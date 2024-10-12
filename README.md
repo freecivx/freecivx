@@ -19,7 +19,7 @@ Currently known servers based on FreecivX.net / Freeciv-web, which are open sour
 
 https://FreecivX.net 
 
-WARCIV screenshots:
+Screenshots:
 ------------------------
 ![Freeciv-web](https://raw.githubusercontent.com/freecivx/freecivx/main/doc/img/Screenshot.png "FCIV.NET screenshot")
 
