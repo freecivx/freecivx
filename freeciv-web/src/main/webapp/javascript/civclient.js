@@ -175,7 +175,7 @@ function init_common_intro_dialog() {
       show_intro_dialog("Welcome to FreecivX.net", msg);
 
   } else {
-    show_intro_dialog("Welcome to FreecivX.net",
+    show_intro_dialog("Welcome to FREECIVX.NET",
       "You can now play a game of Freeciv, where you can " +
       "play a singleplayer game against the Freeciv AI or multiplayer. You can " +
       "start the game directly by entering any name, or customize the game settings. " +
