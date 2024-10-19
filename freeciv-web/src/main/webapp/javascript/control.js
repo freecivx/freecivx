@@ -3261,20 +3261,7 @@ function update_active_units_dialog()
     punits = current_focus;
   }
 
-  for (var i = 0; i < punits.length; i++) {
-    var punit = punits[i];
-    var sprite = get_unit_image_sprite(punit);
-    var active = (current_focus.length > 1 || current_focus[0]['id'] == punit['id']);
 
-    unit_info_html += "<div id='unit_info_div' class='" + (active ? "current_focus_unit" : "")
-           + "'><div id='unit_info_image' onclick='set_unit_focus_and_redraw(units[" + punit['id'] + "])' "
-	   + " style='background: transparent url("
-           + sprite['image-src'] +
-           ");background-position:-" + sprite['tileset-x'] + "px -" + sprite['tileset-y']
-           + "px;  width: " + sprite['width'] + "px;height: " + sprite['height'] + "px;'"
-           + "'></div></div>";
-    width = sprite['width'];
-  }
 
   if (current_focus.length == 1) {
     /* show info about the active focus unit. */
@@ -3286,7 +3273,7 @@ function update_active_units_dialog()
       unit_info_html += "<b>" + nations[players[current_focus[0]['owner']]['nation']]['adjective'] + "</b> ";
     }
 
-    unit_info_html += "<b>" + ptype['name'] + "</b>: ";
+    unit_info_html += "<b>" + ptype['name'] + "</b>:</br> ";
     if (get_unit_homecity_name(aunit) != null) {
       unit_info_html += " " + get_unit_homecity_name(aunit) + " ";
     }
@@ -3314,13 +3301,28 @@ function update_active_units_dialog()
     unit_info_html += "<div id='active_unit_info'>" + current_focus.length + " units selected.</div> ";
   }
 
+  for (var i = 0; i < punits.length; i++) {
+    var punit = punits[i];
+    var sprite = get_unit_image_sprite(punit);
+    var active = (current_focus.length > 1 || current_focus[0]['id'] == punit['id']);
+
+    unit_info_html += "<div id='unit_info_div' class='" + (active ? "current_focus_unit" : "")
+        + "'><div id='unit_info_image' onclick='set_unit_focus_and_redraw(units[" + punit['id'] + "])' "
+        + " style='background: transparent url("
+        + sprite['image-src'] +
+        ");background-position:-" + sprite['tileset-x'] + "px -" + sprite['tileset-y']
+        + "px;  width: " + sprite['width'] + "px;height: " + sprite['height'] + "px;'"
+        + "'></div></div>";
+    width = sprite['width'];
+  }
+
   $("#game_unit_info").html(unit_info_html);
 
   if (current_focus.length > 0) {
     /* reposition and resize unit dialog. */
-    var newwidth = 32 + punits.length * (width * 1.3);
-    if (newwidth < 100) newwidth = 100;
-    var newheight = 65 + normal_tile_height;
+    var newwidth = 80 + punits.length * (width * 1.3);
+    if (newwidth < 280) newwidth = 280;
+    var newheight = 60 + normal_tile_height;
     $("#game_unit_panel").parent().show();
     $("#game_unit_panel").parent().width(newwidth);
     $("#game_unit_panel").parent().height(newheight);

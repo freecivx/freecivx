@@ -862,8 +862,9 @@ body
   float: left;
   color: white;
   background-color: rgba(0,0,0,0.6);
-  font-size: 95%;
+  font-size: 96%;
   padding-top: 2px;
+  max-width: 120px;
 }
 
 #active_unit_info span {
