@@ -118,7 +118,7 @@ var webgpu = <%= webgpu %>;
 
 <style>
 	/*
-		WARCIV.NET - Freeciv 3D.
+		FREECIVX.NET - Freeciv 3D.
 	 */
 	body {
 		padding-top: 60px;
@@ -182,7 +182,7 @@ var webgpu = <%= webgpu %>;
 
 <body>
 
-  <div id="introtxtja">WARCIV.NET is the 3D version of the strategy game Freeciv. Because Civilization should be free, in 3D!</div>
+  <div id="introtxtja">FREECIVX.NET is the 3D version of the strategy game Freeciv. Because Civilization should be free, in 3D!</div>
 
     <div class="container">
         <%@include file="/WEB-INF/jsp/fragments/header.jsp"%>
