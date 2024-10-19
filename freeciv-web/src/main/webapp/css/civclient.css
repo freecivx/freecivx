@@ -1157,3 +1157,7 @@ li.tech-both::before {
 #city_add_to_worklist_btn {
   padding: 10px;
 }
+
+.ui-tabs .ui-tabs-nav .ui-tabs-anchor{
+  padding:.5em 0.5em
+}
