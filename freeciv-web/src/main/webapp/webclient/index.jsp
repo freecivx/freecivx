@@ -177,10 +177,7 @@ var webgpu = <%= webgpu %>;
 
 </style>
 
-<% if (!app) { %>
-  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9958178836739125"
-     crossorigin="anonymous"></script>
-<% } %>
+
 </head>
 
 <body>
@@ -189,25 +186,6 @@ var webgpu = <%= webgpu %>;
 
     <div class="container">
         <%@include file="/WEB-INF/jsp/fragments/header.jsp"%>
-
-            <% if (!app) { %>
-                <div class="row" style="position: relative; z-index: 1000; padding-top: 60px;  margin-left: -56px;">
-                    <div class="col-md-3"></div>
-                    <div class="col-md-8">
-
-                    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9958178836739125"
-                         crossorigin="anonymous"></script>
-                    <!-- HORIZONAL-GOOD-SIZE -->
-                    <ins class="adsbygoogle"
-                         style="display:inline-block;width:728px;height:90px"
-                         data-ad-client="ca-pub-9958178836739125"
-                         data-ad-slot="9479544084"></ins>
-                    <script>
-                         (adsbygoogle = window.adsbygoogle || []).push({});
-                    </script>
-                    </div>
-                </div>
-            <% } %>
 
     </div>
 
