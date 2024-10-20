@@ -10,13 +10,23 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: check out Freeciv-web
-        uses: actions/checkout@v4.1.1
+        uses: actions/checkout@v4.2.1
+        
       - name: Set up Java
         uses: actions/setup-java@v4
         with:
           java-version: '17'
           distribution: 'temurin'
-          cache: maven    
+          cache: maven
+          
+      - name: Set Java 17 as default
+        run: |
+          sudo update-alternatives --install /usr/bin/java java /usr/lib/jvm/java-17-temurin/bin/java 1
+          sudo update-alternatives --set java /usr/lib/jvm/java-17-temurin/bin/java
+          sudo update-alternatives --install /usr/bin/javac javac /usr/lib/jvm/java-17-temurin/bin/javac 1
+          sudo update-alternatives --set javac /usr/lib/jvm/java-17-temurin/bin/javac
+          java -version
+          
       - name: prepare
         run: |
           sudo sysctl -w net.ipv6.conf.all.disable_ipv6=1
@@ -24,6 +34,7 @@ jobs:
           ip addr # for confirmation. can be skipped
           sudo apt-get remove ^postgresql 'mysql.*'
           sudo rm -rf /var/lib/mysql
+          
       - name: install
         shell: bash
         run: bash ./scripts/install/install.sh --mode=TEST
