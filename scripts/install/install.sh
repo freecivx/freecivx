@@ -352,6 +352,7 @@ cd "${basedir}"/scripts/
 ./start-freeciv-web.sh 
 sleep 15
 
+curl http://localhost:8080/freeciv-web
 sudo cat /var/lib/tomcat10/logs/catalina.out
 
 echo "Install and run Playwright"
