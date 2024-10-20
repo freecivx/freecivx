@@ -350,8 +350,9 @@ EOF
 echo "Starting Freecivx.net"
 cd "${basedir}"/scripts/
 ./start-freeciv-web.sh 
-sleep 10
+sleep 15
 
+sudo cat /var/lib/tomcat10/logs/catalina.out
 
 echo "Install and run Playwright"
 cd "${basedir}"/freeciv-web
