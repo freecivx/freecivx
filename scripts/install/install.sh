@@ -349,6 +349,8 @@ EOF
 
 echo "Starting Freecivx.net"
 cd "${basedir}"/scripts/
+./stop-freeciv-web.sh || echo "stop not done"
+killall -9 java || echo "java not stopped"
 ./start-freeciv-web.sh 
 sleep 4
 
