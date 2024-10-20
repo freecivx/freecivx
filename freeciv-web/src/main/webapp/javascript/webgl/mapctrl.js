@@ -54,6 +54,17 @@ function init_webgl_mapctrl()
   controls.dampingFactor = 0.05;
   controls.maxPolarAngle = 0.9 * Math.PI / 2;
 
+  controls.addEventListener('change', () => {
+      if (water_hq != null && water_lq != null) {
+        if (camera.position.y > 600) {
+          water_hq.visible = false;
+          water_lq.visible = true;
+        } else {
+          water_hq.visible = true;
+          water_lq.visible = false;
+        }
+      }
+  });
 }
 
 

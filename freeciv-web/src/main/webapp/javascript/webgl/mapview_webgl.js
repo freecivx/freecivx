@@ -403,17 +403,6 @@ function animate_webgl() {
   if (stats != null) stats.end();
   if (initial_benchmark_enabled || benchmark_enabled) benchmark_frames_count++;
 
-
-  if (water_hq != null && water_lq != null) {
-    if (camera.position.y > 400) {
-      water_hq.visible = false;
-      water_lq.visible = true;
-    } else {
-      water_hq.visible = true;
-      water_lq.visible = false;
-    }
-  }
-
   requestAnimationFrame(animate_webgl);
 }
 
