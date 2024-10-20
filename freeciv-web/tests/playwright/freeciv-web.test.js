@@ -2,7 +2,7 @@ const { test, expect } = require('@playwright/test');
 
 test('Freeciv web homepage loads and has the correct title', async ({ page }) => {
   // Go to the Freeciv-web homepage
-  const response = await page.goto('http://localhost:8080/freeciv-web');
+  const response = await page.goto('http://localhost/');
 
   // Check if the page has loaded successfully
   if (!response || response.status() >= 400) {
