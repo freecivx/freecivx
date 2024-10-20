@@ -53,6 +53,11 @@ ext_install_tomcat10 () {
   sudo chmod u+s /var/lib/tomcat10/bin/catalina.sh
   sudo setfacl -m d:g:tomcat:rwX /var/lib/tomcat10/webapps
 
+  ls -ltra /usr/lib/jvm/
+
+  echo "export JAVA_HOME=\"/usr/lib/jvm/java-17-openjdk-amd64\"" | sudo tee /var/lib/tomcat10/bin/setenv.sh > /dev/null
+  sudo chmod +x /var/lib/tomcat10/bin/setenv.sh
+
   echo "export CATALINA_HOME=\"/var/lib/tomcat10\"" >> ~/.bashrc
   ext_installed[${#ext_installed[@]}]="tomcat10"
 }
