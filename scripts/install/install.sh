@@ -320,8 +320,11 @@ if [ "${FCW_INSTALL_MODE}" = TEST ] && [ ! -f /etc/nginx/ssl/freeciv-web.crt ]; 
   sudo mv freeciv-web.key /etc/nginx/ssl/private/
 fi
 
+
+
+
 echo
-echo FCIV.NET installed!
+echo FREECIVX.NET installed!
 if [ ${#ext_installed[*]} -ne 0 ]; then
   echo "Some components have been installed outside the package managers:"
   for m in "${ext_installed[@]}"; do
@@ -343,4 +346,12 @@ You may want to personalize some things before starting it:
 
 Then run scripts/start-freeciv-web.sh and enjoy!
 EOF
+
+
+
+
+echo "Install and run Playwright"
+cd "${basedir}"/freeciv-web
+npm install @playwright/test --save-dev
+npx playwright test tests/playwright/freeciv-web.test.js
 

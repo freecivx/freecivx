@@ -31,6 +31,7 @@ dependencies="\
   libsqlite3-dev \
   libtool \
   maven \
+  nodejs \
   default-mysql-server \
   nginx \
   openjdk-17-jdk-headless \
