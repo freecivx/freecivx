@@ -13,7 +13,7 @@ cd "${DIR}"
           -Djson-protocol=true -Dnls=false -Daudio=false -Druledit=false \
           -Ddefault_library=static -Dprefix=${HOME}/freeciv \
           -Doptimization=3
-    ninja
+    ninja -j $(nproc)
   )
 
 
