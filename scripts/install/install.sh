@@ -349,7 +349,7 @@ EOF
 
 echo "Starting Freecivx.net"
 cd "${basedir}"/scripts/
-./start-freeciv-web.sh &
+./start-freeciv-web.sh 
 sleep 20
 
 
