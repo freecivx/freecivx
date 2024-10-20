@@ -138,13 +138,6 @@ function webgl_start_renderer()
  This will render the map terrain mesh.
 ****************************************************************************/
 async function init_webgl_mapview() {
-
-  const vertexShaderResponse = await fetch('/javascript/webgl/shaders/terrain_vertex_shader.glsl');
-  const vertex_shader = await vertexShaderResponse.text();
-  
-  const fragmentShaderResponse = await fetch('/javascript/webgl/shaders/terrain_fragment_shader.glsl');
-  var fragment_shader = await fragmentShaderResponse.text();
-
   selected_unit_material = new THREE.MeshBasicMaterial( { color: 0xf6f7bf, transparent: true, opacity: 0.7} );
 
   /* uniforms are variables which are used in the fragment shader fragment.js */
@@ -184,7 +177,12 @@ async function init_webgl_mapview() {
     terrain_quality = 2;
   }
 
+  const vertexShaderResponse = await fetch('/javascript/webgl/shaders/terrain_vertex_shader.glsl');
+  const vertex_shader = await vertexShaderResponse.text();
 
+  // Load fragment shader
+  const fragmentShaderResponse = await fetch('/javascript/webgl/shaders/terrain_fragment_shader.glsl');
+  var fragment_shader = await fragmentShaderResponse.text();
 
   if (maprenderer.capabilities.maxTextures <= 16) {
     delete tiletype_terrains["irrigation"];
