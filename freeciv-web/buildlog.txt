@@ -1,0 +1,83 @@
+maven package
+[[1;34mINFO[m] Scanning for projects...
+[[1;34mINFO[m] 
+[[1;34mINFO[m] [1m------------------------< [0;36mfreeciv:freeciv-web[0;1m >-------------------------[m
+[[1;34mINFO[m] [1mBuilding freecivx.net 1.0[m
+[[1;34mINFO[m] [1m--------------------------------[ war ]---------------------------------[m
+[[1;34mINFO[m] 
+[[1;34mINFO[m] [1m--- [0;32mflyway-maven-plugin:10.19.0:migrate[m [1m(default-cli)[m @ [36mfreeciv-web[0;1m ---[m
+[[1;34mINFO[m] Database: jdbc:mysql://localhost:3306/freeciv_web (MySQL 8.0)
+[[1;34mINFO[m] Successfully validated 17 migrations (execution time 00:00.045s)
+[[1;34mINFO[m] Current version of schema `freeciv_web`: 1.16
+[[1;34mINFO[m] Schema `freeciv_web` is up to date. No migration necessary.
+[[1;34mINFO[m] 
+[[1;34mINFO[m] [1m--- [0;32mmaven-enforcer-plugin:3.5.0:enforce[m [1m(enforce-files-exist)[m @ [36mfreeciv-web[0;1m ---[m
+[[1;34mINFO[m] Rule 0: org.apache.maven.enforcer.rules.files.RequireFilesExist passed
+[[1;34mINFO[m] 
+[[1;34mINFO[m] [1m--- [0;32mmaven-resources-plugin:3.3.1:copy-resources[m [1m(copy-generated-webapp-resources)[m @ [36mfreeciv-web[0;1m ---[m
+[[1;34mINFO[m] Copying 623 resources from src/derived/webapp to target/freeciv-web
+[[1;34mINFO[m] 
+[[1;34mINFO[m] [1m--- [0;32mmaven-resources-plugin:3.3.1:copy-resources[m [1m(copy-javascript)[m @ [36mfreeciv-web[0;1m ---[m
+[[1;34mINFO[m] Copying 118 resources from src/main/webapp/javascript to target/freeciv-web/javascript
+[[1;34mINFO[m] 
+[[1;34mINFO[m] [1m--- [0;32mmaven-antrun-plugin:3.1.0:run[m [1m(create-generated-javascript-dir)[m @ [36mfreeciv-web[0;1m ---[m
+[[1;34mINFO[m] Executing tasks
+[[1;34mINFO[m] Executed tasks
+[[1;34mINFO[m] 
+[[1;34mINFO[m] [1m--- [0;32mmaven-resources-plugin:3.3.1:resources[m [1m(default-resources)[m @ [36mfreeciv-web[0;1m ---[m
+[[1;34mINFO[m] Copying 19 resources from src/main/resources to target/classes
+[[1;34mINFO[m] 
+[[1;34mINFO[m] [1m--- [0;32mminify-maven-plugin:1.7.6:minify[m [1m(minify-webclient.css)[m @ [36mfreeciv-web[0;1m ---[m
+[[1;34mINFO[m] Starting CSS task:
+[[1;34mINFO[m] Processing source file [jquery-ui.min.css].
+[[1;34mINFO[m] Processing source file [sweetalert.css].
+[[1;34mINFO[m] Processing source file [bluecurve.css].
+[[1;34mINFO[m] Processing source file [fg.menu.css].
+[[1;34mINFO[m] Processing source file [theme.dark.css].
+[[1;34mINFO[m] Processing source file [jquery.mCustomScrollbar.css].
+[[1;34mINFO[m] Processing source file [jquery.contextMenu.min.css].
+[[1;34mINFO[m] Processing source file [morris.css].
+[[1;34mINFO[m] Processing source file [spectrum.css].
+[[1;34mINFO[m] Processing source file [pregame.css].
+[[1;34mINFO[m] Processing source file [civclient.css].
+[[1;34mINFO[m] Creating the merged file [webclient.css].
+[[1;34mINFO[m] Creating the minified file [webclient.min.css].
+[[1;34mINFO[m] Uncompressed size: 157240 bytes.
+[[1;34mINFO[m] Compressed size: 130119 bytes minified (24158 bytes gzipped).
+[[1;34mINFO[m] 
+[[1;34mINFO[m] Starting JavaScript task:
+[[1;34mINFO[m] 
+[[1;34mINFO[m] [1m--- [0;32mclosure-compiler-maven-plugin:2.31.0:minify[m [1m(minify-webclient-js)[m @ [36mfreeciv-web[0;1m ---[m
+[[1;34mINFO[m] Starting JavaScript task:
+[[1;34mINFO[m] Processed 1 output files
+[[1;34mINFO[m] Skipped 1 output files (NEWER)
+[[1;34mINFO[m] 
+[[1;34mINFO[m] [1m--- [0;32mmaven-compiler-plugin:3.13.0:compile[m [1m(default-compile)[m @ [36mfreeciv-web[0;1m ---[m
+[[1;34mINFO[m] Nothing to compile - all classes are up to date.
+[[1;34mINFO[m] 
+[[1;34mINFO[m] [1m--- [0;32mnative2ascii-maven-plugin:2.1.1:resources[m [1m(native2ascii-utf8-resources)[m @ [36mfreeciv-web[0;1m ---[m
+[[1;33mWARNING[m] Source directory does not exist: /home/andreas/freecivx/freeciv-web/src/main/native2ascii
+[[1;34mINFO[m] 
+[[1;34mINFO[m] [1m--- [0;32mmaven-resources-plugin:3.3.1:testResources[m [1m(default-testResources)[m @ [36mfreeciv-web[0;1m ---[m
+[[1;34mINFO[m] skip non existing resourceDirectory /home/andreas/freecivx/freeciv-web/src/test/resources
+[[1;34mINFO[m] 
+[[1;34mINFO[m] [1m--- [0;32mmaven-compiler-plugin:3.13.0:testCompile[m [1m(default-testCompile)[m @ [36mfreeciv-web[0;1m ---[m
+[[1;34mINFO[m] No sources to compile
+[[1;34mINFO[m] 
+[[1;34mINFO[m] [1m--- [0;32mmaven-surefire-plugin:2.12.4:test[m [1m(default-test)[m @ [36mfreeciv-web[0;1m ---[m
+[[1;34mINFO[m] No tests to run.
+[[1;34mINFO[m] 
+[[1;34mINFO[m] [1m--- [0;32mmaven-war-plugin:3.4.0:war[m [1m(default-war)[m @ [36mfreeciv-web[0;1m ---[m
+[[1;34mINFO[m] Packaging webapp
+[[1;34mINFO[m] Assembling webapp [freeciv-web] in [/home/andreas/freecivx/freeciv-web/target/freeciv-web]
+[[1;34mINFO[m] Processing war project
+[[1;34mINFO[m] Copying webapp webResources [/home/andreas/freecivx/freeciv-web/src/main/webapp/WEB-INF] to [/home/andreas/freecivx/freeciv-web/target/freeciv-web]
+[[1;34mINFO[m] Copying webapp resources [/home/andreas/freecivx/freeciv-web/src/main/webapp]
+[[1;34mINFO[m] Building war: /home/andreas/freecivx/freeciv-web/target/freeciv-web.war
+[[1;34mINFO[m] [1m------------------------------------------------------------------------[m
+[[1;34mINFO[m] [1;32mBUILD SUCCESS[m
+[[1;34mINFO[m] [1m------------------------------------------------------------------------[m
+[[1;34mINFO[m] Total time:  4.086 s
+[[1;34mINFO[m] Finished at: 2024-10-19T23:14:45+02:00
+[[1;34mINFO[m] [1m------------------------------------------------------------------------[m
+Copying target/freeciv-web.war to /var/lib/tomcat10/webapps
