@@ -39,7 +39,6 @@ jobs:
         
         
       - name: test
-        shell: bash
         run: |
           echo "JAVA_HOME is $JAVA_HOME"
 	  echo "JAVA_HOME_17_X64 is $JAVA_HOME_17_X64"
