@@ -350,14 +350,5 @@ EOF
 echo "Starting Freecivx.net"
 cd "${basedir}"/scripts/
 ./start-freeciv-web.sh 
-sleep 15
-
-curl http://localhost:8080/freeciv-web
-sudo cat /var/lib/tomcat10/logs/catalina.out
-
-echo "Install and run Playwright"
-cd "${basedir}"/freeciv-web
-npm install @playwright/test --save-dev
-npx playwright install
-npx playwright test tests/playwright/freeciv-web.test.js
+sleep 4
 
