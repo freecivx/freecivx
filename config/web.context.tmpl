@@ -12,7 +12,7 @@
 
 
   <Resource name="jdbc/freeciv_mysql" auth="Container" type="javax.sql.DataSource"
-               maxTotal="200" maxIdle="50" minIdle="10" maxWaitMillis="10000"
+               maxTotal="400" maxIdle="50" minIdle="10" maxWaitMillis="10000"
                username="#DB_USER#" password="#DB_PASSWORD#" driverClassName="com.mysql.cj.jdbc.Driver"
                validationQuery="SELECT 1"
                url="jdbc:mysql://localhost:3306/#DB_NAME#?serverTimezone=UTC&amp;useSSL=false&amp;allowPublicKeyRetrieval=true"/>
