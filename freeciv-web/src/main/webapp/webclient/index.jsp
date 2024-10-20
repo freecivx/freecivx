@@ -194,12 +194,4 @@ var webgpu = <%= webgpu %>;
 
 </body>
 
-<script id="terrain_fragment_shh" type="x-shader/x-fragment">
-  <jsp:include page="/javascript/webgl/shaders/terrain_fragment_shader.glsl" flush="false"/>
-</script>
-
-<script id="terrain_vertex_shh" type="x-shader/x-vertex">
-  <jsp:include page="/javascript/webgl/shaders/terrain_vertex_shader.glsl" flush="false"/>
-</script>
-
 </html>

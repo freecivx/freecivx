@@ -137,18 +137,15 @@ function webgl_start_renderer()
 /****************************************************************************
  This will render the map terrain mesh.
 ****************************************************************************/
-function init_webgl_mapview() {
+async function init_webgl_mapview() {
+
+  const vertexShaderResponse = await fetch('/javascript/webgl/shaders/terrain_vertex_shader.glsl');
+  const vertex_shader = await vertexShaderResponse.text();
+  
+  const fragmentShaderResponse = await fetch('/javascript/webgl/shaders/terrain_fragment_shader.glsl');
+  var fragment_shader = await fragmentShaderResponse.text();
+
   selected_unit_material = new THREE.MeshBasicMaterial( { color: 0xf6f7bf, transparent: true, opacity: 0.7} );
-
-  var vertex_shader = $('#terrain_vertex_shh').html();
-  var fragment_shader = $('#terrain_fragment_shh').html();
-
-  if (maprenderer.capabilities.maxTextures <= 16) {
-    delete tiletype_terrains["irrigation"];
-    console.log("max textures: " + maprenderer.capabilities.maxTextures);
-    fragment_shader = fragment_shader.replace("uniform sampler2D irrigation;", "")
-                                     .replaceAll("irrigation", "farmland");
-  }
 
   /* uniforms are variables which are used in the fragment shader fragment.js */
   freeciv_uniforms = {
@@ -185,6 +182,15 @@ function init_webgl_mapview() {
 
   if (map.xsize > 200 || map.ysize > 200) {
     terrain_quality = 2;
+  }
+
+
+
+  if (maprenderer.capabilities.maxTextures <= 16) {
+    delete tiletype_terrains["irrigation"];
+    console.log("max textures: " + maprenderer.capabilities.maxTextures);
+    fragment_shader = fragment_shader.replace("uniform sampler2D irrigation;", "")
+        .replaceAll("irrigation", "farmland");
   }
 
   // High-resolution terrain-mesh shown in mapview.
