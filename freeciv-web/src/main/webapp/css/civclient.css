@@ -1,3 +1,63 @@
+
+/*
+    FREECIVX.NET - Freeciv 3D.
+ */
+body {
+  padding-top: 60px;
+  padding-bottom: 20px;
+}
+
+/*
+ * Delimits an area where to put content.
+ */
+.panel-freeciv {
+  background-color: rgba(243, 236, 209, 0.5);
+  border-bottom: 1px solid #D3B86F;
+  border-radius: 3px;
+  margin-top: 1%;
+  padding: 1%;
+}
+.panel-freeciv h1, .panel-freeciv h2, .panel-freeciv h3,
+.panel-freeciv h4, .panel-freeciv h5, .panel-freeciv h6 {
+  margin-top: 0px;
+}
+
+/*
+ * Sometimes we need some additional space between rows.
+ */
+.top-buffer-3 { margin-top: 3%; }
+.top-buffer-2 { margin-top: 2%; }
+.top-buffer-1 { margin-top: 1%; }
+/*
+ * The bootstrap theme we use adds some transparency, this ensure it is removed.
+ */
+.navbar-inverse {
+  background-image: none;
+}
+/*
+ * Ensure that the logo fits within the navbar.
+ */
+.navbar-brand {
+  float: left;
+  height: 50px;
+  padding: 4px 15px;
+  font-size: 18px;
+  line-height: 20px;
+}
+.ongoing-games-number {
+  margin-left: 5px;
+  background:#BE602D;
+}
+.nav {
+  font-size: 16px;
+}
+@media (min-width: 1024px) {
+  .container {
+    width: 1350px;
+  }
+}
+
+
 body
 {
   margin: 0px;

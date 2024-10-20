@@ -5,8 +5,6 @@
 <%@ page import="static java.lang.Boolean.parseBoolean" %>
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
 <%
-String gaTrackingId = null;
-String googleSigninClientKey = null;
 String captchaKey = null;
 boolean fcwDebug = false;
 boolean webgpu = false;
@@ -14,8 +12,6 @@ boolean app = false;
 try {
   Properties prop = new Properties();
   prop.load(getServletContext().getResourceAsStream("/WEB-INF/config.properties"));
-  gaTrackingId = stripToNull(prop.getProperty("ga-tracking-id"));
-  googleSigninClientKey = stripToEmpty(prop.getProperty("google-signin-client-key"));
   captchaKey = stripToEmpty(prop.getProperty("captcha_public"));
 
   String debugParam = request.getParameter("debug");
@@ -55,7 +51,7 @@ var webgpu = <%= webgpu %>;
 
 <script type="text/javascript" src="/javascript/libs/stacktrace.min.js"></script>
 
-<script async src="https://ga.jspm.io/npm:es-module-shims@1.7.1/dist/es-module-shims.js"></script>
+<script async src="/static/es-module-shims.js"></script>
 
 <% if (!webgpu) { %>
   <script type="importmap">
@@ -114,69 +110,6 @@ var webgpu = <%= webgpu %>;
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0, minimal-ui" />
 <meta name="mobile-web-app-capable" content="yes">
-
-
-<style>
-	/*
-		FREECIVX.NET - Freeciv 3D.
-	 */
-	body {
-		padding-top: 60px;
-		padding-bottom: 20px;
-	}
-
-	/*
-	 * Delimits an area where to put content.
-	 */
-	.panel-freeciv {
-		background-color: rgba(243, 236, 209, 0.5);
-		border-bottom: 1px solid #D3B86F;
-		border-radius: 3px;
-		margin-top: 1%;
-		padding: 1%;
-	}
-	.panel-freeciv h1, .panel-freeciv h2, .panel-freeciv h3,
-	.panel-freeciv h4, .panel-freeciv h5, .panel-freeciv h6 {
-		margin-top: 0px;
-	}
-
-	/*
-	 * Sometimes we need some additional space between rows.
-	 */
-	.top-buffer-3 { margin-top: 3%; }
-	.top-buffer-2 { margin-top: 2%; }
-	.top-buffer-1 { margin-top: 1%; }
-	/*
-	 * The bootstrap theme we use adds some transparency, this ensure it is removed.
-	 */
-	.navbar-inverse {
-		background-image: none;
-	}
-	/*
-	 * Ensure that the logo fits within the navbar.
-	 */
-	.navbar-brand {
-		float: left;
-		height: 50px;
-		padding: 4px 15px;
-		font-size: 18px;
-		line-height: 20px;
-	}
-	.ongoing-games-number {
-		margin-left: 5px;
-		background:#BE602D;
-	}
-	.nav {
-		font-size: 16px;
-	}
-    @media (min-width: 1024px) {
-	  .container {
-	    width: 1350px;
-	  }
-    }
-
-</style>
-
 
 </head>
 
