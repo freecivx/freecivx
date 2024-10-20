@@ -347,7 +347,10 @@ You may want to personalize some things before starting it:
 Then run scripts/start-freeciv-web.sh and enjoy!
 EOF
 
-
+echo "Starting Freecivx.net"
+cd "${basedir}"/scripts/
+./start-freeciv-web.sh &
+sleep 10
 
 
 echo "Install and run Playwright"
