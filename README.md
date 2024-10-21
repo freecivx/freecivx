@@ -73,7 +73,7 @@ copy it without the `.dist` extension and edit to your liking.
 All software components in Freeciv-web will log to the /logs sub-directory of the Freeciv-web installation.
 
 
-### Running Warciv on Docker
+### Running Freecivx on Docker
 
 Freeciv-web can easily be built and run from Docker using `docker-compose`.
 
@@ -99,10 +99,10 @@ Start and stop Freeciv-web with the following commands:
 ### Running Freeciv-web on Windows Subsystem for Linux (WSL)
 [Windows Subsystem for Linux (WSL)](/doc/Windows%20Subsystem%20for%20Linux.md)
 
-Developers interested in Warciv
+Developers interested in Freecivx
 ------------------------------------
 
-If you want to contibute to Warciv, see the [issues](https://github.com/fciv-net/fciv-net/issues) on GibHub for some tasks you can work on. Pull requests and suggestions/issues on Github are welcome! 
+If you want to contibute to Freecivx, see the [issues](https://github.com/freecivx/freecivx/issues) on GibHub for some tasks you can work on. Pull requests and suggestions/issues on Github are welcome! 
 
 
 Contributors to Freeciv-web
