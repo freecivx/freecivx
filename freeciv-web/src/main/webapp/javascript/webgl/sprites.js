@@ -317,8 +317,7 @@ function update_city_label(pcity)
 /****************************************************************************
  Create a city worked sprite
 ****************************************************************************/
-function create_city_worked_sprite(food, shields, trade)
-{
+function create_city_worked_sprite(food, shields, trade) {
   var key = food.toString() + shields.toString() + trade.toString();
 
   var texture;
@@ -331,27 +330,40 @@ function create_city_worked_sprite(food, shields, trade)
     fcanvas.height = 32;
     var ctx = fcanvas.getContext("2d");
 
-    var fkey = "city.t_food_" + food;
-    ctx.drawImage(sprites[fkey], 0, sprites[fkey].height / 2,
-                sprites[fkey].width, sprites[fkey].height / 2,
-                0,0,64,32);
-    var skey = "city.t_shields_" + shields;
-    ctx.drawImage(sprites[skey], 0, sprites[fkey].height / 2,
-                sprites[skey].width, sprites[skey].height / 2,
-                0,0,64,32);
-    var tkey = "city.t_trade_" + trade;
-    ctx.drawImage(sprites[tkey], 0, sprites[fkey].height / 2,
-                sprites[tkey].width, sprites[tkey].height / 2,
-                0,0,64,32);
+    // Add a border around the canvas
+    ctx.strokeStyle = "black";  // border color
+    ctx.lineWidth = 8;  // border width
+    ctx.strokeRect(0, 0, fcanvas.width, fcanvas.height);
+
+    ctx.fillStyle = "#00FF00";
+    ctx.fillRect(0, 0, 20, 32);
+    ctx.fillStyle = "black";
+    ctx.font = "18px Arial";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText(food.toString(), 10, 16);
+
+    ctx.fillStyle = "white";
+    ctx.fillRect(20, 0, 22, 32);
+    ctx.fillStyle = "black";  // text color
+    ctx.fillText(shields.toString(), 31, 16);
+
+    ctx.fillStyle = "yellow";
+    ctx.fillRect(42, 0, 22, 32);
+    ctx.fillStyle = "black";
+    ctx.fillText(trade.toString(), 53, 16);
+
     texture = new THREE.Texture(fcanvas);
     texture.needsUpdate = true;
     texture_cache[key] = texture;
   }
 
-  var sprite = new THREE.Sprite( new THREE.SpriteMaterial( { map: texture}));
-  sprite.scale.set(35,12,1);
+  var sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: texture }));
+  sprite.scale.set(24, 8, 1);
   return sprite;
 }
+
+
 
 /****************************************************************************
  Create a unit explosion sprite (frame = [0-4].
