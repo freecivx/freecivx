@@ -38,7 +38,7 @@ try {
 <link rel="stylesheet" href="/css/solid.min.css">
 <link rel="stylesheet" type="text/css" href="/css/webclient.min.css?ts=${initParam.buildTimeStamp}" />
 <meta name="description" content="FreecivX.net - play Freeciv in 3D online for free; open source strategy game">
-<meta property="og:image" content="https://FreecivX.net/static/images/freeciv-webgl-splash-48.png" />
+<meta property="og:image" content="https://FreecivX.net/images/freeciv-web-logo.png" />
 
 <script type="text/javascript">
 var ts="${initParam.buildTimeStamp}";
@@ -106,7 +106,7 @@ var webgpu = <%= webgpu %>;
 <script type="text/javascript" src="/music/audio.min.js"></script>
 
 <link rel="shortcut icon" href="/images/freeciv-shortcut-icon.png" />
-<link rel="apple-touch-icon" href="/images/freeciv-splash2.png" />
+<link rel="apple-touch-icon" href="/images/freeciv-splash4.png" />
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0, minimal-ui" />
 <meta name="mobile-web-app-capable" content="yes">
