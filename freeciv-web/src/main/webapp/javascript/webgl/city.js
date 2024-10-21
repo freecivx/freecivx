@@ -59,7 +59,7 @@ function show_city_worked_tiles()
       if (city_worked_positions[ptile['index']] == null) {
         var mesh = create_city_worked_sprite(food_output, shield_output, trade_output);
         city_worked_positions[ptile['index']] = mesh;
-        mesh.position.set(pos['x'] + 2, height + 10, pos['y'] - 4);
+        mesh.position.set(pos['x'] + 0, height + 10, pos['y'] - 4);
         if (scene != null) {
           scene.add(mesh);
         }
