@@ -261,9 +261,7 @@ function validate_username() {
 function is_username_valid_show(username) {
   var reason = get_invalid_username_reason(username);
   if (reason != null) {
-    $("#username_validation_result").html("The username '"
-                + username.replace(/&/g, "&amp;").replace(/</g, "&lt;")
-                + "' is " + reason + ".");
+    $("#username_validation_result").text("The username is " + reason + ".");
     $("#username_validation_result").show();
     return false;
   }
