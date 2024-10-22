@@ -267,8 +267,10 @@ function player_has_wonder(playerno, improvement_id)
 **************************************************************************/
 function get_invalid_username_reason(username)
 {
-  if (username == null || $.trim(username).length === 0) {
+  if (username == null) {
     return "empty";
+  } else if (username.length == 0) {
+      return "empty";
   } else if (username.length <= 2) {
     return "too short";
   } else if (username.length >= 32) {
