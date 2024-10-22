@@ -919,6 +919,10 @@ function show_intro_dialog(title, message) {
 
   $("#dialog").html(intro_html);
 
+  $('#username_req').on('input', function() {
+        this.value = this.value.toLowerCase();
+  });
+
   var stored_username = simpleStorage.get("username", "");
   if (stored_username != null && stored_username != false) {
     $("#username_req").val(stored_username);
@@ -1139,7 +1143,7 @@ function show_new_user_account_dialog(gametype)
 
   var title = "New user account";
   var message = "Create a new Freeciv-web user account with information about yourself:<br><br>"
-                + "<table><tr><td>Username:</td><td><input id='username' type='text' size='25' maxlength='30' onkeyup='return forceLower(this);'></td></tr>"
+                + "<table><tr><td>Username:</td><td><input id='username' type='text' size='25' maxlength='30'></td></tr>"
                 + "<tr><td>Email:</td><td><input id='email' type='email' size='25' maxlength='64' ></td></tr>"
                 + "<tr><td>Password:</td><td><input id='password' type='password' size='25'></td></tr>"
                 + "<tr><td>Confim password:</td><td><input id='confirm_password' type='password' size='25'></td></tr></table><br>"
@@ -1176,6 +1180,10 @@ function show_new_user_account_dialog(gametype)
 
   $("#dialog").dialog('open');
 
+
+  $('#username').on('input', function() {
+      this.value = this.value.toLowerCase();
+  });
 
   $("#username").blur(function() {
    $.ajax({

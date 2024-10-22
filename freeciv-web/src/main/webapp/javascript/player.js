@@ -267,15 +267,14 @@ function player_has_wonder(playerno, improvement_id)
 **************************************************************************/
 function get_invalid_username_reason(username)
 {
-  if (username == null || username.length == 0) {
+  if (username == null || $.trim(username).length === 0) {
     return "empty";
   } else if (username.length <= 2) {
     return "too short";
   } else if (username.length >= 32) {
     return "too long";
   }
-  username = username.toLowerCase();
-  if (username.search(/^[a-z][a-z0-9]*$/g) != 0) {
+  if (!/^[a-z][a-z0-9]*$/.test(username)) {
     return "invalid: only English letters and numbers are allowed, and must start with a letter";
   } else if (!check_text_with_banlist_exact(username)) {
     return "banned";
