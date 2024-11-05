@@ -14,7 +14,7 @@ else
 DSUBDIRS =
 endif
 
-SUBDIRS = gen_headers $(DSUBDIRS) dependencies utility common tests windows $(SSUBDIRS) client translations doc tools lua bootstrap
+SUBDIRS = gen_headers $(DSUBDIRS) dependencies utility common tests windows $(SSUBDIRS) translations doc tools lua bootstrap
 
 docs =			\
 	ABOUT-NLS	\

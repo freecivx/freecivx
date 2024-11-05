@@ -811,9 +811,6 @@ server_inc = [common_inc, include_directories('server', 'server/advisors',
               'server/scripting', 'server/generator', 'server/savegame',
               'ai', 'ai/classic')]
 
-client_inc = [common_inc, include_directories('client', 'client/include',
-              'client/luascript', 'client/agents')]
-
 tool_inc = [server_inc, include_directories('tools/ruleutil', 'tools/shared')]
 
 runwrap = custom_target('runwrap', output: 'run.sh',
@@ -3790,16 +3787,6 @@ custom_target('mi_ruledit',
               install_dir: join_paths(get_option('datadir'), 'metainfo'))
 
 endif
-
-executable('freeciv-manual',
-  'tools/civmanual.c',
-  'client/helpdata.c',
-  link_with: [common_lib, server_lib, tool_lib, ais],
-  include_directories: [tool_inc,
-                        include_directories('client', 'client/include')],
-  dependencies: [m_dep, net_dep, readline_dep, gettext_dep],
-  install: true
-  )
 
 install_data(
   'data/default/default.lua',
