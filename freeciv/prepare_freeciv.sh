@@ -12,8 +12,7 @@ cd "${DIR}"
     meson setup ../freeciv -Dserver='freeciv-web' -Dclients=[] -Dfcmp=cli \
           -Djson-protocol=true -Dnls=false -Daudio=false -Druledit=false \
           -Ddefault_library=static -Dprefix=${HOME}/freeciv \
-          -Doptimization=3 \
-	  --disable-lua
+          -Doptimization=3
     ninja -j $(nproc)
   )
 

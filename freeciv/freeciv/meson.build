@@ -1214,6 +1214,7 @@ if server_type != 'disabled'
     )
 
   install_data(
+    'lua/database.lua',
     install_dir : join_paths(get_option('sysconfdir'), 'freeciv')
     )
 
