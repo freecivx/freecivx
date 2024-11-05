@@ -109,10 +109,6 @@ function generate_help_menu(key)
       $("<li data-helptag='" + key + "_" + pgov['id'] + "'>"
           + pgov['name'] + "</li>").appendTo("#help_government_ul");
     }
-  } else if (key == "help_gen_ruleset") {
-    $("<li id='" + key +  "' data-helptag='" + key +  "'>"
-       + "About Current Ruleset" + "</li>").appendTo(
-          find_parent_help_key(key));
   }
 }
 
