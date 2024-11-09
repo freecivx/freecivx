@@ -97,7 +97,7 @@ function update_game_info_pregame()
 
   if ($.getUrlVar('action') == "multi") {
     game_info_html += "<p>";
-    game_info_html += "<h2>Freeciv-Web Multiplayer game</h2>-You are now about to play a multiplayer game.<br>-Please wait until at least 2 players have joined the game, then click the start game button.";
+    game_info_html += "<h2>Freecivx.net Multiplayer game</h2>-You are now about to play a multiplayer game.<br>-Please wait until at least 2 players have joined the game, then click the start game button.";
     game_info_html += "</p>";
   }
 
@@ -926,6 +926,10 @@ function show_intro_dialog(title, message) {
   var stored_username = simpleStorage.get("username", "");
   if (stored_username != null && stored_username != false) {
     $("#username_req").val(stored_username);
+      if ($.getUrlVar('civserverport') != null) {
+          pregame_handle_user(false);
+          $("#fciv-intro").hide();
+      }
   }
   var stored_password = simpleStorage.get("password", "");
   if (stored_password != null && stored_password != false) {
@@ -936,7 +940,7 @@ function show_intro_dialog(title, message) {
   }
   var join_game_customize_text = "";
   if ($.getUrlVar('action') == "multi") {
-    join_game_customize_text = "Join Game";
+    join_game_customize_text = "Join Game " + $.getUrlVar('civserverport');
   } else {
     join_game_customize_text = "Customize";
   }
@@ -977,13 +981,6 @@ function show_intro_dialog(title, message) {
                   click : function() {
                   	$("#fciv-intro").hide();
                     show_new_user_account_dialog();
-                },
-                icons : { primary: "ui-icon-person" }
-              },
-              {
-                text : "Multiplayer",
-                click : function() {
-                   window.location="/game/list?v=multiplayer";
                 },
                 icons : { primary: "ui-icon-person" }
               },

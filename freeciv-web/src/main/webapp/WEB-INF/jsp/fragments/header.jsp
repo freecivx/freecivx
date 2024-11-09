@@ -17,17 +17,12 @@
 		<!-- Collect the nav links, forms, and other panel-freeciv for toggling -->
 		<div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
 		<ul class="nav navbar-nav">
-			<li><a href="/webclient/?action=new&renderer=webgl&type=singleplayer">New Game</a></li>
+			<li><a href="/webclient/?action=new&type=singleplayer">New Game</a></li>
 			<li class="dropdown">
 				<a href="/game/list?v=singleplayer" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">
-					<span onclick="window.location='/game/list?v=singleplayer'">Online Games</span> <span class="caret"></span> <span class="badge ongoing-games-number" id="ongoing-games" title="Ongoing games"></span>
+					<span onclick="window.location='/game/list'">Multiplayer Games</span>
+					<span class="badge ongoing-games-number" id="ongoing-games" title="Ongoing games"></span>
 				</a>
-				<ul class="dropdown-menu">
-					<li><a href="/game/list?v=singleplayer">Single-player</a></li>
-					<li role="separator" class="divider"></li>
-					<li><a href="/game/list?v=multiplayer">Multiplayer</a></li>
-				
-				</ul>
 			</li>
 			<li><a href="https://github.com/freecivx/freecivx/">GitHub</a></li>
 
