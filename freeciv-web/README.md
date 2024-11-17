@@ -1,7 +1,7 @@
-Freeciv 3D web application 
+Freecivx.net 3D web application 
 =======================
 
-This is the Freeciv 3D web application, which consists of the Java servlets 
+This is the Freecivx.net 3D web application, which consists of the Java servlets 
 and filters for running the web client, JSP templates, javascript code
 and other web content. 
 
