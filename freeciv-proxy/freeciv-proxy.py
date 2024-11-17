@@ -73,19 +73,17 @@ class WSHandler(websocket.WebSocketHandler):
               logger.warn("invalid username: " + str(message))
               self.write_message("[{\"pid\":5,\"message\":\"Error: Could not authenticate user.\",\"you_can_join\":false,\"conn_id\":-1}]")
               return
-            self.civserverport = login_message['port']
 
             self.loginpacket = message
             self.is_ready = True
             self.civcom = self.get_civcom(
                 self.username,
-                self.civserverport,
                 self)
             return
 
         # get the civcom instance which corresponds to this user.
         if (self.is_ready): 
-            self.civcom = self.get_civcom(self.username, self.civserverport, self)
+            self.civcom = self.get_civcom(self.username, self)
 
         if (self.civcom is None):
             self.write_message("[{\"pid\":5,\"message\":\"Error: Could not authenticate user.\",\"you_can_join\":false,\"conn_id\":-1}]")
@@ -107,17 +105,11 @@ class WSHandler(websocket.WebSocketHandler):
     def check_origin(self, origin):
       return True;
 
-    # this enables WebSocket compression with default options.
-    def get_compression_options(self):
-        return {'compression_level' : 9, 'mem_level' : 9}
-
     # get the civcom instance which corresponds to the requested user.
-    def get_civcom(self, username, civserverport, ws_connection):
-        key = username + str(civserverport) + ws_connection.id
+    def get_civcom(self, username, ws_connection):
+        key = username + ws_connection.id
         if key not in list(civcoms.keys()):
-            if (int(civserverport) < 5000):
-                return None
-            civcom = CivCom(username, int(civserverport), key, self)
+            civcom = CivCom(username, int(PROXY_PORT) - 1000, key, self)
             civcom.start()
             civcoms[key] = civcom
 

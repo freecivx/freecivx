@@ -120,8 +120,7 @@ function check_websocket_ready()
 
     var login_message = {"pid":4, "username" : username,
     "capability": freeciv_version, "version_label": "-dev",
-    "major_version" : 3, "minor_version" : 1, "patch_version" : 90,
-    "port": civserverport};
+    "major_version" : 3, "minor_version" : 1, "patch_version" : 90};
     ws.send(JSON.stringify(login_message));
 
     /* The connection is now up. Verify that it remains alive. */

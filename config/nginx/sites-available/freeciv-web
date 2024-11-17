@@ -12,30 +12,51 @@
         gzip_types text/css application/json application/javascript application/x-javascript text/javascript text/xml application/xml application/rss+xml application/atom+xml application/rdf+xml application/octet-stream;
         gzip_buffers 16 8k;
 
-        # proxy for websockets to the multiple freeciv-proxy server instances on port range [7000-7999].
-        location ~ /civsocket/7([0-9][0-9][0-9]) {
-            proxy_pass http://127.0.0.1:7$1;
-            proxy_http_version 1.1;
-            proxy_set_header Upgrade $http_upgrade;
-            proxy_set_header Connection $connection_upgrade;
-            proxy_set_header   X-Real-IP        $remote_addr;
+	# Secure proxy for websockets to Freeciv-proxy server instances on port range [7000-7999].
+	location ~ ^/civsocket/7([0-9][0-9][0-9])$ {
+	    # Validate that the captured port is in the range 7000-7999.
+	    set $port_number 7$1;
+	    if ($port_number !~ ^7[0-9][0-9][0-9]$) {
+		return 400; # Bad Request if the port number is invalid.
+	    }
 
-            proxy_connect_timeout      90;
-            proxy_send_timeout         90;
-            proxy_read_timeout         90;
+	    # Enable gzip compression for proxied responses.
+	    gzip on;
+	    gzip_proxied any;
+	    gzip_comp_level 8; # Adjust compression level (1=fastest, 9=maximum compression)
+	    gzip_types text/plain text/css application/json application/javascript text/xml application/xml;
+	    gzip_buffers 16 8k;
 
-        }
+	    # Proxy the request to the corresponding Freeciv-proxy server.
+	    proxy_pass http://127.0.0.1:$port_number;
+	    proxy_http_version 1.1;
+	    proxy_set_header Upgrade $http_upgrade;
+	    proxy_set_header Connection $connection_upgrade;
+	    proxy_set_header X-Real-IP $remote_addr;
 
-        # status for each Freeciv-proxy instance
-        location ~ /civsocket/7([0-9][0-9][0-9])/status {
-            proxy_pass http://127.0.0.1:7$1/;
-            proxy_set_header   X-Real-IP        $remote_addr;
+	    proxy_connect_timeout 90;
+	    proxy_send_timeout 90;
+	    proxy_read_timeout 90;
+	}
 
-            proxy_connect_timeout      90;
-            proxy_send_timeout         90;
-            proxy_read_timeout         90;
 
-        }
+	# Secure status check for each Freeciv-proxy instance on port range [7000-7999].
+	location ~ ^/civsocket/7([0-9][0-9][0-9])/status$ {
+	    # Validate that the captured port is in the range 7000-7999.
+	    set $port_number 7$1;
+	    if ($port_number !~ ^7[0-9][0-9][0-9]$) {
+		return 400; # Bad Request if the port number is invalid.
+	    }
+
+	    # Proxy the request to the corresponding Freeciv-proxy server status endpoint.
+	    proxy_pass http://127.0.0.1:$port_number/;
+	    proxy_set_header X-Real-IP $remote_addr;
+
+	    proxy_connect_timeout 90;
+	    proxy_send_timeout 90;
+	    proxy_read_timeout 90;
+	}
+
 
 	# location for maps and logs in the data "webapp"
 	location ~ /data/.*\.(gif|log|png)$ {
@@ -99,39 +120,7 @@
 
 	}
 
-	# status page for PBEM at /mailstatus
-	location ~ /mailstatus {
-        proxy_pass         http://localhost:4003;
-        proxy_redirect     off;
 
-        proxy_set_header   Host             $host;
-        proxy_set_header   X-Real-IP        $remote_addr;
-        proxy_set_header   X-Forwarded-For  $proxy_add_x_forwarded_for;
-
-	}
-
-	# status page for PBEM at /pbemstatus
-	location ~ /pbemstatus {
-        proxy_pass         http://localhost:4003;
-        proxy_redirect     off;
-
-        proxy_set_header   Host             $host;
-        proxy_set_header   X-Real-IP        $remote_addr;
-        proxy_set_header   X-Forwarded-For  $proxy_add_x_forwarded_for;
-
-	}
-
-	# Freeciv Earth Mapgen servlet
-	location ~ /freeciv-earth-mapgen {
-        proxy_pass         http://localhost:3999;
-        proxy_redirect     off;
-
-        client_max_body_size       3m;
-        proxy_set_header   Host             $host;
-        proxy_set_header   X-Real-IP        $remote_addr;
-        proxy_set_header   X-Forwarded-For  $proxy_add_x_forwarded_for;
-
-	}
 
 	location = / {
           proxy_pass         http://localhost:8080/freeciv-web/;
