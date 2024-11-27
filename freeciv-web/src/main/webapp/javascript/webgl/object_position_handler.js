@@ -56,6 +56,8 @@ var special_resources = ["Fish", "Whales", "Oasis", "Wine", "Iron", "Spice", "Iv
   Handles unit positions
 ****************************************************************************/
 function update_unit_position(ptile) {
+  if (scene == null) return;
+
   let visible_unit = find_visible_unit(ptile);
   let height = 5 + Math.max(ptile['height'], 0.45) * 100 + get_unit_height_offset(visible_unit);
 
@@ -889,15 +891,9 @@ function webgl_clear_unit_focus()
 ****************************************************************************/
 function add_all_objects_to_scene()
 {
-  unit_positions = {};
   city_positions = {};
   city_label_positions = {};
   city_walls_positions = {};
-  unit_flag_positions = {};
-  unit_label_positions = {};
-  unit_activities_positions = {};
-  unit_health_positions = {};
-  unit_healthpercentage_positions = {};
   tile_extra_positions_list = {};
   road_positions = {};
   rail_positions = {};
