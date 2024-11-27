@@ -247,6 +247,10 @@ function load_model(filename)
           node.material.opacity = 0.45;
           node.material.transparent = true;
         }
+        if (filename == "Wheat" ) {
+          node.material.emissive.set(0xEEDC82);
+          node.material.emissiveIntensity = 1.6;
+        }
         node.castShadow = true;
         if (filename == "Oasis") {
           node.castShadow = false;
