@@ -113,6 +113,19 @@ var webgpu = <%= webgpu %>;
 
 </head>
 
+
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-1MPXPYYNLW"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-1MPXPYYNLW');
+</script>
+
+
+
 <body>
 
   <div id="introtxtja">FREECIVX.NET is the 3D version of the strategy game Freeciv. Because Civilization should be free, in 3D!</div>
