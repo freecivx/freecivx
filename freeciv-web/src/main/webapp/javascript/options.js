@@ -164,6 +164,19 @@ function init_options_dialog()
     $("#mentat_tab").show();
   }
 
+
+  $('#openai_setting').change(function() {
+    openai_enabled = this.checked;
+    simpleStorage.set("openai_enabled", openai_enabled);
+  });
+  var stored_openai_setting = simpleStorage.get("openai_setting", "");
+  if (stored_openai_setting != null && !stored_openai_setting ) {
+    $("#openai_setting").prop("checked", false);
+    openai_setting = false;
+  } else {
+    $("#openai_setting").prop("checked", true);
+  }
+
   $('#play_sounds_setting').prop('checked', sounds_enabled);
 
   $('#play_sounds_setting').change(function() {

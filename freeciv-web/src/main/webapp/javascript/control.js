@@ -708,9 +708,9 @@ function check_text_input(event,chatboxtextarea) {
     }
 
 
-    //if (openai_enabled && game_type == 'singleplayer' && message.length > 2 && message_original.indexOf('/') == -1) {
-    //  send_message_to_openai(message_original);
-    //}
+    if (openai_enabled && message.length > 2 && message_original.indexOf('/') == -1) {
+      send_message_to_openai(message_original);
+    }
 
     send_message(message);
     return false;

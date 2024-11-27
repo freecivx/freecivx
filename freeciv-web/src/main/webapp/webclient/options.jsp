@@ -68,6 +68,14 @@
             </div>
         </td>
     </tr>
+        <tr>
+            <td>
+                <div class="main_menu_buttons">
+                    <input type='checkbox' name='openai_setting' id='openai_setting'>
+                    <b>OpenAI (ChatGPT) in game chat</b>
+                </div>
+            </td>
+        </tr>
 </table>
 
 <div class="main_menu_buttons" id="quality_div">

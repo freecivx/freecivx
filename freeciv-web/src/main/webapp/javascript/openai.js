@@ -19,7 +19,7 @@
 
 
 var openai_messages = "";
-
+var openai_enabled = true;
 
 /**************************************************************************
   Returns the current game context to OpenAI.
@@ -166,7 +166,7 @@ function send_message_to_openai(message)
           .done(function( chatresponse ) {
             message_log.update({ event: E_CONNECTION, message: "<b>" + otherone + ":</b> " + chatresponse });
           }).fail(function() {
-                 message_log.update({ event: E_CONNECTION, message: "There was no answer." });
+                 message_log.update({ event: E_CONNECTION, message: "No answer." });
           })
 
 }
