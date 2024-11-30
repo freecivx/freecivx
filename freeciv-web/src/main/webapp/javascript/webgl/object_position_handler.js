@@ -76,37 +76,44 @@ function update_unit_position(ptile) {
     if (scene != null) scene.remove(unit_health_positions[ptile['index']]);
     delete unit_health_positions[ptile['index']];
     unit_healthpercentage_positions[ptile['index']] = null;
+
   }
 
-  if (unit_positions[ptile['index']] == null && visible_unit != null) {
-    // add new unit to the unit_positions
-    let unit_type_name = unit_type(visible_unit)['name'];
-    if (unit_type_name == null) {
-      return;
-    }
+  if (visible_unit == null) {
+    return;
+  }
 
-    let new_unit = webgl_get_model(unit_type_name, ptile);
-    if (new_unit == null) {
-      return;
-    }
+  let unit_type_name = unit_type(visible_unit)['name'];
+  if (unit_type_name == null) {
+    return;
+  }
+
+  let pos;
+  if (visible_unit['anim_list'].length > 0) {
+    let stile = tiles[visible_unit['anim_list'][0]['tile']];
+    pos = map_to_scene_coords(stile['x'], stile['y']);
+    height = 5 + stile['height'] * 100  + get_unit_height_offset(visible_unit);
+  } else {
+    pos = map_to_scene_coords(ptile['x'], ptile['y']);
+  }
+
+  let new_unit = webgl_get_model(unit_type_name, ptile);
+  if (new_unit == null) {
+    return;
+  }
+
+  if (unit_positions[ptile['index']] == null) {
+    // Add new unit on tile.
     unit_positions[ptile['index']] = new_unit;
-    let pos;
-    if (visible_unit['anim_list'].length > 0) {
-      let stile = tiles[visible_unit['anim_list'][0]['tile']];
-      pos = map_to_scene_coords(stile['x'], stile['y']);
-      height = 5 + stile['height'] * 100  + get_unit_height_offset(visible_unit);
-    } else {
-      pos = map_to_scene_coords(ptile['x'], ptile['y']);
-    }
+
     new_unit.matrixAutoUpdate = false;
     new_unit.position.set(pos['x'] - 12, height - 2, pos['y'] - 4);
     let rnd_rotation = Math.floor(Math.random() * 8);
-    new_unit.rotateOnAxis(new THREE.Vector3(0,1,0).normalize(), (convert_unit_rotation(rnd_rotation, unit_type(visible_unit)['name'])));
+    new_unit.rotateOnAxis(new THREE.Vector3(0,1,0).normalize(), (convert_unit_rotation(rnd_rotation, unit_type_name)));
     new_unit.updateMatrix();
 
-    if (scene != null) {
-      scene.add(new_unit);
-    }
+    scene.add(new_unit);
+
     /* add flag. */
     let pflag = get_unit_nation_flag_sprite(visible_unit);
     var new_flag;
@@ -118,55 +125,23 @@ function update_unit_position(ptile) {
         unit_flag_positions[ptile['index']] = new_flag;
       }
     }
-
-    /* indicate focus unit*/
-    let funit = get_focus_unit_on_tile(ptile);
-    let selected_mesh;
-    if (scene != null && funit != null && funit['id'] == visible_unit['id']) {
-      if (selected_unit_indicator != null) {
-        scene.remove(selected_unit_indicator);
-        selected_unit_indicator = null;
-        highlight_map_tile_selected(-1, -1);
-      }
-      if (visible_unit['anim_list'].length == 0) {
-        selected_mesh = new THREE.Mesh( new THREE.RingGeometry( 18, 20, 30), selected_unit_material );
-        selected_mesh.castShadow = true;
-        selected_mesh.position.set(pos['x'] - 4, height + 2, pos['y'] - 4);
-        selected_mesh.rotation.x = -1 * Math.PI / 2;
-        scene.add(selected_mesh);
-        selected_unit_indicator = selected_mesh;
-        highlight_map_tile_selected(ptile.x, ptile.y);
-      }
-    }
-
     anim_objs[visible_unit['id']] = {'unit' : visible_unit['id'], 'mesh' : new_unit, 'flag' : new_flag};
 
-
-  } else if (unit_positions[ptile['index']] != null && visible_unit != null) {
+  } else if (unit_positions[ptile['index']] != null) {
     // Update of visible unit.
-    // TODO: update_unit_position() contains _almost_ the same code twice. this is the duplicate part.
-    let unit_type_name = unit_type(visible_unit)['name'];
-    let pos;
-    if (visible_unit['anim_list'].length > 0) {
-      let stile = tiles[visible_unit['anim_list'][0]['tile']];
-      pos = map_to_scene_coords(stile['x'], stile['y']);
-      height = 5 + stile['height'] * 100  + get_unit_height_offset(visible_unit);
-    } else {
-      pos = map_to_scene_coords(ptile['x'], ptile['y']);
-    }
 
-    if (scene != null) scene.remove(unit_positions[ptile['index']]);
+    scene.remove(unit_positions[ptile['index']]);
     delete unit_positions[ptile['index']];
 
-    if (scene != null && unit_flag_positions[ptile['index']] != null) scene.remove(unit_flag_positions[ptile['index']]);
+    if (unit_flag_positions[ptile['index']] != null) scene.remove(unit_flag_positions[ptile['index']]);
     delete unit_flag_positions[ptile['index']];
 
     let activity;
-    if (unit_activities_positions[ptile['index']] != get_unit_activity_text(visible_unit) + tile_units(ptile).length
-        && visible_unit['anim_list'].length == 0) {
+    if (unit_activities_positions[ptile['index']] !== get_unit_activity_text(visible_unit) + tile_units(ptile).length
+        && visible_unit['anim_list'].length === 0) {
       // add unit activity label
-      if (scene != null && unit_label_positions[ptile['index']] != null) scene.remove(unit_label_positions[ptile['index']]);
-      if (scene != null && (get_unit_activity_text(visible_unit) != null || tile_units(ptile).length > 1 || visible_unit['veteran'] > 0)) {
+      if (unit_label_positions[ptile['index']] != null) scene.remove(unit_label_positions[ptile['index']]);
+      if ((get_unit_activity_text(visible_unit) != null || tile_units(ptile).length > 1 || visible_unit['veteran'] > 0)) {
         activity = create_unit_label_sprite(visible_unit, ptile);
         activity.position.set(pos['x'] + 7, height + 20, pos['y'] - 12);
         scene.add(activity);
@@ -175,62 +150,32 @@ function update_unit_position(ptile) {
       unit_activities_positions[ptile['index']] = get_unit_activity_text(visible_unit) + tile_units(ptile).length;
     }
 
-    let new_unit_health_bar;
-    if (unit_healthpercentage_positions[ptile['index']] != visible_unit['hp'] && visible_unit['anim_list'].length == 0) {
-      if (scene != null && unit_health_positions[ptile['index']] != null) scene.remove(unit_health_positions[ptile['index']]);
-      new_unit_health_bar = create_unit_health_sprite(visible_unit);
+    if (unit_healthpercentage_positions[ptile['index']] !== visible_unit['hp'] && visible_unit['anim_list'].length === 0) {
+      if (unit_health_positions[ptile['index']] != null) scene.remove(unit_health_positions[ptile['index']]);
+      let new_unit_health_bar = create_unit_health_sprite(visible_unit);
       new_unit_health_bar.position.set(pos['x'] - flag_dx, height + flag_dz + 6, pos['y'] - flag_dy - 10);
       unit_health_positions[ptile['index']] = new_unit_health_bar;
-      if (scene != null) {
-        scene.add(new_unit_health_bar);
-      }
+
+      scene.add(new_unit_health_bar);
+
       unit_healthpercentage_positions[ptile['index']] = visible_unit['hp'];
     }
 
-    /* indicate focus unit*/
-    let funit = get_focus_unit_on_tile(ptile);
-    let selected_mesh;
-    if (scene != null && funit != null && funit['id'] == visible_unit['id']) {
-      if (selected_unit_indicator != null) {
-        scene.remove(selected_unit_indicator);
-        selected_unit_indicator = null;
-        highlight_map_tile_selected(-1, -1);
-      }
-      if (visible_unit['anim_list'].length == 0) {
-        selected_mesh = new THREE.Mesh( new THREE.RingGeometry( 16, 20, 30), selected_unit_material );
-        selected_mesh.position.set(pos['x'] - 12, height + 2, pos['y'] - 7);
-        selected_mesh.rotation.x = -1 * Math.PI / 2;
-        scene.add(selected_mesh);
-        selected_unit_indicator = selected_mesh;
-        highlight_map_tile_selected(ptile.x, ptile.y);
-      }
-    }
 
-    if (unit_type_name == null) {
-      console.error(unit_type_name + " model not loaded correcly.");
-      return;
-    }
-
-    let new_unit = webgl_get_model(unit_type_name, ptile);
-    if (new_unit == null) {
-      return;
-    }
     unit_positions[ptile['index']] = new_unit;
     unit_positions[ptile['index']]['unit_type'] = unit_type_name;
 
     new_unit.matrixAutoUpdate = false;
-    new_unit.position.set(pos['x'] - 12, height -2, pos['y'] - 4);
-    new_unit.rotateOnAxis(new THREE.Vector3(0,1,0).normalize(), (convert_unit_rotation(visible_unit['facing'], unit_type(visible_unit)['name']) ));
+    new_unit.position.set(pos['x'] - 12, height - 2, pos['y'] - 4);
+    new_unit.rotateOnAxis(new THREE.Vector3(0, 1, 0).normalize(), (convert_unit_rotation(visible_unit['facing'], unit_type_name)));
     new_unit.updateMatrix();
 
-    if (scene != null) {
-      scene.add(new_unit);
-    }
+    scene.add(new_unit);
 
-    /* add flag. */
-    let pflag = get_unit_nation_flag_sprite(visible_unit);
+    /* update flag. */
     let new_flag;
-    if (unit_flag_positions[ptile['index']] == null && scene != null) {
+    if (unit_flag_positions[ptile['index']] == null) {
+      let pflag = get_unit_nation_flag_sprite(visible_unit);
       new_flag = create_flag_sprite(pflag['key']);
       if (new_flag != null) {
         new_flag.position.set(pos['x'] - flag_dx, height + flag_dz, pos['y'] - flag_dy - 10);
@@ -240,6 +185,25 @@ function update_unit_position(ptile) {
     }
 
     anim_objs[visible_unit['id']] = {'unit' : visible_unit['id'], 'mesh' : new_unit, 'flag' : new_flag};
+
+  }
+
+  /* indicate focus unit*/
+  let focus_unit = get_focus_unit_on_tile(ptile);
+  if (focus_unit != null && focus_unit['id'] === visible_unit['id']) {
+    if (selected_unit_indicator != null) {
+      scene.remove(selected_unit_indicator);
+      selected_unit_indicator = null;
+      highlight_map_tile_selected(-1, -1);
+    }
+    if (visible_unit['anim_list'].length === 0) {
+      let selected_mesh = new THREE.Mesh( new THREE.RingGeometry( 16, 20, 30), selected_unit_material );
+      selected_mesh.position.set(pos['x'] - 12, height + 2, pos['y'] - 7);
+      selected_mesh.rotation.x = -1 * Math.PI / 2;
+      scene.add(selected_mesh);
+      selected_unit_indicator = selected_mesh;
+      highlight_map_tile_selected(ptile.x, ptile.y);
+    }
   }
 
 }

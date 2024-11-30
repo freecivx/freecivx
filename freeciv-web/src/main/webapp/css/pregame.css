@@ -239,9 +239,10 @@ body {
   overflow: auto;
 }
 
-@media (max-width: 700px) {
+@media (max-width: 900px) {
   #pregame_buttons button {
     width: 21%;
+    height: 80px;
   }
 }
 

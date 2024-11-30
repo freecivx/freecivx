@@ -1,9 +1,19 @@
 <div id="fciv-intro">
   <div id="fciv-intro-txt" style="position: relative; left: -50%; ">
-    FreecivX.net is a Free and Open Source empire-building strategy game inspired by the history of human civilization.
-    The game begins in prehistory and your mission is to lead your tribe peacefully from the Stone Age to the Space Age.
-    Freeciv can be played online in your web-browser for free. Press F11 for fullscreen. <a href="/privacy-policy.jsp">Privacy policy</a>.
-    FreecivX.net is open source with a <a href="https://www.gnu.org/licenses/agpl-3.0.en.html">AGPL license</a>.
+    <p>
+      <strong>FreecivX.net</strong> is a free and open-source empire-building strategy game that lets you shape the
+      history of human civilization. Begin your journey in the Stone Age and guide your tribe through
+      centuries of progress, from humble beginnings to the wonders of the Space Age.
+    </p>
+    <p>
+      Play directly in your web browser for free! For an immersive experience, press <strong>F11</strong>
+      to enter fullscreen mode.
+    </p>
+    <p>
+      We value your privacy; learn more in our <a href="/privacy-policy.jsp">Privacy Policy</a>.<br>
+      FreecivX.net is proudly open source and licensed under the
+      <a href="https://www.gnu.org/licenses/agpl-3.0.en.html">AGPL license</a>.
+    </p>
 
   </div>
 </div>

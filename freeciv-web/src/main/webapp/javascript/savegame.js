@@ -401,30 +401,26 @@ function show_scenario_dialog()
   $("#dialog").attr("title", "Select a scenario to play:");
   $("#selectable").css("height", $(window).height() - 180);
   $("#dialog").dialog({
-			bgiframe: true,
-			modal: true,
-			width: is_small_screen() ? "90%" : "40%",
-			position: {my: 'center bottom', at: 'center bottom', of: window},
-			buttons: {
-                                "Cancel" : function() {
-					$("#dialog").dialog('close');
-                                },
-                                "Create map from image upload.." : function() {
-                                  $("#dialog").dialog('close');
-                                  show_map_from_image_dialog();
-                                },
-	  			"Select scenario": function() {
-	  			    if ($('#selectable .ui-selected').index() == -1) {
-	  			        swal("Please select a scenario first.");
-	  			    } else {
+            bgiframe: true,
+            modal: true,
+            width: is_small_screen() ? "90%" : "40%",
+            position: {my: 'center bottom', at: 'center bottom', of: window},
+            buttons: {
+                "Cancel" : function() {
+                    $("#dialog").dialog('close');
+                },
+                "Select scenario": function() {
+                    if ($('#selectable .ui-selected').index() == -1) {
+                        swal("Please select a scenario first.");
+                    } else {
                         scenario_activated = true;
                         load_game_check();
                         $("#dialog").dialog('close');
                         $("#game_text_input").blur();
-					}
-				}
-			}
-		});
+                    }
+                }
+            }
+        });
   $("#selectable").selectable();
   $("#dialog").dialog('open');
   $("#game_text_input").blur();

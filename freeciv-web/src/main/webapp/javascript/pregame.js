@@ -947,9 +947,10 @@ function show_intro_dialog(title, message) {
 
   $("#dialog").attr("title", title);
   $("#dialog").dialog({
-			bgiframe: true,
+			bgiframe: false,
 			modal: true,
 			width: is_small_screen() ? "85%" : "44%",
+            position: { my: "center", at: "center", of: window },
 			buttons:
 			[
 			  {
@@ -1014,7 +1015,6 @@ function show_intro_dialog(title, message) {
     $("#observe_button").remove();
     $("#fciv-intro-txt").text("FreecivX.net is a open source empire-building strategy game inspired by the history of human civilization.");
   }
-  $("#fciv-intro").css("top", ($( window ).height() - 130) + "px");
 
   $("#dialog").dialog('open');
 
@@ -1038,6 +1038,10 @@ function show_intro_dialog(title, message) {
   $(".ui-widget-overlay").css("background-repeat", "no-repeat");
   $(".ui-widget-overlay").css("background-size", "cover");
   $(".ui-widget-overlay").css("opacity", "1.0");
+
+  $(window).on("resize", function () {
+    $("#dialog").dialog("option", "position", { my: "center", at: "center", of: window });
+  });
 
 }
 

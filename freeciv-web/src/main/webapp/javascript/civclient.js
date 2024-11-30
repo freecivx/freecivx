@@ -160,11 +160,6 @@ function init_common_intro_dialog() {
   } else if (is_small_screen()) {
       show_intro_dialog("Welcome to FreecivX.net",
         "You are about to join the game. Please enter your name:");
-  } else if ($.getUrlVar('action') == "earthload") {
-    show_intro_dialog("Welcome to Freeciv-web",
-      "You can now play Freeciv-web on the earth map you have chosen. " +
-      "Please enter your name: ");
-
   } else if ($.getUrlVar('action') == "load") {
     show_intro_dialog("Welcome to FreecivX.net",
       "You are about to join this game server, where you can " +
@@ -180,11 +175,13 @@ function init_common_intro_dialog() {
       show_intro_dialog("Welcome to FreecivX.net", msg);
 
   } else {
-    show_intro_dialog("Welcome to FREECIVX.NET",
-      "You can now play a game of Freeciv, where you can " +
-      "play a singleplayer game against the Freeciv AI or multiplayer. You can " +
-      "start the game directly by entering any name, or customize the game settings. " +
-      "Creating a user account is optional, but savegame support requires that you create a user account.");
+    const introText = `
+    Play the classic open source strategy game FreecivX. Start a singleplayer game against the AI or play others in multiplayer. 
+    Start by entering a name, or adjust the settings to your liking. 
+    Creating an account is optional, but required for saving your progress.
+    `;
+
+    show_intro_dialog("Welcome to FREECIVX.NET", introText);
       $(".pwd_reset").click(forgot_pbem_password);
   }
 }

@@ -1143,13 +1143,13 @@ li.tech-both::before {
 
 #fciv-intro {
     position: absolute;
-    top: 20px;
+    bottom: 20px;
     left: 50%;
     min-width: 300px;
     z-index: 1000;
-    max-width: 80%;
+    max-width: 70%;
     color: white;
-    font-size: 16px;
+    font-size: 14px;
     font-weight: bold;
 
 }
