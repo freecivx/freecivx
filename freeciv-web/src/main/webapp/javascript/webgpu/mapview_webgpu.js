@@ -20,7 +20,7 @@
 
 
 /****************************************************************************
- Start the Warciv WebGPU renderer
+ Start the FreecivX WebGPU renderer
  ****************************************************************************/
 function webgpu_start_renderer()
 {
@@ -153,7 +153,7 @@ function animate_webgpu() {
     }
 
 
-    maprenderer.render(scene, camera);
+    maprenderer.renderAsync(scene, camera);
 
     if (goto_active) check_request_goto_path();
     if (stats != null) stats.end();
