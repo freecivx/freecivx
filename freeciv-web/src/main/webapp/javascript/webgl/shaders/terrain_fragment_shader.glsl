@@ -503,24 +503,33 @@ void main()
         }
     }
 
-
     // Borders
     if (borders_visible && !(border_color.r > 0.546875 && border_color.r < 0.5625 && border_color.b == 0.0 && border_color.g == 0.0)) {
         border_e = texture2D(borders, vec2(vUv.x + (0.06 / map_x_size), vUv.y));
         border_w = texture2D(borders, vec2(vUv.x - (0.06 / map_x_size), vUv.y));
-        border_n = texture2D(borders, vec2(vUv.x , vUv.y + (0.06 / map_x_size)));
-        border_s = texture2D(borders, vec2(vUv.x , vUv.y - (0.06 / map_x_size)));
-        if (border_n.r != border_color.r || border_n.g != border_color.g || border_n.b != border_color.b ||
-            border_s.r != border_color.r || border_s.g != border_color.g || border_n.b != border_color.b ||
-            border_e.r != border_color.r || border_e.g != border_color.g || border_e.b != border_color.b ||
-            border_w.r != border_color.r || border_w.g != border_color.g || border_w.b != border_color.b)  {
-            c = border_color.rbg;
+        border_n = texture2D(borders, vec2(vUv.x, vUv.y + (0.06 / map_x_size)));
+        border_s = texture2D(borders, vec2(vUv.x, vUv.y - (0.06 / map_x_size)));
+
+        bool is_different_border =
+        border_n.r != border_color.r || border_n.g != border_color.g || border_n.b != border_color.b ||
+        border_s.r != border_color.r || border_s.g != border_color.g || border_s.b != border_color.b ||
+        border_e.r != border_color.r || border_e.g != border_color.g || border_e.b != border_color.b ||
+        border_w.r != border_color.r || border_w.g != border_color.g || border_w.b != border_color.b;
+
+        if (is_different_border) {
+            // Apply dotted pattern with twice the frequency
+            float dot_pattern = step(0.5, mod(vUv.x * 1000.0 + vUv.y * 1000.0, 4.0)); // Increase scaling to 1000.0 for higher frequency
+            if (dot_pattern > 0.5) {
+                c = border_color.rgb; // Render border color for dots
+            }
         } else if (vPosition_camera.z > 1000.0) {
-            c = mix(c, border_color.rbg, 0.70);
+            c = mix(c, border_color.rgb, 0.70);
         } else {
-           c = mix(c, border_color.rbg, 0.10);
+            c = mix(c, border_color.rgb, 0.10);
         }
     }
+
+
 
     // specular component, ambient occlusion and fade out underwater terrain
     float x = 1.0 - clamp((vPosition.y - 38.) / 15., 0., 1.);

@@ -31,7 +31,7 @@ var tiletype_terrains = ["coast","ocean","arctic","desert","grassland","hills","
 
 var landGeometry;
 var landMesh; // the terrain land geometry
-var water_hq, water_lq;
+var water_hq;
 var shadowmesh;
 
 var lofiGeometry;
@@ -420,18 +420,18 @@ function add_quality_dependent_objects_webgl()
       waterGeometry,
       new THREE.MeshPhysicalMaterial({
         transmission: 1, // Fully transparent
-        roughness: 0.3, // Slight roughness for water surface
+        roughness: 0.1, // Smoother surface for shiny appearance
         ior: 1.333, // Index of refraction for water
-        color: '#3fa7d6', // Light blue-green color
-        clearcoat: 1, // Adds a shiny layer
-        clearcoatRoughness: 0.05, // Slightly rough clearcoat
-        reflectivity: 0.8, // Enhances reflections
-        thickness: 5, // Simulates water depth
-        attenuationColor: '#1e90ff', // Deeper blue for absorption
-        attenuationDistance: 20, // Absorption distance in meters
-        envMapIntensity: 1.2, // Enhance reflections
-        normalMap: webgl_textures["water1"], // Add wave-like texture
-        normalScale: new THREE.Vector2(0.5, 0.5), // Control wave intensity
+        color: '#c4f0e6', // Lighter blue for shallow shiny areas
+        clearcoat: 1, // Adds shine to the water surface
+        clearcoatRoughness: 0.015, // Even smoother clearcoat
+        reflectivity: 0.97, // Maximized reflections for glossy shallow water
+        thickness: 6, // Reduced thickness to emphasize shallow areas
+        attenuationColor: '#b0e2d4', // Soft blue-green for shallow areas
+        attenuationDistance: 12, // Shorter absorption distance for vibrant shallow areas
+        envMapIntensity: 1.7, // Stronger environment reflections
+        normalMap: webgl_textures["water1"], // Wave texture
+        normalScale: new THREE.Vector2(0.02, 0.02), // Very subtle, short waves
       })
   );
 
@@ -442,20 +442,6 @@ function add_quality_dependent_objects_webgl()
   water_hq.renderOrder = -1; // Render water first, this will solve transparency issues in city labels.
   water_hq.castShadow = false;
   scene.add( water_hq );
-
-  // Water with low quality, far away view.
-  scene.remove(water_lq);
-  let water_material = new THREE.MeshBasicMaterial( { color: 0x3730a3, transparent: true, opacity: 0.5} );
-  water_lq = new THREE.Mesh(waterGeometry, water_material);
-
-  water_lq.rotation.x = - Math.PI * 0.5;
-  water_lq.translateOnAxis(new THREE.Vector3(0,0,1).normalize(), 50);
-  water_lq.translateOnAxis(new THREE.Vector3(1,0,0).normalize(), Math.floor(mapview_model_width / 2) - 500);
-  water_lq.translateOnAxis(new THREE.Vector3(0,1,0).normalize(), -mapview_model_height / 2);
-  water_lq.renderOrder = -1; // Render water first, this will solve transparency issues in city labels.
-  water_lq.castShadow = false;
-  water_lq.visible = false;
-  scene.add( water_lq );
 
   if (graphics_quality === QUALITY_HIGH) {
     if (shadowmesh == null) {

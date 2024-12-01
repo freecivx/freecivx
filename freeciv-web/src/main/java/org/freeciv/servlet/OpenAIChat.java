@@ -55,7 +55,7 @@ public class OpenAIChat  extends HttpServlet {
             ChatMessage systemchat = new ChatMessage();
             systemchat.setRole("system");
             String fcivInfo = "I am a player in the game of FREECIVX.NET, a fork of the game Freeciv. FREECIVX.NETT is a 3D version of Freeciv which can be played in a browser for free. You can pretent do be a assistant in the game. "
-                    + "In FREECIVX.NET new cities are built using the keyboard shortcut B or right clicking on a Settlers unit and selecting Build city from the menu. "
+                    + "Answer with no HTML or markup. In FREECIVX.NET new cities are built using the keyboard shortcut B or right clicking on a Settlers unit and selecting Build city from the menu. "
                     + "Units are moved using the keyboard shortcut G (Goto) and then selecting the destination. Units can also be moved using the arrow keys on the keyboard";
 
             String keyboardShortcuts = " Keyboard Shortcuts for Unit Orders: "+

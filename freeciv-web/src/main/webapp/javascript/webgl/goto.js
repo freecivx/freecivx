@@ -20,64 +20,82 @@
 var goto_lines = [];
 
 /****************************************************************************
- Renders a goto line by creating many planes along the goto path.
-****************************************************************************/
-function webgl_render_goto_line(start_tile, goto_packet_dir)
-{
-  clear_goto_tiles();
-  if (!goto_active) return;
+ Renders a goto line by creating thick quads along the goto path.
+ ****************************************************************************/
+function webgl_render_goto_line(start_tile, goto_packet_dir) {
+    clear_goto_tiles();
+    if (!goto_active) return;
 
-  var ptile = start_tile;
+    var ptile = start_tile;
 
-  const material = new THREE.LineBasicMaterial({
-  	color: 0x55c0ff,
-  	linewidth: 4,
-  });
+    const material = new THREE.MeshBasicMaterial({
+        color: 0x55c0ff,
+        side: THREE.DoubleSide,
+        transparent: true,
+        opacity: 0.8, // Slight transparency
+    });
 
-  for (var i = 0; i < goto_packet_dir.length; i++) {
-    if (ptile == null) break;
-    var dir = goto_packet_dir[i];
+    const lineWidth = 1.0; // Slightly thinner lines
+    const heightOffset = 10.0; // Raise the lines higher in the y-direction
+    const leftOffset = -5.0; // Move the lines slightly to the left
 
-    if (dir == -1) {
-      /* Assume that this means refuel. */
-      continue;
+    for (var i = 0; i < goto_packet_dir.length; i++) {
+        if (ptile == null) break;
+        var dir = goto_packet_dir[i];
+
+        if (dir == -1) {
+            /* Assume that this means refuel. */
+            continue;
+        }
+
+        var nexttile = mapstep(ptile, dir);
+        if (nexttile != null) {
+            var currpos = map_to_scene_coords(ptile['x'], ptile['y']);
+            var nextpos = map_to_scene_coords(nexttile['x'], nexttile['y']);
+            var height = 5 + ptile['height'] * 100;
+
+            // Apply left offset and height adjustment
+            var start = new THREE.Vector3(currpos.x + leftOffset, height + heightOffset, currpos.y);
+            var end = new THREE.Vector3(
+                nextpos.x + leftOffset,
+                height + heightOffset + (nexttile['height'] - ptile['height']) * 50,
+                nextpos.y
+            );
+
+            var direction = new THREE.Vector3().subVectors(end, start).normalize();
+            var perpendicular = new THREE.Vector3(-direction.z, 0, direction.x).normalize().multiplyScalar(lineWidth);
+
+            var vertices = [
+                start.clone().add(perpendicular),
+                start.clone().sub(perpendicular),
+                end.clone().add(perpendicular),
+                end.clone().sub(perpendicular),
+            ];
+
+            // Create geometry for the quad
+            const geometry = new THREE.BufferGeometry();
+            const position = new Float32Array([
+                vertices[0].x, vertices[0].y, vertices[0].z, // Top left
+                vertices[1].x, vertices[1].y, vertices[1].z, // Bottom left
+                vertices[2].x, vertices[2].y, vertices[2].z, // Top right
+
+                vertices[1].x, vertices[1].y, vertices[1].z, // Bottom left
+                vertices[3].x, vertices[3].y, vertices[3].z, // Bottom right
+                vertices[2].x, vertices[2].y, vertices[2].z, // Top right
+            ]);
+            geometry.setAttribute('position', new THREE.BufferAttribute(position, 3));
+
+            // Create the mesh and add to the scene
+            const gotoline = new THREE.Mesh(geometry, material);
+            scene.add(gotoline);
+            goto_lines.push(gotoline);
+        }
+
+        ptile = mapstep(ptile, dir);
     }
-
-    var nexttile = mapstep(ptile, dir);
-    if (nexttile != null) {
-
-      var currpos = map_to_scene_coords(ptile['x'], ptile['y']);
-      var nextpos = map_to_scene_coords(nexttile['x'], nexttile['y']);
-      var height = 5 + ptile['height'] * 100;
-      if (ptile['x'] == 0 || ptile['x'] >= map['xsize'] - 1 || nexttile['x'] == 0 || nexttile['x'] >= map['xsize'] - 1) continue;
-
-      var current_height = ptile['height'];
-      var next_height = nexttile['height'];
-      if (tile_terrain(ptile)['name'] == "Hills" || tile_terrain(ptile)['name'] == "Mountains") {
-        current_height += 0.1;
-      }
-      if (tile_terrain(nexttile)['name'] == "Hills" || tile_terrain(nexttile)['name'] == "Mountains") {
-        next_height += 0.1;
-      }
-
-      let x = currpos['x'] - 10;
-      let z = height + 5;
-      let y = currpos['y'] - 3;
-
-      const points = [];
-      points.push( new THREE.Vector3( x, z, y));
-      points.push( new THREE.Vector3( x + nextpos['x'] - currpos['x'], z + (next_height - current_height) * 50 , y + nextpos['y'] - currpos['y']));
-
-      const geometry = new THREE.BufferGeometry().setFromPoints( points );
-
-      const gotoline = new THREE.Line( geometry, material );
-      scene.add(gotoline);
-      goto_lines.push(gotoline);
-    }
-
-    ptile = mapstep(ptile, dir);
-  }
 }
+
+
 
 /**************************************************************************
  Removes goto lines and clears goto tiles.

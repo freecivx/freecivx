@@ -26,6 +26,7 @@ var map_select_x;
 var map_select_y;
 var map_select_lines = [];
 var map_zoom_button_zoom_out = true;
+const min_y_zoom_level = 250;
 
 /****************************************************************************
  Init WebGL mapctrl.
@@ -54,16 +55,13 @@ function init_webgl_mapctrl()
   controls.dampingFactor = 0.05;
   controls.maxPolarAngle = 0.9 * Math.PI / 2;
 
+
+
   controls.addEventListener('change', () => {
-      if (water_hq != null && water_lq != null) {
-        if (camera.position.y > 600) {
-          water_hq.visible = false;
-          water_lq.visible = true;
-        } else {
-          water_hq.visible = true;
-          water_lq.visible = false;
-        }
-      }
+    if (camera.position.y < min_y_zoom_level) {
+      camera.position.y = min_y_zoom_level; // Restrict y to the minimum value
+      camera.updateMatrixWorld(); // Update the camera's transformation
+    }
   });
 }
 
