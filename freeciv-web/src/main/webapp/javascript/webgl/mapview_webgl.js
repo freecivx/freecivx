@@ -416,23 +416,30 @@ function add_quality_dependent_objects_webgl()
 
   // Water with shader, high quality, near view.
   scene.remove(water_hq);
-  water_hq = new Water(waterGeometry, {
-      color: '#84d1ff',
-      scale: 10,
-      flowDirection: new THREE.Vector2( 0.1, -0.1),
-      textureWidth: 1024,
-      textureHeight: 1024,
-      reflectivity : 0.7,
-      clipBias : 0.05,
-      normalMap0 : webgl_textures["water1"],
-      normalMap1 : webgl_textures["water2"]
-    });
+  water_hq = new THREE.Mesh(
+      waterGeometry,
+      new THREE.MeshPhysicalMaterial({
+        transmission: 1, // Fully transparent
+        roughness: 0.3, // Slight roughness for water surface
+        ior: 1.333, // Index of refraction for water
+        color: '#3fa7d6', // Light blue-green color
+        clearcoat: 1, // Adds a shiny layer
+        clearcoatRoughness: 0.05, // Slightly rough clearcoat
+        reflectivity: 0.8, // Enhances reflections
+        thickness: 5, // Simulates water depth
+        attenuationColor: '#1e90ff', // Deeper blue for absorption
+        attenuationDistance: 20, // Absorption distance in meters
+        envMapIntensity: 1.2, // Enhance reflections
+        normalMap: webgl_textures["water1"], // Add wave-like texture
+        normalScale: new THREE.Vector2(0.5, 0.5), // Control wave intensity
+      })
+  );
 
   water_hq.rotation.x = - Math.PI * 0.5;
   water_hq.translateOnAxis(new THREE.Vector3(0,0,1).normalize(), 50);
   water_hq.translateOnAxis(new THREE.Vector3(1,0,0).normalize(), Math.floor(mapview_model_width / 2) - 500);
   water_hq.translateOnAxis(new THREE.Vector3(0,1,0).normalize(), -mapview_model_height / 2);
-  water_hq.renderOrder = -1; // Render water first, this will sove transparency issues in city labels.
+  water_hq.renderOrder = -1; // Render water first, this will solve transparency issues in city labels.
   water_hq.castShadow = false;
   scene.add( water_hq );
 
@@ -445,7 +452,7 @@ function add_quality_dependent_objects_webgl()
   water_lq.translateOnAxis(new THREE.Vector3(0,0,1).normalize(), 50);
   water_lq.translateOnAxis(new THREE.Vector3(1,0,0).normalize(), Math.floor(mapview_model_width / 2) - 500);
   water_lq.translateOnAxis(new THREE.Vector3(0,1,0).normalize(), -mapview_model_height / 2);
-  water_lq.renderOrder = -1; // Render water first, this will sove transparency issues in city labels.
+  water_lq.renderOrder = -1; // Render water first, this will solve transparency issues in city labels.
   water_lq.castShadow = false;
   water_lq.visible = false;
   scene.add( water_lq );
