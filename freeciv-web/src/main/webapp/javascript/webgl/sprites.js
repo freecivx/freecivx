@@ -153,8 +153,7 @@ function create_unit_health_sprite(punit)
 /****************************************************************************
  Create a city label sprite
 ****************************************************************************/
-function create_city_label_sprite(pcity)
-{
+function create_city_label_sprite(pcity) {
   var fcanvas = document.createElement("canvas");
   fcanvas.width = 390;
   fcanvas.height = 35;
@@ -171,9 +170,9 @@ function create_city_label_sprite(pcity)
   // Flag
   var city_gfx = get_city_flag_sprite(pcity);
   ctx.drawImage(sprites[city_gfx.key],
-                0, 0,
-                sprites[city_gfx.key].width, sprites[city_gfx.key].height,
-                0, 0, 48, 32);
+      0, 0,
+      sprites[city_gfx.key].width, sprites[city_gfx.key].height,
+      0, 0, 48, 32);
   width += 48;
 
   // Occupied
@@ -181,7 +180,7 @@ function create_city_label_sprite(pcity)
   var punits = tile_units(ptile);
   if (punits.length > 0) {
     // Background
-    ctx.fillStyle = 'black';
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.8)';
     ctx.fillRect(width, 0, 16, 32);
     // Stars
     ctx.drawImage(sprites[get_city_occupied_sprite(pcity)], width, 0, 13, 32);
@@ -192,14 +191,13 @@ function create_city_label_sprite(pcity)
   var city_text = pcity.name.toUpperCase() + " " + pcity.size;
   ctx.font = webgl_mapview_font;
   var txt_measure = ctx.measureText(city_text);
-  // Background
+  // Background with brighter overlay
   var background_color = nations[owner.nation].color;
-  ctx.fillStyle = "rgba(0,0,0,0.4)";
+  ctx.fillStyle = "rgba(255, 255, 255, 0.1)";
   ctx.fillRect(width, 0, txt_measure.width + 11 /* padding */, 32);
-  // Text
-  ctx.fillStyle = '#FFFFFF';
-
-  ctx.fillText(city_text, width + 4 /* padding */, 13*2);
+  // Text with increased brightness
+  ctx.fillStyle = '#FFFF99'; // Brighter yellowish white
+  ctx.fillText(city_text, width + 4 /* padding */, 13 * 2);
 
   width += txt_measure.width + 11 /* padding */;
 
@@ -210,14 +208,15 @@ function create_city_label_sprite(pcity)
     if (tag != null) {
       ctx.fillStyle = background_color;
       ctx.fillRect(width, 0, 36, 32);
-      ctx.drawImage(sprites[tag], width, 0, 34, 18*2);
+      ctx.drawImage(sprites[tag], width, 0, 34, 18 * 2);
       width += 35;
     }
   }
   if (width > 380) width = 380;
 
+  // Outline with enhanced contrast
   ctx.lineWidth = 2;
-  ctx.strokeStyle = background_color;
+  ctx.strokeStyle = '#FFFFAA'; // Slightly brighter border color
   ctx.strokeRect(0, 0, width, fcanvas.height - 3);
 
   texture = new THREE.Texture(fcanvas);
@@ -225,10 +224,16 @@ function create_city_label_sprite(pcity)
   var key = 'city_' + pcity['id'];
   texture_cache[key] = texture;
 
-  var sprite = new THREE.Sprite( new THREE.SpriteMaterial( { map: texture}));
+  // Create material with emissive intensity
+  var material = new THREE.SpriteMaterial({ map: texture });
+  material.emissive = new THREE.Color(0xFFFFFF); // White emissive color
+  material.emissiveIntensity = 2.0; // Brighter emissive intensity
+
+  var sprite = new THREE.Sprite(material);
   sprite.scale.set(width * 0.42 + 10, 9.5, 1);
   return sprite;
 }
+
 
 /****************************************************************************
  Update a city name label. This updates the canvas image of the city label,
