@@ -6,7 +6,6 @@ import com.theokanning.openai.completion.chat.ChatMessage;
 import com.theokanning.openai.service.OpenAiService;
 
 import jakarta.servlet.ServletException;
-import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -24,7 +23,7 @@ import java.util.stream.Collectors;
  *
  * URL: /openai_chat
  */
-@WebServlet("/openai_chat")
+//@WebServlet("/openai_chat")
 public class OpenAIChat  extends HttpServlet {
 
     private final String model = "gpt-4o-mini";
@@ -50,6 +49,7 @@ public class OpenAIChat  extends HttpServlet {
             }
 
             OpenAiService service = new OpenAiService(key, Duration.ofSeconds(60));
+
 
             List<ChatMessage> messages = new ArrayList<>();
             ChatMessage systemchat = new ChatMessage();

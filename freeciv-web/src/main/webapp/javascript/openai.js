@@ -161,12 +161,21 @@ function send_message_to_openai(message)
 
   openai_messages += prefix + ": " +  message + ";";
 
-  $.post( "/openai_chat", utf8_to_b64( get_openai_game_context()
+  $.post( "/grok_chat", utf8_to_b64( get_openai_game_context()
          + openai_messages))
-          .done(function( chatresponse ) {
-            message_log.update({ event: E_CONNECTION, message: "<b>" + otherone + ":</b> " + chatresponse });
-          }).fail(function() {
-                 message_log.update({ event: E_CONNECTION, message: "No answer." });
+      .done(function(chatresponse) {
+          try {
+              // Directly access the message property
+              const messageContent = chatresponse.message;
+
+              // Update the message log
+              message_log.update({ event: E_CONNECTION, message: "<b>" + otherone + ":</b> " + messageContent });
+          } catch (error) {
+              console.error("Failed to process chat response:", error);
+          }
+      })
+      .fail(function() {
+                 message_log.update({ event: E_CONNECTION, message: "No answer from AI." });
           })
 
 }

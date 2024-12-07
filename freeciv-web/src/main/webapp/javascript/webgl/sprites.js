@@ -29,7 +29,7 @@ function create_unit_label_sprite(punit, ptile)
   var unit_type = unit_types[punit['type']];
   var max_hp = unit_type['hp'];
   var healthpercent = 10 * Math.floor((10 * hp) / max_hp);
-  let key = punit['id'] + pflag['key'] + (activities != null ? activities.key : "") + tile_units(ptile).length + healthpercent;
+  let key = pflag['key'] + (activities != null ? activities.key : "") + tile_units(ptile).length + healthpercent + unit_type['graphic_str'];
 
   var texture;
   if (texture_cache[key] != null) {
@@ -38,12 +38,19 @@ function create_unit_label_sprite(punit, ptile)
     var width = 0;
     var fcanvas = document.createElement("canvas");
     fcanvas.width = 128;
-    fcanvas.height = 64;
+    fcanvas.height = 48;
     var ctx = fcanvas.getContext("2d");
+
     ctx.drawImage(sprites[pflag['key']], 0, 0,
                 sprites[pflag['key']].width, sprites[pflag['key']].height,
                 0,6,40,20);
-    width += 55;
+    width += 45;
+
+    let unit_sprite = sprites[unit_type['graphic_str'] + "_Idle"];
+    ctx.drawImage(unit_sprite, 0, 0,
+        unit_sprite.width, unit_sprite.height,
+        width,0,unit_sprite.width * 0.5, unit_sprite.height * 0.5);
+    width += 35;
 
     ctx.font = 'bold 18px serif';
 
@@ -52,7 +59,7 @@ function create_unit_label_sprite(punit, ptile)
           0, 0,
           28, 28,
           width, -5, 28, 28);
-      width += 40;
+      width += 30;
     }
     var activity_txt = get_unit_activity_text(punit);
     if (activity_txt == "A") {
@@ -69,9 +76,9 @@ function create_unit_label_sprite(punit, ptile)
       let txt = "" + tile_units(ptile).length;
       ctx.strokeStyle = '#000000';
       ctx.lineWidth = 3;
-      ctx.strokeText(txt, width * 2, 15);
+      ctx.strokeText(txt, width + 5, 15);
       ctx.fillStyle = '#ffe800';
-      ctx.fillText(txt, width * 2, 15);
+      ctx.fillText(txt, width + 5, 15);
       width += 30;
     }
 
@@ -93,7 +100,7 @@ function create_unit_label_sprite(punit, ptile)
   }
 
   var sprite = new THREE.Sprite( new THREE.SpriteMaterial( { map: texture}));
-  sprite.scale.set(30,30,1);
+  sprite.scale.set(30,25,1);
   return sprite;
 }
 

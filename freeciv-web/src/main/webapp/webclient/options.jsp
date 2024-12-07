@@ -61,18 +61,18 @@
                 <b>Dialogs open minimized</b>
             </div>
         </td>
-        <td>
+        <%-- <td>
             <div class="main_menu_buttons">
                 <input type='checkbox' name='ai_mentat_setting' id='ai_mentat_setting'>
                 <b>AI LLM Chat - Mentat</b>
             </div>
-        </td>
+        </td>--%>
     </tr>
         <tr>
             <td>
                 <div class="main_menu_buttons">
                     <input type='checkbox' name='openai_setting' id='openai_setting'>
-                    <b>OpenAI (ChatGPT) in game chat</b>
+                    <b>AI in-game chat using xAI (Grok)</b>
                 </div>
             </td>
         </tr>

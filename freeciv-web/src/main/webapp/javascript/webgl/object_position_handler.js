@@ -102,12 +102,11 @@ function update_unit_position(ptile) {
     scene.add(new_unit);
 
     /* add flag. */
-
     var new_flag;
     if (unit_flag_positions[ptile['index']] == null && scene != null) {
       new_flag = create_unit_label_sprite(visible_unit, ptile);
       if (new_flag != null) {
-        new_flag.position.set(pos['x'] - 10, height + 20, pos['y'] - 20);
+        new_flag.position.set(pos['x'] - 10, height + 15, pos['y'] - 20);
         scene.add(new_flag);
         unit_flag_positions[ptile['index']] = new_flag;
       }
@@ -138,7 +137,7 @@ function update_unit_position(ptile) {
     if (unit_flag_positions[ptile['index']] == null) {
       new_flag = create_unit_label_sprite(visible_unit, ptile);
       if (new_flag != null) {
-        new_flag.position.set(pos['x'] - flag_dx, height + flag_dz, pos['y'] - flag_dy - 10);
+        new_flag.position.set(pos['x'] - flag_dx, height + 15, pos['y'] - flag_dy - 10);
         scene.add(new_flag);
         unit_flag_positions[ptile['index']] = new_flag;
       }
