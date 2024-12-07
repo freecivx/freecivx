@@ -103,17 +103,7 @@
 			        <artifactId>jakarta.servlet.jsp.jstl</artifactId>
 				    <version>3.0.1</version>
 		</dependency>
-
-
-		<dependency>
-			<groupId>com.theokanning.openai-gpt3-java</groupId>
-			<artifactId>service</artifactId>
-			<version>0.18.2</version>
-		</dependency>
-
-
 		
-
 	</dependencies>
 
 	<build>
