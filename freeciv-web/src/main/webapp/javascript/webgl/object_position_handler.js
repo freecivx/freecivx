@@ -32,11 +32,6 @@ var city_building_positions = {};
 
 // stores flag positions on the map. tile index is key, unit 3d model is value.
 var unit_flag_positions = {};
-var unit_label_positions = {};
-var unit_activities_positions = {};
-
-var unit_health_positions = {};
-var unit_healthpercentage_positions = {};
 
 // stores tile extras (eg specials), key is extra + "." + tile_index.
 var tile_extra_positions_list = {};
@@ -68,14 +63,6 @@ function update_unit_position(ptile) {
 
     if (scene != null) scene.remove(unit_flag_positions[ptile['index']]);
     delete unit_flag_positions[ptile['index']];
-
-    if (scene != null) scene.remove(unit_label_positions[ptile['index']]);
-    delete unit_label_positions[ptile['index']];
-    unit_activities_positions[ptile['index']] = null;
-
-    if (scene != null) scene.remove(unit_health_positions[ptile['index']]);
-    delete unit_health_positions[ptile['index']];
-    unit_healthpercentage_positions[ptile['index']] = null;
 
   }
 
@@ -115,10 +102,10 @@ function update_unit_position(ptile) {
     scene.add(new_unit);
 
     /* add flag. */
-    let pflag = get_unit_nation_flag_sprite(visible_unit);
+
     var new_flag;
     if (unit_flag_positions[ptile['index']] == null && scene != null) {
-      new_flag = create_flag_sprite(pflag['key']);
+      new_flag = create_unit_label_sprite(visible_unit, ptile);
       if (new_flag != null) {
         new_flag.position.set(pos['x'] - 10, height + 20, pos['y'] - 20);
         scene.add(new_flag);
@@ -136,32 +123,6 @@ function update_unit_position(ptile) {
     if (unit_flag_positions[ptile['index']] != null) scene.remove(unit_flag_positions[ptile['index']]);
     delete unit_flag_positions[ptile['index']];
 
-    let activity;
-    if (unit_activities_positions[ptile['index']] !== get_unit_activity_text(visible_unit) + tile_units(ptile).length
-        && visible_unit['anim_list'].length === 0) {
-      // add unit activity label
-      if (unit_label_positions[ptile['index']] != null) scene.remove(unit_label_positions[ptile['index']]);
-      if ((get_unit_activity_text(visible_unit) != null || tile_units(ptile).length > 1 || visible_unit['veteran'] > 0)) {
-        activity = create_unit_label_sprite(visible_unit, ptile);
-        activity.position.set(pos['x'] + 7, height + 20, pos['y'] - 12);
-        scene.add(activity);
-        unit_label_positions[ptile['index']] = activity;
-      }
-      unit_activities_positions[ptile['index']] = get_unit_activity_text(visible_unit) + tile_units(ptile).length;
-    }
-
-    if (unit_healthpercentage_positions[ptile['index']] !== visible_unit['hp'] && visible_unit['anim_list'].length === 0) {
-      if (unit_health_positions[ptile['index']] != null) scene.remove(unit_health_positions[ptile['index']]);
-      let new_unit_health_bar = create_unit_health_sprite(visible_unit);
-      new_unit_health_bar.position.set(pos['x'] - flag_dx, height + flag_dz + 6, pos['y'] - flag_dy - 10);
-      unit_health_positions[ptile['index']] = new_unit_health_bar;
-
-      scene.add(new_unit_health_bar);
-
-      unit_healthpercentage_positions[ptile['index']] = visible_unit['hp'];
-    }
-
-
     unit_positions[ptile['index']] = new_unit;
     unit_positions[ptile['index']]['unit_type'] = unit_type_name;
 
@@ -175,8 +136,7 @@ function update_unit_position(ptile) {
     /* update flag. */
     let new_flag;
     if (unit_flag_positions[ptile['index']] == null) {
-      let pflag = get_unit_nation_flag_sprite(visible_unit);
-      new_flag = create_flag_sprite(pflag['key']);
+      new_flag = create_unit_label_sprite(visible_unit, ptile);
       if (new_flag != null) {
         new_flag.position.set(pos['x'] - flag_dx, height + flag_dz, pos['y'] - flag_dy - 10);
         scene.add(new_flag);

@@ -416,18 +416,7 @@ function fill_goto_line_sprite_array(ptile)
 }
 
 
-/**********************************************************************
-  ...
-***********************************************************************/
-function get_unit_nation_flag_sprite(punit)
-{
-  var owner_id = punit['owner'];
-  var owner = players[owner_id];
-  var nation_id = owner['nation'];
-  var nation = nations[nation_id];
 
-  return {"key" : "f.shield." + nation['graphic_str']};
-}
 
 /**********************************************************************
   ...

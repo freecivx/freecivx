@@ -19,133 +19,81 @@
 
 
 /****************************************************************************
- Create a flag sprite
-****************************************************************************/
-function create_flag_sprite(key)
-{
-  if (sprites[key] == null) {
-    console.log("Invalid flag shield key: " + key);
-    return null;
-  }
-
-  var texture;
-  if (texture_cache[key] != null) {
-    texture = texture_cache[key];
-  } else {
-
-    var fcanvas = document.createElement("canvas");
-    fcanvas.width = 32;
-    fcanvas.height = 16;
-    var fcontext = fcanvas.getContext("2d");
-    fcontext.drawImage(sprites[key], 0, 0,
-                sprites[key].width, sprites[key].height,
-                0,0,32,16);
-    texture = new THREE.Texture(fcanvas);
-    texture.needsUpdate = true;
-    texture_cache[key] = texture;
-  }
-
-  var sprite = new THREE.Sprite( new THREE.SpriteMaterial( { map: texture}));
-  sprite.scale.set(10,10,1);
-  return sprite;
-}
-
-
-/****************************************************************************
- Create a unit label sprite
+ Create a unit label, flag, action sprite
 ****************************************************************************/
 function create_unit_label_sprite(punit, ptile)
 {
-  var texture;
+  let pflag = get_unit_nation_flag_sprite(punit);
   var activities = get_unit_activity_sprite(punit);
-  var key = (activities != null ? activities.key : "") + tile_units(ptile).length + '-' + punit['veteran'];
+  var hp = punit['hp'];
+  var unit_type = unit_types[punit['type']];
+  var max_hp = unit_type['hp'];
+  var healthpercent = 10 * Math.floor((10 * hp) / max_hp);
+  let key = punit['id'] + pflag['key'] + (activities != null ? activities.key : "") + tile_units(ptile).length + healthpercent;
 
+  var texture;
   if (texture_cache[key] != null) {
     texture = texture_cache[key];
   } else {
-    var fcanvas = document.createElement("canvas");
-    fcanvas.width = 68;
-    fcanvas.height = 32;
-    var ctx = fcanvas.getContext("2d");
-    ctx.font = 'bold 18px serif';
     var width = 0;
+    var fcanvas = document.createElement("canvas");
+    fcanvas.width = 128;
+    fcanvas.height = 64;
+    var ctx = fcanvas.getContext("2d");
+    ctx.drawImage(sprites[pflag['key']], 0, 0,
+                sprites[pflag['key']].width, sprites[pflag['key']].height,
+                0,6,40,20);
+    width += 55;
+
+    ctx.font = 'bold 18px serif';
 
     if (activities != null) {
       ctx.drawImage(sprites[activities.key],
-                  0, 0,
-                  28, 28,
-                  0, 0, 28, 28);
-      width += 28;
+          0, 0,
+          28, 28,
+          width, -5, 28, 28);
+      width += 40;
     }
     var activity_txt = get_unit_activity_text(punit);
     if (activity_txt == "A") {
       let txt = activity_txt;
       ctx.strokeStyle = '#000000';
       ctx.lineWidth = 3;
-      ctx.strokeText(txt, 0, 20);
+      ctx.strokeText(txt, width, 10);
       ctx.fillStyle = '#ffe800';
-      ctx.fillText(txt, 0, 20);
+      ctx.fillText(txt, width, 10);
+      width += 30;
     }
 
     if (tile_units(ptile).length > 1) {
       let txt = "" + tile_units(ptile).length;
       ctx.strokeStyle = '#000000';
       ctx.lineWidth = 3;
-      ctx.strokeText(txt, width, 20);
+      ctx.strokeText(txt, width * 2, 15);
       ctx.fillStyle = '#ffe800';
-      ctx.fillText(txt, width, 20);
-      width += 23;
+      ctx.fillText(txt, width * 2, 15);
+      width += 30;
     }
 
     if (punit['veteran'] > 0) {
       ctx.drawImage(sprites["unit.vet_" + punit['veteran']],
-                  24, 24,
-                  24, 24,
-                  width - 10, -10, 36, 36);
+          24, 24,
+          24, 24,
+          width - 10, -10, 36, 36);
     }
 
-    texture = new THREE.Texture(fcanvas);
-    texture.needsUpdate = true;
-    texture_cache[key] = texture;
-  }
-
-  var sprite = new THREE.Sprite( new THREE.SpriteMaterial( { map: texture}));
-  sprite.scale.set(20,10,1);
-  return sprite;
-}
-
-/****************************************************************************
- Create a unit health sprite
-****************************************************************************/
-function create_unit_health_sprite(punit)
-{
-  if (punit == null || punit['hp'] == null) return null;
-  var hp = punit['hp'];
-  var unit_type = unit_types[punit['type']];
-  var max_hp = unit_type['hp'];
-  var healthpercent = 10 * Math.floor((10 * hp) / max_hp);
-  var key = "unit_health_" + healthpercent;
-
-
-  var texture;
-  if (texture_cache[key] != null) {
-    texture = texture_cache[key];
-  } else {
-
-    var fcanvas = document.createElement("canvas");
-    fcanvas.width = 32;
-    fcanvas.height = 16;
-    var ctx = fcanvas.getContext("2d");
     ctx.drawImage(sprites["unit.hp_" + healthpercent], 25, 10,
-                22, 7,
-                0,0,32,16);
+        22, 7,
+        0,0,40,6);
+
+
     texture = new THREE.Texture(fcanvas);
     texture.needsUpdate = true;
     texture_cache[key] = texture;
   }
 
   var sprite = new THREE.Sprite( new THREE.SpriteMaterial( { map: texture}));
-  sprite.scale.set(12,3,1);
+  sprite.scale.set(30,30,1);
   return sprite;
 }
 
@@ -460,4 +408,17 @@ function create_star_sky_texture(num_stars, width, height) {
 	var texture = new THREE.Texture(canvas);
 	texture.needsUpdate = true;
 	return texture;
+}
+
+/**********************************************************************
+ ...
+ ***********************************************************************/
+function get_unit_nation_flag_sprite(punit)
+{
+  var owner_id = punit['owner'];
+  var owner = players[owner_id];
+  var nation_id = owner['nation'];
+  var nation = nations[nation_id];
+
+  return {"key" : "f.shield." + nation['graphic_str']};
 }
