@@ -46,6 +46,7 @@ function create_unit_label_sprite(punit, ptile)
                 0,6,40,20);
     width += 45;
 
+
     let unit_sprite = sprites[unit_type['graphic_str'] + "_Idle"];
     ctx.drawImage(unit_sprite, 0, 0,
         unit_sprite.width, unit_sprite.height,
