@@ -17,8 +17,6 @@
 
 ***********************************************************************/
 
-
-var openai_messages = "";
 var openai_enabled = true;
 
 /**************************************************************************
@@ -159,10 +157,10 @@ function send_message_to_openai(message)
      }
    }
 
-  openai_messages += prefix + ": " +  message + ";";
+  let grok_message = prefix + ": " +  message + ";";
 
   $.post( "/grok_chat", utf8_to_b64( get_openai_game_context()
-         + openai_messages))
+         + grok_message))
       .done(function(chatresponse) {
           try {
               // Directly access the message property
