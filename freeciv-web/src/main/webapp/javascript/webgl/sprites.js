@@ -47,11 +47,22 @@ function create_unit_label_sprite(punit, ptile)
     width += 45;
 
 
-    let unit_sprite = sprites[unit_type['graphic_str'] + "_Idle"];
-    ctx.drawImage(unit_sprite, 0, 0,
-        unit_sprite.width, unit_sprite.height,
-        width,0,unit_sprite.width * 0.5, unit_sprite.height * 0.5);
-    width += 35;
+    if (show_unit_in_label && punit.owner != null) {
+      let unit_sprite = sprites[unit_type['graphic_str'] + "_Idle"];
+      var owner_id = punit.owner;
+      var owner = players[owner_id];
+      var background_color = nations[owner.nation].color;
+      let rectWidth = unit_sprite.width * 0.5;
+      let rectHeight = unit_sprite.height * 0.5;
+
+      ctx.fillStyle = background_color;
+      ctx.fillRect(width + 3, 2, rectWidth - 5, rectHeight - 4);
+
+      ctx.drawImage(unit_sprite, 0, 0,
+          unit_sprite.width, unit_sprite.height,
+          width, 0, unit_sprite.width * 0.5, unit_sprite.height * 0.5);
+      width += 35;
+    }
 
     ctx.font = 'bold 18px serif';
 
@@ -151,8 +162,8 @@ function create_city_label_sprite(pcity) {
   var background_color = nations[owner.nation].color;
   ctx.fillStyle = "rgba(255, 255, 255, 0.1)";
   ctx.fillRect(width, 0, txt_measure.width + 11 /* padding */, 32);
-  // Text with increased brightness
-  ctx.fillStyle = '#FFFF99'; // Brighter yellowish white
+
+  ctx.fillStyle = '#FFFF99';
   ctx.fillText(city_text, width + 4 /* padding */, 13 * 2);
 
   width += txt_measure.width + 11 /* padding */;

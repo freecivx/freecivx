@@ -41,6 +41,7 @@ var default_sound_set_name = "stdsounds";
 var default_sound_plugin_name = "";
 
 var sounds_enabled = true;
+var show_unit_in_label = true;
 
 var save_options_on_exit = TRUE;
 var fullscreen_mode = FALSE;
