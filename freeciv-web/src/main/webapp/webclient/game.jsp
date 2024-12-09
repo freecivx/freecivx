@@ -40,10 +40,6 @@
 			<div id="tabs-cities">
 				<jsp:include page="cities.jsp" flush="false"/>
 			</div>
-			<div id="tabs-mentat">
-                <jsp:include page="mentat.jsp" flush="false"/>
-			</div>
-
 			<div id="tabs-hel" class="manual_doc">
 			</div>
 			<div id="tabs-opt">

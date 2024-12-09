@@ -29,7 +29,7 @@ function create_unit_label_sprite(punit, ptile)
   var unit_type = unit_types[punit['type']];
   var max_hp = unit_type['hp'];
   var healthpercent = 10 * Math.floor((10 * hp) / max_hp);
-  let key = pflag['key'] + (activities != null ? activities.key : "") + tile_units(ptile).length + healthpercent + unit_type['graphic_str'];
+  let key = pflag['key'] + (activities != null ? activities.key : "") + tile_units(ptile).length + healthpercent + unit_type['graphic_str'] + get_unit_activity_text(punit);
 
   var texture;
   if (texture_cache[key] != null) {
@@ -78,9 +78,9 @@ function create_unit_label_sprite(punit, ptile)
       let txt = activity_txt;
       ctx.strokeStyle = '#000000';
       ctx.lineWidth = 3;
-      ctx.strokeText(txt, width, 10);
+      ctx.strokeText(txt, width + 6, 15);
       ctx.fillStyle = '#ffe800';
-      ctx.fillText(txt, width, 10);
+      ctx.fillText(txt, width + 6, 15);
       width += 30;
     }
 
