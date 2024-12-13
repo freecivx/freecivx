@@ -38,7 +38,7 @@ function create_unit_label_sprite(punit, ptile)
     var width = 0;
     var fcanvas = document.createElement("canvas");
     fcanvas.width = 128;
-    fcanvas.height = 48;
+    fcanvas.height = 32;
     var ctx = fcanvas.getContext("2d");
 
     ctx.drawImage(sprites[pflag['key']], 0, 0,
@@ -112,7 +112,7 @@ function create_unit_label_sprite(punit, ptile)
   }
 
   var sprite = new THREE.Sprite( new THREE.SpriteMaterial( { map: texture}));
-  sprite.scale.set(30,25,1);
+  sprite.scale.set(26,15,1);
   return sprite;
 }
 

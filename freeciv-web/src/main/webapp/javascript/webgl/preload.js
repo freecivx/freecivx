@@ -310,7 +310,7 @@ switch (filename) {
     modelscale = 7;
     break;
   case 'Caravan':
-    modelscale = 8;
+    modelscale = 10;
     break;
   case 'Carrier':
     modelscale = 0.85;
@@ -540,6 +540,13 @@ switch (filename) {
   case 'city_roman_4':
   case 'city_roman_capital':
     modelscale = 2.1;
+    break;
+  case 'city_european_0':
+  case 'city_european_1':
+  case 'city_european_2':
+  case 'city_european_3':
+  case 'city_european_4':
+    modelscale = 3.3;
     break;
   case 'city_postmodern_0':
   case 'city_postmodern_1':
