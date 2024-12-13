@@ -548,6 +548,13 @@ switch (filename) {
   case 'city_european_4':
     modelscale = 3.3;
     break;
+  case 'city_european_industrial_0':
+  case 'city_european_industrial_1':
+  case 'city_european_industrial_2':
+  case 'city_european_industrial_3':
+  case 'city_european_industrial_4':
+    modelscale = 12;
+    break;
   case 'city_postmodern_0':
   case 'city_postmodern_1':
   case 'city_postmodern_2':

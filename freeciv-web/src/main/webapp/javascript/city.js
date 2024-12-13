@@ -2174,7 +2174,7 @@ function city_to_3d_model_name(pcity)
     city_style_name = "chinese";
   }
   if (city_rule['rule_name'] == "Industrial") {
-    city_style_name = "european";
+    city_style_name = "european_industrial";
   }
 
   if (city_rule['rule_name'] == "PostModern") {
