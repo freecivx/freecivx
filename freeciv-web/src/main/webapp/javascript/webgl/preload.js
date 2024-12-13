@@ -546,7 +546,7 @@ switch (filename) {
   case 'city_european_2':
   case 'city_european_3':
   case 'city_european_4':
-    modelscale = 3.3;
+    modelscale = 3.0;
     break;
   case 'city_european_industrial_0':
   case 'city_european_industrial_1':
