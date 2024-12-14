@@ -45,7 +45,5 @@ echo "Starting publite2" && \
 (cd ${FREECIV_WEB_DIR}/publite2/ && \
 sh run.sh) && \
 echo "Publite2 started" && \
-echo "Will sleep for 2 seconds, then do a status test..." && \
-sleep 2 && \
 bash ${FREECIV_WEB_DIR}/scripts/status-freeciv-web.sh
 echo "FreecivX started!"

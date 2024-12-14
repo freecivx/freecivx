@@ -546,8 +546,10 @@ switch (filename) {
   case 'city_roman_capital':
     modelscale = 2.1;
     break;
-  case 'city_european_0':
   case 'city_european_1':
+    modelscale = 2.9;
+    break;
+  case 'city_european_0':
   case 'city_european_2':
   case 'city_european_3':
   case 'city_european_4':

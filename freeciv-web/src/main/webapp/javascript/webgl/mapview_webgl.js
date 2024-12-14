@@ -473,7 +473,7 @@ function add_quality_dependent_objects_webgl()
       scene.background = sky.texture;
     } else {
       const sky = new THREE.WebGLCubeRenderTarget(2000);
-      sky.fromEquirectangularTexture(maprenderer, create_star_sky_texture(13000, 5500, 2500));
+      sky.fromEquirectangularTexture(maprenderer, create_star_sky_texture(18000, 5000, 2400));
       scene.background = sky.texture;
     }
   } else {
