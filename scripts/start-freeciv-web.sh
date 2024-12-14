@@ -10,6 +10,9 @@ export LC_ALL=en_US.UTF-8
 export LANG=en_US.UTF-8
 export LANGUAGE=en_US.UTF-8
 
+echo "export JAVA_HOME=\"/usr/lib/jvm/java-21-openjdk-amd64\"" | sudo tee /var/lib/tomcat11/bin/setenv.sh > /dev/null
+sudo chmod +x /var/lib/tomcat11/bin/setenv.sh
+
 if [ ! -f ${SCRIPT_DIR}/configuration.sh ]; then
     echo "ERROR: configuration.sh not found. Copy configuration.sh.dist to configuration.sh and update it with your settings."
     exit 2

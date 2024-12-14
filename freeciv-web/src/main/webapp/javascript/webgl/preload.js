@@ -251,10 +251,15 @@ function load_model(filename)
           node.material.emissive.set(0xEEDC82);
           node.material.emissiveIntensity = 1.6;
         }
-        node.castShadow = true;
+        if (filename == "city_european_0" || filename == "city_european_1" || filename == "city_european_2" || filename == "city_european_3" || filename == "city_european_4") {
+          node.material.emissive.set(0x999999);
+          node.material.emissiveIntensity = 0.3;
+        }
         if (filename == "Oasis") {
           node.castShadow = false;
         }
+
+        node.castShadow = true;
       }
     });
 
@@ -546,7 +551,7 @@ switch (filename) {
   case 'city_european_2':
   case 'city_european_3':
   case 'city_european_4':
-    modelscale = 3.0;
+    modelscale = 2.5;
     break;
   case 'city_european_industrial_0':
   case 'city_european_industrial_1':

@@ -204,6 +204,7 @@ function update_city_position(ptile) {
     }
     city_positions[ptile['index']] = new_city;
     if (pcity['style'] == 1) height -= 0.82;
+    if (pcity['style'] == 2) height -= 2;
     if (pcity['style'] == 3) height -= 2;
     if (pcity['style'] == 4) height -= 1;
     if (pcity['style'] == 9) height -= 1;
@@ -255,6 +256,7 @@ function update_city_position(ptile) {
       pcity['webgl_model_name'] = model_name;
       city_positions[ptile['index']] = new_city;
       if (pcity['style'] == 1) height -= 0.82;
+      if (pcity['style'] == 2) height -= 2;
       if (pcity['style'] == 3) height -= 2;
       if (pcity['style'] == 4) height -= 1;
       if (pcity['style'] == 9) height -= 1;
