@@ -34,7 +34,6 @@ dependencies="\
   nodejs \
   default-mysql-server \
   nginx \
-  openjdk-17-jdk-headless \
   patch \
   pkg-config \
   pngcrush \
