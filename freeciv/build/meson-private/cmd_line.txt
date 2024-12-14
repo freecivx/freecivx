@@ -1,0 +1,14 @@
+[options]
+server = freeciv-web
+clients = []
+fcmp = cli
+json-protocol = true
+nls = false
+audio = false
+ruledit = false
+default_library = static
+prefix = /home/andreas/freeciv
+optimization = 3
+
+[properties]
+

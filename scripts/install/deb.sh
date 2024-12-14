@@ -61,8 +61,8 @@ APT_GET='DEBIAN_FRONTEND=noninteractive apt-get -y -qq -o=Dpkg::Use-Pty=0'
 
 sudo ${APT_GET} update
 
-if [ "$DEB_NO_TOMCAT" != "Y" ] && apt-get --simulate install tomcat10 &> /dev/null; then
-  dependencies="${dependencies} tomcat10 tomcat10-admin"
+if [ "$DEB_NO_TOMCAT" != "Y" ] && apt-get --simulate install tomcat11 &> /dev/null; then
+  dependencies="${dependencies} tomcat11 tomcat11-admin"
   INSTALLED_TOMCAT=Y
 else
   INSTALLED_TOMCAT=N
@@ -82,7 +82,7 @@ echo "apt-get install dependencies"
 sudo ${APT_GET} install --no-install-recommends ${dependencies}
 
 if [ "${INSTALLED_TOMCAT}" = N ]; then
-  ext_install_tomcat10
+  ext_install_tomcat11
 fi
 
 TMPINSTDIR=$(mktemp -d)

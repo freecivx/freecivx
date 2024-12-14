@@ -17,49 +17,49 @@
 
 declare -a ext_installed
 
-ext_install_tomcat10 () {
+ext_install_tomcat11 () {
   local TOMCAT_URL
   local TMPFILE
 
-  echo "==== Installing tomcat10 ===="
+  echo "==== Installing tomcat11 ===="
 
-  TOMCAT_URL=$(curl -LsS 'https://tomcat.apache.org/download-10.cgi' | sed -n 's/^.*href="\([^"]*bin\/apache-tomcat-[0-9.]*tar\.gz\)".*/\1/p' | head -n 1)
+  TOMCAT_URL=$(curl -LsS 'https://tomcat.apache.org/download-11.cgi' | sed -n 's/^.*href="\([^"]*bin\/apache-tomcat-[0-9.]*tar\.gz\)".*/\1/p' | head -n 1)
   if [ -z "${TOMCAT_URL}" ]; then
     echo >&2 "Couldn't fetch download URL"
     exit 1
   fi
 
-  echo "Downloading tomcat10 from ${TOMCAT_URL}"
-  TMPFILE=$(mktemp -t tomcat10.XXXX.tar.gz)
+  echo "Downloading tomcat11 from ${TOMCAT_URL}"
+  TMPFILE=$(mktemp -t tomcat11.XXXX.tar.gz)
   curl -LsS -o "${TMPFILE}" "${TOMCAT_URL}"
 
   cd /var/lib
   sudo tar -xzf "${TMPFILE}"
-  sudo mv apache-tomcat-10.* tomcat10
+  sudo mv apache-tomcat-11.* tomcat11
   rm "${TMPFILE}"
 
   if ! getent group tomcat > /dev/null 2>&1 ; then
     sudo groupadd --system tomcat
   fi
   if ! id tomcat > /dev/null 2>&1 ; then
-    sudo useradd --system --home /var/lib/tomcat10 -g tomcat --shell /bin/false tomcat
+    sudo useradd --system --home /var/lib/tomcat11 -g tomcat --shell /bin/false tomcat
   fi
 
-  sudo chgrp -R tomcat /var/lib/tomcat10
-  sudo chmod -R g+r /var/lib/tomcat10/conf
-  sudo chmod g+x /var/lib/tomcat10/conf
-  sudo chown -R tomcat /var/lib/tomcat10/{webapps,work,temp,logs}
-  sudo chown tomcat /var/lib/tomcat10/bin/catalina.sh
-  sudo chmod u+s /var/lib/tomcat10/bin/catalina.sh
-  sudo setfacl -m d:g:tomcat:rwX /var/lib/tomcat10/webapps
+  sudo chgrp -R tomcat /var/lib/tomcat11
+  sudo chmod -R g+r /var/lib/tomcat11/conf
+  sudo chmod g+x /var/lib/tomcat11/conf
+  sudo chown -R tomcat /var/lib/tomcat11/{webapps,work,temp,logs}
+  sudo chown tomcat /var/lib/tomcat11/bin/catalina.sh
+  sudo chmod u+s /var/lib/tomcat11/bin/catalina.sh
+  sudo setfacl -m d:g:tomcat:rwX /var/lib/tomcat11/webapps
 
   ls -ltra /usr/lib/jvm/
 
-  echo "export JAVA_HOME=\"/usr/lib/jvm/java-17-openjdk-amd64\"" | sudo tee /var/lib/tomcat10/bin/setenv.sh > /dev/null
-  sudo chmod +x /var/lib/tomcat10/bin/setenv.sh
+  echo "export JAVA_HOME=\"/usr/lib/jvm/java-17-openjdk-amd64\"" | sudo tee /var/lib/tomcat11/bin/setenv.sh > /dev/null
+  sudo chmod +x /var/lib/tomcat11/bin/setenv.sh
 
-  echo "export CATALINA_HOME=\"/var/lib/tomcat10\"" >> ~/.bashrc
-  ext_installed[${#ext_installed[@]}]="tomcat10"
+  echo "export CATALINA_HOME=\"/var/lib/tomcat11\"" >> ~/.bashrc
+  ext_installed[${#ext_installed[@]}]="tomcat11"
 }
 
 

@@ -12,7 +12,7 @@ done
 
 DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" >/dev/null && pwd)"
 
-TOMCATDIR="/var/lib/tomcat10"
+TOMCATDIR="/var/lib/tomcat11"
 WEBAPP_DIR="${DIR}/target/freeciv-web"
 
 # Creating build.txt info file
