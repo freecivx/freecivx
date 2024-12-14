@@ -70,6 +70,7 @@ freeciv-*.sav*
 target/
 *.class
 tornado*
+build/
 resin*
 freeciv-web.project
 models.zip
