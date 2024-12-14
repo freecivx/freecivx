@@ -73,29 +73,15 @@ copy it without the `.dist` extension and edit to your liking.
 
 All software components in Freeciv-web will log to the /logs sub-directory of the Freeciv-web installation.
 
-
-### Running Freecivx on Docker
-
-Freeciv-web can easily be built and run from Docker using `docker-compose`.
-
- 1. Make sure you have both [Docker](https://www.docker.com/get-started) and [Docker Compose](https://docs.docker.com/compose/install/) installed.
-
- 2. Run the following from the freeciv-web directory:
-
-    ```sh
-    docker-compose up -d
-    ```
-
- 3. Connect to docker via host machine using standard browser
-
-http://localhost:8080/
-
-Enjoy.
-
 Start and stop Freeciv-web with the following commands:  
   start-freeciv-web.sh  
   stop-freeciv-web.sh  
   status-freeciv-web.sh
+
+### Running Freecivx on Docker
+[Docker](/doc/Docker.md)
+
+
 
 ### Running Freeciv-web on Windows Subsystem for Linux (WSL)
 [Windows Subsystem for Linux (WSL)](/doc/Windows%20Subsystem%20for%20Linux.md)
