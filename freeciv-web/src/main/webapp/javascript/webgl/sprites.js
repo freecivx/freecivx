@@ -61,7 +61,7 @@ function create_unit_label_sprite(punit, ptile)
       ctx.drawImage(unit_sprite, 0, 0,
           unit_sprite.width, unit_sprite.height,
           width, 0, unit_sprite.width * 0.5, unit_sprite.height * 0.5);
-      width += 35;
+      width += 33;
     }
 
     ctx.font = 'bold 18px serif';
