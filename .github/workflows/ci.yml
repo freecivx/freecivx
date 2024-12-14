@@ -22,8 +22,7 @@ jobs:
       - name: Set JAVA_HOME environment variables
         run: |
           echo "JAVA_HOME is $JAVA_HOME"
-          echo "JAVA_HOME_17_X64 is $JAVA_HOME_17_X64"
-          java -version # Verify that Java 17 is set as the default
+          java -version 
 
       - name: prepare
         run: |
