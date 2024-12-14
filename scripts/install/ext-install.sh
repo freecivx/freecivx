@@ -55,8 +55,8 @@ ext_install_tomcat11 () {
 
   ls -ltra /usr/lib/jvm/
 
-  echo "export JAVA_HOME=\"/usr/lib/jvm/java-17-openjdk-amd64\"" | sudo tee /var/lib/tomcat11/bin/setenv.sh > /dev/null
-  sudo chmod +x /var/lib/tomcat11/bin/setenv.sh
+  #echo "export JAVA_HOME=\"/usr/lib/jvm/java-17-openjdk-amd64\"" | sudo tee /var/lib/tomcat11/bin/setenv.sh > /dev/null
+  #sudo chmod +x /var/lib/tomcat11/bin/setenv.sh
 
   echo "export CATALINA_HOME=\"/var/lib/tomcat11\"" >> ~/.bashrc
   ext_installed[${#ext_installed[@]}]="tomcat11"
