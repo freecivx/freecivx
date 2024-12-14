@@ -37,7 +37,7 @@ function create_unit_label_sprite(punit, ptile)
   } else {
     var width = 0;
     var fcanvas = document.createElement("canvas");
-    fcanvas.width = 128;
+    fcanvas.width = 100;
     fcanvas.height = 32;
     var ctx = fcanvas.getContext("2d");
 
