@@ -32,7 +32,7 @@ if service --status-all | grep -Fq 'tomcat11'; then
    sudo /usr/sbin/service tomcat11 start || echo "unable to start tomcat11 service"
 else
    # It's a suid script, so will run as tomcat user
-   $CATALINA_HOME/bin/catalina.sh start
+   sudo $CATALINA_HOME/bin/catalina.sh start
 fi
 
 # waiting for Tomcat to start, since it will take some time.
