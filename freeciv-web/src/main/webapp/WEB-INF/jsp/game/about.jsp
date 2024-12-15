@@ -268,7 +268,7 @@
 
                     <div class="col-md-6">
 		                  <div class="vcontainer">
-                                        <iframe  src="https://www.youtube.com/embed/s8ef856BLBQ" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen class="video"></iframe>
+                                        <iframe  src="https://www.youtube.com/embed/36SzxK0v57U" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen class="video"></iframe>
                                         </div>
                                   </div>
 			
