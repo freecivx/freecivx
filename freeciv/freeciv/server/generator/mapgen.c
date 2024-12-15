@@ -437,6 +437,16 @@ static void make_plain(struct tile *ptile, int *to_be_placed )
     tile_set_terrain(ptile,
 		     pick_terrain(MG_TEMPERATE, MG_GREEN, MG_MOUNTAINOUS));
   }
+
+  if (wld.map.server.temperature == 100) {
+    struct terrain *desert = pick_terrain(MG_DRY, MG_UNUSED, MG_UNUSED);
+    tile_set_terrain(ptile, desert);
+  }
+  if (wld.map.server.temperature == 0) {
+    struct terrain *arctic = pick_terrain(MG_FROZEN, MG_UNUSED, MG_UNUSED);
+    tile_set_terrain(ptile, arctic);
+  } 
+
   map_set_placed(ptile);
   (*to_be_placed)--;
 }
@@ -466,6 +476,14 @@ static void make_plains(void)
     /* Place some terrains */                             \
     if ((ptile = rand_map_pos_characteristic((wc), (tc), (mc)))) {	  \
       place_terrain(ptile, (weight), (ter), &(count), (wc),(tc), (mc));   \
+      if (wld.map.server.temperature == 100) { \
+      struct terrain *desert = pick_terrain(MG_DRY, MG_UNUSED, MG_UNUSED); \
+      tile_set_terrain(ptile, desert); \
+      } \
+      if (wld.map.server.temperature == 0) { \
+        struct terrain *arctic = pick_terrain(MG_FROZEN, MG_UNUSED, MG_UNUSED); \
+        tile_set_terrain(ptile, arctic); \
+      } \
     } else {                                                              \
       /* If rand_map_pos_temperature returns FALSE we may as well stop */ \
       /* looking for this time and go to alternate type. */               \

@@ -473,6 +473,8 @@ function pregame_settings()
 	  "<td><input type='number' name='landmass' id='landmass' size='3' length='3' min='15' max='85' step='10'></td></tr>" +
 	  "<tr title='Amount of special resource squares'><td>Specials:</td>" +
 	  "<td><input type='number' name='specials' id='specials' size='4' length='4' min='0' max='1000' step='50'></td></tr>" +
+      "<tr title='World temperature from 0 to 100. 0 is fully arctic, 100 is fully desert.'><td>Temperature:</td>" +
+          "<td><input type='number' name='temperature' id='temperature' size='3' length='3' min='0' max='100' step='10'></td></tr>" +
 	  "<tr title='Minimum distance between cities'><td>City mindist :</td>" +
 	  "<td><input type='number' name='citymindist' id='citymindist' size='4' length='4' min='1' max='9' step='1'></td></tr>" +
           "<tr title='The game will end at the end of the given turn.'><td>End turn:</td>" +
@@ -561,6 +563,11 @@ function pregame_settings()
       && server_settings['landmass']['val'] != null) {
     $("#landmass").val(server_settings['landmass']['val']);
   }
+
+  if (server_settings['temperature'] != null
+        && server_settings['temperature']['val'] != null) {
+        $("#temperature").val(server_settings['temperature']['val']);
+    }
 
   if (server_settings['specials'] != null
       && server_settings['specials']['val'] != null) {
@@ -702,6 +709,10 @@ function pregame_settings()
 
   $('#landmass').change(function() {
     send_message("/set landmass " + $('#landmass').val());
+  });
+
+  $('#temperature').change(function() {
+    send_message("/set temperature " + $('#temperature').val());
   });
 
   $('#citymindist').change(function() {
