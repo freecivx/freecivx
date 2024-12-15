@@ -38,6 +38,6 @@ fi
 # waiting for Tomcat to start, since it will take some time.
 until `curl --output /dev/null --silent --head --fail "http://localhost:8080/freeciv-web"`; do
     printf ".."
-    sleep 3
+    sleep 2
 done
-sleep 8
+sleep 2
