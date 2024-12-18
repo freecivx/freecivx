@@ -115,9 +115,6 @@ checkWebURL "Tomcat DB connection" "http://localhost/game/list" --head
 
 checkWebURL "Pubstatus" "http://localhost:4002/pubstatus"
 
-checkWebURL "freeciv-proxy directly" "http://localhost:7001/status"
-checkWebURL "freeciv-proxy through nginx" "http://localhost/civsocket/7001/status"
-
 checkPID "freeciv-web (spawned by publite2)" "freeciv-web"
 
 checkWebURL "webclient.min.js generation" "http://localhost/javascript/webclient.min.js" --head

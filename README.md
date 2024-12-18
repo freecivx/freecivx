@@ -19,11 +19,11 @@ Live servers
 ------------
 Currently known servers based on FreecivX.net / Freeciv-web, which are open source in compliance with [the AGPL license](LICENSE.md):
 
-https://FreecivX.net 
+https://Freecivx.net 
 
 Screenshots:
 ------------------------
-![Freeciv-web](https://raw.githubusercontent.com/freecivx/freecivx/main/doc/img/Screenshot.png "FCIV.NET screenshot")
+![Freeciv-web](https://raw.githubusercontent.com/freecivx/freecivx/main/doc/img/Screenshot.png "FREECIVX.NET screenshot")
 
 
 Overview
@@ -39,11 +39,6 @@ FreecivX.net consists of these components:
 
 * [Freeciv](freeciv) - the Freeciv C server, which is checked out from the official
   Git repository, and patched to work with a WebSocket/JSON protocol. Implemented in C.
-
-* [Freeciv-proxy](freeciv-proxy) - a WebSocket proxy which allows WebSocket clients in Freeciv-web
-  to send socket requests to Freeciv servers. WebSocket requests are sent from Javascript 
-  in Freeciv-web to nginx, which then proxies the WebSocket messages to freeciv-proxy, 
-  which finally sends Freeciv socket requests to the Freeciv servers. Implemented in Python.
 
 * [Publite2](publite2) - a process launcher for Freeciv C servers, which manages
   multiple Freeciv server processes and checks capacity through the Metaserver. 

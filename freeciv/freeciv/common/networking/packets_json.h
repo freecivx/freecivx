@@ -53,8 +53,6 @@ void *get_packet_from_connection_json(struct connection *pc,
       }                                                                 \
       size = dio_output_used(&dout.raw);                                \
                                                                         \
-      dio_output_rewind(&(dout.raw));                                   \
-      dio_put_uint16_raw(&(dout.raw), size);                            \
       free(json_buffer);                                                \
       json_decref(dout.json);                                           \
     } else {                                                            \

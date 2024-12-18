@@ -5,8 +5,7 @@ Publite2 is a process manager which launches multiple Freeciv-web servers
 depending on demand reported by the Metaserver. It requires the Freeciv-web
 webapplication to be already running on Resin to work. 
 
-Publite2 also launches one Freeciv-proxy server instance for each 
-Freeciv C server.
+Publite2 also launches one websockify instance for each Freeciv C server.
 
 Publite2 is started automatically by the start-freeciv-web.sh script.
 

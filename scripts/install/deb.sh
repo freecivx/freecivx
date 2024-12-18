@@ -51,6 +51,7 @@ dependencies="\
   unzip \
   zlib1g-dev \
   rsync \
+  websockify \
 "
 
 # TODO: Add back python wikipedia package.

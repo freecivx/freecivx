@@ -19,7 +19,7 @@ if [ ! -f ${SCRIPT_DIR}/configuration.sh ]; then
 fi
 . ./configuration.sh
 
-echo "Starting up Freeciv-web: nginx, tomcat, publite2, freeciv-proxy."
+echo "Starting up Freeciv-web: nginx, tomcat, publite2, websockify."
 
 mkdir -p ${FREECIV_WEB_DIR}/logs
 if [ ! -f /etc/nginx/sites-enabled/freeciv-web ]; then
