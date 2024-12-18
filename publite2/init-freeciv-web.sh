@@ -52,7 +52,7 @@ addArgs --saves "${savesdir}"
 export FREECIV_SAVE_PATH=${savesdir};
 rm -f "/var/lib/tomcat11/webapps/data/scorelogs/score-${2}.log"
 
-websockify --verbose "$3" localhost:$(( $3 - 1000 )) > "../logs/freeciv-proxy-${3}.log" 2>&1 &
+websockify "$3" localhost:$(( $3 - 1000 )) > "../logs/freeciv-proxy-${3}.log" 2>&1 &
 proxy_pid=$! && 
 ${HOME}/freeciv/bin/freeciv-web "${args[@]}" > /dev/null 2> "../logs/freeciv-web-stderr-${2}.log"
 
