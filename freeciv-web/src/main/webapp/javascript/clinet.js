@@ -29,7 +29,7 @@ var civserverport = null;
 var ping_last = new Date().getTime();
 var pingtime_check = 240000;
 var ping_timer = null;
-let incompleteBuffer = "";
+let incomplete_messages_from_server_buffer = "";
 
 /****************************************************************************
   Initialized the Network communication, by requesting a valid server port.
@@ -90,52 +90,40 @@ function handleWebSocketMessage(event) {
             const decoder = new TextDecoder('utf-8');
             const text = decoder.decode(data);
 
-            // Append new text to the buffer
-            incompleteBuffer += text;
+            incomplete_messages_from_server_buffer += text;
 
-            let index = 0;
-            let openBraces = 0;
-            let jsonStart = -1;
+            let jsonStart = incomplete_messages_from_server_buffer.indexOf('{');
+            while (jsonStart !== -1) {
+                let jsonEnd = jsonStart;
+                let openBraces = 1;
 
-            // Process the buffer one character at a time
-            while (index < incompleteBuffer.length) {
-                const char = incompleteBuffer[index];
-
-                if (char === '{') {
-                    // Mark the start of a JSON object
-                    if (openBraces === 0) {
-                        jsonStart = index;
-                    }
-                    openBraces++;
-                } else if (char === '}') {
-                    openBraces--;
-
-                    // If we closed all braces, a JSON object is complete
-                    if (openBraces === 0 && jsonStart !== -1) {
-                        const jsonString = incompleteBuffer.slice(jsonStart, index + 1)
-                            .replace(/[^ -~\s]/g, ''); // Strip non-printable ASCII characters
-
-                        try {
-                            const json = JSON.parse(jsonString);
-                            client_handle_packet([json]); // Pass parsed JSON to the handler
-                        } catch (jsonError) {
-                            console.error("Error parsing JSON:", jsonError, "String:", jsonString);
-                        }
-
-                        // Remove the processed JSON from the buffer
-                        incompleteBuffer = incompleteBuffer.slice(index + 1);
-                        index = 0; // Reset the index for the new buffer
-                        jsonStart = -1; // Reset JSON start marker
-                        continue;
+                // Scan for the end of the JSON object
+                while (openBraces > 0 && jsonEnd + 1 < incomplete_messages_from_server_buffer.length) {
+                    jsonEnd++;
+                    if (incomplete_messages_from_server_buffer[jsonEnd] === '{') {
+                        openBraces++;
+                    } else if (incomplete_messages_from_server_buffer[jsonEnd] === '}') {
+                        openBraces--;
                     }
                 }
 
-                index++;
-            }
+                // If we found a complete JSON object
+                if (openBraces === 0) {
+                    const jsonString = incomplete_messages_from_server_buffer.substring(jsonStart, jsonEnd + 1);
+                    try {
+                        const json = JSON.parse(jsonString);
+                        client_handle_packet([json]);
+                    } catch (jsonError) {
+                        console.error("Error parsing JSON:", jsonError, "String:", jsonString);
+                    }
 
-            // Clean up the buffer if it only contains garbage without valid JSON
-            if (openBraces === 0 && jsonStart === -1) {
-                incompleteBuffer = "";
+                    // Move the start to the next possible JSON object
+                    incomplete_messages_from_server_buffer = incomplete_messages_from_server_buffer.substring(jsonEnd + 1);
+                    jsonStart = incomplete_messages_from_server_buffer.indexOf('{', 0);
+                } else {
+                    // Not a complete JSON yet, break and wait for more data
+                    break;
+                }
             }
         } else {
             console.error("Received data of unknown type:", typeof event.data);
