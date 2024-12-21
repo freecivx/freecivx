@@ -177,11 +177,11 @@ async function init_webgl_mapview() {
     terrain_quality = 2;
   }
 
-  const vertexShaderResponse = await fetch('/javascript/webgl/shaders/terrain_vertex_shader.glsl');
+  const vertexShaderResponse = await fetch('/javascript/webgl/shaders_square/terrain_vertex_shader.glsl');
   const vertex_shader = await vertexShaderResponse.text();
 
   // Load fragment shader
-  const fragmentShaderResponse = await fetch('/javascript/webgl/shaders/terrain_fragment_shader.glsl');
+  const fragmentShaderResponse = await fetch('/javascript/webgl/shaders_square/terrain_fragment_shader.glsl');
   var fragment_shader = await fragmentShaderResponse.text();
 
   if (maprenderer.capabilities.maxTextures <= 16) {

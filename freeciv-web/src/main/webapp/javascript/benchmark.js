@@ -91,36 +91,3 @@ function benchmark_check()
 
   setTimeout(benchmark_check, 1000);
 }
-
-/**************************************************************************
- Shows a generic message dialog.
-**************************************************************************/
-function show_slow_game_warning_message(title, message) {
-
-  // reset dialog page.
-  $("#generic_dialog").remove();
-  $("<div id='generic_dialog'></div>").appendTo("div#game_page");
-
-  speak(title);
-  speak(message);
-
-  $("#generic_dialog").html(message);
-  $("#generic_dialog").attr("title", title);
-  $("#generic_dialog").dialog({
-			bgiframe: true,
-			modal: true,
-			width: is_small_screen() ? "90%" : "50%",
-			close: closing_dialog_message,
-			buttons: {
-
-				"Play anyway": close_dialog_message
-
-			}
-		});
-
-  $("#generic_dialog").dialog('open');
-  $("#game_text_input").blur();
-
-  $('#generic_dialog').css("max-height", "450px");
-
-}

@@ -77,21 +77,3 @@ function update_borders_tile(ptile)
     borders_texture.needsUpdate = true;
   }
 }
-
-/****************************************************************************
-  Returns the color of the tile at the given map position.
-****************************************************************************/
-function border_image_color(map_x, map_y)
-{
-  var ptile = map_pos_to_tile(map_x, map_y);
-
-  if (map_x > map['xsize'] || map_y > map['ysize']) {
-    return 0;
-  }
-
-  if (ptile != null && ptile['owner'] != null && ptile['owner'] < 255) {
-      return 1 + ptile['owner'];
-  }
-
-  return 0;
-}

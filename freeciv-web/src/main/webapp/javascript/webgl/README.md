@@ -1,5 +1,5 @@
-WebGL renderer for Freeciv-web
-==============================
+WebGL renderer for Freecivx.net
+===============================
 
 This is the WebGL + Three.js renderer for Freeciv-web.
 
