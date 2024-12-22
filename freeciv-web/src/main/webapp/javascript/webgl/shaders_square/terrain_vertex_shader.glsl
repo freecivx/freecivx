@@ -17,7 +17,6 @@
 
 ***********************************************************************/
 
-uniform mat4 modelViewMatrix;
 uniform mat4 projectionMatrix;
 
 out vec2 vUv;
