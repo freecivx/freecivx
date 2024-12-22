@@ -17,11 +17,6 @@
 
 ***********************************************************************/
 
-in vec2 uv;
-in vec3 position;
-in vec3 normal;
-in vec3 vertColor;
-
 uniform mat4 modelViewMatrix;
 uniform mat4 projectionMatrix;
 
