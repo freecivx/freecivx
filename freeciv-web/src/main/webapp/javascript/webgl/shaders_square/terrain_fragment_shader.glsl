@@ -124,7 +124,6 @@ float road_here_r;
 float road_here_g;
 float road_here_b;
 
-// TODO: deprecated:
 float sprite_pos0_x = 0.0;
 float sprite_pos0_y = 0.75;
 float sprite_pos1_x = 0.25;
@@ -168,10 +167,10 @@ void main()
 {
 
     if (vColor.r == 0.0) {
-        gl_FragColor = vec4(0.0, 0.0, 0.0, 1.0);
+        fragColor = vec4(0.0, 0.0, 0.0, 1.0);
 
         if (mouse_x >= 0 && mouse_y >= 0 && mouse_x == int(floor((map_x_size * vUv.x ))) && mouse_y == int(floor((map_y_size * (1.0 - vUv.y) )))) {
-            gl_FragColor.rgb = vec3(0.3, 0.3, 0.3);
+            fragColor.rgb = vec3(0.3, 0.3, 0.3);
         }
 
         return;
@@ -528,6 +527,6 @@ void main()
     // Fog of war, and unknown tiles, are stored as a vertex color in vColor.r.
     c = c * vColor.r;
 
-    gl_FragColor.rgb = c * shade_factor;
+    fragColor.rgb = c * shade_factor;
 
 }
