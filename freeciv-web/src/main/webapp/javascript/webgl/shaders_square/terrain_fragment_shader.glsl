@@ -19,10 +19,6 @@
 
 precision highp float;
 
-in vec3 vNormal;
-in vec3 vColor;
-in vec2 vUv;
-in vec3 vPosition;
 in vec3 vPosition_camera;
 
 uniform sampler2D maptiles;
@@ -161,8 +157,6 @@ vec4 border_e;
 vec4 border_w;
 vec4 border_n;
 vec4 border_s;
-
-out vec4 fragColor;
 
 void main()
 {
