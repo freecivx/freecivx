@@ -1,4 +1,4 @@
-#version 300 es
+
 
 // Output to the fragment shader
 out vec2 vUv;
