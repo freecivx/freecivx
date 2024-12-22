@@ -1,7 +1,7 @@
 WebGL Shaders for Freeciv-web 
 =============================
 
-These are the WebGL fragment and vertex shaders used by Freeciv-web:
+These are the WebGL fragment and vertex shaders used by Freeciv-web. The shaders are at Glsl ES version 3.
 
 Terrain
 =======
