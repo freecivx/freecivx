@@ -196,7 +196,8 @@ async function init_webgl_mapview() {
       uniforms: freeciv_uniforms,
       vertexShader: vertex_shader,
       fragmentShader: fragment_shader,
-      vertexColors: true
+      vertexColors: true,
+      glslVersion: THREE.GLSL3
     });
 
 
