@@ -18,7 +18,6 @@
 ***********************************************************************/
 
 in vec3 vertColor;
-uniform mat4 projectionMatrix;
 
 out vec2 vUv;
 out vec3 vNormal;
