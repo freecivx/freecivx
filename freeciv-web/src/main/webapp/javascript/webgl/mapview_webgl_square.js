@@ -206,6 +206,7 @@ async function init_webgl_mapview() {
   landMesh = new THREE.Mesh( landGeometry, terrain_material );
   landMesh.receiveShadow = false;
   landMesh.castShadow = false;
+  landMesh.renderOrder = -2;
   scene.add(landMesh);
 
   if (graphics_quality === QUALITY_HIGH) {
@@ -412,28 +413,36 @@ function animate_webgl() {
  ****************************************************************************/
 function add_quality_dependent_objects_webgl()
 {
+  let waterMaterial;
   var waterGeometry = new THREE.PlaneGeometry( mapview_model_width, mapview_model_height);
 
-  // Water with shader, high quality, near view.
-  scene.remove(water_hq);
-  water_hq = new THREE.Mesh(
-      waterGeometry,
-      new THREE.MeshPhysicalMaterial({
-        transmission: 1, // Fully transparent
-        roughness: 0.1, // Smoother surface for shiny appearance
-        ior: 1.333, // Index of refraction for water
-        color: '#c4f0e6', // Lighter blue for shallow shiny areas
-        clearcoat: 1, // Adds shine to the water surface
-        clearcoatRoughness: 0.015, // Even smoother clearcoat
-        reflectivity: 0.97, // Maximized reflections for glossy shallow water
-        thickness: 6, // Reduced thickness to emphasize shallow areas
-        attenuationColor: '#b0e2d4', // Soft blue-green for shallow areas
-        attenuationDistance: 12, // Shorter absorption distance for vibrant shallow areas
-        envMapIntensity: 1.7, // Stronger environment reflections
-        normalMap: webgl_textures["water1"], // Wave texture
-        normalScale: new THREE.Vector2(0.02, 0.02), // Very subtle, short waves
-      })
-  );
+  if (navigator.platform.toLowerCase().includes('mac')) {
+    // Simpler transparent plane for Mac
+    waterMaterial = new THREE.MeshBasicMaterial({
+    color: '#c4f0e6', // Water-like color
+    opacity: 0.5, // Transparent
+    transparent: true, // Enable transparency
+  });
+  } else {
+    // Full water effect for other platforms
+    waterMaterial = new THREE.MeshPhysicalMaterial({
+    transmission: 1, // Fully transparent
+    roughness: 0.1, // Smoother surface for shiny appearance
+    ior: 1.333, // Index of refraction for water
+    color: '#c4f0e6', // Lighter blue for shallow shiny areas
+    clearcoat: 1, // Adds shine to the water surface
+    clearcoatRoughness: 0.015, // Even smoother clearcoat
+    reflectivity: 0.97, // Maximized reflections for glossy shallow water
+    thickness: 6, // Reduced thickness to emphasize shallow areas
+    attenuationColor: '#b0e2d4', // Soft blue-green for shallow areas
+    attenuationDistance: 12, // Shorter absorption distance for vibrant shallow areas
+    envMapIntensity: 1.7, // Stronger environment reflections
+    normalMap: webgl_textures["water1"], // Wave texture
+    normalScale: new THREE.Vector2(0.02, 0.02), // Very subtle, short waves
+  });
+  }
+
+  water_hq = new THREE.Mesh(waterGeometry, waterMaterial);
 
   water_hq.rotation.x = - Math.PI * 0.5;
   water_hq.translateOnAxis(new THREE.Vector3(0,0,1).normalize(), 50);
@@ -443,7 +452,9 @@ function add_quality_dependent_objects_webgl()
   water_hq.castShadow = false;
   scene.add( water_hq );
 
-  if (graphics_quality === QUALITY_HIGH) {
+  if (graphics_quality === QUALITY_HIGH 
+     && !navigator.platform.toLowerCase().includes('mac')
+      ) {
     if (shadowmesh == null) {
       var shadowMaterial = new THREE.ShadowMaterial();
       shadowMaterial.opacity = 0.85;
