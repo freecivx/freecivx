@@ -19,8 +19,11 @@
 
 precision highp float;
 
-varying vec3 vNormal;
-varying vec3 vColor;
+in vec3 vNormal;
+in vec3 vColor;
+in vec2 vUv;
+in vec3 vPosition;
+in vec3 vPosition_camera;
 
 uniform sampler2D maptiles;
 uniform sampler2D borders;
@@ -50,10 +53,6 @@ uniform int mouse_y;
 
 uniform int selected_x;
 uniform int selected_y;
-
-varying vec2 vUv;
-varying vec3 vPosition;
-varying vec3 vPosition_camera;
 
 uniform bool borders_visible;
 
@@ -162,6 +161,7 @@ vec4 border_w;
 vec4 border_n;
 vec4 border_s;
 
+out vec4 fragColor;
 
 void main()
 {
