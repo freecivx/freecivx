@@ -1,154 +1,152 @@
 #!/usr/bin/env python3
-
-'''**********************************************************************
- Publite2 is a process manager which launches multiple Freeciv-web servers.
-    Copyright (C) 2009-2017  The Freeciv-web project
-
-    This program is free software: you can redistribute it and/or modify
-    it under the terms of the GNU Affero General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
-
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU Affero General Public License for more details.
-
-    You should have received a copy of the GNU Affero General Public License
-    along with this program.  If not, see <http://www.gnu.org/licenses/>.
-
-***********************************************************************'''
-
-
-from os import *
+"""
+Publite2: A process manager to launch multiple Freeciv-web servers.
+"""
 
 import sys
 import time
 import http.client
 import configparser
-from pubstatus import *
+from enum import Enum
+from pathlib import Path
+from pubstatus import PubStatus
 from civlauncher import Civlauncher
-import os.path
 
-metahost = "localhost"
-metaport = 8080
-metapath =  "/freeciv-web/meta/metaserver"
-statuspath =  "/freeciv-web/meta/status"
-settings_file = "settings.ini"
-game_types = ["singleplayer", "multiplayer"]
+# Constants
+METAHOST = "localhost"
+METAPORT = 8080
+METAPATH = "/freeciv-web/meta/metaserver"
+STATUSPATH = "/freeciv-web/meta/status"
+SETTINGS_FILE = "settings.ini"
+METACHECKER_INTERVAL = 40
+INITIAL_PORT = 6000
 
-metachecker_interval = 40
-port = 6000
 
-# The Metachecker class connects to the Freeciv-web metaserver, gets the number of available
-# Freeciv-web server instances, and launches new servers if needed.
-class metachecker():
+class GameType(Enum):
+    SINGLEPLAYER = "singleplayer"
+    MULTIPLAYER = "multiplayer"
+
+
+class MetaChecker:
     def __init__(self):
-      self.server_list = []
-      if not os.path.isfile(settings_file):
-        print("ERROR: Publite2 isn't setup correctly. Copy settings.ini.dist to settings.ini " +
-              "and update it do match your system.")
-        sys.exit(1)
-      settings = configparser.ConfigParser()
-      settings.read(settings_file)
-      self.server_capacity_single = int(settings.get("Resource usage", "server_capacity_single",
-                                              fallback = 5))
-      self.server_capacity_multi = int(settings.get("Resource usage", "server_capacity_multi",
-                                              fallback = 2))
+        self.server_list = []
+        self.check_count = 0
+        self.total = 0
+        self.single = 0
+        self.multi = 0
+        self.last_http_status = -1
+        self.html_doc = "-"
 
-      self.server_limit = int(settings.get("Resource usage", "server_limit",
-                                           fallback = 250))
-      self.savesdir = settings.get("Config", "save_directory",
-                                   fallback = "/var/lib/tomcat11/webapps/data/savegames/")
+        self._load_settings()
+        self._start_pubstatus()
 
-      self.check_count = 0;
-      self.total = 0;
-      self.single = 0;
-      self.multi = 0;
-      self.html_doc = "-";
-      self.last_http_status = -1;
-      s = PubStatus(self)
-      s.start();
+    def _load_settings(self):
+        """Load settings from the configuration file."""
+        if not Path(SETTINGS_FILE).is_file():
+            print(
+                f"ERROR: Publite2 isn't set up correctly. "
+                f"Copy {SETTINGS_FILE}.dist to {SETTINGS_FILE} and update it."
+            )
+            sys.exit(1)
 
-    def check(self, port):
-      while 1:
+        settings = configparser.ConfigParser()
+        settings.read(SETTINGS_FILE)
+
+        self.server_capacity_single = int(settings.get("Resource usage", "server_capacity_single", fallback=5))
+        self.server_capacity_multi = int(settings.get("Resource usage", "server_capacity_multi", fallback=2))
+        self.server_limit = int(settings.get("Resource usage", "server_limit", fallback=250))
+        self.savesdir = settings.get("Config", "save_directory", fallback="/var/lib/tomcat11/webapps/data/savegames/")
+
+    def _start_pubstatus(self):
+        """Start the PubStatus thread."""
+        pub_status = PubStatus(self)
+        pub_status.start()
+
+    def _fetch_meta_status(self):
+        """Fetch the meta status from the Freeciv-web metaserver."""
         try:
-          time.sleep(1);
-          conn = http.client.HTTPConnection(metahost, metaport);
-          conn.request("GET", statuspath);
-          r1 = conn.getresponse();
-          self.check_count += 1;
-          self.last_http_status = r1.status;
-          if (r1.status == 200):
-            self.html_doc = r1.read()
-            meta_status = self.html_doc.decode('ascii').split(";");
-            if (len(meta_status) == 4):
-              self.total = int(meta_status[1]);
-              self.single = int(meta_status[2]);
-              self.multi = int(meta_status[3]);
+            conn = http.client.HTTPConnection(METAHOST, METAPORT)
+            conn.request("GET", STATUSPATH)
+            response = conn.getresponse()
 
-              fork_bomb_preventer = (self.total == 0 and self.server_limit < len(self.server_list))
-              if fork_bomb_preventer:
-                print("Error: Have tried to start more than " + str(self.server_limit)
-                      + " servers (the server limit) but according to the"
-                      + " metaserver it has found none.");
-
-              while (self.single < self.server_capacity_single
-                     and self.total <= self.server_limit
-                     and not fork_bomb_preventer):
-                time.sleep(1)
-                new_server = Civlauncher(game_types[0], game_types[0], port, metahost + ":" + str(metaport) + metapath, self.savesdir);
-                self.server_list.append(new_server);
-                new_server.start();
-                port += 1;
-                self.total += 1;
-                self.single += 1;
- 
-              while (self.multi < self.server_capacity_multi
-                     and self.total <= self.server_limit
-                     and not fork_bomb_preventer):
-                time.sleep(1)
-                new_server = Civlauncher(game_types[1], game_types[1], port, metahost + ":" + str(metaport) + metapath, self.savesdir)
-                self.server_list.append(new_server);
-                new_server.start();
-                port += 1;
-                self.total += 1;
-                self.multi += 1;
-
-
-          else:
-            print("Error: Invalid metaserver status");
-
+            self.last_http_status = response.status
+            if response.status == 200:
+                self.html_doc = response.read().decode("ascii")
+                return self.html_doc.split(";")
+            else:
+                print(f"Error: Invalid metaserver status (HTTP {response.status})")
+                return None
         except Exception as e:
-          self.html_doc = ("Error: Publite2 is unable to connect to Freeciv-web metaserver on http://" + 
-                          metahost + metapath + ", error" + str(e));
-          print(self.html_doc);
+            print(f"Error: Unable to connect to metaserver at http://{METAHOST}{STATUSPATH}. Error: {e}")
+            return None
         finally:
-          conn.close();
-          time.sleep(metachecker_interval);
+            conn.close()
+
+    def _launch_server(self, game_type: GameType, port: int) -> int:
+        """Launch a new server for the specified game type."""
+        print(f"Launching {game_type.value} server on port {port}")
+        new_server = Civlauncher(
+            game_type.value,
+            game_type.value,
+            port,
+            f"{METAHOST}:{METAPORT}{METAPATH}",
+            self.savesdir,
+        )
+        self.server_list.append(new_server)
+        new_server.start()
+        return port + 1
+
+    def _update_counts(self, meta_status: list):
+        """Update the server counts based on meta status."""
+        self.total = int(meta_status[1])
+        self.single = int(meta_status[2])
+        self.multi = int(meta_status[3])
+
+    def check(self, port: int):
+        """Periodically check the metaserver and launch additional servers if needed."""
+        while True:
+            time.sleep(METACHECKER_INTERVAL)
+
+            meta_status = self._fetch_meta_status()
+            if not meta_status or len(meta_status) != 4:
+                continue
+
+            self._update_counts(meta_status)
+
+            while self.single < self.server_capacity_single and self.total < self.server_limit:
+                port = self._launch_server(GameType.SINGLEPLAYER, port)
+                self.single += 1
+                self.total += 1
+
+            while self.multi < self.server_capacity_multi and self.total < self.server_limit:
+                port = self._launch_server(GameType.MULTIPLAYER, port)
+                self.multi += 1
+                self.total += 1
 
 
-if __name__ == '__main__':
-  #perform a test-request to the Metaserver
-  try:
-    conn = http.client.HTTPConnection(metahost, metaport);
-    conn.request("GET", statuspath);
-    r1 = conn.getresponse();
-  except Exception as e:
-    print("Error: Publite2 is unable to connect to Freeciv-web metaserver on http://" 
-          + metahost + metapath + ", error" + str(e));
-    sys.exit(1)
-  finally:
-    conn.close();
-  
-  # start the initial Freeciv-web servers
-  mc = metachecker()
-  for type in game_types:
-    new_server = Civlauncher(type, type, port, metahost + ":" + str(metaport) + metapath, mc.savesdir)
-    mc.server_list.append(new_server);
-    new_server.start();
-    port += 1;
-  
-  print("Publite2 started!");
-  time.sleep(20);
-  mc.check(port);
+if __name__ == "__main__":
+    # Test connection to the metaserver
+    try:
+        conn = http.client.HTTPConnection(METAHOST, METAPORT)
+        conn.request("GET", STATUSPATH)
+        response = conn.getresponse()
+
+        if response.status != 200:
+            print(f"Error: Invalid response from metaserver (HTTP {response.status})")
+            sys.exit(1)
+    except Exception as e:
+        print(f"Error: Unable to connect to metaserver at http://{METAHOST}{METAPATH}. Error: {e}")
+        sys.exit(1)
+    finally:
+        conn.close()
+
+    # Start the initial servers
+    mc = MetaChecker()
+    current_port = INITIAL_PORT
+
+    for game_type in GameType:
+        current_port = mc._launch_server(game_type, current_port)
+
+    print("Publite2 started!")
+    mc.check(current_port)
+ 
