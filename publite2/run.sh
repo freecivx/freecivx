@@ -15,7 +15,7 @@ nohup python3 -u "$SCRIPT" > "$LOG_FILE" 2>&1 &
 PID=$!
 
 # Wait briefly to ensure the script starts
-sleep 5
+sleep 1
 
 # Check if the process is still running
 if ps -p $PID > /dev/null; then
