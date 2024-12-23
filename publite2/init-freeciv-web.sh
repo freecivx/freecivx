@@ -1,6 +1,8 @@
-#! /bin/bash
-# starts freeciv-web.
+#!/bin/bash
+# Starts Freeciv-web.
 # This script is started by civlauncher.py in publite2.
+
+set -euo pipefail
 
 if [ "$#" -ne 6 ]; then
   echo "init-freeciv-web.sh error: incorrect number of parameters." >&2
@@ -9,54 +11,46 @@ fi
 
 declare -a args
 
-addArgs() {
-  local i=${#args[*]}
+add_arguments() {
+  local i=${#args[@]}
   for v in "$@"; do
-    args[i]=${v}
-    let i++
+    args[i]="${v}"
+    ((i++))
   done
 }
 
-echo "init-freeciv-web.sh port ${2}"
+echo "init-freeciv-web.sh starting on port ${2}"
 
-addArgs --debug 1
-addArgs --port "${2}"
-addArgs --Announce none
-addArgs --exit-on-end
-addArgs --meta --keep --Metaserver "http://${4}"
-addArgs --type "${5}"
-addArgs --read "pubscript_${6}.serv"
-addArgs --log "../logs/freeciv-web-log-${2}.log"
+add_arguments --debug 1
+add_arguments --port "${2}"
+add_arguments --Announce none
+add_arguments --exit-on-end
+add_arguments --meta --keep --Metaserver "http://${4}"
+add_arguments --type "${5}"
+add_arguments --read "pubscript_${6}.serv"
+add_arguments --log "../logs/freeciv-web-log-${2}-$(date +'%Y%m%d-%H%M%S').log"
 
-if [ "$5" = "pbem" ]; then
-  addArgs --Ranklog "/var/lib/tomcat11/webapps/data/ranklogs/rank_${2}.log"
+if [ "${5}" = "pbem" ]; then
+  add_arguments --Ranklog "/var/lib/tomcat11/webapps/data/ranklogs/rank_${2}.log"
 fi
 
-savesdir=${1}
-if [ "$5" = "longturn" ]; then
-  savesdir="${savesdir}/lt/${6}"
-  mkdir -p "${savesdir}"
+savesdir="${1}"
 
-  grep -q '^#\s*autoreload\s*$' "pubscript_${6}.serv"
-  if [ $? -eq 0 ]; then
-    lastsave=$(ls -t "${savesdir}" | head -n 1)
-    if [ -n "${lastsave}" ]; then
-      addArgs --file "${lastsave%.*}"
-    fi
-  fi
-else
-  addArgs --quitidle 20
-fi
-addArgs --saves "${savesdir}"
+add_arguments --quitidle 20
+add_arguments --saves "${savesdir}"
 
-export FREECIV_SAVE_PATH=${savesdir};
+export FREECIV_SAVE_PATH="${savesdir}"
 rm -f "/var/lib/tomcat11/webapps/data/scorelogs/score-${2}.log"
 
-websockify "$3" localhost:$(( $3 - 1000 )) > "../logs/freeciv-proxy-${3}.log" 2>&1 &
-proxy_pid=$! && 
-${HOME}/freeciv/bin/freeciv-web "${args[@]}" > /dev/null 2> "../logs/freeciv-web-stderr-${2}.log"
+websockify_log="../logs/freeciv-proxy-${3}-$(date +'%Y%m%d-%H%M%S').log"
+websockify "$3" "localhost:$(( $3 - 1000 ))" > "${websockify_log}" 2>&1 &
+proxy_pid=$!
 
+trap 'kill -9 $proxy_pid' EXIT
 
-rc=$?; 
-kill -9 $proxy_pid; 
+freeciv_web_log="../logs/freeciv-web-stderr-${2}-$(date +'%Y%m%d-%H%M%S').log"
+"${HOME}/freeciv/bin/freeciv-web" "${args[@]}" > /dev/null 2> "${freeciv_web_log}"
+
+rc=$?
+kill -9 $proxy_pid || true
 exit $rc
