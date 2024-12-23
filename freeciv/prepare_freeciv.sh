@@ -31,8 +31,7 @@ mkdir -p "${BUILD_DIR}"
     -Ddefault_library=static \
     -Dprefix="${INSTALL_DIR}" \
     -Doptimization=3 \
-    -Db_lto=true \  # Link-time optimization
-    -Db_pgo=generate # Profile-guided optimization preparation
+    -Db_lto=true 
 
   # Build using all available CPU cores
   ninja -j "${NUM_CORES}"
