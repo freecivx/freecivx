@@ -417,10 +417,10 @@ function add_quality_dependent_objects_webgl()
   let waterMaterial;
   var waterGeometry = new THREE.PlaneGeometry( mapview_model_width, mapview_model_height);
 
-  if (navigator.platform.toLowerCase().includes('mac')) {
+  if (graphics_quality != QUALITY_HIGH) {
     // Simpler transparent plane for Mac
     waterMaterial = new THREE.MeshBasicMaterial({
-    color: '#c4f0e6', // Water-like color
+    color: '#82b8ae', // Water-like color
     opacity: 0.5, // Transparent
     transparent: true, // Enable transparency
   });
