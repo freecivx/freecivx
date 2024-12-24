@@ -200,7 +200,6 @@ async function init_webgl_mapview() {
       glslVersion: THREE.GLSL3
     });
 
-
   landGeometry = new THREE.BufferGeometry();
   init_land_geometry(landGeometry, terrain_quality);
   update_land_geometry(landGeometry, terrain_quality);
@@ -221,7 +220,6 @@ async function init_webgl_mapview() {
 
   update_map_terrain_geometry();
   setInterval(update_map_terrain_geometry, 40);
-
 
   setInterval(update_map_known_tiles, 15);
 
@@ -417,14 +415,7 @@ function add_quality_dependent_objects_webgl()
   let waterMaterial;
   var waterGeometry = new THREE.PlaneGeometry( mapview_model_width, mapview_model_height);
 
-  if (graphics_quality != QUALITY_HIGH) {
-    // Simpler transparent plane for Mac
-    waterMaterial = new THREE.MeshBasicMaterial({
-    color: '#82b8ae', // Water-like color
-    opacity: 0.5, // Transparent
-    transparent: true, // Enable transparency
-  });
-  } else {
+
     // Full water effect for other platforms
     waterMaterial = new THREE.MeshPhysicalMaterial({
     transmission: 1, // Fully transparent
@@ -441,7 +432,7 @@ function add_quality_dependent_objects_webgl()
     normalMap: webgl_textures["water1"], // Wave texture
     normalScale: new THREE.Vector2(0.02, 0.02), // Very subtle, short waves
   });
-  }
+  
 
   water_hq = new THREE.Mesh(waterGeometry, waterMaterial);
 
@@ -453,9 +444,7 @@ function add_quality_dependent_objects_webgl()
   water_hq.castShadow = false;
   scene.add( water_hq );
 
-  if (graphics_quality === QUALITY_HIGH 
-     && !navigator.platform.toLowerCase().includes('mac')
-      ) {
+  if (graphics_quality === QUALITY_HIGH) {
     if (shadowmesh == null) {
       var shadowMaterial = new THREE.ShadowMaterial();
       shadowMaterial.opacity = 0.85;
