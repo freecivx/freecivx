@@ -170,7 +170,7 @@ void main()
         fragColor = vec4(0.0, 0.0, 0.0, 1.0);
 
         if (mouse_x >= 0 && mouse_y >= 0 && mouse_x == int(floor((map_x_size * vUv.x ))) && mouse_y == int(floor((map_y_size * (1.0 - vUv.y) )))) {
-            fragColor.rgb = vec3(0.3, 0.3, 0.3);
+            fragColor.rgba = vec4(0.3, 0.3, 0.3, 1.0);
         }
 
         return;
@@ -528,8 +528,6 @@ void main()
         }
     }
 
-
-
     // specular component, ambient occlusion and fade out underwater terrain
     float x = 1.0 - clamp((vPosition.y - 38.) / 15., 0., 1.);
     vec4 Cb = texture(coast, vec2(dx  , dy)) * 0.5;
@@ -547,7 +545,7 @@ void main()
     // Fog of war, and unknown tiles, are stored as a vertex color in vColor.r.
     c = c * vColor.r;
 
-    fragColor.rgb = c * shade_factor;
+    fragColor = vec4(c * shade_factor, 1.0);
 
 }
 
