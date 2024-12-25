@@ -51,8 +51,6 @@ var webgpu = <%= webgpu %>;
 
 <script type="text/javascript" src="/javascript/libs/stacktrace.min.js"></script>
 
-<script async src="/static/es-module-shims.js"></script>
-
 <% if (!webgpu) { %>
   <script type="importmap">
         {
