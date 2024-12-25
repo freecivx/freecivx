@@ -14,7 +14,7 @@
 #   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 dependencies="\
-  openjdk-22-jdk-headless \
+  openjdk-21-jdk-headless \
   acl \
   meson \
   wget \
