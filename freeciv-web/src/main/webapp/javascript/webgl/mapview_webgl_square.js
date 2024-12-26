@@ -206,7 +206,6 @@ async function init_webgl_mapview() {
   landMesh = new THREE.Mesh( landGeometry, terrain_material );
   landMesh.receiveShadow = false;
   landMesh.castShadow = false;
-  landMesh.renderOrder = -2;
   scene.add(landMesh);
 
   if (graphics_quality === QUALITY_HIGH) {
