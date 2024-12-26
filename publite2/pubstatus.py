@@ -37,14 +37,14 @@ class StatusHandler(web.RequestHandler):
         self.write(f"""
         <html>
         <head>
-            <title>Publite2 status for Freeciv-web</title>
+            <title>Publite2 status for Freecivx</title>
             <link href='/css/bootstrap.min.css' rel='stylesheet'>
             <meta http-equiv="refresh" content="20">
             <style>td {{ padding: 2px; }}</style>
         </head>
         <body>
             <div class='container'>
-                <h2>Freeciv-web Publite2 Status</h2>
+                <h2>FreecivX Publite2 Status</h2>
                 <table>
                     <tr><td>Number of Freeciv-web games run:</td><td>{game_count}</td></tr>
                     <tr><td>Server limit (maximum number of running servers):</td><td>{self.metachecker.server_limit}</td></tr>
