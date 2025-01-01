@@ -6,7 +6,7 @@ from pathlib import Path
 from datetime import datetime
 
 
-class CivLauncher(Thread):
+class Civlauncher(Thread):
     def __init__(self, gametype, scripttype, new_port, metahostpath, savesdir):
         super().__init__()
         self.new_port = new_port
