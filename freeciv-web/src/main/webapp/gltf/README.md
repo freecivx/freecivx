@@ -6,7 +6,7 @@ This directory contains glTF 2.0 binary .glb files.
 License
 =======
 
-See [LICENSE-AGPL.txt](LICENSE-AGPL.txt) and [LICENSE-CC-BY-SA](LICENSE-CC-BY-SA) for the license of these models. 
+See [LICENSE-AGPL.txt](LICENSE-AGPL.txt) and [LICENSE-CC-BY-SA.txt](LICENSE-CC-BY-SA.txt) for the license of these models. 
 
 This means that these models are free and open source, and that any modifications and 
 redistributions must also be free and open source according to these licenses.
