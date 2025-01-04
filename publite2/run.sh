@@ -1,5 +1,7 @@
 #!/bin/bash
 
+export FREECIV_SAVE_PATH=/var/lib/tomcat11/webapps/data/savegames/;
+
 # Variables
 SCRIPT="publite2.py"
 LOG_DIR="../logs"

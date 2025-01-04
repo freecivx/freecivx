@@ -233,7 +233,6 @@ function update_tile_forest_jungle(ptile) {
         // 2) Load the GLTF scene or retrieve from your existing function
         let gltfSceneOrObj = webgl_get_model(modelname, ptile);
         if (!gltfSceneOrObj) {
-            console.warn("No model returned for:", modelname);
             return;
         }
         // Extract the actual Mesh
