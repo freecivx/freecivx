@@ -18,7 +18,9 @@ Compression
 Use glTF Transform to prune, dedup and draco compress with Draco:
 https://gltf-transform.dev/
 
-gltf-transform prune dedup draco Cannon.glb Cannon.glb  
-gltf-transform dedup Cannon.glb Cannon.glb  
-gltf-transform draco Cannon.glb Cannon.glb   
+npm install --global @gltf-transform/cli
+
+run-gltf-transform.sh
+
+
 
