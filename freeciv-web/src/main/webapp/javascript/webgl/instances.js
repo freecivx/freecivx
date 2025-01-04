@@ -21,9 +21,10 @@
 const instancedMeshes = {};
 const tile_forest_instance_indices = {};
 
-
-
-function getInstancedMeshFromModel(modelName, gltfMesh, capacity = 20) {
+/****************************************************************************
+ Returns THREE.InstancedMesh based on provided model and mesh.
+****************************************************************************/
+function getInstancedMeshFromModel(modelName, gltfMesh, capacity = 30) {
     // If we already have an instanced mesh for this model, return it
     if (instancedMeshes[modelName]) {
         return instancedMeshes[modelName];
@@ -51,7 +52,9 @@ function getInstancedMeshFromModel(modelName, gltfMesh, capacity = 20) {
     return instancedMeshes[modelName];
 }
 
-
+/****************************************************************************
+ Returns first mesh from the object.
+****************************************************************************/
 function findFirstMesh(root) {
     let found = null;
     root.traverse((child) => {
@@ -62,11 +65,114 @@ function findFirstMesh(root) {
     return found;
 }
 
+/****************************************************************************
+ Adds instanced model
+****************************************************************************/
+function update_tile_model_instancing(modelname, ptile, num_models, scale) {
+    let terrain_name = tile_terrain(ptile).name;
+
+    // Key for tile_forest_instance_indices
+    const tileIndex = ptile.index;
+
+    const isKnown  = (tile_get_known(ptile) !== TILE_UNKNOWN);
+
+    if (!tile_forest_instance_indices[tileIndex]) {
+        let height = 3.8 + ptile.height * 100;
+
+        // 2) Load the GLTF scene or retrieve from your existing function
+        let gltfSceneOrObj = webgl_get_model(modelname, ptile);
+        if (!gltfSceneOrObj) {
+            console.warn("No model returned for:", modelname);
+            return;
+        }
+        // Extract the actual Mesh
+        let gltfMesh = null;
+        // If it's already a Mesh, great; else traverse
+        if (gltfSceneOrObj.isMesh) {
+            gltfMesh = gltfSceneOrObj;
+        } else if (gltfSceneOrObj) {
+            gltfMesh = findFirstMesh(gltfSceneOrObj);
+        }
+        if (!gltfMesh) {
+            console.warn("No mesh found in GLTF for:", modelname);
+            return;
+        }
+
+        // 3) Get or create the InstancedMesh for this tree model
+        const { instancedMesh, usedSlots } = getInstancedMeshFromModel(modelname + tileIndex, gltfMesh, num_models);
+
+        // We'll store the list of instance references for this tile
+        tile_forest_instance_indices[tileIndex] = [];
+
+        // We'll use dummy objects for transforms
+        const dummyMatrix = new THREE.Matrix4();
+        const dummyQuat   = new THREE.Quaternion();
+        const dummyScale  = new THREE.Vector3(scale, scale, scale);
+
+        // 4) Place each tree instance
+        let pos = map_to_scene_coords(ptile.x, ptile.y);
+        for (let i = 0; i < num_models; i++) {
+
+            // Find a free slot
+            let instanceID = usedSlots.indexOf(false);
+            if (instanceID < 0) {
+                console.error("No free slots left in InstancedMesh for", modelname);
+                break;
+            }
+            usedSlots[instanceID] = true; // mark it used
+
+            // Random offset
+            let offsetX = -10 + (12 - Math.floor(Math.random() * 25));
+            let offsetZ = -10 + (12 - Math.floor(Math.random() * 25));
+
+            let finalX = pos.x + offsetX;
+            let finalY = height;
+            let finalZ = pos.y + offsetZ;
+
+            // Random rotation around Y
+            let rotY = 2 * Math.PI * Math.random();
+            dummyQuat.setFromAxisAngle(new THREE.Vector3(0, 1, 0), rotY);
+
+            // Compose transform
+            dummyMatrix.compose(
+                new THREE.Vector3(finalX, finalY, finalZ),
+                dummyQuat,
+                dummyScale
+            );
+
+            // Set matrix for this instance
+            instancedMesh.setMatrixAt(instanceID, dummyMatrix);
+
+            // Remember which slot belongs to this tile
+            tile_forest_instance_indices[tileIndex].push({ modelName: modelname, instanceID });
+        }
+
+        // Update the InstancedMesh so changes appear
+        instancedMesh.instanceMatrix.needsUpdate = true;
+    } else if (scene && tile_forest_instance_indices[tileIndex]) {
+        // For each instance in tile_forest_instance_indices[tileIndex], free it
+        const usedList = tile_forest_instance_indices[tileIndex];
+        usedList.forEach(({ modelName, instanceID }) => {
+            // Access that instanced mesh
+            let entry = instancedMeshes[modelName];
+            if (!entry) return; // should not happen unless the model was never created
+
+            entry.usedSlots[instanceID] = false;
+            // Optionally clear its matrix so it disappears
+            entry.instancedMesh.setMatrixAt(instanceID, new THREE.Matrix4());
+            entry.instancedMesh.instanceMatrix.needsUpdate = true;
+        });
+
+        // Clear our tile->instances mapping
+        tile_forest_instance_indices[tileIndex] = null;
+    }
+}
+
 
 
 /****************************************************************************
  Adds forest or jungle
- ****************************************************************************/
+****************************************************************************/
 function update_tile_forest_jungle(ptile) {
     let terrain_name = tile_terrain(ptile).name;
 

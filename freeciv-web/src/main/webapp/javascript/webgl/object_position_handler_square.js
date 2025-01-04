@@ -567,6 +567,7 @@ function update_tile_extra_update_model(extra_type, extra_name, ptile)
       )) {
     let num_models = 1;
     let height = 5 + ptile['height'] * 100;
+    var use_instancing = false;
 
     if (tile_has_extra(ptile, EXTRA_OIL_WELL)) {
       extra_name = "Oil Well";
@@ -620,8 +621,9 @@ function update_tile_extra_update_model(extra_type, extra_name, ptile)
       height -= 2;
     }
     if (extra_name == "Wheat") {
-      num_models = 14;
+      num_models = 35;
       height -= 0.5;
+      use_instancing = true;
     }
     if (extra_name == "Ruins") {
       height -= 8;
@@ -664,6 +666,11 @@ function update_tile_extra_update_model(extra_type, extra_name, ptile)
     if (extra_name == "Buoy") {
       height -= 2.5;
     }
+    if (use_instancing) {
+      update_tile_model_instancing(extra_name, ptile, num_models, 1.6);
+      return;
+    }
+
     for (let i = 0; i < num_models; i++) {
       let model = webgl_get_model(extra_name.replaceAll(" ", ""), ptile);
       if (model == null) {
