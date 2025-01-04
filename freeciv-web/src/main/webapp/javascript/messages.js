@@ -35,10 +35,10 @@ function init_chatbox()
   $("#game_chatbox_panel").dialog({
 			bgiframe: true,
 			modal: false,
-            width: (is_small_screen() ? "100%" : "35%"),
+            width: (is_small_screen() ? "100%" : "42%"),
             top: 43,
             left: 2,
-			height: (is_small_screen() ? 140 : 250),
+			height: (is_small_screen() ? 150 : 290),
 			resizable: false,
 			dialogClass: 'chatbox_dialog no-close noTitleBar',
 			closeOnEscape: false,
@@ -141,7 +141,7 @@ function add_chatbox_text(packet)
     }
 
     if (civclient_state <= C_S_PREPARING) {
-      text = text.replace(/#FFFFFF/g, '#000000');
+      text = text.replace(/#000000/g, '#FFFFFF');
     } else {
       text = text.replace(/#0000FF/g, '#5555FF')
                  .replace(/#006400/g, '#00AA00')
@@ -208,7 +208,12 @@ function update_chatbox(messages)
         message_log.update(messages[i]);
       }
   }
-  setTimeout(() => $('#freeciv_custom_scrollbar_div').mCustomScrollbar('scrollTo', 'bottom'), 100);
+  if (civclient_state <= C_S_PREPARING) {
+    setTimeout(() => $('#pregame_custom_scrollbar_div').mCustomScrollbar('scrollTo', 'bottom'), 100);
+  } else {
+    setTimeout(() => $('#freeciv_custom_scrollbar_div').mCustomScrollbar('scrollTo', 'bottom'), 100);
+  }
+
 }
 
 /**************************************************************************

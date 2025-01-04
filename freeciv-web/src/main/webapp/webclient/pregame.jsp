@@ -34,7 +34,9 @@
 
   <div id="pregame_player_list"></div> 
   <div id="pregame_game_info"></div>
-  <ol id="pregame_message_area"></ol>
+  <div id="pregame_custom_scrollbar_div">
+    <ol id="pregame_message_area"></ol>
+  </div>
   <div id="pregame_chat_box">
     <input id="pregame_text_input" type="text" name="text_input" value=">" />
   </div>

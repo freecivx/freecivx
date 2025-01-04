@@ -85,9 +85,9 @@ function setup_window_size ()
   var new_mapview_height = winHeight - height_offset;
 
 
-  $("#pregame_message_area").height( new_mapview_height - 100
+  $("#pregame_custom_scrollbar_div").height( new_mapview_height - 100
                                         - $("#pregame_game_info").outerHeight());
-  $("#pregame_message_area").width($(window).width() - 250);
+  $("#pregame_custom_scrollbar_div").width($(window).width() - 250);
   $("#pregame_player_list").height( new_mapview_height - 100);
   $("#pregame_text_input").width($(window).width() - 250);
 
@@ -131,6 +131,7 @@ function setup_window_size ()
     game_unit_panel_state = "minimized";
     $("#pregame_player_list").hide();
     $("#pregame_message_area").width($(window).width() - 20);
+    $("#pregame_custom_scrollbar_div").width("100%");
     $("#pregame_text_input").width($(window).width() - 20);
     $("#pregame_text_input").css("margin-left", "0px");
 
@@ -199,7 +200,7 @@ function show_new_game_message()
 
   } else if (client.conn.playing != null && !game_loaded) {
     var pplayer = client.conn.playing;
-    message = "Welcome to FreecivX.net, the free browser-based 3D version of the classic turn-based strategy game Freeciv! Have fun! "
+    message = "Welcome to FreecivX.net, the free browser-based 3D version of the classic turn-based strategy game Freeciv! You can ask questions to the AI bot (Grok AI) here. Have fun playing FreecivX!"
         + ( mentat_enabled ? "You can ask questions to the AI assistant in the Mentat tab." : "") ;
 
   } else if (game_loaded) {

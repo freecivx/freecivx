@@ -132,7 +132,9 @@ body
   margin: 0 0.3em;
   border: 1px solid #555555;
   color: #ffffff;
-  background-color: rgba(0, 0, 0, 0.7);
+  background-color: rgba(0.1, 0.1, 0.1, 1.0);
+  margin-top: -5px;
+  font-size: 16px;
 }
 
 

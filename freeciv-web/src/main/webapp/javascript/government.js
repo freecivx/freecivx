@@ -119,15 +119,14 @@ function update_govt_dialog()
   for (govt_id in governments) {
     govt = governments[govt_id];
     if (!can_player_get_gov(govt_id)) {
-      $("#govt_id_" + govt['id'] ).button({ disabled: true, label: govt['name'], icons: {primary: govt['rule_name']} });
+      $("#govt_id_" + govt['id'] ).button({ disabled: true, label: govt['name'], icon: govt['rule_name'], iconPosition: "beginning"});
     } else if (requested_gov == govt_id) {
-    $("#govt_id_" + govt['id'] ).button({label: govt['name'], icons: {primary: govt['rule_name']}}).css("background", "green");
+    $("#govt_id_" + govt['id'] ).button({label: govt['name'], icon: govt['rule_name'], iconPosition: "beginning"}).css("background", "green");
     } else if (client.conn.playing['government'] == govt_id) {
-      $("#govt_id_" + govt['id'] ).button({label: govt['name'], icons: {primary: govt['rule_name']}}).css("background", "#BBBBFF").css("font-weight", "bolder");
+      $("#govt_id_" + govt['id'] ).button({label: govt['name'], icon: govt['rule_name'], iconPosition: "beginning"}).css("background", "#BBBBFF").css("font-weight", "bolder");
     } else {
-      $("#govt_id_" + govt['id'] ).button({label: govt['name'], icons: {primary: govt['rule_name']}});
+      $("#govt_id_" + govt['id'] ).button({label: govt['name'], icon: govt['rule_name'], iconPosition: "beginning"});
     }
-
   }
   $(".govt_button").tooltip();
 

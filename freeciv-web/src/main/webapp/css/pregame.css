@@ -59,14 +59,18 @@ body {
 }
 
 #pregame_message_area {
-  background: #111111 url(/images/bg.jpg);
-  color: #000000;
-  overflow: auto;
+  color: #ffffff;
   float: left;
   padding: 5px;
   border: 1px solid black;
   list-style-type: none;
   margin: 0px;
+  font-size: 16px;
+}
+
+#pregame_custom_scrollbar_div {
+  float: left;
+  background: #0c0c0c;
 }
 
 #pregame_player_icon {

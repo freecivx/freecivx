@@ -159,7 +159,7 @@ function init_common_intro_dialog() {
 
   } else if (is_small_screen()) {
       show_intro_dialog("Welcome to FreecivX.net",
-        "You are about to join the game. Please enter your name:");
+        "Welcome to FreecivX, where you can play Freeciv. Enter your name:");
   } else if ($.getUrlVar('action') == "load") {
     show_intro_dialog("Welcome to FreecivX.net",
       "You are about to join this game server, where you can " +
