@@ -338,24 +338,8 @@ switch (filename) {
   case 'Legion':
     modelscale = 7;
     break;
-  case 'Tree1':
-  case 'Tree2':
-  case 'Tree3':
-    modelscale = 29.5;
-    break;
-  case 'Palm1':
-  case 'Palm2':
-    modelscale = 28;
-    break;
   case 'Cactus1':
     modelscale = 44;
-    break;
-  case 'Pine1':
-  case 'Pine2':
-    modelscale = 38.5;
-    break;
-  case 'Tree4':
-    modelscale = 1.3;
     break;
   case 'Fish1':
     modelscale = 1.8;

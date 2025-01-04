@@ -327,8 +327,7 @@ function update_tile_extras(ptile) {
   update_tile_extra_update_model(EXTRA_RUINS, "Ruins", ptile);
   update_tile_extra_update_model(EXTRA_AIRBASE, "Airbase", ptile);
   update_tile_extra_update_model(EXTRA_FORTRESS, "Fortress", ptile);
-  update_tile_forest(ptile);
-  update_tile_jungle(ptile);
+  update_tile_forest_jungle(ptile);
   update_tile_cactus(ptile);
 
   const extra_id = tile_resource(ptile);
@@ -688,88 +687,6 @@ function update_tile_extra_update_model(extra_type, extra_name, ptile)
       scene.remove(tile_extra_positions_list[extra_type + "." + ptile['index']][i]);
     }
     tile_extra_positions_list[extra_type + "." + ptile['index']] = null;
-  }
-}
-
-/****************************************************************************
-  Adds forest
-****************************************************************************/
-function update_tile_forest(ptile)
-{
-  let terrain_name = tile_terrain(ptile).name;
-
-  if (scene != null && tile_models_list[ptile['index']] == null && terrain_name == "Forest" && tile_get_known(ptile) != TILE_UNKNOWN) {
-    let height = 4.8 + ptile['height'] * 100 + get_forest_offset(ptile);
-    tile_models_list[ptile['index']] = [];
-    let modelname;
-    let rnd = Math.floor(Math.random() * 6);
-    if (rnd == 0) {
-      modelname = "Tree1";
-    } else if (rnd == 1) {
-      modelname = "Tree2";
-    } else if (rnd == 2) {
-      modelname = "Tree3";
-    } else if (rnd == 3) {
-      modelname = "Pine1";
-    } else if (rnd == 4) {
-      modelname = "Pine2";
-    } else if (rnd == 5) {
-      modelname = "Tree4";
-      height -= 1.2;
-    }
-    for (let i = 0; i < 7; i++) {
-      let model = webgl_get_model(modelname, ptile);
-      let pos = map_to_scene_coords(ptile['x'], ptile['y']);
-      model.translateOnAxis(new THREE.Vector3(1,0,0).normalize(), pos['x'] - 10 + (12 - Math.floor(Math.random() * 25)));
-      model.translateOnAxis(new THREE.Vector3(0,1,0).normalize(), height);
-      model.translateOnAxis(new THREE.Vector3(0,0,1).normalize(), pos['y'] - 10 + (12 - Math.floor(Math.random() * 25)));
-      model.rotateOnAxis(new THREE.Vector3(0,1,0).normalize(), (2 * Math.PI * Math.random()));
-      tile_models_list[ptile['index']].push(model);
-      if (scene != null) scene.add(model);
-    }
-
-  } else if (scene != null && tile_models_list[ptile['index']] != null && terrain_name != "Forest" && terrain_name != "Jungle" && tile_get_known(ptile) != TILE_UNKNOWN) {
-    for (let i = 0; i < tile_models_list[ptile['index']].length; i++) {
-      scene.remove(tile_models_list[ptile['index']][i]);
-    }
-    tile_models_list[ptile['index']] = null;
-  }
-
-}
-
-/****************************************************************************
-  Adds jungle
-****************************************************************************/
-function update_tile_jungle(ptile)
-{
-  let terrain_name = tile_terrain(ptile).name;
-
-  if (scene != null && tile_models_list[ptile['index']] == null && terrain_name == "Jungle" && tile_get_known(ptile) != TILE_UNKNOWN) {
-    let height = 5 + ptile['height'] * 100 + get_forest_offset(ptile);
-    tile_models_list[ptile['index']] = [];
-    let modelname;
-    let rnd = Math.floor(Math.random() * 2);
-    if (rnd == 0) {
-      modelname = "Palm1";
-    } else if (rnd == 1) {
-      modelname = "Palm2";
-    }
-    for (let i = 0; i < 6; i++) {
-      let model = webgl_get_model(modelname, ptile);
-      let pos = map_to_scene_coords(ptile['x'], ptile['y']);
-      model.translateOnAxis(new THREE.Vector3(1,0,0).normalize(), pos['x'] - 10 + (12 - Math.floor(Math.random() * 25)));
-      model.translateOnAxis(new THREE.Vector3(0,1,0).normalize(), height);
-      model.translateOnAxis(new THREE.Vector3(0,0,1).normalize(), pos['y'] - 10 + (12 - Math.floor(Math.random() * 25)));
-      model.rotateOnAxis(new THREE.Vector3(0,1,0).normalize(), (2 * Math.PI * Math.random()));
-      tile_models_list[ptile['index']].push(model);
-      if (scene != null) scene.add(model);
-    }
-
-  } else if (scene != null && tile_models_list[ptile['index']] != null && terrain_name != "Jungle"  && terrain_name != "Forest"  && tile_get_known(ptile) != TILE_UNKNOWN) {
-    for (let i = 0; i < tile_models_list[ptile['index']].length; i++) {
-      scene.remove(tile_models_list[ptile['index']][i]);
-    }
-    tile_models_list[ptile['index']] = null;
   }
 }
 

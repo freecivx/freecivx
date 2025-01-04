@@ -72,23 +72,16 @@ var webgpu = <%= webgpu %>;
   import * as THREE from 'three';
   window.THREE = THREE;
 
-<% if (webgpu) { %>
-  import { WebGPURenderer } from '/javascript/webgpu/libs/three.webgpu.min.js?ts=${initParam.buildTimeStamp}';
-  window.WebGPURenderer = WebGPURenderer;
-<% } %>
-
   import { GLTFLoader } from '/javascript/webgl/libs/GLTFLoader.js?ts=${initParam.buildTimeStamp}';
   window.GLTFLoader = GLTFLoader;
 
   import { OrbitControls } from '/javascript/webgl/libs/OrbitControls.js?ts=${initParam.buildTimeStamp}';
   window.OrbitControls = OrbitControls;
 
-<% if (!webgpu) { %>
+
 
   import { AnaglyphEffect } from '/javascript/webgl/effects/AnaglyphEffect.js?ts=${initParam.buildTimeStamp}';
   window.AnaglyphEffect = AnaglyphEffect;
-
-<% } %>
 
   import { DRACOLoader } from '/javascript/webgl/libs/DRACOLoader.js?ts=${initParam.buildTimeStamp}';
   window.DRACOLoader = DRACOLoader;
