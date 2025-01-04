@@ -158,8 +158,7 @@ function client_state()
 function can_client_change_view()
 {
   return ((client.conn.playing != null || client_is_observer())
-      && (C_S_RUNNING == client_state()
-	      || C_S_OVER == client_state()));
+      && (C_S_RUNNING == client_state() || C_S_OVER == client_state()));
 }
 
 /**************************************************************************
