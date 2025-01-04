@@ -1,5 +1,5 @@
-glTF 3D models for Freeciv WebGL 
-================================
+glTF 3D models for FreecivX.net
+===============================
 
 This directory contains glTF 2.0 binary .glb files.
 
@@ -10,8 +10,9 @@ gltf-transform prune dedup draco Cannon.glb Cannon.glb
 gltf-transform dedup Cannon.glb Cannon.glb  
 gltf-transform draco Cannon.glb Cannon.glb   
 
-See LICENSE.txt for the AGPL license of these models. This means that these models 
-are free and open source, and that any modifications and redistributions must also be 
-free and open source.
+See [LICENSE-AGPL.txt] and [LICENSE-CC-BY-SA] for the license of these models. 
+
+This means that these models are free and open source, and that any modifications and 
+redistributions must also be free and open source according to these licenses.
 
 
