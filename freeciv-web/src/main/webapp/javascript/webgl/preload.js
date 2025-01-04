@@ -257,6 +257,12 @@ function load_model(filename)
         }
         if (filename == "Oasis") {
           node.castShadow = false;
+          node.material.emissive.set(0xFFFFFF);
+          node.material.emissiveIntensity = 0.15;
+        }
+        if (filename == "Hut" ) {
+          node.material.emissive.set(0xFFFFFF);
+          node.material.emissiveIntensity = 0.15;
         }
 
         node.castShadow = true;

@@ -582,7 +582,7 @@ function update_tile_extra_update_model(extra_type, extra_name, ptile)
       extra_name = "Pollution";
     }
     if (extra_name == "Hut") {
-      height -= 5;
+      height -= 4;
     }
     if (extra_name == "Fish") {
       extra_name = extra_name +  Math.floor(1 + Math.random() * 3);
