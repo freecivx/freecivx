@@ -112,6 +112,7 @@ function webgl_start_renderer()
   maprenderer = new THREE.WebGLRenderer( { antialias: enable_antialiasing, preserveDrawingBuffer: true } );
   maprenderer.outputColorSpace = THREE.LinearSRGBColorSpace;
   maprenderer.frustumCulled = true;
+  maprenderer.setAnimationLoop(animate_webgl);
 
   maprenderer.setPixelRatio(window.devicePixelRatio);
   maprenderer.setSize(new_mapview_width, new_mapview_height);
@@ -121,8 +122,6 @@ function webgl_start_renderer()
     anaglyph_effect = new AnaglyphEffect( maprenderer );
     anaglyph_effect.setSize( new_mapview_width, new_mapview_height );
   }
-
-  animate_webgl();
 
   if (is_small_screen()) {
     camera_dx = 38 * 1.35;
@@ -402,7 +401,6 @@ function animate_webgl() {
   if (stats != null) stats.end();
   if (initial_benchmark_enabled || benchmark_enabled) benchmark_frames_count++;
 
-  requestAnimationFrame(animate_webgl);
 }
 
 
