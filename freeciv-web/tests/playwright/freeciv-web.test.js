@@ -23,6 +23,6 @@ test('Freeciv web homepage loads and has the correct title', async ({ page }) =>
   expect(title).toContain('FREECIVX');
 
   // Check if a key element (the Freeciv-web logo) is visible on the page
-  const logo = await page.locator('img[alt="Freeciv-web"]');
+  const logo = await page.locator('img[alt="FreecivX"]');
   await expect(logo).toBeVisible();
 });
