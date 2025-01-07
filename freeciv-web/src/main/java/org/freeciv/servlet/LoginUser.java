@@ -82,6 +82,13 @@ public class LoginUser extends HttpServlet {
 				String hashedPasswordFromDB = rs1.getString(2);
 				if (hashedPasswordFromDB != null &&
 						hashedPasswordFromDB.equals(DigestUtils.sha256Hex(secure_password))) {
+
+					String query = "UPDATE auth SET last_login = NOW() where username = ?";
+					PreparedStatement preparedStatement = conn.prepareStatement(query);
+					preparedStatement.setString(1, username);
+					preparedStatement.executeUpdate();
+
+
 					response.getOutputStream().print("OK," + rs1.getString(1));
 				} else {
 					response.getOutputStream().print("Failed");

@@ -171,17 +171,6 @@
 		<url-pattern>/listsavegames</url-pattern>
 	</servlet-mapping>
 
-	<!-- /create_pbem_user (new useraccount) -->
-	<servlet>
-		<servlet-name>NewPBEMUser</servlet-name>
-		<servlet-class>org.freeciv.servlet.NewPBEMUser</servlet-class>
-	</servlet>
-
-	<servlet-mapping>
-		<servlet-name>NewPBEMUser</servlet-name>
-		<url-pattern>/create_pbem_user</url-pattern>
-	</servlet-mapping>
-
 	<!-- /login_user -->
 	<servlet>
 		<servlet-name>LoginUser</servlet-name>

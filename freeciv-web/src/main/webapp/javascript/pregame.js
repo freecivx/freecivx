@@ -953,7 +953,7 @@ function show_intro_dialog(title, message) {
 					pregame_handle_user(true);
                     $("#fciv-intro").hide();
 				  },
-				  icons: { primary: "ui-icon-play" }
+				  icon: "ui-icon-play"
 			  },
 			  {
 				  text : join_game_customize_text,
@@ -964,7 +964,7 @@ function show_intro_dialog(title, message) {
 					dialog_close_trigger = "button";
 					pregame_handle_user(false);
 				},
-				icons : { primary: "ui-icon-gear" }
+				icon :"ui-icon-gear"
 			  },
               {
                   text : "New user",
@@ -972,7 +972,7 @@ function show_intro_dialog(title, message) {
                   	$("#fciv-intro").hide();
                     show_new_user_account_dialog();
                 },
-                icons : { primary: "ui-icon-person" }
+                icon : "ui-icon-person"
               },
               {
                 text : "Load",
@@ -983,7 +983,7 @@ function show_intro_dialog(title, message) {
                     show_load_game_dialog();
                   });
                 },
-                icons : { primary: "ui-icon-disk" }
+                icon : "ui-icon-disk"
               }
 			]
 
@@ -1100,7 +1100,7 @@ function pregame_handle_user(close_pregame)
                  }
                  logged_in_with_password = true;
                } else {
-                 swal("Incorrect username or password. Please try again!");
+                 swal("Incorrect username or password.");
                }
 
              },
@@ -1108,8 +1108,6 @@ function pregame_handle_user(close_pregame)
              swal("Login user failed.");
            }
           });
-        } else {
-          swal("Player name already in use. Try a different player name, or enter the username and password of your account, or create a new user account.");
         }
 
         $("#password_row").show();
@@ -1135,17 +1133,16 @@ function show_new_user_account_dialog(gametype)
 {
 
   var title = "New user account";
-  var message = "Create a new Freeciv-web user account with information about yourself:<br><br>"
+  var message = "Create a new Freecivx.net user account:<br><br>"
                 + "<table><tr><td>Username:</td><td><input id='username' type='text' size='25' maxlength='30'></td></tr>"
                 + "<tr><td>Email:</td><td><input id='email' type='email' size='25' maxlength='64' ></td></tr>"
                 + "<tr><td>Password:</td><td><input id='password' type='password' size='25'></td></tr>"
                 + "<tr><td>Confim password:</td><td><input id='confirm_password' type='password' size='25'></td></tr></table><br>"
-                + "<div id='username_validation_result' style='display:none;'></div><br>"
-                + "Remember your username and password, since you will need this to log in later.<br><br>"
-                + "<br><br>"
-                + "<div id='new_user_extra_info'><small><ul><li>It is free and safe to create a new account on Freeciv-web.</li>"
-                + "<li>A user account allows you to save and load games.</li>"
-                + "<li>Other players can use your username to start Play-by-email games with you.</li>"
+                + "<div id='username_validation_result' style='display:none;'></div>"
+                + "Please verify your e-mail by clicking in the link in the e-mail you will get from us. Remember your username and password, since you will need this to log in later."
+                + "<br>"
+                + "<div id='new_user_extra_info'><small><ul><li>It is free and safe to create a new account on FreecivX.net.</li>"
+                + "<li>A user account allows you to save and load games, and play in ranked multiplayer games.</li>"
                 + "<li>You will not receive any spam and your e-mail address will be kept safe. Your password is stored securely as a secure hash.</li>"
                 + "</ul></small></div>";
 
@@ -1164,7 +1161,7 @@ function show_new_user_account_dialog(gametype)
                 "Cancel" : function() {
 	                  init_common_intro_dialog();
 				},
-				"Signup new user" : function() {
+				"New user" : function() {
 				      create_new_freeciv_user_account_request("normal");
 
 				}
@@ -1253,7 +1250,7 @@ function create_new_freeciv_user_account_request(action_type)
 
   $.ajax({
    type: 'POST',
-   url: "/create_pbem_user?username=" + encodeURIComponent(username) + "&email=" + encodeURIComponent(email)
+   url: "/create_user?username=" + encodeURIComponent(username) + "&email=" + encodeURIComponent(email)
             + "&password=" + sha_password,
    success: function(data, textStatus, request){
        simpleStorage.set("username", username);
