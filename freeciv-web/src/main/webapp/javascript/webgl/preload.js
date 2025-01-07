@@ -533,8 +533,10 @@ switch (filename) {
   case 'city_roman_2':
   case 'city_roman_3':
   case 'city_roman_4':
-  case 'city_roman_capital':
     modelscale = 2.1;
+    break;
+  case 'city_roman_capital':
+    modelscale = 1.9;
     break;
   case 'city_european_1':
     modelscale = 2.9;
@@ -594,6 +596,9 @@ switch (filename) {
     break;
   case 'Temple_roman':
     modelscale = 0.75;
+    break;
+  case 'Temple_roman2':
+    modelscale = 3.0;
     break;
   case 'Bank':
     modelscale = 1.35;

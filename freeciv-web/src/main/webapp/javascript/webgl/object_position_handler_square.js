@@ -452,8 +452,12 @@ function add_wonder(ptile, pcity, scene, wonder_name) {
 function add_city_building(ptile, pcity, scene, building_name) {
     if (city_has_building(pcity, improvement_id_by_name(building_name)) && pcity[building_name + '_added'] == null) {
       let original_building_name = building_name;
-      if (building_name == "Temple" && (pcity['style'] == 1 || pcity['style'] == 6 || pcity['style'] == 7)) {
-        building_name = "Temple_roman";
+      if (building_name == "Temple" && (pcity['style'] == 1 || pcity['style'] == 5 || pcity['style'] == 6 || pcity['style'] == 7 )) {
+        if (Math.random() < 0.5) {
+          building_name = "Temple_roman";
+        } else {
+          building_name = "Temple_roman2";
+        }
       }
 
       let building = webgl_get_model(building_name.replaceAll(" ", ""), ptile);
@@ -507,6 +511,9 @@ function add_city_building(ptile, pcity, scene, building_name) {
       }
       if (building_name == "Temple_roman") {
         height += 1.6;
+      }
+      if (building_name == "Temple_roman2") {
+        height -= 0.6;
       }
       if (building_name == "Factory" || building_name == "Marketplace") {
         height -= 1.2;
