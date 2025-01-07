@@ -19,6 +19,10 @@ $(document).ready(function () {
 				if (multiplayer) {
 					multiplayer.innerHTML = data.finished.multiPlayer; //
 				}
+				var players = document.getElementById('statistics-players');
+				if (players) {
+					players.innerHTML = data.finished.players; //
+				}
 			}).fail(function () {
 				var statistics = document.getElementById('statistics');
 				if (statistics) {

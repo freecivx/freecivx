@@ -71,7 +71,8 @@ public class GameStatistics extends HttpServlet {
 			String query = "SELECT " //
 					+ "	(SELECT COUNT(*) FROM servers WHERE state = 'Running') AS ongoingGames, " //
 					+ "	(SELECT SUM(gameCount) FROM games_played_stats WHERE gametype IN (0, 5)) AS totalSinglePlayerGames, " //
-					+ "	(SELECT SUM(gameCount) FROM games_played_stats WHERE gametype IN (1, 2)) AS totalMultiPlayerGames";
+					+ "	(SELECT SUM(gameCount) FROM games_played_stats WHERE gametype IN (1, 2)) AS totalMultiPlayerGames," //
+					+ " (SELECT COUNT(*) FROM auth where verified='1') AS players";
 
 			PreparedStatement preparedStatement = conn.prepareStatement(query);
 			ResultSet rs = preparedStatement.executeQuery();
@@ -84,6 +85,7 @@ public class GameStatistics extends HttpServlet {
 			JSONObject finishedGames = new JSONObject();
 			finishedGames.put("singlePlayer", rs.getInt("totalSinglePlayerGames"));
 			finishedGames.put("multiPlayer", rs.getInt("totalMultiPlayerGames"));
+			finishedGames.put("players", rs.getInt("players"));
 			result.put("finished", finishedGames);
 
 			ZonedDateTime expires = ZonedDateTime.now(ZoneId.of("UTC")).plusHours(1);

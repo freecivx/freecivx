@@ -172,6 +172,21 @@
 				</div>
 		</div> <!-- end game launcher -->
 
+		<c:if test="${default_lang}">
+			<div id="statistics" class="row">
+				<div class="col-md-12">
+					<div class="panel-freeciv statistics">
+						<h4><span id="statistics-singleplayer"><b>0</b></span> <fmt:message key="index-stats-singleplayer"/>
+						 <span id="statistics-multiplayer"><b>0</b></span> multiplayer games, with
+						 <span id="statistics-players"><b>0</b></span> registered players.
+						 <br>
+						FreecivX.net was first launched 18th June 2024, and is based on Freeciv-web from 2013, based on Freeciv which was started in 1996.</h4>
+
+					</div>
+				</div>
+			</div> <!-- end statistics -->
+		</c:if>
+
 
 		<div class="jumbotron">
 			<h2>Game of the day</h2>
@@ -183,17 +198,7 @@
 
 		</div> <!-- end jumbotron -->
 
-		<c:if test="${default_lang}">
-			<div id="statistics" class="row">
-				<div class="col-md-12">
-					<div class="panel-freeciv statistics">
-						<h4><span id="statistics-singleplayer"><b>0</b></span> <fmt:message key="index-stats-singleplayer"/> <span id="statistics-multiplayer"><b>0</b></span> <fmt:message key="index-stats-multiplayer"/><br>
-						<fmt:message key="index-stats-since"/></h4>
 
-					</div>
-				</div>
-			</div> <!-- end statistics -->
-		</c:if>
 
 
 	    <div class="row">
