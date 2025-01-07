@@ -51,7 +51,7 @@ public class RandomUser extends HttpServlet {
 			String query =
 					  "SELECT username "
 					+ "FROM `auth` "
-					+ "WHERE activated='1' "
+					+ "WHERE verified='1' "
 					+ "	AND id >= (SELECT FLOOR(MAX(id) * RAND()) FROM `auth`) "
 					+ "ORDER BY id LIMIT 1;";
 			PreparedStatement preparedStatement = conn.prepareStatement(query);

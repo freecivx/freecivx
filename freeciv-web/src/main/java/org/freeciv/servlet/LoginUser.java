@@ -33,7 +33,7 @@ import org.freeciv.util.Constants;
 
 /**
  * Validates that the given username and password match a user in the database.
- * Such user must be activated.
+ * Such user must be verified.
  *
  * URL: /login_user
  */
@@ -72,7 +72,7 @@ public class LoginUser extends HttpServlet {
 					"SELECT id, secure_hashed_password "
 							+ "FROM auth "
 							+ "WHERE LOWER(username) = LOWER(?) "
-							+ "	AND activated = '1' LIMIT 1";
+							+ "	AND verified = '1' LIMIT 1";
 			PreparedStatement ps1 = conn.prepareStatement(saltHashQuery);
 			ps1.setString(1, username);
 			ResultSet rs1 = ps1.executeQuery();

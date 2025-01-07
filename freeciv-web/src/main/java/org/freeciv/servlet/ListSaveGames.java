@@ -133,7 +133,6 @@ public class ListSaveGames extends HttpServlet {
 					"SELECT username "
 							+ "FROM auth "
 							+ "WHERE LOWER(username) = LOWER(?) "
-							+ "	AND activated = '1'"
 							+ "	AND id = ? LIMIT 1";
 			PreparedStatement ps1 = conn.prepareStatement(usercheck);
 			ps1.setString(1, username);

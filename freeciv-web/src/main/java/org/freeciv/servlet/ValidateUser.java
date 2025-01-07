@@ -53,7 +53,7 @@ public class ValidateUser extends HttpServlet {
 			conn = ds.getConnection();
 
 			String query =
-					  "SELECT username, activated "
+					  "SELECT username, verified "
 					+ "FROM auth "
 					+ "WHERE LOWER(username) = LOWER(?) "
 					+ "	OR LOWER(email) = LOWER(?)";

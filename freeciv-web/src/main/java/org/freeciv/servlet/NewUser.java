@@ -39,7 +39,6 @@ import org.apache.commons.lang3.RandomStringUtils;
 @WebServlet("/create_user")
 public class NewUser extends HttpServlet {
 
-	private static final int ACTIVATED = 1;
 	private static final long serialVersionUID = 1L;
 	private final Validation validation = new Validation();
 
@@ -124,16 +123,15 @@ public class NewUser extends HttpServlet {
 
 	private void createUser(Connection conn, String username, String email, String password, String ip, String verifyKey)
 			throws SQLException {
-		String insertQuery = "INSERT INTO auth (username, email, secure_hashed_password, activated, ip, verifykey) "
-				+ "VALUES (?, ?, ?, ?, ?, ?)";
+		String insertQuery = "INSERT INTO auth (username, email, secure_hashed_password, ip, verifykey) "
+				+ "VALUES (?, ?, ?, ?, ?)";
 
 		try (PreparedStatement ps = conn.prepareStatement(insertQuery)) {
 			ps.setString(1, username.toLowerCase());
 			ps.setString(2, email);
 			ps.setString(3, DigestUtils.sha256Hex(password));
-			ps.setInt(4, ACTIVATED);
-			ps.setString(5, ip);
-			ps.setString(6, verifyKey);
+			ps.setString(4, ip);
+			ps.setString(5, verifyKey);
 			ps.executeUpdate();
 		}
 	}
