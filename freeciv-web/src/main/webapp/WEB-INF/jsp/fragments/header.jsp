@@ -28,7 +28,6 @@
             <li><a href="https://x.com/freecivx">@FreecivX</a></li>
 			<li><a href="https://discord.gg/mKgawv5jrB">Discord</a></li>
             <li><a href="/wiki">Wiki</a></li>
-            <li><a href="/blog">Blog</a></li>
 
 		    <li><a href="/about">About</a></li>
 </ul>
