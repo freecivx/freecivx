@@ -99,7 +99,7 @@ function update_tile_model_instancing(modelname, ptile, num_models, scale) {
         }
 
         // 3) Get or create the InstancedMesh for this tree model
-        const { instancedMesh, usedSlots } = getInstancedMeshFromModel(modelname + tileIndex, gltfMesh, 30);
+        const { instancedMesh, usedSlots } = getInstancedMeshFromModel( tileIndex, gltfMesh, 30);
 
         // We'll store the list of instance references for this tile
         tile_forest_instance_indices[tileIndex] = [];
@@ -150,20 +150,7 @@ function update_tile_model_instancing(modelname, ptile, num_models, scale) {
         // Update the InstancedMesh so changes appear
         instancedMesh.instanceMatrix.needsUpdate = true;
     } else if (scene && tile_forest_instance_indices[tileIndex]) {
-        // For each instance in tile_forest_instance_indices[tileIndex], free it
-        const usedList = tile_forest_instance_indices[tileIndex];
-        usedList.forEach(({ modelName, instanceID }) => {
-            // Access that instanced mesh
-            let entry = instancedMeshes[modelName];
-            if (!entry) return; // should not happen unless the model was never created
-
-            entry.usedSlots[instanceID] = false;
-            // Optionally clear its matrix so it disappears
-            entry.instancedMesh.setMatrixAt(instanceID, new THREE.Matrix4());
-            entry.instancedMesh.instanceMatrix.needsUpdate = true;
-        });
-
-        // Clear our tile->instances mapping
+        scene.remove(instancedMeshes[tileIndex].instancedMesh);
         tile_forest_instance_indices[tileIndex] = null;
     }
 }
@@ -249,7 +236,7 @@ function update_tile_forest_jungle(ptile) {
         }
 
         // 3) Get or create the InstancedMesh for this tree model
-        const { instancedMesh, usedSlots } = getInstancedMeshFromModel(modelname + tileIndex, gltfMesh, 15);
+        const { instancedMesh, usedSlots } = getInstancedMeshFromModel(tileIndex, gltfMesh, 15);
 
         // We'll store the list of instance references for this tile
         tile_forest_instance_indices[tileIndex] = [];
@@ -302,20 +289,8 @@ function update_tile_forest_jungle(ptile) {
     }
     // 5) Otherwise if tile is NOT forest, but we have instance references, free them
     else if (scene && tile_forest_instance_indices[tileIndex] && !isForest && isKnown) {
-        // For each instance in tile_forest_instance_indices[tileIndex], free it
-        const usedList = tile_forest_instance_indices[tileIndex];
-        usedList.forEach(({ modelName, instanceID }) => {
-            // Access that instanced mesh
-            let entry = instancedMeshes[modelName];
-            if (!entry) return; // should not happen unless the model was never created
 
-            entry.usedSlots[instanceID] = false;
-            // Optionally clear its matrix so it disappears
-            entry.instancedMesh.setMatrixAt(instanceID, new THREE.Matrix4());
-            entry.instancedMesh.instanceMatrix.needsUpdate = true;
-        });
-
-        // Clear our tile->instances mapping
+        scene.remove(instancedMeshes[tileIndex].instancedMesh);
         tile_forest_instance_indices[tileIndex] = null;
     }
 }
