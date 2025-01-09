@@ -24,7 +24,7 @@ const tile_forest_instance_indices = {};
 /****************************************************************************
  Returns THREE.InstancedMesh based on provided model and mesh.
 ****************************************************************************/
-function getInstancedMeshFromModel(modelName, gltfMesh, capacity = 35) {
+function getInstancedMeshFromModel(modelName, gltfMesh, capacity = 30) {
     // If we already have an instanced mesh for this model, return it
     if (instancedMeshes[modelName]) {
         return instancedMeshes[modelName];
@@ -99,7 +99,7 @@ function update_tile_model_instancing(modelname, ptile, num_models, scale) {
         }
 
         // 3) Get or create the InstancedMesh for this tree model
-        const { instancedMesh, usedSlots } = getInstancedMeshFromModel(modelname + tileIndex, gltfMesh, num_models);
+        const { instancedMesh, usedSlots } = getInstancedMeshFromModel(modelname + tileIndex, gltfMesh, 30);
 
         // We'll store the list of instance references for this tile
         tile_forest_instance_indices[tileIndex] = [];
@@ -116,7 +116,7 @@ function update_tile_model_instancing(modelname, ptile, num_models, scale) {
             // Find a free slot
             let instanceID = usedSlots.indexOf(false);
             if (instanceID < 0) {
-                console.error("No free slots left in InstancedMesh for", modelname);
+                //console.error("No free slots left in InstancedMesh for", modelname);
                 break;
             }
             usedSlots[instanceID] = true; // mark it used
@@ -228,7 +228,7 @@ function update_tile_forest_jungle(ptile) {
                 }
         }
 
-        let numTrees = 20;
+        let numTrees = 15;
 
         // 2) Load the GLTF scene or retrieve from your existing function
         let gltfSceneOrObj = webgl_get_model(modelname, ptile);
@@ -249,7 +249,7 @@ function update_tile_forest_jungle(ptile) {
         }
 
         // 3) Get or create the InstancedMesh for this tree model
-        const { instancedMesh, usedSlots } = getInstancedMeshFromModel(modelname + tileIndex, gltfMesh, 30);
+        const { instancedMesh, usedSlots } = getInstancedMeshFromModel(modelname + tileIndex, gltfMesh, 15);
 
         // We'll store the list of instance references for this tile
         tile_forest_instance_indices[tileIndex] = [];
@@ -266,7 +266,7 @@ function update_tile_forest_jungle(ptile) {
             // Find a free slot
             let instanceID = usedSlots.indexOf(false);
             if (instanceID < 0) {
-                console.error("No free slots left in InstancedMesh for", modelname);
+                //console.error("No free slots left in InstancedMesh for", modelname);
                 break;
             }
             usedSlots[instanceID] = true; // mark it used

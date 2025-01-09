@@ -628,7 +628,7 @@ function update_tile_extra_update_model(extra_type, extra_name, ptile)
       height -= 2;
     }
     if (extra_name == "Wheat") {
-      num_models = 35;
+      num_models = 25;
       height -= 0.5;
       use_instancing = true;
     }
@@ -674,6 +674,7 @@ function update_tile_extra_update_model(extra_type, extra_name, ptile)
       height -= 2.5;
     }
     if (use_instancing) {
+      tile_extra_positions_list[extra_type + "." + ptile['index']] = [1];
       update_tile_model_instancing(extra_name, ptile, num_models, 1.6);
       return;
     }
