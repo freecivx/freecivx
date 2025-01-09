@@ -591,6 +591,8 @@ function show_city_dialog(pcity)
    $("#cma_form").css("padding-left", "0px");
    $("#city_dialog").parent().css("margin-top", "-200px");
    $("#city_improvements_panel").hide();
+   $("#city_overview_tab").height(330);
+   $("#city_production_tab").height(330);
   } else {
     $("#city_dialog").parent().css("margin-top", "60px");
   }

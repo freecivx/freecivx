@@ -24,7 +24,7 @@ const tile_forest_instance_indices = {};
 /****************************************************************************
  Returns THREE.InstancedMesh based on provided model and mesh.
 ****************************************************************************/
-function getInstancedMeshFromModel(modelName, gltfMesh, capacity = 30) {
+function getInstancedMeshFromModel(modelName, gltfMesh, capacity = 35) {
     // If we already have an instanced mesh for this model, return it
     if (instancedMeshes[modelName]) {
         return instancedMeshes[modelName];
@@ -249,7 +249,7 @@ function update_tile_forest_jungle(ptile) {
         }
 
         // 3) Get or create the InstancedMesh for this tree model
-        const { instancedMesh, usedSlots } = getInstancedMeshFromModel(modelname + tileIndex, gltfMesh, 20);
+        const { instancedMesh, usedSlots } = getInstancedMeshFromModel(modelname + tileIndex, gltfMesh, 30);
 
         // We'll store the list of instance references for this tile
         tile_forest_instance_indices[tileIndex] = [];
