@@ -172,6 +172,9 @@ void main()
         if (mouse_x >= 0 && mouse_y >= 0 && mouse_x == int(floor((map_x_size * vUv.x ))) && mouse_y == int(floor((map_y_size * (1.0 - vUv.y) )))) {
             fragColor.rgba = vec4(0.3, 0.3, 0.3, 1.0);
         }
+        if ( (fract((vPosition.x + 502.0) / 35.71) < 0.028 || fract((vPosition.z + 2.0) / 35.71) < 0.028)) {
+            fragColor.rgba = vec4(0.03, 0.03, 0.03, 1.0);
+        }
 
         return;
     }

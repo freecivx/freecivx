@@ -412,9 +412,8 @@ function add_quality_dependent_objects_webgl()
   let waterMaterial;
   var waterGeometry = new THREE.PlaneGeometry( mapview_model_width, mapview_model_height);
 
-
-    // Full water effect for other platforms
-    waterMaterial = new THREE.MeshPhysicalMaterial({
+  // Full water effect for other platforms
+  waterMaterial = new THREE.MeshPhysicalMaterial({
     transmission: 1, // Fully transparent
     roughness: 0.1, // Smoother surface for shiny appearance
     ior: 1.333, // Index of refraction for water
@@ -429,8 +428,6 @@ function add_quality_dependent_objects_webgl()
     normalMap: webgl_textures["water1"], // Wave texture
     normalScale: new THREE.Vector2(0.02, 0.02), // Very subtle, short waves
   });
-  
-
   water_hq = new THREE.Mesh(waterGeometry, waterMaterial);
 
   water_hq.rotation.x = - Math.PI * 0.5;
