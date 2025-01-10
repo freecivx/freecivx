@@ -19,7 +19,7 @@
 </div>
 
 
-<div id="pregame_page">
+<div id="pregame_page" style="display:none;">
   <div id="pregame_options">
 	<div id="pregame_buttons">
 		<div id="freeciv_logo" style="cursor:pointer;cursor:hand" onclick="window.open('/', '_new');">

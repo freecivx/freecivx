@@ -34,7 +34,21 @@ var loader;
 ****************************************************************************/
 function webgl_preload()
 {
-  $.blockUI({ message: "<h2>Downloading 3D models <span id='download_progress'></span></h2>" });
+  $.blockUI({
+    message: '<img src="/images/backgrounds/freecivx-splash-c.jpg" style="width:100%; height:100%; object-fit:contain; z-index: 10000;">',
+    css: {
+      border: 'none',
+      padding: '0',
+      opacity: 1,
+      width: "100%",
+      height: "100%",
+      "z-index": 100000,
+      "margin-top": - 200
+
+    }
+  });
+  $(".blockUI").css("margin-top", "-100px");
+  $(".blockUI").css("transform", "scale(1.2)");
 
   loader = new GLTFLoader();
   const dracoLoader = new DRACOLoader();

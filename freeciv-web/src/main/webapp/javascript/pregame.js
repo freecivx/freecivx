@@ -938,8 +938,8 @@ function show_intro_dialog(title, message) {
   $("#dialog").dialog({
 			bgiframe: false,
 			modal: true,
-			width: is_small_screen() ? "85%" : "44%",
-            position: { my: "center", at: "center", of: window },
+			width: is_small_screen() ? "85%" : "38%",
+            position: { my: "center", at: "center-0 center-100", of: window },
 			buttons:
 			[
 			  {
@@ -1022,7 +1022,7 @@ function show_intro_dialog(title, message) {
 
   blur_input_on_touchdevice();
 
-  $(".ui-widget-overlay").css("background-image", window.location.href.includes('localhost')  ? "url('/images/backgrounds/6.jpg')" : "url('/data/game_of_the_day.png')");
+  $(".ui-widget-overlay").css("background-image", "url('/images/backgrounds/freecivx-splash-c.jpg')");
   $(".ui-widget-overlay").css("background-position", "center");
   $(".ui-widget-overlay").css("background-repeat", "no-repeat");
   $(".ui-widget-overlay").css("background-size", "cover");
@@ -1034,6 +1034,7 @@ function show_intro_dialog(title, message) {
 
   $("#pregame_custom_scrollbar_div").mCustomScrollbar({theme:"3d"});
   add_chatbox_text({message: 'Welcome to FreecivX. You can enter game commands, chat with players or ask the AI. Try the /help command or ask the AI. FreecivX is a free open source strategy game forked from Freeciv.', event : E_CHAT_MSG});
+  $("#pregame_page").show();
 
 }
 

@@ -67,7 +67,6 @@ function network_init()
   Initialized the WebSocket connection.
 ****************************************************************************/
 function websocket_init() {
-    $.blockUI({ message: "<h2>Please wait while connecting to the server.</h2>" });
     const proxyport = 1000 + parseFloat(civserverport);
     const ws_protocol = (window.location.protocol === 'https:') ? "wss://" : "ws://";
     const port = window.location.port ? `:${window.location.port}` : '';

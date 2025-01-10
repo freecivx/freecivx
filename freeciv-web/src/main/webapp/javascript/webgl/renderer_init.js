@@ -71,9 +71,21 @@ function renderer_init() {
   }
 
   if (C_S_RUNNING === client_state() || C_S_OVER === client_state()) {
+      $.blockUI({
+          message: '<img src="/images/backgrounds/freecivx-splash-c.jpg" style="width:100%; height:100%; object-fit:contain; z-index: 10000;">',
+          css: {
+              border: 'none',
+              padding: '0',
+              opacity: 1,
+              "z-index": 100000,
+              "margin-top": - 200
 
+          }
+      });
+      $(".blockUI").css("margin-top", "-100px");
+      $(".blockUI").css("transform", "scale(1.6)");
 
-    if (!webgpu) {
+      if (!webgpu) {
         webgl_start_renderer();
         init_webgl_mapview();
 
@@ -85,9 +97,10 @@ function renderer_init() {
     init_webgl_mapctrl();
     init_game_unit_panel();
     init_chatbox();
-   keyboard_input=true;
-    $.unblockUI();
-    setTimeout("$('#mapcanvas').fadeIn(2500);", 300);
+    keyboard_input=true;
+
+    setTimeout("$('#mapcanvas').fadeIn(2500); $.unblockUI();", 1500);
+
   }
 }
 
