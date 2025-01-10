@@ -55,7 +55,7 @@ var webgpu = <%= webgpu %>;
   <script type="importmap">
         {
                 "imports": {
-                        "three": "/javascript/webgl/libs/three.module.min.js?ts=${initParam.buildTimeStamp}"
+                        "three": "/javascript/webgl/libs/r173/three.module.min.js?ts=${initParam.buildTimeStamp}"
                 }
         }
   </script>
@@ -63,7 +63,7 @@ var webgpu = <%= webgpu %>;
   <script type="importmap">
         {
                 "imports": {
-                        "three": "/javascript/webgpu/libs/three.webgpu.min.js?ts=${initParam.buildTimeStamp}"
+                        "three": "/javascript/webgpu/libs/r173/three.webgpu.min.js?ts=${initParam.buildTimeStamp}"
                 }
         }
   </script>
