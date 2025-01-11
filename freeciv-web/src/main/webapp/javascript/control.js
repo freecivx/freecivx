@@ -73,7 +73,8 @@ var action_selection_in_progress_for = 0; /* before IDENTITY_NUMBER_ZERO */
 var is_more_user_input_needed = false;
 var info_text_req_tile = null;
 var last_info_tile = null;
-var next_tile_info = null
+var next_tile_info = null;
+var tileInfoTimeoutId = -1;
 
 /****************************************************************************
 ...
@@ -397,7 +398,11 @@ function update_mouse_cursor()
 
   if (last_info_tile == null || last_info_tile != ptile) {
     next_tile_info = ptile;
-    setTimeout(delayed_tile_info_req, 600);
+    if (tileInfoTimeoutId >= 0) {
+      clearTimeout(tileInfoTimeoutId);
+    }
+    tileInfoTimeoutId = setTimeout(delayed_tile_info_req, 200);
+
   }
 }
 
@@ -405,6 +410,7 @@ function update_mouse_cursor()
 ...
 ****************************************************************************/
 function delayed_tile_info_req() {
+  tileInfoTimeoutId = -1;
 
   if (active_city != null) {
     $("#tile_dialog").remove();
