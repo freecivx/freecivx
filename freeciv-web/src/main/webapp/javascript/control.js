@@ -406,6 +406,11 @@ function update_mouse_cursor()
 ****************************************************************************/
 function delayed_tile_info_req() {
 
+  if (active_city != null) {
+    $("#tile_dialog").remove();
+    return;
+  }
+
   last_info_tile = next_tile_info;
   popit_req(next_tile_info);
 }
