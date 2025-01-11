@@ -139,9 +139,10 @@ function update_tile_model_instancing(modelname, ptile, num_models, scale) {
 
         // Update the InstancedMesh so changes appear
         instancedMesh.instanceMatrix.needsUpdate = true;
-    } else if (scene && instancedMesh[tileIndex] != null) {
+    } else if (scene && instancedMeshes[tileIndex] != null) {
         scene.remove(instancedMeshes[tileIndex]);
-        tile_forest_instance_indices[tileIndex] = null;
+        instancedMeshes[tileIndex] = null;
+        instancedMeshType[tileIndex] = null;
     }
 }
 

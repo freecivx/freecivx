@@ -120,6 +120,7 @@ function webglOnDocumentMouseUp( e ) {
   }
   e.preventDefault();
   keyboard_input = true;
+  update_mouse_cursor();
 }
 
 /****************************************************************************
@@ -164,6 +165,8 @@ function webglOnDocumentMouseDown(e) {
      * browsers. */
     context_menu_active = false;
   }
+
+  update_mouse_cursor();
 }
 
 
@@ -180,6 +183,8 @@ function webgl_mapview_touch_start(e)
 
   var ptile = webgl_canvas_pos_to_tile(touch_start_x, touch_start_y);
   set_mouse_touch_started_on_unit(ptile);
+
+  update_mouse_cursor();
 }
 
 /****************************************************************************
@@ -192,6 +197,8 @@ function webgl_mapview_touch_end(e)
     return;
   }
   webgl_action_button_pressed(touch_start_x, touch_start_y, SELECT_POPUP);
+
+  update_mouse_cursor();
 }
 
 /****************************************************************************

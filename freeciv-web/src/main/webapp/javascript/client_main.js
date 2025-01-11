@@ -398,7 +398,7 @@ function handle_web_info_text_message(packet)
     message += "<br>" + city_building_positions[info_text_req_tile['index']]['name'] + ".";
   }
 
-  show_dialog_message("Tile Information", message);
+  show_tile_info( message);
 
 }
 
@@ -433,5 +433,39 @@ function show_splash_screen()
   $(".blockUI").css("margin-top", "-150px");
   $(".blockUI").css("transform", "scale(1.4)");
 
+
+}
+
+/**************************************************************************
+ Shows tile information.
+**************************************************************************/
+function show_tile_info(message) {
+
+  $("#tile_dialog").remove();
+  $("<div id='tile_dialog'></div>").appendTo("div#game_page");
+
+  $("#tile_dialog").html(message);
+
+  $("#tile_dialog").dialog({
+    bgiframe: true,
+    modal: false,
+    position: {
+      my: "left bottom",
+      at: "left bottom",
+      of: window
+    },
+    create: function(event, ui) {
+      $(this).parent().find(".ui-dialog-titlebar").hide();
+    }
+  });
+  $("#tile_dialog").dialog('open');
+
+  $('#tile_dialog').css({
+    "color": "white",
+    "background": "transparent",
+    "border": "none",
+    "min-height" : "30px"
+  });
+  $('#tile_dialog').parent().css({"background" : "rgba(0,0,0,0.8)"});
 
 }

@@ -2751,7 +2751,7 @@ static const void web_popup_info_text(struct astring *str,
      Q_("?city:Friendly(team)")};
   char username[MAX_LEN_NAME + 32];
   char nation[2 * MAX_LEN_NAME + 32];
-  int tile_x, tile_y, nat_x, nat_y;
+  int nat_x, nat_y;
   struct player_tile *plrtile = map_get_player_tile(ptile, pplayer);
   struct vision_site *pdcity = map_get_player_city(ptile, pplayer);
   bool visible = map_is_known_and_seen(ptile, pplayer, V_MAIN);
@@ -2762,11 +2762,8 @@ static const void web_popup_info_text(struct astring *str,
   }
 
   astr_clear(str);
-  index_to_map_pos(&tile_x, &tile_y, tile_index(ptile));
-  astr_add_line(str, _("Location: (%d, %d) [%d]"),
-                tile_x, tile_y, tile_continent(ptile));
   index_to_native_pos(&nat_x, &nat_y, tile_index(ptile));
-  astr_add_line(str, _("Native coordinates: (%d, %d)"),
+  astr_add_line(str, _("Map coordinates: (%d, %d)"),
                 nat_x, nat_y);
 
   astr_add_line(str, _("Terrain: %s"),  tile_get_info_text(ptile, TRUE, 0));
@@ -3006,6 +3003,10 @@ void handle_web_info_text_req(struct player *pplayer, int loc,
   struct unit *funit
     = (focus_unit_id == 0) ? NULL : game_unit_by_number(focus_unit_id);
   const char *info_text;
+
+  if (!map_is_known_and_seen(ptile, pplayer, V_MAIN)) {
+    return;
+  }
 
   web_popup_info_text(&str, ptile, pplayer, punit, funit);
   info_text = astr_str(&str);

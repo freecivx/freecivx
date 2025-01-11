@@ -169,5 +169,6 @@ function set_default_mapview_inactive()
 {
   if (!is_small_screen()) $("#game_unit_panel").parent().hide();
   if (chatbox_active) $("#game_chatbox_panel").parent().hide();
+  $("#tile_dialog").parent().hide();
 
 }

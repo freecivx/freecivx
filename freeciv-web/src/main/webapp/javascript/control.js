@@ -72,6 +72,8 @@ var mouse_touch_started_on_unit = false;
 var action_selection_in_progress_for = 0; /* before IDENTITY_NUMBER_ZERO */
 var is_more_user_input_needed = false;
 var info_text_req_tile = null;
+var last_info_tile = null;
+let popit_lastRun = 0;
 
 /****************************************************************************
 ...
@@ -391,6 +393,16 @@ function update_mouse_cursor()
     $("#mapcanvas").css("cursor", "pointer");
   } else {
     $("#mapcanvas").css("cursor", "default");
+  }
+
+  if (last_info_tile == null || last_info_tile != ptile) {
+    const now = Date.now();
+    if (now - popit_lastRun >= 100) {
+      popit_lastRun = now;
+      $("#tile_dialog").remove();
+      popit();
+    }
+
   }
 }
 
@@ -1280,6 +1292,9 @@ function init_game_unit_panel()
 			dialogClass: 'unit_dialog  no-close',
 			position: {my: 'right bottom', at: 'right bottom', of: window},
 			appendTo: '#tabs-map',
+            create: function(event, ui) {
+              $(this).parent().find(".ui-dialog-titlebar").hide();
+            },
 			close: function(event, ui) { unitpanel_active = false;}
 
 		}).dialogExtend({
@@ -1853,7 +1868,7 @@ function do_map_click(ptile, qtype, first_time_called)
 **************************************************************************/
 function find_active_dialog()
 {
-  const permanent_widgets = ["game_overview_panel", "game_unit_panel", "game_chatbox_panel"];
+  const permanent_widgets = ["game_overview_panel", "game_unit_panel", "game_chatbox_panel", "tile_dialog"];
   const dialogs = $(".ui-dialog");
   for (var i = 0; i < dialogs.length; i++) {
     const dialog = $(dialogs[i]);
@@ -3194,6 +3209,7 @@ function popit()
   var ptile = webgl_canvas_pos_to_tile(mouse_x, mouse_y);
 
   if (ptile == null) return;
+  last_info_tile = ptile;
 
   popit_req(ptile);
 }
@@ -3206,7 +3222,7 @@ function popit_req(ptile)
   if (ptile == null) return;
 
   if (tile_get_known(ptile) == TILE_UNKNOWN) {
-    show_dialog_message("Tile info", "Location: x:" + ptile['x'] + " y:" + ptile['y']);
+    show_tile_info("Map coordinates: x:" + ptile['x'] + " y:" + ptile['y']);
     return;
   }
 
