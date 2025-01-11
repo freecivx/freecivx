@@ -3004,7 +3004,7 @@ void handle_web_info_text_req(struct player *pplayer, int loc,
     = (focus_unit_id == 0) ? NULL : game_unit_by_number(focus_unit_id);
   const char *info_text;
 
-  if (!map_is_known_and_seen(ptile, pplayer, V_MAIN)) {
+  if (!map_is_known(ptile, pplayer)) {
     return;
   }
 
