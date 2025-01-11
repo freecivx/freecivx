@@ -71,6 +71,7 @@ var mouse_touch_started_on_unit = false;
  */
 var action_selection_in_progress_for = 0; /* before IDENTITY_NUMBER_ZERO */
 var is_more_user_input_needed = false;
+var info_text_req_tile = null;
 
 /****************************************************************************
 ...
@@ -3221,6 +3222,7 @@ function popit_req(ptile)
   var packet = {"pid" : packet_web_info_text_req, "visible_unit" : punit_id,
                 "loc" : ptile['index'], "focus_unit": focus_unit_id};
   send_request(JSON.stringify(packet));
+  info_text_req_tile = ptile;
 }
 
 

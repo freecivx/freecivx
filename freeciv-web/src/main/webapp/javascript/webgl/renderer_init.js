@@ -71,19 +71,7 @@ function renderer_init() {
   }
 
   if (C_S_RUNNING === client_state() || C_S_OVER === client_state()) {
-      $.blockUI({
-          message: '<img src="/images/backgrounds/freecivx-splash-c.jpg" style="width:100%; height:100%; object-fit:contain; z-index: 10000;">',
-          css: {
-              border: 'none',
-              padding: '0',
-              opacity: 1,
-              "z-index": 100000,
-              "margin-top": - 200
-
-          }
-      });
-      $(".blockUI").css("margin-top", "-100px");
-      $(".blockUI").css("transform", "scale(1.6)");
+      show_splash_screen();
 
       if (!webgpu) {
         webgl_start_renderer();

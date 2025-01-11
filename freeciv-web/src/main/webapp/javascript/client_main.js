@@ -394,6 +394,10 @@ function handle_web_info_text_message(packet)
   }
   message = lines.join("<br>\n");
 
+  if (info_text_req_tile != null && city_building_positions[info_text_req_tile['index']]) {
+    message += "<br>" + city_building_positions[info_text_req_tile['index']]['name'] + ".";
+  }
+
   show_dialog_message("Tile Information", message);
 
 }
@@ -408,4 +412,26 @@ function updateElementsPosition() {
   // Ensure game_page and tabs is at the top of the page
   $('#tabs').css('top', '0');
   $('#game_page').css('top', '0');
+}
+
+/**************************************************************************
+ ...
+**************************************************************************/
+function show_splash_screen()
+{
+  $.blockUI({
+    message: '<img src="/images/backgrounds/freecivx-splash-c.jpg" style="width:100%; height:100%; object-fit:contain; z-index: 10000;">',
+    css: {
+      border: 'none',
+      padding: '0',
+      opacity: 1,
+      "z-index": 100000,
+      "margin-top": - 200
+
+    }
+  });
+  $(".blockUI").css("margin-top", "-100px");
+  $(".blockUI").css("transform", "scale(1.6)");
+
+
 }

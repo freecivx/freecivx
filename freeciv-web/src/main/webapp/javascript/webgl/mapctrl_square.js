@@ -54,6 +54,7 @@ function init_webgl_mapctrl()
   controls.enablePan = false;
   controls.dampingFactor = 0.05;
   controls.maxPolarAngle = 0.9 * Math.PI / 2;
+  controls.enableRotate = !is_small_screen();
 
 
 
@@ -410,11 +411,11 @@ function map_draw_select_lines() {
 function zoom_map_in_out() {
 
   if (map_zoom_button_zoom_out) {
-    camera.position.y += 1600;
+    camera.position.y += 1400;
     camera.position.y = Math.min(camera.position.y, 2000);
   } else {
-    camera.position.y -= 1600;
-    camera.position.y = Math.max(camera.position.y, 400);
+    camera.position.y -= 1400;
+    camera.position.y = Math.max(camera.position.y, 500);
   }
   map_zoom_button_zoom_out = !map_zoom_button_zoom_out;
 

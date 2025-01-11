@@ -124,9 +124,7 @@ function webgl_start_renderer()
   }
 
   if (is_small_screen()) {
-    camera_dx = 38 * 1.35;
-    camera_dy = 410 * 1.35;
-    camera_dz = 242 * 1.35;
+    camera_dy = camera_dy * 1.6;
   }
 
   $("#pregame_page").hide();

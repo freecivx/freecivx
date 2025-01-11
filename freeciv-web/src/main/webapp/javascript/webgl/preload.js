@@ -34,21 +34,7 @@ var loader;
 ****************************************************************************/
 function webgl_preload()
 {
-  $.blockUI({
-    message: '<img src="/images/backgrounds/freecivx-splash-c.jpg" style="width:100%; height:100%; object-fit:contain; z-index: 10000;">',
-    css: {
-      border: 'none',
-      padding: '0',
-      opacity: 1,
-      width: "100%",
-      height: "100%",
-      "z-index": 100000,
-      "margin-top": - 200
-
-    }
-  });
-  $(".blockUI").css("margin-top", "-100px");
-  $(".blockUI").css("transform", "scale(1.2)");
+  show_splash_screen();
 
   loader = new GLTFLoader();
   const dracoLoader = new DRACOLoader();
@@ -246,9 +232,8 @@ function load_model(filename)
 
   loader.load( url, function(data) {
     var model = data.scene;
-    if (C_S_PREPARING == client_state()) {
-      $("#download_progress").html(" 3D models " + Math.floor(30 + (0.7 * 100 * load_count / total_model_count)) + "%");
-    }
+
+    model['name'] = filename;
 
     model.traverse((node) => {
       if (node.isMesh) {
