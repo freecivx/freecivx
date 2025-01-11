@@ -73,7 +73,7 @@ var action_selection_in_progress_for = 0; /* before IDENTITY_NUMBER_ZERO */
 var is_more_user_input_needed = false;
 var info_text_req_tile = null;
 var last_info_tile = null;
-let popit_lastRun = 0;
+var next_tile_info = null
 
 /****************************************************************************
 ...
@@ -396,14 +396,18 @@ function update_mouse_cursor()
   }
 
   if (last_info_tile == null || last_info_tile != ptile) {
-    const now = Date.now();
-    if (now - popit_lastRun >= 100) {
-      popit_lastRun = now;
-      $("#tile_dialog").remove();
-      popit();
-    }
-
+    next_tile_info = ptile;
+    setTimeout(delayed_tile_info_req, 600);
   }
+}
+
+/****************************************************************************
+...
+****************************************************************************/
+function delayed_tile_info_req() {
+
+  last_info_tile = next_tile_info;
+  popit_req(next_tile_info);
 }
 
 /****************************************************************************
