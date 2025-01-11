@@ -430,8 +430,8 @@ function show_splash_screen()
 
     }
   });
-  $(".blockUI").css("margin-top", "-100px");
-  $(".blockUI").css("transform", "scale(1.6)");
+  $(".blockUI").css("margin-top", "-150px");
+  $(".blockUI").css("transform", "scale(1.4)");
 
 
 }
