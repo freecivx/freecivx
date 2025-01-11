@@ -411,6 +411,10 @@ function delayed_tile_info_req() {
     return;
   }
 
+  if (last_info_tile == next_tile_info) {
+    return;
+  }
+
   last_info_tile = next_tile_info;
   popit_req(next_tile_info);
 }
