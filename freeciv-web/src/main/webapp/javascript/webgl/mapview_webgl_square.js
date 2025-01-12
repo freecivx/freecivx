@@ -27,7 +27,7 @@ var clock;
 
 var controls;
 
-var tiletype_terrains = ["coast","ocean","arctic","desert","grassland","hills","mountains","plains","swamp","tundra", "farmland", "irrigation"];
+var tiletype_terrains = ["coast","ocean","desert","grassland","hills","mountains","plains","swamp", "arctic_farmland_irrigation_tundra"];
 
 var landGeometry;
 var landMesh; // the terrain land geometry
@@ -182,10 +182,7 @@ async function init_webgl_mapview() {
   var fragment_shader = await fragmentShaderResponse.text();
 
   if (maprenderer.capabilities.maxTextures <= 16) {
-    delete tiletype_terrains["irrigation"];
     console.log("max textures: " + maprenderer.capabilities.maxTextures);
-    fragment_shader = fragment_shader.replace("uniform sampler2D irrigation;", "")
-        .replaceAll("irrigation", "farmland");
   }
 
   // High-resolution terrain-mesh shown in mapview.

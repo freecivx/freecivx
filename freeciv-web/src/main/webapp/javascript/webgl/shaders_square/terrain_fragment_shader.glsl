@@ -31,18 +31,15 @@ uniform sampler2D roadsmap;
 uniform sampler2D roadsprites;
 uniform sampler2D railroadsprites;
 
-uniform sampler2D arctic;
+uniform sampler2D arctic_farmland_irrigation_tundra;
 uniform sampler2D grassland;
 uniform sampler2D coast;
 uniform sampler2D desert;
 uniform sampler2D ocean; //floor
 uniform sampler2D plains;
-uniform sampler2D farmland;
 uniform sampler2D hills;
 uniform sampler2D mountains;
 uniform sampler2D swamp;
-uniform sampler2D tundra;
-uniform sampler2D irrigation;
 // Some systems only support 16 textures.
 
 uniform float map_x_size;
@@ -117,6 +114,8 @@ float dy = 0.0;
 
 float mdx = 0.0;
 float mdy = 0.0;
+float tdx = 0.0;
+float tdy = 0.0;
 
 float terrain_here;
 float road_here_r;
@@ -197,6 +196,8 @@ void main()
     dy = mod(map_y_size * vUv.y, 1.0);
     mdx = (map_x_size * vUv.x / 4.0) - 0.25 * floor((map_x_size * vUv.x ));
     mdy = (map_y_size * vUv.y / 4.0) - 0.25 * floor((map_y_size * vUv.y ));
+    tdx = (map_x_size * vUv.x / 2.0) - 0.5 * floor((map_x_size * vUv.x ));
+    tdy = (map_y_size * vUv.y / 2.0) - 0.5 * floor((map_y_size * vUv.y ));
 
     // Set pixel color based on tile type.
     terrain_here = floor(terrain_type.r  * 256.0);
@@ -248,8 +249,8 @@ void main()
             terrain_color = texture(plains, texture_coord);
         }
     } else if (terrain_here == terrain_arctic) {
-        texture_coord = vec2(dx  , dy );
-        terrain_color = texture(arctic, texture_coord);
+        texture_coord = vec2(tdx, tdy + 0.5);
+        terrain_color = texture(arctic_farmland_irrigation_tundra, texture_coord);
     } else if (terrain_here == terrain_desert) {
         if (vPosition.y > beach_blend_high ) {
             texture_coord = vec2(dx , dy);
@@ -300,8 +301,8 @@ void main()
         }
     } else if (terrain_here == terrain_tundra) {
         if (vPosition.y > beach_blend_high ) {
-            texture_coord = vec2(dx  , dy );
-            terrain_color = texture(tundra, texture_coord);
+            texture_coord = vec2(tdx + 0.5 , tdy );
+            terrain_color = texture(arctic_farmland_irrigation_tundra, texture_coord);
         } else {
             texture_coord = vec2(dx  , dy );
             terrain_color = texture(coast, texture_coord);
@@ -322,7 +323,7 @@ void main()
         // snow in mountains texture over a certain height threshold.
         blend_amount = ((3.0 - (mountains_high - vPosition.y)) / 3.0) - 1.0;
 
-        vec4 Ca = texture(arctic, vec2(dx, dy));
+        vec4 Ca = texture(arctic_farmland_irrigation_tundra, vec2(tdx, tdy + 0.5));
         vec4 Cb = texture(mountains, vec2(dx , dy));
         c = mix(Ca.rgb, Cb.rgb, (1.0 - blend_amount));
     } else if (vPosition.y > mountains_low_begin) {
@@ -365,13 +366,13 @@ void main()
 
     if (terrain_type.b == (1.0 / 255.0)) {
         // render Irrigation.
-        texture_coord = vec2(dx , dy);
-        vec4 t1 = texture(irrigation , texture_coord);
+        texture_coord = vec2(tdx, tdy);
+        vec4 t1 = texture(arctic_farmland_irrigation_tundra , texture_coord);
         c = mix(c, vec3(t1), t1.a);
     } else if (terrain_type.b ==(2.0 / 255.0)) {
         // render farmland.
-        texture_coord = vec2(dx , dy );
-        vec4 t1 = texture(farmland, texture_coord);
+        texture_coord = vec2(tdx + 0.5, tdy + 0.5);
+        vec4 t1 = texture(arctic_farmland_irrigation_tundra, texture_coord);
         c = mix(c, vec3(t1), t1.a);
     }
 
