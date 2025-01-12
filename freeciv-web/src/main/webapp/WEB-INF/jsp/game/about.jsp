@@ -291,18 +291,19 @@
 					<div class="panel-freeciv">
 						<h4><fmt:message key="index-contributing"/></h4>
 						Freeciv is open source software released under the GNU General Public License.
-						<a href="https://github.com/fciv-net/fciv-net"><fmt:message key="index-developers"/></a> are welcome to join development.
+						<a href="https://github.com/freecivx/freecivx"><fmt:message key="index-developers"/></a> are welcome to join development.
 					</div>
 				</div>
 				<div class="col-md-4">
 					<div class="panel-freeciv">
 						<h4><fmt:message key="index-stack"/></h4>
-						<img class="small" src="/static/images/webgl-stack.png">WebGL
-						<img class="small" src="/static/images/html5-stack.png">HTML5<br>
-						<img class="small" src="/static/images/tomcat-stack.png">Tomcat
-						<img class="small" src="/static/images/python-stack.png">Python<br>
-						<img class="small" src="/static/images/three-stack.png">Three.js
-						<img class="small" src="/static/images/blender-stack.png">Blender
+                        <img class="small" src="/static/images/webgpu-stack.png">WebGPU <br>
+						<img class="small" src="/static/images/webgl-stack.png">WebGL <br>
+						<img class="small" src="/static/images/html5-stack.png">HTML5 <br>
+						<img class="small" src="/static/images/tomcat-stack.png">Tomcat  <br>
+						<img class="small" src="/static/images/python-stack.png">Python <br>
+						<img class="small" src="/static/images/three-stack.png">Three.js  <br>
+						<img class="small" src="/static/images/blender-stack.png">Blender  <br>
 					</div>
 				</div>
 				<div class="col-md-4">			

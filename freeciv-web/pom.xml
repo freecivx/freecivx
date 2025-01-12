@@ -323,6 +323,7 @@ Rerun the sync-js-hand.js script.
 									<include>2dcanvas/*.js</include>
 									<include>webgl/*.js</include>
 									<include>webgl/libs/*.js</include>
+									<include>webgpu/*.js</include>
 									<include>2dcanvas/tilespec-constants.js</include>
 								</includes>
 								<excludes>

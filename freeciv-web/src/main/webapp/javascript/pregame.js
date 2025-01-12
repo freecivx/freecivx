@@ -510,6 +510,9 @@ function pregame_settings()
                 "<td><input type='checkbox' id='anaglyph_setting'>Enable Anaglyph 3D (Red+Cyan glasses) "+
                 "</td></tr>"+
 
+          "<tr><td style='min-width: 150px;'>Enable experimental WebGPU renderer:</td>" +
+          "<td><button id='webgpu_enable' type='button' class='webgpu button'>WebGPU renderer</button></td></tr>" +
+
          "</table>" +
       "</div>" +
 
@@ -814,6 +817,11 @@ function pregame_settings()
 
   $(".benchmark").button();
   $("#show_voice_commands").button();
+
+  $(".webgpu").click(function() {
+    window.location.href = window.location.href + '?webgpu=true';
+  });
+  $(".webgpu").button();
 
   $(".webgpu").click(function() {
     window.location.href = window.location.href + '?webgpu=true';

@@ -72,6 +72,11 @@ var webgpu = <%= webgpu %>;
   import * as THREE from 'three';
   window.THREE = THREE;
 
+    <% if (webgpu) { %>
+      import { WebGPURenderer } from '/javascript/webgpu/libs/r173/three.webgpu.min.js?ts=${initParam.buildTimeStamp}';
+      window.WebGPURenderer = WebGPURenderer;
+    <% } %>
+
   import { GLTFLoader } from '/javascript/webgl/libs/GLTFLoader.js?ts=${initParam.buildTimeStamp}';
   window.GLTFLoader = GLTFLoader;
 
