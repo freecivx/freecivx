@@ -3,7 +3,7 @@
 
 FROM ubuntu:noble
 
-MAINTAINER FCIV.NET : 3.3
+MAINTAINER FREECIVX : 3.3
 
 RUN DEBIAN_FRONTEND=noninteractive apt-get update --yes --quiet && \
     DEBIAN_FRONTEND=noninteractive apt-get install --yes \
@@ -29,10 +29,8 @@ RUN useradd -m docker && echo "docker:docker" | chpasswd && adduser docker sudo 
 ## Add relevant content - to be pruned in the future
 COPY .git /docker/.git
 COPY freeciv /docker/freeciv
-COPY freeciv-proxy /docker/freeciv-proxy
 COPY freeciv-web /docker/freeciv-web
 COPY publite2 /docker/publite2
-COPY LICENSE.txt /docker/LICENSE.txt
 
 COPY scripts /docker/scripts
 COPY config /docker/config
