@@ -8,6 +8,7 @@ MAINTAINER FREECIVX : 3.3
 RUN DEBIAN_FRONTEND=noninteractive apt-get update --yes --quiet && \
     DEBIAN_FRONTEND=noninteractive apt-get install --yes \
         sudo \
+        git \
         lsb-release \
         locales \
         adduser && \
