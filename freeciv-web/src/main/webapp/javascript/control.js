@@ -393,6 +393,12 @@ function update_mouse_cursor()
   }
 
   if (tile_info_popup_setting && (last_info_tile == null || last_info_tile != ptile)) {
+
+    var inputElement = $('#game_text_input');
+    if (inputElement.is(':focus')) {
+      return;
+    }
+
     next_tile_info = ptile;
     if (tileInfoTimeoutId >= 0) {
       clearTimeout(tileInfoTimeoutId);

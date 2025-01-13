@@ -27,7 +27,7 @@ if ! test -f "${EMSDK_ROOT}/emsdk_env.sh" ; then
 fi
 
 # Sometimes emsdk environment setup script requires
-# cwd to be it's own directory.
+# cwd to be its own directory.
 cd "${EMSDK_ROOT}" || exit 1
 if ! . "./emsdk_env.sh" ; then
   echo "Sourcing \"${EMSDK_ROOT}/emsdk_env.sh\" failed!" >&2
@@ -35,20 +35,26 @@ if ! . "./emsdk_env.sh" ; then
 fi
 cd "${BUILD_ROOT}" || exit 1
 
-# Add more emsdk directories to PATH
-export PATH="${EMSDK_ROOT}/upstream/emscripten:$PATH"
-
 sed -e "s,<EMSDK_ROOT>,${EMSDK_ROOT}," \
     "${PLATFORM_ROOT}/setups/cross-ems.tmpl" > cross.txt
+
+# Build SDL2 separately first, without USE_PTHREADS that
+# the main build uses.
+if ! embuilder build sdl2 sdl2_image sdl2_ttf sdl2_mixer ; then
+  echo "SDL2 build failed!" >&2
+  exit 1
+fi
 
 if ! CC=emcc CXX=em++ AR=emar meson setup \
      --cross-file=cross.txt \
      -Ddefault_library=static \
      -Ddebug=true \
+     -Daudio=none \
      -Dmwand=false \
-     -Druledit=false \
-     -Dclients=sdl2,stub \
+     -Dtools=[] \
+     -Dclients=stub,sdl2 \
      -Dfcmp=[] \
+     -Dfcdb=[] \
      "${PLATFORM_ROOT}/../../"
 then
   echo "Setup with meson failed!" >&2
