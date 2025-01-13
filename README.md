@@ -73,10 +73,9 @@ Start and stop Freeciv-web with the following commands:
   stop-freeciv-web.sh  
   status-freeciv-web.sh
 
-### Running Freecivx on Docker
-[Docker](/doc/Docker.md)
-
-
+### Running Freecivx on Podman / Docker
+Get https://podman.io/
+See: [Docker](/doc/Docker.md)
 
 ### Running Freeciv-web on Windows Subsystem for Linux (WSL)
 [Windows Subsystem for Linux (WSL)](/doc/Windows%20Subsystem%20for%20Linux.md)
