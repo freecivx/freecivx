@@ -107,9 +107,15 @@ var show_buildings = true;
 
 var dialogs_minimized_setting = false;
 var tile_info_popup_setting = true;
+var options_init = false;
 
 function init_options_dialog()
 {
+  if (options_init) {
+    return;
+  }
+  options_init = true;
+
   $("#save_button").button("option", "label", "Save Game (Ctrl+S)");
   $("#surrender_button").button("option", "label", "Surrender Game");
   $("#end_button").button("option", "label", "End Game");
@@ -152,15 +158,8 @@ function init_options_dialog()
       $("#tile_dialog").remove();
     }
   });
-  var tile_info_popup_setting = simpleStorage.get("tile_info_popup_setting", "");
-  if (tile_info_popup_setting == null) {
-    $("#tile_info_popup_setting").prop("checked", true);
-    tile_info_popup_setting = true;
-  } else if (tile_info_popup_setting != null && !tile_info_popup_setting ) {
-    tile_info_popup_setting = false;
-    $("#tile_info_popup_setting").prop("checked", false);
-  } else if (tile_info_popup_setting != null && tile_info_popup_setting) {
-    tile_info_popup_setting = true;
+  tile_info_popup_setting = simpleStorage.get("tile_info_popup_setting", "");
+  if (tile_info_popup_setting) {
     $("#tile_info_popup_setting").prop("checked", true);
   }
 
