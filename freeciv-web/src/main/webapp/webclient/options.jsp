@@ -57,16 +57,17 @@
     <tr>
         <td>
             <div class="main_menu_buttons">
+                <input type='checkbox' name='tile_info_popup_setting' id='tile_info_popup_setting'>
+                <b>Show tile info popup dialog</b>
+            </div>
+        </td>
+        <td>
+            <div class="main_menu_buttons">
                 <input type='checkbox' name='dialogs_minimized_setting' id='dialogs_minimized_setting'>
                 <b>Dialogs open minimized</b>
             </div>
         </td>
-        <%-- <td>
-            <div class="main_menu_buttons">
-                <input type='checkbox' name='ai_mentat_setting' id='ai_mentat_setting'>
-                <b>AI LLM Chat - Mentat</b>
-            </div>
-        </td>--%>
+
     </tr>
         <tr>
             <td>

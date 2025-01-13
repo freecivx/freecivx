@@ -233,10 +233,6 @@ function control_init()
     set_default_mapview_inactive();
   });
 
-  $("#mentat_tab").click(function(event) {
-    init_web_llm();
-  });
-
   $("#hel_tab").click(function(event) {
     set_default_mapview_inactive();
     show_help();
@@ -396,7 +392,7 @@ function update_mouse_cursor()
     $("#mapcanvas").css("cursor", "default");
   }
 
-  if (last_info_tile == null || last_info_tile != ptile) {
+  if (tile_info_popup_setting && (last_info_tile == null || last_info_tile != ptile)) {
     next_tile_info = ptile;
     if (tileInfoTimeoutId >= 0) {
       clearTimeout(tileInfoTimeoutId);

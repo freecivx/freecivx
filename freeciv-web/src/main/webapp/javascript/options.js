@@ -106,7 +106,7 @@ var reqtree_curved_lines = FALSE;
 var show_buildings = true;
 
 var dialogs_minimized_setting = false;
-var mentat_enabled = false;
+var tile_info_popup_setting = true;
 
 function init_options_dialog()
 {
@@ -145,24 +145,23 @@ function init_options_dialog()
     simpleStorage.set('dialogs_minimized_setting', dialogs_minimized_setting);
   });
 
-  $('#ai_mentat_setting').change(function() {
-    mentat_enabled = this.checked;
-    simpleStorage.set("mentat_setting", mentat_enabled);
-    if (mentat_enabled) {
-      $("#mentat_tab").show();
-    } else {
-      $("#mentat_tab").hide();
+  $('#tile_info_popup_setting').change(function() {
+    tile_info_popup_setting = this.checked;
+    simpleStorage.set('tile_info_popup_setting', tile_info_popup_setting);
+    if (!tile_info_popup_setting) {
+      $("#tile_dialog").remove();
     }
   });
-  var stored_mentat_setting = simpleStorage.get("mentat_setting", "");
-  if (stored_mentat_setting != null && !stored_mentat_setting ) {
-    $("#ai_mentat_setting").prop("checked", false);
-    mentat_enabled = false;
-    $("#mentat_tab").hide();
-  } else if (stored_mentat_setting != null && stored_mentat_setting) {
-    $("#ai_mentat_setting").prop("checked", true);
-    mentat_enabled = true;
-    $("#mentat_tab").show();
+  var tile_info_popup_setting = simpleStorage.get("tile_info_popup_setting", "");
+  if (tile_info_popup_setting == null) {
+    $("#tile_info_popup_setting").prop("checked", true);
+    tile_info_popup_setting = true;
+  } else if (tile_info_popup_setting != null && !tile_info_popup_setting ) {
+    tile_info_popup_setting = false;
+    $("#tile_info_popup_setting").prop("checked", false);
+  } else if (tile_info_popup_setting != null && tile_info_popup_setting) {
+    tile_info_popup_setting = true;
+    $("#tile_info_popup_setting").prop("checked", true);
   }
 
 

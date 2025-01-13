@@ -106,12 +106,6 @@ function setup_window_size ()
   $("#freeciv_logo").show();
   $("#tabs-hel").hide();
 
-  if (!mentat_enabled || !is_webgpu_supported()) {
-    $("#mentat_tab").hide();
-  } else {
-    $("#mentat_tab").show();
-  }
-
   if (is_small_screen()) {
     $("#map_tab").children().html("<i class='fa fa-globe' aria-hidden='true'></i>");
     $("#opt_tab").children().html("<i class='fa fa-cogs' aria-hidden='true'></i>");
@@ -199,8 +193,7 @@ function show_new_game_message()
 
   } else if (client.conn.playing != null && !game_loaded) {
     var pplayer = client.conn.playing;
-    message = "Welcome to FreecivX.net, the free browser-based 3D version of the classic turn-based strategy game Freeciv! You can ask questions to the AI bot (Grok AI) here. Have fun playing FreecivX!"
-        + ( mentat_enabled ? "You can ask questions to the AI assistant in the Mentat tab." : "") ;
+    message = "Welcome to FreecivX.net, the free browser-based 3D version of the classic turn-based strategy game Freeciv! You can ask questions to the AI bot (Grok AI) here. Have fun playing FreecivX!";
 
   } else if (game_loaded) {
     message = "Welcome back, " + username;
@@ -439,8 +432,8 @@ function show_splash_screen()
 /**************************************************************************
  Shows tile information.
 **************************************************************************/
-function show_tile_info(message) {
-
+function show_tile_info(message)
+{
   $("#tile_dialog").remove();
   $("<div id='tile_dialog'></div>").appendTo("div#game_page");
 

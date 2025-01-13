@@ -157,3 +157,10 @@ function add_quality_dependent_objects_webgpu()
     maprenderer.shadowMap.enabled = false;
     scene.background = null;
 }
+
+/****************************************************************************
+ Check if WebGPU is supported.
+****************************************************************************/
+function is_webgpu_supported() {
+    return ('gpu' in navigator);
+}
