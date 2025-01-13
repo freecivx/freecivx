@@ -1,5 +1,10 @@
+Podman / Docker setup:
+======================
 
-Freeciv-web can easily be built and run from Docker using `docker-compose`.
+
+Freeciv-web can easily be built and run from Podman or Docker using `docker-compose`.
+
+ 1. Get Podman from: https://podman.io/
 
  1. Make sure you have both [Docker](https://www.docker.com/get-started) and [Docker Compose](https://docs.docker.com/compose/install/) installed.
 
