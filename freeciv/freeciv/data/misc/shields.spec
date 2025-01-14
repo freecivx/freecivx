@@ -195,6 +195,8 @@ sprites =
 		"f.shield.gepid", "flags/gepid-shield"
 		"f.shield.germanic", "flags/germanic-shield"
 		"f.shield.germany", "flags/germany-shield"
+		"f.shield.nazi", "flags/nazi-shield"
+		"f.shield.islamic-state", "flags/islamic-state-shield"
 		"f.shield.ghana", "flags/ghana-shield"
 		"f.shield.ghana_ancient", "flags/ghana_ancient-shield"
 		"f.shield.ghaznavid", "flags/ghaznavid-shield"
