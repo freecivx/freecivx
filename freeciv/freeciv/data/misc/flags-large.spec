@@ -196,6 +196,8 @@ sprites =
 		"f.gepid", "flags/gepid-large"
 		"f.germanic", "flags/germanic-large"
 		"f.germany", "flags/germany-large"
+		"f.nazi", "flags/nazi"
+		"f.islamic-state", "flags/islamic-state"
 		"f.ghana", "flags/ghana-large"
 		"f.ghana_ancient", "flags/ghana_ancient-large"
 		"f.ghaznavid", "flags/ghaznavid-large"
