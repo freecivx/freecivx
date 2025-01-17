@@ -38,7 +38,8 @@ Installs a freeciv-web server.
  -h,--help              Show this message and exit.
  -l,--list              Show currently supported systems and exit.
  -m,--mode=MODE         Where MODE is one of:
-                          TEST  to choose some defaults and install test infra
+                          TEST  to choose some defaults and install test infra, local, H2 database
+                          TEST_GITHUB  to choose some defaults and install test infra, for Github, MySQL database.
                           DFLT  to expect user configuration for a real server
  -s,--system VND REL    Vendor and release to use for the install script,
                         instead of autodetecting.
@@ -116,6 +117,7 @@ done
 case $FCW_INSTALL_MODE in
   DFLT) ;;
   TEST) ;;
+  TEST_GITHUB) ;;
   *)
     echo >&2 "Unknown install mode: ${FCW_INSTALL_MODE}"
     exit 2
@@ -256,13 +258,11 @@ done
 
 if [ "${FCW_INSTALL_MODE}" = "TEST" ]; then
   echo "==== Configuring for H2 Java database. ===="
-  rm "${basedir}/config/flyway.tmpl"
-  rm "${basedir}/config/web.context.tmpl"
-  sudo mkdir -p /var/lib/freecivx
-  sudo chmod 775 /var/lib/freecivx
+  rm "${basedir}/config/flyway.tmpl" || echo "ok"
+  rm "${basedir}/config/web.context.tmpl" || echo "ok"   
 else
-  rm "${basedir}/config/flyway_h2.tmpl"
-  rm "${basedir}/config/web.context_h2.tmpl"
+  rm "${basedir}/config/flyway_h2.tmpl" || echo "ok"
+  rm "${basedir}/config/web.context_h2.tmpl" || echo "ok"
 fi
 
 

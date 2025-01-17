@@ -115,14 +115,14 @@ CREATE TABLE `variables` (
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
-IF '${db.type}' = 'mysql' THEN
-CREATE EVENT freeciv_web_server_cleanup
-    ON SCHEDULE
-      EVERY 30 MINUTE
-    COMMENT 'Removes unused Freeciv-web servers from metaserver'
-    DO
-      DELETE FROM servers where stamp <= DATE_SUB(NOW(), INTERVAL 30 MINUTE);
-END IF;
+//IF '${db.type}' = 'mysql' THEN
+//CREATE EVENT freeciv_web_server_cleanup
+//    ON SCHEDULE
+//      EVERY 30 MINUTE
+//    COMMENT 'Removes unused Freeciv-web servers from metaserver'
+//    DO
+//      DELETE FROM servers where stamp <= DATE_SUB(NOW(), INTERVAL 30 MINUTE);
+//END IF;
 
 
 
