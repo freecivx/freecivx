@@ -628,7 +628,7 @@ function update_tile_extra_update_model(extra_type, extra_name, ptile)
       height -= 2;
     }
     if (extra_name == "Wheat") {
-      num_models = 30;
+      num_models = 25;
       height -= 0.5;
       use_instancing = true;
     }

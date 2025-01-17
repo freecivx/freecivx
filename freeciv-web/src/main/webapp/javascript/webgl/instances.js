@@ -164,29 +164,34 @@ function update_tile_forest_jungle(ptile) {
         let modelname = "";
         let height = 5.2 + ptile.height * 100 + get_forest_offset(ptile);
         let scale = 20;
+        let numTrees = 13;
+
         if (isForest) {
             instancedMeshType[tileIndex] = "Forest";
-            let rnd = Math.floor(Math.random() * 5);
+            let rnd = Math.floor(Math.random() * 7);
             switch (rnd) {
                 case 0:
                     modelname = "Tree1";
-                    scale = 20;
+                    scale = 18;
                     break;
                 case 1:
                     modelname = "Tree2";
-                    scale = 20;
+                    scale = 18;
                     break;
                 case 2:
                     modelname = "Tree3";
-                    scale = 10;
+                    scale = 9;
                     break;
                 case 3:
                     modelname = "Pine1";
                     scale = 40;
                     break;
                 case 4:
-                    modelname = "Pine1";
-                    scale = 40;
+                case 5:
+                case 6:
+                    modelname = "Pine3";
+                    scale = 4;
+                    numTrees = 10;
                     break;
             }
         }
@@ -206,7 +211,6 @@ function update_tile_forest_jungle(ptile) {
             }
         }
 
-        let numTrees = 15;
 
 
         let gltfSceneOrObj = webgl_get_model(modelname, ptile);
