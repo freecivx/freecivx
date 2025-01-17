@@ -254,16 +254,17 @@ for action in start stop; do
 done
 
 
-if [ "${FCW_INSTALL_MODE}" == TEST ]; then
+if [ "${FCW_INSTALL_MODE}" = "TEST" ]; then
   echo "==== Configuring for H2 Java database. ===="
-  rm "${basedir}/config/flyway.tmpl
-  rm "${basedir}/config/web.context.tmpl
+  rm "${basedir}/config/flyway.tmpl"
+  rm "${basedir}/config/web.context.tmpl"
   sudo mkdir -p /var/lib/freecivx
   sudo chmod 775 /var/lib/freecivx
 else
-  rm "${basedir}/config/flyway_h2.tmpl
-  rm "${basedir}/config/web.context_h2.tmpl
+  rm "${basedir}/config/flyway_h2.tmpl"
+  rm "${basedir}/config/web.context_h2.tmpl"
 fi
+
 
 
 echo "==== Filling configuration templates ===="
