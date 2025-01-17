@@ -35,6 +35,7 @@ ext_install_tomcat11 () {
 
   cd /var/lib
   sudo tar -xzf "${TMPFILE}"
+  sudo rm tomcat11 -rf
   sudo mv apache-tomcat-11.* tomcat11
   rm "${TMPFILE}"
 
