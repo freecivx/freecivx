@@ -202,76 +202,8 @@
 
 
 	    <div class="row">
-			<div class="col-md-6">
-				<div class="panel-freeciv">
-					<h3>Multiplayer:</h3>
-					<c:if test="${not empty games and fn:length(games) > 0}">
-						<table class="table multiplayer-games">
-							<thead>
-								<tr>
-									<th>Game name</th>
-									<th>State</th>
-									<th>Turn</th>
-									<th>Players</th>
-									<th>Actions</th>
-								</tr>
-							</thead>
-							<tbody>
-								<c:forEach items="${games}" var="game">
-									<tr class="${game.players > 0 && state == 'Pregame' ? 'highlight' : ''}">
-										<td>
-										    <b>
-											  ${fn:replace(game.message, 'LongTurn', ' One Turn per Day ')}
-											</b>
-										</td>
-										<td>
-											${game.state}
-										</td>
-										<td>
-											${game.turn}
-										</td>
-										<td>
-											<c:choose>
-												<c:when test="${game.players == 0}">
-													None
-												</c:when>
-												<c:when test="${game.players == 1}">
-													1 player
-												</c:when>
-												<c:otherwise>
-													${game.players} players
-												</c:otherwise>
-											</c:choose>
-										</td>			
-										<td>
-											<c:choose>
-												<c:when test="${game.state == 'Running' or game.state == 'Pregame'}">
-													<a  class="label label-success" href="/webclient/?action=multi&renderer=webgl&civserverport=${game.port}&amp;civserverhost=${game.host}&amp;multi=true&amp;type=${game.type}">
-														Play
-													</a>
-												</c:when>
-												<c:otherwise>
-													<a class="label label-success" href="/webclient/?action=observe&amp;civserverport=${game.port}&amp;civserverhost=${game.host}&amp;multi=true&amp;type=${game.type}">
-														Observe
-													</a>
-												</c:otherwise>
-											</c:choose>
-											<a class="label label-primary" href="/game/details?host=${game.host}&amp;port=${game.port}">
-												Info
-											</a>
-										</td>
-									</tr>
-								</c:forEach>		
-							</tbody>
-						</table>
-					</c:if>
-					<c:if test="${empty games or fn:length(games) == 0}">
-						No servers currently listed.
-					</c:if>
-				</div>
-			</div>
-
-                    <div class="col-md-6">
+			<div class="col-md-12">
+                    <div class="col-md-12">
 		                  <div class="vcontainer">
                                         <iframe  src="https://www.youtube.com/embed/I_fviXqQ1ic" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen class="video"></iframe>
                                         </div>

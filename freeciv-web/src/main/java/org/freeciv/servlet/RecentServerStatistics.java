@@ -69,13 +69,11 @@ public class RecentServerStatistics extends HttpServlet {
 					+ "	 WHERE type = 'singleplayer' " //
 					+ "    AND state = 'Pregame' " //
 					+ "    AND humans = '0' " //
-					+ "    AND stamp >= DATE_SUB(NOW(), INTERVAL 1 MINUTE) " //
 					+ "UNION ALL " //
 					+ "	SELECT COUNT(*) AS count " //
 					+ "	  FROM servers " //
 					+ "	 WHERE type = 'multiplayer' " //
-					+ "	   AND state = 'Pregame' " //
-					+ "	   AND stamp >= DATE_SUB(NOW(), INTERVAL 1 MINUTE) ";
+					+ "	   AND state = 'Pregame' ";
 
 			PreparedStatement preparedStatement = conn.prepareStatement(query);
 			ResultSet rs = preparedStatement.executeQuery();

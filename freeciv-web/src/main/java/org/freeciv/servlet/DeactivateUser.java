@@ -77,7 +77,7 @@ public class DeactivateUser extends HttpServlet {
 				String hashedPasswordFromDB = rs1.getString(1);
 				if (hashedPasswordFromDB.equals(Crypt.crypt(secure_password, hashedPasswordFromDB))) {
 
-					String query = "UPDATE auth SET verified = '0' WHERE username = ? ";
+					String query = "UPDATE auth SET verified = FALSE WHERE username = ? ";
 					PreparedStatement preparedStatement = conn.prepareStatement(query);
 					preparedStatement.setString(1, username);
 					int no_updated = preparedStatement.executeUpdate();

@@ -5,6 +5,8 @@ This is the Freecivx.net 3D web application, which consists of the Java servlets
 and filters for running the web client, JSP templates, javascript code
 and other web content. 
 
+This will use MySQL for production database, and H2 for local development (Docker using install.sh --mode=TEST).
+
 Derived Sources
 ===============
 

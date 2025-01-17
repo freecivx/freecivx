@@ -169,7 +169,7 @@ public class GameDetails extends HttpServlet {
 			while (rs.next()) {
 				VariableSummary variable = new VariableSummary();
 				variable.name = rs.getString("name");
-				variable.value = rs.getString("value");
+				variable.value = rs.getString("setting");
 				variables.add(variable);
 			}
 			request.setAttribute("variables", variables);

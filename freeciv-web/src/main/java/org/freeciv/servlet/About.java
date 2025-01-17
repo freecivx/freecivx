@@ -38,13 +38,6 @@ public class About extends HttpServlet {
 
     @Override
     public void doGet(HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException {
-        Games games = new Games();
-
-        try {
-            request.setAttribute("games", games.summary());
-        } catch (RuntimeException e) {
-            // Ohh well, we tried ...
-        }
 
         RequestDispatcher rd = request.getRequestDispatcher("/WEB-INF/jsp/game/about.jsp");
         rd.forward(request, response);

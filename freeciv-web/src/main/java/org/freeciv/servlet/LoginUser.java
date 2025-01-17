@@ -72,7 +72,7 @@ public class LoginUser extends HttpServlet {
 					"SELECT id, secure_hashed_password "
 							+ "FROM auth "
 							+ "WHERE LOWER(username) = LOWER(?) "
-							+ "	AND verified = '1' LIMIT 1";
+							+ "	AND verified = TRUE LIMIT 1";
 			PreparedStatement ps1 = conn.prepareStatement(saltHashQuery);
 			ps1.setString(1, username);
 			ResultSet rs1 = ps1.executeQuery();

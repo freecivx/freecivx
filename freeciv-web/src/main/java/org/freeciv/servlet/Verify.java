@@ -29,7 +29,7 @@ public class Verify extends HttpServlet {
             DataSource ds = (DataSource) env.lookup(Constants.JNDI_DDBBCON_MYSQL);
             conn = ds.getConnection();
 
-            String query = "UPDATE auth SET verified = '1' where verifykey = ?";
+            String query = "UPDATE auth SET verified = TRUE where verifykey = ?";
             PreparedStatement preparedStatement = conn.prepareStatement(query);
             preparedStatement.setString(1,id);
             preparedStatement.executeUpdate();

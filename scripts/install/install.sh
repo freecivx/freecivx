@@ -253,23 +253,41 @@ for action in start stop; do
   fi
 done
 
+
+if [ "${FCW_INSTALL_MODE}" == TEST ]; then
+  echo "==== Configuring for H2 Java database. ===="
+  rm "${basedir}/config/flyway.tmpl
+  rm "${basedir}/config/web.context.tmpl
+  sudo mkdir -p /var/lib/freecivx
+  sudo chmod 775 /var/lib/freecivx
+else
+  rm "${basedir}/config/flyway_h2.tmpl
+  rm "${basedir}/config/web.context_h2.tmpl
+fi
+
+
 echo "==== Filling configuration templates ===="
 "${basedir}/config/gen-from-templates.sh"
 
-echo "==== Setting up DB ===="
-pidof mysqld > /dev/null || start_svc mariadb || start_svc mysql
-if [ -z "${DB_ROOT_PASSWORD}" ]; then
-  echo "Will need the DB root password twice"
-fi
-sudo mysqladmin -u root -p"${DB_ROOT_PASSWORD}" create "${DB_NAME}"
-sudo mysql -u root -p"${DB_ROOT_PASSWORD}" << EOF
-CREATE USER '${DB_USER}'@'localhost' IDENTIFIED BY '${DB_PASSWORD}',
+if [ "${FCW_INSTALL_MODE}" != TEST ]; then
+  echo "==== Setting up MySQL DB ===="
+  pidof mysqld > /dev/null || start_svc mariadb || start_svc mysql
+  if [ -z "${DB_ROOT_PASSWORD}" ]; then  
+    echo "Will need the DB root password twice"
+  fi
+  sudo mysqladmin -u root -p"${DB_ROOT_PASSWORD}" create "${DB_NAME}"
+  sudo mysql -u root -p"${DB_ROOT_PASSWORD}" << EOF
+  CREATE USER '${DB_USER}'@'localhost' IDENTIFIED BY '${DB_PASSWORD}',
             '${DB_USER}'@'127.0.0.1' IDENTIFIED BY '${DB_PASSWORD}',
             '${DB_USER}'@'::1'       IDENTIFIED BY '${DB_PASSWORD}';
-GRANT ALL ON ${DB_NAME}.* TO '${DB_USER}'@'localhost',
+  GRANT ALL ON ${DB_NAME}.* TO '${DB_USER}'@'localhost',
                              '${DB_USER}'@'127.0.0.1',
                              '${DB_USER}'@'::1';
-EOF
+  EOF
+   
+fi
+
+
 
 echo "==== Preparing Tomcat ===="
 cd "${TOMCAT_HOME}"

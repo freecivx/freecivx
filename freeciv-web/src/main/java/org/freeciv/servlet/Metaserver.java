@@ -199,7 +199,7 @@ public class Metaserver extends HttpServlet {
 
 				if (isSettingPlayers) {
 
-					query = "INSERT INTO players (hostport, user, name, nation, flag, type, host) VALUES (?, ?, ?, ?, ?, ?, ?)";
+					query = "INSERT INTO players (hostport, username, name, nation, flag, type, host) VALUES (?, ?, ?, ?, ?, ?, ?)";
 					statement = conn.prepareStatement(query);
 					try {
 						for (int i = 0; i < sPlUser.size(); i++) {
@@ -228,7 +228,7 @@ public class Metaserver extends HttpServlet {
 
 			if ((!variableNames.isEmpty()) && (!variableValues.isEmpty())) {
 
-				query = "INSERT INTO variables (hostport, name, value) VALUES (?, ?, ?)";
+				query = "INSERT INTO variables (hostport, name, setting) VALUES (?, ?, ?)";
 				statement = conn.prepareStatement(query);
 				try {
 					for (int i = 0; i < variableNames.size(); i++) {

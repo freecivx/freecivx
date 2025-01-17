@@ -43,13 +43,13 @@ CREATE TABLE `auth` (
 CREATE TABLE `players` (
   `hostport` varchar(255) NOT NULL DEFAULT 'unknown:5556',
   `name` varchar(64) NOT NULL DEFAULT 'name',
-  `user` varchar(64) DEFAULT NULL,
+  `username` varchar(64) DEFAULT NULL,
   `nation` varchar(64) DEFAULT NULL,
   `type` varchar(10) DEFAULT NULL,
   `host` varchar(255) DEFAULT 'unknown',
   `flag` varchar(128) DEFAULT NULL,
   PRIMARY KEY (`hostport`,`name`)
-) ENGINE=InnoDB DEFAULT CHARSET=latin1 MAX_ROWS=8192;
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -89,7 +89,7 @@ CREATE TABLE `servers` (
   `available` int(11) DEFAULT '0',
   `serverid` varchar(255) DEFAULT NULL,
   PRIMARY KEY (`host`,`port`)
-) ENGINE=InnoDB DEFAULT CHARSET=latin1 MAX_ROWS=256;
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -101,7 +101,7 @@ CREATE TABLE `servers` (
 CREATE TABLE `variables` (
   `hostport` varchar(64) NOT NULL DEFAULT '',
   `name` varchar(64) NOT NULL DEFAULT '',
-  `value` varchar(64) DEFAULT NULL,
+  `setting` varchar(64) DEFAULT NULL,
   PRIMARY KEY (`hostport`,`name`)
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 /*!40101 SET character_set_client = @saved_cs_client */;
@@ -115,17 +115,14 @@ CREATE TABLE `variables` (
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
+IF '${db.type}' = 'mysql' THEN
 CREATE EVENT freeciv_web_server_cleanup
     ON SCHEDULE
       EVERY 30 MINUTE
     COMMENT 'Removes unused Freeciv-web servers from metaserver'
     DO
       DELETE FROM servers where stamp <= DATE_SUB(NOW(), INTERVAL 30 MINUTE);
+END IF;
 
-DROP TABLE IF EXISTS `turncount`;
-CREATE TABLE `turncount` (
-  `count` BIGINT NOT NULL DEFAULT 0
-);
-INSERT INTO turncount (count) VALUES (0);
 
 

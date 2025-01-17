@@ -72,7 +72,7 @@ public class GameStatistics extends HttpServlet {
 					+ "	(SELECT COUNT(*) FROM servers WHERE state = 'Running') AS ongoingGames, " //
 					+ "	(SELECT SUM(gameCount) FROM games_played_stats WHERE gametype IN (0, 5)) AS totalSinglePlayerGames, " //
 					+ "	(SELECT SUM(gameCount) FROM games_played_stats WHERE gametype IN (1, 2)) AS totalMultiPlayerGames," //
-					+ " (SELECT COUNT(*) FROM auth where verified='1') AS players";
+					+ " (SELECT COUNT(*) FROM auth where verified=TRUE) AS players";
 
 			PreparedStatement preparedStatement = conn.prepareStatement(query);
 			ResultSet rs = preparedStatement.executeQuery();
