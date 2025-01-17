@@ -191,10 +191,10 @@ if [ $(id -u) = 0 ]; then
 fi
 
 if [ ! -f "${basedir}"/config/config ]; then
-  if [ "${FCW_INSTALL_MODE}" = TEST ]; then
+  if [[ "${FCW_INSTALL_MODE}" = TEST || "${FCW_INSTALL_MODE}" = TEST_GITHUB ]]; then
     cp "${basedir}"/config/config{.dist,}
     echo "Default config parameters used"
-  else
+  else 
     echo >&2 "Please copy config/config.dist to config/config and"
     echo >&2 "edit its content to suit your needs."
     exit 4
