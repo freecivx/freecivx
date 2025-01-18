@@ -84,3 +84,5 @@ tests/screenshot*.png
 *.iml
 *zone.identifier
 *Zone.Identifier
+flyway.tmpl
+web.context.tmpl
