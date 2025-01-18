@@ -5,9 +5,11 @@ FreecivX can easily be built and run from Podman.
 
  1. Get Podman from: https://podman.io/
 
- 2. Run the following from the freeciv-web directory:
+ 2. Run the following from the freeciv-web directory as root:
 
     ```sh
+    su
+    cd freecivx
     podman build -t freecivx .
     podman run -d -p 80:80 --name freecivxyz freecivx:latest
     ```
