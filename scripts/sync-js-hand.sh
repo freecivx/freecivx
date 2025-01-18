@@ -29,18 +29,18 @@ SOUNDS_DEST="${WEBAPP_DIR}/sounds"
 GAME_DEST="${DATA_APP_DIR}/savegames"
 
 mkdir -p "${DOCS_DEST}" "${JS_DEST}" "${SOUNDS_DEST}" "${GAME_DEST}" && \
-"${DIR}"/freeciv-img-extract/sync.sh -f "${FREECIV_DIR}" -o "${WEBAPP_DIR}" && \
-"${DIR}"/generate_js_hand/generate_js_hand.py -f "${FREECIV_DIR}" -o "${WEBAPP_DIR}" && \
-"${DIR}"/gen_event_types/gen_event_types.py -f "${FREECIV_DIR}" -o "${WEBAPP_DIR}" && \
-"${DIR}"/helpdata_gen/helpdata_gen.py -f "${FREECIV_DIR}" -o "${WEBAPP_DIR}" && \
-"${DIR}"/soundspec-extract/soundspec-extract.py -f "${FREECIV_DIR}" -o "${WEBAPP_DIR}" && \
+bash "${DIR}"/freeciv-img-extract/sync.sh -f "${FREECIV_DIR}" -o "${WEBAPP_DIR}" && \
+python3 "${DIR}"/generate_js_hand/generate_js_hand.py -f "${FREECIV_DIR}" -o "${WEBAPP_DIR}" && \
+python3 "${DIR}"/gen_event_types/gen_event_types.py -f "${FREECIV_DIR}" -o "${WEBAPP_DIR}" && \
+python3 "${DIR}"/helpdata_gen/helpdata_gen.py -f "${FREECIV_DIR}" -o "${WEBAPP_DIR}" && \
+python3 "${DIR}"/soundspec-extract/soundspec-extract.py -f "${FREECIV_DIR}" -o "${WEBAPP_DIR}" && \
 cp "${FREECIV_DIR}/data/stdsounds"/*.ogg "${SOUNDS_DEST}" && \
   echo "Copied sounds to ${SOUNDS_DEST}" && \
 cp "${FREECIV_DIR}/data/scenarios"/*.sav "${GAME_DEST}" && \
   echo "Copied scenarios to ${GAME_DEST}" && \
 cp "${DIR}/../LICENSE.md" "${DOCS_DEST}" && \
 (if [ -n "${UPDATE_EXTERNAL_SOURCES}" ]; then
-  "${DIR}"/update-wikipedia-docs.py -f "${FREECIV_DIR}" -o "${WEBAPP_DIR}"
+  python3 "${DIR}"/update-wikipedia-docs.py -f "${FREECIV_DIR}" -o "${WEBAPP_DIR}"
     echo "Wikipedia content updated."
     echo "  Some images or content may be stale - please review the generated files"
     echo "  for suitability."

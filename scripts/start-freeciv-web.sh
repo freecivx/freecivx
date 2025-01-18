@@ -29,7 +29,7 @@ fi
 
 # Start Freeciv-web's dependency services according to the users
 # configuration.
-./dependency-services-start.sh
+bash ./dependency-services-start.sh
 if [ "${TOMCATMANAGER}" = "Y" ]; then
     if [ -z "${TOMCATMANAGER_PASSWORD}" ]; then
         echo "Please enter tomcat-manager password for ${TOMCATMANAGER_USER}"

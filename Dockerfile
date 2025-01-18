@@ -1,7 +1,7 @@
-# Freeciv-web docker file
+# FreecivX docker file
 # Dockerfile update based on debian/tomcat package
 
-FROM ubuntu:noble
+FROM ubuntu:latest
 
 MAINTAINER FREECIVX : 3.3
 
@@ -32,6 +32,7 @@ COPY .git /docker/.git
 COPY freeciv /docker/freeciv
 COPY freeciv-web /docker/freeciv-web
 COPY publite2 /docker/publite2
+COPY LICENSE.md /docker/LICENSE.md
 
 COPY scripts /docker/scripts
 COPY config /docker/config
@@ -45,7 +46,7 @@ WORKDIR /docker/scripts/
 RUN DEBIAN_FRONTEND=noninteractive sudo apt-get update --yes --quiet && \
     DEBIAN_FRONTEND=noninteractive DEB_NO_TOMCAT=Y \
                                    PIP_SKIP=Y \
-                                   install/install.sh --mode=TEST && \
+                                   bash install/install.sh --mode=TEST && \
     DEBIAN_FRONTEND=noninteractive sudo apt-get clean --yes && \
     sudo rm --recursive --force /var/lib/apt/lists/*
 

@@ -271,7 +271,7 @@ fi
 
 
 echo "==== Filling configuration templates ===="
-"${basedir}/config/gen-from-templates.sh"
+bash "${basedir}/config/gen-from-templates.sh"
 
 if [ "${FCW_INSTALL_MODE}" != TEST ]; then
   echo "==== Setting up MySQL DB ===="
@@ -306,7 +306,7 @@ echo "Please be patient"
 echo "If you get an error: Clock skew detected, on Windows, then try setting the clock exactly correct on your computer using ntp or some clock software."
 
 cd "${basedir}"/freeciv && \
-  ./prepare_freeciv.sh  && \
+  bash ./prepare_freeciv.sh  && \
   cd build && ninja install || \
   handle_error 5 "Failed to install freeciv"
 
@@ -321,7 +321,7 @@ mig_scripts=([0-9]*)
 echo "${mig_scripts[-1]}" > checkpoint
 
 mkdir -p "${basedir}/freeciv-web/src/derived/webapp" && \
-"${basedir}"/scripts/sync-js-hand.sh \
+bash "${basedir}"/scripts/sync-js-hand.sh \
   -f "${basedir}/freeciv/freeciv" \
   -i "${HOME}/freeciv" \
   -o "${basedir}/freeciv-web/src/derived/webapp" \
@@ -329,7 +329,7 @@ mkdir -p "${basedir}/freeciv-web/src/derived/webapp" && \
   handle_error 6 "Failed to synchronize freeciv project"
 
 cd "${basedir}"/freeciv-web && \
-  ./build.sh -B || \
+  bash ./build.sh -B || \
   handle_error 7 "Failed to build freeciv-web server"
 
 echo "==== Setting up nginx ===="
@@ -373,8 +373,8 @@ EOF
 
 echo "Starting Freecivx.net"
 cd "${basedir}"/scripts/
-./stop-freeciv-web.sh || echo "stop not done"
+bash ./stop-freeciv-web.sh || echo "stop not done"
 killall -9 java || echo "java not stopped"
-./start-freeciv-web.sh 
+bash ./start-freeciv-web.sh 
 sleep 4
 
