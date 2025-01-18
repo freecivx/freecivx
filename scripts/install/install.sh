@@ -259,12 +259,15 @@ done
 if [ "${FCW_INSTALL_MODE}" = "TEST" ]; then
   echo "==== Configuring for H2 Java database. ===="
   rm "${basedir}/config/flyway.tmpl" || echo "ok"
-  rm "${basedir}/config/web.context.tmpl" || echo "ok"   
+  rm "${basedir}/config/web.context.tmpl" || echo "ok"
+  sudo mkdir -p /var/lib/freecivx
+  sudo chmod 777 /var/lib/freecivx
+  sudo touch /var/lib/freecivx/freecivx.mv.db
+  sudo chmod 777 /var/lib/freecivx/freecivx.mv.db
 else
   rm "${basedir}/config/flyway_h2.tmpl" || echo "ok"
   rm "${basedir}/config/web.context_h2.tmpl" || echo "ok"
 fi
-
 
 
 echo "==== Filling configuration templates ===="
