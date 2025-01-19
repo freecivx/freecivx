@@ -155,7 +155,7 @@ public class GameDetails extends HttpServlet {
 				player.flag = rs.getString("flag");
 				player.name = rs.getString("name");
 				player.nation = rs.getString("nation");
-				player.user = rs.getString("user");
+				player.user = rs.getString("username");
 				player.type = rs.getString("type");
 				players.add(player);
 			}
@@ -175,6 +175,7 @@ public class GameDetails extends HttpServlet {
 			request.setAttribute("variables", variables);
 
 		} catch (Exception err) {
+			System.out.println(err);
 			request.removeAttribute("state");
 			RequestDispatcher rd = request.getRequestDispatcher("/WEB-INF/jsp/game/details.jsp");
 			rd.forward(request, response);

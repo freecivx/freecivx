@@ -30,7 +30,7 @@ public class Games {
 
 			query = "SELECT COUNT(*) AS count " //
 					+ "FROM servers s " //
-					+ "WHERE type IN ('multiplayer', 'longturn') " //
+					+ "WHERE type IN ('multiplayer') " //
 					+ "	AND ( " //
 					+ "		state = 'Running' OR " //
 					+ "		(state = 'Pregame' " //
@@ -73,15 +73,15 @@ public class Games {
 					+ "	(SELECT COUNT(*) " //
 					+ "	  FROM players " //
 					+ "	 WHERE type = 'Human' " //
-					+ "	   AND hostport =  s.host || ':' || s.port " //
+					+ "	   AND hostport LIKE  CONCAT(s.host, ':', s.port) " //
 					+ "	) AS players," //
 					+ "	(SELECT setting " //
 					+ "	  FROM variables " //
 					+ "	  WHERE name = 'turn' " //
-					+ "	    AND hostport = s.host  || ':' || s.port " //
+					+ "	    AND hostport = CONCAT(s.host, ':', s.port) LIMIT 1" //
 					+ "	) AS turn " //
 					+ "FROM servers s " //
-					+ "WHERE type IN ('multiplayer', 'longturn') OR message LIKE '%Multiplayer%' " //
+					+ "WHERE type IN ('multiplayer') OR message LIKE '%Multiplayer%' " //
 					+ "ORDER BY humans DESC, state DESC";
 
 			statement = connection.prepareStatement(query);
