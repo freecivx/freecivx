@@ -1052,8 +1052,8 @@ function city_name_dialog(suggested_name, unit_id) {
 
   $("#city_name_dialog").dialog('open');
 
-  $('#city_name_dialog').keyup(function(e) {
-    if (e.keyCode == 13) {
+  $(document).keydown(function(e) {
+    if (e.keyCode === 13 && $('#city_name_dialog').is(':visible')) {
       var name = $("#city_name_req").val();
       var actor_unit = game_find_unit_by_number(unit_id);
       request_unit_do_action(ACTION_FOUND_CITY,

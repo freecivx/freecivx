@@ -243,7 +243,7 @@ function load_model(filename)
         node.geometry.computeVertexNormals();
 
         if (filename == "Oasis" && node['name'] == "Groundlow") {
-          node.material.opacity = 0.45;
+          node.material.opacity = 0.7;
           node.material.transparent = true;
         }
         if (filename == "Wheat" ) {
