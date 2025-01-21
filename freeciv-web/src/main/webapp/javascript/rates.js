@@ -40,7 +40,7 @@ function show_tax_rates_dialog()
   $("<div id='rates_dialog'></div>").appendTo("div#game_page");
 
   var dhtml = "<h2>Select tax, luxury and science rates</h2>"
-    + "<form name='rates'><table border='0' style='color: #ffffff;'>"
+    + "<form name='rates'><table border='0'>"
     + "<tr> <td><span>Tax:</td> <td> <div class='slider' id='slider-tax' tabIndex='1'></div>"
     + "</td><td>"
     + "<div id='tax_result' style='float:left;'></div></td>"

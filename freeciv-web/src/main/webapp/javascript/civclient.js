@@ -99,7 +99,7 @@ function civclient_init()
   timeoutTimerId = setInterval(update_timeout, 1000);
 
   update_game_status_panel();
-  statusTimerId = setInterval(update_game_status_panel, 6000);
+  statusTimerId = setInterval(update_game_status_panel, 20000);
 
   motd_init();
 

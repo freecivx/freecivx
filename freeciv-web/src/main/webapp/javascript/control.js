@@ -391,40 +391,6 @@ function update_mouse_cursor()
   } else {
     $("#mapcanvas").css("cursor", "default");
   }
-
-  if (tile_info_popup_setting && (last_info_tile == null || last_info_tile != ptile)) {
-
-    var inputElement = $('#game_text_input');
-    if (inputElement.is(':focus')) {
-      return;
-    }
-
-    next_tile_info = ptile;
-    if (tileInfoTimeoutId >= 0) {
-      clearTimeout(tileInfoTimeoutId);
-    }
-    tileInfoTimeoutId = setTimeout(delayed_tile_info_req, 200);
-
-  }
-}
-
-/****************************************************************************
-...
-****************************************************************************/
-function delayed_tile_info_req() {
-  tileInfoTimeoutId = -1;
-
-  if (active_city != null) {
-    $("#tile_dialog").remove();
-    return;
-  }
-
-  if (last_info_tile == next_tile_info) {
-    return;
-  }
-
-  last_info_tile = next_tile_info;
-  popit_req(next_tile_info);
 }
 
 /****************************************************************************

@@ -89,10 +89,16 @@ function update_game_status_panel(force_status_on_map) {
       net_income = "+" + pplayer['expected_income'];
     }
 
-    if (!is_small_screen()) status_html += "<b>" + pplayer['name'] + " - " + nations[pplayer['nation']]['adjective'] + "</b> &nbsp;&nbsp; <i class='fa fa-child' aria-hidden='true' title='Population'></i>: ";
-    if (!is_small_screen()) status_html += "<b>" + civ_population(client.conn.playing.playerno) + "</b>  &nbsp;&nbsp;";
-    if (!is_small_screen()) status_html += "<i class='fa fa-clock-o' aria-hidden='true' title='Year (turn)'></i>: <b>" + get_year_string() + "</b> &nbsp;&nbsp;";
-    status_html += "<img src='/images/coinage.png'> ";
+    if (!is_small_screen()) {
+      var pnation = nations[pplayer['nation']];
+      var flag_file = pnation['graphic_str'] + ".svg";
+
+      status_html += "<b>" + pnation['adjective'] + " " + pplayer['name'] + "</b> <img src='/images/flags/" + flag_file + "' height='26px' id='top_flag'>&nbsp;&nbsp;"
+                    + "<i class='fa fa-child' aria-hidden='true' title='Population'></i>: ";
+      status_html += "<b>" + civ_population(client.conn.playing.playerno) + "</b>  &nbsp;&nbsp;";
+      status_html += "<i class='far fa-clock' title='Year (turn)'></i>: <b>" + get_year_string() + "</b> &nbsp;&nbsp;";
+    }
+     status_html += "<img src='/images/coinage.png'>: ";
     if (pplayer['expected_income'] >= 0) {
       status_html += "<b title='Gold (net income)'>";
     } else {
@@ -123,10 +129,8 @@ function update_game_status_panel(force_status_on_map) {
     }
   }
 
-
-  var page_title = "FreecivX.net - " + username
-                                    + "  (turn:" + game_info['turn'] + ", port:"
-                                    + civserverport + ") ";
+  var page_title = "FREECIVX.NET - " + username
+                                    + "  turn:" + game_info['turn'];
   if (server_settings['metamessage'] != null) {
     page_title += server_settings['metamessage']['val'];
   }
@@ -149,9 +153,9 @@ function get_year_string()
                   + calendar_info['positive_year_label'] + " ";
   }
   if (is_small_screen()) {
-    year_string += "(T:" + game_info['turn'] + ")";
+    year_string += game_info['turn'];
   } else {
-    year_string += "(Turn:" + game_info['turn'] + ")";
+    year_string += "Turn:" + game_info['turn'];
   }
   return year_string;
 }

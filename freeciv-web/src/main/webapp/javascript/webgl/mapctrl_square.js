@@ -150,6 +150,7 @@ function webglOnDocumentMouseDown(e) {
     check_mouse_drag_unit(ptile);
     touch_start_x = mouse_x;
     touch_start_y = mouse_y;
+    popit_req(ptile);
 
   } else if (middleclick || e['altKey']) {
     popit();
