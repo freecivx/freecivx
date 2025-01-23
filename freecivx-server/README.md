@@ -1,4 +1,4 @@
-# Freecivx Server (Java)
+# Freecivx Server Java
 
 **freecivx-server** is a multiplayer server implemented in Java for [Freecivx.net](https://freecivx.net). It supports large-scale multiplayer games with modern Java features.
 
@@ -18,6 +18,8 @@ License: GNU Affero General Public License
 - **Protocols**:
   - **WebSockets** for real-time communication.
   - **JSON** or **Protocol Buffers** (Protobuf) for efficient data exchange.
+- **Security:** Java is significantly more secure than C.
+
 
 ## Getting Started
 
