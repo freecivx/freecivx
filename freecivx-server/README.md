@@ -10,7 +10,7 @@ License: GNU Affero General Public License
 - **Multiplayer-focused**: Designed for hosting large-scale multiplayer games.
 - **Scalability**:
   - Supports many concurrent players, more than 1000 players.
-  - Handle large maps for MMO-style gameplay. 1000 x 1000 tiles.
+  - Handle large maps for MMO-style gameplay. 1000 x 1000 map tiles.
   - Designed for long-running games, where players can join existing games.
 - **Modern Java Features**:
   - Requires **Java 21** or later.
