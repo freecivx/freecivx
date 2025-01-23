@@ -37,8 +37,9 @@ FreecivX.net consists of these components:
   Implemented in Javascript, Java, JSP, HTML and CSS. Built with maven and runs 
   on Tomcat and nginx.
 
-* [Freeciv](freeciv) - the Freeciv C server, which is checked out from the official
-  Git repository, and patched to work with a WebSocket/JSON protocol. Implemented in C.
+* [Freecivx-server](freecivx-server) - the Freecivx server. Implemented in Java.  Multiplayer and large MMO-games.
+
+* [Freeciv](freeciv) - the Freeciv C server. Forked. Implemented in C.
 
 * [Publite2](publite2) - a process launcher for Freeciv C servers, which manages
   multiple Freeciv server processes and checks capacity through the Metaserver. 

@@ -81,7 +81,7 @@ public class Games {
 					+ "	    AND hostport = CONCAT(s.host, ':', s.port) LIMIT 1" //
 					+ "	) AS turn " //
 					+ "FROM servers s " //
-					+ "WHERE type IN ('multiplayer') OR message LIKE '%Multiplayer%' " //
+					+ "WHERE type IN ('multiplayer', 'freecivx') OR message LIKE '%Multiplayer%' " //
 					+ "ORDER BY humans DESC, state DESC";
 
 			statement = connection.prepareStatement(query);
