@@ -15,9 +15,9 @@ under the GNU Affero General Public License. The 3D models are also "open source
 FreecivX.net is a game about history, technology and human achievements. The developers of this game encourages peace and technological development as a winning strategy.
 
 
-Live servers
+Live server:
 ------------
-Currently known servers based on FreecivX.net / Freeciv-web, which are open source in compliance with [the AGPL license](LICENSE.md):
+Currently known servers based on FreecivX which are open source in compliance with [the AGPL license](LICENSE.md):
 
 https://Freecivx.net 
 
