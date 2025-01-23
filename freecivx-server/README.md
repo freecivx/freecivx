@@ -6,11 +6,12 @@ License: GNU Affero General Public License
 
 ## Features
 
+- **Freeciv game rules and ruleset compatibility**: Maintain compatibility with existing Freeciv game rules and rulesets.
 - **Multiplayer-focused**: Designed for hosting large-scale multiplayer games.
 - **Scalability**:
-  - Supports many concurrent players.
-  - Handles massive maps for MMO-style gameplay.
-  - Designed for long-running games.
+  - Supports many concurrent players, more than 1000 players.
+  - Handle large maps for MMO-style gameplay. 1000 x 1000 tiles.
+  - Designed for long-running games, where players can join existing games.
 - **Modern Java Features**:
   - Requires **Java 21** or later.
   - Utilizes **virtual threads** for high concurrency and lightweight task management.
