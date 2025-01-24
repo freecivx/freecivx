@@ -16,6 +16,11 @@
     </properties>
 
     <dependencies>
+        <dependency>
+            <groupId>org.json</groupId>
+            <artifactId>json</artifactId>
+            <version>20250107</version>
+        </dependency>
         <!-- WebSocket library -->
         <dependency>
             <groupId>org.java-websocket</groupId>
@@ -62,7 +67,7 @@
                     <archive>
                         <manifest>
                             <addClasspath>true</addClasspath>
-                            <mainClass>net.freecivx.Main</mainClass>
+                            <mainClass>net.freecivx.main.Main</mainClass>
                         </manifest>
                     </archive>
                 </configuration>
@@ -83,7 +88,7 @@
                 <configuration>
                     <transformers>
                         <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
-                            <mainClass>net.freecivx.Main</mainClass>
+                            <mainClass>net.freecivx.main.Main</mainClass>
                         </transformer>
                     </transformers>
                 </configuration>

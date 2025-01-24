@@ -30,6 +30,7 @@ var ping_last = new Date().getTime();
 var pingtime_check = 240000;
 var ping_timer = null;
 let incomplete_messages_from_server_buffer = "";
+var freecivx_server = true;
 
 /****************************************************************************
   Initialized the Network communication, by requesting a valid server port.
@@ -67,7 +68,11 @@ function network_init()
   Initialized the WebSocket connection.
 ****************************************************************************/
 function websocket_init() {
-    const proxyport = 1000 + parseFloat(civserverport);
+    var proxyport = parseFloat(civserverport);
+    if (proxyport < 7800) {
+        proxyport += 1000; // Freeciv C server with Websockify.
+        freecivx_server = false;
+    }
     const ws_protocol = (window.location.protocol === 'https:') ? "wss://" : "ws://";
     const port = window.location.port ? `:${window.location.port}` : '';
     ws = new WebSocket(`${ws_protocol}${window.location.hostname}${port}/civsocket/${proxyport}`);
@@ -123,6 +128,14 @@ function handleWebSocketMessage(event) {
                     // Not a complete JSON yet, break and wait for more data
                     break;
                 }
+            }
+        } else if (freecivx_server) {
+            console.log("Got packet: " + event.data);
+            try {
+                const json = JSON.parse(event.data);
+                client_handle_packet([json]);
+            } catch (jsonError) {
+                console.error("Error parsing JSON:", jsonError, "String:", event.data);
             }
         } else {
             console.error("Received data of unknown type:", typeof event.data);
@@ -185,6 +198,11 @@ function send_request(packet_payload) {
     if (ws == null || ws.readyState !== WebSocket.OPEN) {
         console.error("WebSocket is not open. ReadyState:", ws ? ws.readyState : 'WebSocket not initialized');
         return;
+    }
+
+    if (freecivx_server) {
+      ws.send(packet_payload);
+      return;
     }
 
     try {

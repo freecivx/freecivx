@@ -40,7 +40,10 @@ url="http://${TOMCATMANAGER_USER}:${TOMCATMANAGER_PASSWORD}@localhost:8080/manag
 EOF
 fi
 
-#3. publite2
+echo "Starting Freecivx-server-java" && \
+(cd ${FREECIV_WEB_DIR}/freecivx-server/ && \
+sh civserver.sh) && \
+
 echo "Starting publite2" && \
 (cd ${FREECIV_WEB_DIR}/publite2/ && \
 sh run.sh) && \
