@@ -4,7 +4,9 @@ Run FreecivX.net on Windows Subsystem for Linux (WSL)
 
   
 
-Allows running Freeciv3D on an Ubuntu Linux in Windows.
+Allows running Freecivx on an Ubuntu Linux in Windows. 
+This might be a good development environment for Freecivx. 
+Remember to disable Windows realtime antivirus to get good performance.
 
   
 ## 1. Running FreecivX on WSL:
