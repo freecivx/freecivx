@@ -18,6 +18,7 @@ public class Game {
      */
     public void startGame()
     {
+        server.sendMessageAll("Starting new game.");
         server.sendNationInfoAll(1, "Soviet", "Soviet");
         server.sendGameInfoAll();
         server.sendMapInfoAll();

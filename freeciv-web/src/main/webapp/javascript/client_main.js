@@ -267,18 +267,15 @@ function show_endgame_dialog()
 function update_metamessage_on_gamestart()
 {
 
-  if ($.getUrlVar('action') == null || $.getUrlVar('action') == "new" || $.getUrlVar('action') == "earthload" 
+  if ($.getUrlVar('action') == null || $.getUrlVar('action') == "new"
       || $.getUrlVar('scenario') == "true") {
       $.post("/freeciv_time_played_stats?type=single3d").fail(function() {});
   }
   if ($.getUrlVar('action') == "multi" && client.conn.playing != null
-      && client.conn.playing['pid'] == players[0]['pid'] ) {
+      && players[0] != null && client.conn.playing['pid'] == players[0]['pid'] ) {
     $.post("/freeciv_time_played_stats?type=multi").fail(function() {});
   }
-  if ($.getUrlVar('action') == "hotseat") {
-    $.post("/freeciv_time_played_stats?type=hotseat").fail(function() {});
-    send_message("/metamessage hotseat game" );
-  }
+
 }
 
 /**************************************************************************

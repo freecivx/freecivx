@@ -43,13 +43,10 @@ public class CivServer extends org.java_websocket.server.WebSocketServer {
 
     @Override
     public void onOpen(WebSocket conn, ClientHandshake handshake) {
-        int clientId = clientIdGenerator.getAndIncrement();
+        int clientId = (clientIdGenerator.getAndIncrement()) - 1;
         clients.put(clientId, conn);
         conn.setAttachment(clientId); // Attach the client ID to the connection
         System.out.println("New connection (ID: " + clientId + "): " + conn.getRemoteSocketAddress());
-
-        // Send a welcome message with the client ID
-
 
         sendMessage(clientId, "Your client ID is: " + clientId);
 
@@ -87,7 +84,7 @@ public class CivServer extends org.java_websocket.server.WebSocketServer {
             conn.send(msg.toString());
 
             sendPlayerInfoAll(connId, username, username );
-            sendConnInfoAll(connId, username );
+            sendConnInfoAll(connId, username, conn.getRemoteSocketAddress().toString() );
         }
 
         if (pid == Packets.PACKET_PLAYER_READY) {
@@ -98,11 +95,7 @@ public class CivServer extends org.java_websocket.server.WebSocketServer {
         if (pid == Packets.PACKET_CHAT_MSG_REQ) {
             String message = json.optString("message");
 
-            JSONObject msg = new JSONObject();
-            msg.put("pid", Packets.PACKET_CHAT_MSG);
-            msg.put("message", message);
-            msg.put("event", 95);
-            conn.send(msg.toString());
+            sendMessageAll(message);
         }
     }
 
@@ -174,8 +167,8 @@ public class CivServer extends org.java_websocket.server.WebSocketServer {
     public void sendMapInfoAll() {
         JSONObject msg = new JSONObject();
         msg.put("pid", Packets.PACKET_MAP_INFO);
-        msg.put("xsize", 40);
-        msg.put("ysize", 40);
+        msg.put("xsize", 100);
+        msg.put("ysize", 100);
 
         for (WebSocket conn : clients.values()) {
             conn.send(msg.toString());
@@ -210,9 +203,9 @@ public class CivServer extends org.java_websocket.server.WebSocketServer {
     }
 
     public void sendTileInfoAll() {
-        int width = 40;
-        for (int x = 0; x < 40; x++) {
-            for (int y = 0; y < 40; y++) {
+        int width = 100;
+        for (int x = 0; x < 100; x++) {
+            for (int y = 0; y < 100; y++) {
                 int index = y * width + x;
                 JSONObject msg = new JSONObject();
                 msg.put("pid", Packets.PACKET_TILE_INFO);
@@ -231,7 +224,7 @@ public class CivServer extends org.java_websocket.server.WebSocketServer {
 
     }
 
-    public void sendConnInfoAll(int id, String username) {
+    public void sendConnInfoAll(int id, String username, String address) {
         JSONObject msg = new JSONObject();
         msg.put("pid", Packets.PACKET_CONN_INFO);
         msg.put("id", id);
@@ -239,6 +232,7 @@ public class CivServer extends org.java_websocket.server.WebSocketServer {
         msg.put("used", true);
         msg.put("established", true);
         msg.put("player_num", 1);
+        msg.put("addr", address);
         for (WebSocket conn : clients.values()) {
             conn.send(msg.toString());
         }

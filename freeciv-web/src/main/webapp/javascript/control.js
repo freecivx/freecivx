@@ -3230,7 +3230,7 @@ function popit_req(ptile)
 
 
 /**************************************************************************
-   find any city to focus on.
+   find any city to focus on, or at least something.
 **************************************************************************/
 function center_on_any_city()
 {
@@ -3239,6 +3239,7 @@ function center_on_any_city()
     center_tile_mapcanvas(city_tile(pcity));
     return;
   }
+  center_tile_mapcanvas(index_to_tile(0));
 }
 
 /**************************************************************************
