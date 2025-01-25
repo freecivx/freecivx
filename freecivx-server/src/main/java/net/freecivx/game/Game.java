@@ -59,7 +59,12 @@ public class Game {
         server.sendUnitAll(0, 0, 100, 0, 0, 1, 1, 0);
         server.sendUnitAll(1, 0, 100, 1, 0, 1, 1, 0);
         server.sendUnitAll(2, 0, 100, 2, 0, 1, 1, 0);
-
+        server.sendRulesetCityInfoAll(0, "European", "European");
+        server.sendRulesetCityInfoAll(1, "Classical", "Classical");
+        server.sendRulesetCityInfoAll(2, "Tropical", "Tropical");
+        server.sendRulesetCityInfoAll(3, "Asian", "Asian");
+        server.sendCityShortInfoAll(0, 0, 102, 1, 1, true, false, 0, true, false, "", "Trondheim");
+        server.sendCityInfoAll(0, 0, 102, 1, 1, true, false, 0, true, false, "", "Trondheim", 6, 0);
         server.sendTileInfoAll();
         server.sendBordersServerSettingsAll();
         server.sendStartPhaseAll();

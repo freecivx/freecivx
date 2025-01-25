@@ -27,6 +27,7 @@ public class Packets {
     public static int PACKET_RULESET_TECH = 144;
     public static int PACKET_RULESET_GOVERNMENT = 145;
     public static int PACKET_RULESET_NATION = 148;
+    public static int PACKET_RULESET_CITY = 149;
     public static int PACKET_RULESET_TERRAIN = 151;
     public static int PACKET_SERVER_SETTING_CONST = 165;
     public static int PACKET_SERVER_SETTING_BOOL = 166;

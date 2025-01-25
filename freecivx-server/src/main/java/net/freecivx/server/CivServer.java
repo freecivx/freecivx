@@ -22,6 +22,7 @@ package net.freecivx.server;
 import net.freecivx.game.Game;
 import org.java_websocket.WebSocket;
 import org.java_websocket.handshake.ClientHandshake;
+import org.json.JSONArray;
 import org.json.JSONObject;
 
 import java.net.InetSocketAddress;
@@ -200,6 +201,18 @@ public class CivServer extends org.java_websocket.server.WebSocketServer {
         }
     }
 
+    public void sendRulesetCityInfoAll(int style_id, String name, String rule_name) {
+        JSONObject msg = new JSONObject();
+        msg.put("pid", Packets.PACKET_RULESET_CITY);
+        msg.put("style_id", style_id);
+        msg.put("name", name);
+        msg.put("rule_name", rule_name);
+
+        for (WebSocket conn : clients.values()) {
+            conn.send(msg.toString());
+        }
+    }
+
     public void sendRulesetUnitAll(int id, String name, String graphic_str, int move_rate, int hp,
         int veteran_levels, String helptext, int attack_strength, int defense_strength) {
             JSONObject msg = new JSONObject();
@@ -229,6 +242,71 @@ public class CivServer extends org.java_websocket.server.WebSocketServer {
         msg.put("veteran", veteran);
         msg.put("hp", hp);
         msg.put("activity", activity);
+        for (WebSocket conn : clients.values()) {
+            conn.send(msg.toString());
+        }
+    }
+
+    public void sendCityShortInfoAll(int id, int owner, int tile, int size, int style, boolean capital, boolean occupied, int walls, boolean happy,
+                                     boolean unhappy, String improvements, String name) {
+        JSONObject msg = new JSONObject();
+        msg.put("pid", Packets.PACKET_CITY_SHORT_INFO);
+        msg.put("id", id);
+        msg.put("tile", tile);
+        msg.put("owner", owner);
+        msg.put("original", owner);
+        msg.put("size", size);
+        msg.put("style", style);
+        msg.put("capital", capital);
+        msg.put("occupied", occupied);
+        msg.put("walls", walls);
+        msg.put("happy", happy);
+        msg.put("unhappy", unhappy);
+        msg.put("improvements", improvements);
+        msg.put("name", name);
+
+        for (WebSocket conn : clients.values()) {
+            conn.send(msg.toString());
+        }
+    }
+
+    public void sendCityInfoAll(int id, int owner, int tile, int size, int style, boolean capital, boolean occupied, int walls, boolean happy,
+                                     boolean unhappy, String improvements, String name, int production_kind, int production_value) {
+        JSONObject msg = new JSONObject();
+        msg.put("pid", Packets.PACKET_CITY_INFO);
+        msg.put("id", id);
+        msg.put("tile", tile);
+        msg.put("owner", owner);
+        msg.put("original", owner);
+        msg.put("size", size);
+        msg.put("style", style);
+        msg.put("capital", capital);
+        msg.put("occupied", occupied);
+        msg.put("walls", walls);
+        msg.put("happy", happy);
+        msg.put("unhappy", unhappy);
+        msg.put("improvements", improvements);
+        msg.put("name", name);
+        msg.put("production_kind", production_kind);
+        msg.put("production_value", production_value);
+
+        JSONArray pplHappyArray = new JSONArray();
+        pplHappyArray.put(1);
+        pplHappyArray.put(1);
+        pplHappyArray.put(2);
+        pplHappyArray.put(1);
+        pplHappyArray.put(1);
+
+        msg.put("ppl_happy", pplHappyArray);
+        msg.put("ppl_content", pplHappyArray);
+        msg.put("ppl_unhappy", pplHappyArray);
+        msg.put("ppl_angry", pplHappyArray);
+        msg.put("ppl_happy", pplHappyArray);
+
+
+
+        msg.put("surplus", pplHappyArray);
+        msg.put("prod", pplHappyArray);
         for (WebSocket conn : clients.values()) {
             conn.send(msg.toString());
         }
