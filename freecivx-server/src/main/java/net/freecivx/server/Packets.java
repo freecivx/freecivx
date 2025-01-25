@@ -15,6 +15,7 @@ public class Packets {
     public static int PACKET_PLAYER_INFO = 51;
     public static int PACKET_RESEARCH_INFO = 60;
     public static int PACKET_UNIT_INFO = 63;
+    public static int PACKET_UNIT_SHORT_INFO = 64;
     public static int PACKET_CONN_PING = 88;
     public static int PACKET_CONN_PONG = 89;
     public static int PACKET_CONN_INFO = 115;
@@ -30,6 +31,8 @@ public class Packets {
     public static int PACKET_SERVER_SETTING_CONST = 165;
     public static int PACKET_SERVER_SETTING_BOOL = 166;
     public static int PACKET_RULESET_EXTRA = 232;
+    public static int PACKET_WEB_PLAYER_INFO_ADDITION = 259;
+    public static int PACKET_CALENDAR_INFO = 255;
 
 
 }

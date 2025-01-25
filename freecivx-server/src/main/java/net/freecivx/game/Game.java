@@ -19,8 +19,10 @@ public class Game {
     public void startGame()
     {
         server.sendMessageAll("Starting new game.");
-        server.sendNationInfoAll(1, "Soviet", "Soviet");
+        server.sendNationInfoAll(1, "Soviet", "Soviet", "soviet");
+        server.sendNationInfoAll(2, "French", "French", "french");
         server.sendGameInfoAll();
+        server.sendCalendarInfoAll();
         server.sendMapInfoAll();
         server.sendExtrasInfoAll("River");
         server.sendExtrasInfoAll("Mine");
@@ -51,6 +53,13 @@ public class Game {
         server.sendTerrainInfoAll(11, "Plains");
         server.sendTerrainInfoAll(12, "Swamp");
         server.sendTerrainInfoAll(13, "Tundra");
+        server.sendRulesetUnitAll(0, "Settlers", "u.settlers", 1, 1, 1, "Settlers unit", 0, 1 );
+        server.sendRulesetUnitAll(1, "Workers", "u.worker", 1, 1, 1, "Workers unit", 0, 1 );
+        server.sendRulesetUnitAll(2, "Explorer", "u.explorer", 3, 1, 1, "Explorer unit", 0, 1 );
+        server.sendUnitAll(0, 0, 100, 0, 0, 1, 1, 0);
+        server.sendUnitAll(1, 0, 100, 1, 0, 1, 1, 0);
+        server.sendUnitAll(2, 0, 100, 2, 0, 1, 1, 0);
+
         server.sendTileInfoAll();
         server.sendBordersServerSettingsAll();
         server.sendStartPhaseAll();

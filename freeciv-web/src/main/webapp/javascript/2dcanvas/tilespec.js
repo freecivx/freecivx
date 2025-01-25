@@ -551,17 +551,8 @@ function get_tile_label_text(ptile)
 ****************************************************************************/
 function get_unit_image_sprite(punit)
 {
-  var from_type = get_unit_type_image_sprite(unit_type(punit));
+  return get_unit_type_image_sprite(unit_type(punit));
 
-  /* TODO: Find out what the purpose of this is, if it is needed here and if
-   * it is needed in get_unit_type_image_sprite() too. It was the only
-   * difference from get_unit_type_image_sprite() before
-   * get_unit_image_sprite() started to use it. It was added in
-   * f4a3ef358d1462d1f0ef7529982c417ddc402583 but that commit is to huge for
-   * me to figure out what it does. */
-  from_type["height"] = from_type["height"] - 2;
-
-  return from_type;
 }
 
 

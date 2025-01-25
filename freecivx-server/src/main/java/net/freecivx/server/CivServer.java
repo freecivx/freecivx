@@ -84,7 +84,8 @@ public class CivServer extends org.java_websocket.server.WebSocketServer {
             conn.send(msg.toString());
 
             sendPlayerInfoAll(connId, username, username );
-            sendConnInfoAll(connId, username, conn.getRemoteSocketAddress().toString() );
+            sendPlayerInfoAdditionAll(connId, 0);
+            sendConnInfoAll(connId, username, conn.getRemoteSocketAddress().toString(), connId );
         }
 
         if (pid == Packets.PACKET_PLAYER_READY) {
@@ -164,6 +165,18 @@ public class CivServer extends org.java_websocket.server.WebSocketServer {
         }
     }
 
+    public void sendCalendarInfoAll() {
+        JSONObject msg = new JSONObject();
+        msg.put("pid", Packets.PACKET_CALENDAR_INFO);
+        msg.put("positive_year_label", "AC");
+        msg.put("negative_year_label", "BC");
+
+
+        for (WebSocket conn : clients.values()) {
+            conn.send(msg.toString());
+        }
+    }
+
     public void sendMapInfoAll() {
         JSONObject msg = new JSONObject();
         msg.put("pid", Packets.PACKET_MAP_INFO);
@@ -185,8 +198,40 @@ public class CivServer extends org.java_websocket.server.WebSocketServer {
         for (WebSocket conn : clients.values()) {
             conn.send(msg.toString());
         }
+    }
 
+    public void sendRulesetUnitAll(int id, String name, String graphic_str, int move_rate, int hp,
+        int veteran_levels, String helptext, int attack_strength, int defense_strength) {
+            JSONObject msg = new JSONObject();
+            msg.put("pid", Packets.PACKET_RULESET_UNIT);
+            msg.put("id", id);
+            msg.put("name", name);
+            msg.put("graphic_str", graphic_str);
+            msg.put("move_rate", move_rate);
+            msg.put("hp", hp);
+            msg.put("veteran_levels", veteran_levels);
+            msg.put("helptext", helptext);
+            msg.put("attack_strength", attack_strength);
+            msg.put("defense_strength", defense_strength);
+        for (WebSocket conn : clients.values()) {
+            conn.send(msg.toString());
+        }
+    }
 
+    public void sendUnitAll(int id, int owner, int tile, int type, int facing, int veteran, int hp, int activity) {
+        JSONObject msg = new JSONObject();
+        msg.put("pid", Packets.PACKET_UNIT_SHORT_INFO);
+        msg.put("id", id);
+        msg.put("owner", owner);
+        msg.put("tile", tile);
+        msg.put("type", type);
+        msg.put("facing", facing);
+        msg.put("veteran", veteran);
+        msg.put("hp", hp);
+        msg.put("activity", activity);
+        for (WebSocket conn : clients.values()) {
+            conn.send(msg.toString());
+        }
     }
 
     public void sendExtrasInfoAll(String extra_name) {
@@ -224,15 +269,28 @@ public class CivServer extends org.java_websocket.server.WebSocketServer {
 
     }
 
-    public void sendConnInfoAll(int id, String username, String address) {
+    public void sendConnInfoAll(int id, String username, String address, int player_num) {
         JSONObject msg = new JSONObject();
         msg.put("pid", Packets.PACKET_CONN_INFO);
         msg.put("id", id);
         msg.put("username", username);
         msg.put("used", true);
         msg.put("established", true);
-        msg.put("player_num", 1);
+        msg.put("player_num", player_num);
         msg.put("addr", address);
+        for (WebSocket conn : clients.values()) {
+            conn.send(msg.toString());
+        }
+    }
+
+
+    public void sendPlayerInfoAdditionAll(int playerno, int expected_income) {
+        JSONObject msg = new JSONObject();
+        msg.put("pid", Packets.PACKET_WEB_PLAYER_INFO_ADDITION);
+        msg.put("playerno", playerno);
+        msg.put("expected_income", expected_income);
+
+
         for (WebSocket conn : clients.values()) {
             conn.send(msg.toString());
         }
@@ -251,13 +309,13 @@ public class CivServer extends org.java_websocket.server.WebSocketServer {
         }
     }
 
-    public void sendNationInfoAll(int id, String name, String adjective) {
+    public void sendNationInfoAll(int id, String name, String adjective, String graphic_str) {
         JSONObject msg = new JSONObject();
         msg.put("pid", Packets.PACKET_RULESET_NATION);
         msg.put("id", id);
         msg.put("name", name);
         msg.put("adjective", adjective);
-        msg.put("graphic_str", name);
+        msg.put("graphic_str", graphic_str);
 
         for (WebSocket conn : clients.values()) {
             conn.send(msg.toString());
