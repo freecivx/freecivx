@@ -341,7 +341,7 @@ public class CivServer extends org.java_websocket.server.WebSocketServer {
                 JSONObject msg = new JSONObject();
                 msg.put("pid", Packets.PACKET_TILE_INFO);
                 msg.put("tile", index);
-                msg.put("known", 1);
+                msg.put("known", 2);
                 msg.put("terrain", new Random().nextInt(12) + 1);
                 msg.put("resource", 1);
                 msg.put("extras", 1);
