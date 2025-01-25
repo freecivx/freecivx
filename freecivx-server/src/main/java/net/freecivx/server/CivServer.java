@@ -78,12 +78,7 @@ public class CivServer extends org.java_websocket.server.WebSocketServer {
             reply.put("conn_id", connId);
             conn.send(reply.toString());
 
-            JSONObject msg = new JSONObject();
-            msg.put("pid", Packets.PACKET_CHAT_MSG);
-            msg.put("message", "Welcome " + username + ". Connected to Freecivx-server-java.");
-            msg.put("event", 95);
-            conn.send(msg.toString());
-
+            sendMessage(connId, "Welcome " + username + ". Connected to Freecivx-server-java.");
             sendPlayerInfoAll(connId, username, username );
             sendPlayerInfoAdditionAll(connId, 0);
             sendConnInfoAll(connId, username, conn.getRemoteSocketAddress().toString(), connId );
@@ -207,6 +202,19 @@ public class CivServer extends org.java_websocket.server.WebSocketServer {
         msg.put("style_id", style_id);
         msg.put("name", name);
         msg.put("rule_name", rule_name);
+
+        for (WebSocket conn : clients.values()) {
+            conn.send(msg.toString());
+        }
+    }
+
+    public void sendRuleseGovernmentAll(int id, String name, String rule_name, String helptext) {
+        JSONObject msg = new JSONObject();
+        msg.put("pid", Packets.PACKET_RULESET_GOVERNMENT);
+        msg.put("id", id);
+        msg.put("name", name);
+        msg.put("rule_name", rule_name);
+        msg.put("helptext", helptext);
 
         for (WebSocket conn : clients.values()) {
             conn.send(msg.toString());
@@ -381,19 +389,30 @@ public class CivServer extends org.java_websocket.server.WebSocketServer {
         msg.put("username", username);
         msg.put("name", name);
         msg.put("nation", 1);
+        msg.put("government", 1);
+        JSONArray flags = new JSONArray();
+        flags.put(0);
+        flags.put(0);
+        msg.put("flags", flags);
+        JSONArray vis = new JSONArray();
+        vis.put(0);
+        vis.put(0);
+        msg.put("gives_shared_vision", vis);
+
 
         for (WebSocket conn : clients.values()) {
             conn.send(msg.toString());
         }
     }
 
-    public void sendNationInfoAll(int id, String name, String adjective, String graphic_str) {
+    public void sendNationInfoAll(int id, String name, String adjective, String graphic_str, String legend) {
         JSONObject msg = new JSONObject();
         msg.put("pid", Packets.PACKET_RULESET_NATION);
         msg.put("id", id);
         msg.put("name", name);
         msg.put("adjective", adjective);
         msg.put("graphic_str", graphic_str);
+        msg.put("legend", legend);
 
         for (WebSocket conn : clients.values()) {
             conn.send(msg.toString());

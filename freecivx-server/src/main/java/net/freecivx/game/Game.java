@@ -19,8 +19,14 @@ public class Game {
     public void startGame()
     {
         server.sendMessageAll("Starting new game.");
-        server.sendNationInfoAll(1, "Soviet", "Soviet", "soviet");
-        server.sendNationInfoAll(2, "French", "French", "french");
+        server.sendRuleseGovernmentAll(0, "Anarchy", "Anarchy", "Anarchy");
+        server.sendRuleseGovernmentAll(1, "Despotism", "Despotism", "Despotism");
+        server.sendRuleseGovernmentAll(2, "Monarchy", "Monarchy", "Monarchy");
+        server.sendRuleseGovernmentAll(3, "Communism", "Communism", "Communism");
+        server.sendRuleseGovernmentAll(4, "Republic", "Republic", "Republic");
+        server.sendRuleseGovernmentAll(5, "Democracy", "Democracy", "Democracy");
+        server.sendNationInfoAll(1, "Soviet", "Soviet", "soviet", "The Soviets!");
+        server.sendNationInfoAll(2, "French", "French", "french", "Vive La France!");
         server.sendGameInfoAll();
         server.sendCalendarInfoAll();
         server.sendMapInfoAll();
@@ -56,15 +62,15 @@ public class Game {
         server.sendRulesetUnitAll(0, "Settlers", "u.settlers", 1, 1, 1, "Settlers unit", 0, 1 );
         server.sendRulesetUnitAll(1, "Workers", "u.worker", 1, 1, 1, "Workers unit", 0, 1 );
         server.sendRulesetUnitAll(2, "Explorer", "u.explorer", 3, 1, 1, "Explorer unit", 0, 1 );
-        server.sendUnitAll(0, 0, 100, 0, 0, 1, 1, 0);
-        server.sendUnitAll(1, 0, 100, 1, 0, 1, 1, 0);
-        server.sendUnitAll(2, 0, 100, 2, 0, 1, 1, 0);
+        server.sendUnitAll(0, 0, 430, 0, 0, 1, 1, 0);
+        server.sendUnitAll(1, 0, 431, 1, 0, 1, 1, 0);
+        server.sendUnitAll(2, 0, 432, 2, 0, 1, 1, 0);
         server.sendRulesetCityInfoAll(0, "European", "European");
         server.sendRulesetCityInfoAll(1, "Classical", "Classical");
         server.sendRulesetCityInfoAll(2, "Tropical", "Tropical");
         server.sendRulesetCityInfoAll(3, "Asian", "Asian");
-        server.sendCityShortInfoAll(0, 0, 102, 1, 1, true, false, 0, true, false, "", "Trondheim");
-        server.sendCityInfoAll(0, 0, 102, 1, 1, true, false, 0, true, false, "", "Trondheim", 6, 0);
+        server.sendCityShortInfoAll(0, 0, 433, 1, 1, true, false, 0, true, false, "", "Trondheim");
+        server.sendCityInfoAll(0, 0, 433, 1, 1, true, false, 0, true, false, "", "Trondheim", 6, 0);
         server.sendTileInfoAll();
         server.sendBordersServerSettingsAll();
         server.sendStartPhaseAll();
