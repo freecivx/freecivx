@@ -24,7 +24,8 @@ import com.sun.net.httpserver.HttpServer;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.util.concurrent.Executors;
-import org.java_websocket.server.WebSocketServer;
+
+import net.freecivx.server.CivServer;
 
 
 public class Main {
@@ -52,7 +53,7 @@ public class Main {
             System.out.println("HTTP server started on port: " + (port + 1));
 
             // Start WebSocket server
-            WebSocketServer wsServer = new CivWebSocketServer(new InetSocketAddress(port));
+            CivServer wsServer = new CivServer(new InetSocketAddress(port));
             wsServer.start();
             System.out.println("WebSocket server started on port: " + port);
 

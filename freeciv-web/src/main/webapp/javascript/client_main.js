@@ -266,14 +266,6 @@ function show_endgame_dialog()
 **************************************************************************/
 function update_metamessage_on_gamestart()
 {
-  if (!observing && !metamessage_changed && client.conn.playing != null
-      && client.conn.playing['pid'] == players[0]['pid'] 
-      && $.getUrlVar('action') == "new") {
-    var pplayer = client.conn.playing;
-    var metasuggest = username + " ruler of the " + nations[pplayer['nation']]['adjective'] + ".";
-    send_message("/metamessage " + metasuggest);
-    setInterval(update_metamessage_game_running_status, 200000);
-  }
 
   if ($.getUrlVar('action') == null || $.getUrlVar('action') == "new" || $.getUrlVar('action') == "earthload" 
       || $.getUrlVar('scenario') == "true") {

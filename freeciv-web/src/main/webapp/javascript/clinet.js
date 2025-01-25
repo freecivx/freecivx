@@ -130,7 +130,7 @@ function handleWebSocketMessage(event) {
                 }
             }
         } else if (freecivx_server) {
-            console.log("Got packet: " + event.data);
+            //console.log("Got packet: " + event.data);
             try {
                 const json = JSON.parse(event.data);
                 client_handle_packet([json]);
