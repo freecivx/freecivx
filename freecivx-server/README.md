@@ -2,6 +2,8 @@
 
 **freecivx-server** is a multiplayer server implemented in Java for [Freecivx.net](https://freecivx.net). It supports large-scale multiplayer games with modern Java features.
 
+"FreecivX Java server - because Freeciv should not segfault!"
+
 License: GNU Affero General Public License
 
 ## Features
