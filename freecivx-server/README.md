@@ -1,4 +1,4 @@
-# Freecivx Server Java
+# Freecivx Java Server 
 
 **freecivx-server** is a multiplayer server implemented in Java for [Freecivx.net](https://freecivx.net). It supports large-scale multiplayer games with modern Java features.
 
