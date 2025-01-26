@@ -20,12 +20,15 @@
 package net.freecivx.server;
 
 import net.freecivx.game.Game;
+import org.apache.commons.lang3.StringUtils;
 import org.java_websocket.WebSocket;
 import org.java_websocket.handshake.ClientHandshake;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
 import java.net.InetSocketAddress;
+import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
 import java.util.Random;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -38,7 +41,7 @@ public class CivServer extends org.java_websocket.server.WebSocketServer {
 
     public CivServer(InetSocketAddress address) {
         super(address);
-
+        this.setReuseAddr(true);
 
     }
 
@@ -71,7 +74,7 @@ public class CivServer extends org.java_websocket.server.WebSocketServer {
         int pid = json.optInt("pid");
 
         if (pid == Packets.PACKET_SERVER_JOIN_REQ) {
-            String username = json.optString("username");
+            String username = StringUtils.capitalize(json.optString("username"));
             JSONObject reply = new JSONObject();
             reply.put("pid", Packets.PACKET_SERVER_JOIN_REPLY);
             reply.put("you_can_join", true);
@@ -81,6 +84,7 @@ public class CivServer extends org.java_websocket.server.WebSocketServer {
             sendMessage(connId, "Welcome " + username + ". Connected to Freecivx-server-java.");
             sendPlayerInfoAll(connId, username, username );
             sendPlayerInfoAdditionAll(connId, 0);
+            sendRates(connId, 40, 0, 60 );
             sendConnInfoAll(connId, username, conn.getRemoteSocketAddress().toString(), connId );
         }
 
@@ -90,7 +94,30 @@ public class CivServer extends org.java_websocket.server.WebSocketServer {
         }
 
         if (pid == Packets.PACKET_CHAT_MSG_REQ) {
-            String message = json.optString("message");
+            String message =  URLDecoder.decode(json.optString("message"), StandardCharsets.UTF_8);
+            if (message.equalsIgnoreCase("/quit")) {
+                for (WebSocket x : clients.values()) {
+                    x.close(1001, "Server shutting down");
+                }
+                try {
+                    this.stop();
+                } catch (InterruptedException e) {
+                    throw new RuntimeException(e);
+                }
+                System.exit(0);
+            }
+            if (message.equalsIgnoreCase("/start")) {
+                game = new Game(this);
+                game.startGame();
+            }
+            if (message.equalsIgnoreCase("/help")) {
+                String helptext = """
+                        This is the Freecivx Java server. It supports these commands:
+                        /start
+                        /quit
+                        """;
+                sendMessage(connId, helptext);
+            }
 
             sendMessageAll(message);
         }
@@ -234,6 +261,7 @@ public class CivServer extends org.java_websocket.server.WebSocketServer {
             msg.put("helptext", helptext);
             msg.put("attack_strength", attack_strength);
             msg.put("defense_strength", defense_strength);
+            msg.put("build_reqs", new JSONArray()); // value
         for (WebSocket conn : clients.values()) {
             conn.send(msg.toString());
         }
@@ -390,6 +418,11 @@ public class CivServer extends org.java_websocket.server.WebSocketServer {
         msg.put("name", name);
         msg.put("nation", 1);
         msg.put("government", 1);
+        msg.put("researching", 1);
+        msg.put("bulbs_researched", 0);
+        JSONArray inventions = new JSONArray();
+        //inventions.put(0);
+        msg.put("inventions", inventions);
         JSONArray flags = new JSONArray();
         flags.put(0);
         flags.put(0);
@@ -417,6 +450,31 @@ public class CivServer extends org.java_websocket.server.WebSocketServer {
         for (WebSocket conn : clients.values()) {
             conn.send(msg.toString());
         }
+    }
+
+    public void sendTechAll(int id, int root_req, String name, JSONArray research_reqs, String graphic_str, String helptext) {
+        JSONObject msg = new JSONObject();
+        msg.put("pid", Packets.PACKET_RULESET_TECH);
+        msg.put("id", id);
+        msg.put("root_req", root_req);
+        msg.put("research_reqs", research_reqs);
+        msg.put("helptext", helptext);
+        msg.put("name", name);
+        msg.put("graphic_str", graphic_str);
+
+        for (WebSocket conn : clients.values()) {
+            conn.send(msg.toString());
+        }
+    }
+
+    public void sendRates(int conn_id,int tax, int luxury, int science) {
+        JSONObject msg = new JSONObject();
+        msg.put("pid", Packets.PACKET_PLAYER_RATES);
+        msg.put("tax", tax);
+        msg.put("luxury", luxury);
+        msg.put("science", science);
+
+        clients.get(conn_id).send(msg.toString());
     }
 
     public void sendBordersServerSettingsAll() {

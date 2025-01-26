@@ -1,6 +1,7 @@
 package net.freecivx.game;
 
 import net.freecivx.server.CivServer;
+import org.json.JSONArray;
 
 /**
  * The Game class
@@ -19,6 +20,9 @@ public class Game {
     public void startGame()
     {
         server.sendMessageAll("Starting new game.");
+        server.sendTechAll(0, -1, "Alphabet", new JSONArray(), "a.alphabet", "Alphabet");
+        server.sendTechAll(1, -1, "Mathematics", new JSONArray(), "a.mathematics", "Mathematics");
+        server.sendTechAll(2, -1, "The Republic", new JSONArray(), "a.the_republic", "The Republic");
         server.sendRuleseGovernmentAll(0, "Anarchy", "Anarchy", "Anarchy");
         server.sendRuleseGovernmentAll(1, "Despotism", "Despotism", "Despotism");
         server.sendRuleseGovernmentAll(2, "Monarchy", "Monarchy", "Monarchy");
