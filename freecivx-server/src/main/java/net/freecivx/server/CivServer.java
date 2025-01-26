@@ -26,6 +26,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 import net.freecivx.game.Game;
 import net.freecivx.game.Tile;
 import net.freecivx.game.Unit;
+import net.freecivx.log.GameLogger;
+import net.freecivx.log.StdoutLogger;
 import org.apache.commons.lang3.StringUtils;
 import org.java_websocket.WebSocket;
 import org.java_websocket.handshake.ClientHandshake;
@@ -34,13 +36,17 @@ import org.json.JSONObject;
 
 public class CivServer extends org.java_websocket.server.WebSocketServer {
 
+  // FIXME Make configurable
+  private final GameLogger logger;
+
   private final ConcurrentHashMap<Long, WebSocket> clients = new ConcurrentHashMap<>();
   private final AtomicInteger clientIdGenerator = new AtomicInteger(1);
   Game game = null;
 
-  public CivServer(InetSocketAddress address) {
+  public CivServer(InetSocketAddress address, GameLogger logger) {
     super(address);
-    this.setReuseAddr(true);
+      this.logger = logger;
+      this.setReuseAddr(true);
     game = new Game(this);
     game.initGame();
   }
@@ -50,7 +56,7 @@ public class CivServer extends org.java_websocket.server.WebSocketServer {
     long clientId = (clientIdGenerator.getAndIncrement()) - 1;
     clients.put(clientId, conn);
     conn.setAttachment(clientId); // Attach the client ID to the connection
-    System.out.println("New connection (ID: " + clientId + "): " + conn.getRemoteSocketAddress());
+    logger.info("New connection (ID: " + clientId + "): " + conn.getRemoteSocketAddress());
 
     sendMessage(clientId, "Your client ID is: " + clientId);
   }
@@ -59,13 +65,13 @@ public class CivServer extends org.java_websocket.server.WebSocketServer {
   public void onClose(WebSocket conn, int code, String reason, boolean remote) {
     long clientId = conn.getAttachment();
     clients.remove(clientId);
-    System.out.println(
+    logger.info(
         "Connection closed (ID: " + clientId + "): " + conn.getRemoteSocketAddress());
   }
 
   @Override
   public void onMessage(WebSocket conn, String packet) {
-    System.out.println("Message received: " + packet);
+    logger.info("Message received: " + packet);
     long connId = conn.getAttachment();
 
     JSONObject json = new JSONObject(packet);
@@ -135,22 +141,22 @@ public class CivServer extends org.java_websocket.server.WebSocketServer {
 
   @Override
   public void onError(WebSocket conn, Exception ex) {
-    System.err.println("WebSocket error: " + ex.getMessage());
+    logger.error("WebSocket error: " + ex.getMessage());
   }
 
   @Override
   public void onStart() {
-    System.out.println("WebSocket server started successfully.");
+    logger.info("WebSocket server started successfully.");
   }
 
   @Override
   public void stop() throws InterruptedException {
-    System.out.println("Stopping WebSocket server...");
+    logger.info("Stopping WebSocket server...");
     for (WebSocket conn : clients.values()) {
       conn.close(1001, "Server shutting down"); // Use close code 1001 (going away)
     }
     super.stop();
-    System.out.println("WebSocket server stopped.");
+    logger.info("WebSocket server stopped.");
   }
 
   public WebSocket getClientById(long clientId) {
