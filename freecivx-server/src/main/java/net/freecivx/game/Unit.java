@@ -16,12 +16,9 @@
  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
  ***********************************************************************/
-
-
 package net.freecivx.game;
 
 public class Unit {
-
   private long id;
   private int owner; // ID of the player or entity that owns the unit
   private int tile; // The tile where the unit is located

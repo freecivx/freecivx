@@ -19,7 +19,6 @@
 
 
 package net.freecivx.game;
-
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
@@ -198,6 +197,7 @@ public class Game {
                 unitType.getDefenseStrength()));
 
     // Send units
+
     units.forEach((id, unit) -> server.sendUnitAll(unit));
 
     // Send city styles
@@ -237,9 +237,11 @@ public class Game {
               0);
         });
 
-    // Send map and game settings
-    tiles.forEach((id, tile) -> server.sendTileInfoAll(tile)); // TODO: Send all tiles as one call.
+//    cityStyle.forEach(
+//        (id, style) -> server.sendRulesetCityInfoAll(id, style.getName(), style.getName()));
 
+        // Send map and game settings
+      tiles.forEach((id, tile) -> server.sendTileInfoAll(tile)); // TODO: Send all tiles as one call.
     server.sendBordersServerSettingsAll();
     server.sendBeginTurnAll();
     server.sendStartPhaseAll();

@@ -16,7 +16,6 @@
  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
  ***********************************************************************/
-
 package net.freecivx.server;
 
 import java.net.InetSocketAddress;
@@ -168,6 +167,7 @@ public class CivServer extends org.java_websocket.server.WebSocketServer {
       conn.send(msg.toString());
     }
   }
+
 
   public void sendMessage(long conn_id, String message) {
     JSONObject msg = new JSONObject();
