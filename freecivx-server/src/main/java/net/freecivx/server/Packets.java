@@ -18,6 +18,7 @@ public class Packets {
     public static int PACKET_RESEARCH_INFO = 60;
     public static int PACKET_UNIT_INFO = 63;
     public static int PACKET_UNIT_SHORT_INFO = 64;
+    public static int PACKET_UNIT_ORDERS = 73;
     public static int PACKET_CONN_PING = 88;
     public static int PACKET_CONN_PONG = 89;
     public static int PACKET_CONN_INFO = 115;

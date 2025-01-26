@@ -18,9 +18,8 @@ public class Game {
     long turn = 0;
     long phase = 0;
 
-
-
     public WorldMap map;
+    public Map<Long, Player> players = new HashMap<>();
     public Map<Long, Unit> units = new HashMap<>();
     public Map<Long, City> cities = new HashMap<>();
     public Map<Long, Technology> techs = new HashMap<>();
@@ -104,9 +103,9 @@ public class Game {
         cities.put(0L, new City("Trondheim", 0,  433, 1, 1, true, false, 0, true, false, "", 6, 0));
 
         // Initialize Units
-        units.put(0L, new Unit(0, 430, 0, 0, 1, 1, 0));
-        units.put(1L, new Unit(0, 431, 1, 0, 1, 1, 0));
-        units.put(2L, new Unit(0, 432, 2, 0, 1, 1, 0));
+        units.put(0L, new Unit(0, 0, 430, 0, 0, 1, 1, 0));
+        units.put(1L, new Unit(1, 0, 431, 1, 0, 1, 1, 0));
+        units.put(2L, new Unit(2, 0, 432, 2, 0, 1, 1, 0));
 
         // Initialize City Styles
         cityStyle.put(0L, new CityStyle("European"));
@@ -160,8 +159,7 @@ public class Game {
                 unitType.getVeteranLevels(), unitType.getHelptext(), unitType.getAttackStrength(), unitType.getDefenseStrength()));
 
         // Send units
-        units.forEach((id, unit) -> server.sendUnitAll(id, unit.getOwner(), unit.getTile(), unit.getType(), unit.getFacing(), unit.getVeteran(),
-                unit.getHp(), unit.getActivity()));
+        units.forEach((id, unit) -> server.sendUnitAll(unit));
 
         // Send city styles
         cityStyle.forEach((id, style) -> server.sendRulesetCityInfoAll(id, style.getName(), style.getName()));
@@ -192,5 +190,21 @@ public class Game {
         server.sendGameInfoAll(year, turn, phase);
         server.sendBeginTurnAll();
         server.sendStartPhaseAll();
+    }
+
+    public void moveUnit(long unit_id, int dest_tile, int dir) {
+        Unit unit = units.get(unit_id);
+        unit.setTile(dest_tile);
+        unit.setFacing(dir);
+        server.sendUnitAll(unit);
+    }
+
+    public void addPlayer(long connId, String username, String addr) {
+        Player player = new Player(connId, username, addr, 0);
+        players.put(connId, player);
+        server.sendMessage(connId, "Welcome " + username + ". Connected to Freecivx-server-java.");
+        server.sendPlayerInfoAll(connId, username, username );
+        server.sendPlayerInfoAdditionAll(player.getPlayerNo(), 0);
+        server.sendConnInfoAll(connId, username, addr, player.getPlayerNo());
     }
 }
