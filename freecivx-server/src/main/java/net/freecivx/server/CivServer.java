@@ -211,12 +211,12 @@ public class CivServer extends org.java_websocket.server.WebSocketServer {
         }
     }
 
-    public void sendTerrainInfoAll(int id, String name) {
+    public void sendTerrainInfoAll(int id, String name, String graphic_str) {
         JSONObject msg = new JSONObject();
         msg.put("pid", Packets.PACKET_RULESET_TERRAIN);
         msg.put("id", id);
         msg.put("name", name);
-        msg.put("graphic_str", name);
+        msg.put("graphic_str", graphic_str);
 
         for (WebSocket conn : clients.values()) {
             conn.send(msg.toString());
@@ -370,10 +370,15 @@ public class CivServer extends org.java_websocket.server.WebSocketServer {
                 msg.put("pid", Packets.PACKET_TILE_INFO);
                 msg.put("tile", index);
                 msg.put("known", 2);
-                msg.put("terrain", new Random().nextInt(12) + 1);
+                int terrain = new Random().nextInt(12) + 1;
+                msg.put("terrain", terrain);
                 msg.put("resource", 1);
                 msg.put("extras", 1);
-                msg.put("height", 100);
+                int height = 100;
+                if (terrain == 1 || terrain == 2 || terrain == 3) {
+                    height = -100;
+                }
+                msg.put("height", height);
 
                 for (WebSocket conn : clients.values()) {
                     conn.send(msg.toString());
