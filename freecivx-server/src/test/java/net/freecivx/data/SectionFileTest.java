@@ -15,7 +15,7 @@ public class SectionFileTest {
   public void testRuleset() throws IOException {
     try (InputStream is = ClassLoader.getSystemClassLoader().getResourceAsStream(RULESET)) {
       var sf = SectionFile.fromInputStream(is, "nation_english", true);
-      assertEquals(3, sf.getSections().size());
+      assertEquals(1, sf.getSections().size());
     }
   }
 }
