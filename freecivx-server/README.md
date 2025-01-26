@@ -6,6 +6,8 @@
 
 License: GNU Affero General Public License
 
+
+
 ## Features
 
 - **Freeciv game rules and ruleset compatibility**: Maintain compatibility with existing Freeciv game rules and rulesets.
@@ -22,6 +24,11 @@ License: GNU Affero General Public License
   - **JSON** or **Protocol Buffers** (Protobuf) for efficient data exchange.
 - **Security:** Java is significantly more secure than C.
 
+## Current state
+<img src="https://github.com/freecivx/freecivx/blob/main/doc/img/freecivx-java-logo.png" alt="FreecivX Java Logo" width="300"> <img src="https://github.com/freecivx/freecivx/blob/main/doc/img/freecivx-java-server.png" alt="FreecivX Java Logo" width="580">
+ - Games can be started, there is now a real game state, units can move, and the end turn button works. 
+
+
 
 ## Getting Started
 
@@ -36,4 +43,7 @@ License: GNU Affero General Public License
    mvn clean package
   java -jar target/freecivx-server-1.0.jar
 ```
+
+
+
 
