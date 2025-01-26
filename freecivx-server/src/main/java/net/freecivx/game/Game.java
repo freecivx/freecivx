@@ -3,6 +3,9 @@ package net.freecivx.game;
 import net.freecivx.server.CivServer;
 import org.json.JSONArray;
 
+import java.util.HashMap;
+import java.util.Map;
+
 /**
  * The Game class
  */
@@ -10,8 +13,25 @@ public class Game {
 
     CivServer server;
 
+    public WorldMap map = new WorldMap();
+    public Map<Long, Unit> units = new HashMap<>();
+    public Map<Long, City> cities = new HashMap<>();
+    public Map<Long, Technology> techs = new HashMap<>();
+    public Map<Long, Terrain> terrains = new HashMap<>();
+    public Map<Long, Tile> tiles = new HashMap<>();
+    public Map<Long, Government> governments = new HashMap<>();
+    public Map<Long, Nation> nations = new HashMap<>();
+    public Map<Long, Extra> extras = new HashMap<>();
+    public Map<Long, UnitType> unitTypes = new HashMap<>();
+    public Map<Long, CityStyle> cityStyle = new HashMap<>();
+
+
     public Game (CivServer server) {
         this.server = server;
+    }
+
+    public void initGame() {
+
     }
 
     /**

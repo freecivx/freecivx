@@ -42,6 +42,8 @@ public class CivServer extends org.java_websocket.server.WebSocketServer {
     public CivServer(InetSocketAddress address) {
         super(address);
         this.setReuseAddr(true);
+        game = new Game(this);
+        game.initGame();
 
     }
 
@@ -88,7 +90,6 @@ public class CivServer extends org.java_websocket.server.WebSocketServer {
         }
 
         if (pid == Packets.PACKET_PLAYER_READY) {
-            game = new Game(this);
             game.startGame();
         }
 
