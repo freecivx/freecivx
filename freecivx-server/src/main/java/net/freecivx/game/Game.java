@@ -14,6 +14,12 @@ public class Game {
 
     CivServer server;
 
+    long year = 0;
+    long turn = 0;
+    long phase = 0;
+
+
+
     public WorldMap map;
     public Map<Long, Unit> units = new HashMap<>();
     public Map<Long, City> cities = new HashMap<>();
@@ -129,7 +135,9 @@ public class Game {
     public void startGame() {
         server.sendMessageAll("Starting new game.");
 
+        server.sendCalendarInfoAll();
         server.sendMapInfoAll(map.getXsize(), map.getYsize());
+        server.sendGameInfoAll(year, turn, phase);
 
         // Send technologies
         techs.forEach((id, tech) -> server.sendTechAll(id, -1, tech.getName(), new JSONArray(), tech.getGraphicsStr(), tech.getHelptext()));
@@ -172,7 +180,19 @@ public class Game {
         tiles.forEach((id, tile) -> server.sendTileInfoAll(tile)); // TODO: Send all tiles as one call.
 
         server.sendBordersServerSettingsAll();
+        server.sendBeginTurnAll();
         server.sendStartPhaseAll();
+
         server.sendMessageAll("Welcome to the Freecivx game!");
+    }
+
+
+    public void turnDone() {
+        year++;
+        turn++;
+
+        server.sendGameInfoAll(year, turn, phase);
+        server.sendBeginTurnAll();
+        server.sendStartPhaseAll();
     }
 }

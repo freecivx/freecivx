@@ -94,6 +94,10 @@ public class CivServer extends org.java_websocket.server.WebSocketServer {
             game.startGame();
         }
 
+        if (pid == Packets.PACKET_PLAYER_PHASE_DONE) {
+            game.turnDone();
+        }
+
         if (pid == Packets.PACKET_CHAT_MSG_REQ) {
             String message =  URLDecoder.decode(json.optString("message"), StandardCharsets.UTF_8);
             if (message.equalsIgnoreCase("/quit")) {
@@ -168,6 +172,15 @@ public class CivServer extends org.java_websocket.server.WebSocketServer {
         clients.get(conn_id).send(msg.toString());
     }
 
+    public void sendBeginTurnAll() {
+        JSONObject msg = new JSONObject();
+        msg.put("pid", Packets.PACKET_BEGIN_TURN);
+
+        for (WebSocket conn : clients.values()) {
+            conn.send(msg.toString());
+        }
+    }
+
     public void sendStartPhaseAll() {
         JSONObject msg = new JSONObject();
         msg.put("pid", Packets.PACKET_START_PHASE);
@@ -177,12 +190,12 @@ public class CivServer extends org.java_websocket.server.WebSocketServer {
         }
     }
 
-    public void sendGameInfoAll() {
+    public void sendGameInfoAll(long year, long turn, long phase) {
         JSONObject msg = new JSONObject();
         msg.put("pid", Packets.PACKET_GAME_INFO);
-        msg.put("year", 1);
-        msg.put("turn", 0);
-        msg.put("phase", 0);
+        msg.put("year", year);
+        msg.put("turn", turn);
+        msg.put("phase", phase);
 
         for (WebSocket conn : clients.values()) {
             conn.send(msg.toString());
