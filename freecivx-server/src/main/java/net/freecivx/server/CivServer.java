@@ -20,6 +20,7 @@
 package net.freecivx.server;
 
 import net.freecivx.game.Game;
+import net.freecivx.game.Tile;
 import org.apache.commons.lang3.StringUtils;
 import org.java_websocket.WebSocket;
 import org.java_websocket.handshake.ClientHandshake;
@@ -200,18 +201,18 @@ public class CivServer extends org.java_websocket.server.WebSocketServer {
         }
     }
 
-    public void sendMapInfoAll() {
+    public void sendMapInfoAll(int xsize, int ysize) {
         JSONObject msg = new JSONObject();
         msg.put("pid", Packets.PACKET_MAP_INFO);
-        msg.put("xsize", 100);
-        msg.put("ysize", 100);
+        msg.put("xsize", xsize);
+        msg.put("ysize", ysize);
 
         for (WebSocket conn : clients.values()) {
             conn.send(msg.toString());
         }
     }
 
-    public void sendTerrainInfoAll(int id, String name, String graphic_str) {
+    public void sendTerrainInfoAll(long id, String name, String graphic_str) {
         JSONObject msg = new JSONObject();
         msg.put("pid", Packets.PACKET_RULESET_TERRAIN);
         msg.put("id", id);
@@ -223,7 +224,7 @@ public class CivServer extends org.java_websocket.server.WebSocketServer {
         }
     }
 
-    public void sendRulesetCityInfoAll(int style_id, String name, String rule_name) {
+    public void sendRulesetCityInfoAll(long style_id, String name, String rule_name) {
         JSONObject msg = new JSONObject();
         msg.put("pid", Packets.PACKET_RULESET_CITY);
         msg.put("style_id", style_id);
@@ -235,7 +236,7 @@ public class CivServer extends org.java_websocket.server.WebSocketServer {
         }
     }
 
-    public void sendRuleseGovernmentAll(int id, String name, String rule_name, String helptext) {
+    public void sendRuleseGovernmentAll(long id, String name, String rule_name, String helptext) {
         JSONObject msg = new JSONObject();
         msg.put("pid", Packets.PACKET_RULESET_GOVERNMENT);
         msg.put("id", id);
@@ -248,7 +249,7 @@ public class CivServer extends org.java_websocket.server.WebSocketServer {
         }
     }
 
-    public void sendRulesetUnitAll(int id, String name, String graphic_str, int move_rate, int hp,
+    public void sendRulesetUnitAll(long id, String name, String graphic_str, int move_rate, int hp,
         int veteran_levels, String helptext, int attack_strength, int defense_strength) {
             JSONObject msg = new JSONObject();
             msg.put("pid", Packets.PACKET_RULESET_UNIT);
@@ -267,7 +268,7 @@ public class CivServer extends org.java_websocket.server.WebSocketServer {
         }
     }
 
-    public void sendUnitAll(int id, int owner, int tile, int type, int facing, int veteran, int hp, int activity) {
+    public void sendUnitAll(long id, int owner, int tile, int type, int facing, int veteran, int hp, int activity) {
         JSONObject msg = new JSONObject();
         msg.put("pid", Packets.PACKET_UNIT_SHORT_INFO);
         msg.put("id", id);
@@ -283,7 +284,7 @@ public class CivServer extends org.java_websocket.server.WebSocketServer {
         }
     }
 
-    public void sendCityShortInfoAll(int id, int owner, int tile, int size, int style, boolean capital, boolean occupied, int walls, boolean happy,
+    public void sendCityShortInfoAll(long id, int owner, int tile, int size, int style, boolean capital, boolean occupied, int walls, boolean happy,
                                      boolean unhappy, String improvements, String name) {
         JSONObject msg = new JSONObject();
         msg.put("pid", Packets.PACKET_CITY_SHORT_INFO);
@@ -306,7 +307,7 @@ public class CivServer extends org.java_websocket.server.WebSocketServer {
         }
     }
 
-    public void sendCityInfoAll(int id, int owner, int tile, int size, int style, boolean capital, boolean occupied, int walls, boolean happy,
+    public void sendCityInfoAll(long id, int owner, int tile, int size, int style, boolean capital, boolean occupied, int walls, boolean happy,
                                      boolean unhappy, String improvements, String name, int production_kind, int production_value) {
         JSONObject msg = new JSONObject();
         msg.put("pid", Packets.PACKET_CITY_INFO);
@@ -361,29 +362,18 @@ public class CivServer extends org.java_websocket.server.WebSocketServer {
         }
     }
 
-    public void sendTileInfoAll() {
-        int width = 100;
-        for (int x = 0; x < 100; x++) {
-            for (int y = 0; y < 100; y++) {
-                int index = y * width + x;
-                JSONObject msg = new JSONObject();
-                msg.put("pid", Packets.PACKET_TILE_INFO);
-                msg.put("tile", index);
-                msg.put("known", 2);
-                int terrain = new Random().nextInt(12) + 1;
-                msg.put("terrain", terrain);
-                msg.put("resource", 1);
-                msg.put("extras", 1);
-                int height = 100;
-                if (terrain == 1 || terrain == 2 || terrain == 3) {
-                    height = -100;
-                }
-                msg.put("height", height);
+    public void sendTileInfoAll(Tile tile) {
+        JSONObject msg = new JSONObject();
+        msg.put("pid", Packets.PACKET_TILE_INFO);
+        msg.put("tile", tile.getIndex());
+        msg.put("known", tile.getKnown());
+        msg.put("terrain", tile.getTerrain());
+        msg.put("resource", tile.getResource());
+        msg.put("extras", tile.getExtras());
+        msg.put("height", tile.getHeight());
 
-                for (WebSocket conn : clients.values()) {
-                    conn.send(msg.toString());
-                }
-            }
+        for (WebSocket conn : clients.values()) {
+            conn.send(msg.toString());
         }
 
     }
@@ -447,7 +437,7 @@ public class CivServer extends org.java_websocket.server.WebSocketServer {
         }
     }
 
-    public void sendNationInfoAll(int id, String name, String adjective, String graphic_str, String legend) {
+    public void sendNationInfoAll(long id, String name, String adjective, String graphic_str, String legend) {
         JSONObject msg = new JSONObject();
         msg.put("pid", Packets.PACKET_RULESET_NATION);
         msg.put("id", id);
@@ -461,7 +451,7 @@ public class CivServer extends org.java_websocket.server.WebSocketServer {
         }
     }
 
-    public void sendTechAll(int id, int root_req, String name, JSONArray research_reqs, String graphic_str, String helptext) {
+    public void sendTechAll(long id, int root_req, String name, JSONArray research_reqs, String graphic_str, String helptext) {
         JSONObject msg = new JSONObject();
         msg.put("pid", Packets.PACKET_RULESET_TECH);
         msg.put("id", id);
