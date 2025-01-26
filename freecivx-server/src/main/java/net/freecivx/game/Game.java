@@ -1,6 +1,24 @@
-/* Copyright (C) The Authors 2025 */
-package net.freecivx.game;
+/**********************************************************************
+ Freecivx - the 3D web version of Freeciv. http://www.Freecivx.net/
+ Copyright (C) 2009-2025  The Freeciv-web project, Andreas Røsdal
 
+ This program is free software: you can redistribute it and/or modify
+ it under the terms of the GNU Affero General Public License as published by
+ the Free Software Foundation, either version 3 of the License, or
+ (at your option) any later version.
+
+ This program is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ GNU Affero General Public License for more details.
+
+ You should have received a copy of the GNU Affero General Public License
+ along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+ ***********************************************************************/
+
+
+package net.freecivx.game;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
@@ -17,6 +35,7 @@ public class Game {
   long phase = 0;
 
   public WorldMap map;
+  public Map<Long, Player> players = new HashMap<>();
   public Map<Long, Unit> units = new HashMap<>();
   public Map<Long, City> cities = new HashMap<>();
   public Map<Long, Technology> techs = new HashMap<>();
@@ -96,9 +115,9 @@ public class Game {
     cities.put(0L, new City("Trondheim", 0, 433, 1, 1, true, false, 0, true, false, "", 6, 0));
 
     // Initialize Units
-    units.put(0L, new Unit(0, 430, 0, 0, 1, 1, 0));
-    units.put(1L, new Unit(0, 431, 1, 0, 1, 1, 0));
-    units.put(2L, new Unit(0, 432, 2, 0, 1, 1, 0));
+    units.put(0L, new Unit(0, 0, 430, 0, 0, 1, 1, 0));
+    units.put(1L, new Unit(1, 0, 431, 1, 0, 1, 1, 0));
+    units.put(2L, new Unit(2, 0, 432, 2, 0, 1, 1, 0));
 
     // Initialize City Styles
     cityStyle.put(0L, new CityStyle("European"));
@@ -178,17 +197,8 @@ public class Game {
                 unitType.getDefenseStrength()));
 
     // Send units
-    units.forEach(
-        (id, unit) ->
-            server.sendUnitAll(
-                id,
-                unit.getOwner(),
-                unit.getTile(),
-                unit.getType(),
-                unit.getFacing(),
-                unit.getVeteran(),
-                unit.getHp(),
-                unit.getActivity()));
+
+    units.forEach((id, unit) -> server.sendUnitAll(unit));
 
     // Send city styles
     cityStyle.forEach(
@@ -227,8 +237,6 @@ public class Game {
               0);
         });
 
-    cityStyle.forEach(
-        (id, style) -> server.sendRulesetCityInfoAll(id, style.getName(), style.getName()));
 
     // Send map and game settings
     tiles.forEach((id, tile) -> server.sendTileInfoAll(tile)); // TODO: Send all tiles as one call.
@@ -247,5 +255,21 @@ public class Game {
     server.sendGameInfoAll(year, turn, phase);
     server.sendBeginTurnAll();
     server.sendStartPhaseAll();
+  }
+
+  public void moveUnit(long unit_id, int dest_tile, int dir) {
+    Unit unit = units.get(unit_id);
+    unit.setTile(dest_tile);
+    unit.setFacing(dir);
+    server.sendUnitAll(unit);
+  }
+
+  public void addPlayer(long connId, String username, String addr) {
+    Player player = new Player(connId, username, addr, 0);
+    players.put(connId, player);
+    server.sendMessage(connId, "Welcome " + username + ". Connected to Freecivx-server-java.");
+    server.sendPlayerInfoAll(connId, username, username);
+    server.sendPlayerInfoAdditionAll(player.getPlayerNo(), 0);
+    server.sendConnInfoAll(connId, username, addr, player.getPlayerNo());
   }
 }

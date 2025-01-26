@@ -1,4 +1,21 @@
-/* Copyright (C) The Authors 2009-2025 */
+/**********************************************************************
+ Freecivx - the 3D web version of Freeciv. http://www.Freecivx.net/
+ Copyright (C) 2009-2025  The Freeciv-web project, Andreas Røsdal
+
+ This program is free software: you can redistribute it and/or modify
+ it under the terms of the GNU Affero General Public License as published by
+ the Free Software Foundation, either version 3 of the License, or
+ (at your option) any later version.
+
+ This program is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ GNU Affero General Public License for more details.
+
+ You should have received a copy of the GNU Affero General Public License
+ along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+ ***********************************************************************/
 package net.freecivx.server;
 
 import java.net.InetSocketAddress;
@@ -8,6 +25,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import net.freecivx.game.Game;
 import net.freecivx.game.Tile;
+import net.freecivx.game.Unit;
 import org.apache.commons.lang3.StringUtils;
 import org.java_websocket.WebSocket;
 import org.java_websocket.handshake.ClientHandshake;
@@ -16,7 +34,7 @@ import org.json.JSONObject;
 
 public class CivServer extends org.java_websocket.server.WebSocketServer {
 
-  private final ConcurrentHashMap<Integer, WebSocket> clients = new ConcurrentHashMap<>();
+  private final ConcurrentHashMap<Long, WebSocket> clients = new ConcurrentHashMap<>();
   private final AtomicInteger clientIdGenerator = new AtomicInteger(1);
   Game game = null;
 
@@ -29,7 +47,7 @@ public class CivServer extends org.java_websocket.server.WebSocketServer {
 
   @Override
   public void onOpen(WebSocket conn, ClientHandshake handshake) {
-    int clientId = (clientIdGenerator.getAndIncrement()) - 1;
+    long clientId = (clientIdGenerator.getAndIncrement()) - 1;
     clients.put(clientId, conn);
     conn.setAttachment(clientId); // Attach the client ID to the connection
     System.out.println("New connection (ID: " + clientId + "): " + conn.getRemoteSocketAddress());
@@ -39,18 +57,16 @@ public class CivServer extends org.java_websocket.server.WebSocketServer {
 
   @Override
   public void onClose(WebSocket conn, int code, String reason, boolean remote) {
-    Integer clientId = conn.getAttachment();
-    if (clientId != null) {
-      clients.remove(clientId);
-      System.out.println(
-          "Connection closed (ID: " + clientId + "): " + conn.getRemoteSocketAddress());
-    }
+    long clientId = conn.getAttachment();
+    clients.remove(clientId);
+    System.out.println(
+        "Connection closed (ID: " + clientId + "): " + conn.getRemoteSocketAddress());
   }
 
   @Override
   public void onMessage(WebSocket conn, String packet) {
     System.out.println("Message received: " + packet);
-    int connId = conn.getAttachment();
+    long connId = conn.getAttachment();
 
     JSONObject json = new JSONObject(packet);
     int pid = json.optInt("pid");
@@ -63,10 +79,7 @@ public class CivServer extends org.java_websocket.server.WebSocketServer {
       reply.put("conn_id", connId);
       conn.send(reply.toString());
 
-      sendMessage(connId, "Welcome " + username + ". Connected to Freecivx-server-java.");
-      sendPlayerInfoAll(connId, username, username);
-      sendPlayerInfoAdditionAll(connId, 0);
-      sendConnInfoAll(connId, username, conn.getRemoteSocketAddress().toString(), connId);
+      game.addPlayer(connId, username, conn.getRemoteSocketAddress().toString());
     }
 
     if (pid == Packets.PACKET_PLAYER_READY) {
@@ -75,6 +88,18 @@ public class CivServer extends org.java_websocket.server.WebSocketServer {
 
     if (pid == Packets.PACKET_PLAYER_PHASE_DONE) {
       game.turnDone();
+    }
+
+    if (pid == Packets.PACKET_UNIT_ORDERS) {
+      var ORDER_ACTION_MOVE = 3;
+      int unit_id = json.optInt("unit_id");
+      int dest_tile = json.optInt("dest_tile");
+      JSONObject orders = json.optJSONArray("orders").getJSONObject(0);
+      int order = orders.optInt("order");
+      int dir = orders.optInt("dir");
+      if (order == ORDER_ACTION_MOVE) {
+        game.moveUnit(unit_id, dest_tile, dir);
+      }
     }
 
     if (pid == Packets.PACKET_CHAT_MSG_REQ) {
@@ -128,7 +153,7 @@ public class CivServer extends org.java_websocket.server.WebSocketServer {
     System.out.println("WebSocket server stopped.");
   }
 
-  public WebSocket getClientById(int clientId) {
+  public WebSocket getClientById(long clientId) {
     return clients.get(clientId);
   }
 
@@ -143,7 +168,8 @@ public class CivServer extends org.java_websocket.server.WebSocketServer {
     }
   }
 
-  public void sendMessage(int conn_id, String message) {
+
+  public void sendMessage(long conn_id, String message) {
     JSONObject msg = new JSONObject();
     msg.put("pid", Packets.PACKET_CHAT_MSG);
     msg.put("message", message);
@@ -268,18 +294,17 @@ public class CivServer extends org.java_websocket.server.WebSocketServer {
     }
   }
 
-  public void sendUnitAll(
-      long id, int owner, int tile, int type, int facing, int veteran, int hp, int activity) {
+  public void sendUnitAll(Unit unit) {
     JSONObject msg = new JSONObject();
     msg.put("pid", Packets.PACKET_UNIT_SHORT_INFO);
-    msg.put("id", id);
-    msg.put("owner", owner);
-    msg.put("tile", tile);
-    msg.put("type", type);
-    msg.put("facing", facing);
-    msg.put("veteran", veteran);
-    msg.put("hp", hp);
-    msg.put("activity", activity);
+    msg.put("id", unit.getId());
+    msg.put("owner", unit.getOwner());
+    msg.put("tile", unit.getTile());
+    msg.put("type", unit.getType());
+    msg.put("facing", unit.getFacing());
+    msg.put("veteran", unit.getVeteran());
+    msg.put("hp", unit.getHp());
+    msg.put("activity", unit.getActivity());
     for (WebSocket conn : clients.values()) {
       conn.send(msg.toString());
     }
@@ -400,7 +425,7 @@ public class CivServer extends org.java_websocket.server.WebSocketServer {
     }
   }
 
-  public void sendConnInfoAll(int id, String username, String address, int player_num) {
+  public void sendConnInfoAll(long id, String username, String address, long player_num) {
     JSONObject msg = new JSONObject();
     msg.put("pid", Packets.PACKET_CONN_INFO);
     msg.put("id", id);
@@ -414,7 +439,7 @@ public class CivServer extends org.java_websocket.server.WebSocketServer {
     }
   }
 
-  public void sendPlayerInfoAdditionAll(int playerno, int expected_income) {
+  public void sendPlayerInfoAdditionAll(long playerno, int expected_income) {
     JSONObject msg = new JSONObject();
     msg.put("pid", Packets.PACKET_WEB_PLAYER_INFO_ADDITION);
     msg.put("playerno", playerno);
@@ -425,7 +450,7 @@ public class CivServer extends org.java_websocket.server.WebSocketServer {
     }
   }
 
-  public void sendPlayerInfoAll(int playerno, String username, String name) {
+  public void sendPlayerInfoAll(long playerno, String username, String name) {
     JSONObject msg = new JSONObject();
     msg.put("pid", Packets.PACKET_PLAYER_INFO);
     msg.put("playerno", playerno);

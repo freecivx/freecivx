@@ -1,8 +1,25 @@
-/* Copyright (C) The Authors 2025 */
+/**********************************************************************
+ Freecivx - the 3D web version of Freeciv. http://www.Freecivx.net/
+ Copyright (C) 2009-2025  The Freeciv-web project, Andreas Røsdal
+
+ This program is free software: you can redistribute it and/or modify
+ it under the terms of the GNU Affero General Public License as published by
+ the Free Software Foundation, either version 3 of the License, or
+ (at your option) any later version.
+
+ This program is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ GNU Affero General Public License for more details.
+
+ You should have received a copy of the GNU Affero General Public License
+ along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+ ***********************************************************************/
 package net.freecivx.game;
 
 public class Unit {
-
+  private long id;
   private int owner; // ID of the player or entity that owns the unit
   private int tile; // The tile where the unit is located
   private int type; // The type of the unit (e.g., an ID referring to UnitType)
@@ -13,7 +30,9 @@ public class Unit {
   private int activity; // The current activity or status of the unit
 
   // Constructor
-  public Unit(int owner, int tile, int type, int facing, int veteran, int hp, int activity) {
+  public Unit(
+      long id, int owner, int tile, int type, int facing, int veteran, int hp, int activity) {
+    this.id = id;
     this.owner = owner;
     this.tile = tile;
     this.type = type;
@@ -21,6 +40,14 @@ public class Unit {
     this.veteran = veteran;
     this.hp = hp;
     this.activity = activity;
+  }
+
+  public long getId() {
+    return id;
+  }
+
+  public void setId(long id) {
+    this.id = id;
   }
 
   // Getters
@@ -32,12 +59,20 @@ public class Unit {
     return tile;
   }
 
+  public void setTile(int tile) {
+    this.tile = tile;
+  }
+
   public int getType() {
     return type;
   }
 
   public int getFacing() {
     return facing;
+  }
+
+  public void setFacing(int facing) {
+    this.facing = facing;
   }
 
   public int getVeteran() {
