@@ -227,12 +227,12 @@ public class Game {
               0);
         });
 
-    cityStyle.forEach(
-        (id, style) -> server.sendRulesetCityInfoAll(id, style.getName(), style.getName()));
+//    cityStyle.forEach(
+//        (id, style) -> server.sendRulesetCityInfoAll(id, style.getName(), style.getName()));
 
-    // Send map and game settings
-    tiles.forEach((id, tile) -> server.sendTileInfoAll(tile)); // TODO: Send all tiles as one call.
-
+        // Send map and game settings
+        tiles.forEach((id, tile) -> server.sendTileInfoAll(tile)); // TODO: Send all tiles as one call.
+    
     server.sendBordersServerSettingsAll();
     server.sendBeginTurnAll();
     server.sendStartPhaseAll();
