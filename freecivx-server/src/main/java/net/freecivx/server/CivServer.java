@@ -84,7 +84,6 @@ public class CivServer extends org.java_websocket.server.WebSocketServer {
             sendMessage(connId, "Welcome " + username + ". Connected to Freecivx-server-java.");
             sendPlayerInfoAll(connId, username, username );
             sendPlayerInfoAdditionAll(connId, 0);
-            sendRates(connId, 40, 0, 60 );
             sendConnInfoAll(connId, username, conn.getRemoteSocketAddress().toString(), connId );
         }
 
@@ -437,6 +436,10 @@ public class CivServer extends org.java_websocket.server.WebSocketServer {
         vis.put(0);
         msg.put("gives_shared_vision", vis);
 
+        msg.put("tax", 40);
+        msg.put("luxury", 0);
+        msg.put("science", 60);
+        msg.put("gold", 100);
 
         for (WebSocket conn : clients.values()) {
             conn.send(msg.toString());
@@ -470,16 +473,6 @@ public class CivServer extends org.java_websocket.server.WebSocketServer {
         for (WebSocket conn : clients.values()) {
             conn.send(msg.toString());
         }
-    }
-
-    public void sendRates(int conn_id,int tax, int luxury, int science) {
-        JSONObject msg = new JSONObject();
-        msg.put("pid", Packets.PACKET_PLAYER_RATES);
-        msg.put("tax", tax);
-        msg.put("luxury", luxury);
-        msg.put("science", science);
-
-        clients.get(conn_id).send(msg.toString());
     }
 
     public void sendBordersServerSettingsAll() {
