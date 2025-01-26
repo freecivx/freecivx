@@ -297,14 +297,14 @@ public class CivServer extends org.java_websocket.server.WebSocketServer {
   public void sendUnitAll(Unit unit) {
     JSONObject msg = new JSONObject();
     msg.put("pid", Packets.PACKET_UNIT_SHORT_INFO);
-    msg.put("id", unit.getId());
-    msg.put("owner", unit.getOwner());
-    msg.put("tile", unit.getTile());
-    msg.put("type", unit.getType());
-    msg.put("facing", unit.getFacing());
-    msg.put("veteran", unit.getVeteran());
-    msg.put("hp", unit.getHp());
-    msg.put("activity", unit.getActivity());
+    msg.put("id", unit.id());
+    msg.put("owner", unit.owner());
+    msg.put("tile", unit.tile());
+    msg.put("type", unit.type());
+    msg.put("facing", unit.facing());
+    msg.put("veteran", unit.veteran());
+    msg.put("hp", unit.hp());
+    msg.put("activity", unit.activity());
     for (WebSocket conn : clients.values()) {
       conn.send(msg.toString());
     }
@@ -413,12 +413,12 @@ public class CivServer extends org.java_websocket.server.WebSocketServer {
   public void sendTileInfoAll(Tile tile) {
     JSONObject msg = new JSONObject();
     msg.put("pid", Packets.PACKET_TILE_INFO);
-    msg.put("tile", tile.getIndex());
-    msg.put("known", tile.getKnown());
-    msg.put("terrain", tile.getTerrain());
-    msg.put("resource", tile.getResource());
-    msg.put("extras", tile.getExtras());
-    msg.put("height", tile.getHeight());
+    msg.put("tile", tile.index());
+    msg.put("known", tile.known());
+    msg.put("terrain", tile.terrain());
+    msg.put("resource", tile.resource());
+    msg.put("extras", tile.extras());
+    msg.put("height", tile.height());
 
     for (WebSocket conn : clients.values()) {
       conn.send(msg.toString());
