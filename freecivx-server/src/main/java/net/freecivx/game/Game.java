@@ -25,8 +25,8 @@ import java.util.Random;
 import net.freecivx.server.CivServer;
 import org.json.JSONArray;
 
-/** The Game class */
-public class Game {
+/** The Game state class */
+public final class Game {
 
   CivServer server;
 
@@ -34,18 +34,19 @@ public class Game {
   long turn = 0;
   long phase = 0;
 
-  public WorldMap map;
-  public Map<Long, Player> players = new HashMap<>();
-  public Map<Long, Unit> units = new HashMap<>();
-  public Map<Long, City> cities = new HashMap<>();
-  public Map<Long, Technology> techs = new HashMap<>();
-  public Map<Long, Terrain> terrains = new HashMap<>();
-  public Map<Long, Tile> tiles = new HashMap<>();
-  public Map<Long, Government> governments = new HashMap<>();
-  public Map<Long, Nation> nations = new HashMap<>();
-  public Map<Long, Extra> extras = new HashMap<>();
-  public Map<Long, UnitType> unitTypes = new HashMap<>();
-  public Map<Long, CityStyle> cityStyle = new HashMap<>();
+  private WorldMap map;
+  private UnitManager units = new UnitManager();
+
+  private Map<Long, Player> players = new HashMap<>();
+  private Map<Long, City> cities = new HashMap<>();
+  private Map<Long, Technology> techs = new HashMap<>();
+  private Map<Long, Terrain> terrains = new HashMap<>();
+  private Map<Long, Tile> tiles = new HashMap<>();
+  private Map<Long, Government> governments = new HashMap<>();
+  private Map<Long, Nation> nations = new HashMap<>();
+  private Map<Long, Extra> extras = new HashMap<>();
+  private Map<Long, UnitType> unitTypes = new HashMap<>();
+  private Map<Long, CityStyle> cityStyle = new HashMap<>();
 
   public Game(CivServer server) {
     this.server = server;
@@ -125,9 +126,9 @@ public class Game {
     cityStyle.put(2L, new CityStyle("Tropical"));
     cityStyle.put(3L, new CityStyle("Asian"));
 
-    for (int x = 0; x < map.getXsize(); x++) {
-      for (int y = 0; y < map.getYsize(); y++) {
-        long index = y * map.getXsize() + x;
+    for (int x = 0; x < map.xsize(); x += 1) {
+      for (int y = 0; y < map.ysize(); y += 1) {
+        long index = y * map.xsize() + x;
         int terrain = new Random().nextInt(12) + 1;
         int height = 100;
         if (terrain == 1 || terrain == 2 || terrain == 3) {
@@ -144,7 +145,7 @@ public class Game {
     server.sendMessageAll("Starting new game.");
 
     server.sendCalendarInfoAll();
-    server.sendMapInfoAll(map.getXsize(), map.getYsize());
+    server.sendMapInfoAll(map.xsize(), map.ysize());
     server.sendGameInfoAll(year, turn, phase);
 
     // Send technologies
@@ -153,56 +154,55 @@ public class Game {
             server.sendTechAll(
                 id,
                 -1,
-                tech.getName(),
+                tech.name(),
                 new JSONArray(),
-                tech.getGraphicsStr(),
-                tech.getHelptext()));
+                tech.graphicsStr(),
+                tech.helptext()));
 
     // Send governments
     governments.forEach(
         (id, gov) ->
             server.sendRuleseGovernmentAll(
-                id, gov.getName(), gov.getRuleName(), gov.getHelptext()));
+                id, gov.name(), gov.ruleName(), gov.helptext()));
 
     // Send nations
     nations.forEach(
         (id, nation) ->
             server.sendNationInfoAll(
                 id,
-                nation.getName(),
-                nation.getAdjective(),
-                nation.getGraphicsStr(),
-                nation.getLegend()));
+                nation.name(),
+                nation.adjective(),
+                nation.graphicsStr(),
+                nation.legend()));
 
     // Send extras
-    extras.values().forEach(extra -> server.sendExtrasInfoAll(extra.getName()));
+    extras.values().forEach(extra -> server.sendExtrasInfoAll(extra.name()));
 
     // Send terrains
     terrains.forEach(
         (id, terrain) ->
-            server.sendTerrainInfoAll(id, terrain.getName(), terrain.getGraphicsStr()));
+            server.sendTerrainInfoAll(id, terrain.name(), terrain.graphicsStr()));
 
     // Send unit types
     unitTypes.forEach(
         (id, unitType) ->
             server.sendRulesetUnitAll(
                 id,
-                unitType.getName(),
-                unitType.getGraphicsStr(),
-                unitType.getMoveRate(),
-                unitType.getHp(),
-                unitType.getVeteranLevels(),
-                unitType.getHelptext(),
-                unitType.getAttackStrength(),
-                unitType.getDefenseStrength()));
+                unitType.name(),
+                unitType.graphicsStr(),
+                unitType.moveRate(),
+                unitType.hp(),
+                unitType.veteranLevels(),
+                unitType.helptext(),
+                unitType.attackStrength(),
+                unitType.defenseStrength()));
 
     // Send units
-
-    units.forEach((id, unit) -> server.sendUnitAll(unit));
+    units.foreach((id, unit) -> server.sendUnitAll(unit));
 
     // Send city styles
     cityStyle.forEach(
-        (id, style) -> server.sendRulesetCityInfoAll(id, style.getName(), style.getName()));
+        (id, style) -> server.sendRulesetCityInfoAll(id, style.name(), style.name()));
 
     // Send cities
     cities.forEach(
@@ -259,9 +259,7 @@ public class Game {
   }
 
   public void moveUnit(long unit_id, int dest_tile, int dir) {
-    Unit unit = units.get(unit_id);
-    unit.setTile(dest_tile);
-    unit.setFacing(dir);
+    var unit = units.moveAndUpdate(unit_id, dest_tile, dir);
     server.sendUnitAll(unit);
   }
 
@@ -270,7 +268,7 @@ public class Game {
     players.put(connId, player);
     server.sendMessage(connId, "Welcome " + username + ". Connected to Freecivx-server-java.");
     server.sendPlayerInfoAll(connId, username, username);
-    server.sendPlayerInfoAdditionAll(player.getPlayerNo(), 0);
-    server.sendConnInfoAll(connId, username, addr, player.getPlayerNo());
+    server.sendPlayerInfoAdditionAll(player.id(), 0);
+    server.sendConnInfoAll(connId, username, addr, player.id());
   }
 }
