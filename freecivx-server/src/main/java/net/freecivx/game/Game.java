@@ -19,256 +19,212 @@
 
 
 package net.freecivx.game;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Random;
+
 import net.freecivx.server.CivServer;
 import org.json.JSONArray;
 
-/** The Game state class */
-public final class Game {
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Random;
 
-  CivServer server;
+/**
+ * The Game class
+ */
+public class Game {
 
-  long year = 0;
-  long turn = 0;
-  long phase = 0;
+    CivServer server;
 
-  private WorldMap map;
-  private UnitManager units = new UnitManager();
+    long year = 0;
+    long turn = 0;
+    long phase = 0;
 
-  private Map<Long, Player> players = new HashMap<>();
-  private Map<Long, City> cities = new HashMap<>();
-  private Map<Long, Technology> techs = new HashMap<>();
-  private Map<Long, Terrain> terrains = new HashMap<>();
-  private Map<Long, Tile> tiles = new HashMap<>();
-  private Map<Long, Government> governments = new HashMap<>();
-  private Map<Long, Nation> nations = new HashMap<>();
-  private Map<Long, Extra> extras = new HashMap<>();
-  private Map<Long, UnitType> unitTypes = new HashMap<>();
-  private Map<Long, CityStyle> cityStyle = new HashMap<>();
+    public WorldMap map;
+    public Map<Long, Player> players = new HashMap<>();
+    public Map<Long, Unit> units = new HashMap<>();
+    public Map<Long, City> cities = new HashMap<>();
+    public Map<Long, Technology> techs = new HashMap<>();
+    public Map<Long, Terrain> terrains = new HashMap<>();
+    public Map<Long, Tile> tiles = new HashMap<>();
+    public Map<Long, Government> governments = new HashMap<>();
+    public Map<Long, Nation> nations = new HashMap<>();
+    public Map<Long, Extra> extras = new HashMap<>();
+    public Map<Long, UnitType> unitTypes = new HashMap<>();
+    public Map<Long, CityStyle> cityStyle = new HashMap<>();
 
-  public Game(CivServer server) {
-    this.server = server;
-  }
-
-  /** Initializes the game objects with default or predefined values. */
-  public void initGame() {
-    map = new WorldMap(40, 40);
-
-    // Initialize Technologies
-    techs.put(0L, new Technology("Alphabet", "a.alphabet", "Alphabet"));
-    techs.put(1L, new Technology("Mathematics", "a.mathematics", "Mathematics"));
-    techs.put(2L, new Technology("The Republic", "a.the_republic", "The Republic"));
-
-    // Initialize Governments
-    governments.put(0L, new Government("Anarchy", "Anarchy", "Anarchy"));
-    governments.put(1L, new Government("Despotism", "Despotism", "Despotism"));
-    governments.put(2L, new Government("Monarchy", "Monarchy", "Monarchy"));
-    governments.put(3L, new Government("Communism", "Communism", "Communism"));
-    governments.put(4L, new Government("Republic", "Republic", "Republic"));
-    governments.put(5L, new Government("Democracy", "Democracy", "Democracy"));
-
-    // Initialize Nations
-    nations.put(1L, new Nation("Soviet Union", "Soviet", "soviet", "The Soviets!"));
-    nations.put(2L, new Nation("France", "French", "french", "Vive La France!"));
-
-    // Initialize Extras
-    extras.put(0L, new Extra("River"));
-    extras.put(1L, new Extra("Mine"));
-    extras.put(2L, new Extra("Oil_well"));
-    extras.put(3L, new Extra("Fallout"));
-    extras.put(4L, new Extra("Pollution"));
-    extras.put(5L, new Extra("Buoy"));
-    extras.put(6L, new Extra("Road"));
-    extras.put(7L, new Extra("Rail"));
-    extras.put(8L, new Extra("Hut"));
-    extras.put(9L, new Extra("Irrigation"));
-    extras.put(10L, new Extra("Farmland"));
-    extras.put(11L, new Extra("Ruins"));
-    extras.put(12L, new Extra("Airbase"));
-    extras.put(13L, new Extra("Airport"));
-    extras.put(14L, new Extra("Fortress"));
-
-    // Initialize Terrains
-    terrains.put(0L, new Terrain("Arctic", ""));
-    terrains.put(1L, new Terrain("Lake", "lake"));
-    terrains.put(2L, new Terrain("Ocean", "floor"));
-    terrains.put(3L, new Terrain("Deep Ocean", "coast"));
-    terrains.put(4L, new Terrain("Glacier", ""));
-    terrains.put(5L, new Terrain("Desert", ""));
-    terrains.put(6L, new Terrain("Forest", ""));
-    terrains.put(7L, new Terrain("Grassland", ""));
-    terrains.put(8L, new Terrain("Hills", ""));
-    terrains.put(9L, new Terrain("Jungle", ""));
-    terrains.put(10L, new Terrain("Mountains", ""));
-    terrains.put(11L, new Terrain("Plains", ""));
-    terrains.put(12L, new Terrain("Swamp", ""));
-    terrains.put(13L, new Terrain("Tundra", ""));
-    terrains.put(14L, new Terrain("Inaccessible", ""));
-
-    // Initialize UnitTypes
-    unitTypes.put(0L, new UnitType("Settlers", "u.settlers", 1, 1, 1, "Settlers unit", 0, 1));
-    unitTypes.put(1L, new UnitType("Workers", "u.worker", 1, 1, 1, "Workers unit", 0, 1));
-    unitTypes.put(2L, new UnitType("Explorer", "u.explorer", 3, 1, 1, "Explorer unit", 0, 1));
-
-    // Initialize Cities
-    cities.put(0L, new City("Trondheim", 0, 433, 1, 1, true, false, 0, true, false, "", 6, 0));
-
-    // Initialize Units
-    units.put(0L, new Unit(0, 0, 430, 0, 0, 1, 1, 0));
-    units.put(1L, new Unit(1, 0, 431, 1, 0, 1, 1, 0));
-    units.put(2L, new Unit(2, 0, 432, 2, 0, 1, 1, 0));
-
-    // Initialize City Styles
-    cityStyle.put(0L, new CityStyle("European"));
-    cityStyle.put(1L, new CityStyle("Classical"));
-    cityStyle.put(2L, new CityStyle("Tropical"));
-    cityStyle.put(3L, new CityStyle("Asian"));
-
-    for (int x = 0; x < map.xsize(); x += 1) {
-      for (int y = 0; y < map.ysize(); y += 1) {
-        long index = y * map.xsize() + x;
-        int terrain = new Random().nextInt(12) + 1;
-        int height = 100;
-        if (terrain == 1 || terrain == 2 || terrain == 3) {
-          height = -100;
-        }
-        Tile tile = new Tile(index, 2, terrain, 1, 1, height);
-        tiles.put(index, tile);
-      }
+    public Game(CivServer server) {
+        this.server = server;
     }
-  }
 
-  /** Starts a new game and sends the initialized game state to all players. */
-  public void startGame() {
-    server.sendMessageAll("Starting new game.");
+    /**
+     * Initializes the game objects with default or predefined values.
+     */
+    public void initGame() {
+        map = new WorldMap(40, 40);
 
-    server.sendCalendarInfoAll();
-    server.sendMapInfoAll(map.xsize(), map.ysize());
-    server.sendGameInfoAll(year, turn, phase);
+        // Initialize Technologies
+        techs.put(0L, new Technology("Alphabet", "a.alphabet", "Alphabet"));
+        techs.put(1L, new Technology("Mathematics", "a.mathematics", "Mathematics"));
+        techs.put(2L, new Technology("The Republic", "a.the_republic", "The Republic"));
 
-    // Send technologies
-    techs.forEach(
-        (id, tech) ->
-            server.sendTechAll(
-                id,
-                -1,
-                tech.name(),
-                new JSONArray(),
-                tech.graphicsStr(),
-                tech.helptext()));
+        // Initialize Governments
+        governments.put(0L, new Government("Anarchy", "Anarchy", "Anarchy"));
+        governments.put(1L, new Government("Despotism", "Despotism", "Despotism"));
+        governments.put(2L, new Government("Monarchy", "Monarchy", "Monarchy"));
+        governments.put(3L, new Government("Communism", "Communism", "Communism"));
+        governments.put(4L, new Government("Republic", "Republic", "Republic"));
+        governments.put(5L, new Government("Democracy", "Democracy", "Democracy"));
 
-    // Send governments
-    governments.forEach(
-        (id, gov) ->
-            server.sendRuleseGovernmentAll(
-                id, gov.name(), gov.ruleName(), gov.helptext()));
+        // Initialize Nations
+        nations.put(1L, new Nation("Soviet Union", "Soviet", "soviet", "The Soviets!"));
+        nations.put(2L, new Nation("France", "French", "french", "Vive La France!"));
 
-    // Send nations
-    nations.forEach(
-        (id, nation) ->
-            server.sendNationInfoAll(
-                id,
-                nation.name(),
-                nation.adjective(),
-                nation.graphicsStr(),
-                nation.legend()));
+        // Initialize Extras
+        extras.put(0L, new Extra("River"));
+        extras.put(1L, new Extra("Mine"));
+        extras.put(2L, new Extra("Oil_well"));
+        extras.put(3L, new Extra("Fallout"));
+        extras.put(4L, new Extra("Pollution"));
+        extras.put(5L, new Extra("Buoy"));
+        extras.put(6L, new Extra("Road"));
+        extras.put(7L, new Extra("Rail"));
+        extras.put(8L, new Extra("Hut"));
+        extras.put(9L, new Extra("Irrigation"));
+        extras.put(10L, new Extra("Farmland"));
+        extras.put(11L, new Extra("Ruins"));
+        extras.put(12L, new Extra("Airbase"));
+        extras.put(13L, new Extra("Airport"));
+        extras.put(14L, new Extra("Fortress"));
 
-    // Send extras
-    extras.values().forEach(extra -> server.sendExtrasInfoAll(extra.name()));
 
-    // Send terrains
-    terrains.forEach(
-        (id, terrain) ->
-            server.sendTerrainInfoAll(id, terrain.name(), terrain.graphicsStr()));
+        // Initialize Terrains
+        terrains.put(0L, new Terrain("Arctic", ""));
+        terrains.put(1L, new Terrain("Lake", "lake"));
+        terrains.put(2L, new Terrain("Ocean", "floor"));
+        terrains.put(3L, new Terrain("Deep Ocean", "coast"));
+        terrains.put(4L, new Terrain("Glacier", ""));
+        terrains.put(5L, new Terrain("Desert", ""));
+        terrains.put(6L, new Terrain("Forest", ""));
+        terrains.put(7L, new Terrain("Grassland", ""));
+        terrains.put(8L, new Terrain("Hills", ""));
+        terrains.put(9L, new Terrain("Jungle", ""));
+        terrains.put(10L, new Terrain("Mountains", ""));
+        terrains.put(11L, new Terrain("Plains", ""));
+        terrains.put(12L, new Terrain("Swamp", ""));
+        terrains.put(13L, new Terrain("Tundra", ""));
+        terrains.put(14L, new Terrain("Inaccessible", ""));
 
-    // Send unit types
-    unitTypes.forEach(
-        (id, unitType) ->
-            server.sendRulesetUnitAll(
-                id,
-                unitType.name(),
-                unitType.graphicsStr(),
-                unitType.moveRate(),
-                unitType.hp(),
-                unitType.veteranLevels(),
-                unitType.helptext(),
-                unitType.attackStrength(),
-                unitType.defenseStrength()));
 
-    // Send units
-    units.foreach((id, unit) -> server.sendUnitAll(unit));
+        // Initialize UnitTypes
+        unitTypes.put(0L, new UnitType("Settlers", "u.settlers", 1, 1, 1, "Settlers unit", 0, 1));
+        unitTypes.put(1L, new UnitType("Workers", "u.worker", 1, 1, 1, "Workers unit", 0, 1));
+        unitTypes.put(2L, new UnitType("Explorer", "u.explorer", 3, 1, 1, "Explorer unit", 0, 1));
 
-    // Send city styles
-    cityStyle.forEach(
-        (id, style) -> server.sendRulesetCityInfoAll(id, style.name(), style.name()));
+        // Initialize Cities
+        cities.put(0L, new City("Trondheim", 0,  433, 1, 1, true, false, 0, true, false, "", 6, 0));
 
-    // Send cities
-    cities.forEach(
-        (id, city) -> {
-          server.sendCityShortInfoAll(
-              id,
-              city.owner(),
-              city.tile(),
-              city.size(),
-              city.style(),
-              city.capital(),
-              city.occupied(),
-              city.walls(),
-              city.happy(),
-              city.unhappy(),
-              "",
-              city.name());
-          server.sendCityInfoAll(
-              id,
-              city.owner(),
-              city.tile(),
-              city.size(),
-              city.style(),
-              city.capital(),
-              city.occupied(),
-              city.walls(),
-              city.happy(),
-              city.unhappy(),
-              "",
-              city.name(),
-              6,
-              0);
+        // Initialize Units
+        units.put(0L, new Unit(0, 0, 430, 0, 0, 1, 1, 0));
+        units.put(1L, new Unit(1, 0, 431, 1, 0, 1, 1, 0));
+        units.put(2L, new Unit(2, 0, 432, 2, 0, 1, 1, 0));
+
+        // Initialize City Styles
+        cityStyle.put(0L, new CityStyle("European"));
+        cityStyle.put(1L, new CityStyle("Classical"));
+        cityStyle.put(2L, new CityStyle("Tropical"));
+        cityStyle.put(3L, new CityStyle("Asian"));
+
+
+        for (int x = 0; x < map.getXsize(); x++) {
+            for (int y = 0; y < map.getYsize(); y++) {
+                long index = y *  map.getXsize() + x;
+                int terrain = new Random().nextInt(12) + 1;
+                int height = 100;
+                if (terrain == 1 || terrain == 2 || terrain == 3) {
+                    height = -100;
+                }
+                Tile tile = new Tile(index, 2, terrain, 1, 1, height);
+                tiles.put(index, tile);
+            }
+        }
+    }
+
+    /**
+     * Starts a new game and sends the initialized game state to all players.
+     */
+    public void startGame() {
+        server.sendMessageAll("Starting new game.");
+
+        server.sendCalendarInfoAll();
+        server.sendMapInfoAll(map.getXsize(), map.getYsize());
+        server.sendGameInfoAll(year, turn, phase);
+
+        // Send technologies
+        techs.forEach((id, tech) -> server.sendTechAll(id, -1, tech.getName(), new JSONArray(), tech.getGraphicsStr(), tech.getHelptext()));
+
+        // Send governments
+        governments.forEach((id, gov) -> server.sendRuleseGovernmentAll(id, gov.getName(), gov.getRuleName(), gov.getHelptext()));
+
+        // Send nations
+        nations.forEach((id, nation) -> server.sendNationInfoAll(id, nation.getName(), nation.getAdjective(), nation.getGraphicsStr(), nation.getLegend()));
+
+        // Send extras
+        extras.values().forEach(extra -> server.sendExtrasInfoAll(extra.getName()));
+
+        // Send terrains
+        terrains.forEach((id, terrain) -> server.sendTerrainInfoAll(id, terrain.getName(), terrain.getGraphicsStr()));
+
+        // Send unit types
+        unitTypes.forEach((id, unitType) -> server.sendRulesetUnitAll(id, unitType.getName(), unitType.getGraphicsStr(), unitType.getMoveRate(),
+                unitType.getHp(),
+                unitType.getVeteranLevels(), unitType.getHelptext(), unitType.getAttackStrength(), unitType.getDefenseStrength()));
+
+        // Send units
+        units.forEach((id, unit) -> server.sendUnitAll(unit));
+
+        // Send city styles
+        cityStyle.forEach((id, style) -> server.sendRulesetCityInfoAll(id, style.getName(), style.getName()));
+
+        // Send cities
+        cities.forEach((id, city) -> {
+            server.sendCityShortInfoAll(id, city.getOwner(), city.getTile(), city.getSize(), city.getStyle(), city.isCapital(),
+                    city.isOccupied(), city.getWalls(), city.isHappy(), city.isUnhappy(), "", city.getName());
+            server.sendCityInfoAll(id, city.getOwner(), city.getTile(), city.getSize(), city.getStyle(), city.isCapital(),
+                    city.isOccupied(), city.getWalls(), city.isHappy(), city.isUnhappy(), "", city.getName(), 6, 0);
         });
 
-//    cityStyle.forEach(
-//        (id, style) -> server.sendRulesetCityInfoAll(id, style.getName(), style.getName()));
-
         // Send map and game settings
-      tiles.forEach((id, tile) -> server.sendTileInfoAll(tile)); // TODO: Send all tiles as one call.
-    server.sendBordersServerSettingsAll();
-    server.sendBeginTurnAll();
-    server.sendStartPhaseAll();
+        tiles.forEach((id, tile) -> server.sendTileInfoAll(tile)); // TODO: Send all tiles as one call.
 
-    server.sendMessageAll("Welcome to the Freecivx game!");
-  }
+        server.sendBordersServerSettingsAll();
+        server.sendBeginTurnAll();
+        server.sendStartPhaseAll();
 
-  public void turnDone() {
-    year++;
-    turn++;
+        server.sendMessageAll("Welcome to the Freecivx game!");
+    }
 
-    server.sendGameInfoAll(year, turn, phase);
-    server.sendBeginTurnAll();
-    server.sendStartPhaseAll();
-  }
 
-  public void moveUnit(long unit_id, int dest_tile, int dir) {
-    var unit = units.moveAndUpdate(unit_id, dest_tile, dir);
-    server.sendUnitAll(unit);
-  }
+    public void turnDone() {
+        year++;
+        turn++;
 
-  public void addPlayer(long connId, String username, String addr) {
-    Player player = new Player(connId, username, addr, 0);
-    players.put(connId, player);
-    server.sendMessage(connId, "Welcome " + username + ". Connected to Freecivx-server-java.");
-    server.sendPlayerInfoAll(connId, username, username);
-    server.sendPlayerInfoAdditionAll(player.id(), 0);
-    server.sendConnInfoAll(connId, username, addr, player.id());
-  }
+        server.sendGameInfoAll(year, turn, phase);
+        server.sendBeginTurnAll();
+        server.sendStartPhaseAll();
+    }
+
+    public void moveUnit(long unit_id, int dest_tile, int dir) {
+        Unit unit = units.get(unit_id);
+        unit.setTile(dest_tile);
+        unit.setFacing(dir);
+        server.sendUnitAll(unit);
+    }
+
+    public void addPlayer(long connId, String username, String addr) {
+        Player player = new Player(connId, username, addr, 0);
+        players.put(connId, player);
+        server.sendMessage(connId, "Welcome " + username + ". Connected to Freecivx-server-java.");
+        server.sendPlayerInfoAll(connId, username, username );
+        server.sendPlayerInfoAdditionAll(player.getPlayerNo(), 0);
+        server.sendConnInfoAll(connId, username, addr, player.getPlayerNo());
+    }
 }
