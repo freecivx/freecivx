@@ -19,23 +19,13 @@ This repository contains:
 - Java 21 or later
 
 ## Quick Start
-1. Clone the repository:
-   ```bash
-   git clone https://github.com/freecivx/freecivx.git
-   cd freecivx
-   ```
-2. Build the Swing client:
+1. Build the Swing client:
    ```bash
    cd freecivx-client
    mvn clean package
    ```
-3. Start the FreecivX server:
-   ```bash
-   cd ../freecivx-server
-   mvn clean package
-   ./civserver.sh
-   ```
-4. Run the Swing client:
+
+2. Run the Swing client:
    ```bash
    java -jar target/freecivx-client-1.0.0.jar
    ```

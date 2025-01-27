@@ -86,3 +86,4 @@ tests/screenshot*.png
 *Zone.Identifier
 flyway.tmpl
 web.context.tmpl
+dependency-reduced-pom.xml
