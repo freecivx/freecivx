@@ -6,7 +6,7 @@
   <artifactId>freecivx-server</artifactId>
   <version>1.0</version>
   <packaging>jar</packaging>
-  <name>freecivx.net</name>
+  <name>Freecivx Java Server</name>
 
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>

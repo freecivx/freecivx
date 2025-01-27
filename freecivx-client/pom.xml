@@ -21,6 +21,12 @@
     </properties>
 
     <dependencies>
+    
+        <dependency>
+            <groupId>net.freecivx</groupId>
+            <artifactId>freecivx-server</artifactId>
+            <version>1.0</version>
+        </dependency>
 
         <!-- Logging framework -->
         <dependency>
