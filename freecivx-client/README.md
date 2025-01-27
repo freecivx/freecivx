@@ -3,6 +3,8 @@
 The **FreecivX Java Swing Client** is a graphical user interface built with Java Swing to connect to and interact with the **FreecivX Server**. 
 The client provides a user-friendly way to play and manage FreecivX games, offering classic civilization-building gameplay with an enhanced experience.
 
+![FreecivX Swing Client](freecivx-swing-client.png)
+
 ## Goals
 - **Cross-Platform Compatibility**: Run on any system with Java 21+.
 - **User-Friendly Interface**: Provide a clean, modern, and intuitive UI for players.
