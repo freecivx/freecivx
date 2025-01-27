@@ -39,7 +39,9 @@ FreecivX.net consists of these components:
 
 * [Freecivx-server](freecivx-server) - the Freecivx server. Implemented in Java.  Multiplayer and large MMO-games.
 
-* [Freeciv](freeciv) - the Freeciv C server. Forked. Implemented in C.
+* [Freecivx-client](freecivx-client) - the Freecivx Java Swing client.
+
+* [Freeciv](freeciv) - the Freeciv C server. Forked. Implemented in C. Deprecated and soon end-of-life.
 
 * [Publite2](publite2) - a process launcher for Freeciv C servers, which manages
   multiple Freeciv server processes and checks capacity through the Metaserver. 
