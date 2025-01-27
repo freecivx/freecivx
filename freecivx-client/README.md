@@ -6,8 +6,6 @@ Goal:
 =====
 ![bilde](https://github.com/user-attachments/assets/15cbd485-8269-4eb9-b25b-125171c9c07c)
 
-![FreecivX Swing Client](freecivx-swing-client.png)
-
 ## Goals
 - **Cross-Platform Compatibility**: Run on any system with Java 21+.
 - **User-Friendly Interface**: Provide a clean, modern, and intuitive UI for players.
