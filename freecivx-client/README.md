@@ -1,6 +1,6 @@
 # FreecivX Java Swing Client
 
-The **FreecivX Java Swing Client** is a client to play Freeciv on Freecivx servers. It provides a user-friendly way to play FreecivX games, offering classic civilization-building gameplay with an enhanced experience.
+The **FreecivX Java Swing Client** is a application to play Freeciv on Freecivx servers. It provides a user-friendly way to play FreecivX games, offering classic civilization-building gameplay with an enhanced experience.
 
 ![FreecivX Swing Client](freecivx-swing-client.png)
 
