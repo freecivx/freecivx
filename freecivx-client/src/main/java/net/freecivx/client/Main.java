@@ -46,13 +46,13 @@ public class Main {
 
         // Create input fields and labels
         JLabel usernameLabel = new JLabel("Username:");
-        JTextField usernameField = new JTextField(20);
+        JTextField usernameField = new JTextField("guest", 20);
 
         JLabel serverAddressLabel = new JLabel("Server Address:");
-        JTextField serverAddressField = new JTextField(20);
+        JTextField serverAddressField = new JTextField("freecivx.net", 20);
 
         JLabel portLabel = new JLabel("Port:");
-        JTextField portField = new JTextField(20);
+        JTextField portField = new JTextField("8700", 20);
 
         JButton connectButton = new JButton("Connect");
 
