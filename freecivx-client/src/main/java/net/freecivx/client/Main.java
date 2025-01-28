@@ -53,7 +53,7 @@ public class Main {
         JTextField serverAddressField = new JTextField("freecivx.net", 20);
 
         JLabel portLabel = new JLabel("Port:");
-        JTextField portField = new JTextField("8700", 20);
+        JTextField portField = new JTextField("7800", 20);
 
         JButton connectButton = new JButton("Connect");
 
