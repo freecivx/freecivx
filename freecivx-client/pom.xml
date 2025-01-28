@@ -35,6 +35,14 @@
             <version>${org-java-websocket.version}</version>
         </dependency>
 
+        <dependency>
+            <groupId>com.google.code.gson</groupId>
+            <artifactId>gson</artifactId>
+            <version>2.10.1</version>
+        </dependency>
+
+
+
         <!-- Logging framework -->
         <dependency>
             <groupId>org.slf4j</groupId>

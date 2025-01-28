@@ -2,11 +2,12 @@ package net.freecivx.client;
 
 import org.java_websocket.client.WebSocketClient;
 import org.java_websocket.handshake.ServerHandshake;
-
 import javax.swing.*;
 import java.awt.*;
 import java.net.URI;
 import java.net.URISyntaxException;
+import com.google.gson.Gson;
+import com.google.gson.JsonObject;
 
 /**
  * Main entry point for the FreecivX Java Swing Client.
@@ -103,15 +104,29 @@ public class Main {
                     public void onOpen(ServerHandshake handshake) {
                         System.out.println("Connected to server.");
 
-                        // Send a sample JSON packet
-                        String samplePacket = "{\"type\": \"greeting\", \"username\": \"" + username + "\"}";
-                        send(samplePacket);
-                        System.out.println("Sent: " + samplePacket);
+                        // Create and send login message
+                        Gson gson = new Gson();
+                        JsonObject loginMessage = new JsonObject();
+                        loginMessage.addProperty("pid", 4);
+                        loginMessage.addProperty("username", username);
+                        loginMessage.addProperty("capability", "+Freeciv.Web.Devel-3.3");
+                        loginMessage.addProperty("version_label", "-dev");
+                        loginMessage.addProperty("major_version", 3);
+                        loginMessage.addProperty("minor_version", 1);
+                        loginMessage.addProperty("patch_version", 90);
+                        String loginPacket = gson.toJson(loginMessage);
+                        send(loginPacket);
+                        System.out.println("Sent: " + loginPacket);
                     }
 
                     @Override
                     public void onMessage(String message) {
                         System.out.println("Received: " + message);
+
+                        // Parse and log the JSON response
+                        Gson gson = new Gson();
+                        JsonObject response = gson.fromJson(message, JsonObject.class);
+                        System.out.println("Parsed Response: " + response);
                     }
 
                     @Override
