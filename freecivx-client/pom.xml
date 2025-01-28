@@ -17,6 +17,7 @@
         <maven.compiler.source>21</maven.compiler.source>
         <maven.compiler.target>21</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <org-java-websocket.version>1.5.3</org-java-websocket.version>
         <exec.mainClass>net.freecivx.client.Main</exec.mainClass>
     </properties>
 
@@ -26,6 +27,12 @@
             <groupId>net.freecivx</groupId>
             <artifactId>freecivx-server</artifactId>
             <version>1.0</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.java-websocket</groupId>
+            <artifactId>Java-WebSocket</artifactId>
+            <version>${org-java-websocket.version}</version>
         </dependency>
 
         <!-- Logging framework -->
