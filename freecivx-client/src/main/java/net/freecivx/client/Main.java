@@ -25,6 +25,20 @@ public class Main {
             mainFrame.setSize(800, 600); // Set initial size
             mainFrame.setLocationRelativeTo(null); // Center the window
 
+            // Create the menu bar
+            JMenuBar menuBar = new JMenuBar();
+
+            // Add menus to the menu bar
+            menuBar.add(createMenu("Game"));
+            menuBar.add(createMenu("Unit"));
+            menuBar.add(createMenu("Civilization"));
+            menuBar.add(createMenu("Work"));
+            menuBar.add(createMenu("Combat"));
+            menuBar.add(createMenu("Help"));
+
+            // Set the menu bar to the frame
+            mainFrame.setJMenuBar(menuBar);
+
             // Add a simple welcome label
             JLabel welcomeLabel = new JLabel("Welcome to FreecivX Swing Client", SwingConstants.CENTER);
             welcomeLabel.setFont(new Font("Arial", Font.BOLD, 20));
@@ -36,6 +50,22 @@ public class Main {
             // Show the connection dialog
             showConnectionDialog(mainFrame);
         });
+    }
+
+    private static JMenu createMenu(String menuName) {
+        JMenu menu = new JMenu(menuName);
+
+        // Example menu items
+        JMenuItem menuItem1 = new JMenuItem(menuName + " Option 1");
+        JMenuItem menuItem2 = new JMenuItem(menuName + " Option 2");
+        JMenuItem menuItem3 = new JMenuItem(menuName + " Option 3");
+
+        // Add menu items to the menu
+        menu.add(menuItem1);
+        menu.add(menuItem2);
+        menu.add(menuItem3);
+
+        return menu;
     }
 
     private static void showConnectionDialog(JFrame parent) {
