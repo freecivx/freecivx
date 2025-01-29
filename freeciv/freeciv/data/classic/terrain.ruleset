@@ -777,7 +777,7 @@ defense_bonus        = 0
 food                 = 1
 shield               = 1
 trade                = 0
-resources            = "Buffalo", "Wheat"
+resources            = "Buffalo", "Cattle", "Wheat"
 road_food_incr_pct   = 0
 road_shield_incr_pct = 0
 road_trade_incr_pct  = 100
@@ -997,6 +997,12 @@ trade       = 4
 extra       = "Buffalo"
 identifier  = "b"
 shield      = 2
+# plains (horses => buffalo => cattle).
+
+[resource_cattle]
+extra       = "Cattle"
+identifier  = "z"
+shield      = 3
 # plains (horses => buffalo => cattle).
 
 [resource_wheat]
@@ -1779,6 +1785,19 @@ category       = "Resource"
 causes         = "Resource"
 ;rmcauses       = ""
 graphic        = "ts.buffalo"
+graphic_alt    = "-"
+activity_gfx   = "None"
+act_gfx_alt    = "-"
+act_gfx_alt2   = "-"
+rmact_gfx      = "None"
+rmact_gfx_alt  = "-"
+
+[extra_cattle]
+name           = _("Cattle")
+category       = "Resource"
+causes         = "Resource"
+;rmcauses       = ""
+graphic        = "ts.cattle"
 graphic_alt    = "-"
 activity_gfx   = "None"
 act_gfx_alt    = "-"

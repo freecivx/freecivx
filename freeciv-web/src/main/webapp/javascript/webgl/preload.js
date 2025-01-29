@@ -471,7 +471,11 @@ switch (filename) {
     modelscale = 1.2;
     break;
   case 'Buffalo':
-    modelscale = 1.9;
+    modelscale = 1.8;
+    break;
+  case 'Cattle1':
+  case 'Cattle2':
+    modelscale = 2.0;
     break;
   case 'Pheasant':
     modelscale = 1.0;
