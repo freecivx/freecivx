@@ -77,7 +77,8 @@ public class Main {
 
         // Create input fields and labels
         JLabel usernameLabel = new JLabel("Username:");
-        JTextField usernameField = new JTextField("guest", 20);
+        String user = System.getProperty("user.name");
+        JTextField usernameField = new JTextField(user, 20);
 
         JLabel serverAddressLabel = new JLabel("Server Address:");
         JTextField serverAddressField = new JTextField("freecivx.net", 20);
