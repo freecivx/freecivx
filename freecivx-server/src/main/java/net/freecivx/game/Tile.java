@@ -27,15 +27,17 @@ public class Tile {
     private int resource;
     private int extras;
     private int height;
+    private long worked = -1;
 
     // Constructor to initialize a Tile with random values
-    public Tile(long index, int known, int terrain, int resource, int extras, int height) {
+    public Tile(long index, int known, int terrain, int resource, int extras, int height, long worked) {
         this.index = index;
         this.known = known;
         this.terrain = terrain;
         this.resource = resource;
         this.extras = extras;
         this.height = height;
+        this.worked = worked;
 
     }
 
@@ -86,6 +88,14 @@ public class Tile {
 
     public void setHeight(int height) {
         this.height = height;
+    }
+
+    public long getWorked() {
+        return worked;
+    }
+
+    public void setWorked(long worked) {
+        this.worked = worked;
     }
 
     @Override

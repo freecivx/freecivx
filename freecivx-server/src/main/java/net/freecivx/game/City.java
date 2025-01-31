@@ -23,7 +23,7 @@ public class City {
 
     private String name;
     private int owner;
-    private int tile;
+    private long tile;
     private int size;
     private int style;
     private boolean capital;
@@ -36,7 +36,7 @@ public class City {
     private int productionValue;
 
     // Constructor
-    public City(String name, int owner, int tile, int size, int style, boolean capital, boolean occupied, int walls,
+    public City(String name, int owner, long tile, int size, int style, boolean capital, boolean occupied, int walls,
                 boolean happy, boolean unhappy, String improvements, int productionKind, int productionValue) {
         this.name = name;
         this.owner = owner;
@@ -70,11 +70,11 @@ public class City {
         this.owner = owner;
     }
 
-    public int getTile() {
+    public long getTile() {
         return tile;
     }
 
-    public void setTile(int tile) {
+    public void setTile(long tile) {
         this.tile = tile;
     }
 

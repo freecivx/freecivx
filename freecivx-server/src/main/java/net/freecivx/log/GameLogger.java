@@ -20,7 +20,7 @@
 package net.freecivx.log;
 
 /** A logging facade to integrate with runtime-preferred logging mechanism. */
-public sealed interface GameLogger permits NoopLogger, StdoutLogger {
+public sealed interface GameLogger permits  StdoutLogger {
 // TODO Add Slf4jLogger
 
     enum LogLevel {

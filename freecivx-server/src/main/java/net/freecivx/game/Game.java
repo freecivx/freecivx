@@ -142,7 +142,7 @@ public class Game {
                 if (terrain == 1 || terrain == 2 || terrain == 3) {
                     height = -100;
                 }
-                Tile tile = new Tile(index, 2, terrain, 1, 1, height);
+                Tile tile = new Tile(index, 2, terrain, 1, 1, height, -1);
                 tiles.put(index, tile);
             }
         }
@@ -157,6 +157,7 @@ public class Game {
         server.sendCalendarInfoAll();
         server.sendMapInfoAll(map.getXsize(), map.getYsize());
         server.sendGameInfoAll(year, turn, phase);
+        server.sendRulesetControl();
 
         // Send technologies
         techs.forEach((id, tech) -> server.sendTechAll(id, -1, tech.getName(), new JSONArray(), tech.getGraphicsStr(), tech.getHelptext()));
@@ -178,6 +179,9 @@ public class Game {
                 unitType.getHp(),
                 unitType.getVeteranLevels(), unitType.getHelptext(), unitType.getAttackStrength(), unitType.getDefenseStrength()));
 
+
+        tiles.forEach((id, tile) -> server.sendTileInfoAll(tile)); // TODO: Send all tiles as one call.
+
         // Send units
         units.forEach((id, unit) -> server.sendUnitAll(unit));
 
@@ -192,8 +196,6 @@ public class Game {
                     city.isOccupied(), city.getWalls(), city.isHappy(), city.isUnhappy(), "", city.getName(), 6, 0);
         });
 
-        // Send map and game settings
-        tiles.forEach((id, tile) -> server.sendTileInfoAll(tile)); // TODO: Send all tiles as one call.
 
         server.sendBordersServerSettingsAll();
         server.sendBeginTurnAll();
@@ -226,5 +228,29 @@ public class Game {
         server.sendPlayerInfoAll(connId, username, username );
         server.sendPlayerInfoAdditionAll(player.getPlayerNo(), 0);
         server.sendConnInfoAll(connId, username, addr, player.getPlayerNo());
+    }
+
+    public void buildCity(long unit_id, String city_name, long tile_id) {
+
+
+        long id = cities.size() + 1;
+        City city = new City(city_name, 0,  tile_id, 1, 1, false, false,
+                0, true, false, "", 6, 0);
+        cities.put(id, city);
+
+        Tile tile = tiles.get(tile_id);
+        tile.setWorked(id);
+        server.sendTileInfoAll(tile);
+
+        server.sendCityShortInfoAll(id, city.getOwner(), city.getTile(), city.getSize(), city.getStyle(), city.isCapital(),
+                city.isOccupied(), city.getWalls(), city.isHappy(), city.isUnhappy(), "", city.getName());
+
+        server.sendCityInfoAll(id, city.getOwner(), city.getTile(), city.getSize(), city.getStyle(), city.isCapital(),
+                city.isOccupied(), city.getWalls(), city.isHappy(), city.isUnhappy(), "", city.getName(), 6, 0);
+        server.sendUnitRemove(unit_id);
+        units.remove(unit_id);
+
+
+
     }
 }

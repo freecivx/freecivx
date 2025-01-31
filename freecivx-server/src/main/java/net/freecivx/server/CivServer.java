@@ -106,6 +106,23 @@ public class CivServer extends org.java_websocket.server.WebSocketServer {
             }
         }
 
+        if (pid == Packets.PACKET_CITY_NAME_SUGGESTION_REQ) {
+            int unit_id = json.optInt("unit_id");
+            JSONObject msg = new JSONObject();
+            msg.put("pid", Packets.PACKET_CITY_NAME_SUGGESTION_INFO);
+            msg.put("name", "Paris"); // TODO
+            msg.put("unit_id", unit_id);
+            clients.get(connId).send(msg.toString());
+        }
+
+        if (pid == Packets.PACKET_UNIT_DO_ACTION) {
+            long unit_id = json.optInt("actor_id");
+            String name = json.optString("name");
+
+            long tile_id = json.optInt("target_id");
+            game.buildCity(unit_id, name, tile_id);
+        }
+
         if (pid == Packets.PACKET_CHAT_MSG_REQ) {
             String message =  URLDecoder.decode(json.optString("message"), StandardCharsets.UTF_8);
             if (message.equalsIgnoreCase("/quit")) {
@@ -305,7 +322,17 @@ public class CivServer extends org.java_websocket.server.WebSocketServer {
         }
     }
 
-    public void sendCityShortInfoAll(long id, int owner, int tile, int size, int style, boolean capital, boolean occupied, int walls, boolean happy,
+    public void sendUnitRemove(long unit_id) {
+        JSONObject msg = new JSONObject();
+        msg.put("pid", Packets.PACKET_UNIT_REMOVE);
+        msg.put("unit_id", unit_id);
+        for (WebSocket conn : clients.values()) {
+            conn.send(msg.toString());
+        }
+
+    }
+
+    public void sendCityShortInfoAll(long id, int owner, long tile, int size, int style, boolean capital, boolean occupied, int walls, boolean happy,
                                      boolean unhappy, String improvements, String name) {
         JSONObject msg = new JSONObject();
         msg.put("pid", Packets.PACKET_CITY_SHORT_INFO);
@@ -328,7 +355,7 @@ public class CivServer extends org.java_websocket.server.WebSocketServer {
         }
     }
 
-    public void sendCityInfoAll(long id, int owner, int tile, int size, int style, boolean capital, boolean occupied, int walls, boolean happy,
+    public void sendCityInfoAll(long id, int owner, long tile, int size, int style, boolean capital, boolean occupied, int walls, boolean happy,
                                      boolean unhappy, String improvements, String name, int production_kind, int production_value) {
         JSONObject msg = new JSONObject();
         msg.put("pid", Packets.PACKET_CITY_INFO);
@@ -392,6 +419,7 @@ public class CivServer extends org.java_websocket.server.WebSocketServer {
         msg.put("resource", tile.getResource());
         msg.put("extras", tile.getExtras());
         msg.put("height", tile.getHeight());
+        msg.put("worked", tile.getWorked() >= 0 ? tile.getWorked() : JSONObject.NULL);
 
         for (WebSocket conn : clients.values()) {
             conn.send(msg.toString());
@@ -502,7 +530,15 @@ public class CivServer extends org.java_websocket.server.WebSocketServer {
         }
     }
 
+    public void sendRulesetControl() {
+        JSONObject msg = new JSONObject();
+        msg.put("pid", Packets.PACKET_RULESET_CONTROL);
+        msg.put("num_impr_types", 0); // Todo
 
+        for (WebSocket conn : clients.values()) {
+            conn.send(msg.toString());
+        }
+    }
 }
 
 

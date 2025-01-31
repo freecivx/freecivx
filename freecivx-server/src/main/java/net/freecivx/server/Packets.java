@@ -31,13 +31,18 @@ public class Packets {
     public static int PACKET_CHAT_MSG_REQ = 26;
     public static int PACKET_CITY_INFO = 31;
     public static int PACKET_CITY_SHORT_INFO = 32;
+    public static int PACKET_CITY_NAME_SUGGESTION_REQ = 43;
+    public static int PACKET_CITY_NAME_SUGGESTION_INFO = 44;
+
     public static int PACKET_PLAYER_INFO = 51;
     public static int PACKET_PLAYER_PHASE_DONE = 52;
     public static int PACKET_PLAYER_RATES = 53;
     public static int PACKET_RESEARCH_INFO = 60;
+    public static int PACKET_UNIT_REMOVE = 62;
     public static int PACKET_UNIT_INFO = 63;
     public static int PACKET_UNIT_SHORT_INFO = 64;
     public static int PACKET_UNIT_ORDERS = 73;
+    public static int PACKET_UNIT_DO_ACTION = 84;
     public static int PACKET_CONN_PING = 88;
     public static int PACKET_CONN_PONG = 89;
     public static int PACKET_CONN_INFO = 115;
@@ -51,6 +56,7 @@ public class Packets {
     public static int PACKET_RULESET_NATION = 148;
     public static int PACKET_RULESET_CITY = 149;
     public static int PACKET_RULESET_TERRAIN = 151;
+    public static int PACKET_RULESET_CONTROL = 155;
     public static int PACKET_SERVER_SETTING_CONST = 165;
     public static int PACKET_SERVER_SETTING_BOOL = 166;
     public static int PACKET_RULESET_EXTRA = 232;
