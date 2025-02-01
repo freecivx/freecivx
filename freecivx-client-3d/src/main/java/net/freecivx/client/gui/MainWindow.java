@@ -4,6 +4,7 @@ import com.jme3.app.SimpleApplication;
 import com.jme3.math.Vector3f;
 import com.simsilica.lemur.GuiGlobals;
 import com.simsilica.lemur.style.BaseStyles;
+import net.freecivx.client.game.Game;
 import net.freecivx.client.network.FreecivxClient;
 
 public class MainWindow extends SimpleApplication {
@@ -11,6 +12,13 @@ public class MainWindow extends SimpleApplication {
     private FreecivxClient client;
     private ChatUI chatUI;
     private StartGameUI startGameUI;
+    public Game game;
+
+    public MainWindow() {
+        super();
+        this.game = new Game(this);
+
+    }
 
     @Override
     public void simpleInitApp() {
@@ -35,11 +43,15 @@ public class MainWindow extends SimpleApplication {
         chatUI.createUI();
 
         // Show the Start Game button
-        startGameUI = new StartGameUI(guiNode, cam.getWidth(), cam.getHeight(), this::startGame);
+        startGameUI = new StartGameUI(guiNode, cam.getWidth(), cam.getHeight(), this::sendStartGame);
         startGameUI.show();
     }
 
-    private void startGame() {
+    public void gameStarted() {
+       chatUI.hide();
+    }
+
+    private void sendStartGame() {
         client.sendPlayerReady();
     }
 

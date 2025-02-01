@@ -11,7 +11,6 @@ import com.simsilica.lemur.VAlignment;
 import com.simsilica.lemur.component.BorderLayout;
 import com.simsilica.lemur.component.TextEntryComponent;
 import com.simsilica.lemur.event.KeyAction;
-import com.simsilica.lemur.event.KeyActionListener;
 import net.freecivx.client.network.FreecivxClient;
 
 public class ChatUI {
@@ -20,6 +19,7 @@ public class ChatUI {
     private final FreecivxClient client;
     private TextField chatInput;
     private Label chatArea;
+    Container mainContainer;
 
     public ChatUI(Node guiNode, Vector3f camDimensions, FreecivxClient client) {
         this.guiNode = guiNode;
@@ -28,7 +28,7 @@ public class ChatUI {
     }
 
     public void createUI() {
-        Container mainContainer = new Container(new BorderLayout());
+        mainContainer = new Container(new BorderLayout());
 
         Container chatPanel = new Container();
         chatArea = new Label("Connected! Chat below:");
@@ -53,6 +53,12 @@ public class ChatUI {
             showMessage(userText);
             client.sendMessage(userText);
             chatInput.setText("");
+        }
+    }
+
+    public void hide() {
+        if (mainContainer != null) {
+            mainContainer.removeFromParent(); // Hides chat UI
         }
     }
 
