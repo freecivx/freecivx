@@ -17,26 +17,18 @@ import com.simsilica.lemur.Container;
 import com.simsilica.lemur.Label;
 import com.simsilica.lemur.TextField;
 import com.simsilica.lemur.VAlignment;
-import com.simsilica.lemur.component.BorderLayout;
 import com.simsilica.lemur.GuiGlobals;
+import com.simsilica.lemur.component.BorderLayout;
 import com.simsilica.lemur.component.TextEntryComponent;
 import com.simsilica.lemur.style.BaseStyles;
 import com.simsilica.lemur.event.KeyAction;
 import com.simsilica.lemur.event.KeyActionListener;
 import net.freecivx.client.network.FreecivxClient;
 
-import javax.swing.JOptionPane;
-import java.net.URI;
-import java.net.URISyntaxException;
-
 public class MainWindow extends SimpleApplication {
 
     private TextField chatInput;
     private Label chatArea;
-    private TextField usernameField;
-    private TextField hostField;
-    private TextField portField;
-    private Container connectionDialog;
     private FreecivxClient client;
 
     @Override
@@ -45,9 +37,17 @@ public class MainWindow extends SimpleApplication {
         GuiGlobals.getInstance().getStyles().setDefaultStyle(BaseStyles.GLASS);
 
         addBackgroundImage();
-        createConnectionDialog();
         addLighting();
         flyCam.setEnabled(true);
+
+        // Show ConnectionDialog
+        ConnectionDialog connectionDialog = new ConnectionDialog(this, guiNode, new Vector3f(cam.getWidth(), cam.getHeight(), 0), this::onConnectionEstablished);
+        connectionDialog.show();
+    }
+
+    private void onConnectionEstablished(FreecivxClient client) {
+        this.client = client;
+        createUI();
     }
 
     private void addBackgroundImage() {
@@ -65,50 +65,6 @@ public class MainWindow extends SimpleApplication {
         guiNode.attachChild(background);
     }
 
-    private void createConnectionDialog() {
-        Node guiNode = getGuiNode();
-        connectionDialog = new Container(new BorderLayout());
-
-        Container inputContainer = new Container();
-        inputContainer.addChild(new Label("Username:"));
-        String sysusername = System.getProperty("user.name");
-        usernameField = inputContainer.addChild(new TextField(sysusername));
-
-        inputContainer.addChild(new Label("Host:"));
-        hostField = inputContainer.addChild(new TextField("127.0.0.1"));
-
-        inputContainer.addChild(new Label("Port:"));
-        portField = inputContainer.addChild(new TextField("7800"));
-
-        Button connectButton = inputContainer.addChild(new Button("Connect"));
-        connectButton.addClickCommands(source -> {
-            String username = usernameField.getText();
-            String serverAddress = hostField.getText();
-            String port = portField.getText();
-
-            if (username.isEmpty() || serverAddress.isEmpty() || port.isEmpty()) {
-                JOptionPane.showMessageDialog(null, "All fields are required.", "Error", JOptionPane.ERROR_MESSAGE);
-                return;
-            }
-
-            try {
-                URI serverUri = new URI("ws://" + serverAddress + ":" + port);
-                client = new FreecivxClient(this, serverUri, username);
-                client.connect();
-                connectionDialog.removeFromParent();
-                createUI();
-            } catch (URISyntaxException ex) {
-                JOptionPane.showMessageDialog(null, "Invalid server address or port.", "Error", JOptionPane.ERROR_MESSAGE);
-            }
-        });
-
-        connectionDialog.addChild(inputContainer, BorderLayout.Position.Center);
-        connectionDialog.setLocalTranslation(cam.getWidth() / 2f - 150, cam.getHeight() / 2f + 100, 0);
-        connectionDialog.setLocalScale(1.5f);
-        guiNode.setQueueBucket(RenderQueue.Bucket.Gui);
-        guiNode.attachChild(connectionDialog);
-    }
-
     private void createUI() {
         Node guiNode = getGuiNode();
         Container mainContainer = new Container(new BorderLayout());
@@ -117,7 +73,7 @@ public class MainWindow extends SimpleApplication {
         chatArea = new Label("Connected! Chat below:");
         chatArea.setTextVAlignment(VAlignment.Top);
         chatInput = new TextField("");
-        chatInput.setSingleLine(true); // Ensure single-line input
+        chatInput.setSingleLine(true);
 
         chatInput.getActionMap().put(new KeyAction(KeyInput.KEY_RETURN), new KeyActionListener() {
             @Override
@@ -133,7 +89,6 @@ public class MainWindow extends SimpleApplication {
             }
         });
 
-
         chatPanel.addChild(chatArea);
         chatPanel.addChild(chatInput);
         mainContainer.addChild(chatPanel, BorderLayout.Position.South);
@@ -147,7 +102,7 @@ public class MainWindow extends SimpleApplication {
         if (!userText.isEmpty()) {
             showMessage(userText);
             client.sendMessage(userText);
-            chatInput.setText(""); // Clear after sending
+            chatInput.setText("");
         }
     }
 

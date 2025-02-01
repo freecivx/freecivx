@@ -18,6 +18,7 @@ public class Main {
         AppSettings settings = new AppSettings(true);
         settings.setTitle("FreecivX");
         settings.setSettingsDialogImage("freecivx-splash-small.jpg");
+        settings.setResolution(1280, 720);
         return settings;
     }
 
