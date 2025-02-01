@@ -337,8 +337,13 @@ cd "${basedir}"/freecivx-server && \
   mvn clean install || \
   handle_error 7 "Failed to build freecivx-server"
 
-echo "Build Freecivx-client (Freeciv Java swing client)"
-cd "${basedir}"/freecivx-client && \
+echo "Build Freecivx-client (Freeciv Java 2D swing client)"
+cd "${basedir}"/freecivx-client-2d && \
+  mvn clean install || \
+  handle_error 7 "Failed to build freecivx-client"
+
+echo "Build Freecivx-client (Freeciv Java 3D jMonkeyEngine client)"
+cd "${basedir}"/freecivx-client-3d && \
   mvn clean install || \
   handle_error 7 "Failed to build freecivx-client"
 

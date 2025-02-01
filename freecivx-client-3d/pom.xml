@@ -5,12 +5,12 @@
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>net.freecivx</groupId>
-    <artifactId>freecivx-client</artifactId>
+    <artifactId>freecivx-client-3d</artifactId>
     <version>1.0.0</version>
     <packaging>jar</packaging>
 
-    <name>FreecivX Java Swing Client</name>
-    <description>A Java Swing client for FreecivX</description>
+    <name>FreecivX 3C Java jMonkeyEngine Client</name>
+    <description>A Java jMonkeyEngine client for FreecivX</description>
     <url>https://github.com/freecivx/freecivx</url>
 
     <properties>

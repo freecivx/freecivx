@@ -39,7 +39,9 @@ FreecivX.net consists of these components:
 
 * [Freecivx-server](freecivx-server) - the Freecivx server. Implemented in Java.  Multiplayer and large MMO-games.
 
-* [Freecivx-client](freecivx-client) - the Freecivx Java Swing client.
+* [Freecivx-client-2D](freecivx-client-2d) - the Freecivx 2D Java Swing client.
+
+* [Freecivx-client-#D](freecivx-client-3d) - the Freecivx 3D Java jMonkeyEngine client.
 
 * [Freeciv](freeciv) - the Freeciv C server. Forked. Implemented in C. Deprecated and soon end-of-life.
 
