@@ -15,7 +15,7 @@ Freecivx in 3D on Java.
 ## Repository Structure
 This repository contains:
 - **freecivx-server**: The backend server that powers the FreecivX game logic.
-- **freecivx-client-3d**: The Java Swing client that connects to the server and provides the user interface.
+- **freecivx-client-3d**: The Java jMonkeyEngine client that connects to the server and provides the user interface.
 
 ## Requirements
 - Java 21 or later
