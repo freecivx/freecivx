@@ -14,7 +14,7 @@ public class GameMapRenderer {
     private final AssetManager assetManager;
     private final Node rootNode;
 
-    private static final int MAP_SIZE = 10; // 10x10 grid
+    private static final int MAP_SIZE = 40; // 50x50 grid
     private static final float TILE_SIZE = 1.0f; // Size of each tile
 
     public GameMapRenderer(AssetManager assetManager, Node rootNode) {
@@ -31,8 +31,10 @@ public class GameMapRenderer {
             }
         }
 
+        // Center the map
+        mapNode.setLocalTranslation(-MAP_SIZE * TILE_SIZE / 2f, 0, -MAP_SIZE * TILE_SIZE / 2f);
         rootNode.attachChild(mapNode);
-        adjustCamera();
+        adjustCamera(mapNode);
     }
 
     private void createTile(Node mapNode, int x, int y) {
@@ -66,8 +68,12 @@ public class GameMapRenderer {
         }
     }
 
-    private void adjustCamera() {
-        // Position the camera for a top-down isometric view
-        rootNode.setLocalTranslation(-MAP_SIZE / 2f, -2f, -MAP_SIZE / 2f);
+    private void adjustCamera(Node mapNode) {
+        // Calculate the center position of the map
+        Vector3f mapCenter = mapNode.getLocalTranslation().add(MAP_SIZE * TILE_SIZE / 2f, 0, MAP_SIZE * TILE_SIZE / 2f);
+
+        // Move the camera to look at the center of the map from above
+        rootNode.setLocalTranslation(mapCenter.x, -MAP_SIZE, mapCenter.z);
+        rootNode.setLocalRotation(new Quaternion().fromAngleAxis(FastMath.QUARTER_PI, Vector3f.UNIT_X));
     }
 }
