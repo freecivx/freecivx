@@ -1,7 +1,12 @@
 package net.freecivx.client.gui;
 
 import com.jme3.app.SimpleApplication;
+import com.jme3.math.ColorRGBA;
 import com.jme3.math.Vector3f;
+import com.jme3.scene.Geometry;
+import com.jme3.scene.Node;
+import com.jme3.scene.shape.Box;
+import com.jme3.material.Material;
 import com.simsilica.lemur.GuiGlobals;
 import com.simsilica.lemur.style.BaseStyles;
 import net.freecivx.client.game.Game;
@@ -13,11 +18,11 @@ public class MainWindow extends SimpleApplication {
     private ChatUI chatUI;
     private StartGameUI startGameUI;
     public Game game;
+    private BackgroundManager backgroundManager;
 
     public MainWindow() {
         super();
         this.game = new Game(this);
-
     }
 
     @Override
@@ -25,7 +30,9 @@ public class MainWindow extends SimpleApplication {
         GuiGlobals.initialize(this);
         GuiGlobals.getInstance().getStyles().setDefaultStyle(BaseStyles.GLASS);
 
-        new BackgroundManager(assetManager, guiNode, cam).addBackgroundImage();
+        backgroundManager = new BackgroundManager(assetManager, guiNode, cam);
+        backgroundManager.addBackgroundImage(); // Add initial background
+
         new LightingManager(rootNode).setupLighting();
 
         flyCam.setEnabled(true);
@@ -48,11 +55,30 @@ public class MainWindow extends SimpleApplication {
     }
 
     public void gameStarted() {
-       chatUI.hide();
+        chatUI.hide();
+        removeBackground(); // Remove the background when game starts
+        setupGameScene(); // Add a box in the scene
+    }
+
+    private void removeBackground() {
+        backgroundManager.removeBackground(); // Remove background from GUI node
+    }
+
+    private void setupGameScene() {
+        Box box = new Box(1, 1, 1);
+        Geometry boxGeometry = new Geometry("Game Box", box);
+
+        Material mat = new Material(assetManager, "Common/MatDefs/Misc/Unshaded.j3md");
+        mat.setColor("Color", ColorRGBA.Blue);
+        boxGeometry.setMaterial(mat);
+
+        boxGeometry.setLocalTranslation(0, 1, -5); // Move box slightly in front of camera
+        rootNode.attachChild(boxGeometry);
     }
 
     private void sendStartGame() {
         client.sendPlayerReady();
+        gameStarted(); // Start game and remove background
     }
 
     public void showMessage(String message) {

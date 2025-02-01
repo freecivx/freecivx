@@ -13,6 +13,7 @@ public class BackgroundManager {
     private final AssetManager assetManager;
     private final Node guiNode;
     private final Camera cam;
+    private Geometry background;
 
     public BackgroundManager(AssetManager assetManager, Node guiNode, Camera cam) {
         this.assetManager = assetManager;
@@ -25,7 +26,7 @@ public class BackgroundManager {
         float screenHeight = cam.getHeight();
         Quad quad = new Quad(screenWidth, screenHeight);
 
-        Geometry background = new Geometry("Background", quad);
+        background = new Geometry("Background", quad);
         Material mat = new Material(assetManager, "Common/MatDefs/Misc/Unshaded.j3md");
         Texture texture = assetManager.loadTexture("freecivx-splash.jpg");
         mat.setTexture("ColorMap", texture);
@@ -33,5 +34,11 @@ public class BackgroundManager {
 
         background.setLocalTranslation(0, 0, -10);
         guiNode.attachChild(background);
+    }
+
+    public void removeBackground() {
+        if (background != null) {
+            background.removeFromParent(); // Remove background when game starts
+        }
     }
 }
