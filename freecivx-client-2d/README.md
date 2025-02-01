@@ -24,7 +24,7 @@ This repository contains:
 ## Quick Start
 1. Build the Swing client:
    ```bash
-   cd freecivx-client
+   cd freecivx-client-2d
    mvn clean package
    ```
 
