@@ -71,8 +71,9 @@ public class FreecivxClient extends WebSocketClient {
                 .put("pid", Packets.PACKET_PLAYER_READY)
                 .put("is_ready", true)
                 .put("player_no", 0);
-
-        send(packet.toString());
+        if (isOpen()) {
+            send(packet.toString());
+        }
     }
 
     @Override

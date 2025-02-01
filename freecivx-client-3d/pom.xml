@@ -9,7 +9,7 @@
     <version>1.0.0</version>
     <packaging>jar</packaging>
 
-    <name>FreecivX 3C Java jMonkeyEngine Client</name>
+    <name>FreecivX 3D Java jMonkeyEngine Client</name>
     <description>A Java jMonkeyEngine client for FreecivX</description>
     <url>https://github.com/freecivx/freecivx</url>
 
@@ -32,24 +32,28 @@
         </dependency>
 
         <!-- jMonkeyEngine -->
+        <!-- Core jMonkeyEngine 3.7.0 -->
         <dependency>
             <groupId>org.jmonkeyengine</groupId>
             <artifactId>jme3-core</artifactId>
-            <version>3.5.2-stable</version>
+            <version>3.8.0-alpha2</version>
         </dependency>
 
+        <!-- jME3 Desktop for standard applications -->
         <dependency>
             <groupId>org.jmonkeyengine</groupId>
             <artifactId>jme3-desktop</artifactId>
-            <version>3.5.2-stable</version>
+            <version>3.8.0-alpha2</version>
         </dependency>
 
+        <!-- LWJGL3 for rendering -->
         <dependency>
             <groupId>org.jmonkeyengine</groupId>
             <artifactId>jme3-lwjgl3</artifactId>
-            <version>3.5.2-stable</version>
+            <version>3.8.0-alpha2</version>
         </dependency>
 
+        <!-- Lemur for UI -->
         <dependency>
             <groupId>com.simsilica</groupId>
             <artifactId>lemur</artifactId>
