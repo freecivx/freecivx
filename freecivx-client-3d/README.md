@@ -29,7 +29,7 @@ This repository contains:
 
 2. Run the Swing client:
    ```bash
-   java -jar target/freecivx-client-1.0.0.jar
+   java -jar target/freecivx-client-3d-1.0.0.jar
    ```
 
 ## Contributing
