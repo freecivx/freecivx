@@ -1,5 +1,6 @@
 package net.freecivx.client;
 
+import com.jme3.system.AppSettings;
 import net.freecivx.client.gui.MainWindow;
 
 /**
@@ -9,8 +10,15 @@ public class Main {
 
     public static void main(String[] args) {
         MainWindow app = new MainWindow();
+        app.setSettings(createSettings());
         app.start();
     }
 
+    private static AppSettings createSettings() {
+        AppSettings settings = new AppSettings(true);
+        settings.setTitle("FreecivX");
+        settings.setSettingsDialogImage("freecivx-splash-small.jpg");
+        return settings;
+    }
 
 }
