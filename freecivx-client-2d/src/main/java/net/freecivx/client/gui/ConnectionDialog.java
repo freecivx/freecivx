@@ -5,11 +5,14 @@ import net.freecivx.client.network.FreecivxClient;
 
 import javax.swing.*;
 import java.awt.*;
+import java.awt.event.ActionEvent;
 import java.net.URI;
 import java.net.URISyntaxException;
 
 public class ConnectionDialog {
-    public void showConnectionDialog(MainWindow mainWindow, JFrame parent) {
+
+
+    public void showConnectionDialog(MainWindow mainWindow, JFrame parent, FreecivxClient client) {
         JDialog connectionDialog = new JDialog(parent, "Connect to Server", true);
         connectionDialog.setSize(400, 300);
         connectionDialog.setLayout(new GridBagLayout());
@@ -54,26 +57,35 @@ public class ConnectionDialog {
         gbc.gridwidth = 2;
         connectionDialog.add(connectButton, gbc);
 
-        connectButton.addActionListener(e -> {
-            String username = usernameField.getText();
-            String serverAddress = serverAddressField.getText();
-            String port = portField.getText();
-
-            if (username.isEmpty() || serverAddress.isEmpty() || port.isEmpty()) {
-                JOptionPane.showMessageDialog(connectionDialog, "All fields are required.", "Error", JOptionPane.ERROR_MESSAGE);
-                return;
-            }
-
-            try {
-                URI serverUri = new URI("ws://" + serverAddress + ":" + port);
-                FreecivxClient client = new FreecivxClient(mainWindow, serverUri, username);
-                client.connect();
-                connectionDialog.dispose();
-            } catch (URISyntaxException ex) {
-                JOptionPane.showMessageDialog(connectionDialog, "Invalid server address or port.", "Error", JOptionPane.ERROR_MESSAGE);
+        connectButton.addActionListener(new AbstractAction() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                handleConnection(usernameField, serverAddressField, portField, connectionDialog, mainWindow, client);
             }
         });
 
         connectionDialog.setVisible(true);
+    }
+
+    private void handleConnection(JTextField usernameField, JTextField serverAddressField, JTextField portField,
+                                  JDialog connectionDialog, MainWindow mainWindow, FreecivxClient client) {
+        String username = usernameField.getText();
+        String serverAddress = serverAddressField.getText();
+        String port = portField.getText();
+
+        if (username.isEmpty() || serverAddress.isEmpty() || port.isEmpty()) {
+            JOptionPane.showMessageDialog(connectionDialog, "All fields are required.", "Error", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+
+        try {
+            URI serverUri = new URI("ws://" + serverAddress + ":" + port);
+            client = new FreecivxClient(mainWindow.game, mainWindow, serverUri, username);
+            client.connect();
+            mainWindow.setClient(client);
+            connectionDialog.dispose();
+        } catch (URISyntaxException ex) {
+            JOptionPane.showMessageDialog(connectionDialog, "Invalid server address or port.", "Error", JOptionPane.ERROR_MESSAGE);
+        }
     }
 }

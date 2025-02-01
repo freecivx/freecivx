@@ -1,5 +1,6 @@
 package net.freecivx.client.network;
 
+import net.freecivx.client.game.Game;
 import net.freecivx.client.gui.MainWindow;
 import net.freecivx.server.Packets;
 import org.java_websocket.client.WebSocketClient;
@@ -11,11 +12,13 @@ import java.net.URI;
 public class FreecivxClient extends WebSocketClient {
     private final MainWindow mainWindow;
     private final String username;
+    private Game game;
 
-    public FreecivxClient(MainWindow mainWindow, URI serverUri, String username) {
+    public FreecivxClient(Game game, MainWindow mainWindow, URI serverUri, String username) {
         super(serverUri);
         this.username = username;
         this.mainWindow = mainWindow;
+        this.game = game;
     }
 
     @Override
@@ -38,11 +41,15 @@ public class FreecivxClient extends WebSocketClient {
     public void onMessage(String packet) {
         System.out.println("Received: " + packet);
         JSONObject response = new JSONObject(packet);
-        System.out.println("Parsed Response: " + response);
+
         int pid = response.optInt("pid", -1);
         if (pid == Packets.PACKET_CHAT_MSG ) {
             String message = response.optString("message");
             mainWindow.showMessage(message);
+        }
+
+        if (pid == Packets.PACKET_START_PHASE ) {
+            game.setGameState(1);
         }
     }
 
@@ -54,5 +61,23 @@ public class FreecivxClient extends WebSocketClient {
     @Override
     public void onError(Exception ex) {
         mainWindow.showMessage("Error: " + ex.getMessage());
+    }
+
+    public void sendPlayerReady() {
+        JSONObject packet = new JSONObject()
+                .put("pid", Packets.PACKET_PLAYER_READY)
+                .put("is_ready", true)
+                .put("player_no", 0);
+        if (isOpen()) {
+            send(packet.toString());
+        }
+    }
+
+    public void sendMessage(String message) {
+        JSONObject loginMessage = new JSONObject()
+                .put("pid", Packets.PACKET_CHAT_MSG_REQ)
+                .put("message", message);
+
+        send(loginMessage.toString());
     }
 }
