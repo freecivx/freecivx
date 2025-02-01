@@ -27,16 +27,18 @@ public class ConnectionDialog {
     private TextField portField;
     private ConnectionListener connectionListener;
     private MainWindow mainWindow;
+    private FreecivxClient client;
 
     public interface ConnectionListener {
         void onConnectionEstablished(FreecivxClient client);
     }
 
-    public ConnectionDialog(MainWindow mainWindow, Node guiNode, Vector3f camDimensions, ConnectionListener listener) {
+    public ConnectionDialog(MainWindow mainWindow, FreecivxClient client, Node guiNode, Vector3f camDimensions, ConnectionListener listener) {
         this.guiNode = guiNode;
         this.camDimensions = camDimensions;
         this.connectionListener = listener;
         this.mainWindow = mainWindow;
+        this.client = client;
     }
 
     public void show() {
@@ -75,7 +77,7 @@ public class ConnectionDialog {
 
         try {
             URI serverUri = new URI("ws://" + serverAddress + ":" + port);
-            FreecivxClient client = new FreecivxClient(mainWindow, serverUri, username);
+            client = new FreecivxClient(mainWindow, serverUri, username);
             client.connect();
             connectionDialog.removeFromParent();
             if (connectionListener != null) {

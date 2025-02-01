@@ -59,6 +59,15 @@ public class FreecivxClient extends WebSocketClient {
         send(loginMessage.toString());
     }
 
+    public void sendPlayerReady() {
+        JSONObject packet = new JSONObject()
+                .put("pid", Packets.PACKET_PLAYER_READY)
+                .put("is_ready", true)
+                .put("player_no", 0);
+
+        send(packet.toString());
+    }
+
     @Override
     public void onError(Exception ex) {
         mainWindow.showMessage("Error: " + ex.getMessage());
