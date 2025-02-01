@@ -18,6 +18,7 @@
         <maven.compiler.target>21</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <org-java-websocket.version>1.5.3</org-java-websocket.version>
+        <org-json.version>20250107</org-json.version>
         <exec.mainClass>net.freecivx.client.Main</exec.mainClass>
     </properties>
 
@@ -36,9 +37,9 @@
         </dependency>
 
         <dependency>
-            <groupId>com.google.code.gson</groupId>
-            <artifactId>gson</artifactId>
-            <version>2.10.1</version>
+            <groupId>org.json</groupId>
+            <artifactId>json</artifactId>
+            <version>${org-json.version}</version>
         </dependency>
 
 
