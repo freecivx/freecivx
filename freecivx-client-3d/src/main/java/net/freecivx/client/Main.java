@@ -3,13 +3,13 @@ package net.freecivx.client;
 import net.freecivx.client.gui.MainWindow;
 
 /**
- * Main entry point for the FreecivX Java Swing Client.
+ * Main entry point for the FreecivX Java jMonkeyEngine Client.
  */
 public class Main {
 
     public static void main(String[] args) {
-      MainWindow window = new MainWindow();
-      window.setup();
+        MainWindow app = new MainWindow();
+        app.start();
     }
 
 

@@ -22,6 +22,7 @@
         <exec.mainClass>net.freecivx.client.Main</exec.mainClass>
     </properties>
 
+
     <dependencies>
     
         <dependency>
@@ -47,6 +48,23 @@
             <groupId>org.jmonkeyengine</groupId>
             <artifactId>jme3-lwjgl3</artifactId>
             <version>3.5.2-stable</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.simsilica</groupId>
+            <artifactId>lemur</artifactId>
+            <version>1.16.0</version>
+        </dependency>
+        <dependency>
+            <groupId>com.simsilica</groupId>
+            <artifactId>lemur-proto</artifactId>
+            <version>1.13.0</version>
+        </dependency>
+
+       <dependency>
+            <groupId>org.apache.groovy</groupId>
+            <artifactId>groovy</artifactId>
+            <version>5.0.0-alpha-12</version>
         </dependency>
 
         <dependency>
