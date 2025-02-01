@@ -51,6 +51,14 @@ public class FreecivxClient extends WebSocketClient {
         mainWindow.showMessage("Connection closed: " + reason);
     }
 
+    public void sendMessage(String message) {
+        JSONObject loginMessage = new JSONObject()
+                .put("pid", Packets.PACKET_CHAT_MSG_REQ)
+                .put("message", message);
+
+        send(loginMessage.toString());
+    }
+
     @Override
     public void onError(Exception ex) {
         mainWindow.showMessage("Error: " + ex.getMessage());
