@@ -20,8 +20,10 @@
 package net.freecivx.server;
 
 import net.freecivx.game.Game;
+import net.freecivx.game.Player;
 import net.freecivx.game.Tile;
 import net.freecivx.game.Unit;
+import org.apache.commons.text.StringEscapeUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.java_websocket.WebSocket;
 import org.java_websocket.handshake.ClientHandshake;
@@ -76,13 +78,13 @@ public class CivServer extends org.java_websocket.server.WebSocketServer {
         int pid = json.optInt("pid");
 
         if (pid == Packets.PACKET_SERVER_JOIN_REQ) {
-            String username = StringUtils.capitalize(json.optString("username"));
+            String username = StringUtils.capitalize(StringEscapeUtils.escapeHtml4(StringUtils.capitalize(json.optString("username"))));
             JSONObject reply = new JSONObject();
             reply.put("pid", Packets.PACKET_SERVER_JOIN_REPLY);
             reply.put("you_can_join", true);
             reply.put("conn_id", connId);
             conn.send(reply.toString());
-
+            game.addConnection(connId, username, connId, conn.getRemoteSocketAddress().toString());
             game.addPlayer(connId, username, conn.getRemoteSocketAddress().toString());
         }
 
@@ -317,6 +319,10 @@ public class CivServer extends org.java_websocket.server.WebSocketServer {
         msg.put("veteran", unit.getVeteran());
         msg.put("hp", unit.getHp());
         msg.put("activity", unit.getActivity());
+        msg.put("movesleft", unit.getMovesleft());
+        msg.put("done_moving", unit.isDoneMoving());
+        msg.put("transported", unit.isTransported());
+        msg.put("ssa_controller", unit.getSsa_controller());
         for (WebSocket conn : clients.values()) {
             conn.send(msg.toString());
         }
@@ -332,7 +338,7 @@ public class CivServer extends org.java_websocket.server.WebSocketServer {
 
     }
 
-    public void sendCityShortInfoAll(long id, int owner, long tile, int size, int style, boolean capital, boolean occupied, int walls, boolean happy,
+    public void sendCityShortInfoAll(long id, long owner, long tile, int size, int style, boolean capital, boolean occupied, int walls, boolean happy,
                                      boolean unhappy, String improvements, String name) {
         JSONObject msg = new JSONObject();
         msg.put("pid", Packets.PACKET_CITY_SHORT_INFO);
@@ -355,7 +361,7 @@ public class CivServer extends org.java_websocket.server.WebSocketServer {
         }
     }
 
-    public void sendCityInfoAll(long id, int owner, long tile, int size, int style, boolean capital, boolean occupied, int walls, boolean happy,
+    public void sendCityInfoAll(long id, long owner, long tile, int size, int style, boolean capital, boolean occupied, int walls, boolean happy,
                                      boolean unhappy, String improvements, String name, int production_kind, int production_value) {
         JSONObject msg = new JSONObject();
         msg.put("pid", Packets.PACKET_CITY_INFO);
@@ -454,13 +460,13 @@ public class CivServer extends org.java_websocket.server.WebSocketServer {
         }
     }
 
-    public void sendPlayerInfoAll(long playerno, String username, String name) {
+    public void sendPlayerInfoAll(Player player) {
         JSONObject msg = new JSONObject();
         msg.put("pid", Packets.PACKET_PLAYER_INFO);
-        msg.put("playerno", playerno);
-        msg.put("username", username);
-        msg.put("name", name);
-        msg.put("nation", 1);
+        msg.put("playerno", player.getPlayerNo());
+        msg.put("username", player.getUsername());
+        msg.put("name", player.getUsername());
+        msg.put("nation", player.getNation());
         msg.put("government", 1);
         msg.put("researching", 1);
         msg.put("bulbs_researched", 0);
@@ -475,6 +481,12 @@ public class CivServer extends org.java_websocket.server.WebSocketServer {
         vis.put(0);
         vis.put(0);
         msg.put("gives_shared_vision", vis);
+
+        JSONArray embassies = new JSONArray();
+        embassies.put(false);
+        embassies.put(false);
+        msg.put("real_embassy", embassies);
+        msg.put("is_alive", player.isAlive());
 
         msg.put("tax", 40);
         msg.put("luxury", 0);

@@ -23,16 +23,20 @@ package net.freecivx.game;
 public class Unit {
 
     private long id;
-    private int owner;        // ID of the player or entity that owns the unit
-    private int tile;         // The tile where the unit is located
+    private long owner;        // ID of the player or entity that owns the unit
+    private long tile;         // The tile where the unit is located
     private int type;         // The type of the unit (e.g., an ID referring to UnitType)
     private int facing;       // The direction the unit is facing (e.g., could represent angles or cardinal directions)
     private int veteran;      // Veteran level of the unit
     private int hp;           // Current hit points of the unit
-    private int activity;     // The current activity or status of the unit
+    private int activity = 0;     // The current activity or status of the unit
+    private int movesleft;
+    private boolean done_moving = false;
+    private boolean transported = false;
+    private int ssa_controller = 0;
 
     // Constructor
-    public Unit(long id, int owner, int tile, int type, int facing, int veteran, int hp, int activity) {
+    public Unit(long id, long owner, long tile, int type, int facing, int veteran, int hp, int activity, int movesleft) {
         this.id = id;
         this.owner = owner;
         this.tile = tile;
@@ -41,6 +45,7 @@ public class Unit {
         this.veteran = veteran;
         this.hp = hp;
         this.activity = activity;
+        this.movesleft = movesleft;
     }
 
     public long getId() {
@@ -52,15 +57,15 @@ public class Unit {
     }
 
     // Getters
-    public int getOwner() {
+    public long getOwner() {
         return owner;
     }
 
-    public int getTile() {
+    public long getTile() {
         return tile;
     }
 
-    public void setTile(int tile) {
+    public void setTile(long tile) {
         this.tile = tile;
     }
 
@@ -86,6 +91,43 @@ public class Unit {
 
     public int getActivity() {
         return activity;
+    }
+
+
+    public int getMovesleft() {
+        return movesleft;
+    }
+
+    public void setMovesleft(int movesleft) {
+        this.movesleft = movesleft;
+    }
+
+    public void setActivity(int activity) {
+        this.activity = activity;
+    }
+
+    public boolean isDoneMoving() {
+        return done_moving;
+    }
+
+    public void setDoneMoving(boolean done_moving) {
+        this.done_moving = done_moving;
+    }
+
+    public int getSsa_controller() {
+        return ssa_controller;
+    }
+
+    public void setSsa_controller(int ssa_controller) {
+        this.ssa_controller = ssa_controller;
+    }
+
+    public boolean isTransported() {
+        return transported;
+    }
+
+    public void setTransported(boolean transported) {
+        this.transported = transported;
     }
 
     // Optional toString method for debugging

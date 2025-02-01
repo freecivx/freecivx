@@ -50,6 +50,7 @@ public class Game {
     public Map<Long, Extra> extras = new HashMap<>();
     public Map<Long, UnitType> unitTypes = new HashMap<>();
     public Map<Long, CityStyle> cityStyle = new HashMap<>();
+    public Map<Long, Connection> connections = new HashMap<>();
 
     public Game(CivServer server) {
         this.server = server;
@@ -75,8 +76,9 @@ public class Game {
         governments.put(5L, new Government("Democracy", "Democracy", "Democracy"));
 
         // Initialize Nations
-        nations.put(1L, new Nation("Soviet Union", "Soviet", "soviet", "The Soviets!"));
-        nations.put(2L, new Nation("France", "French", "french", "Vive La France!"));
+        nations.put(0L, new Nation("Soviet Union", "Soviet", "soviet", "The Soviets!"));
+        nations.put(1L, new Nation("France", "French", "france", "Vive La France!"));
+        nations.put(2L, new Nation("Germany", "German", "germany", "Deutschland"));
 
         // Initialize Extras
         extras.put(0L, new Extra("River"));
@@ -119,13 +121,7 @@ public class Game {
         unitTypes.put(1L, new UnitType("Workers", "u.worker", 1, 1, 1, "Workers unit", 0, 1));
         unitTypes.put(2L, new UnitType("Explorer", "u.explorer", 3, 1, 1, "Explorer unit", 0, 1));
 
-        // Initialize Cities
-        cities.put(0L, new City("Trondheim", 0,  433, 1, 1, true, false, 0, true, false, "", 6, 0));
 
-        // Initialize Units
-        units.put(0L, new Unit(0, 0, 430, 0, 0, 1, 1, 0));
-        units.put(1L, new Unit(1, 0, 431, 1, 0, 1, 1, 0));
-        units.put(2L, new Unit(2, 0, 432, 2, 0, 1, 1, 0));
 
         // Initialize City Styles
         cityStyle.put(0L, new CityStyle("European"));
@@ -182,6 +178,14 @@ public class Game {
 
         tiles.forEach((id, tile) -> server.sendTileInfoAll(tile)); // TODO: Send all tiles as one call.
 
+
+        // Initialize Units
+        for (Player player : players.values()) {
+            long startPos = new Random().nextInt(map.getXsize() * map.getYsize());
+            units.put(0L, new Unit(0, player.getPlayerNo(), startPos , 0, 0, 1, 1, 0, 2));
+            units.put(1L, new Unit(1,  player.getPlayerNo(), startPos, 1, 0, 1, 1, 0, 2));
+            units.put(2L, new Unit(2,  player.getPlayerNo(),  startPos, 2, 0, 1, 1, 0, 2));
+        }
         // Send units
         units.forEach((id, unit) -> server.sendUnitAll(unit));
 
@@ -222,12 +226,19 @@ public class Game {
     }
 
     public void addPlayer(long connId, String username, String addr) {
-        Player player = new Player(connId, username, addr, 0);
+        Player player = new Player(connId, username, addr, new Random().nextInt(3));
         players.put(connId, player);
-        server.sendMessage(connId, "Welcome " + username + ". Connected to Freecivx-server-java.");
-        server.sendPlayerInfoAll(connId, username, username );
-        server.sendPlayerInfoAdditionAll(player.getPlayerNo(), 0);
-        server.sendConnInfoAll(connId, username, addr, player.getPlayerNo());
+        server.sendMessageAll(username + " has joined the game.");
+
+        players.forEach((id, iplayer) -> server.sendPlayerInfoAll(iplayer));
+        players.forEach((id, iplayer) -> server.sendPlayerInfoAdditionAll(id, 0));
+
+        connections.forEach((id, conn) -> server.sendConnInfoAll(id, conn.getUsername(), conn.getIp(), conn.getPlayerNo()));
+    }
+
+    public void addConnection(long connId, String username, long player_no, String address) {
+        Connection connection = new Connection(connId, username, player_no, address);
+        connections.put(connId, connection);
     }
 
     public void buildCity(long unit_id, String city_name, long tile_id) {

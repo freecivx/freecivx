@@ -332,10 +332,15 @@ cd "${basedir}"/freeciv-web && \
   bash ./build.sh -B || \
   handle_error 7 "Failed to build freeciv-web server"
 
-echo "Build Freecivx-server"
+echo "Build Freecivx-server (Freeciv Java server)"
 cd "${basedir}"/freecivx-server && \
   mvn clean install || \
   handle_error 7 "Failed to build freecivx-server"
+
+echo "Build Freecivx-client (Freeciv Java swing client)"
+cd "${basedir}"/freecivx-client && \
+  mvn clean install || \
+  handle_error 7 "Failed to build freecivx-client"
 
 echo "==== Setting up nginx ===="
 stop_svc nginx

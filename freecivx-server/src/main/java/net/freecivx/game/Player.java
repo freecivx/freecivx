@@ -19,12 +19,17 @@
 
 package net.freecivx.game;
 
+import java.util.ArrayList;
+import java.util.List;
+
 public class Player {
 
     private long connectionId;
     private String username;
     private String address;
     private int nation;
+    private boolean is_alive = true;
+    private List<Boolean> real_embassy = new ArrayList<Boolean>();
 
     // Constructor
     public Player(long connId, String username, String addr, int nation) {
@@ -69,6 +74,22 @@ public class Player {
 
     public long getPlayerNo() {
         return this.connectionId;
+    }
+
+    public boolean isAlive() {
+        return is_alive;
+    }
+
+    public void setAlive(boolean is_alive) {
+        this.is_alive = is_alive;
+    }
+
+    public List<Boolean> getReal_embassy() {
+        return real_embassy;
+    }
+
+    public void setReal_embassy(List<Boolean> real_embassy) {
+        this.real_embassy = real_embassy;
     }
 
     // Utility methods
