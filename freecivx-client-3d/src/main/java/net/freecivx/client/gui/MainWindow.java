@@ -1,15 +1,11 @@
 package net.freecivx.client.gui;
 
 import com.jme3.app.SimpleApplication;
-import com.jme3.math.ColorRGBA;
 import com.jme3.math.Vector3f;
-import com.jme3.scene.Geometry;
-import com.jme3.scene.Node;
-import com.jme3.scene.shape.Box;
-import com.jme3.material.Material;
 import com.simsilica.lemur.GuiGlobals;
 import com.simsilica.lemur.style.BaseStyles;
 import net.freecivx.client.game.Game;
+import net.freecivx.client.game.GameMapRenderer;
 import net.freecivx.client.network.FreecivxClient;
 
 public class MainWindow extends SimpleApplication {
@@ -19,6 +15,7 @@ public class MainWindow extends SimpleApplication {
     private StartGameUI startGameUI;
     public Game game;
     private BackgroundManager backgroundManager;
+    private GameMapRenderer gameMapRenderer;
 
     public MainWindow() {
         super();
@@ -34,6 +31,8 @@ public class MainWindow extends SimpleApplication {
         backgroundManager.addBackgroundImage(); // Add initial background
 
         new LightingManager(rootNode).setupLighting();
+
+        gameMapRenderer = new GameMapRenderer(assetManager, rootNode); // Initialize map renderer
 
         flyCam.setEnabled(true);
 
@@ -57,23 +56,11 @@ public class MainWindow extends SimpleApplication {
     public void gameStarted() {
         chatUI.hide();
         removeBackground(); // Remove the background when game starts
-        setupGameScene(); // Add a box in the scene
+        gameMapRenderer.generateMap(); // Generate the new game map
     }
 
     private void removeBackground() {
         backgroundManager.removeBackground(); // Remove background from GUI node
-    }
-
-    private void setupGameScene() {
-        Box box = new Box(1, 1, 1);
-        Geometry boxGeometry = new Geometry("Game Box", box);
-
-        Material mat = new Material(assetManager, "Common/MatDefs/Misc/Unshaded.j3md");
-        mat.setColor("Color", ColorRGBA.Blue);
-        boxGeometry.setMaterial(mat);
-
-        boxGeometry.setLocalTranslation(0, 1, -5); // Move box slightly in front of camera
-        rootNode.attachChild(boxGeometry);
     }
 
     private void sendStartGame() {
