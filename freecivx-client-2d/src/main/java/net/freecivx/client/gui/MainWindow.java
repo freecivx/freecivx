@@ -21,6 +21,7 @@ public class MainWindow {
     private JPanel mainMapPanel;
     private JButton startGameButton;
     private JPanel buttonPanel;
+    private JLabel splashLabel;
 
     public MainWindow() {
         game = new Game(this);
@@ -92,18 +93,21 @@ public class MainWindow {
             bottomPanel.add(chatInput, BorderLayout.SOUTH);
 
             // Right side main map panel (initially showing splash screen)
-            mainMapPanel = new JPanel();
-            mainMapPanel.setLayout(new BorderLayout());
-            mainMapPanel.setPreferredSize(new Dimension(640, 480));
+            mainMapPanel = new JPanel(new BorderLayout());
+            mainMapPanel.setPreferredSize(new Dimension(1024, 760));
             mainMapPanel.setBorder(BorderFactory.createTitledBorder("Main Map"));
 
+            splashLabel = new JLabel();
             try {
                 ImageIcon splashIcon = new ImageIcon(getClass().getClassLoader().getResource("freecivx-splash.jpg"));
-                JLabel splashLabel = new JLabel(splashIcon);
+                splashLabel.setIcon(new ImageIcon(splashIcon.getImage().getScaledInstance(1024, 760, Image.SCALE_SMOOTH)));
+                splashLabel.setHorizontalAlignment(JLabel.CENTER);
+                splashLabel.setVerticalAlignment(JLabel.CENTER);
                 mainMapPanel.add(splashLabel, BorderLayout.CENTER);
             } catch (Exception e) {
-                JLabel errorLabel = new JLabel("Failed to load splash screen", SwingConstants.CENTER);
-                mainMapPanel.add(errorLabel, BorderLayout.CENTER);
+                splashLabel.setText("Failed to load splash screen");
+                splashLabel.setHorizontalAlignment(JLabel.CENTER);
+                mainMapPanel.add(splashLabel, BorderLayout.CENTER);
             }
 
             // Adding components to the main layout
@@ -126,7 +130,10 @@ public class MainWindow {
         SwingUtilities.invokeLater(() -> {
             showMessage("Game Started");
             mainMapPanel.removeAll();
-            mainMapPanel.add(new GameCanvas(), BorderLayout.CENTER);
+            JScrollPane scrollPane = new JScrollPane(new GameCanvas());
+            scrollPane.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_ALWAYS);
+            scrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_ALWAYS);
+            mainMapPanel.add(scrollPane, BorderLayout.CENTER);
             mainMapPanel.revalidate();
             mainMapPanel.repaint();
 
