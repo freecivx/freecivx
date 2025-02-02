@@ -63,6 +63,8 @@ public class Packets {
     public static int PACKET_WEB_PLAYER_INFO_ADDITION = 259;
     public static int PACKET_CALENDAR_INFO = 255;
     public static int PACKET_WEB_RULESET_UNIT_ADDITION = 260;
+    public static int PACKET_WEB_GOTO_PATH_REQ = 287;
+    public static int PACKET_WEB_GOTO_PATH = 288;
 
 
 }

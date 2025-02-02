@@ -116,6 +116,12 @@ public class CivServer extends org.java_websocket.server.WebSocketServer {
             clients.get(connId).send(msg.toString());
         }
 
+        if (pid == Packets.PACKET_WEB_GOTO_PATH_REQ) {
+            PathFinder pf = new PathFinder(game);
+            JSONObject gotoPacket = pf.processMove(json);
+            clients.get(connId).send(gotoPacket.toString());
+        }
+
         if (pid == Packets.PACKET_UNIT_DO_ACTION) {
             long unit_id = json.optInt("actor_id");
             String name = json.optString("name");

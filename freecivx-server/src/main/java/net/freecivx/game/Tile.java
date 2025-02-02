@@ -98,6 +98,14 @@ public class Tile {
         this.worked = worked;
     }
 
+    public long getX(long mapWidth) {
+        return index % mapWidth;
+    }
+
+    public long getY(long mapWidth) {
+        return index / mapWidth;
+    }
+
     @Override
     public String toString() {
         return "Tile{" +
