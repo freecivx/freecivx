@@ -60,7 +60,7 @@ public class Game {
      * Initializes the game objects with default or predefined values.
      */
     public void initGame() {
-        map = new WorldMap(40, 40);
+        map = new WorldMap(45, 45);
 
         // Initialize Technologies
         techs.put(0L, new Technology("Alphabet", "a.alphabet", "Alphabet"));
@@ -125,7 +125,6 @@ public class Game {
                 "000000000000000000000000000010000000001110001000000000000011011111111001100011000000001100110000000000000000100100000000"));
 
 
-
         // Initialize City Styles
         cityStyle.put(0L, new CityStyle("European"));
         cityStyle.put(1L, new CityStyle("Classical"));
@@ -133,19 +132,10 @@ public class Game {
         cityStyle.put(3L, new CityStyle("Asian"));
 
 
-        for (int x = 0; x < map.getXsize(); x++) {
-            for (int y = 0; y < map.getYsize(); y++) {
-                long index = y *  map.getXsize() + x;
-                int terrain = new Random().nextInt(12) + 1;
-                int height = 100;
-                if (terrain == 1 || terrain == 2 || terrain == 3) {
-                    height = -100;
-                }
-                Tile tile = new Tile(index, 2, terrain, 1, 1, height, -1);
-                tiles.put(index, tile);
-            }
-        }
+        MapGenerator generator = new MapGenerator(map.getXsize(), map.getYsize());
+        tiles = generator.generateMap();
     }
+
 
     /**
      * Starts a new game and sends the initialized game state to all players.

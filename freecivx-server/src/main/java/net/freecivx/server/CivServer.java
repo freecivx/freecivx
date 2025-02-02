@@ -105,9 +105,11 @@ public class CivServer extends org.java_websocket.server.WebSocketServer {
             int order = orders.optInt("order");
             int dir = orders.optInt("dir");
             if (order == ORDER_ACTION_MOVE) {
+                // One tile move.
                 game.moveUnit(unit_id, dest_tile, dir);
             }
             if (order == ORDER_MOVE) {
+                // GOTO.
                 game.moveUnit(unit_id, dest_tile, dir);
             }
         }
