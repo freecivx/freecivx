@@ -96,6 +96,8 @@ public class CivServer extends org.java_websocket.server.WebSocketServer {
         }
 
         if (pid == Packets.PACKET_UNIT_ORDERS) {
+            var ORDER_MOVE = 0;
+            var ORDER_FULL_MP = 2;
             var ORDER_ACTION_MOVE = 3;
             int unit_id = json.optInt("unit_id");
             int dest_tile = json.optInt("dest_tile");
@@ -103,6 +105,9 @@ public class CivServer extends org.java_websocket.server.WebSocketServer {
             int order = orders.optInt("order");
             int dir = orders.optInt("dir");
             if (order == ORDER_ACTION_MOVE) {
+                game.moveUnit(unit_id, dest_tile, dir);
+            }
+            if (order == ORDER_MOVE) {
                 game.moveUnit(unit_id, dest_tile, dir);
             }
         }
