@@ -13,7 +13,7 @@ Ensure you have the following installed before proceeding:
 ```
 cd freeciv-web
 mvn clean package
-cp target/freeciv-web.war ../freecivx-web-runner/target
+cp target/freeciv-web.war ../freecivx-web-runner
 ```
 TODO: Step 1 currently needs to be run on Linux on a normal full install of Freecivx.
 
