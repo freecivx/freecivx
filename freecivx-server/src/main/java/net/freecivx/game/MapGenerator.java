@@ -8,8 +8,9 @@ public class MapGenerator {
     private final int width;
     private final int height;
     private final Map<Long, Tile> tiles = new HashMap<>();
-    private final Random random = new Random();
+    private final Random random;
     private final double[][] heightMap;
+    private final int seed;
 
     // **Terrain IDs**
     private static final int TERRAIN_OCEAN = 3;
@@ -27,6 +28,8 @@ public class MapGenerator {
     public MapGenerator(int width, int height) {
         this.width = width;
         this.height = height;
+        this.seed = new Random().nextInt();  // ✅ **Unique random seed**
+        this.random = new Random(seed);
         this.heightMap = new double[width][height];
 
         generateHeightMap();
@@ -36,8 +39,8 @@ public class MapGenerator {
      * **Generates a heightmap using Fractal Brownian Motion (fBM)**
      */
     private void generateHeightMap() {
-        double scale = 0.02;  // **Controls continent size**
-        int octaves = 4;      // **More octaves = more details**
+        double scale = 0.02;
+        int octaves = 4;
         double persistence = 0.5;
         double lacunarity = 2.0;
 
@@ -91,9 +94,12 @@ public class MapGenerator {
         return lerp(lerpBottom, lerpTop, v);
     }
 
+    /**
+     * **Uses the seed for deterministic random values**
+     */
     private double randomValue(int x, int y) {
-        int seed = (x * 49632) ^ (y * 325176) ^ 12345;
-        return (Math.sin(seed) + 1) * 0.5;
+        int hash = (x * 49632) ^ (y * 325176) ^ seed;
+        return (Math.sin(hash) + 1) * 0.5;
     }
 
     private double fade(double t) {
