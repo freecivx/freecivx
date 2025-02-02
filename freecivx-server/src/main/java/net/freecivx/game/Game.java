@@ -202,8 +202,9 @@ public class Game {
 
 
         server.sendBordersServerSettingsAll();
-        server.sendBeginTurnAll();
+
         server.sendStartPhaseAll();
+        server.sendBeginTurnAll();
 
         server.sendMessageAll("Welcome to the Freecivx game!");
     }

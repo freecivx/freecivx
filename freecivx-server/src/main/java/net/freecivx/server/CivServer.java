@@ -139,7 +139,6 @@ public class CivServer extends org.java_websocket.server.WebSocketServer {
                 System.exit(0);
             }
             if (message.equalsIgnoreCase("/start")) {
-                game = new Game(this);
                 game.startGame();
             }
             if (message.equalsIgnoreCase("/help")) {
