@@ -117,9 +117,12 @@ public class Game {
 
 
         // Initialize UnitTypes
-        unitTypes.put(0L, new UnitType("Settlers", "u.settlers", 1, 1, 1, "Settlers unit", 0, 1));
-        unitTypes.put(1L, new UnitType("Workers", "u.worker", 1, 1, 1, "Workers unit", 0, 1));
-        unitTypes.put(2L, new UnitType("Explorer", "u.explorer", 3, 1, 1, "Explorer unit", 0, 1));
+        unitTypes.put(0L, new UnitType("Settlers", "u.settlers", 1, 1, 1, "Settlers unit", 0, 1,
+                "000000000000000000000000000110000000001110001000000000000011011111111001100011000000001100110000000000000000100100000000"));
+        unitTypes.put(1L, new UnitType("Workers", "u.worker", 1, 1, 1, "Workers unit", 0, 1,
+                "000000000000000000000000000010000000001110001000000000000011011111111001100011000000001100110000000000000000100100000000"));
+        unitTypes.put(2L, new UnitType("Explorer", "u.explorer", 3, 1, 1, "Explorer unit", 0, 1,
+                "000000000000000000000000000010000000001110001000000000000011011111111001100011000000001100110000000000000000100100000000"));
 
 
 
@@ -171,9 +174,9 @@ public class Game {
         terrains.forEach((id, terrain) -> server.sendTerrainInfoAll(id, terrain.getName(), terrain.getGraphicsStr()));
 
         // Send unit types
-        unitTypes.forEach((id, unitType) -> server.sendRulesetUnitAll(id, unitType.getName(), unitType.getGraphicsStr(), unitType.getMoveRate(),
-                unitType.getHp(),
-                unitType.getVeteranLevels(), unitType.getHelptext(), unitType.getAttackStrength(), unitType.getDefenseStrength()));
+        unitTypes.forEach((id, unitType) -> server.sendRulesetUnitAll(id, unitType));
+        unitTypes.forEach((id, unitType) -> server.sendRulesetUnitWebAdditionAll(id, unitType));
+
 
 
         tiles.forEach((id, tile) -> server.sendTileInfoAll(tile)); // TODO: Send all tiles as one call.

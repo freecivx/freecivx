@@ -19,10 +19,7 @@
 
 package net.freecivx.server;
 
-import net.freecivx.game.Game;
-import net.freecivx.game.Player;
-import net.freecivx.game.Tile;
-import net.freecivx.game.Unit;
+import net.freecivx.game.*;
 import org.apache.commons.text.StringEscapeUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.java_websocket.WebSocket;
@@ -33,6 +30,7 @@ import org.json.JSONObject;
 import java.net.InetSocketAddress;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -73,6 +71,7 @@ public class CivServer extends org.java_websocket.server.WebSocketServer {
     public void onMessage(WebSocket conn, String packet) {
         System.out.println("Message received: " + packet);
         long connId = conn.getAttachment();
+        Connection connection = game.connections.get(connId);
 
         JSONObject json = new JSONObject(packet);
         int pid = json.optInt("pid");
@@ -128,15 +127,7 @@ public class CivServer extends org.java_websocket.server.WebSocketServer {
         if (pid == Packets.PACKET_CHAT_MSG_REQ) {
             String message =  URLDecoder.decode(json.optString("message"), StandardCharsets.UTF_8);
             if (message.equalsIgnoreCase("/quit")) {
-                for (WebSocket x : clients.values()) {
-                    x.close(1001, "Server shutting down");
-                }
-                try {
-                    this.stop();
-                } catch (InterruptedException e) {
-                    throw new RuntimeException(e);
-                }
-                System.exit(0);
+              // Not allowed?
             }
             if (message.equalsIgnoreCase("/start")) {
                 game.startGame();
@@ -149,8 +140,9 @@ public class CivServer extends org.java_websocket.server.WebSocketServer {
                         """;
                 sendMessage(connId, helptext);
             }
-
-            sendMessageAll(message);
+            if (connection != null) {
+                sendMessageAll(connection.getUsername() + ": " + message);
+            }
         }
     }
 
@@ -288,20 +280,32 @@ public class CivServer extends org.java_websocket.server.WebSocketServer {
         }
     }
 
-    public void sendRulesetUnitAll(long id, String name, String graphic_str, int move_rate, int hp,
-        int veteran_levels, String helptext, int attack_strength, int defense_strength) {
+    public void sendRulesetUnitAll(long id, UnitType utype) {
             JSONObject msg = new JSONObject();
             msg.put("pid", Packets.PACKET_RULESET_UNIT);
             msg.put("id", id);
-            msg.put("name", name);
-            msg.put("graphic_str", graphic_str);
-            msg.put("move_rate", move_rate);
-            msg.put("hp", hp);
-            msg.put("veteran_levels", veteran_levels);
-            msg.put("helptext", helptext);
-            msg.put("attack_strength", attack_strength);
-            msg.put("defense_strength", defense_strength);
-            msg.put("build_reqs", new JSONArray()); // value
+            msg.put("name", utype.getName());
+            msg.put("graphic_str", utype.getGraphicsStr());
+            msg.put("move_rate", utype.getMoveRate());
+            msg.put("hp", utype.getHp());
+            msg.put("veteran_levels", utype.getVeteranLevels());
+            msg.put("helptext", utype.getHelptext());
+            msg.put("attack_strength", utype.getAttackStrength());
+            msg.put("defense_strength", utype.getDefenseStrength());
+            msg.put("build_reqs", new JSONArray());
+
+        for (WebSocket conn : clients.values()) {
+            conn.send(msg.toString());
+        }
+
+
+    }
+
+    public void sendRulesetUnitWebAdditionAll(long id, UnitType utype) {
+        JSONObject msg = new JSONObject();
+        msg.put("pid", Packets.PACKET_WEB_RULESET_UNIT_ADDITION);
+        msg.put("id", id);
+        msg.put("utype_actions", binaryStringToJsonArray(utype.getUtypeActions()));
         for (WebSocket conn : clients.values()) {
             conn.send(msg.toString());
         }
@@ -549,6 +553,25 @@ public class CivServer extends org.java_websocket.server.WebSocketServer {
         for (WebSocket conn : clients.values()) {
             conn.send(msg.toString());
         }
+    }
+
+    public static JSONArray binaryStringToJsonArray(String binaryString) {
+        int byteArraySize = (binaryString.length() + 7) / 8;
+        int[] bitVector = new int[byteArraySize];
+
+        for (int i = 0; i < binaryString.length(); i++) {
+            if (binaryString.charAt(i) == '1') {
+                bitVector[i / 8] |= (1 << (7 - (i % 8)));
+            }
+        }
+
+        // Create a real JSON array
+        JSONArray jsonArray = new JSONArray();
+        for (int value : bitVector) {
+            jsonArray.put(value);
+        }
+
+        return jsonArray;
     }
 }
 
