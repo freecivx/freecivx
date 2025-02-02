@@ -15,6 +15,7 @@ cd freeciv-web
 mvn clean package
 cp target/freeciv-web.war ../freecivx-web-runner/target
 ```
+TODO: Step 1 currently needs to be run on Linux on a normal full install of Freecivx.
 
 ### Step 2: Build and Run FreecivX Web Runner
 ```
@@ -29,6 +30,9 @@ cd freecivx-server
 mvn clean package
 java -jar target/freecivx-server-1.0.jar
 ```
+### Step 4: Open Freecivx in browser:
+Freecivx is now available on:  
+http://localhost:8080/?action=local  
 
 ## Notes
 - Ensure that the Freeciv-Web `.war` file is correctly copied to `freecivx-web-runner/target` before running.
