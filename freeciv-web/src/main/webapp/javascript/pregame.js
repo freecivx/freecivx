@@ -1057,6 +1057,20 @@ function pregame_handle_user(close_pregame)
     return;
   }
   $("#fciv-intro").hide();
+
+  if ($.getUrlVar('action') === "local") {
+      username = $("#username_req").val();
+      $("#dialog").dialog('close');
+      $("#password_req").val("");
+      simpleStorage.set("password", "");
+      $("#fciv-intro").hide();
+      init_sprites();
+      if (close_pregame) {
+          $("#pregame_page").hide();
+      }
+      return;
+  }
+
   $.ajax({
    type: 'POST',
    url: "/validate_user?userstring=" + check_username,
