@@ -1,20 +1,40 @@
-Freecivx-web-runner
-===================
+# FreecivX Web Runner
 
-Freecivx-web-runner allows running Freeciv-web 100% on Java on any platform natively.
+FreecivX Web Runner allows running Freeciv-Web entirely on Java, making it platform-independent and easy to deploy.
 
-1. Build Freeciv-web:
+## Prerequisites
+Ensure you have the following installed before proceeding:
+- Java 21 or newer
+- Apache Maven
+
+## Building and Running FreecivX
+
+### Step 1: Build Freeciv-Web
+```
 cd freeciv-web
 mvn clean package
 cp target/freeciv-web.war ../freecivx-web-runner/target
+```
 
-
-2. Build and run Freecivx-web-runner:
+### Step 2: Build and Run FreecivX Web Runner
+```
 cd freecivx-web-runner
 mvn clean package
-java -jar target\freecivx-web-runner-1.0.jar
+java -jar target/freecivx-web-runner-1.0.jar
+```
 
-3. Build and run Freecivx-server:
+### Step 3: Build and Run FreecivX Server
+```
 cd freecivx-server
 mvn clean package
-java -jar target\freecivx-server-1.0.jar
+java -jar target/freecivx-server-1.0.jar
+```
+
+## Notes
+- Ensure that the Freeciv-Web `.war` file is correctly copied to `freecivx-web-runner/target` before running.
+- Adjust Java memory settings as needed using `-Xmx` flags for larger maps or high-load scenarios.
+
+## License
+This project is licensed under the AGPL license.
+
+
