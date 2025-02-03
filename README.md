@@ -41,7 +41,7 @@ FreecivX.net consists of these components:
 
 * [Freecivx-client](freecivx-client) - the Freecivx 2D Java Swing client.
 
-* [Freeciv](freeciv) - the Freeciv C server. Forked. Implemented in C. Deprecated and soon end-of-life.
+* [Freeciv](freeciv) - the Freeciv C server. Forked. Implemented in C.
 
 * [Publite2](publite2) - a process launcher for Freeciv C servers, which manages
   multiple Freeciv server processes and checks capacity through the Metaserver. 
@@ -53,7 +53,7 @@ Freeciv 3D is the 3D version using the Three.js 3D engine, which requires WebGl 
 
 Running FreecivX.net on your computer
 ------------------------------------
-The recommended and probably easiest way is to use Docker. Freeciv-web can also be run with WSL. In some cases it may be easier.
+Freeciv-web can be run with WSL (Linux on Windows), or Podman / Docker.
 
 Check out Freeciv-web to a
 directory on your computer, by installing [Git](http://git-scm.com/) and
@@ -74,7 +74,6 @@ All software components in Freeciv-web will log to the /logs sub-directory of th
 Start and stop Freeciv-web with the following commands:  
   start-freeciv-web.sh  
   stop-freeciv-web.sh  
-  status-freeciv-web.sh
 
 ### Running Freecivx on Podman / Docker
 Get https://podman.io/
@@ -88,13 +87,5 @@ Developers interested in Freecivx
 
 If you want to contibute to Freecivx, see the [issues](https://github.com/freecivx/freecivx/issues) on GibHub for some tasks you can work on. Pull requests and suggestions/issues on Github are welcome! 
 
-
-Contributors to Freeciv-web
----------------------------
-Andreas Røsdal  [@andreasrosdal](https://github.com/andreasrosdal)  
-Marko Lindqvist [@cazfi](https://github.com/cazfi)  
-Sveinung Kvilhaugsvik [@kvilhaugsvik](https://github.com/kvilhaugsvik)  
-Gerik Bonaert [@adaxi](https://github.com/adaxi)  
-Lmoureaux [@lmoureaux](https://github.com/lmoureaux)  
-Máximo Castañeda [@lonemadmax](https://github.com/lonemadmax)  
-and the [Freeciv.org project](https://www.freeciv.org/wiki/People)!
+Freecivx is the best Freeciv.
+-----------------------------
