@@ -19,7 +19,7 @@
     <org-json.version>20250107</org-json.version>
     <org-java-websocket.version>1.6.0</org-java-websocket.version>
     <org-apache-http.version>5.4</org-apache-http.version>
-    <org-slf4j.version>2.0.7</org-slf4j.version>
+    <org-slf4j.version>2.0.16</org-slf4j.version>
     <org-apache-commons.version>3.17.0</org-apache-commons.version>
     <!-- Test versions -->
     <junit.version>5.9.2</junit.version>
