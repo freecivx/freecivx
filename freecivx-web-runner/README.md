@@ -37,6 +37,9 @@ http://localhost:8080/?action=local
 ## Notes
 - Ensure that the Freeciv-Web `.war` file is correctly copied to `freecivx-web-runner/target` before running.
 
+## TODO
+- Enable H2 database
+
 ## License
 This project is licensed under the AGPL license.
 
