@@ -24,13 +24,13 @@ This repository contains:
 ## Quick Start
 1. Build the Swing client:
    ```bash
-   cd freecivx-client-2d
+   cd freecivx-client
    mvn clean package
    ```
 
 2. Run the Swing client:
    ```bash
-   java -jar target/freecivx-client-2d-1.0.0.jar
+   java -jar target/freecivx-client-1.0.0.jar
    ```
 
 ## Contributing
