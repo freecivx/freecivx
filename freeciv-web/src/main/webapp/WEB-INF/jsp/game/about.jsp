@@ -229,13 +229,19 @@
 				<div class="col-md-4">
 					<div class="panel-freeciv">
 						<h4><fmt:message key="index-stack"/></h4>
+						<b>Frontend:</b><br>
+
                         <img class="small" src="/static/images/webgpu-stack.png">WebGPU <br>
 						<img class="small" src="/static/images/webgl-stack.png">WebGL <br>
 						<img class="small" src="/static/images/html5-stack.png">HTML5 <br>
-						<img class="small" src="/static/images/tomcat-stack.png">Tomcat  <br>
-						<img class="small" src="/static/images/python-stack.png">Python <br>
 						<img class="small" src="/static/images/three-stack.png">Three.js  <br>
 						<img class="small" src="/static/images/blender-stack.png">Blender  <br>
+						<br>
+						<b>Backend:</b>
+						<br>
+                        <img class="small" src="/static/images/java-stack.png">Java <br>
+                        <img class="small" src="/static/images/tomcat-stack.png">Tomcat  <br>
+                        <img class="small" src="/static/images/python-stack.png">Python <br>
 					</div>
 				</div>
 				<div class="col-md-4">			
