@@ -1,6 +1,6 @@
 # FreecivX Web Runner
 
-FreecivX Web Runner allows running Freeciv-Web entirely on Java, making it platform-independent and easy to deploy.
+FreecivX Web Runner allows running Freeciv-Web entirely in Tomcat on Java, making it platform-independent and easy to deploy.
 
 ## Prerequisites
 Ensure you have the following installed before proceeding:
