@@ -37,7 +37,6 @@ dependencies="\
   nginx \
   patch \
   pkg-config \
-  pngcrush \
   procps \
   python3-minimal \
   python3-pip \

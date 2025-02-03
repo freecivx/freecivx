@@ -22,10 +22,8 @@ TEMP_DIR=$(mktemp -d -t 'freeciv-img-extract.XXX')
 echo "running Freeciv-img-extract..."
 echo "  extracting to ${TEMP_DIR}"
 mkdir -p "${TILESET_DEST}" "${SPEC_DEST}" "${FLAG_DEST}" &&
-python3 "${DIR}"/img-extract.py -f "${FREECIV_DIR}" -o "${TEMP_DIR}" &&
-echo "compressing .png files from ${TEMP_DIR} to ${TILESET_DEST}" &&
-pngcrush -q -d "${TILESET_DEST}" "${TEMP_DIR}"/freeciv-web-tileset*.png &&
-cp "${TEMP_DIR}"/tileset_spec_*.js "${SPEC_DEST}" &&
+python3 "${DIR}"/img-extract.py -f "${FREECIV_DIR}" -o "${TILESET_DEST}" &&
+cp "${TILESET_DEST}"/tileset_spec_*.js "${SPEC_DEST}" &&
 #echo "converting flag .svg files to .png ..." &&
 echo "copying flag .svg files ..." &&
 (for svgfile in $(find "${FREECIV_DIR}"/data/flags/*.svg); do

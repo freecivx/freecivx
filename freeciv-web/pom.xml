@@ -280,9 +280,9 @@ Rerun the sync-js-hand.js script.
 				</plugin>
 
 				<plugin>
-					<groupId>com.samaxes.maven</groupId>
+					<groupId>com.7p-group</groupId>
 					<artifactId>minify-maven-plugin</artifactId>
-					<version>1.7.6</version>
+					<version>1.7.10</version>
 					<executions>
 						<execution>
 							<id>minify-webclient.css</id>
