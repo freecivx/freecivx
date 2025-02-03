@@ -8,5 +8,8 @@ mkdir -p src/derived/webapp
 cd ..
 cd scripts
 ./sync-js-hand.sh -f ../freeciv/freeciv -i /tmp/ -o ../freeciv-web/src/derived/webapp/ -d /tmp
+
+mvn clean package
+
 echo "Build completed. Result is in target\freeciv-web.war"
 
