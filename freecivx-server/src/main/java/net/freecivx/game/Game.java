@@ -123,6 +123,9 @@ public class Game {
                 "000000000000000000000000000010000000001110001000000000000011011111111001100011000000001100110000000000000000100100000000"));
         unitTypes.put(2L, new UnitType("Explorer", "u.explorer", 3, 1, 1, "Explorer unit", 0, 1,
                 "000000000000000000000000000010000000001110001000000000000011011111111001100011000000001100110000000000000000100100000000"));
+        unitTypes.put(3L, new UnitType("Warriors", "u.warriors", 1, 1, 1, "Warriors", 1, 1,
+                "000000000000000000000000000010000000001110001000000000000011011111111001100011000000001100110000000000000000100100000000"));
+
 
 
         // Initialize City Styles
@@ -174,10 +177,18 @@ public class Game {
 
         // Initialize Units
         for (Player player : players.values()) {
-            long startPos = new Random().nextInt(map.getXsize() * map.getYsize());
-            units.put(0L, new Unit(0, player.getPlayerNo(), startPos , 0, 0, 1, 1, 0, 2));
-            units.put(1L, new Unit(1,  player.getPlayerNo(), startPos, 1, 0, 1, 1, 0, 2));
-            units.put(2L, new Unit(2,  player.getPlayerNo(),  startPos, 2, 0, 1, 1, 0, 2));
+            long startPos = 0;
+            for (var i = 0; i < 100; i++) {
+                startPos = new Random().nextInt(map.getXsize() * map.getYsize());
+                Tile startTile = tiles.get(startPos);
+                if (startTile.getTerrain() == 7) {
+                    break;
+                }
+            }
+            units.put(Long.valueOf(units.size()), new Unit(units.size(), player.getPlayerNo(), startPos , 0, 0, 1, 1, 0, 2));
+            units.put(Long.valueOf(units.size()), new Unit(units.size(),  player.getPlayerNo(), startPos, 1, 0, 1, 1, 0, 2));
+            units.put(Long.valueOf(units.size()), new Unit(units.size(),  player.getPlayerNo(),  startPos, 2, 0, 1, 1, 0, 2));
+            units.put(Long.valueOf(units.size()), new Unit(units.size(),  player.getPlayerNo(),  startPos, 3, 0, 1, 1, 0, 2));
         }
         // Send units
         units.forEach((id, unit) -> server.sendUnitAll(unit));
