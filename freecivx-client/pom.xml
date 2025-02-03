@@ -5,7 +5,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>net.freecivx</groupId>
-    <artifactId>freecivx-client-2d</artifactId>
+    <artifactId>freecivx-client</artifactId>
     <version>1.0.0</version>
     <packaging>jar</packaging>
 
