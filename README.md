@@ -41,8 +41,6 @@ FreecivX.net consists of these components:
 
 * [Freecivx-client-2D](freecivx-client-2d) - the Freecivx 2D Java Swing client.
 
-* [Freecivx-client-3D](freecivx-client-3d) - the Freecivx 3D Java jMonkeyEngine client.
-
 * [Freeciv](freeciv) - the Freeciv C server. Forked. Implemented in C. Deprecated and soon end-of-life.
 
 * [Publite2](publite2) - a process launcher for Freeciv C servers, which manages

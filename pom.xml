@@ -22,9 +22,9 @@
 
     <modules>
         <module>freeciv-web</module>
-        <module>freecivx-client-2d</module>
-        <module>freecivx-client-3d</module>
+        <module>freecivx-client</module>
         <module>freecivx-server</module>
+        <module>freecivx-web-runner</module>
     </modules>
 
     <properties>
