@@ -32,10 +32,8 @@ Overview
 FreecivX.net consists of these components:
 
 * [Freeciv-web](freeciv-web) - a Java web application for the Freeciv-web client.
-  This application is a Java web application which make up the application
-  viewed in each user's web browser. The Metaserver is also a part of this module.
   Implemented in Javascript, Java, JSP, HTML and CSS. Built with maven and runs 
-  on Tomcat and nginx.
+  on Tomcat and nginx. Three.js 3D engine, jQuery and jQuery UI.
 
 * [Freecivx-server](freecivx-server) - the Freecivx server. Implemented in Java.  Multiplayer and large MMO-games.
 
