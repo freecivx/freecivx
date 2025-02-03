@@ -1,6 +1,6 @@
 #!/bin/bash
 
-echo "Building Freeciv-web war file for Freecivx-web-runner on Windows."
+echo "Building Freeciv-web war file for Freecivx-web-runner to run natively on Windows or Linux."
 echo "Requires Python 3 and Pillow already installed."
 
 cp ../config/config.dist src/main/webapp/WEB-INF/config.properties

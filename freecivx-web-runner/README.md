@@ -12,7 +12,7 @@ Ensure you have the following installed before proceeding:
 ### Step 1: Build Freeciv-Web
 ```
 cd freeciv-web
-./build-windows.sh
+./build-native.sh
 cp target/freeciv-web.war ../freecivx-web-runner
 ```
 
