@@ -23,7 +23,7 @@
     <org-apache-commons.version>3.17.0</org-apache-commons.version>
     <!-- Test versions -->
     <junit.version>5.9.2</junit.version>
-    <mockito.version>3.12.4</mockito.version>
+    <mockito.version>5.2.0</mockito.version>
   </properties>
 
   <dependencies>
