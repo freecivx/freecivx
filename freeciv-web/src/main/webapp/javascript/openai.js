@@ -125,6 +125,8 @@ function get_openai_game_context()
   }
   context += ".\n";
 
+  context += " unit types: " + JSON.stringify(unit_types);
+
   if (civclient_state == C_S_OVER) {
     context += "The game has ended now. \n";
     return context;
