@@ -123,8 +123,8 @@ public class NewUser extends HttpServlet {
 
 	private void createUser(Connection conn, String username, String email, String password, String ip, String verifyKey)
 			throws SQLException {
-		String insertQuery = "INSERT INTO auth (username, email, secure_hashed_password, ip, verifykey) "
-				+ "VALUES (?, ?, ?, ?, ?)";
+		String insertQuery = "INSERT INTO auth (username, email, secure_hashed_password, ip, verifykey, elo_rating) "
+				+ "VALUES (?, ?, ?, ?, ?, 1000)";
 
 		try (PreparedStatement ps = conn.prepareStatement(insertQuery)) {
 			ps.setString(1, username.toLowerCase());
