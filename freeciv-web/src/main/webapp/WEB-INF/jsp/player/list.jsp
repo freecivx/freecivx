@@ -68,6 +68,12 @@
 	<%@include file="/WEB-INF/jsp/fragments/header.jsp" %>
 	
 	<!-- Begin page content -->
+	<div id="content" class="container mt-4">
+        <div class="alert alert-info text-center">
+            <strong style="font-size:24px;">Complete List of Registered FreecivX Players</strong>
+            <p class="mb-0">These are the hero real registered and verified human players. There are also unregistered anonymous coward players not shown here.</p>
+        </div>
+    </div>
 	<div id="content" class="container">
 		<div>
 			<ul class="nav nav-tabs hidden-xs" role="tablist">
