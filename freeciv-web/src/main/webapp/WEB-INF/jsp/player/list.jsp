@@ -91,7 +91,7 @@
 								<tr
 									class="">
 									<td >
-								       ${player.name}
+								       <b>${player.name}</b>
 									</td>
                                     <td >
                                        ${player.formattedLastLogin}
