@@ -38,7 +38,7 @@ public class Player {
 
     public String getFormattedLastLogin() {
         if (getLast_login() == null) {
-            return "Not logged in, or account created before Freecivx started remembering when last logged in. ";
+            return "Not logged in or account predates FreecivX login display.";
         }
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("EEEE, MMMM d, yyyy HH:mm");
         return getLast_login().format(formatter);
