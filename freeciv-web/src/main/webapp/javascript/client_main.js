@@ -193,7 +193,7 @@ function show_new_game_message()
 
   } else if (client.conn.playing != null && !game_loaded) {
     var pplayer = client.conn.playing;
-    message = "Welcome to FreecivX.net, the free browser-based 3D version of the classic turn-based strategy game Freeciv! You can ask questions to the AI bot (Grok AI) here. Have fun playing FreecivX!";
+    message = "Welcome to FreecivX.net, the free browser-based 3D version of the classic turn-based strategy game Freeciv! You can ask questions to the AI bot (OpenAI) here. Have fun playing FreecivX!";
 
   } else if (game_loaded) {
     message = "Welcome back, " + username;

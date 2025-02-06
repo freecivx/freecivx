@@ -159,7 +159,7 @@ function send_message_to_openai(message)
 
   let grok_message = prefix + ": " +  message + ";";
 
-  $.post( "/grok_chat", utf8_to_b64( get_openai_game_context()
+  $.post( "/openai_chat", utf8_to_b64( get_openai_game_context()
          + grok_message))
       .done(function(chatresponse) {
           try {
