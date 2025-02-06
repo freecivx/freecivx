@@ -7,13 +7,8 @@ import javax.naming.Context;
 import javax.naming.InitialContext;
 import javax.naming.NamingException;
 import javax.sql.DataSource;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.time.LocalDate;
+import java.sql.*;
 import java.time.LocalDateTime;
-import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -74,8 +69,12 @@ public class Players {
             while (rs.next()) {
                 Player player = new Player();
                 player.setName(rs.getString("username"));
-                LocalDateTime login = rs.getTimestamp("last_login").toLocalDateTime();
-                player.setLast_login(login);
+                Timestamp lastLogin = rs.getTimestamp("last_login");
+                if (lastLogin != null) {
+                    LocalDateTime login = lastLogin.toLocalDateTime();
+                    player.setLast_login(login);
+                }
+
                 player.setElo_rating(rs.getInt("elo_rating"));
                 players.add(player);
             }
