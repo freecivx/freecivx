@@ -1,5 +1,7 @@
 package org.freeciv.model;
 
+import org.apache.commons.text.WordUtils;
+
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -11,7 +13,7 @@ public class Player {
     private LocalDateTime last_login;
 
     public String getName() {
-        return name;
+        return WordUtils.capitalizeFully(name);
     }
 
     public void setName(String name) {
@@ -36,7 +38,7 @@ public class Player {
 
     public String getFormattedLastLogin() {
         if (getLast_login() == null) {
-            return "Never logged in";
+            return "Not logged in, or account created before Freecivx started remembering when last logged in. ";
         }
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("EEEE, MMMM d, yyyy HH:mm");
         return getLast_login().format(formatter);
