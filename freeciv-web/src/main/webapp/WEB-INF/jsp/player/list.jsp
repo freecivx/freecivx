@@ -71,7 +71,8 @@
 	<div id="content" class="container">
 		<div>
 			<ul class="nav nav-tabs hidden-xs" role="tablist">
-				<li role="presentation" class="${view == 'multiplayer' ? 'active' : ''}">PLAYERS OF FREECIVX (${playersCount})</li>
+				<li role="presentation active}"><a href="#"
+					aria-controls="multi-player" role="tab" data-toggle="tab">PLAYERS OF FREECIVX (${playersCount})</a></li>
 			</ul>
 
 
