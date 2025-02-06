@@ -912,7 +912,7 @@ function show_intro_dialog(title, message) {
   $("<div id='dialog'></div>").appendTo("div#game_page");
 
   var intro_html = message + "<br><br><table><tr><td>Player name:</td><td><input id='username_req' type='text' size='18' maxlength='31'></td></tr>"
-      +  "<tr id='password_row' style='display:none;'><td>Password:</td><td id='password_td'></td></tr></table>";
+      +  "<tr id='password_row'><td>Password:</td><td id='password_td'></td></tr></table>";
 
   $("#dialog").html(intro_html);
 
@@ -928,12 +928,13 @@ function show_intro_dialog(title, message) {
           $("#fciv-intro").hide();
       }
   }
+  $("#password_row").show();
+  $("#password_td").html("<input id='password_req' type='password' size='18' maxlength='200' > <br> <div id='login_process'></div>");
+
   var stored_password = simpleStorage.get("password", "");
   if (stored_password != null && stored_password != false) {
-    $("#password_row").show();
-    $("#password_td").html("<input id='password_req' type='password' size='18' maxlength='200'>  &nbsp; <a class='pwd_reset_2' href='#' style='color: #666666;'>Forgot password?</a>");
     $("#password_req").val(stored_password);
-    $(".pwd_reset_2").click(forgot_pbem_password);
+
   }
   var join_game_customize_text = "";
   if ($.getUrlVar('action') == "multi") {
@@ -1053,7 +1054,7 @@ function pregame_handle_user(close_pregame)
 {
   var check_username = $("#username_req").val();
   if (check_username == null || check_username.length == 0) {
-    swal("Please enter a player name.");
+      $("#login_process").text("Please sign up as a new player. Username not found.");
     return;
   }
   $("#fciv-intro").hide();
@@ -1076,18 +1077,9 @@ function pregame_handle_user(close_pregame)
    url: "/validate_user?userstring=" + check_username,
    success: function(data, textStatus, request){
       if (data == "user_does_not_exist") {
+          $("#login_process").text("Please sign up as a new player. Username not found.");
 
-        if (validate_username()) {
-          if (!is_touch_device()) $("#pregame_text_input").focus();
-          $("#dialog").dialog('close');
-          $("#password_req").val("");
-          simpleStorage.set("password", "");
-          $("#fciv-intro").hide();
-          init_sprites();
-          if (close_pregame) {
-            $("#pregame_page").hide();
-          }
-        }
+
       } else {
         username = $("#username_req").val().trim();
         var password = $("#password_req").val();
@@ -1123,7 +1115,7 @@ function pregame_handle_user(close_pregame)
                  }
                  logged_in_with_password = true;
                } else {
-                 swal("Incorrect username or password.");
+                   $("#login_process").text("Please sign up as a new player. Username not found.");
                }
 
              },
@@ -1135,7 +1127,7 @@ function pregame_handle_user(close_pregame)
 
         $("#password_row").show();
         $("#password_req").focus();
-        $("#password_td").html("<input id='password_req' type='password' size='25' maxlength='200'>  &nbsp; <a class='pwd_reset' href='#' style='color: #666666;'>Forgot password?</a>");
+        $("#password_td").html("<input id='password_req' type='password' size='25' maxlength='200'>  &nbsp; Account required, enter password.");
         $(".pwd_reset").click(forgot_pbem_password);
       }
     },

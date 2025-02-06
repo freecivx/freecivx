@@ -177,8 +177,8 @@ function init_common_intro_dialog() {
   } else {
     const introText = `
     Play the classic open source strategy game FreecivX. Start a singleplayer game against the AI or play others in multiplayer. 
-    Start by entering a name, or adjust the settings to your liking. 
-    Creating an account is optional, but required for saving your progress.
+    Start by entering your player name, or sign up as a new user, then adjust the settings to your liking. 
+    Creating an account is required.
     `;
 
     show_intro_dialog("Welcome to FREECIVX.NET", introText);

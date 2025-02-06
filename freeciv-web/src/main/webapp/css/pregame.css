@@ -261,3 +261,11 @@ body {
   border-spacing: 7px;
   border-collapse: separate;
 }
+
+#password_req {
+  margin-top: 5px;
+}
+
+#login_process {
+  font-weight: bolder;
+}
