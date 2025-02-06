@@ -106,17 +106,6 @@
 		<url-pattern>/game/details</url-pattern>
 	</servlet-mapping>
 	
-	<!-- /game/list -->
-	<servlet>
-		<servlet-name>GameList</servlet-name>
-		<servlet-class>org.freeciv.servlet.GameList</servlet-class>
-	</servlet>
-
-	<servlet-mapping>
-		<servlet-name>GameList</servlet-name>
-		<url-pattern>/game/list</url-pattern>
-	</servlet-mapping>
-	
 	<!-- /game/statistics -->
 	<servlet>
 		<servlet-name>GameStatistics</servlet-name>

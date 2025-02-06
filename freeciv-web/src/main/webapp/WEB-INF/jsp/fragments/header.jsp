@@ -24,6 +24,7 @@
 					<span class="badge ongoing-games-number" id="ongoing-games" title="Ongoing games"></span>
 				</a>
 			</li>
+			<li><a href="/player/list">Players</a></li>
 			<li><a href="https://github.com/freecivx/freecivx/">GitHub</a></li>
             <li><a href="https://x.com/freecivx">@FreecivX</a></li>
 			<li><a href="https://discord.gg/mKgawv5jrB">Discord</a></li>

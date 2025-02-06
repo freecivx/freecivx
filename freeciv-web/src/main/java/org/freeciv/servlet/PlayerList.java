@@ -1,6 +1,6 @@
 /*******************************************************************************
  * Freeciv-web - the web version of Freeciv. http://www.FreecivX.net/
- * Copyright (C) 2009-2017 The Freeciv-web project
+ * Copyright (C) 2009-2025 The Freeciv-web project
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -28,31 +28,32 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
 import org.freeciv.services.Games;
+import org.freeciv.services.Players;
 import org.freeciv.services.Statistics;
 
 /**
- * Displays the multiplayer games
+ * Displays list of players
+ *
  */
 @MultipartConfig
-@WebServlet("/game/list")
-public class GameList extends HttpServlet {
+@WebServlet("/player/list")
+public class PlayerList extends HttpServlet {
 
-	private static final long serialVersionUID = 1L;
+    private static final long serialVersionUID = 1L;
 
-	@Override
-	public void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+    @Override
+    public void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
 
-		try {
-			Games games = new Games();
-			request.setAttribute("multiPlayerGames", games.getMultiPlayerCount());
-			request.setAttribute("multiPlayerGamesList", games.getMultiPlayerGames());
-			request.setAttribute("view", request.getParameter("v"));
-		} catch (RuntimeException err) {
-			throw err;
-		}
+        try {
+            Players players = new Players();
+            request.setAttribute("playersCount", players.getPlayersCount());
+            request.setAttribute("playersList", players.getPlayers());
+        } catch (RuntimeException err) {
+            throw err;
+        }
 
-		RequestDispatcher rd = request.getRequestDispatcher("/WEB-INF/jsp/game/list.jsp");
-		rd.forward(request, response);
-	}
+        RequestDispatcher rd = request.getRequestDispatcher("/WEB-INF/jsp/player/list.jsp");
+        rd.forward(request, response);
+    }
 
 }
