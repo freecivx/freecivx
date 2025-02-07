@@ -52,7 +52,7 @@ public class Player {
         LocalDateTime now = LocalDateTime.now();
         Duration duration = Duration.between(last_login, now);
 
-        return duration.toHours() < 2 ? "Online" : "Offline";
+        return duration.toMinutes() < 45 ? "Online" : "Offline";
     }
 
     public String getOnlineStatusHtml() {
