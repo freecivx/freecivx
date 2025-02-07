@@ -106,7 +106,7 @@ public class Players {
             connection = ds.getConnection();
 
             query = "SELECT username, last_login, elo_rating from auth  "
-                    + "WHERE verified = '1' and last_login > NOW() - INTERVAL 12 HOURS  "
+                    + "WHERE verified = '1' and last_login > NOW() - INTERVAL 12 HOUR  "
                     + "ORDER BY username DESC";
 
             statement = connection.prepareStatement(query);

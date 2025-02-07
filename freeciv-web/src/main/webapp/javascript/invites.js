@@ -20,6 +20,78 @@
 
 var shownInvites = new Set();
 
+/**************************************************************************
+ Invite player to multiplayer game
+ **************************************************************************/
+function show_invite_player_dialog()
+{
+    var message = "<div id=\"invite_dialog\" title=\"Invite Player\">\n" +
+        "    <p>Select a player to invite (online last 12 hours):</p>\n" +
+        "    <select id=\"playerList\"></select>\n" +
+        "</div><br>" ;
+
+    // reset dialog page.
+    $("#invite_dialog").remove();
+    $("<div id='invite_dialog'></div>").appendTo("div#game_page");
+
+    $("#invite_dialog").html(message);
+
+    $("#invite_dialog").dialog({
+        bgiframe: true,
+        modal: true,
+        width: 400,
+        buttons: {
+            "Invite Player": function() {
+                let selectedPlayer = $("#playerList").val();
+                if (!selectedPlayer) {
+                    alert("Please select a player.");
+                    return;
+                }
+
+                // Send invite request
+                $.ajax({
+                    url: "/PlayerMatcher?from=" + username + "&to=" + selectedPlayer + "&port=" + civserverport,
+                    method: "GET",
+                    success: function(response) {
+                        alert("Player invited successfully!");
+                        $("#invite_dialog").dialog("close");
+                    },
+                    error: function() {
+                        alert("Error sending invite.");
+                    }
+                });
+            },
+            "Cancel": function() {
+                $(this).dialog("close");
+            }
+        }
+    });
+
+    $.ajax({
+        url: "/player/onlinelist",
+        method: "GET",
+        success: function(data) {
+            let playerList = $("#playerList");
+            playerList.empty(); // Clear existing options
+            $.each(data.players, function(index, player) {
+                if (player.toLowerCase() != username.toLowerCase()) {
+                    playerList.append(`<option value="${player}">${player}</option>`);
+                }
+            });
+
+            // Open the dialog after loading data
+            $("#invite_dialog").dialog("open");
+        },
+        error: function() {
+            alert("Error fetching player list.");
+        }
+    });
+
+
+}
+
+
+
 function checkInvitations() {
     if ($.getUrlVar('invite') == "true") {
         return;
