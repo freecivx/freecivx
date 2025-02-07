@@ -182,8 +182,8 @@ function init_common_intro_dialog() {
     `;
 
     show_intro_dialog("Welcome to FREECIVX.NET", introText);
-      $(".pwd_reset").click(forgot_pbem_password);
   }
+  checkInvitations();
 }
 
 

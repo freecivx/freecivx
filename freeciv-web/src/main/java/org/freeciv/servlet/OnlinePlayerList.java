@@ -1,3 +1,5 @@
+package org.freeciv.servlet;
+
 /*******************************************************************************
  * Freeciv-web - the web version of Freeciv. http://www.FreecivX.net/
  * Copyright (C) 2009-2025 The Freeciv-web project
@@ -15,9 +17,11 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *******************************************************************************/
-package org.freeciv.servlet;
+
 
 import java.io.IOException;
+import java.util.List;
+import java.util.stream.Collectors;
 
 import jakarta.servlet.RequestDispatcher;
 import jakarta.servlet.ServletException;
@@ -27,31 +31,46 @@ import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
+import org.freeciv.model.Player;
 import org.freeciv.services.Players;
+import org.json.JSONArray;
+import org.json.JSONObject;
 
 /**
  * Displays list of players
  *
  */
 @MultipartConfig
-@WebServlet("/player/list")
-public class PlayerList extends HttpServlet {
+@WebServlet("/player/onlinelist")
+public class OnlinePlayerList extends HttpServlet {
 
     private static final long serialVersionUID = 1L;
 
     @Override
-    public void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-
+    protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
         try {
             Players players = new Players();
-            request.setAttribute("playersCount", players.getPlayersCount());
-            request.setAttribute("playersList", players.getPlayers());
-        } catch (RuntimeException err) {
-            throw err;
-        }
+            List<Player> playersList = players.getPlayers();
 
-        RequestDispatcher rd = request.getRequestDispatcher("/WEB-INF/jsp/player/list.jsp");
-        rd.forward(request, response);
+            // Extract player names into a JSONArray
+            JSONArray playerArray = new JSONArray();
+            for (Player player : playersList) {
+                playerArray.put(player.getName());
+            }
+
+            // Create JSON response object
+            JSONObject jsonResponse = new JSONObject();
+            jsonResponse.put("players", playerArray);
+
+            // Send JSON response
+            response.setContentType("application/json");
+            response.setCharacterEncoding("UTF-8");
+            response.getWriter().write(jsonResponse.toString());
+
+        } catch (RuntimeException err) {
+            response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+            response.getWriter().write("{\"error\": \"An error occurred.\"}");
+        }
     }
 
 }

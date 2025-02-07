@@ -28,7 +28,6 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
 import org.freeciv.services.Games;
-import org.freeciv.services.Statistics;
 
 /**
  * Displays the multiplayer games

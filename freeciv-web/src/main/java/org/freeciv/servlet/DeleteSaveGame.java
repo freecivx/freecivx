@@ -17,15 +17,12 @@
  *******************************************************************************/
 package org.freeciv.servlet;
 
-import org.apache.commons.codec.digest.Crypt;
-
 import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
-import java.sql.SQLException;
 import java.util.Objects;
 import java.util.Properties;
 import javax.naming.Context;
@@ -35,7 +32,6 @@ import jakarta.servlet.http.*;
 import javax.sql.DataSource;
 
 import org.apache.commons.codec.digest.DigestUtils;
-import org.apache.commons.lang3.StringUtils;
 import org.freeciv.services.Validation;
 import org.freeciv.util.Constants;
 

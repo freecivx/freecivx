@@ -99,12 +99,19 @@ function update_game_info_pregame()
     game_info_html += "<p>";
     game_info_html += "<h2>Freecivx.net Multiplayer game</h2>-You are now about to play a multiplayer game.<br>-Please wait until at least 2 players have joined the game, then click the start game button.";
     game_info_html += "</p>";
+    game_info_html += "<button id='multiplayer_invite_player'  type=\"button\" class=\"button\"><i class=\"fa fa-user-plus\" aria-hidden=\"true\"></i>Invite player</button>";
   }
 
   $("#pregame_game_info").html(game_info_html);
+  $("#multiplayer_invite_player").button();
+  $("#multiplayer_invite_player").click(show_invite_player_dialog);
 
   /* Update pregame_message_area's height. */
   setup_window_size();
+
+
+    setInterval(checkInvitations, 120000);
+    checkInvitations();
 }
 
 /****************************************************************************
@@ -1135,7 +1142,6 @@ function pregame_handle_user(close_pregame)
         $("#password_row").show();
         $("#password_req").focus();
         $("#password_td").html("<input id='password_req' type='password' size='25' maxlength='200'>  &nbsp; Account required, enter password.");
-        $(".pwd_reset").click(forgot_pbem_password);
       }
     },
    error: function (request, textStatus, errorThrown) {
@@ -1400,68 +1406,74 @@ function handle_new_flag(image_data, player_id) {
 
 }
 
-/**************************************************************************
-  Recaptcha callback.
-**************************************************************************/
-function onloadCallback() {
-  // recaptcha is ready and loaded.
-}
-
 
 /**************************************************************************
- Reset the password for the user.
+ Invite player to multiplayer game
 **************************************************************************/
-function forgot_pbem_password()
+function show_invite_player_dialog()
 {
+    var message = "<div id=\"invite_dialog\" title=\"Invite Player\">\n" +
+        "    <p>Select a player to invite (online last 12 hours):</p>\n" +
+        "    <select id=\"playerList\"></select>\n" +
+        "</div><br>" ;
 
-  var title = "Forgot your password?";
-  var message = "Please enter your e-mail address to reset your password. The new password will be sent to you by e-mail.<br><br>"
-                + "<table><tr><td>E-mail address:</td><td><input id='email_reset' type='text' size='25'></td></tr>"
-                + "</table><br><br>"
-                + "<br><br>";
+    // reset dialog page.
+    $("#invite_dialog").remove();
+    $("<div id='invite_dialog'></div>").appendTo("div#game_page");
 
-  // reset dialog page.
-  $("#pwd_dialog").remove();
-  $("<div id='pwd_dialog'></div>").appendTo("div#game_page");
+    $("#invite_dialog").html(message);
 
-  $("#pwd_dialog").html(message);
-  $("#pwd_dialog").attr("title", title);
-  $("#pwd_dialog").dialog({
-			bgiframe: true,
-			modal: true,
-			width: is_small_screen() ? "80%" : "40%",
-			buttons:
-			{
-                "Cancel" : function() {
-	                 $("#pwd_dialog").remove();
-				},
-				"Send password" : function() {
-				    password_reset_count++;
-                    if (password_reset_count > 3) {
-                      swal("Unable to reset password.");
-                      return;
+    $("#invite_dialog").dialog({
+        bgiframe: true,
+        modal: true,
+        width: 400,
+        buttons: {
+            "Invite Player": function() {
+                let selectedPlayer = $("#playerList").val();
+                if (!selectedPlayer) {
+                    alert("Please select a player.");
+                    return;
+                }
+
+                // Send invite request
+                $.ajax({
+                    url: "/PlayerMatcher?from=" + username + "&to=" + selectedPlayer + "&port=" + civserverport,
+                    method: "GET",
+                    success: function(response) {
+                        alert("Player invited successfully!");
+                        $("#invite_dialog").dialog("close");
+                    },
+                    error: function() {
+                        alert("Error sending invite.");
                     }
-				    var reset_email = $("#email_reset").val();
-				    if (reset_email == null || reset_email.length == 0) {
-				      swal("Please fill in e-mail.");
-				      return;
-				    }
-                    $.ajax({
-                       type: 'POST',
-                       url: "/reset_password?email=" + reset_email,
-                       success: function(data, textStatus, request){
-                          swal("Password reset. Please check your email.");
-                          $("#pwd_dialog").remove();
-                        },
-                       error: function (request, textStatus, errorThrown) {
-                         swal("Error, password was not reset.");
-                       }
-                      });
-				}
-			}
-		});
+                });
+            },
+            "Cancel": function() {
+                $(this).dialog("close");
+            }
+        }
+    });
 
-  $("#pwd_dialog").dialog('open');
+    $.ajax({
+        url: "/player/onlinelist",
+        method: "GET",
+        success: function(data) {
+            let playerList = $("#playerList");
+            playerList.empty(); // Clear existing options
+            $.each(data.players, function(index, player) {
+                if (player.toLowerCase() != username.toLowerCase()) {
+                    playerList.append(`<option value="${player}">${player}</option>`);
+                }
+            });
+
+            // Open the dialog after loading data
+            $("#invite_dialog").dialog("open");
+        },
+        error: function() {
+            alert("Error fetching player list.");
+        }
+    });
+
 
 }
 

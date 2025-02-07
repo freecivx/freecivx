@@ -28,8 +28,6 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
 import org.freeciv.services.Statistics;
-import org.json.JSONArray;
-import org.json.JSONObject;
 
 /**
  * Hall Of Fame list
