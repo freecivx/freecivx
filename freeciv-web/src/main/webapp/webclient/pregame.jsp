@@ -28,6 +28,7 @@
 		<button id="load_game_button" type="button" class="button"><i class="fa fa-file-o" aria-hidden="true"></i> Load Game / Scenario</button>
 		<button id="pick_nation_button" type="button" class="button"><i class="fa fa-flag" aria-hidden="true"></i> Pick Nation</button>
 		<button id="pregame_settings_button" type="button" class="button"><i class="fa fa-cogs" aria-hidden="true"></i> Game Settings</button>
+		<button id='multiplayer_invite_player'  type="button" class="button"><i class="fa fa-user-plus" aria-hidden="true"></i>Invite player</button>
 	</div>
 
   </div>
