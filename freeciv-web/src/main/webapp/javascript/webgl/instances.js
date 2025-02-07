@@ -84,7 +84,6 @@ function update_tile_model_instancing(modelname, ptile, num_models, scale) {
         }
         // Extract the actual Mesh
         let gltfMesh = null;
-        // If it's already a Mesh, great; else traverse
         if (gltfSceneOrObj.isMesh) {
             gltfMesh = gltfSceneOrObj;
         } else if (gltfSceneOrObj) {
@@ -95,22 +94,17 @@ function update_tile_model_instancing(modelname, ptile, num_models, scale) {
             return;
         }
 
-        // 3) Get or create the InstancedMesh for this tree model
-        const { instancedMesh, usedSlots } = getInstancedMeshFromModel( tileIndex, gltfMesh, 30);
+        const { instancedMesh, usedSlots } = getInstancedMeshFromModel(tileIndex, gltfMesh, 30);
 
-        // We'll use dummy objects for transforms
         const dummyMatrix = new THREE.Matrix4();
         const dummyQuat   = new THREE.Quaternion();
         const dummyScale  = new THREE.Vector3(scale, scale, scale);
 
-        // 4) Place each tree instance
         let pos = map_to_scene_coords(ptile.x, ptile.y);
         for (let i = 0; i < num_models; i++) {
 
-            // Find a free slot
             let instanceID = usedSlots.indexOf(false);
             if (instanceID < 0) {
-                //console.error("No free slots left in InstancedMesh for", modelname);
                 break;
             }
             usedSlots[instanceID] = true; // mark it used
@@ -119,11 +113,15 @@ function update_tile_model_instancing(modelname, ptile, num_models, scale) {
             let offsetZ = -10 + (12 - Math.floor(Math.random() * 25));
 
             let finalX = pos.x + offsetX;
-            let finalY = height;
+            let finalY = height + 1.0;
             let finalZ = pos.y + offsetZ;
 
-            let rotY = 2 * Math.PI * Math.random();
-            dummyQuat.setFromAxisAngle(new THREE.Vector3(0, 1, 0), rotY);
+            // Random rotation on Y, plus a slight tilt in X and Z
+            let rotY = 0.5 * Math.PI * Math.random();
+            let rotX = (Math.random() - 0.5) * 1.5; // Small tilt on X-axis
+            let rotZ = (Math.random() - 0.5) * 1.0; // Small tilt on Z-axis
+
+            dummyQuat.setFromEuler(new THREE.Euler(rotX, rotY, rotZ));
 
             dummyMatrix.compose(
                 new THREE.Vector3(finalX, finalY, finalZ),
@@ -145,7 +143,6 @@ function update_tile_model_instancing(modelname, ptile, num_models, scale) {
         instancedMeshType[tileIndex] = null;
     }
 }
-
 
 
 /****************************************************************************
