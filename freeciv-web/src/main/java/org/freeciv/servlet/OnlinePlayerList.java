@@ -50,7 +50,7 @@ public class OnlinePlayerList extends HttpServlet {
     protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
         try {
             Players players = new Players();
-            List<Player> playersList = players.getPlayers();
+            List<Player> playersList = players.getOnlinePlayers();
 
             // Extract player names into a JSONArray
             JSONArray playerArray = new JSONArray();
