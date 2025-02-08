@@ -199,29 +199,6 @@ Rerun the sync-js-hand.js script.
 				</plugin>
 
 				<plugin>
-					<groupId>org.codehaus.mojo</groupId>
-					<artifactId>native2ascii-maven-plugin</artifactId>
-					<version>2.1.1</version>
-					<executions>
-						<execution>
-							<id>native2ascii-utf8-resources</id>
-							<goals>
-								<goal>resources</goal>
-							</goals>
-							<configuration>
-								<dest>target/resources/i18n</dest>
-								<src>src/main/resources/i18n</src>
-								<encoding>UTF-8</encoding>
-								<includes>
-									<include>**/text*.properties</include>
-								</includes>
-							</configuration>
-							<phase>compile</phase>
-						</execution>
-					</executions>
-				</plugin>
-
-				<plugin>
 					<groupId>org.apache.maven.plugins</groupId>
 					<artifactId>maven-resources-plugin</artifactId>
 					<version>3.3.1</version>
