@@ -44,7 +44,14 @@ function webgl_update_tile_known(old_tile, new_tile)
 **************************************************************************/
 function update_tiles_known_vertex_colors()
 {
+  const xquality = map.xsize * terrain_quality + 1;
+  const yquality = map.ysize * terrain_quality + 1;
   const colors = [];
+  const gridX = Math.floor(xquality);
+  const gridY = Math.floor(yquality);
+
+  const gridX1 = gridX + 1;
+  const gridY1 = gridY + 1;
 
   for ( let iy = 0; iy < gridY1; iy ++ ) {
     for ( let ix = 0; ix < gridX1; ix ++ ) {

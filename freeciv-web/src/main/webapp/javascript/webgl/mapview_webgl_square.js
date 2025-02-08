@@ -44,17 +44,7 @@ var lofibufferattribute;
 
 var mapview_model_width;
 var mapview_model_height;
-var xquality;
-var yquality;
 
-var width_half;
-var height_half;
-var gridX;
-var gridY;
-var gridX1;
-var gridY1;
-var segment_width;
-var segment_height;
 var MAPVIEW_ASPECT_FACTOR = 35.71;
 
 
@@ -230,20 +220,20 @@ async function init_webgl_mapview() {
 ****************************************************************************/
 function init_land_geometry(geometry, mesh_quality)
 {
-  xquality = map.xsize * mesh_quality + 1;
-  yquality = map.ysize * mesh_quality + 1;
+  const xquality = map.xsize * mesh_quality + 1;
+  const yquality = map.ysize * mesh_quality + 1;
 
-  width_half = mapview_model_width / 2;
-  height_half = mapview_model_height / 2;
+  const width_half = mapview_model_width / 2;
+  const height_half = mapview_model_height / 2;
 
-  gridX = Math.floor(xquality);
-  gridY = Math.floor(yquality);
+  const gridX = Math.floor(xquality);
+  const gridY = Math.floor(yquality);
 
-  gridX1 = gridX + 1;
-  gridY1 = gridY + 1;
+  const gridX1 = gridX + 1;
+  const gridY1 = gridY + 1;
 
-  segment_width = mapview_model_width / gridX;
-  segment_height = mapview_model_height / gridY;
+  const segment_width = mapview_model_width / gridX;
+  const segment_height = mapview_model_height / gridY;
 
   const indices = [];
   const uvs = [];
