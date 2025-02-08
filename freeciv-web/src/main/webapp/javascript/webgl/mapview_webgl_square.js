@@ -47,6 +47,14 @@ var mapview_model_height;
 var xquality;
 var yquality;
 
+var width_half;
+var height_half;
+var gridX;
+var gridY;
+var gridX1;
+var gridY1;
+var segment_width;
+var segment_height;
 var MAPVIEW_ASPECT_FACTOR = 35.71;
 
 
@@ -150,20 +158,21 @@ async function init_webgl_mapview() {
       freeciv_uniforms[terrain_name] = {type: "t", value: webgl_textures[terrain_name]};
     }
 
-  xquality = map.xsize * terrain_quality + 1;
-  yquality = map.ysize * terrain_quality + 1;
-
   init_heightmap(terrain_quality);
   update_heightmap(terrain_quality);
 
   // Low-resolution terrain mesh used for raycasting to find mouse postition.
   var lofiMaterial = new THREE.MeshBasicMaterial({"color" : 0x00ff00});
   lofiGeometry = new THREE.BufferGeometry();
-  manage_land_geometry(lofiGeometry, 2, true);
-  manage_land_geometry(lofiGeometry, 2, false);
+  init_land_geometry(lofiGeometry, 2);
+  update_land_geometry(lofiGeometry, 2);
   lofiMesh = new THREE.Mesh( lofiGeometry, lofiMaterial );
   lofiMesh.layers.set(6);
   scene.add(lofiMesh);
+
+  if (map.xsize > 200 || map.ysize > 200) {
+    terrain_quality = 2;
+  }
 
   const vertexShaderResponse = await fetch('/javascript/webgl/shaders_square/terrain_vertex_shader.glsl');
   const vertex_shader = await vertexShaderResponse.text();
@@ -186,8 +195,8 @@ async function init_webgl_mapview() {
     });
 
   landGeometry = new THREE.BufferGeometry();
-  manage_land_geometry(landGeometry, terrain_quality, true);
-  manage_land_geometry(landGeometry, terrain_quality, false);
+  init_land_geometry(landGeometry, terrain_quality);
+  update_land_geometry(landGeometry, terrain_quality);
   landMesh = new THREE.Mesh( landGeometry, terrain_material );
   landMesh.receiveShadow = false;
   landMesh.castShadow = false;
@@ -217,87 +226,106 @@ async function init_webgl_mapview() {
 }
 
 /****************************************************************************
- Manage the land geometry
+  Initialize land geometry
 ****************************************************************************/
-function manage_land_geometry(geometry, mesh_quality, isInit = false) {
-  const width_half = mapview_model_width / 2;
-  const height_half = mapview_model_height / 2;
+function init_land_geometry(geometry, mesh_quality)
+{
+  xquality = map.xsize * mesh_quality + 1;
+  yquality = map.ysize * mesh_quality + 1;
 
-  const gridX = Math.floor(xquality);
-  const gridY = Math.floor(yquality);
+  width_half = mapview_model_width / 2;
+  height_half = mapview_model_height / 2;
 
-  const gridX1 = gridX + 1;
-  const gridY1 = gridY + 1;
+  gridX = Math.floor(xquality);
+  gridY = Math.floor(yquality);
 
-  const segment_width = mapview_model_width / gridX;
-  const segment_height = mapview_model_height / gridY;
+  gridX1 = gridX + 1;
+  gridY1 = gridY + 1;
+
+  segment_width = mapview_model_width / gridX;
+  segment_height = mapview_model_height / gridY;
 
   const indices = [];
   const uvs = [];
   const vertices = [];
   let heightmap_scale = (mesh_quality === 2) ? (mesh_quality * 2) : 1;
 
-  if (isInit) {
-    for (let iy = 0; iy < gridY1; iy++) {
-      const y = iy * segment_height - height_half;
-      for (let ix = 0; ix < gridX1; ix++) {
-        const x = ix * segment_width - width_half;
-        var sx = ix % xquality, sy = iy % yquality;
+  for ( let iy = 0; iy < gridY1; iy ++ ) {
+    const y = iy * segment_height - height_half;
+    for ( let ix = 0; ix < gridX1; ix ++ ) {
+      const x = ix * segment_width - width_half;
+      var sx = ix % xquality, sy = iy % yquality;
 
-        vertices.push(x, -y, heightmap[sx * heightmap_scale][sy * heightmap_scale] * 100);
-        uvs.push(ix / gridX);
-        uvs.push(1 - (iy / gridY));
-      }
+      vertices.push( x, -y, heightmap[sx * heightmap_scale][sy * heightmap_scale] * 100 );
+      uvs.push( ix / gridX );
+      uvs.push( 1 - ( iy / gridY ) );
     }
-
-    for (let iy = 0; iy < gridY; iy++) {
-      for (let ix = 0; ix < gridX; ix++) {
-        const a = ix + gridX1 * iy;
-        const b = ix + gridX1 * (iy + 1);
-        const c = (ix + 1) + gridX1 * (iy + 1);
-        const d = (ix + 1) + gridX1 * iy;
-
-        indices.push(a, b, d);
-        indices.push(b, c, d);
-      }
-    }
-
-    if (mesh_quality === 2) {
-      lofibufferattribute = new THREE.Float32BufferAttribute(vertices, 3);
-      geometry.setAttribute('position', lofibufferattribute);
-    } else {
-      landbufferattribute = new THREE.Float32BufferAttribute(vertices, 3);
-      geometry.setAttribute('position', landbufferattribute);
-    }
-
-    geometry.setIndex(indices);
-    geometry.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2));
-
-
-  } else {
-
-    const bufferAttribute = mesh_quality === 2 ? lofibufferattribute : landbufferattribute;
-
-    for (let iy = 0; iy <= gridY; iy++) {
-      const y = iy * segment_height - height_half;
-      for (let ix = 0; ix <= gridX; ix++) {
-        const x = ix * segment_width - width_half;
-        const sx = ix % xquality, sy = iy % yquality;
-        const index = iy * (gridX + 1) + ix;
-        const heightIndex = (sy * heightmap_scale * xquality) + (sx * heightmap_scale); // Convert (sx, sy) to single index
-
-        bufferAttribute.setXYZ(index, x, -y, heightmap[heightIndex] * 100);
-      }
-    }
-
-    bufferAttribute.needsUpdate = true;
   }
 
-  geometry.computeVertexNormals();
-  return geometry;
+  for ( let iy = 0; iy < gridY; iy ++ ) {
+    for ( let ix = 0; ix < gridX; ix ++ ) {
+      const a = ix + gridX1 * iy;
+      const b = ix + gridX1 * ( iy + 1 );
+      const c = ( ix + 1 ) + gridX1 * ( iy + 1 );
+      const d = ( ix + 1 ) + gridX1 * iy;
 
+      indices.push( a, b, d );
+      indices.push( b, c, d );
+    }
+  }
+
+  if (mesh_quality === 2) {
+    lofibufferattribute = new THREE.Float32BufferAttribute( vertices, 3 );
+    geometry.setAttribute( 'position', lofibufferattribute);
+  } else {
+    landbufferattribute = new THREE.Float32BufferAttribute( vertices, 3 );
+    geometry.setAttribute( 'position', landbufferattribute);
+  }
+
+  geometry.setIndex( indices );
+  geometry.setAttribute( 'uv', new THREE.Float32BufferAttribute( uvs, 2 ) );
+
+  geometry.computeVertexNormals();
+
+  return geometry;
 }
 
+/****************************************************************************
+  Create the land terrain geometry
+****************************************************************************/
+function update_land_geometry(geometry, mesh_quality) {
+  const xquality = map.xsize * mesh_quality + 1;
+  const yquality = map.ysize * mesh_quality + 1;
+
+  const gridX = Math.floor(xquality);
+  const gridY = Math.floor(yquality);
+
+  const segment_width = mapview_model_width / gridX;
+  const segment_height = mapview_model_height / gridY;
+
+  const width_half = mapview_model_width / 2;
+  const height_half = mapview_model_height / 2;
+
+  const heightmap_scale = (mesh_quality === 2) ? 2 : 1;
+  const bufferAttribute = mesh_quality === 2 ? lofibufferattribute : landbufferattribute;
+
+  for (let iy = 0; iy <= gridY; iy++) {
+    const y = iy * segment_height - height_half;
+    for (let ix = 0; ix <= gridX; ix++) {
+      const x = ix * segment_width - width_half;
+      const sx = ix % xquality, sy = iy % yquality;
+      const index = iy * (gridX + 1) + ix;
+      const heightIndex = (sy * heightmap_scale * xquality) + (sx * heightmap_scale); // Convert (sx, sy) to single index
+
+      bufferAttribute.setXYZ(index, x, -y, heightmap[heightIndex] * 100);
+    }
+  }
+
+  bufferAttribute.needsUpdate = true;
+  geometry.computeVertexNormals();
+
+  return geometry;
+}
 
 
 /****************************************************************************
@@ -309,8 +337,8 @@ function update_map_terrain_geometry()
     var hash = generate_heightmap_hash();
     if (hash != heightmap_hash) {
       update_heightmap(terrain_quality);
-      manage_land_geometry(lofiGeometry, 2, false);
-      manage_land_geometry(landGeometry, terrain_quality, false);
+      update_land_geometry(lofiGeometry, 2);
+      update_land_geometry(landGeometry, terrain_quality);
 
       lofiGeometry.rotateX( - Math.PI / 2 );
       lofiGeometry.translate(Math.floor(mapview_model_width / 2) - 500, 0, Math.floor(mapview_model_height / 2));
