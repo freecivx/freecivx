@@ -69,17 +69,13 @@ function webgpu_start_renderer()
  ****************************************************************************/
 function init_webgpu_mapview() {
     selected_unit_material = new THREE.MeshBasicMaterial( { color: 0xf6f7bf, transparent: true, opacity: 0.7} );
-
-    xquality = map.xsize * terrain_quality + 1;
-    yquality = map.ysize * terrain_quality + 1;
-
     init_heightmap(terrain_quality);
     update_heightmap(terrain_quality);
     // Low-resolution terrain mesh used for raycasting to find mouse postition.
     var lofiMaterial = new THREE.MeshStandardMaterial({"color" : 0x00ff00});
     lofiGeometry = new THREE.BufferGeometry();
-    manage_land_geometry(lofiGeometry, 2, true);
-    manage_land_geometry(lofiGeometry, 2, false);
+    init_land_geometry(lofiGeometry, 2);
+    update_land_geometry(lofiGeometry, 2);
     lofiMesh = new THREE.Mesh( lofiGeometry, lofiMaterial );
     lofiMesh.layers.set(6);
     scene.add(lofiMesh);
@@ -88,8 +84,8 @@ function init_webgpu_mapview() {
     }
     terrain_material = new THREE.MeshStandardMaterial({"color" : 0x008800});
     landGeometry = new THREE.BufferGeometry();
-    manage_land_geometry(landGeometry, terrain_quality, true);
-    manage_land_geometry(landGeometry, terrain_quality, false);
+    init_land_geometry(landGeometry, terrain_quality);
+    update_land_geometry(landGeometry, terrain_quality);
     landMesh = new THREE.Mesh( landGeometry, terrain_material );
     landMesh.receiveShadow = false;
     landMesh.castShadow = false;
