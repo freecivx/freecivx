@@ -656,6 +656,10 @@ body
   background-color: black;
 }
 
+#globe_canvas_div {
+  overflow: hidden;
+}
+
 #tabs-hel.manual_doc {
   background-image: url('/images/bg.jpg');
   color: black;

@@ -149,6 +149,7 @@ function set_globe_view_active() {
  ****************************************************************************/
 function animate_globe() {
     if (globescene == null) return;
+    if (!globe_view_active) return;
 
     if (globecontrols != null) {
         globecontrols.update();
