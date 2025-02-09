@@ -85,6 +85,10 @@ body
   background: black;
 }
 
+#globecanvas {
+  background: black;
+}
+
 #freeciv_logo {
   float:left; 
   background: #444444 url(/images/freeciv-web-logo.png);
@@ -643,6 +647,11 @@ body
 }
 
 #tabs-map {
+  overflow: hidden;
+  background-color: black;
+}
+
+#tabs-globe {
   overflow: hidden;
   background-color: black;
 }

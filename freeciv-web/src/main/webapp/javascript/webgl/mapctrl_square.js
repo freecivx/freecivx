@@ -76,8 +76,15 @@ function webglOnWindowResize() {
     camera.aspect = window.innerWidth / window.innerHeight;
     camera.updateProjectionMatrix();
   }
+  if (globecamera != null) {
+    globecamera.aspect = window.innerWidth / window.innerHeight;
+    globecamera.updateProjectionMatrix();
+  }
   if (maprenderer != null) {
     maprenderer.setSize(window.innerWidth, window.innerHeight);
+  }
+  if (globerenderer != null) {
+    globerenderer.setSize(window.innerWidth, window.innerHeight);
   }
 }
 

@@ -104,7 +104,7 @@ function init_globe_view()
                 float latitude = vPosition.y / 500.0;
                 if (latitude > 0.987 || latitude < -0.987) color = vec3(1.0, 1.0, 1.0);
                 
-                gl_FragColor = vec4(color, 1.0);
+                gl_FragColor = vec4(color * 1.4, 1.0);
             }
         `,
     });

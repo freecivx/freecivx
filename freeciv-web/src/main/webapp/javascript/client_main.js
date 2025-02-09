@@ -96,6 +96,7 @@ function setup_window_size ()
 
   $('#tabs').css("height", $(window).height());
   $("#tabs-map").height(new_mapview_height);
+  $("#tabs-globe").height(new_mapview_height);
 
 
   $("#city_viewport").height( new_mapview_height - 20);
