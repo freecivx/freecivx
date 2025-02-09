@@ -208,6 +208,11 @@ function control_init()
     init_civ_dialog();
   });
 
+  $("#globe_tab").click(function(event) {
+    set_default_mapview_inactive();
+    set_globe_view_active();
+  });
+
   $("#tech_tab").click(function(event) {
     set_default_mapview_inactive();
     update_tech_screen();

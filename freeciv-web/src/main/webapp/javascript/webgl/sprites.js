@@ -405,7 +405,7 @@ function create_tile_label_sprite(label_text)
 /****************************************************************************
  Create stars texture.
 ****************************************************************************/
-function create_star_sky_texture(num_stars, width, height) {
+function create_star_sky_texture(num_stars, width, height, full) {
     var canvas = document.createElement('canvas');
 	canvas.width = width;
 	canvas.height = height;
@@ -416,7 +416,7 @@ function create_star_sky_texture(num_stars, width, height) {
 		var radius = Math.random() * 0.80;
 		var x = Math.floor(Math.random() * width);
 		var y = Math.floor(Math.random() * height);
-		if (y > height * 0.6) continue;
+		if (!full && y > height * 0.6) continue;
 
 		ctx.beginPath();
 		ctx.arc(x, y, radius, 0, 2 * Math.PI, false);

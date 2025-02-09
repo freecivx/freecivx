@@ -76,6 +76,7 @@ function renderer_init() {
       if (!webgpu) {
         webgl_start_renderer();
         init_webgl_mapview();
+        init_globe_view();
 
     } else {
         webgpu_start_renderer();
