@@ -83,21 +83,26 @@ function init_globe_view()
                 vec4 terrain_type = texture(maptiles, adjustedUv);
                 vec4 border_color = borders_visible ? texture(borders, adjustedUv) : vec4(0);
                 vec3 color;
+                vec2 dxdy = vec2(mod(map_x_size * adjustedUv.x, 1.0), mod(map_y_size * adjustedUv.y, 1.0));
+                vec2 tdxdy = vec2(
+                            (map_x_size * adjustedUv.x / 2.0) - 0.5 * floor(map_x_size * adjustedUv.x),
+                            (map_y_size * adjustedUv.y / 2.0) - 0.5 * floor(map_y_size * adjustedUv.y)
+                        );
                 
                 float terrain_here = floor(terrain_type.r * 256.0);
-                if (terrain_here == 70.0) color = texture(grassland, adjustedUv).rgb;
-                else if (terrain_here == 110.0) color = texture(plains, adjustedUv).rgb;
-                else if (terrain_here == 20.0) color = texture(coast, adjustedUv).rgb;
-                else if (terrain_here == 30.0) color = texture(ocean, adjustedUv).rgb;
-                else if (terrain_here == 40.0) color = texture(arctic_farmland_irrigation_tundra, adjustedUv).rgb;
-                else if (terrain_here == 50.0) color = texture(desert, adjustedUv).rgb;
-                else if (terrain_here == 80.0) color = texture(hills, adjustedUv).rgb;
-                else if (terrain_here == 100.0) color = texture(mountains, adjustedUv).rgb;
-                else if (terrain_here == 120.0) color = texture(swamp, adjustedUv).rgb;
-                else color = texture(plains, adjustedUv).rgb;
+                if (terrain_here == 70.0) color = texture(grassland, dxdy).rgb;
+                else if (terrain_here == 110.0) color = texture(plains, dxdy).rgb;
+                else if (terrain_here == 20.0) color = texture(coast, dxdy).rgb;
+                else if (terrain_here == 30.0) color = texture(ocean, dxdy).rgb;
+                else if (terrain_here == 40.0) color = texture(arctic_farmland_irrigation_tundra, vec2(tdxdy.x, tdxdy.y + 0.5)).rgb;
+                else if (terrain_here == 50.0) color = texture(desert, dxdy).rgb;
+                else if (terrain_here == 80.0) color = texture(hills, dxdy).rgb;
+                else if (terrain_here == 100.0) color = texture(mountains, dxdy).rgb;
+                else if (terrain_here == 120.0) color = texture(swamp, dxdy).rgb;
+                else color = texture(plains, dxdy).rgb;
                 
                 float latitude = vPosition.y / 500.0;
-                if (latitude > 0.95 || latitude < -0.95) color = vec3(1.0, 1.0, 1.0);
+                if (latitude > 0.987 || latitude < -0.987) color = vec3(1.0, 1.0, 1.0);
                 
                 gl_FragColor = vec4(color, 1.0);
             }
