@@ -274,6 +274,9 @@ switch (filename) {
   case 'Knights':
     modelscale = 10;
     break;
+  case 'Cavalry':
+    modelscale = 8.1;
+    break;
   case 'Trireme':
     modelscale = 4.5;
     break;
