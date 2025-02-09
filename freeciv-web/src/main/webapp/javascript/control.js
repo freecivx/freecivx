@@ -370,11 +370,19 @@ function update_mouse_cursor()
     return;
   }
 
-  var ptile = webgl_canvas_pos_to_tile(mouse_x, mouse_y);
+  var ptile;
+  if (!globe_view_active) {
+    ptile = webgl_canvas_pos_to_tile(mouse_x, mouse_y);
+    if (ptile == null) return;
+    highlight_map_tile_mouse(ptile.x, ptile.y);
+  }
 
-  if (ptile == null) return;
+  if (globe_view_active) {
+    ptile = globe_canvas_pos_to_tile(mouse_x, mouse_y);
+    if (ptile == null) return;
+    highlight_globe_tile_mouse(ptile.x, ptile.y);
 
-  highlight_map_tile_mouse(ptile.x, ptile.y);
+  }
 
   var punit = find_visible_unit(ptile);
   var pcity = tile_city(ptile);

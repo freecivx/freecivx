@@ -81,10 +81,10 @@ function webglOnWindowResize() {
     globecamera.updateProjectionMatrix();
   }
   if (maprenderer != null) {
-    maprenderer.setSize(window.innerWidth, window.innerHeight);
+    maprenderer.setSize(window.innerWidth, $(window).height() - height_offset);
   }
   if (globerenderer != null) {
-    globerenderer.setSize(window.innerWidth, window.innerHeight);
+    globerenderer.setSize(window.innerWidth, $(window).height() - height_offset);
   }
 }
 
@@ -298,6 +298,19 @@ function highlight_map_tile_mouse(x, y)
     terrain_material.uniforms.mouse_x.needsUpdate = true;
     terrain_material.uniforms.mouse_y.value = y;
     terrain_material.uniforms.mouse_y.needsUpdate = true;
+  }
+}
+
+/**************************************************************************
+ ...
+ **************************************************************************/
+function highlight_globe_tile_mouse(x, y)
+{
+  if (!webgpu && globeMaterial != null && !map_select_active) {
+    globeMaterial.uniforms.mouse_x.value = x;
+    globeMaterial.uniforms.mouse_x.needsUpdate = true;
+    globeMaterial.uniforms.mouse_y.value = y;
+    globeMaterial.uniforms.mouse_y.needsUpdate = true;
   }
 }
 
