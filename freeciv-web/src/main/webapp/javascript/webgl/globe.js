@@ -117,10 +117,36 @@ function init_globe_view() {
     globescene.add(globeMesh);
 
     // Create the inner white sphere for the poles
-    const innerSphereGeometry = new THREE.SphereGeometry(499, 64, 64); // Slightly smaller to prevent overlap
+    const innerSphereGeometry = new THREE.SphereGeometry(499, 64, 64);
     const innerSphereMaterial = new THREE.MeshBasicMaterial({ color: 0xffffff });
     const innerSphereMesh = new THREE.Mesh(innerSphereGeometry, innerSphereMaterial);
     globescene.add(innerSphereMesh);
+
+    // Create atmosphere sphere
+    const atmosphereGeometry = new THREE.SphereGeometry(globe_radius * 1.5, 128, 128);
+    const atmosphereMaterial = new THREE.ShaderMaterial({
+        uniforms: {},
+        vertexShader: `
+        varying vec3 vNormal;
+        void main() {
+            vNormal = normalize(normalMatrix * normal);
+            gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+        }
+    `,
+        fragmentShader: `
+        varying vec3 vNormal;
+        void main() {
+            float intensity = pow(0.5 - dot(vNormal, vec3(0, 0, 1.0)), 3.0);
+            gl_FragColor = vec4(0.3, 0.5, 1.0, 0.6) * intensity;
+        }
+    `,
+        blending: THREE.AdditiveBlending,
+        side: THREE.BackSide,
+        transparent: true
+    });
+    const atmosphereMesh = new THREE.Mesh(atmosphereGeometry, atmosphereMaterial);
+    globescene.add(atmosphereMesh);
+
 
     // Add lights
     const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
