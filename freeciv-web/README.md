@@ -42,6 +42,17 @@ Flyway migrations of the database is supported. Remember to set the mysql passwo
 To migrate the database to the latest version, run this Maven command:
 mvn flyway:migrate
 
+License
+=======
+Freeciv-web has the GNU Affero General Public License.
+https://github.com/freecivx/freecivx/blob/main/freeciv-web/src/main/webapp/gltf/LICENSE-AGPL.txt
+
+The 3d models have Creative Commons Attribution-ShareAlike (CC BY-SA) license.
+https://github.com/freecivx/freecivx/blob/main/freeciv-web/src/main/webapp/gltf/LICENSE-CC-BY-SA.txt
+
+
+See LICENSE-AGPL.txt and LICENSE-CC-BY-SA.txt for the license of these models.
+
 
 Copyright (C) 2007-2024 Andreas Røsdal. 
 Released under the GNU AFFERO GENERAL PUBLIC LICENSE.
