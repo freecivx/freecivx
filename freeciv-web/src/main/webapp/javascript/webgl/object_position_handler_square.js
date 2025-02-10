@@ -214,6 +214,7 @@ function update_city_position(ptile) {
 
     if (scene != null) {
       scene.add(new_city);
+      globe_add_city(ptile, pcity, model_name);
     }
 
     if (scene != null && pcity['walls'] && city_walls_positions[ptile['index']] == null) {

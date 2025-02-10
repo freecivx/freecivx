@@ -5,7 +5,7 @@ var globecontrols;
 var globeMaterial;
 var globeMesh;
 var globe_view_active = false;
-
+var globe_radius = 500;
 
 function init_globe_view() {
     var new_mapview_width = $(window).width() - width_offset;
@@ -37,7 +37,7 @@ function init_globe_view() {
 
     // Create map sphere (excluding poles)
     const pole_cutoff = 0.05 * Math.PI; // 5% of the sphere
-    const globeGeometry = new THREE.SphereGeometry(500, 128, 128, 0, Math.PI * 2, pole_cutoff, Math.PI - 2 * pole_cutoff);
+    const globeGeometry = new THREE.SphereGeometry(globe_radius, 128, 128, 0, Math.PI * 2, pole_cutoff, Math.PI - 2 * pole_cutoff);
     globeMaterial = new THREE.ShaderMaterial({
         uniforms: {
             maptiles: { type: "t", value: maptiletypes },
@@ -105,6 +105,10 @@ function init_globe_view() {
                     shade_factor += 0.7;
                 }
                 
+                if (borders_visible && !(border_color.r > 0.546875 && border_color.r < 0.5625 && border_color.b == 0.0 && border_color.g == 0.0)) {
+                   color = mix(color, border_color.rgb, 0.30);
+                }
+                
                 gl_FragColor = vec4(color * shade_factor, 1.0);
             }
         `,
@@ -158,6 +162,9 @@ function animate_globe() {
     globerenderer.render(globescene, globecamera);
 }
 
+/****************************************************************************
+...
+****************************************************************************/
 function globe_canvas_pos_to_tile(x, y) {
     if (globescene == null || globecamera == null) return null;
 
@@ -190,3 +197,70 @@ function globe_canvas_pos_to_tile(x, y) {
 
     return null;
 }
+
+/****************************************************************************
+ ...
+ ****************************************************************************/
+function globe_add_city(ptile, pcity, model_name) {
+    let new_city = webgl_get_model(model_name, ptile);
+    let globe_coords = map_to_globe_coords(ptile['x'], ptile['y']);
+
+    // Normalize the globe position to get the surface normal
+    let normal = globe_coords.clone().normalize();
+
+    // Create a quaternion to align the city model with the normal
+    let up = new THREE.Vector3(0, 1, 0); // Default "up" direction
+    let quaternion = new THREE.Quaternion();
+    quaternion.setFromUnitVectors(up, normal);
+
+    // Apply the rotation to the city
+    new_city.position.set(globe_coords.x, globe_coords.y, globe_coords.z);
+    new_city.quaternion.copy(quaternion);
+
+    globescene.add(new_city);
+    console.log("added new city " + ptile.x + " " + ptile.y);
+
+    // Create and position the city label slightly above the globe surface
+    let city_label = create_city_label_sprite(pcity);
+    let label_offset = normal.clone().multiplyScalar(25); // Move the label outward by 25 units
+    let label_position = globe_coords.clone().add(label_offset);
+
+    city_label.position.set(label_position.x, label_position.y, label_position.z);
+    city_label.quaternion.copy(quaternion);
+
+    globescene.add(city_label);
+}
+
+
+
+/****************************************************************************
+...
+****************************************************************************/
+function map_to_globe_coords(map_x, map_y) {
+    // Normalize map_x to [0, 1] and ensure correct wrapping
+    const u = (map_x + 0.5) / map.xsize; // Shift 0.5 tiles east
+    let adjusted_u = (1.0 - u) % 1.0; // Flip x-axis to match shader logic
+    if (adjusted_u < 0) adjusted_u += 1.0; // Ensure positive wrapping
+
+    // Adjust map_y normalization to account for pole cutoffs (5% padding on each side)
+    const minV = 0.05; // 5% from the bottom
+    const maxV = 0.95; // 5% before the top
+    const v = minV + ((map_y + 0.5) / map.ysize) * (maxV - minV); // Shift 0.5 tiles south
+
+    // Convert normalized coordinates to latitude and longitude
+    const longitude = adjusted_u * 360 - 180; // -180 to 180
+    const latitude = 90 - v * 180;   // 90 to -90
+
+    // Convert degrees to radians
+    const latRad = THREE.MathUtils.degToRad(latitude);
+    const lonRad = THREE.MathUtils.degToRad(longitude);
+
+    // Convert to Cartesian coordinates
+    const x = globe_radius * Math.cos(latRad) * Math.cos(lonRad);
+    const y = globe_radius * Math.sin(latRad);
+    const z = globe_radius * Math.cos(latRad) * Math.sin(lonRad);
+
+    return new THREE.Vector3(x, y, z);
+}
+
+
