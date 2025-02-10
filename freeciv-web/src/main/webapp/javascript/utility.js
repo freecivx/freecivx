@@ -249,10 +249,8 @@ function forceLower(strnput)
 ...
 **************************************************************************/
 function submit_game_of_the_day() {
- update_game_status_panel(true);
- set_default_mapview_active();
  show_fps();
- setTimeout(submit_game_of_the_day2, 1000);
+ setTimeout(submit_game_of_the_day2, 1500);
 
 }
 
@@ -260,11 +258,10 @@ function submit_game_of_the_day() {
 ...
 **************************************************************************/
 function submit_game_of_the_day2() {
- html2canvas(document.querySelector("#mapview_canvas_div")).then(function(canvas) {
+ html2canvas(document.body).then(function(canvas) {
     var screenshot = canvas.toDataURL("image/png");
     $.post( "/save_game_of_the_day", screenshot);
   });
-  update_game_status_panel();
   show_fps();
 }
 
