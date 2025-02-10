@@ -5,7 +5,7 @@ var globecontrols;
 var globeMaterial;
 var globeMesh;
 var globe_view_active = false;
-var globe_radius = 500;
+var globe_radius = 800;
 
 function init_globe_view() {
     var new_mapview_width = $(window).width() - width_offset;
@@ -18,7 +18,7 @@ function init_globe_view() {
 
     const container = document.getElementById('globecanvas');
     globecamera = new THREE.PerspectiveCamera(45, new_mapview_width / new_mapview_height, 1, 12000);
-    globecamera.position.set(0, 0, 1600);
+    globecamera.position.set(0, 0, 2200);
     globescene = new THREE.Scene();
 
     globerenderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
@@ -29,6 +29,8 @@ function init_globe_view() {
     globerenderer.setPixelRatio(window.devicePixelRatio);
     globerenderer.setSize(new_mapview_width, new_mapview_height);
     container.appendChild(globerenderer.domElement);
+
+    $("#globecanvas").mouseup(globeMouseUp);
 
     // Skybox
     const sky = new THREE.WebGLCubeRenderTarget(2000);
@@ -117,7 +119,7 @@ function init_globe_view() {
     globescene.add(globeMesh);
 
     // Create the inner white sphere for the poles
-    const innerSphereGeometry = new THREE.SphereGeometry(499, 64, 64);
+    const innerSphereGeometry = new THREE.SphereGeometry(globe_radius - 1, 64, 64);
     const innerSphereMaterial = new THREE.MeshBasicMaterial({ color: 0xffffff });
     const innerSphereMesh = new THREE.Mesh(innerSphereGeometry, innerSphereMaterial);
     globescene.add(innerSphereMesh);
@@ -149,11 +151,15 @@ function init_globe_view() {
 
 
     // Add lights
-    const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
-    directionalLight.position.set(1, 1, 1).normalize();
+    const directionalLight = new THREE.DirectionalLight(0xffffff, 2); // Increase intensity if needed
+    directionalLight.position.set(1.5 * globe_radius, globe_radius, 1.5 * globe_radius); // Position the light at an angle
+    directionalLight.target.position.set(0, 0, 0); // Point towards the center of the globe
+    directionalLight.castShadow = true; // Enable shadows if needed
     globescene.add(directionalLight);
+    globescene.add(directionalLight.target); // Ensure the light target is added to the scene
 
-    const ambientLight = new THREE.AmbientLight(0x404040, 28 * Math.PI);
+
+    const ambientLight = new THREE.AmbientLight(0x404040, 42 * Math.PI);
     globescene.add(ambientLight);
 
     globecontrols = new OrbitControls(globecamera, globerenderer.domElement);
@@ -186,42 +192,6 @@ function animate_globe() {
     }
 
     globerenderer.render(globescene, globecamera);
-}
-
-/****************************************************************************
-...
-****************************************************************************/
-function globe_canvas_pos_to_tile(x, y) {
-    if (globescene == null || globecamera == null) return null;
-
-    // Convert screen coordinates to normalized device coordinates (NDC)
-    const mouse = new THREE.Vector2();
-    mouse.set((x / $('#globecanvas').width()) * 2 - 1, - (y / $('#globecanvas').height()) * 2 + 1);
-
-    // Set up the raycaster
-    const raycaster = new THREE.Raycaster();
-    raycaster.setFromCamera(mouse, globecamera);
-
-    // Intersect with the globe mesh
-    const intersects = raycaster.intersectObject(globeMesh, false);
-
-    for (let i = 0; i < intersects.length; i++) {
-        const intersect = intersects[i];
-
-        // Convert intersection point from 3D sphere to latitude/longitude
-        const intersectionPoint = intersect.point.clone().normalize();
-        const latitude = Math.asin(intersectionPoint.y) * (180 / Math.PI);
-        const longitude = Math.atan2(intersectionPoint.z, intersectionPoint.x) * (180 / Math.PI);
-
-        // Convert lat/lon to map tile coordinates
-        const mapX = Math.floor((longitude + 180) / 360 * map['xsize']);
-        const mapY = Math.floor((90 - latitude) / 180 * map['ysize']);
-
-        const tile = map_pos_to_tile(mapX, mapY);
-        if (tile != null) return tile;
-    }
-
-    return null;
 }
 
 /****************************************************************************
@@ -258,6 +228,41 @@ function globe_add_city(ptile, pcity, model_name) {
 }
 
 
+/****************************************************************************
+ ...
+ ****************************************************************************/
+function globe_canvas_pos_to_tile(x, y) {
+    if (globescene == null || globecamera == null) return null;
+
+    // Convert screen coordinates to normalized device coordinates (NDC)
+    const mouse = new THREE.Vector2();
+    mouse.set((x / $('#globecanvas').width()) * 2 - 1, - (y / $('#globecanvas').height()) * 2 + 1);
+
+    // Set up the raycaster
+    const raycaster = new THREE.Raycaster();
+    raycaster.setFromCamera(mouse, globecamera);
+
+    // Intersect with the globe mesh
+    const intersects = raycaster.intersectObject(globeMesh, false);
+
+    for (let i = 0; i < intersects.length; i++) {
+        const intersect = intersects[i];
+
+        // Convert intersection point from 3D sphere to latitude/longitude
+        const intersectionPoint = intersect.point.clone().normalize();
+        const latitude = Math.asin(intersectionPoint.y) * (180 / Math.PI);
+        const longitude = Math.atan2(intersectionPoint.z, intersectionPoint.x) * (180 / Math.PI);
+
+        // Convert lat/lon to map tile coordinates
+        const mapX = Math.floor((longitude + 180) / 360 * map['xsize']);
+        const mapY = Math.floor((90 - latitude) / 180 * map['ysize']);
+
+        const tile = map_pos_to_tile(mapX, mapY);
+        if (tile != null) return tile;
+    }
+
+    return null;
+}
 
 /****************************************************************************
 ...
@@ -290,3 +295,37 @@ function map_to_globe_coords(map_x, map_y) {
 }
 
 
+/****************************************************************************
+...
+****************************************************************************/
+function globeMouseUp( e ) {
+
+    var rightclick = false;
+    var middleclick = false;
+
+    if (!e) var e = window.event;
+    if (e.which) {
+        rightclick = (e.which == 3);
+        middleclick = (e.which == 2);
+    } else if (e.button) {
+        rightclick = (e.button == 2);
+        middleclick = (e.button == 1 || e.button == 4);
+    }
+
+    var ptile = globe_canvas_pos_to_tile(e.clientX, e.clientY - $("#mapcanvas").offset().top);
+    if (ptile == null) return;
+
+    if (rightclick) {
+        /* right click to recenter. */
+
+
+    } else if (!middleclick) {
+        /* Left mouse button*/
+        console.log("clicked on tile " + ptile.x + " " + ptile.y);
+        do_map_click(ptile, SELECT_POPUP, true);
+        update_mouse_cursor();
+    }
+    e.preventDefault();
+    keyboard_input = true;
+    update_mouse_cursor();
+}
