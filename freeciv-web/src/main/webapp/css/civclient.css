@@ -378,7 +378,7 @@ body
   height: 30px;
   text-align: center;
   text-shadow: -1px 0 black, 0 1px black, 1px 0 black, 0 -1px black;
-  padding-right: 180px;
+  padding-right: 150px;
   padding-top: 5px;
 }
 
@@ -1235,5 +1235,9 @@ li.tech-both::before {
 }
 
 .ui-tabs .ui-tabs-nav .ui-tabs-anchor{
-  padding:.5em 0.5em
+  padding:.4em 0.4em
+}
+
+.lowered_gov {
+  height: 27px;
 }

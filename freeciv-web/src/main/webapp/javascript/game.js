@@ -72,7 +72,7 @@ function civ_population(playerno) {
 /**************************************************************************
   ...
 **************************************************************************/
-function update_game_status_panel(force_status_on_map) {
+function update_game_status_panel() {
 
   if (C_S_RUNNING != client_state() || is_small_screen()) return;
 
@@ -93,8 +93,8 @@ function update_game_status_panel(force_status_on_map) {
       var pnation = nations[pplayer['nation']];
       var flag_file = pnation['graphic_str'] + ".svg";
 
-      status_html += "<b>" + pnation['adjective'] + " " + pplayer['name'] + "</b> <img src='/images/flags/" + flag_file
-          + "' height='26px' id='top_flag'>&nbsp;&nbsp;";
+      status_html += "<b>" + pplayer['name'] + "</b> &nbsp; <img src='/images/flags/" + flag_file
+          + "' height='26px' id='top_flag' title='" + pnation['adjective'] + "'>&nbsp;&nbsp;";
 
       if (!is_small_screen()) {
         status_html += "<span style='cursor:pointer;' onclick='javascript:show_revolution_dialog()'>";
@@ -134,7 +134,7 @@ function update_game_status_panel(force_status_on_map) {
     status_html += "Turn: <b>" + game_info['turn'] + "</b>  ";
   }
 
-  if (force_status_on_map != true && $(window).width() - sum_width() > 800) {
+  if ($(window).width() - sum_width() > 700) {
     if ($("#game_status_panel_top").length) {
       $("#game_status_panel_top").show();
       $("#game_status_panel_bar").hide();
@@ -149,8 +149,7 @@ function update_game_status_panel(force_status_on_map) {
     }
   }
 
-  var page_title = "FREECIVX.NET - " + username
-                                    + "  turn:" + game_info['turn'];
+  var page_title = "FREECIVX.NET - " + username + "  turn:" + game_info['turn'];
   if (server_settings['metamessage'] != null) {
     page_title += server_settings['metamessage']['val'];
   }
