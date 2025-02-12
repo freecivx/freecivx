@@ -159,7 +159,7 @@ function init_globe_view() {
     globescene.add(directionalLight.target); // Ensure the light target is added to the scene
 
 
-    const ambientLight = new THREE.AmbientLight(0x404040, 42 * Math.PI);
+    const ambientLight = new THREE.AmbientLight(0x404040, 75 * Math.PI);
     globescene.add(ambientLight);
 
     globecontrols = new OrbitControls(globecamera, globerenderer.domElement);
