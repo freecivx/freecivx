@@ -108,7 +108,8 @@ function setup_window_size ()
   $("#tabs-hel").hide();
 
   if (is_small_screen()) {
-    $("#map_tab").children().html("<i class='fa fa-globe' aria-hidden='true'></i>");
+    $("#map_tab").children().html("<i class='fa fa-map' aria-hidden='true'></i>");
+    $("#globe_tab").children().html("<i class='fa fa-globe' aria-hidden='true'></i>");
     $("#opt_tab").children().html("<i class='fa fa-cogs' aria-hidden='true'></i>");
     $("#players_tab").children().html("<i class='fa fa-flag' aria-hidden='true'></i>");
     $("#cities_tab").children().html("<i class='fa fa-city' aria-hidden='true'></i>");
