@@ -4,7 +4,9 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+<title>Multiplayer games of FreecivX - Freeciv</title>
 <%@include file="/WEB-INF/jsp/fragments/head.jsp"%>
+<title>Multiplayer games of FreecivX - Freeciv</title>
 
 <style>
 	.nav-tabs {
