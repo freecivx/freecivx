@@ -91,7 +91,7 @@
 								<th>Id:</th>
 								<th>Name:</th>
 								<th>Login:</th>
-								<th>Elo rating:</th>
+								<th title="Elo rating games coming soon">Elo rating:</th>
 								<th class="hidden-xs">Online</th>
 							</tr>
 							<c:forEach items="${playersList}" var="player">
@@ -105,7 +105,7 @@
 									<td >
 									   ${player.formattedLastLogin}
 									</td>
-									<td >
+									<td title="Elo rating games coming soon">
 									   ${player.elo_rating}
 									</td>
 									<td >
