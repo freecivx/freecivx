@@ -50,7 +50,7 @@ public class Player {
         if (getLast_login() == null) {
             return "Account predates FreecivX login display.";
         }
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss'Z'").withZone(ZoneOffset.UTC);
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd' 'HH:mm:ss' UTC'").withZone(ZoneOffset.UTC);
         return getLast_login().atZone(ZoneOffset.UTC).format(formatter);
     }
 
