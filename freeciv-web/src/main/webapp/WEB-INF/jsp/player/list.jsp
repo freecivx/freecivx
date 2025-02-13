@@ -71,7 +71,7 @@
 	<div id="content" class="container mt-4">
 		<div class="alert alert-info text-center" style="background-color: white; background-image: none;">
 			<strong style="font-size:24px;">The Honourable List of Players of FreecivX</strong>
-			<p class="mb-0">These are the honourable, real registered and verified human players of FreecivX. <a href="https://www.freecivx.net/">Register</a></p>
+			<p class="mb-0">These are the honourable, real registered and verified human players of FreecivX. <b><a href="https://www.freecivx.net/">Register here</a>.</b></p>
 		</div>
 	</div>
 	<div id="content" class="container">
