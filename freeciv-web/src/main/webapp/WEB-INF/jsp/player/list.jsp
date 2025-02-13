@@ -90,7 +90,7 @@
 							<tr>
 								<th>Id:</th>
 								<th>Name:</th>
-								<th>Login:</th>
+								<th>Last Login:</th>
 								<th title="Elo rating games coming soon">Elo rating:</th>
 								<th class="hidden-xs">Online</th>
 							</tr>
