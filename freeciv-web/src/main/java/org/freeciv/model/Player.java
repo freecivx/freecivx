@@ -8,9 +8,18 @@ import java.time.format.DateTimeFormatter;
 
 public class Player {
 
+    private long id;
     private String name;
     private int elo_rating;
     private LocalDateTime last_login;
+
+    public long getId() {
+        return id;
+    }
+
+    public void setId(long id) {
+        this.id = id;
+    }
 
     public String getName() {
         return WordUtils.capitalizeFully(name);
@@ -52,7 +61,7 @@ public class Player {
         LocalDateTime now = LocalDateTime.now();
         Duration duration = Duration.between(last_login, now);
 
-        return duration.toMinutes() < 45 ? "Online" : "Offline";
+        return duration.toMinutes() < 30 ? "Online" : "Offline";
     }
 
     public String getOnlineStatusHtml() {

@@ -17,14 +17,14 @@
 		background-color: #ecb66a;
 		text-transform: uppercase;
 		color: #fff;
-	    font-weight: 700;		
+		font-weight: 700;
 	}
 	.nav-tabs>li.active>a {
 		color: #fff;
 	}
 	.nav-tabs>li.active>a, .nav-tabs>li.active>a:hover, .nav-tabs>li.active>a:focus {
-	    background-color: #be602d;
-	    color: #fff;
+		background-color: #be602d;
+		color: #fff;
 	}
 	.tab-pane {
 		background-color: #fcf1e0;
@@ -69,11 +69,11 @@
 	
 	<!-- Begin page content -->
 	<div id="content" class="container mt-4">
-        <div class="alert alert-info text-center">
-            <strong style="font-size:24px;">Complete List of Registered FreecivX Players</strong>
-            <p class="mb-0">These are the hero real registered and verified human players. </p>
-        </div>
-    </div>
+		<div class="alert alert-info text-center">
+			<strong style="font-size:24px;">The Honourable List of Players of FreecivX</strong>
+			<p class="mb-0">These are the honourable, real registered and verified human players of FreecivX. </p>
+		</div>
+	</div>
 	<div id="content" class="container">
 		<div>
 			<ul class="nav nav-tabs hidden-xs" role="tablist">
@@ -88,26 +88,29 @@
 					<c:if test="${fn:length(playersList) > 0}">
 						<table id="multiplayer-table" class="table">
 							<tr>
+								<th>Id:</th>
 								<th>Name:</th>
 								<th>Login:</th>
 								<th>Elo rating:</th>
 								<th class="hidden-xs">Online</th>
 							</tr>
 							<c:forEach items="${playersList}" var="player">
-								<tr
-									class="">
+								<tr class="">
 									<td >
-								       <b>${player.name}</b>
+									   <b>${player.id}</b>
 									</td>
-                                    <td >
-                                       ${player.formattedLastLogin}
-                                    </td>
-                                    <td >
-                                       ${player.elo_rating}
-                                    </td>
-                                    <td >
-                                       ${player.onlineStatusHtml}
-                                    </td>
+									<td >
+									   <b>${player.name}</b>
+									</td>
+									<td >
+									   ${player.formattedLastLogin}
+									</td>
+									<td >
+									   ${player.elo_rating}
+									</td>
+									<td >
+									   ${player.onlineStatusHtml}
+									</td>
 								</tr>
 							</c:forEach>
 						</table>

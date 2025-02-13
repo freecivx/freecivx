@@ -59,7 +59,7 @@ public class Players {
             DataSource ds = (DataSource) env.lookup(Constants.JNDI_DDBBCON_MYSQL);
             connection = ds.getConnection();
 
-            query = "SELECT username, last_login, elo_rating from auth  "
+            query = "SELECT id, username, last_login, elo_rating from auth  "
                     + "WHERE verified = '1' "
                     + "ORDER BY elo_rating DESC, last_login DESC";
 
@@ -68,6 +68,7 @@ public class Players {
             List<Player> players = new ArrayList<>();
             while (rs.next()) {
                 Player player = new Player();
+                player.setId(rs.getInt("id"));
                 player.setName(rs.getString("username"));
                 Timestamp lastLogin = rs.getTimestamp("last_login");
                 if (lastLogin != null) {
