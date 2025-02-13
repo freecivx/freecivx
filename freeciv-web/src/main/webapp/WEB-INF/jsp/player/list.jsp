@@ -4,7 +4,9 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+<title>The Honourable List of Players of FreecivX</title>
 <%@include file="/WEB-INF/jsp/fragments/head.jsp"%>
+<title>The Honourable List of Players of FreecivX</title>
 
 <style>
 	.nav-tabs {
