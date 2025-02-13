@@ -4,6 +4,7 @@ import org.apache.commons.text.WordUtils;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 
 public class Player {
@@ -47,10 +48,10 @@ public class Player {
 
     public String getFormattedLastLogin() {
         if (getLast_login() == null) {
-            return "Not logged in or account predates FreecivX login display.";
+            return "Account predates FreecivX login display.";
         }
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("EEEE, MMMM d, yyyy HH:mm");
-        return getLast_login().format(formatter);
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss'Z'").withZone(ZoneOffset.UTC);
+        return getLast_login().atZone(ZoneOffset.UTC).format(formatter);
     }
 
     public String getOnline() {
