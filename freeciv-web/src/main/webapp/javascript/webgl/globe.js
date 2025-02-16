@@ -1,3 +1,23 @@
+/**********************************************************************
+ FreecivX - the web version of Freeciv. http://www.FreecivX.net/
+ Copyright (C) 2009-2025  The Freecivx project
+
+ This program is free software: you can redistribute it and/or modify
+ it under the terms of the GNU Affero General Public License as published by
+ the Free Software Foundation, either version 3 of the License, or
+ (at your option) any later version.
+
+ This program is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ GNU Affero General Public License for more details.
+
+ You should have received a copy of the GNU Affero General Public License
+ along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+***********************************************************************/
+
+
 var globecamera;
 var globescene;
 var globerenderer;
@@ -60,6 +80,7 @@ function init_globe_view() {
             map_y_size: { type: "f", value: map['ysize'] },
             mouse_x: { type: "i", value: -1 },
             mouse_y: { type: "i", value: -1 },
+            globe_known: { type: "t", value: globe_known_texture},
             borders_visible: { type: "bool", value: server_settings['borders']['is_visible'] }
         },
         vertexShader: `
@@ -74,7 +95,7 @@ function init_globe_view() {
         fragmentShader: `
             varying vec2 vUv;
             varying vec3 vPosition;
-            uniform sampler2D maptiles, borders, roadsmap, roadsprites, railroadsprites;
+            uniform sampler2D maptiles, borders, roadsmap, roadsprites, railroadsprites, globe_known;
             uniform sampler2D arctic_farmland_irrigation_tundra, grassland, coast, desert, ocean, plains, hills, mountains, swamp;
             uniform float map_x_size, map_y_size;
             uniform bool borders_visible;
@@ -89,6 +110,14 @@ function init_globe_view() {
                 vec2 tdxdy = vec2(
                             (map_x_size * vUv.x / 2.0) - 0.5 * floor(map_x_size * vUv.x),
                             (map_y_size * vUv.y / 2.0) - 0.5 * floor(map_y_size * vUv.y));
+               float shade_factor = 1.4;    
+                            
+                if (texture(globe_known, vUv).r == 0.0) {
+                  gl_FragColor = vec4(0.0, 0.0, 0.0, 1.0);
+                  return;
+                } else if (abs(texture(globe_known, vUv).r - 0.5) < 0.01) {
+                    shade_factor *= 0.6;
+                }
                         
                 float terrain_here = floor(terrain_type.r * 256.0);
                 if (terrain_here == 70.0) color = texture(grassland, dxdy).rgb;
@@ -102,7 +131,7 @@ function init_globe_view() {
                 else if (terrain_here == 120.0) color = texture(swamp, dxdy).rgb;
                 else color = texture(plains, dxdy).rgb;
 
-                float shade_factor = 1.4;
+
                 if (mouse_x >= 0 && mouse_y >= 0 && mouse_x == int(floor(map_x_size * (1.0 - vUv.x))) && mouse_y == int(floor(map_y_size * (1.05 - vUv.y)))) {
                     shade_factor += 0.7;
                 }
