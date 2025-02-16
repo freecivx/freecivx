@@ -34,7 +34,7 @@ jobs:
 
       - name: install
         shell: bash
-        run: bash ./scripts/install/install.sh --mode=TEST_GITHUB
+        run: bash ./scripts/install/install.sh --mode=TEST_MYSQL
         
         
       - name: Run Playwright tests

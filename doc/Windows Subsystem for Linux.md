@@ -31,7 +31,7 @@ Open a Powershell window, run as Administator, this command:
 
 > cd freecivx
 
-> bash ./scripts/install/install.sh --mode=TEST
+> bash ./scripts/install/install.sh --mode=TEST_MYSQL
 
   
 

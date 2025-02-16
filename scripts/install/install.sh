@@ -38,8 +38,8 @@ Installs a freeciv-web server.
  -h,--help              Show this message and exit.
  -l,--list              Show currently supported systems and exit.
  -m,--mode=MODE         Where MODE is one of:
-                          TEST  to choose some defaults and install test infra, local, H2 database
-                          TEST_GITHUB  to choose some defaults and install test infra, for Github, MySQL database.
+                          TEST_H2      to choose some defaults and install test infra, local, H2 database
+                          TEST_MYSQL   to choose some defaults and install test infra, for Github, MySQL database.
                           DFLT  to expect user configuration for a real server
  -s,--system VND REL    Vendor and release to use for the install script,
                         instead of autodetecting.
@@ -116,8 +116,8 @@ done
 
 case $FCW_INSTALL_MODE in
   DFLT) ;;
-  TEST) ;;
-  TEST_GITHUB) ;;
+  TEST_H2) ;;
+  TEST_MYSQL) ;;
   *)
     echo >&2 "Unknown install mode: ${FCW_INSTALL_MODE}"
     exit 2
@@ -191,7 +191,7 @@ if [ $(id -u) = 0 ]; then
 fi
 
 if [ ! -f "${basedir}"/config/config ]; then
-  if [[ "${FCW_INSTALL_MODE}" = TEST || "${FCW_INSTALL_MODE}" = TEST_GITHUB ]]; then
+  if [[ "${FCW_INSTALL_MODE}" = TEST_H2 || "${FCW_INSTALL_MODE}" = TEST_MYSQL ]]; then
     cp "${basedir}"/config/config{.dist,}
     echo "Default config parameters used"
   else 
@@ -256,7 +256,7 @@ for action in start stop; do
 done
 
 
-if [ "${FCW_INSTALL_MODE}" = "TEST" ]; then
+if [ "${FCW_INSTALL_MODE}" = "TEST_H2" ]; then
   echo "==== Configuring for H2 Java database. ===="
   rm "${basedir}/config/flyway.tmpl" || echo "ok"
   rm "${basedir}/config/web.context.tmpl" || echo "ok"
@@ -273,7 +273,7 @@ fi
 echo "==== Filling configuration templates ===="
 bash "${basedir}/config/gen-from-templates.sh"
 
-if [ "${FCW_INSTALL_MODE}" != TEST ]; then
+if [ "${FCW_INSTALL_MODE}" != TEST_H2 ]; then
   echo "==== Setting up MySQL DB ===="
   pidof mysqld > /dev/null || start_svc mariadb || start_svc mysql
   if [ -z "${DB_ROOT_PASSWORD}" ]; then  
@@ -346,7 +346,7 @@ echo "==== Setting up nginx ===="
 stop_svc nginx
 sudo rm -f /etc/nginx/sites-enabled/default
 sudo cp -R "${basedir}"/config/nginx /etc/
-if [ "${FCW_INSTALL_MODE}" = TEST ] && [ ! -f /etc/nginx/ssl/freeciv-web.crt ]; then
+if [ "${FCW_INSTALL_MODE}" = TEST_H2 ] && [ ! -f /etc/nginx/ssl/freeciv-web.crt ]; then
   sudo mkdir -p /etc/nginx/ssl/private
   sudo chmod 700 /etc/nginx/ssl/private
   openssl req -x509 -newkey rsa:2048 -keyout freeciv-web.key -out freeciv-web.crt -days 3650 -nodes -subj '/CN=localhost' -batch
