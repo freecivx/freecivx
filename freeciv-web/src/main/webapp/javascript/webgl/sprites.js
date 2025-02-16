@@ -125,7 +125,7 @@ function create_city_label_sprite(pcity, index) {
   fcanvas.width = 390;
   fcanvas.height = 35;
   var ctx = fcanvas.getContext("2d");
-  pcity['label_canvas'] = fcanvas;
+  pcity['label_canvas' + index] = fcanvas;
 
   var owner_id = pcity.owner;
   if (owner_id == null) return null;
@@ -208,7 +208,7 @@ function create_city_label_sprite(pcity, index) {
 ****************************************************************************/
 function update_city_label(pcity, index)
 {
-  var canvas = pcity['label_canvas'];
+  var canvas = pcity['label_canvas' + index];
   if (canvas == null) {
     canvas = document.createElement('canvas');
     canvas.width = 390;
