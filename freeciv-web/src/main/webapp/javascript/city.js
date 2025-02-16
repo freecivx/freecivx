@@ -943,7 +943,9 @@ function close_city_dialog()
 **************************************************************************/
 function city_dialog_close_handler()
 {
-  set_default_mapview_active();
+  if (!globe_view_active) {
+    set_default_mapview_active();
+  }
   if (active_city != null) {
     setup_window_size ();
     remove_city_worked_tiles();

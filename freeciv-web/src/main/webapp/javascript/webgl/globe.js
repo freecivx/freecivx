@@ -155,7 +155,9 @@ function init_globe_view() {
                         float dot_pattern = step(0.5, mod(vUv.x * 1000.0 + vUv.y * 1000.0, 3.0)); // Increased frequency for clarity
                         if (dot_pattern > 0.5) {
                             color = mix(color, border_color.rgb, 0.75); // Make borders more distinct
-                        }
+                        } 
+                    } else {
+                        color = mix(color, border_color.rgb, 0.10);
                     }
                 }
                 
@@ -167,7 +169,7 @@ function init_globe_view() {
     globescene.add(globeMesh);
 
     // Create the inner white sphere for the poles
-    const innerSphereGeometry = new THREE.SphereGeometry(globe_radius - 1, 64, 64);
+    const innerSphereGeometry = new THREE.SphereGeometry(globe_radius - 5, 64, 64);
     const innerSphereMaterial = new THREE.MeshBasicMaterial({ color: 0xffffff });
     const innerSphereMesh = new THREE.Mesh(innerSphereGeometry, innerSphereMaterial);
     globescene.add(innerSphereMesh);
@@ -306,14 +308,13 @@ function globe_update_city(ptile, pcity, model_name) {
     update_city_label(pcity, 1);
 
     globe_cities[pcity.id] = new_city;
-    globe_city_labels[pcity.id] = city_label;
 }
 
 
 /****************************************************************************
  ...
  ****************************************************************************/
-function globe_canvas_pos_to_tile(x, y) {
+function globe_canvas_pos_to_tile(x, y, invert_x) {
     if (globescene == null || globecamera == null) return null;
 
     // Convert screen coordinates to normalized device coordinates (NDC)
@@ -332,14 +333,14 @@ function globe_canvas_pos_to_tile(x, y) {
 
         // Convert intersection point from 3D sphere to latitude/longitude
         const intersectionPoint = intersect.point.clone().normalize();
-        const latitude = Math.asin(intersectionPoint.y) * (180 / Math.PI);
+        const latitude = Math.asin(intersectionPoint.y) * (1.1 * 180 / Math.PI);
         const longitude = Math.atan2(intersectionPoint.z, intersectionPoint.x) * (180 / Math.PI);
 
         // Convert lat/lon to map tile coordinates
-        const mapX = Math.floor((longitude + 180) / 360 * map['xsize']);
-        const mapY = Math.floor((90 - latitude) / 180 * map['ysize']);
+        var mapX = Math.floor((longitude + 180) / 360 * map['xsize']);
+        var mapY = Math.floor((invert_x ? -1 : 2) + (90 - latitude) / 180 * map['ysize']);
 
-        const tile = map_pos_to_tile(mapX, mapY);
+        const tile = map_pos_to_tile(invert_x ? (map.xsize - mapX - 1) : mapX, mapY);
         if (tile != null) return tile;
     }
 
@@ -394,7 +395,7 @@ function globeMouseUp( e ) {
         middleclick = (e.button == 1 || e.button == 4);
     }
 
-    var ptile = globe_canvas_pos_to_tile(e.clientX, e.clientY - $("#mapcanvas").offset().top);
+    var ptile = globe_canvas_pos_to_tile(mouse_x, mouse_y, true);
     if (ptile == null) return;
 
     if (rightclick) {
@@ -404,8 +405,10 @@ function globeMouseUp( e ) {
     } else if (!middleclick) {
         /* Left mouse button*/
         console.log("clicked on tile " + ptile.x + " " + ptile.y);
-        do_map_click(ptile, SELECT_POPUP, true);
-        update_mouse_cursor();
+        pcity = tile_city(ptile);
+        if (pcity != null) {
+            show_city_dialog(pcity);
+        }
     }
     e.preventDefault();
     keyboard_input = true;

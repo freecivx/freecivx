@@ -378,7 +378,7 @@ function update_mouse_cursor()
   }
 
   if (globe_view_active) {
-    ptile = globe_canvas_pos_to_tile(mouse_x, mouse_y);
+    ptile = globe_canvas_pos_to_tile(mouse_x, mouse_y, false);
     if (ptile == null) return;
     highlight_globe_tile_mouse(ptile.x, ptile.y);
 
@@ -396,6 +396,7 @@ function update_mouse_cursor()
   } else if (pcity != null && client.conn.playing != null && city_owner_player_id(pcity) == client.conn.playing.playerno) {
     /* select city cursor*/
     $("#mapcanvas").css("cursor", "pointer");
+    $("#globecanvas").css("cursor", "pointer");
   } else if (punit != null && client.conn.playing != null && punit['owner'] == client.conn.playing.playerno) {
     /* move unit cursor */
     $("#mapcanvas").css("cursor", "pointer");
@@ -403,6 +404,7 @@ function update_mouse_cursor()
     $("#mapcanvas").css("cursor", "pointer");
   } else {
     $("#mapcanvas").css("cursor", "default");
+    $("#globecanvas").css("cursor", "default");
   }
 }
 
