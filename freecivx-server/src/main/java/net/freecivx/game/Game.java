@@ -125,6 +125,9 @@ public class Game {
                 "000000000000000000000000000010000000001110001000000000000011011111111001100011000000001100110000000000000000100100000000"));
         unitTypes.put(3L, new UnitType("Warriors", "u.warriors", 1, 1, 1, "Warriors", 1, 1,
                 "000000000000000000000000000010000000001110001000000000000011011111111001100011000000001100110000000000000000100100000000"));
+        unitTypes.put(4L, new UnitType("Horsemen", "u.horsemen", 3, 1, 1, "Horsemen", 2, 1,
+                "000000000000000000000000000010000000001110001000000000000011011111111001100011000000001100110000000000000000100100000000"));
+
 
 
 
@@ -189,6 +192,7 @@ public class Game {
             units.put(Long.valueOf(units.size()), new Unit(units.size(),  player.getPlayerNo(), startPos, 1, 0, 1, 1, 0, 2));
             units.put(Long.valueOf(units.size()), new Unit(units.size(),  player.getPlayerNo(),  startPos, 2, 0, 1, 1, 0, 2));
             units.put(Long.valueOf(units.size()), new Unit(units.size(),  player.getPlayerNo(),  startPos, 3, 0, 1, 1, 0, 2));
+            units.put(Long.valueOf(units.size()), new Unit(units.size(),  player.getPlayerNo(),  startPos, 4, 0, 1, 1, 0, 2));
         }
         // Send units
         units.forEach((id, unit) -> server.sendUnitAll(unit));
