@@ -120,7 +120,7 @@ function create_unit_label_sprite(punit, ptile)
 /****************************************************************************
  Create a city label sprite
 ****************************************************************************/
-function create_city_label_sprite(pcity) {
+function create_city_label_sprite(pcity, index) {
   var fcanvas = document.createElement("canvas");
   fcanvas.width = 390;
   fcanvas.height = 35;
@@ -188,7 +188,7 @@ function create_city_label_sprite(pcity) {
 
   texture = new THREE.Texture(fcanvas);
   texture.needsUpdate = true;
-  var key = 'city_' + pcity['id'];
+  var key = 'city_' + pcity['id'] + index;
   texture_cache[key] = texture;
 
   // Create material with emissive intensity
@@ -206,7 +206,7 @@ function create_city_label_sprite(pcity) {
  Update a city name label. This updates the canvas image of the city label,
  which then updates the corresponding Three.js Texture.
 ****************************************************************************/
-function update_city_label(pcity)
+function update_city_label(pcity, index)
 {
   var canvas = pcity['label_canvas'];
   if (canvas == null) {
@@ -276,7 +276,7 @@ function update_city_label(pcity)
   ctx.strokeStyle = background_color;
   ctx.strokeRect(0, 0, width, canvas.height - 3);
 
-  var key = 'city_' + pcity['id'];
+  var key = 'city_' + pcity['id'] + index;
   if (key in texture_cache) {
     var texture = texture_cache[key];
     if (texture != null) {
