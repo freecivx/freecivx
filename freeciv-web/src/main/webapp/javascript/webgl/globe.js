@@ -138,8 +138,25 @@ function init_globe_view() {
                     shade_factor += 0.7;
                 }
                 
+
                 if (borders_visible && !(border_color.r > 0.546875 && border_color.r < 0.5625 && border_color.b == 0.0 && border_color.g == 0.0)) {
-                   color = mix(color, border_color.rgb, 0.30);
+                    vec4 border_e = texture(borders, vec2(vUv.x + (0.06 / map_x_size), vUv.y));
+                    vec4 border_w = texture(borders, vec2(vUv.x - (0.06 / map_x_size), vUv.y));
+                    vec4 border_n = texture(borders, vec2(vUv.x, vUv.y + (0.06 / map_x_size)));
+                    vec4 border_s = texture(borders, vec2(vUv.x, vUv.y - (0.06 / map_x_size)));
+                    
+                    bool is_different_border = 
+                        border_n.rgb != border_color.rgb ||
+                        border_s.rgb != border_color.rgb ||
+                        border_e.rgb != border_color.rgb ||
+                        border_w.rgb != border_color.rgb;
+                    
+                    if (is_different_border) {
+                        float dot_pattern = step(0.5, mod(vUv.x * 1000.0 + vUv.y * 1000.0, 3.0)); // Increased frequency for clarity
+                        if (dot_pattern > 0.5) {
+                            color = mix(color, border_color.rgb, 0.75); // Make borders more distinct
+                        }
+                    }
                 }
                 
                 gl_FragColor = vec4(color * shade_factor, 1.0);
