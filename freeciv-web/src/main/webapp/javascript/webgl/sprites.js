@@ -160,7 +160,7 @@ function create_city_label_sprite(pcity, index) {
   var txt_measure = ctx.measureText(city_text);
   // Background with brighter overlay
   var background_color = nations[owner.nation].color;
-  ctx.fillStyle = "rgba(255, 255, 255, 0.1)"; // Transparent white overlay
+  ctx.fillStyle = "rgba(0, 0, 0, 0.6)"; // Transparent black overlay
   ctx.fillRect(width, 0, txt_measure.width + 11 /* padding */, 32);
 
   ctx.fillStyle = '#FFFFFF'; // Set text color to white
@@ -252,7 +252,7 @@ function update_city_label(pcity, index)
   var txt_measure = ctx.measureText(city_text);
   // Background
   var background_color = nations[owner.nation].color;
-  ctx.fillStyle = "rgba(0,0,0,0.4)";
+  ctx.fillStyle = "rgba(0,0,0,0.6)";
   ctx.fillRect(width, 0, txt_measure.width + 11 /* padding */, 32);
   // Text
   ctx.fillStyle = '#FFFFFF';
