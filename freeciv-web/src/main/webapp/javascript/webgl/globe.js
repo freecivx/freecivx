@@ -26,6 +26,8 @@ var globeMaterial;
 var globeMesh;
 var globe_view_active = false;
 var globe_radius = 800;
+var globe_cities = {}
+var globe_city_labels = {}
 
 function init_globe_view() {
     var new_mapview_width = $(window).width() - width_offset;
@@ -59,7 +61,7 @@ function init_globe_view() {
 
     // Create map sphere (excluding poles)
     const pole_cutoff = 0.05 * Math.PI; // 5% of the sphere
-    const globeGeometry = new THREE.SphereGeometry(globe_radius, 128, 128, 0, Math.PI * 2, pole_cutoff, Math.PI - 2 * pole_cutoff);
+    const globeGeometry = new THREE.SphereGeometry(globe_radius, map.xsize * 2, map.ysize * 2, 0, Math.PI * 2, pole_cutoff, Math.PI - 2 * pole_cutoff);
     globeMaterial = new THREE.ShaderMaterial({
         uniforms: {
             maptiles: { type: "t", value: maptiletypes },
@@ -113,7 +115,7 @@ function init_globe_view() {
                float shade_factor = 1.4;    
                             
                 if (texture(globe_known, vUv).r == 0.0) {
-                  gl_FragColor = vec4(0.0, 0.0, 0.0, 1.0);
+                  gl_FragColor = vec4(0.1, 0.1, 0.1, 1.0);
                   return;
                 } else if (abs(texture(globe_known, vUv).r - 0.5) < 0.01) {
                     shade_factor *= 0.6;
@@ -225,7 +227,7 @@ function animate_globe() {
 
 /****************************************************************************
  ...
- ****************************************************************************/
+****************************************************************************/
 function globe_add_city(ptile, pcity, model_name) {
     let new_city = webgl_get_model(model_name, ptile);
     let globe_coords = map_to_globe_coords(ptile['x'], ptile['y']);
@@ -246,7 +248,7 @@ function globe_add_city(ptile, pcity, model_name) {
     console.log("added new city " + ptile.x + " " + ptile.y);
 
     // Create and position the city label slightly above the globe surface
-    let city_label = create_city_label_sprite(pcity);
+    let city_label = create_city_label_sprite(pcity, 1);
     let label_offset = normal.clone().multiplyScalar(25); // Move the label outward by 25 units
     let label_position = globe_coords.clone().add(label_offset);
 
@@ -254,6 +256,40 @@ function globe_add_city(ptile, pcity, model_name) {
     city_label.quaternion.copy(quaternion);
 
     globescene.add(city_label);
+
+    globe_cities[pcity.id] = new_city;
+    globe_city_labels[pcity.id] = city_label;
+}
+
+/****************************************************************************
+ ...
+****************************************************************************/
+function globe_update_city(ptile, pcity, model_name) {
+    scene.remove(globe_cities[pcity.id]);
+    scene.remove(globe_city_labels[pcity.id]);
+
+    let new_city = webgl_get_model(model_name, ptile);
+    let globe_coords = map_to_globe_coords(ptile['x'], ptile['y']);
+
+    // Normalize the globe position to get the surface normal
+    let normal = globe_coords.clone().normalize();
+
+    // Create a quaternion to align the city model with the normal
+    let up = new THREE.Vector3(0, 1, 0); // Default "up" direction
+    let quaternion = new THREE.Quaternion();
+    quaternion.setFromUnitVectors(up, normal);
+
+    // Apply the rotation to the city
+    new_city.position.set(globe_coords.x, globe_coords.y, globe_coords.z);
+    new_city.quaternion.copy(quaternion);
+
+    globescene.add(new_city);
+    console.log("updated city " + ptile.x + " " + ptile.y);
+
+    update_city_label(pcity, 1);
+
+    globe_cities[pcity.id] = new_city;
+    globe_city_labels[pcity.id] = city_label;
 }
 
 

@@ -227,7 +227,7 @@ function update_city_position(ptile) {
       }
     }
 
-    let city_label = create_city_label_sprite(pcity);
+    let city_label = create_city_label_sprite(pcity, 0);
     city_label_positions[ptile['index']] = city_label;
     city_label.position.set(pos['x'] + 10 , height + 27, pos['y'] - 25);
 
@@ -267,6 +267,7 @@ function update_city_position(ptile) {
 
       if (scene != null) {
         scene.add(new_city);
+        globe_update_city(ptile, pcity, model_name);
       }
 
       if (scene != null && pcity['walls'] && city_walls_positions[ptile['index']] != null) {
@@ -294,7 +295,8 @@ function update_city_position(ptile) {
     }
 
     if (pcity['webgl_label_hash'] != pcity['name'] + pcity['size'] + pcity['production_value'] + "." + pcity['production_kind'] + punits.length + pcity['nation_id']) {
-      update_city_label(pcity);
+      update_city_label(pcity, 0);
+      globe_update_city(ptile, pcity, model_name);
       pcity['webgl_label_hash'] = pcity['name'] + pcity['size'] + pcity['production_value'] + "." +  pcity['production_kind'] + punits.length + pcity['nation_id'];
     }
   }
