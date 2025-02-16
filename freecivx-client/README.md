@@ -22,13 +22,20 @@ This repository contains:
 - Java 21 or later
 
 ## Quick Start
-1. Build the Swing client:
+
+1. Build the Freecivx Java server:
+   ```bash
+   cd freecivx-server
+   mvn clean package
+   ```
+
+2. Build the Swing client:
    ```bash
    cd freecivx-client
    mvn clean package
    ```
 
-2. Run the Swing client:
+3. Run the Swing client:
    ```bash
    java -jar target/freecivx-client-1.0.0.jar
    ```
