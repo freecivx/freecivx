@@ -125,7 +125,7 @@
 		<dependency>
 			<groupId>io.github.lambdua</groupId>
 			<artifactId>service</artifactId>
-			<version>0.22.8</version>
+			<version>0.22.9</version>
 		</dependency>
 
 	</dependencies>
