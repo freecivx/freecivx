@@ -208,45 +208,7 @@ function init_globe_view() {
     globescene.add(directionalLight);
     globescene.add(directionalLight.target); // Ensure the light target is added to the scene
 
-
-    // --- Add a moon to the scene ---
-    const moonRadius = 45;
-    const moonGeometry = new THREE.SphereGeometry(moonRadius, 32, 32);
-    const moonTexture = new THREE.TextureLoader().load('/textures/moon_texture.jpg');
-    const moonMaterial = new THREE.MeshBasicMaterial({
-        map: moonTexture
-    });
-    const moonMesh = new THREE.Mesh(moonGeometry, moonMaterial);
-
-    // Position the moon relative to the globe
-    // Here it’s placed to the right of the globe with a slight upward offset.
-    moonMesh.position.set(globe_radius + moonRadius + 450, 300, 0);
-    globescene.add(moonMesh);
-
-    // --- Add a sun to the scene ---
-    const sunRadius = 400; // Increase size for visibility
-    const sunGeometry = new THREE.SphereGeometry(sunRadius, 64, 64);
-    const sunMaterial = new THREE.MeshBasicMaterial({
-        color: 0xffff55, // Bright yellow color
-        emissive: 0xffff55, // Self-emitting color
-        emissiveIntensity: 2, // Strong self-emission
-        transparent: false
-    });
-    const sunMesh = new THREE.Mesh(sunGeometry, sunMaterial);
-    sunMesh.position.set(-globe_radius - sunRadius - 15000, 1500, -globe_radius);
-    globescene.add(sunMesh);
-
-
-    // Mars
-    const marsRadius = 120;
-    const marsGeometry = new THREE.SphereGeometry(marsRadius, 32, 32);
-    const marsTexture = new THREE.TextureLoader().load('/textures/mars_texture.jpg');
-    const marsMaterial = new THREE.MeshBasicMaterial({ map: marsTexture });
-    const marsMesh = new THREE.Mesh(marsGeometry, marsMaterial);
-    // Position Mars relative to the globe; adjust offsets as needed.
-    marsMesh.position.set(globe_radius - marsRadius - 5000, 150, -400);
-    globescene.add(marsMesh);
-
+    add_planets();
 
     const ambientLight = new THREE.AmbientLight(0x404040, 75 * Math.PI);
     globescene.add(ambientLight);
