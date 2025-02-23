@@ -41,31 +41,24 @@ function add_planets() {
     const sunRadius = 300; // Increase size for visibility
     const sunGeometry = new THREE.SphereGeometry(sunRadius, 64, 64);
     const sunMaterial = new THREE.ShaderMaterial({
-        uniforms: {
-            lightColor: {value: new THREE.Color(1.0, 0.8, 0.3)} // Bright sun color
-        },
+        uniforms: {},
         vertexShader: `
-        varying vec3 vPosition;
+        varying vec3 vNormal;
         void main() {
-            vPosition = position; // Store vertex position
+            vNormal = normalize(normalMatrix * normal);
             gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
         }
     `,
         fragmentShader: `
-        varying vec3 vPosition;
-        uniform vec3 lightColor;
-
+        varying vec3 vNormal;
         void main() {
-            float distanceFromCenter = length(vPosition) / 300.0; // Normalize using sun radius
-            float intensity = exp(-distanceFromCenter * distanceFromCenter * 2.0); // Glowing effect
-            intensity = clamp(intensity, 0.5, 1.0); // Ensure a bright core
-
-            gl_FragColor = vec4(lightColor * intensity * 5.0, 1.0); // Increase brightness
+            float intensity = pow(0.5 - dot(vNormal, vec3(0, 0, 1.0)), 2.0);
+            gl_FragColor = vec4(1.0, 0.8, 0.3, 0.6) * intensity;
         }
     `,
         blending: THREE.AdditiveBlending,
-        side: THREE.FrontSide, // Ensure we render the front
-        transparent: false
+        side: THREE.BackSide,
+        transparent: true
     });
 
 
