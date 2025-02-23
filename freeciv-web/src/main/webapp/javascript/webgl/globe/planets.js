@@ -74,7 +74,7 @@ function add_planets() {
     const marsMaterial = new THREE.MeshBasicMaterial({map: marsTexture});
     const marsMesh = new THREE.Mesh(marsGeometry, marsMaterial);
     // Position Mars relative to the globe; adjust offsets as needed.
-    marsMesh.position.set(globe_radius - marsRadius - 7000, 150, -400);
+    marsMesh.position.set(globe_radius - marsRadius - 10000, 150, -900);
     globescene.add(marsMesh);
 
 }
