@@ -39,7 +39,7 @@ function init_globe_view() {
     }
 
     const container = document.getElementById('globecanvas');
-    globecamera = new THREE.PerspectiveCamera(45, new_mapview_width / new_mapview_height, 1, 12000);
+    globecamera = new THREE.PerspectiveCamera(45, new_mapview_width / new_mapview_height, 1, 32000);
     globecamera.position.set(0, 0, 2200);
     globescene = new THREE.Scene();
 
@@ -169,7 +169,7 @@ function init_globe_view() {
     globescene.add(globeMesh);
 
     // Create the inner white sphere for the poles
-    const innerSphereGeometry = new THREE.SphereGeometry(globe_radius - 5, 64, 64);
+    const innerSphereGeometry = new THREE.SphereGeometry(globe_radius - 20, 64, 64);
     const innerSphereMaterial = new THREE.MeshBasicMaterial({ color: 0xffffff });
     const innerSphereMesh = new THREE.Mesh(innerSphereGeometry, innerSphereMaterial);
     globescene.add(innerSphereMesh);
@@ -188,7 +188,7 @@ function init_globe_view() {
         fragmentShader: `
         varying vec3 vNormal;
         void main() {
-            float intensity = pow(0.5 - dot(vNormal, vec3(0, 0, 1.0)), 3.0);
+            float intensity = pow(0.5 - dot(vNormal, vec3(0, 0, 1.0)), 4.0);
             gl_FragColor = vec4(0.3, 0.5, 1.0, 0.6) * intensity;
         }
     `,
@@ -207,6 +207,45 @@ function init_globe_view() {
     directionalLight.castShadow = true; // Enable shadows if needed
     globescene.add(directionalLight);
     globescene.add(directionalLight.target); // Ensure the light target is added to the scene
+
+
+    // --- Add a moon to the scene ---
+    const moonRadius = 45;
+    const moonGeometry = new THREE.SphereGeometry(moonRadius, 32, 32);
+    const moonTexture = new THREE.TextureLoader().load('/textures/moon_texture.jpg');
+    const moonMaterial = new THREE.MeshBasicMaterial({
+        map: moonTexture
+    });
+    const moonMesh = new THREE.Mesh(moonGeometry, moonMaterial);
+
+    // Position the moon relative to the globe
+    // Here it’s placed to the right of the globe with a slight upward offset.
+    moonMesh.position.set(globe_radius + moonRadius + 450, 300, 0);
+    globescene.add(moonMesh);
+
+    // --- Add a sun to the scene ---
+    const sunRadius = 400; // Increase size for visibility
+    const sunGeometry = new THREE.SphereGeometry(sunRadius, 64, 64);
+    const sunMaterial = new THREE.MeshBasicMaterial({
+        color: 0xffff55, // Bright yellow color
+        emissive: 0xffff55, // Self-emitting color
+        emissiveIntensity: 2, // Strong self-emission
+        transparent: false
+    });
+    const sunMesh = new THREE.Mesh(sunGeometry, sunMaterial);
+    sunMesh.position.set(-globe_radius - sunRadius - 15000, 1500, -globe_radius);
+    globescene.add(sunMesh);
+
+
+    // Mars
+    const marsRadius = 120;
+    const marsGeometry = new THREE.SphereGeometry(marsRadius, 32, 32);
+    const marsTexture = new THREE.TextureLoader().load('/textures/mars_texture.jpg');
+    const marsMaterial = new THREE.MeshBasicMaterial({ map: marsTexture });
+    const marsMesh = new THREE.Mesh(marsGeometry, marsMaterial);
+    // Position Mars relative to the globe; adjust offsets as needed.
+    marsMesh.position.set(globe_radius - marsRadius - 5000, 150, -400);
+    globescene.add(marsMesh);
 
 
     const ambientLight = new THREE.AmbientLight(0x404040, 75 * Math.PI);
@@ -264,7 +303,6 @@ function globe_add_city(ptile, pcity, model_name) {
     new_city.quaternion.copy(quaternion);
 
     globescene.add(new_city);
-    console.log("added new city " + ptile.x + " " + ptile.y);
 
     // Create and position the city label slightly above the globe surface
     let city_label = create_city_label_sprite(pcity, 1);
