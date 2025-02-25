@@ -25,7 +25,7 @@ var globecontrols;
 var globeMaterial;
 var globeMesh;
 var globe_view_active = false;
-var globe_radius = 800;
+var earth_radius = 800;
 var globe_cities = {}
 var globe_city_labels = {}
 
@@ -39,7 +39,7 @@ function init_globe_view() {
     }
 
     const container = document.getElementById('globecanvas');
-    globecamera = new THREE.PerspectiveCamera(45, new_mapview_width / new_mapview_height, 1, 32000);
+    globecamera = new THREE.PerspectiveCamera(45, new_mapview_width / new_mapview_height, 1, 100000);
     globecamera.position.set(0, 0, 2200);
     globescene = new THREE.Scene();
 
@@ -61,7 +61,7 @@ function init_globe_view() {
 
     // Create map sphere (excluding poles)
     const pole_cutoff = 0.05 * Math.PI; // 5% of the sphere
-    const globeGeometry = new THREE.SphereGeometry(globe_radius, map.xsize * 2, map.ysize * 2, 0, Math.PI * 2, pole_cutoff, Math.PI - 2 * pole_cutoff);
+    const globeGeometry = new THREE.SphereGeometry(earth_radius, map.xsize * 2, map.ysize * 2, 0, Math.PI * 2, pole_cutoff, Math.PI - 2 * pole_cutoff);
     globeMaterial = new THREE.ShaderMaterial({
         uniforms: {
             maptiles: { type: "t", value: maptiletypes },
@@ -169,13 +169,13 @@ function init_globe_view() {
     globescene.add(globeMesh);
 
     // Create the inner white sphere for the poles
-    const innerSphereGeometry = new THREE.SphereGeometry(globe_radius - 20, 64, 64);
+    const innerSphereGeometry = new THREE.SphereGeometry(earth_radius - 20, 64, 64);
     const innerSphereMaterial = new THREE.MeshBasicMaterial({ color: 0xffffff });
     const innerSphereMesh = new THREE.Mesh(innerSphereGeometry, innerSphereMaterial);
     globescene.add(innerSphereMesh);
 
     // Create atmosphere sphere
-    const atmosphereGeometry = new THREE.SphereGeometry(globe_radius * 1.5, 128, 128);
+    const atmosphereGeometry = new THREE.SphereGeometry(earth_radius * 1.5, 128, 128);
     const atmosphereMaterial = new THREE.ShaderMaterial({
         uniforms: {},
         vertexShader: `
@@ -202,7 +202,7 @@ function init_globe_view() {
 
     // Add lights
     const directionalLight = new THREE.DirectionalLight(0xffffff, 2); // Increase intensity if needed
-    directionalLight.position.set(1.5 * globe_radius, globe_radius, 1.5 * globe_radius); // Position the light at an angle
+    directionalLight.position.set(1.5 * earth_radius, earth_radius, 1.5 * earth_radius); // Position the light at an angle
     directionalLight.target.position.set(0, 0, 0); // Point towards the center of the globe
     directionalLight.castShadow = true; // Enable shadows if needed
     globescene.add(directionalLight);
@@ -370,9 +370,9 @@ function map_to_globe_coords(map_x, map_y) {
     const lonRad = THREE.MathUtils.degToRad(longitude);
 
     // Convert to Cartesian coordinates
-    const x = globe_radius * Math.cos(latRad) * Math.cos(lonRad);
-    const y = globe_radius * Math.sin(latRad);
-    const z = globe_radius * Math.cos(latRad) * Math.sin(lonRad);
+    const x = earth_radius * Math.cos(latRad) * Math.cos(lonRad);
+    const y = earth_radius * Math.sin(latRad);
+    const z = earth_radius * Math.cos(latRad) * Math.sin(lonRad);
 
     return new THREE.Vector3(x, y, z);
 }
