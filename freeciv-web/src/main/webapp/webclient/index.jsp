@@ -37,8 +37,8 @@ try {
 <link rel="stylesheet" href="/css/fontawesome.min.css">
 <link rel="stylesheet" href="/css/solid.min.css">
 <link rel="stylesheet" type="text/css" href="/css/webclient.min.css?ts=${initParam.buildTimeStamp}" />
-<meta name="description" content="FreecivX.net - play Freeciv in 3D online for free; open source strategy game">
-<meta property="og:image" content="https://FreecivX.net/images/freeciv-web-logo.png" />
+<meta name="description" content="FreecivX.net play Freeciv in 3D online for free, open source strategy game">
+<meta property="og:image" content="/images/freecivx-icon-web.png" />
 
 <script type="text/javascript">
 var ts="${initParam.buildTimeStamp}";
