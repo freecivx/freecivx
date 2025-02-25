@@ -130,8 +130,8 @@ function add_planets() {
     venusMesh.scale.set(0.9, 0.9, 0.9);
 
 // Moon (relative to Earth)
-    moonMesh.position.set(earth_radius + moonRadius + 200, 50, 0);
-    moonMesh.scale.set(0.5, 0.5, 0.5);
+    moonMesh.position.set(earth_radius + moonRadius + 600, 50, 0);
+
 
 // Mars (slightly smaller, closer)
     marsMesh.position.set(5500, 100, -850);
