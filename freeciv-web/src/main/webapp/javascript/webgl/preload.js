@@ -278,7 +278,7 @@ switch (filename) {
     modelscale = 8.1;
     break;
   case 'Trireme':
-    modelscale = 4.5;
+    modelscale = 3.9;
     break;
   case 'Armor':
     modelscale = 5.8;
