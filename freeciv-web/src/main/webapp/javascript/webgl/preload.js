@@ -606,6 +606,9 @@ switch (filename) {
   case 'Temple_roman2':
     modelscale = 3.0;
     break;
+  case 'Temple_babylonian':
+    modelscale = 2.0;
+    break;
   case 'Bank':
     modelscale = 1.35;
     break;

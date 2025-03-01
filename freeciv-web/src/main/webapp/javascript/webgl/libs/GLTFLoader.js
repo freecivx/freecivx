@@ -600,8 +600,6 @@ class GLTFLightsExtension {
 		// here, because node-level parsing will only override position if explicitly specified.
 		lightNode.position.set( 0, 0, 0 );
 
-		lightNode.decay = 2;
-
 		assignExtrasToUserData( lightNode, lightDef );
 
 		if ( lightDef.intensity !== undefined ) lightNode.intensity = lightDef.intensity;
@@ -2256,7 +2254,7 @@ const ALPHA_MODES = {
 /**
  * Specification: https://github.com/KhronosGroup/glTF/blob/master/specification/2.0/README.md#default-material
  *
- * @param {Object<String, Material>} cache
+ * @param {Object<string, Material>} cache
  * @return {Material}
  */
 function createDefaultMaterial( cache ) {
@@ -2778,7 +2776,7 @@ class GLTFParser {
 	 * Returns a reference to a shared resource, cloning it if necessary.
 	 *
 	 * @param {Object} cache
-	 * @param {Number} index
+	 * @param {number} index
 	 * @param {Object} object
 	 * @return {Object}
 	 */
@@ -3669,8 +3667,8 @@ class GLTFParser {
 	/**
 	 * When Object3D instances are targeted by animation, they need unique names.
 	 *
-	 * @param {String} originalName
-	 * @return {String}
+	 * @param {string} originalName
+	 * @return {string}
 	 */
 	createUniqueName( originalName ) {
 

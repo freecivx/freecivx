@@ -11,6 +11,9 @@ on the game map.
 * terrain_vertex_shader.glsl 
 * terrain_fragment_shader.glsl 
 
+Globe
+=======
+* globe_fragment_shader.glsl 
 
 
 

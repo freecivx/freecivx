@@ -167,7 +167,6 @@ async function init_webgl_mapview() {
   const vertexShaderResponse = await fetch('/javascript/webgl/shaders_square/terrain_vertex_shader.glsl');
   const vertex_shader = await vertexShaderResponse.text();
 
-  // Load fragment shader
   const fragmentShaderResponse = await fetch('/javascript/webgl/shaders_square/terrain_fragment_shader.glsl');
   var fragment_shader = await fragmentShaderResponse.text();
 
