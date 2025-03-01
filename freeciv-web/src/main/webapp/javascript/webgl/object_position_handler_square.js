@@ -629,7 +629,7 @@ function update_tile_extra_update_model(extra_type, extra_name, ptile)
     }
     if (extra_name == "Wine" ) {
       height -= 9.5;
-      num_models = 1;
+      num_models = 6;
     }
     if (extra_name == "Oil") {
       height -= 6;
@@ -702,7 +702,7 @@ function update_tile_extra_update_model(extra_type, extra_name, ptile)
                          height + 1,
                          pos['y'] - 10 + (num_models == 1 ? 0 : (12 - Math.floor(Math.random() * 25))));
       model.rotateOnAxis(new THREE.Vector3(0,1,0).normalize(), (2 * Math.PI * Math.random()));
-      if (extra_name == "Furs" || extra_name == "Silk"  || extra_name == "Resources") {
+      if (extra_name == "Furs" || extra_name == "Resources") {
         model.rotateOnAxis(new THREE.Vector3(1,0,0).normalize(), -1 * (Math.PI  / 2));
       }
       tile_extra_positions_list[extra_type + "." + ptile['index']].push(model);

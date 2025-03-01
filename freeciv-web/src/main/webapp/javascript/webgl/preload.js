@@ -447,7 +447,7 @@ switch (filename) {
     modelscale = 3;
     break;
   case 'Silk':
-    modelscale = 3;
+    modelscale = 2.5;
     break;
   case 'Resources':
     modelscale = 3.5;
@@ -471,7 +471,7 @@ switch (filename) {
     modelscale = 6;
     break;
   case 'Wine':
-    modelscale = 1.2;
+    modelscale = 20.0;
     break;
   case 'Buffalo':
     modelscale = 1.8;
