@@ -39,7 +39,7 @@ void main() {
     float shade_factor = 1.4;
 
     if (texture(globe_known, vUv).r == 0.0) {
-        gl_FragColor = vec4(0.1, 0.1, 0.1, 1.0);
+        gl_FragColor = vec4(0.1, 0.1, 0.15, 1.0);
         return;
     } else if (abs(texture(globe_known, vUv).r - 0.5) < 0.01) {
         shade_factor *= 0.6;
