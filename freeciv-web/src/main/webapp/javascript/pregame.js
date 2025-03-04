@@ -1148,7 +1148,7 @@ function pregame_handle_user(close_pregame)
    error: function (request, textStatus, errorThrown) {
      console.log("For programmers and server admins: "
                  + "Please check if the meta server is running properly.");
-     swal("Error. Please try again with a different name.");
+     swal("Account not found. Please check username and password, and make sure that you verify your account by clicking on the link in the e-mail you got.");
    }
   });
 
