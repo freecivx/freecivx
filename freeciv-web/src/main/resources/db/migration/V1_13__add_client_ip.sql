@@ -1,1 +1,1 @@
-alter table auth add column `ip` varchar(16);
+alter table auth add column `ip` varchar(256);
