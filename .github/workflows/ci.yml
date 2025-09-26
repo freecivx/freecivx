@@ -1,0 +1,47 @@
+name: continuous integration
+
+on:
+  - pull_request
+  - push
+  - workflow_dispatch
+
+jobs:
+  normal:
+    runs-on: ubuntu-latest
+    steps:
+      - name: check out Freeciv-web
+        uses: actions/checkout@v4.2.2
+
+      - name: Set up Java
+        uses: actions/setup-java@v4.5.0
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          cache: maven
+
+      - name: Set JAVA_HOME environment variables
+        run: |
+          echo "JAVA_HOME is $JAVA_HOME"
+          java -version 
+
+      - name: prepare
+        run: |
+          sudo sysctl -w net.ipv6.conf.all.disable_ipv6=1
+          sudo sysctl -w net.ipv6.conf.default.disable_ipv6=1
+          ip addr # for confirmation. can be skipped
+          sudo apt-get remove ^postgresql 'mysql.*'
+          sudo rm -rf /var/lib/mysql
+
+      - name: install
+        shell: bash
+        run: bash ./scripts/install/install.sh --mode=TEST_MYSQL
+        
+        
+      - name: Run Playwright tests
+        run: |
+          java -version 
+          bash ./scripts/test-freecivx.sh
+        
+
+
+

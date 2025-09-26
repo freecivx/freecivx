@@ -1,0 +1,41 @@
+diff -Nurd -X.diff_ignore freeciv/common/featured_text.c freeciv/common/featured_text.c
+--- freeciv/common/featured_text.c	2014-09-11 01:41:13.951730689 +0300
++++ freeciv/common/featured_text.c	2014-09-11 01:41:34.947685408 +0300
+@@ -33,8 +33,8 @@
+ 
+ #include "featured_text.h"
+ 
+-#define SEQ_START '['
+-#define SEQ_STOP ']'
++#define SEQ_START '<'
++#define SEQ_STOP '>'
+ #define SEQ_END '/'
+ 
+ #define MAX_LEN_STR 32
+@@ -141,7 +141,7 @@
+   case TTT_UNDERLINE:
+     return "u";
+   case TTT_COLOR:
+-    return "c";
++    return "font";
+   case TTT_LINK:
+     return "l";
+   };
+@@ -238,7 +238,7 @@
+     {
+       if (!find_option(sequence, "foreground", ptag->color.foreground,
+                        sizeof(ptag->color.foreground))
+-          && !find_option(sequence, "fg", ptag->color.foreground,
++          && !find_option(sequence, "color", ptag->color.foreground,
+                           sizeof(ptag->color.foreground))) {
+         ptag->color.foreground[0] = '\0';
+       }
+@@ -482,7 +482,7 @@
+                                text_tag_type_short_name(ptag->type));
+ 
+       if (ptag->color.foreground[0] != '\0') {
+-        ret += fc_snprintf(buf + ret, len - ret, " fg=\"%s\"",
++        ret += fc_snprintf(buf + ret, len - ret, " color=\"%s\"",
+                            ptag->color.foreground);
+       }
+       if (ptag->color.background[0] != '\0') {

@@ -1,0 +1,179 @@
+[nation_nazi]
+
+translation_domain = "freeciv-core"
+
+name   = _("Nazi")
+plural = _("?plural:Nazi")
+groups = "Modern", "European", "Core"
+
+legend = _("The Nazi regime, under Adolf Hitler's leadership from 1933 to 1945, was a totalitarian dictatorship characterized by extreme nationalism, antisemitism, aggressive militarism, and the systematic persecution and extermination of millions, primarily Jews, through the Holocaust. Germany fell under the control of the Nazi Party in 1933, led by Adolf Hitler. The regime implemented a totalitarian dictatorship, suppressing opposition and promoting extreme nationalist and racist policies. This led to the invasion of Poland in 1939, starting World War II. The Holocaust, a genocide orchestrated by the Nazis, resulted in the murder of six million Jews and millions of other victims. After Germany's defeat in 1945, the country was occupied and divided, eventually reuniting in 1990 after the end of the Cold War. (This nation is included for historical documentation accuracy reasons, and is not supported by the makers of this game, in the same way that this regime has been included in games such as Wolfenstein 3D.)")
+
+leaders = {
+ "name",                        "sex"
+ "Hitler",                    "Male"
+}
+
+ruler_titles = {
+ "government",      "male_title",            "female_title"
+ "Democracy",       _("Führer %s"),      _("?female:Chancellor %s")
+ "Fundamentalism",  _("Führer %s"),      _("?female:Archbishop %s")
+ "Communism",       _("Führer %s"),      _("?female:First Secretary %s")
+ "Monarchy",        _("Führer %s"),          _("Kaiserin %s")
+}
+
+flag         = "nazi"
+flag_alt     = "-"
+style        = "European"
+
+init_techs = ""
+init_buildings = ""
+init_units = ""
+
+conflicts_with = "alsatian", "anhaltian", "badian", "bavarian", "brandenburgian",
+ "franconian", "hanoverian", "hessian", "lippian", "mecklenburgian", "oldenburgian",
+ "palatinate", "prussian", "rhenish", "saxon", "schleswig-holsteinian", "thuringian",
+ "westphalian", "wuerttembergian"
+civilwar_nations = "alsatian", "anhaltian", "badian", "bavarian", "brandenburgian",
+ "franconian", "hanoverian", "hessian", "lippian", "mecklenburgian", "oldenburgian",
+ "palatinate", "prussian", "rhenish", "saxon", "schleswig-holsteinian", "thuringian",
+ "westphalian", "wuerttembergian", "austrian", "east german"
+
+cities =
+"Neu-Berlin (grassland, !mountains)",
+"Berlin (grassland, !mountains)",
+"Hamburg (grassland, swamp, ocean, river, !mountains)",
+"Neu-York (grassland, ocean, river, !mountains)",
+"Drontheim (tundra, forest, ocean, !mountains)",
+"Neu-München (grassland, river, !mountains)",
+"Wienstadt (grassland, river, forest, !mountains)",
+"Neu-Königsberg (plains, river, forest, !mountains)",
+"Stahlheim (grassland, forest, river, !mountains)",
+"Adlerstadt (plains, ocean, river, !mountains)",
+"Neu-Danzig (grassland, ocean, river, !mountains)",
+"Nordhafen (tundra, ocean, river, !mountains)",
+"Neu-Riga (grassland, river, forest, !mountains)",
+"Eisenstadt (grassland, plains, river, !mountains)",
+"Neu-Paris (grassland, river, forest, !mountains)",
+"Wolfenburg (plains, forest, river, !mountains)",
+"Neu-Rom (plains, river, ocean, !mountains)",
+"Donauhaven (grassland, river, swamp, !mountains)",
+"Neu-Oslo (tundra, ocean, river, !mountains)",
+"Neu-Warschau (plains, river, forest, !mountains)",
+"Gotenhafen (grassland, ocean, river, !mountains)",
+  "Hamburg (grassland, swamp, ocean, river, !mountains)",
+  "München (hills, mountains, !ocean)",
+  "Köln (plains, hills, river)",
+  "Frankfurt am Main (grassland, hills, river, !ocean)",
+  "Essen (grassland, hills, !river)",
+  "Dortmund (grassland, hills)",
+  "Stuttgart (hills, !ocean)",
+  "Düsseldorf (grassland, hills, river)",
+  "Bremen (grassland, plains, swamp, ocean, river, !mountains)",
+  "Duisburg (grassland, hills, river)",
+  "Hannover (grassland, plains, !mountains)",
+  "Nürnberg (hills, mountains, river, !ocean)",
+  "Leipzig (grassland, plains, hills, !ocean)",
+  "Dresden (plains, hills, river, !ocean)",
+  "Bochum (grassland, plains, hills, !river)",
+  "Wuppertal (grassland, plains, hills, river)",
+  "Bielefeld (plains, forest, !mountains)",
+  "Mannheim (grassland, forest, river, !ocean)",
+  "Bonn (plains, forest, river)",
+  "Halle/Saale (grassland, plains, river, !ocean, !mountains)",
+  "Gelsenkirchen (grassland, plains, !mountains)",
+  "Chemnitz (hills, mountains, !ocean)",
+  "Karlsruhe (plains, forest, river, !ocean)",
+  "Wiesbaden (plains, hills, river, !ocean)",
+  "Magdeburg (grassland, plains, river)",
+  "Münster (grassland, plains, !river)",
+  "Mönchengladbach (grassland, plains, !river)",
+  "Augsburg (forest, hills, mountains, river, !ocean)",
+  "Braunschweig (grassland, plains)",
+  "Krefeld (grassland, plains, !river)",
+  "Kiel (grassland, swamp, ocean, !mountains)",
+  "Aachen (plains, hills)",
+  "Rostock (grassland, ocean, river, !mountains)",
+  "Oberhausen (grassland, plains, river)",
+  "Lübeck (grassland, ocean, river, !mountains)",
+  "Hagen (plains, hills)",
+  "Kassel (plains, forest, !ocean)",
+  "Erfurt (hills, forest, !ocean)",
+  "Freiburg im Breisgau (plains, forest, hills, mountains, !ocean)",
+  "Saarbrücken (forest, hills, river, !ocean)",
+  "Mainz (plains, hills, river, !ocean)",
+  "Hamm (grassland, hills)",
+  "Herne (plains, hills)",
+  "Mülheim an der Ruhr (grassland, hills, river)",
+  "Ludwigshafen (grassland, forest, river, !ocean)",
+  "Osnabrück (grassland, plains, forest)",
+  "Solingen (plains, hills, !river)",
+  "Leverkusen (plains, hills, river)",
+  "Neuss (plains, hills, river)",
+  "Oldenburg (grassland, swamp, ocean, river, !mountains)",
+  "Darmstadt (grassland, forest, !ocean)",
+  "Heidelberg (forest, hills, river, !ocean)",
+  "Potsdam (grassland, swamp, !mountains)",
+  "Bremerhaven (grassland, swamp, ocean, river, !mountains)",
+  "Paderborn (plains, forest)",
+  "Würzburg (plains, forest, river, !ocean)",
+  "Göttingen (forest, hills, !ocean)",
+  "Cottbus (swamp, plains, forest, river)",
+  "Wolfsburg (grassland, plains)",
+  "Recklinghausen (grassland, plains, hills, !river)",
+  "Regensburg (forest, hills, river, !ocean)",
+  "Remscheid (plains, hills, !river)",
+  "Gera (forest, hills)",
+  "Heilbronn (plains, forest, river)",
+  "Schwerin (grassland, ocean, !mountains)",
+  "Bottrop (grassland, plains, hills)",
+  "Salzgitter (plains, forest, hills)",
+  "Pforzheim (grassland, forest, river, !ocean)",
+  "Offenbach am Main (grassland, hills, river, !ocean)",
+  "Ulm (forest, hills, river, !ocean)",
+  "Siegen (forest, hills, river)",
+  "Koblenz (forest, hills, river, !ocean)",
+  "Ingolstadt (hills, river, !ocean)",
+  "Fürth (hills, !ocean)",
+  "Zwickau (forest, hills, !ocean)",
+  "Reutlingen (forest, hills, !ocean)",
+  "Moers (plains, hills)",
+  "Hildesheim (plains, hills)",
+  "Witten (grassland, hills, river)",
+  "Bergisch Gladbach (plains, hills, !river)",
+  "Erlangen (forest, hills, river, !ocean)",
+  "Kaiserslautern (plains, forest, !ocean)",
+  "Jena (hills, river, !ocean)",
+  "Trier (forest, river, !ocean)",
+  "Frankfurt/Oder (grassland, plains, swamp, river)",
+  "Fulda (hills, river, !ocean)",
+  "Bamberg (forest, hills, !ocean)",
+  "Marburg (hills, river, !ocean)",
+  "Wittenberg (grassland, plains, river, !mountains)",
+  "Weimar (plains, forest, !ocean)",
+  "Baden-Baden (forest, hills, mountains, !ocean)",
+  "Passau (hills, mountains, river, !ocean)",
+  "Verden (grassland, plains, swamp, ocean)",
+  "Wismar (grassland, ocean, !mountains)",
+  "Nördlingen (forest, hills, !river, !ocean)",
+  "Stralsund (grassland, ocean, !mountains)",
+  "Mansfeld (plains, hills, !ocean)",
+  "Donauwörth (hills, mountains, river)",
+  "Dessau (plains, forest)",
+  "Worms (plains, forest, river, !ocean)",
+  "Wittstock (grassland, plains, ocean, !mountains)",
+  "Mühlberg (plains, river, !ocean)",
+  "Speyer (plains, hills, river, !ocean)",
+  "Kleve (grassland, plains, river)",
+  "Landau in der Pfalz (forest, hills, !ocean)",
+  "Rosheim (forest, hills, !ocean)",
+  "Schmalkalden (forest, hills, !ocean)",
+  "Lutter (forest, hills)",
+  "Wiesloch (forest, hills, river, !ocean)",
+  "Rosslau (grassland, plains, river)",
+  "Minden (grassland, hills, swamp, river)",
+  "Sinsheim (forest, hills)",
+  "Gotha (forest, hills)",
+  "Philippsburg (grassland, forest, hills, !ocean)",
+  "Halberstadt (plains, hills)",
+  "Bad Hersfeld (forest, hills)",
+  "Altenburg (forest, hills, !ocean)"

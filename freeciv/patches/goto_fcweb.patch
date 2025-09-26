@@ -1,0 +1,120 @@
+diff -Nurd freeciv/common/networking/packets.def freeciv/common/networking/packets.def
+--- freeciv/common/networking/packets.def	2023-05-28 04:56:42.084118825 +0300
++++ freeciv/common/networking/packets.def	2023-05-28 04:57:02.080267631 +0300
+@@ -2445,3 +2445,17 @@
+ 
+   BV_ACTIONS utype_actions;
+ end
++
++# Used for showing GOTO path in web client.
++PACKET_WEB_GOTO_PATH_REQ = 287; cs, dsend, handle-via-fields
++  UNIT unit_id;
++  TILE goal;
++end
++
++PACKET_WEB_GOTO_PATH = 288; sc, dsend, handle-via-fields, no-handle
++  UNIT unit_id;
++  UINT16 length;
++  DIRECTION dir[MAX_LEN_ROUTE:length];
++  TILE dest;
++  UINT32 turns;
++end
+diff -Nurd freeciv/server/unithand.c freeciv/server/unithand.c
+--- freeciv/server/unithand.c	2023-05-28 04:56:42.396121144 +0300
++++ freeciv/server/unithand.c	2023-05-28 04:57:02.084267661 +0300
+@@ -45,6 +45,9 @@
+ #include "unit.h"
+ #include "unitlist.h"
+ 
++/* common/aicore */
++#include "pf_tools.h"
++
+ /* common/scriptcore */
+ #include "luascript_types.h"
+ 
+@@ -4228,6 +4231,85 @@
+ }
+ 
+ /**********************************************************************//**
++  This function handles GOTO path requests from the client.
++**************************************************************************/
++void handle_web_goto_path_req(struct player *pplayer, int unit_id, int goal)
++{
++  struct unit *punit = player_unit_by_number(pplayer, unit_id);
++  struct tile *ptile = index_to_tile(&(wld.map), goal);
++  struct pf_parameter parameter;
++  struct pf_map *pfm;
++  struct pf_path *path;
++  struct tile *old_tile;
++  int i = 0;
++  struct packet_web_goto_path p;
++
++  if (NULL == punit) {
++    /* Shouldn't happen */
++    log_error("handle_unit_move(): invalid unit %d",
++              unit_id);
++    return;
++  }
++
++  if (NULL == ptile) {
++    /* Shouldn't happen */
++    log_error("handle_unit_move(): invalid %s (%d) tile (%d, %d)",
++              unit_rule_name(punit),
++              unit_id,
++              TILE_XY(ptile));
++    return;
++  }
++
++  if (!is_player_phase(unit_owner(punit), game.info.phase)) {
++    /* Client is out of sync, ignore */
++    log_verbose("handle_unit_move(): invalid %s (%d) %s != phase %d",
++                unit_rule_name(punit),
++                unit_id,
++                nation_rule_name(nation_of_unit(punit)),
++                game.info.phase);
++    return;
++  }
++
++  p.unit_id = punit->id;
++  p.dest = tile_index(ptile);
++
++  /* Use path-finding to find a goto path. */
++  pft_fill_unit_parameter(&parameter, punit);
++  pfm = pf_map_new(&parameter);
++  path = pf_map_path(pfm, ptile);
++  pf_map_destroy(pfm);
++
++  if (path) {
++    int total_mc = 0;
++
++    p.length = path->length - 1;
++
++    old_tile = path->positions[0].tile;
++
++    for (i = 0; i < path->length - 1; i++) {
++      struct tile *new_tile = path->positions[i + 1].tile;
++      int dir;
++
++      total_mc += path->positions[1].total_MC;
++      if (same_pos(new_tile, old_tile)) {
++        dir = -1;
++      } else {
++        dir = get_direction_for_step(&(wld.map), old_tile, new_tile);
++      }
++      old_tile = new_tile;
++      p.dir[i] = dir;
++
++    }
++    pf_path_destroy(path);
++    p.turns = total_mc / unit_move_rate(punit);
++    send_packet_web_goto_path(pplayer->current_conn, &p);
++
++  } else {
++    return;
++  }
++}
++
++/**********************************************************************//**
+   Handle change in unit activity.
+ **************************************************************************/
+ static void handle_unit_change_activity_real(struct player *pplayer,

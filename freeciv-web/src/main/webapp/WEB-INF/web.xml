@@ -1,0 +1,286 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<web-app xmlns="https://jakarta.ee/xml/ns/jakartaee"
+		 xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+		 xsi:schemaLocation="https://jakarta.ee/xml/ns/jakartaee https://jakarta.ee/xml/ns/jakartaee/web-app_5_0.xsd"
+		 version="5.0">
+
+	<display-name>Freeciv-web Client</display-name>
+
+	<filter>
+		<filter-name>setCharacterEncodingFilter</filter-name>
+		<filter-class>org.apache.catalina.filters.SetCharacterEncodingFilter</filter-class>
+		<init-param>
+			<param-name>encoding</param-name>
+			<param-value>UTF-8</param-value>
+		</init-param>
+		<async-supported>true</async-supported>
+	</filter>
+
+	<filter-mapping>
+		<filter-name>setCharacterEncodingFilter</filter-name>
+		<url-pattern>/*</url-pattern>
+	</filter-mapping>
+
+	<resource-ref>
+		<description>MySQL DB Connection</description>
+		<res-ref-name>jdbc/freeciv_mysql</res-ref-name>
+		<res-type>javax.sql.DataSource</res-type>
+		<res-auth>Container</res-auth>
+	</resource-ref>
+	
+	<context-param>
+		<param-name>
+			jakarta.servlet.jsp.jstl.fmt.fallbackLocale
+		</param-name>
+		<param-value>en_US</param-value>
+	</context-param>
+
+	<error-page>
+		<error-code>404</error-code>
+		<location>/WEB-INF/jsp/errors/404.jsp</location>
+	</error-page>
+	
+	<!-- / -->
+	<servlet>
+		<servlet-name>Index</servlet-name>
+		<servlet-class>org.freeciv.servlet.Index</servlet-class>
+	</servlet>
+
+	<servlet-mapping>
+		<servlet-name>Index</servlet-name>
+		<url-pattern></url-pattern>
+	</servlet-mapping>
+
+	<!-- /about -->
+	<servlet>
+		<servlet-name>About</servlet-name>
+		<servlet-class>org.freeciv.servlet.About</servlet-class>
+	</servlet>
+
+	<servlet-mapping>
+		<servlet-name>About</servlet-name>
+		<url-pattern>/about</url-pattern>
+	</servlet-mapping>
+
+	<!-- /errorlog -->
+	<servlet>
+		<servlet-name>ErrorLog</servlet-name>
+		<servlet-class>org.freeciv.servlet.ErrorLog</servlet-class>
+	</servlet>
+
+	<servlet-mapping>
+		<servlet-name>ErrorLog</servlet-name>
+		<url-pattern>/errorlog</url-pattern>
+	</servlet-mapping>
+
+	<!-- /errorlist -->
+	<servlet>
+		<servlet-name>ErrorList</servlet-name>
+		<servlet-class>org.freeciv.servlet.ErrorList</servlet-class>
+	</servlet>
+
+	<servlet-mapping>
+		<servlet-name>ErrorList</servlet-name>
+		<url-pattern>/errorlist</url-pattern>
+	</servlet-mapping>
+
+	<!-- /save_game_of_the_day -->
+	<servlet>
+		<servlet-name>SaveGameOfTheDay</servlet-name>
+		<servlet-class>org.freeciv.servlet.SaveGameOfTheDay</servlet-class>
+	</servlet>
+
+	<servlet-mapping>
+		<servlet-name>SaveGameOfTheDay</servlet-name>
+		<url-pattern>/save_game_of_the_day</url-pattern>
+	</servlet-mapping>
+
+	<!-- /game/details -->
+	<servlet>
+		<servlet-name>GameDetails</servlet-name>
+		<servlet-class>org.freeciv.servlet.GameDetails</servlet-class>
+	</servlet>
+
+	<servlet-mapping>
+		<servlet-name>GameDetails</servlet-name>
+		<url-pattern>/game/details</url-pattern>
+	</servlet-mapping>
+	
+	<!-- /game/statistics -->
+	<servlet>
+		<servlet-name>GameStatistics</servlet-name>
+		<servlet-class>org.freeciv.servlet.GameStatistics</servlet-class>
+	</servlet>
+
+	<servlet-mapping>
+		<servlet-name>GameStatistics</servlet-name>
+		<url-pattern>/game/statistics</url-pattern>
+	</servlet-mapping>
+	
+	<!-- /game/statistics/details -->
+	<servlet>
+		<servlet-name>GameStatisticsDetails</servlet-name>
+		<servlet-class>org.freeciv.servlet.GameStatisticsDetails</servlet-class>
+	</servlet>
+
+	<servlet-mapping>
+		<servlet-name>GameStatisticsDetails</servlet-name>
+		<url-pattern>/game/statistics/details</url-pattern>
+	</servlet-mapping>
+
+	<!-- /hall_of_fame -->
+	<servlet>
+		<servlet-name>HallOfFameList</servlet-name>
+		<servlet-class>org.freeciv.servlet.HallOfFameList</servlet-class>
+	</servlet>
+
+	<servlet-mapping>
+		<servlet-name>HallOfFameList</servlet-name>
+		<url-pattern>/hall_of_fame</url-pattern>
+	</servlet-mapping>
+
+	<!-- /civclientlauncher (game launcher servlet) -->
+	<servlet>
+		<servlet-name>CivclientLauncher</servlet-name>
+		<servlet-class>org.freeciv.servlet.CivclientLauncher</servlet-class>
+	</servlet>
+
+	<servlet-mapping>
+		<servlet-name>CivclientLauncher</servlet-name>
+		<url-pattern>/civclientlauncher</url-pattern>
+	</servlet-mapping>
+
+	<!-- /listsavegames -->
+	<servlet>
+		<servlet-name>ListSaveGames</servlet-name>
+		<servlet-class>org.freeciv.servlet.ListSaveGames</servlet-class>
+	</servlet>
+
+	<servlet-mapping>
+		<servlet-name>ListSaveGames</servlet-name>
+		<url-pattern>/listsavegames</url-pattern>
+	</servlet-mapping>
+
+	<!-- /login_user -->
+	<servlet>
+		<servlet-name>LoginUser</servlet-name>
+		<servlet-class>org.freeciv.servlet.LoginUser</servlet-class>
+	</servlet>
+
+	<servlet-mapping>
+		<servlet-name>LoginUser</servlet-name>
+		<url-pattern>/login_user</url-pattern>
+	</servlet-mapping>
+
+	<!-- /validate_user -->
+	<servlet>
+		<servlet-name>ValidateUser</servlet-name>
+		<servlet-class>org.freeciv.servlet.ValidateUser</servlet-class>
+	</servlet>
+
+	<servlet-mapping>
+		<servlet-name>ValidateUser</servlet-name>
+		<url-pattern>/validate_user</url-pattern>
+	</servlet-mapping>
+
+	<!-- /random_user -->
+	<servlet>
+		<servlet-name>RandomUser</servlet-name>
+		<servlet-class>org.freeciv.servlet.RandomUser</servlet-class>
+	</servlet>
+
+	<servlet-mapping>
+		<servlet-name>RandomUser</servlet-name>
+		<url-pattern>/random_user</url-pattern>
+	</servlet-mapping>
+
+	<!-- /user_count -->
+	<servlet>
+		<servlet-name>UserCount</servlet-name>
+		<servlet-class>org.freeciv.servlet.UserCount</servlet-class>
+	</servlet>
+
+	<servlet-mapping>
+		<servlet-name>UserCount</servlet-name>
+		<url-pattern>/user_count</url-pattern>
+	</servlet-mapping>
+
+
+	<!-- /deactivate_user -->
+	<servlet>
+		<servlet-name>DeactivateUser</servlet-name>
+		<servlet-class>org.freeciv.servlet.DeactivateUser</servlet-class>
+	</servlet>
+
+	<servlet-mapping>
+		<servlet-name>DeactivateUser</servlet-name>
+		<url-pattern>/deactivate_user</url-pattern>
+	</servlet-mapping>
+
+	<!-- /password_reset -->
+	<servlet>
+		<servlet-name>ResetPassword</servlet-name>
+		<servlet-class>org.freeciv.servlet.ResetPassword</servlet-class>
+	</servlet>
+
+	<servlet-mapping>
+		<servlet-name>ResetPassword</servlet-name>
+		<url-pattern>/reset_password</url-pattern>
+	</servlet-mapping>
+
+
+	<!-- /deletesavegame -->
+	<servlet>
+		<servlet-name>DeleteSaveGame</servlet-name>
+		<servlet-class>org.freeciv.servlet.DeleteSaveGame</servlet-class>
+	</servlet>
+
+	<servlet-mapping>
+		<servlet-name>DeleteSaveGame</servlet-name>
+		<url-pattern>/deletesavegame</url-pattern>
+	</servlet-mapping>
+
+	<!-- /freeciv_time_played_stats -->
+	<servlet>
+		<servlet-name>FreecivStatsServlet</servlet-name>
+		<servlet-class>org.freeciv.servlet.FreecivStatsServlet</servlet-class>
+	</servlet>
+
+	<servlet-mapping>
+		<servlet-name>FreecivStatsServlet</servlet-name>
+		<url-pattern>/freeciv_time_played_stats</url-pattern>
+	</servlet-mapping>
+
+	<!-- /meta/status -->
+	<servlet>
+		<servlet-name>RecentServerStatistics</servlet-name>
+		<servlet-class>org.freeciv.servlet.RecentServerStatistics</servlet-class>
+	</servlet>
+
+	<servlet-mapping>
+		<servlet-name>RecentServerStatistics</servlet-name>
+		<url-pattern>/meta/status</url-pattern>
+	</servlet-mapping>
+
+	<!-- /meta/metaserver -->
+	<servlet>
+		<servlet-name>Metaserver</servlet-name>
+		<servlet-class>org.freeciv.servlet.Metaserver</servlet-class>
+	</servlet>
+
+	<servlet-mapping>
+		<servlet-name>Metaserver</servlet-name>
+		<url-pattern>/meta/metaserver</url-pattern>
+	</servlet-mapping>
+
+	<context-param>
+		<param-name>buildTimeStamp</param-name>
+		<param-value>${timestamp}</param-value>
+	</context-param>
+	
+	<welcome-file-list>
+		<welcome-file>index.jsp</welcome-file>
+		<welcome-file>index.html</welcome-file>
+	</welcome-file-list>
+
+</web-app>

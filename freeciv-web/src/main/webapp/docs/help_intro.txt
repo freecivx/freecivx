@@ -1,0 +1,9 @@
+<h1>The Freeciv 3D Online Manual</h1>
+
+FreecivX.net is a Free and Open Source empire-building strategy game inspired by the
+history of human civilization.
+<br><br>
+FreecivX.net / Freeciv-web is free and open source software. The Freeciv C server is released under the GNU General Public License while the FreecivX.net (Freeciv-web) client is released under the GNU Affero General Public License
+<br><br>
+<a href="https://github.com/warciv/warciv" target="_new">GitHub project for FreecivX.net</a>
+<br>

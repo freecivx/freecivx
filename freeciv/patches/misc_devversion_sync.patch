@@ -1,0 +1,59 @@
+diff -Nurd freeciv/common/networking/packets.def freeciv/common/networking/packets.def
+--- freeciv/common/networking/packets.def	2022-09-30 04:59:39.160791631 +0300
++++ freeciv/common/networking/packets.def	2022-09-30 04:59:57.364984539 +0300
+@@ -762,6 +762,10 @@
+   WORKLIST worklist;
+ 
+   BV_IMPRS improvements;
++
++  STRING food_output[MAX_LEN_MSG];
++  STRING shield_output[MAX_LEN_MSG];
++  STRING trade_output[MAX_LEN_MSG];
+   BV_CITY_OPTIONS city_options;
+   ESTRING name[MAX_LEN_CITYNAME];
+ 
+diff -Nurd freeciv/server/citytools.c freeciv/server/citytools.c
+--- freeciv/server/citytools.c	2022-09-30 04:59:39.584796126 +0300
++++ freeciv/server/citytools.c	2022-09-30 05:02:36.342660667 +0300
+@@ -2625,6 +2625,12 @@
+ 
+ #ifdef FREECIV_WEB
+   if (web_packet != NULL) {
++    char food_output_buf[MAX_NUM_ITEMS + 1];
++    char shield_output_buf[MAX_NUM_ITEMS + 1];
++    char trade_output_buf[MAX_NUM_ITEMS + 1];
++    struct tile *pcenter = city_tile(pcity);
++    int c = 0;
++
+     BV_CLR_ALL(web_packet->can_build_unit);
+     BV_CLR_ALL(web_packet->can_build_improvement);
+ 
+@@ -2652,6 +2658,28 @@
+         BV_SET(web_packet->can_build_unit, utype_index(punittype));
+       }
+     } unit_type_iterate_end;
++
++    city_tile_iterate(city_map_radius_sq_get(pcity), pcenter, ptile) {
++      char f[2];
++      char s[2];
++      char t[2];
++
++      fc_snprintf(f, sizeof(f), "%d", city_tile_output_now(pcity, ptile, O_FOOD));
++      fc_snprintf(s, sizeof(s), "%d", city_tile_output_now(pcity, ptile, O_SHIELD));
++      fc_snprintf(t, sizeof(t), "%d", city_tile_output_now(pcity, ptile, O_TRADE));
++      food_output_buf[c] = f[0];
++      shield_output_buf[c] = s[0];
++      trade_output_buf[c] = t[0];
++
++      c += 1;
++    } city_tile_iterate_end;
++
++    food_output_buf[c] = '\0';
++    shield_output_buf[c] = '\0';
++    trade_output_buf[c] = '\0';
++    sz_strlcpy(packet->food_output, food_output_buf);
++    sz_strlcpy(packet->shield_output, shield_output_buf);
++    sz_strlcpy(packet->trade_output, trade_output_buf);
+   }
+ #endif /* FREECIV_WEB */
+ }

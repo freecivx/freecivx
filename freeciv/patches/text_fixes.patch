@@ -1,0 +1,65 @@
+diff -Nurd freeciv/common/featured_text.c freeciv/common/featured_text.c
+--- freeciv/common/featured_text.c	2023-01-17 18:09:06.266579628 +0200
++++ freeciv/common/featured_text.c	2023-01-17 18:09:20.546716781 +0200
+@@ -74,7 +74,7 @@
+ 
+ const struct ft_color ftc_warning       = FT_COLOR("#FF0000",   NULL);
+ const struct ft_color ftc_log           = FT_COLOR("#7F7F7F",   NULL);
+-const struct ft_color ftc_server        = FT_COLOR("#8B0000",   NULL);
++const struct ft_color ftc_server        = FT_COLOR("#FFFFFF",   NULL);
+ const struct ft_color ftc_client        = FT_COLOR("#EF7F00",   NULL);
+ const struct ft_color ftc_editor        = FT_COLOR("#0000FF",   NULL);
+ const struct ft_color ftc_command       = FT_COLOR("#006400",   NULL);
+@@ -83,7 +83,7 @@
+ const struct ft_color ftc_player_lost   = FT_COLOR("#FFFFFF",   "#000000");
+ const struct ft_color ftc_game_start    = FT_COLOR("#00FF00",   "#115511");
+ 
+-const struct ft_color ftc_chat_public   = FT_COLOR("#00008B",   NULL);
++const struct ft_color ftc_chat_public   = FT_COLOR("#FFFFFF",   NULL);
+ const struct ft_color ftc_chat_ally     = FT_COLOR("#551166",   NULL);
+ const struct ft_color ftc_chat_private  = FT_COLOR("#A020F0",   NULL);
+ const struct ft_color ftc_chat_luaconsole = FT_COLOR("#006400", NULL);
+@@ -1073,10 +1073,9 @@
+ {
+   static char buf[MAX_LEN_LINK];
+ 
+-  fc_snprintf(buf, sizeof(buf), "%c%s tgt=\"%s\" id=%d name=\"%s\" %c%c",
+-              SEQ_START, text_tag_type_short_name(TTT_LINK),
+-              text_link_type_name(TLT_CITY), pcity->id,
+-              city_name_get(pcity), SEQ_END, SEQ_STOP);
++  fc_snprintf(buf, sizeof(buf), "<a href=\"#\" onclick=\"show_city_dialog_by_id(%d);\">%s</a>",
++              pcity->id,
++              city_name_get(pcity));
+   return buf;
+ }
+ 
+@@ -1123,10 +1122,8 @@
+ {
+   static char buf[MAX_LEN_LINK];
+ 
+-  fc_snprintf(buf, sizeof(buf), "%c%s tgt=\"%s\" id=%d name=\"%s\" %c%c",
+-              SEQ_START, text_tag_type_short_name(TTT_LINK),
+-              text_link_type_name(TLT_UNIT), punit->id,
+-              unit_name_translation(punit), SEQ_END, SEQ_STOP);
++  fc_snprintf(buf, sizeof(buf), "%s", unit_name_translation(punit));
++
+   return buf;
+ }
+ 
+diff -Nurd freeciv/server/srv_main.c freeciv/server/srv_main.c
+--- freeciv/server/srv_main.c	2023-01-17 18:09:06.682583626 +0200
++++ freeciv/server/srv_main.c	2023-01-17 18:11:20.643866180 +0200
+@@ -2568,7 +2568,12 @@
+   pplayer->style = style_of_nation(pnation);
+ 
+   if (set_name) {
+-    server_player_set_name(pplayer, pick_random_player_name(pnation));
++    if (is_ai(pplayer)) {
++      server_player_set_name(pplayer, pick_random_player_name(pnation));
++    } else {
++      /* FIXME: in Web client, connection username == player name. */
++      server_player_set_name(pplayer, pplayer->username);
++    }
+   }
+ 
+   if ((pleader = nation_leader_by_name(pnation, player_name(pplayer)))) {

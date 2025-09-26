@@ -1,0 +1,112 @@
+diff --git a/common/networking/packets.def b/common/networking/packets.def
+index b37d745..b68c207 100644
+--- a/common/networking/packets.def
++++ b/common/networking/packets.def
+@@ -468,6 +468,7 @@ PACKET_TILE_INFO = 15; sc, lsend, is-game-info
+   TURN place_turn; # Send finishing turn and not a counter that would change every turn
+   STRING spec_sprite[MAX_LEN_NAME];
+   STRING label[MAX_LEN_MAP_LABEL];
++  UINT32 height;
+ end
+ 
+ # The variables in the packet are listed in alphabetical order.
+diff --git a/common/tile.h b/common/tile.h
+index 01151a7..39abdd3 100644
+--- a/common/tile.h
++++ b/common/tile.h
+@@ -63,6 +63,7 @@ struct tile {
+   struct tile *claimer;
+   char *label;                          /* NULL for no label */
+   char *spec_sprite;
++  int height;
+ };
+ 
+ /* 'struct tile_list' and related functions. */
+diff --git a/server/maphand.c b/server/maphand.c
+index 42efd92..a5330a5 100644
+--- a/server/maphand.c
++++ b/server/maphand.c
+@@ -55,6 +55,7 @@
+ 
+ /* server/generator */
+ #include "mapgen_utils.h"
++#include "height_map.h"
+ 
+ #include "maphand.h"
+ 
+@@ -543,7 +544,7 @@ void send_tile_info(struct conn_list *dest, struct tile *ptile,
+       info.place_turn = (NULL != ptile->placing)
+                          ? game.info.turn + ptile->infra_turns
+                          : 0;
+-
++      info.height = (height_map != NULL) ? hmap(ptile) : 0;
+       if (pplayer != NULL) {
+ 	info.extras = map_get_player_tile(ptile, pplayer)->extras;
+       } else {
+@@ -584,6 +585,7 @@ void send_tile_info(struct conn_list *dest, struct tile *ptile,
+       info.place_turn = 0;
+ 
+       info.extras = plrtile->extras;
++      info.height = (height_map != NULL) ? hmap(ptile) : 0;
+ 
+       /* Labels never change, so they are not subject to fog of war */
+       if (ptile->label != NULL) {
+diff --git a/server/generator/mapgen.c b/server/generator/mapgen.c
+index 86ab016..b4ded03 100644
+--- a/server/generator/mapgen.c
++++ b/server/generator/mapgen.c
+@@ -1354,8 +1354,8 @@ bool map_fractal_generate(bool autosize, struct unit_type *initial_unit)
+         || MAPGEN_FRACTURE == wld.map.server.generator) {
+ 
+       make_land();
+-      free(height_map);
+-      height_map = NULL;
++      //free(height_map);
++      //height_map = NULL;
+     }
+     if (!wld.map.server.tinyisles) {
+       remove_tiny_islands();
+@@ -2284,8 +2284,8 @@ static void mapgenerator2(void)
+ 
+     /* init world created this map, destroy it before abort */
+     destroy_placed_map();
+-    free(height_map);
+-    height_map = NULL;
++    //free(height_map);
++    //height_map = NULL;
+     return;
+   }
+ 
+@@ -2300,8 +2300,8 @@ static void mapgenerator2(void)
+ 
+   make_plains();  
+   destroy_placed_map();
+-  free(height_map);
+-  height_map = NULL;
++  //free(height_map);
++  //height_map = NULL;
+ 
+   if (checkmass > wld.map.xsize + wld.map.ysize + totalweight) {
+     log_verbose("%ld mass left unplaced", checkmass);
+@@ -2396,8 +2396,8 @@ static void mapgenerator3(void)
+ 
+   make_plains();  
+   destroy_placed_map();
+-  free(height_map);
+-  height_map = NULL;
++  //free(height_map);
++  //height_map = NULL;
+     
+   if (j == 1500) {
+     log_normal(_("Generator 3 left %li landmass unplaced."), checkmass);
+@@ -2464,8 +2464,8 @@ static void mapgenerator4(void)
+   }
+   make_plains();  
+   destroy_placed_map();
+-  free(height_map);
+-  height_map = NULL;
++  //free(height_map);
++  //height_map = NULL;
+ 
+   if (checkmass > wld.map.xsize + wld.map.ysize + totalweight) {
+     log_verbose("%ld mass left unplaced", checkmass);

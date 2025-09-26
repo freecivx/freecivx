@@ -1,0 +1,20 @@
+version: "3"
+services:
+
+  fciv-net:
+    image: freeciv/fciv-net
+    build: .
+    container_name: fciv-net
+    command: ["sleep", "infinity"]
+    volumes:
+      - ./freeciv-web:/docker/freeciv-web-shared
+    ports:
+      - "8080:80"
+      - "4002:4002"
+      - "6000-6009:6000-6009"
+      - "7000-7009:7000-7009"
+      - "8888:8080"
+    user: docker
+
+volumes:
+  data:

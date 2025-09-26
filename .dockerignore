@@ -1,0 +1,11 @@
+.dockerignore
+.gitattributes
+.gitignore
+.mailmap
+ADVANCED.md
+CONTRIBUTING.md
+Dockerfile
+README.md
+README-One-Turn-Per-Day.md
+TODO
+Vagrantfile

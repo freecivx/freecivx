@@ -1,0 +1,57 @@
+[nation_islamic_state]
+
+name   = _("Islamic State")
+plural = _("?plural:Islamic State")
+groups = "Asian", "Early Modern", "Modern"
+legend = _("The Islamic State, also known as ISIS or ISIL, emerged in 2014 during the Syrian civil war, declaring a self-proclaimed caliphate. Rooted in extremist interpretations of Sunni Islam, it aimed to establish a global theocratic state. The group controlled vast territories across Syria and Iraq, enforcing strict Sharia law and committing widespread atrocities, including genocide and terrorism. A global coalition led by the US, alongside local forces, defeated ISIS territorially by 2019, though its ideology persists in cells worldwide.")
+
+leaders = {
+ "name",                          "sex"
+ "Osama bin Laden",               "Male"
+ "Abu Omar al-Baghdadi",          "Male"
+ "Abu Bakr al-Baghdadi",          "Male"
+ "Abu Ibrahim al-Hashimi al-Qurashi", "Male"
+ "Abu al-Hasan al-Hashimi al-Qurashi", "Male"
+ "Abu al-Hussein al-Husseini al-Qurashi", "Male"
+ "Abu Hafs al-Hashimi al-Qurashi", "Male"
+}
+
+
+ruler_titles = {
+ "government",      "male_title",      "female_title"
+ "Fundamentalism",  _("Caliph %s"),    _("Calipha %s")
+ "Republic",        _("Vizier %s"),    _("?female:Vizier %s")
+}
+
+flag = "islamic-state"
+flag_alt = "arab"
+style = "Babylonian"
+
+init_techs = ""
+init_buildings = ""
+init_units = ""
+
+civilwar_nations = "emirati", "bahraini"
+
+cities =
+ "Raqqa",
+ "Mosul",
+ "Deir ez-Zor",
+ "Al-Mayadin",
+ "Al-Bab",
+ "Jarabulus",
+ "Manbij",
+ "Palmyra",
+ "Tal Afar",
+ "Hawija",
+ "Al-Qa'im",
+ "Baiji",
+ "Hit",
+ "Fallujah",
+ "Ramadi",
+ "Tikrit",
+ "Sinjar",
+ "Al-Rutba",
+ "Al-Hasakah",
+ "Kobani"
+

@@ -1,0 +1,7 @@
+# Ensure all text files have LF line endings
+* text=auto eol=lf
+
+# Set line endings and executable flags for specific file types
+*.sh text eol=lf exec
+*.py text eol=lf exec
+

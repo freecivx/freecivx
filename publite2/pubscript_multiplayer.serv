@@ -1,0 +1,33 @@
+cmdlevel ctrl first
+set nationset all
+set compresstype xz
+set maxplayers 100
+set allowtake H1Ah1adOo
+set autotoggle enabled
+set timeout 60
+set netwait 15
+set nettimeout 120
+set pingtime 30
+set pingtimeout 120
+set maxconnectionsperhost 256
+set threaded_save enabled
+set scorelog enabled
+set mapsize xysize
+set xsize 64
+set ysize 64
+
+set victories spacerace
+
+set landm 50
+set minp 2
+set aifill 0
+set generator FAIR
+
+set wetness 25
+set topology ""
+set wrap=
+set steepness 12
+
+
+metaconnection persistent
+metamessage Freecivx Multiplayer Game (Freeciv classic server)

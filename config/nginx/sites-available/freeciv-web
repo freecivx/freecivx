@@ -1,0 +1,161 @@
+
+
+    server {
+        listen       80;
+        # diabled 2024
+        #include /etc/nginx/snippets/freeciv-web-ssl.conf;
+        tcp_nodelay on; 
+ 
+        gzip  on;
+        gzip_comp_level 8;
+        gzip_proxied any;
+        gzip_types text/css application/json application/javascript application/x-javascript text/javascript text/xml application/xml application/rss+xml application/atom+xml application/rdf+xml application/octet-stream;
+        gzip_buffers 16 8k;
+
+	# Secure proxy for websockets to Freeciv-proxy server instances on port range [7000-7999].
+	location ~ ^/civsocket/7([0-9][0-9][0-9])$ {
+	    # Validate that the captured port is in the range 7000-7999.
+	    set $port_number 7$1;
+	    if ($port_number !~ ^7[0-9][0-9][0-9]$) {
+		return 400; # Bad Request if the port number is invalid.
+	    }
+
+	    # Enable gzip compression for proxied responses.
+	    gzip on;
+	    gzip_proxied any;
+	    gzip_comp_level 8; # Adjust compression level (1=fastest, 9=maximum compression)
+	    gzip_types text/plain text/css application/json application/javascript text/xml application/xml;
+	    gzip_buffers 16 8k;
+
+	    # Proxy the request to the corresponding Freeciv-proxy server.
+	    proxy_pass http://127.0.0.1:$port_number;
+	    proxy_http_version 1.1;
+	    proxy_set_header Upgrade $http_upgrade;
+	    proxy_set_header Connection $connection_upgrade;
+	    proxy_set_header X-Real-IP $remote_addr;
+
+	    proxy_connect_timeout 90;
+	    proxy_send_timeout 90;
+	    proxy_read_timeout 90;
+	}
+
+
+	# Secure status check for each Freeciv-proxy instance on port range [7000-7999].
+	location ~ ^/civsocket/7([0-9][0-9][0-9])/status$ {
+	    # Validate that the captured port is in the range 7000-7999.
+	    set $port_number 7$1;
+	    if ($port_number !~ ^7[0-9][0-9][0-9]$) {
+		return 400; # Bad Request if the port number is invalid.
+	    }
+
+	    # Proxy the request to the corresponding Freeciv-proxy server status endpoint.
+	    proxy_pass http://127.0.0.1:$port_number/;
+	    proxy_set_header X-Real-IP $remote_addr;
+
+	    proxy_connect_timeout 90;
+	    proxy_send_timeout 90;
+	    proxy_read_timeout 90;
+	}
+
+
+	# location for maps and logs in the data "webapp"
+	location ~ /data/.*\.(gif|log|png)$ {
+        proxy_pass         http://localhost:8080;
+        proxy_redirect     off;
+
+        proxy_set_header   Host             $host;
+
+        client_max_body_size       15m;
+        client_body_buffer_size    128k;
+
+        proxy_connect_timeout      90;
+        proxy_send_timeout         90;
+        proxy_read_timeout         90;
+
+        proxy_buffer_size          4k;
+        proxy_buffers              4 32k;
+        proxy_busy_buffers_size    64k;
+        proxy_temp_file_write_size 64k;
+	}
+
+	# no other stuff should be accessible in /data
+	location ~ /data/ {
+	  return 403;
+	}
+
+	# location for javascript, css and images.
+	location ~* \.(js|css|png|jpg|dae)$ {
+        rewrite ^(.*)$ /freeciv-web/$1 break;
+        proxy_pass         http://localhost:8080;
+        proxy_redirect     off;
+
+	expires 7d;
+
+        proxy_set_header   Host             $host;
+
+        client_max_body_size       3m;
+        client_body_buffer_size    128k;
+
+        proxy_connect_timeout      90;
+        proxy_send_timeout         90;
+        proxy_read_timeout         90;
+
+        proxy_buffer_size          4k;
+        proxy_buffers              4 32k;
+        proxy_busy_buffers_size    64k;
+        proxy_temp_file_write_size 64k;
+
+
+
+	}
+
+	# status page for Publite2 at /pubstatus
+	location ~ /pubstatus {
+        proxy_pass         http://localhost:4002;
+        proxy_redirect     off;
+
+        proxy_set_header   Host             $host;
+        proxy_set_header   X-Real-IP        $remote_addr;
+        proxy_set_header   X-Forwarded-For  $proxy_add_x_forwarded_for;
+
+	}
+
+
+
+	location = / {
+          proxy_pass         http://localhost:8080/freeciv-web/;
+          proxy_redirect     off;
+	}
+
+        location = /meta/metaserver {
+          deny all;
+        }
+
+	# proxy for app-server on port 8080
+	location ~ / {
+        rewrite ^(.*)$ /freeciv-web/$1 break;
+        proxy_pass         http://localhost:8080;
+        proxy_redirect     off;
+
+
+        proxy_set_header   Host             $host;
+        proxy_set_header   X-Real-IP        $remote_addr;
+        proxy_set_header   X-Forwarded-For  $proxy_add_x_forwarded_for;
+        proxy_max_temp_file_size 0;
+
+        client_max_body_size       15m;
+        client_body_buffer_size    128k;
+
+        proxy_connect_timeout      90;
+        proxy_send_timeout         90;
+        proxy_read_timeout         90;
+
+        proxy_buffer_size          4k;
+        proxy_buffers              4 32k;
+        proxy_busy_buffers_size    64k;
+        proxy_temp_file_write_size 64k;
+	}
+
+
+     }
+

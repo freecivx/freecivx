@@ -1,0 +1,271 @@
+body { 
+    font-family: "lucida grande", tahoma, verdana, arial, sans-serif;
+	font-size: 14px;
+	margin: 0px; 
+	background-color: #000000;
+}
+
+
+#pregame_page {
+  padding: 10px;
+  float:left;
+}
+
+
+#pregame_options {
+  background: #000000 url("/images/ui-widget-header.png") 50% 100% repeat-x;
+  width: 99%;
+  min-height: 30px;
+  padding: 0px;
+  float: left;
+}
+
+#pregame_player_list {
+  width: 200px;
+  float: left;
+  overflow: auto;
+}
+
+.pregame_player_name {
+  padding: 3px;
+  margin: 3px;
+  background: #111111 url(/images/black-bg.png);
+  color: #ffffff;
+  float: left;
+  min-height: 32px;
+  width: 85%;
+  border: 1px solid black;
+}
+
+.pregame_player_ready {
+  color: green;
+}
+
+#pregame_game_info:empty {
+  display: none;
+  padding: 0px;
+  border: 0px;
+}
+
+#pregame_game_info:not(:empty) {
+  background: #111111 url(/images/bg.jpg); 
+  color: #000000;
+  max-height: 15%;
+  width: 78%;
+  overflow: auto;
+  float: left;
+  padding: 5px;
+  border: 1px solid black;
+}
+
+#pregame_message_area {
+  color: #ffffff;
+  float: left;
+  padding: 5px;
+  border: 1px solid black;
+  list-style-type: none;
+  margin: 0px;
+  font-size: 16px;
+}
+
+#pregame_custom_scrollbar_div {
+  float: left;
+  background: #0c0c0c;
+}
+
+#pregame_player_icon {
+  background: transparent url(/images/player-icon.png); 
+  width: 24px; 
+  height: 24px; 
+  margin: 5px;
+  float:left;
+  
+}
+
+#pregame_ai_icon {
+  background: transparent url(/images/ai-icon.png); 
+  width: 24px; 
+  height: 24px; 
+  margin: 5px;
+  float:left;
+  
+}  
+
+#pregame_chat_box {
+  width: 100%;
+  height: 20px;
+  float: left;
+}
+
+#pregame_text_input {
+  padding: 5px;
+  font-size: 16px;
+  background-color: #dddddd;
+  margin-left: 200px;
+}
+
+#pregame_metamessage {
+  width: 50%;
+}
+
+
+#nation_list {
+  float: left; 
+  height:580px;
+  overflow: auto; 
+  width: 29%;
+}
+
+#nation_legend {
+  float: left; 
+  height: 500px; 
+  overflow: auto; 
+  padding: 10px; 
+  width: 45%;
+  font-size: 120%;
+  margin-left: 10px;
+}
+
+#select_nation_flag {
+  float: right;
+}
+
+#nation_flag_choice {
+  width : 300px;
+}
+
+
+.nation_choice {
+  width: 260px; 
+  margin-left: 5px; 
+  cursor:pointer;
+  cursor:hand;
+  font-weight: bold;
+  font-size: 1.1em; 
+  min-height: 33px;
+}
+
+#nation_autocomplete_box {
+  width: 210px; 
+  background:  #111111 url(/images/bg-dark.jpg); 
+  border:1px solid #000000; 
+  color: white;
+
+}
+
+#nation_heading {
+  padding: 3px; 
+  padding-bottom: 10px; 
+  width: 100%;
+}
+
+#nation_choice {
+  float: right;
+  font-size: 20px;
+}
+
+
+#pregame_buttons {
+  float:left;
+}
+
+#share_icons {
+  float:left;
+  margin-left: 50px;
+}
+
+
+#savegame_note {
+  font-style:italic;
+  font-size: 70%;
+}
+
+#selectable .ui-selecting { 
+  background: #228822; 
+}
+
+#selectable .ui-selected { 
+  background: #117711; 
+  color: white; 
+}
+
+#selectable {
+  list-style-type: none;
+  margin: 0;
+  padding: 0;
+  width: 100%; 
+  overflow: auto;
+  height: 400px;
+}
+
+#selectable li {
+  margin: 3px;
+  padding: 0.4em;
+  cursor: pointer;
+}
+
+#username_validation_result {
+  font-weight: bold;
+  color: #ee3333;
+  background-color: white;
+  padding: 1px;
+}
+
+.pregame_flags {
+  width: 50px;
+  float: left;
+}
+
+.pick_nation_flags {
+  width: 44px;
+  float: left;
+  padding-right: 3px;
+}
+
+.nation_pickme_line {
+  float: left;
+  padding: 2px;
+}
+
+#pick_nation_dialog {
+  overflow: auto;
+}
+
+#pregame_settings {
+  overflow: auto;
+}
+
+.hotseat_player {
+  padding-top: 4px;
+}
+
+#hotseat_dialog {
+  overflow: auto;
+}
+
+@media (max-width: 900px) {
+  #pregame_buttons button {
+    width: 21%;
+    height: 80px;
+  }
+}
+
+
+#ruleset_description {
+  text-decoration: underline;
+  color: black;
+  cursor:pointer;
+}
+
+#settings_table {
+  border-spacing: 7px;
+  border-collapse: separate;
+}
+
+#password_req {
+  margin-top: 5px;
+}
+
+#login_process {
+  font-weight: bolder;
+}

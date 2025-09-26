@@ -1,0 +1,55 @@
+diff -Nurd freeciv/server/connecthand.c freeciv/server/connecthand.c
+--- freeciv/server/connecthand.c	2023-03-11 03:50:04.941527761 +0200
++++ freeciv/server/connecthand.c	2023-03-11 03:50:14.317578810 +0200
+@@ -163,7 +163,7 @@
+     /* First connection
+      * Replace "restarting in x seconds" meta message */
+     maybe_automatic_meta_message(default_meta_message_string());
+-    (void) send_server_info_to_metaserver(META_INFO);
++    (void) send_server_info_to_metaserver(META_FORCE);
+   }
+ 
+   /* introduce the server to the connection */
+diff -Nurd freeciv/server/meta.c freeciv/server/meta.c
+--- freeciv/server/meta.c	2023-03-11 03:50:04.941527761 +0200
++++ freeciv/server/meta.c	2023-03-11 03:51:02.557837885 +0200
+@@ -391,6 +391,10 @@
+         }
+       } players_iterate_end;
+ 
++      if (S_S_INITIAL == server_state()) {
++        humans = conn_list_size(game.est_connections);
++      }
++
+       /* Send the number of available players. */
+       netfile_add_form_int(post, "available", players);
+       netfile_add_form_int(post, "humans", humans);
+@@ -533,7 +537,7 @@
+     since_previous = timer_read_seconds(last_send_timer);
+ 
+     /* Don't allow the user to spam the metaserver with updates */
+-    if (since_previous < METASERVER_MIN_UPDATE_INTERVAL) {
++    if (flag != META_FORCE && since_previous < METASERVER_MIN_UPDATE_INTERVAL) {
+       if (flag == META_INFO) {
+         want_update = TRUE; /* We couldn't update now, but update a.s.a.p. */
+       }
+diff -Nurd freeciv/server/meta.h freeciv/server/meta.h
+--- freeciv/server/meta.h	2023-03-11 03:50:04.941527761 +0200
++++ freeciv/server/meta.h	2023-03-11 03:50:14.317578810 +0200
+@@ -19,13 +19,14 @@
+ 
+ #define DEFAULT_META_SERVER_NO_SEND  TRUE
+ #define DEFAULT_META_SERVER_ADDR     FREECIV_META_URL
+-#define METASERVER_REFRESH_INTERVAL   (3*60)
++#define METASERVER_REFRESH_INTERVAL   60
+ #define METASERVER_MIN_UPDATE_INTERVAL 7   /* not too short, not too long */
+ 
+ enum meta_flag {
+   META_INFO,
+   META_REFRESH,
+-  META_GOODBYE
++  META_GOODBYE,
++  META_FORCE
+ };
+ 
+ const char *default_meta_patches_string(void);

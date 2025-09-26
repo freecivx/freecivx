@@ -1,0 +1,16 @@
+diff --git a/data/scenarios/tutorial.sav b/data/scenarios/tutorial.sav
+index 5c9c80648f..4aff18696c 100644
+--- a/data/scenarios/tutorial.sav
++++ b/data/scenarios/tutorial.sav
+@@ -363,10 +363,9 @@ set={"name","value","gamestart","gamesetdef"
+ "mapsize","FULLSIZE","FULLSIZE","Changed"
+ "revolentype","RANDOM","RANDOM","Changed"
+ "size",1,1,"Changed"
+-"topology","WRAPX|ISO|HEX","WRAPX|ISO|HEX","Changed"
+ "victories","","","Changed"
+ }
+-set_count=6
++set_count=5
+ gamestart_valid=TRUE
+ 
+ [ruledata]

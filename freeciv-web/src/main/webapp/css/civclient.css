@@ -1,0 +1,1243 @@
+
+/*
+    FREECIVX.NET - Freeciv 3D.
+ */
+body {
+  padding-top: 60px;
+  padding-bottom: 20px;
+}
+
+/*
+ * Delimits an area where to put content.
+ */
+.panel-freeciv {
+  background-color: rgba(243, 236, 209, 0.5);
+  border-bottom: 1px solid #D3B86F;
+  border-radius: 3px;
+  margin-top: 1%;
+  padding: 1%;
+}
+.panel-freeciv h1, .panel-freeciv h2, .panel-freeciv h3,
+.panel-freeciv h4, .panel-freeciv h5, .panel-freeciv h6 {
+  margin-top: 0px;
+}
+
+/*
+ * Sometimes we need some additional space between rows.
+ */
+.top-buffer-3 { margin-top: 3%; }
+.top-buffer-2 { margin-top: 2%; }
+.top-buffer-1 { margin-top: 1%; }
+/*
+ * The bootstrap theme we use adds some transparency, this ensure it is removed.
+ */
+.navbar-inverse {
+  background-image: none;
+}
+/*
+ * Ensure that the logo fits within the navbar.
+ */
+.navbar-brand {
+  float: left;
+  height: 50px;
+  padding: 4px 15px;
+  font-size: 18px;
+  line-height: 20px;
+}
+.ongoing-games-number {
+  margin-left: 5px;
+  background:#BE602D;
+}
+.nav {
+  font-size: 16px;
+}
+@media (min-width: 1024px) {
+  .container {
+    width: 1350px;
+  }
+}
+
+
+body
+{
+  margin: 0px;
+  background: #000000;
+  overflow: hidden;
+  width: 100%;
+}
+
+/*button {
+  margin: .2em .2em .2em 0; 
+  cursor: pointer; 
+  padding: .2em .6em .3em .6em; 
+  line-height: 1.4em; 
+  width:auto; 
+  overflow:visible; 
+}*/
+
+.ui-tabs .ui-tabs-panel {
+  border-width:0;
+  display:block;
+  padding:0px;
+}
+
+#mapcanvas {
+  background: black;
+}
+
+#globecanvas {
+  background: black;
+}
+
+#freeciv_logo {
+  float:left; 
+  background: #444444 url(/images/freeciv-web-logo.png);
+  width: 169px;
+  height: 35px; 
+  margin-right: 10px;
+}
+
+#game_logo {
+  width: 100%;
+  height: 50px;
+  background-color: #aaaaff;
+}
+
+#freeciv_custom_scrollbar_div {
+  height: 95%;
+  overflow: auto;
+}
+
+#game_message_area {
+  padding-top: 12px;
+  padding-left: 0px;
+  box-sizing: border-box;
+  border: 1px solid #111111;
+  color: white;
+  list-style-type: none;
+  margin: 0px;
+}
+
+#game_chat_box {
+  width: 100%;
+  display: flex;
+}
+
+#chat_direction {
+  width: 29px;
+  height: 20px;
+  display: none;
+}
+
+#game_text_input {
+  flex: 1 1 auto;
+  height: 18px;
+  min-width: 0;
+  margin: 0 0.3em;
+  border: 1px solid #555555;
+  color: #ffffff;
+  background-color: rgba(0.1, 0.1, 0.1, 1.0);
+  margin-top: -5px;
+  font-size: 16px;
+}
+
+
+#game_unit_info {
+  float: left;
+  width: 100%;
+  overflow: hidden;
+}
+
+#unit_text_details {
+  float:left;
+  width: 135px;
+
+}
+
+#end_game_turn_panel {
+  float: right;
+  width: 120px;
+}
+
+
+
+.order_button {
+  overflow: hidden;
+  padding-right: 12px;
+  display: inline-block;
+  height: 30px;
+  width: 30px;
+}
+
+#turn_done_button_div {
+  position: absolute;
+  padding: 8px;
+  right: 0;
+  top: 0;
+}
+
+#zoom_map_image {
+  padding-left: 4px;
+  padding-right: 4px;
+  cursor:pointer;
+  height: 30px;
+  margin-top: -4px;
+}
+
+
+#turn_done_button {
+
+}
+
+.main_menu_buttons {
+  padding:10px
+}
+
+#city_dialog {
+  font-size: 90%;
+}
+
+#city_dialog_info {
+  float: left;
+  padding: 10px;
+
+}
+
+#city_button_pane {
+  margin: 20px;
+  float: left;
+}
+
+
+.city_panel {
+  float: left; 
+  padding-right: 30px;
+}
+
+#city_improvements_panel {
+
+}
+
+#city_right_panel {
+  float: right; 
+  width: 55%;
+  background: url("/images/bg.jpg") repeat scroll 0 0 #222222;
+  height: 533px;
+}
+
+
+#freeciv_manual {  
+  color: #ffffff;
+  padding: 10px;
+  
+}
+
+.manual-tab {
+  background: #2e2f35;
+  padding: 30px;
+  overflow: auto;
+}
+
+.helptext {
+  white-space: pre-wrap;
+  font-size: 85%;
+}
+
+#manual_non_helptext_facts {
+  -moz-column-width: 20em;
+  -webkit-column-width: 20em;
+  column-width: 20em;
+  -moz-column-count: 2;
+  -webkit-column-count: 2;
+  column-count: 2;
+}
+
+#game_unit_orders_default {
+  bottom: 45px;
+  min-width: 300px;
+  height: 40px;
+  position: absolute;
+  text-align: center;
+  width: 100%;
+}
+
+#city_viewport {
+  overflow: auto;
+}
+
+.ui-dialog {
+  border: 1px #444444 solid;
+  max-height: 100%;
+  // overflow: auto;
+}
+
+#dialog {
+  max-height: 400px;
+}
+
+/* Research dialog. */
+
+#technologies {
+  clear: left;
+  position: relative; 
+  overflow: auto; 
+  width: 100%;
+  background-image: url('/images/bg.jpg');
+}
+
+#tech_info_box {
+  float: left; 
+  border: 1px solid rgb(153, 153, 153); 
+  width: 100%;
+  min-height: 40px; 
+  padding: 4px; 
+  margin: 2px; 
+  margin-left: 0px; 
+  background: url("/images/bg-dark.jpg") repeat scroll 0 0 ; 
+  color: white;
+}
+
+#tech_goal_box {
+  float: left;
+  font-weight: bold;
+}
+
+#tech_progress_box {
+  float: left; 
+  padding-left: 80px; 
+  width: 520px;
+}
+
+#progress_bg {
+  float: left;
+  background-color: #bbbbbb; 
+  width: 100%;
+  border: 1px solid #ffffff;
+  position: relative;
+}
+
+#progress_fg {
+  float: left; 
+  width: 60%; 
+  background-color: #5582c2;
+}
+
+#tech_progress_text {
+  position: absolute;
+  left: 0;
+}
+
+#tech_results {
+  float: left; 
+  padding-left: 20px;
+}
+
+
+#nations {
+  overflow: auto;
+}
+
+#city_name_req {
+  width: 100%;
+}
+
+#civ_dialog {
+  padding: 20px;
+  margin: 20px;
+  height: 550px;
+  text-align: center;
+}
+
+/* Overrides to jquery-ui-1.8.9.custom.css */ 
+
+.ui-widget-overlay {
+  background: none repeat scroll 0 0 #000000;
+  opacity: 0.75;
+}
+
+.ui-widget-content {
+  background: url("/images/bg.jpg") repeat scroll 50% 50%;
+
+}
+
+
+#game_status_panel_bar {
+  position: absolute;
+  color: #ffffff;
+  height: 23px;
+  text-align: center;
+  top: 50px;
+  overflow: hidden;
+  text-shadow: -1px 0 black, 0 1px black, 1px 0 black, 0 -1px black;
+  font-size: 70%;
+}
+
+#game_status_panel_top {
+  float: right;
+  color: #ffffff;
+  height: 30px;
+  text-align: center;
+  text-shadow: -1px 0 black, 0 1px black, 1px 0 black, 0 -1px black;
+  padding-right: 150px;
+  padding-top: 5px;
+}
+
+.ui-dialog .ui-dialog-content {
+  position: static;
+}
+
+
+#city_present_units, #city_supported_units {
+  float: left;
+  height: 115px;
+  overflow: auto; 
+  background:  url("/images/bg-dark.jpg") repeat scroll 0 0 ; 
+  border: 1px solid #444444;
+  padding: 6px;
+  margin: 5px;
+  min-width: 240px;
+  max-width: 380px;
+}
+
+#city_improvements {
+  float: left;
+  height: 115px;
+  overflow: auto; 
+  background: url("/images/bg-dark.jpg") repeat scroll 0 0 ; 
+  border: 1px solid #444444;
+  padding: 6px;
+  margin: 5px;
+  min-width: 240px;
+  max-width: 380px;
+
+}
+
+#city_improvements_title, #city_present_units_title, #city_supported_units_title {
+  font-size: 90%;
+  font-weight: bold;
+  color: white;
+  background-color: black;
+  padding: 4px;
+  margin: -7px -6px 7px -6px;
+}
+
+#city_improvement_element {
+  text-align: center; 
+  color: #ffffff; 
+  width: 70px; 
+  cursor:pointer;
+  float: left;
+}
+
+
+.production_list_item {
+  float: left;
+  text-align: center; 
+  width: 80px;
+  height: 90px;
+  font-size: 70%;
+}
+
+.production_list_item_sub {
+  cursor:pointer;
+  float:left; 
+}
+
+#unit_info_div {
+  float:left; 
+}
+
+#unit_info_image {
+  cursor:pointer; 
+  float: left;
+  margin-left: -2px;
+}
+
+#city_production_overview {
+  padding-top: 10px;
+}
+
+.ui-dialog .ui-dialog-title {
+  float: none;
+}
+
+#tabs_menu {
+  font-size: 0.98em;
+  overflow: hidden;
+  background: black;
+}
+
+.chatbox_dialog {
+  background: rgba(0,0,0,0.75);
+  background-color: rgba(0,0,0, 0.75);
+  z-index: 2000;
+}
+
+#ui-dialog-title-game_chatbox_panel {
+  margin-top: -5px;
+  font-size: 10px;
+}
+
+.chatbox_dialog div.ui-dialog-content {
+  padding: 5px 0;
+}
+
+.specialist_item {
+  width: 30px;
+  height: 38px;
+  float: left;
+}
+
+.blockUI h1 {
+  font-size: 18px;
+}
+
+.blockUI h2 {
+  font-size: 16px;
+}
+
+.tablesorter-dark {
+  font: 115% sans-serif;
+  background: url("/images/bg-dark.jpg") repeat scroll 0 0 ; 
+  color: white;
+}
+
+.tablesorter-dark thead th {
+  font: 100% sans-serif;
+}
+
+.tablesorter-dark thead td {
+  font: 105% sans-serif;
+}
+
+#city_stats tr {
+  line-height: 15px;
+  font-size: 14px;
+}
+
+.govbutton {
+  width: 190px;
+}
+
+.setting_button {
+  width: 210px;
+}
+
+#nation_table {
+  cursor: pointer;
+  padding-bottom: 400px;
+}
+
+#nations_button_div {
+  padding-bottom: 15px;
+  clear: left;
+}
+
+.act_sel_dialog {
+  min-width: 280px;
+}
+
+.act_sel_dialog .ui-dialog-content {
+  text-align: center;
+  min-width: 250px;
+}
+
+.act_sel_dialog .ui-dialog-buttonpane {
+  text-align: center;
+}
+
+.act_sel_button {
+  width: 250px;
+  margin-bottom: auto !important;
+  margin-top: auto !important;
+}
+
+.ui-selected {
+  background-color: #eeeeee;
+  color: black;
+}
+
+.ui-selecting {
+  background-color: #bbbbbb;
+  color: black;
+}
+.tablesorter-dark td {
+	background-color: inherit;
+	color: inherit;
+}
+
+.tablesorter-dark tbody > tr:hover > td,
+.tablesorter-dark tbody > tr.even:hover > td,
+.tablesorter-dark tbody > tr.odd:hover > td {
+	background: inherit;
+}
+
+.nation_row_self {
+  color: lightgreen;
+}
+
+.nation_row_war {
+  color: #ff3333;
+}
+
+.nation_row_dead {
+  color: #9e9e9e;
+}
+
+#city_disband_options {
+  padding: 10px;
+}
+
+#basic_cma_options {
+  padding: 10px;
+}
+
+#tech_advance_helptext span {
+  text-decoration:underline;
+  cursor: pointer;
+}
+
+#tech_gained_choice {
+  float: left;
+  padding: 5px;
+}
+
+.specific_tech {
+  float: left;
+  background-color: rgba(2,2,2,0.6);
+  color: white;
+  border: 1px solid white;
+  padding: 3px;
+  margin: 4px;
+  cursor: pointer;
+
+}
+
+.tech_infobox_image {
+  float: left;
+  margin: 4px;
+}
+
+#wiki_image {
+  max-width: 600px; 
+  max-height: 500px; 
+  margin: 5px;
+  float: right;
+}
+
+#help_menu {
+  float: left;
+  background-image: url('/images/bg.jpg');
+  color: black;
+  font-weight: bold;
+
+}
+
+#help_info_page {
+  float: left;
+  padding-left: 25px;
+}
+
+.help_submenu {
+  max-height:  600px;
+  overflow: auto;
+  min-width: 320px;
+  background-image: url('/images/bg.jpg');
+  color: black;
+}
+
+#tabs-map {
+  overflow: hidden;
+  background-color: black;
+}
+
+#tabs-globe {
+  overflow: hidden;
+  background-color: black;
+}
+
+#globe_canvas_div {
+  overflow: hidden;
+}
+
+#tabs-hel.manual_doc {
+  background-image: url('/images/bg.jpg');
+  color: black;
+
+}
+
+#tabs-hel.manual_doc a {
+  color: darkgreen;
+}
+
+#tabs-hel.ui-icon, #tabs-hel.ui-widget-content .ui-icon {
+  background-image: url("images/ui-icons_222222_256x240.png");
+}
+
+#game_chatbox_panel {
+  overflow: hidden;
+}
+
+#city_current_worklist {
+  width: 100%;
+  float: left;
+  overflow: auto;
+  background-color: rgba(40,40,40,0.4);
+  border: 1px solid black;
+  list-style-type: none;
+}
+
+#worklist_production_choices {
+  width: 100%;
+  float: left;
+  overflow: auto;
+  background-color: rgba(40,40,40,0.4);
+  border: 1px solid black;
+}
+
+#worklist_heading {
+  width: 100%;
+  float: left;
+}
+
+#tasks_heading {
+  width: 100%;
+  float: left;
+}
+
+#worklist_left {
+  float: left;
+  width: 45%
+}
+
+#worklist_right {
+  float: right;
+  width: 50%;
+}
+
+#worklist_control {
+  width: 5%;
+  overflow: hidden;
+  text-align: center;
+}
+
+#worklist_control button {
+  padding: 0;
+  margin: 0;
+  width: 80%;
+  height: 10%;
+  min-height: 1.2em;
+  max-height: 5em;
+}
+
+#worklist_control .wc_spacer {
+  height: 10%;
+  max-height: 5em;
+}
+
+@media (max-width: 480px) {
+  #worklist_control {
+    display: none;
+  }
+}
+
+.prod_choice_list_item {
+  text-align: left; 
+  font-size: 100%;
+  cursor:pointer;
+  float: left;
+  padding: 2px;
+  margin: 2px;
+}
+
+.worklist_table {
+  width: 100%;
+  border-spacing: 0px;
+  border-collapse: separate;
+}
+
+#worklist_dialog_headline {
+  width: 100%;
+  height: 42px;
+  font-size: 120%;
+  padding-bottom: 5px;
+  background-color: rgba(40,40,40,0.2);
+}
+
+.worklist_table .ui-selected {
+  background-color: white;
+}
+
+.cannot_build_item {
+  background-color: rgba(255,63,63,0.5);
+}
+
+.cannot_build_item.ui-selected {
+  background-color: rgba(255,63,63,1);
+}
+
+.cannot_build_item.ui-selecting {
+  background-color: rgba(255,127,127,1);
+}
+
+.ui-widget-header {
+  background: #cb842e url("/images/ui-widget-header.png") 50% 50% repeat-x;
+}
+
+.ui-dialog .ui-dialog-title {
+  font-size: 140%;
+}
+
+.ui-dialog-titlebar, .unit_dialog .ui-dialog-titlebar, .chatbox_dialog .ui-dialog-titlebar  {
+  padding-bottom: 0px;
+  padding-left: 4px;
+  padding-top: 0px;
+  font-size: 11px;
+  margin-top: -5px;
+  overflow: hidden;
+}
+
+.chatbox_dialog .ui-dialog-titlebar {
+  background: #cb842e url("/images/ui-widget-header.png") 100% 50% repeat-x;
+}
+
+.ui-widget-content a {
+  color: #f8ff8a;
+}
+
+.govt_button {
+  width: 60%;
+  margin: 6px;
+}
+
+#governments {
+  text-align: center;
+}
+
+.Democracy {
+  background-image: url(/images/gov.democracy.png) !important; 
+}
+
+.Anarchy {
+  background-image: url(/images/gov.anarchy.png) !important; 
+}
+
+.Republic {
+  background-image: url(/images/gov.republic.png) !important; 
+}
+
+.Despotism {
+  background-image: url(/images/gov.despotism.png) !important; 
+}
+
+.Communism {
+  background-image: url(/images/gov.communism.png) !important; 
+}
+
+.Monarchy {
+  background-image: url(/images/gov.monarchy.png) !important; 
+}
+
+.flag_self {
+  float: left;
+  width: 140px;
+}
+
+.flag_counterpart {
+  float: right;
+  width: 140px;
+
+}
+
+.context-menu-list {
+  background: none;
+}
+
+.context-menu-item {
+  font-size: 125%;
+  background-color: rgba(200,200,200,0.75);
+}
+
+@media (max-width: 900px) {
+  .context-menu-item {
+    font-size: 150%;
+    background-color: rgba(200,200,200,0.75);
+  }
+}
+
+.chatbox_text_tileinfo {
+  cursor:pointer;
+}
+
+/* city tabs will be on the bottom of the dialog. */
+#city_tabs .ui-tabs-nav { 
+    position: absolute; 
+    left: 0.25em; 
+    right: 0.25em; 
+    bottom: 0.25em; 
+    padding: 0em 0.2em 0.2em; 
+} 
+#city_tabs .ui-tabs-nav li { 
+    border-top: none; 
+    border-bottom: 1px solid #ccc; 
+    -moz-border-radius: 0px 0px 4px 4px; 
+    -webkit-border-radius: 0px 0px 4px 4px; 
+    border-radius: 0px 0px 4px 4px; 
+} 
+#city_tabs .ui-tabs-nav li.ui-tabs-selected, 
+#city_tabs .ui-tabs-nav li.ui-state-active { 
+    top: -1px; 
+}
+
+
+#prod_buttons {
+  float: right;
+  clear: both;
+}
+
+.ui-tooltip {
+    white-space: pre-line;
+    z-index: 100002;
+    position: absolute;
+}
+
+.no-close .ui-dialog-titlebar-close {
+  display: none 
+}
+
+.nation_flags {
+  width: 44px;
+}
+
+
+#prod_descr {
+  padding: 10px;
+  margin-left: 55px;
+}
+
+
+.scorechart {
+  height:  530px;
+  width: 100%;
+  background-color: white;
+  overflow: hidden;
+
+}
+
+#scores_dialog {
+  overflow: hidden;
+}
+
+.current_focus_unit {
+  border: 2px solid white;
+  background-color: rgba(240,240,240,0.5);
+ 
+}
+
+#active_unit_info {
+  float: left;
+  color: white;
+  background-color: rgba(0,0,0,0.6);
+  font-size: 96%;
+  padding-top: 2px;
+  max-width: 120px;
+}
+
+#active_unit_info span {
+  font-size: 75%;
+}
+
+#game_unit_panel {
+  margin-left: -8px;
+}
+
+#city_table {
+  width: 100%;
+  cursor: pointer;
+}
+
+.cities_row {
+  cursor:pointer;
+}
+
+#wiki_dialog {
+  overflow: auto;
+}
+
+#cities_scroll {
+  width: 100%;
+  overflow: auto;
+}
+
+.negative_net_income {
+  color: red;
+  background-color: #330000;
+}
+
+.nation_table_body {
+  background: rgba(0, 0, 0, 0.45);
+}
+
+.vert-attr-list th {
+  padding-right: 0.5em;
+  text-align: right;
+}
+
+.inteldlg_tabs { 
+  margin: 0.5em 0em; 
+} 
+
+.inteldlg_tabs > ul {
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+@media(max-height:600px) {
+  .inteldlg_tabs > ul {
+    max-height: 250px;
+    overflow-y: auto;
+  }
+}
+
+#intel_tabs-technology ul {
+  list-style-type: none;
+  position: relative;
+}
+
+li.tech-them {
+  font-weight: bold;
+}
+
+li.tech-them::before {
+  content: '\2605';
+  position: absolute;
+  left: 1em;
+}
+
+li.tech-both::before {
+  content: '\2713';
+  position: absolute;
+  left: 1em;
+}
+
+.e_next_year {
+  border-top: 2px #555555 groove;
+  margin-top: 0.5em;
+  padding-bottom: 0.5em;
+}
+
+
+#chat_context_dialog {
+  overflow-y: auto;
+}
+
+#chat_context_dialog tr:hover {
+  background-color: rgba(240, 240, 240, 0.75);
+}
+
+#chat_context_dialog canvas {
+  vertical-align: middle;
+}
+
+
+.ui-widget-header .ui-icon {
+  background-image: url(images/ui-icons_c47a23_256x240.png);
+}
+
+#nations_title {
+  font-size: 170%;
+  float: left;
+  padding: 10px;
+}
+
+#nations_label {
+  float: left;
+  padding: 15px;
+}
+
+#technology_dialog {
+  overflow: hidden;
+}
+
+/* Diplomacy dialog. */
+
+.diplomacy_messages {
+  background: url("/images/bg-dark.jpg") repeat scroll 0 0 ;
+  min-height: 20px;
+  max-height: 200px;
+  overflow: auto;
+  border: 1px solid #555555;
+  width: 100%;
+  font-size: 130%;
+  margin: 3px;
+  margin-bottom: 10px;
+  padding-bottom: 10px;
+}
+
+.diplomacy_messages a {
+  color: white;
+}
+
+.diplomacy_player_box {
+  width: 50%;
+  float: left;
+  text-align:center;
+}
+
+.diplomacy_player_box h3 {
+  clear: both;
+  width: 100%;
+  padding-top: 1em;
+}
+
+.dipl_div {
+  float: left;
+  text-align: left;
+  font-size: 14px;
+  white-space: nowrap;
+  z-index: 2000;
+}
+
+.dipl_div a {
+  color: #1e1b1d;
+  text-decoration: none;
+}
+
+.dipl_add {
+  z-index: 100;
+}
+
+.agree_self {
+  float: left;
+}
+
+.agree_counterpart {
+  float: right;
+}
+
+.diplomacy_gold {
+  padding: 8px;
+  font-size: 80%;
+}
+
+.diplomacy_gold input {
+  height: 15px;
+  font-size: 14px;
+  width: 40px;
+}
+
+.menu-button-activator {
+  font-size: 14px;
+  float: left;
+  margin: 0 4px 40px 20px;
+  padding: .4em 1em;
+  text-decoration: none !important;
+  cursor: pointer;
+  position: relative;
+  text-align: center;
+}
+
+.menu-button-activator .ui-icon {
+  position: absolute;
+  top: 50%;
+  margin-top: -8px;
+  left: auto;
+  margin-left: 0;
+  right: .2em;
+}
+
+#civ_dialog_text {
+  max-width: 70%;
+  padding: 5px;
+  background-color: rgba(0,0,0,0.1);
+  font-size: 90%;
+}
+
+#civ_dialog_flag {
+  padding: 5px;
+}
+
+#fciv-intro {
+    position: absolute;
+    bottom: 20px;
+    left: 50%;
+    min-width: 300px;
+    z-index: 1000;
+    max-width: 70%;
+    color: white;
+    font-size: 14px;
+    font-weight: bold;
+
+}
+
+#fciv-intro-txt {
+    background-color: rgba(1.0, 1.0, 1.0, 0.5);
+}
+
+.prod_choice_name {
+  font-weight: bold;
+}
+
+#cma_form {
+  float: left;
+  padding-left: 100px;
+  padding-top: 20px;
+  border-spacing: 30px;
+  font-size: 140%;
+}
+
+.cma_checkbox {
+  width: 20px;
+  height: 20px;
+}
+
+.noTitleBar .ui-dialog-titlebar {
+  height: 13px;
+}
+
+#worklist_production_choices .ui-selecting {
+  background: #FECA40;
+}
+
+#worklist_production_choices .ui-selected {
+  background: #337ab7;
+  color: white;
+}
+
+#worklist_production_choices {
+  list-style-type: none;
+  margin: 0;
+  padding: 0;
+  width: 100%;
+}
+#worklist_production_choices li {
+  margin: 3px;
+  padding: 2px;
+  font-size: 1.1em;
+  float: left;
+  height: 80px;
+
+}
+
+
+#city_current_worklist .ui-selected{
+  background: #337ab7;
+  color: white;
+}
+
+
+#city_change_production_btn {
+  padding: 10px;
+}
+
+#city_add_to_worklist_btn {
+  padding: 10px;
+}
+
+.ui-tabs .ui-tabs-nav .ui-tabs-anchor{
+  padding:.4em 0.4em
+}
+
+.lowered_gov {
+  height: 27px;
+}

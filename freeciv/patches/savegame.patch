@@ -1,0 +1,143 @@
+diff -Nurd freeciv/server/commands.c freeciv/server/commands.c
+--- freeciv/server/commands.c	2023-05-28 10:47:05.228715104 +0300
++++ freeciv/server/commands.c	2023-05-28 10:47:20.112804093 +0300
+@@ -552,7 +552,7 @@
+       "all cities and units etc. Use with care!"), NULL,
+    CMD_ECHO_ALL, VCF_NONE, 50
+   },
+-  {"save",	ALLOW_ADMIN,
++  {"save",	ALLOW_CTRL,
+    /* TRANS: translate text between <> only */
+    N_("save\n"
+       "save <file-name>"),
+diff -Nurd freeciv/server/savegame/savemain.c freeciv/server/savegame/savemain.c
+--- freeciv/server/savegame/savemain.c	2023-05-28 10:47:05.232715128 +0300
++++ freeciv/server/savegame/savemain.c	2023-05-28 10:48:04.009066546 +0300
+@@ -152,8 +152,8 @@
+   stdata->save_compress_level = game.server.save_compress_level;
+ 
+   if (!orig_filename) {
+-    stdata->filepath[0] = '\0';
+-    filename = stdata->filepath;
++    con_write(C_FAIL, _("Failed saving game. Missing filename."));
++    return;
+   } else {
+     sz_strlcpy(stdata->filepath, orig_filename);
+     if ((filename = strrchr(stdata->filepath, '/'))) {
+@@ -190,13 +190,6 @@
+     }
+   }
+ 
+-  /* If orig_filename is NULL or empty, use a generated default name. */
+-  if (filename[0] == '\0') {
+-    /* Manual save */
+-    generate_save_name(game.server.save_name, filename,
+-                       sizeof(stdata->filepath) + stdata->filepath - filename, "manual");
+-  }
+-
+   timer_cpu = timer_new(TIMER_CPU, TIMER_ACTIVE, "save cpu");
+   timer_user = timer_new(TIMER_USER, TIMER_ACTIVE, "save user");
+   timer_start(timer_cpu);
+diff -Nurd freeciv/server/stdinhand.c freeciv/server/stdinhand.c
+--- freeciv/server/stdinhand.c	2023-05-28 10:47:05.228715104 +0300
++++ freeciv/server/stdinhand.c	2023-05-28 10:50:14.749848273 +0300
+@@ -21,6 +21,7 @@
+ #include <stdio.h>
+ #include <stdlib.h>
+ #include <string.h>
++#include <time.h>
+ 
+ #ifdef FREECIV_HAVE_LIBREADLINE
+ #include <readline/readline.h>
+@@ -670,11 +671,6 @@
+ **************************************************************************/
+ static bool save_command(struct connection *caller, char *arg, bool check)
+ {
+-  if (is_restricted(caller)) {
+-    cmd_reply(CMD_SAVE, caller, C_FAIL,
+-              _("You cannot save games manually on this server."));
+-    return FALSE;
+-  }
+   if (!check) {
+     save_game(arg, "User request", FALSE);
+   }
+@@ -3786,6 +3782,7 @@
+   struct section_file *file;
+   char arg[MAX_LEN_PATH];
+   struct conn_list *global_observers;
++  struct strvec *webdirs;
+ 
+   if (!filename || filename[0] == '\0') {
+     cmd_reply(CMD_LOAD, caller, C_FAIL, _("Usage:\n%s"),
+@@ -3805,10 +3802,21 @@
+   }
+ 
+   {
++    char websave[300];
++
++    webdirs = strvec_new();
++
++    if (caller != NULL) {
++      fc_snprintf(websave, sizeof(websave), "%s/%s", srvarg.saves_pathname, caller->username);
++      strvec_append(webdirs, websave);
++    }
++    fc_snprintf(websave, sizeof(websave), "%s/pbem", srvarg.saves_pathname);
++    strvec_append(webdirs, websave);
++
+     /* it is a normal savegame or maybe a scenario */
+     char testfile[MAX_LEN_PATH];
+     const struct strvec *pathes[] = {
+-      get_save_dirs(), get_scenario_dirs(), NULL
++      get_save_dirs(), get_scenario_dirs(), webdirs, NULL
+     };
+     const char *exts[] = {
+       "sav", "gz", "bz2", "xz", "sav.gz", "sav.bz2", "sav.xz", "sav.zst", NULL
+@@ -3859,9 +3867,12 @@
+     cmd_reply(CMD_LOAD, caller, C_FAIL, _("Could not load savefile: %s"),
+               arg);
+     dlsend_packet_game_load(game.est_connections, FALSE, arg);
++    strvec_destroy(webdirs);
+     return FALSE;
+   }
+ 
++  strvec_destroy(webdirs);
++
+   if (check) {
+     return TRUE;
+   }
+@@ -4502,6 +4513,35 @@
+ 
+   level = command_level(command_by_number(cmd));
+ 
++  /* Special savegame handling for Freeciv-web. */
++  if (strncmp(game.server.meta_info.type, "pbem", 4) == 0 
++      && cmd == CMD_SAVE && caller) {
++    char pbemfile[200];
++
++    fc_snprintf(pbemfile, sizeof(pbemfile), "%s/pbem/pbem-%s-%u",
++                srvarg.saves_pathname, caller->username, (unsigned)time(NULL));
++    sz_strlcpy(arg, pbemfile);
++  } else if (cmd == CMD_SAVE && caller) {
++    char savefile[300];
++    char buffer[30];
++    char savedir[300];
++    time_t timer;
++    struct tm tm_info;
++
++    time(&timer);
++    fc_localtime(&timer, &tm_info);
++    strftime(buffer, 30, "%Y-%m-%d-%H_%M", &tm_info);
++    fc_snprintf(savefile, sizeof(savefile), "%s/%s/%s_T%u_%s",
++                srvarg.saves_pathname,  caller->username,
++                caller->username, game.info.turn, buffer);
++    sz_strlcpy(arg, savefile);
++
++    /* Create sub-directory from player's username in saves directory. */
++    fc_snprintf(savedir, sizeof(savedir), "%s/%s",
++                srvarg.saves_pathname, caller->username);
++    make_dir(savedir, 0775);
++  }
++
+   if (conn_can_vote(caller, NULL) && level == ALLOW_CTRL
+       && conn_get_access(caller) == ALLOW_BASIC && !check
+       && !vote_would_pass_immediately(caller, cmd)) {
