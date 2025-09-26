@@ -16,7 +16,9 @@ set mapsize xysize
 set xsize 64
 set ysize 64
 set landm 50
-set aifill 12
+
+# FIXME there is a problem reporting to Metaserver in singleplayer games when aifill is more than 0
+set aifill 0
 
 set victories spacerace
 
