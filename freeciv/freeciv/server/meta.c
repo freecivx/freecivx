@@ -324,7 +324,8 @@ static bool send_to_metaserver(enum meta_flag flag)
                          get_meta_message_string());
 
     /* NOTE: Send info for ALL players or none at all. */
-    if (normal_player_count() == 0) {
+    // FIXME: there is a bug here, if there are players then the server isn't reported to the metaserver.
+    if (TRUE || normal_player_count() == 0) {
       netfile_add_form_int(post, "dropplrs", 1);
     } else {
       players = 0; /* Counter for players_available */
