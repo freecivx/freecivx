@@ -22,7 +22,7 @@
     <org-slf4j.version>2.0.17</org-slf4j.version>
     <org-apache-commons.version>3.19.0</org-apache-commons.version>
     <!-- Test versions -->
-    <junit.version>5.12.0</junit.version>
+    <junit.version>6.0.0</junit.version>
     <mockito.version>5.2.0</mockito.version>
   </properties>
 
