@@ -16,7 +16,7 @@
     <spotless-maven-plugin.version>2.43.0</spotless-maven-plugin.version>
     <maven-compiler-plugin.version>3.14.1</maven-compiler-plugin.version>
     <maven-jar-plugin.version>3.4.2</maven-jar-plugin.version>
-    <org-json.version>20250107</org-json.version>
+    <org-json.version>20250517</org-json.version>
     <org-java-websocket.version>1.6.0</org-java-websocket.version>
     <org-apache-http.version>5.4.2</org-apache-http.version>
     <org-slf4j.version>2.0.17</org-slf4j.version>
