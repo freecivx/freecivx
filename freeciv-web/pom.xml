@@ -348,7 +348,7 @@ Rerun the sync-js-hand.js script.
         <dependency>
             <groupId>com.google.guava</groupId>
             <artifactId>guava</artifactId>
-            <version>20.0</version> </dependency>
+            <version>24.0-jre</version> </dependency>
     </dependencies>
 				</plugin>
 
