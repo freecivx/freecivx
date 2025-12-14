@@ -297,7 +297,7 @@ Rerun the sync-js-hand.js script.
 				<plugin>
 					<groupId>com.github.blutorange</groupId>
 					<artifactId>closure-compiler-maven-plugin</artifactId>
-					<version>3.0.0</version>
+					<version>3.0.1</version>
 					<configuration>
 						<closureLanguageIn>ECMASCRIPT_2019</closureLanguageIn>
 						<closureLanguageOut>ECMASCRIPT_2019</closureLanguageOut>
@@ -344,12 +344,7 @@ Rerun the sync-js-hand.js script.
 						</execution>
 
 					</executions>
-					<dependencies>
-                     <dependency>
-                        <groupId>com.google.guava</groupId>
-                        <artifactId>guava</artifactId>
-                        <version>30.0-jre</version> </dependency>
-                   </dependencies>
+					
 				</plugin>
 
 			</plugins>
