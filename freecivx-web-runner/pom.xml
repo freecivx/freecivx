@@ -25,7 +25,7 @@
         <dependency>
             <groupId>org.apache.tomcat.embed</groupId>
             <artifactId>tomcat-embed-jasper</artifactId>
-            <version>11.0.14</version>
+            <version>11.0.15</version>
         </dependency>
 
         <!-- JNDI and Database Connection -->
