@@ -4,6 +4,10 @@ import time
 from threading import Thread
 from pathlib import Path
 from datetime import datetime
+import logging
+
+
+logger = logging.getLogger(__name__)
 
 
 class Civlauncher(Thread):
@@ -21,14 +25,15 @@ class Civlauncher(Thread):
     def run(self):
         while True:
             try:
-                print(
-                    f"Start freeciv-web on port {self.new_port} "
-                    f"and freeciv-proxy on port {1000 + self.new_port}."
+                logger.info(
+                    "Start freeciv-web on port %s and freeciv-proxy on port %s.",
+                    self.new_port,
+                    1000 + self.new_port,
                 )
                 self.launch_game()
                 self.num_start += 1
-            except Exception as e:
-                print(f"Error during execution: {e}")
+            except Exception as e:  # noqa: BLE001
+                logger.error("Error during execution: %s", e)
                 self.num_error += 1
             time.sleep(5)
 
@@ -48,7 +53,7 @@ class Civlauncher(Thread):
                 stdout=open(proxy_log, "w"),
                 stderr=subprocess.STDOUT,
             )
-            print(f"Proxy started on port {1000 + self.new_port}.")
+            logger.info("Proxy started on port %s.", 1000 + self.new_port)
 
             # Start Freeciv-web process
             freeciv_log = f"../logs/freeciv-web-stderr-{self.new_port}.log"
@@ -58,13 +63,13 @@ class Civlauncher(Thread):
                 stderr=open(freeciv_log, "w"),
             )
             freeciv_process.wait()
-            print(f"Freeciv-web process exited with code {freeciv_process.returncode}.")
+            logger.info("Freeciv-web process exited with code %s.", freeciv_process.returncode)
 
         finally:
             if proxy_process:
                 proxy_process.terminate()
                 proxy_process.wait()
-                print("Proxy process terminated.")
+                logger.info("Proxy process terminated.")
 
     def build_freeciv_args(self):
         args = [

@@ -1,8 +1,11 @@
 from threading import Thread
 from tornado import web, ioloop, httpserver
 import sys
+import logging
 
 STATUS_PORT = 4002
+
+logger = logging.getLogger(__name__)
 
 """Serves the Publite2 status page on the URL: /pubstatus"""
 class PubStatus(Thread):
@@ -12,7 +15,7 @@ class PubStatus(Thread):
 
     def run(self):
         # Log the Python version
-        print(f"Starting PubStatus server with Python version: {sys.version}")
+        logger.info("Starting PubStatus server with Python version: %s", sys.version)
 
         # Set up the Tornado IOLoop and application
         io_loop = ioloop.IOLoop()
@@ -83,4 +86,3 @@ class StatusHandler(web.RequestHandler):
         </body>
         </html>
         """)
-      
