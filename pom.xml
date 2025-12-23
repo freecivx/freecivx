@@ -24,7 +24,6 @@
         <module>freeciv-web</module>
         <module>freecivx-client</module>
         <module>freecivx-server</module>
-        <module>freecivx-web-runner</module>
     </modules>
 
     <properties>
