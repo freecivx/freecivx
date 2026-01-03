@@ -293,7 +293,7 @@ function webgl_action_button_pressed(canvas_x, canvas_y, qtype)
 **************************************************************************/
 function highlight_map_tile_mouse(x, y)
 {
-  if (!webgpu && terrain_material != null && !map_select_active) {
+  if (terrain_material != null && !map_select_active) {
     terrain_material.uniforms.mouse_x.value = x;
     terrain_material.uniforms.mouse_x.needsUpdate = true;
     terrain_material.uniforms.mouse_y.value = y;
@@ -306,7 +306,7 @@ function highlight_map_tile_mouse(x, y)
  **************************************************************************/
 function highlight_globe_tile_mouse(x, y)
 {
-  if (!webgpu && globeMaterial != null && !map_select_active) {
+  if (globeMaterial != null && !map_select_active) {
     globeMaterial.uniforms.mouse_x.value = x;
     globeMaterial.uniforms.mouse_x.needsUpdate = true;
     globeMaterial.uniforms.mouse_y.value = y;
@@ -319,7 +319,7 @@ function highlight_globe_tile_mouse(x, y)
 **************************************************************************/
 function highlight_map_tile_selected(x, y)
 {
-  if (!webgpu && terrain_material != null) {
+  if (terrain_material != null) {
     terrain_material.uniforms.selected_x.value = x;
     terrain_material.uniforms.selected_x.needsUpdate = true;
     terrain_material.uniforms.selected_y.value = y;

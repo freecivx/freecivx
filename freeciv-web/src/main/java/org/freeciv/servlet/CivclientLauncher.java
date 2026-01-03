@@ -82,7 +82,7 @@ public class CivclientLauncher extends HttpServlet {
 								+ "FROM servers "
 								+ "WHERE state = 'Pregame' "
 								+ "	AND type = ? "
-								+ "	AND humans = '0' "
+								+ "	AND (humans = '0' OR humans = -1) "
 								+ "ORDER BY RAND() "
 								+ "LIMIT 1 ";
 

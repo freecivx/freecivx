@@ -821,15 +821,6 @@ function pregame_settings()
   $(".benchmark").button();
   $("#show_voice_commands").button();
 
-  $(".webgpu").click(function() {
-    window.location.href = window.location.href + '?webgpu=true';
-  });
-  $(".webgpu").button();
-
-  $(".webgpu").click(function() {
-    window.location.href = window.location.href + '?webgpu=true';
-  });
-  $(".webgpu").button();
 
   $('#speech_setting').change(function() {
     if ($('#speech_setting').prop('checked')) {

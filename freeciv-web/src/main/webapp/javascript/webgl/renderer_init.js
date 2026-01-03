@@ -73,15 +73,9 @@ function renderer_init() {
   if (C_S_RUNNING === client_state() || C_S_OVER === client_state()) {
       show_splash_screen();
 
-      if (!webgpu) {
-        webgl_start_renderer();
-        init_webgl_mapview();
-        init_globe_view();
-
-    } else {
-        webgpu_start_renderer();
-        init_webgpu_mapview();
-    }
+    webgl_start_renderer();
+    init_webgl_mapview();
+    init_globe_view();
 
     init_webgl_mapctrl();
     init_game_unit_panel();

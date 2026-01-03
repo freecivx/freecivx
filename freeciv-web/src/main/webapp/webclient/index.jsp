@@ -7,7 +7,7 @@
 <%
 String captchaKey = null;
 boolean fcwDebug = false;
-boolean webgpu = false;
+
 boolean app = false;
 try {
   Properties prop = new Properties();
@@ -17,8 +17,6 @@ try {
   String debugParam = request.getParameter("debug");
   fcwDebug = (debugParam != null && (debugParam.isEmpty() || parseBoolean(debugParam)));
 
-  String webgpuParam = request.getParameter("webgpu");
-  webgpu = (webgpuParam != null && (!webgpuParam.isEmpty() || parseBoolean(webgpuParam)));
 
   String appParam = request.getParameter("app");
   app = (appParam != null && (appParam.isEmpty() || parseBoolean(appParam)));
@@ -43,7 +41,7 @@ try {
 <script type="text/javascript">
 var ts="${initParam.buildTimeStamp}";
 var fcwDebug=<%= fcwDebug %>;
-var webgpu = <%= webgpu %>;
+
 </script>
 <script type="text/javascript" src="/javascript/libs/jquery.min.js?ts=${initParam.buildTimeStamp}"></script>
 
@@ -51,7 +49,7 @@ var webgpu = <%= webgpu %>;
 
 <script type="text/javascript" src="/javascript/libs/stacktrace.min.js"></script>
 
-<% if (!webgpu) { %>
+
   <script type="importmap">
         {
                 "imports": {
@@ -59,23 +57,11 @@ var webgpu = <%= webgpu %>;
                 }
         }
   </script>
-<% } else { %>
-  <script type="importmap">
-        {
-                "imports": {
-                        "three": "/javascript/webgpu/libs/threejs/three.webgpu.min.js?ts=${initParam.buildTimeStamp}"
-                }
-        }
-  </script>
-<% } %>
 <script type="module">
   import * as THREE from 'three';
   window.THREE = THREE;
 
-    <% if (webgpu) { %>
-      import { WebGPURenderer } from '/javascript/webgpu/libs/threejs/three.webgpu.min.js?ts=${initParam.buildTimeStamp}';
-      window.WebGPURenderer = WebGPURenderer;
-    <% } %>
+
 
   import { GLTFLoader } from '/javascript/webgl/libs/GLTFLoader.js?ts=${initParam.buildTimeStamp}';
   window.GLTFLoader = GLTFLoader;
