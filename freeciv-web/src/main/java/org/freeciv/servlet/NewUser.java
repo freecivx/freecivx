@@ -1,5 +1,5 @@
 /*******************************************************************************
- * FreecivX - the web version of Freeciv. http://www.FreecivX.net/
+ * FreecivX - the web version of Freeciv. http://www.FreecivWorld.net/
  * Copyright (C) 2009-2025 The Freeciv-web project
  *
  * This program is free software: you can redistribute it and/or modify
@@ -137,10 +137,10 @@ public class NewUser extends HttpServlet {
 	}
 
 	public void sendEmailVerify(String to, String randomNumber) throws MessagingException, IOException {
-		String verificationLink = "https://www.freecivx.net/verify?id=" + randomNumber;
-		String emailBody = "Welcome to FreecivX,\n\nPlease verify your FreecivX.net account: \n"
+		String verificationLink = "https://www.FreecivWorld.net/verify?id=" + randomNumber;
+		String emailBody = "Welcome to FreecivX,\n\nPlease verify your FreecivWorld.net account: \n"
 				+ verificationLink + "\n\nThank you for joining!";
-		sendEmail(to, "Welcome to FreecivX.net", emailBody);
+		sendEmail(to, "Welcome to FreecivWorld.net", emailBody);
 	}
 
 	public void sendEmail(String to, String subject, String body) throws MessagingException, IOException {

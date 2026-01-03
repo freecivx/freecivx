@@ -180,7 +180,7 @@
 						 <span id="statistics-multiplayer"><b>0</b></span> multiplayer games, with
 						 <span id="statistics-players"><b>0</b></span> registered players.
 						 <br>
-						FreecivX.net was first launched 18th June 2024, and is based on Freeciv-web from 2013, based on Freeciv which was started in 1996.</h4>
+						FreecivWorld.net was first launched 18th June 2024, and is based on Freeciv-web from 2013, based on Freeciv which was started in 1996.</h4>
 
 					</div>
 				</div>
@@ -223,7 +223,7 @@
 					<div class="panel-freeciv">
 						<h4><fmt:message key="index-contributing"/></h4>
 						Freeciv is open source software released under the GNU General Public License.
-						<a href="https://github.com/freecivx/freecivx"><fmt:message key="index-developers"/></a> are welcome to join development.
+						<a href="https://github.com/freecivworld/freecivworld"><fmt:message key="index-developers"/></a> are welcome to join development.
 					</div>
 				</div>
 				<div class="col-md-4">

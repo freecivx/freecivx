@@ -1,7 +1,7 @@
 <div id="fciv-intro">
   <div id="fciv-intro-txt" style="position: relative; left: -50%; ">
     <p>
-      <strong>FreecivX.net</strong> is a free and open-source empire-building strategy game that lets you shape the
+      <strong>FreecivWorld.net</strong> is a free and open-source empire-building strategy game that lets you shape the
       history of human civilization. Begin your journey in the Stone Age and guide your tribe through
       centuries of progress, from humble beginnings to the wonders of the Space Age.
     </p>
@@ -11,7 +11,7 @@
     </p>
     <p>
       We value your privacy; learn more in our <a href="/privacy-policy.jsp">Privacy Policy</a>.<br>
-      FreecivX.net is proudly open source and licensed under the
+      FreecivWorld.net is proudly open source and licensed under the
       <a href="https://www.gnu.org/licenses/agpl-3.0.en.html">AGPL license</a>.
     </p>
 

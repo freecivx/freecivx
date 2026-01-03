@@ -30,14 +30,14 @@ try {
 <!DOCTYPE html>
 <html>
 <head>
-<title>FREECIVX.NET - 3D browser version of the strategy game Freeciv.</title>
+<title>FreecivWorld.net - 3D browser version of the strategy game Freeciv.</title>
 
 <link href="/static/css/bootstrap.min.css" rel="stylesheet">
 
 <link rel="stylesheet" href="/css/fontawesome.min.css">
 <link rel="stylesheet" href="/css/solid.min.css">
 <link rel="stylesheet" type="text/css" href="/css/webclient.min.css?ts=${initParam.buildTimeStamp}" />
-<meta name="description" content="FreecivX.net play Freeciv in 3D online for free, open source strategy game">
+<meta name="description" content="FreecivWorld.net play Freeciv in 3D online for free, open source strategy game">
 <meta property="og:image" content="/images/freecivx-icon-web2.jpg" />
 
 <script type="text/javascript">
@@ -122,7 +122,7 @@ var webgpu = <%= webgpu %>;
 
 <body>
 
-  <div id="introtxtja">FREECIVX.NET is the 3D version of the strategy game Freeciv. Because Civilization should be free, in 3D!</div>
+  <div id="introtxtja">FreecivWorld.net is the 3D version of the strategy game Freeciv. Because Civilization should be free, in 3D!</div>
 
     <div class="container">
         <%@include file="/WEB-INF/jsp/fragments/header.jsp"%>

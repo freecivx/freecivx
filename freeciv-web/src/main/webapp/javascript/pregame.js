@@ -1,5 +1,5 @@
 /**********************************************************************
-    Freeciv-web - the web version of Freeciv. http://www.FreecivX.net/
+    Freeciv-web - the web version of Freeciv. http://www.FreecivWorld.net/
     Copyright (C) 2009-2015  The Freeciv-web project
 
     This program is free software: you can redistribute it and/or modify
@@ -97,7 +97,7 @@ function update_game_info_pregame()
 
   if ($.getUrlVar('action') == "multi") {
     game_info_html += "<p>";
-    game_info_html += "<h2>Freecivx.net Multiplayer game</h2>-You are now about to play a multiplayer game.<br>-Please wait until at least 2 players have joined the game, then click the start game button.";
+    game_info_html += "<h2>FreecivWorld.net Multiplayer game</h2>-You are now about to play a multiplayer game.<br>-Please wait until at least 2 players have joined the game, then click the start game button.";
     game_info_html += "</p>";
     game_info_html += "";
   }
@@ -444,7 +444,7 @@ function pregame_settings()
   var dhtml = "<div id='pregame_settings_tabs'>" +
       "   <ul>" +
       "     <li><a href='#pregame_settings_tabs-1'>Game</a></li>" +
-      "     <li><a href='#pregame_settings_tabs-2'>3D WebGL,WebGPU</a></li>" +
+      "     <li><a href='#pregame_settings_tabs-2'>3D WebGL</a></li>" +
       "     <li><a href='#pregame_settings_tabs-3'>AI Chat, LLM, Other</a></li>" +
       "   </ul>" +
       "<div id='pregame_settings_tabs-1'><br><table id='settings_table'> " +
@@ -516,10 +516,6 @@ function pregame_settings()
         "<tr id='anaglyph_enabled'><td id='anaglyph_label' style='min-width: 150px;'></td>" +
                 "<td><input type='checkbox' id='anaglyph_setting'>Enable Anaglyph 3D (Red+Cyan glasses) "+
                 "</td></tr>"+
-
-          "<tr><td style='min-width: 150px;'>Enable experimental WebGPU renderer:</td>" +
-          "<td><button id='webgpu_enable' type='button' class='webgpu button'>WebGPU renderer</button></td></tr>" +
-
          "</table>" +
       "</div>" +
 
@@ -1018,7 +1014,7 @@ function show_intro_dialog(title, message) {
     $("#freeciv_logo").remove();
     $("#pregame_message_area").css("width", "73%");
     $("#observe_button").remove();
-    $("#fciv-intro-txt").text("FreecivX.net is a open source empire-building strategy game inspired by the history of human civilization.");
+    $("#fciv-intro-txt").text("FreecivWorld.net is a open source empire-building strategy game inspired by the history of human civilization.");
   }
 
   $("#dialog").dialog('open');
@@ -1038,7 +1034,7 @@ function show_intro_dialog(title, message) {
 
   blur_input_on_touchdevice();
 
-  $(".ui-widget-overlay").css("background-image", "url('/images/backgrounds/freecivx-splash-c.jpg')");
+
   $(".ui-widget-overlay").css("background-position", "center");
   $(".ui-widget-overlay").css("background-repeat", "no-repeat");
   $(".ui-widget-overlay").css("background-size", "cover");
@@ -1162,7 +1158,7 @@ function show_new_user_account_dialog(gametype)
 {
 
   var title = "New user account";
-  var message = "Create a new Freecivx.net user account:<br><br>"
+  var message = "Create a new FreecivWorld.net user account:<br><br>"
                 + "<table><tr><td>Username:</td><td><input id='username' type='text' size='25' maxlength='30'></td></tr>"
                 + "<tr><td>Email:</td><td><input id='email' type='email' size='25' maxlength='64' ></td></tr>"
                 + "<tr><td>Password:</td><td><input id='password' type='password' size='25'></td></tr>"
@@ -1170,7 +1166,7 @@ function show_new_user_account_dialog(gametype)
                 + "<div id='username_validation_result' style='display:none;'></div>"
                 + "Please verify your e-mail by clicking in the link in the e-mail you will get from us. Remember your username and password, since you will need this to log in later."
                 + "<br>"
-                + "<div id='new_user_extra_info'><small><ul><li>It is free and safe to create a new account on FreecivX.net.</li>"
+                + "<div id='new_user_extra_info'><small><ul><li>It is free and safe to create a new account on FreecivWorld.net.</li>"
                 + "<li>A user account allows you to save and load games, and play in ranked multiplayer games.</li>"
                 + "<li>You will not receive any spam and your e-mail address will be kept safe. Your password is stored securely as a secure hash.</li>"
                 + "</ul></small></div>";

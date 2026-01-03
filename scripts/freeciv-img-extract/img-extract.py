@@ -137,7 +137,7 @@ def increment_tileset_image(tileset_name):
   global tileset_inc;
 
   draw = ImageDraw.Draw(tileset)
-  draw.text((130, 0), "Freecivx - GPL Licensed  - Copyright 2007-2025  FREECIVX.NET", fill="rgb(0,0,0)")
+  draw.text((130, 0), "Freecivx - GPL Licensed  - Copyright 2007-2025  FreecivWorld.net", fill="rgb(0,0,0)")
 
   tileset_file = "freeciv-web-tileset-" + tileset_name + "-" + str(tileset_inc) + ".png"
   tileset.save(path.join(out_dir, tileset_file))

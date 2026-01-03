@@ -1,33 +1,33 @@
-FREECIVWORLD.NET - Freeciv in 3D for the web!
+FreecivWorld.net - Freeciv in 3D for the web!
 -----------------------------------------
 
 [![License: AGPL v3](https://img.shields.io/badge/License-AGPL%20v3-blue.svg)](https://www.gnu.org/licenses/agpl-3.0)
 [![Build Status](https://github.com/freecivworld/freecivworld/workflows/continuous%20integration/badge.svg)](https://github.com/freecivworld/freecivworld/actions?query=workflow%3A%22continuous+integration%22)
 
 
-[freecivworld.net](https://www.freecivworld.net) is an open-source turn-based strategy game. It can be played in a web-browser which supports HTML5 and WebGL 2 or WebGPU. The game features in-depth game-play and a wide variety of game modes and options. Your goal is to build cities, collect resources, organize your government, and build an army, with the ultimate goal of creating the best civilization. You can play online against other players (multiplayer) or play by yourself against the computer.
+[FreecivWorld.net](https://www.FreecivWorld.net) is an open-source turn-based strategy game. It can be played in a web-browser which supports HTML5 and WebGL 2 or WebGPU. The game features in-depth game-play and a wide variety of game modes and options. Your goal is to build cities, collect resources, organize your government, and build an army, with the ultimate goal of creating the best civilization. You can play online against other players (multiplayer) or play by yourself against the computer.
 
-freecivworld.net is free and open source software. The Freeciv C server is released under the GNU General Public License, while the Freeciv-web client is released
+FreecivWorld.net is free and open source software. The Freeciv C server is released under the GNU General Public License, while the Freeciv-web client is released
 under the GNU Affero General Public License. The 3D models are also "open source" and must be made free and open source. See [License](LICENSE.md) for the full license document.
 
-freecivworld.net is a game about history, technology and human achievements. The developers of this game encourages peace and technological development as a winning strategy.
+FreecivWorld.net is a game about history, technology and human achievements. The developers of this game encourages peace and technological development as a winning strategy.
 
 
 Live server:
 ------------
 Currently known servers based on freecivworld which are open source in compliance with [the AGPL license](LICENSE.md):
 
-https://freecivworld.net 
+https://FreecivWorld.net 
 
 Screenshots:
 ------------------------
-![Freeciv-web](https://raw.githubusercontent.com/freecivworld/freecivworld/main/doc/img/Screenshot.png "freecivworld.net screenshot")
+![Freeciv-web](https://raw.githubusercontent.com/freecivworld/freecivworld/main/doc/img/Screenshot.png "FreecivWorld.net screenshot")
 
 
 Overview
 --------
 
-freecivworld.net consists of these components:
+FreecivWorld.net consists of these components:
 
 * [Freeciv-web](freeciv-web) - a Java web application for the Freeciv-web client.
   Implemented in Javascript, Java, JSP, HTML and CSS. Built with maven and runs 
@@ -47,7 +47,7 @@ Freeciv 3D
 -------------
 Freeciv 3D is the 3D version using the Three.js 3D engine, which requires WebGl 2 or WebGPU support.
 
-Running freecivworld.net on your computer
+Running FreecivWorld.net on your computer
 ------------------------------------
 Freeciv-web can be run with WSL (Linux on Windows), or Podman / Docker.
 

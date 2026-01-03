@@ -1,7 +1,7 @@
-Freecivx.net 3D web application 
+FreecivWorld.net 3D web application 
 =======================
 
-This is the Freecivx.net 3D web application, which consists of the Java servlets 
+This is the FreecivWorld.net 3D web application, which consists of the Java servlets 
 and filters for running the web client, JSP templates, javascript code
 and other web content. 
 
@@ -57,7 +57,7 @@ See LICENSE-AGPL.txt and LICENSE-CC-BY-SA.txt for the license of these models.
 Copyright (C) 2007-2024 Andreas Røsdal. 
 Released under the GNU AFFERO GENERAL PUBLIC LICENSE.
 
-Source code, 3D models and all files part of Freeciv 3D / FreecivX.net are covered by the GNU AFFERO GENERAL PUBLIC LICENSE.
-See LICENSE.txt for the AGPL license of Freeciv 3D / FreecivX.net. This license means that these 3D models
+Source code, 3D models and all files part of Freeciv 3D / FreecivWorld.net are covered by the GNU AFFERO GENERAL PUBLIC LICENSE.
+See LICENSE.txt for the AGPL license of Freeciv 3D / FreecivWorld.net. This license means that these 3D models
 are free and open source, and that any modifications and redistributions must also be
 free and open source, with the AGPL license.

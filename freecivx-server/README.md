@@ -1,6 +1,6 @@
 # Freecivx Java Server 
 
-**freecivx-server** is a multiplayer server implemented in Java for [Freecivx.net](https://freecivx.net). It supports large-scale multiplayer games with modern Java features.
+**freecivx-server** is a multiplayer server implemented in Java for [FreecivWorld.net](https://FreecivWorld.net). It supports large-scale multiplayer games with modern Java features.
 
 "FreecivX Java server - because Freeciv should not segfault!"
 

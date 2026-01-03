@@ -33,7 +33,7 @@ public class Verify extends HttpServlet {
             preparedStatement.setString(1,id);
             preparedStatement.executeUpdate();
 
-            response.sendRedirect("http://www.freecivx.net?verify=ok");
+            response.sendRedirect("http://www.FreecivWorld.net?verify=ok");
             Thread.sleep(100);
 
     } catch (Exception err) {

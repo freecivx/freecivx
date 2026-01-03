@@ -10,7 +10,7 @@
 		</button>
 		<a class="navbar-brand" href="/">
 			<!--Logo font is: Liberation Sans Bold Italic -->
-			<img src="/static/images/brand.png" alt="FreecivX">
+			<img src="/static/images/brand.png" alt="FreecivWorld">
 		</a>
 		</div>
 
@@ -25,10 +25,8 @@
 				</a>
 			</li>
 			<li><a href="/player/list">Players</a></li>
-			<li><a href="https://github.com/freecivx/freecivx/">GitHub</a></li>
-            <li><a href="https://x.com/freecivx">@FreecivX</a></li>
-			<li><a href="https://discord.gg/mKgawv5jrB">Discord</a></li>
-            <li><a href="/wiki">Wiki</a></li>
+			<li><a href="https://github.com/freecivworld/freecivworld/">GitHub</a></li>
+
 
 		    <li><a href="/about">About</a></li>
 </ul>

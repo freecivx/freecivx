@@ -1,7 +1,7 @@
 package org.freeciv.servlet;
 
 /*******************************************************************************
- * Freeciv-web - the web version of Freeciv. http://www.FreecivX.net/
+ * Freeciv-web - the web version of Freeciv. http://www.FreecivWorld.net/
  * Copyright (C) 2009-2025 The Freeciv-web project
  *
  * This program is free software: you can redistribute it and/or modify

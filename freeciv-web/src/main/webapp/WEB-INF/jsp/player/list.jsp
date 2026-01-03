@@ -4,9 +4,9 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<title>The Honourable List of Players of FreecivX</title>
+<title>The Honourable List of Players of FreecivWorld</title>
 <%@include file="/WEB-INF/jsp/fragments/head.jsp"%>
-<title>The Honourable List of Players of FreecivX</title>
+<title>The Honourable List of Players of FreecivWorld</title>
 
 <style>
 	.nav-tabs {
@@ -72,8 +72,8 @@
 	<!-- Begin page content -->
 	<div id="content" class="container mt-4">
 		<div class="alert alert-info text-center" style="background-color: white; background-image: none;">
-			<strong style="font-size:24px;">The Honourable List of Players of FreecivX</strong>
-			<p class="mb-0">These are the honourable, real registered and verified human players of FreecivX. <b><a href="https://www.freecivx.net/">Register here</a>.</b></p>
+			<strong style="font-size:24px;">The Honourable List of Players of FreecivWorld</strong>
+			<p class="mb-0">These are the honourable, real registered and verified human players of FreecivX. <b><a href="https://www.FreecivWorld.net/">Register here</a>.</b></p>
 		</div>
 	</div>
 	<div id="content" class="container">

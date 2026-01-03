@@ -1,5 +1,5 @@
 /**********************************************************************
-    Freeciv-web - the web version of Freeciv. http://www.FreecivX.net/
+    Freeciv-web - the web version of Freeciv. http://www.FreecivWorld.net/
     Copyright (C) 2009-2015  The Freeciv-web project
 
     This program is free software: you can redistribute it and/or modify
@@ -195,7 +195,7 @@ function show_new_game_message()
 
   } else if (client.conn.playing != null && !game_loaded) {
     var pplayer = client.conn.playing;
-    message = "Welcome to FreecivX.net, the free browser-based 3D version of the classic turn-based strategy game Freeciv! You can ask questions to the AI bot (OpenAI) here. Have fun playing FreecivX!";
+    message = "Welcome to FreecivWorld.net, the free browser-based 3D version of the classic turn-based strategy game Freeciv! You can ask questions to the AI bot (OpenAI) here. Have fun playing FreecivWorld!";
 
   } else if (game_loaded) {
     message = "Welcome back, " + username;
@@ -404,19 +404,6 @@ function updateElementsPosition() {
 **************************************************************************/
 function show_splash_screen()
 {
-  $.blockUI({
-    message: '<img src="/images/backgrounds/freecivx-splash-c.jpg" style="width:100%; height:100%; object-fit:contain; z-index: 10000;">',
-    css: {
-      border: 'none',
-      padding: '0',
-      opacity: 1,
-      "z-index": 100000,
-      "margin-top": - 200
-
-    }
-  });
-  $(".blockUI").css("margin-top", "-150px");
-  $(".blockUI").css("transform", "scale(1.4)");
 
 
 }

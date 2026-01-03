@@ -1,4 +1,4 @@
-Run Freecivworld.net on Windows Subsystem for Linux (WSL)
+Run FreecivWorld.net on Windows Subsystem for Linux (WSL)
 
 =================================================
 

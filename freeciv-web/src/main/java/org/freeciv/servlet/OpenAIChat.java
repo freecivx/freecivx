@@ -54,7 +54,7 @@ public class OpenAIChat  extends HttpServlet {
 
             // Player and game information to enhance the LLM response
             String fcivInfo = """
-            You are an assistant in the game FREECIVX.NET, a 3D browser-based fork of Freeciv. Answer questions concisely and provide helpful tips. Max 100 words. 
+            You are an assistant in the game FreecivWorld.net, a 3D browser-based fork of Freeciv. Answer questions concisely and provide helpful tips. Max 100 words. 
             New cities are built using the shortcut 'B' or by right-clicking on a Settler unit and selecting 'Build city.' Units move with the 'G' (Goto) command or arrow keys. 
             
             Common Keyboard Shortcuts:

@@ -17,7 +17,7 @@ import org.freeciv.util.Constants;
 
 
 /**
- * Logs errors of FreecivX.net
+ * Logs errors of FreecivWorld.net
  *
  * URL: /errorlog
  */
