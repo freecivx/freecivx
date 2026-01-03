@@ -17,12 +17,12 @@ test('Freeciv web homepage loads and has the correct title', async ({ page }) =>
   const htmlContent = await page.content();
   console.log('Page HTML content:', htmlContent);
 
-  // Check if the page title contains "FREECIVX"
+  // Check if the page title contains "FREECIVWORLD"
   const title = await page.title();
   console.log(`Page title: ${title}`);
-  expect(title).toContain('FREECIVX');
+  expect(title).toContain('FREECIVWORLD');
 
   // Check if a key element (the Freeciv-web logo) is visible on the page
-  const logo = await page.locator('img[alt="FreecivX"]');
+  const logo = await page.locator('img[alt="FreecivWorld"]');
   await expect(logo).toBeVisible();
 });
