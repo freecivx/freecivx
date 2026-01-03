@@ -695,7 +695,7 @@ function show_tech_gained_dialog(tech_gained_id)
             },{
 				text : "Show Technology Tree",
 				click : function() {
-                  $("#tabs").tabs("option", "active", 3);
+                  $("#tabs").tabs("option", "active", 2);
                   set_default_mapview_inactive();
                   update_tech_screen();
 				  $("#tech_dialog").dialog('close');
