@@ -75,7 +75,6 @@ function renderer_init() {
 
     webgl_start_renderer();
     init_webgl_mapview();
-    init_globe_view();
 
     init_webgl_mapctrl();
     init_game_unit_panel();

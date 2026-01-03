@@ -191,7 +191,7 @@ function handle_tile_info(packet)
     update_borders_tile(tiles[packet['tile']]);
     update_roads_tile(tiles[packet['tile']], true);
     update_tiletypes_tile(tiles[packet['tile']]);
-    update_globe_known_tile(tiles[packet['tile']]);
+
   }
 }
 
@@ -517,7 +517,6 @@ function handle_map_info(packet)
   init_borders_image();
   init_roads_image();
   init_map_tiletype_image();
-  init_globe_known_image();
 
 }
 

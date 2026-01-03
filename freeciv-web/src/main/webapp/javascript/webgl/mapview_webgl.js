@@ -357,7 +357,7 @@ function update_map_known_tiles()
 ****************************************************************************/
 function animate_webgl() {
   if (scene == null) return;
-  if (globe_view_active) return;
+
   if (stats != null) stats.begin();
   if (mapview_slide['active']) update_map_slide_3d();
 

@@ -329,7 +329,7 @@ function set_default_mapview_active()
   $(".chatbox_dialog").css("left", "5px");
 
   $("#mapview_canvas_div").show();
-  globe_view_active = false;
+
 }
 
 

@@ -208,11 +208,6 @@ function control_init()
     init_civ_dialog();
   });
 
-  $("#globe_tab").click(function(event) {
-    set_default_mapview_inactive();
-    set_globe_view_active();
-  });
-
   $("#tech_tab").click(function(event) {
     set_default_mapview_inactive();
     update_tech_screen();
@@ -370,19 +365,9 @@ function update_mouse_cursor()
     return;
   }
 
-  var ptile;
-  if (!globe_view_active) {
-    ptile = webgl_canvas_pos_to_tile(mouse_x, mouse_y);
-    if (ptile == null) return;
-    highlight_map_tile_mouse(ptile.x, ptile.y);
-  }
-
-  if (globe_view_active) {
-    ptile = globe_canvas_pos_to_tile(mouse_x, mouse_y, false);
-    if (ptile == null) return;
-    highlight_globe_tile_mouse(ptile.x, ptile.y);
-
-  }
+  var ptile = webgl_canvas_pos_to_tile(mouse_x, mouse_y);
+  if (ptile == null) return;
+  highlight_map_tile_mouse(ptile.x, ptile.y);
 
   var punit = find_visible_unit(ptile);
   var pcity = tile_city(ptile);
