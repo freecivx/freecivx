@@ -14,7 +14,6 @@
 #   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 dependencies="\
-  openjdk-25-jdk-headless \
   acl \
   meson \
   wget \
