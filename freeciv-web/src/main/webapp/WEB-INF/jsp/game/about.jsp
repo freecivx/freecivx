@@ -180,7 +180,7 @@
 						 <span id="statistics-multiplayer"><b>0</b></span> multiplayer games, with
 						 <span id="statistics-players"><b>0</b></span> registered players.
 						 <br>
-						FreecivWorld.net was first launched 18th June 2024, and is based on Freeciv-web from 2013, based on Freeciv which was started in 1996.</h4>
+						FreecivWorld.net was first launched January 4 2026, and is based on Freeciv-web from 2013, based on Freeciv which was started in 1996.</h4>
 
 					</div>
 				</div>

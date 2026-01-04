@@ -14,7 +14,7 @@
 				<li id="hel_tab"><a href="#tabs-hel"><i class="fa fa-circle-info" aria-hidden="true"></i> Manual</a></li>
 
 
-                <div id="game_status_panel_top"></div>
+        <div id="game_status_panel_top"></div>
 
 				<div id="turn_done_button_div">
 						 <img id="zoom_map_image" src="/images/map-zoom.png" title="Zoom map out/in">

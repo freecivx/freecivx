@@ -1025,11 +1025,11 @@ function show_intro_dialog(title, message) {
 
   blur_input_on_touchdevice();
 
-
   $(".ui-widget-overlay").css("background-position", "center");
   $(".ui-widget-overlay").css("background-repeat", "no-repeat");
   $(".ui-widget-overlay").css("background-size", "cover");
   $(".ui-widget-overlay").css("opacity", "1.0");
+  $(".ui-widget-overlay").css("background-image", "url('/images/backgrounds/freecivworld-logo.jpg')")
 
   $(window).on("resize", function () {
     $("#dialog").dialog("option", "position", { my: "center", at: "center", of: window });
@@ -1039,6 +1039,8 @@ function show_intro_dialog(title, message) {
   add_chatbox_text({message: 'Welcome to FreecivX. You can enter game commands, chat with players or ask the AI. Try the /help command or ask the AI. FreecivX is a free open source strategy game forked from Freeciv.', event : E_CHAT_MSG});
   $("#pregame_page").show();
 
+  $("#dialog").parent().hide();
+  setTimeout("$('#dialog').parent().show();", 1000);
 }
 
 /**************************************************************************
