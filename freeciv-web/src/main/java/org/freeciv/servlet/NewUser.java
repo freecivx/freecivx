@@ -138,7 +138,7 @@ public class NewUser extends HttpServlet {
 
 	public void sendEmailVerify(String to, String randomNumber) throws MessagingException, IOException {
 		String verificationLink = "https://www.FreecivWorld.net/verify?id=" + randomNumber;
-		String emailBody = "Welcome to FreecivX,\n\nPlease verify your FreecivWorld.net account: \n"
+		String emailBody = "Welcome to FreecivWorld,\n\nPlease verify your FreecivWorld.net account: \n"
 				+ verificationLink + "\n\nThank you for joining!";
 		sendEmail(to, "Welcome to FreecivWorld.net", emailBody);
 	}
