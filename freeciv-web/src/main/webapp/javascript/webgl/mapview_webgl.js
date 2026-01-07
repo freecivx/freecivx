@@ -219,6 +219,10 @@ async function init_webgl_mapview() {
 ****************************************************************************/
 function init_land_geometry(geometry, mesh_quality)
 {
+  if (typeof topo_has_flag !== 'undefined' && topo_has_flag(TF_HEX)) {
+    return init_land_geometry_hex(geometry, mesh_quality);
+  }
+
   const xquality = map.xsize * mesh_quality + 1;
   const yquality = map.ysize * mesh_quality + 1;
 
@@ -280,9 +284,86 @@ function init_land_geometry(geometry, mesh_quality)
 }
 
 /****************************************************************************
+  Initialize land geometry for HEX topology
+****************************************************************************/
+function init_land_geometry_hex(geometry, mesh_quality) {
+  const segment_width = mapview_model_width / map.xsize;
+  const segment_height = mapview_model_height / map.ysize;
+  const width_half = mapview_model_width / 2;
+  const height_half = mapview_model_height / 2;
+
+  const vertices = [];
+  const indices = [];
+  const uvs = [];
+
+  let index_offset = 0;
+  let heightmap_scale = (mesh_quality === 2) ? (mesh_quality * 2) : 1;
+  const xquality = map.xsize * mesh_quality + 1;
+
+  for (let iy = 0; iy < map.ysize; iy++) {
+    const y_pos = iy * segment_height - height_half;
+    const offset_x = (iy % 2 !== 0) ? (segment_width / 2) : 0;
+
+    for (let ix = 0; ix < map.xsize; ix++) {
+      const x_pos = ix * segment_width - width_half + offset_x;
+
+      // Heights:
+      // Sample heightmap at roughly the tile corners.
+      // Since heightmap is generated as a grid, sampling (ix, iy) works.
+      // We will just use the height at (ix, iy) for all corners for now, or sample 4 points if possible.
+      // With Disjoint logic, we should ideally interpolate.
+      // But let's stick to simple "flat" tile or simple sampling.
+      // Let's sample the height at (ix, iy) * mesh_quality?
+
+      // Note: heightmap is 1D array.
+      // index = y * scale * xquality + x * scale.
+      // Let's use the same index logic as the grid to get heights for the 4 corners relative to the grid.
+      // For HEX mode, we just grab the height at the corresponding grid point.
+
+      let h_idx = (iy * heightmap_scale * xquality) + (ix * heightmap_scale);
+      let h = (heightmap[h_idx] || 0) * 100;
+
+      // TL, TR, BL, BR
+      vertices.push(x_pos, -y_pos, h); // TL
+      vertices.push(x_pos + segment_width, -y_pos, h); // TR
+      vertices.push(x_pos, -(y_pos + segment_height), h); // BL
+      vertices.push(x_pos + segment_width, -(y_pos + segment_height), h); // BR
+
+      uvs.push( ix / map.xsize, 1 - (iy / map.ysize) );
+      uvs.push( (ix + 1) / map.xsize, 1 - (iy / map.ysize) );
+      uvs.push( ix / map.xsize, 1 - ((iy + 1) / map.ysize) );
+      uvs.push( (ix + 1) / map.xsize, 1 - ((iy + 1) / map.ysize) );
+
+      indices.push(index_offset, index_offset + 2, index_offset + 1);
+      indices.push(index_offset + 1, index_offset + 2, index_offset + 3);
+
+      index_offset += 4;
+    }
+  }
+
+  if (mesh_quality === 2) {
+    lofibufferattribute = new THREE.Float32BufferAttribute( vertices, 3 );
+    geometry.setAttribute( 'position', lofibufferattribute);
+  } else {
+    landbufferattribute = new THREE.Float32BufferAttribute( vertices, 3 );
+    geometry.setAttribute( 'position', landbufferattribute);
+  }
+
+  geometry.setIndex( indices );
+  geometry.setAttribute( 'uv', new THREE.Float32BufferAttribute( uvs, 2 ) );
+  geometry.computeVertexNormals();
+
+  return geometry;
+}
+
+/****************************************************************************
   Create the land terrain geometry
 ****************************************************************************/
 function update_land_geometry(geometry, mesh_quality) {
+  if (typeof topo_has_flag !== 'undefined' && topo_has_flag(TF_HEX)) {
+    return update_land_geometry_hex(geometry, mesh_quality);
+  }
+
   const xquality = map.xsize * mesh_quality + 1;
   const yquality = map.ysize * mesh_quality + 1;
 
@@ -307,6 +388,43 @@ function update_land_geometry(geometry, mesh_quality) {
       const heightIndex = (sy * heightmap_scale * xquality) + (sx * heightmap_scale); // Convert (sx, sy) to single index
 
       bufferAttribute.setXYZ(index, x, -y, heightmap[heightIndex] * 100);
+    }
+  }
+
+  bufferAttribute.needsUpdate = true;
+  geometry.computeVertexNormals();
+
+  return geometry;
+}
+
+/****************************************************************************
+  Update land terrain geometry for HEX topology
+****************************************************************************/
+function update_land_geometry_hex(geometry, mesh_quality) {
+  const segment_width = mapview_model_width / map.xsize;
+  const segment_height = mapview_model_height / map.ysize;
+  const width_half = mapview_model_width / 2;
+  const height_half = mapview_model_height / 2;
+
+  const bufferAttribute = mesh_quality === 2 ? lofibufferattribute : landbufferattribute;
+  let heightmap_scale = (mesh_quality === 2) ? (mesh_quality * 2) : 1;
+  const xquality = map.xsize * mesh_quality + 1;
+
+  let vertexIndex = 0;
+  for (let iy = 0; iy < map.ysize; iy++) {
+    const y_pos = iy * segment_height - height_half;
+    const offset_x = (iy % 2 !== 0) ? (segment_width / 2) : 0;
+
+    for (let ix = 0; ix < map.xsize; ix++) {
+      const x_pos = ix * segment_width - width_half + offset_x;
+
+      let h_idx = (iy * heightmap_scale * xquality) + (ix * heightmap_scale);
+      let h = (heightmap[h_idx] || 0) * 100;
+
+      bufferAttribute.setXYZ(vertexIndex++, x_pos, -y_pos, h);
+      bufferAttribute.setXYZ(vertexIndex++, x_pos + segment_width, -y_pos, h);
+      bufferAttribute.setXYZ(vertexIndex++, x_pos, -(y_pos + segment_height), h);
+      bufferAttribute.setXYZ(vertexIndex++, x_pos + segment_width, -(y_pos + segment_height), h);
     }
   }
 

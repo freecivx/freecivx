@@ -737,6 +737,10 @@ function pregame_settings()
     }
   });
 
+  if (server_settings['topology'] != null && server_settings['topology']['val'] != null) {
+     $("#topology").val(server_settings['topology']['val']);
+  }
+
   /* Make the long ruleset description available in the pregame. The
    * ruleset's README isn't located at the player's computer. */
   $('#ruleset_description').html(" description");

@@ -24,8 +24,17 @@
 function map_to_scene_coords(x, y)
 {
   var result = {};
-  result['x'] = Math.floor(-470 + x * mapview_model_width / map['xsize']);
-  result['y'] = Math.floor(30 + y * mapview_model_height / map['ysize']);
+  if (typeof topo_has_flag !== 'undefined' && topo_has_flag(TF_HEX)) {
+    var tile_width = mapview_model_width / map['xsize'];
+    var tile_height = mapview_model_height / map['ysize'];
+    var offset_x = (y % 2 !== 0) ? (tile_width / 2) : 0;
+
+    result['x'] = Math.floor(-470 + x * tile_width + offset_x);
+    result['y'] = Math.floor(30 + y * tile_height);
+  } else {
+    result['x'] = Math.floor(-470 + x * mapview_model_width / map['xsize']);
+    result['y'] = Math.floor(30 + y * mapview_model_height / map['ysize']);
+  }
 
   return result;
 }
@@ -36,8 +45,19 @@ function map_to_scene_coords(x, y)
 function scene_to_map_coords(x, y)
 {
   var result = {};
-  result['x'] = Math.floor((x + 500) * map['xsize'] / mapview_model_width);
-  result['y'] = Math.floor((y) * map['ysize'] / mapview_model_height);
+
+  if (typeof topo_has_flag !== 'undefined' && topo_has_flag(TF_HEX)) {
+    var tile_width = mapview_model_width / map['xsize'];
+    var tile_height = mapview_model_height / map['ysize'];
+
+    result['y'] = Math.floor((y) / tile_height);
+    var offset_x = (result['y'] % 2 !== 0) ? (tile_width / 2) : 0;
+
+    result['x'] = Math.floor((x + 500 - offset_x) / tile_width);
+  } else {
+    result['x'] = Math.floor((x + 500) * map['xsize'] / mapview_model_width);
+    result['y'] = Math.floor((y) * map['ysize'] / mapview_model_height);
+  }
 
   return result;
 }
