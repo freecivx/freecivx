@@ -17,32 +17,27 @@
  *******************************************************************************/
 package org.freeciv.servlet;
 
-import java.io.IOException;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
-import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import jakarta.servlet.RequestDispatcher;
-import jakarta.servlet.ServletException;
-import jakarta.servlet.annotation.MultipartConfig;
-import jakarta.servlet.http.HttpServlet;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
-
 import org.freeciv.util.DatabaseUtil;
+import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 
 /**
  * Displays detailed information about a specific game
  *
  * URL: /meta/game-details
  */
-@MultipartConfig
-public class GameDetails extends HttpServlet {
+@Controller
+public class GameDetails {
 
 	private static final Logger logger = LoggerFactory.getLogger(GameDetails.class);
 
@@ -88,30 +83,29 @@ public class GameDetails extends HttpServlet {
 
 	}
 
-	private static final long serialVersionUID = 1L;
+	@GetMapping("/meta/game-details")
+	public String getGameDetails(
+			@RequestParam(required = false) String host,
+			@RequestParam(required = false) String port,
+			Model model) {
 
-	@Override
-	public void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+		String sHost = host;
+		String sPort = port;
 
-		String sHost = request.getParameter("host");
-		String sPort = request.getParameter("port");
-
-		int port;
+		int portNum;
 		try {
 			if (sPort == null) {
 				throw new IllegalArgumentException("Port must be supplied.");
 			}
-			port = Integer.parseInt(sPort);
-			if ((port < 1024) || (port > 65535)) {
+			portNum = Integer.parseInt(sPort);
+			if ((portNum < 1024) || (portNum > 65535)) {
 				throw new IllegalArgumentException("Invalid port supplied. Expected a number between 1024 and 65535");
 			}
 			if (sHost == null) {
 				throw new IllegalArgumentException("Host parameter is required to perform this request.");
 			}
 		} catch (IllegalArgumentException e) {
-			RequestDispatcher rd = request.getRequestDispatcher("game-details.jsp");
-			rd.forward(request, response);
-			return;
+			return "game-details";
 		}
 
 		String hostPort = sHost + ':' + sPort;
@@ -121,22 +115,20 @@ public class GameDetails extends HttpServlet {
 
 			try (PreparedStatement statement = conn.prepareStatement(query)) {
 				statement.setString(1, sHost);
-				statement.setInt(2, port);
+				statement.setInt(2, portNum);
 				try (ResultSet rs = statement.executeQuery()) {
 					if (rs.next()) {
-						request.setAttribute("version", rs.getString("version"));
-						request.setAttribute("patches", rs.getString("patches"));
-						request.setAttribute("capability", rs.getString("capability"));
-						request.setAttribute("state", rs.getString("state"));
-						request.setAttribute("ruleset", rs.getString("ruleset"));
-						request.setAttribute("serverid", rs.getString("serverid"));
-						request.setAttribute("port", port);
-						request.setAttribute("host", sHost);
-						request.setAttribute("type", rs.getString("type"));
+						model.addAttribute("version", rs.getString("version"));
+						model.addAttribute("patches", rs.getString("patches"));
+						model.addAttribute("capability", rs.getString("capability"));
+						model.addAttribute("state", rs.getString("state"));
+						model.addAttribute("ruleset", rs.getString("ruleset"));
+						model.addAttribute("serverid", rs.getString("serverid"));
+						model.addAttribute("port", portNum);
+						model.addAttribute("host", sHost);
+						model.addAttribute("type", rs.getString("type"));
 					} else {
-						RequestDispatcher rd = request.getRequestDispatcher("game-information.jsp");
-						rd.forward(request, response);
-						return;
+						return "game-information";
 					}
 				}
 			}
@@ -155,7 +147,7 @@ public class GameDetails extends HttpServlet {
 						player.type = rs.getString("type");
 						players.add(player);
 					}
-					request.setAttribute("players", players);
+					model.addAttribute("players", players);
 				}
 			}
 
@@ -170,19 +162,15 @@ public class GameDetails extends HttpServlet {
 						variable.value = rs.getString("setting");
 						variables.add(variable);
 					}
-					request.setAttribute("variables", variables);
+					model.addAttribute("variables", variables);
 				}
 			}
 
 		} catch (Exception err) {
 			logger.error("Error fetching game details", err);
-			request.removeAttribute("state");
-			RequestDispatcher rd = request.getRequestDispatcher("/WEB-INF/jsp/game/details.jsp");
-			rd.forward(request, response);
-			return;
+			return "game/details";
 		}
 
-		RequestDispatcher rd = request.getRequestDispatcher("/WEB-INF/jsp/game/details.jsp");
-		rd.forward(request, response);
+		return "game/details";
 	}
 }

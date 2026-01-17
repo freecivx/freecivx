@@ -24,61 +24,54 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.util.Objects;
-import java.util.Properties;
 import javax.naming.Context;
 import javax.naming.InitialContext;
-import jakarta.servlet.*;
-import jakarta.servlet.http.*;
 import javax.sql.DataSource;
 
 import org.apache.commons.codec.digest.DigestUtils;
 import org.freeciv.services.Validation;
 import org.freeciv.util.Constants;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 
 /**
  * Deletes a savegame.
  *
  * URL: /deletesavegame
  */
-public class DeleteSaveGame extends HttpServlet {
-	
-	private static final long serialVersionUID = 1L;
+@RestController
+public class DeleteSaveGame {
 
-	private final Validation validation = new Validation();
+	@Autowired
+	private Validation validation;
 	
+	@Value("${savegame.dir}")
 	private String savegameDirectory;
 
-	public void init(ServletConfig config) throws ServletException {
-		super.init(config);
+	@PostMapping("/deletesavegame")
+	public ResponseEntity<String> deleteSaveGame(
+			@RequestParam("username") String username,
+			@RequestParam("savegame") String savegame,
+			@RequestParam("sha_password") String sha_password,
+			@RequestParam("userid") String userid) {
 
-		try {
-			Properties prop = new Properties();
-			prop.load(getServletContext().getResourceAsStream("/WEB-INF/config.properties"));
-			savegameDirectory = prop.getProperty("savegame_dir");
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
-	}
-
-	public void doPost(HttpServletRequest request, HttpServletResponse response)
-			throws IOException, ServletException {
-
-		String username = request.getParameter("username");
-		String savegame = request.getParameter("savegame");
-		String secure_password = java.net.URLDecoder.decode(request.getParameter("sha_password"), StandardCharsets.UTF_8);
-		String userid = request.getParameter("userid");
+		String secure_password = java.net.URLDecoder.decode(sha_password, StandardCharsets.UTF_8);
 
 		if (!validation.isValidUsername(username)) {
-			response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR,
-					"Invalid username");
-			return;
+			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+					.body("Invalid username");
 		}
 		String usernameFromDB = getUsernameFromDB(username, userid, secure_password);
 
 		if (savegame == null || savegame.length() > 100 || savegame.contains("/") || savegame.contains("\\") || savegame.contains(".")) {
-			response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR,
-					"Invalid savegame");
-			return;
+			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+					.body("Invalid savegame");
 		}
 
 		try {
@@ -89,9 +82,8 @@ public class DeleteSaveGame extends HttpServlet {
 			File folder = new File(savegameDirectory + "/" + usernameFromDB.toLowerCase());
 
 			if (!folder.exists()) {
-				response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR,
-						"Save folder under the given username cannot be found.");
-				return;
+				return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+						.body("Save folder under the given username cannot be found.");
 			} 
 			boolean fileFound = false;
 			for (File savegameFile: Objects.requireNonNull(folder.listFiles())) {
@@ -104,21 +96,22 @@ public class DeleteSaveGame extends HttpServlet {
 				}
 			}
 			if (!fileFound) {
-				response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR,
-						"Saved game not found.");
+				return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+						.body("Saved game not found.");
             }
+            return ResponseEntity.ok().build();
 		} catch (Exception err) {
-			response.setHeader("result", "error");
-			response.sendError(HttpServletResponse.SC_BAD_REQUEST, "ERROR");
+			return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+					.header("result", "error")
+					.body("ERROR");
 		}
 
 	}
 
-	public void doGet(HttpServletRequest request, HttpServletResponse response)
-			throws IOException, ServletException {
-
-		response.sendError(HttpServletResponse.SC_METHOD_NOT_ALLOWED, "This endpoint only supports the POST method.");
-
+	@GetMapping("/deletesavegame")
+	public ResponseEntity<String> getNotAllowed() {
+		return ResponseEntity.status(HttpStatus.METHOD_NOT_ALLOWED)
+				.body("This endpoint only supports the POST method.");
 	}
 
 	private String getUsernameFromDB(String username, String userid, String secure_password) {

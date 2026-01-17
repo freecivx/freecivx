@@ -18,10 +18,6 @@
 package org.freeciv.servlet;
 
 import java.nio.charset.StandardCharsets;
-import java.io.*;
-import jakarta.servlet.*;
-import jakarta.servlet.http.*;
-import jakarta.servlet.annotation.WebServlet;
 import java.sql.*;
 import java.util.Properties;
 import javax.mail.*;
@@ -32,72 +28,84 @@ import javax.naming.*;
 import org.freeciv.services.Validation;
 import org.freeciv.util.Constants;
 import org.apache.commons.lang3.RandomStringUtils;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 
 /**
  * Servlet to create a new FreecivX user account.
  */
-@WebServlet("/create_user")
-public class NewUser extends HttpServlet {
+@RestController
+public class NewUser {
 
-	private static final long serialVersionUID = 1L;
-	private final Validation validation = new Validation();
+	@Autowired
+	private Validation validation;
 
-	@Override
-	public void doPost(HttpServletRequest request, HttpServletResponse response)
-			throws IOException, ServletException {
+	@Value("${email.host:}")
+	private String emailHost;
 
-		String username = java.net.URLDecoder.decode(request.getParameter("username"), StandardCharsets.UTF_8);
-		String password = java.net.URLDecoder.decode(request.getParameter("password"), StandardCharsets.UTF_8);
-		String email = java.net.URLDecoder.decode(request.getParameter("email").replace("+", "%2B"), StandardCharsets.UTF_8);
+	@Value("${email.port:}")
+	private String emailPort;
+
+	@Value("${email.username:}")
+	private String emailUsername;
+
+	@Value("${email.password:}")
+	private String emailPassword;
+
+	@Value("${email.sender:}")
+	private String emailSender;
+
+	@PostMapping("/create_user")
+	public ResponseEntity<String> createUser(
+			@RequestParam("username") String username_param,
+			@RequestParam("password") String password_param,
+			@RequestParam("email") String email_param,
+			jakarta.servlet.http.HttpServletRequest request) {
+
+		String username = java.net.URLDecoder.decode(username_param, StandardCharsets.UTF_8);
+		String password = java.net.URLDecoder.decode(password_param, StandardCharsets.UTF_8);
+		String email = java.net.URLDecoder.decode(email_param.replace("+", "%2B"), StandardCharsets.UTF_8);
 
 		// Validate inputs
-		if (!isValidInput(username, password, email, response)) {
-			return;
+		if (password == null || password.length() <= 2) {
+			return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Invalid password.");
+		}
+		if (!validation.isValidUsername(username)) {
+			return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Invalid username.");
+		}
+		if (email == null || email.length() <= 4) {
+			return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Invalid email address.");
 		}
 
 		String ipAddress = getClientIp(request);
 
 		try (Connection conn = getConnection()) {
 			if (isIPLimitExceeded(conn, ipAddress)) {
-				response.sendError(HttpServletResponse.SC_BAD_REQUEST, "IP address limit exceeded.");
-				return;
+				return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("IP address limit exceeded.");
 			}
 
 			String randomNumber = "1" + RandomStringUtils.randomNumeric(20);
-			createUser(conn, username, email, password, ipAddress, randomNumber);
+			createUserInDB(conn, username, email, password, ipAddress, randomNumber);
 			sendEmailVerify(email, randomNumber);
-			response.getWriter().print("OK");
+			return ResponseEntity.ok("OK");
 		} catch (Exception e) {
 			e.printStackTrace();
-			response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Error creating user.");
+			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error creating user.");
 		}
 	}
 
-	@Override
-	public void doGet(HttpServletRequest request, HttpServletResponse response)
-			throws IOException, ServletException {
-		response.sendError(HttpServletResponse.SC_METHOD_NOT_ALLOWED, "POST method only.");
+	@GetMapping("/create_user")
+	public ResponseEntity<String> getNotAllowed() {
+		return ResponseEntity.status(HttpStatus.METHOD_NOT_ALLOWED).body("POST method only.");
 	}
 
-
-	private boolean isValidInput(String username, String password, String email, HttpServletResponse response)
-			throws IOException {
-		if (password == null || password.length() <= 2) {
-			response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Invalid password.");
-			return false;
-		}
-		if (!validation.isValidUsername(username)) {
-			response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Invalid username.");
-			return false;
-		}
-		if (email == null || email.length() <= 4) {
-			response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Invalid email address.");
-			return false;
-		}
-		return true;
-	}
-
-	private String getClientIp(HttpServletRequest request) {
+	private String getClientIp(jakarta.servlet.http.HttpServletRequest request) {
 		String ipAddress = request.getHeader("X-Real-IP");
 		return (ipAddress != null) ? ipAddress : request.getRemoteAddr();
 	}
@@ -121,7 +129,7 @@ public class NewUser extends HttpServlet {
 		return false;
 	}
 
-	private void createUser(Connection conn, String username, String email, String password, String ip, String verifyKey)
+	private void createUserInDB(Connection conn, String username, String email, String password, String ip, String verifyKey)
 			throws SQLException {
 		String insertQuery = "INSERT INTO auth (username, email, secure_hashed_password, ip, verifykey, elo_rating, last_login, verified) "
 				+ "VALUES (?, ?, ?, ?, ?, 1000, NOW(), 0)";
@@ -136,31 +144,28 @@ public class NewUser extends HttpServlet {
 		}
 	}
 
-	public void sendEmailVerify(String to, String randomNumber) throws MessagingException, IOException {
+	public void sendEmailVerify(String to, String randomNumber) throws MessagingException {
 		String verificationLink = "https://www.FreecivWorld.net/verify?id=" + randomNumber;
 		String emailBody = "Welcome to FreecivWorld,\n\nPlease verify your FreecivWorld.net account: \n"
 				+ verificationLink + "\n\nThank you for joining!";
 		sendEmail(to, "Welcome to FreecivWorld.net", emailBody);
 	}
 
-	public void sendEmail(String to, String subject, String body) throws MessagingException, IOException {
-		Properties prop = new Properties();
-		prop.load(getServletContext().getResourceAsStream("/WEB-INF/config.properties"));
-
+	public void sendEmail(String to, String subject, String body) throws MessagingException {
 		Properties props = new Properties();
 		props.put("mail.smtp.auth", "true");
 		props.put("mail.smtp.starttls.enable", "true");
-		props.put("mail.smtp.host", prop.getProperty("email_host"));
-		props.put("mail.smtp.port", prop.getProperty("email_port"));
+		props.put("mail.smtp.host", emailHost);
+		props.put("mail.smtp.port", emailPort);
 
 		Session session = Session.getInstance(props, new Authenticator() {
 			protected PasswordAuthentication getPasswordAuthentication() {
-				return new PasswordAuthentication(prop.getProperty("email_username"), prop.getProperty("email_password"));
+				return new PasswordAuthentication(emailUsername, emailPassword);
 			}
 		});
 
 		Message message = new MimeMessage(session);
-		message.setFrom(new InternetAddress(prop.getProperty("email_sender")));
+		message.setFrom(new InternetAddress(emailSender));
 		message.setRecipients(Message.RecipientType.TO, InternetAddress.parse(to));
 		message.setSubject(subject);
 		message.setText(body);

@@ -23,16 +23,20 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.util.Arrays;
 import java.util.Comparator;
-import java.util.Properties;
 import javax.naming.Context;
 import javax.naming.InitialContext;
-import jakarta.servlet.*;
-import jakarta.servlet.http.*;
 import javax.sql.DataSource;
 
-import org.apache.commons.lang3.StringUtils;
 import org.freeciv.services.Validation;
 import org.freeciv.util.Constants;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 
 
 /**
@@ -40,36 +44,24 @@ import org.freeciv.util.Constants;
  *
  * URL: /listsavegames
  */
-public class ListSaveGames extends HttpServlet {
-	
-	private static final long serialVersionUID = 1L;
+@RestController
+public class ListSaveGames {
 
-	private final Validation validation = new Validation();
+	@Autowired
+	private Validation validation;
 	
+	@Value("${savegame.dir}")
 	private String savegameDirectory;
 
-	public void init(ServletConfig config) throws ServletException {
-		super.init(config);
+	@PostMapping("/listsavegames")
+	public ResponseEntity<String> listSaveGames(
+			@RequestParam("username") String username,
+			@RequestParam("userid") String userid) {
 
-		try {
-			Properties prop = new Properties();
-			prop.load(getServletContext().getResourceAsStream("/WEB-INF/config.properties"));
-			savegameDirectory = prop.getProperty("savegame_dir");
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
-	}
-
-	public void doPost(HttpServletRequest request, HttpServletResponse response)
-			throws IOException, ServletException {
-
-		String username = request.getParameter("username");
 		if (!validation.isValidUsername(username)) {
-			response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR,
-					"Invalid username");
-			return;
+			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+					.body("Invalid username");
 		}
-		String userid = request.getParameter("userid");
 
         try {
 			String usernameFromDB = getUsernameFromDB(username, userid);
@@ -79,7 +71,7 @@ public class ListSaveGames extends HttpServlet {
 			File folder = new File(savegameDirectory + "/" + usernameFromDB.toLowerCase());
 
 			if (!folder.exists()) {
-				response.getOutputStream().print(";");
+				return ResponseEntity.ok(";");
 			} else {
 				File[] files = folder.listFiles();
 				StringBuilder buffer = new StringBuilder();
@@ -103,21 +95,21 @@ public class ListSaveGames extends HttpServlet {
 						}
 					}
 				}
-				response.getOutputStream().print(buffer.toString());
+				return ResponseEntity.ok(buffer.toString());
 			}
 
 		} catch (Exception err) {
-			response.setHeader("result", "error");
-			response.sendError(HttpServletResponse.SC_BAD_REQUEST, "ERROR");
+			return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+					.header("result", "error")
+					.body("ERROR");
 		}
 
 	}
 
-	public void doGet(HttpServletRequest request, HttpServletResponse response)
-			throws IOException, ServletException {
-
-		response.sendError(HttpServletResponse.SC_METHOD_NOT_ALLOWED, "This endpoint only supports the POST method.");
-
+	@GetMapping("/listsavegames")
+	public ResponseEntity<String> getNotAllowed() {
+		return ResponseEntity.status(HttpStatus.METHOD_NOT_ALLOWED)
+				.body("This endpoint only supports the POST method.");
 	}
 
 

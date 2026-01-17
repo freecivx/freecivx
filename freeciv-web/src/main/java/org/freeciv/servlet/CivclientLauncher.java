@@ -17,10 +17,6 @@
  *******************************************************************************/
 package org.freeciv.servlet;
 
-import java.io.*;
-import jakarta.servlet.*;
-import jakarta.servlet.http.*;
-
 import java.sql.*;
 
 import javax.sql.*;
@@ -28,6 +24,12 @@ import javax.sql.*;
 import org.freeciv.util.Constants;
 
 import javax.naming.*;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 
 
 /**
@@ -36,20 +38,15 @@ import javax.naming.*;
  *
  * URL: /civclientlauncher
  */
-public class CivclientLauncher extends HttpServlet {
-	
-	private static final long serialVersionUID = 1L;
+@RestController
+public class CivclientLauncher {
 
-	public void doPost(HttpServletRequest request, HttpServletResponse response)
-			throws IOException, ServletException {
+	@PostMapping("/civclientlauncher")
+	public ResponseEntity<String> launchCivclient(
+			@RequestParam(required = false, defaultValue = "new") String action,
+			@RequestParam(required = false) String civserverport) {
 
-		// Parse input parameters ...
-		String action = request.getParameter("action");
-		if (action == null) {
-			action = "new";
-		}
-
-		String civServerPort = request.getParameter("civserverport");
+		String civServerPort = civserverport;
 
 		Connection conn = null;
 		try {
@@ -67,10 +64,9 @@ public class CivclientLauncher extends HttpServlet {
 				gameType = "singleplayer";
 				break;
 			default:
-				response.setHeader("result", "invalid port validation");
-				response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR,
-						"Unable to find a valid Freeciv server to play on. Please try again later.");
-				return;
+				return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+						.header("result", "invalid port validation")
+						.body("Unable to find a valid Freeciv server to play on. Please try again later.");
 			}
 			
 
@@ -92,9 +88,8 @@ public class CivclientLauncher extends HttpServlet {
 				if (lookupRs.next()) {
 					civServerPort = Integer.toString(lookupRs.getInt(1));
 				} else {
-					response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR,
-							"No servers available for creating a new game on.");
-					return;
+					return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+							.body("No servers available for creating a new game on.");
 				}
 			}
 
@@ -102,26 +97,25 @@ public class CivclientLauncher extends HttpServlet {
 			String validateQuery = "SELECT COUNT(*) FROM servers WHERE port = ?";
 			PreparedStatement validateStmt = conn.prepareStatement(validateQuery);
 			if (civServerPort == null || civServerPort.isEmpty()) {
-				response.setHeader("result", "invalid port validation");
-				response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR,
-						"Unable to find a valid Freeciv server to play on. Please try again later.");
-				return;
+				return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+						.header("result", "invalid port validation")
+						.body("Unable to find a valid Freeciv server to play on. Please try again later.");
 			}
 
 			validateStmt.setInt(1, Integer.parseInt(civServerPort));
 			ResultSet validateRs = validateStmt.executeQuery();
 			validateRs.next();
 			if (validateRs.getInt(1) != 1) {
-				response.setHeader("result", "invalid port validation");
-				response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR,
-						"Invalid input values to civclient.");
-				return;
+				return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+						.header("result", "invalid port validation")
+						.body("Invalid input values to civclient.");
 			}
 
 		} catch (Exception err) {
-			response.setHeader("result", err.getMessage());
 			err.printStackTrace();
-			return;
+			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+					.header("result", err.getMessage())
+					.build();
 		} finally {
 			if (conn != null)
 				try {
@@ -132,17 +126,17 @@ public class CivclientLauncher extends HttpServlet {
 		}
 
 		int port = Integer.parseInt(civServerPort);
-		response.setHeader("port", String.valueOf(port));
-		response.setHeader("result", "success");
-		response.getOutputStream().print("success");
+		return ResponseEntity.ok()
+				.header("port", String.valueOf(port))
+				.header("result", "success")
+				.body("success");
 
 	}
 
-	public void doGet(HttpServletRequest request, HttpServletResponse response)
-			throws IOException, ServletException {
-
-		response.sendError(HttpServletResponse.SC_METHOD_NOT_ALLOWED, "This endpoint only supports the POST method.");
-
+	@GetMapping("/civclientlauncher")
+	public ResponseEntity<String> getNotAllowed() {
+		return ResponseEntity.status(HttpStatus.METHOD_NOT_ALLOWED)
+				.body("This endpoint only supports the POST method.");
 	}
 
 }
