@@ -1,3 +1,5 @@
+#!/bin/bash
+
 #   Copyright (C) 2018  The Freeciv-web project
 #
 #   This program is free software: you can redistribute it and/or modify
@@ -86,4 +88,30 @@ if [ "${INSTALLED_TOMCAT}" = N ]; then
 fi
 
 TMPINSTDIR=$(mktemp -d)
+
+echo "==== Installing Node.js ===="
+if [ "${INSTALLED_NODEJS}" = N ]; then
+  NODE_MAJOR=20
+  sudo mkdir -p /etc/apt/keyrings
+  curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key | sudo gpg --dearmor -o /etc/apt/keyrings/nodesource.gpg
+  echo "deb [signed-by=/etc/apt/keyrings/nodesource.gpg] https://deb.nodesource.com/node_${NODE_MAJOR}.x nodistro main" | sudo tee /etc/apt/sources.list.d/nodesource.list
+  sudo ${APT_GET} update
+  sudo ${APT_GET} install --no-install-recommends nodejs
+  if ! command -v npm >/dev/null ; then
+    sudo ${APT_GET} install --no-install-recommends npm
+  fi
+  if apt-get --simulate install node-opener &> /dev/null ; then
+    sudo ${APT_GET} install --no-install-recommends node-opener
+  fi
+fi
+
+# Populate ~/.config with current user
+npm help > /dev/null
+
+export MESON_VER="0.60.3"
+
+echo "==== Installing Meson ===="
+if ! sudo ${APT_GET} satisfy "meson (>= ${MESON_VER})" ; then
+  ext_install_meson
+fi
 

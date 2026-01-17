@@ -60,4 +60,21 @@ ext_install_tomcat11 () {
   ext_installed[${#ext_installed[@]}]="tomcat11"
 }
 
+ext_install_meson () {
+  mkdir -p ${HOME}/freeciv/meson-install
+
+  ( cd ${HOME}/freeciv/meson-install
+
+    if ! wget "https://github.com/mesonbuild/meson/releases/download/${MESON_VER}/meson-${MESON_VER}.tar.gz" ; then
+      echo "Meson download failed!" >&2
+      exit 1
+    fi
+
+    tar xzf meson-${MESON_VER}.tar.gz
+    ln -s "meson-${MESON_VER}/meson.py" meson
+  )
+
+  ext_installed[${#ext_installed[@]}]="meson"
+}
+
 
