@@ -14,6 +14,8 @@ This document outlines the plan to modernize JavaScript files in the `freeciv-we
 8. **Modern Loops**: Use `for...of`, `forEach`, `map`, `filter`, etc. where appropriate
 9. **Strict Equality**: Use `===` and `!==` instead of `==` and `!=`
 10. **Optional Chaining**: Use `?.` for safer property access where supported
+11. In general use modern Javascript features and built in browser features, and improve general code quality.
+12. Use modern Three.js patterns and best practices.
 
 ## Files to Modernize (in order)
 
