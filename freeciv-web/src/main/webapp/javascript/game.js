@@ -195,7 +195,7 @@ function current_turn_timeout()
 function sum_width()
 {
   let sum = 0;
-  $("#tabs_menu").children().each(() => {
+  $("#tabs_menu").children().each(function() {
     if ($(this).is(":visible") && $(this).attr('id') !== "game_status_panel_top") sum += $(this).width();
   });
   return sum;
