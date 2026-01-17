@@ -100,11 +100,50 @@ bash ./scripts/status-freeciv-web.sh
 
 ## Running and Testing the Game
 
-### Starting the Development Server
+### Running FreecivWorld in GitHub Copilot Environment
+
+**IMPORTANT: Network Limitations in Copilot Workspace**
+
+When attempting to run FreecivWorld inside a GitHub Copilot workspace, you will encounter network restrictions:
+
+- **External network access is LIMITED**: Many external domains are blocked, including Apache Tomcat download servers
+- **Docker builds will fail**: The Dockerfile depends on downloading Tomcat from tomcat.apache.org, which is typically blocked
+- **Manual installation challenges**: Full installation requires downloading dependencies from various sources
+
+#### Recommended Approach for Copilot Development
+
+For working with FreecivWorld in a Copilot environment, use this workflow:
+
+1. **Code Exploration and Editing**: ✅ Works perfectly
+   - Browse and search the codebase
+   - Edit JavaScript, Java, C, and Python files
+   - Use grep/glob to find code patterns
+   - Review and modify configuration files
+
+2. **Static Analysis**: ✅ Works well
+   - Analyze code structure
+   - Review architecture and dependencies
+   - Understand component interactions
+   - Plan changes and refactoring
+
+3. **Local Testing**: ⚠️ Limited
+   - Playwright browser is available for viewing static content
+   - Cannot run full server stack due to network restrictions
+   - Can build individual components if dependencies are cached
+
+4. **Development Workflow**: ✅ Recommended
+   - Make code changes in Copilot
+   - Use CI/CD pipeline for testing
+   - Review changes locally on your machine for full testing
+   - Use Copilot for code review and documentation
+
+### Starting the Development Server (Local/Full Environment)
 
 There are multiple ways to run FreecivWorld depending on your environment:
 
-#### Option 1: Docker Development Environment (Recommended for Copilot)
+#### Option 1: Docker Development Environment (Recommended for Local Development)
+
+**Note**: This requires unrestricted network access and will NOT work in restricted Copilot environments.
 
 ```bash
 # Start the container with volume mount for live development
@@ -119,6 +158,11 @@ docker-compose up -d
 
 # Access the game at http://localhost:8080/
 ```
+
+**Common Issues in Copilot**:
+- `curl: (6) Could not resolve host: tomcat.apache.org` - External downloads blocked
+- DNS resolution failures for external resources
+- Solution: Use a local development environment or CI/CD for testing
 
 #### Option 2: Direct Script Execution
 
@@ -261,14 +305,47 @@ cd freeciv-web/tests/playwright && npx playwright test specific-test.js
 
 ## Copilot-Specific Tips and Tricks
 
+### What Works Well in Copilot Workspace
+
+✅ **Fully Supported Operations**:
+- Code exploration with grep, glob, and view tools
+- Editing files (JavaScript, Java, C, Python, JSP, HTML, CSS)
+- Git operations (checkout, commit, diff, status)
+- Viewing directory structures
+- Maven project structure analysis
+- Documentation updates
+- Code reviews and suggestions
+- Static analysis and planning
+
+⚠️ **Limited/Restricted Operations**:
+- Docker builds (external downloads blocked)
+- Full server deployment (network restrictions)
+- Installing dependencies from external sources
+- Running complete test suites that require server
+- Downloading external resources
+
+✅ **Available Tools**:
+- Playwright browser (for static content viewing)
+- Java 17 (project requires Java 21+, but partial builds possible)
+- Maven 3.9.12
+- Node.js v20.19.6
+- Python 3
+- Git
+
 ### Exploring the Codebase Efficiently
 
-1. **Use parallel searches** to understand related components:
+1. **Use Copilot's search tools** to understand related components:
    ```bash
-   # Search multiple patterns simultaneously
-   grep "player_" freeciv-web/src/ -r &
-   grep "unit_" freeciv-web/src/ -r &
-   grep "city_" freeciv-web/src/ -r &
+   # Use grep tool (better than shell grep in Copilot)
+   # Search for player-related code
+   grep -r "player_" freeciv-web/src/main/webapp/javascript/
+   
+   # Use glob tool to find files
+   # Find all JavaScript files
+   glob **/*.js
+   
+   # Find specific file types in a directory
+   glob freeciv-web/src/main/webapp/**/*.jsp
    ```
 
 2. **Understand component boundaries**:
@@ -293,33 +370,70 @@ cd freeciv-web/tests/playwright && npx playwright test specific-test.js
 
 #### JavaScript (Client-side)
 
+**Copilot Advantage**: JavaScript files can be edited and analyzed without building.
+
 ```javascript
 // Common patterns in the codebase:
 // - jQuery for DOM manipulation: $('#element')
 // - Three.js for 3D: new THREE.Mesh()
 // - Packet handling: handle_* functions
 // - Game state: client, players, units, cities objects
+
+// Key directories:
+// - freeciv-web/src/main/webapp/javascript/ - Main client code
+// - freeciv-web/src/main/webapp/javascript/webgl/ - 3D rendering
+// - freeciv-web/src/main/webapp/javascript/2dcanvas/ - 2D rendering
+// - freeciv-web/src/main/webapp/javascript/libs/ - Third-party libraries
 ```
 
+**Tips for Copilot**:
+- Changes to JavaScript don't require rebuilding (just refresh browser when running locally)
+- Use grep to find function definitions: `grep -r "function myfunction" freeciv-web/src/`
+- Search for global variables: `grep -r "var client\|let client" freeciv-web/src/`
+
 #### Java (Server-side)
+
+**Copilot Limitation**: Java 17 available, but project targets Java 21+. Builds may have compatibility issues.
 
 ```java
 // Maven module structure
 // - freeciv-web: Web application (WAR)
 // - freecivx-server: Game server
 // - freecivx-client: Swing client
-// Build with: mvn clean install
+// Build command: mvn clean install (may fail in Copilot due to network/Java version)
+
+// Key directories:
+// - freeciv-web/src/main/java/ - Web application servlets and services
+// - freecivx-server/src/main/java/ - Game server implementation
 ```
 
+**Tips for Copilot**:
+- Edit Java files directly for code improvements
+- Use grep to find class definitions: `grep -r "class ClassName" freeciv-web/src/`
+- Review pom.xml files to understand dependencies
+- Test builds in CI/CD pipeline rather than in Copilot
+
 #### C (Freeciv Server)
+
+**Copilot Capability**: Can edit C files, but building requires full toolchain.
 
 ```c
 // Server logic in freeciv/freeciv/
 // - server/ - Main server code
-// - common/ - Shared code
+// - common/ - Shared code between server and client
 // - ai/ - AI players
-// Build with: ./prepare_freeciv.sh
+// Build script: ./prepare_freeciv.sh (requires autoconf, automake, etc.)
+
+// Key directories:
+// - freeciv/freeciv/server/ - Core server logic
+// - freeciv/freeciv/common/ - Shared game logic
+// - freeciv/freeciv/ai/ - AI implementation
 ```
+
+**Tips for Copilot**:
+- Use grep with C-specific patterns: `grep -r "^void.*(" freeciv/freeciv/ --include="*.c"`
+- Search for struct definitions: `grep -r "^struct " freeciv/freeciv/ --include="*.h"`
+- Review header files to understand APIs
 
 #### Python (Publite2)
 
