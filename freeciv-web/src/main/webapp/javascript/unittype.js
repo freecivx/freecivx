@@ -1,4 +1,6 @@
 /**********************************************************************
+'use strict';
+
     Freeciv-web - the web version of Freeciv. http://www.FreecivWorld.net/
     Copyright (C) 2009-2015  The Freeciv-web project
 
@@ -18,25 +20,25 @@
 ***********************************************************************/
 
 
-var unit_types = {};  /* packet_ruleset_unit */
-var unit_classes = {};  /* packet_ruleset_unit_class */
+const unit_types = {};  /* packet_ruleset_unit */
+const unit_classes = {};  /* packet_ruleset_unit_class */
 
-var U_NOT_OBSOLETED = null;
+const U_NOT_OBSOLETED = null;
 
-var U_LAST = MAX_NUM_UNITS;
+const U_LAST = MAX_NUM_UNITS;
 
-var UCF_TERRAIN_SPEED = 0;
-var UCF_TERRAIN_DEFENSE = 1;
-var UCF_DAMAGE_SLOWS = 2;
-var UCF_CAN_OCCUPY_CITY = 3;
-var UCF_BUILD_ANYWHERE = 4;
-var UCF_UNREACHABLE = 5;
-var UCF_COLLECT_RANSOM = 6;
-var UCF_ZOC = 7;
-var UCF_DOESNT_OCCUPY_TILE = 8;
-var UCF_ATTACK_NON_NATIVE = 9;
-var UCF_KILLCITIZEN = 10;
-var UCF_HUT_FRIGHTEN = 11;
+const UCF_TERRAIN_SPEED = 0;
+const UCF_TERRAIN_DEFENSE = 1;
+const UCF_DAMAGE_SLOWS = 2;
+const UCF_CAN_OCCUPY_CITY = 3;
+const UCF_BUILD_ANYWHERE = 4;
+const UCF_UNREACHABLE = 5;
+const UCF_COLLECT_RANSOM = 6;
+const UCF_ZOC = 7;
+const UCF_DOESNT_OCCUPY_TILE = 8;
+const UCF_ATTACK_NON_NATIVE = 9;
+const UCF_KILLCITIZEN = 10;
+const UCF_HUT_FRIGHTEN = 11;
 
 
 // Unit flags
@@ -178,7 +180,7 @@ function utype_can_do_action(putype, action_id)
 **************************************************************************/
 function utype_can_do_action_result(putype, result)
 {
-  var act_id;
+  let act_id;
 
   if (putype == null || putype['utype_actions'] == null) {
     console.log("utype_can_do_action_result(): bad unit type.");
@@ -186,7 +188,7 @@ function utype_can_do_action_result(putype, result)
   }
 
   for (act_id = 0; act_id < ACTION_COUNT; act_id++) {
-    var paction = action_by_number(act_id);
+    const paction = action_by_number(act_id);
     if (action_has_result(paction, result)
         && utype_can_do_action(putype, act_id)) {
       return true;
@@ -234,10 +236,10 @@ function can_player_build_unit_direct(p, punittype)
 **************************************************************************/
 function get_utypes_from_tech(tech_id)
 {
-  var result = [];
+  const result = [];
 
-  for (var unit_type_id in unit_types) {
-    var punit_type = unit_types[unit_type_id];
+  for (let unit_type_id in unit_types) {
+    const punit_type = unit_types[unit_type_id];
     if (punit_type['build_reqs'].length > 0 && punit_type['build_reqs'][0]['value'] == tech_id) {
       result.push(punit_type);
     }
@@ -251,7 +253,7 @@ function get_utypes_from_tech(tech_id)
 function utype_has_flag(ptype, flag)
 {
   // returns whether unit_type has UTYF type flag
-  var bv = new BitVector(ptype['flags']);
+  const bv = new BitVector(ptype['flags']);
   return bv.isSet(flag);
 }
 
@@ -263,7 +265,7 @@ function utype_real_base_attack_strength(ptype) {
   // no custom power_fact means default of 100%:
   if (ptype.power_fact[0] === undefined) return ptype.attack_strength;
 
-  var adjusted = ptype.attack_strength * ptype.power_fact[0];
+  const adjusted = ptype.attack_strength * ptype.power_fact[0];
   // round to 3 decimals
   adjusted *= 10; // already 100x higher from power_fect, so make 1000x
   adjusted = Math.round(adjusted) / 1000;
@@ -276,7 +278,7 @@ function utype_real_base_defense_strength(ptype) {
   // no custom power_fact means default of 100%:
   if (ptype.power_fact[0] === undefined) return ptype.defense_strength;
 
-  var adjusted = ptype.defense_strength * ptype.power_fact[0];
+  const adjusted = ptype.defense_strength * ptype.power_fact[0];
   // round to 3 decimals
   adjusted *= 10; // already 100x higher from power_fect, so make 1000x
   adjusted = Math.round(adjusted) / 1000;
@@ -290,10 +292,10 @@ function utype_real_base_defense_strength(ptype) {
 *************************************************************************/
 function utype_real_base_move_rate(punit_type)
 {
-  var move_bonus = parseInt(punit_type['move_bonus'][0])
+  const move_bonus = parseInt(punit_type['move_bonus'][0])
                  ? parseInt(punit_type['move_bonus'][0])
                  : 0;
-  var move_rate  = parseInt(punit_type['move_rate']);
+  const move_rate = parseInt(punit_type['move_rate']);
 
   return move_bonus + move_rate;
 }
@@ -303,10 +305,10 @@ function utype_real_base_move_rate(punit_type)
 **************************************************************************/
 function get_units_from_tech(tech_id)
 {
-  var result = [];
+  const result = [];
 
-  for (var unit_type_id in unit_types) {
-    var punit_type = unit_types[unit_type_id];
+  for (let unit_type_id in unit_types) {
+    const punit_type = unit_types[unit_type_id];
     if (punit_type['tech_requirement'] == tech_id) {
       result.push(punit_type);
     }

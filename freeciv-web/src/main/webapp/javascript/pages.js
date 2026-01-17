@@ -1,4 +1,6 @@
 /**********************************************************************
+'use strict';
+
     Freeciv-web - the web version of Freeciv. http://www.FreecivWorld.net/
     Copyright (C) 2009-2015  The Freeciv-web project
 
@@ -19,20 +21,20 @@
 
 
 
-var PAGE_MAIN = 0;		/* Main menu, aka intro page.  */
-var PAGE_START = 1;		/* Start new game page.  */
-var PAGE_SCENARIO = 2;		/* Start new scenario page. */
-var PAGE_LOAD = 3;		/* Load saved game page. */
-var PAGE_NETWORK = 4;		/* Connect to network page.  */
-var PAGE_NATION = 5;		/* Select a nation page.  */
-var PAGE_GAME = 6;		/* In game page. */
+const PAGE_MAIN = 0;		/* Main menu, aka intro page.  */
+const PAGE_START = 1;		/* Start new game page.  */
+const PAGE_SCENARIO = 2;		/* Start new scenario page. */
+const PAGE_LOAD = 3;		/* Load saved game page. */
+const PAGE_NETWORK = 4;		/* Connect to network page.  */
+const PAGE_NATION = 5;		/* Select a nation page.  */
+const PAGE_GAME = 6;		/* In game page. */
 
-var old_page = -1;
+const old_page = -1;
 
 function set_client_page(page)
 {
 
-  var new_page = page;
+  const new_page = page;
 
 
   /* If the page remains the same, don't do anything. */

@@ -1,4 +1,6 @@
 /**********************************************************************
+'use strict';
+
     Freeciv-web - the web version of Freeciv. http://www.FreecivWorld.net/
     Copyright (C) 2009-2015  The Freeciv-web project
 
@@ -17,14 +19,14 @@
 
 ***********************************************************************/
 
-var governments = {};
-var requested_gov = -1;
+const governments = {};
+const requested_gov = -1;
 
-var REPORT_WONDERS_OF_THE_WORLD = 0;
-var REPORT_WONDERS_OF_THE_WORLD_LONG = 1;
-var REPORT_TOP_CITIES = 2;
-var REPORT_DEMOGRAPHIC = 3;
-var REPORT_ACHIEVEMENTS = 4;
+const REPORT_WONDERS_OF_THE_WORLD = 0;
+const REPORT_WONDERS_OF_THE_WORLD_LONG = 1;
+const REPORT_TOP_CITIES = 2;
+const REPORT_DEMOGRAPHIC = 3;
+const REPORT_ACHIEVEMENTS = 4;
 
 
 
@@ -34,13 +36,13 @@ var REPORT_ACHIEVEMENTS = 4;
 **************************************************************************/
 function show_revolution_dialog()
 {
-  var id = "#revolution_dialog";
+  const id = "#revolution_dialog";
   $(id).remove();
   $("<div id='revolution_dialog'></div>").appendTo("div#game_page");
 
   if (client.conn.playing == null) return;
 
-  var dhtml = "Current form of government: " + governments[client.conn.playing['government']]['name']
+  const dhtml = "Current form of government: " + governments[client.conn.playing['government']]['name']
 	  + "<br>To start a revolution, select the new form of government:"
   + "<p><div id='governments' >"
   + "<div id='governments_list'>"
@@ -75,11 +77,11 @@ function init_civ_dialog()
 {
   if (!client_is_observer() && client.conn.playing != null) {
 
-    var pplayer = client.conn.playing;
-    var pnation = nations[pplayer['nation']];
-    var tag = pnation['graphic_str'];
+    const pplayer = client.conn.playing;
+    const pnation = nations[pplayer['nation']];
+    const tag = pnation['graphic_str'];
 
-    var civ_description = "<div>" + nations[pplayer['nation']]['legend']  +"</div><br>";
+    const civ_description = "<div>" + nations[pplayer['nation']]['legend']  +"</div><br>";
     $("#nation_title").html(pplayer['name'] + " rules the " + nations[pplayer['nation']]['adjective']
                             	    + " with government form " + governments[client.conn.playing['government']]['name']);
     if (!is_small_screen()) {
@@ -101,11 +103,11 @@ function init_civ_dialog()
 **************************************************************************/
 function update_govt_dialog()
 {
-  var govt;
-  var govt_id;
+  let govt;
+  let govt_id;
   if (client_is_observer()) return;
 
-  var governments_list_html = "";
+  const governments_list_html = "";
 
   for (govt_id in governments) {
     govt = governments[govt_id];
@@ -158,7 +160,7 @@ function set_req_government(gov_id)
 **************************************************************************/
 function send_player_change_government(govt_id)
 {
-  var packet = {"pid" : packet_player_change_government,
+  const packet = {"pid" : packet_player_change_government,
                 "government" : govt_id };
   send_request(JSON.stringify(packet));
 }
@@ -219,7 +221,7 @@ function can_player_get_gov(govt_id)
 **************************************************************************/
 function request_report(rtype)
 {
-  var packet = {"pid"  : packet_report_req,
+  const packet = {"pid"  : packet_report_req,
                 "type" : rtype};
   send_request(JSON.stringify(packet));
 }

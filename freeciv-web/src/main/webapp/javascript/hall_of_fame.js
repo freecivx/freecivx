@@ -1,4 +1,6 @@
 /**********************************************************************
+'use strict';
+
     Freeciv-web - the web version of Freeciv. http://www.FreecivWorld.net/
     Copyright (C) 2009-2017  The Freeciv-web project
 
@@ -17,7 +19,7 @@
 
 ***********************************************************************/
 
-var submitted_to_hof = false;
+const submitted_to_hof = false;
 
 /**************************************************************************
  Submit game to Hall of Fame
@@ -29,7 +31,7 @@ function submit_game_to_hall_of_fame()
   }
   submitted_to_hof = true;
 
-  var pplayer = client.conn.playing;
+  const pplayer = client.conn.playing;
 
   if (game_info['turn'] < 30 || get_score_text(pplayer) == 0) {
     return;

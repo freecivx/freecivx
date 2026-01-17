@@ -1,4 +1,6 @@
 /**********************************************************************
+'use strict';
+
     FreecivWorld.net - the web version of Freeciv. https://www.FreecivWorld.net/
     Copyright (C) 2022 FreecivWorld.net
 
@@ -19,14 +21,14 @@
 
 // CMA for FreecivWorld.net
 
-var _cma_val_sliders = [1,0,0,0,0,0];
-var _cma_min_sliders = [0,0,0,0,0,0];
-var _cma_happy_slider = 0;
-var _cma_celebrate = false;
-var _cma_allow_disorder = false;
-var _cma_no_farmer = false;
-var _cma_allow_specialists = true;
-var _cma_max_growth = false;
+const _cma_val_sliders = [1,0,0,0,0,0];
+const _cma_min_sliders = [0,0,0,0,0,0];
+const _cma_happy_slider = 0;
+const _cma_celebrate = false;
+const _cma_allow_disorder = false;
+const _cma_no_farmer = false;
+const _cma_allow_specialists = true;
+const _cma_max_growth = false;
 
 
 /**************************************************************************
@@ -70,7 +72,7 @@ function show_city_governor_tab()
 **************************************************************************/
 function request_new_cma(city_id)
 {
-  var cm_parameter = {};
+  const cm_parameter = {};
 
   if ($("#cma_food").prop('checked')) {
     _cma_val_sliders[0] = 6;
@@ -116,16 +118,16 @@ function request_new_cma(city_id)
   cm_parameter['factor'] = [..._cma_val_sliders];
   cm_parameter['happy_factor'] = _cma_happy_slider;
 
-  var cma_disabled = (!$("#cma_food").prop('checked') && !$("#cma_shield").prop('checked') && !$("#cma_trade").prop('checked')
+  const cma_disabled = (!$("#cma_food").prop('checked') && !$("#cma_shield").prop('checked') && !$("#cma_trade").prop('checked')
                    && !$("#cma_gold").prop('checked') && !$("#cma_luxury").prop('checked') && !$("#cma_science").prop('checked') );
 
   if (!cma_disabled) {
-    var packet = {"pid" : packet_web_cma_set,
+    const packet = {"pid" : packet_web_cma_set,
                 "id" : city_id,
                 "cm_parameter" : cm_parameter };
     send_request(JSON.stringify(packet));
   } else {
-    var packet = {"pid" : packet_web_cma_clear,
+    const packet = {"pid" : packet_web_cma_clear,
                 "id" : city_id};
     send_request(JSON.stringify(packet));
   }

@@ -1,4 +1,6 @@
 /**********************************************************************
+'use strict';
+
     Freeciv-web - the web version of Freeciv. http://www.FreecivWorld.net/
     Copyright (C) 2021  The Freeciv-web project
 
@@ -19,7 +21,7 @@
 
 
 /* All generalized actions. */
-var actions = {};
+const actions = {};
 
 /**********************************************************************//**
   Return the action with the given id.

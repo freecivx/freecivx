@@ -1,4 +1,6 @@
 /**********************************************************************
+'use strict';
+
     Freeciv-web - the web version of Freeciv. http://www.FreecivWorld.net/
     Copyright (C) 2009-2015  The Freeciv-web project
 
@@ -17,14 +19,14 @@
 
 ***********************************************************************/
 
-var game_info = null;
-var calendar_info = null;
-var game_rules = null;
-var ruleset_control = null;
-var ruleset_summary = null;
-var ruleset_description = null;
+const game_info = null;
+const calendar_info = null;
+const game_rules = null;
+const ruleset_control = null;
+const ruleset_summary = null;
+const ruleset_description = null;
 
-var IDENTITY_NUMBER_ZERO = 0;
+const IDENTITY_NUMBER_ZERO = 0;
 
 function game_init()
 {
@@ -57,10 +59,10 @@ function game_find_unit_by_number(id)
  Count the # of thousand citizen in a civilisation.
 **************************************************************************/
 function civ_population(playerno) {
-  var population = 0;
+  const population = 0;
 
-  for (var city_id in cities) {
-    var pcity = cities[city_id];
+  for (let city_id in cities) {
+    const pcity = cities[city_id];
     if (playerno == pcity['owner']) {
       population += city_population(pcity);
     }
@@ -76,29 +78,29 @@ function update_game_status_panel() {
 
   if (C_S_RUNNING != client_state() || is_small_screen()) return;
 
-  var status_html = "";
+  const status_html = "";
 
   if (client.conn.playing != null) {
-    var pplayer = client.conn.playing;
-    var tax = client.conn.playing['tax'];
-    var lux = client.conn.playing['luxury'];
-    var sci = client.conn.playing['science'];
+    const pplayer = client.conn.playing;
+    const tax = client.conn.playing['tax'];
+    const lux = client.conn.playing['luxury'];
+    const sci = client.conn.playing['science'];
 
-    var net_income = pplayer['expected_income'];
+    const net_income = pplayer['expected_income'];
     if (pplayer['expected_income'] > 0) {
       net_income = "+" + pplayer['expected_income'];
     }
 
     if (!is_small_screen()) {
-      var pnation = nations[pplayer['nation']];
-      var flag_file = pnation['graphic_str'] + ".svg";
+      const pnation = nations[pplayer['nation']];
+      const flag_file = pnation['graphic_str'] + ".svg";
 
       status_html += "<b>" + pplayer['name'] + "</b> &nbsp; <img src='/images/flags/" + flag_file
           + "' height='26px' id='top_flag' title='" + pnation['adjective'] + "'>&nbsp;&nbsp;";
 
       if (!is_small_screen()) {
         status_html += "<span style='cursor:pointer;' onclick='javascript:show_revolution_dialog()'>";
-        var gov_name = governments[client.conn.playing['government']]['name'];
+        const gov_name = governments[client.conn.playing['government']]['name'];
 
         if (gov_name == "Anarchy") status_html += "<img class='lowered_gov' src='/images/gov.anarchy.png' title='Anarchy'>";
         else if (gov_name == "Despotism") status_html += "<img class='lowered_gov' src='/images/gov.despotism.png' title='Despotism'>";
@@ -149,7 +151,7 @@ function update_game_status_panel() {
     }
   }
 
-  var page_title = "FreecivWorld.net - " + username + "  turn:" + game_info['turn'];
+  const page_title = "FreecivWorld.net - " + username + "  turn:" + game_info['turn'];
   if (server_settings['metamessage'] != null) {
     page_title += server_settings['metamessage']['val'];
   }
@@ -163,7 +165,7 @@ function update_game_status_panel() {
 **************************************************************************/
 function get_year_string()
 {
-  var year_string = "";
+  const year_string = "";
   if (game_info['year'] < 0) {
     year_string = Math.abs(game_info['year'])
                   + calendar_info['negative_year_label'] + " ";
@@ -198,7 +200,7 @@ function current_turn_timeout()
 **************************************************************************/
 function sum_width()
 {
-  var sum=0;
+  const sum = 0;
   $("#tabs_menu").children().each( function(){
     if ($(this).is(":visible") && $(this).attr('id') != "game_status_panel_top") sum += $(this).width();
   });

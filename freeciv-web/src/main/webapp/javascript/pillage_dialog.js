@@ -1,4 +1,6 @@
 /**********************************************************************
+'use strict';
+
     Freeciv-web - the web version of Freeciv. http://www.FreecivWorld.net/
     Copyright (C) 2018  The Freeciv-web project
 
@@ -28,10 +30,10 @@
 function popup_pillage_selection_dialog(punit)
 {
   if (punit == null) return;
-  var tgt = get_what_can_unit_pillage_from(punit, null);
+  const tgt = get_what_can_unit_pillage_from(punit, null);
   if (tgt.length == 0) return;
 
-  var id = '#pillage_sel_dialog_' + punit['id'];
+  const id = '#pillage_sel_dialog_' + punit['id'];
 
   $(id).remove();
   $("<div id='pillage_sel_dialog_" + punit['id'] + "'></div>").appendTo("div#game_page");
@@ -39,10 +41,10 @@ function popup_pillage_selection_dialog(punit)
               + unit_types[punit['type']]['name']
               + " is waiting for you to select what to pillage."));
 
-  var button_id_prefix = 'pillage_sel_' + punit['id'] + '_';
-  var buttons = [];
-  for (var i = 0; i < tgt.length; i++) {
-    var extra_id = tgt[i];
+  const button_id_prefix = 'pillage_sel_' + punit['id'] + '_';
+  const buttons = [];
+  for (const i = 0; i < tgt.length; i++) {
+    const extra_id = tgt[i];
     if (extra_id == EXTRA_NONE) continue;
     buttons.push({
       id     : button_id_prefix + extra_id,
@@ -83,10 +85,10 @@ function popup_pillage_selection_dialog(punit)
 ****************************************************************************/
 function pillage_target_selected(ev)
 {
-  var id = ev.target.id;
-  var params = id.match(/pillage_sel_(\d*)_([^_]*)/);
-  var extra_id = params[2] == 'ANYTHING' ? EXTRA_NONE : parseInt(params[2], 10);
-  var punit_id = parseInt(params[1], 10);
+  const id = ev.target.id;
+  const params = id.match(/pillage_sel_(\d*)_([^_]*)/);
+  const extra_id = params[2] == 'ANYTHING' ? EXTRA_NONE : parseInt(params[2], 10);
+  const punit_id = parseInt(params[1], 10);
   request_unit_do_action(ACTION_PILLAGE, punit_id, units[punit_id].tile,
                          extra_id);
   $(this).dialog('close');

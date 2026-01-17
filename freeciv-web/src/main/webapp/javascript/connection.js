@@ -1,4 +1,6 @@
 /**********************************************************************
+'use strict';
+
     Freeciv-web - the web version of Freeciv. http://www.FreecivWorld.net/
     Copyright (C) 2009-2015  The Freeciv-web project
 
@@ -17,9 +19,9 @@
 
 ***********************************************************************/
 
-var connections = {};
-var conn_ping_info = {};
-var debug_ping_list = [];
+const connections = {};
+const conn_ping_info = {};
+const debug_ping_list = [];
 
 function find_conn_by_id(id)
 {

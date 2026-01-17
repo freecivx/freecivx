@@ -1,4 +1,6 @@
 /**********************************************************************
+'use strict';
+
     Freeciv-web - the web version of Freeciv. http://www.FreecivWorld.net/
     Copyright (C) 2009-2015  The Freeciv-web project
 
@@ -70,7 +72,7 @@ function handle_ruleset_terrain(packet)
 function handle_server_join_reply(packet)
 {
   if (packet['you_can_join']) {
-    var client_info;
+    let client_info;
 
     client.conn.established = true;
     client.conn.id = packet['conn_id'];
@@ -125,7 +127,7 @@ function handle_server_join_reply(packet)
 **************************************************************************/
 function handle_conn_info(packet)
 {
-  var pconn = find_conn_by_id(packet['id']);
+  const pconn = find_conn_by_id(packet['id']);
 
 
   if (packet['used'] == false) {
@@ -137,7 +139,7 @@ function handle_conn_info(packet)
     client_remove_cli_conn(pconn);
     pconn = null;
   } else {
-    var pplayer = valid_player_by_number(packet['player_num']);
+    const pplayer = valid_player_by_number(packet['player_num']);
 
     packet['playing'] = pplayer;
 
@@ -177,7 +179,7 @@ function handle_tile_info(packet)
 
     map_tile_height_adjust(packet);
 
-    var old_tile = $.extend({}, tiles[packet['tile']]);
+    const old_tile = $.extend({}, tiles[packet['tile']]);
     webgl_update_tile_known(tiles[packet['tile']], packet);
     update_tile_extras($.extend(old_tile, packet));
 
@@ -198,10 +200,10 @@ function handle_tile_info(packet)
 /* 100% complete */
 function handle_chat_msg(packet)
 {
-  var message = packet['message'];
-  var conn_id = packet['conn_id'];
-  var event = packet['event'];
-  var ptile = packet['tile'];
+  const message = packet['message'];
+  const conn_id = packet['conn_id'];
+  const event = packet['event'];
+  const ptile = packet['tile'];
 
   if (message == null) return;
   if (event == null || event < 0 || event >= E_UNDEFINED) {
@@ -213,7 +215,7 @@ function handle_chat_msg(packet)
   if (connections[conn_id] != null) {
       message = "<b>" + connections[conn_id]['username'] + ":</b>" + message;
   } else if (packet['event'] == E_SCRIPT) {
-    var regxp = /\n/gi;
+    const regxp = /\n/gi;
     message = message.replace(regxp, "<br>\n");
     show_dialog_message("Message for you:", message);
     return;
@@ -488,7 +490,7 @@ function handle_player_remove(packet)
 function handle_conn_ping(packet)
 {
   ping_last = new Date().getTime();
-  var pong_packet = {"pid" : packet_conn_pong};
+  const pong_packet = {"pid" : packet_conn_pong};
   send_request(JSON.stringify(pong_packet));
 
 }
@@ -582,8 +584,8 @@ function handle_ruleset_control(packet)
   improvements_init();
 
   /* handle_ruleset_extra defines some variables dinamically */
-  for (var extra in extras) {
-    var ename = extras[extra]['name'];
+  for (let extra in extras) {
+    const ename = extras[extra]['name'];
     delete window["EXTRA_" + ename.toUpperCase()];
     if (ename == "Railroad") delete window["EXTRA_RAIL"];
     else if (ename == "Oil Well") delete window["EXTRA_OIL_WELL"];
@@ -666,7 +668,7 @@ function handle_server_shutdown(packet)
 
 function handle_nuke_tile_info(packet)
 {
-  var ptile = index_to_tile(packet['tile']);
+  const ptile = index_to_tile(packet['tile']);
 
   render_nuclear_explosion(ptile);
 
@@ -753,7 +755,7 @@ function handle_player_attribute_chunk(packet)
 **************************************************************************/
 function handle_unit_remove(packet)
 {
-  var punit = game_find_unit_by_number(packet['unit_id']);
+  const punit = game_find_unit_by_number(packet['unit_id']);
 
   if (punit == null) {
     return;
@@ -796,14 +798,14 @@ function handle_unit_short_info(packet)
 **************************************************************************/
 function action_decision_handle(punit)
 {
-  var a;
+  let a;
 
   for (a = 0; a < auto_attack_actions.length; a++) {
     let action = auto_attack_actions[a];
     if (utype_can_do_action(unit_type(punit), action) && auto_attack) {
       /* An auto action like auto attack could be legal. Check for those at
       * once so they won't have to wait for player focus. */
-      var packet = {
+      const packet = {
         "pid"             : packet_unit_get_actions,
         "actor_unit_id"   : punit['id'],
         "target_unit_id"  : IDENTITY_NUMBER_ZERO,
@@ -829,7 +831,7 @@ function action_decision_maybe_auto(actor_unit, action_probabilities,
                                     target_tile, target_extra,
                                     target_unit, target_city)
 {
-  var a;
+  let a;
 
   for (a = 0; a < auto_attack_actions.length; a++) {
     let action = auto_attack_actions[a];
@@ -837,7 +839,7 @@ function action_decision_maybe_auto(actor_unit, action_probabilities,
     if (action_prob_possible(action_probabilities[action])
         && auto_attack) {
 
-      var target = target_tile['index'];
+      const target = target_tile['index'];
       if (action == ACTION_NUKE_CITY) {
         target = tile_city(target_tile);
         if (!target) continue;
@@ -878,7 +880,7 @@ function action_decision_maybe_auto(actor_unit, action_probabilities,
 **************************************************************************/
 function handle_unit_packet_common(packet_unit)
 {
-  var punit = player_find_unit_by_id(unit_owner(packet_unit), packet_unit['id']);
+  const punit = player_find_unit_by_id(unit_owner(packet_unit), packet_unit['id']);
 
   clear_tile_unit(punit);
 
@@ -887,7 +889,7 @@ function handle_unit_packet_common(packet_unit)
      * by simply deleting the old one and creating a new one. */
     handle_unit_remove(packet_unit['id']);
   }
-  var old_tile = null;
+  const old_tile = null;
   if (punit != null) old_tile = index_to_tile(punit['tile']);
 
   if (units[packet_unit['id']] == null) {
@@ -909,7 +911,7 @@ function handle_unit_packet_common(packet_unit)
     update_unit_anim_list(units[packet_unit['id']], packet_unit);
     units[packet_unit['id']] = $.extend(units[packet_unit['id']], packet_unit);
 
-    for (var i = 0; i < current_focus.length; i++) {
+    for (const i = 0; i < current_focus.length; i++) {
       if (current_focus[i]['id'] == packet_unit['id']) {
         $.extend(current_focus[i], packet_unit);
       }
@@ -935,10 +937,10 @@ function handle_unit_packet_common(packet_unit)
 
 function handle_unit_combat_info(packet)
 {
-  var attacker = units[packet['attacker_unit_id']];
-  var defender = units[packet['defender_unit_id']];
-  var attacker_hp = packet['attacker_hp'];
-  var defender_hp = packet['defender_hp'];
+  const attacker = units[packet['attacker_unit_id']];
+  const defender = units[packet['defender_unit_id']];
+  const attacker_hp = packet['attacker_hp'];
+  const defender_hp = packet['defender_hp'];
 
 
   if (attacker_hp == 0) animate_explosion_on_tile(attacker['tile'], 0);
@@ -951,14 +953,14 @@ function handle_unit_combat_info(packet)
 **************************************************************************/
 function handle_unit_action_answer(packet)
 {
-  var diplomat_id = packet['actor_id'];
-  var target_id = packet['target_id'];
-  var cost = packet['cost'];
-  var action_type = packet['action_type'];
+  const diplomat_id = packet['actor_id'];
+  const target_id = packet['target_id'];
+  const cost = packet['cost'];
+  const action_type = packet['action_type'];
 
-  var target_city = game_find_city_by_number(target_id);
-  var target_unit = game_find_unit_by_number(target_id);
-  var actor_unit = game_find_unit_by_number(diplomat_id);
+  const target_city = game_find_city_by_number(target_id);
+  const target_unit = game_find_unit_by_number(target_id);
+  const actor_unit = game_find_unit_by_number(diplomat_id);
 
   if (actor_unit == null) {
     console.log("Bad actor unit (" + diplomat_id
@@ -1016,24 +1018,24 @@ function handle_unit_action_answer(packet)
 **************************************************************************/
 function handle_unit_actions(packet)
 {
-  var actor_unit_id = packet['actor_unit_id'];
-  var target_unit_id = packet['target_unit_id'];
-  var target_city_id = packet['target_city_id'];
-  var target_tile_id = packet['target_tile_id'];
-  var target_extra_id = packet['target_extra_id'];
-  var action_probabilities = packet['action_probabilities'];
+  const actor_unit_id = packet['actor_unit_id'];
+  const target_unit_id = packet['target_unit_id'];
+  const target_city_id = packet['target_city_id'];
+  const target_tile_id = packet['target_tile_id'];
+  const target_extra_id = packet['target_extra_id'];
+  const action_probabilities = packet['action_probabilities'];
 
-  var pdiplomat = game_find_unit_by_number(actor_unit_id);
-  var target_unit = game_find_unit_by_number(target_unit_id);
-  var target_city = game_find_city_by_number(target_city_id);
-  var ptile = index_to_tile(target_tile_id);
-  var target_extra = extra_by_number(target_extra_id);
+  const pdiplomat = game_find_unit_by_number(actor_unit_id);
+  const target_unit = game_find_unit_by_number(target_unit_id);
+  const target_city = game_find_city_by_number(target_city_id);
+  const ptile = index_to_tile(target_tile_id);
+  const target_extra = extra_by_number(target_extra_id);
 
-  var hasActions = false;
+  const hasActions = false;
 
   /* The dead can't act. */
   if (pdiplomat != null && ptile != null) {
-    action_probabilities.forEach(function(prob) {
+    action_probabilities.forEach((prob) => {
       if (action_prob_possible(prob)) {
         hasActions = true;
       }
@@ -1084,7 +1086,7 @@ function handle_diplomacy_cancel_meeting(packet)
 
 function handle_diplomacy_create_clause(packet)
 {
-  var counterpart_id = packet['counterpart'];
+  const counterpart_id = packet['counterpart'];
   if(diplomacy_clause_map[counterpart_id] == null) {
     diplomacy_clause_map[counterpart_id] = [];
   }
@@ -1105,7 +1107,7 @@ function handle_diplomacy_accept_treaty(packet)
 }
 
 /* Assemble incoming page_msg here. */
-var page_msg = {};
+const page_msg = {};
 
 /**************************************************************************
   Page_msg header handler.
@@ -1138,7 +1140,7 @@ function handle_page_msg_part(packet)
   if (page_msg['missing_parts'] == 0) {
     /* This was the last part. */
 
-    var regxp = /\n/gi;
+    const regxp = /\n/gi;
 
     page_msg['message'] = page_msg['message'].replace(regxp, "<br>\n");
     show_dialog_message(page_msg['headline'], page_msg['message']);
@@ -1187,7 +1189,7 @@ function handle_begin_turn(packet)
   update_active_units_dialog();
   update_game_status_panel();
 
-  var funits = get_units_in_focus();
+  const funits = get_units_in_focus();
   if (funits != null && funits.length == 0) {
     /* auto-center if there is no unit in focus. */
     auto_center_on_focus_unit();
@@ -1268,14 +1270,14 @@ function handle_ruleset_government_ruler_title(packet)
 **************************************************************************/
 function recreate_old_tech_req(packet)
 {
-  var i;
+  let i;
 
   /* Recreate the field it self. */
   packet['req'] = [];
 
   /* Add all techs in research_reqs. */
   for (i = 0; i < packet['research_reqs'].length; i++) {
-    var requirement = packet['research_reqs'][i];
+    const requirement = packet['research_reqs'][i];
 
     if (requirement.kind == VUT_ADVANCE
         && requirement.range == REQ_RANGE_PLAYER
@@ -1686,7 +1688,7 @@ function handle_ruleset_extra_flag(packet)
 ****************************************************************************/
 function handle_ruleset_base(packet)
 {
-  var i;
+  let i;
 
   for (i = 0; i < MAX_EXTRA_TYPES; i++) {
     if (is_extra_caused_by(extras[i], EC_BASE)
@@ -1707,7 +1709,7 @@ function handle_ruleset_base(packet)
 ****************************************************************************/
 function handle_ruleset_road(packet)
 {
-  var i;
+  let i;
 
   for (i = 0; i < MAX_EXTRA_TYPES; i++) {
     if (is_extra_caused_by(extras[i], EC_ROAD)
@@ -1728,7 +1730,7 @@ function handle_ruleset_road(packet)
 ****************************************************************************/
 function handle_ruleset_action_enabler(packet)
 {
-  var paction = actions[packet.enabled_action];
+  const paction = actions[packet.enabled_action];
 
   if (paction === undefined) {
     console.log("Unknown action " + packet.action + " for enabler ");
@@ -1775,13 +1777,13 @@ function handle_endgame_player(packet)
 
 function handle_research_info(packet)
 {
-  var old_inventions = null;
+  const old_inventions = null;
   if (research_data[packet['id']] != null) old_inventions = research_data[packet['id']]['inventions'];
 
   research_data[packet['id']] = packet;
 
   if (game_info['team_pooled_research']) {
-    for (var player_id in players) {
+    for (let player_id in players) {
       let pplayer = players[player_id];
       if (pplayer['team'] == packet['id']) {
 	    pplayer = $.extend(pplayer, packet);
@@ -1795,7 +1797,7 @@ function handle_research_info(packet)
   }
 
   if (!client_is_observer() && old_inventions != null && client.conn.playing != null && client.conn.playing['playerno'] == packet['id']) {
-    for (var i = 0; i < packet['inventions'].length; i++) {
+    for (const i = 0; i < packet['inventions'].length; i++) {
       if (packet['inventions'][i] != old_inventions[i] && packet['inventions'][i] == TECH_KNOWN) {
         queue_tech_gained_dialog(i);
 	    break;

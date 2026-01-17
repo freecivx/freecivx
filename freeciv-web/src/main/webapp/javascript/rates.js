@@ -1,4 +1,6 @@
 /**********************************************************************
+'use strict';
+
     Freeciv-web - the web version of Freeciv. http://www.FreecivWorld.net/
     Copyright (C) 2009-2015  The Freeciv-web project
 
@@ -17,16 +19,16 @@
 
 ***********************************************************************/
 
-var s_tax = null;
-var s_lux = null;
-var s_sci = null;
+const s_tax = null;
+const s_lux = null;
+const s_sci = null;
 
-var tax;
-var sci;
-var lux;
+let tax;
+let sci;
+let lux;
 
-var maxrate = 80;
-var freeze = false;
+const maxrate = 80;
+const freeze = false;
 
 
 
@@ -35,11 +37,11 @@ var freeze = false;
 **************************************************************************/
 function show_tax_rates_dialog()
 {
-  var id = "#rates_dialog";
+  const id = "#rates_dialog";
   $(id).remove();
   $("<div id='rates_dialog'></div>").appendTo("div#game_page");
 
-  var dhtml = "<h2>Select tax, luxury and science rates</h2>"
+  const dhtml = "<h2>Select tax, luxury and science rates</h2>"
     + "<form name='rates'><table border='0'>"
     + "<tr> <td><span>Tax:</td> <td> <div class='slider' id='slider-tax' tabIndex='1'></div>"
     + "</td><td>"
@@ -92,7 +94,7 @@ function update_rates_dialog()
                       client.conn.playing['luxury'],
                       client.conn.playing['science'], maxrate);
 
-  var govt = governments[client.conn.playing['government']];
+  const govt = governments[client.conn.playing['government']];
 
   $("#max_tax_rate").html("<i>" + govt['name'] + " max rate: " + maxrate + "</i>");
   update_net_income();
@@ -104,7 +106,7 @@ function update_rates_dialog()
 **************************************************************************/
 function update_net_income()
 {
-  var net_income = client.conn.playing['expected_income'];
+  const net_income = client.conn.playing['expected_income'];
   if (client.conn.playing['expected_income'] > 0) {
     net_income = "+" + client.conn.playing['expected_income'];
   }
@@ -117,7 +119,7 @@ function update_net_income()
 function update_net_bulbs(bulbs)
 {
   if (bulbs === undefined) {
-    var cbo = get_current_bulbs_output();
+    const cbo = get_current_bulbs_output();
     bulbs = cbo.self_bulbs - cbo.self_upkeep;
   }
   if (bulbs > 0) {
@@ -191,8 +193,8 @@ function update_tax_rates ()
   if (s_lux.getValue() % 10 != 0) s_lux.setValue(s_lux.getValue() - (s_lux.getValue() % 10));
   if (s_sci.getValue() % 10 != 0) s_sci.setValue(s_sci.getValue() - (s_sci.getValue() % 10));
 
-  var lock_lux = document.rates.lock[1].checked;
-  var lock_sci = document.rates.lock[2].checked;
+  const lock_lux = document.rates.lock[1].checked;
+  const lock_sci = document.rates.lock[2].checked;
 
   tax = s_tax.getValue();
   lux = s_lux.getValue();
@@ -235,8 +237,8 @@ function update_lux_rates ()
   if (s_lux.getValue() % 10 != 0) s_lux.setValue(s_lux.getValue() - (s_lux.getValue() % 10));
   if (s_sci.getValue() % 10 != 0) s_sci.setValue(s_sci.getValue() - (s_sci.getValue() % 10));
 
-  var lock_tax = document.rates.lock[0].checked;
-  var lock_sci = document.rates.lock[2].checked;
+  const lock_tax = document.rates.lock[0].checked;
+  const lock_sci = document.rates.lock[2].checked;
 
   tax = s_tax.getValue();
   lux = s_lux.getValue();
@@ -280,8 +282,8 @@ function update_sci_rates ()
   if (s_lux.getValue() % 10 != 0) s_lux.setValue(s_lux.getValue() - (s_lux.getValue() % 10));
   if (s_sci.getValue() % 10 != 0) s_sci.setValue(s_sci.getValue() - (s_sci.getValue() % 10));
 
-  var lock_tax = document.rates.lock[0].checked;
-  var lock_lux = document.rates.lock[1].checked;
+  const lock_tax = document.rates.lock[0].checked;
+  const lock_lux = document.rates.lock[1].checked;
 
   tax = s_tax.getValue();
   lux = s_lux.getValue();
@@ -318,7 +320,7 @@ function update_sci_rates ()
 function submit_player_rates()
 {
   if (tax >= 0 && tax <= 100 && lux >= 0 && lux <= 100 && sci >= 0 && sci <= 100) {
-    var packet = {"pid" : packet_player_rates,
+    const packet = {"pid" : packet_player_rates,
                   "tax" : tax, "luxury" : lux, "science" : sci };
     send_request(JSON.stringify(packet));
   } else {

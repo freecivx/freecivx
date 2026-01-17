@@ -1,4 +1,6 @@
 /**********************************************************************
+'use strict';
+
     Freeciv-web - the web version of Freeciv. http://www.FreecivWorld.net/
     Copyright (C) 2009-2015  The Freeciv-web project
 
@@ -17,9 +19,9 @@
 
 ***********************************************************************/
 
-var TILE_UNKNOWN = 0;
-var TILE_KNOWN_UNSEEN = 1;
-var TILE_KNOWN_SEEN = 2;
+const TILE_UNKNOWN = 0;
+const TILE_KNOWN_UNSEEN = 1;
+const TILE_KNOWN_SEEN = 2;
 
 const TILE_INDEX_NONE = -1;
 
@@ -58,7 +60,7 @@ function tile_resource(tile)
 {
   if (tile != null && tile.extras != null) {
     const tile_extras = tile.extras.toBitSet();
-    for (var extra in tile_extras) {
+    for (let extra in tile_extras) {
       if (is_extra_caused_by(extras[tile_extras[extra]], EC_RESOURCE)) {
         return tile_extras[extra];
       }
@@ -72,7 +74,7 @@ function tile_resource(tile)
 ****************************************************************************/
 function tile_has_territory_claiming_extra(ptile)
 {
-  var extra;
+  let extra;
 
   for (extra = 0; extra < MAX_EXTRA_TYPES; extra++) {
     if (tile_has_extra(ptile, extra)
@@ -112,8 +114,8 @@ function tile_city(ptile)
 {
   if (ptile == null) return null;
 
-  var city_id = ptile['worked'];
-  var pcity = cities[city_id];
+  const city_id = ptile['worked'];
+  const pcity = cities[city_id];
 
   if (pcity != null && is_city_center(pcity, ptile)) {
     return pcity;

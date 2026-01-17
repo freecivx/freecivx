@@ -1,4 +1,6 @@
 /**********************************************************************
+'use strict';
+
     FreecivWorld.net - the web version of Freeciv. https://www.FreecivWorld.net/
     Copyright (C) 2023 FreecivWorld.net
 
@@ -23,9 +25,7 @@
 **************************************************************************/
 function errorlog_callback(stackframes)
 {
-    var stringifiedStack = stackframes.map(function(sf) {
-        return sf.toString();
-    }).join('\n');
+    const stringifiedStack = stackframes.map((sf) => sf.toString()).join('\n');
     if (stringifiedStack != null && (stringifiedStack.indexOf("Failed to resolve module specifier") > 0 || stringifiedStack.indexOf("'three'") > 0)) return;
 
     $.post("/errorlog?stacktrace=" + utf8_to_b64(stringifiedStack + " " + window.navigator.userAgent)).fail(function() {});

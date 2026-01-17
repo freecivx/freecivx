@@ -1,4 +1,6 @@
 /**********************************************************************
+'use strict';
+
     Copyright (C) 2017  The Freeciv-web project
 
     This program is free software: you can redistribute it and/or modify
@@ -16,12 +18,12 @@
 
 ***********************************************************************/
 
-var chatbox_active = false;
-var message_log = new EventAggregator(update_chatbox, 125,
+const chatbox_active = false;
+const message_log = new EventAggregator(update_chatbox, 125,
                                       EventAggregator.DP_ALL, 1000, 0);
-var previous_scroll = 0;
-var current_message_dialog_state = null;
-var max_chat_message_length = 350;
+const previous_scroll = 0;
+const current_message_dialog_state = null;
+const max_chat_message_length = 350;
 
 /**************************************************************************
  ...
@@ -112,7 +114,7 @@ function reclassify_chat_message(text)
   text = text.replace(/^\([^)]*\) /, "");
 
   // We should have the font tag now
-  var color = text.substring(14, 20);
+  const color = text.substring(14, 20);
   if (color == "A020F0") {
     return E_CHAT_PRIVATE;
   } else if (color == "551166") {
@@ -129,7 +131,7 @@ function reclassify_chat_message(text)
 **************************************************************************/
 function add_chatbox_text(packet)
 {
-    var text = packet['message'];
+    const text = packet['message'];
 
     if (text == null) return;
     if (!check_text_with_banlist(text)) return;
@@ -158,7 +160,7 @@ function add_chatbox_text(packet)
 **************************************************************************/
 function get_chatbox_text()
 {
-  var chatbox_msg_list = get_chatbox_msg_list();
+  const chatbox_msg_list = get_chatbox_msg_list();
   if (chatbox_msg_list != null) {
     return chatbox_msg_list.textContent;
   } else {
@@ -190,11 +192,11 @@ function clear_chatbox()
 **************************************************************************/
 function update_chatbox(messages)
 {
-  var scrollDiv = get_chatbox_msg_list();
+  const scrollDiv = get_chatbox_msg_list();
 
   if (scrollDiv != null) {
-    for (var i = 0; i < messages.length; i++) {
-        var item = document.createElement('li');
+    for (const i = 0; i < messages.length; i++) {
+        const item = document.createElement('li');
         item.className = fc_e_events[messages[i].event][E_I_NAME];
         item.innerHTML = messages[i].message;
         scrollDiv.appendChild(item);
@@ -204,7 +206,7 @@ function update_chatbox(messages)
       // It seems this might happen in pregame while handling a join request.
       // If so, enqueue the messages again, but we'll be emptying-requeueing
       // every second until the state changes.
-      for (var i = 0; i < messages.length; i++) {
+      for (const i = 0; i < messages.length; i++) {
         message_log.update(messages[i]);
       }
   }
@@ -228,8 +230,8 @@ function chatbox_clip_messages(lines)
   // Flush the buffered messages
   message_log.fireNow();
 
-  var msglist = get_chatbox_msg_list();
-  var remove = msglist.children.length - lines;
+  const msglist = get_chatbox_msg_list();
+  const remove = msglist.children.length - lines;
   while (remove-- > 0) {
     msglist.removeChild(msglist.firstChild);
   }
@@ -244,11 +246,11 @@ function chatbox_clip_messages(lines)
 **************************************************************************/
 function wait_for_text(text, runnable)
 {
-  var chatbox_text = get_chatbox_text();
+  const chatbox_text = get_chatbox_text();
   if (chatbox_text != null && chatbox_text.indexOf(text) != -1) {
     runnable();
   } else {
-    setTimeout(function () {
+    setTimeout(() => {
       wait_for_text(text, runnable);
     }, 100);
   }

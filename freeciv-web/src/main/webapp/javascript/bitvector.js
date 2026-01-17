@@ -1,4 +1,6 @@
 /**************************************************************************
+'use strict';
+
     Freeciv-web - the web version of Freeciv. http://www.FreecivWorld.net/
     Copyright (C) 2009-2015  The Freeciv-web project
 
@@ -27,16 +29,14 @@ function BitVector(raw)
   /************************************************************************
     Returns true iff the specified bit is set to true.
   ************************************************************************/
-  this.isSet = function(bitNumber) {
-    return (this.raw[Math.floor(bitNumber / 8)]
+  this.isSet = (bitNumber) => (this.raw[Math.floor(bitNumber / 8)]
             & (1 << (bitNumber % 8))) != 0;
-  };
 
   /************************************************************************
     Set the specified bit to true.
   ************************************************************************/
   this.set = function(bitNumber) {
-    var byteNumber = Math.floor(bitNumber / 8);
+    const byteNumber = Math.floor(bitNumber / 8);
 
     this.raw[byteNumber] = (this.raw[byteNumber]
                             | (1 << (bitNumber % 8)));
@@ -46,7 +46,7 @@ function BitVector(raw)
     Set the specified bit to false.
   ************************************************************************/
   this.unset = function(bitNumber, value) {
-    var byteNumber = Math.floor(bitNumber / 8);
+    const byteNumber = Math.floor(bitNumber / 8);
 
     this.raw[byteNumber] = (this.raw[byteNumber]
                             & ~(1 << (bitNumber % 8)));
@@ -58,9 +58,9 @@ function BitVector(raw)
     Note that the last 7 bits may be unused.
   ************************************************************************/
   this.toString = function() {
-    var out = "";
+    const out = "";
 
-    for (var i = 0; i < this.raw.length * 8; i++) {
+    for (const i = 0; i < this.raw.length * 8; i++) {
       out += this.isSet(i) ? "1" : 0;
     }
 
@@ -71,9 +71,9 @@ function BitVector(raw)
     Returns the list of set bits.
   ************************************************************************/
   this.toBitSet = function() {
-    var out = [];
+    const out = [];
 
-    for (var i = 0; i < this.raw.length * 8; i++) {
+    for (const i = 0; i < this.raw.length * 8; i++) {
       if(this.isSet(i)) {
         out.push(i);
       }

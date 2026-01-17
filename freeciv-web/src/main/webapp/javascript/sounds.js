@@ -1,4 +1,6 @@
 /**********************************************************************
+'use strict';
+
     Freeciv-web - the web version of Freeciv. http://www.FreecivWorld.net/
     Copyright (C) 2009-2016  The Freeciv-web project
 
@@ -17,7 +19,7 @@
 
 ***********************************************************************/
 
-var sound_path = "/sounds/";
+const sound_path = "/sounds/";
 
 /**************************************************************************
  Plays the unit sound for movement, if the unit has moved and is visible. 
@@ -35,7 +37,7 @@ function check_unit_sound_play(old_unit, new_unit)
     return;
   }
 
-  var ptype = unit_type(new_unit);
+  const ptype = unit_type(new_unit);
   if (soundset[ptype['sound_move']] != null) {
     play_sound(soundset[ptype['sound_move']]);
   } else if (soundset[ptype['sound_move_alt']] != null) {
@@ -57,7 +59,7 @@ function unit_move_sound_play(unit)
     return;
   }
 
-  var ptype = unit_type(unit);
+  const ptype = unit_type(unit);
   if (soundset[ptype['sound_move']] != null) {
     play_sound(soundset[ptype['sound_move']]);
   } else if (soundset[ptype['sound_move_alt']] != null) {
@@ -80,7 +82,7 @@ function play_combat_sound(unit)
     return;
   }
 
-  var ptype = unit_type(unit);
+  const ptype = unit_type(unit);
   if (soundset[ptype['sound_fight']] != null) {
     play_sound(soundset[ptype['sound_fight']]);
   } else if (soundset[ptype['sound_fight_alt']] != null) {
@@ -97,8 +99,8 @@ function play_sound(sound_file)
 {
   try {
     if (!sounds_enabled || !(document.createElement('audio').canPlayType) || Audio == null) return;
-    var audio = new Audio(sound_path + sound_file);
-    var promise = audio.play();
+    const audio = new Audio(sound_path + sound_file);
+    const promise = audio.play();
     if (promise != null) {
       promise.catch(sound_error_handler);
     }

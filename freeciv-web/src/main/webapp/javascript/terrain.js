@@ -1,4 +1,6 @@
 /**********************************************************************
+'use strict';
+
     Freeciv-web - the web version of Freeciv. http://www.FreecivWorld.net/
     Copyright (C) 2009-2015  The Freeciv-web project
 
@@ -19,9 +21,9 @@
 
 
 
-var terrains = {};
-var resources = {};
-var terrain_control = {};
+const terrains = {};
+const resources = {};
+const terrain_control = {};
 
 /**************************************************************************
  ...
@@ -44,11 +46,11 @@ function tile_terrain(ptile)
 **************************************************************************/
 function tile_terrain_near(ptile)
 {
-  var tterrain_near = [];
-  for (var dir = 0; dir < 8; dir++) {
-    var tile1 = mapstep(ptile, dir);
+  const tterrain_near = [];
+  for (const dir = 0; dir < 8; dir++) {
+    const tile1 = mapstep(ptile, dir);
     if (tile1 != null && tile_get_known(tile1) != TILE_UNKNOWN) {
-      var terrain1 = tile_terrain(tile1);
+      const terrain1 = tile_terrain(tile1);
 
       if (null != terrain1) {
         tterrain_near[dir] = terrain1;
@@ -69,7 +71,7 @@ function tile_terrain_near(ptile)
 function is_ocean_tile(ptile)
 {
   if (ptile == null) return false;
-  var pterrain = tile_terrain(ptile);
+  const pterrain = tile_terrain(ptile);
   return (pterrain['graphic_str'] == "floor" || pterrain['graphic_str'] == "coast");
 }
 
@@ -78,8 +80,8 @@ function is_ocean_tile(ptile)
 **************************************************************************/
 function is_ocean_tile_near(ptile)
 {
-  for (var dir = 0; dir < 8; dir++) {
-    var tile1 = mapstep(ptile, dir);
+  for (const dir = 0; dir < 8; dir++) {
+    const tile1 = mapstep(ptile, dir);
     if (is_ocean_tile(tile1)) {
       return true;
     }
@@ -92,8 +94,8 @@ function is_ocean_tile_near(ptile)
 **************************************************************************/
 function is_land_tile_near(ptile)
 {
-  for (var dir = 0; dir < 8; dir++) {
-    var tile1 = mapstep(ptile, dir);
+  for (const dir = 0; dir < 8; dir++) {
+    const tile1 = mapstep(ptile, dir);
     if (!is_ocean_tile(tile1)) {
       return true;
     }
@@ -106,8 +108,8 @@ function is_land_tile_near(ptile)
 **************************************************************************/
 function is_river_tile_near(ptile)
 {
-  for (var dir = 0; dir < 8; dir++) {
-    var tile1 = mapstep(ptile, dir);
+  for (const dir = 0; dir < 8; dir++) {
+    const tile1 = mapstep(ptile, dir);
     if (tile_has_extra(tile1, EXTRA_RIVER)) {
       return true;
     }

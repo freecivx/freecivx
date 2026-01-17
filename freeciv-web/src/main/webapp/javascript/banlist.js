@@ -1,4 +1,6 @@
 /**********************************************************************
+'use strict';
+
     Freeciv-web - the web version of Freeciv. http://www.FreecivWorld.net/
     Copyright (C) 2009-2017  The Freeciv-web project
 
@@ -21,7 +23,7 @@
 /* This is a list of banned users of Freeciv-web.
    Note that user accounts can also be disabled by setting activated=0 in the auth DB table.
 */
-var banned_users = [];
+const banned_users = [];
 
 /**************************************************************************
  Returns false if the text contains a banned user.
@@ -29,7 +31,7 @@ var banned_users = [];
 function check_text_with_banlist(text)
 {
   if (text == null || text.length == 0) return false;
-  for (var i = 0; i < banned_users.length; i++) {
+  for (const i = 0; i < banned_users.length; i++) {
     if (text.toLowerCase().indexOf(banned_users[i].toLowerCase()) != -1) return false;
   }
   return true;
@@ -42,7 +44,7 @@ function check_text_with_banlist(text)
 function check_text_with_banlist_exact(text)
 {
   if (text == null || text.length == 0) return false;
-  for (var i = 0; i < banned_users.length; i++) {
+  for (const i = 0; i < banned_users.length; i++) {
     if (text.toLowerCase() == banned_users[i].toLowerCase()) return false;
   }
   return true;

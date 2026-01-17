@@ -1,4 +1,6 @@
 /**********************************************************************
+'use strict';
+
     Freeciv-web - the web version of Freeciv. http://www.FreecivWorld.net/
     Copyright (C) 2009-2017  The Freeciv-web project
 
@@ -25,7 +27,7 @@
 function show_intelligence_report_dialog()
 {
   if (selected_player == -1) return;
-  var pplayer = players[selected_player];
+  const pplayer = players[selected_player];
 
   if (client_is_observer()
       || client.conn.playing.real_embassy[selected_player]) {
@@ -40,7 +42,7 @@ function show_intelligence_report_dialog()
 **************************************************************************/
 function show_intelligence_report_hearsay(pplayer)
 {
-  var msg = "Ruler " + pplayer['name'] + "<br>";
+  const msg = "Ruler " + pplayer['name'] + "<br>";
   if (pplayer['government'] > 0) {
     msg += "Government: " + governments[pplayer['government']]['name'] + "<br>";
   }

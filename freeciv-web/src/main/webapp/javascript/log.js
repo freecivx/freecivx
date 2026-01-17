@@ -1,4 +1,6 @@
 /**********************************************************************
+'use strict';
+
     Freeciv-web - the web version of Freeciv. http://www.FreecivWorld.net/
     Copyright (C) 2009-2015  The Freeciv-web project
 
@@ -18,11 +20,11 @@
 ***********************************************************************/
 
 
-var LOG_FATAL = 0;
-var LOG_ERROR = 1;		/* non-fatal errors */
-var LOG_NORMAL = 2;
-var LOG_VERBOSE = 3;		/* not shown by default */
-var LOG_DEBUG = 4;		/* suppressed unless DEBUG defined;
+const LOG_FATAL = 0;
+const LOG_ERROR = 1;		/* non-fatal errors */
+const LOG_NORMAL = 2;
+const LOG_VERBOSE = 3;		/* not shown by default */
+const LOG_DEBUG = 4;		/* suppressed unless DEBUG defined;
 				   may be enabled on file/line basis */
 
 

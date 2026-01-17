@@ -1,4 +1,6 @@
 /**********************************************************************
+'use strict';
+
     Freeciv-web - the web version of Freeciv. http://www.FreecivWorld.net/
     Copyright (C) 2009-2015  The Freeciv-web project
 
@@ -17,28 +19,28 @@
 
 ***********************************************************************/
 
-var CLAUSE_ADVANCE = 0;
-var CLAUSE_GOLD = 1;
-var CLAUSE_MAP = 2;
-var CLAUSE_SEAMAP = 3;
-var CLAUSE_CITY = 4;
-var CLAUSE_CEASEFIRE = 5;
-var CLAUSE_PEACE = 6;
-var CLAUSE_ALLIANCE = 7;
-var CLAUSE_VISION = 8;
-var CLAUSE_EMBASSY = 9;
-var CLAUSE_SHARED_TILES = 10;
-var SPECENUM_COUNT = 11;
+const CLAUSE_ADVANCE = 0;
+const CLAUSE_GOLD = 1;
+const CLAUSE_MAP = 2;
+const CLAUSE_SEAMAP = 3;
+const CLAUSE_CITY = 4;
+const CLAUSE_CEASEFIRE = 5;
+const CLAUSE_PEACE = 6;
+const CLAUSE_ALLIANCE = 7;
+const CLAUSE_VISION = 8;
+const CLAUSE_EMBASSY = 9;
+const CLAUSE_SHARED_TILES = 10;
+const SPECENUM_COUNT = 11;
 
-var clause_infos = {};
-var diplomacy_clause_map = {};
+const clause_infos = {};
+const diplomacy_clause_map = {};
 
 /**************************************************************************
  ...
 **************************************************************************/
 function diplomacy_init_meeting_req(counterpart)
 {
-  var packet = {"pid" : packet_diplomacy_init_meeting_req,
+  const packet = {"pid" : packet_diplomacy_init_meeting_req,
 	        "counterpart" : counterpart};
   send_request(JSON.stringify(packet));
 }
@@ -57,7 +59,7 @@ function show_diplomacy_dialog(counterpart)
 **************************************************************************/
 function accept_treaty_req(counterpart_id)
 {
-  var packet = {"pid" : packet_diplomacy_accept_treaty_req,
+  const packet = {"pid" : packet_diplomacy_accept_treaty_req,
                 "counterpart" : counterpart_id};
   send_request(JSON.stringify(packet));
 }
@@ -73,11 +75,11 @@ function accept_treaty(counterpart, I_accepted, other_accepted)
 
   } else {
 
-  var agree_sprite = get_treaty_agree_thumb_up();
-  var disagree_sprite = get_treaty_disagree_thumb_down();
+  const agree_sprite = get_treaty_agree_thumb_up();
+  const disagree_sprite = get_treaty_disagree_thumb_down();
 
 
-  var agree_html = "<div style='float:left; background: transparent url("
+  const agree_html = "<div style='float:left; background: transparent url("
            + agree_sprite['image-src']
            + "); background-position:-" + agree_sprite['tileset-x'] + "px -"
 	   + agree_sprite['tileset-y']
@@ -85,7 +87,7 @@ function accept_treaty(counterpart, I_accepted, other_accepted)
 	   + agree_sprite['height'] + "px; margin: 5px; '>"
            + "</div>";
 
-  var disagree_html = "<div style='float:left; background: transparent url("
+  const disagree_html = "<div style='float:left; background: transparent url("
            + disagree_sprite['image-src']
            + "); background-position:-" + disagree_sprite['tileset-x'] + "px -"
 	   + disagree_sprite['tileset-y']
@@ -111,7 +113,7 @@ function accept_treaty(counterpart, I_accepted, other_accepted)
 **************************************************************************/
 function cancel_meeting_req(counterpart_id)
 {
-  var packet = {"pid" : packet_diplomacy_cancel_meeting_req,
+  const packet = {"pid" : packet_diplomacy_cancel_meeting_req,
 	        "counterpart" : counterpart_id};
   send_request(JSON.stringify(packet));
 }
@@ -123,16 +125,16 @@ function create_clause_req(counterpart_id, giver, type, value)
 {
   if (type == CLAUSE_CEASEFIRE || type == CLAUSE_PEACE || type == CLAUSE_ALLIANCE) {
     // eg. creating peace treaty requires removing ceasefire first.
-    var clauses = diplomacy_clause_map[counterpart_id];
-    for (var i = 0; i < clauses.length; i++) {
-      var clause = clauses[i];
+    const clauses = diplomacy_clause_map[counterpart_id];
+    for (const i = 0; i < clauses.length; i++) {
+      const clause = clauses[i];
       if (clause['type'] == CLAUSE_CEASEFIRE || clause['type'] == CLAUSE_PEACE|| clause['type'] == CLAUSE_ALLIANCE) {
         remove_clause_req(counterpart_id, i);
       }
     }
   }
 
-  var packet = {"pid" : packet_diplomacy_create_clause_req,
+  const packet = {"pid" : packet_diplomacy_create_clause_req,
                 "counterpart" : counterpart_id,
                 "giver" : giver,
                 "type" : type,
@@ -163,7 +165,7 @@ function cleanup_diplomacy_dialog(counterpart_id)
 **************************************************************************/
 function discard_diplomacy_dialogs()
 {
-  for (var counterpart in diplomacy_clause_map) {
+  for (let counterpart in diplomacy_clause_map) {
     cleanup_diplomacy_dialog(counterpart);
   }
   diplomacy_clause_map = {};
@@ -174,11 +176,11 @@ function discard_diplomacy_dialogs()
 **************************************************************************/
 function show_diplomacy_clauses(counterpart_id)
 {
-    var clauses = diplomacy_clause_map[counterpart_id];
-    var diplo_html = "";
-    for (var i = 0; i < clauses.length; i++) {
-      var clause = clauses[i];
-      var diplo_str = client_diplomacy_clause_string(clause['counterpart'],
+    const clauses = diplomacy_clause_map[counterpart_id];
+    const diplo_html = "";
+    for (const i = 0; i < clauses.length; i++) {
+      const clause = clauses[i];
+      const diplo_str = client_diplomacy_clause_string(clause['counterpart'],
  		          clause['giver'],
                   clause['type'],
                   clause['value']);
@@ -195,10 +197,10 @@ function show_diplomacy_clauses(counterpart_id)
 **************************************************************************/
 function remove_clause_req(counterpart_id, clause_no)
 {
-  var clauses = diplomacy_clause_map[counterpart_id];
-  var clause = clauses[clause_no];
+  const clauses = diplomacy_clause_map[counterpart_id];
+  const clause = clauses[clause_no];
 
-  var packet = {"pid" : packet_diplomacy_remove_clause_req,
+  const packet = {"pid" : packet_diplomacy_remove_clause_req,
 	            "counterpart" : clause['counterpart'],
                 "giver": clause['giver'],
                 "type" : clause['type'],
@@ -211,10 +213,10 @@ function remove_clause_req(counterpart_id, clause_no)
 **************************************************************************/
 function remove_clause(remove_clause_obj)
 {
-  var counterpart_id = remove_clause_obj['counterpart'];
-  var clause_list = diplomacy_clause_map[counterpart_id];
-  for (var i = 0; i < clause_list.length; i++) {
-    var check_clause = clause_list[i];
+  const counterpart_id = remove_clause_obj['counterpart'];
+  const clause_list = diplomacy_clause_map[counterpart_id];
+  for (const i = 0; i < clause_list.length; i++) {
+    const check_clause = clause_list[i];
     if (counterpart_id == check_clause['counterpart']
 	&& remove_clause_obj['giver'] == check_clause['giver']
         && remove_clause_obj['type'] == check_clause['type']) {
@@ -232,15 +234,15 @@ function remove_clause(remove_clause_obj)
 **************************************************************************/
 function client_diplomacy_clause_string(counterpart, giver, type, value)
 {
-  var pplayer = players[giver];
-  var nation = nations[pplayer['nation']]['adjective'];
+  const pplayer = players[giver];
+  const nation = nations[pplayer['nation']]['adjective'];
 
   switch (type) {
   case CLAUSE_ADVANCE:
-    var ptech = techs[value];
+    const ptech = techs[value];
     return "The " + nation + " give " + ptech['name'];
   case CLAUSE_CITY:
-    var pcity = cities[value];
+    const pcity = cities[value];
 
     if (pcity != null) {
       return "The " + nation + " give " + decodeURIComponent(pcity['name']);
@@ -284,7 +286,7 @@ function client_diplomacy_clause_string(counterpart, giver, type, value)
 **************************************************************************/
 function diplomacy_cancel_treaty(player_id)
 {
-  var packet = {"pid" : packet_diplomacy_cancel_pact,
+  const packet = {"pid" : packet_diplomacy_cancel_pact,
 	        "other_player_id" : player_id,
                 "clause" : DS_CEASEFIRE};
   send_request(JSON.stringify(packet));
@@ -438,17 +440,17 @@ function createDiplomacyDialog(counterpart) {
 
 function meeting_paint_custom_flag(nation, flag_canvas)
 {
-  var tag = "f." + nation['graphic_str'];
-  var flag_canvas_ctx = flag_canvas.getContext("2d");
+  const tag = "f." + nation['graphic_str'];
+  const flag_canvas_ctx = flag_canvas.getContext("2d");
   flag_canvas_ctx.scale(1.5, 1.5);
   flag_canvas_ctx.drawImage(sprites[tag], 0, 0);
 }
 
 function create_clauses_menu(content) {
   content.css('position', 'relative');
-  var children = content.children();
-  var button = children.eq(0);
-  var menu = children.eq(1);
+  const children = content.children();
+  const button = children.eq(0);
+  const menu = children.eq(1);
   menu.menu();
   menu.hide();
   menu.css({
@@ -459,11 +461,11 @@ function create_clauses_menu(content) {
        + parseFloat(button.css('borderTopWidth')),
     left: parseFloat(button.css('marginLeft'))
   });
-  var menu_open = function () {
+  const menu_open = function () {
     menu.show();
     menu.data('diplAdd', 'open');
   };
-  var menu_close = function () {
+  const menu_close = function () {
     menu.hide();
     menu.data('diplAdd', 'closed');
   };
@@ -487,10 +489,10 @@ function create_clauses_menu(content) {
 **************************************************************************/
 function meeting_gold_change_req(counterpart_id, giver, gold)
 {
-  var clauses = diplomacy_clause_map[counterpart_id];
+  const clauses = diplomacy_clause_map[counterpart_id];
   if (clauses != null) {
-    for (var i = 0; i < clauses.length; i++) {
-      var clause = clauses[i];
+    for (const i = 0; i < clauses.length; i++) {
+      const clause = clauses[i];
       if (clause['giver'] == giver && clause['type'] == CLAUSE_GOLD) {
         if (clause['value'] == gold) return;
         remove_clause_req(counterpart_id, i);
@@ -499,7 +501,7 @@ function meeting_gold_change_req(counterpart_id, giver, gold)
   }
 
   if (gold != 0) {
-    var packet = {"pid" : packet_diplomacy_create_clause_req,
+    const packet = {"pid" : packet_diplomacy_create_clause_req,
                   "counterpart" : counterpart_id,
                   "giver" : giver,
                   "type" : CLAUSE_GOLD,
@@ -513,8 +515,8 @@ function meeting_gold_change_req(counterpart_id, giver, gold)
 **************************************************************************/
 function meeting_template_data(giver, taker)
 {
-  var data = {};
-  var nation = nations[giver['nation']];
+  const data = {};
+  const nation = nations[giver['nation']];
 
   if (!nation['customized']) {
     data.flag = nation['graphic_str'] + ".svg";
@@ -524,9 +526,9 @@ function meeting_template_data(giver, taker)
   data.name = giver['name'];
   data.pid = giver['playerno'];
 
-  var all_clauses = [];
+  const all_clauses = [];
 
-  var clauses = [];
+  const clauses = [];
   if (clause_infos[CLAUSE_MAP]['enabled']) {
     clauses.push({type: CLAUSE_MAP, value: 1, name: 'World-map'});
   }
@@ -539,7 +541,7 @@ function meeting_template_data(giver, taker)
 
   if (game_info.trading_tech && clause_infos[CLAUSE_ADVANCE]['enabled']) {
     clauses = [];
-    for (var tech_id in techs) {
+    for (let tech_id in techs) {
       if (player_invention_state(giver, tech_id) == TECH_KNOWN
           && (player_invention_state(taker, tech_id) == TECH_UNKNOWN
               || player_invention_state(taker, tech_id) == TECH_PREREQS_KNOWN)) {
@@ -557,8 +559,8 @@ function meeting_template_data(giver, taker)
 
   if (game_info.trading_city && clause_infos[CLAUSE_CITY]['enabled']) {
     clauses = [];
-    for (var city_id in cities) {
-      var pcity = cities[city_id];
+    for (let city_id in cities) {
+      const pcity = cities[city_id];
       if (city_owner(pcity) == giver
           && !does_city_have_improvement(pcity, "Palace")) {
         clauses.push({

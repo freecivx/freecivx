@@ -1,4 +1,6 @@
 /**********************************************************************
+'use strict';
+
     OpenAI - the 3D web version of Freeciv. http://www.FreecivWorld.net/
     Copyright (C) 2009-2023  The FreecivWorld.net project
 
@@ -17,7 +19,7 @@
 
 ***********************************************************************/
 
-var openai_enabled = true;
+const openai_enabled = true;
 
 /**************************************************************************
   Returns the current game context to OpenAI.
@@ -86,7 +88,7 @@ function get_openai_game_context()
 
 
    context += " Cities in the game: "
-   for (var city_id in cities){
+   for (let city_id in cities){
        let pcity = cities[city_id];
        context += pcity['name'];
        if (nations[pcity['nation_id']] != null) {
@@ -98,7 +100,7 @@ function get_openai_game_context()
   context += ".\n";
 
   context += " All technologies researched and known the current player: "
-  for (var tech_id in techs) {
+  for (let tech_id in techs) {
      let ptech = techs[tech_id];
      if (player_invention_state(client.conn.playing, ptech['id']) == TECH_KNOWN) {
        context += ptech['name'] + ",";
@@ -107,7 +109,7 @@ function get_openai_game_context()
   context += ".\n";
 
   context += "All technologies not known the current player: "
-  for (var tech_id in techs) {
+  for (let tech_id in techs) {
      let ptech = techs[tech_id];
      if (player_invention_state(client.conn.playing, ptech['id']) != TECH_KNOWN) {
        context += ptech['name'] + ",";
@@ -116,8 +118,8 @@ function get_openai_game_context()
   context += ".\n";
 
   context += " Game units of the current player: "
-  for (var unit_id in units) {
-    var punit = units[unit_id];
+  for (let unit_id in units) {
+    const punit = units[unit_id];
      if (punit['owner'] == client.conn.playing.playerno ) {
        let punit_type = unit_types[punit['type']];
        context += punit_type['rule_name'] + ",";
@@ -146,11 +148,11 @@ function get_openai_game_context()
 function send_message_to_openai(message)
 {
 
-  var prefix = ". Please answer this message from the player in the game: ";
-  var otherone = "Assistant";
+  const prefix = ". Please answer this message from the player in the game: ";
+  const otherone = "Assistant";
 
-   for (var player_id in players) {
-     var pplayer = players[player_id];
+   for (let player_id in players) {
+     const pplayer = players[player_id];
      if (message.indexOf(pplayer['name']) >= 0 && message.indexOf(pplayer['name']) < 120) {
        prefix = ". Please respond to this message from " + username + " to the AI player " + pplayer['name']
                + " in the game with a message of maximum 100 words where you pretend that you are the AI player. "

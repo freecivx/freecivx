@@ -1,4 +1,6 @@
 /**********************************************************************
+'use strict';
+
     Freeciv-web - the web version of Freeciv. http://www.FreecivWorld.net/
     Copyright (C) 2009-2015  The Freeciv-web project
 
@@ -18,37 +20,37 @@
 ***********************************************************************/
 
 
-var spaceship_info = {};
+const spaceship_info = {};
 
-var spaceships = {};
-var spaceship_launched = null;
+const spaceships = {};
+const spaceship_launched = null;
 
-var SSHIP_NONE = 0;
-var SSHIP_STARTED = 1;
-var SSHIP_LAUNCHED = 2;
-var SSHIP_ARRIVED = 3;
+const SSHIP_NONE = 0;
+const SSHIP_STARTED = 1;
+const SSHIP_LAUNCHED = 2;
+const SSHIP_ARRIVED = 3;
 
-var SSHIP_PLACE_STRUCTURAL = 0;
-var SSHIP_PLACE_FUEL = 1;
-var SSHIP_PLACE_PROPULSION = 2;
-var SSHIP_PLACE_HABITATION = 3;
-var SSHIP_PLACE_LIFE_SUPPORT = 4;
-var SSHIP_PLACE_SOLAR_PANELS = 5;
+const SSHIP_PLACE_STRUCTURAL = 0;
+const SSHIP_PLACE_FUEL = 1;
+const SSHIP_PLACE_PROPULSION = 2;
+const SSHIP_PLACE_HABITATION = 3;
+const SSHIP_PLACE_LIFE_SUPPORT = 4;
+const SSHIP_PLACE_SOLAR_PANELS = 5;
 
-var spaceship_speed = 1.0;
-var spaceship_acc = 1.01;
+const spaceship_speed = 1.0;
+const spaceship_acc = 1.01;
 
 /**************************************************************************
  ...
 **************************************************************************/
 function show_spaceship_dialog()
 {
-  var title = "Spaceship";
-  var message = "";
+  const title = "Spaceship";
+  const message = "";
 
   if (client_is_observer()) return;
 
-  var spaceship = spaceship_info[client.conn.playing['playerno']];
+  const spaceship = spaceship_info[client.conn.playing['playerno']];
 
   message += "Spaceship progress: " + get_spaceship_state_text(spaceship['sship_state']) + "<br>";
   message += "Success probability: " + Math.floor(spaceship['success_rate'] * 100) + "%<br>";
@@ -133,8 +135,8 @@ function add_spaceship(ptile, pcity, scene) {
     if (spaceshipmodel == null) {
       return;
     }
-    var nexttile = ptile;
-    for (var i = 0; i < 30; i++) {
+    const nexttile = ptile;
+    for (const i = 0; i < 30; i++) {
       let dir = Math.floor(Math.random() * 8);
       let ntile = mapstep(ptile, dir);
       nexttile = mapstep(ntile, dir);
@@ -163,9 +165,9 @@ function add_spaceship(ptile, pcity, scene) {
   Animate spaceship launch
 ****************************************************************************/
 function launch_spaceship_anim() {
-  var playerno = client.conn.playing['playerno'];
+  const playerno = client.conn.playing['playerno'];
 
-  var spaceshipmodel = webgl_get_model("Spaceship_launched", null);
+  const spaceshipmodel = webgl_get_model("Spaceship_launched", null);
   if (spaceshipmodel == null) {
     return;
   }

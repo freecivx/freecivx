@@ -1,4 +1,6 @@
 /**********************************************************************
+'use strict';
+
  Freeciv 3D - the web version of Freeciv. http://www.FreecivWorld.net/
  Copyright (C) 2009-2024  The Freeciv-web project
 
@@ -25,8 +27,8 @@ function update_city_screen()
 {
     if (observing) return;
 
-    var sortList = [];
-    var headers = $('#city_table thead th');
+    const sortList = [];
+    const headers = $('#city_table thead th');
     headers.filter('.tablesorter-headerAsc').each(function (i, cell) {
         sortList.push([cell.cellIndex, 0]);
     });
@@ -34,17 +36,17 @@ function update_city_screen()
         sortList.push([cell.cellIndex, 1]);
     });
 
-    var city_list_html = "<table class='tablesorter' id='city_table' border=0 cellspacing=0>"
+    const city_list_html = "<table class='tablesorter' id='city_table' border=0 cellspacing=0>"
         + "<thead><tr><th>Name</th><th>Population</th><th>Size</th><th>State</th>"
         + "<th>Granary</th><th>Grows In</th><th>Producing</th>"
         + "<th>Surplus<br>Food/Prod/Trade</th><th>Economy<br>Gold/Luxury/Science</th></tr></thead><tbody>";
-    var count = 0;
-    for (var city_id in cities) {
-        var pcity = cities[city_id];
+    const count = 0;
+    for (let city_id in cities) {
+        const pcity = cities[city_id];
         if (client.conn.playing != null && city_owner(pcity) != null && city_owner(pcity).playerno == client.conn.playing.playerno) {
             count++;
-            var prod_type = get_city_production_type(pcity);
-            var turns_to_complete_str;
+            const prod_type = get_city_production_type(pcity);
+            let turns_to_complete_str;
             if (get_city_production_time(pcity) == FC_INFINITY) {
                 turns_to_complete_str = "-"; //client does not know how long production will take yet.
             } else {
@@ -68,7 +70,7 @@ function update_city_screen()
 
     $('.cities_row').mousedown(function(event){
         if(event.which == 1) {
-            var cityId = $(this).data('city-id');
+            const cityId = $(this).data('city-id');
             show_city_dialog_by_id(cityId);
         }
     });
@@ -100,18 +102,18 @@ function update_city_screen()
 **************************************************************************/
 function generate_cities_production_list()
 {
-  var pcity = null;
-  for (var city_id in cities) {
-    var ncity = cities[city_id];
+  const pcity = null;
+  for (let city_id in cities) {
+    const ncity = cities[city_id];
     if (client.conn.playing != null && city_owner(ncity) != null && city_owner(ncity).playerno == client.conn.playing.playerno) {
        pcity = ncity;
        break;
     }
   }
 
-  var production_list = {};
-  for (var unit_type_id in unit_types) {
-    var punit_type = unit_types[unit_type_id];
+  const production_list = {};
+  for (let unit_type_id in unit_types) {
+    const punit_type = unit_types[unit_type_id];
         // TODO: should have unique check if each city can build the thing, not just check if the first city can build it.
     if (!can_city_build_now(pcity, VUT_UTYPE, punit_type['id'])) continue;
 
@@ -119,8 +121,8 @@ function generate_cities_production_list()
       production_list[punit_type['name']] = {name: punit_type['name']}
   }
 
-  for (var improvement_id in improvements) {
-    var pimprovement = improvements[improvement_id];
+  for (let improvement_id in improvements) {
+    const pimprovement = improvements[improvement_id];
     if (!can_city_build_now(pcity, VUT_IMPROVEMENT, pimprovement['id'])) continue;
     production_list[pimprovement['name']] = {name: pimprovement['name']}
   }
@@ -131,16 +133,16 @@ function generate_cities_production_list()
 ...
 **************************************************************************/
 function cities_choose_production(key, options, city_id) {
-  var production_list = {};
-  for (var unit_type_id in unit_types) {
-    var punit_type = unit_types[unit_type_id];
+  const production_list = {};
+  for (let unit_type_id in unit_types) {
+    const punit_type = unit_types[unit_type_id];
     if (punit_type['name'] == key) {
         send_city_change(city_id, VUT_UTYPE, punit_type['id']);
     }
   }
 
-  for (var improvement_id in improvements) {
-    var pimprovement = improvements[improvement_id];
+  for (let improvement_id in improvements) {
+    const pimprovement = improvements[improvement_id];
     if (pimprovement['name'] == key) {
         send_city_change(city_id, VUT_IMPROVEMENT, pimprovement['id']);
     }

@@ -1,4 +1,6 @@
 /**********************************************************************
+'use strict';
+
     Freeciv-web - the web version of Freeciv. http://www.FreecivWorld.net/
     Copyright (C) 2009-2015  The Freeciv-web project
 
@@ -18,7 +20,7 @@
 ***********************************************************************/
 
 
-var requirements = {};
+const requirements = {};
 
 
 /* Range of requirements.
@@ -31,18 +33,18 @@ var requirements = {};
  *    tile is also within Adjacent range);
  *  - World contains Alliance contains Player (a requirement we ourselves
  *    have is also within Alliance range). */
-var REQ_RANGE_LOCAL = 0;
-var REQ_RANGE_TILE = 1;
-var REQ_RANGE_CADJACENT = 2;
-var REQ_RANGE_ADJACENT = 3;
-var REQ_RANGE_CITY = 4;
-var REQ_RANGE_TRADEROUTE = 5;
-var REQ_RANGE_CONTINENT = 6;
-var REQ_RANGE_PLAYER = 7;
-var REQ_RANGE_TEAM = 8;
-var REQ_RANGE_ALLIANCE = 9;
-var REQ_RANGE_WORLD = 10;
-var REQ_RANGE_COUNT = 11;   /* Keep this last */
+const REQ_RANGE_LOCAL = 0;
+const REQ_RANGE_TILE = 1;
+const REQ_RANGE_CADJACENT = 2;
+const REQ_RANGE_ADJACENT = 3;
+const REQ_RANGE_CITY = 4;
+const REQ_RANGE_TRADEROUTE = 5;
+const REQ_RANGE_CONTINENT = 6;
+const REQ_RANGE_PLAYER = 7;
+const REQ_RANGE_TEAM = 8;
+const REQ_RANGE_ALLIANCE = 9;
+const REQ_RANGE_WORLD = 10;
+const REQ_RANGE_COUNT = 11;   /* Keep this last */
 
 
 /****************************************************************************
@@ -66,7 +68,7 @@ function is_req_active(target_player,
 		   req,
            prob_type)
 {
-  var result = TRI_NO;
+  const result = TRI_NO;
 
   /* Note the target may actually not exist.  In particular, effects that
    * have a VUT_SPECIAL or VUT_TERRAIN may often be passed to this function
@@ -177,7 +179,7 @@ function are_reqs_active(target_player,
              prob_type)
 {
 
-  for (var i = 0; i < reqs.length; i++) {
+  for (const i = 0; i < reqs.length; i++) {
     if (!is_req_active(target_player, target_city, target_building,
 		       target_tile, target_unittype, target_output,
 		       target_specialist,

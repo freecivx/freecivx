@@ -1,4 +1,6 @@
 /**********************************************************************
+'use strict';
+
     Freeciv-web - the web version of Freeciv. http://www.FreecivWorld.net/
     Copyright (C) 2009-2015  The Freeciv-web project
 
@@ -18,33 +20,33 @@
 ***********************************************************************/
 
 
-var units = {};
+const units = {};
 
 /* Depends on the ruleset. Comes in the packet ruleset_terrain_control.
  * Set in handle_ruleset_terrain_control(). */
-var SINGLE_MOVE;
+let SINGLE_MOVE;
 
-var ANIM_STEPS = 6;
+const ANIM_STEPS = 6;
 
 /* The unit_orders enum from unit.h */
-var ORDER_MOVE = 0;
-var ORDER_ACTIVITY = 1;
-var ORDER_FULL_MP = 2;
-var ORDER_ACTION_MOVE = 3;
-var ORDER_PERFORM_ACTION = 4;
-var ORDER_LAST = 5;
+const ORDER_MOVE = 0;
+const ORDER_ACTIVITY = 1;
+const ORDER_FULL_MP = 2;
+const ORDER_ACTION_MOVE = 3;
+const ORDER_PERFORM_ACTION = 4;
+const ORDER_LAST = 5;
 
 /* The unit_ss_data_type enum from unit.h */
-var USSDT_QUEUE = 0;
-var USSDT_UNQUEUE = 1;
-var USSDT_BATTLE_GROUP = 2;
-var USSDT_SENTRY = 3;
+const USSDT_QUEUE = 0;
+const USSDT_UNQUEUE = 1;
+const USSDT_BATTLE_GROUP = 2;
+const USSDT_SENTRY = 3;
 
 /* enum server_side_agent */
-var SSA_NONE = 0;
-var SSA_AUTOSETTLER = 1;
-var SSA_AUTOEXPLORE = 2;
-var SSA_COUNT = 3;
+const SSA_NONE = 0;
+const SSA_AUTOSETTLER = 1;
+const SSA_AUTOEXPLORE = 2;
+const SSA_COUNT = 3;
 
 /****************************************************************************
  ...
@@ -93,9 +95,9 @@ function tile_units(ptile)
 function get_supported_units(pcity)
 {
   if (pcity == null) return null;
-  var result = [];
-  for (var unit_id in units) {
-    var punit = units[unit_id];
+  const result = [];
+  for (let unit_id in units) {
+    const punit = units[unit_id];
     if (punit['homecity'] == pcity['id']) {
       result.push(punit);
     }
@@ -113,12 +115,12 @@ function update_tile_unit(punit)
 {
   if (punit == null) return;
 
-  var found = false;
-  var ptile = index_to_tile(punit['tile']);
+  const found = false;
+  const ptile = index_to_tile(punit['tile']);
 
   if (ptile == null || ptile['units'] == null) return;
 
-  for (var i = 0; i <  ptile['units'].length; i++) {
+  for (const i = 0; i <  ptile['units'].length; i++) {
     if (ptile['units'][i]['id'] == punit['id']) {
       found = true;
     }
@@ -136,7 +138,7 @@ function update_tile_unit(punit)
 function clear_tile_unit(punit)
 {
   if (punit == null) return;
-  var ptile = index_to_tile(punit['tile']);
+  const ptile = index_to_tile(punit['tile']);
   if (ptile == null || ptile['units'] == null) return -1;
 
   if (ptile['units'].indexOf(punit) >= 0) {
@@ -158,9 +160,7 @@ function unit_list_size(unit_list)
 **************************************************************************/
 function unit_list_without(unit_list, punit)
 {
-  return unit_list.filter(function(funit, index, c_focus) {
-    return funit['id'] != punit['id'];
-  });
+  return unit_list.filter((funit, index, c_focus) => funit['id'] != punit['id']);
 }
 
 /**************************************************************************
@@ -197,7 +197,7 @@ function get_unit_moves_left(punit)
 **************************************************************************/
 function move_points_text(moves)
 {
-  var result = "";
+  const result = "";
 
   if ((moves % SINGLE_MOVE) != 0) {
     if (Math.floor(moves / SINGLE_MOVE) > 0) {
@@ -234,7 +234,7 @@ function unit_has_goto(punit)
 **************************************************************************/
 function update_unit_anim_list(old_unit, new_unit)
 {
-  var anim_tuple;
+  let anim_tuple;
   if (old_unit == null || new_unit == null) return;
   /* unit is in same position. */
   if (new_unit['tile'] == old_unit['tile']) return;
@@ -247,9 +247,9 @@ function update_unit_anim_list(old_unit, new_unit)
     return;
   }
 
-  var has_old_pos = false;
-  var has_new_pos = false;
-  for (var i = 0; i <  old_unit['anim_list'].length; i++) {
+  const has_old_pos = false;
+  const has_new_pos = false;
+  for (const i = 0; i <  old_unit['anim_list'].length; i++) {
     anim_tuple = old_unit['anim_list'][i];
     if (anim_tuple['tile'] == old_unit['tile']) {
       has_old_pos = true;
@@ -280,7 +280,7 @@ function update_unit_anim_list(old_unit, new_unit)
 **************************************************************************/
 function get_unit_anim_offset(punit)
 {
-  var offset = {};
+  const offset = {};
 
   offset['x'] = 0;
   offset['y'] = 0;
@@ -294,8 +294,8 @@ function get_unit_anim_offset(punit)
 **************************************************************************/
 function reset_unit_anim_list()
 {
- for (var unit_id in units) {
-    var punit = units[unit_id];
+ for (let unit_id in units) {
+    const punit = units[unit_id];
     punit['anim_list'] = [];
   }
 }
@@ -327,18 +327,18 @@ function is_unit_visible(punit)
 **************************************************************************/
 function unittype_ids_alphabetic()
 {
-  var unittype_names = [];
-  var unit_id;
+  const unittype_names = [];
+  let unit_id;
   for (unit_id in unit_types) {
-    var punit_type = unit_types[unit_id];
+    const punit_type = unit_types[unit_id];
     unittype_names.push(punit_type['name']);
   }
 
   unittype_names.sort();
 
-  var unittype_id_list = [];
-  for (var n in unittype_names) {
-    var unit_name = unittype_names[n];
+  const unittype_id_list = [];
+  for (let n in unittype_names) {
+    const unit_name = unittype_names[n];
     for (unit_id in unit_types) {
       punit_type = unit_types[unit_id];
       if (unit_name == punit_type['name']) {
@@ -355,9 +355,9 @@ function unittype_ids_alphabetic()
 **************************************************************************/
 function get_unit_city_info(punit)
 {
-  var result = "";
+  const result = "";
 
-  var ptype = unit_type(punit);
+  const ptype = unit_type(punit);
 
   result += ptype['name'] + "\nFood/Shield/Gold: ";
 
@@ -383,9 +383,9 @@ function get_unit_city_info(punit)
 **************************************************************************/
 function get_what_can_unit_pillage_from(punit, ptile)
 {
-  var i, j;
-  var extra;
-  var targets = [];
+  let i, j;
+  let extra;
+  const targets = [];
   if (punit == null) return targets;
 
   /* If no tile is given, use the one the unit is on */
@@ -396,8 +396,8 @@ function get_what_can_unit_pillage_from(punit, ptile)
   if (terrains[ptile.terrain].pillage_time == 0) return targets;
   if (!utype_can_do_action(unit_type(punit), ACTION_PILLAGE)) return targets;
 
-  var available = ptile.extras.toBitSet();
-  var cannot_pillage = new BitVector([]);
+  const available = ptile.extras.toBitSet();
+  const cannot_pillage = new BitVector([]);
 
   /* Get what other units are pillaging on the tile */
   for (const unit_idx in Object.keys(ptile.units)) {
@@ -411,7 +411,7 @@ function get_what_can_unit_pillage_from(punit, ptile)
   for (i = 0; i < available.length; i++) {
     extra = extras[available[i]];
     for (j = 0; j < extra.reqs.length; j++) {
-      var req = extra.reqs[j];
+      const req = extra.reqs[j];
       if (req.kind == VUT_EXTRA && req.present == true) {
         cannot_pillage.set(req.value);
       }

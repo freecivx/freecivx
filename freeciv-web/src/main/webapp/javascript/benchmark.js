@@ -1,4 +1,6 @@
 /**********************************************************************
+'use strict';
+
     Freeciv-web - the web version of Freeciv. http://www.FreecivWorld.net/
     Copyright (C) 2009-2017  The Freeciv-web project
 
@@ -17,10 +19,10 @@
 
 ***********************************************************************/
 
-var benchmark_start;
-var benchmark_enabled = false;
-var benchmark_frames_count = 0;
-var initial_benchmark_enabled = true;
+let benchmark_start;
+const benchmark_enabled = false;
+const benchmark_frames_count = 0;
+const initial_benchmark_enabled = true;
 
 /****************************************************************************
   Runs a benchmark of the WebGL version
@@ -56,8 +58,8 @@ function benchmark_check()
   } catch (err)  {}
 
   if (game_info != null && game_info['turn'] >= 15) {
-    var time_elapsed =  (new Date().getTime() - benchmark_start) / 1000;
-    var fps = Math.floor(benchmark_frames_count / time_elapsed);
+    const time_elapsed = (new Date().getTime() - benchmark_start) / 1000;
+    const fps = Math.floor(benchmark_frames_count / time_elapsed);
 
     $("#benchmark_dialog").remove();
     $("<div id='benchmark_dialog'></div>").appendTo("div#game_page");

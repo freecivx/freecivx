@@ -1,4 +1,6 @@
 /**********************************************************************
+'use strict';
+
     Freeciv-web - the web version of Freeciv. http://www.FreecivWorld.net/
     Copyright (C) 2009-2015  The Freeciv-web project
 
@@ -18,10 +20,10 @@
 ***********************************************************************/
 
 
-var auto_attack = false;
+const auto_attack = false;
 
-var action_selection_restart = false;
-var did_not_decide = false;
+const action_selection_restart = false;
+const did_not_decide = false;
 
 /**********************************************************************//**
   Move the queue of units that need user input forward unless the current
@@ -120,7 +122,7 @@ function format_action_label(action_id, action_probabilities)
 **************************************************************************/
 function format_action_tooltip(act_id, act_probs)
 {
-  var out;
+  let out;
 
   if (act_probs[act_id]['min'] == act_probs[act_id]['max']) {
     out = "The probability of success is ";
@@ -170,7 +172,7 @@ function act_sel_click_function(parent_id,
   case ACTION_SPY_BRIBE_UNIT:
   case ACTION_UPGRADE_UNIT:
     return function() {
-      var packet = {
+      const packet = {
         "pid"          : packet_unit_action_query,
         "actor_id"     : actor_unit_id,
         "target_id"    : tgt_id,
@@ -185,7 +187,7 @@ function act_sel_click_function(parent_id,
   case ACTION_FOUND_CITY:
     return function() {
       /* Ask the server to suggest a city name. */
-      var packet = {
+      const packet = {
         "pid"     : packet_city_name_suggestion_req,
         "unit_id" : actor_unit_id
       };
@@ -213,7 +215,7 @@ function create_act_sel_button(parent_id,
                                action_id, action_probabilities)
 {
   /* Create the initial button with this action */
-  var button = {
+  const button = {
     id      : "act_sel_" + action_id + "_" + actor_unit_id,
     "class" : 'act_sel_button',
     text    : format_action_label(action_id,
@@ -239,7 +241,7 @@ function popup_action_selection(actor_unit, action_probabilities,
   if (actor_unit == null) return;
 
   // reset dialog page.
-  var id = "#act_sel_dialog_" + actor_unit['id'];
+  const id = "#act_sel_dialog_" + actor_unit['id'];
   $(id).remove();
   $("<div id='act_sel_dialog_" + actor_unit['id'] + "'></div>").appendTo("div#game_page");
 
@@ -253,11 +255,11 @@ function popup_action_selection(actor_unit, action_probabilities,
     action_selection_close();
   }
 
-  var actor_homecity = cities[actor_unit['homecity']];
+  const actor_homecity = cities[actor_unit['homecity']];
 
-  var buttons = [];
+  const buttons = [];
 
-  var dhtml = "";
+  const dhtml = "";
 
   if (target_city != null) {
     dhtml += "Your " + unit_types[actor_unit['type']]['name'];
@@ -294,9 +296,9 @@ function popup_action_selection(actor_unit, action_probabilities,
 
   /* Show a button for each enabled action. The buttons are sorted by
    * target kind first and then by action id number. */
-  for (var tgt_kind = ATK_CITY; tgt_kind < ATK_COUNT; tgt_kind++) {
-    var tgt_id = -1;
-    var sub_tgt_id = -1;
+  for (const tgt_kind = ATK_CITY; tgt_kind < ATK_COUNT; tgt_kind++) {
+    const tgt_id = -1;
+    const sub_tgt_id = -1;
 
     switch (tgt_kind) {
     case ATK_CITY:
@@ -331,7 +333,7 @@ function popup_action_selection(actor_unit, action_probabilities,
       break;
     }
 
-    for (var action_id = 0; action_id < ACTION_COUNT; action_id++) {
+    for (const action_id = 0; action_id < ACTION_COUNT; action_id++) {
       if (actions[action_id]['tgt_kind'] == tgt_kind
           && action_prob_possible(
               action_probabilities[action_id])) {
@@ -375,7 +377,7 @@ function popup_action_selection(actor_unit, action_probabilities,
   /* Special-case handling for auto-attack. */
   if (action_prob_possible(action_probabilities[ACTION_ATTACK])) {
         if (!auto_attack) {
-          var button = {
+          const button = {
             id      : "act_sel_" + ACTION_ATTACK + "_" + actor_unit['id'],
             "class" : 'act_sel_button',
             text    : "Auto attack from now on!",
@@ -433,9 +435,9 @@ function popup_action_selection(actor_unit, action_probabilities,
 **************************************************************************/
 function popup_bribe_dialog(actor_unit, target_unit, cost, act_id)
 {
-  var bribe_possible = false;
-  var dhtml = "";
-  var id = "#bribe_unit_dialog_" + actor_unit['id'];
+  const bribe_possible = false;
+  const dhtml = "";
+  const id = "#bribe_unit_dialog_" + actor_unit['id'];
 
   /* Reset dialog page. */
   $(id).remove();
@@ -458,8 +460,8 @@ function popup_bribe_dialog(actor_unit, target_unit, cost, act_id)
 
   $(id).html(dhtml);
 
-  var close_button = {	Close: function() {$(id).dialog('close');}};
-  var bribe_close_button = {	"Cancel": function() {$(id).dialog('close');},
+  const close_button = {	Close: function() {$(id).dialog('close');}};
+  const bribe_close_button = {	"Cancel": function() {$(id).dialog('close');},
   				"Do it!": function() {
       request_unit_do_action(act_id, actor_unit['id'], target_unit['id']);
       $(id).dialog('close');
@@ -487,9 +489,9 @@ function popup_bribe_dialog(actor_unit, target_unit, cost, act_id)
 **************************************************************************/
 function popup_incite_dialog(actor_unit, target_city, cost, act_id)
 {
-  var incite_possible;
-  var id;
-  var dhtml;
+  let incite_possible;
+  let id;
+  let dhtml;
 
   id = "#incite_city_dialog_" + actor_unit['id'];
 
@@ -518,8 +520,8 @@ function popup_incite_dialog(actor_unit, target_city, cost, act_id)
 
   $(id).html(dhtml);
 
-  var close_button = {         Close:    function() {$(id).dialog('close');}};
-  var incite_close_buttons = { 'Cancel': function() {$(id).dialog('close');},
+  const close_button = {         Close:    function() {$(id).dialog('close');}};
+  const incite_close_buttons = { 'Cancel': function() {$(id).dialog('close');},
                                'Do it!': function() {
       request_unit_do_action(act_id, actor_unit['id'], target_city['id']);
                                  $(id).dialog('close');
@@ -546,9 +548,9 @@ function popup_incite_dialog(actor_unit, target_city, cost, act_id)
 **************************************************************************/
 function popup_unit_upgrade_dlg(actor_unit, target_city, cost, act_id)
 {
-  var upgrade_possible;
-  var id;
-  var dhtml;
+  let upgrade_possible;
+  let id;
+  let dhtml;
 
   id = "#upgrade_unit_dialog_" + actor_unit['id'];
 
@@ -570,8 +572,8 @@ function popup_unit_upgrade_dlg(actor_unit, target_city, cost, act_id)
 
   $(id).html(dhtml);
 
-  var close_button = {          Close:    function() {$(id).dialog('close');}};
-  var upgrade_close_buttons = { 'Cancel': function() {$(id).dialog('close');},
+  const close_button = {          Close:    function() {$(id).dialog('close');}};
+  const upgrade_close_buttons = { 'Cancel': function() {$(id).dialog('close');},
                                 'Do it!': function() {
       request_unit_do_action(act_id, actor_unit['id'], target_city['id']);
                                   $(id).dialog('close');
@@ -602,7 +604,7 @@ function create_steal_tech_button(parent_id, tech,
                                   actor_id, city_id, action_id)
 {
   /* Create the initial button with this tech */
-  var button = {
+  const button = {
     text : tech['name'],
     click : function() {
       request_unit_do_action(action_id, actor_id, city_id, tech['id']);
@@ -621,9 +623,9 @@ function create_steal_tech_button(parent_id, tech,
 function popup_steal_tech_selection_dialog(actor_unit, target_city, 
                                            act_probs, action_id)
 {
-  var id = "stealtech_dialog_" + actor_unit['id'];
-  var buttons = [];
-  var untargeted_action_id = ACTION_COUNT;
+  const id = "stealtech_dialog_" + actor_unit['id'];
+  const buttons = [];
+  const untargeted_action_id = ACTION_COUNT;
 
   /* Reset dialog page. */
   $("#" + id).remove();
@@ -633,13 +635,13 @@ function popup_steal_tech_selection_dialog(actor_unit, target_city,
   $("#" + id).attr("title", "Select Advance to Steal");
 
   /* List the alternatives */
-  for (var tech_id in techs) {
+  for (let tech_id in techs) {
     /* JavaScript for each iterates over keys. */
-    var tech = techs[tech_id];
+    const tech = techs[tech_id];
 
     /* Actor and target player tech known state. */
-    var act_kn = player_invention_state(client.conn.playing, tech_id);
-    var tgt_kn = player_invention_state(city_owner(target_city), tech_id);
+    const act_kn = player_invention_state(client.conn.playing, tech_id);
+    const tgt_kn = player_invention_state(city_owner(target_city), tech_id);
 
     /* Can steal a tech if the target player knows it and the actor player
      * has the pre requirements. Some rulesets allows the player to steal
@@ -728,8 +730,8 @@ function create_sabotage_impr_button(improvement, parent_id,
 **************************************************************************/
 function popup_sabotage_dialog(actor_unit, target_city, city_imprs, act_id)
 {
-  var id = "sabotage_impr_dialog_" + actor_unit['id'];
-  var buttons = [];
+  const id = "sabotage_impr_dialog_" + actor_unit['id'];
+  const buttons = [];
 
   /* Reset dialog page. */
   $("#" + id).remove();
@@ -739,8 +741,8 @@ function popup_sabotage_dialog(actor_unit, target_city, city_imprs, act_id)
   $("#" + id).attr("title", "Select Improvement to Sabotage");
 
   /* List the alternatives */
-  for (var i = 0; i < ruleset_control['num_impr_types']; i++) {
-    var improvement = improvements[i];
+  for (const i = 0; i < ruleset_control['num_impr_types']; i++) {
+    const improvement = improvements[i];
 
     if (city_imprs.isSet(i)
         && improvement['sabotage'] > 0) {
@@ -783,9 +785,9 @@ function popup_sabotage_dialog(actor_unit, target_city, city_imprs, act_id)
 function create_select_tgt_unit_button(parent_id, actor_unit_id,
                                        target_tile_id, target_unit_id)
 {
-  var text = "";
-  var target_unit = units[target_unit_id];
-  var button = {};
+  const text = "";
+  const target_unit = units[target_unit_id];
+  const button = {};
 
   text += unit_types[target_unit['type']]['name'];
 
@@ -800,7 +802,7 @@ function create_select_tgt_unit_button(parent_id, actor_unit_id,
   button = {
     text  : text,
     click : function() {
-      var packet = {
+      const packet = {
         "pid"             : packet_unit_get_actions,
         "actor_unit_id"   : actor_unit_id,
         "target_unit_id"  : target_unit_id,
@@ -823,12 +825,12 @@ function create_select_tgt_unit_button(parent_id, actor_unit_id,
 **************************************************************************/
 function select_tgt_unit(actor_unit, target_tile, potential_tgt_units)
 {
-  var i;
+  let i;
 
-  var rid     = "sel_tgt_unit_dialog_" + actor_unit['id'];
-  var id      = "#" + rid;
-  var dhtml   = "";
-  var buttons = [];
+  const rid = "sel_tgt_unit_dialog_" + actor_unit['id'];
+  const id = "#" + rid;
+  const dhtml = "";
+  const buttons = [];
 
   /* Reset dialog page. */
   $(id).remove();
@@ -840,7 +842,7 @@ function select_tgt_unit(actor_unit, target_tile, potential_tgt_units)
   $(id).html(dhtml);
 
   for (i = 0; i < potential_tgt_units.length; i++) {
-    var tgt_unit = potential_tgt_units[i];
+    const tgt_unit = potential_tgt_units[i];
 
     buttons.push(create_select_tgt_unit_button(id, actor_unit['id'],
                                                target_tile['index'],
@@ -864,10 +866,10 @@ function select_tgt_unit(actor_unit, target_tile, potential_tgt_units)
 **************************************************************************/
 function list_potential_target_extras(act_unit, target_tile)
 {
-  var potential_targets = [];
+  const potential_targets = [];
 
-  for (var i = 0; i < ruleset_control.num_extra_types; i++) {
-    var pextra = extras[i];
+  for (const i = 0; i < ruleset_control.num_extra_types; i++) {
+    const pextra = extras[i];
 
     if (tile_has_extra(target_tile, pextra.id)) {
       /* This extra is at the tile. Can anything be done to it? */
@@ -908,10 +910,10 @@ function create_select_tgt_extra_button(parent_id, actor_unit_id,
                                         target_unit_id,
                                         target_tile_id, target_extra_id)
 {
-  var text = "";
-  var button = {};
+  const text = "";
+  const button = {};
 
-  var target_tile = index_to_tile(target_tile_id);
+  const target_tile = index_to_tile(target_tile_id);
 
   text += extras[target_extra_id]['name'];
 
@@ -930,7 +932,7 @@ function create_select_tgt_extra_button(parent_id, actor_unit_id,
   button = {
     text  : text,
     click : function() {
-      var packet = {
+      const packet = {
         "pid"             : packet_unit_get_actions,
         "actor_unit_id"   : actor_unit_id,
         "target_unit_id"  : target_unit_id,
@@ -954,12 +956,12 @@ function create_select_tgt_extra_button(parent_id, actor_unit_id,
 function select_tgt_extra(actor_unit, target_unit,
                           target_tile, potential_tgt_extras)
 {
-  var i;
+  let i;
 
-  var rid     = "sel_tgt_extra_dialog_" + actor_unit['id'];
-  var id      = "#" + rid;
-  var dhtml   = "";
-  var buttons = [];
+  const rid = "sel_tgt_extra_dialog_" + actor_unit['id'];
+  const id = "#" + rid;
+  const dhtml = "";
+  const buttons = [];
 
   /* Reset dialog page. */
   $(id).remove();
@@ -971,7 +973,7 @@ function select_tgt_extra(actor_unit, target_unit,
   $(id).html(dhtml);
 
   for (i = 0; i < potential_tgt_extras.length; i++) {
-    var tgt_extra = potential_tgt_extras[i];
+    const tgt_extra = potential_tgt_extras[i];
 
     buttons.push(create_select_tgt_extra_button(id, actor_unit['id'],
                                                 target_unit == null ?
@@ -1011,7 +1013,7 @@ function action_selection_actor_unit()
 **************************************************************************/
 function action_selection_target_city()
 {
-  var id = "#act_sel_dialog_" + action_selection_in_progress_for;
+  const id = "#act_sel_dialog_" + action_selection_in_progress_for;
 
   if (action_selection_in_progress_for == IDENTITY_NUMBER_ZERO) {
     return IDENTITY_NUMBER_ZERO;
@@ -1028,7 +1030,7 @@ function action_selection_target_city()
 **************************************************************************/
 function action_selection_target_unit()
 {
-  var id = "#act_sel_dialog_" + action_selection_in_progress_for;
+  const id = "#act_sel_dialog_" + action_selection_in_progress_for;
 
   if (action_selection_in_progress_for == IDENTITY_NUMBER_ZERO) {
     return IDENTITY_NUMBER_ZERO;
@@ -1045,7 +1047,7 @@ function action_selection_target_unit()
 **************************************************************************/
 function action_selection_target_tile()
 {
-  var id = "#act_sel_dialog_" + action_selection_in_progress_for;
+  const id = "#act_sel_dialog_" + action_selection_in_progress_for;
 
   if (action_selection_in_progress_for == IDENTITY_NUMBER_ZERO) {
     return TILE_INDEX_NONE;
@@ -1062,7 +1064,7 @@ function action_selection_target_tile()
 **************************************************************************/
 function action_selection_target_extra()
 {
-  var id = "#act_sel_dialog_" + action_selection_in_progress_for;
+  const id = "#act_sel_dialog_" + action_selection_in_progress_for;
 
   if (action_selection_in_progress_for == IDENTITY_NUMBER_ZERO) {
     return EXTRA_NONE;
@@ -1079,7 +1081,7 @@ function action_selection_refresh(actor_unit,
                                   target_extra,
                                   act_probs)
 {
-  var id;
+  let id;
 
   id = "#act_sel_dialog_" + actor_unit['id'];
   $(id).remove();
@@ -1094,8 +1096,8 @@ function action_selection_refresh(actor_unit,
 ***************************************************************************/
 function action_selection_close()
 {
-  var id;
-  var actor_unit_id = action_selection_in_progress_for;
+  let id;
+  const actor_unit_id = action_selection_in_progress_for;
 
   id = "#act_sel_dialog_" + actor_unit_id;
   $(id).remove();

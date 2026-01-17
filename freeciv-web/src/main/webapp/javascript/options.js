@@ -1,4 +1,6 @@
 /**********************************************************************
+'use strict';
+
     Freeciv-web - the web version of Freeciv. http://www.FreecivWorld.net/
     Copyright (C) 2009-2015  The Freeciv-web project
 
@@ -19,9 +21,9 @@
 
 /* The server will send information about its settings. It is stored here.
  * You can look up a setting by its name or by its id number. */
-var server_settings = {};
+const server_settings = {};
 
-var statsview = null;
+const statsview = null;
 
 /****************************************************************
  The "options" file handles actual "options", and also view options,
@@ -31,83 +33,83 @@ var statsview = null;
 
 /** Defaults for options normally on command line **/
 
-var default_user_name = "";
-var default_server_host = "localhost";
-//var  default_server_port = DEFAULT_SOCK_PORT;
-//var default_metaserver = META_URL;
-var default_theme_name = "human";
-var default_tileset_name = "";
-var default_sound_set_name = "stdsounds";
-var default_sound_plugin_name = "";
+const default_user_name = "";
+const default_server_host = "localhost";
+//const default_server_port = DEFAULT_SOCK_PORT;
+//const default_metaserver = META_URL;
+const default_theme_name = "human";
+const default_tileset_name = "";
+const default_sound_set_name = "stdsounds";
+const default_sound_plugin_name = "";
 
-var sounds_enabled = true;
-var show_unit_in_label = true;
+const sounds_enabled = true;
+const show_unit_in_label = true;
 
-var save_options_on_exit = TRUE;
-var fullscreen_mode = FALSE;
+const save_options_on_exit = TRUE;
+const fullscreen_mode = FALSE;
 
 /** Local Options: **/
 
-var solid_color_behind_units = FALSE;
-var sound_bell_at_new_turn = FALSE;
-var  smooth_move_unit_msec = 30;
-var smooth_center_slide_msec = 200;
-var do_combat_animation = TRUE;
-var ai_manual_turn_done = TRUE;
-var auto_center_on_unit = TRUE;
-var auto_center_on_combat = FALSE;
-var auto_center_each_turn = TRUE;
-var wakeup_focus = TRUE;
-var goto_into_unknown = TRUE;
-var center_when_popup_city = TRUE;
-var concise_city_production = FALSE;
-var auto_turn_done = FALSE;
-var meta_accelerators = TRUE;
-var ask_city_name = TRUE;
-var popup_new_cities = TRUE;
-var popup_actor_arrival = true;
-var keyboardless_goto = TRUE;
-var enable_cursor_changes = TRUE;
-var separate_unit_selection = FALSE;
-var unit_selection_clears_orders = TRUE;
-var highlight_our_names = "yellow";
+const solid_color_behind_units = FALSE;
+const sound_bell_at_new_turn = FALSE;
+const smooth_move_unit_msec = 30;
+const smooth_center_slide_msec = 200;
+const do_combat_animation = TRUE;
+const ai_manual_turn_done = TRUE;
+const auto_center_on_unit = TRUE;
+const auto_center_on_combat = FALSE;
+const auto_center_each_turn = TRUE;
+const wakeup_focus = TRUE;
+const goto_into_unknown = TRUE;
+const center_when_popup_city = TRUE;
+const concise_city_production = FALSE;
+const auto_turn_done = FALSE;
+const meta_accelerators = TRUE;
+const ask_city_name = TRUE;
+const popup_new_cities = TRUE;
+const popup_actor_arrival = true;
+const keyboardless_goto = TRUE;
+const enable_cursor_changes = TRUE;
+const separate_unit_selection = FALSE;
+const unit_selection_clears_orders = TRUE;
+const highlight_our_names = "yellow";
 
 /* This option is currently set by the client - not by the user. */
-var update_city_text_in_refresh_tile = TRUE;
-var minimap_color = 1;   // draw minimap in primary,secondary, or tertiary colors
+const update_city_text_in_refresh_tile = TRUE;
+const minimap_color = 1;   // draw minimap in primary,secondary, or tertiary colors
 
-var draw_city_outlines = TRUE;
-var draw_city_output = FALSE;
-var draw_map_grid = FALSE;
-var draw_city_names = TRUE;
-var draw_city_growth = TRUE;
-var draw_city_productions = FALSE;
-var draw_city_buycost = FALSE;
-var draw_city_traderoutes = FALSE;
-var draw_terrain = TRUE;
-var draw_coastline = FALSE;
-var draw_roads_rails = TRUE;
-var draw_irrigation = TRUE;
-var draw_mines = TRUE;
-var draw_fortress_airbase = TRUE;
-var draw_huts = TRUE;
-var draw_resources = TRUE;
-var draw_pollution = TRUE;
-var draw_cities = TRUE;
-var draw_units = TRUE;
-var draw_focus_unit = FALSE;
-var draw_fog_of_war = TRUE;
-var draw_borders = TRUE;
-var draw_full_citybar = TRUE;
-var draw_unit_shields = TRUE;
-var player_dlg_show_dead_players = TRUE;
-var reqtree_show_icons = TRUE;
-var reqtree_curved_lines = FALSE;
-var show_buildings = true;
+const draw_city_outlines = TRUE;
+const draw_city_output = FALSE;
+const draw_map_grid = FALSE;
+const draw_city_names = TRUE;
+const draw_city_growth = TRUE;
+const draw_city_productions = FALSE;
+const draw_city_buycost = FALSE;
+const draw_city_traderoutes = FALSE;
+const draw_terrain = TRUE;
+const draw_coastline = FALSE;
+const draw_roads_rails = TRUE;
+const draw_irrigation = TRUE;
+const draw_mines = TRUE;
+const draw_fortress_airbase = TRUE;
+const draw_huts = TRUE;
+const draw_resources = TRUE;
+const draw_pollution = TRUE;
+const draw_cities = TRUE;
+const draw_units = TRUE;
+const draw_focus_unit = FALSE;
+const draw_fog_of_war = TRUE;
+const draw_borders = TRUE;
+const draw_full_citybar = TRUE;
+const draw_unit_shields = TRUE;
+const player_dlg_show_dead_players = TRUE;
+const reqtree_show_icons = TRUE;
+const reqtree_curved_lines = FALSE;
+const show_buildings = true;
 
-var dialogs_minimized_setting = false;
-var tile_info_popup_setting = true;
-var options_init = false;
+const dialogs_minimized_setting = false;
+const tile_info_popup_setting = true;
+const options_init = false;
 
 function init_options_dialog()
 {
@@ -122,12 +124,12 @@ function init_options_dialog()
   $("#fullscreen_button").button("option", "label", "Fullscreen");
 
 
-  var existing_timeout = game_info['timeout'];
+  const existing_timeout = game_info['timeout'];
   if (existing_timeout == 0) $("#timeout_info").html("(0 = no timeout)");
   $("#timeout_setting").val(existing_timeout);
 
   $('#timeout_setting').change(function() {
-    var new_timeout = parseInt($('#timeout_setting').val());
+    const new_timeout = parseInt($('#timeout_setting').val());
     if (new_timeout >= 1 && new_timeout <= 29) {
       swal("Invalid timeout specified. Must be 0 or more than 30 seconds.");
     } else {
@@ -168,7 +170,7 @@ function init_options_dialog()
     openai_enabled = this.checked;
     simpleStorage.set("openai_enabled", openai_enabled);
   });
-  var stored_openai_setting = simpleStorage.get("openai_setting", "");
+  const stored_openai_setting = simpleStorage.get("openai_setting", "");
   if (stored_openai_setting != null && !stored_openai_setting ) {
     $("#openai_setting").prop("checked", false);
     openai_setting = false;

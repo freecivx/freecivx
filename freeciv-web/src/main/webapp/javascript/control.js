@@ -1,4 +1,6 @@
 /**********************************************************************
+'use strict';
+
     Freeciv-web - the web version of Freeciv. http://www.FreecivWorld.net/
     Copyright (C) 2009-2015  The Freeciv-web project
 
@@ -18,50 +20,50 @@
 ***********************************************************************/
 
 
-var mouse_x;
-var mouse_y;
-var prev_mouse_x;
-var prev_mouse_y;
-var keyboard_input = true;
-var unitpanel_active = false;
-var allow_right_click = false;
+let mouse_x;
+let mouse_y;
+let prev_mouse_x;
+let prev_mouse_y;
+const keyboard_input = true;
+const unitpanel_active = false;
+const allow_right_click = false;
 
-var current_focus = [];
+const current_focus = [];
 
 /* The priority unit(s) for unit_focus_advance(). */
-var urgent_focus_queue = [];
+const urgent_focus_queue = [];
 
-var goto_active = false;
-var paradrop_active = false;
-var airlift_active = false;
-var action_tgt_sel_active = false;
+const goto_active = false;
+const paradrop_active = false;
+const airlift_active = false;
+const action_tgt_sel_active = false;
 
 /* Will be set when the goto is activated. */
-var goto_last_order = -1;
-var goto_last_action = -1;
+const goto_last_order = -1;
+const goto_last_action = -1;
 
 /* Selecting unit from a stack without popup. */
-var SELECT_POPUP = 0;
-var SELECT_SEA = 1;
-var SELECT_LAND = 2;
-var SELECT_APPEND = 3;
+const SELECT_POPUP = 0;
+const SELECT_SEA = 1;
+const SELECT_LAND = 2;
+const SELECT_APPEND = 3;
 
-var intro_click_description = true;
-var resize_enabled = true;
-var goto_request_map = {};
-var goto_turns_request_map = {};
-var current_goto_turns = 0;
-var waiting_units_list = [];
-var show_citybar = true;
-var context_menu_active = true;
-var has_movesleft_warning_been_shown = false;
-var game_unit_panel_state = null;
+const intro_click_description = true;
+const resize_enabled = true;
+const goto_request_map = {};
+const goto_turns_request_map = {};
+const current_goto_turns = 0;
+const waiting_units_list = [];
+const show_citybar = true;
+const context_menu_active = true;
+const has_movesleft_warning_been_shown = false;
+const game_unit_panel_state = null;
 
-var chat_send_to = -1;
-var CHAT_ICON_EVERYBODY = String.fromCharCode(62075);
-var CHAT_ICON_ALLIES = String.fromCharCode(61746);
-var end_turn_info_message_shown = false;
-var mouse_touch_started_on_unit = false;
+const chat_send_to = -1;
+const CHAT_ICON_EVERYBODY = String.fromCharCode(62075);
+const CHAT_ICON_ALLIES = String.fromCharCode(61746);
+const end_turn_info_message_shown = false;
+const mouse_touch_started_on_unit = false;
 
 /* The ID of the unit that currently is in the action selection process.
  *
@@ -69,12 +71,12 @@ var mouse_touch_started_on_unit = false;
  * actions a unit can take. It ends when the last follow up question is
  * answered.
  */
-var action_selection_in_progress_for = 0; /* before IDENTITY_NUMBER_ZERO */
-var is_more_user_input_needed = false;
-var info_text_req_tile = null;
-var last_info_tile = null;
-var next_tile_info = null;
-var tileInfoTimeoutId = -1;
+const action_selection_in_progress_for = 0; /* before IDENTITY_NUMBER_ZERO */
+const is_more_user_input_needed = false;
+const info_text_req_tile = null;
+const last_info_tile = null;
+const next_tile_info = null;
+const tileInfoTimeoutId = -1;
 
 /****************************************************************************
 ...
@@ -98,9 +100,7 @@ function control_init()
     });
 
 
-  $("#game_text_input").keydown(function(event) {
-	  return check_text_input(event, $("#game_text_input"));
-  });
+  $("#game_text_input").keydown((event) => check_text_input(event, $("#game_text_input")));
   $("#game_text_input").focus(function(event) {
     keyboard_input=false;
     resize_enabled = false;
@@ -115,9 +115,7 @@ function control_init()
     chat_context_change();
   });
 
-  $("#pregame_text_input").keydown(function(event) {
-   return check_text_input(event, $("#pregame_text_input"));
-  });
+  $("#pregame_text_input").keydown((event) => check_text_input(event, $("#pregame_text_input")));
 
   $("#pregame_text_input").blur(function(event) {
       keyboard_input=true;
@@ -153,7 +151,7 @@ function control_init()
 
   /* disable text-selection, as this gives wrong mouse cursor
    * during drag to goto units. */
-  document.onselectstart = function(){ return allow_right_click; };
+  document.onselectstart = () => allow_right_click;
 
   /* disable right clicks. */
   window.addEventListener('contextmenu', function (e) {
@@ -161,7 +159,7 @@ function control_init()
     if (!allow_right_click) e.preventDefault();
   }, false);
 
-  var context_options = {
+  const context_options = {
         selector: '#mapcanvas' ,
 	    zIndex: 5000,
         autoHide: true,
@@ -173,7 +171,7 @@ function control_init()
               context_menu_active = true;
               return false;
             }
-            var unit_actions = update_unit_order_commands();
+            const unit_actions = update_unit_order_commands();
             return {
                  callback: function(key, options) {
                    handle_context_menu_callback(key);
@@ -186,7 +184,7 @@ function control_init()
   if (!is_touch_device()) {
     context_options['position'] = function(opt, x, y){
                                                 if (is_touch_device()) return;
-                                                var new_top = mouse_y + $("#mapcanvas").offset().top;
+                                                const new_top = mouse_y + $("#mapcanvas").offset().top;
                                                 opt.$menu.css({top: new_top , left: mouse_x});
                                               };
   }
@@ -365,12 +363,12 @@ function update_mouse_cursor()
     return;
   }
 
-  var ptile = webgl_canvas_pos_to_tile(mouse_x, mouse_y);
+  const ptile = webgl_canvas_pos_to_tile(mouse_x, mouse_y);
   if (ptile == null) return;
   highlight_map_tile_mouse(ptile.x, ptile.y);
 
-  var punit = find_visible_unit(ptile);
-  var pcity = tile_city(ptile);
+  const punit = find_visible_unit(ptile);
+  const pcity = tile_city(ptile);
 
   if (goto_active && current_goto_turns != null) {
     /* show goto cursor */
@@ -398,7 +396,7 @@ function update_mouse_cursor()
  small. Otherwise, show a dialog for the user to select one.
 ****************************************************************************/
 function chat_context_change() {
-  var recipients = chat_context_get_recipients();
+  const recipients = chat_context_get_recipients();
   if (recipients.length < 4) {
     chat_context_set_next(recipients);
   } else {
@@ -410,24 +408,24 @@ function chat_context_change() {
  Get ordered list of possible alive human chatbox messages recipients.
 ****************************************************************************/
 function chat_context_get_recipients() {
-  var allies = false;
-  var pm = [];
+  const allies = false;
+  const pm = [];
 
   pm.push({id: null, flag: null, description: 'Everybody'});
 
-  var self = -1;
+  const self = -1;
   if (client.conn.playing != null) {
     self = client.conn.playing['playerno'];
   }
 
-  for (var player_id in players) {
+  for (let player_id in players) {
     if (player_id == self) continue;
 
-    var pplayer = players[player_id];
+    const pplayer = players[player_id];
     if (pplayer['flags'].isSet(PLRF_AI)) continue;
     if (!pplayer['is_alive']) continue;
 
-    var nation = nations[pplayer['nation']];
+    const nation = nations[pplayer['nation']];
     if (nation == null) continue;
 
     // TODO: add connection state, to list connected players first
@@ -446,7 +444,7 @@ function chat_context_get_recipients() {
     pm.push({id: self, flag: null, description: 'Allies'});
   }
 
-  pm.sort(function (a, b) {
+  pm.sort((a, b) => {
     if (a.id == null) return -1;
     if (b.id == null) return 1;
     if (a.id == self) return -1;
@@ -463,7 +461,7 @@ function chat_context_get_recipients() {
  Switch chatbox messages recipients.
 ****************************************************************************/
 function chat_context_set_next(recipients) {
-  var next = 0;
+  const next = 0;
   while (next < recipients.length && recipients[next].id != chat_send_to) {
     next++;
   }
@@ -480,7 +478,7 @@ function chat_context_set_next(recipients) {
  chatbox messages.
 ****************************************************************************/
 function chat_context_dialog_show(recipients) {
-  var dlg = $("#chat_context_dialog");
+  const dlg = $("#chat_context_dialog");
   if (dlg.length > 0) {
     dlg.dialog('close');
     dlg.remove();
@@ -488,15 +486,15 @@ function chat_context_dialog_show(recipients) {
   $("<div id='chat_context_dialog' title='Choose chat recipient'></div>")
     .appendTo("div#game_page");
 
-  var self = -1;
+  const self = -1;
   if (client.conn.playing != null) {
     self = client.conn.playing['playerno'];
   }
 
-  var tbody_el = document.createElement('tbody');
+  const tbody_el = document.createElement('tbody');
 
-  var add_row = function (id, flag, description) {
-    var flag_canvas, ctx, row, cell;
+  const add_row = function (id, flag, description) {
+    let flag_canvas, ctx, row, cell;
     row = document.createElement('tr');
     cell = document.createElement('td');
     flag_canvas = document.createElement('canvas');
@@ -518,9 +516,9 @@ function chat_context_dialog_show(recipients) {
     return ctx;
   };
 
-  for (var i = 0; i < recipients.length; i++) {
+  for (const i = 0; i < recipients.length; i++) {
     if (recipients[i].id != chat_send_to) {
-      var ctx = add_row(recipients[i].id, recipients[i].flag,
+      const ctx = add_row(recipients[i].id, recipients[i].flag,
                         recipients[i].description);
 
       if (recipients[i].id == null || recipients[i].id == self) {
@@ -535,7 +533,7 @@ function chat_context_dialog_show(recipients) {
     }
   }
 
-  var table = document.createElement('table');
+  const table = document.createElement('table');
   table.appendChild(tbody_el);
   $(table).on('click', 'tbody tr', handle_chat_direction_chosen);
   $(table).appendTo("#chat_context_dialog");
@@ -560,7 +558,7 @@ function chat_context_dialog_show(recipients) {
  Handle a choice in the chat context dialog.
 ****************************************************************************/
 function handle_chat_direction_chosen(ev) {
-  var new_send_to = $(this).data("chatSendTo");
+  const new_send_to = $(this).data("chatSendTo");
   $("#chat_context_dialog").dialog('close');
   if (new_send_to == null) {
     set_chat_direction(null);
@@ -576,10 +574,10 @@ function set_chat_direction(player_id) {
 
   if (player_id == chat_send_to) return;
 
-  var player_name;
-  var icon = $("#chat_direction");
+  let player_name;
+  const icon = $("#chat_direction");
   if (icon.length <= 0) return;
-  var ctx = icon[0].getContext("2d");
+  const ctx = icon[0].getContext("2d");
 
   if (player_id == null || player_id < 0) {
     player_id = null;
@@ -596,12 +594,12 @@ function set_chat_direction(player_id) {
     ctx.fillText(CHAT_ICON_ALLIES, 10, 16);
     player_name = 'allies';
   } else {
-    var pplayer = players[player_id];
+    const pplayer = players[player_id];
     if (pplayer == null) return;
     player_name = pplayer['name']
                 + " of the " + nations[pplayer['nation']]['adjective'];
     ctx.clearRect(0, 0, 29, 20);
-    var flag = sprites["f." + nations[pplayer['nation']]['graphic_str']];
+    const flag = sprites["f." + nations[pplayer['nation']]['graphic_str']];
     if (flag != null) {
       ctx.drawImage(flag, 0, 0);
     }
@@ -634,17 +632,17 @@ function is_unprefixed_message(message) {
   if (message.length === 0) return true;
 
   /* Commands, messages to allies and explicit send to everybody */
-  var first = message.charAt(0);
+  const first = message.charAt(0);
   if (first === '/' || first === '.' || first === ':') return false;
 
   /* Private messages */
-  var quoted_pos = -1;
+  const quoted_pos = -1;
   if (first === '"' || first === "'") {
     quoted_pos = message.indexOf(first, 1);
   }
-  var private_mark = message.indexOf(':', quoted_pos);
+  const private_mark = message.indexOf(':', quoted_pos);
   if (private_mark < 0) return true;
-  var space_pos = message.indexOf(' ', quoted_pos);
+  const space_pos = message.indexOf(' ', quoted_pos);
   return (space_pos !== -1 && (space_pos < private_mark));
 }
 
@@ -654,8 +652,8 @@ function is_unprefixed_message(message) {
 function check_text_input(event,chatboxtextarea) {
 
   if (event.keyCode == 13 && event.shiftKey == 0)  {
-    var message = $(chatboxtextarea).val();
-    var message_original = $(chatboxtextarea).val();
+    const message = $(chatboxtextarea).val();
+    const message_original = $(chatboxtextarea).val();
 
     if (chat_send_to != null && chat_send_to >= 0
         && is_unprefixed_message(message)) {
@@ -663,14 +661,14 @@ function check_text_input(event,chatboxtextarea) {
           && chat_send_to == client.conn.playing['playerno']) {
         message = ". " + encode_message_text(message);
       } else {
-        var pplayer = players[chat_send_to];
+        const pplayer = players[chat_send_to];
         if (pplayer == null) {
           // Change to public chat, don't send the message,
           // keep it in the chatline and hope the user notices
           set_chat_direction(null);
           return;
         }
-        var player_name = pplayer['name'];
+        const player_name = pplayer['name'];
         /* TODO:
            - Spaces before ':' not good for longturn yet
            - Encoding characters in the name also does not work
@@ -678,9 +676,9 @@ function check_text_input(event,chatboxtextarea) {
            So we send the name unencoded, cut until the first "special" character
            and hope that is unique enough to recognize the player. It usually is.
          */
-        var badchars = [' ', '"', "'"];
-        for (var c in badchars) {
-          var i = player_name.indexOf(badchars[c]);
+        const badchars = [' ', '"', "'"];
+        for (let c in badchars) {
+          const i = player_name.indexOf(badchars[c]);
           if (i > 0) {
             player_name = player_name.substring(0, i);
           }
@@ -751,7 +749,7 @@ function can_ask_server_for_actions()
 **************************************************************************/
 function ask_server_for_actions(punit)
 {
-  var ptile;
+  let ptile;
 
   if (observing || punit == null) {
     return false;
@@ -771,7 +769,7 @@ function ask_server_for_actions(punit)
     /* Ask the server about what actions punit can do. The server's
      * reply will pop up an action selection dialog for it. */
 
-    var packet = {
+    const packet = {
       "pid"             : packet_unit_get_actions,
       "actor_unit_id"   : punit['id'],
       "target_unit_id"  : IDENTITY_NUMBER_ZERO,
@@ -811,11 +809,11 @@ function action_selection_no_longer_in_progress(old_actor_id)
 **************************************************************************/
 function action_decision_clear_want(old_actor_id)
 {
-  var old = game_find_unit_by_number(old_actor_id);
+  const old = game_find_unit_by_number(old_actor_id);
 
   if (old != null && old['action_decision_want'] !== ACT_DEC_NOTHING) {
     /* Have the server record that a decision no longer is wanted. */
-    var unqueue = {
+    const unqueue = {
       "pid"     : packet_unit_sscs_set,
       "unit_id" : old_actor_id,
       "type"    : USSDT_UNQUEUE,
@@ -831,8 +829,8 @@ function action_decision_clear_want(old_actor_id)
 function action_selection_next_in_focus(old_actor_id)
 {
   /* Go to the next unit in focus that needs a decision. */
-  for (var i = 0; i < current_focus.length; i++) {
-    var funit = current_focus[i];
+  for (const i = 0; i < current_focus.length; i++) {
+    const funit = current_focus[i];
     if (old_actor_id != funit['id']
         && should_ask_server_for_actions(funit)) {
       ask_server_for_actions(funit);
@@ -868,11 +866,11 @@ function action_decision_request(actor_unit)
 ****************************************************************************/
 function get_focus_unit_on_tile(ptile)
 {
-  var funits = get_units_in_focus();
+  const funits = get_units_in_focus();
   if (funits == null) return null;
 
-  for (var i = 0; i < funits.length; i++) {
-    var punit = funits[i];
+  for (const i = 0; i < funits.length; i++) {
+    const punit = funits[i];
     if (punit['tile'] == ptile['index']) {
       return punit;
     }
@@ -887,9 +885,9 @@ function get_focus_unit_on_tile(ptile)
 ****************************************************************************/
 function unit_is_in_focus(cunit)
 {
-  var funits = get_units_in_focus();
-  for (var i = 0; i < funits.length; i++) {
-    var punit = funits[i];
+  const funits = get_units_in_focus();
+  for (const i = 0; i < funits.length; i++) {
+    const punit = funits[i];
     if (punit['id'] == cunit['id']) {
       return true;
     }
@@ -966,9 +964,9 @@ function update_unit_focus()
 
   /* iterate zero times for no units in focus,
    * otherwise quit for any of the conditions. */
-  var funits = get_units_in_focus();
-  for (var i = 0; i < funits.length; i++) {
-    var punit = funits[i];
+  const funits = get_units_in_focus();
+  for (const i = 0; i < funits.length; i++) {
+    const punit = funits[i];
 
     if (punit['movesleft'] > 0
 	  && punit['done_moving'] == false
@@ -991,20 +989,20 @@ function update_unit_focus()
 **************************************************************************/
 function advance_unit_focus()
 {
-  var candidate;
-  var i;
+  let candidate;
+  let i;
 
   if (client_is_observer() || nuke_active) return;
   goto_active = false;
   clear_goto_tiles();
 
   if (urgent_focus_queue.length > 0) {
-    var focus_tile = (current_focus != null && current_focus.length > 0
+    const focus_tile = (current_focus != null && current_focus.length > 0
                       ? current_focus[0]['tile']
                       : -1);
 
     for (i = 0; i < urgent_focus_queue.length; i++) {
-      var punit = units[urgent_focus_queue[i]['id']];
+      const punit = units[urgent_focus_queue[i]['id']];
 
       if ((ACTIVITY_IDLE != punit.activity
            || punit.has_orders)
@@ -1047,8 +1045,8 @@ function advance_unit_focus()
 
     /* find a city to focus on if new game. consider removing this.  */
     if (game_info['turn'] <= 1) {
-      for (var city_id in cities) {
-        var pcity = cities[city_id];
+      for (let city_id in cities) {
+        const pcity = cities[city_id];
         if (city_owner_player_id(pcity) == client.conn.playing.playerno) {
           center_tile_mapcanvas(city_tile(pcity));
           break;
@@ -1068,13 +1066,13 @@ function advance_unit_focus()
 **************************************************************************/
 function update_unit_order_commands()
 {
-  var i, r;
-  var punit;
-  var ptype;
-  var ptile;
-  var unit_actions = {};
-  var funits = get_units_in_focus();
-  var pcity;
+  let i, r;
+  let punit;
+  let ptype;
+  let ptile;
+  const unit_actions = {};
+  const funits = get_units_in_focus();
+  let pcity;
   for (i = 0; i < funits.length; i++) {
     punit = funits[i];
     ptile = index_to_tile(punit['tile']);
@@ -1215,10 +1213,10 @@ function update_unit_order_commands()
     // Load unit on transport
     if (pcity != null) {
       let units_on_tile = tile_units(ptile);
-      for (var r = 0; r < units_on_tile.length; r++) {
-        var tunit = units_on_tile[r];
+      for (const r = 0; r < units_on_tile.length; r++) {
+        const tunit = units_on_tile[r];
         if (tunit['id'] == punit['id']) continue;
-        var ntype = unit_type(tunit);
+        const ntype = unit_type(tunit);
         if (ntype['transport_capacity'] > 0) unit_actions["unit_load"] = {name: "Load on transport (L)"};
       }
     }
@@ -1226,8 +1224,8 @@ function update_unit_order_commands()
     // Unload unit from transport
     let units_on_tile = tile_units(ptile);
     if (ptype['transport_capacity'] > 0 && units_on_tile.length >= 2) {
-      for (var r = 0; r < units_on_tile.length; r++) {
-        var tunit = units_on_tile[r];
+      for (const r = 0; r < units_on_tile.length; r++) {
+        const tunit = units_on_tile[r];
         if (tunit['transported']) {
           unit_actions["unit_show_cargo"] = {name: "Activate cargo units"};
           if (pcity != null) unit_actions["unit_unload"] = {name: "Unload units from transport (T)"};
@@ -1306,12 +1304,12 @@ function init_game_unit_panel()
 **************************************************************************/
 function find_best_focus_candidate(accept_current)
 {
-  var punit;
-  var i;
+  let punit;
+  let i;
   if (client_is_observer()) return null;
 
-  var sorted_units = [];
-  for (var unit_id in units) {
+  const sorted_units = [];
+  for (let unit_id in units) {
     punit = units[unit_id];
     if (client.conn.playing != null && punit['owner'] == client.conn.playing.playerno) {
       sorted_units.push(punit);
@@ -1353,8 +1351,8 @@ function find_best_focus_candidate(accept_current)
 function unit_distance_compare(unit_a, unit_b)
 {
   if (unit_a == null || unit_b == null) return 0;
-  var ptile_a = index_to_tile(unit_a['tile']);
-  var ptile_b = index_to_tile(unit_b['tile']);
+  const ptile_a = index_to_tile(unit_a['tile']);
+  const ptile_b = index_to_tile(unit_b['tile']);
 
   if (ptile_a == null || ptile_b == null) return 0;
 
@@ -1438,7 +1436,7 @@ function auto_center_on_focus_unit()
 {
   if (active_city != null) return; /* don't change focus while city dialog is active.*/
 
-  var ptile = find_a_focus_unit_tile_to_center_on();
+  const ptile = find_a_focus_unit_tile_to_center_on();
 
   if (ptile != null && auto_center_on_unit) {
     center_tile_mapcanvas(ptile);
@@ -1451,7 +1449,7 @@ function auto_center_on_focus_unit()
 ****************************************************************************/
 function find_a_focus_unit_tile_to_center_on()
 {
-  var funit = current_focus[0];
+  const funit = current_focus[0];
 
   if (funit == null) return null;
 
@@ -1463,7 +1461,7 @@ Return a pointer to a visible unit, if there is one.
 **************************************************************************/
 function find_visible_unit(ptile)
 {
-  var i;
+  let i;
 
   /* If no units here, return nothing. */
   if (ptile == null || unit_list_size(tile_units(ptile))==0) {
@@ -1471,7 +1469,7 @@ function find_visible_unit(ptile)
   }
 
   /* If the unit in focus is at this tile, show that on top */
-  var pfocus = get_focus_unit_on_tile(ptile);
+  const pfocus = get_focus_unit_on_tile(ptile);
   if (pfocus != null) {
     return pfocus;
   }
@@ -1482,16 +1480,16 @@ function find_visible_unit(ptile)
   }
 
   /* TODO: add missing C logic here.*/
-  var vunits = tile_units(ptile);
+  const vunits = tile_units(ptile);
   for (i = 0; i < vunits.length; i++) {
-    var aunit = vunits[i];
+    const aunit = vunits[i];
     if (aunit['anim_list'] != null && aunit['anim_list'].length > 0) {
       return aunit;
     }
   }
 
   for (i = 0; i < vunits.length; i++) {
-    var tunit = vunits[i];
+    const tunit = vunits[i];
     if (tunit['transported'] == false) {
       return tunit;
     }
@@ -1505,7 +1503,7 @@ TODO: not complete yet
 ***********************************************************************/
 function get_drawable_unit(ptile, citymode)
 {
-  var punit = find_visible_unit(ptile);
+  const punit = find_visible_unit(ptile);
 
   if (punit == null) return null;
 
@@ -1524,7 +1522,7 @@ function get_drawable_unit(ptile, citymode)
   adjacent tile.
 **************************************************************************/
 function order_wants_direction(order, act_id, ptile) {
-  var action = actions[act_id];
+  const action = actions[act_id];
 
   if (order == ORDER_PERFORM_ACTION && action == null) {
     /* Bad action id or action rule data not received and stored
@@ -1570,11 +1568,11 @@ function order_wants_direction(order, act_id, ptile) {
 **************************************************************************/
 function do_unit_paradrop_to(punit, ptile)
 {
-  var act_id;
-  var paradrop_action = null;
+  let act_id;
+  const paradrop_action = null;
 
   for (act_id = 0; act_id < ACTION_COUNT; act_id++) {
-    var paction = action_by_number(act_id);
+    const paction = action_by_number(act_id);
 
     if (!(action_has_result(paction, ACTRES_PARADROP_CONQUER)
           || action_has_result(paction, ACTRES_PARADROP))) {
@@ -1590,7 +1588,7 @@ function do_unit_paradrop_to(punit, ptile)
         /* More than one paradrop action may be possible. The user must
          * choose. Have the server record that an action decision is wanted
          * for this unit so the dialog will be brought up. */
-        var packet = {
+        const packet = {
           "pid"     : packet_unit_sscs_set,
           "unit_id" : punit['id'],
           "type"    : USSDT_QUEUE,
@@ -1613,9 +1611,9 @@ function do_unit_paradrop_to(punit, ptile)
 **************************************************************************/
 function do_map_click(ptile, qtype, first_time_called)
 {
-  var punit;
-  var packet;
-  var pcity;
+  let punit;
+  let packet;
+  let pcity;
   if (ptile == null || client_is_observer()) return;
 
   if (active_city != null) {
@@ -1633,22 +1631,22 @@ function do_map_click(ptile, qtype, first_time_called)
 
     return;
   }
-  var sunits = tile_units(ptile);
+  const sunits = tile_units(ptile);
   pcity = tile_city(ptile);
 
   if (goto_active) {
     if (current_focus.length > 0) {
       // send goto order for all units in focus. 
-      for (var s = 0; s < current_focus.length; s++) {
+      for (const s = 0; s < current_focus.length; s++) {
         punit = current_focus[s];
         /* Get the path the server sent using PACKET_WEB_GOTO_PATH. */
-        var goto_path = goto_request_map[punit['id'] + "," + ptile['x'] + "," + ptile['y']];
+        const goto_path = goto_request_map[punit['id'] + "," + ptile['x'] + "," + ptile['y']];
         if (goto_path == null) {
           continue;
         }
 
         /* The tile the unit currently is standing on. */
-        var old_tile = index_to_tile(punit['tile']);
+        const old_tile = index_to_tile(punit['tile']);
 
         /* Create an order to move along the path. */
         packet = {
@@ -1664,7 +1662,7 @@ function do_map_click(ptile, qtype, first_time_called)
           "dest_tile": ptile['index']
         };
 
-        var order = {
+        const order = {
           "order"      : ORDER_LAST,
           "activity"   : ACTIVITY_LAST,
           "target"     : 0,
@@ -1675,7 +1673,7 @@ function do_map_click(ptile, qtype, first_time_called)
 
         /* Add each individual order. */
         packet['orders'] = [];
-        for (var i = 0; i < goto_path['length']; i++) {
+        for (const i = 0; i < goto_path['length']; i++) {
           /* TODO: Have the server send the full orders in stead of just the
            * dir part. Use that data in stead. */
 
@@ -1701,7 +1699,7 @@ function do_map_click(ptile, qtype, first_time_called)
 
         if (goto_last_order != ORDER_LAST) {
           /* The final order is specified. */
-          var pos;
+          let pos;
 
           /* Should the final order be performed from the final tile or
            * from the tile before it? In some cases both are legal. */
@@ -1753,7 +1751,7 @@ function do_map_click(ptile, qtype, first_time_called)
           unit_move_sound_play(punit);
         } else if (!has_movesleft_warning_been_shown) {
           has_movesleft_warning_been_shown = true;
-          var ptype = unit_type(punit);
+          const ptype = unit_type(punit);
           message_log.update({
             event: E_BAD_COMMAND,
             message: ptype['name'] + " has no moves left. Press turn done for the next turn."
@@ -1771,7 +1769,7 @@ function do_map_click(ptile, qtype, first_time_called)
       if (current_focus.length > 0) {
         request_goto_path(current_focus[0]['id'], ptile['x'], ptile['y']);
         if (first_time_called) {
-          setTimeout(function(){
+          setTimeout(() => {
             do_map_click(ptile, qtype, false);
           }, 250);
         }
@@ -1822,7 +1820,7 @@ function do_map_click(ptile, qtype, first_time_called)
       if (sunits[0]['owner'] == client.conn.playing.playerno) {
         if (sunits.length == 1) {
           /* A single unit has been clicked with the mouse. */
-          var unit = sunits[0];
+          const unit = sunits[0];
           set_unit_focus_and_activate(unit);
         } else {
           /* more than one unit is on the selected tile. */
@@ -1857,7 +1855,7 @@ function find_active_dialog()
 {
   const permanent_widgets = ["game_overview_panel", "game_unit_panel", "game_chatbox_panel", "tile_dialog"];
   const dialogs = $(".ui-dialog");
-  for (var i = 0; i < dialogs.length; i++) {
+  for (const i = 0; i < dialogs.length; i++) {
     const dialog = $(dialogs[i]);
     if (dialog.css("display") == "none") {
       continue;
@@ -1881,7 +1879,7 @@ function global_keyboard_listener(ev)
   if (C_S_RUNNING != client_state()) return;
 
   if (!ev) ev = window.event;
-  var keyboard_key = String.fromCharCode(ev.keyCode);
+  const keyboard_key = String.fromCharCode(ev.keyCode);
 
   if (0 === $("#tabs").tabs("option", "active")) {
     // The Map tab is active
@@ -2179,7 +2177,7 @@ function handle_context_menu_callback(key)
       break;
 
     case "tile_info":
-      var ptile = find_a_focus_unit_tile_to_center_on();
+      const ptile = find_a_focus_unit_tile_to_center_on();
       if (ptile != null) popit_req(ptile);
       break;
 
@@ -2300,7 +2298,7 @@ function handle_context_menu_callback(key)
       break;
 
     case "show_city":
-      var stile = find_a_focus_unit_tile_to_center_on();
+      const stile = find_a_focus_unit_tile_to_center_on();
       if (stile != null) {
         show_city_dialog(tile_city(stile));
       }
@@ -2393,7 +2391,7 @@ function send_end_turn()
 
   $("#turn_done_button").button( "option", "disabled", true);
   if (!is_touch_device()) $("#turn_done_button").tooltip({ disabled: true });
-  var packet = {"pid" : packet_player_phase_done, "turn" : game_info['turn']};
+  const packet = {"pid" : packet_player_phase_done, "turn" : game_info['turn']};
   send_request(JSON.stringify(packet));
   update_turn_change_timer();
   close_city_dialog();
@@ -2406,8 +2404,8 @@ function send_end_turn()
 **************************************************************************/
 function key_unit_auto_explore()
 {
-  var funits = get_units_in_focus();
-  for (var i = 0; i < funits.length; i++) {
+  const funits = get_units_in_focus();
+  for (const i = 0; i < funits.length; i++) {
     request_unit_ssa_set(funits[i], SSA_AUTOEXPLORE);
   }
   setTimeout(update_unit_focus, 700);
@@ -2418,18 +2416,18 @@ function key_unit_auto_explore()
 **************************************************************************/
 function key_unit_load()
 {
-  var funits = get_units_in_focus();
-  for (var i = 0; i < funits.length; i++) {
-    var punit = funits[i];
-    var ptile = index_to_tile(punit['tile']);
-    var transporter_unit_id = 0;
+  const funits = get_units_in_focus();
+  for (const i = 0; i < funits.length; i++) {
+    const punit = funits[i];
+    const ptile = index_to_tile(punit['tile']);
+    const transporter_unit_id = 0;
 
-    var has_transport_unit = false;
-    var units_on_tile = tile_units(ptile);
+    const has_transport_unit = false;
+    const units_on_tile = tile_units(ptile);
     for (let r = 0; r < units_on_tile.length; r++) {
-      var tunit = units_on_tile[r];
+      const tunit = units_on_tile[r];
       if (tunit['id'] == punit['id']) continue;
-      var ntype = unit_type(tunit);
+      const ntype = unit_type(tunit);
       if (ntype['transport_capacity'] > 0) {
         has_transport_unit = true;
         transporter_unit_id = tunit['id'];
@@ -2449,16 +2447,16 @@ function key_unit_load()
 **************************************************************************/
 function key_unit_unload()
 {
-  var funits = get_units_in_focus();
-  var units_on_tile = [];
-  for (var i = 0; i < funits.length; i++) {
-    var punit = funits[i];
-    var ptile = index_to_tile(punit['tile']);
+  const funits = get_units_in_focus();
+  const units_on_tile = [];
+  for (const i = 0; i < funits.length; i++) {
+    const punit = funits[i];
+    const ptile = index_to_tile(punit['tile']);
     units_on_tile = tile_units(ptile);
   }
 
-  for (var i = 0; i < units_on_tile.length; i++) {
-    var punit = units_on_tile[i];
+  for (const i = 0; i < units_on_tile.length; i++) {
+    const punit = units_on_tile[i];
     if (punit['transported'] && punit['transported_by'] > 0
         && punit['owner'] == client.conn.playing.playerno) {
       request_new_unit_activity(punit, ACTIVITY_IDLE, EXTRA_NONE);
@@ -2479,17 +2477,17 @@ function key_unit_unload()
 **************************************************************************/
 function key_unit_show_cargo()
 {
-  var funits = get_units_in_focus();
-  var units_on_tile = [];
-  for (var i = 0; i < funits.length; i++) {
-    var punit = funits[i];
-    var ptile = index_to_tile(punit['tile']);
+  const funits = get_units_in_focus();
+  const units_on_tile = [];
+  for (const i = 0; i < funits.length; i++) {
+    const punit = funits[i];
+    const ptile = index_to_tile(punit['tile']);
     units_on_tile = tile_units(ptile);
   }
 
   current_focus = [];
-  for (var i = 0; i < units_on_tile.length; i++) {
-    var punit = units_on_tile[i];
+  for (const i = 0; i < units_on_tile.length; i++) {
+    const punit = units_on_tile[i];
     if (punit['transported'] && punit['transported_by'] > 0 ) {
       current_focus.push(punit);
     }
@@ -2502,9 +2500,9 @@ function key_unit_show_cargo()
 **************************************************************************/
 function key_unit_wait()
 {
-  var funits = get_units_in_focus();
-  for (var i = 0; i < funits.length; i++) {
-    var punit = funits[i];
+  const funits = get_units_in_focus();
+  for (const i = 0; i < funits.length; i++) {
+    const punit = funits[i];
     waiting_units_list.push(punit['id']);
   }
   advance_unit_focus();
@@ -2515,9 +2513,9 @@ function key_unit_wait()
 **************************************************************************/
 function key_unit_noorders()
 {
-  var funits = get_units_in_focus();
-  for (var i = 0; i < funits.length; i++) {
-    var punit = funits[i];
+  const funits = get_units_in_focus();
+  for (const i = 0; i < funits.length; i++) {
+    const punit = funits[i];
     punit['done_moving'] = true;
   }
 
@@ -2529,9 +2527,9 @@ function key_unit_noorders()
 **************************************************************************/
 function key_unit_idle()
 {
-  var funits = get_units_in_focus();
-  for (var i = 0; i < funits.length; i++) {
-    var punit = funits[i];
+  const funits = get_units_in_focus();
+  for (const i = 0; i < funits.length; i++) {
+    const punit = funits[i];
     request_new_unit_activity(punit, ACTIVITY_IDLE, EXTRA_NONE);
   }
   setTimeout(update_unit_focus, 700);
@@ -2542,9 +2540,9 @@ function key_unit_idle()
 **************************************************************************/
 function key_unit_sentry()
 {
-  var funits = get_units_in_focus();
-  for (var i = 0; i < funits.length; i++) {
-    var punit = funits[i];
+  const funits = get_units_in_focus();
+  for (const i = 0; i < funits.length; i++) {
+    const punit = funits[i];
     request_new_unit_activity(punit, ACTIVITY_SENTRY, EXTRA_NONE);
   }
   setTimeout(update_unit_focus, 700);
@@ -2555,9 +2553,9 @@ function key_unit_sentry()
 **************************************************************************/
 function key_unit_fortify()
 {
-  var funits = get_units_in_focus();
-  for (var i = 0; i < funits.length; i++) {
-    var punit = funits[i];
+  const funits = get_units_in_focus();
+  for (const i = 0; i < funits.length; i++) {
+    const punit = funits[i];
     request_new_unit_activity(punit, ACTIVITY_FORTIFYING, EXTRA_NONE);
   }
   setTimeout(update_unit_focus, 700);
@@ -2568,9 +2566,9 @@ function key_unit_fortify()
 **************************************************************************/
 function key_unit_fortress()
 {
-  var funits = get_units_in_focus();
-  for (var i = 0; i < funits.length; i++) {
-    var punit = funits[i];
+  const funits = get_units_in_focus();
+  for (const i = 0; i < funits.length; i++) {
+    const punit = funits[i];
     /* EXTRA_NONE -> server decides */
     request_new_unit_activity(punit, ACTIVITY_BASE, EXTRA_NONE);
   }
@@ -2582,9 +2580,9 @@ function key_unit_fortress()
 **************************************************************************/
 function key_unit_airbase()
 {
-  var funits = get_units_in_focus();
-  for (var i = 0; i < funits.length; i++) {
-    var punit = funits[i];
+  const funits = get_units_in_focus();
+  for (const i = 0; i < funits.length; i++) {
+    const punit = funits[i];
     request_new_unit_activity(punit, ACTIVITY_BASE, EXTRA_AIRBASE);
   }
   setTimeout(update_unit_focus, 700);
@@ -2595,9 +2593,9 @@ function key_unit_airbase()
 **************************************************************************/
 function key_unit_irrigate()
 {
-  var funits = get_units_in_focus();
-  for (var i = 0; i < funits.length; i++) {
-    var punit = funits[i];
+  const funits = get_units_in_focus();
+  for (const i = 0; i < funits.length; i++) {
+    const punit = funits[i];
     /* EXTRA_NONE -> server decides */
     request_new_unit_activity(punit, ACTIVITY_IRRIGATE, EXTRA_NONE);
   }
@@ -2609,9 +2607,9 @@ function key_unit_irrigate()
 **************************************************************************/
 function key_unit_cultivate()
 {
-  var funits = get_units_in_focus();
-  for (var i = 0; i < funits.length; i++) {
-    var punit = funits[i];
+  const funits = get_units_in_focus();
+  for (const i = 0; i < funits.length; i++) {
+    const punit = funits[i];
     request_new_unit_activity(punit, ACTIVITY_CULTIVATE, EXTRA_NONE);
   }
   setTimeout(update_unit_focus, 700);
@@ -2622,9 +2620,9 @@ function key_unit_cultivate()
 **************************************************************************/
 function key_unit_clean()
 {
-  var funits = get_units_in_focus();
-  for (var i = 0; i < funits.length; i++) {
-    var punit = funits[i];
+  const funits = get_units_in_focus();
+  for (const i = 0; i < funits.length; i++) {
+    const punit = funits[i];
     request_new_unit_activity(punit, ACTIVITY_CLEAN, EXTRA_NONE);
   }
   setTimeout(update_unit_focus, 700);
@@ -2637,7 +2635,7 @@ function key_unit_clean()
 **************************************************************************/
 function key_unit_nuke()
 {
-  var funits = get_units_in_focus();
+  const funits = get_units_in_focus();
   nuke_unit = (funits != null && funits.length == 1) ? funits[0] : null;
   nuke_start_tile = (funits != null && funits.length == 1) ? index_to_tile(funits[0]['tile']) : null;
 
@@ -2656,11 +2654,11 @@ function key_unit_nuke()
 **************************************************************************/
 function key_unit_upgrade()
 {
-  var funits = get_units_in_focus();
-  for (var i = 0; i < funits.length; i++) {
-    var punit = funits[i];
-    var pcity = tile_city(index_to_tile(punit['tile']));
-    var target_id = (pcity != null) ? pcity['id'] : 0;
+  const funits = get_units_in_focus();
+  for (const i = 0; i < funits.length; i++) {
+    const punit = funits[i];
+    const pcity = tile_city(index_to_tile(punit['tile']));
+    const target_id = (pcity != null) ? pcity['id'] : 0;
     request_unit_do_action(ACTION_UPGRADE_UNIT, punit['id'], target_id);
   }
   update_unit_focus();
@@ -2695,9 +2693,9 @@ function key_unit_airlift()
 **************************************************************************/
 function key_unit_transform()
 {
-  var funits = get_units_in_focus();
-  for (var i = 0; i < funits.length; i++) {
-    var punit = funits[i];
+  const funits = get_units_in_focus();
+  for (const i = 0; i < funits.length; i++) {
+    const punit = funits[i];
     request_new_unit_activity(punit, ACTIVITY_TRANSFORM, EXTRA_NONE);
   }
   setTimeout(update_unit_focus, 700);
@@ -2708,10 +2706,10 @@ function key_unit_transform()
 **************************************************************************/
 function key_unit_pillage()
 {
-  var funits = get_units_in_focus();
-  for (var i = 0; i < funits.length; i++) {
-    var punit = funits[i];
-    var tgt = get_what_can_unit_pillage_from(punit, null);
+  const funits = get_units_in_focus();
+  for (const i = 0; i < funits.length; i++) {
+    const punit = funits[i];
+    const tgt = get_what_can_unit_pillage_from(punit, null);
     if (tgt.length > 0) {
       if (tgt.length == 1) {
         request_unit_do_action(ACTION_PILLAGE, punit['id'], punit.tile,
@@ -2729,9 +2727,9 @@ function key_unit_pillage()
 **************************************************************************/
 function key_unit_mine()
 {
-  var funits = get_units_in_focus();
-  for (var i = 0; i < funits.length; i++) {
-    var punit = funits[i];
+  const funits = get_units_in_focus();
+  for (const i = 0; i < funits.length; i++) {
+    const punit = funits[i];
     /* EXTRA_NONE -> server decides */
     request_new_unit_activity(punit, ACTIVITY_MINE, EXTRA_NONE);
   }
@@ -2743,9 +2741,9 @@ function key_unit_mine()
 **************************************************************************/
 function key_unit_plant()
 {
-  var funits = get_units_in_focus();
-  for (var i = 0; i < funits.length; i++) {
-    var punit = funits[i];
+  const funits = get_units_in_focus();
+  for (const i = 0; i < funits.length; i++) {
+    const punit = funits[i];
     request_new_unit_activity(punit, ACTIVITY_PLANT, EXTRA_NONE);
   }
   setTimeout(update_unit_focus, 700);
@@ -2756,10 +2754,10 @@ function key_unit_plant()
 **************************************************************************/
 function key_unit_road()
 {
-  var funits = get_units_in_focus();
-  for (var i = 0; i < funits.length; i++) {
-    var punit = funits[i];
-    var ptile = index_to_tile(punit['tile']);
+  const funits = get_units_in_focus();
+  for (const i = 0; i < funits.length; i++) {
+    const punit = funits[i];
+    const ptile = index_to_tile(punit['tile']);
     if (!tile_has_extra(ptile, EXTRA_ROAD)) {
       request_new_unit_activity(punit, ACTIVITY_GEN_ROAD, extras['Road']['id']);
     } else if (!tile_has_extra(ptile, EXTRA_RAIL)) {
@@ -2774,11 +2772,11 @@ function key_unit_road()
 **************************************************************************/
 function key_unit_homecity()
 {
-  var funits = get_units_in_focus();
-  for (var i = 0; i < funits.length; i++) {
-    var punit = funits[i];
-    var ptile = index_to_tile(punit['tile']);
-    var pcity = tile_city(ptile);
+  const funits = get_units_in_focus();
+  for (const i = 0; i < funits.length; i++) {
+    const punit = funits[i];
+    const ptile = index_to_tile(punit['tile']);
+    const pcity = tile_city(ptile);
 
     if (pcity != null) {
       request_unit_do_action(ACTION_HOME_CITY, punit['id'], pcity['id']);
@@ -2815,11 +2813,11 @@ function key_unit_action_select()
 **************************************************************************/
 function request_unit_act_sel_vs(ptile)
 {
-  var funits = get_units_in_focus();
+  const funits = get_units_in_focus();
 
-  for (var i = 0; i < funits.length; i++) {
-    var punit = funits[i];
-    var packet = {
+  for (const i = 0; i < funits.length; i++) {
+    const punit = funits[i];
+    const packet = {
       "pid"     : packet_unit_sscs_set,
       "unit_id" : punit['id'],
       "type"    : USSDT_QUEUE,
@@ -2837,10 +2835,10 @@ function request_unit_act_sel_vs(ptile)
 **************************************************************************/
 function request_unit_act_sel_vs_own_tile()
 {
-  var funits = get_units_in_focus();
-  for (var i = 0; i < funits.length; i++) {
-    var punit = funits[i];
-    var packet = {
+  const funits = get_units_in_focus();
+  for (const i = 0; i < funits.length; i++) {
+    const punit = funits[i];
+    const packet = {
       "pid"     : packet_unit_sscs_set,
       "unit_id" : punit['id'],
       "type"    : USSDT_QUEUE,
@@ -2861,14 +2859,14 @@ function key_unit_auto_settle()
 {
 
   if (get_num_cities() == 0) {
-    var message = "Can't activate Auto Settlers, because no cities are built yet.";
+    const message = "Can't activate Auto Settlers, because no cities are built yet.";
     message_log.update({ event: E_CONNECTION, message: message });
     return;
   }
 
-  var funits = get_units_in_focus();
-  for (var i = 0; i < funits.length; i++) {
-    var punit = funits[i];
+  const funits = get_units_in_focus();
+  for (const i = 0; i < funits.length; i++) {
+    const punit = funits[i];
     request_unit_autosettlers(punit);
   }
   setTimeout(update_unit_focus, 700);
@@ -2885,7 +2883,7 @@ function request_unit_cancel_orders(punit)
                         || punit.has_orders)) {
     punit.ssa_controller = SSA_NONE;
     punit.has_orders = false;
-    var packet = {
+    const packet = {
       pid: packet_unit_orders,
       unit_id: punit.id,
       src_tile: punit.tile,
@@ -2906,7 +2904,7 @@ function request_new_unit_activity(punit, activity, target)
 {
   request_unit_cancel_orders(punit);
   action_decision_clear_want(punit['id']);
-  var packet = {"pid" : packet_unit_change_activity, "unit_id" : punit['id'],
+  const packet = {"pid" : packet_unit_change_activity, "unit_id" : punit['id'],
                 "activity" : activity, "target" : target };
   send_request(JSON.stringify(packet));
 }
@@ -2919,7 +2917,7 @@ function request_new_unit_activity(punit, activity, target)
 function request_unit_ssa_set(punit, agent)
 {
   if (punit != null) {
-    var packet = {
+    const packet = {
       "pid"     : packet_unit_server_side_agent_set,
       "unit_id" : punit['id'],
       "agent"   : agent,
@@ -2948,7 +2946,7 @@ function request_unit_autosettlers(punit)
 function request_unit_build_city()
 {
   if (current_focus.length > 0) {
-    var punit = current_focus[0];
+    const punit = current_focus[0];
     if (punit != null) {
 
       if (punit['movesleft'] == 0) {
@@ -2959,10 +2957,10 @@ function request_unit_build_city()
         return;
       }
 
-      var ptype = unit_type(punit);
+      const ptype = unit_type(punit);
       if (ptype['name'] == "Settlers" || ptype['name'] == "Engineers") {
-        var packet = null;
-        var target_city = tile_city(index_to_tile(punit['tile']));
+        const packet = null;
+        const target_city = tile_city(index_to_tile(punit['tile']));
 
         /* Do Join City if located inside a city. */
         if (target_city == null) {
@@ -3020,16 +3018,16 @@ function key_unit_disband()
     closeOnConfirm: true
 },
 function(){
-  var funits = get_units_in_focus();
-  for (var i = 0; i < funits.length; i++) {
-    var punit = funits[i];
-    var target_city = tile_city(index_to_tile(punit['tile']));
+  const funits = get_units_in_focus();
+  for (const i = 0; i < funits.length; i++) {
+    const punit = funits[i];
+    const target_city = tile_city(index_to_tile(punit['tile']));
 
     /* Do Recycle Unit if located inside a city. */
     /* FIXME: Only rulesets where the player can do Recycle Unit to all
      * domestic and allied cities are supported here. */
-    var action_id = target_city ? ACTION_RECYCLE_UNIT : ACTION_DISBAND_UNIT;
-    var target_id = target_city ? target_city['id'] : punit['id'];
+    const action_id = target_city ? ACTION_RECYCLE_UNIT : ACTION_DISBAND_UNIT;
+    const target_id = target_city ? target_city['id'] : punit['id'];
     request_unit_do_action(action_id, punit['id'], target_id);
   }
   setTimeout(update_unit_focus, 700);
@@ -3044,23 +3042,23 @@ function(){
 function key_unit_move(dir)
 {
   if (current_focus.length > 0) {
-    var punit = current_focus[0];
+    const punit = current_focus[0];
     if (punit == null) {
       return;
     }
 
-    var ptile = index_to_tile(punit['tile']);
+    const ptile = index_to_tile(punit['tile']);
     if (ptile == null) {
       return;
     }
 
-    var newtile = mapstep(ptile, dir);
+    const newtile = mapstep(ptile, dir);
     if (newtile == null) {
       return;
     }
 
     /* Send the order to move using the orders system. */
-    var order = {
+    const order = {
       "order"      : ORDER_ACTION_MOVE,
       "dir"        : dir,
       "activity"   : ACTIVITY_LAST,
@@ -3071,9 +3069,7 @@ function key_unit_move(dir)
 
     if (punit['transported']
         /* No non domestic units */
-        && newtile['units'].every(function(ounit) {
-             return ounit['owner'] == client.conn.playing.playerno;
-           })
+        && newtile['units'].every((ounit) => ounit['owner'] == client.conn.playing.playerno)
         /* No non domestic cities */
         && (tile_city(newtile) == null
             || tile_city(newtile)['owner'] == client.conn.playing.playerno)
@@ -3083,7 +3079,7 @@ function key_unit_move(dir)
       order["order"] = ORDER_MOVE;
     }
 
-    var packet = {
+    const packet = {
       "pid"      : packet_unit_orders,
       "unit_id"  : punit['id'],
       "src_tile" : ptile['index'],
@@ -3111,7 +3107,7 @@ function request_goto_path(unit_id, dst_x, dst_y)
   if (goto_request_map[unit_id + "," + dst_x + "," + dst_y] == null) {
     goto_request_map[unit_id + "," + dst_x + "," + dst_y] = true;
 
-    var packet = {"pid" : packet_web_goto_path_req, "unit_id" : unit_id,
+    const packet = {"pid" : packet_web_goto_path_req, "unit_id" : unit_id,
                   "goal" : map_pos_to_tile(dst_x, dst_y)['index']};
     send_request(JSON.stringify(packet));
     current_goto_turns = null;
@@ -3131,11 +3127,11 @@ function check_request_goto_path()
       && prev_mouse_x == mouse_x && prev_mouse_y == mouse_y) {
     clear_goto_tiles();
 
-    var ptile = webgl_canvas_pos_to_tile(mouse_x, mouse_y);
+    const ptile = webgl_canvas_pos_to_tile(mouse_x, mouse_y);
 
     if (ptile != null) {
       /* Send request for goto_path to server. */
-      for (var i = 0; i < current_focus.length; i++) {
+      for (const i = 0; i < current_focus.length; i++) {
         request_goto_path(current_focus[i]['id'], ptile['x'], ptile['y']);
       }
     }
@@ -3149,11 +3145,11 @@ function check_request_goto_path()
 ****************************************************************************/
 function update_goto_path(goto_packet)
 {
-  var punit = units[goto_packet['unit_id']];
+  const punit = units[goto_packet['unit_id']];
   if (punit == null) return;
-  var t0 = index_to_tile(punit['tile']);
-  var ptile = t0;
-  var goaltile = index_to_tile(goto_packet['dest']);
+  const t0 = index_to_tile(punit['tile']);
+  const ptile = t0;
+  const goaltile = index_to_tile(goto_packet['dest']);
 
   webgl_render_goto_line(ptile, goto_packet['dir']);
 
@@ -3184,7 +3180,7 @@ function center_tile_mapcanvas(ptile)
 **************************************************************************/
 function center_tile_id(ptile_id)
 {
-  var ptile = tiles[ptile_id];
+  const ptile = tiles[ptile_id];
   center_tile_mapcanvas(ptile);
 }
 
@@ -3193,7 +3189,7 @@ function center_tile_id(ptile_id)
 **************************************************************************/
 function popit()
 {
-  var ptile = webgl_canvas_pos_to_tile(mouse_x, mouse_y);
+  const ptile = webgl_canvas_pos_to_tile(mouse_x, mouse_y);
 
   if (ptile == null) return;
   last_info_tile = ptile;
@@ -3213,16 +3209,16 @@ function popit_req(ptile)
     return;
   }
 
-  var punit_id = 0;
-  var punit = find_visible_unit(ptile);
+  const punit_id = 0;
+  const punit = find_visible_unit(ptile);
   if (punit != null) punit_id = punit['id'];
 
-  var focus_unit_id = 0;
+  const focus_unit_id = 0;
   if (current_focus.length > 0) {
     focus_unit_id = current_focus[0]['id'];
   }
 
-  var packet = {"pid" : packet_web_info_text_req, "visible_unit" : punit_id,
+  const packet = {"pid" : packet_web_info_text_req, "visible_unit" : punit_id,
                 "loc" : ptile['index'], "focus_unit": focus_unit_id};
   send_request(JSON.stringify(packet));
   info_text_req_tile = ptile;
@@ -3234,8 +3230,8 @@ function popit_req(ptile)
 **************************************************************************/
 function center_on_any_city()
 {
-  for (var city_id in cities) {
-    var pcity = cities[city_id];
+  for (let city_id in cities) {
+    const pcity = cities[city_id];
     center_tile_mapcanvas(city_tile(pcity));
     return;
   }
@@ -3247,19 +3243,19 @@ function center_on_any_city()
 **************************************************************************/
 function update_active_units_dialog()
 {
-  var unit_info_html = "";
-  var ptile = null;
-  var punits = [];
-  var width = 0;
+  const unit_info_html = "";
+  const ptile = null;
+  const punits = [];
+  const width = 0;
 
   if (client_is_observer() || !unitpanel_active) return;
 
   if (current_focus.length == 1) {
     ptile = index_to_tile(current_focus[0]['tile']);
     punits.push(current_focus[0]);
-    var tmpunits = tile_units(ptile);
-    for (var i = 0; i < tmpunits.length; i++) {
-      var kunit = tmpunits[i];
+    const tmpunits = tile_units(ptile);
+    for (const i = 0; i < tmpunits.length; i++) {
+      const kunit = tmpunits[i];
       if (kunit['id'] == current_focus[0]['id']) continue;
       punits.push(kunit);
     }
@@ -3271,8 +3267,8 @@ function update_active_units_dialog()
 
   if (current_focus.length == 1) {
     /* show info about the active focus unit. */
-    var aunit = current_focus[0];
-    var ptype = unit_type(aunit);
+    const aunit = current_focus[0];
+    const ptype = unit_type(aunit);
     unit_info_html += "<div id='active_unit_info' title='" + ptype['helptext'] + "'>";
 
     if (client.conn.playing != null && current_focus[0]['owner'] != client.conn.playing.playerno) {
@@ -3307,10 +3303,10 @@ function update_active_units_dialog()
     unit_info_html += "<div id='active_unit_info'>" + current_focus.length + " units selected.</div> ";
   }
 
-  for (var i = 0; i < punits.length; i++) {
-    var punit = punits[i];
-    var sprite = get_unit_image_sprite(punit);
-    var active = (current_focus.length > 1 || current_focus[0]['id'] == punit['id']);
+  for (const i = 0; i < punits.length; i++) {
+    const punit = punits[i];
+    const sprite = get_unit_image_sprite(punit);
+    const active = (current_focus.length > 1 || current_focus[0]['id'] == punit['id']);
 
     unit_info_html += "<div id='unit_info_div' class='" + (active ? "current_focus_unit" : "")
         + "'><div id='unit_info_image' onclick='set_unit_focus_and_redraw(units[" + punit['id'] + "])' "
@@ -3326,9 +3322,9 @@ function update_active_units_dialog()
 
   if (current_focus.length > 0) {
     /* reposition and resize unit dialog. */
-    var newwidth = 80 + punits.length * (width * 1.3);
+    const newwidth = 80 + punits.length * (width * 1.3);
     if (newwidth < 280) newwidth = 280;
-    var newheight = 60 + normal_tile_height;
+    const newheight = 60 + normal_tile_height;
     $("#game_unit_panel").parent().show();
     $("#game_unit_panel").parent().width(newwidth);
     $("#game_unit_panel").parent().height(newheight);
@@ -3348,7 +3344,7 @@ function update_active_units_dialog()
 **************************************************************************/
 function set_mouse_touch_started_on_unit(ptile) {
   if (ptile == null) return;
-  var sunit = find_visible_unit(ptile);
+  const sunit = find_visible_unit(ptile);
   if (sunit != null && client.conn.playing != null && sunit['owner'] == client.conn.playing.playerno) {
     mouse_touch_started_on_unit = true;
   } else {
@@ -3365,7 +3361,7 @@ function check_mouse_drag_unit(ptile)
 {
   if (ptile == null || !mouse_touch_started_on_unit) return;
 
-  var sunit = find_visible_unit(ptile);
+  const sunit = find_visible_unit(ptile);
 
   if (sunit != null) {
     if (client.conn.playing != null && sunit['owner'] == client.conn.playing.playerno) {
@@ -3374,7 +3370,7 @@ function check_mouse_drag_unit(ptile)
     }
   }
 
-  var ptile_units = tile_units(ptile);
+  const ptile_units = tile_units(ptile);
   if (ptile_units.length > 1) {
      update_active_units_dialog();
   }

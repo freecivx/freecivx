@@ -1,4 +1,6 @@
 /**********************************************************************
+'use strict';
+
     Freeciv-web - the web version of Freeciv. http://www.FreecivWorld.net/
     Copyright (C) 2009-2015  The Freeciv-web project
 
@@ -17,16 +19,16 @@
 
 ***********************************************************************/
 
-var observing = false;
-var chosen_nation = -1;
-var chosen_style = -1;
-var choosing_player = -1;
-var ai_skill_level = 3;
-var nation_select_id = -1;
-var metamessage_changed = false;
-var logged_in_with_password = false;
-var antialiasing_setting = true;
-var password_reset_count = 0;
+const observing = false;
+const chosen_nation = -1;
+const chosen_style = -1;
+const choosing_player = -1;
+const ai_skill_level = 3;
+const nation_select_id = -1;
+const metamessage_changed = false;
+const logged_in_with_password = false;
+const antialiasing_setting = true;
+const password_reset_count = 0;
 
 /****************************************************************************
   ...
@@ -35,9 +37,9 @@ function pregame_start_game()
 {
   if (client.conn['player_num'] == null) return;
 
-  var test_packet = {"pid" : packet_player_ready, "is_ready" : true,
+  const test_packet = {"pid" : packet_player_ready, "is_ready" : true,
                      "player_no": client.conn['player_num']};
-  var myJSONText = JSON.stringify(test_packet);
+  const myJSONText = JSON.stringify(test_packet);
   send_request(myJSONText);
 
   setup_window_size ();
@@ -65,7 +67,7 @@ function observe()
 ****************************************************************************/
 function update_game_info_pregame()
 {
-  var game_info_html = "";
+  const game_info_html = "";
 
   if (C_S_PREPARING != client_state()) {
     /* The game has already started. */
@@ -119,11 +121,11 @@ function update_game_info_pregame()
 ****************************************************************************/
 function update_player_info_pregame()
 {
-  var id;
+  let id;
   if (C_S_PREPARING == client_state()) {
-    var player_html = "";
+    const player_html = "";
     for (id in players) {
-      var player = players[id];
+      const player = players[id];
       if (player != null) {
         if (player['name'].indexOf("AI") != -1) {
           player_html += "<div id='pregame_plr_" + id
@@ -140,16 +142,16 @@ function update_player_info_pregame()
 
     /* show player ready state in pregame dialog */
     for (id in players) {
-      var player = players[id];
-      var nation_text = "";
+      const player = players[id];
+      const nation_text = "";
       if (player['nation'] in nations) {
         nation_text = " - " + nations[player['nation']]['adjective'];
-        var flag_html = $("<canvas id='pregame_nation_flags_" + id + "' width='44' height='30' class='pregame_flags'></canvas>");
+        const flag_html = $("<canvas id='pregame_nation_flags_" + id + "' width='44' height='30' class='pregame_flags'></canvas>");
         $("#pregame_plr_"+id).prepend(flag_html);
-        var flag_canvas = document.getElementById('pregame_nation_flags_' + id);
+        const flag_canvas = document.getElementById('pregame_nation_flags_' + id);
         if (flag_canvas == null) continue;
-        var flag_canvas_ctx = flag_canvas.getContext("2d");
-        var tag = "f." + nations[player['nation']]['graphic_str'];
+        const flag_canvas_ctx = flag_canvas.getContext("2d");
+        const tag = "f." + nations[player['nation']]['graphic_str'];
         if (sprites[tag] != null && flag_canvas_ctx != null) {
           flag_canvas_ctx.drawImage(sprites[tag], 0, 0);
         }
@@ -168,7 +170,7 @@ function update_player_info_pregame()
     }
     $(".pregame_player_name").tooltip();
 
-    var pregame_context_items = {
+    const pregame_context_items = {
             "pick_nation": {name: "Pick nation"},
             "observe_player": {name: "Observe this player"},
             "take_player": {name: "Take this player"},
@@ -185,9 +187,9 @@ function update_player_info_pregame()
       $("#pregame_player_list").contextMenu({
         selector: '.pregame_player_name',
         callback: function(key, options) {
-            var name = $(this).attr('name');
+            const name = $(this).attr('name');
             if (name != null && name.indexOf(" ") != -1) name = name.split(" ")[0];
-            var playerid = parseInt($(this).attr('playerid'));
+            const playerid = parseInt($(this).attr('playerid'));
             if (key == "take_player") {
               send_message("/take " + name);
             } else if (key == "pick_nation") {
@@ -228,19 +230,19 @@ function update_player_info_pregame()
 function pick_nation(player_id)
 {
   if (player_id == null) player_id = client.conn['player_num'];
-  var pplayer = players[player_id]; 
+  const pplayer = players[player_id]; 
   choosing_player = player_id;
 
   if (pplayer == null) return; 
 
-  var nations_html = "<div id='nation_heading'><span>Select nation for " + pplayer['name'] + ":</span> <br>"
+  const nations_html = "<div id='nation_heading'><span>Select nation for " + pplayer['name'] + ":</span> <br>"
                   + "<input id='nation_autocomplete_box' type='text' size='20'>"
 		  + "<div id='nation_choice'></div></div> <div id='nation_list'> ";
 
   /* prepare a list of flags and nations. */
-  var nation_name_list = [];
-  for (var nation_id in nations) {
-    var pnation = nations[nation_id];
+  const nation_name_list = [];
+  for (let nation_id in nations) {
+    const pnation = nations[nation_id];
     if (pnation['is_playable']) {
       nations_html += "<div class='nation_pickme_line' onclick='select_nation(" + nation_id + ");'>"
              + "<div id='nation_" + nation_id + "' class='nation_choice'>"
@@ -290,12 +292,12 @@ function pick_nation(player_id)
   nation_select_id = setTimeout (update_nation_selection, 150);
   $("#pick_nation_dialog").dialog('open');
 
-  for (var nation_id in nations) {
-    var pnation = nations[nation_id];
+  for (let nation_id in nations) {
+    const pnation = nations[nation_id];
     if (pnation['is_playable']) {
-      var flag_canvas = document.getElementById('pick_flag_' + nation_id);
-      var flag_canvas_ctx = flag_canvas.getContext("2d");
-      var tag = "f." + pnation['graphic_str'];
+      const flag_canvas = document.getElementById('pick_flag_' + nation_id);
+      const flag_canvas_ctx = flag_canvas.getContext("2d");
+      const tag = "f." + pnation['graphic_str'];
 
       if (tileset[tag] == null) continue;
 
@@ -314,12 +316,12 @@ function pick_nation(player_id)
 ****************************************************************************/
 function update_nation_selection()
 {
-  var nation_name = $("#nation_autocomplete_box").val();
+  const nation_name = $("#nation_autocomplete_box").val();
   if (nation_name == null || nation_name.length == 0) return;
   if (C_S_RUNNING == client_state()) return;
 
-  for (var nation_id in nations) {
-    var pnation = nations[nation_id];
+  for (let nation_id in nations) {
+    const pnation = nations[nation_id];
     if (pnation['is_playable'] && pnation['adjective'].toLowerCase() == nation_name.toLowerCase()) {
       select_nation(nation_id);
       return;
@@ -332,7 +334,7 @@ function update_nation_selection()
 ****************************************************************************/
 function select_nation(new_nation_id)
 {
-  var pnation = nations[new_nation_id];
+  const pnation = nations[new_nation_id];
   $("#nation_legend").html(pnation['legend']);
   $("#nation_autocomplete_box").val(pnation['adjective']);
   $("#nation_" + chosen_nation).css("background-color", "transparent");
@@ -359,21 +361,21 @@ function submit_nation_choice()
   if (chosen_nation == -1 || client.conn['player_num'] == null 
       || choosing_player == null || choosing_player < 0) return;
 
-  var pplayer = players[choosing_player];
+  const pplayer = players[choosing_player];
   if (pplayer == null) return;
 
-  var leader_name = pplayer['name']; 
+  const leader_name = pplayer['name']; 
 
   if (pplayer['flags'].isSet(PLRF_AI)) {
     leader_name = nations[chosen_nation]['leader_name'][0];
   }
 
-  var style = nations[chosen_nation]['style'];
+  const style = nations[chosen_nation]['style'];
   if (chosen_style != -1) {
     style = chosen_style;
   }
 
-  var test_packet = {"pid" : packet_nation_select_req,
+  const test_packet = {"pid" : packet_nation_select_req,
                      "player_no" : choosing_player,
                      "nation_no" : chosen_nation,
                      "is_male" : true, /* FIXME */
@@ -410,7 +412,7 @@ function ruledir_from_ruleset_name(ruleset_name, fall_back_dir)
   Show the full description of the current ruleset.
 ***************************************************************************/
 function show_ruleset_description_full() {
-  var id = "#long_help_dialog";
+  const id = "#long_help_dialog";
 
   if (ruleset_control == null) return;
 
@@ -437,11 +439,11 @@ function show_ruleset_description_full() {
 ****************************************************************************/
 function pregame_settings()
 {
-  var id = "#pregame_settings";
+  const id = "#pregame_settings";
   $(id).remove();
   $("<div id='pregame_settings'></div>").appendTo("div#pregame_page");
 
-  var dhtml = "<div id='pregame_settings_tabs'>" +
+  const dhtml = "<div id='pregame_settings_tabs'>" +
       "   <ul>" +
       "     <li><a href='#pregame_settings_tabs-1'>Game</a></li>" +
       "     <li><a href='#pregame_settings_tabs-2'>3D WebGL</a></li>" +
@@ -625,7 +627,7 @@ function pregame_settings()
 
   $("#3d_antialiasing_label").prop("innerHTML", "Antialiasing:");
 
-  var stored_antialiasing_setting = simpleStorage.get("antialiasing_setting", "");
+  const stored_antialiasing_setting = simpleStorage.get("antialiasing_setting", "");
   if (stored_antialiasing_setting != null && stored_antialiasing_setting == "false") {
       $("#3d_antialiasing_setting").prop("checked", false);
       antialiasing_setting = false;
@@ -679,7 +681,7 @@ function pregame_settings()
   });
 
   $('#metamessage').bind('keyup blur',function(){
-    var cleaned_text = $(this).val().replace(/[^a-zA-Z\s\-]/g,'');
+    const cleaned_text = $(this).val().replace(/[^a-zA-Z\s\-]/g,'');
     if ($(this).val() != cleaned_text) {
       $(this).val( cleaned_text ); }
     }
@@ -758,7 +760,7 @@ function pregame_settings()
       confirmButtonText: "Yes, set game password",   
       closeOnConfirm: true }, 
       function(){   
-        var pwd_packet = {"pid" : packet_authentication_reply, "password" : $('#password').val()};
+        const pwd_packet = {"pid" : packet_authentication_reply, "password" : $('#password').val()};
         send_request(JSON.stringify(pwd_packet));
         send_message("/metamessage Private password-protected game");
         metamessage_changed = true;
@@ -905,7 +907,7 @@ function show_intro_dialog(title, message) {
   $("#dialog").remove();
   $("<div id='dialog'></div>").appendTo("div#game_page");
 
-  var intro_html = message + "<br><br><table><tr><td>Player name:</td><td><input id='username_req' type='text' size='18' maxlength='31'></td></tr>"
+  const intro_html = message + "<br><br><table><tr><td>Player name:</td><td><input id='username_req' type='text' size='18' maxlength='31'></td></tr>"
       +  "<tr id='password_row'><td>Password:</td><td id='password_td'></td></tr></table>";
 
   $("#dialog").html(intro_html);
@@ -914,7 +916,7 @@ function show_intro_dialog(title, message) {
         this.value = this.value.toLowerCase();
   });
 
-  var stored_username = simpleStorage.get("username", "");
+  const stored_username = simpleStorage.get("username", "");
   if (stored_username != null && stored_username != false) {
     $("#username_req").val(stored_username);
       if ($.getUrlVar('civserverport') != null) {
@@ -925,12 +927,12 @@ function show_intro_dialog(title, message) {
   $("#password_row").show();
   $("#password_td").html("<input id='password_req' type='password' size='18' maxlength='200' > <br> <div id='login_process'></div>");
 
-  var stored_password = simpleStorage.get("password", "");
+  const stored_password = simpleStorage.get("password", "");
   if (stored_password != null && stored_password != false) {
     $("#password_req").val(stored_password);
 
   }
-  var join_game_customize_text = "";
+  const join_game_customize_text = "";
   if ($.getUrlVar('action') == "multi") {
     join_game_customize_text = "Join Game " + $.getUrlVar('civserverport');
   } else {
@@ -1048,7 +1050,7 @@ function show_intro_dialog(title, message) {
 **************************************************************************/
 function pregame_handle_user(close_pregame)
 {
-  var check_username = $("#username_req").val();
+  const check_username = $("#username_req").val();
   if (check_username == null || check_username.length == 0) {
       $("#login_process").text("Please sign up as a new player. Username not found.");
     return;
@@ -1086,18 +1088,18 @@ function pregame_handle_user(close_pregame)
 
       } else {
         username = $("#username_req").val().trim();
-        var password = $("#password_req").val();
+        const password = $("#password_req").val();
         if (password == null) {
-          var stored_password = simpleStorage.get("password", "");
+          const stored_password = simpleStorage.get("password", "");
           if (stored_password != null && stored_password != false) {
             password = stored_password;
           }
         }
 
         if (password != null && password.length > 2) {
-          var shaObj = new jsSHA("SHA-512", "TEXT");
+          const shaObj = new jsSHA("SHA-512", "TEXT");
           shaObj.update(password);
-          var sha_password = encodeURIComponent(shaObj.getHash("HEX"));
+          const sha_password = encodeURIComponent(shaObj.getHash("HEX"));
 
           $.ajax({
            type: 'POST',
@@ -1150,8 +1152,8 @@ function pregame_handle_user(close_pregame)
 function show_new_user_account_dialog(gametype)
 {
 
-  var title = "New user account";
-  var message = "Create a new FreecivWorld.net user account:<br><br>"
+  const title = "New user account";
+  const message = "Create a new FreecivWorld.net user account:<br><br>"
                 + "<table><tr><td>Username:</td><td><input id='username' type='text' size='25' maxlength='30'></td></tr>"
                 + "<tr><td>Email:</td><td><input id='email' type='email' size='25' maxlength='64' ></td></tr>"
                 + "<tr><td>Password:</td><td><input id='password' type='password' size='25'></td></tr>"
@@ -1238,9 +1240,9 @@ function show_new_user_account_dialog(gametype)
 function create_new_freeciv_user_account_request(action_type)
 {
   username = $("#username").val().trim().toLowerCase();
-  var password = $("#password").val().trim();
-  var confirm_password = $("#confirm_password").val().trim();
-  var email = $("#email").val().trim();
+  const password = $("#password").val().trim();
+  const confirm_password = $("#confirm_password").val().trim();
+  const email = $("#email").val().trim();
 
   $("#username_validation_result").show();
   if (!is_username_valid_show(username)) {
@@ -1262,9 +1264,9 @@ function create_new_freeciv_user_account_request(action_type)
 
   $("#dialog").parent().hide();
 
-  var shaObj = new jsSHA("SHA-512", "TEXT");
+  const shaObj = new jsSHA("SHA-512", "TEXT");
   shaObj.update(password);
-  var sha_password = encodeURIComponent(shaObj.getHash("HEX"));
+  const sha_password = encodeURIComponent(shaObj.getHash("HEX"));
 
   $.ajax({
    type: 'POST',
@@ -1296,13 +1298,13 @@ function show_customize_nation_dialog(player_id) {
   if (chosen_nation == -1 || client.conn['player_num'] == null
       || choosing_player == null || choosing_player < 0) return;
 
-  var pnation = nations[chosen_nation];
+  const pnation = nations[chosen_nation];
 
   // reset dialog page.
   $("#dialog").remove();
   $("<div id='dialog'></div>").appendTo("div#game_page");
 
-  var message = "<br>"
+  const message = "<br>"
        + "Upload new flag: <input type='file' id='newFlagFileInput'><br><br>"
        + "For best results scale the image to 29 x 20 pixels before uploading. <br><br>"
        + "(Note: the customized nation and flag will only be active during the current game session and will not be visible to other players.)";
@@ -1333,8 +1335,8 @@ function show_customize_nation_dialog(player_id) {
 **************************************************************************/
 function handle_customized_nation(player_id)
 {
-  var fileInput = document.getElementById('newFlagFileInput');
-  var file = fileInput.files[0];
+  const fileInput = document.getElementById('newFlagFileInput');
+  const file = fileInput.files[0];
 
   if (file == null) {
     swal("Please upload a image file!");
@@ -1346,11 +1348,11 @@ function handle_customized_nation(player_id)
     return;
   }
 
-  var extension = file.name.substring(file.name.lastIndexOf('.'));
+  const extension = file.name.substring(file.name.lastIndexOf('.'));
   console.log("New flag: " + file.type + " with extention " + extension);
 
   if (extension == '.png' || extension == '.bmp' || extension == '.jpg' || extension == '.jpeg' || extension == '.JPG') {
-    var reader = new FileReader();
+    const reader = new FileReader();
     reader.onload = function(e) {
       handle_new_flag(reader.result, player_id);
     };
@@ -1366,23 +1368,23 @@ function handle_customized_nation(player_id)
   Update flag sprites based on user uploaded flags.
 **************************************************************************/
 function handle_new_flag(image_data, player_id) {
-  var pnation = nations[chosen_nation];
-  var flag_tag = "f." + pnation['graphic_str'];
-  var shield_tag = "f.shield." + pnation['graphic_str'];
+  const pnation = nations[chosen_nation];
+  const flag_tag = "f." + pnation['graphic_str'];
+  const shield_tag = "f.shield." + pnation['graphic_str'];
 
-  var new_flag_canvas = document.createElement('canvas');
+  const new_flag_canvas = document.createElement('canvas');
   new_flag_canvas.width = sprites[flag_tag].width;
   new_flag_canvas.height = sprites[flag_tag].height;
   sprites[flag_tag] = new_flag_canvas;
-  var ctx_flag = new_flag_canvas.getContext("2d");
+  const ctx_flag = new_flag_canvas.getContext("2d");
 
-  var new_shield_canvas = document.createElement('canvas');
+  const new_shield_canvas = document.createElement('canvas');
   new_shield_canvas.width = sprites[shield_tag].width;
   new_shield_canvas.height = sprites[shield_tag].height;
   sprites[shield_tag] = new_shield_canvas;
-  var ctx_shield = new_shield_canvas.getContext("2d");
+  const ctx_shield = new_shield_canvas.getContext("2d");
 
-  var img = new Image();
+  const img = new Image();
   img.onload = function() {
       ctx_flag.drawImage(img, 0, 0, this.width, this.height, 0, 0, new_flag_canvas.width, new_flag_canvas.height);
       ctx_shield.drawImage(img, 0, 0, this.width, this.height, 0, 0, new_shield_canvas.width, new_shield_canvas.height);
@@ -1403,8 +1405,8 @@ function handle_new_flag(image_data, player_id) {
  Determines if the email is valid
 **************************************************************************/
 function validateEmail(email) {
-    var checkemail = email;
+    const checkemail = email;
     if (checkemail != null) checkemail = checkemail.replace("+", "");  // + is allowed.
-    var re = /^([\w-]+(?:\.[\w-]+)*)@((?:[\w-]+\.)*\w[\w-]{0,66})\.([a-z]{2,6}(?:\.[a-z]{2})?)$/i;
+    const re = /^([\w-]+(?:\.[\w-]+)*)@((?:[\w-]+\.)*\w[\w-]{0,66})\.([a-z]{2,6}(?:\.[a-z]{2})?)$/i;
     return re.test(checkemail);
 }

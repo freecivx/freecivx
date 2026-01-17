@@ -1,4 +1,6 @@
 /**********************************************************************
+'use strict';
+
     Freeciv-web - the web version of Freeciv. http://www.FreecivWorld.net/
     Copyright (C) 2009-2015  The Freeciv-web project
 
@@ -18,19 +20,19 @@
 ***********************************************************************/
 
 
-var clinet_last_send = 0;
-var debug_client_speed_list = [];
+const clinet_last_send = 0;
+const debug_client_speed_list = [];
 
-var freeciv_version = "+Freeciv.Web.Devel-3.3";
+const freeciv_version = "+Freeciv.Web.Devel-3.3";
 
-var ws = null;
-var civserverport = null;
+const ws = null;
+const civserverport = null;
 
-var ping_last = new Date().getTime();
-var pingtime_check = 240000;
-var ping_timer = null;
+const ping_last = new Date().getTime();
+const pingtime_check = 240000;
+const ping_timer = null;
 let incomplete_messages_from_server_buffer = "";
-var freecivx_server = true;
+const freecivx_server = true;
 
 /****************************************************************************
   Initialized the Network communication, by requesting a valid server port.
@@ -45,7 +47,7 @@ function network_init()
       return;
   }
 
-  var civclient_request_url = "/civclientlauncher";
+  const civclient_request_url = "/civclientlauncher";
   if ($.getUrlVar('action') != null) civclient_request_url += "?action=" + $.getUrlVar('action');
   if ($.getUrlVar('action') == null && $.getUrlVar('civserverport') != null) civclient_request_url += "?";
   if ($.getUrlVar('civserverport') != null) civclient_request_url += "&civserverport=" + $.getUrlVar('civserverport');
@@ -55,7 +57,7 @@ function network_init()
    url: civclient_request_url,
    success: function(data, textStatus, request){
        civserverport = request.getResponseHeader('port');
-       var connect_result = request.getResponseHeader('result');
+       const connect_result = request.getResponseHeader('result');
        if (civserverport != null && connect_result == "success") {
          websocket_init();
          load_game_check();
@@ -77,14 +79,14 @@ function network_init()
 function websocket_init() {
     if ($.getUrlVar('action') === "local") {
         civserverport = 7800;
-        var freecivx_port = parseFloat(civserverport);
+        const freecivx_port = parseFloat(civserverport);
         freecivx_server = true;
 
         const ws_protocol = (window.location.protocol === 'https:') ? "wss://" : "ws://";
         ws = new WebSocket(`${ws_protocol}${window.location.hostname}:${freecivx_port}/`);
         ws.binaryType = 'arraybuffer';
     } else {
-        var proxyport = parseFloat(civserverport);
+        const proxyport = parseFloat(civserverport);
         if (proxyport < 7800) {
             proxyport += 1000; // Freeciv C server with Websockify.
             freecivx_server = false;
@@ -183,7 +185,7 @@ function check_websocket_ready()
 {
   if (ws != null && ws.readyState === 1) {
 
-    var login_message = {"pid":4, "username" : username,
+    const login_message = {"pid":4, "username" : username,
     "capability": freeciv_version, "version_label": "-dev",
     "major_version" : 3, "minor_version" : 1, "patch_version" : 90};
 
@@ -260,7 +262,7 @@ function send_request(packet_payload) {
 ****************************************************************************/
 function clinet_debug_collect()
 {
-  var time_elapsed = new Date().getTime() - clinet_last_send;
+  const time_elapsed = new Date().getTime() - clinet_last_send;
   debug_client_speed_list.push(time_elapsed);
   clinet_last_send = new Date().getTime();
 }
@@ -271,7 +273,7 @@ function clinet_debug_collect()
 ****************************************************************************/
 function ping_check()
 {
-  var time_since_last_ping = new Date().getTime() - ping_last;
+  const time_since_last_ping = new Date().getTime() - ping_last;
   if (time_since_last_ping > pingtime_check) {
     console.log("Error: Missing PING message from server, "
                 + "indicates server connection problem.");
@@ -292,7 +294,7 @@ function send_message_delayed(message, delay)
 function send_message(message)
 {
 
-  var packet = {"pid" : packet_chat_msg_req, 
+  const packet = {"pid" : packet_chat_msg_req, 
                 "message" : message};
   send_request(JSON.stringify(packet));
 }

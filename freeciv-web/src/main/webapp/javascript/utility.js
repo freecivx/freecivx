@@ -1,4 +1,6 @@
 /**********************************************************************
+'use strict';
+
     Freeciv-web - the web version of Freeciv. http://www.FreecivWorld.net/
     Copyright (C) 2009-2015  The Freeciv-web project
 
@@ -17,7 +19,7 @@
 
 ***********************************************************************/
 
-var stripChar = [];
+const stripChar = [];
 stripChar[0] = new RegExp(String.fromCharCode(3), "g");
 const STRIPCHAR_LAST = 1;
 
@@ -28,9 +30,9 @@ function clone(obj){
   if(obj == null || typeof(obj) != 'object') {
     return obj;
   }
-  var temp = obj.constructor(); // changed
+  const temp = obj.constructor(); // changed
 
-  for (var key in obj) {
+  for (let key in obj) {
     temp[key] = clone(obj[key]);
   }
 
@@ -68,9 +70,9 @@ function XOR(a,b) {
 ****************************************************************************/
 $.extend({
   getUrlVars: function(){
-    var vars = [], hash;
-    var hashes = window.location.href.slice(window.location.href.indexOf('?') + 1).split('&');
-    for(var i = 0; i < hashes.length; i++)
+    const vars = [], hash;
+    const hashes = window.location.href.slice(window.location.href.indexOf('?') + 1).split('&');
+    for(const i = 0; i < hashes.length; i++)
     {
       hash = hashes[i].split('=');
       vars.push(hash[0]);
@@ -78,14 +80,12 @@ $.extend({
     }
     return vars;
   },
-  getUrlVar: function(name){
-    return $.getUrlVars()[name];
-  }
+  getUrlVar: (name) => $.getUrlVars()[name]
 });
 
 
 
-var benchmark_start = 0;
+const benchmark_start = 0;
 
 /****************************************************************************
  Benchmark the Freeciv.net webclient.
@@ -95,15 +95,15 @@ function civclient_benchmark(frame)
 
   if (frame == 0) benchmark_start = new Date().getTime();
 
-  var ptile = map_pos_to_tile(frame+5, frame+5);
+  const ptile = map_pos_to_tile(frame+5, frame+5);
   center_tile_mapcanvas(ptile);
 
   if (frame < 30) {
     setTimeout("civclient_benchmark(" + (frame + 1) + ")", 10);
   } else {
 
-    var end = new Date().getTime();
-    var time = (end - benchmark_start) / 25;
+    const end = new Date().getTime();
+    const time = (end - benchmark_start) / 25;
     swal('Redraw time: ' + time);
   }
 }
@@ -121,7 +121,7 @@ function numberWithCommas(x) {
 function to_title_case(str)
 {
   return str.replace(/\w\S*/g,
-         function(txt){return txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase();});
+         (txt) => txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase());
 }
 
 /**************************************************************************
@@ -152,7 +152,7 @@ function get_random_int(min, max) {
 ...
 **************************************************************************/
 function supports_mp3() {
-  var a = document.createElement('audio');
+  const a = document.createElement('audio');
   return !!(a.canPlayType && a.canPlayType('audio/mpeg;').replace(/no/, ''));
 }
 
@@ -176,9 +176,9 @@ function is_right_mouse_selection_supported()
 **************************************************************************/
 function seconds_to_human_time(input_seconds) {
   if (input_seconds <= 0) return 0 + 's';
-  var hours   = Math.floor(input_seconds / 3600);
-  var minutes = Math.floor((input_seconds - (hours * 3600)) / 60);
-  var seconds = input_seconds - (hours * 3600) - (minutes * 60);
+  const hours = Math.floor(input_seconds / 3600);
+  const minutes = Math.floor((input_seconds - (hours * 3600)) / 60);
+  const seconds = input_seconds - (hours * 3600) - (minutes * 60);
   if (hours > 0) return hours+'h '+minutes+'m ';
   if (hours == 0 && minutes > 0) return minutes+'m '+seconds + 's';
   if (hours == 0 && minutes == 0) return seconds + 's';
@@ -217,7 +217,7 @@ function uncapitalize(s) {
 function cleaned_text(str)
 {
   // Remove each type of ugly spurious character or escape code.
-  for (var i = 0; i < STRIPCHAR_LAST; i++) {
+  for (const i = 0; i < STRIPCHAR_LAST; i++) {
     str = str.replace(stripChar[i],"");
   }
   return str;
@@ -259,7 +259,7 @@ function submit_game_of_the_day() {
 **************************************************************************/
 function submit_game_of_the_day2() {
  html2canvas(document.body).then(function(canvas) {
-    var screenshot = canvas.toDataURL("image/png");
+    const screenshot = canvas.toDataURL("image/png");
     $.post( "/save_game_of_the_day", screenshot);
   });
   show_fps();

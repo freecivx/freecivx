@@ -1,4 +1,6 @@
 /**********************************************************************
+'use strict';
+
     Freeciv-web - the web version of Freeciv. http://www.FreecivWorld.net/
     Copyright (C) 2009-2015  The Freeciv-web project
 
@@ -18,16 +20,16 @@
 ***********************************************************************/
 
 
-var C_S_INITIAL = 0;    /* Client boot, only used once on program start. */
-var C_S_PREPARING = 1;  /* Main menu (disconnected) and connected in pregame. */
-var C_S_RUNNING = 2;    /* Connected with game in progress. */
-var C_S_OVER = 3;       /* Connected with game over. */
+const C_S_INITIAL = 0;    /* Client boot, only used once on program start. */
+const C_S_PREPARING = 1;  /* Main menu (disconnected) and connected in pregame. */
+const C_S_RUNNING = 2;    /* Connected with game in progress. */
+const C_S_OVER = 3;       /* Connected with game over. */
 
-var civclient_state = C_S_INITIAL;
+const civclient_state = C_S_INITIAL;
 
-var endgame_player_info = [];
-var height_offset = 52;
-var width_offset = 10;
+const endgame_player_info = [];
+const height_offset = 52;
+const width_offset = 10;
 
 /**************************************************************************
  Sets the client state (initial, pre, running, over etc).
@@ -79,10 +81,10 @@ function set_client_state(newstate)
 **************************************************************************/
 function setup_window_size ()
 {
-  var winWidth = $(window).width();
-  var winHeight = $(window).height();
-  var new_mapview_width = winWidth - width_offset;
-  var new_mapview_height = winHeight - height_offset;
+  const winWidth = $(window).width();
+  const winHeight = $(window).height();
+  const new_mapview_width = winWidth - width_offset;
+  const new_mapview_height = winHeight - height_offset;
 
 
   $("#pregame_custom_scrollbar_div").height( new_mapview_height - 100
@@ -186,7 +188,7 @@ function client_is_observer()
 **************************************************************************/
 function show_new_game_message()
 {
-  var message = null;
+  const message = null;
 
   clear_chatbox();
 
@@ -194,7 +196,7 @@ function show_new_game_message()
     return;
 
   } else if (client.conn.playing != null && !game_loaded) {
-    var pplayer = client.conn.playing;
+    const pplayer = client.conn.playing;
     message = "Welcome to FreecivWorld.net, the free browser-based 3D version of the classic turn-based strategy game Freeciv! You can ask questions to the AI bot (OpenAI) here. Have fun playing FreecivWorld!";
 
   } else if (game_loaded) {
@@ -214,7 +216,7 @@ function show_new_game_message()
 **************************************************************************/
 function alert_war(player_no)
 {
-  var pplayer = players[player_no];
+  const pplayer = players[player_no];
   message_log.update({
     event: E_DIPLOMACY,
     message: "War: You are now at war with the "
@@ -228,11 +230,11 @@ function alert_war(player_no)
 **************************************************************************/
 function show_endgame_dialog()
 {
-  var title = "Final Report: The Greatest Civilizations in the world!";
-  var message = "<p id='hof_msg'></p>";
-  for (var i = 0; i < endgame_player_info.length; i++) {
-    var pplayer = players[endgame_player_info[i]['player_id']];
-    var nation_adj = nations[pplayer['nation']]['adjective'];
+  const title = "Final Report: The Greatest Civilizations in the world!";
+  const message = "<p id='hof_msg'></p>";
+  for (const i = 0; i < endgame_player_info.length; i++) {
+    const pplayer = players[endgame_player_info[i]['player_id']];
+    const nation_adj = nations[pplayer['nation']]['adjective'];
     message += (i+1) + ": The " + nation_adj + " ruler " + pplayer['name'] 
       + " scored " + endgame_player_info[i]['score'] + " points" + "<br>";
   }
@@ -286,8 +288,8 @@ function update_metamessage_on_gamestart()
 function update_metamessage_game_running_status()
 {
   if (client.conn.playing != null && !metamessage_changed) {
-    var pplayer = client.conn.playing;
-    var metasuggest = nations[pplayer['nation']]['adjective'] + " | " + (governments[client.conn.playing['government']] != null ? governments[client.conn.playing['government']]['name'] : "-")
+    const pplayer = client.conn.playing;
+    const metasuggest = nations[pplayer['nation']]['adjective'] + " | " + (governments[client.conn.playing['government']] != null ? governments[client.conn.playing['government']]['name'] : "-")
          + " | People:" + civ_population(client.conn.playing.playerno)
          + " | Score:" + pplayer['score'] + " | " + "Research:" + (techs[client.conn.playing['researching']] != null ? techs[client.conn.playing['researching']]['name'] : "-" );
     send_message("/metamessage " + metasuggest);
@@ -302,7 +304,7 @@ function update_metamessage_game_running_status()
 function set_default_mapview_active()
 {
 
-  var active_tab = $('#tabs').tabs('option', 'active');
+  const active_tab = $('#tabs').tabs('option', 'active');
   if (active_tab == 4) { // cities dialog is active
     return;
   }
@@ -338,8 +340,8 @@ Received tile info text.
 **************************************************************************/
 function handle_web_info_text_message(packet)
 {
-  var message = decodeURIComponent(packet['message']);
-  var lines = message.split('\n');
+  const message = decodeURIComponent(packet['message']);
+  const lines = message.split('\n');
 
   /* When a line starts with the key, the regex value is used to break it
    * in four elements:
@@ -348,17 +350,17 @@ function handle_web_info_text_message(packet)
    * - text after the player's name and before the status insertion point
    * - text after the status insertion point
   **/
-  var matcher = {
+  const matcher = {
     'Terri': /^(Territory of )([^(]*)(\s+\([^,]*)(.*)/,
     'City:': /^(City:[^|]*\|\s+)([^(]*)(\s+\([^,]*)(.*)/,
     'Unit:': /^(Unit:[^|]*\|\s+)([^(]*)(\s+\([^,]*)(.*)/
   };
 
-  for (var i = 0; i < lines.length; i++) {
-    var re = matcher[lines[i].substr(0, 5)];
+  for (const i = 0; i < lines.length; i++) {
+    const re = matcher[lines[i].substr(0, 5)];
     if (re !== undefined) {
-      var pplayer = null;
-      var split_txt = lines[i].match(re);
+      const pplayer = null;
+      const split_txt = lines[i].match(re);
       if (split_txt != null && split_txt.length > 4) {
         pplayer = player_by_full_username(split_txt[2]);
       }
