@@ -32,7 +32,7 @@ public class Section {
   }
 
   public String getLastEntryName() {
-    return entries.getLast().name();
+    return entries.get(entries.size() - 1).name();
   }
 
   public void addEntry(SectionFile.Entry entry) {
