@@ -14,13 +14,15 @@ This document outlines the plan to modernize JavaScript files in the `freeciv-we
 8. **Modern Loops**: Use `for...of`, `forEach`, `map`, `filter`, etc. where appropriate
 9. **Strict Equality**: Use `===` and `!==` instead of `==` and `!=`
 10. **Optional Chaining**: Use `?.` for safer property access where supported
+11. In general use modern Javascript features and built in browser features, and improve general code quality.
+12. Use modern Three.js patterns and best practices.
 
 ## Files to Modernize (in order)
 
 ### Phase 1: Core Game Files
+
 - [x] `game.js` - Core game state and info management (Completed 2026-01-17)
-- [x] `clinet.js` - Client network communication (Completed 2026-01-17)
-- [ ] `client_main.js` - Client main entry point  
+- [x] `client_main.js` - Client main entry point (Completed 2026-01-17)
 - [ ] `control.js` - Game control logic
 - [ ] `chatbox.js` - Chat functionality
 - [ ] `helpdata.js` - Help system
@@ -95,8 +97,11 @@ Do NOT modernize these library files:
 ## Progress Tracking
 
 **Started**: 2026-01-17 14:31:09  
-**Last Updated**: 2026-01-17 15:40:35  
-**Files Completed**: 3 (`game.js`, `clinet.js`, `webgl/mapview_webgl.js`)
+
+**Last Updated**: 2026-01-17 
+**Files Completed**: 3 (`game.js`, `client_main.js`, `webgl/mapview_webgl.js`)
+
+
 **Files Remaining**: ~50+
 
 ---
