@@ -478,11 +478,68 @@ mvn clean package -DskipTests
 # Also requires Tomcat web server, databases, C server, etc.
 ```
 
-**For freeciv-web development**:
-- ✅ **Edit JavaScript files directly** - no build needed for JS changes
-- ✅ **Edit Java servlets and services** - can review code
-- ⚠️ **Full build requires**: Running sync scripts, Tomcat, databases
-- 💡 **Recommendation**: Use CI/CD for full integration testing
+**✅ VERIFIED (January 17, 2026): freeciv-web Build Test Results**
+
+Attempted to build freeciv-web in GitHub Copilot workspace:
+
+```bash
+cd /home/runner/work/freecivworld/freecivworld/freeciv-web
+mvn clean package -DskipTests
+
+# Result: BUILD FAILURE (as expected)
+# Error: Files derived from the original freeciv project not found as expected.
+# Rerun the sync-js-hand.js script.
+# Some required files are missing:
+# /home/runner/work/freecivworld/freecivworld/freeciv-web/src/derived/webapp
+```
+
+**Why freeciv-web Cannot Build in Copilot:**
+
+1. **Missing Derived Files**: Requires generated files from C Freeciv server
+   - Need to run `scripts/sync-js-hand.sh` first
+   - Script requires built and installed C Freeciv server
+   - Script runs multiple Python generation scripts
+
+2. **Complex Dependencies Chain**:
+   ```bash
+   # Required before building freeciv-web:
+   1. Build C Freeciv server (./prepare_freeciv.sh)
+   2. Install C Freeciv server to specific directory
+   3. Run sync-js-hand.sh with correct paths:
+      -f FREECIV_DIR   # Original freeciv source
+      -i INSTALL_DIR   # Installed freeciv location  
+      -o WEBAPP_DIR    # freeciv-web webapp directory
+      -d DATA_APP_DIR  # Save-game data directory
+   4. Script generates:
+      - JavaScript packet handlers (packhand_gen.js)
+      - Help data files
+      - Event type definitions
+      - Sound files
+      - Scenario files
+   ```
+
+3. **Additional Build Requirements**:
+   - Tomcat web server (usually downloaded during Docker build)
+   - MySQL or H2 database
+   - Full build toolchain for C code (autoconf, automake, compilers)
+   - Network access to external resources
+
+**What This Means for Development:**
+
+- ✅ **JavaScript editing**: Can edit JS files directly without building
+- ✅ **Java servlet editing**: Can review and modify Java code
+- ❌ **Full build**: Cannot build complete WAR file in Copilot
+- ❌ **Local testing**: Cannot run full web application in Copilot
+- ✅ **CI/CD**: Push changes and let CI build/test the full stack
+
+**Recommended Workflow for freeciv-web**:
+1. Edit JavaScript or Java source files in Copilot
+2. Commit and push changes
+3. CI/CD pipeline handles complex build process
+4. Review results from CI/CD builds
+5. Test full integration in local environment with Docker
+
+This confirms the documentation's assessment that **freeciv-web requires the full development stack** and is not suitable for lightweight Copilot-based development.
 
 #### ❌ Docker in Copilot (Not Recommended)
 
