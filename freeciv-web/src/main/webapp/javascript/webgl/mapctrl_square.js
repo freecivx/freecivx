@@ -26,7 +26,7 @@ var map_select_x;
 var map_select_y;
 var map_select_lines = [];
 var map_zoom_button_zoom_out = true;
-var min_y_zoom_level = 250;
+const min_y_zoom_level = 250;
 
 /****************************************************************************
  Init WebGL mapctrl.

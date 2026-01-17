@@ -31,7 +31,7 @@ var slide_init = false;
 /****************************************************************************
   Point the camera to look at point x, y, z in Three.js coordinates.
 ****************************************************************************/
-function camera_look_at_square(x, y, z)
+function camera_look_at(x, y, z)
 {
   camera_current_x = x;
   camera_current_y = y;
@@ -60,14 +60,14 @@ function camera_look_at_square(x, y, z)
 /**************************************************************************
   Centers the mapview around the given tile..
 **************************************************************************/
-function center_tile_mapcanvas_3d_square(ptile)
+function center_tile_mapcanvas_3d(ptile)
 {
   if (ptile != null) {
     if (slide_init) {
-      enable_mapview_slide_3d_square(ptile);
+      enable_mapview_slide_3d(ptile);
     } else {
-      var pos = map_to_scene_coords_square(ptile['x'], ptile['y']);
-      camera_look_at_square(pos['x'] - 50, 0, pos['y'] - 50);       // -50 to get the center tile more in the center of the screen.
+      var pos = map_to_scene_coords(ptile['x'], ptile['y']);
+      camera_look_at(pos['x'] - 50, 0, pos['y'] - 50);       // -50 to get the center tile more in the center of the screen.
       slide_init = true;
     }
 
@@ -78,12 +78,12 @@ function center_tile_mapcanvas_3d_square(ptile)
 /**************************************************************************
 ...
 **************************************************************************/
-function center_tile_city_square(city)
+function center_tile_city(city)
 {
   var ptile = city_tile(city);
   if (ptile != null) {
-    var pos = map_to_scene_coords_square(ptile['x'], ptile['y']);
-    camera_look_at_square(pos['x'] , 0, pos['y'] );
+    var pos = map_to_scene_coords(ptile['x'], ptile['y']);
+    camera_look_at(pos['x'] , 0, pos['y'] );
   }
 
 }
@@ -91,7 +91,7 @@ function center_tile_city_square(city)
 /**************************************************************************
   Enabled silding of the mapview to the given tile.
 **************************************************************************/
-function enable_mapview_slide_3d_square(ptile)
+function enable_mapview_slide_3d(ptile)
 {
   var pos_dest = map_to_scene_coords(ptile['x'], ptile['y']);
 
@@ -111,7 +111,7 @@ function enable_mapview_slide_3d_square(ptile)
 /**************************************************************************
   Updates mapview slide, called once per frame.
 **************************************************************************/
-function update_map_slide_3d_square()
+function update_map_slide_3d()
 {
   var elapsed = 1 + new Date().getTime() - mapview_slide['start'];
   mapview_slide['i'] = Math.floor(mapview_slide['max']
@@ -126,7 +126,7 @@ function update_map_slide_3d_square()
   var dx = Math.floor(mapview_slide['dx'] * (mapview_slide['i'] - mapview_slide['prev']) / mapview_slide['max']);
   var dy = Math.floor(mapview_slide['dy'] * (mapview_slide['i'] - mapview_slide['prev']) / mapview_slide['max']);
 
-  camera_look_at_square(camera_current_x + dx, 0, camera_current_z + dy);
+  camera_look_at(camera_current_x + dx, 0, camera_current_z + dy);
   mapview_slide['prev'] = mapview_slide['i'];
 
 }

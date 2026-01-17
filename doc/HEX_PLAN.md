@@ -578,3 +578,204 @@ Implementing hexagonal map tile support requires:
 The recommended approach is to create separate, parallel implementations (Option A) rather than trying to unify square and hex in single code paths. This makes the code clearer, more maintainable, and reduces the risk of breaking existing square tile functionality.
 
 This plan provides a roadmap for implementing complete hexagonal map tile support in FreecivWorld.net while maintaining compatibility with existing square tile maps.
+
+---
+
+## Implementation Lessons Learned (January 2026)
+
+An initial implementation attempt was made following this plan. Here are key insights and lessons learned:
+
+### What Worked Well
+
+1. **Parallel Implementation Approach**: Creating separate `*_hex.js` files alongside `*_square.js` files was the right approach
+   - Minimized risk to existing square tile functionality
+   - Made code organization clear and maintainable
+   - Allowed independent development and testing
+
+2. **Topology Detection**: Using `topo_has_flag(TF_HEX)` to detect hexagonal topology worked correctly
+   - Server topology is properly communicated to client
+   - Runtime detection allows dynamic shader loading
+
+3. **Shader Selection**: Conditional shader loading based on topology (`shaders_hex/` vs `shaders_square/`) is straightforward
+
+### Critical Issues Discovered
+
+1. **Geometry Generation Complexity**
+   - **Issue**: Simply creating parallel hex files wasn't sufficient - the actual tile geometry must be hexagonal
+   - **Root Cause**: The `init_land_geometry()` and `update_land_geometry()` functions generate a square grid of triangles regardless of topology
+   - **What's Needed**: These functions must generate hexagonal tile shapes when `use_hex_topology` is true
+   - **Attempted Fix**: Added hex spacing factors (width × √3, height × 1.5) and row offsets to create staggered layout
+   - **Result**: Improved but likely requires further refinement for proper hexagonal tile shapes
+
+2. **Heightmap Array Structure**
+   - **Issue**: Heightmap is a 1D Float32Array but initial code tried to access it as 2D array
+   - **Fix**: Use calculated index: `heightmap[(sy * heightmap_scale * xquality) + (sx * heightmap_scale)]`
+   - **Lesson**: Understand data structures before copying code patterns
+
+3. **Function Naming and Dispatch Layer**
+   - **Issue**: Incomplete renaming of square functions caused runtime ReferenceErrors
+   - **Problem**: Used sed commands that didn't catch all function declarations
+   - **Solution Attempted**: Created `topology_dispatch.js` to route calls to `*_square()` or `*_hex()` functions
+   - **Complication**: Requires ALL square functions to have `_square` suffix and hex equivalents to exist
+   - **Missing Functions**: `webgl_canvas_pos_to_tile`, `webgl_canvas_pos_to_map_pos` initially missed
+
+4. **Variable Scope and Redeclaration**
+   - **Issue**: Using `const` for variables in both `mapctrl_square.js` and `mapctrl_hex.js` caused compilation errors
+   - **Cause**: Both files loaded in same scope, `const` doesn't allow redeclaration
+   - **Fix**: Changed to `var` which permits redeclaration
+   - **Better Solution**: Use proper module scoping or unique variable names (e.g., `square_min_y_zoom_level`)
+
+### Coordinate System Challenges
+
+1. **Odd-r Offset Coordinates**: Implementation used odd-r layout as planned
+   - Odd rows offset by half hex width
+   - Matches Freeciv server's internal system
+   - Formula: `x_offset = (y % 2) * (hex_width / 2)`
+
+2. **Hex Spacing Calculations**:
+   ```javascript
+   hex_width = MAPVIEW_ASPECT_FACTOR * Math.sqrt(3)  // ≈ 1.732 × base
+   hex_height = MAPVIEW_ASPECT_FACTOR * 1.5
+   ```
+
+3. **Scene Coordinate Conversion**:
+   - Must account for hex geometry when converting tile coordinates to 3D scene positions
+   - Both `map_to_scene_coords_hex()` and geometry generation must use consistent formulas
+
+### Shader Considerations
+
+1. **Grid Line Rendering**: The fragment shader's grid lines are still rendered for square tiles
+   - Lines 174, 232-234, 244-246, 341-343 in `terrain_fragment_shader.glsl` draw square grid
+   - Need hexagonal grid line rendering for proper visual feedback
+   - Hex grid lines require different math: distance to hex edges, not rectangular boundaries
+
+2. **Shader Similarity**: Vertex shaders can be nearly identical; main differences are in fragment shader for:
+   - Grid line rendering
+   - UV mapping (though basic mapping works for both)
+   - Texture tiling patterns
+
+### Architecture Insights
+
+1. **Centralized vs. Distributed Topology Awareness**:
+   - **Attempted**: Dispatch layer with topology-agnostic wrapper functions
+   - **Pro**: Clean API, single point of topology switching
+   - **Con**: Requires all functions to exist in both variants, adds complexity
+   - **Alternative**: Make core geometry functions topology-aware internally (using conditionals)
+
+2. **File Loading Order Matters**:
+   - `mapview_webgl.js` must define `use_hex_topology` before other modules load
+   - Dispatch layer must load after both `*_square.js` and `*_hex.js` implementations
+   - Risk of undefined function errors if loading order is incorrect
+
+3. **Geometry Generation is Key**:
+   - **Most Critical Component**: Proper hex tile geometry generation
+   - **Not Sufficient**: Having hex shaders and coordinate functions without hex geometry still renders squares
+   - **Geometry Defines Visual Appearance**: The triangle mesh structure determines tile shape more than shaders
+   - **Recommendation**: Focus first on getting `init_land_geometry()` to create proper hexagonal tiles
+
+### Roads, Borders, and Features
+
+1. **6-Way vs 8-Way Connectivity**:
+   - Roads currently use 8-directional square logic
+   - Need complete rewrite for 6-way hex connections
+   - Sprite sheets designed for square tiles won't work for hexes
+   - May need procedural road rendering instead of sprites
+
+2. **Object Positioning**:
+   - Units, cities, and other objects need hex-aware positioning
+   - Simply copying square logic doesn't account for hex tile shape
+   - Staggered row offset affects all object placement
+
+### Testing and Debugging
+
+1. **Incremental Approach Recommended**:
+   - Don't try to implement everything at once
+   - Start with basic hex terrain rendering
+   - Add features one at a time
+   - Test thoroughly at each step
+
+2. **Visual Debugging is Essential**:
+   - Console logging topology detection helps verify server communication
+   - Grid lines in shader provide visual feedback for tile boundaries
+   - Coordinate conversion must be verified visually (click on tiles to check selection)
+
+### What Should Be Done Differently
+
+1. **Start with Geometry, Not Shaders**:
+   - Begin by making geometry generation topology-aware
+   - Verify hexagonal tiles render correctly before adding features
+   - Shaders can initially be nearly identical to square versions
+
+2. **Internal Conditionals vs. Separate Files**:
+   - Consider making core functions topology-aware internally using conditionals
+   - Reduce need for complete duplication of all modules
+   - Example: Single `init_land_geometry()` that handles both topologies
+
+3. **Comprehensive Function Audit**:
+   - Before renaming, identify ALL functions that need topology variants
+   - Use grep/search to find all callers
+   - Test each function rename immediately
+
+4. **Module System or Namespace**:
+   - Consider using JavaScript modules or namespace objects
+   - Avoid global scope pollution
+   - Prevent variable redeclaration issues
+
+5. **Prototype in Isolation First**:
+   - Create minimal hex tile rendering in separate test file
+   - Verify geometry, coordinates, and shader work correctly
+   - Then integrate into full application
+
+### Revised Implementation Recommendation
+
+Based on lessons learned, a better approach would be:
+
+**Phase 1A: Core Geometry (Most Critical)**
+1. Modify `init_land_geometry()` and `update_land_geometry()` in `mapview_webgl.js`
+2. Add topology conditionals to generate hex vs square tile geometry
+3. Use hex spacing factors and row offsets when `use_hex_topology` is true
+4. Verify tiles render as hexagons visually
+
+**Phase 1B: Coordinate System**
+1. Create `maputil_hex.js` with hex coordinate conversion functions
+2. Test coordinate conversions independently
+3. Ensure click-to-tile selection works correctly
+
+**Phase 1C: Camera and Interaction**
+1. Adapt camera positioning for hex grid
+2. Implement hex-aware mouse picking
+3. Test tile selection and highlighting
+
+**Phase 2: Shaders and Visual Polish**
+1. Create hex-specific shaders with proper grid line rendering
+2. Optimize UV mapping for hex tiles
+3. Add visual polish and effects
+
+**Phase 3: Game Features**
+1. Implement roads with 6-way connections (may require procedural rendering)
+2. Adapt goto/pathfinding visualization
+3. Handle borders and territories
+
+**Key Principle**: Get basic hex rendering working end-to-end before adding complexity.
+
+### Technical Debt and Warnings
+
+1. **Function Dispatch Complexity**: The topology dispatch layer adds cognitive overhead
+2. **Code Duplication**: Having separate `*_hex.js` files means maintaining parallel code
+3. **Testing Burden**: Every feature must be tested in both topologies
+4. **Performance**: Hex tiles may have different performance characteristics than squares
+
+### Conclusion
+
+Implementing hexagonal tiles is more complex than initially anticipated. The core challenge is **geometry generation** - creating actual hexagonal tile meshes rather than square grids. Simply having parallel file structures and coordinate conversion functions is not sufficient; the underlying 3D geometry must be hexagonal.
+
+A successful implementation requires:
+- Deep understanding of 3D geometry and mesh generation
+- Careful coordinate system design and testing
+- Topology-aware core rendering functions
+- Extensive testing of tile selection and interaction
+- Complete rewrite of features that assume 8-way connectivity
+
+**Recommendation**: Consider starting with a minimal proof-of-concept that focuses solely on rendering hexagonal terrain tiles correctly, without roads, borders, or advanced features. Once basic hex rendering works reliably, features can be added incrementally.
+
+This plan provides a roadmap for implementing complete hexagonal map tile support in FreecivWorld.net while maintaining compatibility with existing square tile maps.

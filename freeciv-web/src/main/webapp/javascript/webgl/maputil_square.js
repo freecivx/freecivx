@@ -21,7 +21,7 @@
 /****************************************************************************
   Converts from map to scene coordinates.
 ****************************************************************************/
-function map_to_scene_coords_square(x, y)
+function map_to_scene_coords(x, y)
 {
   var result = {};
   result['x'] = Math.floor(-470 + x * mapview_model_width / map['xsize']);
@@ -33,7 +33,7 @@ function map_to_scene_coords_square(x, y)
 /****************************************************************************
   Converts from scene to map coordinates.
 ****************************************************************************/
-function scene_to_map_coords_square(x, y)
+function scene_to_map_coords(x, y)
 {
   var result = {};
   result['x'] = Math.floor((x + 500) * map['xsize'] / mapview_model_width);
@@ -46,7 +46,7 @@ function scene_to_map_coords_square(x, y)
 /****************************************************************************
   Converts from canvas coordinates to a tile.
 ****************************************************************************/
-function webgl_canvas_pos_to_tile_square(x, y) {
+function webgl_canvas_pos_to_tile(x, y) {
   if (mouse == null || lofiMesh == null) return null;
 
   mouse.set( ( x / $('#mapcanvas').width() ) * 2 - 1, - ( y / $('#mapcanvas').height() ) * 2 + 1);
@@ -57,7 +57,7 @@ function webgl_canvas_pos_to_tile_square(x, y) {
 
   for (var i = 0; i < intersects.length; i++) {
     var intersect = intersects[i];
-    var pos = scene_to_map_coords_square(intersect.point.x, intersect.point.z);
+    var pos = scene_to_map_coords(intersect.point.x, intersect.point.z);
     var ptile = map_pos_to_tile(pos['x'], pos['y']);
     if (ptile != null) return ptile;
   }
@@ -68,7 +68,7 @@ function webgl_canvas_pos_to_tile_square(x, y) {
 /****************************************************************************
   Converts from canvas coordinates to a tile, fast using the water mesh.
 ****************************************************************************/
-function webgl_canvas_pos_to_tile_quick_square(x, y) {
+function webgl_canvas_pos_to_tile_quick(x, y) {
   if (mouse == null || lofiMesh == null) return null;
 
   raycaster.layers.set(0);
@@ -83,7 +83,7 @@ function webgl_canvas_pos_to_tile_quick_square(x, y) {
 
   for (var i = 0; i < intersects.length; i++) {
     var intersect = intersects[i];
-    var pos = scene_to_map_coords_square(intersect.point.x, intersect.point.z);
+    var pos = scene_to_map_coords(intersect.point.x, intersect.point.z);
     var ptile = map_pos_to_tile(pos['x'], pos['y']);
     if (ptile != null) return ptile;
   }
@@ -94,7 +94,7 @@ function webgl_canvas_pos_to_tile_quick_square(x, y) {
 /****************************************************************************
   Converts from canvas coordinates to Three.js coordinates.
 ****************************************************************************/
-function webgl_canvas_pos_to_map_pos_square(x, y) {
+function webgl_canvas_pos_to_map_pos(x, y) {
   if (mouse == null || lofiMesh == null || mapview_slide['active']) return null;
 
   mouse.set( ( x / $('#mapcanvas').width() ) * 2 - 1, - ( y / $('#mapcanvas').height() ) * 2 + 1);
@@ -115,7 +115,7 @@ function webgl_canvas_pos_to_map_pos_square(x, y) {
   Converts from unit['facing'] to number of rotations of 1/8 parts of full circle rotations (2PI),
   then to radians;
 ****************************************************************************/
-function convert_unit_rotation_square(facing_dir, unit_type_name)
+function convert_unit_rotation(facing_dir, unit_type_name)
 {
   var rotation_rad = 0;
 
