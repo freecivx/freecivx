@@ -34,7 +34,7 @@ const width_offset = 10;
 **************************************************************************/
 function set_client_state(newstate)
 {
-  if (civclient_state != newstate) {
+  if (civclient_state !== newstate) {
     civclient_state = newstate;
 
     switch (civclient_state) {
@@ -153,7 +153,7 @@ function client_state()
 **************************************************************************/
 function can_client_change_view()
 {
-  return ((client.conn.playing != null || client_is_observer())
+  return ((client.conn.playing !== null || client_is_observer())
       && (C_S_RUNNING === client_state() || C_S_OVER === client_state()));
 }
 
@@ -178,7 +178,7 @@ function can_client_issue_orders()
 **************************************************************************/
 function client_is_observer()
 {
-  return client.conn.playing == null || client.conn['observer'] || observing;
+  return client.conn.playing === null || client.conn['observer'] || observing;
 }
 
 /**************************************************************************
@@ -193,13 +193,13 @@ function show_new_game_message()
   if (observing || $.getUrlVar('autostart') === "true") {
     return;
 
-  } else if (client.conn.playing != null && !game_loaded) {
+  } else if (client.conn.playing !== null && !game_loaded) {
     const pplayer = client.conn.playing;
     message = "Welcome to FreecivWorld.net, the free browser-based 3D version of the classic turn-based strategy game Freeciv! You can ask questions to the AI bot (OpenAI) here. Have fun playing FreecivWorld!";
 
   } else if (game_loaded) {
     message = `Welcome back, ${username}`;
-    if (client.conn.playing != null) {
+    if (client.conn.playing !== null) {
      message += ` ruler of the ${nations[client.conn.playing['nation']]['adjective']} empire.`;
     }
   } else {
@@ -270,8 +270,8 @@ function update_metamessage_on_gamestart()
       || $.getUrlVar('scenario') === "true") {
       $.post("/freeciv_time_played_stats?type=single3d").fail(() => {});
   }
-  if ($.getUrlVar('action') === "multi" && client.conn.playing != null
-      && players[0] != null && client.conn.playing['pid'] === players[0]['pid'] ) {
+  if ($.getUrlVar('action') === "multi" && client.conn.playing !== null
+      && players[0] !== null && client.conn.playing['pid'] === players[0]['pid'] ) {
     $.post("/freeciv_time_played_stats?type=multi").fail(() => {});
   }
 
@@ -282,9 +282,9 @@ function update_metamessage_on_gamestart()
 **************************************************************************/
 function update_metamessage_game_running_status()
 {
-  if (client.conn.playing != null && !metamessage_changed) {
+  if (client.conn.playing !== null && !metamessage_changed) {
     const pplayer = client.conn.playing;
-    const metasuggest = `${nations[pplayer['nation']]['adjective']} | ${governments[client.conn.playing['government']] != null ? governments[client.conn.playing['government']]['name'] : "-"} | People:${civ_population(client.conn.playing.playerno)} | Score:${pplayer['score']} | Research:${techs[client.conn.playing['researching']] != null ? techs[client.conn.playing['researching']]['name'] : "-"}`;
+    const metasuggest = `${nations[pplayer['nation']]['adjective']} | ${governments[client.conn.playing['government']] !== null ? governments[client.conn.playing['government']]['name'] : "-"} | People:${civ_population(client.conn.playing.playerno)} | Score:${pplayer['score']} | Research:${techs[client.conn.playing['researching']] !== null ? techs[client.conn.playing['researching']]['name'] : "-"}`;
     send_message(`/metamessage ${metasuggest}`);
 
   }
@@ -354,18 +354,18 @@ function handle_web_info_text_message(packet)
     if (re !== undefined) {
       let pplayer = null;
       const split_txt = lines[i].match(re);
-      if (split_txt != null && split_txt.length > 4) {
+      if (split_txt !== null && split_txt.length > 4) {
         pplayer = player_by_full_username(split_txt[2]);
       }
-      if (pplayer != null &&
-          (client.conn.playing == null || pplayer != client.conn.playing)) {
+      if (pplayer !== null &&
+          (client.conn.playing === null || pplayer !== client.conn.playing)) {
         lines[i] = `${split_txt[1]}<a href='#' onclick='nation_table_select_player(${pplayer['playerno']});' style='color: black;'>${split_txt[2]}</a>${split_txt[3]}, ${get_player_connection_status(pplayer)}${split_txt[4]}`;
       }
     }
   }
   message = lines.join("<br>\n");
 
-  if (info_text_req_tile != null && city_building_positions[info_text_req_tile['index']]) {
+  if (info_text_req_tile !== null && city_building_positions[info_text_req_tile['index']]) {
     message += `<br>${city_building_positions[info_text_req_tile['index']]['name']}.`;
   }
 
