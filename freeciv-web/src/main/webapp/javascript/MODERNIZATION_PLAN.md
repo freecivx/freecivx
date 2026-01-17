@@ -20,9 +20,9 @@ This document outlines the plan to modernize JavaScript files in the `freeciv-we
 ## Files to Modernize (in order)
 
 ### Phase 1: Core Game Files
-- [ ] `game.js` - Core game state and info management
-- [ ] `client.js` - Client state management  
-- [ ] `clinet_state.js` - Client state utilities
+
+- [x] `game.js` - Core game state and info management (Completed 2026-01-17)
+- [x] `client_main.js` - Client main entry point (Completed 2026-01-17)
 - [ ] `control.js` - Game control logic
 - [ ] `chatbox.js` - Chat functionality
 - [ ] `helpdata.js` - Help system
@@ -97,8 +97,9 @@ Do NOT modernize these library files:
 ## Progress Tracking
 
 **Started**: 2026-01-17 14:31:09  
-**Last Updated**: 2026-01-17 14:31:09  
-**Files Completed**: 0
+**Last Updated**: 2026-01-17 15:56:57  
+**Files Completed**: 3 (`game.js`,  `client_main.js`)
+
 **Files Remaining**: ~50+
 
 ---
