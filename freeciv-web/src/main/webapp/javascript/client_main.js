@@ -18,16 +18,16 @@
 ***********************************************************************/
 
 
-var C_S_INITIAL = 0;    /* Client boot, only used once on program start. */
-var C_S_PREPARING = 1;  /* Main menu (disconnected) and connected in pregame. */
-var C_S_RUNNING = 2;    /* Connected with game in progress. */
-var C_S_OVER = 3;       /* Connected with game over. */
+const C_S_INITIAL = 0;    /* Client boot, only used once on program start. */
+const C_S_PREPARING = 1;  /* Main menu (disconnected) and connected in pregame. */
+const C_S_RUNNING = 2;    /* Connected with game in progress. */
+const C_S_OVER = 3;       /* Connected with game over. */
 
-var civclient_state = C_S_INITIAL;
+let civclient_state = C_S_INITIAL;
 
-var endgame_player_info = [];
-var height_offset = 52;
-var width_offset = 10;
+let endgame_player_info = [];
+const height_offset = 52;
+const width_offset = 10;
 
 /**************************************************************************
  Sets the client state (initial, pre, running, over etc).
@@ -55,7 +55,7 @@ function set_client_state(newstate)
       /* remove context menu from pregame. */
       $(".context-menu-root").remove();
 
-      if (observing || $.getUrlVar('action') == "multi" || game_loaded) {
+      if (observing || $.getUrlVar('action') === "multi" || game_loaded) {
         center_on_any_city();
         advance_unit_focus();
       }
@@ -79,10 +79,10 @@ function set_client_state(newstate)
 **************************************************************************/
 function setup_window_size ()
 {
-  var winWidth = $(window).width();
-  var winHeight = $(window).height();
-  var new_mapview_width = winWidth - width_offset;
-  var new_mapview_height = winHeight - height_offset;
+  const winWidth = $(window).width();
+  const winHeight = $(window).height();
+  const new_mapview_width = winWidth - width_offset;
+  const new_mapview_height = winHeight - height_offset;
 
 
   $("#pregame_custom_scrollbar_div").height( new_mapview_height - 100
@@ -154,7 +154,7 @@ function client_state()
 function can_client_change_view()
 {
   return ((client.conn.playing != null || client_is_observer())
-      && (C_S_RUNNING == client_state() || C_S_OVER == client_state()));
+      && (C_S_RUNNING === client_state() || C_S_OVER === client_state()));
 }
 
 /**************************************************************************
@@ -170,7 +170,7 @@ function can_client_control()
 **************************************************************************/
 function can_client_issue_orders()
 {
-  return (can_client_control() && C_S_RUNNING == client_state());
+  return (can_client_control() && C_S_RUNNING === client_state());
 }
 
 /**************************************************************************
@@ -186,21 +186,21 @@ function client_is_observer()
 **************************************************************************/
 function show_new_game_message()
 {
-  var message = null;
+  let message = null;
 
   clear_chatbox();
 
-  if (observing || $.getUrlVar('autostart') == "true") {
+  if (observing || $.getUrlVar('autostart') === "true") {
     return;
 
   } else if (client.conn.playing != null && !game_loaded) {
-    var pplayer = client.conn.playing;
+    const pplayer = client.conn.playing;
     message = "Welcome to FreecivWorld.net, the free browser-based 3D version of the classic turn-based strategy game Freeciv! You can ask questions to the AI bot (OpenAI) here. Have fun playing FreecivWorld!";
 
   } else if (game_loaded) {
-    message = "Welcome back, " + username;
+    message = `Welcome back, ${username}`;
     if (client.conn.playing != null) {
-     message += " ruler of the " + nations[client.conn.playing['nation']]['adjective'] + " empire.";
+     message += ` ruler of the ${nations[client.conn.playing['nation']]['adjective']} empire.`;
     }
   } else {
     return;
@@ -214,12 +214,10 @@ function show_new_game_message()
 **************************************************************************/
 function alert_war(player_no)
 {
-  var pplayer = players[player_no];
+  const pplayer = players[player_no];
   message_log.update({
     event: E_DIPLOMACY,
-    message: "War: You are now at war with the "
-	+ nations[pplayer['nation']]['adjective']
-        + " leader " + pplayer['name'] + "!"
+    message: `War: You are now at war with the ${nations[pplayer['nation']]['adjective']} leader ${pplayer['name']}!`
   });
 }
 
@@ -228,13 +226,12 @@ function alert_war(player_no)
 **************************************************************************/
 function show_endgame_dialog()
 {
-  var title = "Final Report: The Greatest Civilizations in the world!";
-  var message = "<p id='hof_msg'></p>";
-  for (var i = 0; i < endgame_player_info.length; i++) {
-    var pplayer = players[endgame_player_info[i]['player_id']];
-    var nation_adj = nations[pplayer['nation']]['adjective'];
-    message += (i+1) + ": The " + nation_adj + " ruler " + pplayer['name'] 
-      + " scored " + endgame_player_info[i]['score'] + " points" + "<br>";
+  const title = "Final Report: The Greatest Civilizations in the world!";
+  let message = "<p id='hof_msg'></p>";
+  for (let i = 0; i < endgame_player_info.length; i++) {
+    const pplayer = players[endgame_player_info[i]['player_id']];
+    const nation_adj = nations[pplayer['nation']]['adjective'];
+    message += `${i+1}: The ${nation_adj} ruler ${pplayer['name']} scored ${endgame_player_info[i]['score']} points<br>`;
   }
 
   // reset dialog page.
@@ -248,7 +245,7 @@ function show_endgame_dialog()
 			modal: true,
 			width: is_small_screen() ? "90%" : "50%",
 			buttons: {
-				Ok: function() {
+				Ok: () => {
 					$("#dialog").dialog('close');
 					$("#game_text_input").blur();
 				}
@@ -269,13 +266,13 @@ function show_endgame_dialog()
 function update_metamessage_on_gamestart()
 {
 
-  if ($.getUrlVar('action') == null || $.getUrlVar('action') == "new"
-      || $.getUrlVar('scenario') == "true") {
-      $.post("/freeciv_time_played_stats?type=single3d").fail(function() {});
+  if ($.getUrlVar('action') == null || $.getUrlVar('action') === "new"
+      || $.getUrlVar('scenario') === "true") {
+      $.post("/freeciv_time_played_stats?type=single3d").fail(() => {});
   }
-  if ($.getUrlVar('action') == "multi" && client.conn.playing != null
-      && players[0] != null && client.conn.playing['pid'] == players[0]['pid'] ) {
-    $.post("/freeciv_time_played_stats?type=multi").fail(function() {});
+  if ($.getUrlVar('action') === "multi" && client.conn.playing != null
+      && players[0] != null && client.conn.playing['pid'] === players[0]['pid'] ) {
+    $.post("/freeciv_time_played_stats?type=multi").fail(() => {});
   }
 
 }
@@ -286,11 +283,9 @@ function update_metamessage_on_gamestart()
 function update_metamessage_game_running_status()
 {
   if (client.conn.playing != null && !metamessage_changed) {
-    var pplayer = client.conn.playing;
-    var metasuggest = nations[pplayer['nation']]['adjective'] + " | " + (governments[client.conn.playing['government']] != null ? governments[client.conn.playing['government']]['name'] : "-")
-         + " | People:" + civ_population(client.conn.playing.playerno)
-         + " | Score:" + pplayer['score'] + " | " + "Research:" + (techs[client.conn.playing['researching']] != null ? techs[client.conn.playing['researching']]['name'] : "-" );
-    send_message("/metamessage " + metasuggest);
+    const pplayer = client.conn.playing;
+    const metasuggest = `${nations[pplayer['nation']]['adjective']} | ${governments[client.conn.playing['government']] != null ? governments[client.conn.playing['government']]['name'] : "-"} | People:${civ_population(client.conn.playing.playerno)} | Score:${pplayer['score']} | Research:${techs[client.conn.playing['researching']] != null ? techs[client.conn.playing['researching']]['name'] : "-"}`;
+    send_message(`/metamessage ${metasuggest}`);
 
   }
 }
@@ -302,8 +297,8 @@ function update_metamessage_game_running_status()
 function set_default_mapview_active()
 {
 
-  var active_tab = $('#tabs').tabs('option', 'active');
-  if (active_tab == 4) { // cities dialog is active
+  const active_tab = $('#tabs').tabs('option', 'active');
+  if (active_tab === 4) { // cities dialog is active
     return;
   }
 
@@ -313,7 +308,7 @@ function set_default_mapview_active()
 
   if (chatbox_active) {
     $("#game_chatbox_panel").parent().show();
-    if (current_message_dialog_state == "minimized") $("#game_chatbox_panel").dialogExtend("minimize");
+    if (current_message_dialog_state === "minimized") $("#game_chatbox_panel").dialogExtend("minimize");
   }
 
   $("#tabs").tabs("option", "active", 0);
@@ -338,8 +333,8 @@ Received tile info text.
 **************************************************************************/
 function handle_web_info_text_message(packet)
 {
-  var message = decodeURIComponent(packet['message']);
-  var lines = message.split('\n');
+  let message = decodeURIComponent(packet['message']);
+  const lines = message.split('\n');
 
   /* When a line starts with the key, the regex value is used to break it
    * in four elements:
@@ -348,39 +343,30 @@ function handle_web_info_text_message(packet)
    * - text after the player's name and before the status insertion point
    * - text after the status insertion point
   **/
-  var matcher = {
+  const matcher = {
     'Terri': /^(Territory of )([^(]*)(\s+\([^,]*)(.*)/,
     'City:': /^(City:[^|]*\|\s+)([^(]*)(\s+\([^,]*)(.*)/,
     'Unit:': /^(Unit:[^|]*\|\s+)([^(]*)(\s+\([^,]*)(.*)/
   };
 
-  for (var i = 0; i < lines.length; i++) {
-    var re = matcher[lines[i].substr(0, 5)];
+  for (let i = 0; i < lines.length; i++) {
+    const re = matcher[lines[i].substr(0, 5)];
     if (re !== undefined) {
-      var pplayer = null;
-      var split_txt = lines[i].match(re);
+      let pplayer = null;
+      const split_txt = lines[i].match(re);
       if (split_txt != null && split_txt.length > 4) {
         pplayer = player_by_full_username(split_txt[2]);
       }
       if (pplayer != null &&
           (client.conn.playing == null || pplayer != client.conn.playing)) {
-        lines[i] = split_txt[1]
-                 + "<a href='#' onclick='nation_table_select_player("
-                 + pplayer['playerno']
-                 + ");' style='color: black;'>"
-                 + split_txt[2]
-                 + "</a>"
-                 + split_txt[3]
-                 + ", "
-                 + get_player_connection_status(pplayer)
-                 + split_txt[4];
+        lines[i] = `${split_txt[1]}<a href='#' onclick='nation_table_select_player(${pplayer['playerno']});' style='color: black;'>${split_txt[2]}</a>${split_txt[3]}, ${get_player_connection_status(pplayer)}${split_txt[4]}`;
       }
     }
   }
   message = lines.join("<br>\n");
 
   if (info_text_req_tile != null && city_building_positions[info_text_req_tile['index']]) {
-    message += "<br>" + city_building_positions[info_text_req_tile['index']]['name'] + ".";
+    message += `<br>${city_building_positions[info_text_req_tile['index']]['name']}.`;
   }
 
   show_tile_info( message);
@@ -426,8 +412,8 @@ function show_tile_info(message)
       at: "left bottom",
       of: window
     },
-    create: function(event, ui) {
-      $(this).parent().find(".ui-dialog-titlebar").hide();
+    create: (event, ui) => {
+      $(event.target).parent().find(".ui-dialog-titlebar").hide();
     }
   });
   $("#tile_dialog").dialog('open');
