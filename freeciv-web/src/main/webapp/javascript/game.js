@@ -24,8 +24,6 @@ let ruleset_control = null;
 let ruleset_summary = null;
 let ruleset_description = null;
 
-const IDENTITY_NUMBER_ZERO = 0;
-
 function game_init()
 {
   map = {};
