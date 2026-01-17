@@ -37,7 +37,7 @@ This document outlines the plan to modernize JavaScript files in the `freeciv-we
 - [ ] `mapview.js` - Map rendering
 - [ ] `mapctrl.js` - Map controls
 - [ ] `2dcanvas.js` - 2D canvas rendering
-- [ ] `webgl/` - WebGL files (if applicable to non-library code)
+- [x] `webgl/mapview_webgl.js` - WebGL map rendering (Completed 2026-01-17)
 
 ### Phase 4: Utilities
 - [ ] `utility.js` - Utility functions
@@ -95,8 +95,8 @@ Do NOT modernize these library files:
 ## Progress Tracking
 
 **Started**: 2026-01-17 14:31:09  
-**Last Updated**: 2026-01-17 15:18:48  
-**Files Completed**: 2 (`game.js`, `clinet.js`)
+**Last Updated**: 2026-01-17 15:40:35  
+**Files Completed**: 3 (`game.js`, `clinet.js`, `webgl/mapview_webgl.js`)
 **Files Remaining**: ~50+
 
 ---
