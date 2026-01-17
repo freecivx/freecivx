@@ -90,19 +90,23 @@ fi
 TMPINSTDIR=$(mktemp -d)
 
 echo "==== Installing Node.js ===="
-if [ "${INSTALLED_NODEJS}" = N ]; then
-  NODE_MAJOR=20
-  sudo mkdir -p /etc/apt/keyrings
-  curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key | sudo gpg --dearmor -o /etc/apt/keyrings/nodesource.gpg
-  echo "deb [signed-by=/etc/apt/keyrings/nodesource.gpg] https://deb.nodesource.com/node_${NODE_MAJOR}.x nodistro main" | sudo tee /etc/apt/sources.list.d/nodesource.list
-  sudo ${APT_GET} update
-  sudo ${APT_GET} install --no-install-recommends nodejs
-  if ! command -v npm >/dev/null ; then
+# Check if npm is available, if not install it
+if ! command -v npm >/dev/null ; then
+  if [ "${INSTALLED_NODEJS}" = N ]; then
+    NODE_MAJOR=20
+    sudo mkdir -p /etc/apt/keyrings
+    curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key | sudo gpg --dearmor -o /etc/apt/keyrings/nodesource.gpg
+    echo "deb [signed-by=/etc/apt/keyrings/nodesource.gpg] https://deb.nodesource.com/node_${NODE_MAJOR}.x nodistro main" | sudo tee /etc/apt/sources.list.d/nodesource.list
+    sudo ${APT_GET} update
+    sudo ${APT_GET} install --no-install-recommends nodejs npm
+  else
     sudo ${APT_GET} install --no-install-recommends npm
   fi
-  if apt-get --simulate install node-opener &> /dev/null ; then
-    sudo ${APT_GET} install --no-install-recommends node-opener
-  fi
+fi
+
+# Install node-opener if available
+if apt-get --simulate install node-opener &> /dev/null ; then
+  sudo ${APT_GET} install --no-install-recommends node-opener
 fi
 
 # Populate ~/.config with current user
