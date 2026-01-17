@@ -70,10 +70,11 @@ ext_install_meson () {
       exit 1
     fi
 
-    tar xzf meson-${MESON_VER}.tar.gz
+    tar xzf "meson-${MESON_VER}.tar.gz"
     ln -sf "${PWD}/meson-${MESON_VER}/meson.py" meson
   )
 
+  export PATH="${HOME}/freeciv/meson-install:${PATH}"
   ext_installed[${#ext_installed[@]}]="meson"
 }
 
