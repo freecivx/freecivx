@@ -23,14 +23,14 @@ public class SaveGameOfTheDay {
     private static final String mapDstImgPaths = "/var/lib/tomcat11/webapps/data/";
 
     @PostMapping("/save_game_of_the_day")
-    public ResponseEntity<Void> saveGameOfTheDay(@RequestBody String imageData) {
+    public ResponseEntity<String> saveGameOfTheDay(@RequestBody String imageData) {
 
         try {
             String image = imageData.replace("data:image/png;base64,", "");
             byte[] image_of_the_day = Base64.getDecoder().decode(image.getBytes(StandardCharsets.UTF_8));
             if (image_of_the_day.length > 15000000) {
                 System.out.println("Image too big.");
-                return ResponseEntity.ok().build();
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Image too big.");
             }
             ByteArrayInputStream bais = new ByteArrayInputStream(image_of_the_day);
             BufferedImage bufferedImage = ImageIO.read(bais);
@@ -44,7 +44,7 @@ public class SaveGameOfTheDay {
 
         } catch (Exception ex) {
             System.err.println(ex.getMessage());
-            return ResponseEntity.ok().build();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
 }
