@@ -263,8 +263,9 @@ function init_land_geometry(geometry, mesh_quality)
       }
       
       var sx = ix % xquality, sy = iy % yquality;
+      const heightIndex = (sy * heightmap_scale * xquality) + (sx * heightmap_scale);
 
-      vertices.push( x, -y, heightmap[sx * heightmap_scale][sy * heightmap_scale] * 100 );
+      vertices.push( x, -y, heightmap[heightIndex] * 100 );
       uvs.push( ix / gridX );
       uvs.push( 1 - ( iy / gridY ) );
     }
