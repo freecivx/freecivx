@@ -17,24 +17,21 @@
  *******************************************************************************/
 package org.freeciv.servlet;
 
-import java.io.IOException;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
-import java.sql.SQLException;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import jakarta.servlet.ServletException;
-import jakarta.servlet.http.HttpServlet;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
-
 import org.freeciv.util.DatabaseUtil;
 import org.json.JSONObject;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 /**
  * Lists: the number of running games, the number of single player games played,
@@ -42,9 +39,9 @@ import org.json.JSONObject;
  *
  * URL: /game/statistics
  */
-public class GameStatistics extends HttpServlet {
+@RestController
+public class GameStatistics {
 	
-	private static final long serialVersionUID = 1L;
 	private static final Logger logger = LoggerFactory.getLogger(GameStatistics.class);
 
 	private static final String HEADER_EXPIRES = "Expires";
@@ -52,15 +49,14 @@ public class GameStatistics extends HttpServlet {
 	private static final String CONTENT_TYPE = "application/json";
 	
 	private static final String INTERNAL_SERVER_ERROR = new JSONObject() //
-			.put("statusCode", HttpServletResponse.SC_INTERNAL_SERVER_ERROR) //
+			.put("statusCode", HttpStatus.INTERNAL_SERVER_ERROR.value()) //
 			.put("error", "Internal server error.") //
 			.toString();
 
-	@Override
-	public void doGet(HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException {
+	@GetMapping("/game/statistics")
+	public ResponseEntity<String> getGameStatistics() {
 
 		try {
-			response.setContentType(CONTENT_TYPE);
 
 			try (Connection conn = DatabaseUtil.getConnection()) {
 				String query = "SELECT " //
@@ -86,16 +82,19 @@ public class GameStatistics extends HttpServlet {
 						ZonedDateTime expires = ZonedDateTime.now(ZoneId.of("UTC")).plusHours(1);
 						String rfc1123Expires = expires.format(DateTimeFormatter.RFC_1123_DATE_TIME);
 
-						response.setHeader(HEADER_EXPIRES, rfc1123Expires);
-						response.getOutputStream().print(result.toString());
+						return ResponseEntity.ok()
+								.header("Content-Type", CONTENT_TYPE)
+								.header(HEADER_EXPIRES, rfc1123Expires)
+								.body(result.toString());
 					}
 				}
 			}
 
 		} catch (Exception err) {
 			logger.error("Error retrieving game statistics", err);
-			response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
-			response.getOutputStream().print(INTERNAL_SERVER_ERROR);
+			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+					.header("Content-Type", CONTENT_TYPE)
+					.body(INTERNAL_SERVER_ERROR);
 		}
 	}
 

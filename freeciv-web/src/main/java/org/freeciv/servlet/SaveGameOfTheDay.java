@@ -3,38 +3,34 @@ package org.freeciv.servlet;
 import org.apache.commons.io.FileUtils;
 
 import javax.imageio.ImageIO;
-import jakarta.servlet.ServletConfig;
-import jakarta.servlet.ServletException;
-import jakarta.servlet.http.HttpServlet;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RestController;
 import java.awt.image.BufferedImage;
 import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
-import java.util.Properties;
-import java.util.stream.Collectors;
 
 /**
  * Saves a game of the day image.
  *
  * URL: /save_game_of_the_day
  */
-public class SaveGameOfTheDay extends HttpServlet {
+@RestController
+public class SaveGameOfTheDay {
 
     private static final String mapDstImgPaths = "/var/lib/tomcat11/webapps/data/";
 
-    public void doPost(HttpServletRequest request, HttpServletResponse response)
-            throws IOException, ServletException {
-        String image = null;
+    @PostMapping("/save_game_of_the_day")
+    public ResponseEntity<Void> saveGameOfTheDay(@RequestBody String imageData) {
 
         try {
-            image = request.getReader().lines().collect(Collectors.joining(System.lineSeparator()));
-            image = image.replace("data:image/png;base64,", "");
+            String image = imageData.replace("data:image/png;base64,", "");
             byte[] image_of_the_day = Base64.getDecoder().decode(image.getBytes(StandardCharsets.UTF_8));
             if (image_of_the_day.length > 15000000) {
                 System.out.println("Image too big.");
-                return;
+                return ResponseEntity.ok().build();
             }
             ByteArrayInputStream bais = new ByteArrayInputStream(image_of_the_day);
             BufferedImage bufferedImage = ImageIO.read(bais);
@@ -44,11 +40,11 @@ public class SaveGameOfTheDay extends HttpServlet {
             }
             bais.close();
 
+            return ResponseEntity.ok().build();
+
         } catch (Exception ex) {
             System.err.println(ex.getMessage());
+            return ResponseEntity.ok().build();
         }
-
-
-
     }
 }

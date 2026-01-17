@@ -3,21 +3,18 @@ package org.freeciv.servlet;
 import com.theokanning.openai.completion.chat.*;
 import com.theokanning.openai.service.OpenAiService;
 
-import jakarta.servlet.ServletException;
-import jakarta.servlet.annotation.WebServlet;
-import jakarta.servlet.http.HttpServlet;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RestController;
 
-import java.io.IOException;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.List;
-import java.util.Properties;
-import java.util.stream.Collectors;
 
 
 /**
@@ -25,33 +22,28 @@ import java.util.stream.Collectors;
  *
  * URL: /openai_chat
  */
-@WebServlet("/openai_chat")
-public class OpenAIChat  extends HttpServlet {
+@RestController
+public class OpenAIChat {
     private static final Logger logger = LoggerFactory.getLogger(OpenAIChat.class);
 
     private final String model = "gpt-4o";
 
-    @Override
-    public void doPost(HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException {
+    @Value("${openai.key:}")
+    private String openaiKey;
+
+    @PostMapping("/openai_chat")
+    public ResponseEntity<String> chatWithOpenAI(@RequestBody String messageBody) {
         try {
-            response.setContentType("text/html; charset=UTF-8");
-            response.setCharacterEncoding("UTF-8");
-
-            String message = request.getReader().lines().collect(Collectors.joining(System.lineSeparator()));
-
-            message = new String(Base64.getDecoder().decode(message));
+            String message = new String(Base64.getDecoder().decode(messageBody));
 
             logger.info("OpenAI message: {}", message);
 
-            Properties prop = new Properties();
-            prop.load(getServletContext().getResourceAsStream("/WEB-INF/config.properties"));
-            String key = prop.getProperty("openai_key");
-            if (key == null || key.equals("")) {
+            if (openaiKey == null || openaiKey.equals("")) {
                 logger.warn("OpenAI key missing.");
-                return;
+                return ResponseEntity.ok().build();
             }
 
-            OpenAiService service = new OpenAiService(key, Duration.ofSeconds(60));
+            OpenAiService service = new OpenAiService(openaiKey, Duration.ofSeconds(60));
 
             List<ChatMessage> messages = new ArrayList<>();
 
@@ -102,14 +94,16 @@ public class OpenAIChat  extends HttpServlet {
                     .build();
             List<ChatCompletionChoice> choices = service.createChatCompletion(completionRequest).getChoices();
             for (ChatCompletionChoice choice : choices) {
-
-                response.setContentType("application/json");
-                response.getWriter().write(String.format("{\"message\": \"%s\"}", choice.getMessage().getContent()));
+                return ResponseEntity.ok()
+                        .header("Content-Type", "application/json")
+                        .body(String.format("{\"message\": \"%s\"}", choice.getMessage().getContent()));
             }
 
+            return ResponseEntity.ok().build();
 
         } catch (Exception erro) {
             logger.error("Error in OpenAI chat: {}", erro.getMessage(), erro);
+            return ResponseEntity.ok().build();
         }
     }
 
