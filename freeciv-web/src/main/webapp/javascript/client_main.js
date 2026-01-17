@@ -200,7 +200,7 @@ function show_new_game_message()
     message = "Welcome to FreecivWorld.net, the free browser-based 3D version of the classic turn-based strategy game Freeciv! You can ask questions to the AI bot (OpenAI) here. Have fun playing FreecivWorld!";
 
   } else if (game_loaded) {
-    message = "Welcome back, " + username;
+    message = `Welcome back, ${username}`;
     if (client.conn.playing != null) {
      message += " ruler of the " + nations[client.conn.playing['nation']]['adjective'] + " empire.";
     }

@@ -95,15 +95,15 @@ function accept_treaty(counterpart, I_accepted, other_accepted)
 	   + disagree_sprite['height'] + "px; margin: 5px; '>"
            + "</div>";
     if (I_accepted == true) {
-      $("#agree_self_" + counterpart).html(agree_html);
+      $(`#agree_self_${counterpart}`).html(agree_html);
     } else {
-      $("#agree_self_" + counterpart).html(disagree_html);
+      $(`#agree_self_${counterpart}`).html(disagree_html);
     }
 
     if (other_accepted) {
-      $("#agree_counterpart_" + counterpart).html(agree_html);
+      $(`#agree_counterpart_${counterpart}`).html(agree_html);
     } else {
-      $("#agree_counterpart_" + counterpart).html(disagree_html);
+      $(`#agree_counterpart_${counterpart}`).html(disagree_html);
     }
   }
 }
@@ -157,7 +157,7 @@ function cancel_meeting(counterpart)
 **************************************************************************/
 function cleanup_diplomacy_dialog(counterpart_id)
 {
-  $("#diplomacy_dialog_" + counterpart_id).remove();
+  $(`#diplomacy_dialog_${counterpart_id}`).remove();
 }
 
 /**************************************************************************
@@ -189,7 +189,7 @@ function show_diplomacy_clauses(counterpart_id)
 
     }
 
-    $("#diplomacy_messages_" + counterpart_id).html(diplo_html);
+    $(`#diplomacy_messages_${counterpart_id}`).html(diplo_html);
 }
 
 /**************************************************************************
@@ -253,9 +253,9 @@ function client_diplomacy_clause_string(counterpart, giver, type, value)
 
   case CLAUSE_GOLD:
     if (giver == client.conn.playing['playerno']) {
-      $("#self_gold_" + counterpart).val(value);
+      $(`#self_gold_${counterpart}`).val(value);
     } else {
-      $("#counterpart_gold_" + counterpart).val(value);
+      $(`#counterpart_gold_${counterpart}`).val(value);
     }
     return "The " + nation + " give " + value + " gold";
   case CLAUSE_MAP:

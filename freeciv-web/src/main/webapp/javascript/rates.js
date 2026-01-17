@@ -123,7 +123,7 @@ function update_net_bulbs(bulbs)
     bulbs = cbo.self_bulbs - cbo.self_upkeep;
   }
   if (bulbs > 0) {
-    bulbs = "+" + bulbs;
+    bulbs = `+${bulbs}`;
   }
   $("#bulbs_info").html(bulbs);
 }
