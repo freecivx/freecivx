@@ -19,8 +19,8 @@
 
 ***********************************************************************/
 
-const map_known_dirty = true;
-const map_geometry_dirty = true;
+let map_known_dirty = true;
+let map_geometry_dirty = true;
 
 /**************************************************************************
  Updates the terrain vertex colors to set tile to known, unknown or fogged.

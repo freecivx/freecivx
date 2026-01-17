@@ -37,7 +37,7 @@ function create_unit_label_sprite(punit, ptile)
   if (texture_cache[key] != null) {
     texture = texture_cache[key];
   } else {
-    const width = 0;
+    let width = 0;
     const fcanvas = document.createElement("canvas");
     fcanvas.width = 100;
     fcanvas.height = 32;
@@ -134,7 +134,7 @@ function create_city_label_sprite(pcity, index) {
   const owner = players[owner_id];
 
   // We draw from left to right, updating `width' after each call.
-  const width = 0; // Total width of the bar
+  let width = 0; // Total width of the bar
 
   // Flag
   const city_gfx = get_city_flag_sprite(pcity);
@@ -226,7 +226,7 @@ function update_city_label(pcity, index)
   const owner = players[owner_id];
 
   // We draw from left to right, updating `width' after each call.
-  const width = 0; // Total width of the bar
+  let width = 0; // Total width of the bar
 
   // Flag
   const city_gfx = get_city_flag_sprite(pcity);
