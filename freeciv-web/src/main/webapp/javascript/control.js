@@ -652,18 +652,18 @@ function is_unprefixed_message(message) {
 ****************************************************************************/
 function check_text_input(event,chatboxtextarea) {
 
-  if (event.keyCode == 13 && event.shiftKey == 0)  {
+  if (event.keyCode === 13 && event.shiftKey === 0)  {
     let message = $(chatboxtextarea).val();
     const message_original = $(chatboxtextarea).val();
 
     if (chat_send_to != null && chat_send_to >= 0
         && is_unprefixed_message(message)) {
       if (client.conn.playing != null
-          && chat_send_to == client.conn.playing['playerno']) {
+          && chat_send_to === client.conn.playing['playerno']) {
         message = ". " + encode_message_text(message);
       } else {
         const pplayer = players[chat_send_to];
-        if (pplayer == null) {
+        if (pplayer === null) {
           // Change to public chat, don't send the message,
           // keep it in the chatline and hope the user notices
           set_chat_direction(null);
@@ -707,7 +707,7 @@ function check_text_input(event,chatboxtextarea) {
     }
 
 
-    if (openai_enabled && message.length > 2 && message_original.indexOf('/') == -1) {
+    if (openai_enabled && message.length > 2 && message_original.indexOf('/') === -1) {
       send_message_to_openai(message_original);
     }
 
@@ -752,7 +752,7 @@ function ask_server_for_actions(punit)
 {
   let ptile;
 
-  if (observing || punit == null) {
+  if (observing || punit === null) {
     return false;
   }
 
@@ -907,7 +907,7 @@ function get_units_in_focus()
 **************************************************************************/
 function unit_focus_urgent(punit)
 {
-  if (punit == null || punit['activity'] == null) {
+  if (punit === null || punit['activity'] === null) {
     console.log("unit_focus_urgent(): not a unit");
     console.log(punit);
     return;
@@ -926,7 +926,7 @@ function control_unit_killed(punit)
   }
 
   if (unit_is_in_focus(punit)) {
-    if (current_focus.length == 1) {
+    if (current_focus.length === 1) {
       /* if the unit in focus is removed, then advance the unit focus. */
       advance_unit_focus();
     } else {
