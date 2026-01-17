@@ -428,7 +428,7 @@ function chat_context_get_recipients() {
     if (!pplayer['is_alive']) continue;
 
     const nation = nations[pplayer['nation']];
-    if (nation === null) continue;
+    if (!nation) continue;
 
     // TODO: add connection state, to list connected players first
     pm.push({
@@ -597,7 +597,7 @@ function set_chat_direction(player_id) {
     player_name = 'allies';
   } else {
     const pplayer = players[player_id];
-    if (pplayer === null) return;
+    if (!pplayer) return;
     player_name = `${pplayer['name']} of the ${nations[pplayer['nation']]['adjective']}`;
     ctx.clearRect(0, 0, 29, 20);
     const flag = sprites["f." + nations[pplayer['nation']]['graphic_str']];
@@ -663,7 +663,7 @@ function check_text_input(event,chatboxtextarea) {
         message = ". " + encode_message_text(message);
       } else {
         const pplayer = players[chat_send_to];
-        if (pplayer === null) {
+        if (!pplayer) {
           // Change to public chat, don't send the message,
           // keep it in the chatline and hope the user notices
           set_chat_direction(null);
@@ -1000,6 +1000,13 @@ function advance_unit_focus()
 
     for (i = 0; i < urgent_focus_queue.length; i++) {
       const punit = units[urgent_focus_queue[i]['id']];
+
+      if (!punit) {
+        // Unit no longer exists, remove from queue
+        urgent_focus_queue = unit_list_without(urgent_focus_queue, urgent_focus_queue[i]);
+        i--;
+        continue;
+      }
 
       if ((ACTIVITY_IDLE !== punit.activity
            || punit.has_orders)
@@ -3108,7 +3115,8 @@ function request_goto_path(unit_id, dst_x, dst_y)
     current_goto_turns = null;
     $("#unit_text_details").html("Choose unit goto");
     setTimeout(update_mouse_cursor, 700);
-  } else {
+  } else if (goto_request_map[`${unit_id},${dst_x},${dst_y}`] !== true) {
+    // Only update if we have an actual goto_packet (not just the initial 'true' placeholder)
     update_goto_path(goto_request_map[`${unit_id},${dst_x},${dst_y}`]);
   }
 }
@@ -3141,7 +3149,7 @@ function check_request_goto_path()
 function update_goto_path(goto_packet)
 {
   const punit = units[goto_packet['unit_id']];
-  if (punit === null) return;
+  if (!punit) return;
   const t0 = index_to_tile(punit['tile']);
   const ptile = t0;
   const goaltile = index_to_tile(goto_packet['dest']);
