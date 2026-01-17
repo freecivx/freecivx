@@ -195,6 +195,15 @@ function handle_tile_info(packet)
   }
 }
 
+function handle_tile_info_batch(packet)
+{
+  if (tiles != null && packet['tiles'] != null) {
+    for (var i = 0; i < packet['tiles'].length; i++) {
+      handle_tile_info(packet['tiles'][i]);
+    }
+  }
+}
+
 /* 100% complete */
 function handle_chat_msg(packet)
 {

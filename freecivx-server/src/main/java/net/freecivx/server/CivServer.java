@@ -33,6 +33,7 @@ import java.net.InetSocketAddress;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
+import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -450,6 +451,29 @@ public class CivServer extends org.java_websocket.server.WebSocketServer {
             conn.send(msg.toString());
         }
 
+    }
+
+    public void sendAllTilesInfoAll(Map<Long, Tile> tiles) {
+        JSONObject msg = new JSONObject();
+        msg.put("pid", Packets.PACKET_TILE_INFO_BATCH);
+        
+        JSONArray tilesArray = new JSONArray();
+        for (Tile tile : tiles.values()) {
+            JSONObject tileObj = new JSONObject();
+            tileObj.put("tile", tile.getIndex());
+            tileObj.put("known", tile.getKnown());
+            tileObj.put("terrain", tile.getTerrain());
+            tileObj.put("resource", tile.getResource());
+            tileObj.put("extras", tile.getExtras());
+            tileObj.put("height", tile.getHeight());
+            tileObj.put("worked", tile.getWorked() >= 0 ? tile.getWorked() : JSONObject.NULL);
+            tilesArray.put(tileObj);
+        }
+        msg.put("tiles", tilesArray);
+
+        for (WebSocket conn : clients.values()) {
+            conn.send(msg.toString());
+        }
     }
 
     public void sendConnInfoAll(long id, String username, String address, long player_num) {

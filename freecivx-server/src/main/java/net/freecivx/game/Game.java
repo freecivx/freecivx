@@ -176,7 +176,7 @@ public class Game {
 
 
 
-        tiles.forEach((id, tile) -> server.sendTileInfoAll(tile)); // TODO: Send all tiles as one call.
+        server.sendAllTilesInfoAll(tiles);
 
 
         // Initialize Units
