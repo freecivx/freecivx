@@ -1,3 +1,4 @@
+#!/bin/bash
 #   Copyright (C) 2018  The Freeciv-web project
 #
 #   This program is free software: you can redistribute it and/or modify
@@ -56,10 +57,9 @@ dependencies="\
 # TODO: Add back python wikipedia package.
 
 INSTALLED_TOMCAT=N
-INSTALLED_NODEJS=N
 APT_GET='DEBIAN_FRONTEND=noninteractive apt-get -y -qq -o=Dpkg::Use-Pty=0'
 
-sudo ${APT_GET} update
+sudo "${APT_GET}" update
 
 if [ "$DEB_NO_TOMCAT" != "Y" ] && apt-get --simulate install tomcat11 &> /dev/null; then
   dependencies="${dependencies} tomcat11 tomcat11-admin"
@@ -79,11 +79,10 @@ echo "mysql setup..."
 sudo debconf-set-selections <<< "mysql-server mysql-server/root_password password ${DB_ROOT_PASSWORD}"
 sudo debconf-set-selections <<< "mysql-server mysql-server/root_password_again password ${DB_ROOT_PASSWORD}"
 echo "apt-get install dependencies"
-sudo ${APT_GET} install --no-install-recommends ${dependencies}
+# shellcheck disable=SC2086
+sudo "${APT_GET}" install --no-install-recommends ${dependencies}
 
 if [ "${INSTALLED_TOMCAT}" = N ]; then
   ext_install_tomcat11
 fi
-
-TMPINSTDIR=$(mktemp -d)
 
