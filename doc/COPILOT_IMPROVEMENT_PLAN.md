@@ -60,8 +60,8 @@ The fastest way to get FreecivWorld running is using Docker/Podman:
 git clone https://github.com/freecivworld/freecivworld.git --depth=10
 cd freecivworld
 
-# Start with Docker Compose
-docker-compose up -d
+# Start with Docker Compose (use 'docker compose' or 'docker-compose' depending on your version)
+docker compose up -d
 
 # Access the game
 # Open browser to http://localhost:8080/
@@ -476,7 +476,7 @@ The GitHub Actions workflow runs on every push:
 
 ```yaml
 # .github/workflows/continuous-integration.yml
-# - Sets up Java 25
+# - Sets up Java (currently Java 25 in CI, but Java 21+ is the minimum requirement)
 # - Installs all dependencies
 # - Runs Playwright tests
 # - Reports results
@@ -561,13 +561,16 @@ vim freeciv-web/src/main/webapp/javascript/webgl/models.js
 bash ./scripts/sync-js-hand.sh
 
 # Extract and update tilesets
-cd scripts/freeciv-img-extract && python3 img-extract.py
+cd scripts/freeciv-img-extract
+python3 img-extract.py
 
 # Generate help documentation
-cd scripts/helpdata_gen && python3 helpdata_gen.py
+cd scripts/helpdata_gen
+python3 helpdata_gen.py
 
 # Update Wikipedia documentation
-cd scripts && python3 update-wikipedia-docs.py
+cd scripts
+python3 update-wikipedia-docs.py
 
 # Clean up old logs
 bash ./scripts/log-cleanup.sh
@@ -673,9 +676,9 @@ docker ps -a
 docker logs fciv-net
 
 # Remove and rebuild
-docker-compose down
-docker-compose build --no-cache
-docker-compose up -d
+docker compose down
+docker compose build --no-cache
+docker compose up -d
 ```
 
 **Issue**: Permission denied errors
@@ -718,9 +721,9 @@ When something doesn't work:
 ### Getting Help
 
 - **Issues**: https://github.com/freecivworld/freecivworld/issues
-- **Contributing Guide**: [doc/CONTRIBUTING.md](CONTRIBUTING.md)
-- **Advanced Topics**: [doc/ADVANCED.md](ADVANCED.md)
-- **Docker Setup**: [doc/Docker.md](Docker.md)
+- **Contributing Guide**: [CONTRIBUTING.md](CONTRIBUTING.md)
+- **Advanced Topics**: [ADVANCED.md](ADVANCED.md)
+- **Docker Setup**: [Docker.md](Docker.md)
 
 ## Future Improvements
 
