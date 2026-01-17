@@ -17,6 +17,9 @@ This document outlines the plan to modernize JavaScript files in the `freeciv-we
 11. In general use modern Javascript features and built in browser features, and improve general code quality.
 12. Use modern Three.js patterns and best practices.
 
+difficule files:
+clinet.js, because the request to /civclientlauncher included url parameters which was null, but should have port and game type parameters.
+
 ## Files to Modernize (in order)
 
 ### Phase 1: Core Game Files
