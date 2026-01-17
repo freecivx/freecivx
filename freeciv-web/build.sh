@@ -2,13 +2,20 @@
 # builds Freeciv-web and copies the war file to Tomcat.
 
 BATCH_MODE=""
+SKIP_MINIFY_OPT=""
 
 while [[ $# -gt 0 ]]; do
   case $1 in
     -B) BATCH_MODE="-B"; shift;;
+    --skip-minify) SKIP_MINIFY_OPT="-Dskip-minify-js=true"; shift;;
     *) echo "Unrecognized argument: $1"; shift;;
   esac
 done
+
+# Use environment variable if set
+if [ "${SKIP_MINIFY}" = "true" ]; then
+  SKIP_MINIFY_OPT="-Dskip-minify-js=true"
+fi
 
 DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" >/dev/null && pwd)"
 
@@ -30,6 +37,6 @@ else
 fi
 
 echo "maven package"
-mvn ${BATCH_MODE} -Dflyway.configFiles=./flyway.properties flyway:migrate package && \
+mvn ${BATCH_MODE} ${SKIP_MINIFY_OPT} -Dflyway.configFiles=./flyway.properties flyway:migrate package && \
 echo "Copying target/freeciv-web.war to ${TOMCATDIR}/webapps" && \
   cp target/freeciv-web.war "${TOMCATDIR}/webapps/"

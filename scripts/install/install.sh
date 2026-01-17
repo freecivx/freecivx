@@ -329,18 +329,13 @@ bash "${basedir}"/scripts/sync-js-hand.sh \
   handle_error 6 "Failed to synchronize freeciv project"
 
 cd "${basedir}"/freeciv-web && \
-  bash ./build.sh -B || \
+  bash ./build.sh -B ${SKIP_MINIFY:+--skip-minify} || \
   handle_error 7 "Failed to build freeciv-web server"
 
-echo "Build Freecivx-server (Freeciv Java server)"
-cd "${basedir}"/freecivx-server && \
-  mvn clean install || \
-  handle_error 7 "Failed to build freecivx-server"
-
-echo "Build Freecivx-client (Freeciv Java 2D swing client)"
-cd "${basedir}"/freecivx-client && \
-  mvn clean install || \
-  handle_error 7 "Failed to build freecivx-client"
+echo "Build Freecivx-server (Freeciv Java server) and Freecivx-client in parallel"
+cd "${basedir}" && \
+  mvn -B -T 1C clean install -pl freecivx-server,freecivx-client || \
+  handle_error 7 "Failed to build freecivx modules"
 
 echo "==== Setting up nginx ===="
 stop_svc nginx

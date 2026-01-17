@@ -1,8 +1,6 @@
 ./stop-freeciv-web.sh
 cd ..
-cd freecivx-server
-mvn package
-cd ..
+mvn -B -T 1C package -pl freecivx-server
 cd scripts
 ./start-freeciv-web.sh
 

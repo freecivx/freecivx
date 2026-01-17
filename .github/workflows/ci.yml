@@ -19,6 +19,26 @@ jobs:
           distribution: 'temurin'
           cache: maven
 
+      - name: Cache Freeciv build
+        uses: actions/cache@v4
+        with:
+          path: |
+            freeciv/build
+            ~/freeciv
+          key: ${{ runner.os }}-freeciv-${{ hashFiles('freeciv/prepare_freeciv.sh', 'freeciv/version.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-freeciv-
+
+      - name: Cache Node modules
+        uses: actions/cache@v4
+        with:
+          path: |
+            freeciv-web/node_modules
+            ~/.cache/ms-playwright
+          key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-node-
+
       - name: Set JAVA_HOME environment variables
         run: |
           echo "JAVA_HOME is $JAVA_HOME"
@@ -35,12 +55,23 @@ jobs:
       - name: install
         shell: bash
         run: bash ./scripts/install/install.sh --mode=TEST_MYSQL
+        env:
+          SKIP_MINIFY: "true"
         
         
       - name: Run Playwright tests
         run: |
           java -version 
-          bash ./scripts/test-freecivx.sh
+          cd freeciv-web
+          # Install Playwright with cache check
+          if [ ! -d "node_modules/@playwright/test" ]; then
+            npm install @playwright/test --save-dev
+          fi
+          # Install browsers only if not cached
+          if [ ! -d "$HOME/.cache/ms-playwright" ] || [ -z "$(ls -A $HOME/.cache/ms-playwright)" ]; then
+            npx playwright install
+          fi
+          npx playwright test tests/playwright/freeciv-web.test.js
         
 
 
