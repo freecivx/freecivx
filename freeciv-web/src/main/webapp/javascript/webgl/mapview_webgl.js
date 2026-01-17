@@ -248,10 +248,20 @@ function init_land_geometry(geometry, mesh_quality)
   const vertices = [];
   let heightmap_scale = (mesh_quality === 2) ? (mesh_quality * 2) : 1;
 
+  // For hex topology, adjust spacing to create hexagonal layout
+  const hex_width_factor = use_hex_topology ? Math.sqrt(3) : 1.0;
+  const hex_height_factor = use_hex_topology ? 1.5 : 1.0;
+
   for ( let iy = 0; iy < gridY1; iy ++ ) {
-    const y = iy * segment_height - height_half;
+    const y = iy * segment_height * hex_height_factor - height_half;
     for ( let ix = 0; ix < gridX1; ix ++ ) {
-      const x = ix * segment_width - width_half;
+      let x = ix * segment_width * hex_width_factor - width_half;
+      
+      // For hex mode, offset odd rows by half a hex width
+      if (use_hex_topology && (iy % 2 === 1)) {
+        x += (segment_width * hex_width_factor) / 2;
+      }
+      
       var sx = ix % xquality, sy = iy % yquality;
 
       vertices.push( x, -y, heightmap[sx * heightmap_scale][sy * heightmap_scale] * 100 );
@@ -307,10 +317,20 @@ function update_land_geometry(geometry, mesh_quality) {
   const heightmap_scale = (mesh_quality === 2) ? 2 : 1;
   const bufferAttribute = mesh_quality === 2 ? lofibufferattribute : landbufferattribute;
 
+  // For hex topology, adjust spacing to create hexagonal layout
+  const hex_width_factor = use_hex_topology ? Math.sqrt(3) : 1.0;
+  const hex_height_factor = use_hex_topology ? 1.5 : 1.0;
+
   for (let iy = 0; iy <= gridY; iy++) {
-    const y = iy * segment_height - height_half;
+    const y = iy * segment_height * hex_height_factor - height_half;
     for (let ix = 0; ix <= gridX; ix++) {
-      const x = ix * segment_width - width_half;
+      let x = ix * segment_width * hex_width_factor - width_half;
+      
+      // For hex mode, offset odd rows by half a hex width
+      if (use_hex_topology && (iy % 2 === 1)) {
+        x += (segment_width * hex_width_factor) / 2;
+      }
+      
       const sx = ix % xquality, sy = iy % yquality;
       const index = iy * (gridX + 1) + ix;
       const heightIndex = (sy * heightmap_scale * xquality) + (sx * heightmap_scale); // Convert (sx, sy) to single index
