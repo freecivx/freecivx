@@ -541,6 +541,126 @@ mvn clean package -DskipTests
 
 This confirms the documentation's assessment that **freeciv-web requires the full development stack** and is not suitable for lightweight Copilot-based development.
 
+### ✅ Scripts Directory Analysis (January 17, 2026)
+
+**Goal**: Understand if freeciv-web can run in Copilot alongside freecivx-server for browser testing.
+
+**Analysis of /scripts/ directory:**
+
+#### Key Scripts Examined:
+
+1. **start-freeciv-web.sh** - Main startup script
+   - Starts 5 required services: MySQL, nginx, Tomcat, publite2, freecivx-server
+   - Requires `/scripts/configuration.sh` (system-specific settings)
+   - Deploys WAR file to Tomcat on port 8080
+   - Waits for Tomcat to fully start before continuing
+
+2. **dependency-services-default-start.sh** - Service starter
+   ```bash
+   # Required services in order:
+   1. MySQL/MariaDB database server
+   2. nginx web server (reverse proxy)
+   3. Tomcat 11 servlet container
+   4. Waits for http://localhost:8080/freeciv-web to respond
+   ```
+
+3. **install/install.sh** - Installation script
+   - Supports 3 modes:
+     - `TEST_H2` - Local testing with H2 database
+     - `TEST_MYSQL` - CI testing with MySQL
+     - `DFLT` - Production server setup
+   - All modes require system package installation (nginx, mysql, tomcat11)
+   - Sets TOMCAT_HOME=/var/lib/tomcat11
+
+#### Why freeciv-web Cannot Run in Copilot:
+
+**Missing System Services** (cannot be installed in Copilot):
+- ❌ **MySQL/MariaDB**: Requires `sudo service mariadb start` or `sudo service mysql start`
+- ❌ **nginx**: Requires `sudo service nginx start` and configuration in `/etc/nginx/`
+- ❌ **Tomcat 11**: Requires system installation at `/var/lib/tomcat11/` with sudo access
+- ❌ **System modifications**: Scripts use `sudo` extensively for service management
+
+**Complex Deployment Chain**:
+```
+1. Install system packages (nginx, mysql, tomcat11) → ❌ No sudo in Copilot
+2. Run sync-js-hand.sh to generate derived files → ❌ Requires built C server  
+3. Build WAR with Maven → ❌ Fails without derived files
+4. Deploy WAR to Tomcat → ❌ Tomcat not installed
+5. Start all services → ❌ Services not available
+6. Configure nginx reverse proxy → ❌ Cannot modify /etc/nginx/
+7. Wait for Tomcat to serve WAR → ❌ Tomcat not running
+```
+
+#### Alternative Approach Considered: Embedded Server
+
+**Question**: Can we run freeciv-web with an embedded Tomcat/Jetty?
+
+**Investigation Results**:
+- ✅ Checked pom.xml for embedded server plugins: None found
+- ❌ freeciv-web is packaged as WAR (Web Application Archive)
+- ❌ WAR requires external servlet container (Tomcat/Jetty/etc.)
+- ❌ No Spring Boot or embedded server configuration exists
+- ⚠️ Would require significant refactoring to add embedded server support
+
+**Why Embedded Server Won't Help**:
+Even with an embedded server, freeciv-web would still need:
+1. Derived files from sync-js-hand.sh (requires C server build)
+2. Database (MySQL or H2)
+3. Static files and configurations
+4. nginx for WebSocket proxying
+
+#### Realistic Options for Copilot Development:
+
+**Option 1: JavaScript-Only Development** ✅ RECOMMENDED
+```bash
+# Edit JavaScript files directly - no build required
+cd /home/runner/work/freecivworld/freecivworld/freeciv-web/src/main/webapp/javascript
+# Edit JS files
+# Commit and push - CI will handle integration
+```
+
+**Option 2: Run freecivx-server Only** ✅ WORKS NOW
+```bash
+# Run standalone Java game server
+cd /home/runner/work/freecivworld/freecivworld/freecivx-server
+mvn clean package -DskipTests
+java -jar target/freecivx-server-1.0.jar
+# Server runs on ports 7800 (WebSocket) and 7801 (HTTP)
+# Can test game server logic independently
+```
+
+**Option 3: Static HTML/JS Testing** ⚠️ LIMITED
+```bash
+# View static HTML/JS files without server
+cd /home/runner/work/freecivworld/freecivworld/freeciv-web/src/main/webapp
+# Open HTML files in Playwright browser
+# Limited - no server-side functionality, no game server connection
+```
+
+**Option 4: Full Stack** ❌ NOT POSSIBLE IN COPILOT
+- Requires sudo access for system services
+- Requires network access to download Tomcat and other packages
+- Requires derived files from complex build chain
+- Use Docker on local machine or CI/CD instead
+
+#### Conclusion:
+
+**freeciv-web CANNOT run in GitHub Copilot** due to:
+1. Required system services (MySQL, nginx, Tomcat) need sudo
+2. Complex multi-step build process with external dependencies
+3. WAR deployment model requires servlet container
+4. Network restrictions prevent downloading required packages
+
+**Best Practice**:
+- ✅ **For game server**: Use freecivx-server (fully functional in Copilot)
+- ✅ **For webapp JS**: Edit directly, test in CI/CD
+- ✅ **For full testing**: Use Docker locally or let CI/CD handle it
+- ✅ **For exploration**: Use Copilot for code analysis and editing
+
+This confirms that the **two-tier architecture** is necessary:
+- **freecivx-server**: Lightweight, Copilot-friendly, perfect for development
+- **freeciv-web**: Full-stack webapp, requires complete infrastructure, use CI/CD
+
 #### ❌ Docker in Copilot (Not Recommended)
 
 While Docker is available in Copilot, it has **significant limitations**:
