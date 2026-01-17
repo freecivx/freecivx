@@ -52,13 +52,14 @@ EOF
 handle_error () {
   local status=${1:-1}
   local msg=${2:-Unknown Error}
-  local stars=$(printf '%*s' ${#msg} '')
+  local stars
+  stars=$(printf '%*s' ${#msg} '')
   >&2 echo
   >&2 echo "${stars// /*}"
   >&2 echo "${msg}"
   >&2 echo "${stars// /*}"
   >&2 echo
-  exit $status
+  exit "$status"
 }
 
 while :; do
@@ -142,7 +143,7 @@ if [ ! -f "${basedir}"/scripts/install/systems ]; then
   if [ "${basedir:0:1}" = / ]; then
     echo >&2 "${basedir}"
   else
-    echo >&2 $(pwd)/"${basedir}"
+    echo >&2 "$(pwd)/${basedir}"
   fi
   echo >&2 "You can tell it where to look for them with the --dir option."
   exit 2
@@ -184,7 +185,7 @@ else
 fi
 echo
 
-if [ $(id -u) = 0 ]; then
+if [ "$(id -u)" = 0 ]; then
   echo >&2 "Please don't run this script as root."
   echo >&2 "If you think you know what you are doing, remove this check and try again."
   exit 3
@@ -297,7 +298,7 @@ fi
 
 echo "==== Preparing Tomcat ===="
 cd "${TOMCAT_HOME}"
-sudo setfacl -m d:u:$(id -u):rwX,u:$(id -u):rwx webapps
+sudo setfacl -m "d:u:$(id -u):rwX,u:$(id -u):rwx" webapps
 mkdir -p webapps/data/{savegames/pbem,scorelogs,ranklogs}
 setfacl -Rm d:u:tomcat:rwX webapps/data
 
