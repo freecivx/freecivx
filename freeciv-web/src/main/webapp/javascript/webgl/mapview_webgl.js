@@ -17,7 +17,7 @@
 
 ***********************************************************************/
 
-let container, stats;
+let container;
 let scene, maprenderer;
 let anaglyph_effect;
 
