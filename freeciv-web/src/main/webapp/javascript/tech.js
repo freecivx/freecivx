@@ -939,10 +939,8 @@ function get_current_bulbs_output()
   }
 
   return {
-    self_bulbs: self_bulbs,
-    self_upkeep: self_upkeep,
-    pooled: pooled,
-    team_bulbs: team_bulbs,
+    self_bulbs: self_bulbs, self_upkeep,
+    pooled: pooled, team_bulbs,
     team_upkeep: team_upkeep
   };
 }

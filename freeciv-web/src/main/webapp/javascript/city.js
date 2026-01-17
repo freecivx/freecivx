@@ -1848,8 +1848,7 @@ function send_city_worklist(city_id)
     worklist.splice(MAX_LEN_WORKLIST, overflow);
   }
 
-  send_request(JSON.stringify({pid     : packet_city_worklist,
-                               city_id : city_id,
+  send_request(JSON.stringify({pid     : packet_city_worklist, city_id,
                                worklist: worklist}));
 }
 

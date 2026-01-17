@@ -208,7 +208,7 @@ function show_new_game_message()
     return;
   }
 
-  message_log.update({ event: E_CONNECTION, message: message });
+  message_log.update({ event: E_CONNECTION, message});
 }
 
 /**************************************************************************

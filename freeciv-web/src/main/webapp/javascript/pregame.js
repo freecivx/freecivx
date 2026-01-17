@@ -912,7 +912,7 @@ function show_intro_dialog(title, message) {
 
   $("#dialog").html(intro_html);
 
-  $('#username_req').on('input', function() {
+  $('#username_req').on('input', () => {
         this.value = this.value.toLowerCase();
   });
 
@@ -1033,7 +1033,7 @@ function show_intro_dialog(title, message) {
   $(".ui-widget-overlay").css("opacity", "1.0");
   $(".ui-widget-overlay").css("background-image", "url('/images/backgrounds/freecivworld-logo.jpg')")
 
-  $(window).on("resize", function () {
+  $(window).on("resize", () => {
     $("#dialog").dialog("option", "position", { my: "center", at: "center", of: window });
   });
 
@@ -1191,7 +1191,7 @@ function show_new_user_account_dialog(gametype)
   $("#dialog").dialog('open');
 
 
-  $('#username').on('input', function() {
+  $('#username').on('input', () => {
       this.value = this.value.toLowerCase();
   });
 

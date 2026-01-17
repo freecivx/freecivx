@@ -1187,12 +1187,8 @@ function computeMorphedAttributes( object ) {
 
 	return {
 
-		positionAttribute: positionAttribute,
-		normalAttribute: normalAttribute,
-		morphedPositionAttribute: morphedPositionAttribute,
-		morphedNormalAttribute: morphedNormalAttribute
-
-	};
+		positionAttribute: positionAttribute, normalAttribute,
+		morphedPositionAttribute: morphedPositionAttribute, morphedNormalAttribute};
 
 }
 

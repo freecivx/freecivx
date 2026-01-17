@@ -92,7 +92,7 @@ function update_city_screen()
 
     $('#cities_scroll').css("height", $(window).height() - 200);
 
-    $("#city_table").tablesorter({theme:"dark", sortList: sortList});
+    $("#city_table").tablesorter({theme:"dark", sortList});
 
     $("#cities_heading").text(count + " Cities");
 }

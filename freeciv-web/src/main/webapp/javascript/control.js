@@ -154,7 +154,7 @@ function control_init()
   document.onselectstart = () => allow_right_click;
 
   /* disable right clicks. */
-  window.addEventListener('contextmenu', function (e) {
+  window.addEventListener('contextmenu', (e) => {
     if (e.target != null && (e.target.id == 'game_text_input' || e.target.id == 'overview_map' || e.target.id == 'replay_result' || (e.target.parent != null && e.target.parent.id == 'game_message_area'))) return;
     if (!allow_right_click) e.preventDefault();
   }, false);
@@ -191,7 +191,7 @@ function control_init()
 
   $.contextMenu(context_options);
 
-  $(window).on('unload', function(){
+  $(window).on('unload', () => {
     network_stop();
   });
 
@@ -2860,7 +2860,7 @@ function key_unit_auto_settle()
 
   if (get_num_cities() == 0) {
     const message = "Can't activate Auto Settlers, because no cities are built yet.";
-    message_log.update({ event: E_CONNECTION, message: message });
+    message_log.update({ event: E_CONNECTION, message});
     return;
   }
 
@@ -2993,8 +2993,7 @@ function request_unit_do_action(action_id, actor_id, target_id, sub_tgt_id,
 {
   send_request(JSON.stringify({
     pid: packet_unit_do_action,
-    action_type: action_id,
-    actor_id: actor_id,
+    action_type: action_id, actor_id,
     target_id: target_id,
     sub_tgt_id: sub_tgt_id || 0,
     name: name || ""

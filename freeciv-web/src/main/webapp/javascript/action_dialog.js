@@ -422,8 +422,7 @@ function popup_action_selection(actor_unit, action_probabilities,
       width: "390",
       close: function() {
         act_sel_queue_may_be_done(actor_unit['id']);
-      },
-      buttons: buttons });
+      }, buttons});
 
   $(id).dialog('open');
   is_more_user_input_needed = false;
@@ -697,8 +696,7 @@ function popup_steal_tech_selection_dialog(actor_unit, target_city,
                        modal: true,
                        close: function() {
                          act_sel_queue_done(actor_unit['id']);
-                       },
-                       buttons: buttons,
+                       }, buttons,
                        width: "90%"});
 
   /* Show the dialog. */
@@ -769,8 +767,7 @@ function popup_sabotage_dialog(actor_unit, target_city, city_imprs, act_id)
                        modal: true,
                        close: function() {
                          act_sel_queue_done(actor_unit['id']);
-                       },
-                       buttons: buttons,
+                       }, buttons,
                        width: "90%"});
 
   /* Show the dialog. */
@@ -855,8 +852,7 @@ function select_tgt_unit(actor_unit, target_tile, potential_tgt_units)
       modal    : true,
       close: function() {
         act_sel_queue_may_be_done(actor_unit['id']);
-      },
-      buttons  : buttons });
+      }, buttons});
 
   $(id).dialog('open');
 }
@@ -989,8 +985,7 @@ function select_tgt_extra(actor_unit, target_unit,
       modal    : true,
       close: function() {
         act_sel_queue_may_be_done(actor_unit['id']);
-      },
-      buttons  : buttons });
+      }, buttons});
 
   $(id).dialog('open');
 }

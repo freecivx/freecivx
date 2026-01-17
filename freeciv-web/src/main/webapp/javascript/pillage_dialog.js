@@ -71,8 +71,7 @@ function popup_pillage_selection_dialog(punit)
     bgiframe: true,
     modal: false,
     dialogClass: 'act_sel_dialog',
-    width: 390,
-    buttons: buttons,
+    width: 390, buttons,
     close: function () {$(this).remove();},
     autoOpen: true
   });

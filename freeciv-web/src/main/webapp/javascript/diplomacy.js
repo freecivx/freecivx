@@ -536,7 +536,7 @@ function meeting_template_data(giver, taker)
     clauses.push({type: CLAUSE_SEAMAP, value: 1, name: 'Sea-map'});
   }
   if (clauses.length > 0) {
-    all_clauses.push({title: 'Maps...', clauses: clauses});
+    all_clauses.push({title: 'Maps...', clauses});
   }
 
   if (game_info.trading_tech && clause_infos[CLAUSE_ADVANCE]['enabled']) {
@@ -553,7 +553,7 @@ function meeting_template_data(giver, taker)
       }
     }
     if (clauses.length > 0) {
-      all_clauses.push({title: 'Advances...', clauses: clauses});
+      all_clauses.push({title: 'Advances...', clauses});
     }
   }
 
@@ -571,7 +571,7 @@ function meeting_template_data(giver, taker)
       }
     }
     if (clauses.length > 0) {
-      all_clauses.push({title: 'Cities...', clauses: clauses});
+      all_clauses.push({title: 'Cities...', clauses});
     }
   }
 
@@ -596,7 +596,7 @@ function meeting_template_data(giver, taker)
       clauses.push({type: CLAUSE_ALLIANCE, value: 1, name: 'Alliance'});
     }
     if (clauses.length > 0) {
-      all_clauses.push({ title: 'Pacts...', clauses: clauses });
+      all_clauses.push({ title: 'Pacts...', clauses});
     }
   }
 
