@@ -10,10 +10,10 @@ The build process has been optimized to reduce build times by 40-60% through par
 
 ### 1. Maven Parallel Builds
 
-**Location**: `pom.xml`, `scripts/install/install.sh`, `scripts/rebuild.sh`
+**Location**: `scripts/install/install.sh`, `scripts/rebuild.sh`
 
-- **Property**: Added `maven.build.parallel=true` to parent POM
-- **Reactor Builds**: Use `-T 1C` flag to build with 1 thread per CPU core
+- **Command Flag**: Use `-T 1C` flag to build with 1 thread per CPU core
+- **Reactor Builds**: Maven reactor builds allow parallel module compilation
 - **Module Coordination**: `freecivx-server` and `freecivx-client` now build in parallel
 
 **Example**:
