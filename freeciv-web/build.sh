@@ -13,7 +13,7 @@ while [[ $# -gt 0 ]]; do
 done
 
 # Use environment variable if set and not overridden by command line
-if [ -z "${SKIP_MINIFY_OPT}" ] && [ "${SKIP_MINIFY}" = "true" ]; then
+if [ -z "${SKIP_MINIFY_OPT}" ] && [ "${SKIP_MINIFY:-}" = "true" ]; then
   SKIP_MINIFY_OPT="-Dskip-minify-js=true"
 fi
 
