@@ -266,7 +266,7 @@ function show_endgame_dialog()
 function update_metamessage_on_gamestart()
 {
 
-  if ($.getUrlVar('action') == null || $.getUrlVar('action') === "new"
+  if ($.getUrlVar('action') === null || $.getUrlVar('action') === "new"
       || $.getUrlVar('scenario') === "true") {
       $.post("/freeciv_time_played_stats?type=single3d").fail(() => {});
   }
@@ -412,8 +412,8 @@ function show_tile_info(message)
       at: "left bottom",
       of: window
     },
-    create: (event, ui) => {
-      $(event.target).parent().find(".ui-dialog-titlebar").hide();
+    create: function(event, ui) {
+      $(this).parent().find(".ui-dialog-titlebar").hide();
     }
   });
   $("#tile_dialog").dialog('open');
