@@ -101,26 +101,29 @@ freecivx-server/
 
 ### Building freecivx-server in Copilot
 
-**Limitation**: Copilot workspace has Java 17, but freecivx-server requires Java 21+.
+**UPDATED JANUARY 2026**: ✅ **freecivx-server NOW WORKS with Java 17!**
+
+The freecivx-server pom.xml has been updated to target Java 17, and the code has been fixed to avoid Java 21+ specific APIs (like `List.getLast()`). You can now build and run freecivx-server directly in Copilot!
 
 ```bash
-# This will FAIL in Copilot due to Java version mismatch
+# Build freecivx-server (now works with Java 17!)
 cd freecivx-server
 mvn clean package -DskipTests
 
-# Error: "invalid target release: 21"
+# Build completes successfully and creates target/freecivx-server-1.0.jar
 ```
 
-**Workaround for Development**:
+**What Works Now**:
+- ✅ **Full compilation**: Builds successfully with Java 17
 - ✅ **Code exploration**: View and edit Java files freely
 - ✅ **Dependency analysis**: Review pom.xml and understand dependencies
 - ✅ **Architecture study**: Understand class relationships and patterns
 - ✅ **Code refactoring**: Make improvements to Java code
-- ✅ **Testing in CI**: Push changes and let CI/CD build with Java 21+
+- ✅ **Local testing**: Run the server directly in Copilot workspace
 
-### Running freecivx-server (Local Environment)
+### Running freecivx-server (Local Environment or Copilot)
 
-When working in a proper development environment with Java 21+:
+✅ **Now Works in Copilot with Java 17!**
 
 ```bash
 # Build the JAR
@@ -137,6 +140,10 @@ java -jar target/freecivx-server-1.0.jar 8000
 # 1. Start WebSocket server on port 7800 (or specified port)
 # 2. Start HTTP status server on port 7801 (port + 1)
 # 3. Publish to metaserver (if configured)
+
+# Test that the server is running
+curl http://localhost:7801/status
+# Should return: "Welcome to FreecivX Server!"
 ```
 
 ### Key Features to Explore
@@ -351,6 +358,84 @@ bash ./scripts/status-freeciv-web.sh
 ```
 
 ## Running and Testing the Game
+
+### Recommended Approach: Pure Java Development (Updated January 2026)
+
+**NEW: Docker-Free Development is Now Possible!**
+
+For development in GitHub Copilot or limited environments, we now recommend using **pure Java** instead of Docker:
+
+#### ✅ Running freecivx-server (Pure Java - Recommended)
+
+The freecivx-server is a standalone Java application that can run without Docker or any complex dependencies:
+
+```bash
+# 1. Build with Maven (works with Java 17+)
+cd /home/runner/work/freecivworld/freecivworld/freecivx-server
+mvn clean package -DskipTests
+
+# 2. Run the server
+java -jar target/freecivx-server-1.0.jar
+
+# Server starts on:
+# - WebSocket: port 7800
+# - HTTP Status: port 7801
+
+# 3. Verify it's running
+curl http://localhost:7801/status
+# Returns: "Welcome to FreecivX Server!"
+
+# 4. Check WebSocket is listening
+netstat -tuln | grep 7800
+# Or: ss -tuln | grep 7800
+```
+
+**Why Pure Java is Better for Copilot**:
+- ✅ **No network dependencies**: Doesn't require downloading Tomcat or other external resources
+- ✅ **Fast build**: Maven downloads from Maven Central which is not blocked
+- ✅ **Easy debugging**: Can run directly in IDE or terminal
+- ✅ **Minimal setup**: Only needs Java and Maven (both available in Copilot)
+- ✅ **Self-contained**: All dependencies bundled in the JAR
+
+#### ⚠️ Freeciv-web (Complex - Requires Full Stack)
+
+The freeciv-web component requires more setup and is **not recommended for Copilot development**:
+
+```bash
+# Attempting to build freeciv-web will fail without derived files
+cd freeciv-web
+mvn clean package -DskipTests
+# Error: "Files derived from the original freeciv project not found"
+# Requires running sync-js-hand.sh script first
+# Also requires Tomcat web server, databases, C server, etc.
+```
+
+**For freeciv-web development**:
+- ✅ **Edit JavaScript files directly** - no build needed for JS changes
+- ✅ **Edit Java servlets and services** - can review code
+- ⚠️ **Full build requires**: Running sync scripts, Tomcat, databases
+- 💡 **Recommendation**: Use CI/CD for full integration testing
+
+#### ❌ Docker in Copilot (Not Recommended)
+
+While Docker is available in Copilot, it has **significant limitations**:
+
+```bash
+# Docker build will FAIL in Copilot
+docker build -t freecivx .
+# Error after ~2 minutes: "curl: (6) Could not resolve host: tomcat.apache.org"
+```
+
+**Why Docker Doesn't Work Well**:
+- ❌ **Network restrictions**: External downloads blocked (tomcat.apache.org)
+- ❌ **Long build times**: Takes 2+ minutes before failing
+- ❌ **Complex debugging**: Hard to troubleshoot inside containers
+- ❌ **Resource intensive**: Uses more memory and CPU
+
+**When to Use Docker**:
+- ✅ **Local development** on your own machine with full network access
+- ✅ **Production deployment** with pre-built images
+- ✅ **Full integration testing** with all components running
 
 ### Running FreecivWorld in GitHub Copilot Environment
 
@@ -1093,23 +1178,26 @@ When something doesn't work:
 
 ## Summary: Effective Copilot Workflows for FreecivWorld
 
-Based on practical experience running FreecivWorld in GitHub Copilot, here are the recommended workflows:
+Based on practical experience running FreecivWorld in GitHub Copilot **(Updated January 2026)**, here are the recommended workflows:
 
 ### ✅ What Works Excellently in Copilot
 
-1. **Code Exploration and Analysis**
+1. **freecivx-server Development (NEW: Fully Functional!)**
+   - ✅ **Build with Java 17**: `mvn clean package` works perfectly
+   - ✅ **Run locally**: `java -jar target/freecivx-server-1.0.jar`
+   - ✅ **Test endpoints**: Server runs on ports 7800 (WebSocket) and 7801 (HTTP)
+   - ✅ **Edit all Java source files**: Make changes and rebuild instantly
+   - ✅ **Add new features and game mechanics**: Full development capability
+   - ✅ **Write unit tests**: JUnit tests included
+   - ✅ **Refactor and improve code quality**: Complete access to codebase
+   - ✅ **Study WebSocket implementation**: Real-time server running in Copilot
+   - ✅ **Analyze game state management**: Test and debug live
+
+2. **Code Exploration and Analysis**
    - Browse all source code (JavaScript, Java, C, Python)
    - Use grep/glob tools for searching patterns
    - Understand architecture and dependencies
    - Review and plan changes
-
-2. **freecivx-server Development**
-   - Edit all Java source files
-   - Add new features and game mechanics
-   - Write unit tests
-   - Refactor and improve code quality
-   - Study WebSocket implementation
-   - Analyze game state management
 
 3. **JavaScript Client Development**
    - Edit client-side game logic
@@ -1135,16 +1223,13 @@ Based on practical experience running FreecivWorld in GitHub Copilot, here are t
 1. **Docker Builds**
    - **Issue**: External downloads blocked (tomcat.apache.org)
    - **Solution**: Build Docker images locally or in CI/CD
+   - **Alternative**: Use pure Java approach (freecivx-server)
 
-2. **Full Server Deployment**
-   - **Issue**: Cannot run complete stack (Tomcat, databases, C server)
-   - **Solution**: Use CI/CD for integration testing
+2. **Full Web Application Stack (freeciv-web)**
+   - **Issue**: Requires derived files from sync scripts, Tomcat, databases
+   - **Solution**: Edit JS/Java code directly, use CI/CD for integration testing
 
-3. **Java 21 Compilation**
-   - **Issue**: Copilot has Java 17, project needs Java 21+
-   - **Solution**: Edit code in Copilot, build in CI/CD
-
-4. **C Server Building**
+3. **C Server Building**
    - **Issue**: Requires full toolchain (autoconf, automake, compilers)
    - **Solution**: Build locally or in CI/CD
 
@@ -1162,7 +1247,7 @@ Based on practical experience running FreecivWorld in GitHub Copilot, here are t
    - Cannot install/run MySQL or H2 database servers
    - Solution: Test database code in CI/CD
 
-### Recommended Copilot Development Workflow
+### Recommended Copilot Development Workflow (Updated)
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
@@ -1173,30 +1258,38 @@ Based on practical experience running FreecivWorld in GitHub Copilot, here are t
 └─────────────────────────────────────────────────────────────┘
                             ↓
 ┌─────────────────────────────────────────────────────────────┐
-│ 2. EDIT IN COPILOT                                          │
-│    • Make focused changes to source files                   │
-│    • Update freecivx-server Java code                       │
+│ 2. DEVELOP freecivx-server IN COPILOT (NEW!)               │
+│    • Build: mvn clean package                               │
+│    • Run: java -jar target/freecivx-server-1.0.jar          │
+│    • Test: curl http://localhost:7801/status                │
+│    • Iterate: Make changes, rebuild, test                   │
+└─────────────────────────────────────────────────────────────┘
+                            ↓
+┌─────────────────────────────────────────────────────────────┐
+│ 3. EDIT OTHER COMPONENTS                                    │
 │    • Modify JavaScript client code                          │
+│    • Update Java servlets and services                      │
+│    • Improve C server code                                  │
 │    • Write or update tests                                  │
 │    • Improve documentation                                  │
 └─────────────────────────────────────────────────────────────┘
                             ↓
 ┌─────────────────────────────────────────────────────────────┐
-│ 3. REVIEW IN COPILOT                                        │
+│ 4. REVIEW IN COPILOT                                        │
 │    • Use git diff to check changes                          │
 │    • Review for correctness and style                       │
 │    • Ensure minimal, surgical changes                       │
 └─────────────────────────────────────────────────────────────┘
                             ↓
 ┌─────────────────────────────────────────────────────────────┐
-│ 4. COMMIT AND PUSH                                          │
+│ 5. COMMIT AND PUSH                                          │
 │    • Commit with descriptive message                        │
 │    • Push to trigger CI/CD pipeline                         │
 └─────────────────────────────────────────────────────────────┘
                             ↓
 ┌─────────────────────────────────────────────────────────────┐
-│ 5. VERIFY IN CI/CD                                          │
-│    • CI builds with Java 21+                                │
+│ 6. VERIFY IN CI/CD                                          │
+│    • CI builds full stack                                   │
 │    • All tests run automatically                            │
 │    • Integration tests with full stack                      │
 │    • Review CI results and iterate if needed                │
@@ -1205,10 +1298,10 @@ Based on practical experience running FreecivWorld in GitHub Copilot, here are t
 
 ### Best Practices for Copilot + FreecivWorld
 
-1. **Focus on freecivx-server for deep work**
-   - Most self-contained component
-   - Clear structure and dependencies
-   - Perfect for architectural improvements
+1. **Prioritize freecivx-server for deep work (NEW!)**
+   - Fully functional in Copilot with Java 17
+   - Can build, run, and test without Docker
+   - Perfect for feature development and debugging
 
 2. **Use JavaScript client for UI improvements**
    - No build required during development
@@ -1230,34 +1323,43 @@ Based on practical experience running FreecivWorld in GitHub Copilot, here are t
    - Add code comments for complex logic
    - Help future developers (and Copilot AI!)
 
-### Example Session: Adding a Feature to freecivx-server
+### Example Session: Developing freecivx-server in Copilot (NEW!)
 
 ```bash
-# 1. Explore existing implementation
-grep -r "Unit" freecivx-server/src/main/java/net/freecivx/game/ --include="*.java"
+# 1. Build the server
+cd /home/runner/work/freecivworld/freecivworld/freecivx-server
+mvn clean package -DskipTests
 
-# 2. View related files
+# 2. Run the server in background
+java -jar target/freecivx-server-1.0.jar &
+
+# 3. Test it's working
+curl http://localhost:7801/status
+# Output: "Welcome to FreecivX Server!"
+
+# 4. Check WebSocket is listening
+netstat -tuln | grep 7800
+# Output: tcp6    0    0 :::7800    :::*    LISTEN
+
+# 5. View and edit game logic
 view freecivx-server/src/main/java/net/freecivx/game/Unit.java
-view freecivx-server/src/main/java/net/freecivx/game/Game.java
 
-# 3. Edit to add new feature
-# (Make changes to Java files)
+# 6. Make changes (e.g., add new unit ability)
+edit freecivx-server/src/main/java/net/freecivx/game/Unit.java
 
-# 4. Write test
-# (Add test in freecivx-server/src/test/java/)
+# 7. Rebuild and test
+mvn clean package -DskipTests
+kill <pid>  # Stop old server
+java -jar target/freecivx-server-1.0.jar &
 
-# 5. Review changes
+# 8. Verify changes
+curl http://localhost:7801/status
+
+# 9. Review and commit
 git --no-pager diff freecivx-server/
-
-# 6. Commit and push
 git add freecivx-server/
 git commit -m "Add new unit ability: fortification bonus"
 git push
-
-# 7. Monitor CI
-# - Check GitHub Actions for build results
-# - Review test results
-# - Fix any issues and iterate
 ```
 
 This workflow maximizes Copilot's strengths while working around its limitations.
