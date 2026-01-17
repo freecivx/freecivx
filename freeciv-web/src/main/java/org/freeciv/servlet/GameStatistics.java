@@ -25,16 +25,15 @@ import java.sql.SQLException;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-import javax.naming.Context;
-import javax.naming.InitialContext;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import javax.sql.DataSource;
 
-import org.freeciv.util.Constants;
+import org.freeciv.util.DatabaseUtil;
 import org.json.JSONObject;
 
 /**
@@ -46,6 +45,7 @@ import org.json.JSONObject;
 public class GameStatistics extends HttpServlet {
 	
 	private static final long serialVersionUID = 1L;
+	private static final Logger logger = LoggerFactory.getLogger(GameStatistics.class);
 
 	private static final String HEADER_EXPIRES = "Expires";
 	
@@ -59,52 +59,43 @@ public class GameStatistics extends HttpServlet {
 	@Override
 	public void doGet(HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException {
 
-		Connection conn = null;
-
 		try {
 			response.setContentType(CONTENT_TYPE);
 
-			Context env = (Context) (new InitialContext().lookup(Constants.JNDI_CONNECTION));
-			DataSource ds = (DataSource) env.lookup(Constants.JNDI_DDBBCON_MYSQL);
-			conn = ds.getConnection();
+			try (Connection conn = DatabaseUtil.getConnection()) {
+				String query = "SELECT " //
+						+ "	(SELECT COUNT(*) FROM servers WHERE state = 'Running') AS ongoingGames, " //
+						+ "	(SELECT SUM(gameCount) FROM games_played_stats WHERE gametype IN (0, 5)) AS totalSinglePlayerGames, " //
+						+ "	(SELECT SUM(gameCount) FROM games_played_stats WHERE gametype IN (1, 2)) AS totalMultiPlayerGames," //
+						+ " (SELECT COUNT(*) FROM auth where verified=TRUE) AS players";
 
-			String query = "SELECT " //
-					+ "	(SELECT COUNT(*) FROM servers WHERE state = 'Running') AS ongoingGames, " //
-					+ "	(SELECT SUM(gameCount) FROM games_played_stats WHERE gametype IN (0, 5)) AS totalSinglePlayerGames, " //
-					+ "	(SELECT SUM(gameCount) FROM games_played_stats WHERE gametype IN (1, 2)) AS totalMultiPlayerGames," //
-					+ " (SELECT COUNT(*) FROM auth where verified=TRUE) AS players";
+				try (PreparedStatement preparedStatement = conn.prepareStatement(query)) {
+					try (ResultSet rs = preparedStatement.executeQuery()) {
+						if (!rs.next()) {
+							throw new Exception("Expected at least one row.");
+						}
 
-			PreparedStatement preparedStatement = conn.prepareStatement(query);
-			ResultSet rs = preparedStatement.executeQuery();
-			if (!rs.next()) {
-				throw new Exception("Expected at least one row.");
-			}
+						JSONObject result = new JSONObject();
+						result.put("ongoing", rs.getInt("ongoingGames"));
+						JSONObject finishedGames = new JSONObject();
+						finishedGames.put("singlePlayer", rs.getInt("totalSinglePlayerGames"));
+						finishedGames.put("multiPlayer", rs.getInt("totalMultiPlayerGames"));
+						finishedGames.put("players", rs.getInt("players"));
+						result.put("finished", finishedGames);
 
-			JSONObject result = new JSONObject();
-			result.put("ongoing", rs.getInt("ongoingGames"));
-			JSONObject finishedGames = new JSONObject();
-			finishedGames.put("singlePlayer", rs.getInt("totalSinglePlayerGames"));
-			finishedGames.put("multiPlayer", rs.getInt("totalMultiPlayerGames"));
-			finishedGames.put("players", rs.getInt("players"));
-			result.put("finished", finishedGames);
+						ZonedDateTime expires = ZonedDateTime.now(ZoneId.of("UTC")).plusHours(1);
+						String rfc1123Expires = expires.format(DateTimeFormatter.RFC_1123_DATE_TIME);
 
-			ZonedDateTime expires = ZonedDateTime.now(ZoneId.of("UTC")).plusHours(1);
-			String rfc1123Expires = expires.format(DateTimeFormatter.RFC_1123_DATE_TIME);
-
-			response.setHeader(HEADER_EXPIRES, rfc1123Expires);
-			response.getOutputStream().print(result.toString());
-
-		} catch (Exception err) {
-			response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
-			response.getOutputStream().print(INTERNAL_SERVER_ERROR);
-		} finally {
-			if (conn != null) {
-				try {
-					conn.close();
-				} catch (SQLException e) {
-					e.printStackTrace();
+						response.setHeader(HEADER_EXPIRES, rfc1123Expires);
+						response.getOutputStream().print(result.toString());
+					}
 				}
 			}
+
+		} catch (Exception err) {
+			logger.error("Error retrieving game statistics", err);
+			response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+			response.getOutputStream().print(INTERNAL_SERVER_ERROR);
 		}
 	}
 

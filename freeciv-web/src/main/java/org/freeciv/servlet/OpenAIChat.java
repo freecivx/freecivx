@@ -8,6 +8,8 @@ import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.time.Duration;
@@ -25,6 +27,7 @@ import java.util.stream.Collectors;
  */
 @WebServlet("/openai_chat")
 public class OpenAIChat  extends HttpServlet {
+    private static final Logger logger = LoggerFactory.getLogger(OpenAIChat.class);
 
     private final String model = "gpt-4o";
 
@@ -38,13 +41,13 @@ public class OpenAIChat  extends HttpServlet {
 
             message = new String(Base64.getDecoder().decode(message));
 
-            System.out.println("OpenAI message: " + message);
+            logger.info("OpenAI message: {}", message);
 
             Properties prop = new Properties();
             prop.load(getServletContext().getResourceAsStream("/WEB-INF/config.properties"));
             String key = prop.getProperty("openai_key");
             if (key == null || key.equals("")) {
-                System.out.println("OpenAI key missing.");
+                logger.warn("OpenAI key missing.");
                 return;
             }
 
@@ -106,8 +109,7 @@ public class OpenAIChat  extends HttpServlet {
 
 
         } catch (Exception erro) {
-            erro.printStackTrace();
-            System.out.println(erro.getMessage());
+            logger.error("Error in OpenAI chat: {}", erro.getMessage(), erro);
         }
     }
 

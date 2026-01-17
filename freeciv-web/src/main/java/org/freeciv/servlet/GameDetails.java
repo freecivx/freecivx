@@ -24,18 +24,17 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-import javax.naming.Context;
-import javax.naming.InitialContext;
 import jakarta.servlet.RequestDispatcher;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.MultipartConfig;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import javax.sql.DataSource;
 
-import org.freeciv.util.Constants;
+import org.freeciv.util.DatabaseUtil;
 
 /**
  * Displays detailed information about a specific game
@@ -44,6 +43,8 @@ import org.freeciv.util.Constants;
  */
 @MultipartConfig
 public class GameDetails extends HttpServlet {
+
+	private static final Logger logger = LoggerFactory.getLogger(GameDetails.class);
 
 	public class PlayerSummary {
 		private String flag;
@@ -115,79 +116,70 @@ public class GameDetails extends HttpServlet {
 
 		String hostPort = sHost + ':' + sPort;
 		String query;
-		Connection conn = null;
-		PreparedStatement statement = null;
-		ResultSet rs = null;
-		try {
-			Context env = (Context) (new InitialContext().lookup(Constants.JNDI_CONNECTION));
-			DataSource ds = (DataSource) env.lookup(Constants.JNDI_DDBBCON_MYSQL);
-			conn = ds.getConnection();
-
+		try (Connection conn = DatabaseUtil.getConnection()) {
 			query = "SELECT * FROM servers WHERE host = ? AND port = ?";
 
-			statement = conn.prepareStatement(query);
-			statement.setString(1, sHost);
-			statement.setInt(2, port);
-			rs = statement.executeQuery();
-			if (rs.next()) {
-				request.setAttribute("version", rs.getString("version"));
-				request.setAttribute("patches", rs.getString("patches"));
-				request.setAttribute("capability", rs.getString("capability"));
-				request.setAttribute("state", rs.getString("state"));
-				request.setAttribute("ruleset", rs.getString("ruleset"));
-				request.setAttribute("serverid", rs.getString("serverid"));
-				request.setAttribute("port", port);
-				request.setAttribute("host", sHost);
-				request.setAttribute("type", rs.getString("type"));
-			} else {
-				RequestDispatcher rd = request.getRequestDispatcher("game-information.jsp");
-				rd.forward(request, response);
-				return;
+			try (PreparedStatement statement = conn.prepareStatement(query)) {
+				statement.setString(1, sHost);
+				statement.setInt(2, port);
+				try (ResultSet rs = statement.executeQuery()) {
+					if (rs.next()) {
+						request.setAttribute("version", rs.getString("version"));
+						request.setAttribute("patches", rs.getString("patches"));
+						request.setAttribute("capability", rs.getString("capability"));
+						request.setAttribute("state", rs.getString("state"));
+						request.setAttribute("ruleset", rs.getString("ruleset"));
+						request.setAttribute("serverid", rs.getString("serverid"));
+						request.setAttribute("port", port);
+						request.setAttribute("host", sHost);
+						request.setAttribute("type", rs.getString("type"));
+					} else {
+						RequestDispatcher rd = request.getRequestDispatcher("game-information.jsp");
+						rd.forward(request, response);
+						return;
+					}
+				}
 			}
 
 			query = "SELECT * FROM players WHERE hostport = ? ORDER BY name";
-			statement = conn.prepareStatement(query);
-			statement.setString(1, hostPort);
-			rs = statement.executeQuery();
-			List<PlayerSummary> players = new ArrayList<>();
-			while (rs.next()) {
-				PlayerSummary player = new PlayerSummary();
-				player.flag = rs.getString("flag");
-				player.name = rs.getString("name");
-				player.nation = rs.getString("nation");
-				player.user = rs.getString("username");
-				player.type = rs.getString("type");
-				players.add(player);
+			try (PreparedStatement statement = conn.prepareStatement(query)) {
+				statement.setString(1, hostPort);
+				try (ResultSet rs = statement.executeQuery()) {
+					List<PlayerSummary> players = new ArrayList<>();
+					while (rs.next()) {
+						PlayerSummary player = new PlayerSummary();
+						player.flag = rs.getString("flag");
+						player.name = rs.getString("name");
+						player.nation = rs.getString("nation");
+						player.user = rs.getString("username");
+						player.type = rs.getString("type");
+						players.add(player);
+					}
+					request.setAttribute("players", players);
+				}
 			}
-			request.setAttribute("players", players);
 
 			query = "SELECT * FROM variables WHERE hostport = ? ORDER BY name";
-			statement = conn.prepareStatement(query);
-			statement.setString(1, hostPort);
-			rs = statement.executeQuery();
-			List<VariableSummary> variables = new ArrayList<>();
-			while (rs.next()) {
-				VariableSummary variable = new VariableSummary();
-				variable.name = rs.getString("name");
-				variable.value = rs.getString("setting");
-				variables.add(variable);
+			try (PreparedStatement statement = conn.prepareStatement(query)) {
+				statement.setString(1, hostPort);
+				try (ResultSet rs = statement.executeQuery()) {
+					List<VariableSummary> variables = new ArrayList<>();
+					while (rs.next()) {
+						VariableSummary variable = new VariableSummary();
+						variable.name = rs.getString("name");
+						variable.value = rs.getString("setting");
+						variables.add(variable);
+					}
+					request.setAttribute("variables", variables);
+				}
 			}
-			request.setAttribute("variables", variables);
 
 		} catch (Exception err) {
-			System.out.println(err);
+			logger.error("Error fetching game details", err);
 			request.removeAttribute("state");
 			RequestDispatcher rd = request.getRequestDispatcher("/WEB-INF/jsp/game/details.jsp");
 			rd.forward(request, response);
 			return;
-		} finally {
-			if (conn != null) {
-				try {
-					conn.close();
-				} catch (SQLException e) {
-					e.printStackTrace();
-				}
-			}
 		}
 
 		RequestDispatcher rd = request.getRequestDispatcher("/WEB-INF/jsp/game/details.jsp");
