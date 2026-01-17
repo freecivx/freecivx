@@ -19,7 +19,7 @@
 
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-		<java.version>21</java.version>
+		<java.version>17</java.version>
 		<timestamp>${maven.build.timestamp}</timestamp>
 		<derived-webapp.dir>${basedir}/src/derived/webapp</derived-webapp.dir>
 		<generated-js.dir>${project.build.directory}/${project.build.finalName}/javascript</generated-js.dir>
@@ -82,6 +82,7 @@
 		<dependency>
 			<groupId>org.apache.commons</groupId>
 			<artifactId>commons-text</artifactId>
+			<version>1.15.0</version>
 		</dependency>
 
 		<dependency>
@@ -93,6 +94,7 @@
 		<dependency>
 			<groupId>commons-io</groupId>
 			<artifactId>commons-io</artifactId>
+			<version>2.21.0</version>
 		</dependency>
 
 		<!-- Database -->

@@ -3,6 +3,7 @@ package org.freeciv.servlet;
 import org.apache.commons.io.FileUtils;
 
 import javax.imageio.ImageIO;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
