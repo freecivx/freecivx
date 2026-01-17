@@ -1,70 +1,44 @@
 package org.freeciv.services;
 
 import org.freeciv.model.Player;
-import org.freeciv.util.Constants;
+import org.freeciv.util.DatabaseUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-import javax.naming.Context;
-import javax.naming.InitialContext;
-import javax.naming.NamingException;
-import javax.sql.DataSource;
 import java.sql.*;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
 public class Players {
+    private static final Logger logger = LoggerFactory.getLogger(Players.class);
 
     public int getPlayersCount() {
 
-        String query;
-        Connection connection = null;
-        PreparedStatement statement = null;
-        ResultSet rs = null;
-        try {
-            Context env = (Context) (new InitialContext().lookup(Constants.JNDI_CONNECTION));
-            DataSource ds = (DataSource) env.lookup(Constants.JNDI_DDBBCON_MYSQL);
-            connection = ds.getConnection();
+        String query = "SELECT COUNT(*) AS count " //
+                + "FROM auth  " //
+                + "WHERE verified = '1'";
 
-            query = "SELECT COUNT(*) AS count " //
-                    + "FROM auth  " //
-                    + "WHERE verified = '1'";
-
-            statement = connection.prepareStatement(query);
-            rs = statement.executeQuery();
+        try (Connection connection = DatabaseUtil.getConnection();
+             PreparedStatement statement = connection.prepareStatement(query);
+             ResultSet rs = statement.executeQuery()) {
             rs.next();
             return rs.getInt("count");
         } catch (SQLException e) {
+            logger.error("Failed to get players count", e);
             throw new RuntimeException(e);
-        } catch (NamingException e) {
-            throw new RuntimeException(e);
-        } finally {
-            if (connection != null) {
-                try {
-                    connection.close();
-                } catch (SQLException e) {
-                    e.printStackTrace();
-                }
-            }
         }
     }
 
     public List<Player> getPlayers() {
 
-        String query;
-        Connection connection = null;
-        PreparedStatement statement = null;
-        ResultSet rs = null;
-        try {
-            Context env = (Context) (new InitialContext().lookup(Constants.JNDI_CONNECTION));
-            DataSource ds = (DataSource) env.lookup(Constants.JNDI_DDBBCON_MYSQL);
-            connection = ds.getConnection();
+        String query = "SELECT id, username, last_login, elo_rating from auth  "
+                + "WHERE verified = '1' "
+                + "ORDER BY elo_rating DESC, last_login DESC";
 
-            query = "SELECT id, username, last_login, elo_rating from auth  "
-                    + "WHERE verified = '1' "
-                    + "ORDER BY elo_rating DESC, last_login DESC";
-
-            statement = connection.prepareStatement(query);
-            rs = statement.executeQuery();
+        try (Connection connection = DatabaseUtil.getConnection();
+             PreparedStatement statement = connection.prepareStatement(query);
+             ResultSet rs = statement.executeQuery()) {
             List<Player> players = new ArrayList<>();
             while (rs.next()) {
                 Player player = new Player();
@@ -81,37 +55,20 @@ public class Players {
             }
             return players;
         } catch (SQLException e) {
+            logger.error("Failed to get players", e);
             throw new RuntimeException(e);
-        } catch (NamingException e) {
-            throw new RuntimeException(e);
-        } finally {
-            if (connection != null) {
-                try {
-                    connection.close();
-                } catch (SQLException e) {
-                    e.printStackTrace();
-                }
-            }
         }
     }
 
     public List<Player> getOnlinePlayers() {
 
-        String query;
-        Connection connection = null;
-        PreparedStatement statement = null;
-        ResultSet rs = null;
-        try {
-            Context env = (Context) (new InitialContext().lookup(Constants.JNDI_CONNECTION));
-            DataSource ds = (DataSource) env.lookup(Constants.JNDI_DDBBCON_MYSQL);
-            connection = ds.getConnection();
+        String query = "SELECT username, last_login, elo_rating from auth  "
+                + "WHERE verified = '1' and last_login > NOW() - INTERVAL 12 HOUR  "
+                + "ORDER BY username DESC";
 
-            query = "SELECT username, last_login, elo_rating from auth  "
-                    + "WHERE verified = '1' and last_login > NOW() - INTERVAL 12 HOUR  "
-                    + "ORDER BY username DESC";
-
-            statement = connection.prepareStatement(query);
-            rs = statement.executeQuery();
+        try (Connection connection = DatabaseUtil.getConnection();
+             PreparedStatement statement = connection.prepareStatement(query);
+             ResultSet rs = statement.executeQuery()) {
             List<Player> players = new ArrayList<>();
             while (rs.next()) {
                 Player player = new Player();
@@ -120,17 +77,8 @@ public class Players {
             }
             return players;
         } catch (SQLException e) {
+            logger.error("Failed to get online players", e);
             throw new RuntimeException(e);
-        } catch (NamingException e) {
-            throw new RuntimeException(e);
-        } finally {
-            if (connection != null) {
-                try {
-                    connection.close();
-                } catch (SQLException e) {
-                    e.printStackTrace();
-                }
-            }
         }
     }
 }

@@ -33,6 +33,7 @@ import java.util.Random;
 public class Game {
 
     CivServer server;
+    private final Random random = new Random();
 
     long year = 0;
     long turn = 0;
@@ -182,7 +183,7 @@ public class Game {
         for (Player player : players.values()) {
             long startPos = 0;
             for (var i = 0; i < 100; i++) {
-                startPos = new Random().nextInt(map.getXsize() * map.getYsize());
+                startPos = random.nextInt(map.getXsize() * map.getYsize());
                 Tile startTile = tiles.get(startPos);
                 if (startTile.getTerrain() == 7) {
                     break;
@@ -235,7 +236,7 @@ public class Game {
     }
 
     public void addPlayer(long connId, String username, String addr) {
-        Player player = new Player(connId, username, addr, new Random().nextInt(3));
+        Player player = new Player(connId, username, addr, random.nextInt(3));
         players.put(connId, player);
         server.sendMessageAll(username + " has joined the game.");
 

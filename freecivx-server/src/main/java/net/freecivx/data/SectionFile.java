@@ -22,7 +22,12 @@ package net.freecivx.data;
 import java.io.*;
 import java.util.*;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class SectionFile {
+  private static final Logger logger = LoggerFactory.getLogger(SectionFile.class);
+  
   public record Entry(String name, String value) {}
 
   private String name;
@@ -42,7 +47,7 @@ public class SectionFile {
       out.name = filename;
       return out;
     } catch (IOException e) {
-      e.printStackTrace();
+      logger.error("Failed to read section file: {}", filename, e);
       return null;
     }
   }
@@ -52,7 +57,7 @@ public class SectionFile {
     try (BufferedReader reader = new BufferedReader(new InputStreamReader(is))) {
       return fromReader(reader, sectionName, allowDuplicates);
     } catch (IOException e) {
-      e.printStackTrace();
+      logger.error("Failed to read section file from input stream", e);
       return null;
     }
   }
@@ -129,7 +134,7 @@ public class SectionFile {
 
       return secFile;
     } catch (IOException e) {
-      e.printStackTrace();
+      logger.error("Failed to parse section file from reader", e);
       return null;
     }
   }

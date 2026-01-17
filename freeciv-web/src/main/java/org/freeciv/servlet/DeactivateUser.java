@@ -18,6 +18,8 @@
 package org.freeciv.servlet;
 
 import org.apache.commons.codec.digest.Crypt;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.*;
 import jakarta.servlet.*;
@@ -26,11 +28,9 @@ import jakarta.servlet.http.*;
 import java.nio.charset.StandardCharsets;
 import java.sql.*;
 
-import javax.sql.*;
-import javax.naming.*;
-
 import org.freeciv.services.Validation;
 import org.freeciv.util.Constants;
+import org.freeciv.util.DatabaseUtil;
 
 
 /**
@@ -41,6 +41,7 @@ import org.freeciv.util.Constants;
 public class DeactivateUser extends HttpServlet {
 	
 	private static final long serialVersionUID = 1L;
+	private static final Logger logger = LoggerFactory.getLogger(DeactivateUser.class);
 
 	private final Validation validation = new Validation();
 
@@ -56,58 +57,47 @@ public class DeactivateUser extends HttpServlet {
 			return;
 		}
 
-		Connection conn = null;
-		try {
-			Context env = (Context) (new InitialContext().lookup(Constants.JNDI_CONNECTION));
-			DataSource ds = (DataSource) env.lookup(Constants.JNDI_DDBBCON_MYSQL);
-			conn = ds.getConnection();
-
+		try (Connection conn = DatabaseUtil.getConnection()) {
 			// Salted, hashed password.
 			String saltHashQuery =
 					"SELECT secure_hashed_password "
 							+ "FROM auth "
 							+ "WHERE LOWER(username) = LOWER(?) "
 							+ "	LIMIT 1";
-			PreparedStatement ps1 = conn.prepareStatement(saltHashQuery);
-			ps1.setString(1, username);
-			ResultSet rs1 = ps1.executeQuery();
-			if (!rs1.next()) {
-				response.getOutputStream().print("Failed");
-            } else {
-				String hashedPasswordFromDB = rs1.getString(1);
-				if (hashedPasswordFromDB.equals(Crypt.crypt(secure_password, hashedPasswordFromDB))) {
-
-					String query = "UPDATE auth SET verified = FALSE WHERE username = ? ";
-					PreparedStatement preparedStatement = conn.prepareStatement(query);
-					preparedStatement.setString(1, username);
-					int no_updated = preparedStatement.executeUpdate();
-					if (no_updated == 1) {
-						response.getOutputStream().print("OK!");
+			try (PreparedStatement ps1 = conn.prepareStatement(saltHashQuery)) {
+				ps1.setString(1, username);
+				try (ResultSet rs1 = ps1.executeQuery()) {
+					if (!rs1.next()) {
+						response.getOutputStream().print("Failed");
 					} else {
-						response.sendError(HttpServletResponse.SC_BAD_REQUEST,
-								"Invalid username or password.");
-                    }
+						String hashedPasswordFromDB = rs1.getString(1);
+						if (hashedPasswordFromDB.equals(Crypt.crypt(secure_password, hashedPasswordFromDB))) {
 
-				} else {
-					response.sendError(HttpServletResponse.SC_BAD_REQUEST,
-							"Invalid username or password.");
-                }
+							String query = "UPDATE auth SET verified = FALSE WHERE username = ? ";
+							try (PreparedStatement preparedStatement = conn.prepareStatement(query)) {
+								preparedStatement.setString(1, username);
+								int no_updated = preparedStatement.executeUpdate();
+								if (no_updated == 1) {
+									response.getOutputStream().print("OK!");
+								} else {
+									response.sendError(HttpServletResponse.SC_BAD_REQUEST,
+											"Invalid username or password.");
+								}
+							}
+
+						} else {
+							response.sendError(HttpServletResponse.SC_BAD_REQUEST,
+									"Invalid username or password.");
+						}
+					}
+				}
 			}
 
 		} catch (Exception err) {
 			response.setHeader("result", "error");
-			err.printStackTrace();
+			logger.error("Error deactivating user", err);
 			response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Unable to login");
-		} finally {
-			if (conn != null)
-				try {
-					conn.close();
-				} catch (SQLException e) {
-					e.printStackTrace();
-				}
 		}
-
-
 	}
 
 	public void doGet(HttpServletRequest request, HttpServletResponse response)

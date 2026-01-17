@@ -26,9 +26,12 @@ import java.net.InetSocketAddress;
 import java.util.concurrent.Executors;
 
 import net.freecivx.server.CivServer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 
 public class Main {
+    private static final Logger logger = LoggerFactory.getLogger(Main.class);
 
     public static void main(String[] args) {
         int port = 7800; // Default port
@@ -37,25 +40,25 @@ public class Main {
             try {
                 port = Integer.parseInt(args[0]);
             } catch (NumberFormatException e) {
-                System.err.println("Invalid port number: " + args[0]);
+                logger.error("Invalid port number: {}", args[0]);
                 System.exit(1);
                 return;
             }
         }
 
-        System.out.println("This is the server for Freecivx on port " + port + ". You can learn a lot about Freecivx at https://www.FreecivWorld.net/");
+        logger.info("This is the server for Freecivx on port {}. You can learn a lot about Freecivx at https://www.FreecivWorld.net/", port);
 
         try {
             // Create HTTP server
             HttpServer httpServer = HttpServer.create(new InetSocketAddress(port + 1), 0);
             httpServer.createContext("/", new HTTPStatusWebHandler());
             httpServer.setExecutor(Executors.newCachedThreadPool());
-            System.out.println("HTTP server started on port: " + (port + 1));
+            logger.info("HTTP server started on port: {}", (port + 1));
 
             // Start WebSocket server
             CivServer wsServer = new CivServer(new InetSocketAddress(port));
             wsServer.start();
-            System.out.println("WebSocket server started on port: " + port);
+            logger.info("WebSocket server started on port: {}", port);
 
             // Start HTTP server
             httpServer.start();
@@ -64,7 +67,7 @@ public class Main {
             MetaserverClient.publishToMetaserver(port);
 
         } catch (IOException e) {
-            System.err.println("Failed to start the server: " + e.getMessage());
+            logger.error("Failed to start the server: {}", e.getMessage(), e);
             System.exit(1);
         }
     }

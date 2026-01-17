@@ -27,17 +27,16 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-import javax.naming.Context;
-import javax.naming.InitialContext;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.MultipartConfig;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import javax.sql.DataSource;
 
-import org.freeciv.util.Constants;
+import org.freeciv.util.DatabaseUtil;
 import org.json.JSONObject;
 
 /**
@@ -49,6 +48,7 @@ import org.json.JSONObject;
 public class Metaserver extends HttpServlet {
 
 	private static final long serialVersionUID = 1L;
+	private static final Logger logger = LoggerFactory.getLogger(Metaserver.class);
 	
 	private static final String CONTENT_TYPE = "application/json";
 
@@ -149,30 +149,28 @@ public class Metaserver extends HttpServlet {
 		}
 
 		String hostPort = sHost + ':' + sPort;
-		Connection conn = null;
-		PreparedStatement statement;
-		try {
-
-			Context env = (Context) (new InitialContext().lookup(Constants.JNDI_CONNECTION));
-			DataSource ds = (DataSource) env.lookup(Constants.JNDI_DDBBCON_MYSQL);
-			conn = ds.getConnection();
+		try (Connection conn = DatabaseUtil.getConnection()) {
+			PreparedStatement statement;
 
 			if (serverIsStopping != null) {
 				query = "DELETE FROM servers WHERE host = ? AND port = ?";
-				statement = conn.prepareStatement(query);
-				statement.setString(1, sHost);
-				statement.setInt(2, port);
-				statement.executeUpdate();
+				try (PreparedStatement ps = conn.prepareStatement(query)) {
+					ps.setString(1, sHost);
+					ps.setInt(2, port);
+					ps.executeUpdate();
+				}
 
 				query = "DELETE FROM variables WHERE hostport = ?";
-				statement = conn.prepareStatement(query);
-				statement.setString(1, hostPort);
-				statement.executeUpdate();
+				try (PreparedStatement ps = conn.prepareStatement(query)) {
+					ps.setString(1, hostPort);
+					ps.executeUpdate();
+				}
 
 				query = "DELETE FROM players WHERE hostport = ?";
-				statement = conn.prepareStatement(query);
-				statement.setString(1, hostPort);
-				statement.executeUpdate();
+				try (PreparedStatement ps = conn.prepareStatement(query)) {
+					ps.setString(1, hostPort);
+					ps.executeUpdate();
+				}
 				return;
 			}
 
@@ -185,32 +183,60 @@ public class Metaserver extends HttpServlet {
 
 			if (isSettingPlayers || (dropPlayers != null)) {
 				query = "DELETE FROM players WHERE hostport = ?";
-				statement = conn.prepareStatement(query);
-				statement.setString(1, hostPort);
-				statement.executeUpdate();
+				try (PreparedStatement ps = conn.prepareStatement(query)) {
+					ps.setString(1, hostPort);
+					ps.executeUpdate();
+				}
 
 				if (dropPlayers != null) {
 					query = "UPDATE servers SET available = 0, humans = -1 WHERE host = ? AND port = ?";
-					statement = conn.prepareStatement(query);
-					statement.setString(1, sHost);
-					statement.setInt(2, port);
-					statement.executeUpdate();
+					try (PreparedStatement ps = conn.prepareStatement(query)) {
+						ps.setString(1, sHost);
+						ps.setInt(2, port);
+						ps.executeUpdate();
+					}
 				}
 
 				if (isSettingPlayers) {
-
 					query = "INSERT INTO players (hostport, username, name, nation, flag, type, host) VALUES (?, ?, ?, ?, ?, ?, ?)";
-					statement = conn.prepareStatement(query);
+					try (PreparedStatement ps = conn.prepareStatement(query)) {
+						try {
+							for (int i = 0; i < sPlUser.size(); i++) {
+								ps.setString(1, hostPort);
+								ps.setString(2, sPlUser.get(i));
+								ps.setString(3, sPlName.get(i));
+								ps.setString(4, sPlNation.get(i));
+								ps.setString(5, sPlFlag.get(i));
+								ps.setString(6, sPlType.get(i));
+								ps.setString(7, sPlHost.get(i));
+								ps.executeUpdate();
+							}
+						} catch (IndexOutOfBoundsException e) {
+							response.setContentType(CONTENT_TYPE);
+							response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+							response.getOutputStream().print(BAD_REQUEST);
+							return;
+						}
+					}
+				}
+			}
+
+			// delete this variables that this server might have already set
+			try (PreparedStatement ps = conn.prepareStatement("DELETE FROM variables WHERE hostport = ?")) {
+				ps.setString(1, hostPort);
+				ps.executeUpdate();
+			}
+
+			if ((!variableNames.isEmpty()) && (!variableValues.isEmpty())) {
+
+				query = "INSERT INTO variables (hostport, name, setting) VALUES (?, ?, ?)";
+				try (PreparedStatement ps = conn.prepareStatement(query)) {
 					try {
-						for (int i = 0; i < sPlUser.size(); i++) {
-							statement.setString(1, hostPort);
-							statement.setString(2, sPlUser.get(i));
-							statement.setString(3, sPlName.get(i));
-							statement.setString(4, sPlNation.get(i));
-							statement.setString(5, sPlFlag.get(i));
-							statement.setString(6, sPlType.get(i));
-							statement.setString(7, sPlHost.get(i));
-							statement.executeUpdate();
+						for (int i = 0; i < variableNames.size(); i++) {
+							ps.setString(1, hostPort);
+							ps.setString(2, variableNames.get(i));
+							ps.setString(3, variableValues.get(i));
+							ps.executeUpdate();
 						}
 					} catch (IndexOutOfBoundsException e) {
 						response.setContentType(CONTENT_TYPE);
@@ -221,88 +247,58 @@ public class Metaserver extends HttpServlet {
 				}
 			}
 
-			// delete this variables that this server might have already set
-			statement = conn.prepareStatement("DELETE FROM variables WHERE hostport = ?");
-			statement.setString(1, hostPort);
-			statement.executeUpdate();
-
-			if ((!variableNames.isEmpty()) && (!variableValues.isEmpty())) {
-
-				query = "INSERT INTO variables (hostport, name, setting) VALUES (?, ?, ?)";
-				statement = conn.prepareStatement(query);
-				try {
-					for (int i = 0; i < variableNames.size(); i++) {
-						statement.setString(1, hostPort);
-						statement.setString(2, variableNames.get(i));
-						statement.setString(3, variableValues.get(i));
-						statement.executeUpdate();
-					}
-				} catch (IndexOutOfBoundsException e) {
-					response.setContentType(CONTENT_TYPE);
-					response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
-					response.getOutputStream().print(BAD_REQUEST);
-					return;
-				}
-
-			}
-
 			query = "SELECT COUNT(*) FROM servers WHERE host = ? and port = ?";
-			statement = conn.prepareStatement(query);
-			statement.setString(1, sHost);
-			statement.setInt(2, port);
-			ResultSet rs = statement.executeQuery();
+			try (PreparedStatement ps = conn.prepareStatement(query)) {
+				ps.setString(1, sHost);
+				ps.setInt(2, port);
+				try (ResultSet rs = ps.executeQuery()) {
+					boolean serverExists = rs.next() && (rs.getInt(1) == 1);
 
-			boolean serverExists = rs.next() && (rs.getInt(1) == 1);
+					List<String> setServerVariables = new ArrayList<>(serverVariables.keySet());
+					StringBuilder queryBuilder = new StringBuilder();
+					if (serverExists) {
+						queryBuilder.append("UPDATE servers SET ");
+						for (String parameter : setServerVariables) {
+							queryBuilder.append(parameter).append(" = ?, ");
+						}
+						queryBuilder.append(" stamp = NOW() ");
+						queryBuilder.append(" WHERE host = ? AND port = ?");
+					} else {
+						queryBuilder = new StringBuilder("INSERT INTO servers SET ");
+						for (String parameter : setServerVariables) {
+							queryBuilder.append(parameter).append(" = ?, ");
+						}
+						queryBuilder.append(" stamp = NOW() ");
+					}
 
-			List<String> setServerVariables = new ArrayList<>(serverVariables.keySet());
-			StringBuilder queryBuilder = new StringBuilder();
-			if (serverExists) {
-				queryBuilder.append("UPDATE servers SET ");
-				for (String parameter : setServerVariables) {
-					queryBuilder.append(parameter).append(" = ?, ");
-				}
-				queryBuilder.append(" stamp = NOW() ");
-				queryBuilder.append(" WHERE host = ? AND port = ?");
-			} else {
-				queryBuilder = new StringBuilder("INSERT INTO servers SET ");
-				for (String parameter : setServerVariables) {
-					queryBuilder.append(parameter).append(" = ?, ");
-				}
-				queryBuilder.append(" stamp = NOW() ");
-			}
-
-			query = queryBuilder.toString();
-			statement = conn.prepareStatement(query);
-			int i = 1;
-			for (String parameter : setServerVariables) {
-				switch (parameter) {
-				case "port":
-				case "available":
-					statement.setInt(i++, Integer.parseInt(serverVariables.get(parameter)));
-					break;
-				default:
-					statement.setString(i++, serverVariables.get(parameter));
-					break;
+					query = queryBuilder.toString();
+					try (PreparedStatement ps2 = conn.prepareStatement(query)) {
+						int i = 1;
+						for (String parameter : setServerVariables) {
+							switch (parameter) {
+							case "port":
+							case "available":
+								ps2.setInt(i++, Integer.parseInt(serverVariables.get(parameter)));
+								break;
+							default:
+								ps2.setString(i++, serverVariables.get(parameter));
+								break;
+							}
+						}
+						if (serverExists) {
+							ps2.setString(i++, sHost);
+							ps2.setInt(i++, port);
+						}
+						ps2.executeUpdate();
+					}
 				}
 			}
-			if (serverExists) {
-				statement.setString(i++, sHost);
-				statement.setInt(i++, port);
-			}
-			statement.executeUpdate();
 
 		} catch (Exception err) {
+			logger.error("Error updating metaserver", err);
 			response.setContentType(CONTENT_TYPE);
 			response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
 			response.getOutputStream().print(INTERNAL_SERVER_ERROR);
-		} finally {
-			if (conn != null) {
-				try {
-					conn.close();
-				} catch (SQLException e) {
-					e.printStackTrace();
-				}
-			}
 		}
 	}
 }

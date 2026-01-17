@@ -23,12 +23,13 @@ import jakarta.servlet.http.*;
 
 import java.nio.charset.StandardCharsets;
 import java.sql.*;
-import javax.sql.*;
-import javax.naming.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import org.apache.commons.codec.digest.DigestUtils;
 import org.freeciv.services.Validation;
 import org.freeciv.util.Constants;
+import org.freeciv.util.DatabaseUtil;
 
 
 /**
@@ -40,6 +41,7 @@ import org.freeciv.util.Constants;
 public class LoginUser extends HttpServlet {
 	
 	private static final long serialVersionUID = 1L;
+	private static final Logger logger = LoggerFactory.getLogger(LoginUser.class);
 
 	private final Validation validation = new Validation();
 
@@ -61,51 +63,41 @@ public class LoginUser extends HttpServlet {
 			return;
 		}
 
-		Connection conn = null;
-		try {
-			Context env = (Context) (new InitialContext().lookup(Constants.JNDI_CONNECTION));
-			DataSource ds = (DataSource) env.lookup(Constants.JNDI_DDBBCON_MYSQL);
-			conn = ds.getConnection();
-
+		try (Connection conn = DatabaseUtil.getConnection()) {
 			// Salted, hashed password.
 			String saltHashQuery =
 					"SELECT id, secure_hashed_password "
 							+ "FROM auth "
 							+ "WHERE LOWER(username) = LOWER(?) "
 							+ "	AND verified = TRUE LIMIT 1";
-			PreparedStatement ps1 = conn.prepareStatement(saltHashQuery);
-			ps1.setString(1, username);
-			ResultSet rs1 = ps1.executeQuery();
-			if (!rs1.next()) {
-				response.getOutputStream().print("Failed");
-			} else {
-				String hashedPasswordFromDB = rs1.getString(2);
-				if (hashedPasswordFromDB != null &&
-						hashedPasswordFromDB.equals(DigestUtils.sha256Hex(secure_password))) {
+			try (PreparedStatement ps1 = conn.prepareStatement(saltHashQuery)) {
+				ps1.setString(1, username);
+				try (ResultSet rs1 = ps1.executeQuery()) {
+					if (!rs1.next()) {
+						response.getOutputStream().print("Failed");
+					} else {
+						String hashedPasswordFromDB = rs1.getString(2);
+						if (hashedPasswordFromDB != null &&
+								hashedPasswordFromDB.equals(DigestUtils.sha256Hex(secure_password))) {
 
-					String query = "UPDATE auth SET last_login = NOW() where username = ?";
-					PreparedStatement preparedStatement = conn.prepareStatement(query);
-					preparedStatement.setString(1, username);
-					preparedStatement.executeUpdate();
+							String query = "UPDATE auth SET last_login = NOW() where username = ?";
+							try (PreparedStatement preparedStatement = conn.prepareStatement(query)) {
+								preparedStatement.setString(1, username);
+								preparedStatement.executeUpdate();
+							}
 
-
-					response.getOutputStream().print("OK," + rs1.getString(1));
-				} else {
-					response.getOutputStream().print("Failed");
+							response.getOutputStream().print("OK," + rs1.getString(1));
+						} else {
+							response.getOutputStream().print("Failed");
+						}
+					}
 				}
 			}
 
-
 		} catch (Exception err) {
 			response.setHeader("result", "error");
+			logger.error("Error logging in user", err);
 			response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Unable to login");
-		} finally {
-			if (conn != null)
-				try {
-					conn.close();
-				} catch (SQLException e) {
-					e.printStackTrace();
-				}
 		}
 	}
 

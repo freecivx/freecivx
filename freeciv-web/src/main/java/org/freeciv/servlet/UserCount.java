@@ -23,11 +23,9 @@ import jakarta.servlet.http.*;
 
 import java.sql.*;
 
-import javax.sql.*;
-
-import org.freeciv.util.Constants;
-
-import javax.naming.*;
+import org.freeciv.util.DatabaseUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 
 /**
@@ -36,37 +34,24 @@ import javax.naming.*;
  * URL: /user_count
  */
 public class UserCount extends HttpServlet {
-	
+	private static final Logger logger = LoggerFactory.getLogger(UserCount.class);
 	private static final long serialVersionUID = 1L;
 
 	public void doPost(HttpServletRequest request, HttpServletResponse response)
 			throws IOException, ServletException {
 
-		Connection conn = null;
-		try {
-
-			Context env = (Context) (new InitialContext().lookup(Constants.JNDI_CONNECTION));
-			DataSource ds = (DataSource) env.lookup(Constants.JNDI_DDBBCON_MYSQL);
-			conn = ds.getConnection();
-
-			String query = "SELECT COUNT(*) FROM `auth`";
-			PreparedStatement preparedStatement = conn.prepareStatement(query);
-			ResultSet rs = preparedStatement.executeQuery();
+		String query = "SELECT COUNT(*) FROM `auth`";
+		try (Connection conn = DatabaseUtil.getConnection();
+		     PreparedStatement preparedStatement = conn.prepareStatement(query);
+		     ResultSet rs = preparedStatement.executeQuery()) {
 			if (rs.next()) {
 				response.getOutputStream().print(rs.getString(1));
 			}
 
-		} catch (Exception err) {
+		} catch (SQLException e) {
+			logger.error("Failed to count users", e);
 			response.setHeader("result", "error");
-			err.printStackTrace();
 			response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Unable to count users");
-		} finally {
-			if (conn != null)
-				try {
-					conn.close();
-				} catch (SQLException e) {
-					e.printStackTrace();
-				}
 		}
 		
 	}
