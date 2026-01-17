@@ -26,7 +26,7 @@ clinet.js, because the request to /civclientlauncher included url parameters whi
 
 - [x] `game.js` - Core game state and info management (Completed 2026-01-17)
 - [x] `client_main.js` - Client main entry point (Completed 2026-01-17)
-- [ ] `control.js` - Game control logic
+- [x] `control.js` - Game control logic (Completed 2026-01-17)
 - [ ] `chatbox.js` - Chat functionality
 - [ ] `helpdata.js` - Help system
 - [ ] `specialist.js` - Specialist management
@@ -102,7 +102,7 @@ Do NOT modernize these library files:
 **Started**: 2026-01-17 14:31:09  
 
 **Last Updated**: 2026-01-17 
-**Files Completed**: 3 (`game.js`, `client_main.js`, `webgl/mapview_webgl.js`)
+**Files Completed**: 4 (`game.js`, `client_main.js`, `webgl/mapview_webgl.js`, `control.js`)
 
 
 **Files Remaining**: ~50+
