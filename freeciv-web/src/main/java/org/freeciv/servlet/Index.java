@@ -17,30 +17,20 @@
  *******************************************************************************/
 package org.freeciv.servlet;
 
-import java.io.IOException;
-
-import jakarta.servlet.RequestDispatcher;
-import jakarta.servlet.ServletException;
-import jakarta.servlet.http.HttpServlet;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
-
 import org.freeciv.services.Games;
+import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.GetMapping;
 
 /**
  * Displays the home page
  *
  * URL: /
  */
-public class Index extends HttpServlet {
+@Controller
+public class Index {
 
-	private static final long serialVersionUID = 1L;
-
-	@Override
-	public void doGet(HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException {
-
-		RequestDispatcher rd = request.getRequestDispatcher("/WEB-INF/jsp/index.jsp");
-		rd.forward(request, response);
-
+	@GetMapping("/")
+	public String getIndex() {
+		return "index";
 	}
 }

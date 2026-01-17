@@ -1,10 +1,5 @@
 package org.freeciv.servlet;
 
-import jakarta.servlet.ServletException;
-import jakarta.servlet.http.HttpServlet;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
-import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -13,6 +8,11 @@ import java.sql.SQLException;
 import org.freeciv.util.DatabaseUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 
 
 /**
@@ -20,23 +20,27 @@ import org.slf4j.LoggerFactory;
  *
  * URL: /errorlog
  */
-public class ErrorLog extends HttpServlet {
+@RestController
+public class ErrorLog {
     private static final Logger logger = LoggerFactory.getLogger(ErrorLog.class);
 
 
-    public void doPost(HttpServletRequest request, HttpServletResponse response)
-            throws IOException, ServletException {
+    @PostMapping("/errorlog")
+    public ResponseEntity<Void> logError(@RequestParam("stacktrace") String stacktrace_param) {
 
-        String stacktrace = java.net.URLDecoder.decode(request.getParameter("stacktrace"), StandardCharsets.UTF_8);
+        String stacktrace = java.net.URLDecoder.decode(stacktrace_param, StandardCharsets.UTF_8);
 
         String query = "INSERT INTO errorlog (stacktrace) VALUES (?)";
         try (Connection conn = DatabaseUtil.getConnection();
              PreparedStatement preparedStatement = conn.prepareStatement(query)) {
             preparedStatement.setString(1, stacktrace);
             preparedStatement.executeUpdate();
+            return ResponseEntity.ok().build();
         } catch (SQLException e) {
             logger.error("Failed to log error to database", e);
-            response.setHeader("result", "error");
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .header("result", "error")
+                    .build();
         }
 
     }

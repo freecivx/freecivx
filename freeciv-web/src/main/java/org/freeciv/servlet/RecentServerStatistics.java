@@ -17,7 +17,6 @@
  *******************************************************************************/
 package org.freeciv.servlet;
 
-import java.io.IOException;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -25,33 +24,32 @@ import java.sql.SQLException;
 
 import javax.naming.Context;
 import javax.naming.InitialContext;
-import jakarta.servlet.ServletException;
-import jakarta.servlet.http.HttpServlet;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
 import javax.sql.DataSource;
 
 import org.freeciv.util.Constants;
 import org.json.JSONObject;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 /**
  * Lists: the number of servers.
  *
  * URL: /meta/status
  */
-public class RecentServerStatistics extends HttpServlet {
+@RestController
+public class RecentServerStatistics {
 	
-	private static final long serialVersionUID = 1L;
-
 	private static final String CONTENT_TYPE = "application/json";
 	
 	private static final String INTERNAL_SERVER_ERROR = new JSONObject() //
-			.put("statusCode", HttpServletResponse.SC_INTERNAL_SERVER_ERROR) //
+			.put("statusCode", HttpStatus.INTERNAL_SERVER_ERROR.value()) //
 			.put("error", "Internal server error.") //
 			.toString();
 
-	@Override
-	public void doGet(HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException {
+	@GetMapping("/meta/status")
+	public ResponseEntity<String> getServerStatistics() {
 
 		Connection conn = null;
 
@@ -90,13 +88,13 @@ public class RecentServerStatistics extends HttpServlet {
 				throw new Exception("Expected 3 rows of data. Obtained " + i);
 			}
 
-			response.getOutputStream().print(result.toString());
+			return ResponseEntity.ok(result.toString());
 
 		} catch (Exception err) {
 			System.err.println(err);
-			response.setContentType(CONTENT_TYPE);
-			response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
-			response.getOutputStream().print(INTERNAL_SERVER_ERROR);
+			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+					.header("Content-Type", CONTENT_TYPE)
+					.body(INTERNAL_SERVER_ERROR);
 		} finally {
 			if (conn != null) {
 				try {

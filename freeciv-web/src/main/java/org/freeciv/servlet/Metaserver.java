@@ -17,11 +17,9 @@
  *******************************************************************************/
 package org.freeciv.servlet;
 
-import java.io.IOException;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
-import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -30,40 +28,38 @@ import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import jakarta.servlet.ServletException;
-import jakarta.servlet.annotation.MultipartConfig;
-import jakarta.servlet.http.HttpServlet;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
-
 import org.freeciv.util.DatabaseUtil;
 import org.json.JSONObject;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 
 /**
  * Displays the multiplayer games
  *
  * URL: /meta/metaserver
  */
-@MultipartConfig
-public class Metaserver extends HttpServlet {
+@RestController
+public class Metaserver {
 
-	private static final long serialVersionUID = 1L;
 	private static final Logger logger = LoggerFactory.getLogger(Metaserver.class);
 	
 	private static final String CONTENT_TYPE = "application/json";
 
 	private static final String INTERNAL_SERVER_ERROR = new JSONObject() //
-			.put("statusCode", HttpServletResponse.SC_INTERNAL_SERVER_ERROR) //
+			.put("statusCode", HttpStatus.INTERNAL_SERVER_ERROR.value()) //
 			.put("error", "Internal server error.") //
 			.toString();
 
 	private static final String FORBIDDEN = new JSONObject() //
-			.put("statusCode", HttpServletResponse.SC_FORBIDDEN) //
+			.put("statusCode", HttpStatus.FORBIDDEN.value()) //
 			.put("error", "Forbidden.") //
 			.toString();
 
 	private static final String BAD_REQUEST = new JSONObject() //
-			.put("statusCode", HttpServletResponse.SC_BAD_REQUEST) //
+			.put("statusCode", HttpStatus.BAD_REQUEST.value()) //
 			.put("error", "Bad Request.") //
 			.toString();
 
@@ -84,44 +80,40 @@ public class Metaserver extends HttpServlet {
 		SERVER_COLUMNS.add("port");
 	}
 
-	@Override
-	public void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+	@PostMapping("/meta/metaserver")
+	public ResponseEntity<String> updateMetaserver(
+			@RequestParam(required = false) String bye,
+			@RequestParam(required = false) String host,
+			@RequestParam(required = false) String port,
+			@RequestParam(required = false) String dropplrs,
+			@RequestParam(value = "plu[]", required = false) List<String> sPlUser,
+			@RequestParam(value = "pll[]", required = false) List<String> sPlName,
+			@RequestParam(value = "pln[]", required = false) List<String> sPlNation,
+			@RequestParam(value = "plf[]", required = false) List<String> sPlFlag,
+			@RequestParam(value = "plt[]", required = false) List<String> sPlType,
+			@RequestParam(value = "plh[]", required = false) List<String> sPlHost,
+			@RequestParam(value = "vn[]", required = false) List<String> variableNames,
+			@RequestParam(value = "vv[]", required = false) List<String> variableValues,
+			@RequestParam Map<String, String> allParams,
+			jakarta.servlet.http.HttpServletRequest request) {
 
 		String localAddr = request.getLocalAddr();
 		String remoteAddr = request.getRemoteAddr();
 
 		if ((localAddr == null) || !localAddr.equals(remoteAddr)) {
-			response.setContentType(CONTENT_TYPE);
-			response.setStatus(HttpServletResponse.SC_FORBIDDEN);
-			response.getOutputStream().print(FORBIDDEN);
-			return;
+			return ResponseEntity.status(HttpStatus.FORBIDDEN)
+					.header("Content-Type", CONTENT_TYPE)
+					.body(FORBIDDEN);
 		}
 
-		String serverIsStopping = request.getParameter("bye");
-		String sHost = request.getParameter("host");
-		String sPort = request.getParameter("port");
-		String dropPlayers = request.getParameter("dropplrs");
-
-		List<String> sPlUser = request.getParameterValues("plu[]") == null ? null
-				: Arrays.asList(request.getParameterValues("plu[]"));
-		List<String> sPlName = request.getParameterValues("pll[]") == null ? null
-				: Arrays.asList(request.getParameterValues("pll[]"));
-		List<String> sPlNation = request.getParameterValues("pln[]") == null ? null
-				: Arrays.asList(request.getParameterValues("pln[]"));
-		List<String> sPlFlag = request.getParameterValues("plf[]") == null ? null
-				: Arrays.asList(request.getParameterValues("plf[]"));
-		List<String> sPlType = request.getParameterValues("plt[]") == null ? null
-				: Arrays.asList(request.getParameterValues("plt[]"));
-		List<String> sPlHost = request.getParameterValues("plh[]") == null ? null
-				: Arrays.asList(request.getParameterValues("plh[]"));
-		List<String> variableNames = request.getParameterValues("vn[]") == null ? null
-				: Arrays.asList(request.getParameterValues("vn[]"));
-		List<String> variableValues = request.getParameterValues("vv[]") == null ? null
-				: Arrays.asList(request.getParameterValues("vv[]"));
+		String serverIsStopping = bye;
+		String sHost = host;
+		String sPort = port;
+		String dropPlayers = dropplrs;
 
 		Map<String, String> serverVariables = new HashMap<>();
 		for (String serverParameter : SERVER_COLUMNS) {
-			String parameter = request.getParameter(serverParameter);
+			String parameter = allParams.get(serverParameter);
 			if (parameter != null) {
 				serverVariables.put(serverParameter, parameter);
 			}
@@ -129,23 +121,22 @@ public class Metaserver extends HttpServlet {
 
 		// Data validation
 		String query;
-		int port;
+		int portNum;
 		try {
 			if (sPort == null) {
 				throw new IllegalArgumentException("Port must be supplied.");
 			}
-			port = Integer.parseInt(sPort);
-			if ((port < 1024) || (port > 65535)) {
+			portNum = Integer.parseInt(sPort);
+			if ((portNum < 1024) || (portNum > 65535)) {
 				throw new IllegalArgumentException("Invalid port supplied. Expected a number between 1024 and 65535");
 			}
 			if (sHost == null) {
 				throw new IllegalArgumentException("Host parameter is required to perform this request.");
 			}
 		} catch (IllegalArgumentException e) {
-			response.setContentType(CONTENT_TYPE);
-			response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
-			response.getOutputStream().print(BAD_REQUEST);
-			return;
+			return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+					.header("Content-Type", CONTENT_TYPE)
+					.body(BAD_REQUEST);
 		}
 
 		String hostPort = sHost + ':' + sPort;
@@ -156,7 +147,7 @@ public class Metaserver extends HttpServlet {
 				query = "DELETE FROM servers WHERE host = ? AND port = ?";
 				try (PreparedStatement ps = conn.prepareStatement(query)) {
 					ps.setString(1, sHost);
-					ps.setInt(2, port);
+					ps.setInt(2, portNum);
 					ps.executeUpdate();
 				}
 
@@ -171,7 +162,7 @@ public class Metaserver extends HttpServlet {
 					ps.setString(1, hostPort);
 					ps.executeUpdate();
 				}
-				return;
+				return ResponseEntity.ok().build();
 			}
 
 			boolean isSettingPlayers = (sPlUser != null) && !sPlUser.isEmpty() //
@@ -192,7 +183,7 @@ public class Metaserver extends HttpServlet {
 					query = "UPDATE servers SET available = 0, humans = -1 WHERE host = ? AND port = ?";
 					try (PreparedStatement ps = conn.prepareStatement(query)) {
 						ps.setString(1, sHost);
-						ps.setInt(2, port);
+						ps.setInt(2, portNum);
 						ps.executeUpdate();
 					}
 				}
@@ -212,10 +203,9 @@ public class Metaserver extends HttpServlet {
 								ps.executeUpdate();
 							}
 						} catch (IndexOutOfBoundsException e) {
-							response.setContentType(CONTENT_TYPE);
-							response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
-							response.getOutputStream().print(BAD_REQUEST);
-							return;
+							return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+									.header("Content-Type", CONTENT_TYPE)
+									.body(BAD_REQUEST);
 						}
 					}
 				}
@@ -227,7 +217,7 @@ public class Metaserver extends HttpServlet {
 				ps.executeUpdate();
 			}
 
-			if ((!variableNames.isEmpty()) && (!variableValues.isEmpty())) {
+			if (variableNames != null && !variableNames.isEmpty() && variableValues != null && !variableValues.isEmpty()) {
 
 				query = "INSERT INTO variables (hostport, name, setting) VALUES (?, ?, ?)";
 				try (PreparedStatement ps = conn.prepareStatement(query)) {
@@ -239,10 +229,9 @@ public class Metaserver extends HttpServlet {
 							ps.executeUpdate();
 						}
 					} catch (IndexOutOfBoundsException e) {
-						response.setContentType(CONTENT_TYPE);
-						response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
-						response.getOutputStream().print(BAD_REQUEST);
-						return;
+						return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+								.header("Content-Type", CONTENT_TYPE)
+								.body(BAD_REQUEST);
 					}
 				}
 			}
@@ -250,7 +239,7 @@ public class Metaserver extends HttpServlet {
 			query = "SELECT COUNT(*) FROM servers WHERE host = ? and port = ?";
 			try (PreparedStatement ps = conn.prepareStatement(query)) {
 				ps.setString(1, sHost);
-				ps.setInt(2, port);
+				ps.setInt(2, portNum);
 				try (ResultSet rs = ps.executeQuery()) {
 					boolean serverExists = rs.next() && (rs.getInt(1) == 1);
 
@@ -287,18 +276,20 @@ public class Metaserver extends HttpServlet {
 						}
 						if (serverExists) {
 							ps2.setString(i++, sHost);
-							ps2.setInt(i++, port);
+							ps2.setInt(i++, portNum);
 						}
 						ps2.executeUpdate();
 					}
 				}
 			}
 
+			return ResponseEntity.ok().build();
+
 		} catch (Exception err) {
 			logger.error("Error updating metaserver", err);
-			response.setContentType(CONTENT_TYPE);
-			response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
-			response.getOutputStream().print(INTERNAL_SERVER_ERROR);
+			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+					.header("Content-Type", CONTENT_TYPE)
+					.body(INTERNAL_SERVER_ERROR);
 		}
 	}
 }

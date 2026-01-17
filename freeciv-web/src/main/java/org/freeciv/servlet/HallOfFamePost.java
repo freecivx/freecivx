@@ -1,13 +1,8 @@
 package org.freeciv.servlet;
 
-import jakarta.servlet.annotation.WebServlet;
 import org.apache.commons.io.FileUtils;
 import javax.naming.Context;
 import javax.naming.InitialContext;
-import jakarta.servlet.ServletException;
-import jakarta.servlet.http.HttpServlet;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
 import javax.sql.DataSource;
 import java.io.File;
 import java.io.IOException;
@@ -21,44 +16,56 @@ import java.util.logging.Logger;
 
 import org.freeciv.services.Validation;
 import org.freeciv.util.Constants;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 
 /**
  * Submit game results to Hall of Fame.
  *
  * URL: /hall_of_fame_post
  */
-@WebServlet("/hall_of_fame_post")
-public class HallOfFamePost extends HttpServlet {
+@RestController
+public class HallOfFamePost {
 
     private static final Logger LOGGER = Logger.getLogger(HallOfFamePost.class.getName());
-    private static final Validation VALIDATION = new Validation();
     private static final Pattern ALPHA_NUMERIC_PATTERN = Pattern.compile("^[0-9a-zA-Z .]+$");
     private static final String MAP_SRC_IMG_PATH = System.getenv("MAP_SRC_IMG_PATH");
     private static final String MAP_DST_IMG_PATH = System.getenv("MAP_DST_IMG_PATH");
 
-    @Override
-    protected void doPost(HttpServletRequest request, HttpServletResponse response)
-            throws IOException, ServletException {
+    @Autowired
+    private Validation validation;
 
-        String username = sanitizeInput(request.getParameter("username"));
-        String nation = sanitizeInput(request.getParameter("nation"));
-        String score = sanitizeInput(request.getParameter("score"));
-        String turn = sanitizeInput(request.getParameter("turn"));
-        String port = sanitizeInput(request.getParameter("port"));
+    @PostMapping("/hall_of_fame_post")
+    public ResponseEntity<Void> submitHallOfFame(
+            @RequestParam("username") String username,
+            @RequestParam("nation") String nation,
+            @RequestParam("score") String score,
+            @RequestParam("turn") String turn,
+            @RequestParam("port") String port,
+            jakarta.servlet.http.HttpServletRequest request) {
+
+        username = sanitizeInput(username);
+        nation = sanitizeInput(nation);
+        score = sanitizeInput(score);
+        turn = sanitizeInput(turn);
+        port = sanitizeInput(port);
+
         String ipAddress = request.getHeader("X-Real-IP");
         if (ipAddress == null) {
             ipAddress = request.getRemoteAddr();
         }
 
         // Input validation
-        if (!VALIDATION.isValidUsername(username)) {
-            response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Invalid username.");
-            return;
+        if (!validation.isValidUsername(username)) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
         }
 
         if (!ALPHA_NUMERIC_PATTERN.matcher(score).matches() || !ALPHA_NUMERIC_PATTERN.matcher(turn).matches()) {
-            response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Invalid data submitted.");
-            return;
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
         }
 
         // Database and file operations
@@ -71,9 +78,11 @@ public class HallOfFamePost extends HttpServlet {
             // Insert game results
             insertGameResult(conn, username, nation, score, turn, ipAddress);
 
+            return ResponseEntity.ok().build();
+
         } catch (Exception e) {
             LOGGER.log(Level.SEVERE, "Error processing Hall of Fame submission", e);
-            response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "An internal error occurred.");
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
 

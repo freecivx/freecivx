@@ -21,16 +21,18 @@ import org.apache.commons.codec.digest.Crypt;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.*;
-import jakarta.servlet.*;
-import jakarta.servlet.http.*;
-
 import java.nio.charset.StandardCharsets;
 import java.sql.*;
 
 import org.freeciv.services.Validation;
-import org.freeciv.util.Constants;
 import org.freeciv.util.DatabaseUtil;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 
 
 /**
@@ -38,23 +40,24 @@ import org.freeciv.util.DatabaseUtil;
  *
  * URL: /deactivate_user
  */
-public class DeactivateUser extends HttpServlet {
+@RestController
+public class DeactivateUser {
 	
-	private static final long serialVersionUID = 1L;
 	private static final Logger logger = LoggerFactory.getLogger(DeactivateUser.class);
 
-	private final Validation validation = new Validation();
+	@Autowired
+	private Validation validation;
 
-	public void doPost(HttpServletRequest request, HttpServletResponse response)
-			throws IOException, ServletException {
+	@PostMapping("/deactivate_user")
+	public ResponseEntity<String> deactivateUser(
+			@RequestParam("username") String username,
+			@RequestParam("sha_password") String sha_password) {
 
-		String username = request.getParameter("username");
-		String secure_password = java.net.URLDecoder.decode(request.getParameter("sha_password"), StandardCharsets.UTF_8);
+		String secure_password = java.net.URLDecoder.decode(sha_password, StandardCharsets.UTF_8);
 
 		if (!validation.isValidUsername(username)) {
-			response.sendError(HttpServletResponse.SC_BAD_REQUEST,
-					"Invalid username. Please try again with another username.");
-			return;
+			return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+					.body("Invalid username. Please try again with another username.");
 		}
 
 		try (Connection conn = DatabaseUtil.getConnection()) {
@@ -68,7 +71,7 @@ public class DeactivateUser extends HttpServlet {
 				ps1.setString(1, username);
 				try (ResultSet rs1 = ps1.executeQuery()) {
 					if (!rs1.next()) {
-						response.getOutputStream().print("Failed");
+						return ResponseEntity.ok("Failed");
 					} else {
 						String hashedPasswordFromDB = rs1.getString(1);
 						if (hashedPasswordFromDB.equals(Crypt.crypt(secure_password, hashedPasswordFromDB))) {
@@ -78,33 +81,33 @@ public class DeactivateUser extends HttpServlet {
 								preparedStatement.setString(1, username);
 								int no_updated = preparedStatement.executeUpdate();
 								if (no_updated == 1) {
-									response.getOutputStream().print("OK!");
+									return ResponseEntity.ok("OK!");
 								} else {
-									response.sendError(HttpServletResponse.SC_BAD_REQUEST,
-											"Invalid username or password.");
+									return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+											.body("Invalid username or password.");
 								}
 							}
 
 						} else {
-							response.sendError(HttpServletResponse.SC_BAD_REQUEST,
-									"Invalid username or password.");
+							return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+									.body("Invalid username or password.");
 						}
 					}
 				}
 			}
 
 		} catch (Exception err) {
-			response.setHeader("result", "error");
 			logger.error("Error deactivating user", err);
-			response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Unable to login");
+			return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+					.header("result", "error")
+					.body("Unable to login");
 		}
 	}
 
-	public void doGet(HttpServletRequest request, HttpServletResponse response)
-			throws IOException, ServletException {
-
-		response.sendError(HttpServletResponse.SC_METHOD_NOT_ALLOWED, "This endpoint only supports the POST method.");
-
+	@GetMapping("/deactivate_user")
+	public ResponseEntity<String> getNotAllowed() {
+		return ResponseEntity.status(HttpStatus.METHOD_NOT_ALLOWED)
+				.body("This endpoint only supports the POST method.");
 	}
 
 }

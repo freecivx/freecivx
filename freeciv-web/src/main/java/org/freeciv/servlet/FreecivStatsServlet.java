@@ -17,7 +17,6 @@
  *******************************************************************************/
 package org.freeciv.servlet;
 
-import java.io.IOException;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
@@ -26,22 +25,23 @@ import java.util.Map;
 
 import javax.naming.Context;
 import javax.naming.InitialContext;
-import jakarta.servlet.ServletException;
-import jakarta.servlet.http.HttpServlet;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
 import javax.sql.DataSource;
 
 import org.freeciv.util.Constants;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 
 /**
  * This servlet will collect statistics about time played, and number of games stated.
  *
  * URL: /freeciv_time_played_stats
  */
-public class FreecivStatsServlet extends HttpServlet {
-	
-	private static final long serialVersionUID = 1L;
+@RestController
+public class FreecivStatsServlet {
 
 	private final static Map<String, Integer> gameTypes = new HashMap<>();
 	
@@ -51,15 +51,14 @@ public class FreecivStatsServlet extends HttpServlet {
 		gameTypes.put("multi", 1);
 	}
 
-	public void doPost(HttpServletRequest request, HttpServletResponse response)
-			throws IOException, ServletException {
+	@PostMapping("/freeciv_time_played_stats")
+	public ResponseEntity<Void> recordGameStats(@RequestParam("type") String gameType) {
 
 		Connection conn = null;
 		try {
 
-			String gameType = request.getParameter("type");
 			if (!gameTypes.containsKey(gameType)) {
-				return;
+				return ResponseEntity.ok().build();
 			}
 
 			Context env = (Context) (new InitialContext().lookup(Constants.JNDI_CONNECTION));
@@ -76,9 +75,11 @@ public class FreecivStatsServlet extends HttpServlet {
 			preparedStatement.setInt(1, gameTypeId);
 			preparedStatement.executeUpdate();
 
+			return ResponseEntity.ok().build();
 
 		} catch (Exception err) {
 			System.err.println("Error in FreecivStatsServlet" + err.getMessage());
+			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
 		} finally {
 			if (conn != null)
 				try {
@@ -90,10 +91,9 @@ public class FreecivStatsServlet extends HttpServlet {
 
 	}
 
-	public void doGet(HttpServletRequest request, HttpServletResponse response)
-			throws IOException, ServletException {
-
-		response.sendError(HttpServletResponse.SC_METHOD_NOT_ALLOWED, "This endpoint only supports the POST method.");
-		
+	@GetMapping("/freeciv_time_played_stats")
+	public ResponseEntity<String> getNotAllowed() {
+		return ResponseEntity.status(HttpStatus.METHOD_NOT_ALLOWED)
+				.body("This endpoint only supports the POST method.");
 	}
 }

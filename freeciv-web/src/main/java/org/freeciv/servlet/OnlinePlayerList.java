@@ -19,37 +19,31 @@ package org.freeciv.servlet;
  *******************************************************************************/
 
 
-import java.io.IOException;
 import java.util.List;
-import java.util.stream.Collectors;
-
-import jakarta.servlet.RequestDispatcher;
-import jakarta.servlet.ServletException;
-import jakarta.servlet.annotation.MultipartConfig;
-import jakarta.servlet.annotation.WebServlet;
-import jakarta.servlet.http.HttpServlet;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
 
 import org.freeciv.model.Player;
 import org.freeciv.services.Players;
 import org.json.JSONArray;
 import org.json.JSONObject;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 /**
  * Displays list of players
  *
  */
-@MultipartConfig
-@WebServlet("/player/onlinelist")
-public class OnlinePlayerList extends HttpServlet {
+@RestController
+public class OnlinePlayerList {
 
-    private static final long serialVersionUID = 1L;
+    @Autowired
+    private Players players;
 
-    @Override
-    protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+    @GetMapping("/player/onlinelist")
+    public ResponseEntity<String> getOnlinePlayers() {
         try {
-            Players players = new Players();
             List<Player> playersList = players.getOnlinePlayers();
 
             // Extract player names into a JSONArray
@@ -62,14 +56,14 @@ public class OnlinePlayerList extends HttpServlet {
             JSONObject jsonResponse = new JSONObject();
             jsonResponse.put("players", playerArray);
 
-            // Send JSON response
-            response.setContentType("application/json");
-            response.setCharacterEncoding("UTF-8");
-            response.getWriter().write(jsonResponse.toString());
+            return ResponseEntity.ok()
+                    .header("Content-Type", "application/json; charset=UTF-8")
+                    .body(jsonResponse.toString());
 
         } catch (RuntimeException err) {
-            response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
-            response.getWriter().write("{\"error\": \"An error occurred.\" " +  err.getMessage()  +" }");
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .header("Content-Type", "application/json")
+                    .body("{\"error\": \"An error occurred.\" " + err.getMessage() + " }");
         }
     }
 

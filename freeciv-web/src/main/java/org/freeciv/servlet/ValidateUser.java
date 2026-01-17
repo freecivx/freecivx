@@ -17,10 +17,6 @@
  *******************************************************************************/
 package org.freeciv.servlet;
 
-import java.io.*;
-import jakarta.servlet.*;
-import jakarta.servlet.http.*;
-
 import java.sql.*;
 
 import javax.sql.*;
@@ -28,6 +24,12 @@ import javax.sql.*;
 import org.freeciv.util.Constants;
 
 import javax.naming.*;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 
 
 /**
@@ -36,14 +38,11 @@ import javax.naming.*;
  *
  * URL: /validate_user
  */
-public class ValidateUser extends HttpServlet {
-	
-	private static final long serialVersionUID = 1L;
+@RestController
+public class ValidateUser {
 
-	public void doPost(HttpServletRequest request, HttpServletResponse response)
-			throws IOException, ServletException {
-
-		String usernameOrEmail = request.getParameter("userstring");
+	@PostMapping("/validate_user")
+	public ResponseEntity<String> validateUser(@RequestParam("userstring") String usernameOrEmail) {
 
 		Connection conn = null;
 		try {
@@ -67,20 +66,21 @@ public class ValidateUser extends HttpServlet {
 				String username = rs.getString(1);
 				int activated = rs.getInt(2);
 				if (activated == 1) {
-					response.getOutputStream().print(username);
+					return ResponseEntity.ok(username);
 				} else {
-					response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Invalid user");
+					return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Invalid user");
 				}
 			} else if (usernameOrEmail != null && usernameOrEmail.contains("@")) {
-				response.getOutputStream().print("invitation");
+				return ResponseEntity.ok("invitation");
 			} else {
-				response.getOutputStream().print("user_does_not_exist");
+				return ResponseEntity.ok("user_does_not_exist");
 			}
 
 		} catch (Exception err) {
-			response.setHeader("result", "error");
 			err.printStackTrace();
-			response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Unable to login");
+			return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+					.header("result", "error")
+					.body("Unable to login");
 		} finally {
 			if (conn != null)
 				try {
@@ -92,11 +92,10 @@ public class ValidateUser extends HttpServlet {
 
 	}
 
-	public void doGet(HttpServletRequest request, HttpServletResponse response)
-			throws IOException, ServletException {
-
-		response.sendError(HttpServletResponse.SC_METHOD_NOT_ALLOWED, "This endpoint only supports the POST method.");
-
+	@GetMapping("/validate_user")
+	public ResponseEntity<String> getNotAllowed() {
+		return ResponseEntity.status(HttpStatus.METHOD_NOT_ALLOWED)
+				.body("This endpoint only supports the POST method.");
 	}
 
 }

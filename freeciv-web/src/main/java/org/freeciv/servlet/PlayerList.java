@@ -17,41 +17,32 @@
  *******************************************************************************/
 package org.freeciv.servlet;
 
-import java.io.IOException;
-
-import jakarta.servlet.RequestDispatcher;
-import jakarta.servlet.ServletException;
-import jakarta.servlet.annotation.MultipartConfig;
-import jakarta.servlet.annotation.WebServlet;
-import jakarta.servlet.http.HttpServlet;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
-
 import org.freeciv.services.Players;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.GetMapping;
 
 /**
  * Displays list of players
  *
  */
-@MultipartConfig
-@WebServlet("/player/list")
-public class PlayerList extends HttpServlet {
+@Controller
+public class PlayerList {
 
-    private static final long serialVersionUID = 1L;
+    @Autowired
+    private Players players;
 
-    @Override
-    public void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-
+    @GetMapping("/player/list")
+    public String getPlayerList(Model model) {
         try {
-            Players players = new Players();
-            request.setAttribute("playersCount", players.getPlayersCount());
-            request.setAttribute("playersList", players.getPlayers());
+            model.addAttribute("playersCount", players.getPlayersCount());
+            model.addAttribute("playersList", players.getPlayers());
         } catch (RuntimeException err) {
             throw err;
         }
 
-        RequestDispatcher rd = request.getRequestDispatcher("/WEB-INF/jsp/player/list.jsp");
-        rd.forward(request, response);
+        return "player/list";
     }
 
 }

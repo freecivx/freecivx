@@ -17,33 +17,30 @@
  *******************************************************************************/
 package org.freeciv.servlet;
 
-import java.io.IOException;
 import java.util.List;
 import java.util.Map;
-
-import jakarta.servlet.RequestDispatcher;
-import jakarta.servlet.ServletException;
-import jakarta.servlet.http.HttpServlet;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
 
 import org.freeciv.services.Statistics;
 import org.json.JSONArray;
 import org.json.JSONObject;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.GetMapping;
 
 /**
  * Lists: game type statisticts
  *
  * URL: /game/statistics/details
  */
-public class GameStatisticsDetails extends HttpServlet {
-	
-	private static final long serialVersionUID = 1L;
+@Controller
+public class GameStatisticsDetails {
 
-	@Override
-	public void doGet(HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException {
+	@Autowired
+	private Statistics statistics;
 
-		Statistics statistics = new Statistics();
+	@GetMapping("/game/statistics/details")
+	public String getGameStatisticsDetails(Model model) {
 
 		List<Map<String, Object>> result = statistics.getPlayedGamesByType();
 
@@ -53,13 +50,12 @@ public class GameStatisticsDetails extends HttpServlet {
 		}
 
 		try {
-			request.setAttribute("data", data);
+			model.addAttribute("data", data);
 		} catch (RuntimeException e) {
 			// Ohh well, we tried ...
 		}
 
-		RequestDispatcher rd = request.getRequestDispatcher("/WEB-INF/jsp/game/statistics-details.jsp");
-		rd.forward(request, response);
+		return "game/statistics-details";
 
 	}
 

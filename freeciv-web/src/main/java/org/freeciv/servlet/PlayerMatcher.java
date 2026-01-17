@@ -1,47 +1,46 @@
 package org.freeciv.servlet;
 
-import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
-import jakarta.servlet.ServletException;
-import jakarta.servlet.annotation.WebServlet;
-import jakarta.servlet.http.HttpServlet;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
 import org.json.JSONArray;
 import org.json.JSONObject;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 
-@WebServlet("/PlayerMatcher")
-public class PlayerMatcher extends HttpServlet {
+@RestController
+public class PlayerMatcher {
 
     // Stores invitations: key = recipient's username (lowercase), value = list of invitations
     private static final ConcurrentHashMap<String, List<Invitation>> invitationsMap = new ConcurrentHashMap<>();
     private static final long EXPIRATION_TIME_MS = 2 * 60 * 60 * 1000; // 2 hours in milliseconds
 
-    @Override
-    protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-        response.setContentType("application/json");
-        response.setCharacterEncoding("UTF-8");
+    @GetMapping("/PlayerMatcher")
+    public ResponseEntity<String> handlePlayerMatcher(
+            @RequestParam(required = false) String from,
+            @RequestParam(required = false) String to,
+            @RequestParam(required = false) String port,
+            @RequestParam(required = false) String username,
+            @RequestParam(required = false) String all) {
 
-        String fromUser = request.getParameter("from");
-        String toUser = request.getParameter("to");
-        String portStr = request.getParameter("port");
-        String username = request.getParameter("username");
-        String allParam = request.getParameter("all");
-
-        if (fromUser != null && toUser != null && portStr != null) {
+        if (from != null && to != null && port != null) {
             // Handle sending an invitation
             try {
-                int port = Integer.parseInt(portStr);
-                addInvitation(fromUser.toLowerCase(), toUser.toLowerCase(), port); // Store usernames in lowercase
+                int portNum = Integer.parseInt(port);
+                addInvitation(from.toLowerCase(), to.toLowerCase(), portNum); // Store usernames in lowercase
 
                 JSONObject successResponse = new JSONObject();
                 successResponse.put("message", "Invitation sent successfully.");
-                response.getWriter().write(successResponse.toString());
+                return ResponseEntity.ok()
+                        .header("Content-Type", "application/json; charset=UTF-8")
+                        .body(successResponse.toString());
 
             } catch (NumberFormatException e) {
-                response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
-                response.getWriter().write("{\"error\": \"Invalid port number.\"}");
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                        .header("Content-Type", "application/json")
+                        .body("{\"error\": \"Invalid port number.\"}");
             }
 
         } else if (username != null) {
@@ -49,17 +48,22 @@ public class PlayerMatcher extends HttpServlet {
             JSONArray invitationsArray = getInvitationsForUser(username.toLowerCase());
             JSONObject jsonResponse = new JSONObject();
             jsonResponse.put("invitations", invitationsArray);
-            response.getWriter().write(jsonResponse.toString());
+            return ResponseEntity.ok()
+                    .header("Content-Type", "application/json; charset=UTF-8")
+                    .body(jsonResponse.toString());
 
-        } else if ("true".equalsIgnoreCase(allParam)) {
+        } else if ("true".equalsIgnoreCase(all)) {
             // Handle retrieving ALL invitations
             JSONObject allInvitations = getAllInvitations();
-            response.getWriter().write(allInvitations.toString());
+            return ResponseEntity.ok()
+                    .header("Content-Type", "application/json; charset=UTF-8")
+                    .body(allInvitations.toString());
 
         } else {
             // Invalid request
-            response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
-            response.getWriter().write("{\"error\": \"Invalid parameters.\"}");
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .header("Content-Type", "application/json")
+                    .body("{\"error\": \"Invalid parameters.\"}");
         }
     }
 

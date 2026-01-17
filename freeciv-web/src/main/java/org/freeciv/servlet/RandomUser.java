@@ -17,15 +17,16 @@
  *******************************************************************************/
 package org.freeciv.servlet;
 
-import java.io.*;
-import jakarta.servlet.*;
-import jakarta.servlet.http.*;
-
 import java.sql.*;
 
 import org.freeciv.util.DatabaseUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 
 /**
@@ -33,12 +34,12 @@ import org.slf4j.LoggerFactory;
  *
  * URL: /random_user
  */
-public class RandomUser extends HttpServlet {
+@RestController
+public class RandomUser {
 	private static final Logger logger = LoggerFactory.getLogger(RandomUser.class);
-	private static final long serialVersionUID = 1L;
 
-	public void doPost(HttpServletRequest request, HttpServletResponse response)
-			throws IOException, ServletException {
+	@PostMapping("/random_user")
+	public ResponseEntity<String> getRandomUser() {
 
 		String query =
 				  "SELECT username "
@@ -50,23 +51,22 @@ public class RandomUser extends HttpServlet {
 		     PreparedStatement preparedStatement = conn.prepareStatement(query);
 		     ResultSet rs = preparedStatement.executeQuery()) {
 			if (!rs.next()) {
-				response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Invalid user.");
-				return;
+				return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Invalid user.");
 			}
-			response.getOutputStream().print(rs.getString(1));
+			return ResponseEntity.ok(rs.getString(1));
 
 		} catch (SQLException e) {
 			logger.error("Failed to find random user", e);
-			response.setHeader("result", "error");
-			response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Unable to login");
+			return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+					.header("result", "error")
+					.body("Unable to login");
 		}
 	}
 
-	public void doGet(HttpServletRequest request, HttpServletResponse response)
-			throws IOException, ServletException {
-
-		response.sendError(HttpServletResponse.SC_METHOD_NOT_ALLOWED, "This endpoint only supports the POST method.");
-
+	@GetMapping("/random_user")
+	public ResponseEntity<String> getNotAllowed() {
+		return ResponseEntity.status(HttpStatus.METHOD_NOT_ALLOWED)
+				.body("This endpoint only supports the POST method.");
 	}
 
 }

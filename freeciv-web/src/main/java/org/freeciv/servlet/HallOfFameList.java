@@ -17,42 +17,38 @@
  *******************************************************************************/
 package org.freeciv.servlet;
 
-import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 
-import jakarta.servlet.RequestDispatcher;
-import jakarta.servlet.ServletException;
-import jakarta.servlet.http.HttpServlet;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
-
 import org.freeciv.services.Statistics;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.GetMapping;
 
 /**
  * Hall Of Fame list
  *
  * URL: /hall_of_fame
  */
-public class HallOfFameList extends HttpServlet {
-	
-    private static final long serialVersionUID = 1L;
+@Controller
+public class HallOfFameList {
 
-    @Override
-    public void doGet(HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException {
+    @Autowired
+    private Statistics statistics;
 
-        Statistics statistics = new Statistics();
+    @GetMapping("/hall_of_fame")
+    public String getHallOfFame(Model model) {
 
         List<Map<String, Object>> result = statistics.getHallOfFameList();
 
          try {
-            request.setAttribute("data", result);
+            model.addAttribute("data", result);
         } catch (RuntimeException e) {
             // Ohh well, we tried ...
         }
 
-        RequestDispatcher rd = request.getRequestDispatcher("/WEB-INF/jsp/game/hall_of_fame.jsp");
-        rd.forward(request, response);
+        return "game/hall_of_fame";
 
     }
 
