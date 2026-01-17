@@ -39,7 +39,7 @@ function init_webgl_renderer()
   }
 
   const stored_graphics_quality_setting = simpleStorage.get("graphics_quality", "");
-  if (stored_graphics_quality_setting != null && stored_graphics_quality_setting > 0) {
+  if (stored_graphics_quality_setting !== null && stored_graphics_quality_setting > 0) {
     graphics_quality = stored_graphics_quality_setting;
   } else if (is_small_screen()) {
     graphics_quality = QUALITY_MEDIUM;
