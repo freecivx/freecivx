@@ -1,4 +1,6 @@
 /**********************************************************************
+'use strict';
+
     Freeciv-web - the web version of Freeciv. http://www.FreecivWorld.net/
     Copyright (C) 2009-2016  The Freeciv-web project
 
@@ -17,7 +19,7 @@
 
 ***********************************************************************/
 
-var goto_lines = [];
+const goto_lines = [];
 
 /****************************************************************************
  Renders a goto line by creating thick quads along the goto path.
@@ -26,7 +28,7 @@ function webgl_render_goto_line(start_tile, goto_packet_dir) {
     clear_goto_tiles();
     if (!goto_active) return;
 
-    var ptile = start_tile;
+    const ptile = start_tile;
 
     const material = new THREE.MeshBasicMaterial({
         color: 0x55c0ff,
@@ -39,33 +41,33 @@ function webgl_render_goto_line(start_tile, goto_packet_dir) {
     const heightOffset = 10.0; // Raise the lines higher in the y-direction
     const leftOffset = -5.0; // Move the lines slightly to the left
 
-    for (var i = 0; i < goto_packet_dir.length; i++) {
+    for (const i = 0; i < goto_packet_dir.length; i++) {
         if (ptile == null) break;
-        var dir = goto_packet_dir[i];
+        const dir = goto_packet_dir[i];
 
         if (dir == -1) {
             /* Assume that this means refuel. */
             continue;
         }
 
-        var nexttile = mapstep(ptile, dir);
+        const nexttile = mapstep(ptile, dir);
         if (nexttile != null) {
-            var currpos = map_to_scene_coords(ptile['x'], ptile['y']);
-            var nextpos = map_to_scene_coords(nexttile['x'], nexttile['y']);
-            var height = 5 + ptile['height'] * 100;
+            const currpos = map_to_scene_coords(ptile['x'], ptile['y']);
+            const nextpos = map_to_scene_coords(nexttile['x'], nexttile['y']);
+            const height = 5 + ptile['height'] * 100;
 
             // Apply left offset and height adjustment
-            var start = new THREE.Vector3(currpos.x + leftOffset, height + heightOffset, currpos.y);
-            var end = new THREE.Vector3(
+            const start = new THREE.Vector3(currpos.x + leftOffset, height + heightOffset, currpos.y);
+            const end = new THREE.Vector3(
                 nextpos.x + leftOffset,
                 height + heightOffset + (nexttile['height'] - ptile['height']) * 50,
                 nextpos.y
             );
 
-            var direction = new THREE.Vector3().subVectors(end, start).normalize();
-            var perpendicular = new THREE.Vector3(-direction.z, 0, direction.x).normalize().multiplyScalar(lineWidth);
+            const direction = new THREE.Vector3().subVectors(end, start).normalize();
+            const perpendicular = new THREE.Vector3(-direction.z, 0, direction.x).normalize().multiplyScalar(lineWidth);
 
-            var vertices = [
+            const vertices = [
                 start.clone().add(perpendicular),
                 start.clone().sub(perpendicular),
                 end.clone().add(perpendicular),
@@ -103,7 +105,7 @@ function webgl_render_goto_line(start_tile, goto_packet_dir) {
 function clear_goto_tiles()
 {
   if (scene != null && goto_lines != null) {
-    for (var i = 0; i < goto_lines.length; i++) {
+    for (const i = 0; i < goto_lines.length; i++) {
       scene.remove(goto_lines[i]);
     }
     goto_lines = [];

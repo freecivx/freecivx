@@ -1,4 +1,6 @@
 /**********************************************************************
+'use strict';
+
     Freeciv-web - the web version of Freeciv. http://www.FreecivWorld.net/
     Copyright (C) 2009-2015  The Freeciv-web project
 
@@ -27,7 +29,7 @@ function view_game_scores() {
   $("<div id='scores_dialog'></div>").appendTo("div#game_page");
 
 
-  var dialog_html = "<center><div id='scores_wait'>Please wait while generating score graphs...</div></center>"
+  const dialog_html = "<center><div id='scores_wait'>Please wait while generating score graphs...</div></center>"
     +"</div><div id='scores_tabs'><ul id='scores_ul'></ul></div>";
 
   $("#scores_dialog").html(dialog_html);
@@ -69,27 +71,27 @@ function view_game_scores() {
  Handles the scorelog file
 ****************************************************************************/
 function handle_scorelog(scorelog) {
-  var start_turn = 0;
-  var scoreitems = scorelog.split("\n");
-  var scoreplayers = {};
-  var playerslist = [];
-  var playernames = [];
-  var scoretags = {};
-  var resultdata = {};
-  var scorecolors = [];
-  for (var i = 0; i < scoreitems.length; i++) {
-    var scoreitem = scoreitems[i];
-    var scoredata = scoreitem.split(" ");
+  const start_turn = 0;
+  const scoreitems = scorelog.split("\n");
+  const scoreplayers = {};
+  const playerslist = [];
+  const playernames = [];
+  const scoretags = {};
+  const resultdata = {};
+  const scorecolors = [];
+  for (const i = 0; i < scoreitems.length; i++) {
+    const scoreitem = scoreitems[i];
+    const scoredata = scoreitem.split(" ");
     if (scoredata.length >= 3) {
       if (scoredata[0] == "addplayer") {
-        var pname = scoredata[3];
-        for (var s = 4; s < scoredata.length; s++) {
+        const pname = scoredata[3];
+        for (const s = 4; s < scoredata.length; s++) {
           pname += " " + scoredata[s];
         }
         scoreplayers[scoredata[2]] = pname;
         playerslist.push(scoredata[2]);
         playernames.push(pname);
-        var pplayer = player_by_name(pname);
+        const pplayer = player_by_name(pname);
         if (pplayer == null) {
           scorecolors.push("#ff0000"); 
         } else {
@@ -103,18 +105,18 @@ function handle_scorelog(scorelog) {
         scoretags[scoredata[1]] = scoredata[2];
 
       } else if (scoredata[0] == "data") {
-        var turn = scoredata[1];
-        var tag = scoredata[2];
-        var player = scoredata[3];
-        var value = scoredata[4];
+        const turn = scoredata[1];
+        const tag = scoredata[2];
+        const player = scoredata[3];
+        const value = scoredata[4];
         if (resultdata[tag] == null) {
-          var s = {};
+          const s = {};
           s["turn"] = turn;
           s[player] = parseInt(value);
           resultdata[tag] = [];
           resultdata[tag][turn - start_turn] = s;
         } else if (resultdata[tag] != null && resultdata[tag][turn - start_turn] == null) {
-          var s = {};
+          const s = {};
           s["turn"] = turn;
           s[player] = parseInt(value);
           resultdata[tag][turn - start_turn] = s;
@@ -126,17 +128,17 @@ function handle_scorelog(scorelog) {
   }
   if (is_small_screen()) scoretags = {"0" : "score"};
 
-  for (var key in scoretags) {
-    var tagname = scoretags[key];
+  for (let key in scoretags) {
+    const tagname = scoretags[key];
     $("#scores_ul").append("<li><a href='#scores-tabs-" + key + "' class='scores_tabber'>" + get_scorelog_name(tagname) + "</a></li>");
     $("#scores_tabs").append("<div id='scores-tabs-" + key + "'><div id='scoreschart-" + key +  "' class='scorechart'></div>"
       + "<center><b>" + get_scorelog_name(tagname) + "</b></center></div>");
   }
 
-  var ps = 4;
+  const ps = 4;
   if (scoreitems.length >1000) ps = 0;
 
-  for (var key in scoretags) {
+  for (let key in scoretags) {
     try {
       Morris.Line({
         element: 'scoreschart-' + key,
@@ -165,7 +167,7 @@ function handle_scorelog(scorelog) {
 ...
 ****************************************************************************/
 function get_scorelog_name(tag) {
-  var names = {
+  const names = {
   "score" : "Score",
   "pop" : "Population",
   "bnp" : "Economics",

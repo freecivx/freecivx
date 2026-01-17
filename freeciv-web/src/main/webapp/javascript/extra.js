@@ -1,4 +1,6 @@
 /**********************************************************************
+'use strict';
+
     Freeciv-web - the web version of Freeciv. http://www.FreecivWorld.net/
     Copyright (C) 2009-2015  The Freeciv-web project
 
@@ -17,9 +19,9 @@
 
 ***********************************************************************/
 
-var extras = {};
+const extras = {};
 
-var EXTRA_NONE = -1;
+const EXTRA_NONE = -1;
 
 // see handle_ruleset_extra, where EXTRA_* variables are defines dynamically.
 

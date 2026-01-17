@@ -289,11 +289,7 @@ class Refractor extends Mesh {
 		 *
 		 * @return {WebGLRenderTarget} The internal render target
 		 */
-		this.getRenderTarget = function () {
-
-			return renderTarget;
-
-		};
+		this.getRenderTarget = () => renderTarget;
 
 		/**
 		 * Frees the GPU-related resources allocated by this instance. Call this

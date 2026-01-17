@@ -1,4 +1,6 @@
 /**********************************************************************
+'use strict';
+
     Freeciv-web - the web version of Freeciv. http://www.FreecivWorld.net/
     Copyright (C) 2009-2017  The Freeciv-web project
 
@@ -17,16 +19,16 @@
 
 ***********************************************************************/
 
-var QUALITY_MEDIUM = 2; // medium quality.
-var QUALITY_HIGH = 3;   // best quality, add features which require high-end graphics hardware here.
+const QUALITY_MEDIUM = 2; // medium quality.
+const QUALITY_HIGH = 3;   // best quality, add features which require high-end graphics hardware here.
 
-var graphics_quality = QUALITY_HIGH;
+const graphics_quality = QUALITY_HIGH;
 
-var terrain_quality = 8; // 8 is slow, 7 has problems with rivers.
+const terrain_quality = 8; // 8 is slow, 7 has problems with rivers.
 
-var anaglyph_3d_enabled = false;
+const anaglyph_3d_enabled = false;
 
-var stats = null;
+const stats = null;
 
 /****************************************************************************
   Init the Freeciv-web WebGL renderer
@@ -38,7 +40,7 @@ function init_webgl_renderer()
     return;
   }
 
-  var stored_graphics_quality_setting = simpleStorage.get("graphics_quality", "");
+  const stored_graphics_quality_setting = simpleStorage.get("graphics_quality", "");
   if (stored_graphics_quality_setting != null && stored_graphics_quality_setting > 0) {
     graphics_quality = stored_graphics_quality_setting;
   } else if (is_small_screen()) {

@@ -1,4 +1,6 @@
 /**********************************************************************
+'use strict';
+
     Freeciv-web - the web version of Freeciv. http://www.FreecivWorld.net/
     Copyright (C) 2009-2022  The Freeciv-web project
 
@@ -18,8 +20,8 @@
 ***********************************************************************/
 
 
-var heightmap = null;
-var heightmap_hash = -1;
+const heightmap = null;
+const heightmap_hash = -1;
 
 /****************************************************************************
   Returns height offset for units. This will make units higher above cities.

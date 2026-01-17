@@ -1,4 +1,6 @@
 /**********************************************************************
+'use strict';
+
     Freeciv-web - the web version of Freeciv. http://www.FreecivWorld.net/
     Copyright (C) 2009-2017  The Freeciv-web project
 
@@ -18,36 +20,36 @@
 ***********************************************************************/
 
 
-var anim_objs = {};
+const anim_objs = {};
 
 /****************************************************************************
  Updates unit movement animation.
 ****************************************************************************/
 function update_animated_objects()
 {
-  for (var unit_id in anim_objs) {
+  for (let unit_id in anim_objs) {
 
-    var punit = units[anim_objs[unit_id]['unit']];
-    var mesh = anim_objs[unit_id]['mesh'];
-    var flag = anim_objs[unit_id]['flag'];
+    const punit = units[anim_objs[unit_id]['unit']];
+    const mesh = anim_objs[unit_id]['mesh'];
+    const flag = anim_objs[unit_id]['flag'];
 
     if (punit == null || mesh == null) {
       delete anim_objs[unit_id];
       continue;
     }
-    var anim_list = punit['anim_list'];
+    const anim_list = punit['anim_list'];
     if (anim_list[0] == null || anim_list[1] == null) {
       delete anim_objs[unit_id];
       continue;
     }
 
-    var tile_start = tiles[anim_list[0]['tile']];
-    var tile_end = tiles[anim_list[1]['tile']];
-    var pos_start = map_to_scene_coords(tile_start['x'], tile_start['y']);
-    var pos_end = map_to_scene_coords(tile_end['x'], tile_end['y']);
-    var delta_x = (pos_end['x'] - pos_start['x'])  / ANIM_STEPS;
-    var delta_y = (pos_end['y'] - pos_start['y'])  / ANIM_STEPS;
-    var delta_z = ((tile_end['height'] - tile_start['height']) * 100) / ANIM_STEPS;
+    const tile_start = tiles[anim_list[0]['tile']];
+    const tile_end = tiles[anim_list[1]['tile']];
+    const pos_start = map_to_scene_coords(tile_start['x'], tile_start['y']);
+    const pos_end = map_to_scene_coords(tile_end['x'], tile_end['y']);
+    const delta_x = (pos_end['x'] - pos_start['x'])  / ANIM_STEPS;
+    const delta_y = (pos_end['y'] - pos_start['y'])  / ANIM_STEPS;
+    const delta_z = ((tile_end['height'] - tile_start['height']) * 100) / ANIM_STEPS;
 
     mesh.rotateOnAxis(new THREE.Vector3(0,1,0).normalize(), -1 * (convert_unit_rotation(punit['facing'], unit_type(punit)['name'])));
     mesh.translateOnAxis(new THREE.Vector3(1,0,0).normalize(), delta_x);
@@ -103,10 +105,10 @@ function animate_explosion_on_tile(tile_id, animation_frame)
 {
   if (scene == null) return;
   
-  var ptile = tiles[tile_id];
+  const ptile = tiles[tile_id];
   if (ptile == null) return;
 
-  var height = 5 + ptile['height'] * 100;
+  const height = 5 + ptile['height'] * 100;
 
   if (ptile['explosion_mesh'] != null) {
     scene.remove(ptile['explosion_mesh']);
@@ -118,8 +120,8 @@ function animate_explosion_on_tile(tile_id, animation_frame)
     return;
   }
 
-  var explosion_mesh = create_unit_explosion_sprite(animation_frame);
-  var pos = map_to_scene_coords(ptile['x'], ptile['y']);
+  const explosion_mesh = create_unit_explosion_sprite(animation_frame);
+  const pos = map_to_scene_coords(ptile['x'], ptile['y']);
   explosion_mesh.position.set(pos['x'] - 6, height + 8, pos['y'] - 6);
   ptile['explosion_mesh'] = explosion_mesh;
   scene.add(explosion_mesh);

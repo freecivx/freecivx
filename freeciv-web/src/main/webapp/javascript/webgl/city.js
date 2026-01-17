@@ -1,4 +1,6 @@
 /**********************************************************************
+'use strict';
+
     FreecivWorld.net - the web version of Freeciv. http://www.FreecivWorld.net/
     Copyright (C) 2009-2022  The FreecivWorld.net project
 
@@ -18,8 +20,8 @@
 ***********************************************************************/
 
 
-var city_worked_positions = {};
-var city_labels_visible = true;
+const city_worked_positions = {};
+const city_labels_visible = true;
 
 /****************************************************************************
 Show labels with worked city tiles.
@@ -33,8 +35,8 @@ function show_city_worked_tiles()
   }
   let other_city_material = new THREE.MeshBasicMaterial( { color: 0xc33b3b, transparent: true, opacity: 0.4} );
 
-  for (var tile_id in tiles) {
-    var ptile = tiles[tile_id];
+  for (let tile_id in tiles) {
+    const ptile = tiles[tile_id];
     if (active_city != null && ptile != null && ptile['worked'] != null
           && active_city['id'] == ptile['worked'] && active_city['output_food'] != null) {
       let ctile = city_tile(active_city);
@@ -57,7 +59,7 @@ function show_city_worked_tiles()
       trade_output = Math.floor(trade_output / game_info.granularity);
 
       if (city_worked_positions[ptile['index']] == null) {
-        var mesh = create_city_worked_sprite(food_output, shield_output, trade_output);
+        const mesh = create_city_worked_sprite(food_output, shield_output, trade_output);
         city_worked_positions[ptile['index']] = mesh;
         mesh.position.set(pos['x'] + 0, height + 10, pos['y'] - 4);
         if (scene != null) {
@@ -94,7 +96,7 @@ function show_city_worked_tiles()
   Remove all city worked labels.
 ****************************************************************************/
 function remove_city_worked_tiles() {
-  for (var workedid in city_worked_positions) {
+  for (let workedid in city_worked_positions) {
     if (city_worked_positions[workedid] != null) {
       scene.remove(city_worked_positions[workedid]);
     }
@@ -111,8 +113,8 @@ Is the given tile a city tile in the active city?
 ****************************************************************************/
 function is_city_tile(ptile, active_city)
 {
-  var ctile = city_tile(active_city);
-  var d = map_distance_vector(ptile, ctile);
+  const ctile = city_tile(active_city);
+  const d = map_distance_vector(ptile, ctile);
 
   if ((d[0] == 2 && d[1] == 2) || (d[0] == -2 && d[1] == -2) || (d[0] == -2 && d[1] == 2) || (d[0] == 2 && d[1] == -2) ) {
     return false;
@@ -130,15 +132,15 @@ function is_city_tile(ptile, active_city)
 ****************************************************************************/
 function hide_city_labels() {
   if (city_labels_visible) {
-    for (var cid in city_label_positions) {
-      var city_label = city_label_positions[cid];
+    for (let cid in city_label_positions) {
+      const city_label = city_label_positions[cid];
       city_label.visible = false;
     }
     city_labels_visible = false;
     $("#city_labels_hide_button").text("Show city labels");
   } else {
     for (let cid in city_label_positions) {
-      var city_label = city_label_positions[cid];
+      const city_label = city_label_positions[cid];
       city_label.visible = true;
     }
     city_labels_visible = true;
@@ -153,8 +155,8 @@ function hide_city_labels() {
 **************************************************************************/
 function get_citywalls_scale(pcity)
 {
-  var style = get_citywalls_models(pcity);
-  var scale = 9;
+  const style = get_citywalls_models(pcity);
+  const scale = 9;
   if (pcity['size'] >=3 && pcity['size'] <=6) {
     scale = 9.5;
   } else if (pcity['size'] > 6 && pcity['size'] <= 9) {

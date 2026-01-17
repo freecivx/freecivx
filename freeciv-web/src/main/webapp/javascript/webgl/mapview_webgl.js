@@ -1,4 +1,6 @@
 /**********************************************************************
+'use strict';
+
     FreecivWorld.net - the web version of Freeciv. http://www.FreecivWorld.net/
     Copyright (C) 2009-2024  The Freeciv-web project
 
@@ -17,35 +19,35 @@
 
 ***********************************************************************/
 
-var container, stats;
-var scene, maprenderer;
-var anaglyph_effect;
+let container, stats;
+let scene, maprenderer;
+let anaglyph_effect;
 
-var mouse, raycaster;
-var spotlight;
-var clock;
+let mouse, raycaster;
+let spotlight;
+let clock;
 
-var controls;
+let controls;
 
-var tiletype_terrains = ["coast","ocean","desert","grassland","hills","mountains","plains","swamp", "arctic_farmland_irrigation_tundra"];
+const tiletype_terrains = ["coast","ocean","desert","grassland","hills","mountains","plains","swamp", "arctic_farmland_irrigation_tundra"];
 
-var landGeometry;
-var landMesh; // the terrain land geometry
-var water_hq;
-var shadowmesh;
+let landGeometry;
+let landMesh; // the terrain land geometry
+let water_hq;
+let shadowmesh;
 
-var lofiGeometry;
-var lofiMesh;  // low resolution mesh used for raycasting.
-var freeciv_uniforms;
-var terrain_material;
+let lofiGeometry;
+let lofiMesh;  // low resolution mesh used for raycasting.
+let freeciv_uniforms;
+let terrain_material;
 
-var landbufferattribute;
-var lofibufferattribute;
+let landbufferattribute;
+let lofibufferattribute;
 
-var mapview_model_width;
-var mapview_model_height;
+let mapview_model_width;
+let mapview_model_height;
 
-var MAPVIEW_ASPECT_FACTOR = 35.71;
+const MAPVIEW_ASPECT_FACTOR = 35.71;
 
 
 /****************************************************************************
@@ -53,8 +55,8 @@ var MAPVIEW_ASPECT_FACTOR = 35.71;
 ****************************************************************************/
 function webgl_start_renderer()
 {
-  var new_mapview_width = $(window).width() - width_offset;
-  var new_mapview_height;
+  const new_mapview_width = $(window).width() - width_offset;
+  let new_mapview_height;
   if (!is_small_screen()) {
     new_mapview_height = $(window).height() - height_offset;
   } else {
@@ -77,7 +79,7 @@ function webgl_start_renderer()
   clock = new THREE.Clock();
 
   // Lights
-  var ambientLight = new THREE.AmbientLight( 0x606060, 28 * Math.PI );
+  const ambientLight = new THREE.AmbientLight( 0x606060, 28 * Math.PI );
   scene.add(ambientLight);
 
   spotlight = new THREE.SpotLight( 0xffffff, 3.0 * Math.PI, 0, Math.PI / 3, 0.001, 0.5);
@@ -92,8 +94,8 @@ function webgl_start_renderer()
   spotlight.shadow.mapSize.x = 4096;
   spotlight.shadow.mapSize.y = 4096;
 
-  var enable_antialiasing = graphics_quality >= QUALITY_MEDIUM;
-  var stored_antialiasing_setting = simpleStorage.get("antialiasing_setting", "");
+  const enable_antialiasing = graphics_quality >= QUALITY_MEDIUM;
+  const stored_antialiasing_setting = simpleStorage.get("antialiasing_setting", "");
   if (stored_antialiasing_setting != null && stored_antialiasing_setting == "false") {
     enable_antialiasing = false;
   }
@@ -143,8 +145,8 @@ async function init_webgl_mapview() {
       borders_visible: {type: "bool", value: server_settings['borders']['is_visible']}
     };
 
-    for (var i = 0; i < tiletype_terrains.length ; i++) {
-      var terrain_name = tiletype_terrains[i];
+    for (const i = 0; i < tiletype_terrains.length ; i++) {
+      const terrain_name = tiletype_terrains[i];
       freeciv_uniforms[terrain_name] = {type: "t", value: webgl_textures[terrain_name]};
     }
 
@@ -152,7 +154,7 @@ async function init_webgl_mapview() {
   update_heightmap(terrain_quality);
 
   // Low-resolution terrain mesh used for raycasting to find mouse postition.
-  var lofiMaterial = new THREE.MeshBasicMaterial({"color" : 0x00ff00});
+  const lofiMaterial = new THREE.MeshBasicMaterial({"color" : 0x00ff00});
   lofiGeometry = new THREE.BufferGeometry();
   init_land_geometry(lofiGeometry, 2);
   update_land_geometry(lofiGeometry, 2);
@@ -168,7 +170,7 @@ async function init_webgl_mapview() {
   const vertex_shader = await vertexShaderResponse.text();
 
   const fragmentShaderResponse = await fetch('/javascript/webgl/shaders_square/terrain_fragment_shader.glsl');
-  var fragment_shader = await fragmentShaderResponse.text();
+  const fragment_shader = await fragmentShaderResponse.text();
 
   if (maprenderer.capabilities.maxTextures <= 16) {
     console.log("max textures: " + maprenderer.capabilities.maxTextures);
@@ -192,7 +194,7 @@ async function init_webgl_mapview() {
   scene.add(landMesh);
 
   if (graphics_quality === QUALITY_HIGH) {
-    var shadowMaterial = new THREE.ShadowMaterial();
+    const shadowMaterial = new THREE.ShadowMaterial();
     shadowMaterial.opacity = 0.92;
     shadowmesh = new THREE.Mesh( landGeometry, shadowMaterial);
     shadowmesh.receiveShadow = true;
@@ -243,7 +245,7 @@ function init_land_geometry(geometry, mesh_quality)
     const y = iy * segment_height - height_half;
     for ( let ix = 0; ix < gridX1; ix ++ ) {
       const x = ix * segment_width - width_half;
-      var sx = ix % xquality, sy = iy % yquality;
+      const sx = ix % xquality, sy = iy % yquality;
 
       vertices.push( x, -y, heightmap[sx * heightmap_scale][sy * heightmap_scale] * 100 );
       uvs.push( ix / gridX );
@@ -323,7 +325,7 @@ function update_land_geometry(geometry, mesh_quality) {
 function update_map_terrain_geometry()
 {
   if (map_geometry_dirty) {
-    var hash = generate_heightmap_hash();
+    const hash = generate_heightmap_hash();
     if (hash != heightmap_hash) {
       update_heightmap(terrain_quality);
       update_land_geometry(lofiGeometry, 2);
@@ -395,7 +397,7 @@ function animate_webgl() {
 function add_quality_dependent_objects_webgl()
 {
   let waterMaterial;
-  var waterGeometry = new THREE.PlaneGeometry( mapview_model_width, mapview_model_height);
+  const waterGeometry = new THREE.PlaneGeometry( mapview_model_width, mapview_model_height);
 
   // Full water effect for other platforms
   waterMaterial = new THREE.MeshPhysicalMaterial({
@@ -425,7 +427,7 @@ function add_quality_dependent_objects_webgl()
 
   if (graphics_quality === QUALITY_HIGH) {
     if (shadowmesh == null) {
-      var shadowMaterial = new THREE.ShadowMaterial();
+      const shadowMaterial = new THREE.ShadowMaterial();
       shadowMaterial.opacity = 0.85;
       shadowmesh = new THREE.Mesh( landGeometry, shadowMaterial);
       shadowmesh.receiveShadow = true;
@@ -443,8 +445,8 @@ function add_quality_dependent_objects_webgl()
     maprenderer.shadowMap.enabled = false;
   }
 
-  var hours = new Date().getHours();
-  var is_day = hours > 6 && hours < 20;
+  const hours = new Date().getHours();
+  const is_day = hours > 6 && hours < 20;
 
   if (graphics_quality === QUALITY_HIGH) {
     if (is_day) {

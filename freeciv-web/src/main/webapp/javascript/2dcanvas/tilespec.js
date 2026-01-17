@@ -1,4 +1,6 @@
 /**********************************************************************
+'use strict';
+
     Freeciv-web - the web version of Freeciv. http://www.FreecivWorld.net/
     Copyright (C) 2009-2015  The Freeciv-web project
 
@@ -18,78 +20,78 @@
 ***********************************************************************/
 
 
-var num_cardinal_tileset_dirs = 4;
-var cardinal_tileset_dirs = [DIR8_NORTH, DIR8_EAST, DIR8_SOUTH, DIR8_WEST];
+const num_cardinal_tileset_dirs = 4;
+const cardinal_tileset_dirs = [DIR8_NORTH, DIR8_EAST, DIR8_SOUTH, DIR8_WEST];
 
-var NUM_CORNER_DIRS = 4;
+const NUM_CORNER_DIRS = 4;
 
-var DIR4_TO_DIR8 = [ DIR8_NORTH, DIR8_SOUTH, DIR8_EAST, DIR8_WEST];
+const DIR4_TO_DIR8 = [ DIR8_NORTH, DIR8_SOUTH, DIR8_EAST, DIR8_WEST];
 
-var current_select_sprite = 0;
-var max_select_sprite = 4;
+const current_select_sprite = 0;
+const max_select_sprite = 4;
 
-var explosion_anim_map = {};
+const explosion_anim_map = {};
 
 /* Items on the mapview are drawn in layers.  Each entry below represents
  * one layer.  The names are basically arbitrary and just correspond to
  * groups of elements in fill_sprite_array().  Callers of fill_sprite_array
  * must call it once for each layer. */
-var LAYER_TERRAIN1 = 0;
-var LAYER_TERRAIN2 = 1;
-var LAYER_TERRAIN3 = 2;
-var LAYER_ROADS = 3;
-var LAYER_SPECIAL1 = 4;
-var LAYER_CITY1 = 5;
-var LAYER_SPECIAL2 = 6;
-var LAYER_UNIT = 7;
-var LAYER_FOG = 8;
-var LAYER_SPECIAL3 = 9;
-var LAYER_TILELABEL = 10;
-var LAYER_CITYBAR = 11;
-var LAYER_GOTO = 12;
-var LAYER_COUNT = 13;
+const LAYER_TERRAIN1 = 0;
+const LAYER_TERRAIN2 = 1;
+const LAYER_TERRAIN3 = 2;
+const LAYER_ROADS = 3;
+const LAYER_SPECIAL1 = 4;
+const LAYER_CITY1 = 5;
+const LAYER_SPECIAL2 = 6;
+const LAYER_UNIT = 7;
+const LAYER_FOG = 8;
+const LAYER_SPECIAL3 = 9;
+const LAYER_TILELABEL = 10;
+const LAYER_CITYBAR = 11;
+const LAYER_GOTO = 12;
+const LAYER_COUNT = 13;
 
 // these layers are not used at the moment, for performance reasons.
-//var LAYER_BACKGROUND = ; (not in use)
-//var LAYER_EDITOR = ; (not in use)
-//var LAYER_GRID* = ; (not in use)
+//const LAYER_BACKGROUND =  ; (not in use)
+//const LAYER_EDITOR =  ; (not in use)
+//let LAYER_GRID* = ; (not in use)
 
 /* An edge is the border between two tiles.  This structure represents one
  * edge.  The tiles are given in the same order as the enumeration name. */
-var EDGE_NS = 0; /* North and south */
-var EDGE_WE = 1; /* West and east */
-var EDGE_UD = 2; /* Up and down (nw/se), for hex_width tilesets */
-var EDGE_LR = 3; /* Left and right (ne/sw), for hex_height tilesets */
-var EDGE_COUNT = 4;
+const EDGE_NS = 0; /* North and south */
+const EDGE_WE = 1; /* West and east */
+const EDGE_UD = 2; /* Up and down (nw/se), for hex_width tilesets */
+const EDGE_LR = 3; /* Left and right (ne/sw), for hex_height tilesets */
+const EDGE_COUNT = 4;
 
-var MATCH_NONE = 0;
-var MATCH_SAME = 1;		/* "boolean" match */
-var MATCH_PAIR = 2;
-var MATCH_FULL = 3;
+const MATCH_NONE = 0;
+const MATCH_SAME = 1;		/* "boolean" match */
+const MATCH_PAIR = 2;
+const MATCH_FULL = 3;
 
-var CELL_WHOLE = 0;		/* entire tile */
-var CELL_CORNER = 1;	/* corner of tile */
+const CELL_WHOLE = 0;		/* entire tile */
+const CELL_CORNER = 1;	/* corner of tile */
 
 /* Darkness style.  Don't reorder this enum since tilesets depend on it. */
 /* No darkness sprites are drawn. */
-var DARKNESS_NONE = 0;
+const DARKNESS_NONE = 0;
 
 /* 1 sprite that is split into 4 parts and treated as a darkness4.  Only
  * works in iso-view. */
-var DARKNESS_ISORECT = 1;
+const DARKNESS_ISORECT = 1;
 
 /* 4 sprites, one per direction.  More than one sprite per tile may be
  * drawn. */
-var DARKNESS_CARD_SINGLE = 2;
+const DARKNESS_CARD_SINGLE = 2;
 
 /* 15=2^4-1 sprites.  A single sprite is drawn, chosen based on whether
  * there's darkness in _each_ of the cardinal directions. */
-var DARKNESS_CARD_FULL = 3;
+const DARKNESS_CARD_FULL = 3;
 
 /* Corner darkness & fog.  3^4 = 81 sprites. */
-var DARKNESS_CORNER = 4;
+const DARKNESS_CORNER = 4;
 
-var terrain_match = {"t.l0.hills1" : MATCH_NONE,
+const terrain_match = {"t.l0.hills1" : MATCH_NONE,
 "t.l0.mountains1" : MATCH_NONE,
 "t.l0.plains1" : MATCH_NONE,
 "t.l0.desert1" : MATCH_NONE
@@ -302,10 +304,10 @@ function dir_get_tileset_name(dir)
 ****************************************************************************/
 function cardinal_index_str(idx)
 {
-  var c = "";
+  const c = "";
 
-  for (var i = 0; i < num_cardinal_tileset_dirs; i++) {
-    var value = (idx >> i) & 1;
+  for (const i = 0; i < num_cardinal_tileset_dirs; i++) {
+    const value = (idx >> i) & 1;
 
     c += dir_get_tileset_name(cardinal_tileset_dirs[i]) + value;
   }
@@ -318,13 +320,13 @@ function cardinal_index_str(idx)
   Return the flag graphic to be used by the city.
 ***********************************************************************/
 function get_city_flag_sprite(pcity) {
-  var owner_id = pcity['owner'];
+  const owner_id = pcity['owner'];
   if (owner_id == null) return {};
-  var owner = players[owner_id];
+  const owner = players[owner_id];
   if (owner == null) return {};
-  var nation_id = owner['nation'];
+  const nation_id = owner['nation'];
   if (nation_id == null) return {};
-  var nation = nations[nation_id];
+  const nation = nations[nation_id];
   if (nation == null) return {};
   return {"key" : "f." + nation['graphic_str']};
 }
@@ -333,13 +335,13 @@ function get_city_flag_sprite(pcity) {
   Return the flag graphic to be used by the base on tile
 ***********************************************************************/
 function get_base_flag_sprite(ptile) {
-  var owner_id = ptile['extras_owner'];
+  const owner_id = ptile['extras_owner'];
   if (owner_id == null) return {};
-  var owner = players[owner_id];
+  const owner = players[owner_id];
   if (owner == null) return {};
-  var nation_id = owner['nation'];
+  const nation_id = owner['nation'];
   if (nation_id == null) return {};
-  var nation = nations[nation_id];
+  const nation = nations[nation_id];
   if (nation == null) return {};
   return {"key" : "f." + nation['graphic_str'],
           "offset_x" : city_flag_offset_x,
@@ -350,9 +352,9 @@ function get_base_flag_sprite(ptile) {
  Returns the sprite key for the number of defending units in a city.
 ***********************************************************************/
 function get_city_occupied_sprite(pcity) {
-  var owner_id = pcity['owner'];
-  var ptile = city_tile(pcity);
-  var punits = tile_units(ptile);
+  const owner_id = pcity['owner'];
+  const ptile = city_tile(pcity);
+  const punits = tile_units(ptile);
 
   if (!observing && client.conn.playing != null
       && owner_id != client.conn.playing.playerno && pcity['occupied']) {
@@ -431,10 +433,10 @@ function get_unit_stack_sprite(punit)
 ***********************************************************************/
 function get_unit_hp_sprite(punit)
 {
-  var hp = punit['hp'];
-  var utype = unit_type(punit);
-  var max_hp = utype['hp'];
-  var healthpercent = 10 * Math.floor((10 * hp) / max_hp);
+  const hp = punit['hp'];
+  const utype = unit_type(punit);
+  const max_hp = utype['hp'];
+  const healthpercent = 10 * Math.floor((10 * hp) / max_hp);
 
   return {"key" : "unit.hp_" + healthpercent};
 }
@@ -452,8 +454,8 @@ function get_unit_veteran_sprite(punit)
 ***********************************************************************/
 function get_unit_activity_sprite(punit)
 {
-  var activity = punit['activity'];
-  var act_tgt  = punit['activity_tgt'];
+  const activity = punit['activity'];
+  const act_tgt = punit['activity_tgt'];
 
   switch (activity) {
     /* TODO: Use target specific sprites. */
@@ -561,17 +563,17 @@ function get_unit_image_sprite(punit)
 ****************************************************************************/
 function get_unit_type_image_sprite(punittype)
 {
-  var tag = tileset_unit_type_graphic_tag(punittype);
+  const tag = tileset_unit_type_graphic_tag(punittype);
 
   if (tag == null) {
     return null;
   }
 
-  var tileset_x = tileset[tag][0];
-  var tileset_y = tileset[tag][1];
-  var width = tileset[tag][2];
-  var height = tileset[tag][3];
-  var i = tileset[tag][4];
+  const tileset_x = tileset[tag][0];
+  const tileset_y = tileset[tag][1];
+  const width = tileset[tag][2];
+  const height = tileset[tag][3];
+  const i = tileset[tag][4];
   return {"tag": tag,
             "image-src" : "/tileset/freeciv-web-tileset-" + tileset_name + "-" + i + get_tileset_file_extention() + "?ts=" + ts,
             "tileset-x" : tileset_x,
@@ -586,17 +588,17 @@ function get_unit_type_image_sprite(punittype)
 ****************************************************************************/
 function get_improvement_image_sprite(pimprovement)
 {
-  var tag = tileset_building_graphic_tag(pimprovement);
+  const tag = tileset_building_graphic_tag(pimprovement);
 
   if (tag == null) {
     return null;
   }
 
-  var tileset_x = tileset[tag][0];
-  var tileset_y = tileset[tag][1];
-  var width = tileset[tag][2];
-  var height = tileset[tag][3];
-  var i = tileset[tag][4];
+  const tileset_x = tileset[tag][0];
+  const tileset_y = tileset[tag][1];
+  const width = tileset[tag][2];
+  const height = tileset[tag][3];
+  const i = tileset[tag][4];
   return {"tag": tag,
             "image-src" : "/tileset/freeciv-web-tileset-" + tileset_name + "-" + i + get_tileset_file_extention() + "?ts=" + ts,
             "tileset-x" : tileset_x,
@@ -613,11 +615,11 @@ function get_specialist_image_sprite(tag)
 {
   if (tileset[tag] == null) return null;
 
-  var tileset_x = tileset[tag][0];
-  var tileset_y = tileset[tag][1];
-  var width = tileset[tag][2];
-  var height = tileset[tag][3];
-  var i = tileset[tag][4];
+  const tileset_x = tileset[tag][0];
+  const tileset_y = tileset[tag][1];
+  const width = tileset[tag][2];
+  const height = tileset[tag][3];
+  const i = tileset[tag][4];
   return {"tag": tag,
             "image-src" : "/tileset/freeciv-web-tileset-" + tileset_name + "-" + i + get_tileset_file_extention() + "?ts=" + ts,
             "tileset-x" : tileset_x,
@@ -633,15 +635,15 @@ function get_specialist_image_sprite(tag)
 ****************************************************************************/
 function get_technology_image_sprite(ptech)
 {
-  var tag = tileset_tech_graphic_tag(ptech);
+  const tag = tileset_tech_graphic_tag(ptech);
 
   if (tag == null) return null;
 
-  var tileset_x = tileset[tag][0];
-  var tileset_y = tileset[tag][1];
-  var width = tileset[tag][2];
-  var height = tileset[tag][3];
-  var i = tileset[tag][4];
+  const tileset_x = tileset[tag][0];
+  const tileset_y = tileset[tag][1];
+  const width = tileset[tag][2];
+  const height = tileset[tag][3];
+  const i = tileset[tag][4];
   return {"tag": tag,
             "image-src" : "/tileset/freeciv-web-tileset-" + tileset_name + "-" + i + get_tileset_file_extention() + "?ts=" + ts,
             "tileset-x" : tileset_x,
@@ -656,15 +658,15 @@ function get_technology_image_sprite(ptech)
 ****************************************************************************/
 function get_nation_flag_sprite(pnation)
 {
-  var tag = "f." + pnation['graphic_str'];
+  const tag = "f." + pnation['graphic_str'];
 
   if (tileset[tag] == null) return null;
 
-  var tileset_x = tileset[tag][0];
-  var tileset_y = tileset[tag][1];
-  var width = tileset[tag][2];
-  var height = tileset[tag][3];
-  var i = tileset[tag][4];
+  const tileset_x = tileset[tag][0];
+  const tileset_y = tileset[tag][1];
+  const width = tileset[tag][2];
+  const height = tileset[tag][3];
+  const i = tileset[tag][4];
   return {"tag": tag,
             "image-src" : "/tileset/freeciv-web-tileset-" + tileset_name + "-" + i + get_tileset_file_extention() + "?ts=" + ts,
             "tileset-x" : tileset_x,
@@ -679,13 +681,13 @@ function get_nation_flag_sprite(pnation)
 ****************************************************************************/
 function get_treaty_agree_thumb_up()
 {
-  var tag = "treaty.agree_thumb_up";
+  const tag = "treaty.agree_thumb_up";
 
-  var tileset_x = tileset[tag][0];
-  var tileset_y = tileset[tag][1];
-  var width = tileset[tag][2];
-  var height = tileset[tag][3];
-  var i = tileset[tag][4];
+  const tileset_x = tileset[tag][0];
+  const tileset_y = tileset[tag][1];
+  const width = tileset[tag][2];
+  const height = tileset[tag][3];
+  const i = tileset[tag][4];
   return {"tag": tag,
             "image-src" : "/tileset/freeciv-web-tileset-" + tileset_name + "-" + i + get_tileset_file_extention() + "?ts=" + ts,
             "tileset-x" : tileset_x,
@@ -700,13 +702,13 @@ function get_treaty_agree_thumb_up()
 ****************************************************************************/
 function get_treaty_disagree_thumb_down()
 {
-  var tag = "treaty.disagree_thumb_down";
+  const tag = "treaty.disagree_thumb_down";
 
-  var tileset_x = tileset[tag][0];
-  var tileset_y = tileset[tag][1];
-  var width = tileset[tag][2];
-  var height = tileset[tag][3];
-  var i = tileset[tag][4];
+  const tileset_x = tileset[tag][0];
+  const tileset_y = tileset[tag][1];
+  const width = tileset[tag][2];
+  const height = tileset[tag][3];
+  const i = tileset[tag][4];
   return {"tag": tag,
             "image-src" : "/tileset/freeciv-web-tileset-" + tileset_name + "-" + i + get_tileset_file_extention() + "?ts=" + ts,
             "tileset-x" : tileset_x,
@@ -723,23 +725,23 @@ function get_treaty_disagree_thumb_down()
 function assign_nation_color(nation_id)
 {
 
-  var nation = nations[nation_id];
+  const nation = nations[nation_id];
   if (nation == null || nation['color'] != null) return;
 
-  var flag_key = "f." + nation['graphic_str'];
-  var flag_sprite = sprites[flag_key];
+  const flag_key = "f." + nation['graphic_str'];
+  const flag_sprite = sprites[flag_key];
   if (flag_sprite == null) return;
-  var c = flag_sprite.getContext('2d');
-  var width = tileset[flag_key][2];
-  var height = tileset[flag_key][3];
-  var color_counts = {};
+  const c = flag_sprite.getContext('2d');
+  const width = tileset[flag_key][2];
+  const height = tileset[flag_key][3];
+  const color_counts = {};
   /* gets the flag image data, except for the black border. */
   if (c == null) return;
-  var img_data = c.getImageData(1, 1, width-2, height-2).data;
+  const img_data = c.getImageData(1, 1, width-2, height-2).data;
 
   /* count the number of each pixel's color */
-  for (var i = 0; i < img_data.length; i += 4) {
-    var current_color = "rgb(" + img_data[i] + "," + img_data[i+1] + ","
+  for (const i = 0; i < img_data.length; i += 4) {
+    const current_color = "rgb(" + img_data[i] + "," + img_data[i+1] + ","
                         + img_data[i+2] + ")";
     if (current_color in color_counts) {
       color_counts[current_color] = color_counts[current_color] + 1;
@@ -748,10 +750,10 @@ function assign_nation_color(nation_id)
     }
   }
 
-  var max = -1;
-  var max_color = null;
+  const max = -1;
+  const max_color = null;
 
-  for (var current_color in color_counts) {
+  for (let current_color in color_counts) {
     if (color_counts[current_color] > max) {
       max = color_counts[current_color];
       max_color = current_color;
@@ -772,14 +774,14 @@ function assign_nation_color(nation_id)
 ****************************************************************************/
 function is_color_collision(color_a, color_b)
 {
-  var distance_threshold = 20;
+  const distance_threshold = 20;
 
   if (color_a == null || color_b == null) return false;
 
-  var pcolor_a = color_rbg_to_list(color_a);
-  var pcolor_b = color_rbg_to_list(color_b);
+  const pcolor_a = color_rbg_to_list(color_a);
+  const pcolor_b = color_rbg_to_list(color_b);
 
-  var color_distance = Math.sqrt( Math.pow(pcolor_a[0] - pcolor_b[0], 2)
+  const color_distance = Math.sqrt( Math.pow(pcolor_a[0] - pcolor_b[0], 2)
 		  + Math.pow(pcolor_a[1] - pcolor_b[1], 2)
 		  + Math.pow(pcolor_a[2] - pcolor_b[2], 2));
 
@@ -792,7 +794,7 @@ function is_color_collision(color_a, color_b)
 function color_rbg_to_list(pcolor)
 {
   if (pcolor == null) return null;
-  var color_rgb = pcolor.match(/\d+/g);
+  const color_rgb = pcolor.match(/\d+/g);
   color_rgb[0] = parseFloat(color_rgb[0]);
   color_rgb[1] = parseFloat(color_rgb[1]);
   color_rgb[2] = parseFloat(color_rgb[2]);

@@ -1,4 +1,6 @@
 /**********************************************************************
+'use strict';
+
  FreecivWorld.net - the web version of Freeciv. https://www.FreecivWorld.net/
  Copyright (C) 2025 FreecivWorld.net
 
@@ -18,14 +20,14 @@
  ***********************************************************************/
 
 
-var shownInvites = new Set();
+const shownInvites = new Set();
 
 /**************************************************************************
  Invite player to multiplayer game
  **************************************************************************/
 function show_invite_player_dialog()
 {
-    var message = "<div id=\"invite_dialog\" title=\"Invite Player\">\n" +
+    const message = "<div id=\"invite_dialog\" title=\"Invite Player\">\n" +
         "    <p>Select a player to invite (online last 12 hours):</p>\n" +
         "    <select id=\"playerList\"></select>\n" +
         "</div><br>" ;
@@ -97,7 +99,7 @@ function checkInvitations() {
         return;
     }
 
-    var stored_username = simpleStorage.get("username", "");
+    const stored_username = simpleStorage.get("username", "");
     if (stored_username != null ) {
         username = stored_username;
     }

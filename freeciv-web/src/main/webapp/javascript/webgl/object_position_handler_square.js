@@ -1,4 +1,6 @@
 /**********************************************************************
+'use strict';
+
     Freeciv-web - the web version of Freeciv. http://www.FreecivWorld.net/
     Copyright (C) 2009-2016  The Freeciv-web project
 
@@ -16,36 +18,36 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 ***********************************************************************/
-var flag_dy = 0;
-var flag_dx = 16;
-var flag_dz = 18;
+const flag_dy = 0;
+const flag_dx = 16;
+const flag_dz = 18;
 
 // stores unit positions on the map. tile index is key, unit 3d model is value.
-var unit_positions = {};
+const unit_positions = {};
 // stores city positions on the map. tile index is key, unit 3d model is value.
-var city_positions = {};
-var city_label_positions = {};
-var city_walls_positions = {};
-var city_disorder_positions = {};
-var city_light_positions = {};
-var city_building_positions = {};
+const city_positions = {};
+const city_label_positions = {};
+const city_walls_positions = {};
+const city_disorder_positions = {};
+const city_light_positions = {};
+const city_building_positions = {};
 
 // stores flag positions on the map. tile index is key, unit 3d model is value.
-var unit_flag_positions = {};
+const unit_flag_positions = {};
 
 // stores tile extras (eg specials), key is extra + "." + tile_index.
-var tile_extra_positions_list = {};
+const tile_extra_positions_list = {};
 
 // key is tile is, value is list of three.js tree models.
-var tile_models_list = {};
+const tile_models_list = {};
 
-var selected_unit_indicator = null;
-var selected_unit_material = null;
-var selected_unit_material_counter = 0;
+const selected_unit_indicator = null;
+const selected_unit_material = null;
+const selected_unit_material_counter = 0;
 
-var sun_mesh = null;
+const sun_mesh = null;
 
-var special_resources = ["Fish", "Whales", "Oasis", "Wine", "Iron", "Spice", "Ivory" , "Oil", "Coal", "Fruit", "Furs", "Gold", "Gems", "Silk", "Resources", "Fallout", "Game", "Buffalo", "Pheasant", "Wheat", "Peat", "Buoy", "Cattle"];
+const special_resources = ["Fish", "Whales", "Oasis", "Wine", "Iron", "Spice", "Ivory" , "Oil", "Coal", "Fruit", "Furs", "Gold", "Gems", "Silk", "Resources", "Fallout", "Game", "Buffalo", "Pheasant", "Wheat", "Peat", "Buoy", "Cattle"];
 
 /****************************************************************************
   Handles unit positions
@@ -102,7 +104,7 @@ function update_unit_position(ptile) {
     scene.add(new_unit);
 
     /* add flag. */
-    var new_flag;
+    let new_flag;
     if (unit_flag_positions[ptile['index']] == null && scene != null) {
       new_flag = create_unit_label_sprite(visible_unit, ptile);
       if (new_flag != null) {
@@ -480,7 +482,7 @@ function add_city_building(ptile, pcity, scene, building_name) {
           ptile = origtile;
         }
 
-        var is_ocean_building = (building_name == "Harbor");
+        const is_ocean_building = (building_name == "Harbor");
         if (!is_ocean_tile(nexttile) && is_ocean_building) {
           ptile = mapstep(ptile, Math.floor(Math.random() * 8));
           if (ptile == null) ptile = origtile;
@@ -580,7 +582,7 @@ function update_tile_extra_update_model(extra_type, extra_name, ptile)
       )) {
     let num_models = 1;
     let height = 5 + ptile['height'] * 100;
-    var use_instancing = false;
+    const use_instancing = false;
 
     if (tile_has_extra(ptile, EXTRA_OIL_WELL)) {
       extra_name = "Oil Well";

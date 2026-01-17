@@ -1,4 +1,6 @@
 /**********************************************************************
+'use strict';
+
     Freeciv-web - the web version of Freeciv. http://www.FreecivWorld.net/
     Copyright (C) 2009-2016  The Freeciv-web project
 
@@ -19,8 +21,8 @@
 
 /* Speech Synthesis API  (text to speech)*/
 
-var speech_enabled = false;
-var voice = null;
+const speech_enabled = false;
+const voice = null;
 
 /**************************************************************************
  is Speech Synthesis API enabled?
@@ -58,10 +60,10 @@ function speak_unfiltered(text) {
 function speech_synth(text, filter_enabled) {
   if (!is_speech_supported() || !speech_enabled) return;
 
-    var text_filtered = filter_enabled ? filter_speech_messages(text) : text;
+    const text_filtered = filter_enabled ? filter_speech_messages(text) : text;
     if (text_filtered == null) return;
 
-	var msg = new SpeechSynthesisUtterance();
+	const msg = new SpeechSynthesisUtterance();
  	msg.text = text_filtered;
 
 	msg.volume = parseFloat(1);
@@ -70,15 +72,15 @@ function speech_synth(text, filter_enabled) {
 	msg.lang = 'en-US';
 
 	if (voice == null) {
-      var voices = speechSynthesis.getVoices();
-      voices.forEach(function(voice_check, i) {
+      const voices = speechSynthesis.getVoices();
+      voices.forEach((voice_check, i) => {
         // try to find a default voice
         if (voice_check.name == "Google UK English Female") voice = "Google UK English Female";
       });
 	}
 
 	if (voice != null) {
-	  msg.voice = speechSynthesis.getVoices().filter(function(voice_check) { return voice_check.name == voice; })[0];
+	  msg.voice = speechSynthesis.getVoices().filter((voice_check) => voice_check.name == voice)[0];
 	}
 
 	window.speechSynthesis.speak(msg);
@@ -113,11 +115,11 @@ function filter_speech_messages(input) {
 **************************************************************************/
 function load_voices() {
   if (!is_speech_supported() || speechSynthesis == null) return;
-  var voices = speechSynthesis.getVoices();
-  var voiceSelect = document.getElementById('voice');
+  const voices = speechSynthesis.getVoices();
+  const voiceSelect = document.getElementById('voice');
   if (voiceSelect == null) return;
-  voices.forEach(function(voice, i) {
-      var option = document.createElement('option');
+  voices.forEach((voice, i) => {
+      const option = document.createElement('option');
       option.value = voice.name;
       option.innerHTML = voice.name;
       voiceSelect.appendChild(option);

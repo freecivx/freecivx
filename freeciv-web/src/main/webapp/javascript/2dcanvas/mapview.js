@@ -1,4 +1,6 @@
 /**********************************************************************
+'use strict';
+
     Freeciv-web - the web version of Freeciv. http://www.FreecivWorld.net/
     Copyright (C) 2009-2015  The Freeciv-web project
 
@@ -18,20 +20,20 @@
 ***********************************************************************/
 
 
-var tileset_images = [];
-var sprites = {};
-var loaded_images = 0;
+const tileset_images = [];
+const sprites = {};
+const loaded_images = 0;
 
-var sprites_init = false;
+const sprites_init = false;
 
-var canvas_text_font = "16px Georgia, serif"; // with canvas text support
+const canvas_text_font = "16px Georgia, serif"; // with canvas text support
 
-var fullfog = [];
+const fullfog = [];
 
-var GOTO_DIR_DX = [0, 1, 2, -1, 1, -2, -1, 0];
-var GOTO_DIR_DY = [-2, -1, 0, -1, 1, 0, 1, 2];
+const GOTO_DIR_DX = [0, 1, 2, -1, 1, -2, -1, 0];
+const GOTO_DIR_DY = [-2, -1, 0, -1, 1, 0, 1, 2];
 
-var mapview_slide = {};
+const mapview_slide = {};
 mapview_slide['active'] = false;
 mapview_slide['dx'] = 0;
 mapview_slide['dy'] = 0;
@@ -66,8 +68,8 @@ function init_sprites()
   $("body").css("padding-bottom", "0px");
 
   if (loaded_images != tileset_image_count) {
-    for (var i = 0; i < tileset_image_count; i++) {
-      var tileset_image = new Image();
+    for (const i = 0; i < tileset_image_count; i++) {
+      const tileset_image = new Image();
       tileset_image.onload = preload_check;
       tileset_image.src = '/tileset/freeciv-web-tileset-'
                           + tileset_name + '-' + i + get_tileset_file_extention() + '?ts=' + ts;
@@ -108,17 +110,17 @@ function init_cache_sprites()
     return;
   }
 
-  for (var tile_tag in tileset) {
-    var x = tileset[tile_tag][0];
-    var y = tileset[tile_tag][1];
-    var w = tileset[tile_tag][2];
-    var h = tileset[tile_tag][3];
-    var i = tileset[tile_tag][4];
+  for (let tile_tag in tileset) {
+    const x = tileset[tile_tag][0];
+    const y = tileset[tile_tag][1];
+    const w = tileset[tile_tag][2];
+    const h = tileset[tile_tag][3];
+    const i = tileset[tile_tag][4];
 
-    var newCanvas = document.createElement('canvas');
+    const newCanvas = document.createElement('canvas');
     newCanvas.height = h;
     newCanvas.width = w;
-    var newCtx = newCanvas.getContext('2d');
+    const newCtx = newCanvas.getContext('2d');
 
     newCtx.drawImage(tileset_images[i], x, y,
                        w, h, 0, 0, w, h);

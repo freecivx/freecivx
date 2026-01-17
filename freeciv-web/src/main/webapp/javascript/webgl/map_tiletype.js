@@ -1,4 +1,6 @@
 /**********************************************************************
+'use strict';
+
     Freeciv-web - the web version of Freeciv. http://www.FreecivWorld.net/
     Copyright (C) 2009-2016  The Freeciv-web project
 
@@ -17,8 +19,8 @@
 
 ***********************************************************************/
 
-var maptiletypes;
-var maptiles_data;
+let maptiletypes;
+let maptiles_data;
 
 /****************************************************************************
   Returns a texture containing each map tile, where the color of each pixel

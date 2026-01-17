@@ -1,4 +1,6 @@
 /**********************************************************************
+'use strict';
+
     Freeciv-web - the web version of Freeciv. http://www.FreecivWorld.net/
     Copyright (C) 2009-2015  The Freeciv-web project
 
@@ -22,7 +24,7 @@
 // IDs are dynamic based on ruleset
 const B_AIRPORT_NAME = 'Airport';
 
-var B_LAST = MAX_NUM_BUILDINGS;
+const B_LAST = MAX_NUM_BUILDINGS;
 
 const improvements = {};
 /** @private */
@@ -50,11 +52,11 @@ function improvements_add_building(improvement) {
 **************************************************************************/
 function get_improvements_from_tech(tech_id)
 {
-  var result = [];
-  for (var improvement_id in improvements) {
-    var pimprovement = improvements[improvement_id];
-    var reqs = get_improvement_requirements(improvement_id);
-    for (var i = 0; i < reqs.length; i++) {
+  const result = [];
+  for (let improvement_id in improvements) {
+    const pimprovement = improvements[improvement_id];
+    const reqs = get_improvement_requirements(improvement_id);
+    for (const i = 0; i < reqs.length; i++) {
       if (reqs[i] == tech_id) {
         result.push(pimprovement);
       }
@@ -76,10 +78,10 @@ function is_wonder(improvement)
 **************************************************************************/
 function get_improvement_requirements(improvement_id)
 {
-  var result = [];
-  var improvement = improvements[improvement_id];
+  const result = [];
+  const improvement = improvements[improvement_id];
   if (improvement != null && improvement['reqs'] != null) {
-    for (var i = 0; i < improvement['reqs'].length; i++) {
+    for (const i = 0; i < improvement['reqs'].length; i++) {
       if (improvement['reqs'][i]['kind'] == 1
           && improvement['reqs'][i]['present']) {
         result.push(improvement['reqs'][i]['value']);

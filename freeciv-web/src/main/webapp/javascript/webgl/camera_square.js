@@ -1,4 +1,6 @@
 /**********************************************************************
+'use strict';
+
     Freeciv-web - the web version of Freeciv. http://www.FreecivWorld.net/
     Copyright (C) 2009-2017  The Freeciv-web project
 
@@ -17,15 +19,15 @@
 
 ***********************************************************************/
 
-var camera;
+let camera;
 
-var camera_dx = 50;
-var camera_dy = 430;
-var camera_dz = 242;
-var camera_current_x = 0;
-var camera_current_y = 0;
-var camera_current_z = 0;
-var slide_init = false;
+const camera_dx = 50;
+const camera_dy = 430;
+const camera_dz = 242;
+const camera_current_x = 0;
+const camera_current_y = 0;
+const camera_current_z = 0;
+const slide_init = false;
 
 
 /****************************************************************************
@@ -66,7 +68,7 @@ function center_tile_mapcanvas_3d(ptile)
     if (slide_init) {
       enable_mapview_slide_3d(ptile);
     } else {
-      var pos = map_to_scene_coords(ptile['x'], ptile['y']);
+      const pos = map_to_scene_coords(ptile['x'], ptile['y']);
       camera_look_at(pos['x'] - 50, 0, pos['y'] - 50);       // -50 to get the center tile more in the center of the screen.
       slide_init = true;
     }
@@ -80,9 +82,9 @@ function center_tile_mapcanvas_3d(ptile)
 **************************************************************************/
 function center_tile_city(city)
 {
-  var ptile = city_tile(city);
+  const ptile = city_tile(city);
   if (ptile != null) {
-    var pos = map_to_scene_coords(ptile['x'], ptile['y']);
+    const pos = map_to_scene_coords(ptile['x'], ptile['y']);
     camera_look_at(pos['x'] , 0, pos['y'] );
   }
 
@@ -93,7 +95,7 @@ function center_tile_city(city)
 **************************************************************************/
 function enable_mapview_slide_3d(ptile)
 {
-  var pos_dest = map_to_scene_coords(ptile['x'], ptile['y']);
+  const pos_dest = map_to_scene_coords(ptile['x'], ptile['y']);
 
   camera_dx = camera.position.x - controls.target.x + 50;
   camera_dy = camera.position.y - controls.target.y + 50;
@@ -113,7 +115,7 @@ function enable_mapview_slide_3d(ptile)
 **************************************************************************/
 function update_map_slide_3d()
 {
-  var elapsed = 1 + new Date().getTime() - mapview_slide['start'];
+  const elapsed = 1 + new Date().getTime() - mapview_slide['start'];
   mapview_slide['i'] = Math.floor(mapview_slide['max']
                         * (mapview_slide['slide_time']
                         - elapsed) / mapview_slide['slide_time']);
@@ -123,8 +125,8 @@ function update_map_slide_3d()
     return;
   }
 
-  var dx = Math.floor(mapview_slide['dx'] * (mapview_slide['i'] - mapview_slide['prev']) / mapview_slide['max']);
-  var dy = Math.floor(mapview_slide['dy'] * (mapview_slide['i'] - mapview_slide['prev']) / mapview_slide['max']);
+  const dx = Math.floor(mapview_slide['dx'] * (mapview_slide['i'] - mapview_slide['prev']) / mapview_slide['max']);
+  const dy = Math.floor(mapview_slide['dy'] * (mapview_slide['i'] - mapview_slide['prev']) / mapview_slide['max']);
 
   camera_look_at(camera_current_x + dx, 0, camera_current_z + dy);
   mapview_slide['prev'] = mapview_slide['i'];

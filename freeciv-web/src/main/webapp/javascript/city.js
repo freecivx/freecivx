@@ -1,4 +1,6 @@
 /**********************************************************************
+'use strict';
+
     Freeciv-web - the web version of Freeciv. http://www.FreecivWorld.net/
     Copyright (C) 2009-2015  The Freeciv-web project
 
@@ -18,47 +20,47 @@
 ***********************************************************************/
 
 
-var cities = {};
-var city_rules = {};
-var city_trade_routes = {};
+const cities = {};
+const city_rules = {};
+const city_trade_routes = {};
 
-var goods = {};
+const goods = {};
 
-var active_city = null;
-var worklist_dialog_active = false;
-var production_selection = [];
-var worklist_selection = [];
+const active_city = null;
+const worklist_dialog_active = false;
+const production_selection = [];
+const worklist_selection = [];
 
 /* The city_options enum. */
-var CITYO_DISBAND      = 0;
-var CITYO_NEW_EINSTEIN = 1;
-var CITYO_NEW_TAXMAN   = 2;
-var CITYO_LAST         = 3;
+const CITYO_DISBAND = 0;
+const CITYO_NEW_EINSTEIN = 1;
+const CITYO_NEW_TAXMAN = 2;
+const CITYO_LAST = 3;
 
-var FEELING_BASE = 0;		/* before any of the modifiers below */
-var FEELING_LUXURY = 1;		/* after luxury */
-var FEELING_EFFECT = 2;		/* after building effects */
-var FEELING_NATIONALITY = 3;  	/* after citizen nationality effects */
-var FEELING_MARTIAL = 4;	/* after units enforce martial order */
-var FEELING_FINAL = 5;		/* after wonders (final result) */
+const FEELING_BASE = 0;		/* before any of the modifiers below */
+const FEELING_LUXURY = 1;		/* after luxury */
+const FEELING_EFFECT = 2;		/* after building effects */
+const FEELING_NATIONALITY = 3;  	/* after citizen nationality effects */
+const FEELING_MARTIAL = 4;	/* after units enforce martial order */
+const FEELING_FINAL = 5;		/* after wonders (final result) */
 
-var MAX_LEN_WORKLIST = 64;
+const MAX_LEN_WORKLIST = 64;
 
-var INCITE_IMPOSSIBLE_COST = (1000 * 1000 * 1000);
+const INCITE_IMPOSSIBLE_COST = (1000 * 1000 * 1000);
 
-var city_tab_index = 0;
-var city_prod_clicks = 0;
+const city_tab_index = 0;
+const city_prod_clicks = 0;
 
-var city_screen_updater = new EventAggregator(update_city_screen, 250,
+const city_screen_updater = new EventAggregator(update_city_screen, 250,
                                               EventAggregator.DP_NONE,
                                               250, 3, 250);
 
 /* Information for mapping workable tiles of a city to local index */
-var city_tile_map = null;
+const city_tile_map = null;
 
-var opt_show_unreachable_items = false;
+const opt_show_unreachable_items = false;
 
-var city_dialog_html = `
+const city_dialog_html = `
 <div id="city_tabs">
   <ul>
     <li><a href="#city_tabs-1" onclick="javascript:city_tab_index=0;">Overview</a></li>
@@ -254,12 +256,12 @@ function city_owner(pcity)
 function remove_city(pcity_id)
 {
   if (pcity_id == null || client.conn.playing == null) return;
-  var pcity = cities[pcity_id];
+  const pcity = cities[pcity_id];
   if (pcity == null) return;
 
-  var update = client.conn.playing.playerno &&
+  const update = client.conn.playing.playerno &&
                city_owner(pcity).playerno == client.conn.playing.playerno;
-  var ptile = city_tile(cities[pcity_id]);
+  const ptile = city_tile(cities[pcity_id]);
   delete cities[pcity_id];
   update_city_position(ptile);
   if (update) {
@@ -303,9 +305,9 @@ function show_city_dialog_by_id(pcity_id)
 **************************************************************************/
 function show_city_dialog(pcity)
 {
-  var turns_to_complete;
-  var sprite;
-  var punit;
+  let turns_to_complete;
+  let sprite;
+  let punit;
 
   if (active_city != pcity || active_city == null) {
     city_prod_clicks = 0;
@@ -330,7 +332,7 @@ function show_city_dialog(pcity)
 
   show_city_traderoutes();
 
-  var dialog_buttons = {};
+  const dialog_buttons = {};
   dialog_buttons = $.extend(dialog_buttons,
   {
      "Change production" : city_change_production,
@@ -396,7 +398,7 @@ function show_city_dialog(pcity)
                        + "Granary: " + pcity['food_stock'] + "/" + pcity['granary_size'] + "<br>"
                        + "Change in: " + city_turns_to_growth_text(pcity));
 
-  var prod_type = get_city_production_type_sprite(pcity);
+  const prod_type = get_city_production_type_sprite(pcity);
   $("#city_production_overview").html("Producing: " + (prod_type != null ? prod_type['type']['name'] : "None"));
 
   turns_to_complete = get_city_production_time(pcity);
@@ -407,8 +409,8 @@ function show_city_dialog(pcity)
     $("#city_production_turns_overview").html("-");
   }
 
-  var improvements_html = "";
-  for (var z = 0; z < ruleset_control.num_impr_types; z ++) {
+  const improvements_html = "";
+  for (const z = 0; z < ruleset_control.num_impr_types; z ++) {
     if (pcity['improvements'] != null && pcity['improvements'].isSet(z)) {
        sprite = get_improvement_image_sprite(improvements[z]);
        if (sprite == null) {
@@ -428,10 +430,10 @@ function show_city_dialog(pcity)
   }
   $("#city_improvements_list").html(improvements_html);
 
-  var punits = tile_units(city_tile(pcity));
+  const punits = tile_units(city_tile(pcity));
   if (punits != null) {
-    var present_units_html = "";
-    for (var r = 0; r < punits.length; r++) {
+    const present_units_html = "";
+    for (const r = 0; r < punits.length; r++) {
       punit = punits[r];
       sprite = get_unit_image_sprite(punit);
       if (sprite == null) {
@@ -451,10 +453,10 @@ function show_city_dialog(pcity)
     $("#city_present_units_list").html(present_units_html);
   }
 
-  var sunits = get_supported_units(pcity);
+  const sunits = get_supported_units(pcity);
   if (sunits != null) {
-    var supported_units_html = "";
-    for (var t = 0; t < sunits.length; t++) {
+    const supported_units_html = "";
+    for (const t = 0; t < sunits.length; t++) {
       punit = sunits[t];
       sprite = get_unit_image_sprite(punit);
       if (sprite == null) {
@@ -479,24 +481,24 @@ function show_city_dialog(pcity)
   $("#city_improvement_element").tooltip();
 
   if ('prod' in pcity && 'surplus' in pcity) {
-    var food_txt = pcity['prod'][O_FOOD] + " ( ";
+    const food_txt = pcity['prod'][O_FOOD] + " ( ";
     if (pcity['surplus'][O_FOOD] > 0) food_txt += "+";
     food_txt += pcity['surplus'][O_FOOD] + ")";
 
-    var shield_txt = pcity['prod'][O_SHIELD] + " ( ";
+    const shield_txt = pcity['prod'][O_SHIELD] + " ( ";
     if (pcity['surplus'][O_SHIELD] > 0) shield_txt += "+";
     shield_txt += pcity['surplus'][O_SHIELD] + ")";
 
-    var trade_txt = pcity['prod'][O_TRADE] + " ( ";
+    const trade_txt = pcity['prod'][O_TRADE] + " ( ";
     if (pcity['surplus'][O_TRADE] > 0) trade_txt += "+";
     trade_txt += pcity['surplus'][O_TRADE] + ")";
 
-    var gold_txt = pcity['prod'][O_GOLD] + " ( ";
+    const gold_txt = pcity['prod'][O_GOLD] + " ( ";
     if (pcity['surplus'][O_GOLD] > 0) gold_txt += "+";
     gold_txt += pcity['surplus'][O_GOLD] + ")";
 
-    var luxury_txt = pcity['prod'][O_LUXURY];
-    var science_txt = pcity['prod'][O_SCIENCE];
+    const luxury_txt = pcity['prod'][O_LUXURY];
+    const science_txt = pcity['prod'][O_SCIENCE];
 
     $("#city_food").html(food_txt);
     $("#city_prod").html(shield_txt);
@@ -513,20 +515,20 @@ function show_city_dialog(pcity)
   }
 
   /* Handle citizens and specialists */
-  var specialist_html = "";
-  var citizen_types = ["angry", "unhappy", "content", "happy"];
-  for (var s = 0; s < citizen_types.length; s++) {
+  const specialist_html = "";
+  const citizen_types = ["angry", "unhappy", "content", "happy"];
+  for (const s = 0; s < citizen_types.length; s++) {
     if (pcity['ppl_' + citizen_types[s]] == null) continue;
-    for (var i = 0; i < pcity['ppl_' + citizen_types[s]][FEELING_FINAL]; i ++) {
+    for (const i = 0; i < pcity['ppl_' + citizen_types[s]][FEELING_FINAL]; i ++) {
       specialist_html = specialist_html +
       "<canvas id='citizen_" + s + "_" + i + "' class='specialist_item' title='One " + citizen_types[s] + " citizen' width='30' height='38'></canvas>";
     }
   }
 
-  for (var u = 0; u < pcity['specialists_size']; u++) {
-    var spec_type_name = specialists[u]['plural_name'];
-    var spec_gfx_key = "specialist." + specialists[u]['rule_name'] + "_0";
-    for (var j = 0; j < pcity['specialists'][u]; j++) {
+  for (const u = 0; u < pcity['specialists_size']; u++) {
+    const spec_type_name = specialists[u]['plural_name'];
+    const spec_gfx_key = "specialist." + specialists[u]['rule_name'] + "_0";
+    for (const j = 0; j < pcity['specialists'][u]; j++) {
       sprite = get_specialist_image_sprite(spec_gfx_key);
       specialist_html = specialist_html +
       "<canvas id='specialist_" + u + "_" + j + "' class='specialist_item' style='cursor:pointer;cursor:hand;' title='" + spec_type_name
@@ -536,18 +538,18 @@ function show_city_dialog(pcity)
   specialist_html += "<div style='clear: both;'></div>";
   $("#specialist_panel").html(specialist_html);
 
-  for (var s = 0; s < citizen_types.length; s++) {
+  for (const s = 0; s < citizen_types.length; s++) {
     if (pcity['ppl_' + citizen_types[s]] == null) continue;
-    for (var i = 0; i < pcity['ppl_' + citizen_types[s]][FEELING_FINAL]; i ++) {
-      var citizen_canvas = $("#citizen_"  + s + "_" + i)[0].getContext("2d");
+    for (const i = 0; i < pcity['ppl_' + citizen_types[s]][FEELING_FINAL]; i ++) {
+      const citizen_canvas = $("#citizen_"  + s + "_" + i)[0].getContext("2d");
       citizen_canvas.drawImage(sprites["citizen." + citizen_types[s] + "_" + (i % 2)], 0, 0, 15, 20, 0, 0, 30, 38);
     }
   }
-  for (var u = 0; u < pcity['specialists_size']; u++) {
-    var spec_type_name = specialists[u]['plural_name'];
-    var spec_gfx_key = "specialist." + specialists[u]['rule_name'] + "_0";
-    for (var j = 0; j < pcity['specialists'][u]; j++) {
-      var specialist_canvas = $("#specialist_" + u + "_" + j)[0].getContext("2d");
+  for (const u = 0; u < pcity['specialists_size']; u++) {
+    const spec_type_name = specialists[u]['plural_name'];
+    const spec_gfx_key = "specialist." + specialists[u]['rule_name'] + "_0";
+    for (const j = 0; j < pcity['specialists'][u]; j++) {
+      const specialist_canvas = $("#specialist_" + u + "_" + j)[0].getContext("2d");
       specialist_canvas.drawImage(sprites[spec_gfx_key],  0, 0, 15, 20, 0, 0, 30, 38);
     }
   }
@@ -557,8 +559,8 @@ function show_city_dialog(pcity)
   $('#disbandable_city').prop('checked',
                               pcity['city_options'] != null && pcity['city_options'].isSet(CITYO_DISBAND));
   $('#disbandable_city').click(function() {
-    var options = pcity['city_options'];
-    var packet = {
+    const options = pcity['city_options'];
+    const packet = {
       "pid"     : packet_city_options_req,
       "city_id" : active_city['id'],
       "options" : options.raw
@@ -614,12 +616,12 @@ function get_city_production_type_sprite(pcity)
 {
   if (pcity == null) return null; 
   if (pcity['production_kind'] == VUT_UTYPE) {
-    var punit_type = unit_types[pcity['production_value']];
+    const punit_type = unit_types[pcity['production_value']];
     return {"type":punit_type,"sprite":get_unit_type_image_sprite(punit_type)};
   }
 
   if (pcity['production_kind'] == VUT_IMPROVEMENT) {
-    var improvement = improvements[pcity['production_value']];
+    const improvement = improvements[pcity['production_value']];
     return {"type":improvement,"sprite":get_improvement_image_sprite(improvement)};
   }
 
@@ -635,12 +637,12 @@ function get_city_production_type(pcity)
     return null;
   }
   if (pcity['production_kind'] == VUT_UTYPE) {
-    var punit_type = unit_types[pcity['production_value']];
+    const punit_type = unit_types[pcity['production_value']];
     return punit_type;
   }
 
   if (pcity['production_kind'] == VUT_IMPROVEMENT) {
-    var improvement = improvements[pcity['production_value']];
+    const improvement = improvements[pcity['production_value']];
     return improvement;
   }
 
@@ -656,12 +658,12 @@ function get_city_production_time(pcity)
  if (pcity == null) return FC_INFINITY;
 
   if (pcity['production_kind'] == VUT_UTYPE) {
-    var punit_type = unit_types[pcity['production_value']];
+    const punit_type = unit_types[pcity['production_value']];
     return city_turns_to_build(pcity, punit_type, true);
   }
 
   if (pcity['production_kind'] == VUT_IMPROVEMENT) {
-    var improvement = improvements[pcity['production_value']];
+    const improvement = improvements[pcity['production_value']];
     if (improvement['name'] == "Coinage") {
       return FC_INFINITY;
     }
@@ -681,13 +683,13 @@ function get_production_progress(pcity)
   if (pcity == null) return " ";
 
   if (pcity['production_kind'] == VUT_UTYPE) {
-    var punit_type = unit_types[pcity['production_value']];
+    const punit_type = unit_types[pcity['production_value']];
     return pcity['shield_stock'] + "/"
            + universal_build_shield_cost(pcity, punit_type);
   }
 
   if (pcity['production_kind'] == VUT_IMPROVEMENT) {
-    var improvement = improvements[pcity['production_value']];
+    const improvement = improvements[pcity['production_value']];
     if (improvement['name'] == "Coinage") {
       return " ";
     }
@@ -706,13 +708,13 @@ function get_production_progress_num(pcity)
   if (pcity == null) return 0;
 
   if (pcity['production_kind'] == VUT_UTYPE) {
-    var punit_type = unit_types[pcity['production_value']];
+    const punit_type = unit_types[pcity['production_value']];
     return pcity['shield_stock'] /
            universal_build_shield_cost(pcity, punit_type);
   }
 
   if (pcity['production_kind'] == VUT_IMPROVEMENT) {
-    var improvement = improvements[pcity['production_value']];
+    const improvement = improvements[pcity['production_value']];
     if (improvement['name'] == "Coinage") {
       return 0;
     }
@@ -728,9 +730,9 @@ function get_production_progress_num(pcity)
 **************************************************************************/
 function generate_production_list()
 {
-  var production_list = [];
-  for (var unit_type_id in unit_types) {
-    var punit_type = unit_types[unit_type_id];
+  const production_list = [];
+  for (let unit_type_id in unit_types) {
+    const punit_type = unit_types[unit_type_id];
 
     /* FIXME: web client doesn't support unit flags yet, so this is a hack: */
     if (punit_type['name'] == "Barbarian Leader" || punit_type['name'] == "Leader") continue;
@@ -746,9 +748,9 @@ function generate_production_list()
                             "sprite" : get_unit_type_image_sprite(punit_type)});
   }
 
-  for (var improvement_id in improvements) {
-    var pimprovement = improvements[improvement_id];
-      var build_cost = pimprovement['build_cost'];
+  for (let improvement_id in improvements) {
+    const pimprovement = improvements[improvement_id];
+      const build_cost = pimprovement['build_cost'];
       if (pimprovement['name'] == "Coinage") build_cost = "-";
       production_list.push({"kind": VUT_IMPROVEMENT,
                             "value" : pimprovement['id'],
@@ -823,9 +825,9 @@ function city_has_building(pcity, improvement_id)
 **************************************************************************/
 function city_turns_to_build(pcity, target, include_shield_stock)
 {
-  var city_shield_surplus =  pcity['surplus'][O_SHIELD];
-  var city_shield_stock = include_shield_stock ? pcity['shield_stock'] : 0;
-  var cost = universal_build_shield_cost(pcity, target);
+  const city_shield_surplus = pcity['surplus'][O_SHIELD];
+  const city_shield_stock = include_shield_stock ? pcity['shield_stock'] : 0;
+  const cost = universal_build_shield_cost(pcity, target);
 
   if (include_shield_stock == true && (pcity['shield_stock'] >= cost)) {
     return 1;
@@ -841,29 +843,29 @@ function city_turns_to_build(pcity, target, include_shield_stock)
 **************************************************************************/
 function request_city_buy()
 {
-  var pcity = active_city;
-  var pplayer = client.conn.playing;
+  const pcity = active_city;
+  const pplayer = client.conn.playing;
 
   // reset dialog page.
   $("#buy_dialog").remove();
   $("<div id='buy_dialog'></div>").appendTo("div#game_page");
-  var buy_price_string = "";
-  var buy_question_string = "";
+  const buy_price_string = "";
+  const buy_question_string = "";
 
   if (pcity['production_kind'] == VUT_UTYPE) {
-    var punit_type = unit_types[pcity['production_value']];
+    const punit_type = unit_types[pcity['production_value']];
     if (punit_type != null) {
       send_city_buy();
       return;
     }
   }
-  var improvement = improvements[pcity['production_value']];
+  const improvement = improvements[pcity['production_value']];
   if (improvement != null) {
     buy_price_string = improvement['name'] + " costs " + pcity['buy_cost'] + " gold.";
     buy_question_string = "Buy " + improvement['name'] + " for " + pcity['buy_cost'] + " gold?";
   }
 
-  var treasury_text = "<br>Treasury contains " + pplayer['gold'] + " gold.";
+  const treasury_text = "<br>Treasury contains " + pplayer['gold'] + " gold.";
 
   if (pcity['buy_cost'] > pplayer['gold']) {
     show_dialog_message("Buy It!",
@@ -871,7 +873,7 @@ function request_city_buy()
     return;
   }
 
-  var dhtml = buy_question_string + treasury_text;
+  const dhtml = buy_question_string + treasury_text;
 
 
   $("#buy_dialog").html(dhtml);
@@ -903,7 +905,7 @@ function request_city_buy()
 function send_city_buy()
 {
   if (active_city != null) {
-    var packet = {"pid" : packet_city_buy, "city_id" : active_city['id']};
+    const packet = {"pid" : packet_city_buy, "city_id" : active_city['id']};
     send_request(JSON.stringify(packet));
   }
 }
@@ -913,7 +915,7 @@ function send_city_buy()
 **************************************************************************/
 function send_city_change(city_id, kind, value)
 {
-  var packet = {"pid" : packet_city_change, "city_id" : city_id,
+  const packet = {"pid" : packet_city_change, "city_id" : city_id,
                 "production_kind": kind, "production_value" : value};
   send_request(JSON.stringify(packet));
 }
@@ -961,7 +963,7 @@ function city_dialog_close_handler()
 **************************************************************************/
 function do_city_map_click(ptile)
 {
-  var packet = null;
+  const packet = null;
   if (ptile['worked'] == active_city['id']) {
     packet = {"pid"     : packet_city_make_specialist,
               "city_id" : active_city['id'],
@@ -981,7 +983,7 @@ function does_city_have_improvement(pcity, improvement_name)
 {
   if (pcity == null || pcity['improvements'] == null) return false;
 
-  for (var z = 0; z < ruleset_control.num_impr_types; z++) {
+  for (const z = 0; z < ruleset_control.num_impr_types; z++) {
     if (pcity['improvements'] != null && pcity['improvements'].isSet(z) && improvements[z] != null
         && improvements[z]['name'] == improvement_name) {
       return true;
@@ -1030,14 +1032,14 @@ function city_name_dialog(suggested_name, unit_id) {
 				},{
 					text: "Ok",
 				        click: function() {
-						var name = $("#city_name_req").val();
+						const name = $("#city_name_req").val();
 						if (name.length == 0 || name.length >= MAX_LEN_CITYNAME - 6
 						    || encodeURIComponent(name).length  >= MAX_LEN_CITYNAME - 6) {
 						  swal("City name is invalid. Please try a different shorter name.");
 						  return;
 						}
 
-                        var actor_unit = game_find_unit_by_number(unit_id);
+                        const actor_unit = game_find_unit_by_number(unit_id);
                         request_unit_do_action(ACTION_FOUND_CITY,
                           unit_id, actor_unit['tile'], 0,
                           encodeURIComponent(name));
@@ -1055,8 +1057,8 @@ function city_name_dialog(suggested_name, unit_id) {
 
   $(document).keydown(function(e) {
     if (e.keyCode === 13 && $('#city_name_dialog').is(':visible')) {
-      var name = $("#city_name_req").val();
-      var actor_unit = game_find_unit_by_number(unit_id);
+      const name = $("#city_name_req").val();
+      const actor_unit = game_find_unit_by_number(unit_id);
       request_unit_do_action(ACTION_FOUND_CITY,
         unit_id, actor_unit['tile'], 0, encodeURIComponent(name));
 	  $("#city_name_dialog").remove();
@@ -1079,7 +1081,7 @@ function next_city()
 
   city_screen_updater.fireNow();
 
-  var next_row = $('#cities_list_' + active_city['id']).next();
+  const next_row = $('#cities_list_' + active_city['id']).next();
   if (next_row.length === 0) {
     // Either the city is not in the list anymore or it was the last item.
     // Anyway, go to the beginning
@@ -1100,7 +1102,7 @@ function previous_city()
 
   city_screen_updater.fireNow();
 
-  var prev_row = $('#cities_list_' + active_city['id']).prev();
+  const prev_row = $('#cities_list_' + active_city['id']).prev();
   if (prev_row.length === 0) {
     // Either the city is not in the list anymore or it was the last item.
     // Anyway, go to the end
@@ -1118,14 +1120,14 @@ function previous_city()
 function city_sell_improvement(improvement_id)
 {
   if ('confirm' in window) {
-    var agree=confirm("Are you sure you want to sell this building?");
+    const agree = confirm("Are you sure you want to sell this building?");
     if (agree) {
-      var packet = {"pid" : packet_city_sell, "city_id" : active_city['id'],
+      const packet = {"pid" : packet_city_sell, "city_id" : active_city['id'],
                   "build_id": improvement_id};
       send_request(JSON.stringify(packet));
     }
   } else {
-    var packet = {"pid" : packet_city_sell, "city_id" : active_city['id'],
+    const packet = {"pid" : packet_city_sell, "city_id" : active_city['id'],
                 "build_id": improvement_id};
     send_request(JSON.stringify(packet));
   }
@@ -1136,7 +1138,7 @@ function city_sell_improvement(improvement_id)
 **************************************************************************/
 function city_turns_to_growth_text(pcity)
 {
-  var turns = pcity['granary_turns'];
+  const turns = pcity['granary_turns'];
 
   if (turns == 0) {
     return "blocked";
@@ -1168,8 +1170,8 @@ function dxy_to_center_index(dx, dy, r)
 function get_city_dxy_to_index(dx, dy, pcity)
 {
   build_city_tile_map(pcity.city_radius_sq);
-  var city_tile_map_index = dxy_to_center_index(dx, dy, city_tile_map.radius);
-  var ctile = city_tile(active_city);
+  const city_tile_map_index = dxy_to_center_index(dx, dy, city_tile_map.radius);
+  const ctile = city_tile(active_city);
   return get_city_tile_map_for_pos(ctile.x, ctile.y)[city_tile_map_index];
 }
 
@@ -1179,28 +1181,28 @@ function get_city_dxy_to_index(dx, dy, pcity)
 function build_city_tile_map(radius_sq)
 {
   if (city_tile_map == null || city_tile_map.radius_sq < radius_sq) {
-    var r = Math.floor(Math.sqrt(radius_sq));
-    var vectors = [];
+    const r = Math.floor(Math.sqrt(radius_sq));
+    const vectors = [];
 
-    for (var dx = -r; dx <= r; dx++) {
-      for (var dy = -r; dy <= r; dy++) {
-        var d_sq = map_vector_to_sq_distance(dx, dy);
+    for (const dx = -r; dx <= r; dx++) {
+      for (const dy = -r; dy <= r; dy++) {
+        const d_sq = map_vector_to_sq_distance(dx, dy);
         if (d_sq <= radius_sq) {
           vectors.push([dx, dy, d_sq, dxy_to_center_index(dx, dy, r)]);
         }
       }
     }
 
-    vectors.sort(function (a, b) {
-      var d = a[2] - b[2];
+    vectors.sort((a, b) => {
+      const d = a[2] - b[2];
       if (d !== 0) return d;
       d = a[0] - b[0];
       if (d !== 0) return d;
       return a[1] - b[1];
     });
 
-    var base_map = [];
-    for (var i = 0; i < vectors.length; i++) {
+    const base_map = [];
+    for (const i = 0; i < vectors.length; i++) {
       base_map[vectors[i][3]] = i;
     }
 
@@ -1220,9 +1222,9 @@ function build_city_tile_map(radius_sq)
 **************************************************************************/
 function delta_tile_helper(pos, r, size)
 {
-  var d_min = -pos;
-  var d_max = (size-1) - pos;
-  var i = 0;
+  const d_min = -pos;
+  const d_max = (size-1) - pos;
+  const i = 0;
   if (d_min > -r) {
     i = r + d_min;
   } else if (d_max < r) {
@@ -1237,12 +1239,12 @@ function delta_tile_helper(pos, r, size)
 **************************************************************************/
 function build_city_tile_map_with_limits(dx_min, dx_max, dy_min, dy_max)
 {
-  var clipped_map = [];
-  var v = city_tile_map.base_sorted;
-  var vl = v.length;
-  var index = 0;
-  for (var vi = 0; vi < vl; vi++) {
-    var tile_data = v[vi];
+  const clipped_map = [];
+  const v = city_tile_map.base_sorted;
+  const vl = v.length;
+  const index = 0;
+  for (const vi = 0; vi < vl; vi++) {
+    const tile_data = v[vi];
     if (tile_data[0] >= dx_min && tile_data[0] <= dx_max &&
         tile_data[1] >= dy_min && tile_data[1] <= dy_max) {
       clipped_map[tile_data[3]] = index;
@@ -1261,18 +1263,16 @@ function get_city_tile_map_for_pos(x, y)
     if (wrap_has_flag(WRAP_Y)) {
 
       // Torus
-      get_city_tile_map_for_pos = function (x, y) {
-        return city_tile_map.maps[0];
-      };
+      get_city_tile_map_for_pos = (x, y) => city_tile_map.maps[0];
 
     } else {
 
       // Cylinder with N-S axis
       get_city_tile_map_for_pos = function (x, y) {
-        var r = city_tile_map.radius;
-        var d = delta_tile_helper(y, r, map.ysize)
+        const r = city_tile_map.radius;
+        const d = delta_tile_helper(y, r, map.ysize)
         if (city_tile_map.maps[d[2]] == null) {
-          var m = build_city_tile_map_with_limits(-r, r, d[0], d[1]);
+          let m = build_city_tile_map_with_limits(-r, r, d[0], d[1]);
           city_tile_map.maps[d[2]] = m;
         }
         return city_tile_map.maps[d[2]];
@@ -1284,10 +1284,10 @@ function get_city_tile_map_for_pos(x, y)
 
       // Cylinder with E-W axis
       get_city_tile_map_for_pos = function (x, y) {
-        var r = city_tile_map.radius;
-        var d = delta_tile_helper(x, r, map.xsize)
+        const r = city_tile_map.radius;
+        const d = delta_tile_helper(x, r, map.xsize)
         if (city_tile_map.maps[d[2]] == null) {
-          var m = build_city_tile_map_with_limits(d[0], d[1], -r, r);
+          let m = build_city_tile_map_with_limits(d[0], d[1], -r, r);
           city_tile_map.maps[d[2]] = m;
         }
         return city_tile_map.maps[d[2]];
@@ -1297,12 +1297,12 @@ function get_city_tile_map_for_pos(x, y)
 
       // Flat
       get_city_tile_map_for_pos = function (x, y) {
-        var r = city_tile_map.radius;
-        var dx = delta_tile_helper(x, r, map.xsize)
-        var dy = delta_tile_helper(y, r, map.ysize)
-        var map_i = (2*r + 1) * dx[2] + dy[2];
+        const r = city_tile_map.radius;
+        const dx = delta_tile_helper(x, r, map.xsize)
+        let dy = delta_tile_helper(y, r, map.ysize)
+        let map_i = (2*r + 1) * dx[2] + dy[2];
         if (city_tile_map.maps[map_i] == null) {
-          var m = build_city_tile_map_with_limits(dx[0], dx[1], dy[0], dy[1]);
+          const m = build_city_tile_map_with_limits(dx[0], dx[1], dy[0], dy[1]);
           city_tile_map.maps[map_i] = m;
         }
         return city_tile_map.maps[map_i];
@@ -1319,7 +1319,7 @@ function get_city_tile_map_for_pos(x, y)
 **************************************************************************/
 function city_change_specialist(city_id, from_specialist_id)
 {
-  var city_message = {"pid": packet_city_change_specialist,
+  const city_message = {"pid": packet_city_change_specialist,
                       "city_id" : city_id,
                       "from" : from_specialist_id,
                       "to" : (from_specialist_id + 1) % 3};
@@ -1332,7 +1332,7 @@ function city_change_specialist(city_id, from_specialist_id)
 **************************************************************************/
 function city_can_buy(pcity)
 {
-  var improvement = improvements[pcity['production_value']];
+  const improvement = improvements[pcity['production_value']];
 
   return (!pcity['did_buy'] && pcity['turn_founded'] != game_info['turn']
           && improvement['name'] != "Coinage");
@@ -1383,14 +1383,14 @@ function rename_city()
 				},{
 					text: "Ok",
 				        click: function() {
-						var name = $("#city_name_req").val();
+						const name = $("#city_name_req").val();
 						if (name.length == 0 || name.length >= MAX_LEN_NAME - 4
 						    || encodeURIComponent(name).length  >= MAX_LEN_NAME - 4) {
 						  swal("City name is invalid");
 						  return;
 						}
 
-						var packet = {"pid" : packet_city_rename, "name" : encodeURIComponent(name), "city_id" : active_city['id'] };
+						const packet = {"pid" : packet_city_rename, "name" : encodeURIComponent(name), "city_id" : active_city['id'] };
 						send_request(JSON.stringify(packet));
 						$("#city_name_dialog").remove();
 						keyboard_input=true;
@@ -1404,8 +1404,8 @@ function rename_city()
 
   $('#city_name_dialog').keyup(function(e) {
     if (e.keyCode == 13) {
-      var name = $("#city_name_req").val();
-      var packet = {"pid" : packet_city_rename, "name" : encodeURIComponent(name), "city_id" : active_city['id'] };
+      const name = $("#city_name_req").val();
+      const packet = {"pid" : packet_city_rename, "name" : encodeURIComponent(name), "city_id" : active_city['id'] };
       send_request(JSON.stringify(packet));
       $("#city_name_dialog").remove();
       keyboard_input=true;
@@ -1418,8 +1418,8 @@ function rename_city()
 **************************************************************************/
 function show_city_traderoutes()
 {
-  var msg;
-  var routes;
+  let msg;
+  let routes;
 
   if (active_city == null) {
     /* No city to show. */
@@ -1437,10 +1437,10 @@ function show_city_traderoutes()
   }
 
   msg = "";
-  for (var i = 0; i < active_city['traderoute_count']; i++) {
-    var tcity_id;
-    var tcity;
-    var good;
+  for (const i = 0; i < active_city['traderoute_count']; i++) {
+    let tcity_id;
+    let tcity;
+    let good;
     
     if (routes[i] == null) continue;
 
@@ -1477,20 +1477,20 @@ function show_city_traderoutes()
 function city_worklist_dialog(pcity)
 {
   if (pcity == null) return;
-  var universals_list = [];
-  var kind;
-  var value;
+  const universals_list = [];
+  let kind;
+  let value;
 
   if (pcity['worklist'] != null && pcity['worklist'].length != 0) {
-    var work_list = pcity['worklist'];
-    for (var i = 0; i < work_list.length; i++) {
-      var work_item = work_list[i];
+    const work_list = pcity['worklist'];
+    for (const i = 0; i < work_list.length; i++) {
+      const work_item = work_list[i];
       kind = work_item['kind'];
       value = work_item['value'];
       if (kind == null || value == null || work_item.length == 0) continue;
       if (kind == VUT_IMPROVEMENT) {
-        var pimpr = improvements[value];
-	var build_cost = pimpr['build_cost'];
+        const pimpr = improvements[value];
+	const build_cost = pimpr['build_cost'];
 	if (pimpr['name'] == "Coinage") build_cost = "-";
 	universals_list.push({"name" : pimpr['name'],
 		"kind" : kind,
@@ -1499,7 +1499,7 @@ function city_worklist_dialog(pcity)
 		"build_cost" : build_cost,
 		"sprite" : get_improvement_image_sprite(pimpr)});
       } else if (kind == VUT_UTYPE) {
-        var putype = unit_types[value];
+        const putype = unit_types[value];
         universals_list.push({"name" : putype['name'],
 		"kind" : kind,
 		"value" : value,
@@ -1512,10 +1512,10 @@ function city_worklist_dialog(pcity)
     }
   }
 
-  var worklist_html = "";
-  for (var j = 0; j < universals_list.length; j++) {
-    var universal = universals_list[j];
-    var sprite = universal['sprite'];
+  const worklist_html = "";
+  for (const j = 0; j < universals_list.length; j++) {
+    const universal = universals_list[j];
+    const sprite = universal['sprite'];
     if (sprite == null) {
       console.log("Missing sprite for " + universal[j]['name']);
       continue;
@@ -1553,9 +1553,9 @@ function city_worklist_dialog(pcity)
   $('#show_unreachable_items').prop('checked', opt_show_unreachable_items);
 
   worklist_dialog_active = true;
-  var turns_to_complete = get_city_production_time(pcity);
-  var prod_type = get_city_production_type_sprite(pcity);
-  var prod_img_html = "";
+  const turns_to_complete = get_city_production_time(pcity);
+  const prod_type = get_city_production_type_sprite(pcity);
+  const prod_img_html = "";
   if (prod_type != null) { 
     sprite = prod_type['sprite'];
     prod_img_html = "<div style='background: transparent url("
@@ -1565,7 +1565,7 @@ function city_worklist_dialog(pcity)
            +"</div>";
   }
 
-  var headline = prod_img_html + "<div id='prod_descr'>" // universal_build_shield_cost(pcity, target); // pcity['shield_stock']
+  const headline = prod_img_html + "<div id='prod_descr'>" // universal_build_shield_cost(pcity, target); // pcity['shield_stock']
     + (is_small_screen() ? " " : " Production: <b>")
     + (prod_type != null ? prod_type['type']['name'] : "None")
     + "</b> ("
@@ -1588,14 +1588,14 @@ function city_worklist_dialog(pcity)
 
   $(".button").button();
 
-  var tab_h = $("#city_production_tab").height();
+  const tab_h = $("#city_production_tab").height();
   $("#city_current_worklist").height(tab_h - 120);
   $("#worklist_production_choices").height(tab_h - 47);
   $("#worklist_control").height("190px");
 
-  var worklist_items = $("#city_current_worklist .prod_choice_list_item");
-  var max_selection = Math.min(MAX_LEN_WORKLIST, worklist_items.length);
-  for (var k = 0; k < worklist_selection.length; k++) {
+  const worklist_items = $("#city_current_worklist .prod_choice_list_item");
+  const max_selection = Math.min(MAX_LEN_WORKLIST, worklist_items.length);
+  for (const k = 0; k < worklist_selection.length; k++) {
     if (worklist_selection[k] >= max_selection) {
       worklist_selection.splice(k, worklist_selection.length - k);
       break;
@@ -1623,17 +1623,17 @@ function city_worklist_dialog(pcity)
 **************************************************************************/
 function populate_worklist_production_choices(pcity)
 {
-  var production_list = generate_production_list();
-  var production_html = "";
-  for (var a = 0; a < production_list.length; a++) {
-    var sprite = production_list[a]['sprite'];
+  const production_list = generate_production_list();
+  const production_html = "";
+  for (const a = 0; a < production_list.length; a++) {
+    const sprite = production_list[a]['sprite'];
     if (sprite == null) {
       console.log("Missing sprite for " + production_list[a]['value']);
       continue;
     }
-    var kind = production_list[a]['kind'];
-    var value = production_list[a]['value'];
-    var can_build = can_city_build_now(pcity, kind, value);
+    const kind = production_list[a]['kind'];
+    const value = production_list[a]['value'];
+    const can_build = can_city_build_now(pcity, kind, value);
 
     if (can_build || opt_show_unreachable_items) {
       production_html += "<li class='prod_choice_list_item kindvalue_item ui-widget-content "
@@ -1665,9 +1665,9 @@ function populate_worklist_production_choices(pcity)
     });
 
     if (production_selection.length > 0) {
-      var prod_items = $("#worklist_production_choices .kindvalue_item");
-      var sel = [];
-      production_selection.forEach(function (v) {
+      const prod_items = $("#worklist_production_choices .kindvalue_item");
+      const sel = [];
+      production_selection.forEach((v) => {
         sel.push("[data-value='" + v.value + "']" +
                  "[data-kind='"  + v.kind  + "']");
       });
@@ -1675,14 +1675,14 @@ function populate_worklist_production_choices(pcity)
     }
 
     $(".kindvalue_item").dblclick(function() {
-      var value = parseFloat($(this).data('value'));
-      var kind = parseFloat($(this).data('kind'));
+      const value = parseFloat($(this).data('value'));
+      const kind = parseFloat($(this).data('kind'));
       send_city_change(pcity['id'], kind, value);
     });
   } else {
     $(".kindvalue_item").click(function() {
-      var value = parseFloat($(this).data('value'));
-      var kind = parseFloat($(this).data('kind'));
+      const value = parseFloat($(this).data('value'));
+      const kind = parseFloat($(this).data('kind'));
       if (city_prod_clicks == 0) {
         send_city_change(pcity['id'], kind, value);
       } else {
@@ -1707,7 +1707,7 @@ function extract_universal(element)
 
 function find_universal_in_worklist(universal, worklist)
 {
-  for (var i = 0; i < worklist.length; i++) {
+  for (const i = 0; i < worklist.length; i++) {
     if (worklist[i].kind === universal.kind &&
         worklist[i].value === universal.value) {
       return i;
@@ -1718,8 +1718,8 @@ function find_universal_in_worklist(universal, worklist)
 
 function handle_worklist_select(event, ui)
 {
-  var selected = extract_universal(ui.selected);
-  var idx = find_universal_in_worklist(selected, production_selection);
+  const selected = extract_universal(ui.selected);
+  const idx = find_universal_in_worklist(selected, production_selection);
   if (idx < 0) {
     production_selection.push(selected);
     update_worklist_actions();
@@ -1728,8 +1728,8 @@ function handle_worklist_select(event, ui)
 
 function handle_worklist_unselect(event, ui)
 {
-  var selected = extract_universal(ui.unselected);
-  var idx = find_universal_in_worklist(selected, production_selection);
+  const selected = extract_universal(ui.unselected);
+  const idx = find_universal_in_worklist(selected, production_selection);
   if (idx >= 0) {
     production_selection.splice(idx, 1);
     update_worklist_actions();
@@ -1741,8 +1741,8 @@ function handle_worklist_unselect(event, ui)
 **************************************************************************/
 function handle_current_worklist_select(event, ui)
 {
-  var idx = parseInt($(ui.selected).data('wlitem'), 10);
-  var i = worklist_selection.length - 1;
+  const idx = parseInt($(ui.selected).data('wlitem'), 10);
+  const i = worklist_selection.length - 1;
   while (i >= 0 && worklist_selection[i] > idx)
     i--;
   if (i < 0 || worklist_selection[i] < idx) {
@@ -1756,8 +1756,8 @@ function handle_current_worklist_select(event, ui)
 **************************************************************************/
 function handle_current_worklist_unselect(event, ui)
 {
-  var idx = parseInt($(ui.unselected).data('wlitem'), 10);
-  var i = worklist_selection.length - 1;
+  const idx = parseInt($(ui.unselected).data('wlitem'), 10);
+  const i = worklist_selection.length - 1;
   while (i >= 0 && worklist_selection[i] > idx)
     i--;
   if (i >= 0 && worklist_selection[i] === idx) {
@@ -1773,8 +1773,8 @@ function handle_current_worklist_click(event)
 {
   event.stopPropagation();
 
-  var element = $(this);
-  var item = parseInt(element.data('wlitem'), 10);
+  const element = $(this);
+  const item = parseInt(element.data('wlitem'), 10);
 
   if (worklist_selection.length === 1 && worklist_selection[0] === item) {
      element.removeClass('ui-selected');
@@ -1842,8 +1842,8 @@ function update_worklist_actions()
 **************************************************************************/
 function send_city_worklist(city_id)
 {
-  var worklist = cities[city_id]['worklist'];
-  var overflow = worklist.length - MAX_LEN_WORKLIST;
+  const worklist = cities[city_id]['worklist'];
+  const overflow = worklist.length - MAX_LEN_WORKLIST;
   if (overflow > 0) {
     worklist.splice(MAX_LEN_WORKLIST, overflow);
   }
@@ -1858,7 +1858,7 @@ function send_city_worklist(city_id)
 **************************************************************************/
 function send_city_worklist_add(city_id, kind, value)
 {
-  var pcity = cities[city_id];
+  const pcity = cities[city_id];
   if (pcity['worklist'].length >= MAX_LEN_WORKLIST) {
     return;
   }
@@ -1896,11 +1896,11 @@ function city_add_to_worklist()
 **************************************************************************/
 function handle_current_worklist_direct_remove()
 {
-  var idx = parseInt($(this).data('wlitem'), 10);
+  const idx = parseInt($(this).data('wlitem'), 10);
   active_city['worklist'].splice(idx, 1);
 
   // User may dblclick a task while having other selected
-  var i = worklist_selection.length - 1;
+  const i = worklist_selection.length - 1;
   while (i >= 0 && worklist_selection[i] > idx) {
     worklist_selection[i]--;
     i--;
@@ -1919,11 +1919,11 @@ function handle_current_worklist_direct_remove()
 **************************************************************************/
 function city_insert_in_worklist()
 {
-  var count = Math.min(production_selection.length, MAX_LEN_WORKLIST);
+  const count = Math.min(production_selection.length, MAX_LEN_WORKLIST);
   if (count === 0) return;
 
-  var i;
-  var wl = active_city['worklist'];
+  let i;
+  const wl = active_city['worklist'];
 
   if (worklist_selection.length === 0) {
 
@@ -1955,11 +1955,11 @@ function city_insert_in_worklist()
 **************************************************************************/
 function city_worklist_task_up()
 {
-  var count = worklist_selection.length;
+  const count = worklist_selection.length;
   if (count === 0) return;
 
-  var swap;
-  var wl = active_city['worklist'];
+  let swap;
+  const wl = active_city['worklist'];
 
   if (worklist_selection[0] === 0) {
     worklist_selection.shift();
@@ -1976,8 +1976,8 @@ function city_worklist_task_up()
     count--;
   }
 
-  for (var i = 0; i < count; i++) {
-    var task_idx = worklist_selection[i];
+  for (const i = 0; i < count; i++) {
+    const task_idx = worklist_selection[i];
     swap = wl[task_idx - 1];
     wl[task_idx - 1] = wl[task_idx];
     wl[task_idx] = swap;
@@ -1992,16 +1992,16 @@ function city_worklist_task_up()
 **************************************************************************/
 function city_worklist_task_down()
 {
-  var count = worklist_selection.length;
+  const count = worklist_selection.length;
   if (count === 0) return;
 
-  var swap;
-  var wl = active_city['worklist'];
+  let swap;
+  const wl = active_city['worklist'];
 
   if (worklist_selection[--count] === wl.length - 1) return;
 
   while (count >= 0) {
-    var task_idx = worklist_selection[count];
+    const task_idx = worklist_selection[count];
     swap = wl[task_idx + 1];
     wl[task_idx + 1] = wl[task_idx];
     wl[task_idx] = swap;
@@ -2017,13 +2017,13 @@ function city_worklist_task_down()
 **************************************************************************/
 function city_exchange_worklist_task()
 {
-  var prod_l = production_selection.length;
+  const prod_l = production_selection.length;
   if (prod_l === 0) return;
 
-  var i;
-  var same = true;
-  var wl = active_city['worklist'];
-  var task_l = worklist_selection.length;
+  let i;
+  const same = true;
+  const wl = active_city['worklist'];
+  const task_l = worklist_selection.length;
   if (prod_l === task_l) {
     for (i = 0; i < prod_l; i++) {
       if (same &&
@@ -2052,10 +2052,10 @@ function city_exchange_worklist_task()
 **************************************************************************/
 function city_worklist_task_remove()
 {
-  var count = worklist_selection.length;
+  const count = worklist_selection.length;
   if (count === 0) return;
 
-  var wl = active_city['worklist'];
+  const wl = active_city['worklist'];
 
   while (--count >= 0) {
     wl.splice(worklist_selection[count], 1);
@@ -2106,8 +2106,8 @@ function city_keyboard_listener(ev)
   if (C_S_RUNNING != client_state()) return;
 
   if (!ev) ev = window.event;
-  var keyboard_key = String.fromCharCode(ev.keyCode);
-  var key_code = ev.keyCode;
+  const keyboard_key = String.fromCharCode(ev.keyCode);
+  const key_code = ev.keyCode;
 
   if (active_city != null) {
 
@@ -2144,7 +2144,7 @@ function city_keyboard_listener(ev)
 **************************************************************************/
 function city_to_3d_model_name(pcity)
 {
-  var size = 0;
+  const size = 0;
   if (pcity['size'] >=3 && pcity['size'] <=6) {
     size = 1;
   } else if (pcity['size'] > 6 && pcity['size'] <= 9) {
@@ -2155,11 +2155,11 @@ function city_to_3d_model_name(pcity)
     size = 4;
   }
 
-  var style_id = pcity['style'];
+  const style_id = pcity['style'];
   if (style_id == -1) style_id = 0;
-  var city_rule = city_rules[style_id];
+  const city_rule = city_rules[style_id];
 
-  var city_style_name = "european";
+  const city_style_name = "european";
   if (city_rule['rule_name'] == "Modern") {
     city_style_name = "modern";
   }
@@ -2193,10 +2193,10 @@ function city_to_3d_model_name(pcity)
 **************************************************************************/
 function get_num_cities()
 {
-  var count = 0;
+  const count = 0;
 
-  for (var city_id in cities){
-    var pcity = cities[city_id];
+  for (let city_id in cities){
+    const pcity = cities[city_id];
     if (client.conn.playing != null && city_owner(pcity) != null && city_owner(pcity).playerno == client.conn.playing.playerno) {
       count++;
     }

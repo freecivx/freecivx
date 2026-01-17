@@ -1,4 +1,6 @@
 /**********************************************************************
+'use strict';
+
     Freeciv-web - the web version of Freeciv. http://www.FreecivWorld.net/
     Copyright (C) 2009-2015  The Freeciv-web project
 
@@ -17,10 +19,10 @@
 
 ***********************************************************************/
 
-var nations = {};
-var nation_groups = [];
-var diplstates = {};
-var selected_player = -1;
+const nations = {};
+const nation_groups = [];
+const diplstates = {};
+const selected_player = -1;
 
 
 /**************************************************************************
@@ -28,23 +30,23 @@ var selected_player = -1;
 **************************************************************************/
 function update_nation_screen()
 {
-  var total_players = 0;
-  var no_humans = 0;
-  var no_ais = 0;
+  const total_players = 0;
+  const no_humans = 0;
+  const no_ais = 0;
 
-  var nation_list_html = "<table class='tablesorter' id='nation_table' width='95%' border=0 cellspacing=0 >"
+  const nation_list_html = "<table class='tablesorter' id='nation_table' width='95%' border=0 cellspacing=0 >"
 	  + "<thead><tr><th>Flag</th><th>Color</th><th>Player Name:</th>"
 	  + "<th>Nation:</th><th class='nation_attitude'>Attitude</th><th>Score</th><th>AI/Human</th><th>Alive?</th>"
 	  + "<th>Diplomatic state</th><th>Embassy</th><th>Shared vision</th><th class='nation_team'>Team</th><th>State</th></tr></thead><tbody class='nation_table_body'>";
 
-  for (var player_id in players) {
-    var pplayer = players[player_id];
+  for (let player_id in players) {
+    const pplayer = players[player_id];
     if (pplayer['nation'] == -1) continue;
     total_players++;
 
-    var flag_html = "<canvas id='nation_dlg_flags_" + player_id + "' width='44' height='30' class='nation_flags'></canvas>";
+    const flag_html = "<canvas id='nation_dlg_flags_" + player_id + "' width='44' height='30' class='nation_flags'></canvas>";
 
-    var plr_class = "";
+    const plr_class = "";
     if (!client_is_observer() && client.conn.playing != null && player_id == client.conn.playing['playerno']) plr_class = "nation_row_self";
     if (!pplayer['is_alive']) plr_class = "nation_row_dead";
     if (!client_is_observer() && diplstates[player_id] != null && diplstates[player_id] == DS_WAR) plr_class = "nation_row_war";
@@ -86,7 +88,7 @@ function update_nation_screen()
     nation_list_html += "</td>";
 
     nation_list_html += "<td class='nation_team'>" + (pplayer['team'] + 1) + "</td>";
-    var pstate = " ";
+    const pstate = " ";
     if (pplayer['phase_done'] && !pplayer['flags'].isSet(PLRF_AI)) {
       pstate = "Done";
     } else if (!pplayer['flags'].isSet(PLRF_AI)
@@ -156,8 +158,8 @@ function handle_nation_table_select(ev)
 {
   ev.stopPropagation();
 
-  var new_element = $(this);
-  var new_player = parseFloat(new_element.data("plrid"));
+  const new_element = $(this);
+  const new_player = parseFloat(new_element.data("plrid"));
 
   if (new_player === selected_player) {
      new_element.removeClass('ui-selected');
@@ -175,12 +177,12 @@ function handle_nation_table_select(ev)
 **************************************************************************/
 function select_a_nation()
 {
-  var player_id = selected_player;
-  var pplayer = players[selected_player];
+  const player_id = selected_player;
+  const pplayer = players[selected_player];
   if (pplayer == null) return;
 
-  var selected_myself = client.conn.playing != null && player_id == client.conn.playing['playerno'];
-  var both_alive_and_different = client.conn.playing != null
+  const selected_myself = client.conn.playing != null && player_id == client.conn.playing['playerno'];
+  const both_alive_and_different = client.conn.playing != null
                               && player_id != client.conn.playing['playerno']
                               && pplayer['is_alive']
                               && client.conn.playing['is_alive'];
@@ -277,7 +279,7 @@ function select_no_nation()
 function nation_table_select_player(player_no)
 {
   $('#players_tab a').click();
-  var row = $('#nation_table tr[data-plrid=' + player_no + ']');
+  const row = $('#nation_table tr[data-plrid=' + player_no + ']');
   if (row.length == 1) {
     row.click();
     row[0].scrollIntoView();
@@ -311,7 +313,7 @@ function withdraw_vision_clicked()
 {
   if (selected_player == -1) return;
 
-  var packet = {"pid" : packet_diplomacy_cancel_pact,
+  const packet = {"pid" : packet_diplomacy_cancel_pact,
                 "other_player_id" : selected_player,
                 "clause" : CLAUSE_VISION};
   send_request(JSON.stringify(packet));
@@ -324,7 +326,7 @@ function withdraw_vision_clicked()
 function take_player_clicked()
 {
   if (selected_player == -1) return;
-  var pplayer = players[selected_player];
+  const pplayer = players[selected_player];
   take_player(pplayer['name']);
   set_default_mapview_active();
 }
@@ -335,7 +337,7 @@ function take_player_clicked()
 function toggle_ai_clicked()
 {
   if (selected_player == -1) return;
-  var pplayer = players[selected_player];
+  const pplayer = players[selected_player];
   aitoggle_player(pplayer['name']);
   set_default_mapview_active();
 }
@@ -413,8 +415,8 @@ function center_on_player()
   if (selected_player == -1) return;
 
     /* find a city to focus on. */
-    for (var city_id in cities) {
-      var pcity = cities[city_id];
+    for (let city_id in cities) {
+      const pcity = cities[city_id];
       if (city_owner_player_id(pcity) == selected_player) {
         center_tile_mapcanvas(city_tile(pcity));
         set_default_mapview_active();
@@ -429,8 +431,8 @@ function center_on_player()
 **************************************************************************/
 function send_private_message(other_player_name)
 {
-  var message = other_player_name + ": " + encode_message_text($("#private_message_text").val());
-  var packet = {"pid" : packet_chat_msg_req,
+  const message = other_player_name + ": " + encode_message_text($("#private_message_text").val());
+  const packet = {"pid" : packet_chat_msg_req,
                 "message" : message};
   send_request(JSON.stringify(packet));
   keyboard_input = true;
@@ -447,21 +449,21 @@ function send_private_message(other_player_name)
 function show_send_private_message_dialog()
 {
   if (selected_player == -1) return;
-  var pplayer = players[selected_player];
+  const pplayer = players[selected_player];
 
   if (pplayer == null) {
     swal("Please select a player to send a private message to first.");
     return;
   }
 
-  var name = pplayer['name'];
+  const name = pplayer['name'];
   keyboard_input = false;
 
   // reset dialog page.
   $("#dialog").remove();
   $("<div id='dialog'></div>").appendTo("div#game_page");
 
-  var intro_html = "Message: <input id='private_message_text' type='text' size='50' maxlength='80'>";
+  const intro_html = "Message: <input id='private_message_text' type='text' size='50' maxlength='80'>";
   $("#dialog").html(intro_html);
   $("#dialog").attr("title", "Send private message to " + name);
   $("#dialog").dialog({

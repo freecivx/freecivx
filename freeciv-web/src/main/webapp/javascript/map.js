@@ -1,4 +1,6 @@
 /**********************************************************************
+'use strict';
+
     Freeciv-web - the web version of Freeciv. http://www.FreecivWorld.net/
     Copyright (C) 2009-2015  The Freeciv-web project
 
@@ -18,40 +20,40 @@
 ***********************************************************************/
 
 
-var map = {};
-var tiles = {};
+const map = {};
+const tiles = {};
 
-var DIR8_NORTHWEST = 0;
-var DIR8_NORTH = 1;
-var DIR8_NORTHEAST = 2;
-var DIR8_WEST = 3;
-var DIR8_EAST = 4;
-var DIR8_SOUTHWEST = 5;
-var DIR8_SOUTH = 6;
-var DIR8_SOUTHEAST = 7;
-var DIR8_LAST = 8;
-var DIR8_COUNT = DIR8_LAST;
+const DIR8_NORTHWEST = 0;
+const DIR8_NORTH = 1;
+const DIR8_NORTHEAST = 2;
+const DIR8_WEST = 3;
+const DIR8_EAST = 4;
+const DIR8_SOUTHWEST = 5;
+const DIR8_SOUTH = 6;
+const DIR8_SOUTHEAST = 7;
+const DIR8_LAST = 8;
+const DIR8_COUNT = DIR8_LAST;
 
-var DIR6_NORTHEAST = 1;
-var DIR6_EAST = 2;
-var DIR6_NORTHWEST = 3;
-var DIR6_SOUTHEAST = 4;
-var DIR6_WEST = 5;
-var DIR6_SOUTHWEST = 6;
-var DIR6_LAST = 6;
-var DIR6_COUNT = DIR6_LAST;
+const DIR6_NORTHEAST = 1;
+const DIR6_EAST = 2;
+const DIR6_NORTHWEST = 3;
+const DIR6_SOUTHEAST = 4;
+const DIR6_WEST = 5;
+const DIR6_SOUTHWEST = 6;
+const DIR6_LAST = 6;
+const DIR6_COUNT = DIR6_LAST;
 
-var WRAP_X = 1;
-var WRAP_Y = 2;
+const WRAP_X = 1;
+const WRAP_Y = 2;
 
-var TF_ISO = 1;
-var TF_HEX = 2;
+const TF_ISO = 1;
+const TF_HEX = 2;
 
-var T_NONE = 0; /* A special flag meaning no terrain type. */
-var T_UNKNOWN = 0; /* An unknown terrain. */
+const T_NONE = 0; /* A special flag meaning no terrain type. */
+const T_UNKNOWN = 0; /* An unknown terrain. */
 
 /* The first terrain value. */
-var T_FIRST = 0;
+const T_FIRST = 0;
 
 /* used to compute neighboring tiles.
  *
@@ -68,11 +70,11 @@ var T_FIRST = 0;
  *   -------
  * Note that you must normalize x1 and y1 yourself.
  */
-var DIR_DX = [ -1, 0, 1, -1, 1, -1, 0, 1 ];
-var DIR_DY = [ -1, -1, -1, 0, 0, 1, 1, 1 ];
+const DIR_DX = [ -1, 0, 1, -1, 1, -1, 0, 1 ];
+const DIR_DY = [ -1, -1, -1, 0, 0, 1, 1, 1 ];
 
-var DIR_HEX_DX = [ 0,  1, 1, 0, 1, -1,  0,  0 ];
-var DIR_HEX_DY = [ 0,   -1, 0, -1,  1,  0,  1,  0 ];
+const DIR_HEX_DX = [ 0,  1, 1, 0, 1, -1,  0,  0 ];
+const DIR_HEX_DY = [ 0,   -1, 0, -1,  1,  0,  1,  0 ];
 
 
 /****************************************************************************
@@ -101,9 +103,9 @@ function map_allocate()
 {
   tiles = {};
 
-  for (var x = 0; x < map['xsize']; x++) {
-    for (var y = 0; y < map['ysize']; y++) {
-      var tile = {};
+  for (const x = 0; x < map['xsize']; x++) {
+    for (const y = 0; y < map['ysize']; y++) {
+      const tile = {};
       tile['index'] = x + y * map['xsize'];
       tile['x'] = x;
       tile['y'] = y;
@@ -144,7 +146,7 @@ function tile_init(tile)
 ****************************************************************************/
 function map_init_topology(set_sizes)
 {
-  var dir;
+  let dir;
 
   map.valid_dirs = {};
   map.cardinal_dirs = {};
@@ -232,8 +234,8 @@ function index_to_tile(index)
 ****************************************************************************/
 function NATIVE_TO_MAP_POS(nat_x, nat_y)
 {
-    var pmap_x = Math.floor(((nat_y) + ((nat_y) & 1)) / 2 + (nat_x));
-    var pmap_y = Math.floor(nat_y - pmap_x + map['xsize']);
+    const pmap_x = Math.floor(((nat_y) + ((nat_y) & 1)) / 2 + (nat_x));
+    const pmap_y = Math.floor(nat_y - pmap_x + map['xsize']);
     return {'map_x' : pmap_x, 'map_y' : pmap_y};
 }
 
@@ -242,8 +244,8 @@ function NATIVE_TO_MAP_POS(nat_x, nat_y)
 ****************************************************************************/
 function MAP_TO_NATIVE_POS(map_x, map_y)
 {
-   var pnat_y = Math.floor(map_x + map_y - map['xsize']);
-   var pnat_x = Math.floor((2 * map_x - pnat_y - (pnat_y & 1)) / 2);
+   const pnat_y = Math.floor(map_x + map_y - map['xsize']);
+   const pnat_x = Math.floor((2 * map_x - pnat_y - (pnat_y & 1)) / 2);
    return {'nat_y': pnat_y, 'nat_x': pnat_x};
 }
 
@@ -252,8 +254,8 @@ function MAP_TO_NATIVE_POS(map_x, map_y)
 ****************************************************************************/
 function NATURAL_TO_MAP_POS(nat_x, nat_y)
 {
-   var pmap_x = Math.floor(((nat_y) + (nat_x)) / 2);
-   var pmap_y = Math.floor(nat_y - pmap_x + map['xsize']);
+   const pmap_x = Math.floor(((nat_y) + (nat_x)) / 2);
+   const pmap_y = Math.floor(nat_y - pmap_x + map['xsize']);
    return {'map_x' : pmap_x, 'map_y' : pmap_y};
 }
 
@@ -262,8 +264,8 @@ function NATURAL_TO_MAP_POS(nat_x, nat_y)
 ****************************************************************************/
 function MAP_TO_NATURAL_POS(map_x, map_y)
 {
-    var pnat_y = Math.floor((map_x) + (map_y) - map['xsize']);
-    var pnat_x = Math.floor(2 * (map_x) - pnat_y);
+    const pnat_y = Math.floor((map_x) + (map_y) - map['xsize']);
+    const pnat_x = Math.floor(2 * (map_x) - pnat_y);
 
     return {'nat_y' : pnat_y, 'nat_x' : pnat_x};
 }
@@ -275,13 +277,11 @@ function map_vector_to_sq_distance(dx, dy)
 {
   if (topo_has_flag(TF_HEX)) {
     map_vector_to_sq_distance = function (dx, dy) {
-      var d = map_vector_to_distance(dx, dy);
+      const d = map_vector_to_distance(dx, dy);
       return d * d;
     };
   } else {
-    map_vector_to_sq_distance = function (dx, dy) {
-      return dx*dx + dy*dy;
-    };
+    map_vector_to_sq_distance = (dx, dy) => dx*dx + dy*dy;
   }
   return map_vector_to_sq_distance(dx, dy);
 }
@@ -310,9 +310,7 @@ function map_vector_to_distance(dx, dy)
       }
     }
   } else {
-    map_vector_to_distance = function (dx, dy) {
-      return Math.max(Math.abs(dx), Math.abs(dy));
-    };
+    map_vector_to_distance = (dx, dy) => Math.max(Math.abs(dx), Math.abs(dy));
   }
   return map_vector_to_distance(dx, dy);
 }
@@ -322,13 +320,13 @@ function map_vector_to_distance(dx, dy)
 ****************************************************************************/
 function map_distance_vector(tile0, tile1)
 {
-  var half_world;
-  var dx = tile1.x - tile0.x;
+  let half_world;
+  const dx = tile1.x - tile0.x;
   if (wrap_has_flag(WRAP_X)) {
     half_world = Math.floor(map.xsize / 2);
     dx = FC_WRAP(dx + half_world, map.xsize) - half_world;
   }
-  var dy = tile1.y - tile0.y;
+  const dy = tile1.y - tile0.y;
   if (wrap_has_flag(WRAP_Y)) {
     half_world = Math.floor(map.ysize / 2);
     dx = FC_WRAP(dy + half_world, map.ysize) - half_world;
@@ -356,10 +354,10 @@ function mapstep(ptile, dir)
 ****************************************************************************/
 function get_direction_for_step(start_tile, end_tile)
 {
-  var dir;
+  let dir;
 
   for (dir = DIR8_NORTHWEST; dir < DIR8_LAST; dir++) {
-    var test_tile = mapstep(start_tile, dir);
+    const test_tile = mapstep(start_tile, dir);
 
     if (test_tile == end_tile) {
       return dir;

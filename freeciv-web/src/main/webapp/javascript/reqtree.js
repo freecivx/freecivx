@@ -1,4 +1,6 @@
 /**********************************************************************
+'use strict';
+
     Freeciv-web - the web version of Freeciv. http://www.FreecivWorld.net/
     Copyright (C) 2009-2015  The Freeciv-web project
 
@@ -18,10 +20,10 @@
 ***********************************************************************/
 
 
-var reqtree = {};
-var reqtree_xwidth = 330;
-var reqtree_ywidth = 80;
-var level_counts = {};
+const reqtree = {};
+const reqtree_xwidth = 330;
+const reqtree_ywidth = 80;
+const level_counts = {};
 
 /**************************************************************************
  Technology tree algorithm, assigning the position of each technology in the tree.

@@ -1,4 +1,6 @@
 /**********************************************************************
+'use strict';
+
     Freeciv-web - the web version of Freeciv. http://www.FreecivWorld.net/
     Copyright (C) 2009-2015  The Freeciv-web project
 
@@ -17,10 +19,10 @@
 
 ***********************************************************************/
 
-var saved_this_turn = false;
-var game_loaded = false;
+const saved_this_turn = false;
+const game_loaded = false;
 
-var scenarios = [
+const scenarios = [
   {"img":"/images/world_small.png", "description":"The World - Small world map, 80x50 map of the Earth", "savegame":"earth-small"},
   {"img":"/images/world_big.png", "description":"The World - Large world map, 160x90 map of the Earth", "savegame":"earth-large"},
   {"img":"/images/iberian.png", "description":"Iberian Peninsula - 136x100 map of Spain and Portugal", "savegame":"iberian-peninsula"},
@@ -33,9 +35,9 @@ var scenarios = [
   {"img":"/images/europe.png", "description":"Very large map of Europe, 200x100", "savegame":"europe"}
 ];
 
-var scenario_info = null;
-var scenario_activated = false;
-var loadTimerId = -1;
+const scenario_info = null;
+const scenario_activated = false;
+const loadTimerId = -1;
 
 
 /****************************************************************************
@@ -52,7 +54,7 @@ function save_game()
   $("#save_dialog").remove();
   $("<div id='save_dialog'></div>").appendTo("div#game_page");
 
-  var dhtml = "<span id='settings_info'><i>You can save your current game here. "
+  const dhtml = "<span id='settings_info'><i>You can save your current game here. "
     + "Savegames are stored on the server. You can save once every turn in each game session.</i></span>";
 
   if (!logged_in_with_password) {
@@ -132,11 +134,11 @@ function show_load_game_dialog()
 **************************************************************************/
 function show_load_game_dialog_cb(savegames_data)
 {
-  var saveHtml = [];
+  const saveHtml = [];
 
   if (savegames_data != null && savegames_data.length >= 3) {
-    var savegames = savegames_data.split(";");
-    for (var i = 0; i < savegames.length; i++) {
+    const savegames = savegames_data.split(";");
+    for (const i = 0; i < savegames.length; i++) {
         if (savegames[i].length > 2) {
           saveHtml.push("<li class='ui-widget-content'>" + savegames[i] + "</li>");
         }
@@ -151,12 +153,12 @@ function show_load_game_dialog_cb(savegames_data)
   saveHtml = "<ul id='selectable' style='height: 95%;'>" + saveHtml.join('')
            + "</ul><br>";
 
-  var dialog_buttons = {};
+  const dialog_buttons = {};
 
   if (C_S_RUNNING != client_state()) {
     dialog_buttons = $.extend(dialog_buttons,
      {"Load Savegame": function() {
-		  var load_game_id = $('#selectable .ui-selected').index();
+		  const load_game_id = $('#selectable .ui-selected').index();
 		  if (load_game_id == -1) {
 		    swal("Unable to load savegame: no game selected.");
 		  } else if ($('#selectable .ui-selected').text() != null){
@@ -167,11 +169,11 @@ function show_load_game_dialog_cb(savegames_data)
 		    $("#game_text_input").blur();
 		  }
     }});
-    var stored_password = simpleStorage.get("password", "");
+    const stored_password = simpleStorage.get("password", "");
     if (stored_password != null && stored_password != false) {
       dialog_buttons = $.extend(dialog_buttons, {
     "Delete ALL" : function() {
-            var r;
+            let r;
             if ('confirm' in window) {
              r = confirm("Do you really want to delete all your savegames?");
             } else {
@@ -185,10 +187,10 @@ function show_load_game_dialog_cb(savegames_data)
     },
 
     "Delete" : function() {
-      var load_game_id = $('#selectable .ui-selected').index();
+      const load_game_id = $('#selectable .ui-selected').index();
       if (load_game_id != -1) {
       $('#selectable .ui-selected').each(function () {
-         var $this = $(this);
+         const $this = $(this);
          if ($this.length) {
           delete_savegame($this.text());
          }
@@ -229,7 +231,7 @@ function show_load_game_dialog_cb(savegames_data)
   } else {
     $("#selectable").on("click", "li", function (ev) {
       ev.stopPropagation();
-      var item = $(this);
+      const item = $(this);
       item.siblings().removeClass('ui-selected');
       item.addClass('ui-selected');
     });
@@ -248,11 +250,11 @@ function show_load_game_dialog_cb(savegames_data)
 **************************************************************************/
 function delete_savegame(filename)
 {
-  var stored_password = simpleStorage.get("password", "");
+  const stored_password = simpleStorage.get("password", "");
   if (stored_password != null && stored_password != false) {
-    var shaObj = new jsSHA("SHA-512", "TEXT");
+    const shaObj = new jsSHA("SHA-512", "TEXT");
     shaObj.update(stored_password);
-    var sha_password = encodeURIComponent(shaObj.getHash("HEX"));
+    const sha_password = encodeURIComponent(shaObj.getHash("HEX"));
 
     $.ajax({
      type: 'POST',
@@ -268,11 +270,11 @@ function delete_savegame(filename)
 **************************************************************************/
 function delete_all_savegames()
 {
-  var stored_password = simpleStorage.get("password", "");
+  const stored_password = simpleStorage.get("password", "");
   if (stored_password != null && stored_password != false) {
-    var shaObj = new jsSHA("SHA-512", "TEXT");
+    const shaObj = new jsSHA("SHA-512", "TEXT");
     shaObj.update(stored_password);
-    var sha_password = encodeURIComponent(shaObj.getHash("HEX"));
+    const sha_password = encodeURIComponent(shaObj.getHash("HEX"));
 
     $.ajax({
      type: 'POST',
@@ -288,8 +290,8 @@ function delete_all_savegames()
 **************************************************************************/
 function load_game_check()
 {
-  var load_game_id = $('#selectable .ui-selected').index();
-  var scenario = $.getUrlVar('scenario');
+  const load_game_id = $('#selectable .ui-selected').index();
+  const scenario = $.getUrlVar('scenario');
 
   if ($.getUrlVar('load') == "tutorial") {
     $.blockUI();
@@ -301,7 +303,7 @@ function load_game_check()
   } else if (load_game_id != -1) {
     $.blockUI();
     if (scenario == "true" || scenario_activated) {
-        var scenario_game_id = scenarios[load_game_id]['savegame'];
+        const scenario_game_id = scenarios[load_game_id]['savegame'];
         wait_for_text("You are logged in as", function () {
           load_game_real(scenario_game_id);
         });
@@ -362,7 +364,7 @@ function load_game_toggle()
     return;
   }
     
-  var firstplayer = players[0]['name'].split(" ")[0];
+  const firstplayer = players[0]['name'].split(" ")[0];
 
   if ($.getUrlVar('scenario') == "true" || scenario_activated) {
     send_message("/set aifill 6");
@@ -389,8 +391,8 @@ function show_scenario_dialog()
   $("<div id='dialog'></div>").appendTo("div#game_page");
   $.unblockUI();
 
-  var saveHtml =  "<ol id='selectable'>";
-    for (var i = 0; i < scenarios.length; i++) {
+  const saveHtml = "<ol id='selectable'>";
+    for (const i = 0; i < scenarios.length; i++) {
       saveHtml += "<li class='ui-widget-content'><img border='0' src='" + scenarios[i]['img']
 	       +  "' style='padding: 4px;' ><br>" + scenarios[i]['description'] + "</li>";
     }

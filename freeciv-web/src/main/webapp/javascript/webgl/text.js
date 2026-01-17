@@ -1,4 +1,6 @@
 /**********************************************************************
+'use strict';
+
     Freeciv-web - the web version of Freeciv. http://www.FreecivWorld.net/
     Copyright (C) 2009-2016  The Freeciv-web project
 
@@ -17,8 +19,8 @@
 
 ***********************************************************************/
 
-var texture_cache = {};
-var webgl_mapview_font = "27px arial, sans serif";
+const texture_cache = {};
+const webgl_mapview_font = "27px arial, sans serif";
 
 
 /**********************************************************************
@@ -26,7 +28,7 @@ var webgl_mapview_font = "27px arial, sans serif";
 ***********************************************************************/
 function get_unit_activity_text(punit)
 {
-  var activity = punit['activity'];
+  const activity = punit['activity'];
 
   /* don't draw activity for enemy units */
   if (client.conn.playing == null || punit['owner'] != client.conn.playing.playerno) {

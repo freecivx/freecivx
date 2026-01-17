@@ -1,4 +1,6 @@
 /**********************************************************************
+'use strict';
+
     Freeciv-web - the web version of Freeciv. http://www.FreecivWorld.net/
     Copyright (C) 2009-2017  The Freeciv-web project
 
@@ -17,17 +19,17 @@
 
 ***********************************************************************/
 
-var webgl_textures = {};
-var webgl_models = {};
-var total_model_count = 0;
-var load_count = 0;
+const webgl_textures = {};
+const webgl_models = {};
+const total_model_count = 0;
+const load_count = 0;
 
-var model_filenames_initial = ["Settlers",   "Explorer",   "Workers", "city_european_0",  "city_modern_0", "city_roman_0",  "city_babylonian_0", "city_chinese_0", "Warriors", "citywalls_stone", "citywalls_roman",
+const model_filenames_initial = ["Settlers",   "Explorer",   "Workers", "city_european_0",  "city_modern_0", "city_roman_0",  "city_babylonian_0", "city_chinese_0", "Warriors", "citywalls_stone", "citywalls_roman",
                                "Cactus1", "Palm1", "Palm2", "Pine1", "Pine3", "Tree1", "Tree2", "Tree3", "Fish1", "Fish2", "Fish3", "Whales", "Wheat"];
-var tiles_of_unloaded_models_map = {};
-var models_loading_map = {}; // used to keep track of which models are loading, to prevent loading the same models multiple times.
+const tiles_of_unloaded_models_map = {};
+const models_loading_map = {}; // used to keep track of which models are loading, to prevent loading the same models multiple times.
 
-var loader;
+let loader;
 
 /****************************************************************************
   Preload textures and models
@@ -42,28 +44,28 @@ function webgl_preload()
   dracoLoader.setDecoderConfig( { type: 'js' } );
   loader.setDRACOLoader(dracoLoader);
 
-  var loadingManager = new THREE.LoadingManager();
+  const loadingManager = new THREE.LoadingManager();
   loadingManager.onLoad = function () {
     webgl_preload_models();
   };
 
-  var textureLoader = new THREE.ImageLoader( loadingManager );
+  const textureLoader = new THREE.ImageLoader( loadingManager );
 
-  var disorder_sprite = new THREE.Texture();
+  const disorder_sprite = new THREE.Texture();
   webgl_textures["city_disorder"] = disorder_sprite;
   textureLoader.load( '/textures/city_civil_disorder.png', function ( image ) {
       disorder_sprite.image = image;
       disorder_sprite.needsUpdate = true;
   } );
 
-  for (var i = 0; i < tiletype_terrains.length ; i++) {
-    var terrain_name = tiletype_terrains[i];
+  for (const i = 0; i < tiletype_terrains.length ; i++) {
+    const terrain_name = tiletype_terrains[i];
     textureLoader.load("/textures/large/" + terrain_name + ".png", handle_new_texture("/textures/large/" + terrain_name + ".png", terrain_name));
   }
 
 
   /* Preload road textures. */
-  var imgurl = "/textures/large/roads.png";
+  const imgurl = "/textures/large/roads.png";
   textureLoader.load(imgurl, (function () {
           return function (image) {
                 $("#download_progress").html(" road textures 15%");
@@ -94,56 +96,56 @@ function webgl_preload()
     })()
   );
 
-  var city_light = new THREE.Texture();
+  const city_light = new THREE.Texture();
   webgl_textures["city_light"] = city_light;
   textureLoader.load( '/textures/city_light.png', function ( image ) {
       city_light.image = image;
       city_light.needsUpdate = true;
   } );
 
-  var nuke_grey_blast_area = new THREE.Texture();
+  const nuke_grey_blast_area = new THREE.Texture();
   webgl_textures["nuke_grey_blast_area"] = nuke_grey_blast_area;
   textureLoader.load( '/textures/nuke_grey_blast_area.png', function ( image ) {
       nuke_grey_blast_area.image = image;
       nuke_grey_blast_area.needsUpdate = true;
   } );
 
-  var nuke_inner_mushroom_cloud = new THREE.Texture();
+  const nuke_inner_mushroom_cloud = new THREE.Texture();
   webgl_textures["nuke_inner_mushroom_cloud"] = nuke_inner_mushroom_cloud;
   textureLoader.load( '/textures/nuke_inner_mushroom_cloud.png', function ( image ) {
       nuke_inner_mushroom_cloud.image = image;
       nuke_inner_mushroom_cloud.needsUpdate = true;
   } );
 
-  var nuke_outer_mushroom_cloud = new THREE.Texture();
+  const nuke_outer_mushroom_cloud = new THREE.Texture();
   webgl_textures["nuke_outer_mushroom_cloud"] = nuke_outer_mushroom_cloud;
   textureLoader.load( '/textures/nuke_outer_mushroom_cloud.png', function ( image ) {
       nuke_outer_mushroom_cloud.image = image;
       nuke_outer_mushroom_cloud.needsUpdate = true;
   } );
 
-  var nuke_hot_mushroom_cloud = new THREE.Texture();
+  const nuke_hot_mushroom_cloud = new THREE.Texture();
   webgl_textures["nuke_hot_mushroom_cloud"] = nuke_hot_mushroom_cloud;
   textureLoader.load( '/textures/nuke_hot_mushroom_cloud.png', function ( image ) {
       nuke_hot_mushroom_cloud.image = image;
       nuke_hot_mushroom_cloud.needsUpdate = true;
   } );
 
-  var nuke_rising_column = new THREE.Texture();
+  const nuke_rising_column = new THREE.Texture();
   webgl_textures["nuke_rising_column"] = nuke_rising_column;
   textureLoader.load( '/textures/nuke_rising_column.png', function ( image ) {
       nuke_rising_column.image = image;
       nuke_rising_column.needsUpdate = true;
   } );
 
-  var nuke_shock_wave = new THREE.Texture();
+  const nuke_shock_wave = new THREE.Texture();
   webgl_textures["nuke_shock_wave"] = nuke_shock_wave;
   textureLoader.load( '/textures/nuke_shock_wave.png', function ( image ) {
       nuke_shock_wave.image = image;
       nuke_shock_wave.needsUpdate = true;
   } );
 
-  var nuke_glow = new THREE.Texture();
+  const nuke_glow = new THREE.Texture();
   webgl_textures["nuke_glow"] = nuke_glow;
   textureLoader.load( '/textures/nuke_glow.png', function ( image ) {
       nuke_glow.image = image;
@@ -200,7 +202,7 @@ function webgl_preload()
 function handle_new_texture(url, terrain_name)
 {
   return function (image) {
-                var texture = new THREE.Texture();
+                const texture = new THREE.Texture();
                 texture.image = image;
                 texture.wrapS = THREE.RepeatWrapping;
                 texture.wrapT = THREE.RepeatWrapping;
@@ -217,7 +219,7 @@ function handle_new_texture(url, terrain_name)
 function webgl_preload_models()
 {
   total_model_count = model_filenames_initial.length;
-  for (var i = 0; i < model_filenames_initial.length; i++) {
+  for (const i = 0; i < model_filenames_initial.length; i++) {
     load_model(model_filenames_initial[i]);
   }
 }
@@ -228,10 +230,10 @@ function webgl_preload_models()
 function load_model(filename)
 {
 
-  var url = "/gltf/" + filename + ".glb";
+  const url = "/gltf/" + filename + ".glb";
 
   loader.load( url, function(data) {
-    var model = data.scene;
+    const model = data.scene;
 
     model['name'] = filename;
 
@@ -268,7 +270,7 @@ function load_model(filename)
       }
     });
 
-var modelscale = 12;
+const modelscale = 12;
 switch (filename) {
   case 'Horsemen':
   case 'Knights':
@@ -663,10 +665,10 @@ switch (filename) {
     if (load_count == total_model_count) webgl_preload_complete();
 
     /* Update view of tiles where model now has been downloaded. */
-    for (var ptile_index in tiles_of_unloaded_models_map) {
-      var ptile = tiles[ptile_index];
+    for (let ptile_index in tiles_of_unloaded_models_map) {
+      const ptile = tiles[ptile_index];
       if (ptile == null) continue;
-      var model_filename = tiles_of_unloaded_models_map[ptile_index];
+      const model_filename = tiles_of_unloaded_models_map[ptile_index];
       if (filename == model_filename) {
         update_unit_position(ptile);
         update_city_position(ptile);

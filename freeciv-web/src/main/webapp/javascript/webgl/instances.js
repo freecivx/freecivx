@@ -1,4 +1,6 @@
 /**********************************************************************
+'use strict';
+
  Freecivx - the web version of Freeciv. http://www.FreecivWorld.net/
  Copyright (C) 2009-2025  The Freeciv-web project
 

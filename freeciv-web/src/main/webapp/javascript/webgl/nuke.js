@@ -1,4 +1,6 @@
 /**********************************************************************
+'use strict';
+
     FreecivWorld.net - the 3D web version of Freeciv. http://www.FreecivWorld.net/
     Copyright (C) 2009-2023  The Freeciv-web project
 
@@ -17,12 +19,12 @@
 
 ***********************************************************************/
 
-var nuke_unit = null;
-var nuke_start_tile = null;
-var nuke_objects = [];
-var nuke_mushroom_objects = [];
-var nuke_other_objects = [];
-var nuke_active = false;
+const nuke_unit = null;
+const nuke_start_tile = null;
+const nuke_objects = [];
+const nuke_mushroom_objects = [];
+const nuke_other_objects = [];
+const nuke_active = false;
 
 /****************************************************************************
  Renders a nuclear explosion animation on the given tile.
@@ -43,12 +45,12 @@ function create_nuke(ptile_id)
 {
   play_sound('LrgExpl.ogg');
 
-  var ptile = tiles[ptile_id];
-  var pos = map_to_scene_coords(ptile['x'], ptile['y']);
-  var height = 5 + ptile['height'] * 100;
+  const ptile = tiles[ptile_id];
+  const pos = map_to_scene_coords(ptile['x'], ptile['y']);
+  const height = 5 + ptile['height'] * 100;
 
-  var inner_radius = 110;
-  var mushroom_height = 70;
+  const inner_radius = 110;
+  const mushroom_height = 70;
 
   let sprite = new THREE.Sprite( new THREE.SpriteMaterial( { map: webgl_textures["nuke_glow"]}));
   sprite.scale.set(500, 200, 1);
@@ -57,11 +59,11 @@ function create_nuke(ptile_id)
   nuke_objects.push(sprite);
 
   // Render inner mushroom cloud.
-  var innerMaterial = new THREE.SpriteMaterial( { map: webgl_textures["nuke_inner_mushroom_cloud"]});
-  for (var i = 0; i < 45000; i++) {
-    var x = pos['x'] + (Math.random() * inner_radius) - (inner_radius / 2);
-    var h = height + mushroom_height + (Math.random() * inner_radius) - (inner_radius / 2);
-    var y = pos['y']  + (Math.random() * inner_radius) - (inner_radius / 2);
+  const innerMaterial = new THREE.SpriteMaterial( { map: webgl_textures["nuke_inner_mushroom_cloud"]});
+  for (const i = 0; i < 45000; i++) {
+    const x = pos['x'] + (Math.random() * inner_radius) - (inner_radius / 2);
+    const h = height + mushroom_height + (Math.random() * inner_radius) - (inner_radius / 2);
+    const y = pos['y']  + (Math.random() * inner_radius) - (inner_radius / 2);
     let dist = Math.sqrt(((pos['x'] - x) ** 2) + (2 * (height + mushroom_height - h) ** 2) + ((pos['y'] - y) ** 2));
     if (dist > (inner_radius / 2) || dist < 45) {
       continue;
@@ -75,14 +77,14 @@ function create_nuke(ptile_id)
     nuke_mushroom_objects.push(sprite);
   }
 
-  var outer_radius = 118;
+  const outer_radius = 118;
 
   // Render outer mushroom cloud.
-  var outerMaterial = new THREE.SpriteMaterial( { map: webgl_textures["nuke_outer_mushroom_cloud"]});
-  for (var i = 0; i < 25000; i++) {
-    var x = pos['x'] + (Math.random() * outer_radius) - (outer_radius / 2);
-    var h = height + mushroom_height + (Math.random() * outer_radius) - (outer_radius / 2);
-    var y = pos['y']  + (Math.random() * outer_radius) - (outer_radius / 2);
+  const outerMaterial = new THREE.SpriteMaterial( { map: webgl_textures["nuke_outer_mushroom_cloud"]});
+  for (const i = 0; i < 25000; i++) {
+    const x = pos['x'] + (Math.random() * outer_radius) - (outer_radius / 2);
+    const h = height + mushroom_height + (Math.random() * outer_radius) - (outer_radius / 2);
+    const y = pos['y']  + (Math.random() * outer_radius) - (outer_radius / 2);
     let dist = Math.sqrt(((pos['x'] - x) ** 2) + (2 * (height + mushroom_height - h) ** 2) + ((pos['y'] - y) ** 2));
     if (dist > (outer_radius / 2) || dist < 35) {
       continue;
@@ -97,12 +99,12 @@ function create_nuke(ptile_id)
   }
 
   // Render hot mushroom cloud.
-  var hotMaterial = new THREE.SpriteMaterial( { map: webgl_textures["nuke_hot_mushroom_cloud"]});
-  for (var i = 0; i < 15000; i++) {
-    var x = pos['x'] + (Math.random() * outer_radius) - (outer_radius / 2);
-    var h = height + mushroom_height + (Math.random() * outer_radius) - (outer_radius / 2);
-    var y = pos['y']  + (Math.random() * outer_radius) - (outer_radius / 2);
-    var dist = Math.sqrt(((pos['x'] - x) ** 2) + (2 * (height + mushroom_height - h) ** 2) + ((pos['y'] - y) ** 2));
+  const hotMaterial = new THREE.SpriteMaterial( { map: webgl_textures["nuke_hot_mushroom_cloud"]});
+  for (const i = 0; i < 15000; i++) {
+    const x = pos['x'] + (Math.random() * outer_radius) - (outer_radius / 2);
+    const h = height + mushroom_height + (Math.random() * outer_radius) - (outer_radius / 2);
+    const y = pos['y']  + (Math.random() * outer_radius) - (outer_radius / 2);
+    const dist = Math.sqrt(((pos['x'] - x) ** 2) + (2 * (height + mushroom_height - h) ** 2) + ((pos['y'] - y) ** 2));
     if (dist > (outer_radius / 2) || dist < 35) {
       continue;
     }
@@ -117,12 +119,12 @@ function create_nuke(ptile_id)
 
 
   // Render shock wave
-  var shock_radius = 240;
-  var shockMaterial = new THREE.SpriteMaterial( { map: webgl_textures["nuke_shock_wave"]});
-  for (var i = 0; i < 100000; i++) {
-    var x = pos['x'] + (Math.random() * shock_radius) - (shock_radius / 2);
-    var h = height + mushroom_height + (Math.random() * shock_radius) - (shock_radius / 2);
-    var y = pos['y']  + (Math.random() * shock_radius) - (shock_radius / 2);
+  const shock_radius = 240;
+  const shockMaterial = new THREE.SpriteMaterial( { map: webgl_textures["nuke_shock_wave"]});
+  for (const i = 0; i < 100000; i++) {
+    const x = pos['x'] + (Math.random() * shock_radius) - (shock_radius / 2);
+    const h = height + mushroom_height + (Math.random() * shock_radius) - (shock_radius / 2);
+    const y = pos['y']  + (Math.random() * shock_radius) - (shock_radius / 2);
     let dist = Math.sqrt(((pos['x'] - x) ** 2) + (120 * (height + mushroom_height - h) ** 2) + ((pos['y'] - y) ** 2));
     if (dist > (shock_radius / 2) || dist < 115) {
       continue;
@@ -137,12 +139,12 @@ function create_nuke(ptile_id)
   }
 
   // Render blast area.
-  var blast_radius = 200;
-  var blastMaterial = new THREE.SpriteMaterial( { map: webgl_textures["nuke_grey_blast_area"]});
-  for (var i = 0; i < 90000; i++) {
-    var x = pos['x'] + (Math.random() * blast_radius) - (blast_radius / 2);
-    var h = height + 0.5 + (Math.random() * blast_radius) - (blast_radius / 2);
-    var y = pos['y']  + (Math.random() * blast_radius) - (blast_radius / 2);
+  const blast_radius = 200;
+  const blastMaterial = new THREE.SpriteMaterial( { map: webgl_textures["nuke_grey_blast_area"]});
+  for (const i = 0; i < 90000; i++) {
+    const x = pos['x'] + (Math.random() * blast_radius) - (blast_radius / 2);
+    const h = height + 0.5 + (Math.random() * blast_radius) - (blast_radius / 2);
+    const y = pos['y']  + (Math.random() * blast_radius) - (blast_radius / 2);
     let dist = Math.sqrt(((pos['x'] - x) ** 2) + (70 * (height + 0.5 - h) ** 2) + ((pos['y'] - y) ** 2));
     if (dist > (blast_radius / 2)) {
       continue;
@@ -157,12 +159,12 @@ function create_nuke(ptile_id)
   }
 
   // Render rising column.
-  var column_radius = 60;
-  var risingMaterial = new THREE.SpriteMaterial( { map: webgl_textures["nuke_rising_column"]});
-  for (var i = 0; i < 4000; i++) {
-    var x = pos['x'] + (Math.random() * column_radius) - (column_radius / 2);
-    var h = height + 30 + (Math.random() * column_radius) - (column_radius / 2);
-    var y = pos['y']  + (Math.random() * column_radius) - (column_radius / 2);
+  const column_radius = 60;
+  const risingMaterial = new THREE.SpriteMaterial( { map: webgl_textures["nuke_rising_column"]});
+  for (const i = 0; i < 4000; i++) {
+    const x = pos['x'] + (Math.random() * column_radius) - (column_radius / 2);
+    const h = height + 30 + (Math.random() * column_radius) - (column_radius / 2);
+    const y = pos['y']  + (Math.random() * column_radius) - (column_radius / 2);
     let dist = Math.sqrt(((pos['x'] - x) ** 2) + (0.01 * (height + 30 - h) ** 2) + ((pos['y'] - y) ** 2));
     if (dist > (column_radius / 2)) {
       continue;
@@ -185,7 +187,7 @@ function create_nuke(ptile_id)
 ****************************************************************************/
 function clear_nuke()
 {
-  for (var i = 0; i < nuke_objects.length; i++) {
+  for (const i = 0; i < nuke_objects.length; i++) {
     scene.remove(nuke_objects[i]);
   }
   nuke_objects = [];
@@ -198,14 +200,14 @@ function clear_nuke()
  Animate the nuke particles
 ****************************************************************************/
 function animate_nuke() {
-  for (var i = 0; i < nuke_mushroom_objects.length; i++) {
+  for (const i = 0; i < nuke_mushroom_objects.length; i++) {
     nuke_mushroom_objects[i].position.set(nuke_mushroom_objects[i].position.x + ( 2 * Math.random()) - 1,
     nuke_mushroom_objects[i].position.y + (2 * Math.random()) - 1 + 0.5,
     nuke_mushroom_objects[i].position.z + (2 * Math.random()) - 1
     );
   }
 
-  for (var i = 0; i < nuke_other_objects.length; i++) {
+  for (const i = 0; i < nuke_other_objects.length; i++) {
     nuke_other_objects[i].position.set(nuke_other_objects[i].position.x + ( 1 * Math.random()) - 0.5,
     nuke_other_objects[i].position.y + (1 * Math.random()) - 0.5,
     nuke_other_objects[i].position.z + (1 * Math.random()) - 0.5

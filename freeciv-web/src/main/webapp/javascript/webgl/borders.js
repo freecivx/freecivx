@@ -1,4 +1,6 @@
 /**********************************************************************
+'use strict';
+
     Freeciv-web - the web version of Freeciv. http://www.FreecivWorld.net/
     Copyright (C) 2009-2017  The Freeciv-web project
 
@@ -17,10 +19,10 @@
 
 ***********************************************************************/
 
-var borders_palette = [];
-var borders_texture;
-var borders_hash = -1;
-var borders_data;
+const borders_palette = [];
+let borders_texture;
+const borders_hash = -1;
+let borders_data;
 
 /****************************************************************************
  Initialize borders image.
@@ -56,7 +58,7 @@ function update_borders_tile(ptile)
   let old_value = borders_data[index] + borders_data[index + 1] + borders_data[index + 2];
 
   if (ptile != null && ptile['owner'] != null && ptile['owner'] < 255) {
-    var pplayer = players[ptile['owner']];
+    const pplayer = players[ptile['owner']];
 
     if (nations[pplayer['nation']].color != null) {
       let nation_colors = nations[pplayer['nation']].color.replace("rgb(", "").replace(")", "").split(",");

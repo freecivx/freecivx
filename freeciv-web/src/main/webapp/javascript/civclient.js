@@ -1,4 +1,6 @@
 /**********************************************************************
+'use strict';
+
     Freeciv-web - the web version of Freeciv. http://www.FreecivWorld.net/
     Copyright (C) 2009-2015  The Freeciv-web project
 
@@ -18,33 +20,33 @@
 ***********************************************************************/
 
 
-var client = {};
+const client = {};
 client.conn = {};
 
-var client_frozen = false;
-var phase_start_time = 0;
+const client_frozen = false;
+const phase_start_time = 0;
 
-var debug_active = false;
-var autostart = false;
+const debug_active = false;
+const autostart = false;
 
-var username = null;
-var userid = null;
+const username = null;
+const userid = null;
 
-var fc_seedrandom = null;
+const fc_seedrandom = null;
 
 // singleplayer, multiplayer, longturn
-var game_type = "";
+const game_type = "";
 
-var music_list = [ ];
-var audio = null;
-var audio_enabled = false;
+const music_list = [ ];
+const audio = null;
+const audio_enabled = false;
 
-var last_turn_change_time = 0;
-var turn_change_elapsed = 0;
-var seconds_to_phasedone = 0;
-var seconds_to_phasedone_sync = 0;
-var dialog_close_trigger = "";
-var dialog_message_close_task;
+const last_turn_change_time = 0;
+const turn_change_elapsed = 0;
+const seconds_to_phasedone = 0;
+const seconds_to_phasedone_sync = 0;
+const dialog_close_trigger = "";
+let dialog_message_close_task;
 
 /**************************************************************************
  Main starting point for FreecivWorld.net
@@ -69,7 +71,7 @@ function civclient_init()
   $.blockUI.defaults['css']['color'] = "#fff";
   $.blockUI.defaults['theme'] = true;
 
-  var action = $.getUrlVar('action');
+  const action = $.getUrlVar('action');
   game_type = $.getUrlVar('type');
   if (game_type == null) {
     if (action == null) {
@@ -168,7 +170,7 @@ function init_common_intro_dialog() {
 
   } else if ($.getUrlVar('action') == "multi") {
 
-      var msg = "You are about to join this game server, where you can "  +
+      const msg = "You are about to join this game server, where you can "  +
                   "participate in a multiplayer game. You can customize the game " +
                   "settings, and wait for the minimum number of players before " +
                   "the game can start. ";
@@ -261,7 +263,7 @@ function validate_username() {
  Returns whether the username is valid.
 **************************************************************************/
 function is_username_valid_show(username) {
-  var reason = get_invalid_username_reason(username);
+  const reason = get_invalid_username_reason(username);
   if (reason != null) {
     $("#username_validation_result").text("The username is " + reason + ".");
     $("#username_validation_result").show();
@@ -284,10 +286,10 @@ function is_server()
 **************************************************************************/
 function update_timeout()
 {
-  var now = new Date().getTime();
+  const now = new Date().getTime();
   if (game_info != null
       && current_turn_timeout() != null && current_turn_timeout() > 0) {
-    var remaining = Math.floor(seconds_to_phasedone - ((now - seconds_to_phasedone_sync) / 1000));
+    const remaining = Math.floor(seconds_to_phasedone - ((now - seconds_to_phasedone_sync) / 1000));
 
     if (remaining >= 0 && turn_change_elapsed == 0) {
       if (is_small_screen()) {
@@ -385,9 +387,9 @@ function show_debug_info()
 
   debug_active = true;
   /* Show average network latency PING (server to client, and back). */
-  var sum = 0;
-  var max = 0;
-  for (var i = 0; i < debug_ping_list.length; i++) {
+  const sum = 0;
+  const max = 0;
+  for (const i = 0; i < debug_ping_list.length; i++) {
     sum += debug_ping_list[i];
     if (debug_ping_list[i] > max) max = debug_ping_list[i];
   }
@@ -396,7 +398,7 @@ function show_debug_info()
   /* Show average network latency PING (client to server, and back). */
   sum = 0;
   max = 0;
-  for (var j = 0; j < debug_client_speed_list.length; j++) {
+  for (const j = 0; j < debug_client_speed_list.length; j++) {
     sum += debug_client_speed_list[j];
     if (debug_client_speed_list[j] > max) max = debug_client_speed_list[j];
   }
@@ -427,7 +429,7 @@ function show_auth_dialog(packet) {
   $("#dialog").remove();
   $("<div id='dialog'></div>").appendTo("div#game_page");
 
-  var intro_html = packet['message']
+  const intro_html = packet['message']
       + "<br><br> Password: <input id='password_req' type='text' size='25'>";
   $("#dialog").html(intro_html);
   $("#dialog").attr("title", "Private server needs password to enter");
@@ -438,8 +440,8 @@ function show_auth_dialog(packet) {
 			buttons:
 			{
 				"Ok" : function() {
-                                  var pwd_packet = {"pid" : packet_authentication_reply, "password" : $('#password_req').val()};
-                                  var myJSONText = JSON.stringify(pwd_packet);
+                                  const pwd_packet = {"pid" : packet_authentication_reply, "password" : $('#password_req').val()};
+                                  const myJSONText = JSON.stringify(pwd_packet);
                                   send_request(myJSONText);
 
                                   $("#dialog").dialog('close');

@@ -1,4 +1,6 @@
 /**********************************************************************
+'use strict';
+
     Freeciv-web - the web version of Freeciv. http://www.FreecivWorld.net/
     Copyright (C) 2009-2016  The Freeciv-web project
 
@@ -17,8 +19,8 @@
 
 ***********************************************************************/
 
-var map_known_dirty = true;
-var map_geometry_dirty = true;
+const map_known_dirty = true;
+const map_geometry_dirty = true;
 
 /**************************************************************************
  Updates the terrain vertex colors to set tile to known, unknown or fogged.
@@ -55,11 +57,11 @@ function update_tiles_known_vertex_colors()
 
   for ( let iy = 0; iy < gridY1; iy ++ ) {
     for ( let ix = 0; ix < gridX1; ix ++ ) {
-        var sx = ix % xquality, sy = iy % yquality;
-        var mx = Math.floor((sx / terrain_quality) - 0.040), my = Math.floor((sy / terrain_quality) - 0.040);
-        var ptile = map_pos_to_tile(mx, my);
+        const sx = ix % xquality, sy = iy % yquality;
+        const mx = Math.floor((sx / terrain_quality) - 0.040), my = Math.floor((sy / terrain_quality) - 0.040);
+        const ptile = map_pos_to_tile(mx, my);
         if (ptile != null) {
-          var c = get_vertex_color_from_tile(ptile, ix, iy);
+          const c = get_vertex_color_from_tile(ptile, ix, iy);
           colors.push(c[0], c[1], c[2]);
         } else {
           colors.push(0,0,0);
@@ -81,7 +83,7 @@ function update_tiles_known_vertex_colors()
 **************************************************************************/
 function get_vertex_color_from_tile(ptile, vertex_x, vertex_y)
 {
-    var known_status_color = 0;
+    const known_status_color = 0;
     if (tile_get_known(ptile) == TILE_KNOWN_SEEN) {
       known_status_color = 1.06;
 
@@ -93,7 +95,7 @@ function get_vertex_color_from_tile(ptile, vertex_x, vertex_y)
 
     if (active_city != null && ptile != null && (tile_get_known(ptile) == TILE_KNOWN_SEEN || tile_get_known(ptile) == TILE_KNOWN_UNSEEN)) {
       // Hightlight active city
-      var ctile = city_tile(active_city);
+      const ctile = city_tile(active_city);
       if (ptile['index'] == ctile['index']) {
         known_status_color = 1.06;
       } else if (is_city_tile(ptile, active_city)) {

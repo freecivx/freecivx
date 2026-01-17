@@ -1,4 +1,6 @@
 /**********************************************************************
+'use strict';
+
     Freeciv-web - the web version of Freeciv. http://www.FreecivWorld.net/
     Copyright (C) 2009-2016  The Freeciv-web project
 
@@ -17,15 +19,15 @@
 
 ***********************************************************************/
 
-var timeOfLastPinchZoom = new Date().getTime();
-var map_select_check = false;
-var map_select_active = false;
+const timeOfLastPinchZoom = new Date().getTime();
+const map_select_check = false;
+const map_select_active = false;
 
-var map_select_check_started = 0;
-var map_select_x;
-var map_select_y;
-var map_select_lines = [];
-var map_zoom_button_zoom_out = true;
+const map_select_check_started = 0;
+let map_select_x;
+let map_select_y;
+const map_select_lines = [];
+const map_zoom_button_zoom_out = true;
 const min_y_zoom_level = 250;
 
 /****************************************************************************
@@ -88,10 +90,10 @@ Triggered when the mouse button is clicked UP on the mapview canvas.
 ****************************************************************************/
 function webglOnDocumentMouseUp( e ) {
 
-  var rightclick = false;
-  var middleclick = false;
+  const rightclick = false;
+  const middleclick = false;
 
-  if (!e) var e = window.event;
+  if (!e) const e = window.event;
   if (e.which) {
     rightclick = (e.which == 3);
     middleclick = (e.which == 2);
@@ -100,7 +102,7 @@ function webglOnDocumentMouseUp( e ) {
     middleclick = (e.button == 1 || e.button == 4);
   }
 
-  var ptile = webgl_canvas_pos_to_tile(e.clientX, e.clientY - $("#mapcanvas").offset().top);
+  const ptile = webgl_canvas_pos_to_tile(e.clientX, e.clientY - $("#mapcanvas").offset().top);
   if (ptile == null) return;
 
   if (rightclick) {
@@ -129,12 +131,12 @@ function webglOnDocumentMouseUp( e ) {
   Triggered when the mouse button is clicked DOWN on the mapview canvas.
 ****************************************************************************/
 function webglOnDocumentMouseDown(e) {
-  var rightclick = false;
-  var middleclick = false;
+  const rightclick = false;
+  const middleclick = false;
 
   if (active_city != null) return;
 
-  if (!e) var e = window.event;
+  if (!e) const e = window.event;
   if (e.which) {
     rightclick = (e.which == 3);
     middleclick = (e.which == 2);
@@ -147,7 +149,7 @@ function webglOnDocumentMouseDown(e) {
     /* Left mouse button is down */
     if (goto_active) return;
 
-    var ptile = webgl_canvas_pos_to_tile(e.clientX, e.clientY - $("#mapcanvas").offset().top);
+    const ptile = webgl_canvas_pos_to_tile(e.clientX, e.clientY - $("#mapcanvas").offset().top);
     set_mouse_touch_started_on_unit(ptile);
     check_mouse_drag_unit(ptile);
     touch_start_x = mouse_x;
@@ -184,7 +186,7 @@ function webgl_mapview_touch_start(e)
   touch_start_x = e.originalEvent.touches[0].pageX - $('#mapcanvas').position().left;
   touch_start_y = e.originalEvent.touches[0].pageY - $('#mapcanvas').position().top;
 
-  var ptile = webgl_canvas_pos_to_tile(touch_start_x, touch_start_y);
+  const ptile = webgl_canvas_pos_to_tile(touch_start_x, touch_start_y);
   set_mouse_touch_started_on_unit(ptile);
 
   update_mouse_cursor();
@@ -212,12 +214,12 @@ function webgl_mapview_touch_move(e)
   mouse_x = e.originalEvent.touches[0].pageX - $('#mapcanvas').position().left;
   mouse_y = e.originalEvent.touches[0].pageY - $('#mapcanvas').position().top;
 
-  var spos = webgl_canvas_pos_to_map_pos(touch_start_x, touch_start_y);
-  var epos = webgl_canvas_pos_to_map_pos(mouse_x, mouse_y);
+  const spos = webgl_canvas_pos_to_map_pos(touch_start_x, touch_start_y);
+  const epos = webgl_canvas_pos_to_map_pos(mouse_x, mouse_y);
 
   touch_start_x = mouse_x;
   touch_start_y = mouse_y;
-  var ptile = webgl_canvas_pos_to_tile(mouse_x, mouse_y);
+  const ptile = webgl_canvas_pos_to_tile(mouse_x, mouse_y);
   if (!goto_active) {
     check_mouse_drag_unit(ptile);
   }
@@ -228,7 +230,7 @@ function webgl_mapview_touch_move(e)
   goto_preview_active = true;
   if (goto_active && current_focus.length > 0) {
     if (ptile != null) {
-      for (var i = 0; i < current_focus.length; i++) {
+      for (const i = 0; i < current_focus.length; i++) {
         if (i >= 20) return;  // max 20 units goto a time.
         if (goto_request_map[current_focus[i]['id'] + "," + ptile['x'] + "," + ptile['y']] == null) {
           request_goto_path(current_focus[i]['id'], ptile['x'], ptile['y']);
@@ -251,7 +253,7 @@ function webgl_mapview_touch_move(e)
 function webgl_recenter_button_pressed(ptile)
 {
   if (can_client_change_view() && ptile != null) {
-    var sunit = find_visible_unit(ptile);
+    const sunit = find_visible_unit(ptile);
     let pcity = tile_city(ptile)
     if (!client_is_observer() && (sunit != null && sunit['owner'] == client.conn.playing.playerno) || (pcity != null && pcity['owner'] == client.conn.playing.playerno)) {
       /* the user right-clicked on own unit */
@@ -276,7 +278,7 @@ function webgl_recenter_button_pressed(ptile)
 **************************************************************************/
 function webgl_action_button_pressed(canvas_x, canvas_y, qtype)
 {
-  var ptile = webgl_canvas_pos_to_tile(canvas_x, canvas_y);
+  const ptile = webgl_canvas_pos_to_tile(canvas_x, canvas_y);
 
   if (can_client_change_view() && ptile != null) {
     do_map_click(ptile, qtype, true);
@@ -317,7 +319,7 @@ function map_select_units(mouse_x, mouse_y)
   if (client_is_observer()) return;
   webgl_clear_unit_focus();
   
-  var selected_units = [];
+  const selected_units = [];
 
   for (let i = 0; i < map_select_lines.length; i++) {
     scene.remove(map_select_lines[i]);
@@ -344,19 +346,19 @@ function map_select_units(mouse_x, mouse_y)
   let selected_map_tiles = {};
   for (let x = x1; x < x2; x += 15) {
     for (let y = y1; y < y2; y += 15) {
-      var ptile = webgl_canvas_pos_to_tile_quick(x, y);
+      const ptile = webgl_canvas_pos_to_tile_quick(x, y);
       if (ptile != null) {
         selected_map_tiles[ptile['index']] = ptile;
       }
     }
   }
 
-  for (var tile_id in selected_map_tiles) {
-    var ptile = selected_map_tiles[tile_id];
+  for (let tile_id in selected_map_tiles) {
+    const ptile = selected_map_tiles[tile_id];
     let cunits = tile_units(ptile);
     if (cunits == null) continue;
-    for (var i = 0; i < cunits.length; i++) {
-      var aunit = cunits[i];
+    for (const i = 0; i < cunits.length; i++) {
+      const aunit = cunits[i];
       if (aunit['owner'] == client.conn.playing.playerno) {
         selected_units.push(aunit);
       }
@@ -391,7 +393,7 @@ function map_draw_select_lines() {
     return;
   }
 
-  var height = 5 + 0.75 * 100;
+  const height = 5 + 0.75 * 100;
 
   const material = new THREE.LineDashedMaterial({
   	color: 0xff0000,

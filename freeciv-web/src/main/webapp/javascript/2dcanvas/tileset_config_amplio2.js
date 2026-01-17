@@ -1,4 +1,6 @@
 /**********************************************************************
+'use strict';
+
     Freeciv-web - the web version of Freeciv. http://www.FreecivWorld.net/
     Copyright (C) 2009-2015  The Freeciv-web project
 
@@ -20,17 +22,17 @@
 /* Amplio.tilespec ported to Javascript. */
 
 
-var tileset_tile_width = 96;
-var tileset_tile_height = 48;
+const tileset_tile_width = 96;
+const tileset_tile_height = 48;
 
-var tileset_name = "amplio2";
+const tileset_name = "amplio2";
 
-var tileset_image_count = 2;
+const tileset_image_count = 2;
 
-var normal_tile_width  = 96;
-var normal_tile_height = 48;
-var small_tile_width   = 15;
-var small_tile_height  = 20;
+const normal_tile_width = 96;
+const normal_tile_height = 48;
+const small_tile_width = 15;
+const small_tile_height = 20;
 
 
 

@@ -1,4 +1,6 @@
 /**********************************************************************
+'use strict';
+
     Freeciv-web - the web version of Freeciv. http://www.FreecivWorld.net/
     Copyright (C) 2009-2015  The Freeciv-web project
 
@@ -19,26 +21,26 @@
 
 
 
-var players = {};
-var research_data = {};
+const players = {};
+const research_data = {};
 
-var MAX_NUM_PLAYERS = 30;
+const MAX_NUM_PLAYERS = 30;
 
-var MAX_AI_LOVE = 1000;
+const MAX_AI_LOVE = 1000;
 
-var DS_ARMISTICE = 0;
-var DS_WAR = 1;
-var DS_CEASEFIRE = 2;
-var DS_PEACE = 3;
-var DS_ALLIANCE = 4;
-var DS_NO_CONTACT = 5;
-var DS_TEAM = 6;
-var DS_LAST = 7;
+const DS_ARMISTICE = 0;
+const DS_WAR = 1;
+const DS_CEASEFIRE = 2;
+const DS_PEACE = 3;
+const DS_ALLIANCE = 4;
+const DS_NO_CONTACT = 5;
+const DS_TEAM = 6;
+const DS_LAST = 7;
 
 /* The plr_flag_id enum. */
-var PLRF_AI = 0;
-var PLRF_SCENARIO_RESERVED = 1;
-var PLRF_COUNT = 2;
+const PLRF_AI = 0;
+const PLRF_SCENARIO_RESERVED = 1;
+const PLRF_COUNT = 2;
 
 function valid_player_by_number(playerno)
 {
@@ -58,8 +60,8 @@ function player_by_number(playerno)
 
 function player_by_name(pname)
 {
-  for (var player_id in players) {
-    var pplayer = players[player_id];
+  for (let player_id in players) {
+    const pplayer = players[player_id];
     if (pname == pplayer['name']) return pplayer;
   }
   return null;
@@ -67,14 +69,14 @@ function player_by_name(pname)
 
 function player_by_full_username(pname)
 {
-  var ainame;
+  let ainame;
   if (pname.substr(0, 3) == 'AI ') {
     ainame = pname.substr(3);
   } else {
     ainame = pname;
   }
-  for (var player_id in players) {
-    var pplayer = players[player_id];
+  for (let player_id in players) {
+    const pplayer = players[player_id];
     if (pplayer['flags'].isSet(PLRF_AI)){
       if (ainame == pplayer['name']) return pplayer;
     } else {
@@ -96,7 +98,7 @@ function player_by_full_username(pname)
 ***************************************************************/
 function player_find_unit_by_id(pplayer, unit_id)
 {
-  var punit = idex_lookup_unit(unit_id);
+  const punit = idex_lookup_unit(unit_id);
 
   if (punit == null) return null;
 
@@ -192,7 +194,7 @@ function get_embassy_text(player_id)
 **************************************************************************/
 function get_ai_level_text(player)
 {
-  var ai_level = player['ai_skill_level'];
+  const ai_level = player['ai_skill_level'];
   if (ai_level == 0) {
     return "Restricted";
   } else if (ai_level == 1) {
@@ -252,8 +254,8 @@ function research_get(pplayer)
 **************************************************************************/
 function player_has_wonder(playerno, improvement_id)
 {
-  for (var city_id in cities) {
-    var pcity = cities[city_id];
+  for (let city_id in cities) {
+    const pcity = cities[city_id];
     if (city_owner(pcity).playerno == playerno && city_has_building(pcity, improvement_id)) {
       return true;
     }

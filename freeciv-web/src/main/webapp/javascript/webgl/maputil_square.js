@@ -1,4 +1,6 @@
 /**********************************************************************
+'use strict';
+
     Freeciv-web - the web version of Freeciv. http://www.FreecivWorld.net/
     Copyright (C) 2009-2016  The Freeciv-web project
 
@@ -23,7 +25,7 @@
 ****************************************************************************/
 function map_to_scene_coords(x, y)
 {
-  var result = {};
+  const result = {};
   result['x'] = Math.floor(-470 + x * mapview_model_width / map['xsize']);
   result['y'] = Math.floor(30 + y * mapview_model_height / map['ysize']);
 
@@ -35,7 +37,7 @@ function map_to_scene_coords(x, y)
 ****************************************************************************/
 function scene_to_map_coords(x, y)
 {
-  var result = {};
+  const result = {};
   result['x'] = Math.floor((x + 500) * map['xsize'] / mapview_model_width);
   result['y'] = Math.floor((y) * map['ysize'] / mapview_model_height);
 
@@ -53,12 +55,12 @@ function webgl_canvas_pos_to_tile(x, y) {
 
   raycaster.setFromCamera( mouse, camera );
 
-  var intersects = raycaster.intersectObject(lofiMesh, false);
+  const intersects = raycaster.intersectObject(lofiMesh, false);
 
-  for (var i = 0; i < intersects.length; i++) {
-    var intersect = intersects[i];
-    var pos = scene_to_map_coords(intersect.point.x, intersect.point.z);
-    var ptile = map_pos_to_tile(pos['x'], pos['y']);
+  for (const i = 0; i < intersects.length; i++) {
+    const intersect = intersects[i];
+    const pos = scene_to_map_coords(intersect.point.x, intersect.point.z);
+    const ptile = map_pos_to_tile(pos['x'], pos['y']);
     if (ptile != null) return ptile;
   }
 
@@ -77,14 +79,14 @@ function webgl_canvas_pos_to_tile_quick(x, y) {
 
   raycaster.setFromCamera( mouse, camera );
 
-  var intersects = raycaster.intersectObject(water_hq, false);
+  const intersects = raycaster.intersectObject(water_hq, false);
 
   raycaster.layers.set(6);
 
-  for (var i = 0; i < intersects.length; i++) {
-    var intersect = intersects[i];
-    var pos = scene_to_map_coords(intersect.point.x, intersect.point.z);
-    var ptile = map_pos_to_tile(pos['x'], pos['y']);
+  for (const i = 0; i < intersects.length; i++) {
+    const intersect = intersects[i];
+    const pos = scene_to_map_coords(intersect.point.x, intersect.point.z);
+    const ptile = map_pos_to_tile(pos['x'], pos['y']);
     if (ptile != null) return ptile;
   }
 
@@ -101,10 +103,10 @@ function webgl_canvas_pos_to_map_pos(x, y) {
 
   raycaster.setFromCamera( mouse, camera );
 
-  var intersects = raycaster.intersectObject(lofiMesh);
+  const intersects = raycaster.intersectObject(lofiMesh);
 
   if (intersects.length > 0) {
-    var intersect = intersects[0];
+    const intersect = intersects[0];
     return {'x' : intersect.point.x, 'y' : intersect.point.z};
   }
 
@@ -117,7 +119,7 @@ function webgl_canvas_pos_to_map_pos(x, y) {
 ****************************************************************************/
 function convert_unit_rotation(facing_dir, unit_type_name)
 {
-  var rotation_rad = 0;
+  const rotation_rad = 0;
 
   if (facing_dir == 0) rotation_rad = -3;
   if (facing_dir == 1) rotation_rad = -4;

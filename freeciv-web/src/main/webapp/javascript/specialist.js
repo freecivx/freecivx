@@ -1,4 +1,6 @@
 /**********************************************************************
+'use strict';
+
     Freeciv-web - the web version of Freeciv. http://www.FreecivWorld.net/
     Copyright (C) 2009-2015  The Freeciv-web project
 
@@ -18,7 +20,7 @@
 ***********************************************************************/
 
 
-var specialists = {};
+const specialists = {};
 
 
 
