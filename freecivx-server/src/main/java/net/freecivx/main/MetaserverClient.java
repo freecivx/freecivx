@@ -25,7 +25,11 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class MetaserverClient {
+    private static final Logger logger = LoggerFactory.getLogger(MetaserverClient.class);
 
     public static void publishToMetaserver(int port) {
         String metaserverUrl = "http://localhost:8080/freeciv-web/meta/metaserver";
@@ -45,14 +49,14 @@ public class MetaserverClient {
             }
 
             int responseCode = connection.getResponseCode();
-            System.out.println("Response: " + connection.getResponseMessage());
+            logger.debug("Response: {}", connection.getResponseMessage());
             if (responseCode == HttpURLConnection.HTTP_OK) {
-                System.out.println("Server successfully published to metaserver.");
+                logger.info("Server successfully published to metaserver.");
             } else {
-                System.err.println("Failed to publish to metaserver. Response code: " + responseCode);
+                logger.error("Failed to publish to metaserver. Response code: {}", responseCode);
             }
         } catch (IOException e) {
-            System.err.println("Error publishing to metaserver: " + e.getMessage());
+            logger.error("Error publishing to metaserver: {}", e.getMessage(), e);
         }
     }
 }
