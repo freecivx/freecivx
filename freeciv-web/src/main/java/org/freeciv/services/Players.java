@@ -4,12 +4,14 @@ import org.freeciv.model.Player;
 import org.freeciv.util.DatabaseUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Service;
 
 import java.sql.*;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
+@Service
 public class Players {
     private static final Logger logger = LoggerFactory.getLogger(Players.class);
 

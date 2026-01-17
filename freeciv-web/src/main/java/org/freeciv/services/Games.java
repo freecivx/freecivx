@@ -11,7 +11,9 @@ import org.freeciv.model.Game;
 import org.freeciv.util.DatabaseUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Service;
 
+@Service
 public class Games {
 	private static final Logger logger = LoggerFactory.getLogger(Games.class);
 

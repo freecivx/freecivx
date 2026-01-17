@@ -15,23 +15,26 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *******************************************************************************/
-package org.freeciv.servlet;
+package org.freeciv.config;
 
-import org.springframework.stereotype.Controller;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.boot.jdbc.DataSourceBuilder;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Primary;
+
+import javax.sql.DataSource;
 
 /**
- * Displays the about page
- *
- * URL: /about
+ * Spring configuration for database connectivity
  */
-@Controller
-@RequestMapping("/about")
-public class About {
+@Configuration
+public class DatabaseConfig {
 
-    @GetMapping
-    public String showAbout() {
-        return "game/about";
-    }
+	@Bean
+	@Primary
+	@ConfigurationProperties(prefix = "spring.datasource")
+	public DataSource dataSource() {
+		return DataSourceBuilder.create().build();
+	}
 }

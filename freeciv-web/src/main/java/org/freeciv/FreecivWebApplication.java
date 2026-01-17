@@ -15,23 +15,19 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *******************************************************************************/
-package org.freeciv.servlet;
+package org.freeciv;
 
-import org.springframework.stereotype.Controller;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.boot.web.servlet.support.SpringBootServletInitializer;
 
 /**
- * Displays the about page
- *
- * URL: /about
+ * Spring Boot application entry point for Freeciv-web
  */
-@Controller
-@RequestMapping("/about")
-public class About {
+@SpringBootApplication
+public class FreecivWebApplication extends SpringBootServletInitializer {
 
-    @GetMapping
-    public String showAbout() {
-        return "game/about";
-    }
+	public static void main(String[] args) {
+		SpringApplication.run(FreecivWebApplication.class, args);
+	}
 }

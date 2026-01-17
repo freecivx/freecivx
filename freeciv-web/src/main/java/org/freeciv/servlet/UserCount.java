@@ -17,15 +17,17 @@
  *******************************************************************************/
 package org.freeciv.servlet;
 
-import java.io.*;
-import jakarta.servlet.*;
-import jakarta.servlet.http.*;
-
 import java.sql.*;
 
 import org.freeciv.util.DatabaseUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 
 /**
@@ -33,34 +35,31 @@ import org.slf4j.LoggerFactory;
  *
  * URL: /user_count
  */
-public class UserCount extends HttpServlet {
+@RestController
+@RequestMapping("/user_count")
+public class UserCount {
 	private static final Logger logger = LoggerFactory.getLogger(UserCount.class);
-	private static final long serialVersionUID = 1L;
 
-	public void doPost(HttpServletRequest request, HttpServletResponse response)
-			throws IOException, ServletException {
-
+	@PostMapping
+	public ResponseEntity<String> countUsers() {
 		String query = "SELECT COUNT(*) FROM `auth`";
 		try (Connection conn = DatabaseUtil.getConnection();
 		     PreparedStatement preparedStatement = conn.prepareStatement(query);
 		     ResultSet rs = preparedStatement.executeQuery()) {
 			if (rs.next()) {
-				response.getOutputStream().print(rs.getString(1));
+				return ResponseEntity.ok(rs.getString(1));
 			}
-
+			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Unable to count users");
 		} catch (SQLException e) {
 			logger.error("Failed to count users", e);
-			response.setHeader("result", "error");
-			response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Unable to count users");
+			return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Unable to count users");
 		}
-		
 	}
 
-	public void doGet(HttpServletRequest request, HttpServletResponse response)
-			throws IOException, ServletException {
-
-		response.sendError(HttpServletResponse.SC_METHOD_NOT_ALLOWED, "This endpoint only supports the POST method.");
-
+	@GetMapping
+	public ResponseEntity<String> methodNotAllowed() {
+		return ResponseEntity.status(HttpStatus.METHOD_NOT_ALLOWED)
+				.body("This endpoint only supports the POST method.");
 	}
 
 }

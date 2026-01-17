@@ -17,41 +17,38 @@
  *******************************************************************************/
 package org.freeciv.servlet;
 
-import java.io.IOException;
-
-import jakarta.servlet.RequestDispatcher;
-import jakarta.servlet.ServletException;
-import jakarta.servlet.annotation.MultipartConfig;
-import jakarta.servlet.annotation.WebServlet;
-import jakarta.servlet.http.HttpServlet;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
-
 import org.freeciv.services.Games;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 
 /**
  * Displays the multiplayer games
  */
-@MultipartConfig
-@WebServlet("/game/list")
-public class GameList extends HttpServlet {
+@Controller
+@RequestMapping("/game/list")
+public class GameList {
 
-	private static final long serialVersionUID = 1L;
+	private final Games games;
 
-	@Override
-	public void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+	@Autowired
+	public GameList(Games games) {
+		this.games = games;
+	}
 
+	@GetMapping
+	public String listGames(@RequestParam(value = "v", required = false) String view, Model model) {
 		try {
-			Games games = new Games();
-			request.setAttribute("multiPlayerGames", games.getMultiPlayerCount());
-			request.setAttribute("multiPlayerGamesList", games.getMultiPlayerGames());
-			request.setAttribute("view", request.getParameter("v"));
+			model.addAttribute("multiPlayerGames", games.getMultiPlayerCount());
+			model.addAttribute("multiPlayerGamesList", games.getMultiPlayerGames());
+			model.addAttribute("view", view);
 		} catch (RuntimeException err) {
 			throw err;
 		}
-
-		RequestDispatcher rd = request.getRequestDispatcher("/WEB-INF/jsp/game/list.jsp");
-		rd.forward(request, response);
+		return "game/list";
 	}
 
 }

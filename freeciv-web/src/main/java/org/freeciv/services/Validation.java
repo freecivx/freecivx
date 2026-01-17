@@ -19,6 +19,9 @@ package org.freeciv.services;
 
 import java.util.regex.Pattern;
 
+import org.springframework.stereotype.Service;
+
+@Service
 public class Validation {
 
 	private static final Pattern usernamePattern = Pattern.compile("[a-z][a-z0-9]*");
