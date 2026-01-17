@@ -138,4 +138,46 @@ public class Game {
 		return this;
 	}
 
+	@Override
+	public boolean equals(Object o) {
+		if (this == o) return true;
+		if (o == null || getClass() != o.getClass()) return false;
+		Game game = (Game) o;
+		return port == game.port &&
+				duration == game.duration &&
+				players == game.players &&
+				turn == game.turn &&
+				java.util.Objects.equals(host, game.host) &&
+				java.util.Objects.equals(version, game.version) &&
+				java.util.Objects.equals(patches, game.patches) &&
+				java.util.Objects.equals(type, game.type) &&
+				java.util.Objects.equals(state, game.state) &&
+				java.util.Objects.equals(message, game.message) &&
+				java.util.Objects.equals(flag, game.flag) &&
+				java.util.Objects.equals(player, game.player);
+	}
+
+	@Override
+	public int hashCode() {
+		return java.util.Objects.hash(host, port, version, patches, type, state, message, duration, players, turn, flag, player);
+	}
+
+	@Override
+	public String toString() {
+		return "Game{" +
+				"host='" + host + '\'' +
+				", port=" + port +
+				", version='" + version + '\'' +
+				", patches='" + patches + '\'' +
+				", type='" + type + '\'' +
+				", state='" + state + '\'' +
+				", message='" + message + '\'' +
+				", duration=" + duration +
+				", players=" + players +
+				", turn=" + turn +
+				", flag='" + flag + '\'' +
+				", player='" + player + '\'' +
+				'}';
+	}
+
 }
