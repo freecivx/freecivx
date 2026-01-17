@@ -59,7 +59,10 @@ INSTALLED_TOMCAT=N
 INSTALLED_NODEJS=N
 APT_GET='DEBIAN_FRONTEND=noninteractive apt-get -y -qq -o=Dpkg::Use-Pty=0'
 
-sudo ${APT_GET} update
+# Skip apt-get update if DEB_SKIP_APT_UPDATE is set (e.g., when package lists are already fresh)
+if [ "$DEB_SKIP_APT_UPDATE" != "Y" ]; then
+  sudo ${APT_GET} update
+fi
 
 if [ "$DEB_NO_TOMCAT" != "Y" ] && apt-get --simulate install tomcat11 &> /dev/null; then
   dependencies="${dependencies} tomcat11 tomcat11-admin"

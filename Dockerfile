@@ -46,6 +46,7 @@ WORKDIR /docker/scripts/
 
 RUN DEBIAN_FRONTEND=noninteractive sudo apt-get update --yes --quiet && \
     DEBIAN_FRONTEND=noninteractive DEB_NO_TOMCAT=Y \
+                                   DEB_SKIP_APT_UPDATE=Y \
                                    PIP_SKIP=Y \
                                    bash install/install.sh --mode=TEST_H2 && \
     DEBIAN_FRONTEND=noninteractive sudo apt-get clean --yes && \
