@@ -48,8 +48,8 @@ jobs:
         run: |
           sudo sysctl -w net.ipv6.conf.all.disable_ipv6=1
           sudo sysctl -w net.ipv6.conf.default.disable_ipv6=1
-          # Remove databases in parallel
-          (sudo apt-get remove -y 'postgresql-*' 'mysql-*' || true) &
+          # Remove databases in parallel - specific patterns to avoid unintended matches
+          (sudo apt-get remove -y 'postgresql-[0-9]*' 'mysql-server-*' || true) &
           (sudo rm -rf /var/lib/mysql || true) &
           wait
 
@@ -71,7 +71,7 @@ jobs:
             npm install @playwright/test --save-dev
           fi
           # Install browsers only if not cached
-          if [ ! -d "$HOME/.cache/ms-playwright" ] || [ -z "$(ls -A $HOME/.cache/ms-playwright)" ]; then
+          if [ ! -d "$HOME/.cache/ms-playwright" ] || [ ! "$(ls -A $HOME/.cache/ms-playwright 2>/dev/null)" ]; then
             npx playwright install
           fi
           npx playwright test tests/playwright/freeciv-web.test.js

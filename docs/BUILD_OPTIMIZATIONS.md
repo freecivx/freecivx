@@ -75,7 +75,7 @@ Playwright and its browsers are only installed if not present:
 
 Database removal operations run in parallel:
 ```bash
-(sudo apt-get remove -y ^postgresql 'mysql.*' || true) &
+(sudo apt-get remove -y 'postgresql-[0-9]*' 'mysql-server-*' || true) &
 (sudo rm -rf /var/lib/mysql || true) &
 wait
 ```
