@@ -116,8 +116,6 @@ mvn clean package -DskipTests
 - ✅ **Dependency analysis**: Review pom.xml and understand dependencies
 - ✅ **Architecture study**: Understand class relationships and patterns
 - ✅ **Code refactoring**: Make improvements to Java code
-- ❌ **Building**: Cannot compile due to Java version
-- ❌ **Running**: Cannot execute the server
 - ✅ **Testing in CI**: Push changes and let CI/CD build with Java 21+
 
 ### Running freecivx-server (Local Environment)
