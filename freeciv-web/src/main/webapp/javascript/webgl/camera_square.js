@@ -31,7 +31,7 @@ var slide_init = false;
 /****************************************************************************
   Point the camera to look at point x, y, z in Three.js coordinates.
 ****************************************************************************/
-function camera_look_at(x, y, z)
+function camera_look_at_square(x, y, z)
 {
   camera_current_x = x;
   camera_current_y = y;
@@ -60,7 +60,7 @@ function camera_look_at(x, y, z)
 /**************************************************************************
   Centers the mapview around the given tile..
 **************************************************************************/
-function center_tile_mapcanvas_3d(ptile)
+function center_tile_mapcanvas_3d_square(ptile)
 {
   if (ptile != null) {
     if (slide_init) {
@@ -78,7 +78,7 @@ function center_tile_mapcanvas_3d(ptile)
 /**************************************************************************
 ...
 **************************************************************************/
-function center_tile_city(city)
+function center_tile_city_square(city)
 {
   var ptile = city_tile(city);
   if (ptile != null) {
@@ -91,7 +91,7 @@ function center_tile_city(city)
 /**************************************************************************
   Enabled silding of the mapview to the given tile.
 **************************************************************************/
-function enable_mapview_slide_3d(ptile)
+function enable_mapview_slide_3d_square(ptile)
 {
   var pos_dest = map_to_scene_coords(ptile['x'], ptile['y']);
 
