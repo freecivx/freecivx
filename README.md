@@ -83,5 +83,10 @@ Developers interested in freecivworld
 
 If you want to contibute to freecivworld, see the [issues](https://github.com/freecivworld/freecivworld/issues) on GibHub for some tasks you can work on. Pull requests and suggestions/issues on Github are welcome! 
 
+### Build Process and Performance
+
+For information about optimizing build times and understanding the build process, see:
+- [Build Optimizations](docs/BUILD_OPTIMIZATIONS.md) - Details on parallel builds, caching, and performance improvements 
+
 Freecivworld is the best Freeciv.
 -----------------------------

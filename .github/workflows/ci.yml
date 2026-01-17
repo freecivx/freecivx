@@ -48,9 +48,10 @@ jobs:
         run: |
           sudo sysctl -w net.ipv6.conf.all.disable_ipv6=1
           sudo sysctl -w net.ipv6.conf.default.disable_ipv6=1
-          ip addr # for confirmation. can be skipped
-          sudo apt-get remove ^postgresql 'mysql.*'
-          sudo rm -rf /var/lib/mysql
+          # Remove databases in parallel
+          (sudo apt-get remove -y ^postgresql 'mysql.*' || true) &
+          (sudo rm -rf /var/lib/mysql || true) &
+          wait
 
       - name: install
         shell: bash
