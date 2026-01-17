@@ -4,9 +4,12 @@
 
 This document outlines strategies for improving FreecivWorld development using GitHub Copilot, including best practices for code exploration, development workflows, testing, and running the game in a Copilot environment.
 
+**Key Finding**: The freecivx-server (Java standalone server) is particularly well-suited for development and exploration in GitHub Copilot, as it's a self-contained component with minimal external dependencies.
+
 ## Table of Contents
 
 - [Repository Structure](#repository-structure)
+- [Freecivx-Server: The Copilot-Friendly Component](#freecivx-server-the-copilot-friendly-component)
 - [Setting Up Development Environment](#setting-up-development-environment)
 - [Running and Testing the Game](#running-and-testing-the-game)
 - [Development Workflow with Copilot](#development-workflow-with-copilot)
@@ -38,6 +41,257 @@ freecivworld/
 - **Build Tools**: Maven, Bash scripts
 - **Deployment**: Docker/Podman
 - **Testing**: Playwright (end-to-end tests)
+
+## Freecivx-Server: The Copilot-Friendly Component
+
+### Why freecivx-server is Ideal for Copilot Development
+
+The **freecivx-server** module is particularly well-suited for development inside GitHub Copilot workspaces because:
+
+✅ **Self-Contained**: Standalone Java application with no complex external dependencies  
+✅ **Maven-Based**: All dependencies download from Maven Central (no blocked domains)  
+✅ **Minimal Build Requirements**: Only needs Java and Maven (no database, no web server, no C compiler)  
+✅ **Small Codebase**: Only 26 Java source files - easy to explore and understand  
+✅ **Clear Structure**: Well-organized package structure with game logic separated from networking  
+✅ **Modern Java**: Uses Java 21 features like virtual threads for concurrency  
+✅ **WebSocket Server**: Standalone server that can be tested independently  
+
+### About freecivx-server
+
+Located in `/freecivx-server/`, this is a multiplayer game server implemented in Java as an alternative to the traditional C-based Freeciv server. It's designed for:
+
+- **Large-scale multiplayer games** with 1000+ concurrent players
+- **MMO-style gameplay** with 1000x1000 tile maps
+- **Long-running games** where players can join existing sessions
+- **Modern architecture** using WebSockets and JSON/Protobuf protocols
+- **High reliability** - "because Freeciv should not segfault!"
+
+### File Structure
+
+```
+freecivx-server/
+├── pom.xml                           # Maven build configuration (Java 21)
+├── civserver.sh                      # Launch script
+├── README.md                         # Component documentation
+└── src/
+    ├── main/java/net/freecivx/
+    │   ├── main/
+    │   │   ├── Main.java             # Entry point (WebSocket + HTTP server)
+    │   │   ├── HTTPStatusWebHandler.java
+    │   │   └── MetaserverClient.java
+    │   ├── server/
+    │   │   ├── CivServer.java        # WebSocket server implementation
+    │   │   └── Packets.java          # Network protocol definitions
+    │   ├── game/                     # Game logic (26 Java files)
+    │   │   ├── Game.java             # Main game state manager
+    │   │   ├── Player.java           # Player entities
+    │   │   ├── Unit.java             # Unit entities
+    │   │   ├── City.java             # City entities
+    │   │   ├── WorldMap.java         # Map management
+    │   │   ├── MapGenerator.java     # Map generation
+    │   │   ├── PathFinder.java       # Pathfinding algorithms
+    │   │   ├── Technology.java       # Tech tree
+    │   │   ├── Government.java       # Government systems
+    │   │   └── ...                   # Other game entities
+    │   └── data/
+    │       ├── SectionFile.java      # Config file parser
+    │       └── Section.java          # Config sections
+    └── test/java/                    # Unit tests (JUnit 5 + Mockito)
+```
+
+### Building freecivx-server in Copilot
+
+**Limitation**: Copilot workspace has Java 17, but freecivx-server requires Java 21+.
+
+```bash
+# This will FAIL in Copilot due to Java version mismatch
+cd freecivx-server
+mvn clean package -DskipTests
+
+# Error: "invalid target release: 21"
+```
+
+**Workaround for Development**:
+- ✅ **Code exploration**: View and edit Java files freely
+- ✅ **Dependency analysis**: Review pom.xml and understand dependencies
+- ✅ **Architecture study**: Understand class relationships and patterns
+- ✅ **Code refactoring**: Make improvements to Java code
+- ❌ **Building**: Cannot compile due to Java version
+- ❌ **Running**: Cannot execute the server
+- ✅ **Testing in CI**: Push changes and let CI/CD build with Java 21+
+
+### Running freecivx-server (Local Environment)
+
+When working in a proper development environment with Java 21+:
+
+```bash
+# Build the JAR
+cd freecivx-server
+mvn clean package
+
+# Run the server (default port 7800)
+java -jar target/freecivx-server-1.0.jar
+
+# Or specify a custom port
+java -jar target/freecivx-server-1.0.jar 8000
+
+# The server will:
+# 1. Start WebSocket server on port 7800 (or specified port)
+# 2. Start HTTP status server on port 7801 (port + 1)
+# 3. Publish to metaserver (if configured)
+```
+
+### Key Features to Explore
+
+When studying the freecivx-server code in Copilot:
+
+1. **WebSocket Communication** (`CivServer.java`):
+   - Real-time bidirectional communication
+   - JSON packet format
+   - Connection management with ConcurrentHashMap
+
+2. **Game State Management** (`Game.java`):
+   - Turn-based game loop
+   - Player management
+   - Unit and city management
+   - Technology research
+
+3. **Map Generation** (`MapGenerator.java`, `WorldMap.java`):
+   - Procedural terrain generation
+   - Tile-based map system
+   - Support for large maps (1000x1000)
+
+4. **Pathfinding** (`PathFinder.java`):
+   - A* algorithm implementation
+   - Unit movement calculations
+   - Terrain cost calculations
+
+5. **Network Protocol** (`Packets.java`):
+   - Packet type definitions
+   - Client-server communication patterns
+
+### Development Workflow in Copilot
+
+#### Exploring the Code
+
+```bash
+# Find all game entity classes
+find freecivx-server/src -name "*.java" | grep game
+
+# Search for specific functionality
+grep -r "WebSocket" freecivx-server/src/ --include="*.java"
+
+# Find packet handlers
+grep -r "PACKET_" freecivx-server/src/ --include="*.java"
+
+# Understand class dependencies
+grep -r "import net.freecivx" freecivx-server/src/ --include="*.java"
+```
+
+#### Making Code Changes
+
+1. **Edit Java files directly**: All Java files are accessible for editing
+2. **Add new features**: Implement new game mechanics or server features
+3. **Refactor code**: Improve structure and patterns
+4. **Add tests**: Write JUnit tests (even if you can't run them locally)
+5. **Update documentation**: Improve README and code comments
+
+#### Testing Strategy
+
+Since you cannot build/run in Copilot:
+
+```bash
+# Write tests that will run in CI
+# Example: freecivx-server/src/test/java/net/freecivx/data/SectionFileTest.java
+
+# Use static analysis
+# Review code for potential bugs
+# Check for proper exception handling
+# Verify thread safety in concurrent code
+
+# Commit and push to trigger CI
+git add freecivx-server/
+git commit -m "Improve game state management"
+git push
+
+# CI will:
+# - Build with Java 21+
+# - Run all tests
+# - Report any issues
+```
+
+### Common Development Tasks
+
+#### Adding a New Game Entity
+
+```bash
+# 1. Create the entity class
+vim freecivx-server/src/main/java/net/freecivx/game/MyNewEntity.java
+
+# 2. Add to game state
+vim freecivx-server/src/main/java/net/freecivx/game/Game.java
+
+# 3. Add network packets (if needed)
+vim freecivx-server/src/main/java/net/freecivx/server/Packets.java
+
+# 4. Add tests
+vim freecivx-server/src/test/java/net/freecivx/game/MyNewEntityTest.java
+```
+
+#### Improving Performance
+
+```bash
+# Profile key areas:
+# - Map generation (MapGenerator.java)
+# - Pathfinding (PathFinder.java)
+# - Turn processing (Game.java)
+
+# Consider:
+# - Virtual threads for concurrency (already used)
+# - Data structure optimizations
+# - Caching frequently accessed data
+```
+
+#### Adding New Network Features
+
+```bash
+# 1. Define new packet types in Packets.java
+# 2. Add handlers in CivServer.java onMessage()
+# 3. Update client-side code (if needed)
+# 4. Test with WebSocket client
+```
+
+### Dependencies (from pom.xml)
+
+All dependencies are from Maven Central and download successfully in Copilot:
+
+- **org.json** (20251224): JSON parsing and generation
+- **Java-WebSocket** (1.6.0): WebSocket server implementation
+- **Apache HttpClient** (5.6): HTTP client for metaserver communication
+- **SLF4J** (2.0.17): Logging framework
+- **Apache Commons Lang** (3.20.0): Utility functions
+- **Apache Commons Text** (1.15.0): Text processing and escaping
+- **JUnit Jupiter** (6.0.2): Unit testing framework (test scope)
+- **Mockito** (5.2.0): Mocking framework (test scope)
+
+### Integration with Other Components
+
+The freecivx-server communicates with:
+
+1. **Web Clients**: Via WebSocket (port 7800)
+   - Sends/receives JSON packets
+   - Handles player connections
+   - Broadcasts game state updates
+
+2. **Metaserver**: Via HTTP
+   - Registers server availability
+   - Publishes game information
+   - Enables server discovery
+
+3. **Future Integration**:
+   - Could replace traditional C server
+   - Compatible with existing web client
+   - Supports the same game rules and rulesets
 
 ## Setting Up Development Environment
 
@@ -839,6 +1093,177 @@ When something doesn't work:
 - **Advanced Topics**: [ADVANCED.md](ADVANCED.md)
 - **Docker Setup**: [Docker.md](Docker.md)
 
+## Summary: Effective Copilot Workflows for FreecivWorld
+
+Based on practical experience running FreecivWorld in GitHub Copilot, here are the recommended workflows:
+
+### ✅ What Works Excellently in Copilot
+
+1. **Code Exploration and Analysis**
+   - Browse all source code (JavaScript, Java, C, Python)
+   - Use grep/glob tools for searching patterns
+   - Understand architecture and dependencies
+   - Review and plan changes
+
+2. **freecivx-server Development**
+   - Edit all Java source files
+   - Add new features and game mechanics
+   - Write unit tests
+   - Refactor and improve code quality
+   - Study WebSocket implementation
+   - Analyze game state management
+
+3. **JavaScript Client Development**
+   - Edit client-side game logic
+   - Modify UI components
+   - Update 3D rendering code (Three.js)
+   - Add new features to web interface
+   - No build required for testing (just reload browser when running locally)
+
+4. **Documentation**
+   - Update README files
+   - Improve code comments
+   - Write technical documentation
+   - Create development guides
+
+5. **Configuration and Scripts**
+   - Edit bash scripts
+   - Modify Maven pom.xml files
+   - Update configuration files
+   - Improve build scripts
+
+### ⚠️ What Has Limitations in Copilot
+
+1. **Docker Builds**
+   - **Issue**: External downloads blocked (tomcat.apache.org)
+   - **Solution**: Build Docker images locally or in CI/CD
+
+2. **Full Server Deployment**
+   - **Issue**: Cannot run complete stack (Tomcat, databases, C server)
+   - **Solution**: Use CI/CD for integration testing
+
+3. **Java 21 Compilation**
+   - **Issue**: Copilot has Java 17, project needs Java 21+
+   - **Solution**: Edit code in Copilot, build in CI/CD
+
+4. **C Server Building**
+   - **Issue**: Requires full toolchain (autoconf, automake, compilers)
+   - **Solution**: Build locally or in CI/CD
+
+### ❌ What Doesn't Work in Copilot
+
+1. **External Resource Downloads**
+   - Blocked domains prevent some installations
+   - Workaround: Pre-cache dependencies or use CI/CD
+
+2. **Running End-to-End Tests**
+   - Requires full server stack
+   - Solution: Run tests in CI/CD pipeline
+
+3. **Database Operations**
+   - Cannot install/run MySQL or H2 database servers
+   - Solution: Test database code in CI/CD
+
+### Recommended Copilot Development Workflow
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│ 1. EXPLORE IN COPILOT                                       │
+│    • Browse code with view/grep/glob tools                  │
+│    • Understand architecture and components                 │
+│    • Identify files to modify                               │
+└─────────────────────────────────────────────────────────────┘
+                            ↓
+┌─────────────────────────────────────────────────────────────┐
+│ 2. EDIT IN COPILOT                                          │
+│    • Make focused changes to source files                   │
+│    • Update freecivx-server Java code                       │
+│    • Modify JavaScript client code                          │
+│    • Write or update tests                                  │
+│    • Improve documentation                                  │
+└─────────────────────────────────────────────────────────────┘
+                            ↓
+┌─────────────────────────────────────────────────────────────┐
+│ 3. REVIEW IN COPILOT                                        │
+│    • Use git diff to check changes                          │
+│    • Review for correctness and style                       │
+│    • Ensure minimal, surgical changes                       │
+└─────────────────────────────────────────────────────────────┘
+                            ↓
+┌─────────────────────────────────────────────────────────────┐
+│ 4. COMMIT AND PUSH                                          │
+│    • Commit with descriptive message                        │
+│    • Push to trigger CI/CD pipeline                         │
+└─────────────────────────────────────────────────────────────┘
+                            ↓
+┌─────────────────────────────────────────────────────────────┐
+│ 5. VERIFY IN CI/CD                                          │
+│    • CI builds with Java 21+                                │
+│    • All tests run automatically                            │
+│    • Integration tests with full stack                      │
+│    • Review CI results and iterate if needed                │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### Best Practices for Copilot + FreecivWorld
+
+1. **Focus on freecivx-server for deep work**
+   - Most self-contained component
+   - Clear structure and dependencies
+   - Perfect for architectural improvements
+
+2. **Use JavaScript client for UI improvements**
+   - No build required during development
+   - Immediate feedback when testing locally
+   - Great for rapid iteration
+
+3. **Leverage CI/CD for validation**
+   - Don't try to build everything in Copilot
+   - Use CI for final integration testing
+   - Faster iteration than fighting environment issues
+
+4. **Make surgical, focused changes**
+   - Small, reviewable commits
+   - Test one thing at a time
+   - Easier to debug when CI fails
+
+5. **Document your changes**
+   - Update relevant README files
+   - Add code comments for complex logic
+   - Help future developers (and Copilot AI!)
+
+### Example Session: Adding a Feature to freecivx-server
+
+```bash
+# 1. Explore existing implementation
+grep -r "Unit" freecivx-server/src/main/java/net/freecivx/game/ --include="*.java"
+
+# 2. View related files
+view freecivx-server/src/main/java/net/freecivx/game/Unit.java
+view freecivx-server/src/main/java/net/freecivx/game/Game.java
+
+# 3. Edit to add new feature
+# (Make changes to Java files)
+
+# 4. Write test
+# (Add test in freecivx-server/src/test/java/)
+
+# 5. Review changes
+git --no-pager diff freecivx-server/
+
+# 6. Commit and push
+git add freecivx-server/
+git commit -m "Add new unit ability: fortification bonus"
+git push
+
+# 7. Monitor CI
+# - Check GitHub Actions for build results
+# - Review test results
+# - Fix any issues and iterate
+```
+
+This workflow maximizes Copilot's strengths while working around its limitations.
+
 ## Future Improvements
 
 ### Planned Enhancements for Copilot Development
@@ -885,6 +1310,8 @@ This document should evolve with the project. To improve it:
 
 ---
 
-**Last Updated**: January 2026
-**Maintainers**: FreecivWorld Development Team
+**Last Updated**: January 2026  
+**Maintainers**: FreecivWorld Development Team  
 **License**: GNU Affero General Public License v3.0
+
+**Revision Notes**: This document was updated in January 2026 with practical findings from running FreecivWorld inside GitHub Copilot workspaces. Key additions include network limitation warnings, detailed freecivx-server documentation, and recommended Copilot-specific workflows.
