@@ -34,7 +34,7 @@ jobs:
 
       - name: install
         shell: bash
-        run: bash ./scripts/install/install.sh --mode=TEST_MYSQL
+        run: DEB_SKIP_APT_UPDATE=Y bash ./scripts/install/install.sh --mode=TEST_MYSQL
         
         
       - name: Run Playwright tests
