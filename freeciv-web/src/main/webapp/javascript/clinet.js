@@ -18,19 +18,19 @@
 ***********************************************************************/
 
 
-let clinet_last_send = 0;
-let debug_client_speed_list = [];
+var clinet_last_send = 0;
+var debug_client_speed_list = [];
 
-const freeciv_version = "+Freeciv.Web.Devel-3.3";
+var freeciv_version = "+Freeciv.Web.Devel-3.3";
 
-let ws = null;
-let civserverport = null;
+var ws = null;
+var civserverport = null;
 
-let ping_last = new Date().getTime();
-const pingtime_check = 240000;
-let ping_timer = null;
+var ping_last = new Date().getTime();
+var pingtime_check = 240000;
+var ping_timer = null;
 let incomplete_messages_from_server_buffer = "";
-let freecivx_server = true;
+var freecivx_server = true;
 
 /****************************************************************************
   Initialized the Network communication, by requesting a valid server port.
@@ -45,27 +45,28 @@ function network_init()
       return;
   }
 
-  let civclient_request_url = "/civclientlauncher";
-  if ($.getUrlVar('action') !== null) civclient_request_url += `?action=${$.getUrlVar('action')}`;
-  if ($.getUrlVar('action') === null && $.getUrlVar('civserverport') !== null) civclient_request_url += "?";
-  if ($.getUrlVar('civserverport') !== null) civclient_request_url += `&civserverport=${$.getUrlVar('civserverport')}`;
+  var civclient_request_url = "/civclientlauncher";
+  if ($.getUrlVar('action') != null) civclient_request_url += "?action=" + $.getUrlVar('action');
+  if ($.getUrlVar('action') == null && $.getUrlVar('civserverport') != null) civclient_request_url += "?";
+  if ($.getUrlVar('civserverport') != null) civclient_request_url += "&civserverport=" + $.getUrlVar('civserverport');
 
   $.ajax({
    type: 'POST',
    url: civclient_request_url,
-   success: (data, textStatus, request) => {
+   success: function(data, textStatus, request){
        civserverport = request.getResponseHeader('port');
-       const connect_result = request.getResponseHeader('result');
-       if (civserverport !== null && connect_result === "success") {
+       var connect_result = request.getResponseHeader('result');
+       if (civserverport != null && connect_result == "success") {
          websocket_init();
          load_game_check();
 
        } else {
-         show_dialog_message("Network error", `Invalid server port. Error: ${connect_result}`);
+         show_dialog_message("Network error", "Invalid server port. Error: " + connect_result);
        }
    },
-   error: (request, textStatus, errorThrown) => {
-	show_dialog_message("Network error", `Unable to communicate with civclientlauncher servlet . Error: ${textStatus} ${errorThrown} ${request.getResponseHeader('result')}`);
+   error: function (request, textStatus, errorThrown) {
+	show_dialog_message("Network error", "Unable to communicate with civclientlauncher servlet . Error: "
+		+ textStatus + " " + errorThrown + " " + request.getResponseHeader('result'));
    }
   });
 }
@@ -76,14 +77,14 @@ function network_init()
 function websocket_init() {
     if ($.getUrlVar('action') === "local") {
         civserverport = 7800;
-        const freecivx_port = parseFloat(civserverport);
+        var freecivx_port = parseFloat(civserverport);
         freecivx_server = true;
 
         const ws_protocol = (window.location.protocol === 'https:') ? "wss://" : "ws://";
         ws = new WebSocket(`${ws_protocol}${window.location.hostname}:${freecivx_port}/`);
         ws.binaryType = 'arraybuffer';
     } else {
-        let proxyport = parseFloat(civserverport);
+        var proxyport = parseFloat(civserverport);
         if (proxyport < 7800) {
             proxyport += 1000; // Freeciv C server with Websockify.
             freecivx_server = false;
@@ -166,7 +167,7 @@ function handleWebSocketClose(event) {
     $("#turn_done_button, #save_button").button("option", "disabled", true);
     $(window).unbind('beforeunload');
     clearInterval(ping_timer);
-    console.info(`WebSocket connection closed, code+reason: ${event.code}, ${event.reason}`);
+    console.info("WebSocket connection closed, code+reason: " + event.code + ", " + event.reason);
 }
 
 function handleWebSocketError(evt) {
@@ -180,9 +181,9 @@ function handleWebSocketError(evt) {
 ****************************************************************************/
 function check_websocket_ready()
 {
-  if (ws !== null && ws.readyState === 1) {
+  if (ws != null && ws.readyState === 1) {
 
-    const login_message = {"pid":4, "username" : username,
+    var login_message = {"pid":4, "username" : username,
     "capability": freeciv_version, "version_label": "-dev",
     "major_version" : 3, "minor_version" : 1, "patch_version" : 90};
 
@@ -202,7 +203,7 @@ function check_websocket_ready()
 ****************************************************************************/
 function network_stop()
 {
-  if (ws !== null) ws.close();
+  if (ws != null) ws.close();
   ws = null;
 }
 
@@ -210,7 +211,7 @@ function network_stop()
   Sends a request to the server, with a JSON packet.
 ****************************************************************************/
 function send_request(packet_payload) {
-    if (ws === null || ws.readyState !== WebSocket.OPEN) {
+    if (ws == null || ws.readyState !== WebSocket.OPEN) {
         console.error("WebSocket is not open. ReadyState:", ws ? ws.readyState : 'WebSocket not initialized');
         return;
     }
@@ -222,13 +223,13 @@ function send_request(packet_payload) {
 
     try {
         // Convert the string payload to UTF-8 encoded bytes
-        const encoder = new TextEncoder();
-        const utf8_encoded = encoder.encode(packet_payload);
+        let encoder = new TextEncoder();
+        let utf8_encoded = encoder.encode(packet_payload);
 
         // Calculate total length: 2-byte header + payload length + 1-byte null terminator
-        const totalLength = 2 + utf8_encoded.length + 1;
-        const buffer = new ArrayBuffer(totalLength);
-        const view = new DataView(buffer);
+        let totalLength = 2 + utf8_encoded.length + 1;
+        let buffer = new ArrayBuffer(totalLength);
+        let view = new DataView(buffer);
 
         // Write the length of the message (header)
         view.setUint16(0, utf8_encoded.length + 3); // Automatically handles byte order
@@ -259,7 +260,7 @@ function send_request(packet_payload) {
 ****************************************************************************/
 function clinet_debug_collect()
 {
-  const time_elapsed = new Date().getTime() - clinet_last_send;
+  var time_elapsed = new Date().getTime() - clinet_last_send;
   debug_client_speed_list.push(time_elapsed);
   clinet_last_send = new Date().getTime();
 }
@@ -270,9 +271,10 @@ function clinet_debug_collect()
 ****************************************************************************/
 function ping_check()
 {
-  const time_since_last_ping = new Date().getTime() - ping_last;
+  var time_since_last_ping = new Date().getTime() - ping_last;
   if (time_since_last_ping > pingtime_check) {
-    console.log(`Error: Missing PING message from server, indicates server connection problem.`);
+    console.log("Error: Missing PING message from server, "
+                + "indicates server connection problem.");
   }
 }
 
@@ -281,7 +283,7 @@ function ping_check()
 ****************************************************************************/
 function send_message_delayed(message, delay)
 {
-  setTimeout(() => send_message(message), delay);
+  setTimeout("send_message('" + message + "');", delay);
 }
 
 /****************************************************************************
@@ -290,7 +292,7 @@ function send_message_delayed(message, delay)
 function send_message(message)
 {
 
-  const packet = {"pid" : packet_chat_msg_req, 
+  var packet = {"pid" : packet_chat_msg_req, 
                 "message" : message};
   send_request(JSON.stringify(packet));
 }
