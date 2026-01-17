@@ -49,7 +49,7 @@ jobs:
           sudo sysctl -w net.ipv6.conf.all.disable_ipv6=1
           sudo sysctl -w net.ipv6.conf.default.disable_ipv6=1
           # Remove databases in parallel
-          (sudo apt-get remove -y ^postgresql 'mysql.*' || true) &
+          (sudo apt-get remove -y postgresql* 'mysql-*' || true) &
           (sudo rm -rf /var/lib/mysql || true) &
           wait
 
@@ -64,7 +64,9 @@ jobs:
         run: |
           java -version 
           cd freeciv-web
-          # Install Playwright with cache check
+          # Install Playwright with cache check (optimized for CI caching)
+          # Note: This is inline rather than using test-freecivx.sh to leverage
+          # the node_modules and browser cache configured above
           if [ ! -d "node_modules/@playwright/test" ]; then
             npm install @playwright/test --save-dev
           fi
