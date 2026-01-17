@@ -495,6 +495,12 @@ function pregame_settings()
           "<option value='ISLAND'>Island-based</option>" +
           "<option value='FAIR'>Fair islands</option>" +
           //"<option value='FRACTURE'>Fracture map</option>" + FIXME: this one doesnt work.
+    "</select></td></tr>" +
+    "<tr title='Map tile topology: Square or Hexagonal tiles'><td>Map Topology:</td>" +
+    "<td><select name='topology' id='topology'>" +
+      "<option value='0'>Square tiles (ISO)</option>" +
+      "<option value='1'>Hexagonal tiles (Hex)</option>" +
+      "<option value='2' selected>Hexagonal tiles (Iso-Hex, recommended)</option>" +
     "</select></td></tr>"
     + "</table><br>"+
 	  "<span id='settings_info'><i>Freeciv-web can be customized using the command line in many " +

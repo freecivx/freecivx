@@ -47,6 +47,8 @@ var mapview_model_height;
 
 var MAPVIEW_ASPECT_FACTOR = 35.71;
 
+var use_hex_topology = false;  // Track current topology
+
 
 /****************************************************************************
   Start the Freeciv-web WebGL renderer
@@ -164,10 +166,17 @@ async function init_webgl_mapview() {
     terrain_quality = 2;
   }
 
-  const vertexShaderResponse = await fetch('/javascript/webgl/shaders_square/terrain_vertex_shader.glsl');
+  // Detect hexagonal topology
+  use_hex_topology = topo_has_flag(TF_HEX);
+  console.log("Topology detected: " + (use_hex_topology ? "Hexagonal" : "Square"));
+
+  // Load appropriate shaders based on topology
+  const shader_dir = use_hex_topology ? 'shaders_hex' : 'shaders_square';
+  
+  const vertexShaderResponse = await fetch('/javascript/webgl/' + shader_dir + '/terrain_vertex_shader.glsl');
   const vertex_shader = await vertexShaderResponse.text();
 
-  const fragmentShaderResponse = await fetch('/javascript/webgl/shaders_square/terrain_fragment_shader.glsl');
+  const fragmentShaderResponse = await fetch('/javascript/webgl/' + shader_dir + '/terrain_fragment_shader.glsl');
   var fragment_shader = await fragmentShaderResponse.text();
 
   if (maprenderer.capabilities.maxTextures <= 16) {
