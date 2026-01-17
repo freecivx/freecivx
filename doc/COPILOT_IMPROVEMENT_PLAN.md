@@ -6,7 +6,7 @@ This document outlines strategies for improving FreecivWorld development using G
 
 **Key Finding**: The freecivx-server (Java standalone server) is particularly well-suited for development and exploration in GitHub Copilot, as it's a self-contained component with minimal external dependencies.
 
-**✅ VERIFIED (January 17, 2026)**: Successfully built and ran freecivx-server inside GitHub Copilot workspace with Java 17. Full build, run, and test cycle confirmed working. See [Verified Running Experience](#-verified-running-experience-january-2026) section for details.
+**✅ VERIFIED (January 17, 2026)**: Successfully built and ran freecivx-server inside GitHub Copilot workspace with Java 17. Full build, run, and test cycle confirmed working. See [Verified Running Experience](#verified-running-experience-january-2026) section for details.
 
 ## Table of Contents
 
@@ -179,7 +179,15 @@ netstat -tuln | grep 7801
 # ✅ Shows: tcp6 0 0 :::7801 :::* LISTEN
 
 # 7. Stop the server
-kill <pid>  # or use pkill java if only one Java process
+# Option 1: If you saved the PID when starting
+kill $!  # Kills the last background process
+
+# Option 2: Find and kill by process name
+ps aux | grep freecivx-server
+kill <pid_from_output>
+
+# Option 3: Kill all Java processes (use with caution)
+pkill -f freecivx-server
 ```
 
 **What Works:**
