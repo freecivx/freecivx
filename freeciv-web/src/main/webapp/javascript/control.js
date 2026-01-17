@@ -119,14 +119,14 @@ function control_init()
    return check_text_input(event, $("#pregame_text_input"));
   });
 
-  $("#pregame_text_input").blur((event) => {
+  $("#pregame_text_input").blur(function(event) {
       keyboard_input=true;
       if (this.value === '') {
-        $("#pregame_text_input").value='>';
+        $(this).val('>');
       }
   });
 
-  $("#pregame_text_input").focus((event) => {
+  $("#pregame_text_input").focus(function(event) {
     keyboard_input=false;
     if (this.value==='>') this.value='';
   });
