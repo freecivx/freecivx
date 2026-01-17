@@ -20,6 +20,10 @@
 // Hexagonal map utilities
 // Uses offset coordinates (odd-r) for hex tile layout
 
+// Constants for hex coordinate conversion
+const HEX_SCENE_OFFSET_X = -470;
+const HEX_SCENE_OFFSET_Y = 30;
+
 /****************************************************************************
   Converts from map to scene coordinates for hexagonal tiles.
   Uses odd-r horizontal hexagon layout where odd rows are offset right.
@@ -37,8 +41,8 @@ function map_to_scene_coords_hex(x, y)
   // Offset odd rows by half hex width
   var row_offset = (y % 2) * (hex_width / 2);
   
-  result['x'] = Math.floor(-470 + x * hex_width + row_offset);
-  result['y'] = Math.floor(30 + y * hex_height);
+  result['x'] = Math.floor(HEX_SCENE_OFFSET_X + x * hex_width + row_offset);
+  result['y'] = Math.floor(HEX_SCENE_OFFSET_Y + y * hex_height);
 
   return result;
 }
@@ -53,11 +57,11 @@ function scene_to_map_coords_hex(x, y)
   var hex_height = MAPVIEW_ASPECT_FACTOR * 1.5;
   
   // Approximate row first
-  var row = Math.floor((y - 30) / hex_height);
+  var row = Math.floor((y - HEX_SCENE_OFFSET_Y) / hex_height);
   
   // Account for row offset
   var row_offset = (row % 2) * (hex_width / 2);
-  var col = Math.floor((x + 470 - row_offset) / hex_width);
+  var col = Math.floor((x - HEX_SCENE_OFFSET_X - row_offset) / hex_width);
   
   result['x'] = col;
   result['y'] = row;

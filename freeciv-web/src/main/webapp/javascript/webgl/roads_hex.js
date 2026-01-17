@@ -17,6 +17,21 @@
 
 ***********************************************************************/
 
+/**
+ * HEXAGONAL ROADS - TODO
+ * 
+ * This file currently contains square topology road logic copied from roads_square.js.
+ * It needs to be updated for hexagonal topology:
+ * 
+ * 1. Hexagonal tiles have 6 neighbors (not 8)
+ * 2. Road connectivity uses 6-directional movement
+ * 3. Neighbor calculations differ for odd vs even rows in odd-r offset coordinates
+ * 4. Road sprites need to be designed for 6-way connections
+ * 
+ * For now, roads will render incorrectly on hex maps. This is a known limitation
+ * that will be addressed in a future update.
+ */
+
 var roads_texture;
 var roads_data;
 
