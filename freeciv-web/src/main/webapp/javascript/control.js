@@ -519,14 +519,14 @@ function chat_context_dialog_show(recipients) {
   };
 
   for (let i = 0; i < recipients.length; i++) {
-    if (recipients[i].id != chat_send_to) {
+    if (recipients[i].id !== chat_send_to) {
       const ctx = add_row(recipients[i].id, recipients[i].flag,
                         recipients[i].description);
 
-      if (recipients[i].id == null || recipients[i].id == self) {
+      if (recipients[i].id === null || recipients[i].id === self) {
         ctx.font = "18px FontAwesome";
         ctx.fillStyle = "rgba(32, 32, 32, 1)";
-        if (recipients[i].id == null) {
+        if (recipients[i].id === null) {
           ctx.fillText(CHAT_ICON_EVERYBODY, 5, 15);
         } else {
           ctx.fillText(CHAT_ICON_ALLIES, 8, 16);
@@ -562,7 +562,7 @@ function chat_context_dialog_show(recipients) {
 function handle_chat_direction_chosen(ev) {
   const new_send_to = $(this).data("chatSendTo");
   $("#chat_context_dialog").dialog('close');
-  if (new_send_to == null) {
+  if (new_send_to === null) {
     set_chat_direction(null);
   } else {
     set_chat_direction(parseFloat(new_send_to));
@@ -574,14 +574,14 @@ function handle_chat_direction_chosen(ev) {
 ****************************************************************************/
 function set_chat_direction(player_id) {
 
-  if (player_id == chat_send_to) return;
+  if (player_id === chat_send_to) return;
 
   let player_name;
   const icon = $("#chat_direction");
   if (icon.length <= 0) return;
   const ctx = icon[0].getContext("2d");
 
-  if (player_id == null || player_id < 0) {
+  if (player_id === null || player_id < 0) {
     player_id = null;
     ctx.clearRect(0, 0, 29, 20);
     ctx.font = "18px FontAwesome";
@@ -589,7 +589,7 @@ function set_chat_direction(player_id) {
     ctx.fillText(CHAT_ICON_EVERYBODY, 7, 15);
     player_name = 'everybody';
   } else if (client.conn.playing != null
-             && player_id == client.conn.playing['playerno']) {
+             && player_id === client.conn.playing['playerno']) {
     ctx.clearRect(0, 0, 29, 20);
     ctx.font = "18px FontAwesome";
     ctx.fillStyle = "rgba(192, 192, 192, 1)";
@@ -597,7 +597,7 @@ function set_chat_direction(player_id) {
     player_name = 'allies';
   } else {
     const pplayer = players[player_id];
-    if (pplayer == null) return;
+    if (pplayer === null) return;
     player_name = `${pplayer['name']} of the ${nations[pplayer['nation']]['adjective']}`;
     ctx.clearRect(0, 0, 29, 20);
     const flag = sprites["f." + nations[pplayer['nation']]['graphic_str']];
