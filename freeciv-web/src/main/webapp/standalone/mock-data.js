@@ -54,6 +54,9 @@ var EXTRA_MAGLEV = 12;
 var EXTRA_RIVER = 13;
 var EXTRA_OIL_WELL = 14;
 
+// Number of city styles that will be initialized
+var MOCK_CITY_STYLES_COUNT = 4;
+
 /**
  * Initialize mock map data
  */
@@ -204,7 +207,7 @@ function init_mock_cities() {
       owner: 1,
       tile: tile_index,
       size: 3 + Math.floor(Math.random() * 5),
-      style: i % 4,  // Rotate through available city styles
+      style: i % MOCK_CITY_STYLES_COUNT,  // Rotate through available city styles
       pplhappy: [3],
       pplcontent: [2],
       pplunhappy: [0],
@@ -360,7 +363,7 @@ function init_mock_game() {
   // Mock additional game objects
   connections = {};
   governments = {};
-  improvements = {};
+  // Don't reassign improvements - it's a const in improvement.js
   techs = {};
   
   console.log("Mock game state initialized");
@@ -413,42 +416,24 @@ function init_mock_terrains() {
  * Initialize mock city rules (styles)
  */
 function init_mock_city_rules() {
-  city_rules = {};
+  // city_rules is declared in city.js, just populate it
+  if (typeof city_rules === 'undefined') {
+    window.city_rules = {};
+  }
   
   // Default city styles
-  city_rules[0] = {
-    id: 0,
-    name: "European",
-    rule_name: "European",
-    graphic: "city.european",
-    graphic_alt: "city.classical"
-  };
+  var styles = [
+    { id: 0, name: "European", rule_name: "European", graphic: "city.european", graphic_alt: "city.classical" },
+    { id: 1, name: "Classical", rule_name: "Classical", graphic: "city.classical", graphic_alt: "city.european" },
+    { id: 2, name: "Modern", rule_name: "Modern", graphic: "city.modern", graphic_alt: "city.european" },
+    { id: 3, name: "Babylonian", rule_name: "Babylonian", graphic: "city.babylonian", graphic_alt: "city.classical" }
+  ];
   
-  city_rules[1] = {
-    id: 1,
-    name: "Classical",
-    rule_name: "Classical",
-    graphic: "city.classical",
-    graphic_alt: "city.european"
-  };
+  for (var i = 0; i < styles.length; i++) {
+    city_rules[styles[i].id] = styles[i];
+  }
   
-  city_rules[2] = {
-    id: 2,
-    name: "Modern",
-    rule_name: "Modern",
-    graphic: "city.modern",
-    graphic_alt: "city.european"
-  };
-  
-  city_rules[3] = {
-    id: 3,
-    name: "Babylonian",
-    rule_name: "Babylonian",
-    graphic: "city.babylonian",
-    graphic_alt: "city.classical"
-  };
-  
-  console.log("Mock city rules initialized");
+  console.log("Mock city rules initialized: " + styles.length + " styles");
 }
 
 /**
