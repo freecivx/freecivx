@@ -31,55 +31,47 @@ var height_offset = 0;
 function bootstrap_standalone_renderer() {
   console.log("=== Bootstrapping Standalone Renderer ===");
   
-  // Set graphics quality
-  graphics_quality = QUALITY_HIGH;
-  terrain_quality = 8;
+  // Set graphics quality using object destructuring
+  Object.assign(window, {
+    graphics_quality: QUALITY_HIGH,
+    terrain_quality: 8
+  });
   
-  // Initialize map view dimensions
-  var mapview_width = window.innerWidth;
-  var mapview_height = window.innerHeight;
+  // Initialize map view dimensions using destructuring
+  const { innerWidth: mapview_width, innerHeight: mapview_height } = window;
   
-  console.log("Viewport size:", mapview_width, "x", mapview_height);
+  console.log(`Viewport size: ${mapview_width} x ${mapview_height}`);
   
-  // Call init_webgl_renderer() as specified in requirements
-  try {
-    init_webgl_renderer();
-    console.log("WebGL renderer initialized");
-  } catch (e) {
-    console.error("Error initializing WebGL renderer:", e);
-    alert("Error initializing WebGL renderer: " + e.message);
-    return;
-  }
+  // Define initialization steps with modern array methods
+  const initSteps = [
+    { fn: init_webgl_renderer, name: 'WebGL renderer initialized' },
+    { fn: webgl_start_renderer, name: 'WebGL renderer started' },
+    { fn: init_webgl_mapview, name: 'WebGL mapview initialized' }
+  ];
   
-  // Initialize WebGL renderer
-  try {
-    webgl_start_renderer();
-    console.log("WebGL renderer started");
-  } catch (e) {
-    console.error("Error starting WebGL renderer:", e);
-    alert("Error starting WebGL renderer: " + e.message);
-    return;
-  }
+  // Execute initialization steps using array methods
+  const success = initSteps.every(step => {
+    try {
+      step.fn();
+      console.log(step.name);
+      return true;
+    } catch (e) {
+      console.error(`Error ${step.name}:`, e);
+      alert(`Error ${step.name}: ${e.message}`);
+      return false;
+    }
+  });
   
-  // Initialize map view
-  try {
-    init_webgl_mapview();
-    console.log("WebGL mapview initialized");
-  } catch (e) {
-    console.error("Error initializing mapview:", e);
-    alert("Error initializing mapview: " + e.message);
+  if (!success) {
     return;
   }
   
   // Start render loop
   start_standalone_render_loop();
   
-  // Hide loading overlay
-  setTimeout(function() {
-    var overlay = document.getElementById('loading-overlay');
-    if (overlay) {
-      overlay.style.display = 'none';
-    }
+  // Hide loading overlay using optional chaining
+  setTimeout(() => {
+    document.getElementById('loading-overlay')?.style.setProperty('display', 'none');
   }, 500);
   
   console.log("=== Standalone Renderer Bootstrap Complete ===");
@@ -91,27 +83,23 @@ function bootstrap_standalone_renderer() {
 function start_standalone_render_loop() {
   console.log("Starting render loop");
   
-  function animate() {
+  const animate = () => {
     requestAnimationFrame(animate);
     
     try {
-      // Update controls if they exist
-      if (typeof controls !== 'undefined' && controls && controls.update) {
-        controls.update();
-      }
+      // Update controls if they exist using optional chaining
+      controls?.update?.();
       
-      // Render the scene
-      if (typeof maprenderer !== 'undefined' && maprenderer) {
-        if (typeof anaglyph_effect !== 'undefined' && anaglyph_effect && anaglyph_3d_enabled) {
-          anaglyph_effect.render(scene, camera);
-        } else {
-          maprenderer.render(scene, camera);
-        }
+      // Render the scene using modern conditional logic
+      if (maprenderer) {
+        const shouldUseAnaglyph = anaglyph_effect && anaglyph_3d_enabled;
+        const renderer = shouldUseAnaglyph ? anaglyph_effect : maprenderer;
+        renderer.render(scene, camera);
       }
     } catch (e) {
       console.error("Error in render loop:", e);
     }
-  }
+  };
   
   animate();
 }
@@ -122,14 +110,18 @@ function start_standalone_render_loop() {
 function init_standalone_environment() {
   console.log("=== Initializing Standalone Environment ===");
   
-  // Wait for DOM to be ready
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', function() {
-      init_standalone_after_dom_ready();
+  // Wait for DOM to be ready using cleaner Promise-based approach
+  const ensureDOMReady = () => {
+    return new Promise(resolve => {
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', resolve, { once: true });
+      } else {
+        resolve();
+      }
     });
-  } else {
-    init_standalone_after_dom_ready();
-  }
+  };
+  
+  ensureDOMReady().then(init_standalone_after_dom_ready);
 }
 
 /**
@@ -147,13 +139,13 @@ function init_standalone_after_dom_ready() {
     webgl_preload();
     
     // Wait for models to load, then bootstrap renderer
-    setTimeout(function() {
+    setTimeout(() => {
       bootstrap_standalone_renderer();
     }, 3000); // Give 3 seconds for initial assets to load
     
   } catch (e) {
     console.error("Error during preload:", e);
-    alert("Error during preload: " + e.message);
+    alert(`Error during preload: ${e.message}`);
   }
 }
 
@@ -161,27 +153,33 @@ function init_standalone_after_dom_ready() {
  * Show loading progress
  */
 function show_splash_screen() {
-  var canvas = document.getElementById('mapcanvas');
-  if (canvas) {
-    var ctx = canvas.getContext('2d');
-    if (ctx) {
-      ctx.fillStyle = '#1a1a2e';
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
-      ctx.fillStyle = '#ffffff';
-      ctx.font = '20px Arial';
-      ctx.textAlign = 'center';
-      ctx.fillText('Loading Freeciv-web Standalone...', canvas.width / 2, canvas.height / 2);
-    }
+  const canvas = document.getElementById('mapcanvas');
+  const ctx = canvas?.getContext('2d');
+  
+  if (ctx) {
+    const { width, height } = canvas;
+    // Use modern canvas drawing with method chaining where possible
+    ctx.fillStyle = '#1a1a2e';
+    ctx.fillRect(0, 0, width, height);
+    
+    Object.assign(ctx, {
+      fillStyle: '#ffffff',
+      font: '20px Arial',
+      textAlign: 'center'
+    });
+    
+    ctx.fillText('Loading Freeciv-web Standalone...', width / 2, height / 2);
   }
+  
   console.log("Showing splash screen");
 }
 
 /**
  * Override webgl_preload_complete to skip network init
  */
-var original_webgl_preload_complete = window.webgl_preload_complete;
+const original_webgl_preload_complete = window.webgl_preload_complete;
 window.webgl_preload_complete = function() {
-  if (typeof STANDALONE_MODE !== 'undefined' && STANDALONE_MODE) {
+  if (STANDALONE_MODE) {
     console.log("Mock webgl_preload_complete - skipping network_init");
     // Don't call network_init in standalone mode
   } else if (original_webgl_preload_complete) {
