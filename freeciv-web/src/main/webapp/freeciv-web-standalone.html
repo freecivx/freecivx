@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Freeciv-web Standalone 3D Testing Environment</title>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+body {
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  background-color: #000;
+  font-family: Arial, sans-serif;
+}
+
+#mapcanvas {
+  width: 100vw;
+  height: 100vh;
+  display: block;
+}
+
+#loading-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.9);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  color: white;
+}
+
+#loading-overlay h1 {
+  font-size: 32px;
+  margin-bottom: 20px;
+}
+
+#loading-overlay p {
+  font-size: 16px;
+  margin: 10px 0;
+}
+
+#loading-progress {
+  width: 400px;
+  height: 30px;
+  border: 2px solid #4a90e2;
+  border-radius: 15px;
+  margin-top: 20px;
+  overflow: hidden;
+  background: #1a1a2e;
+}
+
+#loading-bar {
+  height: 100%;
+  width: 0%;
+  background: linear-gradient(90deg, #4a90e2, #357abd);
+  transition: width 0.3s ease;
+}
+
+#info-panel {
+  position: fixed;
+  top: 50%;
+  right: 10px;
+  transform: translateY(-50%);
+  background: rgba(0, 0, 0, 0.8);
+  color: white;
+  padding: 15px;
+  border-radius: 5px;
+  font-size: 12px;
+  max-width: 200px;
+  z-index: 1000;
+}
+
+#info-panel h3 {
+  margin: 0 0 10px 0;
+  font-size: 14px;
+}
+
+#info-panel ul {
+  margin: 5px 0;
+  padding-left: 20px;
+}
+
+#info-panel li {
+  margin: 3px 0;
+}
+</style>
+
+<!-- Three.js and dependencies -->
+<script type="importmap">
+{
+  "imports": {
+    "three": "/javascript/webgl/libs/threejs/three.module.min.js"
+  }
+}
+</script>
+
+<script type="module">
+  import * as THREE from 'three';
+  window.THREE = THREE;
+
+  import { GLTFLoader } from '/javascript/webgl/libs/GLTFLoader.js';
+  window.GLTFLoader = GLTFLoader;
+
+  import { OrbitControls } from '/javascript/webgl/libs/OrbitControls.js';
+  window.OrbitControls = OrbitControls;
+
+  import { AnaglyphEffect } from '/javascript/webgl/effects/AnaglyphEffect.js';
+  window.AnaglyphEffect = AnaglyphEffect;
+
+  import { DRACOLoader } from '/javascript/webgl/libs/DRACOLoader.js';
+  window.DRACOLoader = DRACOLoader;
+  
+  console.log("Three.js modules loaded");
+</script>
+
+<script type="text/javascript">
+// Set standalone mode flag
+var STANDALONE_MODE = true;
+console.log("=== Freeciv-web Standalone Mode ===");
+
+// Mock constants that might be needed
+var C_S_INITIAL = 0;
+var C_S_PREPARING = 1;
+var C_S_RUNNING = 5;
+var C_S_OVER = 6;
+
+var QUALITY_MEDIUM = 2;
+var QUALITY_HIGH = 3;
+
+// Mock jQuery minimal functions if not loaded
+if (typeof $ === 'undefined') {
+  window.$ = function(selector) {
+    if (selector === window || selector === document) {
+      return {
+        width: function() { return window.innerWidth; },
+        height: function() { return window.innerHeight; }
+      };
+    }
+    var elem = typeof selector === 'string' ? document.querySelector(selector) : selector;
+    return {
+      html: function(html) {
+        if (arguments.length === 0) {
+          return elem ? elem.innerHTML : '';
+        }
+        if (elem) elem.innerHTML = html;
+        return this;
+      },
+      fadeIn: function() { return this; },
+      fadeOut: function() { return this; },
+      hide: function() { return this; },
+      show: function() { return this; }
+    };
+  };
+  
+  $.blockUI = function() { console.log("$.blockUI()"); };
+  $.unblockUI = function() { 
+    console.log("$.unblockUI()");
+    var overlay = document.getElementById('loading-overlay');
+    if (overlay) {
+      overlay.style.display = 'none';
+    }
+  };
+}
+</script>
+
+<!-- Core Freeciv-web JavaScript files (minimal set needed for 3D rendering) -->
+<script type="text/javascript" src="/javascript/fc_types.js"></script>
+<script type="text/javascript" src="/javascript/bitvector.js"></script>
+<script type="text/javascript" src="/javascript/utility.js"></script>
+<script type="text/javascript" src="/javascript/map.js"></script>
+<script type="text/javascript" src="/javascript/tile.js"></script>
+<script type="text/javascript" src="/javascript/terrain.js"></script>
+<script type="text/javascript" src="/javascript/extra.js"></script>
+<script type="text/javascript" src="/javascript/player.js"></script>
+<script type="text/javascript" src="/javascript/nation.js"></script>
+<script type="text/javascript" src="/javascript/game.js"></script>
+<script type="text/javascript" src="/javascript/unittype.js"></script>
+<script type="text/javascript" src="/javascript/unit.js"></script>
+<script type="text/javascript" src="/javascript/city.js"></script>
+<script type="text/javascript" src="/javascript/cities.js"></script>
+
+<!-- WebGL/3D rendering modules -->
+<script type="text/javascript" src="/javascript/webgl/renderer_init.js"></script>
+<script type="text/javascript" src="/javascript/webgl/preload.js"></script>
+<script type="text/javascript" src="/javascript/webgl/mapview_webgl.js"></script>
+<script type="text/javascript" src="/javascript/webgl/heightmap_square.js"></script>
+<script type="text/javascript" src="/javascript/webgl/map_tiletype.js"></script>
+<script type="text/javascript" src="/javascript/webgl/camera_square.js"></script>
+<script type="text/javascript" src="/javascript/webgl/mapctrl_square.js"></script>
+<script type="text/javascript" src="/javascript/webgl/maputil_square.js"></script>
+<script type="text/javascript" src="/javascript/webgl/borders.js"></script>
+<script type="text/javascript" src="/javascript/webgl/animation.js"></script>
+<script type="text/javascript" src="/javascript/webgl/sprites.js"></script>
+<script type="text/javascript" src="/javascript/webgl/city.js"></script>
+<script type="text/javascript" src="/javascript/webgl/text.js"></script>
+<script type="text/javascript" src="/javascript/webgl/goto_square.js"></script>
+<script type="text/javascript" src="/javascript/webgl/instances.js"></script>
+<script type="text/javascript" src="/javascript/webgl/roads_square.js"></script>
+<script type="text/javascript" src="/javascript/webgl/object_position_handler_square.js"></script>
+<script type="text/javascript" src="/javascript/webgl/tile_visibility_handler.js"></script>
+
+<!-- Standalone testing modules -->
+<script type="text/javascript" src="/standalone/mock-server.js"></script>
+<script type="text/javascript" src="/standalone/mock-data.js"></script>
+<script type="text/javascript" src="/standalone/renderer-bootstrap.js"></script>
+<script type="text/javascript" src="/standalone/test-scenarios.js"></script>
+<script type="text/javascript" src="/standalone/screenshot-capture.js"></script>
+<script type="text/javascript" src="/standalone/test-runner.js"></script>
+
+<script type="text/javascript">
+// Update loading progress
+function update_loading_progress(percent, message) {
+  var bar = document.getElementById('loading-bar');
+  var msg = document.getElementById('loading-message');
+  if (bar) bar.style.width = percent + '%';
+  if (msg) msg.textContent = message;
+}
+
+// Initialize when page loads
+window.addEventListener('load', function() {
+  console.log("Page loaded, initializing standalone environment...");
+  update_loading_progress(50, "Initializing...");
+  
+  setTimeout(function() {
+    try {
+      init_standalone_environment();
+      update_loading_progress(100, "Complete!");
+    } catch (e) {
+      console.error("Initialization error:", e);
+      alert("Error initializing: " + e.message);
+    }
+  }, 100);
+});
+
+// Handle window resize
+window.addEventListener('resize', function() {
+  if (typeof camera !== 'undefined' && camera) {
+    camera.aspect = window.innerWidth / window.innerHeight;
+    camera.updateProjectionMatrix();
+  }
+  if (typeof maprenderer !== 'undefined' && maprenderer) {
+    maprenderer.setSize(window.innerWidth, window.innerHeight);
+  }
+});
+
+console.log("Standalone HTML initialized");
+</script>
+
+</head>
+<body>
+
+<div id="loading-overlay">
+  <h1>Freeciv-web Standalone 3D Testing</h1>
+  <p>Loading 3D rendering engine...</p>
+  <div id="loading-progress">
+    <div id="loading-bar"></div>
+  </div>
+  <p id="loading-message">Initializing...</p>
+  <p style="margin-top: 30px; font-size: 12px; color: #888;">
+    No server connection required
+  </p>
+</div>
+
+<canvas id="mapcanvas"></canvas>
+
+<div id="info-panel">
+  <h3>Standalone Mode</h3>
+  <p><strong>Status:</strong> Active</p>
+  <p><strong>Controls:</strong></p>
+  <ul>
+    <li>Mouse: Rotate view</li>
+    <li>Scroll: Zoom in/out</li>
+    <li>Right-click drag: Pan</li>
+  </ul>
+  <p style="margin-top: 10px; font-size: 11px; color: #aaa;">
+    Test controls will appear in the top corners after loading.
+  </p>
+</div>
+
+<div id="download_progress" style="display:none;"></div>
+
+</body>
+</html>
