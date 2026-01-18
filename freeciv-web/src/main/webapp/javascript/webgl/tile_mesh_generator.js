@@ -186,13 +186,85 @@ function create_or_update_tile_mesh(x, y, is_hex) {
 function init_tile_meshes(is_hex) {
   console.log("Initializing " + (is_hex ? "hexagonal" : "square") + " tile meshes...");
   
+  // For now, use simple materials per terrain type for testing
+  // TODO: Integrate with the advanced shader system
+  var material_cache = {};
+  
   for (var y = 0; y < map.ysize; y++) {
     for (var x = 0; x < map.xsize; x++) {
-      create_or_update_tile_mesh(x, y, is_hex);
+      var key = x + "," + y;
+      var ptile = map_pos_to_tile(x, y);
+      
+      if (!ptile) continue;
+      
+      var height = ptile['height'] || 0.5;
+      
+      // Create geometry based on topology
+      var geometry;
+      if (is_hex) {
+        geometry = create_hex_tile_geometry(x, y, height);
+      } else {
+        geometry = create_square_tile_geometry(x, y, height);
+      }
+      
+      tile_geometries[key] = geometry;
+      
+      // Get terrain type for basic color
+      var terrain = tile_terrain(ptile);
+      var terrain_name = terrain ? terrain['name'] : 'unknown';
+      
+      // Create simple colored material based on terrain
+      // TODO: Replace with proper terrain shader material
+      var material;
+      if (!material_cache[terrain_name]) {
+        var color = get_terrain_color(terrain_name);
+        material_cache[terrain_name] = new THREE.MeshBasicMaterial({
+          color: color,
+          side: THREE.DoubleSide
+        });
+      }
+      material = material_cache[terrain_name];
+      
+      // Create mesh
+      var mesh = new THREE.Mesh(geometry, material);
+      mesh.receiveShadow = false;
+      mesh.castShadow = false;
+      tile_meshes[key] = mesh;
+      
+      if (typeof scene !== 'undefined') {
+        scene.add(mesh);
+      }
     }
   }
   
   console.log("Created " + Object.keys(tile_meshes).length + " tile meshes.");
+}
+
+/**
+ * Get a basic color for a terrain type (for testing)
+ * @param {string} terrain_name - Name of terrain type
+ * @returns {number} Color as hex number
+ */
+function get_terrain_color(terrain_name) {
+  var terrain_colors = {
+    'Ocean': 0x1e90ff,
+    'Coast': 0x4169e1,
+    'Deep Ocean': 0x000080,
+    'Glacier': 0xf0f8ff,
+    'Desert': 0xf4a460,
+    'Forest': 0x228b22,
+    'Grassland': 0x7cfc00,
+    'Hills': 0x8b7355,
+    'Jungle': 0x006400,
+    'Mountains': 0x696969,
+    'Plains': 0x9acd32,
+    'Swamp': 0x556b2f,
+    'Tundra': 0xdcdcdc,
+    'Lake': 0x4682b4,
+    'unknown': 0x808080
+  };
+  
+  return terrain_colors[terrain_name] || 0x808080;
 }
 
 /**

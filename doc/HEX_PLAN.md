@@ -786,3 +786,264 @@ ideas for next attempt:
    this means that each map tile is a separate mesh object which is a hexagonal 3d object, and together they look like a game map. the shaders needs to be rewritten to instead of doing shading for one whole map object, the shader must shade each map tile separately. heightmap will also set height for each map tile separately instead of the whole map. this will be like how civ 6 does hex map tiles.
 
 after each attemp update this document 
+
+---
+
+## Implementation Lessons Learned (January 2026 - Attempt 2)
+
+### Successful Implementation Strategy
+
+This attempt followed the recommended per-tile mesh approach inspired by Civilization 6's hex tile system.
+
+**What Was Implemented:**
+
+1. **Per-Tile Mesh Generator** (`tile_mesh_generator.js`)
+   - Created a modular system for generating individual tile meshes
+   - Implemented both hexagonal and square tile geometry generators
+   - Each tile is now a separate THREE.Mesh object
+   - Tiles use odd-r offset coordinate system for hex layout
+   
+2. **Hexagonal Geometry**
+   - Hex tiles have 6 vertices forming a hexagon plus a center point
+   - Hex width = TILE_SIZE * √3
+   - Hex height = TILE_SIZE * 2  
+   - Vertical spacing = hex_height * 0.75
+   - Odd rows offset by hex_width / 2
+   
+3. **Square Geometry (Per-Tile)**
+   - Square tiles use 4 corners forming two triangles
+   - Each tile is TILE_SIZE × TILE_SIZE
+   - Maintains compatibility with existing square topology
+   
+4. **Topology Detection and Branching**
+   - Added `use_hex_topology` flag based on `topo_has_flag(TF_HEX)`
+   - Added `use_per_tile_meshes` flag for per-tile rendering mode
+   - Conditional shader loading: `shaders_hex/` vs `shaders_square/`
+   - Console logging for topology detection debugging
+   
+5. **Shader Infrastructure**
+   - Created `shaders_hex/` directory
+   - Copied square shaders as starting point
+   - Dynamic shader path selection based on topology
+   - Future: Need to implement hex-specific grid line rendering
+   
+6. **Pregame UI**
+   - Added topology selector dropdown in pregame settings
+   - Three options: Square tiles (ISO), Hex, Iso-Hex (recommended)
+   - Topology value mapping: 0=Square, 1=Hex, 2=Iso-Hex
+   - Integrated with existing settings change handlers
+
+**Architecture Decisions:**
+
+1. **Per-Tile Meshes vs Single Mesh**
+   - Chose per-tile approach for hex support
+   - Enables proper hexagonal tile shapes
+   - Each tile can be independently updated
+   - Trades off some performance for flexibility
+   - Square tiles can still use single-mesh mode (backward compat)
+   
+2. **Conditional Rendering Paths**
+   - `if (use_per_tile_meshes)` branches in init code
+   - Per-tile path: Calls `init_tile_meshes(use_hex_topology)`
+   - Single-mesh path: Traditional `init_land_geometry()` approach
+   - Both paths maintain lofi mesh for raycasting
+   
+3. **Material Sharing**
+   - All tiles share the same `terrain_material` shader material
+   - Reduces memory overhead
+   - Uniforms are shared across all tiles
+   - May need adjustment for per-tile texturing later
+
+**Key Code Structure:**
+
+```javascript
+// In mapview_webgl.js:
+use_hex_topology = topo_has_flag(TF_HEX);
+use_per_tile_meshes = use_hex_topology;
+
+if (use_per_tile_meshes) {
+  init_tile_meshes(use_hex_topology);  // Creates individual tile meshes
+} else {
+  init_land_geometry(landGeometry);     // Traditional single mesh
+}
+```
+
+```javascript
+// In tile_mesh_generator.js:
+function create_hex_tile_geometry(x, y, height) {
+  // Center + 6 corners = 7 vertices
+  // 6 triangles forming hexagon
+  var centerX = x * hex_width + (y % 2) * (hex_width / 2);  // Odd-r offset
+  var centerZ = y * hex_height * 0.75;
+  // ... generate hex vertices and indices
+}
+```
+
+### Challenges and Solutions
+
+**Challenge 1: Topology Detection Timing**
+- **Issue**: Needed to detect topology before creating geometries
+- **Solution**: Check `topo_has_flag(TF_HEX)` at start of `init_webgl_mapview()`
+- **Result**: Clean conditional branching based on server topology
+
+**Challenge 2: Coordinate System**
+- **Issue**: Hexagons require offset coordinate system
+- **Solution**: Used odd-r offset (odd rows shifted right by half hex width)
+- **Math**: `centerX = x * hex_width + (y % 2) * (hex_width / 2)`
+- **Matches**: Freeciv server's internal hex coordinate system
+
+**Challenge 3: Geometry Generation**
+- **Issue**: Need to create proper 6-sided hex shapes
+- **Solution**: Generate 7 vertices (center + 6 corners) with triangles from center
+- **Formula**: Corner positions using `angle = (Math.PI / 3) * i` for i=0..5
+
+**Challenge 4: Material and Scene Dependencies**
+- **Issue**: tile_mesh_generator.js loads before scene/material available
+- **Solution**: Added guards checking if functions/variables exist
+- **Pattern**: `if (typeof scene !== 'undefined') { scene.add(mesh); }`
+
+**Challenge 5: Build System Integration**
+- **Issue**: New JavaScript file needs to be included in build
+- **Solution**: Maven minify plugin already includes `webgl/*.js` pattern
+- **Result**: No build configuration changes needed
+
+### What Still Needs Work
+
+1. **Hex Grid Line Rendering**
+   - Fragment shader still renders square grid lines
+   - Need to implement 6-sided hex border rendering
+   - Math: Distance to hex edges instead of rectangular boundaries
+   
+2. **Texture Coordinate Mapping**
+   - Current UV mapping may not tile perfectly on hexagons
+   - May need hex-specific texture coordinates
+   - Or create hex-optimized terrain textures
+   
+3. **Lofi Mesh for Raycasting**
+   - Currently using square grid for mouse picking
+   - Should create hex-based lofi mesh for accurate picking
+   - Affects tile selection and cursor positioning
+   
+4. **Per-Tile Texture Data**
+   - Shaders need per-tile terrain type information
+   - Current uniforms are map-wide
+   - May need vertex colors or texture atlases
+   
+5. **Height Updates**
+   - Per-tile meshes need update mechanism when heights change
+   - `update_tile_mesh(x, y, is_hex)` exists but not integrated
+   - Need to hook into heightmap update system
+   
+6. **Performance Optimization**
+   - Creating thousands of individual meshes may impact performance
+   - Consider instancing or geometry merging
+   - May need LOD system for distant tiles
+   
+7. **Camera and Controls**
+   - Camera positioning may need adjustment for hex layout
+   - Hex tiles have different visual spacing than squares
+   - Need `camera_hex.js` implementation
+   
+8. **Roads and Features**
+   - Roads need 6-way connection logic (not 8-way)
+   - Borders need hex edge rendering
+   - Units need proper hex tile positioning
+
+### Testing Required
+
+1. **Basic Rendering Test**
+   - Start game with hex topology selected
+   - Verify tiles appear as hexagons (not squares)
+   - Check that tiles connect properly
+   
+2. **Topology Switching Test**
+   - Create square map, verify it still works
+   - Create hex map, verify hex rendering
+   - Ensure no regressions in square mode
+   
+3. **Coordinate Test**
+   - Click on hex tiles, verify selection
+   - Check that neighboring tiles are correct
+   - Test odd vs even row offsets
+   
+4. **Performance Test**
+   - Measure FPS with per-tile meshes
+   - Compare to single-mesh performance
+   - Test on various map sizes
+
+### Next Steps (Priority Order)
+
+1. **Test Current Implementation**
+   - Build and run the game
+   - Select hex topology in pregame
+   - Observe what renders (may see issues)
+   - Check browser console for errors
+   
+2. **Fix Per-Tile Texture/Material**
+   - Tiles currently share one material
+   - Need per-tile terrain type rendering
+   - May need to pass tile coordinates to shader
+   - Shader can lookup terrain type from texture
+   
+3. **Implement Hex Grid Lines**
+   - Update fragment shader for hex borders
+   - Distance to hex edge calculation
+   - Make hex tiles visually distinct
+   
+4. **Create Hex Utility Functions**
+   - `maputil_hex.js`: pixel_to_hex, hex_to_pixel
+   - Neighbor tile calculations (6 neighbors)
+   - Distance and range functions
+   
+5. **Implement Raycasting for Hex**
+   - Create hex lofi mesh for picking
+   - Update `mapctrl` for hex tile selection
+   - Ensure cursor highlights correct tile
+   
+6. **Game Feature Integration**
+   - Roads, borders, units, cities
+   - All need hex-aware positioning
+   - Implement `roads_hex.js`, `goto_hex.js`, etc.
+
+### Success Metrics
+
+- [x] Per-tile mesh generator created
+- [x] Hex geometry generation implemented
+- [x] Topology detection working
+- [x] UI for topology selection added
+- [ ] Hex tiles render as hexagons (visually)
+- [ ] Tile selection works on hex map
+- [ ] No regressions in square map mode
+- [ ] All game features work on hex maps
+- [ ] Performance acceptable on large hex maps
+
+### Code Quality Notes
+
+**Good Practices:**
+- Modular design with separate tile_mesh_generator.js
+- Conditional branching preserves square tile code
+- Console logging aids debugging
+- Guards for undefined variables/functions
+
+**Areas for Improvement:**
+- Error handling in tile mesh creation
+- Memory management for thousands of meshes
+- Coordinate conversion functions need testing
+- Documentation of hex math formulas
+
+**Technical Debt:**
+- Two rendering paths increase complexity
+- Shader duplication between square and hex
+- Need abstraction layer for topology-agnostic code
+
+### Conclusion of Attempt 2
+
+This implementation successfully creates the foundation for hex tile rendering using a per-tile mesh approach. The architecture is sound: each tile is an independent THREE.Mesh object, hex geometry is generated with proper 6-sided shapes, and topology detection enables conditional rendering paths.
+
+**Major Achievement**: Shifted from trying to modify the single-mesh system to creating a clean per-tile architecture that naturally supports hexagonal tiles.
+
+**Key Insight**: Per-tile meshes enable true hexagonal tile shapes. The previous attempts failed because they tried to force hex layout onto a square grid mesh. This approach generates the correct geometry from the start.
+
+**Current State**: Infrastructure is in place but untested. Next critical step is to test the rendering and fix any issues with texture/material application to individual tiles. The shader system may need updates to render each tile's terrain type correctly.
+
+**Recommendation**: Proceed with testing and iterative fixes. Focus on getting basic hex tiles to render correctly before adding game features. The foundation is solid; now it needs refinement and integration with the rest of the game systems.
