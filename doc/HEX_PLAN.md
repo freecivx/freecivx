@@ -779,3 +779,7 @@ A successful implementation requires:
 **Recommendation**: Consider starting with a minimal proof-of-concept that focuses solely on rendering hexagonal terrain tiles correctly, without roads, borders, or advanced features. Once basic hex rendering works reliably, features can be added incrementally.
 
 This plan provides a roadmap for implementing complete hexagonal map tile support in FreecivWorld.net while maintaining compatibility with existing square tile maps.
+
+ideas for next attempt:
+1. first split current map geometry (terrain geometry) from one large mesh to one mesh per tile.
+2. then implement hex map tiles according to this plan.
