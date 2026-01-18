@@ -100,6 +100,12 @@ function bootstrap_standalone_renderer() {
   // Position camera to view the map
   position_camera_for_standalone();
   
+  // Manually trigger first render frame to kickstart the animation loop
+  // The setAnimationLoop() in webgl_start_renderer() should handle subsequent frames
+  if (typeof animate_webgl === 'function') {
+    animate_webgl();
+  }
+  
   // Hide loading overlay using optional chaining
   setTimeout(() => {
     const overlay = document.getElementById('loading-overlay');
