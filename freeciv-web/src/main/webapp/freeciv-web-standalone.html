@@ -328,65 +328,32 @@ var C_S_OVER = 6;        // Game is over
 // Quality presets for rendering (affects detail level, performance)
 var QUALITY_MEDIUM = 2;
 var QUALITY_HIGH = 3;
+</script>
 
-// *** JQUERY MOCK ***
-// Minimal jQuery implementation for compatibility with legacy code
-// Freeciv-web uses jQuery extensively, but we don't need full library for standalone
-if (typeof $ === 'undefined') {
-  // Basic selector function (mimics jQuery $())
-  window.$ = function(selector) {
-    // Handle window/document selectors for width/height queries
-    if (selector === window || selector === document) {
-      return {
-        width: function() { return window.innerWidth; },
-        height: function() { return window.innerHeight; }
-      };
+<!-- ============================================================================
+     JQUERY LIBRARY AND PLUGINS
+     ============================================================================
+     Load the real jQuery library and required plugins for client functionality
+     ============================================================================ -->
+<script type="text/javascript" src="/javascript/libs/jquery.min.js"></script>
+<script type="text/javascript" src="/javascript/libs/jquery-ui.min.js"></script>
+<script type="text/javascript" src="/javascript/libs/jquery.blockUI.js"></script>
+<script type="text/javascript" src="/javascript/libs/jquery.contextMenu.js"></script>
+
+<script type="text/javascript">
+// *** INTERCEPT CIVCLIENT_INIT AUTO-RUN ***
+// civclient.js has a $(document).ready(civclient_init) call that we need to prevent
+// We'll wrap the original $.fn.ready to intercept calls to civclient_init
+(function() {
+  var originalReady = $.fn.ready;
+  $.fn.ready = function(fn) {
+    if (fn && fn.toString().indexOf('civclient_init') !== -1) {
+      console.log("Intercepted civclient_init document.ready - will not auto-execute");
+      return this;
     }
-    // Handle DOM element selectors
-    var elem = typeof selector === 'string' ? document.querySelector(selector) : selector;
-    return {
-      html: function(html) {
-        if (arguments.length === 0) {
-          return elem ? elem.innerHTML : '';
-        }
-        if (elem) elem.innerHTML = html;
-        return this;
-      },
-      fadeIn: function() { return this; },
-      fadeOut: function() { return this; },
-      hide: function() { return this; },
-      show: function() { return this; }
-    };
+    return originalReady.call(this, fn);
   };
-  
-  // Mock blocking UI functions (used during loading)
-  $.blockUI = function() { console.log("$.blockUI()"); };
-  $.unblockUI = function() { 
-    console.log("$.unblockUI()");
-    // Hide loading overlay when unblocking
-    var overlay = document.getElementById('loading-overlay');
-    if (overlay) {
-      overlay.style.display = 'none';
-    }
-  };
-  
-  // Mock $.extend for object merging (used by utility.js)
-  // Merges properties from source objects into target object
-  $.extend = function() {
-    var target = arguments[0] || {};
-    for (var i = 1; i < arguments.length; i++) {
-      var source = arguments[i];
-      if (source != null) {
-        for (var key in source) {
-          if (source.hasOwnProperty(key)) {
-            target[key] = source[key];
-          }
-        }
-      }
-    }
-    return target;
-  };
-}
+})();
 </script>
 
 <!-- ============================================================================
@@ -421,7 +388,25 @@ if (typeof $ === 'undefined') {
 <script type="text/javascript" src="/javascript/improvement.js"></script>           <!-- Building definitions -->
 <script type="text/javascript" src="/javascript/city.js"></script>                  <!-- City utilities -->
 <script type="text/javascript" src="/javascript/cities.js"></script>                <!-- City management -->
-<script type="text/javascript" src="/javascript/control.js"></script>               <!-- Control functions -->
+
+<!-- ============================================================================
+     ADDITIONAL DEPENDENCIES FOR CLIENT FILES
+     ============================================================================
+     These are required by civclient.js, control.js, and client_main.js
+     ============================================================================ -->
+<script type="text/javascript" src="/javascript/government.js"></script>            <!-- Government types -->
+<script type="text/javascript" src="/javascript/clinet.js"></script>                <!-- Client network -->
+<script type="text/javascript" src="/javascript/packhand.js"></script>              <!-- Packet handlers -->
+<script type="text/javascript" src="/javascript/pages.js"></script>                 <!-- Page management -->
+
+<!-- ============================================================================
+     MAIN CLIENT FILES
+     ============================================================================
+     Core client initialization and control
+     ============================================================================ -->
+<script type="text/javascript" src="/javascript/client_main.js"></script>           <!-- Client state management -->
+<script type="text/javascript" src="/javascript/civclient.js"></script>             <!-- Core client initialization -->
+<script type="text/javascript" src="/javascript/control.js"></script>               <!-- User interaction control -->
 
 <!-- WEBGL/3D RENDERING MODULES -->
 <!-- The 3D rendering engine stack (Three.js based) -->

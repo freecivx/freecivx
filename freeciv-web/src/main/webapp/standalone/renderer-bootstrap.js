@@ -130,10 +130,8 @@ function init_standalone_environment() {
 /**
  * Continue initialization after DOM is ready
  */
-async function init_standalone_after_dom_ready() {
-  // Initialize mock data
-  init_all_mock_data();
-  
+function init_standalone_after_dom_ready() {
+    
   // Initialize WebGL preload
   console.log("Starting WebGL preload...");
   
@@ -155,6 +153,16 @@ async function init_standalone_after_dom_ready() {
     console.error("Error during preload:", e);
     alert(`Error during preload: ${e.message}`);
   }
+  
+  
+  // Set client state to RUNNING (needed by many client functions)
+  if (typeof set_client_state === 'function') {
+    set_client_state(C_S_RUNNING);
+    console.log("Client state set to C_S_RUNNING");
+  }
+  
+
+
 }
 
 /**
