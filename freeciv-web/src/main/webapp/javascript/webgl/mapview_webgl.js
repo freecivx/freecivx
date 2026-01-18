@@ -47,10 +47,6 @@ var mapview_model_height;
 
 var MAPVIEW_ASPECT_FACTOR = 35.71;
 
-// Per-tile mesh rendering mode (for hex support)
-var use_per_tile_meshes = false;
-var use_hex_topology = false;
-
 
 /****************************************************************************
   Start the Freeciv-web WebGL renderer
@@ -129,13 +125,6 @@ function webgl_start_renderer()
  This will render the map terrain mesh.
 ****************************************************************************/
 async function init_webgl_mapview() {
-  // Detect hex topology
-  use_hex_topology = topo_has_flag(TF_HEX);
-  use_per_tile_meshes = use_hex_topology;  // Use per-tile meshes for hex maps
-  
-  console.log("Topology detected: " + (use_hex_topology ? "Hexagonal" : "Square"));
-  console.log("Using per-tile meshes: " + use_per_tile_meshes);
-  
   selected_unit_material = new THREE.MeshBasicMaterial( { color: 0xf6f7bf, transparent: true, opacity: 0.7} );
 
   /* uniforms are variables which are used in the fragment shader fragment.js */
@@ -162,20 +151,30 @@ async function init_webgl_mapview() {
   init_heightmap(terrain_quality);
   update_heightmap(terrain_quality);
 
-  // Load appropriate shaders based on topology
-  var shader_path = use_hex_topology ? '/javascript/webgl/shaders_hex/' : '/javascript/webgl/shaders_square/';
-  
-  const vertexShaderResponse = await fetch(shader_path + 'terrain_vertex_shader.glsl');
+  // Low-resolution terrain mesh used for raycasting to find mouse postition.
+  var lofiMaterial = new THREE.MeshBasicMaterial({"color" : 0x00ff00});
+  lofiGeometry = new THREE.BufferGeometry();
+  init_land_geometry(lofiGeometry, 2);
+  update_land_geometry(lofiGeometry, 2);
+  lofiMesh = new THREE.Mesh( lofiGeometry, lofiMaterial );
+  lofiMesh.layers.set(6);
+  scene.add(lofiMesh);
+
+  if (map.xsize > 200 || map.ysize > 200) {
+    terrain_quality = 2;
+  }
+
+  const vertexShaderResponse = await fetch('/javascript/webgl/shaders_square/terrain_vertex_shader.glsl');
   const vertex_shader = await vertexShaderResponse.text();
 
-  const fragmentShaderResponse = await fetch(shader_path + 'terrain_fragment_shader.glsl');
+  const fragmentShaderResponse = await fetch('/javascript/webgl/shaders_square/terrain_fragment_shader.glsl');
   var fragment_shader = await fragmentShaderResponse.text();
 
   if (maprenderer.capabilities.maxTextures <= 16) {
     console.log("max textures: " + maprenderer.capabilities.maxTextures);
   }
 
-  // Create terrain material
+  // High-resolution terrain-mesh shown in mapview.
   terrain_material = new THREE.ShaderMaterial({
       uniforms: freeciv_uniforms,
       vertexShader: vertex_shader,
@@ -184,53 +183,21 @@ async function init_webgl_mapview() {
       glslVersion: THREE.GLSL3
     });
 
-  if (use_per_tile_meshes) {
-    // Per-tile mesh approach (for hex tiles)
-    console.log("Initializing per-tile mesh rendering...");
-    init_tile_meshes(use_hex_topology);
-    
-    // Still need a lofi mesh for raycasting
-    var lofiMaterial = new THREE.MeshBasicMaterial({"color" : 0x00ff00});
-    lofiGeometry = new THREE.BufferGeometry();
-    init_land_geometry(lofiGeometry, 2);
-    update_land_geometry(lofiGeometry, 2);
-    lofiMesh = new THREE.Mesh( lofiGeometry, lofiMaterial );
-    lofiMesh.layers.set(6);
-    scene.add(lofiMesh);
-  } else {
-    // Traditional single-mesh approach (for square tiles)
-    console.log("Initializing single-mesh rendering...");
-    
-    // Low-resolution terrain mesh used for raycasting to find mouse position.
-    var lofiMaterial = new THREE.MeshBasicMaterial({"color" : 0x00ff00});
-    lofiGeometry = new THREE.BufferGeometry();
-    init_land_geometry(lofiGeometry, 2);
-    update_land_geometry(lofiGeometry, 2);
-    lofiMesh = new THREE.Mesh( lofiGeometry, lofiMaterial );
-    lofiMesh.layers.set(6);
-    scene.add(lofiMesh);
+  landGeometry = new THREE.BufferGeometry();
+  init_land_geometry(landGeometry, terrain_quality);
+  update_land_geometry(landGeometry, terrain_quality);
+  landMesh = new THREE.Mesh( landGeometry, terrain_material );
+  landMesh.receiveShadow = false;
+  landMesh.castShadow = false;
+  scene.add(landMesh);
 
-    if (map.xsize > 200 || map.ysize > 200) {
-      terrain_quality = 2;
-    }
-
-    // High-resolution terrain-mesh shown in mapview.
-    landGeometry = new THREE.BufferGeometry();
-    init_land_geometry(landGeometry, terrain_quality);
-    update_land_geometry(landGeometry, terrain_quality);
-    landMesh = new THREE.Mesh( landGeometry, terrain_material );
-    landMesh.receiveShadow = false;
-    landMesh.castShadow = false;
-    scene.add(landMesh);
-
-    if (graphics_quality === QUALITY_HIGH) {
-      var shadowMaterial = new THREE.ShadowMaterial();
-      shadowMaterial.opacity = 0.92;
-      shadowmesh = new THREE.Mesh( landGeometry, shadowMaterial);
-      shadowmesh.receiveShadow = true;
-      shadowmesh.castShadow = false;
-      scene.add(shadowmesh);
-    }
+  if (graphics_quality === QUALITY_HIGH) {
+    var shadowMaterial = new THREE.ShadowMaterial();
+    shadowMaterial.opacity = 0.92;
+    shadowmesh = new THREE.Mesh( landGeometry, shadowMaterial);
+    shadowmesh.receiveShadow = true;
+    shadowmesh.castShadow = false;
+    scene.add(shadowmesh);
   }
 
   update_map_terrain_geometry();
