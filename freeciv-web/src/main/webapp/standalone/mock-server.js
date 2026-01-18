@@ -118,6 +118,51 @@ if (typeof is_small_screen === 'undefined') {
 }
 
 /**
+ * Mock touch device detection
+ */
+if (typeof is_touch_device === 'undefined') {
+  window.is_touch_device = function() {
+    if(('ontouchstart' in window) || 'onmsgesturechange' in window
+        || window.DocumentTouch && document instanceof DocumentTouch) {
+      return true;
+    } else {
+      return false;
+    }
+  };
+}
+
+/**
+ * Mock game panel initialization functions
+ */
+if (typeof init_game_unit_panel === 'undefined') {
+  window.init_game_unit_panel = function() {
+    console.log("Mock init_game_unit_panel");
+  };
+}
+
+if (typeof init_chatbox === 'undefined') {
+  window.init_chatbox = function() {
+    console.log("Mock init_chatbox");
+  };
+}
+
+/**
+ * Mock keyboard input flag
+ */
+if (typeof keyboard_input === 'undefined') {
+  window.keyboard_input = false;
+}
+
+/**
+ * Mock city population function
+ */
+if (typeof city_population === 'undefined') {
+  window.city_population = function(city) {
+    return city ? city.size : 0;
+  };
+}
+
+/**
  * Mock Detector for WebGL support
  */
 if (typeof Detector === 'undefined') {

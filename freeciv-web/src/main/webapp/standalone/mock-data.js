@@ -323,6 +323,23 @@ function init_mock_game() {
     }
   };
   
+  // Mock server settings
+  server_settings = {
+    borders: {
+      is_visible: true
+    }
+  };
+  
+  // Mock extras and resources
+  extras = {};
+  resources = {};
+  
+  // Mock additional game objects
+  connections = {};
+  governments = {};
+  improvements = {};
+  techs = {};
+  
   console.log("Mock game state initialized");
 }
 
