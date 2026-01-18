@@ -365,7 +365,7 @@ function init_mock_game() {
   connections = {};
   governments = {};
   // Don't reassign improvements - it's a const in improvement.js
-  techs = {};
+  // techs will be initialized by init_mock_techs()
   
   console.log("Mock game state initialized");
 }
@@ -438,6 +438,43 @@ function init_mock_city_rules() {
 }
 
 /**
+ * Initialize mock technologies
+ * Creates basic tech tree for testing
+ */
+function init_mock_techs() {
+  techs = {};
+  
+  // Create some basic technologies that are commonly used
+  // These match the structure from handle_ruleset_tech in packhand.js
+  var basic_techs = [
+    { id: 0, name: "None", req: [0, 0] },
+    { id: 1, name: "Alphabet", req: [0, 0] },
+    { id: 2, name: "Bronze Working", req: [0, 0] },
+    { id: 3, name: "Pottery", req: [0, 0] },
+    { id: 4, name: "Writing", req: [1, 0] },
+    { id: 5, name: "Iron Working", req: [2, 0] },
+    { id: 6, name: "Warrior Code", req: [0, 0] },
+    { id: 7, name: "Horseback Riding", req: [0, 0] },
+    { id: 8, name: "Masonry", req: [0, 0] },
+    { id: 9, name: "Currency", req: [2, 0] }
+  ];
+  
+  basic_techs.forEach(function(tech) {
+    techs[tech.id] = {
+      id: tech.id,
+      name: tech.name,
+      req: tech.req,
+      root_req: 0,
+      flags: [],
+      cost: 10,
+      helptext: "Mock technology for testing"
+    };
+  });
+  
+  console.log("Mock techs initialized:", Object.keys(techs).length, "technologies");
+}
+
+/**
  * Initialize all mock data
  */
 function init_all_mock_data() {
@@ -450,6 +487,7 @@ function init_all_mock_data() {
   init_mock_nations();
   init_mock_cities();
   init_mock_units();
+  init_mock_techs();
   init_mock_game();
   
   console.log("=== Mock Data Initialization Complete ===");
