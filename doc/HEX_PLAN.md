@@ -1,5 +1,13 @@
 # Hexagonal Map Tiles Implementation Plan
 
+## Implementation Credits
+
+**AI Model Used**: Claude 3.5 Sonnet (2024)
+- Implementation completed: January 2026
+- Model: Anthropic's Claude 3.5 Sonnet
+- All code generation, architecture decisions, and documentation created with AI assistance
+- Human guidance provided by @andreasrosdal
+
 ## Overview
 This document outlines the plan for implementing support for hexagonal map tiles in FreecivWorld.net, in addition to the current square map tiles. The implementation will allow players to choose between square and hexagonal map topologies in the pregame settings.
 
