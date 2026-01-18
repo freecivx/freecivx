@@ -328,205 +328,32 @@ var C_S_OVER = 6;        // Game is over
 // Quality presets for rendering (affects detail level, performance)
 var QUALITY_MEDIUM = 2;
 var QUALITY_HIGH = 3;
+</script>
 
-// *** JQUERY MOCK ***
-// Minimal jQuery implementation for compatibility with legacy code
-// Freeciv-web uses jQuery extensively, but we don't need full library for standalone
-if (typeof $ === 'undefined') {
-  // Store document ready handlers for manual invocation
-  var readyHandlers = [];
-  var documentReadyCalled = false;
-  
-  // Basic selector function (mimics jQuery $())
-  window.$ = function(selector) {
-    // Handle document ready: $(document).ready(fn) or $(fn)
-    if (selector === document || typeof selector === 'function') {
-      var fn = typeof selector === 'function' ? selector : null;
-      return {
-        ready: function(handler) {
-          var handlerFn = handler || fn;
-          if (handlerFn) {
-            // Check if this is civclient_init - we'll skip it
-            var fnStr = handlerFn.toString();
-            if (fnStr.indexOf('civclient_init') !== -1) {
-              console.log("Intercepted civclient_init document.ready - will not auto-execute");
-              return this;
-            }
-            // Store other handlers for later execution
-            readyHandlers.push(handlerFn);
-            // If document is already ready and we've called documentReady, execute immediately
-            if (documentReadyCalled) {
-              try {
-                handlerFn();
-              } catch (e) {
-                console.error("Error in ready handler:", e);
-              }
-            }
-          }
-          return this;
-        }
-      };
+<!-- ============================================================================
+     JQUERY LIBRARY AND PLUGINS
+     ============================================================================
+     Load the real jQuery library and required plugins for client functionality
+     ============================================================================ -->
+<script type="text/javascript" src="/javascript/libs/jquery.min.js"></script>
+<script type="text/javascript" src="/javascript/libs/jquery-ui.min.js"></script>
+<script type="text/javascript" src="/javascript/libs/jquery.blockUI.js"></script>
+<script type="text/javascript" src="/javascript/libs/jquery.contextMenu.js"></script>
+
+<script type="text/javascript">
+// *** INTERCEPT CIVCLIENT_INIT AUTO-RUN ***
+// civclient.js has a $(document).ready(civclient_init) call that we need to prevent
+// We'll wrap the original $.fn.ready to intercept calls to civclient_init
+(function() {
+  var originalReady = $.fn.ready;
+  $.fn.ready = function(fn) {
+    if (fn && fn.toString().indexOf('civclient_init') !== -1) {
+      console.log("Intercepted civclient_init document.ready - will not auto-execute");
+      return this;
     }
-    
-    // Handle window/document selectors for width/height queries
-    if (selector === window) {
-      return {
-        width: function() { return window.innerWidth; },
-        height: function() { return window.innerHeight; },
-        resize: function(fn) {
-          if (fn) window.addEventListener('resize', fn);
-          return this;
-        },
-        bind: function(event, fn) {
-          if (fn) window.addEventListener(event.split(' ')[0], fn);
-          return this;
-        }
-      };
-    }
-    
-    // Handle DOM element selectors
-    var elem = typeof selector === 'string' ? document.querySelector(selector) : selector;
-    return {
-      html: function(html) {
-        if (arguments.length === 0) {
-          return elem ? elem.innerHTML : '';
-        }
-        if (elem) elem.innerHTML = html;
-        return this;
-      },
-      fadeIn: function() { return this; },
-      fadeOut: function() { return this; },
-      hide: function() { 
-        if (elem) elem.style.display = 'none';
-        return this; 
-      },
-      show: function() { 
-        if (elem) elem.style.display = 'block';
-        return this; 
-      },
-      blur: function() {
-        if (elem && elem.blur) elem.blur();
-        return this;
-      },
-      remove: function() {
-        if (elem && elem.parentNode) elem.parentNode.removeChild(elem);
-        return this;
-      },
-      click: function(fn) {
-        if (elem && fn) elem.addEventListener('click', fn);
-        return this;
-      },
-      keydown: function(fn) {
-        if (elem && fn) elem.addEventListener('keydown', fn);
-        return this;
-      },
-      mousedown: function(fn) {
-        if (elem && fn) elem.addEventListener('mousedown', fn);
-        return this;
-      },
-      mousemove: function(fn) {
-        if (elem && fn) elem.addEventListener('mousemove', fn);
-        return this;
-      },
-      mouseup: function(fn) {
-        if (elem && fn) elem.addEventListener('mouseup', fn);
-        return this;
-      },
-      contextmenu: function(fn) {
-        if (elem && fn) elem.addEventListener('contextmenu', fn);
-        return this;
-      },
-      height: function(val) {
-        if (arguments.length === 0) {
-          return elem ? elem.clientHeight : 0;
-        }
-        if (elem) elem.style.height = (typeof val === 'number' ? val + 'px' : val);
-        return this;
-      },
-      width: function(val) {
-        if (arguments.length === 0) {
-          return elem ? elem.clientWidth : 0;
-        }
-        if (elem) elem.style.width = (typeof val === 'number' ? val + 'px' : val);
-        return this;
-      },
-      outerHeight: function() {
-        return elem ? elem.offsetHeight : 0;
-      },
-      outerWidth: function() {
-        return elem ? elem.offsetWidth : 0;
-      },
-      css: function(prop, val) {
-        if (arguments.length === 1 && typeof prop === 'string') {
-          return elem ? elem.style[prop] : '';
-        }
-        if (elem) {
-          if (typeof prop === 'object') {
-            for (var key in prop) {
-              elem.style[key] = prop[key];
-            }
-          } else {
-            elem.style[prop] = val;
-          }
-        }
-        return this;
-      },
-      length: elem ? 1 : 0
-    };
+    return originalReady.call(this, fn);
   };
-  
-  // Function to manually invoke stored ready handlers (except civclient_init)
-  window.invokeDocumentReadyHandlers = function() {
-    documentReadyCalled = true;
-    console.log("Invoking " + readyHandlers.length + " document.ready handlers");
-    readyHandlers.forEach(function(handler) {
-      try {
-        handler();
-      } catch (e) {
-        console.error("Error in ready handler:", e);
-      }
-    });
-  };
-  
-  // Mock blocking UI functions (used during loading)
-  $.blockUI = function() { console.log("$.blockUI()"); };
-  $.unblockUI = function() { 
-    console.log("$.unblockUI()");
-    // Hide loading overlay when unblocking
-    var overlay = document.getElementById('loading-overlay');
-    if (overlay) {
-      overlay.style.display = 'none';
-    }
-  };
-  
-  // Mock AJAX functions
-  $.post = function(url, data, callback) {
-    console.log("Mock $.post to", url);
-    return { fail: function() { return this; } };
-  };
-  
-  $.ajax = function(options) {
-    console.log("Mock $.ajax", options);
-    return { fail: function() { return this; } };
-  };
-  
-  // Mock $.extend for object merging (used by utility.js)
-  // Merges properties from source objects into target object
-  $.extend = function() {
-    var target = arguments[0] || {};
-    for (var i = 1; i < arguments.length; i++) {
-      var source = arguments[i];
-      if (source != null) {
-        for (var key in source) {
-          if (source.hasOwnProperty(key)) {
-            target[key] = source[key];
-          }
-        }
-      }
-    }
-    return target;
-  };
-}
+})();
 </script>
 
 <!-- ============================================================================

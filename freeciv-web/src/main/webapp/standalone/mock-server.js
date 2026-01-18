@@ -325,56 +325,16 @@ if (typeof STANDALONE_MODE !== 'undefined' && STANDALONE_MODE) {
 }
 
 /**
- * Mock jQuery plugins used by civclient.js and control.js
+ * Mock jQuery custom functions used by civclient.js
+ * Note: Real jQuery and plugins are now loaded in standalone HTML,
+ * so we only need to mock custom helper functions
  */
 if (typeof $ !== 'undefined') {
-  // Ensure $.fn exists for jQuery plugins
-  if (!$.fn) {
-    $.fn = {};
-  }
-  
-  // Mock getUrlVar for URL parameter parsing
+  // Mock getUrlVar for URL parameter parsing (custom function, not a standard jQuery method)
   if (!$.getUrlVar) {
     $.getUrlVar = function(key) {
       console.log("Mock $.getUrlVar called for:", key);
       return null; // Return null for all URL vars in standalone mode
-    };
-  }
-  
-  // Mock tabs widget (used by civclient_init)
-  if (!$.fn.tabs) {
-    $.fn.tabs = function(options) {
-      console.log("Mock $.fn.tabs called with options:", options);
-      return this;
-    };
-  }
-  
-  // Mock button widget
-  if (!$.fn.button) {
-    $.fn.button = function(options) {
-      // Handle both initialization and method calls
-      if (typeof options === 'string') {
-        // Method call like .button("option", "disabled", true)
-        console.log("Mock $.fn.button method call:", options);
-        return this;
-      }
-      console.log("Mock $.fn.button initialization");
-      return this;
-    };
-  }
-  
-  // Mock contextMenu (used by control_init)
-  if (!$.contextMenu) {
-    $.contextMenu = function(options) {
-      console.log("Mock $.contextMenu initialized");
-      return this;
-    };
-  }
-  
-  // Mock tooltip widget
-  if (!$.fn.tooltip) {
-    $.fn.tooltip = function(options) {
-      return this;
     };
   }
 }
