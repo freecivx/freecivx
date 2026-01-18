@@ -112,16 +112,16 @@ function save_screenshot_data(scenario_name) {
  * Display screenshot in a new window for visual inspection
  */
 function show_screenshot_preview() {
-  var dataURL = capture_screenshot();
+  const dataURL = capture_screenshot();
   if (!dataURL) {
     alert("Failed to capture screenshot");
     return;
   }
   
   // Open in new window
-  var win = window.open();
-  win.document.write('<html><head><title>Screenshot Preview</title></head><body style="margin:0;padding:0;background:#000;">');
-  win.document.write('<img src="' + dataURL + '" style="max-width:100%;height:auto;"/>');
+  const win = window.open();
+  win.document.write(`<html><head><title>Screenshot Preview</title></head><body style="margin:0;padding:0;background:#000;">`);
+  win.document.write(`<img src="${dataURL}" style="max-width:100%;height:auto;"/>`);
   win.document.write('</body></html>');
   win.document.close();
 }
