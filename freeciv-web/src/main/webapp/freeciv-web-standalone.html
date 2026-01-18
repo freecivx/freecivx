@@ -165,10 +165,30 @@ if (typeof $ === 'undefined') {
       overlay.style.display = 'none';
     }
   };
+  
+  // Mock $.extend for utility.js
+  $.extend = function() {
+    var target = arguments[0] || {};
+    for (var i = 1; i < arguments.length; i++) {
+      var source = arguments[i];
+      if (source != null) {
+        for (var key in source) {
+          if (source.hasOwnProperty(key)) {
+            target[key] = source[key];
+          }
+        }
+      }
+    }
+    return target;
+  };
 }
 </script>
 
+<!-- Mock server functions - must be loaded before other scripts -->
+<script type="text/javascript" src="/standalone/mock-server.js"></script>
+
 <!-- Core Freeciv-web JavaScript files (minimal set needed for 3D rendering) -->
+<script type="text/javascript" src="/javascript/libs/EventAggregator.js"></script>
 <script type="text/javascript" src="/javascript/fc_types.js"></script>
 <script type="text/javascript" src="/javascript/bitvector.js"></script>
 <script type="text/javascript" src="/javascript/utility.js"></script>
@@ -208,7 +228,6 @@ if (typeof $ === 'undefined') {
 <script type="text/javascript" src="/javascript/webgl/tile_visibility_handler.js"></script>
 
 <!-- Standalone testing modules -->
-<script type="text/javascript" src="/standalone/mock-server.js"></script>
 <script type="text/javascript" src="/standalone/mock-data.js"></script>
 <script type="text/javascript" src="/standalone/renderer-bootstrap.js"></script>
 <script type="text/javascript" src="/standalone/test-scenarios.js"></script>

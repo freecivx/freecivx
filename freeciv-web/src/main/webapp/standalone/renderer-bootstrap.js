@@ -41,6 +41,16 @@ function bootstrap_standalone_renderer() {
   
   console.log("Viewport size:", mapview_width, "x", mapview_height);
   
+  // Call init_webgl_renderer() as specified in requirements
+  try {
+    init_webgl_renderer();
+    console.log("WebGL renderer initialized");
+  } catch (e) {
+    console.error("Error initializing WebGL renderer:", e);
+    alert("Error initializing WebGL renderer: " + e.message);
+    return;
+  }
+  
   // Initialize WebGL renderer
   try {
     webgl_start_renderer();
@@ -63,6 +73,14 @@ function bootstrap_standalone_renderer() {
   
   // Start render loop
   start_standalone_render_loop();
+  
+  // Hide loading overlay
+  setTimeout(function() {
+    var overlay = document.getElementById('loading-overlay');
+    if (overlay) {
+      overlay.style.display = 'none';
+    }
+  }, 500);
   
   console.log("=== Standalone Renderer Bootstrap Complete ===");
 }

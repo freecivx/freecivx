@@ -224,4 +224,81 @@ if (typeof spaceship_launched === 'undefined') {
   window.spaceship_acc = 1.01;
 }
 
+/**
+ * Mock benchmark variables
+ * These are normally defined in benchmark.js which is not loaded in standalone mode
+ */
+if (typeof initial_benchmark_enabled === 'undefined') {
+  window.initial_benchmark_enabled = false;
+  window.benchmark_enabled = false;
+  window.benchmark_frames_count = 0;
+}
+
+/**
+ * Mock get_city_flag_sprite function
+ * This is normally defined in 2dcanvas/tilespec.js which is not loaded in standalone mode
+ */
+if (typeof get_city_flag_sprite === 'undefined') {
+  window.get_city_flag_sprite = function(pcity) {
+    // Return a simple mock sprite structure
+    return {
+      key: 'city_flag',
+      x: 0,
+      y: 0,
+      width: 32,
+      height: 32
+    };
+  };
+}
+
+/**
+ * Mock update_city_screen function
+ * This is normally defined in city.js but needs to be available early for EventAggregator
+ */
+if (typeof update_city_screen === 'undefined') {
+  window.update_city_screen = function() {
+    // Do nothing in standalone mode
+  };
+}
+
+/**
+ * Mock sprites object for 2D canvas sprites
+ * This is normally defined in 2dcanvas/mapview.js which is not loaded in standalone mode
+ */
+if (typeof sprites === 'undefined') {
+  window.sprites = {};
+  
+  // Create a mock canvas image for sprites
+  var mock_canvas = document.createElement('canvas');
+  mock_canvas.width = 48;
+  mock_canvas.height = 32;
+  var mock_ctx = mock_canvas.getContext('2d');
+  mock_ctx.fillStyle = 'rgba(0, 0, 0, 0)';
+  mock_ctx.fillRect(0, 0, 48, 32);
+  
+  // Add default sprite entries that might be needed
+  window.sprites['city_flag'] = mock_canvas;
+  window.sprites['occupied'] = mock_canvas;
+}
+
+/**
+ * Mock get_city_occupied_sprite function
+ * This is normally defined in 2dcanvas/tilespec.js
+ */
+if (typeof get_city_occupied_sprite === 'undefined') {
+  window.get_city_occupied_sprite = function(pcity) {
+    return 'occupied';
+  };
+}
+
+/**
+ * Mock add_spaceship function
+ * This is normally defined in spacerace.js which is not loaded in standalone mode
+ */
+if (typeof add_spaceship === 'undefined') {
+  window.add_spaceship = function(ptile, pcity, scene) {
+    // Do nothing in standalone mode - spaceship visualization not needed
+  };
+}
+
 console.log("Mock server functions initialized");
