@@ -423,6 +423,32 @@ The model provided:
 
 ## 12) Troubleshooting
 
+### Common Errors and Solutions
+
+#### EXTRA_RIVER is not defined
+
+**Error Message:**
+```
+Uncaught (in promise) ReferenceError: EXTRA_RIVER is not defined
+    at update_heightmap (heightmap_square.js:226:37)
+```
+
+**Cause:** The `EXTRA_*` constants (like `EXTRA_RIVER`, `EXTRA_ROAD`, etc.) are normally defined dynamically by the server via `handle_ruleset_extra()` in `packhand.js`. In standalone mode, the server doesn't run, so these constants are undefined.
+
+**Solution:** The constants are now predefined in `standalone/mock-data.js` after the terrain type constants. This includes all standard extra types from `EXTRA_NONE` through `EXTRA_OIL_WELL`.
+
+#### mapview_slide is not defined
+
+**Error Message:**
+```
+Uncaught ReferenceError: mapview_slide is not defined
+    at animate_webgl (mapview_webgl.js:362:3)
+```
+
+**Cause:** The `mapview_slide` variable is defined in `javascript/2dcanvas/mapview.js`, which is not loaded in standalone mode since we only use 3D rendering. However, `mapview_webgl.js` checks this variable in the animation loop.
+
+**Solution:** The `mapview_slide` object is now mocked in `standalone/mock-server.js` with the proper structure including `active`, `dx`, `dy`, `i`, `max`, `slide_time`, `prev`, and `start` properties.
+
 ### Page Won't Load
 
 - Check browser console for errors

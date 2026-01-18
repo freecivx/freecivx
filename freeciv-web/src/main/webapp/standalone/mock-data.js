@@ -32,6 +32,26 @@ var T_MOUNTAINS = 6;
 var T_SWAMP = 7;
 var T_TUNDRA = 8;
 
+// Extra type constants (matching the game's dynamic assignment)
+// These are normally defined dynamically in packhand.js via handle_ruleset_extra()
+// but need to be predefined in standalone mode
+var EXTRA_NONE = -1;
+var EXTRA_IRRIGATION = 0;
+var EXTRA_FARMLAND = 1;
+var EXTRA_MINE = 2;
+var EXTRA_POLLUTION = 3;
+var EXTRA_HUT = 4;
+var EXTRA_FORTRESS = 5;
+var EXTRA_AIRBASE = 6;
+var EXTRA_FALLOUT = 7;
+var EXTRA_BUOY = 8;
+var EXTRA_RUINS = 9;
+var EXTRA_ROAD = 10;
+var EXTRA_RAIL = 11;
+var EXTRA_MAGLEV = 12;
+var EXTRA_RIVER = 13;
+var EXTRA_OIL_WELL = 14;
+
 /**
  * Initialize mock map data
  */

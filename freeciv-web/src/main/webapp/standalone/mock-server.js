@@ -193,4 +193,23 @@ if (typeof game_info === 'undefined') {
   };
 }
 
+/**
+ * Mock mapview_slide for camera animations
+ * This is normally defined in 2dcanvas/mapview.js but that file
+ * is not loaded in standalone mode. The variable is needed by
+ * mapview_webgl.js animate_webgl() function.
+ */
+if (typeof mapview_slide === 'undefined') {
+  window.mapview_slide = {
+    active: false,
+    dx: 0,
+    dy: 0,
+    i: 0,
+    max: 100,
+    slide_time: 700,
+    prev: 0,
+    start: 0
+  };
+}
+
 console.log("Mock server functions initialized");
