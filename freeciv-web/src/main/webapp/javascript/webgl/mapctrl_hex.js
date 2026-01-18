@@ -33,9 +33,40 @@ function webgl_canvas_pos_to_tile_hex(canvas_x, canvas_y) {
   // Use raycasting with the lofi mesh (still square for now)
   // TODO: Create hex-specific lofi mesh for accurate picking
   
-  // For now, use the square picking and then refine
-  if (typeof webgl_canvas_pos_to_tile === 'function') {
-    return webgl_canvas_pos_to_tile(canvas_x, canvas_y);
+  // Use raycasting directly without going through dispatcher
+  if (typeof raycaster === 'undefined' || typeof mouse === 'undefined' || typeof camera === 'undefined') {
+    return null;
+  }
+  
+  var rect = maprenderer.domElement.getBoundingClientRect();
+  mouse.x = ((canvas_x - rect.left) / rect.width) * 2 - 1;
+  mouse.y = -((canvas_y - rect.top) / rect.height) * 2 + 1;
+  
+  raycaster.setFromCamera(mouse, camera);
+  
+  if (typeof lofiMesh !== 'undefined' && lofiMesh) {
+    var intersects = raycaster.intersectObject(lofiMesh);
+    if (intersects.length > 0) {
+      var pos = intersects[0].point;
+      
+      // Convert scene position to hex tile coordinates
+      var tx = Math.floor((pos.x + mapview_model_width / 2 - 500) / MAPVIEW_ASPECT_FACTOR);
+      var ty = Math.floor((pos.z + mapview_model_height / 2) / MAPVIEW_ASPECT_FACTOR);
+      
+      // Refine to hex coordinates using scene_to_hex_coords if available
+      if (typeof scene_to_hex_coords === 'function') {
+        var hex_coords = scene_to_hex_coords(pos.x, pos.z);
+        if (hex_coords && hex_coords.x >= 0 && hex_coords.x < map.xsize && 
+            hex_coords.y >= 0 && hex_coords.y < map.ysize) {
+          return map_pos_to_tile(hex_coords.x, hex_coords.y);
+        }
+      }
+      
+      // Fallback to square approximation
+      if (tx >= 0 && tx < map.xsize && ty >= 0 && ty < map.ysize) {
+        return map_pos_to_tile(tx, ty);
+      }
+    }
   }
   
   return null;
