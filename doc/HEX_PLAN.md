@@ -783,3 +783,6 @@ This plan provides a roadmap for implementing complete hexagonal map tile suppor
 ideas for next attempt:
 1. first split current map geometry (terrain geometry) from one large mesh to one mesh per tile.
 2. then implement hex map tiles according to this plan.
+   this means that each map tile is a separate mesh object which is a hexagonal 3d object, and together they look like a game map. the shaders needs to be rewritten to instead of doing shading for one whole map object, the shader must shade each map tile separately. heightmap will also set height for each map tile separately instead of the whole map. this will be like how civ 6 does hex map tiles.
+
+after each attemp update this document 
