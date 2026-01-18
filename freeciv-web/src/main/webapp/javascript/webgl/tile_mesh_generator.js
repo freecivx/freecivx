@@ -154,6 +154,7 @@ function create_square_tile_geometry(x, y, height) {
  * @returns {THREE.Mesh} The tile mesh
  */
 function create_or_update_tile_mesh(x, y, is_hex) {
+  // Ensure required functions are available
   if (typeof map_pos_to_tile !== 'function') {
     console.error("map_pos_to_tile function not available");
     return null;
@@ -179,8 +180,10 @@ function create_or_update_tile_mesh(x, y, is_hex) {
   // Create or update mesh
   var mesh = tile_meshes[key];
   if (!mesh) {
-    // Use the global terrain_material if available
-    var material = (typeof terrain_material !== 'undefined') ? terrain_material : new THREE.MeshBasicMaterial({color: 0x808080});
+    // Use shared terrain_material if available, otherwise create fallback once
+    var material = (typeof terrain_material !== 'undefined' && terrain_material) 
+                   ? terrain_material 
+                   : get_fallback_material();
     mesh = new THREE.Mesh(geometry, material);
     mesh.receiveShadow = false;
     mesh.castShadow = false;
@@ -194,6 +197,20 @@ function create_or_update_tile_mesh(x, y, is_hex) {
   }
   
   return mesh;
+}
+
+// Cached fallback material to avoid memory leaks
+var fallback_material = null;
+
+/**
+ * Get or create a fallback material when terrain_material is unavailable
+ * @returns {THREE.Material} Fallback material
+ */
+function get_fallback_material() {
+  if (!fallback_material) {
+    fallback_material = new THREE.MeshBasicMaterial({color: 0x808080});
+  }
+  return fallback_material;
 }
 
 /**
@@ -319,10 +336,9 @@ function cleanup_tile_meshes() {
     if (mesh.geometry) {
       mesh.geometry.dispose();
     }
-    if (mesh.material && mesh.material.dispose) {
-      // Don't dispose shared materials from cache
-      // mesh.material.dispose();
-    }
+    // Materials are cached and shared between tiles, so we don't dispose them here
+    // to avoid breaking other tiles that reference the same material.
+    // Materials will be garbage collected when all references are removed.
   }
   
   tile_meshes = {};

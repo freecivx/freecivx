@@ -496,10 +496,10 @@ function pregame_settings()
           "<option value='FAIR'>Fair islands</option>" +
           //"<option value='FRACTURE'>Fracture map</option>" + FIXME: this one doesnt work.
     "</select></td></tr>" +
-      "<tr title='Map tile topology: Square or Hexagonal tiles'><td>Map Topology:</td>" +
+      "<tr title='Map tile topology: Square or Hexagonal tiles. Hexagonal tiles provide 6-way movement strategy. Iso-Hex is the recommended hex mode matching the classic Civilization hex style.'><td>Map Topology:</td>" +
       "<td><select name='topology' id='topology'>" +
-        "<option value='0'>Square tiles (ISO)</option>" +
-        "<option value='1'>Hexagonal tiles (Hex)</option>" +
+        "<option value='0'>Square tiles (ISO view)</option>" +
+        "<option value='1'>Hexagonal tiles (flat-top hex)</option>" +
         "<option value='2'>Hexagonal tiles (Iso-Hex, recommended)</option>" +
       "</select></td></tr>"
     + "</table><br>"+

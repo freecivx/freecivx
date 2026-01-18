@@ -17,6 +17,22 @@
 
 ***********************************************************************/
 
+/**
+ * Hexagonal Tile Fragment Shader
+ * 
+ * This shader is currently copied from the square tile shader and needs updates:
+ * 
+ * TODO: Implement hexagonal grid line rendering
+ * - Lines 174, 232-234, 244-246, 341-343 render square grid lines
+ * - Need to calculate distance to hex edges instead of rectangular boundaries
+ * - Hex edges: 6 line segments forming hexagon border
+ * 
+ * TODO: Replace magic numbers with named constants or uniforms:
+ * - 502.0: Map offset constant (line 174)
+ * - 35.71: MAPVIEW_ASPECT_FACTOR (line 174) 
+ * - 0.028: Grid line width (line 174)
+ */
+
 precision highp float;
 
 in vec3 vNormal;
