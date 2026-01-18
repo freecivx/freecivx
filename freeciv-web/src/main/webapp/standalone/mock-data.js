@@ -121,6 +121,7 @@ function init_mock_map() {
         known: 2, // TILE_KNOWN_SEEN
         owner: null,
         worked: null,
+        units: [], // Units on this tile
         extras: {
           isSet: function() { return false; },
           toBitSet: function() { return []; }

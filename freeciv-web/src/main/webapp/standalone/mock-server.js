@@ -291,4 +291,14 @@ if (typeof get_city_occupied_sprite === 'undefined') {
   };
 }
 
+/**
+ * Mock add_spaceship function
+ * This is normally defined in spacerace.js which is not loaded in standalone mode
+ */
+if (typeof add_spaceship === 'undefined') {
+  window.add_spaceship = function(ptile, pcity, scene) {
+    // Do nothing in standalone mode - spaceship visualization not needed
+  };
+}
+
 console.log("Mock server functions initialized");

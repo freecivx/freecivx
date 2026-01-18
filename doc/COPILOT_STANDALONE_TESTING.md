@@ -495,6 +495,102 @@ Uncaught TypeError: Cannot read properties of undefined (reading 'rule_name')
 
 Additionally, added `init_mock_city_rules()` function to `mock-data.js` to initialize city style data required by `city_to_3d_model_name()`.
 
+#### $.extend is not a function
+
+**Error Message:**
+```
+TypeError: $.extend is not a function
+    at http://localhost:8080/javascript/utility.js:69:3
+```
+
+**Cause:** The jQuery mock in standalone mode was minimal and didn't include the `$.extend` function which is used by `utility.js`.
+
+**Solution:** Added `$.extend` implementation to the jQuery mock in `freeciv-web-standalone.html` to properly merge objects.
+
+#### EventAggregator is not defined
+
+**Error Message:**
+```
+ReferenceError: EventAggregator is not defined
+    at http://localhost:8080/javascript/city.js:52:27
+```
+
+**Cause:** The `EventAggregator` class is defined in `javascript/libs/EventAggregator.js`, which was not loaded in standalone mode.
+
+**Solution:** Added `<script src="/javascript/libs/EventAggregator.js"></script>` to load the library before other scripts that depend on it.
+
+#### initial_benchmark_enabled is not defined
+
+**Error Message:**
+```
+ReferenceError: initial_benchmark_enabled is not defined
+    at animate_webgl (http://localhost:8080/javascript/webgl/mapview_webgl.js:387:3)
+```
+
+**Cause:** Benchmark variables are defined in `javascript/benchmark.js`, which is not loaded in standalone mode.
+
+**Solution:** Added mock benchmark variables (`initial_benchmark_enabled`, `benchmark_enabled`, `benchmark_frames_count`) to `standalone/mock-server.js`.
+
+#### get_city_flag_sprite is not defined
+
+**Error Message:**
+```
+ReferenceError: get_city_flag_sprite is not defined
+    at create_city_label_sprite (http://localhost:8080/javascript/webgl/sprites.js:138:18)
+```
+
+**Cause:** This function is defined in `javascript/2dcanvas/tilespec.js`, which is not loaded in standalone mode.
+
+**Solution:** Added `get_city_flag_sprite()` mock function to `standalone/mock-server.js` that returns a simple sprite structure.
+
+#### sprites is not defined / sprites[key] is undefined
+
+**Error Message:**
+```
+ReferenceError: sprites is not defined
+    at create_city_label_sprite (http://localhost:8080/javascript/webgl/sprites.js:139:17)
+```
+
+**Cause:** The `sprites` object is defined in `javascript/2dcanvas/mapview.js`, which is not loaded in standalone mode.
+
+**Solution:** Added mock `sprites` object to `standalone/mock-server.js` with mock canvas elements for commonly used sprite keys.
+
+#### add_spaceship is not defined
+
+**Error Message:**
+```
+ReferenceError: add_spaceship is not defined
+    at add_city_buildings (http://localhost:8080/javascript/webgl/object_position_handler_square.js:358:3)
+```
+
+**Cause:** The `add_spaceship()` function is defined in `javascript/spacerace.js`, which is not loaded in standalone mode.
+
+**Solution:** Added `add_spaceship()` mock function to `standalone/mock-server.js` as a no-op since spaceship visualization is not needed in standalone mode.
+
+#### update_city_screen is not defined
+
+**Error Message:**
+```
+ReferenceError: update_city_screen is not defined
+    at http://localhost:8080/javascript/city.js:52:47
+```
+
+**Cause:** The `update_city_screen()` function needs to be available before `city.js` loads to initialize the EventAggregator.
+
+**Solution:** Added `update_city_screen()` mock function to `standalone/mock-server.js` which is loaded early in the page.
+
+#### tile_units returns undefined
+
+**Error Message:**
+```
+TypeError: Cannot read properties of undefined (reading 'length')
+    at create_city_label_sprite (http://localhost:8080/javascript/webgl/sprites.js:148:14)
+```
+
+**Cause:** Mock tiles didn't have a `units` array property, causing `tile_units()` to return undefined.
+
+**Solution:** Added `units: []` property to tile initialization in `standalone/mock-data.js`.
+
 ### Page Won't Load
 
 - Check browser console for errors
@@ -525,5 +621,5 @@ Additionally, added `init_mock_city_rules()` function to `mock-data.js` to initi
 ---
 
 **Last Updated**: January 2026  
-**Version**: 1.0  
-**Status**: ✓ Implemented and Tested
+**Version**: 1.1  
+**Status**: ✓ Implemented and Tested - All JavaScript errors fixed
