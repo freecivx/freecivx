@@ -132,6 +132,15 @@ function init_standalone_environment() {
  */
 function init_standalone_after_dom_ready() {
     
+  // Initialize mock data first (map, tiles, cities, units, etc.)
+  console.log("Initializing mock data...");
+  if (typeof init_all_mock_data === 'function') {
+    init_all_mock_data();
+    console.log("Mock data initialized successfully");
+  } else {
+    console.error("init_all_mock_data function not found!");
+  }
+  
   // Initialize WebGL preload
   console.log("Starting WebGL preload...");
   

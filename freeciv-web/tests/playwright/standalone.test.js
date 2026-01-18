@@ -5,7 +5,7 @@ test('Freeciv-web standalone 3D environment loads', async ({ page }) => {
   test.setTimeout(60000);
 
   // Navigate to standalone page
-  const response = await page.goto('http://localhost/freeciv-web-standalone.html');
+  const response = await page.goto('http://localhost:8080/freeciv-web-standalone.html');
 
   // Check if the page loaded successfully
   if (!response || response.status() >= 400) {
@@ -82,7 +82,7 @@ test('Freeciv-web standalone 3D environment loads', async ({ page }) => {
 test('Test runner controls appear', async ({ page }) => {
   test.setTimeout(60000);
 
-  await page.goto('http://localhost/freeciv-web-standalone.html');
+  await page.goto('http://localhost:8080/freeciv-web-standalone.html');
 
   // Wait for initialization
   await page.waitForTimeout(10000);
@@ -96,7 +96,7 @@ test('Test runner controls appear', async ({ page }) => {
 test('Screenshot controls appear', async ({ page }) => {
   test.setTimeout(60000);
 
-  await page.goto('http://localhost/freeciv-web-standalone.html');
+  await page.goto('http://localhost:8080/freeciv-web-standalone.html');
 
   // Wait for initialization
   await page.waitForTimeout(8000);
