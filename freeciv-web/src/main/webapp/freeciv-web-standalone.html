@@ -333,15 +333,57 @@ var QUALITY_HIGH = 3;
 // Minimal jQuery implementation for compatibility with legacy code
 // Freeciv-web uses jQuery extensively, but we don't need full library for standalone
 if (typeof $ === 'undefined') {
+  // Store document ready handlers for manual invocation
+  var readyHandlers = [];
+  var documentReadyCalled = false;
+  
   // Basic selector function (mimics jQuery $())
   window.$ = function(selector) {
-    // Handle window/document selectors for width/height queries
-    if (selector === window || selector === document) {
+    // Handle document ready: $(document).ready(fn) or $(fn)
+    if (selector === document || typeof selector === 'function') {
+      var fn = typeof selector === 'function' ? selector : null;
       return {
-        width: function() { return window.innerWidth; },
-        height: function() { return window.innerHeight; }
+        ready: function(handler) {
+          var handlerFn = handler || fn;
+          if (handlerFn) {
+            // Check if this is civclient_init - we'll skip it
+            var fnStr = handlerFn.toString();
+            if (fnStr.indexOf('civclient_init') !== -1) {
+              console.log("Intercepted civclient_init document.ready - will not auto-execute");
+              return this;
+            }
+            // Store other handlers for later execution
+            readyHandlers.push(handlerFn);
+            // If document is already ready and we've called documentReady, execute immediately
+            if (documentReadyCalled) {
+              try {
+                handlerFn();
+              } catch (e) {
+                console.error("Error in ready handler:", e);
+              }
+            }
+          }
+          return this;
+        }
       };
     }
+    
+    // Handle window/document selectors for width/height queries
+    if (selector === window) {
+      return {
+        width: function() { return window.innerWidth; },
+        height: function() { return window.innerHeight; },
+        resize: function(fn) {
+          if (fn) window.addEventListener('resize', fn);
+          return this;
+        },
+        bind: function(event, fn) {
+          if (fn) window.addEventListener(event.split(' ')[0], fn);
+          return this;
+        }
+      };
+    }
+    
     // Handle DOM element selectors
     var elem = typeof selector === 'string' ? document.querySelector(selector) : selector;
     return {
@@ -354,9 +396,45 @@ if (typeof $ === 'undefined') {
       },
       fadeIn: function() { return this; },
       fadeOut: function() { return this; },
-      hide: function() { return this; },
-      show: function() { return this; }
+      hide: function() { 
+        if (elem) elem.style.display = 'none';
+        return this; 
+      },
+      show: function() { 
+        if (elem) elem.style.display = 'block';
+        return this; 
+      },
+      blur: function() {
+        if (elem && elem.blur) elem.blur();
+        return this;
+      },
+      remove: function() {
+        if (elem && elem.parentNode) elem.parentNode.removeChild(elem);
+        return this;
+      },
+      click: function(fn) {
+        if (elem && fn) elem.addEventListener('click', fn);
+        return this;
+      },
+      keydown: function(fn) {
+        if (elem && fn) elem.addEventListener('keydown', fn);
+        return this;
+      },
+      length: elem ? 1 : 0
     };
+  };
+  
+  // Function to manually invoke stored ready handlers (except civclient_init)
+  window.invokeDocumentReadyHandlers = function() {
+    documentReadyCalled = true;
+    console.log("Invoking " + readyHandlers.length + " document.ready handlers");
+    readyHandlers.forEach(function(handler) {
+      try {
+        handler();
+      } catch (e) {
+        console.error("Error in ready handler:", e);
+      }
+    });
   };
   
   // Mock blocking UI functions (used during loading)
@@ -421,7 +499,25 @@ if (typeof $ === 'undefined') {
 <script type="text/javascript" src="/javascript/improvement.js"></script>           <!-- Building definitions -->
 <script type="text/javascript" src="/javascript/city.js"></script>                  <!-- City utilities -->
 <script type="text/javascript" src="/javascript/cities.js"></script>                <!-- City management -->
-<script type="text/javascript" src="/javascript/control.js"></script>               <!-- Control functions -->
+
+<!-- ============================================================================
+     ADDITIONAL DEPENDENCIES FOR CLIENT FILES
+     ============================================================================
+     These are required by civclient.js, control.js, and client_main.js
+     ============================================================================ -->
+<script type="text/javascript" src="/javascript/government.js"></script>            <!-- Government types -->
+<script type="text/javascript" src="/javascript/clinet.js"></script>                <!-- Client network -->
+<script type="text/javascript" src="/javascript/packhand.js"></script>              <!-- Packet handlers -->
+<script type="text/javascript" src="/javascript/pages.js"></script>                 <!-- Page management -->
+
+<!-- ============================================================================
+     MAIN CLIENT FILES
+     ============================================================================
+     Core client initialization and control
+     ============================================================================ -->
+<script type="text/javascript" src="/javascript/client_main.js"></script>           <!-- Client state management -->
+<script type="text/javascript" src="/javascript/civclient.js"></script>             <!-- Core client initialization -->
+<script type="text/javascript" src="/javascript/control.js"></script>               <!-- User interaction control -->
 
 <!-- WEBGL/3D RENDERING MODULES -->
 <!-- The 3D rendering engine stack (Three.js based) -->

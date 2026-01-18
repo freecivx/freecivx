@@ -313,4 +313,211 @@ if (typeof STANDALONE_MODE !== 'undefined' && STANDALONE_MODE) {
   console.log(`Mapview model dimensions set: ${mapview_model_width} x ${mapview_model_height}`);
 }
 
+/**
+ * Mock jQuery plugins used by civclient.js and control.js
+ */
+if (typeof $ !== 'undefined') {
+  // Mock getUrlVar for URL parameter parsing
+  if (!$.getUrlVar) {
+    $.getUrlVar = function(key) {
+      console.log("Mock $.getUrlVar called for:", key);
+      return null; // Return null for all URL vars in standalone mode
+    };
+  }
+  
+  // Mock tabs widget (used by civclient_init)
+  if (!$.fn.tabs) {
+    $.fn.tabs = function(options) {
+      console.log("Mock $.fn.tabs called with options:", options);
+      return this;
+    };
+  }
+  
+  // Mock button widget
+  if (!$.fn.button) {
+    $.fn.button = function(options) {
+      // Handle both initialization and method calls
+      if (typeof options === 'string') {
+        // Method call like .button("option", "disabled", true)
+        console.log("Mock $.fn.button method call:", options);
+        return this;
+      }
+      console.log("Mock $.fn.button initialization");
+      return this;
+    };
+  }
+  
+  // Mock contextMenu (used by control_init)
+  if (!$.contextMenu) {
+    $.contextMenu = function(options) {
+      console.log("Mock $.contextMenu initialized");
+      return this;
+    };
+  }
+  
+  // Mock tooltip widget
+  if (!$.fn.tooltip) {
+    $.fn.tooltip = function(options) {
+      return this;
+    };
+  }
+}
+
+/**
+ * Mock functions called by civclient.js
+ */
+if (typeof STANDALONE_MODE !== 'undefined' && STANDALONE_MODE) {
+  
+  // Mock motd_init (message of the day initialization)
+  if (typeof motd_init === 'undefined') {
+    window.motd_init = function() {
+      console.log("Mock motd_init");
+    };
+  }
+  
+  // Mock checkInvitations (multiplayer invitations)
+  if (typeof checkInvitations === 'undefined') {
+    window.checkInvitations = function() {
+      console.log("Mock checkInvitations");
+    };
+  }
+  
+  // Mock update_game_status_panel (top panel with turn info)
+  if (typeof update_game_status_panel === 'undefined') {
+    window.update_game_status_panel = function() {
+      // Do nothing - we don't have the full UI in standalone mode
+    };
+  }
+  
+  // Mock speak (text-to-speech)
+  if (typeof speak === 'undefined') {
+    window.speak = function(text) {
+      // Mock text-to-speech - do nothing in standalone
+    };
+  }
+  
+  // Mock show_intro_dialog (welcome dialog)
+  if (typeof show_intro_dialog === 'undefined') {
+    window.show_intro_dialog = function(title, message) {
+      console.log("Mock intro dialog:", title, message);
+    };
+  }
+  
+  // Mock set_client_page (page switching)
+  if (typeof set_client_page === 'undefined') {
+    window.set_client_page = function(page) {
+      console.log("Mock set_client_page:", page);
+    };
+  }
+  
+  // Mock PAGE_GAME constant
+  if (typeof PAGE_GAME === 'undefined') {
+    window.PAGE_GAME = 'game';
+  }
+  
+  // Mock renderer_init (normally initializes 2D canvas renderer)
+  if (typeof renderer_init === 'undefined') {
+    window.renderer_init = function() {
+      console.log("Mock renderer_init (2D canvas not used in standalone)");
+    };
+  }
+  
+  // Mock clear_chatbox
+  if (typeof clear_chatbox === 'undefined') {
+    window.clear_chatbox = function() {
+      // Do nothing in standalone mode
+    };
+  }
+  
+  // Mock show_new_game_message
+  if (typeof show_new_game_message === 'undefined') {
+    window.show_new_game_message = function() {
+      console.log("Mock show_new_game_message");
+    };
+  }
+  
+  // Mock update_metamessage_on_gamestart
+  if (typeof update_metamessage_on_gamestart === 'undefined') {
+    window.update_metamessage_on_gamestart = function() {
+      // Do nothing in standalone mode
+    };
+  }
+  
+  // Mock observing flag
+  if (typeof observing === 'undefined') {
+    window.observing = false;
+  }
+  
+  // Mock game_loaded flag
+  if (typeof game_loaded === 'undefined') {
+    window.game_loaded = false;
+  }
+  
+  // Mock unitpanel_active flag
+  if (typeof unitpanel_active === 'undefined') {
+    window.unitpanel_active = false;
+  }
+  
+  // Mock center_on_any_city
+  if (typeof center_on_any_city === 'undefined') {
+    window.center_on_any_city = function() {
+      console.log("Mock center_on_any_city");
+    };
+  }
+  
+  // Mock advance_unit_focus
+  if (typeof advance_unit_focus === 'undefined') {
+    window.advance_unit_focus = function() {
+      console.log("Mock advance_unit_focus");
+    };
+  }
+  
+  // Mock show_endgame_dialog
+  if (typeof show_endgame_dialog === 'undefined') {
+    window.show_endgame_dialog = function() {
+      console.log("Mock show_endgame_dialog");
+    };
+  }
+  
+  // Mock game_init
+  if (typeof game_init === 'undefined') {
+    window.game_init = function() {
+      console.log("Mock game_init");
+    };
+  }
+  
+  // Mock timeoutTimerId
+  if (typeof timeoutTimerId === 'undefined') {
+    window.timeoutTimerId = null;
+  }
+  
+  // Mock update_timeout
+  if (typeof update_timeout === 'undefined') {
+    window.update_timeout = function() {
+      // Do nothing in standalone mode
+    };
+  }
+  
+  // Mock mapview_window_resized
+  if (typeof mapview_window_resized === 'undefined') {
+    window.mapview_window_resized = function() {
+      console.log("Mock mapview_window_resized");
+    };
+  }
+  
+  // Mock orientation_changed
+  if (typeof orientation_changed === 'undefined') {
+    window.orientation_changed = function() {
+      console.log("Mock orientation_changed");
+    };
+  }
+  
+  // Mock send_end_turn
+  if (typeof send_end_turn === 'undefined') {
+    window.send_end_turn = function() {
+      console.log("Mock send_end_turn");
+    };
+  }
+}
+
 console.log("Mock server functions initialized");
