@@ -59,7 +59,7 @@ function position_camera_for_standalone() {
 /**
  * Bootstrap the standalone 3D renderer
  */
-function bootstrap_standalone_renderer() {
+async function bootstrap_standalone_renderer() {
   console.log("=== Bootstrapping Standalone Renderer ===");
   
   // Set graphics quality using object destructuring
@@ -73,38 +73,28 @@ function bootstrap_standalone_renderer() {
   
   console.log(`Viewport size: ${mapview_width} x ${mapview_height}`);
   
-  // Define initialization steps with modern array methods
-  const initSteps = [
-    { fn: init_webgl_renderer, name: 'WebGL renderer initialized' },
-    { fn: webgl_start_renderer, name: 'WebGL renderer started' },
-    { fn: init_webgl_mapview, name: 'WebGL mapview initialized' }
-  ];
-  
-  // Execute initialization steps using array methods
-  const success = initSteps.every(step => {
-    try {
-      step.fn();
-      console.log(step.name);
-      return true;
-    } catch (e) {
-      console.error(`Error ${step.name}:`, e);
-      alert(`Error ${step.name}: ${e.message}`);
-      return false;
-    }
-  });
-  
-  if (!success) {
+  // Initialize renderer and start it (synchronous)
+  try {
+    init_webgl_renderer();
+    console.log('WebGL renderer initialized');
+    
+    webgl_start_renderer();
+    console.log('WebGL renderer started');
+    
+    // Wait for async mapview initialization to complete
+    await init_webgl_mapview();
+    console.log('WebGL mapview initialized');
+  } catch (e) {
+    console.error(`Error during initialization:`, e);
+    alert(`Error during initialization: ${e.message}`);
     return;
   }
   
   // Position camera to view the map
   position_camera_for_standalone();
   
-  // Manually trigger first render frame to kickstart the animation loop
-  // setAnimationLoop(animate_webgl) was already registered in webgl_start_renderer() at line 105
-  if (typeof animate_webgl === 'function') {
-    animate_webgl();
-  }
+  // The animation loop is already running via setAnimationLoop() in webgl_start_renderer()
+  // No manual trigger needed since init_webgl_mapview() has now completed
   
   // Hide loading overlay using optional chaining
   setTimeout(() => {
@@ -140,7 +130,7 @@ function init_standalone_environment() {
 /**
  * Continue initialization after DOM is ready
  */
-function init_standalone_after_dom_ready() {
+async function init_standalone_after_dom_ready() {
   // Initialize mock data
   init_all_mock_data();
   
@@ -152,8 +142,8 @@ function init_standalone_after_dom_ready() {
     webgl_preload();
     
     // Wait for models to load, then bootstrap renderer
-    setTimeout(() => {
-      bootstrap_standalone_renderer();
+    setTimeout(async () => {
+      await bootstrap_standalone_renderer();
     }, 3000); // Give 3 seconds for initial assets to load
     
   } catch (e) {
