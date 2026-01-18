@@ -74,6 +74,14 @@ function bootstrap_standalone_renderer() {
   // Start render loop
   start_standalone_render_loop();
   
+  // Hide loading overlay
+  setTimeout(function() {
+    var overlay = document.getElementById('loading-overlay');
+    if (overlay) {
+      overlay.style.display = 'none';
+    }
+  }, 500);
+  
   console.log("=== Standalone Renderer Bootstrap Complete ===");
 }
 
