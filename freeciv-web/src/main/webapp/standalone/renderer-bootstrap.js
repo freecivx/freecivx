@@ -143,7 +143,12 @@ async function init_standalone_after_dom_ready() {
     
     // Wait for models to load, then bootstrap renderer
     setTimeout(async () => {
-      await bootstrap_standalone_renderer();
+      try {
+        await bootstrap_standalone_renderer();
+      } catch (e) {
+        console.error("Error in bootstrap_standalone_renderer:", e);
+        alert(`Error initializing renderer: ${e.message}`);
+      }
     }, 3000); // Give 3 seconds for initial assets to load
     
   } catch (e) {
