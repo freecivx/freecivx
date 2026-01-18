@@ -1531,4 +1531,7 @@ The implementation is **production-ready** from a correctness standpoint, with c
 
 The implementation awaits integration testing in the actual game environment to verify full end-to-end functionality with the Freeciv server and client rendering pipeline.
 
+Andreas: This hexagonal map rendering improvement is not yet successful. When resting, the actual map rendering in THree.js is black and there are javascript errors: t RangeError: Maximum call stack size exceeded
+    at webgl_canvas_pos_to_tile (topology_dispatch.js:54:3)
+
 
