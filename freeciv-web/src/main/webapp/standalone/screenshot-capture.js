@@ -158,8 +158,8 @@ function capture_screenshot_sequence(count, interval_ms, callback) {
     current++;
     if (current < count) {
       setTimeout(captureNext, interval_ms);
-    } else {
-      callback?.(screenshots);
+    } else if (callback) {
+      callback(screenshots);
     }
   };
   

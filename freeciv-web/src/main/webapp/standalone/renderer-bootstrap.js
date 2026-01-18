@@ -71,7 +71,10 @@ function bootstrap_standalone_renderer() {
   
   // Hide loading overlay using optional chaining
   setTimeout(() => {
-    document.getElementById('loading-overlay')?.style.setProperty('display', 'none');
+    const overlay = document.getElementById('loading-overlay');
+    if (overlay) {
+      overlay.style.display = 'none';
+    }
   }, 500);
   
   console.log("=== Standalone Renderer Bootstrap Complete ===");
@@ -87,12 +90,15 @@ function start_standalone_render_loop() {
     requestAnimationFrame(animate);
     
     try {
-      // Update controls if they exist using optional chaining
-      controls?.update?.();
+      // Update controls if they exist using typeof check for safety
+      if (typeof controls !== 'undefined' && controls?.update) {
+        controls.update();
+      }
       
       // Render the scene using modern conditional logic
-      if (maprenderer) {
-        const shouldUseAnaglyph = anaglyph_effect && anaglyph_3d_enabled;
+      if (typeof maprenderer !== 'undefined' && maprenderer) {
+        const shouldUseAnaglyph = typeof anaglyph_effect !== 'undefined' && anaglyph_effect && 
+                                   typeof anaglyph_3d_enabled !== 'undefined' && anaglyph_3d_enabled;
         const renderer = shouldUseAnaglyph ? anaglyph_effect : maprenderer;
         renderer.render(scene, camera);
       }
