@@ -40,14 +40,14 @@ function capture_screenshot() {
     }
     
     // Get the canvas and convert to data URL
-    var canvas = maprenderer.domElement;
+    const canvas = maprenderer.domElement;
     if (!canvas) {
       console.error("Canvas not found");
       return null;
     }
     
-    var dataURL = canvas.toDataURL('image/png');
-    console.log("Screenshot captured, data URL length:", dataURL.length);
+    const dataURL = canvas.toDataURL('image/png');
+    console.log(`Screenshot captured, data URL length: ${dataURL.length}`);
     
     return dataURL;
   } catch (e) {
@@ -59,12 +59,8 @@ function capture_screenshot() {
 /**
  * Download screenshot as a file
  */
-function download_screenshot(filename) {
-  if (!filename) {
-    filename = 'freeciv-standalone-screenshot-' + Date.now() + '.png';
-  }
-  
-  var dataURL = capture_screenshot();
+function download_screenshot(filename = `freeciv-standalone-screenshot-${Date.now()}.png`) {
+  const dataURL = capture_screenshot();
   if (!dataURL) {
     alert("Failed to capture screenshot");
     return false;
@@ -72,14 +68,16 @@ function download_screenshot(filename) {
   
   try {
     // Create a temporary link element
-    var link = document.createElement('a');
-    link.download = filename;
-    link.href = dataURL;
+    const link = Object.assign(document.createElement('a'), {
+      download: filename,
+      href: dataURL
+    });
+    
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
     
-    console.log("Screenshot download initiated:", filename);
+    console.log(`Screenshot download initiated: ${filename}`);
     return true;
   } catch (e) {
     console.error("Error downloading screenshot:", e);
@@ -93,18 +91,20 @@ function download_screenshot(filename) {
  * but provides the data for headless testing environments
  */
 function save_screenshot_data(scenario_name) {
-  var dataURL = capture_screenshot();
+  const dataURL = capture_screenshot();
   if (!dataURL) {
     return null;
   }
   
-  // Return the data for use by test automation
+  // Return the data for use by test automation using modern object literal syntax
+  const { width, height } = maprenderer.domElement;
+  
   return {
     scenario: scenario_name,
     timestamp: Date.now(),
-    dataURL: dataURL,
-    width: maprenderer.domElement.width,
-    height: maprenderer.domElement.height
+    dataURL,
+    width,
+    height
   };
 }
 
@@ -112,16 +112,16 @@ function save_screenshot_data(scenario_name) {
  * Display screenshot in a new window for visual inspection
  */
 function show_screenshot_preview() {
-  var dataURL = capture_screenshot();
+  const dataURL = capture_screenshot();
   if (!dataURL) {
     alert("Failed to capture screenshot");
     return;
   }
   
   // Open in new window
-  var win = window.open();
-  win.document.write('<html><head><title>Screenshot Preview</title></head><body style="margin:0;padding:0;background:#000;">');
-  win.document.write('<img src="' + dataURL + '" style="max-width:100%;height:auto;"/>');
+  const win = window.open();
+  win.document.write(`<html><head><title>Screenshot Preview</title></head><body style="margin:0;padding:0;background:#000;">`);
+  win.document.write(`<img src="${dataURL}" style="max-width:100%;height:auto;"/>`);
   win.document.write('</body></html>');
   win.document.close();
 }
@@ -141,29 +141,27 @@ function create_screenshot_comparison(beforeDataURL, afterDataURL) {
  * Capture screenshots at timed intervals
  */
 function capture_screenshot_sequence(count, interval_ms, callback) {
-  var screenshots = [];
-  var current = 0;
+  const screenshots = [];
+  let current = 0;
   
-  function captureNext() {
-    var screenshot = capture_screenshot();
+  const captureNext = () => {
+    const screenshot = capture_screenshot();
     if (screenshot) {
       screenshots.push({
         index: current,
         timestamp: Date.now(),
         dataURL: screenshot
       });
-      console.log("Captured screenshot", current + 1, "of", count);
+      console.log(`Captured screenshot ${current + 1} of ${count}`);
     }
     
     current++;
     if (current < count) {
       setTimeout(captureNext, interval_ms);
-    } else {
-      if (callback) {
-        callback(screenshots);
-      }
+    } else if (callback) {
+      callback(screenshots);
     }
-  }
+  };
   
   captureNext();
 }
@@ -199,13 +197,9 @@ function add_screenshot_controls() {
  * Toggle screenshot controls visibility
  */
 function toggle_screenshot_controls() {
-  var controls = document.getElementById('screenshot-controls');
+  const controls = document.getElementById('screenshot-controls');
   if (controls) {
-    if (controls.style.display === 'none') {
-      controls.style.display = 'block';
-    } else {
-      controls.style.display = 'none';
-    }
+    controls.style.display = controls.style.display === 'none' ? 'block' : 'none';
   }
 }
 
@@ -213,13 +207,15 @@ function toggle_screenshot_controls() {
  * Initialize screenshot capture on page load
  */
 if (typeof STANDALONE_MODE !== 'undefined' && STANDALONE_MODE) {
-  // Wait for page to load
+  // Wait for page to load using modern approach
+  const initScreenshotControls = () => {
+    setTimeout(add_screenshot_controls, 5000); // Add controls after 5 seconds
+  };
+  
   if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', function() {
-      setTimeout(add_screenshot_controls, 5000); // Add controls after 5 seconds
-    });
+    document.addEventListener('DOMContentLoaded', initScreenshotControls, { once: true });
   } else {
-    setTimeout(add_screenshot_controls, 5000);
+    initScreenshotControls();
   }
 }
 

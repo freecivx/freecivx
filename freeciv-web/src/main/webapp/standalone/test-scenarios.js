@@ -261,15 +261,15 @@ var test_scenarios = {
  * Load a test scenario
  */
 function load_test_scenario(scenario_name) {
-  console.log("=== Loading Test Scenario: " + scenario_name + " ===");
+  console.log(`=== Loading Test Scenario: ${scenario_name} ===`);
   
-  var scenario = test_scenarios[scenario_name];
+  const scenario = test_scenarios[scenario_name];
   if (!scenario) {
-    console.error("Scenario not found:", scenario_name);
+    console.error(`Scenario not found: ${scenario_name}`);
     return false;
   }
   
-  console.log("Description:", scenario.description);
+  console.log(`Description: ${scenario.description}`);
   
   try {
     scenario.setup();
@@ -285,15 +285,11 @@ function load_test_scenario(scenario_name) {
  * Get list of available scenarios
  */
 function get_available_scenarios() {
-  var scenarios = [];
-  for (var key in test_scenarios) {
-    scenarios.push({
-      id: key,
-      name: test_scenarios[key].name,
-      description: test_scenarios[key].description
-    });
-  }
-  return scenarios;
+  return Object.entries(test_scenarios).map(([id, scenario]) => ({
+    id,
+    name: scenario.name,
+    description: scenario.description
+  }));
 }
 
 console.log("Test scenarios module loaded");
