@@ -59,7 +59,7 @@ function position_camera_for_standalone() {
 /**
  * Bootstrap the standalone 3D renderer
  */
-function bootstrap_standalone_renderer() {
+async function bootstrap_standalone_renderer() {
   console.log("=== Bootstrapping Standalone Renderer ===");
   
   // Set graphics quality using object destructuring
@@ -73,35 +73,28 @@ function bootstrap_standalone_renderer() {
   
   console.log(`Viewport size: ${mapview_width} x ${mapview_height}`);
   
-  // Define initialization steps with modern array methods
-  const initSteps = [
-    { fn: init_webgl_renderer, name: 'WebGL renderer initialized' },
-    { fn: webgl_start_renderer, name: 'WebGL renderer started' },
-    { fn: init_webgl_mapview, name: 'WebGL mapview initialized' }
-  ];
-  
-  // Execute initialization steps using array methods
-  const success = initSteps.every(step => {
-    try {
-      step.fn();
-      console.log(step.name);
-      return true;
-    } catch (e) {
-      console.error(`Error ${step.name}:`, e);
-      alert(`Error ${step.name}: ${e.message}`);
-      return false;
-    }
-  });
-  
-  if (!success) {
+  // Initialize renderer and start it (synchronous)
+  try {
+    init_webgl_renderer();
+    console.log('WebGL renderer initialized');
+    
+    webgl_start_renderer();
+    console.log('WebGL renderer started');
+    
+    // Wait for async mapview initialization to complete
+    await init_webgl_mapview();
+    console.log('WebGL mapview initialized');
+  } catch (e) {
+    console.error(`Error during initialization:`, e);
+    alert(`Error during initialization: ${e.message}`);
     return;
   }
   
   // Position camera to view the map
   position_camera_for_standalone();
   
-  // Start render loop
-  start_standalone_render_loop();
+  // The animation loop is already running via setAnimationLoop() in webgl_start_renderer()
+  // No manual trigger needed since init_webgl_mapview() has now completed
   
   // Hide loading overlay using optional chaining
   setTimeout(() => {
@@ -112,36 +105,6 @@ function bootstrap_standalone_renderer() {
   }, 500);
   
   console.log("=== Standalone Renderer Bootstrap Complete ===");
-}
-
-/**
- * Start the standalone render loop
- */
-function start_standalone_render_loop() {
-  console.log("Starting render loop");
-  
-  const animate = () => {
-    requestAnimationFrame(animate);
-    
-    try {
-      // Update controls if they exist using typeof check for safety
-      if (typeof controls !== 'undefined' && controls?.update) {
-        controls.update();
-      }
-      
-      // Render the scene using modern conditional logic
-      if (typeof maprenderer !== 'undefined' && maprenderer) {
-        const shouldUseAnaglyph = typeof anaglyph_effect !== 'undefined' && anaglyph_effect && 
-                                   typeof anaglyph_3d_enabled !== 'undefined' && anaglyph_3d_enabled;
-        const renderer = shouldUseAnaglyph ? anaglyph_effect : maprenderer;
-        renderer.render(scene, camera);
-      }
-    } catch (e) {
-      console.error("Error in render loop:", e);
-    }
-  };
-  
-  animate();
 }
 
 /**
@@ -168,25 +131,7 @@ function init_standalone_environment() {
  * Continue initialization after DOM is ready
  */
 function init_standalone_after_dom_ready() {
-  // Set client state to RUNNING (needed by many client functions)
-  if (typeof set_client_state === 'function') {
-    set_client_state(C_S_RUNNING);
-    console.log("Client state set to C_S_RUNNING");
-  }
-  
-  // Initialize mock data
-  init_all_mock_data();
-  
-  // Call control_init if available (sets up keyboard shortcuts, context menus)
-  if (typeof control_init === 'function') {
-    try {
-      control_init();
-      console.log("control_init() called successfully");
-    } catch (e) {
-      console.warn("Error in control_init:", e);
-    }
-  }
-  
+    
   // Initialize WebGL preload
   console.log("Starting WebGL preload...");
   
@@ -195,14 +140,29 @@ function init_standalone_after_dom_ready() {
     webgl_preload();
     
     // Wait for models to load, then bootstrap renderer
-    setTimeout(() => {
-      bootstrap_standalone_renderer();
+    setTimeout(async () => {
+      try {
+        await bootstrap_standalone_renderer();
+      } catch (e) {
+        console.error("Error in bootstrap_standalone_renderer:", e);
+        alert(`Error initializing renderer: ${e.message}`);
+      }
     }, 3000); // Give 3 seconds for initial assets to load
     
   } catch (e) {
     console.error("Error during preload:", e);
     alert(`Error during preload: ${e.message}`);
   }
+  
+  
+  // Set client state to RUNNING (needed by many client functions)
+  if (typeof set_client_state === 'function') {
+    set_client_state(C_S_RUNNING);
+    console.log("Client state set to C_S_RUNNING");
+  }
+  
+
+
 }
 
 /**
