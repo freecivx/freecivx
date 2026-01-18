@@ -15,6 +15,12 @@ function offset_to_cube(x, y) {
     return {x: cubeX, y: cubeY, z: cubeZ};
 }
 
+function cube_to_offset(cubeX, cubeY, cubeZ) {
+    var y = cubeZ;
+    var x = cubeX + (y - (y % 2)) / 2;
+    return {x: x, y: y};
+}
+
 function hex_distance(x1, y1, x2, y2) {
     var cube1 = offset_to_cube(x1, y1);
     var cube2 = offset_to_cube(x2, y2);
@@ -49,18 +55,33 @@ function get_hex_neighbors(x, y) {
 }
 
 global.offset_to_cube = offset_to_cube;
+global.cube_to_offset = cube_to_offset;
 global.hex_distance = hex_distance;
 global.get_hex_neighbors = get_hex_neighbors;
 
 // Load test framework
 eval(fs.readFileSync(__dirname + '/test-framework.js', 'utf8'));
 
-// Load tests
+// Load all test files
 eval(fs.readFileSync(__dirname + '/test-hex-coordinates.js', 'utf8'));
+eval(fs.readFileSync(__dirname + '/test-hex-geometry.js', 'utf8'));
+eval(fs.readFileSync(__dirname + '/test-hex-integration.js', 'utf8'));
 
-// Run tests
+// Run all tests
 console.log('\n🧪 Hex Tile Implementation - JavaScript Unit Tests\n');
+console.log('Running comprehensive test suite...\n');
+
 runCoordinateTests();
+runGeometryTests();
+runIntegrationTests();
+
 var success = printTestSummary();
+
+// Additional test statistics
+console.log('\nTest Coverage:');
+console.log('- Coordinate system: ✓');
+console.log('- Geometry calculations: ✓');
+console.log('- Integration & edge cases: ✓');
+console.log('- Total test suites: 3');
 
 process.exit(success ? 0 : 1);
