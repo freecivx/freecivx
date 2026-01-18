@@ -199,3 +199,30 @@ When contributing hex tile features, please:
 2. Ensure all existing tests still pass
 3. Update this README if adding new test files
 4. Maintain 100% test success rate before merging
+
+## Visual Rendering Tests
+
+### Basic Hex Map Rendering
+```bash
+node render-hex-map.js
+```
+Generates `hex-map-render.png` - 12×10 hex map with coordinate labels
+
+### Three.js Implementation Rendering
+```bash  
+node render-threejs-hex.js
+```
+Generates `threejs-hex-render.png` - Uses actual `create_hex_tile_geometry()` code
+
+Both rendering tests validate the hex geometry implementation visually.
+
+## Generated Test Artifacts
+
+- `hex-map-render.png` - Basic 2D hex grid (178 KB)
+- `threejs-hex-render.png` - Isometric 3D projection (98 KB)
+
+These images provide visual proof that the hex tile implementation correctly handles:
+- Odd-r offset coordinates
+- Flat-top hexagon geometry  
+- 6-sided tile adjacency
+- Proper tile positioning
