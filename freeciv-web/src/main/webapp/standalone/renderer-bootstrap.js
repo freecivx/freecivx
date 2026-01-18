@@ -101,7 +101,7 @@ function bootstrap_standalone_renderer() {
   position_camera_for_standalone();
   
   // Manually trigger first render frame to kickstart the animation loop
-  // The setAnimationLoop() in webgl_start_renderer() should handle subsequent frames
+  // setAnimationLoop(animate_webgl) was already registered in webgl_start_renderer() at line 105
   if (typeof animate_webgl === 'function') {
     animate_webgl();
   }
