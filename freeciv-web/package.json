@@ -1,0 +1,12 @@
+{
+  "name": "freeciv-web",
+  "version": "1.0.0",
+  "description": "Freeciv web client",
+  "scripts": {
+    "test": "playwright test",
+    "test:standalone": "playwright test tests/playwright/standalone.test.js"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.40.0"
+  }
+}
