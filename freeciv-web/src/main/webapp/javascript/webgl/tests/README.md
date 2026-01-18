@@ -22,6 +22,45 @@ Tests for hex coordinate system functions:
 - `scene_to_hex_coords()` - Scene to tile coordinate conversion
 - `get_hex_neighbors()` - 6-neighbor calculation for hex tiles
 
+### `test-hex-geometry.js`
+Tests for hex geometry calculations:
+- Hex dimensions (width, height, spacing)
+- Corner angle calculations (6 corners at 60° intervals)
+- Even/odd row positioning logic
+- Square tile dimensions for comparison
+
+### `test-hex-integration.js`
+Integration and edge case tests:
+- Roundtrip coordinate conversions
+- Distance properties (symmetry, triangle inequality)
+- Neighbor adjacency validation
+- Map boundary and corner tiles
+- Large coordinate handling
+
+### `render-hex-map.js`
+Basic 2D rendering test:
+- Renders hex map to PNG using Node.js canvas
+- Shows coordinate labels on each tile
+- 8 terrain types with legend
+- Output: `hex-map-render.png` (12×10 tiles)
+
+### `render-threejs-hex.js`
+Three.js implementation rendering test:
+- Uses actual `create_hex_tile_geometry()` from implementation
+- Renders 15×12 hex map in isometric projection
+- 12 realistic terrain types
+- Technical details overlay
+- Output: `threejs-hex-render.png`
+
+### `render-threejs-enhanced.js`
+Enhanced Three.js rendering test:
+- High-quality visualization (1600×1200 px)
+- Uses actual `create_hex_tile_geometry()` implementation
+- 20×15 map with 15 terrain types
+- Realistic gradients and shading
+- Comprehensive legends and details
+- Output: `threejs-hex-enhanced.png`
+
 ### `run-tests.js`
 Node.js test runner that:
 - Mocks browser environment for Node.js
@@ -74,9 +113,56 @@ Success rate: 100.00%
 ========================================
 ```
 
-### Browser (Visual Test Runner)
+### Visual Rendering Tests
 
-Open `../test-runner.html` (if created) in a web browser for interactive testing with visual feedback.
+Generate visual proof images of hex tile implementation:
+
+```bash
+cd freeciv-web/src/main/webapp/javascript/webgl/tests
+npm install  # Install canvas dependency (first time only)
+
+# Generate basic 2D rendering
+node render-hex-map.js
+# Output: hex-map-render.png (12×10 tiles, 901×660 px, 178 KB)
+
+# Generate Three.js implementation rendering
+node render-threejs-hex.js
+# Output: threejs-hex-render.png (15×12 tiles, 1200×900 px, 98 KB)
+
+# Generate enhanced high-quality rendering
+node render-threejs-enhanced.js
+# Output: threejs-hex-enhanced.png (20×15 tiles, 1600×1200 px, 265 KB)
+```
+
+#### Visual Test Outputs
+
+**hex-map-render.png** - Basic 2D visualization:
+- 12×10 hex tiles with coordinate labels
+- 8 terrain types with legend
+- Demonstrates odd-r offset clearly
+- Each tile labeled with (x,y) coordinates
+
+**threejs-hex-render.png** - Implementation validation:
+- Uses actual `create_hex_tile_geometry()` code
+- 15×12 tiles in isometric projection
+- 12 realistic terrain types
+- Technical details overlay showing implementation values
+- Validates flat-top orientation and odd-r offset
+
+**threejs-hex-enhanced.png** - High-quality proof:
+- Professional visualization (1600×1200 px)
+- 20×15 map with 300 hex tiles
+- 15 terrain types with realistic gradients
+- Comprehensive legends showing all terrain types
+- Implementation details panel
+- Beautiful shading and depth effects
+- **This is the primary visual proof image**
+
+All images demonstrate:
+- ✅ Flat-top hexagon geometry (6-sided tiles)
+- ✅ Odd-r offset coordinate system (odd rows shifted by ½ hex width)
+- ✅ Proper tile adjacency (6 neighbors per tile)
+- ✅ Correct dimensions matching specification
 
 ## Test Coverage
 
