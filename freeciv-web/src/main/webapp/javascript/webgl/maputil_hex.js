@@ -77,7 +77,8 @@ function scene_to_hex_coords(sceneX, sceneZ) {
 
 /**
  * Get the 6 neighbor tiles for a hex tile
- * Returns neighbors in clockwise order starting from top
+ * Returns neighbors in clockwise order starting from North
+ * For odd-r offset coordinates (odd rows shifted right by 0.5)
  * @param {number} x - Tile x coordinate
  * @param {number} y - Tile y coordinate
  * @returns {array} Array of {x, y} neighbor coordinates
@@ -86,33 +87,70 @@ function get_hex_neighbors(x, y) {
   var neighbors = [];
   var isOddRow = (y % 2 === 1);
   
-  // Neighbor offsets depend on whether row is odd or even
-  // For odd-r offset coordinates:
-  // Even rows: NE and SE have same x, NW and SW have x-1
-  // Odd rows: NE and SE have x+1, NW and SW have same x
+  // Neighbor offsets for odd-r offset coordinates (flat-top hexagons)
+  // Odd rows are shifted right by 0.5 hex width
+  //
+  // For even rows (y % 2 == 0):
+  //     NW(-1,-1)  N(0,-1)
+  //        \      /
+  //    W(-1,0) - tile(0,0) - E(+1,0)
+  //        /      \
+  //     SW(-1,+1)  S(0,+1)
+  //
+  // For odd rows (y % 2 == 1):  
+  //        N(0,-1)  NE(+1,-1)
+  //        /      \
+  //    W(-1,0) - tile(0,0) - E(+1,0)
+  //        \      /
+  //        S(0,+1)  SE(+1,+1)
   
   if (isOddRow) {
-    // Odd row offsets (y is odd)
-    neighbors.push({x: x, y: y - 1});      // North
-    neighbors.push({x: x + 1, y: y - 1});  // Northeast
-    neighbors.push({x: x + 1, y: y});      // East (actually Southeast)
-    neighbors.push({x: x, y: y + 1});      // South
-    neighbors.push({x: x, y: y + 1});      // Southwest (actually same as south, need to fix)
-    neighbors.push({x: x, y: y});          // Northwest (actually West)
+    // Odd row (shifted right)
+    neighbors = [
+      {x: x,     y: y - 1},  // North
+      {x: x + 1, y: y - 1},  // Northeast
+      {x: x + 1, y: y},      // East
+      {x: x + 1, y: y + 1},  // Southeast
+      {x: x,     y: y + 1},  // South
+      {x: x - 1, y: y}       // West (no NW, SW for odd rows in this direction)
+    ];
   } else {
-    // Even row offsets (y is even)
-    neighbors.push({x: x, y: y - 1});      // North
-    neighbors.push({x: x, y: y - 1});      // Northeast (need to adjust)
-    neighbors.push({x: x + 1, y: y});      // East (actually Southeast)
-    neighbors.push({x: x, y: y + 1});      // South
-    neighbors.push({x: x - 1, y: y + 1});  // Southwest
-    neighbors.push({x: x - 1, y: y});      // West (actually Northwest)
+    // Even row
+    neighbors = [
+      {x: x,     y: y - 1},  // North
+      {x: x,     y: y - 1},  // Northeast (same as north for even)
+      {x: x + 1, y: y},      // East
+      {x: x,     y: y + 1},  // Southeast (same as south for even)
+      {x: x,     y: y + 1},  // South
+      {x: x - 1, y: y}       // West
+    ];
   }
   
-  // Filter out invalid coordinates
-  neighbors = neighbors.filter(function(n) {
-    return n.x >= 0 && n.x < map.xsize && n.y >= 0 && n.y < map.ysize;
-  });
+  // Actually, let me use the correct odd-r flat-top hex neighbor offsets
+  // Reference: https://www.redblobgames.com/grids/hexagons/#neighbors-offset
+  
+  var parity = y & 1; // 0 for even, 1 for odd
+  var offsetDirections = [
+    // even rows, odd rows
+    [{x: 1, y: 0},  {x: 1, y: 0}],   // E
+    [{x: 0, y: 1},  {x: 1, y: 1}],   // SE
+    [{x: -1, y: 1}, {x: 0, y: 1}],   // SW
+    [{x: -1, y: 0}, {x: -1, y: 0}],  // W
+    [{x: -1, y: -1},{x: 0, y: -1}],  // NW
+    [{x: 0, y: -1}, {x: 1, y: -1}]   // NE
+  ];
+  
+  neighbors = [];
+  for (var i = 0; i < 6; i++) {
+    var dir = offsetDirections[i][parity];
+    var nx = x + dir.x;
+    var ny = y + dir.y;
+    
+    // Only add if within map bounds
+    if (nx >= 0 && nx < map.xsize && ny >= 0 && ny < map.ysize) {
+      neighbors.push({x: nx, y: ny});
+    }
+  }
   
   return neighbors;
 }
