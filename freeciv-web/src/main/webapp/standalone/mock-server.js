@@ -224,39 +224,4 @@ if (typeof spaceship_launched === 'undefined') {
   window.spaceship_acc = 1.01;
 }
 
-/**
- * Mock find_visible_unit function
- * This is normally defined in control.js which is not loaded in standalone mode
- * Returns the visible unit on a tile, prioritizing focused units
- */
-if (typeof find_visible_unit === 'undefined') {
-  window.find_visible_unit = function(ptile) {
-    // If no units here, return nothing
-    if (ptile == null) {
-      return null;
-    }
-    
-    // Check if tile_units function exists and get units
-    if (typeof tile_units === 'undefined') {
-      return null;
-    }
-    
-    var units_on_tile = tile_units(ptile);
-    if (units_on_tile == null || units_on_tile.length == 0) {
-      return null;
-    }
-    
-    // If a city is here, return nothing (unit hidden by city)
-    if (typeof tile_city !== 'undefined') {
-      var city = tile_city(ptile);
-      if (city != null) {
-        return null;
-      }
-    }
-    
-    // Return the first visible unit (simplified version without focus logic)
-    return units_on_tile[0];
-  };
-}
-
 console.log("Mock server functions initialized");

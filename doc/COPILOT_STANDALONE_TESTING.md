@@ -461,17 +461,39 @@ Uncaught ReferenceError: spaceship_launched is not defined
 
 **Solution:** The spaceship variables are now mocked in `standalone/mock-server.js` with default values (`spaceship_launched = null`, `spaceship_speed = 1.0`, `spaceship_acc = 1.01`).
 
-#### find_visible_unit is not defined
+#### nuke_objects is not defined
 
 **Error Message:**
 ```
-Uncaught (in promise) ReferenceError: find_visible_unit is not defined
-    at update_unit_position (object_position_handler_square.js:56:22)
+Uncaught ReferenceError: nuke_objects is not defined
+    at update_animated_objects (animation.js:92:3)
 ```
 
-**Cause:** The `find_visible_unit()` function is defined in `javascript/control.js`, which is not loaded in standalone mode. This function determines which unit should be visible when multiple units occupy the same tile.
+**Cause:** The `nuke_objects` array is defined in `javascript/webgl/nuke.js`, which was not loaded in standalone mode.
 
-**Solution:** A simplified version of `find_visible_unit()` is now mocked in `standalone/mock-server.js`. It returns the first visible unit on a tile, excluding tiles with cities.
+**Solution:** Added `nuke.js` to the list of loaded WebGL modules in `freeciv-web-standalone.html`.
+
+#### find_visible_unit is not defined / city_rule['rule_name'] undefined
+
+**Error Message:**
+```
+Uncaught ReferenceError: find_visible_unit is not defined
+    at update_unit_position (object_position_handler_square.js:56:22)
+```
+or
+```
+Uncaught TypeError: Cannot read properties of undefined (reading 'rule_name')
+    at city_to_3d_model_name (city.js:2163:16)
+```
+
+**Cause:** Several important JavaScript files (`control.js`, `improvement.js`) were not loaded in standalone mode, causing missing functions and undefined data structures like `city_rules`.
+
+**Solution:** Added the following files to `freeciv-web-standalone.html`:
+- `javascript/control.js` - Provides `find_visible_unit()` and other control functions
+- `javascript/improvement.js` - Provides building/improvement definitions
+- `javascript/webgl/nuke.js` - Provides `nuke_objects` array for nuke animations
+
+Additionally, added `init_mock_city_rules()` function to `mock-data.js` to initialize city style data required by `city_to_3d_model_name()`.
 
 ### Page Won't Load
 

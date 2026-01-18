@@ -204,6 +204,7 @@ function init_mock_cities() {
       owner: 1,
       tile: tile_index,
       size: 3 + Math.floor(Math.random() * 5),
+      style: i % 4,  // Rotate through available city styles
       pplhappy: [3],
       pplcontent: [2],
       pplunhappy: [0],
@@ -409,6 +410,48 @@ function init_mock_terrains() {
 }
 
 /**
+ * Initialize mock city rules (styles)
+ */
+function init_mock_city_rules() {
+  city_rules = {};
+  
+  // Default city styles
+  city_rules[0] = {
+    id: 0,
+    name: "European",
+    rule_name: "European",
+    graphic: "city.european",
+    graphic_alt: "city.classical"
+  };
+  
+  city_rules[1] = {
+    id: 1,
+    name: "Classical",
+    rule_name: "Classical",
+    graphic: "city.classical",
+    graphic_alt: "city.european"
+  };
+  
+  city_rules[2] = {
+    id: 2,
+    name: "Modern",
+    rule_name: "Modern",
+    graphic: "city.modern",
+    graphic_alt: "city.european"
+  };
+  
+  city_rules[3] = {
+    id: 3,
+    name: "Babylonian",
+    rule_name: "Babylonian",
+    graphic: "city.babylonian",
+    graphic_alt: "city.classical"
+  };
+  
+  console.log("Mock city rules initialized");
+}
+
+/**
  * Initialize all mock data
  */
 function init_all_mock_data() {
@@ -416,6 +459,7 @@ function init_all_mock_data() {
   
   init_mock_map();
   init_mock_terrains();
+  init_mock_city_rules();
   init_mock_players();
   init_mock_nations();
   init_mock_cities();
