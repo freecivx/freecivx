@@ -26,6 +26,37 @@ var width_offset = 0;
 var height_offset = 0;
 
 /**
+ * Position camera to properly view the 3D map
+ */
+function position_camera_for_standalone() {
+  console.log("Positioning camera for standalone mode");
+  
+  // Center on the middle of the map
+  const centerX = Math.floor(map.xsize / 2);
+  const centerY = Math.floor(map.ysize / 2);
+  const centerTile = map_pos_to_tile(centerX, centerY);
+  
+  if (centerTile && typeof center_tile_mapcanvas_3d === 'function') {
+    // Use the standard camera positioning function
+    center_tile_mapcanvas_3d(centerTile);
+    console.log(`Camera centered on tile (${centerX}, ${centerY})`);
+  } else if (centerTile && typeof camera_look_at === 'function') {
+    // Fallback to direct camera_look_at function
+    const pos = map_to_scene_coords(centerX, centerY);
+    camera_look_at(pos.x - 50, 0, pos.y - 50);
+    console.log(`Camera positioned at scene coords (${pos.x}, ${pos.y})`);
+  } else {
+    // Final fallback: manually position camera
+    console.warn("Using fallback camera positioning");
+    if (typeof camera !== 'undefined' && camera) {
+      camera.position.set(20, 30, 20);
+      camera.lookAt(0, 0, 0);
+      camera.updateMatrixWorld();
+    }
+  }
+}
+
+/**
  * Bootstrap the standalone 3D renderer
  */
 function bootstrap_standalone_renderer() {
@@ -65,6 +96,9 @@ function bootstrap_standalone_renderer() {
   if (!success) {
     return;
   }
+  
+  // Position camera to view the map
+  position_camera_for_standalone();
   
   // Start render loop
   start_standalone_render_loop();
@@ -157,27 +191,13 @@ function init_standalone_after_dom_ready() {
 
 /**
  * Show loading progress
+ * Note: We don't draw on the canvas here because WebGL will use it.
+ * The loading overlay in the HTML handles visual feedback instead.
  */
 function show_splash_screen() {
-  const canvas = document.getElementById('mapcanvas');
-  const ctx = canvas?.getContext('2d');
-  
-  if (ctx) {
-    const { width, height } = canvas;
-    // Use modern canvas drawing with method chaining where possible
-    ctx.fillStyle = '#1a1a2e';
-    ctx.fillRect(0, 0, width, height);
-    
-    Object.assign(ctx, {
-      fillStyle: '#ffffff',
-      font: '20px Arial',
-      textAlign: 'center'
-    });
-    
-    ctx.fillText('Loading Freeciv-web Standalone...', width / 2, height / 2);
-  }
-  
-  console.log("Showing splash screen");
+  // Canvas drawing removed - it conflicts with WebGL context
+  // The HTML loading overlay provides visual feedback during initialization
+  console.log("Splash screen phase (using HTML overlay)");
 }
 
 /**

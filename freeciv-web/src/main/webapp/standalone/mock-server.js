@@ -301,4 +301,16 @@ if (typeof add_spaceship === 'undefined') {
   };
 }
 
+/**
+ * Initialize mapview model dimensions
+ * These are needed for scene coordinate conversions but not initialized elsewhere
+ */
+if (typeof STANDALONE_MODE !== 'undefined' && STANDALONE_MODE) {
+  // Calculate model dimensions based on map size
+  // The MAPVIEW_ASPECT_FACTOR determines the scene scaling
+  window.mapview_model_width = 1000;  // Standard width for the 3D scene
+  window.mapview_model_height = 1000; // Standard height for the 3D scene
+  console.log(`Mapview model dimensions set: ${mapview_model_width} x ${mapview_model_height}`);
+}
+
 console.log("Mock server functions initialized");

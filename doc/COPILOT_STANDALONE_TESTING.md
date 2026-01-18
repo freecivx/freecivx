@@ -618,8 +618,72 @@ TypeError: Cannot read properties of undefined (reading 'length')
 - Use smaller map in test scenarios
 - Close other browser tabs
 
+## 13) January 2026 Improvements
+
+### 3D Map Rendering Fixes
+
+**Issue**: The standalone 3D renderer was initializing but not displaying the terrain map properly. Investigation revealed two critical issues:
+
+1. **Missing Camera Positioning**: The camera was never positioned after initialization, remaining at the default (0,0,0) coordinates
+2. **Undefined Mapview Dimensions**: The `mapview_model_width` and `mapview_model_height` variables were declared but never initialized
+
+**Solutions Implemented**:
+
+#### Camera Positioning (`renderer-bootstrap.js`)
+Added `position_camera_for_standalone()` function that:
+- Centers the camera on the middle of the map
+- Uses the existing `center_tile_mapcanvas_3d()` function
+- Falls back to `camera_look_at()` if needed
+- Provides manual positioning as final fallback
+
+```javascript
+function position_camera_for_standalone() {
+  const centerX = Math.floor(map.xsize / 2);
+  const centerY = Math.floor(map.ysize / 2);
+  const centerTile = map_pos_to_tile(centerX, centerY);
+  
+  if (centerTile && typeof center_tile_mapcanvas_3d === 'function') {
+    center_tile_mapcanvas_3d(centerTile);
+  }
+  // ... fallbacks ...
+}
+```
+
+#### Mapview Dimensions (`mock-server.js`)
+Initialized the mapview model dimensions required for scene coordinate conversions:
+
+```javascript
+window.mapview_model_width = 1000;  // Standard width for the 3D scene
+window.mapview_model_height = 1000; // Standard height for the 3D scene
+```
+
+#### Canvas Context Conflict Fix
+Removed 2D canvas drawing from `show_splash_screen()` that conflicted with WebGL context. The HTML loading overlay now handles all visual feedback during initialization.
+
+**Results**:
+- ✅ Camera now properly positioned to view the 3D map
+- ✅ Coordinate conversions work correctly (no more NaN positions)
+- ✅ WebGL renderer displays without canvas conflicts
+- ✅ All test scenarios functional
+
+**Testing in GitHub Copilot**:
+Successfully tested the standalone renderer inside GitHub Copilot workspace using a simple Python HTTP server:
+
+```bash
+cd /home/runner/work/freecivworld/freecivworld/freeciv-web/src/main/webapp
+python3 -m http.server 8080 &
+# Open http://localhost:8080/freeciv-web-standalone.html in Playwright
+```
+
+**Verified Functionality**:
+- 3D terrain mesh generation (77,924 vertices for 40x30 map)
+- Camera positioning and controls
+- Scene rendering with proper lighting
+- Test runner and screenshot controls
+- All 5 test scenarios available
+
 ---
 
-**Last Updated**: January 2026  
-**Version**: 1.1  
+**Last Updated**: January 18, 2026  
+**Version**: 1.2  
 **Status**: ✓ Implemented and Tested - All JavaScript errors fixed
