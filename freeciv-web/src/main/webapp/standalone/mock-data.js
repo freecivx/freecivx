@@ -32,6 +32,31 @@ var T_MOUNTAINS = 6;
 var T_SWAMP = 7;
 var T_TUNDRA = 8;
 
+// Extra type constants (matching the game's dynamic assignment)
+// These are normally defined dynamically in packhand.js via handle_ruleset_extra()
+// but need to be predefined in standalone mode.
+// NOTE: These values match the default Freeciv ruleset and may need updating if the
+// ruleset changes. The values correspond to the order extras are defined in the ruleset.
+var EXTRA_NONE = -1;
+var EXTRA_IRRIGATION = 0;
+var EXTRA_FARMLAND = 1;
+var EXTRA_MINE = 2;
+var EXTRA_POLLUTION = 3;
+var EXTRA_HUT = 4;
+var EXTRA_FORTRESS = 5;
+var EXTRA_AIRBASE = 6;
+var EXTRA_FALLOUT = 7;
+var EXTRA_BUOY = 8;
+var EXTRA_RUINS = 9;
+var EXTRA_ROAD = 10;
+var EXTRA_RAIL = 11;
+var EXTRA_MAGLEV = 12;
+var EXTRA_RIVER = 13;
+var EXTRA_OIL_WELL = 14;
+
+// Number of city styles that will be initialized
+var MOCK_CITY_STYLES_COUNT = 4;
+
 /**
  * Initialize mock map data
  */
@@ -182,6 +207,7 @@ function init_mock_cities() {
       owner: 1,
       tile: tile_index,
       size: 3 + Math.floor(Math.random() * 5),
+      style: i % MOCK_CITY_STYLES_COUNT,  // Rotate through available city styles
       pplhappy: [3],
       pplcontent: [2],
       pplunhappy: [0],
@@ -337,7 +363,7 @@ function init_mock_game() {
   // Mock additional game objects
   connections = {};
   governments = {};
-  improvements = {};
+  // Don't reassign improvements - it's a const in improvement.js
   techs = {};
   
   console.log("Mock game state initialized");
@@ -387,6 +413,30 @@ function init_mock_terrains() {
 }
 
 /**
+ * Initialize mock city rules (styles)
+ */
+function init_mock_city_rules() {
+  // city_rules is declared in city.js, just populate it
+  if (typeof city_rules === 'undefined') {
+    window.city_rules = {};
+  }
+  
+  // Default city styles
+  var styles = [
+    { id: 0, name: "European", rule_name: "European", graphic: "city.european", graphic_alt: "city.classical" },
+    { id: 1, name: "Classical", rule_name: "Classical", graphic: "city.classical", graphic_alt: "city.european" },
+    { id: 2, name: "Modern", rule_name: "Modern", graphic: "city.modern", graphic_alt: "city.european" },
+    { id: 3, name: "Babylonian", rule_name: "Babylonian", graphic: "city.babylonian", graphic_alt: "city.classical" }
+  ];
+  
+  for (var i = 0; i < styles.length; i++) {
+    city_rules[styles[i].id] = styles[i];
+  }
+  
+  console.log("Mock city rules initialized: " + styles.length + " styles");
+}
+
+/**
  * Initialize all mock data
  */
 function init_all_mock_data() {
@@ -394,6 +444,7 @@ function init_all_mock_data() {
   
   init_mock_map();
   init_mock_terrains();
+  init_mock_city_rules();
   init_mock_players();
   init_mock_nations();
   init_mock_cities();

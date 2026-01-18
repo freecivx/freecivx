@@ -193,4 +193,35 @@ if (typeof game_info === 'undefined') {
   };
 }
 
+/**
+ * Mock mapview_slide for camera animations
+ * This is normally defined in 2dcanvas/mapview.js but that file
+ * is not loaded in standalone mode. The variable is needed by
+ * mapview_webgl.js animate_webgl() function.
+ * Note: 'prev' and 'start' properties are added here even though the original
+ * only initializes them later, because they're accessed by animation code.
+ */
+if (typeof mapview_slide === 'undefined') {
+  window.mapview_slide = {
+    active: false,
+    dx: 0,
+    dy: 0,
+    i: 0,
+    max: 100,
+    slide_time: 700,
+    prev: 0,
+    start: 0
+  };
+}
+
+/**
+ * Mock spaceship variables for animation
+ * These are normally defined in spacerace.js which is not loaded in standalone mode
+ */
+if (typeof spaceship_launched === 'undefined') {
+  window.spaceship_launched = null;
+  window.spaceship_speed = 1.0;
+  window.spaceship_acc = 1.01;
+}
+
 console.log("Mock server functions initialized");
