@@ -420,6 +420,57 @@ if (typeof $ === 'undefined') {
         if (elem && fn) elem.addEventListener('keydown', fn);
         return this;
       },
+      mousedown: function(fn) {
+        if (elem && fn) elem.addEventListener('mousedown', fn);
+        return this;
+      },
+      mousemove: function(fn) {
+        if (elem && fn) elem.addEventListener('mousemove', fn);
+        return this;
+      },
+      mouseup: function(fn) {
+        if (elem && fn) elem.addEventListener('mouseup', fn);
+        return this;
+      },
+      contextmenu: function(fn) {
+        if (elem && fn) elem.addEventListener('contextmenu', fn);
+        return this;
+      },
+      height: function(val) {
+        if (arguments.length === 0) {
+          return elem ? elem.clientHeight : 0;
+        }
+        if (elem) elem.style.height = (typeof val === 'number' ? val + 'px' : val);
+        return this;
+      },
+      width: function(val) {
+        if (arguments.length === 0) {
+          return elem ? elem.clientWidth : 0;
+        }
+        if (elem) elem.style.width = (typeof val === 'number' ? val + 'px' : val);
+        return this;
+      },
+      outerHeight: function() {
+        return elem ? elem.offsetHeight : 0;
+      },
+      outerWidth: function() {
+        return elem ? elem.offsetWidth : 0;
+      },
+      css: function(prop, val) {
+        if (arguments.length === 1 && typeof prop === 'string') {
+          return elem ? elem.style[prop] : '';
+        }
+        if (elem) {
+          if (typeof prop === 'object') {
+            for (var key in prop) {
+              elem.style[key] = prop[key];
+            }
+          } else {
+            elem.style[prop] = val;
+          }
+        }
+        return this;
+      },
       length: elem ? 1 : 0
     };
   };
@@ -446,6 +497,17 @@ if (typeof $ === 'undefined') {
     if (overlay) {
       overlay.style.display = 'none';
     }
+  };
+  
+  // Mock AJAX functions
+  $.post = function(url, data, callback) {
+    console.log("Mock $.post to", url);
+    return { fail: function() { return this; } };
+  };
+  
+  $.ajax = function(options) {
+    console.log("Mock $.ajax", options);
+    return { fail: function() { return this; } };
   };
   
   // Mock $.extend for object merging (used by utility.js)

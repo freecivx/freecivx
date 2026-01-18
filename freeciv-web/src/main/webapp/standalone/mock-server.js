@@ -194,6 +194,17 @@ if (typeof game_info === 'undefined') {
 }
 
 /**
+ * Mock server_settings for WebGL rendering
+ */
+if (typeof server_settings === 'undefined') {
+  window.server_settings = {
+    borders: {
+      is_visible: true
+    }
+  };
+}
+
+/**
  * Mock mapview_slide for camera animations
  * This is normally defined in 2dcanvas/mapview.js but that file
  * is not loaded in standalone mode. The variable is needed by
@@ -317,6 +328,11 @@ if (typeof STANDALONE_MODE !== 'undefined' && STANDALONE_MODE) {
  * Mock jQuery plugins used by civclient.js and control.js
  */
 if (typeof $ !== 'undefined') {
+  // Ensure $.fn exists for jQuery plugins
+  if (!$.fn) {
+    $.fn = {};
+  }
+  
   // Mock getUrlVar for URL parameter parsing
   if (!$.getUrlVar) {
     $.getUrlVar = function(key) {
