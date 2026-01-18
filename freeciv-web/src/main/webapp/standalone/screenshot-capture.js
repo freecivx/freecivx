@@ -29,13 +29,13 @@ function capture_screenshot() {
   console.log("Capturing screenshot...");
   
   try {
-    if (!maprenderer) {
+    if (typeof maprenderer === 'undefined' || !maprenderer) {
       console.error("Renderer not initialized");
       return null;
     }
     
     // Render one more frame to ensure we have the latest
-    if (scene && camera) {
+    if (typeof scene !== 'undefined' && typeof camera !== 'undefined') {
       maprenderer.render(scene, camera);
     }
     
@@ -206,7 +206,7 @@ function toggle_screenshot_controls() {
 /**
  * Initialize screenshot capture on page load
  */
-if (STANDALONE_MODE) {
+if (typeof STANDALONE_MODE !== 'undefined' && STANDALONE_MODE) {
   // Wait for page to load using modern approach
   const initScreenshotControls = () => {
     setTimeout(add_screenshot_controls, 5000); // Add controls after 5 seconds

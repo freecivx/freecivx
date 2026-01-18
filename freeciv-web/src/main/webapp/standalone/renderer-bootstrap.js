@@ -179,7 +179,7 @@ function show_splash_screen() {
  */
 const original_webgl_preload_complete = window.webgl_preload_complete;
 window.webgl_preload_complete = function() {
-  if (STANDALONE_MODE) {
+  if (typeof STANDALONE_MODE !== 'undefined' && STANDALONE_MODE) {
     console.log("Mock webgl_preload_complete - skipping network_init");
     // Don't call network_init in standalone mode
   } else if (original_webgl_preload_complete) {
