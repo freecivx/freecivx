@@ -100,8 +100,10 @@ function bootstrap_standalone_renderer() {
   // Position camera to view the map
   position_camera_for_standalone();
   
-  // Start render loop
-  start_standalone_render_loop();
+  // Note: The render loop is already started by webgl_start_renderer() 
+  // via maprenderer.setAnimationLoop(animate_webgl). No need to start a separate loop.
+  // The animate_webgl() function in mapview_webgl.js handles all rendering.
+  console.log("Render loop already active via animate_webgl()");
   
   // Hide loading overlay using optional chaining
   setTimeout(() => {
@@ -116,8 +118,18 @@ function bootstrap_standalone_renderer() {
 
 /**
  * Start the standalone render loop
+ * NOTE: This function is NO LONGER USED.
+ * The render loop is automatically started by webgl_start_renderer()
+ * via maprenderer.setAnimationLoop(animate_webgl) in mapview_webgl.js.
+ * 
+ * Keeping this function for reference, but it should not be called.
  */
 function start_standalone_render_loop() {
+  console.warn("start_standalone_render_loop() called but is deprecated!");
+  console.warn("The render loop is already running via animate_webgl()");
+  
+  // Original implementation (no longer used):
+  /*
   console.log("Starting render loop");
   
   const animate = () => {
@@ -142,6 +154,7 @@ function start_standalone_render_loop() {
   };
   
   animate();
+  */
 }
 
 /**
