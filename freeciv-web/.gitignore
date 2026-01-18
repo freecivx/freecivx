@@ -1,2 +1,3 @@
 flyway.properties
 node_modules
+test-results/
