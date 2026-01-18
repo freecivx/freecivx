@@ -162,6 +162,8 @@ BROWSER COMPATIBILITY:
 - Requires: Modern JavaScript (ES2019+)
 - Tested: Chrome 90+, Firefox 88+, Edge 90+
 
+TODO: - Consider bundling all javascript files in /javascript using Closure Compiler, so that it's built and included like the real thing
+    
 -->
 <head>
 <title>Freeciv-web Standalone 3D Testing Environment</title>
@@ -329,7 +331,9 @@ var C_S_OVER = 6;        // Game is over
 var QUALITY_MEDIUM = 2;
 var QUALITY_HIGH = 3;
 </script>
-
+     <!-- Jquery should be early. -->
+<script type="text/javascript" src="/javascript/libs/jquery.min.js"></script>
+    
 <script type="text/javascript" src="/javascript/utility.js"></script>               <!-- Helper functions -->
     
 <!-- ============================================================================
@@ -337,7 +341,7 @@ var QUALITY_HIGH = 3;
      ============================================================================
      Load the real jQuery library and required plugins for client functionality
      ============================================================================ -->
-<script type="text/javascript" src="/javascript/libs/jquery.min.js"></script>
+
 <script type="text/javascript" src="/javascript/libs/jquery-ui.min.js"></script>
 <script type="text/javascript" src="/javascript/libs/jquery.blockUI.js"></script>
 <script type="text/javascript" src="/javascript/libs/jquery.contextMenu.js"></script>
