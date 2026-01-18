@@ -25,13 +25,14 @@
 // Storage for all tile meshes
 var tile_meshes = {};  // Keyed by "x,y" string
 var tile_geometries = {};  // Keyed by "x,y" string
+var tile_mesh_group = null;  // THREE.Group to hold all tile meshes
 
 // Tile rendering constants
 var TILE_SIZE = MAPVIEW_ASPECT_FACTOR;  // Base tile size
 
 /**
  * Generate a hexagonal tile geometry
- * @param {number} x - Tile x coordinate
+ * @param {number} x - Tile x coordinate  
  * @param {number} y - Tile y coordinate
  * @param {number} height - Tile height from heightmap
  * @returns {THREE.BufferGeometry} Hex tile geometry
@@ -44,6 +45,7 @@ function create_hex_tile_geometry(x, y, height) {
   var hex_height = TILE_SIZE * 2;
   
   // Calculate center position using odd-r offset coordinates
+  // Tiles are in XZ plane (Y is up)
   var centerX = x * hex_width;
   if (y % 2 === 1) {  // Odd rows are offset
     centerX += hex_width / 2;
@@ -51,6 +53,14 @@ function create_hex_tile_geometry(x, y, height) {
   var centerZ = y * hex_height * 0.75;  // Vertical spacing for hexagons
   
   var centerY = height * 100;  // Height scaling
+  
+  // Adjust for map centering (match single-mesh positioning)
+  // The map is centered at origin and then translated
+  var width_half = (map.xsize * hex_width) / 2;
+  var height_half = (map.ysize * hex_height * 0.75) / 2;
+  
+  centerX -= width_half;
+  centerZ -= height_half;
   
   // Create hexagon vertices (6 corners + 1 center)
   var vertices = [];
@@ -61,9 +71,9 @@ function create_hex_tile_geometry(x, y, height) {
   vertices.push(centerX, centerY, centerZ);
   uvs.push(0.5, 0.5);
   
-  // Six corner vertices
+  // Six corner vertices (flat-top hexagon)
   for (var i = 0; i < 6; i++) {
-    var angle = (Math.PI / 3) * i;
+    var angle = (Math.PI / 3) * i - Math.PI / 2;  // Start from top
     var vx = centerX + TILE_SIZE * Math.cos(angle);
     var vz = centerZ + TILE_SIZE * Math.sin(angle);
     vertices.push(vx, centerY, vz);
@@ -98,6 +108,13 @@ function create_square_tile_geometry(x, y, height) {
   var tileX = x * TILE_SIZE;
   var tileZ = y * TILE_SIZE;
   var tileY = height * 100;  // Height scaling
+  
+  // Adjust for map centering
+  var width_half = (map.xsize * TILE_SIZE) / 2;
+  var height_half = (map.ysize * TILE_SIZE) / 2;
+  
+  tileX -= width_half;
+  tileZ -= height_half;
   
   // Create square tile vertices (4 corners)
   var halfSize = TILE_SIZE / 2;
@@ -186,6 +203,12 @@ function create_or_update_tile_mesh(x, y, is_hex) {
 function init_tile_meshes(is_hex) {
   console.log("Initializing " + (is_hex ? "hexagonal" : "square") + " tile meshes...");
   
+  // Create a group to hold all tiles
+  if (tile_mesh_group) {
+    scene.remove(tile_mesh_group);
+  }
+  tile_mesh_group = new THREE.Group();
+  
   // For now, use simple materials per terrain type for testing
   // TODO: Integrate with the advanced shader system
   var material_cache = {};
@@ -230,11 +253,17 @@ function init_tile_meshes(is_hex) {
       mesh.receiveShadow = false;
       mesh.castShadow = false;
       tile_meshes[key] = mesh;
-      
-      if (typeof scene !== 'undefined') {
-        scene.add(mesh);
-      }
+      tile_mesh_group.add(mesh);
     }
+  }
+  
+  // Apply the same transformation as the single mesh
+  // Tiles are in XZ plane, so no need to rotate
+  // But apply translation offset to match single-mesh positioning
+  tile_mesh_group.position.set(Math.floor(mapview_model_width / 2) - 500, 0, 0);
+  
+  if (typeof scene !== 'undefined') {
+    scene.add(tile_mesh_group);
   }
   
   console.log("Created " + Object.keys(tile_meshes).length + " tile meshes.");
@@ -281,20 +310,22 @@ function update_tile_mesh(x, y, is_hex) {
  * Clean up all tile meshes (call when changing topology or ending game)
  */
 function cleanup_tile_meshes() {
+  if (tile_mesh_group && typeof scene !== 'undefined') {
+    scene.remove(tile_mesh_group);
+  }
+  
   for (var key in tile_meshes) {
     var mesh = tile_meshes[key];
-    if (typeof scene !== 'undefined') {
-      scene.remove(mesh);
-    }
     if (mesh.geometry) {
       mesh.geometry.dispose();
     }
     if (mesh.material && mesh.material.dispose) {
-      // Don't dispose shared material
+      // Don't dispose shared materials from cache
       // mesh.material.dispose();
     }
   }
   
   tile_meshes = {};
   tile_geometries = {};
+  tile_mesh_group = null;
 }
