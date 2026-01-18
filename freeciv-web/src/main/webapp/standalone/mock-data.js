@@ -34,7 +34,9 @@ var T_TUNDRA = 8;
 
 // Extra type constants (matching the game's dynamic assignment)
 // These are normally defined dynamically in packhand.js via handle_ruleset_extra()
-// but need to be predefined in standalone mode
+// but need to be predefined in standalone mode.
+// NOTE: These values match the default Freeciv ruleset and may need updating if the
+// ruleset changes. The values correspond to the order extras are defined in the ruleset.
 var EXTRA_NONE = -1;
 var EXTRA_IRRIGATION = 0;
 var EXTRA_FARMLAND = 1;

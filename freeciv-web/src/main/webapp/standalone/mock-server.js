@@ -198,6 +198,8 @@ if (typeof game_info === 'undefined') {
  * This is normally defined in 2dcanvas/mapview.js but that file
  * is not loaded in standalone mode. The variable is needed by
  * mapview_webgl.js animate_webgl() function.
+ * Note: 'prev' and 'start' properties are added here even though the original
+ * only initializes them later, because they're accessed by animation code.
  */
 if (typeof mapview_slide === 'undefined') {
   window.mapview_slide = {
@@ -209,6 +211,51 @@ if (typeof mapview_slide === 'undefined') {
     slide_time: 700,
     prev: 0,
     start: 0
+  };
+}
+
+/**
+ * Mock spaceship variables for animation
+ * These are normally defined in spacerace.js which is not loaded in standalone mode
+ */
+if (typeof spaceship_launched === 'undefined') {
+  window.spaceship_launched = null;
+  window.spaceship_speed = 1.0;
+  window.spaceship_acc = 1.01;
+}
+
+/**
+ * Mock find_visible_unit function
+ * This is normally defined in control.js which is not loaded in standalone mode
+ * Returns the visible unit on a tile, prioritizing focused units
+ */
+if (typeof find_visible_unit === 'undefined') {
+  window.find_visible_unit = function(ptile) {
+    // If no units here, return nothing
+    if (ptile == null) {
+      return null;
+    }
+    
+    // Check if tile_units function exists and get units
+    if (typeof tile_units === 'undefined') {
+      return null;
+    }
+    
+    var units_on_tile = tile_units(ptile);
+    if (units_on_tile == null || units_on_tile.length == 0) {
+      return null;
+    }
+    
+    // If a city is here, return nothing (unit hidden by city)
+    if (typeof tile_city !== 'undefined') {
+      var city = tile_city(ptile);
+      if (city != null) {
+        return null;
+      }
+    }
+    
+    // Return the first visible unit (simplified version without focus logic)
+    return units_on_tile[0];
   };
 }
 

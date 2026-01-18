@@ -449,6 +449,30 @@ Uncaught ReferenceError: mapview_slide is not defined
 
 **Solution:** The `mapview_slide` object is now mocked in `standalone/mock-server.js` with the proper structure including `active`, `dx`, `dy`, `i`, `max`, `slide_time`, `prev`, and `start` properties.
 
+#### spaceship_launched is not defined
+
+**Error Message:**
+```
+Uncaught ReferenceError: spaceship_launched is not defined
+    at update_animated_objects (animation.js:81:3)
+```
+
+**Cause:** The `spaceship_launched` variable and related spaceship animation variables (`spaceship_speed`, `spaceship_acc`) are defined in `javascript/spacerace.js`, which is not loaded in standalone mode.
+
+**Solution:** The spaceship variables are now mocked in `standalone/mock-server.js` with default values (`spaceship_launched = null`, `spaceship_speed = 1.0`, `spaceship_acc = 1.01`).
+
+#### find_visible_unit is not defined
+
+**Error Message:**
+```
+Uncaught (in promise) ReferenceError: find_visible_unit is not defined
+    at update_unit_position (object_position_handler_square.js:56:22)
+```
+
+**Cause:** The `find_visible_unit()` function is defined in `javascript/control.js`, which is not loaded in standalone mode. This function determines which unit should be visible when multiple units occupy the same tile.
+
+**Solution:** A simplified version of `find_visible_unit()` is now mocked in `standalone/mock-server.js`. It returns the first visible unit on a tile, excluding tiles with cities.
+
 ### Page Won't Load
 
 - Check browser console for errors
