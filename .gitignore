@@ -88,3 +88,7 @@ flyway.tmpl
 web.context.tmpl
 dependency-reduced-pom.xml
 tomcat.8080
+
+# Node.js dependencies
+node_modules/
+package-lock.json

@@ -2,6 +2,8 @@
 
 ## 1) Overview and Goals
 
+**NOTE: The HTML file `/freeciv-web/src/main/webapp/freeciv-web-standalone.html` now contains comprehensive inline documentation explaining its purpose, architecture, initialization flow, and usage. Refer to that file for detailed technical documentation.**
+
 The Freeciv-web standalone 3D testing environment provides a comprehensive platform for testing and developing the WebGL/Three.js 3D rendering engine **without requiring a running Tomcat server or Freeciv C server**. This enables:
 
 - **Offline development** - Work on 3D rendering without server dependencies
