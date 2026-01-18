@@ -2158,6 +2158,12 @@ function city_to_3d_model_name(pcity)
   var style_id = pcity['style'];
   if (style_id == -1) style_id = 0;
   var city_rule = city_rules[style_id];
+  
+  // Safety check: if city_rule is undefined, use default European style
+  if (!city_rule) {
+    console.warn(`City style ${style_id} not found in city_rules, using default European style`);
+    city_rule = { rule_name: "European" };
+  }
 
   var city_style_name = "european";
   if (city_rule['rule_name'] == "Modern") {
