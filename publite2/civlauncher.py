@@ -1,5 +1,7 @@
 import subprocess
 import time
+import pwd
+import os
 from threading import Thread
 from pathlib import Path
 from datetime import datetime
@@ -71,9 +73,10 @@ class Civlauncher(Thread):
                 logger.info("Proxy process terminated.")
 
     def build_freeciv_args(self):
-        # Use Path.home() instead of os.getenv('HOME') to prevent command injection
-        # Path.home() uses the system's home directory resolver which is more secure
-        freeciv_binary = Path.home() / "freeciv" / "bin" / "freeciv-web"
+        # Get home directory from system user database (not from HOME env var)
+        # This prevents command injection via HOME environment variable manipulation
+        home_dir = Path(pwd.getpwuid(os.getuid()).pw_dir)
+        freeciv_binary = home_dir / "freeciv" / "bin" / "freeciv-web"
         
         # Resolve to absolute path and validate it exists
         try:
