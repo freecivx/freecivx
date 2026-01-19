@@ -3,6 +3,7 @@ import time
 import pwd
 import os
 import threading
+import re
 from threading import Thread
 from pathlib import Path
 from datetime import datetime
@@ -62,33 +63,43 @@ class Civlauncher(Thread):
         logs_dir.mkdir(parents=True, exist_ok=True)
 
         proxy_process = None
+        proxy_log_file = None
+        freeciv_log_file = None
+        
         try:
-            # Start proxy process with proper file handle management
+            # Start proxy process - keep file handle open for process lifetime
             proxy_log = logs_dir / f"freeciv-proxy-{1000 + self.new_port}.log"
-            with open(proxy_log, "w") as proxy_log_file:
-                proxy_process = subprocess.Popen(
-                    ["websockify", str(1000 + self.new_port), f"localhost:{self.new_port}"],
-                    stdout=proxy_log_file,
-                    stderr=subprocess.STDOUT,
-                )
+            proxy_log_file = open(proxy_log, "w")
+            proxy_process = subprocess.Popen(
+                ["websockify", str(1000 + self.new_port), f"localhost:{self.new_port}"],
+                stdout=proxy_log_file,
+                stderr=subprocess.STDOUT,
+            )
             logger.info("Proxy started on port %s.", 1000 + self.new_port)
 
-            # Start Freeciv-web process with proper file handle management
+            # Start Freeciv-web process - keep file handle open for process lifetime
             freeciv_log = logs_dir / f"freeciv-web-stderr-{self.new_port}.log"
-            with open(freeciv_log, "w") as freeciv_log_file:
-                freeciv_process = subprocess.Popen(
-                    args,
-                    stdout=subprocess.DEVNULL,
-                    stderr=freeciv_log_file,
-                )
+            freeciv_log_file = open(freeciv_log, "w")
+            freeciv_process = subprocess.Popen(
+                args,
+                stdout=subprocess.DEVNULL,
+                stderr=freeciv_log_file,
+            )
             freeciv_process.wait()
             logger.info("Freeciv-web process exited with code %s.", freeciv_process.returncode)
 
         finally:
+            # Clean up proxy process
             if proxy_process:
                 proxy_process.terminate()
                 proxy_process.wait()
                 logger.info("Proxy process terminated.")
+            
+            # Close file handles after processes are done
+            if proxy_log_file:
+                proxy_log_file.close()
+            if freeciv_log_file:
+                freeciv_log_file.close()
 
     def build_freeciv_args(self):
         # Get home directory from system user database (not from HOME env var)
@@ -109,7 +120,6 @@ class Civlauncher(Thread):
         
         # Validate metahostpath to prevent command injection
         # Allow only alphanumeric, dots, colons, slashes, and dashes
-        import re
         if not re.match(r'^[a-zA-Z0-9.:/_-]+$', self.metahostpath):
             logger.error(
                 "Invalid metahostpath format: %s. Must contain only alphanumeric, dots, colons, slashes, and dashes.",
