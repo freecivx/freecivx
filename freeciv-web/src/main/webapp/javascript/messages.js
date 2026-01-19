@@ -196,7 +196,7 @@ function update_chatbox(messages)
     for (var i = 0; i < messages.length; i++) {
         var item = document.createElement('li');
         item.className = fc_e_events[messages[i].event][E_I_NAME];
-        item.innerHTML = escapeHTML(messages[i].message);
+        item.innerHTML = html_safe(messages[i].message);
         scrollDiv.appendChild(item);
     }
 
