@@ -2,6 +2,7 @@ import subprocess
 import time
 import pwd
 import os
+import threading
 from threading import Thread
 from pathlib import Path
 from datetime import datetime
@@ -12,8 +13,9 @@ logger = logging.getLogger(__name__)
 
 
 class Civlauncher(Thread):
-    def __init__(self, gametype, scripttype, new_port, metahostpath, savesdir):
+    def __init__(self, gametype, scripttype, new_port, metahostpath, savesdir, shutdown_event=None):
         super().__init__()
+        self.daemon = True  # Thread will not prevent program exit
         self.new_port = new_port
         self.gametype = gametype
         self.scripttype = scripttype
@@ -22,9 +24,10 @@ class Civlauncher(Thread):
         self.started_time = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")
         self.num_start = 0
         self.num_error = 0
+        self.shutdown_event = shutdown_event or threading.Event()
 
     def run(self):
-        while True:
+        while not self.shutdown_event.is_set():
             try:
                 logger.info(
                     "Start freeciv-web on port %s and freeciv-proxy on port %s.",
@@ -39,7 +42,12 @@ class Civlauncher(Thread):
             except KeyboardInterrupt:
                 logger.info("Received keyboard interrupt, stopping server on port %s.", self.new_port)
                 break
-            time.sleep(5)
+            
+            # Check shutdown event before sleeping
+            if self.shutdown_event.wait(5):
+                break
+        
+        logger.info("Civlauncher thread for port %s shutting down.", self.new_port)
 
     def launch_game(self):
         # Prepare save directory

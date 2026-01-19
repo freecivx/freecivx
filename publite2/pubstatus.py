@@ -4,19 +4,21 @@ from tornado.escape import xhtml_escape
 import sys
 import logging
 
-STATUS_PORT = 4002
-
 logger = logging.getLogger(__name__)
 
 """Serves the Publite2 status page on the URL: /pubstatus"""
 class PubStatus(Thread):
     def __init__(self, mc):
         super().__init__()
+        self.daemon = True  # Thread will not prevent program exit
         self.metachecker = mc
 
     def run(self):
         # Log the Python version
         logger.info("Starting PubStatus server with Python version: %s", sys.version)
+
+        # Get status port from config
+        status_port = self.metachecker.config.status_port
 
         # Set up the Tornado IOLoop and application
         io_loop = ioloop.IOLoop()
@@ -25,7 +27,8 @@ class PubStatus(Thread):
             (r"/pubstatus", StatusHandler, dict(metachecker=self.metachecker)),
         ])
         http_server = httpserver.HTTPServer(application)
-        http_server.listen(STATUS_PORT)
+        http_server.listen(status_port)
+        logger.info("PubStatus server listening on port %s", status_port)
         io_loop.start()
 
 class StatusHandler(web.RequestHandler):

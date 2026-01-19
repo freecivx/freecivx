@@ -2,6 +2,23 @@
 #Freeciv savegames are stored in this directory
 save_directory = /var/lib/tomcat11/webapps/data/savegames/
 
+# Metaserver connection settings
+# Can be overridden with environment variables: PUBLITE_METAHOST, PUBLITE_METAPORT
+metahost = localhost
+metaport = 8080
+
+# Status page port
+# Can be overridden with environment variable: PUBLITE_STATUS_PORT
+status_port = 4002
+
+# Initial port for game servers
+# Can be overridden with environment variable: PUBLITE_INITIAL_PORT
+initial_port = 6000
+
+# Metaserver check interval in seconds
+# Can be overridden with environment variable: PUBLITE_CHECK_INTERVAL
+check_interval = 40
+
 [Resource usage]
 server_capacity_single = 4
 server_capacity_multi = 2
