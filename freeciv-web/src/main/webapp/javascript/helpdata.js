@@ -208,13 +208,13 @@ function helpdata_format_current_ruleset()
 {
   var msg = "";
   if (ruleset_control != null) {
-    msg += "<h1>" + html_safe(ruleset_control['name']) + "</h1>";
+    msg += "<h1>" + ruleset_control['name'] + "</h1>";
   }
   if (ruleset_summary != null) {
-    msg += "<p>" + html_safe(ruleset_summary).replace(/\n/g, "<br>") + "</p>";
+    msg += "<p>" + ruleset_summary.replace(/\n/g, "<br>") + "</p>";
   }
   if (ruleset_description != null) {
-    msg += "<p>" + html_safe(ruleset_description).replace(/\n/g, "<br>") + "</p>";
+    msg += "<p>" + ruleset_description.replace(/\n/g, "<br>") + "</p>";
   }
   return msg;
 }

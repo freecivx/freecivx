@@ -193,15 +193,14 @@ function get_tileset_file_extention()
 }
 
 /**************************************************************************
- Makes a string HTML-safe by escaping HTML special characters to prevent
- XSS attacks.
+...
 **************************************************************************/
 function html_safe(text)
 {
-  if (text == null) return "";
-  var div = document.createElement('div');
-  div.textContent = text;
-  return div.innerHTML;
+  text = text.replace(/'/g, "&#39;");
+  text = text.replace(/"/g, "&#34;");
+  text = text.replace(/[\x03]/g,"\n");
+  return text;
 }
 
 /**************************************************************************
