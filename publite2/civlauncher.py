@@ -81,8 +81,12 @@ class Civlauncher(Thread):
         # Resolve to absolute path and validate it exists
         try:
             freeciv_binary = freeciv_binary.resolve(strict=True)
-        except (OSError, RuntimeError) as e:
-            logger.error("Freeciv binary not found at %s: %s", freeciv_binary, e)
+        except (OSError, FileNotFoundError) as e:
+            logger.error(
+                "Freeciv binary not found. Expected location: %s. Error: %s",
+                freeciv_binary,
+                e,
+            )
             raise
         
         args = [
