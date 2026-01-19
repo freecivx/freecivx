@@ -8,6 +8,7 @@ import time
 import http.client
 import logging
 import argparse
+import threading
 from enum import Enum
 from pathlib import Path
 from pubstatus import PubStatus
@@ -35,6 +36,7 @@ class GameType(Enum):
 class MetaChecker:
     def __init__(self, config: PubliteConfig | None = None):
         self.server_list = []
+        self.server_list_lock = threading.Lock()
         self.check_count = 0
         self.total = 0
         self.single = 0
@@ -70,18 +72,28 @@ class MetaChecker:
 
     def _fetch_meta_status(self):
         """Fetch the meta status from the Freeciv-web metaserver."""
+        conn = None
         try:
-            conn = http.client.HTTPConnection(METAHOST, METAPORT)
+            conn = http.client.HTTPConnection(METAHOST, METAPORT, timeout=10)
             conn.request("GET", STATUSPATH)
             response = conn.getresponse()
 
             self.last_http_status = response.status
             if response.status == 200:
                 self.html_doc = response.read().decode("ascii")
-                return self.html_doc.split(";")
+                status_parts = self.html_doc.split(";")
+                # Validate response format before returning
+                if len(status_parts) != 4:
+                    logger.error(
+                        "Invalid metaserver status format. Expected 4 parts, got %d: %s",
+                        len(status_parts),
+                        self.html_doc,
+                    )
+                    return None
+                return status_parts
             logger.error("Invalid metaserver status (HTTP %s)", response.status)
             return None
-        except Exception as e:  # noqa: BLE001
+        except (OSError, http.client.HTTPException) as e:
             logger.error(
                 "Unable to connect to metaserver at http://%s%s. Error: %s",
                 METAHOST,
@@ -90,7 +102,8 @@ class MetaChecker:
             )
             return None
         finally:
-            conn.close()
+            if conn:
+                conn.close()
 
     def _launch_server(self, game_type: GameType, port: int) -> int:
         """Launch a new server for the specified game type."""
@@ -102,7 +115,8 @@ class MetaChecker:
             f"{METAHOST}:{METAPORT}{METAPATH}",
             self.savesdir,
         )
-        self.server_list.append(new_server)
+        with self.server_list_lock:
+            self.server_list.append(new_server)
         new_server.start()
         return port + 1
 
@@ -116,9 +130,10 @@ class MetaChecker:
         """Periodically check the metaserver and launch additional servers if needed."""
         while True:
             time.sleep(METACHECKER_INTERVAL)
+            self.check_count += 1
 
             meta_status = self._fetch_meta_status()
-            if not meta_status or len(meta_status) != 4:
+            if not meta_status:
                 continue
 
             self._update_counts(meta_status)
@@ -169,15 +184,16 @@ def main(argv: list[str] | None = None) -> int:
     )
 
     # Test connection to the metaserver (legacy behaviour).
+    conn = None
     try:
-        conn = http.client.HTTPConnection(METAHOST, METAPORT)
+        conn = http.client.HTTPConnection(METAHOST, METAPORT, timeout=10)
         conn.request("GET", STATUSPATH)
         response = conn.getresponse()
 
         if response.status != 200:
             logger.error("Invalid response from metaserver (HTTP %s)", response.status)
             return 1
-    except Exception as e:  # noqa: BLE001
+    except (OSError, http.client.HTTPException) as e:
         logger.error(
             "Unable to connect to metaserver at http://%s%s. Error: %s",
             METAHOST,
@@ -186,7 +202,8 @@ def main(argv: list[str] | None = None) -> int:
         )
         return 1
     finally:
-        conn.close()
+        if conn:
+            conn.close()
 
     # Load configuration (using the possibly overridden settings path) and
     # initialise MetaChecker with it. This keeps behaviour consistent while

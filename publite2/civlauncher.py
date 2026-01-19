@@ -33,9 +33,12 @@ class Civlauncher(Thread):
                 )
                 self.launch_game()
                 self.num_start += 1
-            except Exception as e:  # noqa: BLE001
+            except (OSError, subprocess.SubprocessError, ValueError) as e:
                 logger.error("Error during execution: %s", e)
                 self.num_error += 1
+            except KeyboardInterrupt:
+                logger.info("Received keyboard interrupt, stopping server on port %s.", self.new_port)
+                break
             time.sleep(5)
 
     def launch_game(self):
@@ -45,24 +48,31 @@ class Civlauncher(Thread):
         # Build arguments
         args = self.build_freeciv_args()
 
+        # Use absolute path for logs directory
+        script_dir = Path(__file__).parent.resolve()
+        logs_dir = script_dir.parent / "logs"
+        logs_dir.mkdir(parents=True, exist_ok=True)
+
         proxy_process = None
         try:
-            # Start proxy process
-            proxy_log = f"../logs/freeciv-proxy-{1000 + self.new_port}.log"
-            proxy_process = subprocess.Popen(
-                ["websockify", str(1000 + self.new_port), f"localhost:{self.new_port}"],
-                stdout=open(proxy_log, "w"),
-                stderr=subprocess.STDOUT,
-            )
+            # Start proxy process with proper file handle management
+            proxy_log = logs_dir / f"freeciv-proxy-{1000 + self.new_port}.log"
+            with open(proxy_log, "w") as proxy_log_file:
+                proxy_process = subprocess.Popen(
+                    ["websockify", str(1000 + self.new_port), f"localhost:{self.new_port}"],
+                    stdout=proxy_log_file,
+                    stderr=subprocess.STDOUT,
+                )
             logger.info("Proxy started on port %s.", 1000 + self.new_port)
 
-            # Start Freeciv-web process
-            freeciv_log = f"../logs/freeciv-web-stderr-{self.new_port}.log"
-            freeciv_process = subprocess.Popen(
-                args,
-                stdout=subprocess.DEVNULL,
-                stderr=open(freeciv_log, "w"),
-            )
+            # Start Freeciv-web process with proper file handle management
+            freeciv_log = logs_dir / f"freeciv-web-stderr-{self.new_port}.log"
+            with open(freeciv_log, "w") as freeciv_log_file:
+                freeciv_process = subprocess.Popen(
+                    args,
+                    stdout=subprocess.DEVNULL,
+                    stderr=freeciv_log_file,
+                )
             freeciv_process.wait()
             logger.info("Freeciv-web process exited with code %s.", freeciv_process.returncode)
 
@@ -89,6 +99,21 @@ class Civlauncher(Thread):
             )
             raise
         
+        # Validate metahostpath to prevent command injection
+        # Allow only alphanumeric, dots, colons, slashes, and dashes
+        import re
+        if not re.match(r'^[a-zA-Z0-9.:/_-]+$', self.metahostpath):
+            logger.error(
+                "Invalid metahostpath format: %s. Must contain only alphanumeric, dots, colons, slashes, and dashes.",
+                self.metahostpath,
+            )
+            raise ValueError(f"Invalid metahostpath: {self.metahostpath}")
+        
+        # Use absolute path for logs directory
+        script_dir = Path(__file__).parent.resolve()
+        logs_dir = script_dir.parent / "logs"
+        log_file = logs_dir / f"freeciv-web-log-{self.new_port}.log"
+        
         args = [
             str(freeciv_binary),
             "--debug", "1",
@@ -99,7 +124,7 @@ class Civlauncher(Thread):
             "--Metaserver", f"http://{self.metahostpath}",
             "--type", self.gametype,
             "--read", f"pubscript_{self.scripttype}.serv",
-            "--log", f"../logs/freeciv-web-log-{self.new_port}.log",
+            "--log", str(log_file),
             "--quitidle", "20",
             "--saves", str(self.savesdir),
         ]
