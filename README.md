@@ -3,6 +3,7 @@ FreecivWorld.net - Freeciv in 3D for the web!
 
 [![License: AGPL v3](https://img.shields.io/badge/License-AGPL%20v3-blue.svg)](https://www.gnu.org/licenses/agpl-3.0)
 [![Build Status](https://github.com/freecivworld/freecivworld/workflows/continuous%20integration/badge.svg)](https://github.com/freecivworld/freecivworld/actions?query=workflow%3A%22continuous+integration%22)
+[![CodeFactor](https://www.codefactor.io/repository/github/freecivworld/freecivworld/badge)](https://www.codefactor.io/repository/github/freecivworld/freecivworld)
 
 
 [FreecivWorld.net](https://www.FreecivWorld.net) is an open-source turn-based strategy game. It can be played in a web-browser which supports HTML5 and WebGL 2 or WebGPU. The game features in-depth game-play and a wide variety of game modes and options. Your goal is to build cities, collect resources, organize your government, and build an army, with the ultimate goal of creating the best civilization. You can play online against other players (multiplayer) or play by yourself against the computer.
