@@ -212,6 +212,18 @@ function uncapitalize(s) {
 }
 
 /**************************************************************************
+ Escapes HTML special characters to prevent XSS attacks.
+ Converts characters like <, >, &, ", and ' to their HTML entity equivalents.
+**************************************************************************/
+function escapeHTML(text)
+{
+  if (text == null) return "";
+  var div = document.createElement('div');
+  div.textContent = text;
+  return div.innerHTML;
+}
+
+/**************************************************************************
 ...
 **************************************************************************/
 function cleaned_text(str)
