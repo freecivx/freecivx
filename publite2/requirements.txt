@@ -1,8 +1,0 @@
-# Publite2 Dependencies
-# Python 3.8+ required
-
-# Web server for status page
-tornado>=6.0,<7.0
-
-# Note: websockify is expected to be available as a system command
-# Install via: pip install websockify OR apt-get install websockify
