@@ -90,7 +90,7 @@ function start_standalone_game() {
   // Create mock data
   create_mock_game_data();
   
-  // Set client state to running
+  // Set client state to running - this will trigger the game UI to show
   set_client_state(C_S_RUNNING);
   
   console.log("Standalone game started successfully");
@@ -271,12 +271,10 @@ function create_mock_ruleset() {
     }
   };
   
-  // Create basic improvements
-  improvements = {
-    0: { id: 0, name: "Palace" },
-    1: { id: 1, name: "Barracks" },
-    2: { id: 2, name: "Granary" }
-  };
+  // Create basic improvements (populate existing const object)
+  improvements[0] = { id: 0, name: "Palace" };
+  improvements[1] = { id: 1, name: "Barracks" };
+  improvements[2] = { id: 2, name: "Granary" };
   
   console.log("Created mock ruleset data");
 }
