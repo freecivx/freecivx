@@ -6,7 +6,8 @@
   "scripts": {
     "build": "vite build && node unwrap-bundle.js",
     "dev": "vite",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test": "node test-bundle.js"
   },
   "devDependencies": {
     "vite": "^6.0.5",

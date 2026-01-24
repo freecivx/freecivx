@@ -177,7 +177,7 @@ export default function viteConcatPlugin() {
           concatenatedCode += code;
           concatenatedCode += '\n';
         } catch (err) {
-          console.warn(`Warning: Could not read ${filePath}: ${err.message}`);
+          console.warn(`Warning: Could not read file ${file}: ${err.message}`);
         }
       }
       console.log(`Concatenated ${jsFiles.length} files (${concatenatedCode.length} bytes)`);
