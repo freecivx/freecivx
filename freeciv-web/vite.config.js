@@ -16,8 +16,12 @@ export default defineConfig({
         entryFileNames: 'webclient-vite.min.js',
         chunkFileNames: 'chunks/[name]-[hash].js',
         assetFileNames: 'assets/[name]-[hash][extname]',
-        // Use ES module format to support import maps for three.js
-        format: 'es'
+        // Use IIFE format for compatibility with Closure Compiler and regular script tags
+        format: 'iife',
+        // Map external 'three' module to global THREE variable
+        globals: {
+          three: 'THREE'
+        }
       },
       // External dependencies that should not be bundled
       // three.js is loaded externally via import maps in index.jsp
