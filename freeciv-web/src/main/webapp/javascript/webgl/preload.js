@@ -39,7 +39,7 @@ function webgl_preload()
   loader = new GLTFLoader();
   const dracoLoader = new DRACOLoader();
   dracoLoader.setDecoderPath( '/javascript/webgl/libs/' );
-  dracoLoader.setDecoderConfig( { type: 'js' } );
+  dracoLoader.setDecoderConfig( { type: 'wasm' } );
   loader.setDRACOLoader(dracoLoader);
 
   var loadingManager = new THREE.LoadingManager();
