@@ -73,9 +73,6 @@ function setup_standalone_environment() {
       setup_window_size();
     });
   }
-
-  EXTRA_RIVER = 13;
-  EXTRA_ROAD = 11;
 }
 
 /**************************************************************************
@@ -97,6 +94,11 @@ function start_standalone_game() {
   
   // Create mock data
   create_mock_game_data();
+  
+  // Initialize WebGL loader and resources before starting the game
+  // This is necessary because in standalone mode we bypass the normal
+  // tileset preloading flow that initializes these resources
+  initialize_standalone_webgl();
   
   // Set client state to running - this will trigger the game UI to show
   set_client_state(C_S_RUNNING);
@@ -287,6 +289,74 @@ function create_mock_ruleset() {
   improvements[1] = { id: 1, name: "Barracks" };
   improvements[2] = { id: 2, name: "Granary" };
   
+  // Create city styles (city_rules)
+  city_rules = {
+    0: {
+      style_id: 0,
+      rule_name: "European",
+      name: "European"
+    },
+    1: {
+      style_id: 1,
+      rule_name: "Classical",
+      name: "Classical"
+    },
+    2: {
+      style_id: 2,
+      rule_name: "Modern",
+      name: "Modern"
+    }
+  };
+  
+  // Create mock extras (terrain improvements like roads, mines, etc.)
+  // This is needed because object_position_handler_square.js references EXTRA_* constants
+  extras = {};
+  
+  // Define common extra types with IDs
+  var extraId = 0;
+  
+  // Roads and infrastructure
+  extras[extraId] = { id: extraId, name: "Road", rule_name: "Road" };
+  window.EXTRA_ROAD = extraId++;
+  
+  extras[extraId] = { id: extraId, name: "Railroad", rule_name: "Railroad" };
+  window.EXTRA_RAIL = extraId++;
+  
+  extras[extraId] = { id: extraId, name: "River", rule_name: "River" };
+  window.EXTRA_RIVER = extraId++;
+  
+  // Resources
+  extras[extraId] = { id: extraId, name: "Mine", rule_name: "Mine" };
+  window.EXTRA_MINE = extraId++;
+  
+  extras[extraId] = { id: extraId, name: "Irrigation", rule_name: "Irrigation" };
+  window.EXTRA_IRRIGATION = extraId++;
+  
+  extras[extraId] = { id: extraId, name: "Oil Well", rule_name: "Oil Well" };
+  window.EXTRA_OIL_WELL = extraId++;
+  
+  // Special features
+  extras[extraId] = { id: extraId, name: "Hut", rule_name: "Hut" };
+  window.EXTRA_HUT = extraId++;
+  
+  extras[extraId] = { id: extraId, name: "Ruins", rule_name: "Ruins" };
+  window.EXTRA_RUINS = extraId++;
+  
+  extras[extraId] = { id: extraId, name: "Fortress", rule_name: "Fortress" };
+  window.EXTRA_FORTRESS = extraId++;
+  
+  extras[extraId] = { id: extraId, name: "Airbase", rule_name: "Airbase" };
+  window.EXTRA_AIRBASE = extraId++;
+  
+  extras[extraId] = { id: extraId, name: "Fallout", rule_name: "Fallout" };
+  window.EXTRA_FALLOUT = extraId++;
+  
+  extras[extraId] = { id: extraId, name: "Pollution", rule_name: "Pollution" };
+  window.EXTRA_POLLUTION = extraId++;
+  
+  extras[extraId] = { id: extraId, name: "Buoy", rule_name: "Buoy" };
+  window.EXTRA_BUOY = extraId++;
+  
   console.log("Created mock ruleset data");
 }
 
@@ -388,6 +458,7 @@ function create_mock_cities() {
     tile: capital_tile_index,
     name: "Rome",
     size: 3,
+    style: 1, // Classical style
     improvements: new BitVector([true, false, false]), // Has Palace
     production_kind: 0, // Building
     production_value: 1, // Barracks
@@ -419,6 +490,7 @@ function create_mock_cities() {
     tile: city1_tile_index,
     name: "Memphis",
     size: 2,
+    style: 0, // European style
     improvements: new BitVector([true, false, false]), // Has Palace
     production_kind: 1, // Unit
     production_value: 1, // Warriors
@@ -449,6 +521,7 @@ function create_mock_cities() {
     tile: city2_tile_index,
     name: "Athens",
     size: 2,
+    style: 1, // Classical style
     improvements: new BitVector([true, false, false]), // Has Palace
     production_kind: 1, // Unit
     production_value: 1, // Warriors
@@ -641,4 +714,35 @@ function create_mock_server_settings() {
   };
   
   console.log("Created mock server_settings");
+}
+
+/**************************************************************************
+ * Initialize WebGL resources for standalone mode
+ * This initializes the GLTFLoader and other resources that would normally
+ * be initialized during tileset preloading
+ **************************************************************************/
+function initialize_standalone_webgl() {
+  console.log("Initializing WebGL resources for standalone mode");
+  
+  // Initialize the GLTF loader if it hasn't been initialized yet
+  if (typeof loader === 'undefined' || loader === null) {
+    loader = new GLTFLoader();
+    const dracoLoader = new DRACOLoader();
+    dracoLoader.setDecoderPath('/javascript/webgl/libs/');
+    dracoLoader.setDecoderConfig({ type: 'wasm' });
+    loader.setDRACOLoader(dracoLoader);
+    console.log("Initialized GLTFLoader for standalone mode");
+  }
+  
+  // Initialize webgl_textures if not already initialized
+  if (typeof webgl_textures === 'undefined') {
+    window.webgl_textures = {};
+  }
+  
+  // Initialize webgl_models if not already initialized  
+  if (typeof webgl_models === 'undefined') {
+    window.webgl_models = {};
+  }
+  
+  console.log("WebGL resources initialized for standalone mode");
 }
