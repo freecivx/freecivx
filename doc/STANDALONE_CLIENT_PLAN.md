@@ -150,11 +150,42 @@ Testing approach:
 - ✅ Fixed: Missing server_settings['borders']['is_visible'] error
 - ✅ Fixed: Duplicate standalone client files (removed -dev version)
 - ✅ Fixed: BitVector null initialization error causing "Cannot read properties of null (reading '1')" at BitVector.isSet
+- ✅ Fixed: THREE.Material parameter 'map' has value of undefined (added placeholder texture in standalone.js)
+- ✅ Fixed: Race conditions causing WebGL errors by adding proper initialization delays
+- ✅ Enhanced: Added comprehensive console logging throughout standalone mode for better debugging
 
 ### Remaining Known Issues
-- ⚠️ WebGL map rendering may still have errors (need to initialize tileset and graphics data)
-- ⚠️ Some 404 errors for missing static assets (flags, textures) - cosmetic only
+- ⚠️ THREE.BufferGeometry.computeBoundingSphere() NaN warnings may still appear but don't break functionality
+- ⚠️ Some 404 errors for missing static assets (flags, textures) - cosmetic only, will be replaced when actual assets load
 - ⚠️ Game state panel and unit info panels may need additional mock data initialization
+
+### Important Notes
+- **All fixes are isolated to standalone.js and documentation files only**
+- **No modifications to core WebGL or game files** - normal mode remains unaffected
+- **Standalone mode uses initialization delays and placeholder resources** to work around timing issues
+
+### Recent Updates (January 2026)
+
+#### Fixes Applied (Standalone Mode Only)
+1. **Increased Initialization Delays**: 
+   - Increased `STANDALONE_STARTUP_DELAY_MS` from 500ms to 1000ms to allow textures to load before game starts
+   - Added `STANDALONE_WEBGL_INIT_DELAY_MS` (500ms) delay before setting client state to C_S_RUNNING
+   - This prevents race conditions where WebGL tries to use resources before they're ready
+
+2. **Added Placeholder Textures**:
+   - Created placeholder city_light texture in `initialize_standalone_webgl()` to prevent "map parameter undefined" errors
+   - Placeholder is a simple white 32x32 canvas texture that gets replaced when actual texture loads
+   - This ensures THREE.Material always has a valid texture reference
+
+3. **Enhanced Console Logging**: 
+   - Added comprehensive logging throughout `standalone.js` with `[Standalone]` prefixes for better debugging
+   - Logs include initialization steps, resource counts, timing information, and state transitions
+   - Makes it easier to diagnose issues and track standalone mode execution
+
+4. **Updated Documentation**: 
+   - Updated STANDALONE_CLIENT_PLAN.md to reflect current status and fixes
+   - All changes are isolated to standalone.js and documentation files only
+   - No modifications to core WebGL or game files that could affect normal mode
 
 ### Next Steps (Priority Order)
 
