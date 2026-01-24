@@ -73,6 +73,9 @@ function setup_standalone_environment() {
       setup_window_size();
     });
   }
+
+  EXTRA_RIVER = 13;
+  EXTRA_ROAD = 11;
 }
 
 /**************************************************************************
