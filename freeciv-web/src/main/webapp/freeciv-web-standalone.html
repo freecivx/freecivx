@@ -462,22 +462,46 @@ function update_loading_progress(percent, message) {
 
 // *** MAIN INITIALIZATION ***
 // Called when page finishes loading (all scripts downloaded)
-// Triggers the standalone environment initialization sequence
+// Uses retry mechanism to handle async script loading
 window.addEventListener('load', function() {
-  console.log("Page loaded, initializing standalone environment...");
+  console.log("Page loaded, waiting for standalone environment...");
   update_loading_progress(50, "Initializing...");
   
-  // Small delay to ensure DOM is ready
-  setTimeout(function() {
+  var initAttempts = 0;
+  var maxAttempts = 20; // Try for up to 2 seconds (20 * 100ms)
+  
+  function attemptInit() {
+    initAttempts++;
+    
+    // Check if bootstrap module is ready
+    if (typeof init_standalone_environment !== 'function') {
+      if (initAttempts < maxAttempts) {
+        console.log(`Waiting for init_standalone_environment... (attempt ${initAttempts}/${maxAttempts})`);
+        setTimeout(attemptInit, 100);
+        return;
+      } else {
+        var errorMsg = "Failed to initialize: init_standalone_environment function not found after " + maxAttempts + " attempts. " +
+                      "This may indicate a script loading issue. Check browser console for errors.";
+        console.error(errorMsg);
+        alert(errorMsg);
+        return;
+      }
+    }
+    
+    // Bootstrap module is ready, proceed with initialization
     try {
-      // Start initialization (defined in renderer-bootstrap.js)
+      console.log("Starting standalone environment initialization...");
       init_standalone_environment();
       update_loading_progress(100, "Complete!");
     } catch (e) {
       console.error("Initialization error:", e);
-      alert("Error initializing: " + e.message);
+      console.error("Stack trace:", e.stack);
+      alert("Error initializing: " + e.message + "\n\nCheck console for details.");
     }
-  }, 100);
+  }
+  
+  // Start initialization attempts
+  setTimeout(attemptInit, 100);
 });
 
 // *** WINDOW RESIZE HANDLER ***
