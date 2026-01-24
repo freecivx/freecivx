@@ -1,4 +1,4 @@
-const { test, expect } = require('@playwright/test');
+import { test, expect } from '@playwright/test';
 
 test('Freeciv-web standalone 3D environment loads', async ({ page }) => {
   // Set a longer timeout since 3D loading takes time
