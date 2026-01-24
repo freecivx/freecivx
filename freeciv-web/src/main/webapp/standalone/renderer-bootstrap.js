@@ -198,6 +198,4 @@ window.webgl_preload_complete = function() {
   }
 };
 
-// Signal that the bootstrap module is ready
-window.STANDALONE_BOOTSTRAP_READY = true;
-console.log("Renderer bootstrap module loaded and ready");
+console.log("Renderer bootstrap module loaded");
