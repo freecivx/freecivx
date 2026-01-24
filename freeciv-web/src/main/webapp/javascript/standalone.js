@@ -29,7 +29,9 @@ var standalone_mode = false;
 var STANDALONE_STARTUP_DELAY_MS = 1000;  // Increased delay to allow textures to load
 var STANDALONE_MAP_WIDTH = 40;          // Map width in tiles
 var STANDALONE_MAP_HEIGHT = 30;         // Map height in tiles
-var STANDALONE_WEBGL_INIT_DELAY_MS = 500; // Additional delay before WebGL initialization
+// Delay before setting client state to allow WebGL renderer, textures, and geometry to initialize
+// This prevents race conditions where the renderer tries to use resources before they're ready
+var STANDALONE_WEBGL_INIT_DELAY_MS = 500;
 
 /**************************************************************************
  * Initialize standalone mode
@@ -756,6 +758,21 @@ function create_mock_server_settings() {
 }
 
 /**************************************************************************
+ * Create a placeholder texture to prevent undefined texture errors
+ * This is used during standalone initialization when actual textures
+ * haven't loaded yet
+ **************************************************************************/
+function create_placeholder_texture(width, height, color) {
+  var canvas = document.createElement('canvas');
+  canvas.width = width || 32;
+  canvas.height = height || 32;
+  var ctx = canvas.getContext('2d');
+  ctx.fillStyle = color || '#ffffff';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  return new THREE.CanvasTexture(canvas);
+}
+
+/**************************************************************************
  * Initialize WebGL resources for standalone mode
  * This initializes the GLTFLoader and other resources that would normally
  * be initialized during tileset preloading
@@ -785,18 +802,10 @@ function initialize_standalone_webgl() {
   }
   
   // Pre-create placeholder textures to prevent undefined errors
-  // These will be replaced when actual textures load
+  // These will be replaced when actual textures load asynchronously
   if (!window.webgl_textures["city_light"]) {
     console.log("[Standalone] Creating placeholder city_light texture");
-    // Create a simple placeholder texture to prevent undefined errors
-    var canvas = document.createElement('canvas');
-    canvas.width = 32;
-    canvas.height = 32;
-    var ctx = canvas.getContext('2d');
-    ctx.fillStyle = '#ffffff';
-    ctx.fillRect(0, 0, 32, 32);
-    var placeholderTexture = new THREE.CanvasTexture(canvas);
-    window.webgl_textures["city_light"] = placeholderTexture;
+    window.webgl_textures["city_light"] = create_placeholder_texture(32, 32, '#ffffff');
   }
   
   // Initialize webgl_models if not already initialized  
