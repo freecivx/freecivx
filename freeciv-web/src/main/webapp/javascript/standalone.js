@@ -55,9 +55,7 @@ function setup_standalone_environment() {
   if (typeof setup_window_size === 'function') {
     // Ensure window sizing works in standalone mode
     $(window).on('resize', function() {
-      if (typeof setup_window_size === 'function') {
-        setup_window_size();
-      }
+      setup_window_size();
     });
   }
 }

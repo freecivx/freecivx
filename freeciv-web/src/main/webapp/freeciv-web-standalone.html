@@ -31,8 +31,9 @@ var fcwDebug=false;
 <!-- Main application bundle - includes jQuery, Stacktrace, Audio, and all application code -->
 <script src="/javascript/webclient.min.js" defer></script>
 
-<!-- Standalone-specific functionality -->
-<script src="/javascript/standalone.js" defer></script>
+<!-- Standalone-specific functionality (included in webclient.min.js after build, 
+     this separate tag is for development when using unminified sources) -->
+<!-- <script src="/javascript/standalone.js" defer></script> -->
 
 <link rel="shortcut icon" href="/images/freeciv-shortcut-icon.png" />
 <link rel="apple-touch-icon" href="/images/freeciv-splash4.png" />
