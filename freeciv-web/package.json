@@ -1,0 +1,15 @@
+{
+  "name": "freeciv-web",
+  "version": "1.0.0",
+  "description": "Freeciv-Web JavaScript build with Vite",
+  "type": "module",
+  "scripts": {
+    "build": "vite build",
+    "dev": "vite",
+    "preview": "vite preview"
+  },
+  "devDependencies": {
+    "vite": "^6.0.5",
+    "terser": "^5.36.0"
+  }
+}

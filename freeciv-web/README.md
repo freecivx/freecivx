@@ -36,6 +36,27 @@ sh build.sh
 
 There is also a build-js.sh script to build just JavaScript quickly for development work.
 
+JavaScript Build with Vite
+===========================
+Freeciv-web now supports building JavaScript using Vite as an alternative to the Closure Compiler.
+The Vite build provides faster build times and modern JavaScript tooling.
+
+To build JavaScript with Vite:
+```
+cd freeciv-web
+npm install    # Install dependencies (only needed once)
+npm run build  # Build JavaScript with Vite
+```
+
+The Vite build outputs:
+- `target/vite-build/webclient-vite.min.js` - Minified JavaScript bundle
+- `target/vite-build/webclient-vite.min.js.map` - Source map for debugging
+
+During Maven build, both Closure Compiler and Vite builds are executed:
+- `mvn compile` runs `npm install` and `npm run build` automatically
+- The Vite output is copied to `target/freeciv-web/javascript/` alongside the Closure Compiler output
+- Set `-Dskip-minify-js=true` to skip JavaScript minification during development
+
 The build script will also create a data webapp directory where savegames and scorelogs are stored.
 
 Flyway migrations of the database is supported. Remember to set the mysql password in flyway.properties.dist and rename the file to flyway.properties.
