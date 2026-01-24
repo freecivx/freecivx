@@ -505,3 +505,8 @@ function tech_dialog_active() {
 function update_tech_dialog_cursor() {
   return;
 }
+
+
+function is_small_screen() {
+  return false;
+}
