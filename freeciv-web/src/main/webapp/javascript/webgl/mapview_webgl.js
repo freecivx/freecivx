@@ -238,6 +238,7 @@ function init_land_geometry(geometry, mesh_quality)
   const uvs = [];
   const vertices = [];
   let heightmap_scale = (mesh_quality === 2) ? (mesh_quality * 2) : 1;
+  const heightmap_resolution_x = map.xsize * mesh_quality + 1;
 
   for ( let iy = 0; iy < gridY1; iy ++ ) {
     const y = iy * segment_height - height_half;
@@ -245,7 +246,11 @@ function init_land_geometry(geometry, mesh_quality)
       const x = ix * segment_width - width_half;
       var sx = ix % xquality, sy = iy % yquality;
 
-      vertices.push( x, -y, heightmap[sx * heightmap_scale][sy * heightmap_scale] * 100 );
+      // Calculate 1D index for heightmap array
+      const heightmap_index = (sy * heightmap_scale) * heightmap_resolution_x + (sx * heightmap_scale);
+      const height_value = heightmap && heightmap[heightmap_index] !== undefined ? heightmap[heightmap_index] * 100 : 0;
+      
+      vertices.push( x, -y, height_value );
       uvs.push( ix / gridX );
       uvs.push( 1 - ( iy / gridY ) );
     }
@@ -296,6 +301,7 @@ function update_land_geometry(geometry, mesh_quality) {
   const height_half = mapview_model_height / 2;
 
   const heightmap_scale = (mesh_quality === 2) ? 2 : 1;
+  const heightmap_resolution_x = map.xsize * mesh_quality + 1;
   const bufferAttribute = mesh_quality === 2 ? lofibufferattribute : landbufferattribute;
 
   for (let iy = 0; iy <= gridY; iy++) {
@@ -304,9 +310,11 @@ function update_land_geometry(geometry, mesh_quality) {
       const x = ix * segment_width - width_half;
       const sx = ix % xquality, sy = iy % yquality;
       const index = iy * (gridX + 1) + ix;
-      const heightIndex = (sy * heightmap_scale * xquality) + (sx * heightmap_scale); // Convert (sx, sy) to single index
+      // Calculate 1D index for heightmap array
+      const heightIndex = (sy * heightmap_scale) * heightmap_resolution_x + (sx * heightmap_scale);
+      const height_value = heightmap && heightmap[heightIndex] !== undefined ? heightmap[heightIndex] * 100 : 0;
 
-      bufferAttribute.setXYZ(index, x, -y, heightmap[heightIndex] * 100);
+      bufferAttribute.setXYZ(index, x, -y, height_value);
     }
   }
 
@@ -398,7 +406,7 @@ function add_quality_dependent_objects_webgl()
   var waterGeometry = new THREE.PlaneGeometry( mapview_model_width, mapview_model_height);
 
   // Full water effect for other platforms
-  waterMaterial = new THREE.MeshPhysicalMaterial({
+  var waterMaterialConfig = {
     transmission: 1, // Fully transparent
     roughness: 0.1, // Smoother surface for shiny appearance
     ior: 1.333, // Index of refraction for water
@@ -409,10 +417,16 @@ function add_quality_dependent_objects_webgl()
     thickness: 6, // Reduced thickness to emphasize shallow areas
     attenuationColor: '#b0e2d4', // Soft blue-green for shallow areas
     attenuationDistance: 12, // Shorter absorption distance for vibrant shallow areas
-    envMapIntensity: 1.7, // Stronger environment reflections
-    normalMap: webgl_textures["water1"], // Wave texture
-    normalScale: new THREE.Vector2(0.02, 0.02), // Very subtle, short waves
-  });
+    envMapIntensity: 1.7 // Stronger environment reflections
+  };
+  
+  // Add normalMap only if the texture is available
+  if (webgl_textures["water1"]) {
+    waterMaterialConfig.normalMap = webgl_textures["water1"]; // Wave texture
+    waterMaterialConfig.normalScale = new THREE.Vector2(0.02, 0.02); // Very subtle, short waves
+  }
+  
+  waterMaterial = new THREE.MeshPhysicalMaterial(waterMaterialConfig);
   water_hq = new THREE.Mesh(waterGeometry, waterMaterial);
 
   water_hq.rotation.x = - Math.PI * 0.5;

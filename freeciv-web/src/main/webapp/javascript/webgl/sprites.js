@@ -136,22 +136,27 @@ function create_city_label_sprite(pcity, index) {
 
   // Flag
   var city_gfx = get_city_flag_sprite(pcity);
-  ctx.drawImage(sprites[city_gfx.key],
-      0, 0,
-      sprites[city_gfx.key].width, sprites[city_gfx.key].height,
-      0, 0, 48, 32);
-  width += 48;
+  if (city_gfx && city_gfx.key && sprites[city_gfx.key] && sprites[city_gfx.key].width) {
+    ctx.drawImage(sprites[city_gfx.key],
+        0, 0,
+        sprites[city_gfx.key].width, sprites[city_gfx.key].height,
+        0, 0, 48, 32);
+    width += 48;
+  }
 
   // Occupied
   var ptile = city_tile(pcity);
   var punits = tile_units(ptile);
   if (punits.length > 0) {
-    // Background
-    ctx.fillStyle = 'rgba(0, 0, 0, 0.8)';
-    ctx.fillRect(width, 0, 16, 32);
-    // Stars
-    ctx.drawImage(sprites[get_city_occupied_sprite(pcity)], width, 0, 13, 32);
-    width += 13;
+    var occupied_sprite_key = get_city_occupied_sprite(pcity);
+    if (occupied_sprite_key && sprites[occupied_sprite_key]) {
+      // Background
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.8)';
+      ctx.fillRect(width, 0, 16, 32);
+      // Stars
+      ctx.drawImage(sprites[occupied_sprite_key], width, 0, 13, 32);
+      width += 13;
+    }
   }
 
   // Name and size
@@ -172,7 +177,7 @@ function create_city_label_sprite(pcity, index) {
   var prod_type = get_city_production_type(pcity);
   if (prod_type != null) {
     var tag = tileset_ruleset_entity_tag_str_or_alt(prod_type, "unit or building");
-    if (tag != null) {
+    if (tag != null && sprites[tag]) {
       ctx.fillStyle = background_color;
       ctx.fillRect(width, 0, 36, 32);
       ctx.drawImage(sprites[tag], width, 0, 34, 18 * 2);
@@ -228,22 +233,27 @@ function update_city_label(pcity, index)
 
   // Flag
   var city_gfx = get_city_flag_sprite(pcity);
-  ctx.drawImage(sprites[city_gfx.key],
-                0, 0,
-                sprites[city_gfx.key].width, sprites[city_gfx.key].height,
-                0, 0, 48, 32);
-  width += 48;
+  if (city_gfx && city_gfx.key && sprites[city_gfx.key] && sprites[city_gfx.key].width) {
+    ctx.drawImage(sprites[city_gfx.key],
+                  0, 0,
+                  sprites[city_gfx.key].width, sprites[city_gfx.key].height,
+                  0, 0, 48, 32);
+    width += 48;
+  }
 
   // Occupied
   var ptile = city_tile(pcity);
   var punits = tile_units(ptile);
   if (punits.length > 0) {
-    // Background
-    ctx.fillStyle = 'black';
-    ctx.fillRect(width, 0, 16, 32);
-    // Stars
-    ctx.drawImage(sprites[get_city_occupied_sprite(pcity)], width, 0, 13, 32);
-    width += 13;
+    var occupied_sprite_key = get_city_occupied_sprite(pcity);
+    if (occupied_sprite_key && sprites[occupied_sprite_key]) {
+      // Background
+      ctx.fillStyle = 'black';
+      ctx.fillRect(width, 0, 16, 32);
+      // Stars
+      ctx.drawImage(sprites[occupied_sprite_key], width, 0, 13, 32);
+      width += 13;
+    }
   }
 
   // Name and size
@@ -264,7 +274,7 @@ function update_city_label(pcity, index)
   var prod_type = get_city_production_type(pcity);
   if (prod_type != null) {
     var tag = tileset_ruleset_entity_tag_str_or_alt(prod_type, "unit or building");
-    if (tag != null) {
+    if (tag != null && sprites[tag]) {
       ctx.fillStyle = background_color;
       ctx.fillRect(width, 0, 36, 32);
       ctx.drawImage(sprites[tag], width, 0, 34, 18*2);
