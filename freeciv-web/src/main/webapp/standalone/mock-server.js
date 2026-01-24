@@ -398,6 +398,22 @@ if (typeof STANDALONE_MODE !== 'undefined' && STANDALONE_MODE) {
     };
   }
   
+  // Mock message_log (required by client_main.js)
+  if (typeof message_log === 'undefined') {
+    // Create a mock EventAggregator that does nothing
+    window.message_log = {
+      update: function(packet) {
+        // Do nothing in standalone mode - no chatbox to update
+      },
+      clear: function() {
+        // Do nothing in standalone mode
+      },
+      fireNow: function() {
+        // Do nothing in standalone mode
+      }
+    };
+  }
+  
   // Mock clear_chatbox
   if (typeof clear_chatbox === 'undefined') {
     window.clear_chatbox = function() {
