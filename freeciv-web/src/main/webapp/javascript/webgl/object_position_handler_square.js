@@ -70,6 +70,10 @@ function update_unit_position(ptile) {
     return;
   }
 
+  if (unit_type(visible_unit) == null) {
+    return;
+  }
+
   let unit_type_name = unit_type(visible_unit)['name'];
   if (unit_type_name == null) {
     return;
