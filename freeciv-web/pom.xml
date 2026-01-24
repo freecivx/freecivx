@@ -239,6 +239,25 @@ Rerun the sync-js-hand.js script.
 								</resources>
 							</configuration>
 						</execution>
+						<execution>
+							<!-- Copy audio.min.js into javascript directory for bundling -->
+							<id>copy-audio-js</id>
+							<phase>generate-sources</phase>
+							<goals>
+								<goal>copy-resources</goal>
+							</goals>
+							<configuration>
+								<outputDirectory>${project.build.directory}/${project.build.finalName}/javascript/music</outputDirectory>
+								<resources>
+									<resource>
+										<directory>${basedir}/src/main/webapp/music</directory>
+										<includes>
+											<include>audio.min.js</include>
+										</includes>
+									</resource>
+								</resources>
+							</configuration>
+						</execution>
 					</executions>
 				</plugin>
 
@@ -315,6 +334,9 @@ Rerun the sync-js-hand.js script.
 								<outputFilename>webclient.min.js</outputFilename>
 								<includes>
 									<!-- order is important: these must be before sources below -->
+									<include>libs/jquery.min.js</include>
+									<include>libs/stacktrace.min.js</include>
+									<include>music/audio.min.js</include>
 									<include>libs/EventAggregator.js</include>
 									<include>map-constants.js</include>
 									<include>2dcanvas/tilespec-constants.js</include>
@@ -332,9 +354,7 @@ Rerun the sync-js-hand.js script.
 									<exclude>webclient.js</exclude>
 									<exclude>webclient.min.js</exclude>
 									<exclude>libs/es-module-shims.js</exclude>
-									<exclude>libs/jquery.min.js</exclude>
 									<exclude>libs/gif.worker.js</exclude>
-									<exclude>libs/stacktrace.min.js</exclude>
 									<exclude>webgl/libs/*js</exclude>
 									<exclude>webgl/effects/*js</exclude>
 									<exclude>three-modules.js</exclude>
