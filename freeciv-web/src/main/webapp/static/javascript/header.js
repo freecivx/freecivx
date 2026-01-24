@@ -33,8 +33,6 @@ $(document).ready(function () {
 		}
 	})($);
 
-      $("#fcw-frontpage-nav-button").click(function(){
-        $(".collapse.navbar-collapse").toggleClass("in");
-      });
+
 
 });

@@ -51,6 +51,11 @@ var dialog_message_close_task;
 **************************************************************************/
 $(document).ready(function() {
   civclient_init();
+
+
+  $("#fcw-frontpage-nav-button").click(function(){
+     $(".collapse.navbar-collapse").toggleClass("in");
+  });
 });
 
 /**************************************************************************

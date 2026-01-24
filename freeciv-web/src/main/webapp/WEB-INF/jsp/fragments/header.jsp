@@ -33,5 +33,5 @@
 		</div><!-- end navbar-collapse -->
 	</div><!-- end container-fluid -->
 </nav> <!-- end nav -->
-<script src="/static/javascript/header.js"></script>
+
 

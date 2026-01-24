@@ -249,6 +249,9 @@
 		</c:if>
 
 		<%@include file="/WEB-INF/jsp/fragments/footer.jsp"%>
+
+		<script src="/static/javascript/header.js"></script>
+
 	</div>
 </body>
 </html>	
