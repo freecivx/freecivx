@@ -4,6 +4,31 @@
 
 This document describes the JavaScript modernization changes made to `index.jsp` and the roadmap for future Vite migration.
 
+## Current Vite Build Configuration
+
+### IIFE Format for Script Tag Compatibility
+
+The Vite build is configured in `freeciv-web/vite.config.js` to output in IIFE (Immediately Invoked Function Expression) format rather than ES modules. This is required because:
+
+1. The generated bundle is loaded via a regular `<script>` tag (not `type="module"`)
+2. ES module format would generate `import`/`export` statements that cause syntax errors in non-module contexts
+3. External dependencies like `three.js` are declared with proper globals mapping
+
+**Key Configuration:**
+```javascript
+output: {
+  format: 'iife',           // Compatibility with regular script tags
+  globals: {
+    three: 'THREE'          // Map external 'three' module to global THREE
+  }
+}
+```
+
+Without the `format: 'iife'` setting, Vite generates ES module output with statements like `import { Mesh } from "three"`, which causes the error:
+```
+Uncaught SyntaxError: Unexpected token 'export'
+```
+
 ## Current State (Modernized)
 
 ### Script Loading Organization
@@ -108,7 +133,17 @@ export default defineConfig({
     rollupOptions: {
       input: {
         main: '/javascript/main.js'
-      }
+      },
+      output: {
+        // Use IIFE format for compatibility with regular script tags
+        format: 'iife',
+        // Define globals for external dependencies
+        globals: {
+          three: 'THREE'
+        }
+      },
+      // External dependencies that should not be bundled
+      external: ['three']
     }
   },
   resolve: {
@@ -118,6 +153,8 @@ export default defineConfig({
   }
 });
 ```
+
+**Important:** When outputting JavaScript bundles that will be loaded with regular `<script>` tags (not `type="module"`), configure Vite to use IIFE format. Otherwise, Vite will generate ES module output with `import`/`export` statements that cause syntax errors in non-module contexts.
 
 ### Step 4: Update Build Process
 Replace Maven minify plugin with Vite:
