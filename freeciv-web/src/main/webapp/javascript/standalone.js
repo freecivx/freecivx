@@ -107,6 +107,9 @@ function start_standalone_game() {
 function create_mock_game_data() {
   console.log("Creating mock game data");
   
+  // Initialize mock server settings (must be first to prevent errors)
+  create_mock_server_settings();
+  
   // Initialize mock map
   create_mock_map();
   
@@ -586,11 +589,53 @@ function setup_mock_client_connection() {
 }
 
 /**************************************************************************
- * Standalone-specific event handlers
+ * Initialize mock server settings
+ * This prevents errors when accessing server_settings in the client code
  **************************************************************************/
-$(document).ready(function() {
-  if (is_standalone_mode()) {
-    console.log("Document ready in standalone mode");
-    init_standalone();
+function create_mock_server_settings() {
+  // Initialize server_settings if it doesn't exist
+  if (typeof server_settings === 'undefined') {
+    window.server_settings = {};
   }
-});
+  
+  // Add borders settings (fixes the 'is_visible' error)
+  server_settings['borders'] = {
+    id: 'borders',
+    name: 'borders',
+    is_visible: true,
+    val: true
+  };
+  
+  // Add other common server settings that might be accessed
+  server_settings['metamessage'] = {
+    id: 'metamessage',
+    name: 'metamessage',
+    val: 'Standalone Mode'
+  };
+  
+  server_settings['techlevel'] = {
+    id: 'techlevel',
+    name: 'techlevel',
+    val: 0
+  };
+  
+  server_settings['landmass'] = {
+    id: 'landmass',
+    name: 'landmass',
+    val: 30
+  };
+  
+  server_settings['nukes_minor'] = {
+    id: 'nukes_minor',
+    name: 'nukes_minor',
+    val: true
+  };
+  
+  server_settings['nukes_major'] = {
+    id: 'nukes_major',
+    name: 'nukes_major',
+    val: true
+  };
+  
+  console.log("Created mock server_settings");
+}

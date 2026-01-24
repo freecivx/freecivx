@@ -139,12 +139,21 @@ Testing approach:
 - ✅ Implemented auto-start functionality
 - ✅ Added serving instructions (Python, Node.js, PHP)
 - ✅ Testing and validation with Maven build
-- ✅ Created development version (freeciv-web-standalone-dev.html)
+- ✅ **Removed freeciv-web-standalone-dev.html** (consolidated to single standalone client)
+- ✅ **Fixed standalone mode detection** (only runs when ts="standalone" is set)
+- ✅ **Added server_settings mock data** (borders, metamessage, techlevel, landmass, nukes)
+- ✅ **Fixed "Cannot read properties of undefined (reading 'is_visible')" error**
+- ✅ **Improved documentation** in freeciv-web-standalone.html with build instructions
 
-### Known Issues
-- ⚠️ WebGL map rendering has errors (need to initialize tileset and graphics data)
-- ⚠️ Some 404 errors for missing static assets (flags, textures)
-- ⚠️ Game state panel and unit info panels need mock data initialization
+### Resolved Issues
+- ✅ Fixed: Standalone client interference in normal production mode
+- ✅ Fixed: Missing server_settings['borders']['is_visible'] error
+- ✅ Fixed: Duplicate standalone client files (removed -dev version)
+
+### Remaining Known Issues
+- ⚠️ WebGL map rendering may still have errors (need to initialize tileset and graphics data)
+- ⚠️ Some 404 errors for missing static assets (flags, textures) - cosmetic only
+- ⚠️ Game state panel and unit info panels may need additional mock data initialization
 
 ### Next Steps (Priority Order)
 
@@ -203,10 +212,104 @@ Testing approach:
    - Console commands for manipulating mock data
 
 ### Future Enhancements
-- ⏳ Complete local game state persistence using IndexedDB
-- ⏳ Offline AI opponent capabilities (requires game logic implementation)
+
+#### Phase 1: Complete WebGL Rendering (High Priority)
+- ⏳ Initialize tileset data for proper terrain rendering
+- ⏳ Add mock graphics configuration (sprite positions, terrain graphics)
+- ⏳ Ensure map tiles render correctly on the 3D canvas
+- ⏳ Fix any remaining 404 errors for static assets
+- ⏳ Add mock data for game state panel (gold, science, turn info)
+- ⏳ Add mock data for unit info panel
+
+#### Phase 2: Enhanced Mock Data (Medium Priority)
+- ⏳ Add diplomacy states between players
+- ⏳ Add tech tree research progress and visualization
+- ⏳ Add calendar info for year calculation
+- ⏳ Add tile extras (roads, resources, bases)
+- ⏳ Add more diverse unit types and buildings
+- ⏳ Add nation-specific characteristics
+
+#### Phase 3: Basic Interactivity (Medium Priority)
+- ⏳ Enable unit selection (visual feedback)
+- ⏳ Allow tile inspection (show tile info in console/panel)
+- ⏳ Enable city dialog opening (read-only mode)
+- ⏳ Make tech tree tab functional
+- ⏳ Make nations tab functional with player list
+- ⏳ Add camera controls (zoom, pan, rotate)
+
+#### Phase 4: Advanced Features (Low Priority)
+- ⏳ Local state persistence using IndexedDB
+- ⏳ Multiple save slots for different mock scenarios
+- ⏳ Scenario presets (small/medium/large maps, different eras)
+- ⏳ Screenshot/export functionality
+- ⏳ Mock unit movement (visual only, no game logic)
+- ⏳ Mock city production (visual only, no game logic)
+
+#### Phase 5: Developer Experience (Low Priority)
+- ⏳ Hot-reloading for development
+- ⏳ Mock data editor UI
+- ⏳ Debug panel showing game state
+- ⏳ Console commands for manipulating mock data
+- ⏳ Documentation generator for mock data structures
+
+#### Phase 6: Advanced Capabilities (Future)
+- ⏳ Offline AI opponent simulation (requires significant game logic)
 - ⏳ Scenario editor integration
-- ⏳ Mobile-optimized layout and controls
-- ⏳ Progressive Web App (PWA) support for offline use
-- ⏳ Unit movement and city production simulation
-- ⏳ Save/load functionality for mock game states
+- ⏳ Mobile-optimized layout and touch controls
+- ⏳ Progressive Web App (PWA) support
+- ⏳ Complete save/load functionality for mock game states
+- ⏳ Tutorial mode with guided gameplay
+- ⏳ Demo mode with automated actions
+
+## Future Vision
+
+The standalone client aims to become a fully functional offline demo and development tool that showcases Freeciv-web's capabilities without requiring server infrastructure. Key goals include:
+
+1. **Development Tool**: Allow developers to test UI changes, new features, and bug fixes without running the full server stack
+2. **Demo Platform**: Provide a quick way to demonstrate Freeciv-web's features to potential users and contributors
+3. **Offline Experience**: Enable basic gameplay experience without internet connection (with limitations)
+4. **Learning Tool**: Serve as a tutorial platform for new players to learn game mechanics
+5. **Testing Framework**: Support automated UI testing and screenshot generation
+
+## Technical Roadmap
+
+### Short Term (Next 3-6 Months)
+- Fix all WebGL rendering issues
+- Complete mock data for all game panels
+- Add basic interactivity (selection, inspection)
+- Improve documentation and examples
+- Test on multiple browsers and devices
+
+### Medium Term (6-12 Months)
+- Add local persistence with IndexedDB
+- Implement scenario system with presets
+- Create developer tools and debug panels
+- Add more comprehensive mock data
+- Improve mobile experience
+
+### Long Term (12+ Months)
+- Consider limited game logic for offline play
+- Explore PWA capabilities
+- Build scenario editor
+- Add tutorial/demo modes
+- Performance optimizations for large maps
+
+## Maintenance and Support
+
+The standalone client should be:
+- **Maintained**: Updated alongside main client to prevent divergence
+- **Tested**: Include in CI/CD pipeline with basic smoke tests
+- **Documented**: Keep documentation current with changes
+- **Isolated**: Ensure it never interferes with production client
+- **Useful**: Prioritize features that benefit developers and users
+
+## Success Metrics
+
+- ✅ Loads without errors in modern browsers
+- ✅ Displays game map and UI correctly
+- ✅ Does not interfere with production client
+- ⏳ Provides useful development environment
+- ⏳ Serves as effective demo platform
+- ⏳ Supports basic offline gameplay
+- ⏳ Includes comprehensive documentation
+- ⏳ Performs well on various devices
