@@ -4,8 +4,20 @@
 
 // Order-dependent files must be loaded first
 import './main/webapp/javascript/libs/EventAggregator.js';
-// Note: map-constants.js and tilespec-constants.js may be generated during build
-// and should be included if they exist
+
+// TODO: Generated/derived files need to be included when available:
+// - map-constants.js (generated from Freeciv C code)
+// - 2dcanvas/tilespec-constants.js (generated from Freeciv C code)
+// - packhand_gen.js (generated packet handler)
+// These files are created by running scripts/sync-js-hand.sh and stored in
+// src/derived/webapp/javascript/. The Vite build currently does not include
+// these files, which accounts for much of the size difference with the
+// traditional Closure Compiler build.
+//
+// To fully match the traditional build size, the Vite build process needs to:
+// 1. Ensure derived files are generated before build
+// 2. Configure Vite to include files from src/derived/webapp/javascript/
+// OR copy derived files to src/main/webapp/javascript/ before build
 
 // Main JavaScript files
 import './main/webapp/javascript/action_dialog.js';
@@ -66,6 +78,7 @@ import './main/webapp/javascript/utility.js';
 import './main/webapp/javascript/libs/Detector.js';
 import './main/webapp/javascript/libs/bigscreen.min.js';
 import './main/webapp/javascript/libs/html2canvas.min.js';
+import './main/webapp/javascript/libs/jquery-ui.min.js';
 import './main/webapp/javascript/libs/jquery.blockUI.js';
 import './main/webapp/javascript/libs/jquery.contextMenu.js';
 import './main/webapp/javascript/libs/jquery.dialogextend.js';
@@ -77,6 +90,7 @@ import './main/webapp/javascript/libs/seedrandom.min.js';
 import './main/webapp/javascript/libs/sha512.js';
 import './main/webapp/javascript/libs/simpleStorage.min.js';
 import './main/webapp/javascript/libs/slider.js';
+import './main/webapp/javascript/libs/stats.min.js';
 import './main/webapp/javascript/libs/sweetalert.min.js';
 import './main/webapp/javascript/libs/timer.js';
 
@@ -99,20 +113,18 @@ import './main/webapp/javascript/webgl/maputil_square.js';
 import './main/webapp/javascript/webgl/mapview_webgl.js';
 import './main/webapp/javascript/webgl/nuke.js';
 import './main/webapp/javascript/webgl/object_position_handler_square.js';
-// Note: Reflector.js and Refractor.js are excluded as they depend on three.js
-// import './main/webapp/javascript/webgl/objects/Reflector.js';
-// import './main/webapp/javascript/webgl/objects/Refractor.js';
-// Note: Pass.js is excluded as it depends on three.js
-// import './main/webapp/javascript/webgl/postprocessing/Pass.js';
+// Note: These files depend on three.js which is loaded externally via import maps
+import './main/webapp/javascript/webgl/objects/Reflector.js';
+import './main/webapp/javascript/webgl/objects/Refractor.js';
+import './main/webapp/javascript/webgl/postprocessing/Pass.js';
 import './main/webapp/javascript/webgl/preload.js';
 import './main/webapp/javascript/webgl/renderer_init.js';
 import './main/webapp/javascript/webgl/roads_square.js';
 import './main/webapp/javascript/webgl/sprites.js';
 import './main/webapp/javascript/webgl/text.js';
 import './main/webapp/javascript/webgl/tile_visibility_handler.js';
-// Note: BufferGeometryUtils.js is excluded as it depends on three.js
-// import './main/webapp/javascript/webgl/utils/BufferGeometryUtils.js';
-// Note: AnaglyphEffect.js is excluded as it depends on three.js
+import './main/webapp/javascript/webgl/utils/BufferGeometryUtils.js';
+// Note: AnaglyphEffect.js is in webgl/effects/ which is excluded per pom.xml
 // import './main/webapp/javascript/webgl/effects/AnaglyphEffect.js';
 
 // Note: The following files are excluded as per pom.xml configuration:
