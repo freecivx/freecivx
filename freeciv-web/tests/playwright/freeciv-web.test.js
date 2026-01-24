@@ -1,4 +1,4 @@
-const { test, expect } = require('@playwright/test');
+import { test, expect } from '@playwright/test';
 
 test('Freeciv web homepage loads and has the correct title', async ({ page }) => {
   // Go to the Freeciv-web homepage
