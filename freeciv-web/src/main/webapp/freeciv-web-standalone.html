@@ -3,6 +3,56 @@
 <head>
 <title>FreecivWorld.net - 3D version of Freeciv (Standalone)</title>
 
+<!--
+  =========================================================================
+  FREECIV-WEB STANDALONE CLIENT
+  =========================================================================
+  
+  This is a standalone version of Freeciv-web that runs with mock data
+  without requiring a server connection. Perfect for testing, development,
+  and offline demonstrations.
+  
+  HOW TO RUN:
+  -----------
+  
+  1. Using Python (Python 3):
+     cd /path/to/freeciv-web/src/main/webapp
+     python3 -m http.server 8080
+     
+     Then open: http://localhost:8080/freeciv-web-standalone.html
+  
+  2. Using Python (Python 2):
+     cd /path/to/freeciv-web/src/main/webapp
+     python -m SimpleHTTPServer 8080
+     
+     Then open: http://localhost:8080/freeciv-web-standalone.html
+  
+  3. Using Node.js (install http-server first: npm install -g http-server):
+     cd /path/to/freeciv-web/src/main/webapp
+     http-server -p 8080
+     
+     Then open: http://localhost:8080/freeciv-web-standalone.html
+  
+  4. Using PHP:
+     cd /path/to/freeciv-web/src/main/webapp
+     php -S localhost:8080
+     
+     Then open: http://localhost:8080/freeciv-web-standalone.html
+  
+  FEATURES:
+  ---------
+  - Runs completely offline with mock game data
+  - Automatically starts a game on load
+  - Includes 3 players (1 human, 2 AI)
+  - Displays a 40x30 map with varied terrain
+  - Shows cities, units, and game UI
+  
+  NOTE: This is a demonstration version with limited functionality.
+  For the full multiplayer experience, visit https://www.freecivworld.net/
+  
+  =========================================================================
+-->
+
 <link href="/static/css/bootstrap.min.css" rel="stylesheet">
 
 <link rel="stylesheet" href="/css/fontawesome.min.css">
@@ -31,9 +81,8 @@ var fcwDebug=false;
 <!-- Main application bundle - includes jQuery, Stacktrace, Audio, and all application code -->
 <script src="/javascript/webclient.min.js" defer></script>
 
-<!-- Standalone-specific functionality (included in webclient.min.js after build, 
-     this separate tag is for development when using unminified sources) -->
-<!-- <script src="/javascript/standalone.js" defer></script> -->
+<!-- Standalone-specific functionality -->
+<script src="/javascript/standalone.js" defer></script>
 
 <link rel="shortcut icon" href="/images/freeciv-shortcut-icon.png" />
 <link rel="apple-touch-icon" href="/images/freeciv-splash4.png" />
