@@ -139,12 +139,21 @@ Testing approach:
 - ✅ Implemented auto-start functionality
 - ✅ Added serving instructions (Python, Node.js, PHP)
 - ✅ Testing and validation with Maven build
-- ✅ Created development version (freeciv-web-standalone-dev.html)
+- ✅ **Removed freeciv-web-standalone-dev.html** (consolidated to single standalone client)
+- ✅ **Fixed standalone mode detection** (only runs when ts="standalone" is set)
+- ✅ **Added server_settings mock data** (borders, metamessage, techlevel, landmass, nukes)
+- ✅ **Fixed "Cannot read properties of undefined (reading 'is_visible')" error**
+- ✅ **Improved documentation** in freeciv-web-standalone.html with build instructions
 
-### Known Issues
-- ⚠️ WebGL map rendering has errors (need to initialize tileset and graphics data)
-- ⚠️ Some 404 errors for missing static assets (flags, textures)
-- ⚠️ Game state panel and unit info panels need mock data initialization
+### Resolved Issues
+- ✅ Fixed: Standalone client interference in normal production mode
+- ✅ Fixed: Missing server_settings['borders']['is_visible'] error
+- ✅ Fixed: Duplicate standalone client files (removed -dev version)
+
+### Remaining Known Issues
+- ⚠️ WebGL map rendering may still have errors (need to initialize tileset and graphics data)
+- ⚠️ Some 404 errors for missing static assets (flags, textures) - cosmetic only
+- ⚠️ Game state panel and unit info panels may need additional mock data initialization
 
 ### Next Steps (Priority Order)
 

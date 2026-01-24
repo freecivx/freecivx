@@ -639,26 +639,3 @@ function create_mock_server_settings() {
   
   console.log("Created mock server_settings");
 }
-
-/**************************************************************************
- * Standalone-specific event handlers
- * ONLY runs when ts="standalone" is set (not in normal production mode)
- **************************************************************************/
-$(document).ready(function() {
-  // Check if we're in standalone mode by checking the global ts variable
-  // This variable is set in freeciv-web-standalone.html but not in the normal client
-  if (typeof ts !== 'undefined' && ts === 'standalone') {
-    console.log("Document ready in standalone mode");
-    standalone_mode = true;
-    if (typeof window !== 'undefined') {
-      window.is_standalone = true;
-    }
-    init_standalone();
-  } else {
-    // Not in standalone mode, don't do anything
-    standalone_mode = false;
-    if (typeof window !== 'undefined') {
-      window.is_standalone = false;
-    }
-  }
-});
