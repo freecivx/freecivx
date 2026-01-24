@@ -25,6 +25,11 @@
 
 var standalone_mode = true;
 
+// Configuration constants for standalone mode
+var STANDALONE_STARTUP_DELAY_MS = 500;  // Delay before auto-starting the game
+var STANDALONE_MAP_WIDTH = 40;          // Map width in tiles
+var STANDALONE_MAP_HEIGHT = 30;         // Map height in tiles
+
 /**************************************************************************
  * Initialize standalone mode
  * Called when the standalone HTML page loads
@@ -40,10 +45,10 @@ function init_standalone() {
   // Initialize any standalone-specific settings
   setup_standalone_environment();
   
-  // Start the game automatically after a short delay
+  // Start the game automatically after a short delay to allow initialization
   setTimeout(function() {
     start_standalone_game();
-  }, 500);
+  }, STANDALONE_STARTUP_DELAY_MS);
 }
 
 /**************************************************************************
@@ -125,10 +130,10 @@ function create_mock_game_data() {
  * Create mock map data
  **************************************************************************/
 function create_mock_map() {
-  // Create a small 40x30 map for testing
+  // Create a configurable map for testing
   map = {
-    xsize: 40,
-    ysize: 30,
+    xsize: STANDALONE_MAP_WIDTH,
+    ysize: STANDALONE_MAP_HEIGHT,
     topology_id: 0,  // Standard topology
     wrap_id: WRAP_X, // Wrap in X direction
     num_valid_dirs: 8,
