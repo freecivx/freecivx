@@ -14,8 +14,8 @@ cleaning the maven project does not delete them - as the files are
 generated outside of maven, maven should not delete them during its
 standard `clean` phase.
 
-**ONLY** This README.md and a .gitignore file should ever be committed
-under this directory.
 
 To regenerate files in this directory, run the script:
 `${FREECIV_WEB}\scripts\sync-js-hand.sh`.
+
+2026: Trying with these files committed, maybe standalone builds will be easier and faster.
