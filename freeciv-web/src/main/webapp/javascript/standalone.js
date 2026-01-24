@@ -186,7 +186,7 @@ function create_mock_map() {
         y: y,
         terrain: terrain,
         known: 2, // TILE_KNOWN_SEEN
-        extras: new BitVector([]),
+        extras: new BitVector(['0']),
         units: [],
         owner: null,
         claimer: null,
