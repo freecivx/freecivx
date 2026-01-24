@@ -26,16 +26,20 @@
 var standalone_mode = false;
 
 // Configuration constants for standalone mode
-var STANDALONE_STARTUP_DELAY_MS = 500;  // Delay before auto-starting the game
+var STANDALONE_STARTUP_DELAY_MS = 1000;  // Increased delay to allow textures to load
 var STANDALONE_MAP_WIDTH = 40;          // Map width in tiles
 var STANDALONE_MAP_HEIGHT = 30;         // Map height in tiles
+// Delay before setting client state to allow WebGL renderer, textures, and geometry to initialize
+// This prevents race conditions where the renderer tries to use resources before they're ready
+var STANDALONE_WEBGL_INIT_DELAY_MS = 500;
 
 /**************************************************************************
  * Initialize standalone mode
  * Called when the standalone HTML page loads
  **************************************************************************/
 function init_standalone() {
-  console.log("Initializing Freeciv-web in standalone mode");
+  console.log("[Standalone] Initializing Freeciv-web in standalone mode");
+  console.log("[Standalone] Startup delay: " + STANDALONE_STARTUP_DELAY_MS + "ms");
   
   // Set global flag for other modules to detect standalone mode
   if (typeof window !== 'undefined') {
@@ -56,13 +60,14 @@ function init_standalone() {
  * Configure any standalone-specific settings and overrides
  **************************************************************************/
 function setup_standalone_environment() {
-  console.log("Setting up standalone environment");
+  console.log("[Standalone] Setting up standalone environment");
+  console.log("[Standalone] Map dimensions: " + STANDALONE_MAP_WIDTH + "x" + STANDALONE_MAP_HEIGHT);
   
   // Override network_init to prevent websocket connection
   if (typeof network_init !== 'undefined') {
     var original_network_init = network_init;
     network_init = function() {
-      console.log("Skipping network initialization in standalone mode");
+      console.log("[Standalone] Skipping network initialization in standalone mode");
       // Don't call original network_init
     };
   }
@@ -87,51 +92,67 @@ function is_standalone_mode() {
  * Start standalone game with mock data
  **************************************************************************/
 function start_standalone_game() {
-  console.log("Starting standalone game with mock data");
+  console.log("[Standalone] Starting standalone game with mock data");
   
   // Initialize game structures
+  console.log("[Standalone] Calling game_init()");
   game_init();
   
   // Create mock data
+  console.log("[Standalone] Creating mock game data");
   create_mock_game_data();
   
   // Initialize WebGL loader and resources before starting the game
   // This is necessary because in standalone mode we bypass the normal
   // tileset preloading flow that initializes these resources
+  console.log("[Standalone] Initializing WebGL resources");
   initialize_standalone_webgl();
   
-  // Set client state to running - this will trigger the game UI to show
-  set_client_state(C_S_RUNNING);
-  
-  console.log("Standalone game started successfully");
+  // Delay setting client state to allow WebGL resources to initialize
+  // This prevents errors with undefined textures and uninitialized geometries
+  console.log("[Standalone] Waiting " + STANDALONE_WEBGL_INIT_DELAY_MS + "ms before starting renderer");
+  setTimeout(function() {
+    console.log("[Standalone] Setting client state to C_S_RUNNING");
+    set_client_state(C_S_RUNNING);
+    console.log("[Standalone] Standalone game started successfully");
+  }, STANDALONE_WEBGL_INIT_DELAY_MS);
 }
 
 /**************************************************************************
  * Create mock game data for standalone mode
  **************************************************************************/
 function create_mock_game_data() {
-  console.log("Creating mock game data");
+  console.log("[Standalone] Creating mock game data");
   
   // Initialize mock server settings (must be first to prevent errors)
+  console.log("[Standalone] Creating server settings");
   create_mock_server_settings();
   
   // Initialize mock map
+  console.log("[Standalone] Creating map data");
   create_mock_map();
   
   // Initialize mock ruleset data
+  console.log("[Standalone] Creating ruleset data");
   create_mock_ruleset();
   
   // Initialize mock players
+  console.log("[Standalone] Creating players");
   create_mock_players();
   
   // Initialize mock cities
+  console.log("[Standalone] Creating cities");
   create_mock_cities();
   
   // Initialize mock units
+  console.log("[Standalone] Creating units");
   create_mock_units();
   
   // Set up the client connection
+  console.log("[Standalone] Setting up client connection");
   setup_mock_client_connection();
+  
+  console.log("[Standalone] Mock game data created successfully");
 }
 
 /**************************************************************************
@@ -201,7 +222,7 @@ function create_mock_map() {
     }
   }
   
-  console.log("Created mock map: " + map.xsize + "x" + map.ysize + " tiles");
+  console.log("[Standalone] Created mock map: " + map.xsize + "x" + map.ysize + " tiles (" + Object.keys(tiles).length + " tiles initialized)");
 }
 
 /**************************************************************************
@@ -357,7 +378,11 @@ function create_mock_ruleset() {
   extras[extraId] = { id: extraId, name: "Buoy", rule_name: "Buoy" };
   window.EXTRA_BUOY = extraId++;
   
-  console.log("Created mock ruleset data");
+  console.log("[Standalone] Created mock ruleset data (nations: " + Object.keys(nations).length + 
+              ", governments: " + Object.keys(governments).length + 
+              ", techs: " + Object.keys(techs).length + 
+              ", unit_types: " + Object.keys(unit_types).length + 
+              ", extras: " + Object.keys(extras).length + ")");
 }
 
 /**************************************************************************
@@ -441,7 +466,8 @@ function create_mock_players() {
     expected_income: 5
   };
   
-  console.log("Created " + Object.keys(players).length + " mock players");
+  console.log("[Standalone] Created " + Object.keys(players).length + " mock players: " + 
+              players[0].name + " (Human), " + players[1].name + ", " + players[2].name);
 }
 
 /**************************************************************************
@@ -544,7 +570,10 @@ function create_mock_cities() {
   tiles[city2_tile_index].owner = 2;
   tiles[city2_tile_index].worked = 2;
   
-  console.log("Created " + Object.keys(cities).length + " mock cities");
+  console.log("[Standalone] Created " + Object.keys(cities).length + " mock cities: " + 
+              cities[0].name + " (size " + cities[0].size + "), " + 
+              cities[1].name + " (size " + cities[1].size + "), " + 
+              cities[2].name + " (size " + cities[2].size + ")");
 }
 
 /**************************************************************************
@@ -633,7 +662,11 @@ function create_mock_units() {
   
   tiles[warrior2_tile_index].units.push(3);
   
-  console.log("Created " + Object.keys(units).length + " mock units");
+  console.log("[Standalone] Created " + Object.keys(units).length + " mock units: " + 
+              unit_types[units[0].type].name + ", " + 
+              unit_types[units[1].type].name + ", " + 
+              unit_types[units[2].type].name + ", " + 
+              unit_types[units[3].type].name);
 }
 
 /**************************************************************************
@@ -667,7 +700,8 @@ function setup_mock_client_connection() {
     observing = false;
   }
   
-  console.log("Setup mock client connection");
+  console.log("[Standalone] Setup mock client connection (current player: " + client.conn.playing.name + 
+              ", turn: " + game_info.turn + ", year: " + game_info.year + ")");
 }
 
 /**************************************************************************
@@ -719,7 +753,23 @@ function create_mock_server_settings() {
     val: true
   };
   
-  console.log("Created mock server_settings");
+  console.log("[Standalone] Created mock server_settings (borders: " + server_settings['borders'].val + 
+              ", techlevel: " + server_settings['techlevel'].val + ")");
+}
+
+/**************************************************************************
+ * Create a placeholder texture to prevent undefined texture errors
+ * This is used during standalone initialization when actual textures
+ * haven't loaded yet
+ **************************************************************************/
+function create_placeholder_texture(width, height, color) {
+  var canvas = document.createElement('canvas');
+  canvas.width = width || 32;
+  canvas.height = height || 32;
+  var ctx = canvas.getContext('2d');
+  ctx.fillStyle = color || '#ffffff';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  return new THREE.CanvasTexture(canvas);
 }
 
 /**************************************************************************
@@ -728,27 +778,43 @@ function create_mock_server_settings() {
  * be initialized during tileset preloading
  **************************************************************************/
 function initialize_standalone_webgl() {
-  console.log("Initializing WebGL resources for standalone mode");
+  console.log("[Standalone] Initializing WebGL resources for standalone mode");
   
   // Initialize the GLTF loader if it hasn't been initialized yet
   if (!loader) {
+    console.log("[Standalone] Creating GLTFLoader");
     loader = new GLTFLoader();
     const dracoLoader = new DRACOLoader();
     dracoLoader.setDecoderPath('/javascript/webgl/libs/');
     dracoLoader.setDecoderConfig({ type: 'wasm' });
     loader.setDRACOLoader(dracoLoader);
-    console.log("Initialized GLTFLoader for standalone mode");
+    console.log("[Standalone] GLTFLoader initialized");
+  } else {
+    console.log("[Standalone] GLTFLoader already exists");
   }
   
   // Initialize webgl_textures if not already initialized
   if (!window.webgl_textures) {
+    console.log("[Standalone] Creating webgl_textures object");
     window.webgl_textures = {};
+  } else {
+    console.log("[Standalone] webgl_textures already initialized with " + Object.keys(window.webgl_textures).length + " textures");
+  }
+  
+  // Pre-create placeholder textures to prevent undefined errors
+  // These will be replaced when actual textures load asynchronously
+  if (!window.webgl_textures["city_light"]) {
+    console.log("[Standalone] Creating placeholder city_light texture");
+    window.webgl_textures["city_light"] = create_placeholder_texture(32, 32, '#ffffff');
   }
   
   // Initialize webgl_models if not already initialized  
   if (!window.webgl_models) {
+    console.log("[Standalone] Creating webgl_models object");
     window.webgl_models = {};
+  } else {
+    console.log("[Standalone] webgl_models already initialized with " + Object.keys(window.webgl_models).length + " models");
   }
   
-  console.log("WebGL resources initialized for standalone mode");
+  console.log("[Standalone] WebGL resources initialized for standalone mode");
 }
