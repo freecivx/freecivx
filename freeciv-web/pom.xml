@@ -239,6 +239,25 @@ Rerun the sync-js-hand.js script.
 								</resources>
 							</configuration>
 						</execution>
+						<execution>
+							<!-- Copy audio.min.js into javascript directory for bundling -->
+							<id>copy-audio-js</id>
+							<phase>generate-sources</phase>
+							<goals>
+								<goal>copy-resources</goal>
+							</goals>
+							<configuration>
+								<outputDirectory>${project.build.directory}/${project.build.finalName}/javascript/music</outputDirectory>
+								<resources>
+									<resource>
+										<directory>${basedir}/src/main/webapp/music</directory>
+										<includes>
+											<include>audio.min.js</include>
+										</includes>
+									</resource>
+								</resources>
+							</configuration>
+						</execution>
 					</executions>
 				</plugin>
 
@@ -256,6 +275,26 @@ Rerun the sync-js-hand.js script.
 							<configuration>
 								<target>
 									<mkdir dir="${generated-js.dir}"/>
+								</target>
+							</configuration>
+						</execution>
+						<execution>
+							<id>concatenate-javascript</id>
+							<phase>compile</phase>
+							<goals>
+								<goal>run</goal>
+							</goals>
+							<configuration>
+								<target>
+									<!-- Concatenate all JS files into a single webclient.min.js -->
+									<concat destfile="${generated-js.dir}/webclient.min.js" force="yes" fixlastline="yes">
+										<!-- First, add already-minified libraries in the correct order -->
+										<filelist dir="${generated-js.dir}/libs" files="jquery.min.js"/>
+										<filelist dir="${generated-js.dir}/libs" files="stacktrace.min.js"/>
+										<filelist dir="${generated-js.dir}/music" files="audio.min.js"/>
+										<!-- Then add the minified application code -->
+										<filelist dir="${generated-js.dir}" files="webclient-app.min.js"/>
+									</concat>
 								</target>
 							</configuration>
 						</execution>
@@ -312,7 +351,7 @@ Rerun the sync-js-hand.js script.
 								<baseSourceDir>${project.build.directory}/${project.build.finalName}</baseSourceDir>
 								<sourceDir>javascript</sourceDir>
 								<targetDir>javascript</targetDir>
-								<outputFilename>webclient.min.js</outputFilename>
+								<outputFilename>webclient-app.min.js</outputFilename>
 								<includes>
 									<!-- order is important: these must be before sources below -->
 									<include>libs/EventAggregator.js</include>
@@ -331,6 +370,7 @@ Rerun the sync-js-hand.js script.
 								<excludes>
 									<exclude>webclient.js</exclude>
 									<exclude>webclient.min.js</exclude>
+									<exclude>webclient-app.min.js</exclude>
 									<exclude>libs/es-module-shims.js</exclude>
 									<exclude>libs/jquery.min.js</exclude>
 									<exclude>libs/gif.worker.js</exclude>

@@ -44,14 +44,8 @@ var ts="${initParam.buildTimeStamp}";
 var fcwDebug=<%= fcwDebug %>;
 </script>
 
-<!-- Core dependencies - loaded synchronously for compatibility -->
-<script src="/javascript/libs/jquery.min.js?ts=${initParam.buildTimeStamp}"></script>
-
 <!-- External services -->
 <script src="https://apis.google.com/js/platform.js" defer></script>
-
-<!-- Error tracking -->
-<script src="/javascript/libs/stacktrace.min.js" defer></script>
 
 <!-- Three.js ES Module System - Modern import map pattern for Vite compatibility -->
 <script type="importmap">
@@ -64,11 +58,8 @@ var fcwDebug=<%= fcwDebug %>;
 <!-- Three.js module loader - exports to window for backward compatibility -->
 <script type="module" src="/javascript/three-modules.js?ts=${initParam.buildTimeStamp}"></script>
 
-<!-- Main application bundle - to be replaced with ES modules in Vite migration -->
+<!-- Main application bundle - includes jQuery, Stacktrace, Audio, and all application code -->
 <script src="/javascript/webclient.min.js?ts=${initParam.buildTimeStamp}" defer></script>
-
-<!-- Audio system -->
-<script src="/music/audio.min.js" defer></script>
 
 <link rel="shortcut icon" href="/images/freeciv-shortcut-icon.png" />
 <link rel="apple-touch-icon" href="/images/freeciv-splash4.png" />
