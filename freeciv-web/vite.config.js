@@ -10,8 +10,7 @@ export default defineConfig({
     emptyOutDir: true,
     rollupOptions: {
       input: {
-        main: resolve(__dirname, 'src/main/webapp/webclient/index.jsp'),
-        webclient: resolve(__dirname, 'src/main/webapp/javascript/webclient.min.js'),
+        'three-modules': resolve(__dirname, 'src/main/webapp/javascript/three-modules.js'),
       },
       output: {
         entryFileNames: 'javascript/[name]-[hash].js',

@@ -47,6 +47,8 @@ By default, Maven builds skip Vite to maintain backward compatibility.
 3. **Modernized Three.js imports**: Created `javascript/three-modules.js` for cleaner module management
 4. **Updated index.jsp**: Simplified Three.js loading using the new module system
 
+**Note**: The current implementation uses local Three.js files from `javascript/webgl/libs/` rather than the npm package. The `three` package in `package.json` is included for future migration to npm-based Three.js management.
+
 ## Benefits
 
 - Faster development with Hot Module Replacement (HMR)
