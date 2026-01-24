@@ -33,6 +33,7 @@ dependencies="\
   libtool \
   maven \
   nodejs \
+  npm \
   default-mysql-server \
   nginx \
   patch \
