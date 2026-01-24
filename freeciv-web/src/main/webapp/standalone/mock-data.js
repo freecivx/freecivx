@@ -57,6 +57,9 @@ var EXTRA_OIL_WELL = 14;
 // Number of city styles that will be initialized
 var MOCK_CITY_STYLES_COUNT = 4;
 
+
+var E_CONNECTION = 98;
+
 /**
  * Initialize mock map data
  */
@@ -491,4 +494,13 @@ function init_all_mock_data() {
   init_mock_game();
   
   console.log("=== Mock Data Initialization Complete ===");
+}
+
+
+function tech_dialog_active() {
+  return false;
+}
+
+function update_tech_dialog_cursor() {
+  return;
 }
