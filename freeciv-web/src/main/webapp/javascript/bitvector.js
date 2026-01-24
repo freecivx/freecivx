@@ -28,6 +28,9 @@ function BitVector(raw)
     Returns true iff the specified bit is set to true.
   ************************************************************************/
   this.isSet = function(bitNumber) {
+    if (this.raw == null || this.raw.length === 0) {
+      return false;
+    }
     return (this.raw[Math.floor(bitNumber / 8)]
             & (1 << (bitNumber % 8))) != 0;
   };
@@ -36,6 +39,9 @@ function BitVector(raw)
     Set the specified bit to true.
   ************************************************************************/
   this.set = function(bitNumber) {
+    if (this.raw == null || this.raw.length === 0) {
+      return;
+    }
     var byteNumber = Math.floor(bitNumber / 8);
 
     this.raw[byteNumber] = (this.raw[byteNumber]
@@ -46,6 +52,9 @@ function BitVector(raw)
     Set the specified bit to false.
   ************************************************************************/
   this.unset = function(bitNumber, value) {
+    if (this.raw == null || this.raw.length === 0) {
+      return;
+    }
     var byteNumber = Math.floor(bitNumber / 8);
 
     this.raw[byteNumber] = (this.raw[byteNumber]
@@ -58,6 +67,9 @@ function BitVector(raw)
     Note that the last 7 bits may be unused.
   ************************************************************************/
   this.toString = function() {
+    if (this.raw == null || this.raw.length === 0) {
+      return "";
+    }
     var out = "";
 
     for (var i = 0; i < this.raw.length * 8; i++) {
@@ -71,6 +83,9 @@ function BitVector(raw)
     Returns the list of set bits.
   ************************************************************************/
   this.toBitSet = function() {
+    if (this.raw == null || this.raw.length === 0) {
+      return [];
+    }
     var out = [];
 
     for (var i = 0; i < this.raw.length * 8; i++) {
