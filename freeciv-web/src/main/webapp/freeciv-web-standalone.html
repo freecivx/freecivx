@@ -86,11 +86,6 @@ if (typeof window !== 'undefined') {
   window.is_standalone = true;
 }
 
-// Initialize standalone mode when document is ready
-$(document).ready(function() {
-  console.log("Document ready in standalone mode");
-  init_standalone();
-});
 </script>
 
 <!-- Three.js ES Module System  -->
@@ -109,6 +104,15 @@ $(document).ready(function() {
 
 <!-- Standalone-specific functionality -->
 <script src="/javascript/standalone.js" defer></script>
+
+<script>
+  // Initialize standalone mode when document is ready
+  $(document).ready(function() {
+    console.log("Document ready in standalone mode");
+    init_standalone();
+  });
+</script>
+
 
 <link rel="shortcut icon" href="/images/freeciv-shortcut-icon.png" />
 <link rel="apple-touch-icon" href="/images/freeciv-splash4.png" />
