@@ -8,6 +8,7 @@ export default defineConfig({
   build: {
     outDir: '../../../target/freeciv-web-vite',
     emptyOutDir: true,
+    manifest: true,
     rollupOptions: {
       input: {
         'three-modules': resolve(__dirname, 'src/main/webapp/javascript/three-modules.js'),
@@ -48,7 +49,8 @@ export default defineConfig({
   },
   resolve: {
     alias: {
-      '@': resolve(__dirname, 'src/main/webapp')
+      '@': resolve(__dirname, 'src/main/webapp'),
+      'three': resolve(__dirname, 'src/main/webapp/javascript/webgl/libs/threejs/three.module.min.js')
     }
   }
 });
