@@ -462,46 +462,22 @@ function update_loading_progress(percent, message) {
 
 // *** MAIN INITIALIZATION ***
 // Called when page finishes loading (all scripts downloaded)
-// Uses retry mechanism to handle async script loading
+// Triggers the standalone environment initialization sequence
 window.addEventListener('load', function() {
-  console.log("Page loaded, waiting for standalone environment...");
+  console.log("Page loaded, initializing standalone environment...");
   update_loading_progress(50, "Initializing...");
   
-  var initAttempts = 0;
-  var maxAttempts = 20; // Try for up to 2 seconds (20 * 100ms)
-  
-  function attemptInit() {
-    initAttempts++;
-    
-    // Check if bootstrap module is ready
-    if (typeof init_standalone_environment !== 'function') {
-      if (initAttempts < maxAttempts) {
-        console.log(`Waiting for init_standalone_environment... (attempt ${initAttempts}/${maxAttempts})`);
-        setTimeout(attemptInit, 100);
-        return;
-      } else {
-        var errorMsg = "Failed to initialize: init_standalone_environment function not found after " + maxAttempts + " attempts. " +
-                      "This may indicate a script loading issue. Check browser console for errors.";
-        console.error(errorMsg);
-        alert(errorMsg);
-        return;
-      }
-    }
-    
-    // Bootstrap module is ready, proceed with initialization
+  // Small delay to ensure DOM is ready
+  setTimeout(function() {
     try {
-      console.log("Starting standalone environment initialization...");
+      // Start initialization (defined in renderer-bootstrap.js)
       init_standalone_environment();
       update_loading_progress(100, "Complete!");
     } catch (e) {
       console.error("Initialization error:", e);
-      console.error("Stack trace:", e.stack);
-      alert("Error initializing: " + e.message + "\n\nCheck console for details.");
+      alert("Error initializing: " + e.message);
     }
-  }
-  
-  // Start initialization attempts
-  setTimeout(attemptInit, 100);
+  }, 100);
 });
 
 // *** WINDOW RESIZE HANDLER ***
