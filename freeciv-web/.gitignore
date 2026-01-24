@@ -1,3 +1,4 @@
 flyway.properties
 node_modules
 test-results/
+target/freeciv-web-vite
