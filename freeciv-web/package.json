@@ -4,7 +4,7 @@
   "description": "Freeciv-Web JavaScript build with Vite",
   "type": "module",
   "scripts": {
-    "build": "vite build",
+    "build": "vite build && node unwrap-bundle.js",
     "dev": "vite",
     "preview": "vite preview"
   },
