@@ -152,3 +152,8 @@ EventAggregator.prototype.clear = function () {
   this.count = 0;
 };
 
+// Make EventAggregator available globally for Vite build
+if (typeof window !== 'undefined') {
+  window.EventAggregator = EventAggregator;
+}
+
