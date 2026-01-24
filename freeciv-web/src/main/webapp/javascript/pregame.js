@@ -1038,9 +1038,6 @@ function show_intro_dialog(title, message) {
   $("#pregame_custom_scrollbar_div").mCustomScrollbar({theme:"3d"});
   add_chatbox_text({message: 'Welcome to FreecivX. You can enter game commands, chat with players or ask the AI. Try the /help command or ask the AI. FreecivX is a free open source strategy game forked from Freeciv.', event : E_CHAT_MSG});
   $("#pregame_page").show();
-
-  $("#dialog").parent().hide();
-  setTimeout("$('#dialog').parent().show();", 1000);
 }
 
 /**************************************************************************
