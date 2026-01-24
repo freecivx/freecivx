@@ -38,18 +38,22 @@ try {
 <meta name="description" content="FreecivWorld.net play Freeciv in 3D online for free, open source strategy game">
 <meta property="og:image" content="/images/freecivx-icon-web2.jpg" />
 
-<script type="text/javascript">
+<!-- Global configuration variables -->
+<script>
 var ts="${initParam.buildTimeStamp}";
 var fcwDebug=<%= fcwDebug %>;
-
 </script>
-<script type="text/javascript" src="/javascript/libs/jquery.min.js?ts=${initParam.buildTimeStamp}"></script>
 
-<script src="https://apis.google.com/js/platform.js"></script>
+<!-- Core dependencies - loaded synchronously for compatibility -->
+<script src="/javascript/libs/jquery.min.js?ts=${initParam.buildTimeStamp}"></script>
 
-<script type="text/javascript" src="/javascript/libs/stacktrace.min.js"></script>
+<!-- External services -->
+<script src="https://apis.google.com/js/platform.js" defer></script>
 
+<!-- Error tracking -->
+<script src="/javascript/libs/stacktrace.min.js" defer></script>
 
+<!-- Three.js ES Module System - Modern import map pattern for Vite compatibility -->
 <script type="importmap">
   {
     "imports": {
@@ -57,12 +61,14 @@ var fcwDebug=<%= fcwDebug %>;
     }
   }
 </script>
+<!-- Three.js module loader - exports to window for backward compatibility -->
 <script type="module" src="/javascript/three-modules.js?ts=${initParam.buildTimeStamp}"></script>
 
+<!-- Main application bundle - to be replaced with ES modules in Vite migration -->
+<script src="/javascript/webclient.min.js?ts=${initParam.buildTimeStamp}" defer></script>
 
-<script type="text/javascript" src="/javascript/webclient.min.js?ts=${initParam.buildTimeStamp}"></script>
-
-<script type="text/javascript" src="/music/audio.min.js"></script>
+<!-- Audio system -->
+<script src="/music/audio.min.js" defer></script>
 
 <link rel="shortcut icon" href="/images/freeciv-shortcut-icon.png" />
 <link rel="apple-touch-icon" href="/images/freeciv-splash4.png" />
