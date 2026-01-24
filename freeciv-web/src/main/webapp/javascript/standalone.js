@@ -107,6 +107,9 @@ function start_standalone_game() {
 function create_mock_game_data() {
   console.log("Creating mock game data");
   
+  // Initialize mock server settings (must be first to prevent errors)
+  create_mock_server_settings();
+  
   // Initialize mock map
   create_mock_map();
   
@@ -586,11 +589,76 @@ function setup_mock_client_connection() {
 }
 
 /**************************************************************************
+ * Initialize mock server settings
+ * This prevents errors when accessing server_settings in the client code
+ **************************************************************************/
+function create_mock_server_settings() {
+  // Initialize server_settings if it doesn't exist
+  if (typeof server_settings === 'undefined') {
+    window.server_settings = {};
+  }
+  
+  // Add borders settings (fixes the 'is_visible' error)
+  server_settings['borders'] = {
+    id: 'borders',
+    name: 'borders',
+    is_visible: true,
+    val: true
+  };
+  
+  // Add other common server settings that might be accessed
+  server_settings['metamessage'] = {
+    id: 'metamessage',
+    name: 'metamessage',
+    val: 'Standalone Mode'
+  };
+  
+  server_settings['techlevel'] = {
+    id: 'techlevel',
+    name: 'techlevel',
+    val: 0
+  };
+  
+  server_settings['landmass'] = {
+    id: 'landmass',
+    name: 'landmass',
+    val: 30
+  };
+  
+  server_settings['nukes_minor'] = {
+    id: 'nukes_minor',
+    name: 'nukes_minor',
+    val: true
+  };
+  
+  server_settings['nukes_major'] = {
+    id: 'nukes_major',
+    name: 'nukes_major',
+    val: true
+  };
+  
+  console.log("Created mock server_settings");
+}
+
+/**************************************************************************
  * Standalone-specific event handlers
+ * ONLY runs when ts="standalone" is set (not in normal production mode)
  **************************************************************************/
 $(document).ready(function() {
-  if (is_standalone_mode()) {
+  // Check if we're in standalone mode by checking the global ts variable
+  // This variable is set in freeciv-web-standalone.html but not in the normal client
+  if (typeof ts !== 'undefined' && ts === 'standalone') {
     console.log("Document ready in standalone mode");
+    standalone_mode = true;
+    if (typeof window !== 'undefined') {
+      window.is_standalone = true;
+    }
     init_standalone();
+  } else {
+    // Not in standalone mode, don't do anything
+    standalone_mode = false;
+    if (typeof window !== 'undefined') {
+      window.is_standalone = false;
+    }
   }
 });

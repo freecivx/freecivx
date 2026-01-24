@@ -12,29 +12,32 @@
   without requiring a server connection. Perfect for testing, development,
   and offline demonstrations.
   
-  HOW TO RUN:
-  -----------
+  HOW TO BUILD:
+  -------------
+  
+  1. Build the project:
+     mvn compile
+  
+  2. The standalone client will be available at:
+     target/freeciv-web/freeciv-web-standalone.html
+  
+  HOW TO RUN (After Building):
+  ----------------------------
   
   1. Using Python (Python 3):
-     cd /path/to/freeciv-web/src/main/webapp
+     cd target/freeciv-web
      python3 -m http.server 8080
      
      Then open: http://localhost:8080/freeciv-web-standalone.html
   
-  2. Using Python (Python 2):
-     cd /path/to/freeciv-web/src/main/webapp
-     python -m SimpleHTTPServer 8080
-     
-     Then open: http://localhost:8080/freeciv-web-standalone.html
-  
-  3. Using Node.js (install http-server first: npm install -g http-server):
-     cd /path/to/freeciv-web/src/main/webapp
+  2. Using Node.js (install http-server first: npm install -g http-server):
+     cd target/freeciv-web
      http-server -p 8080
      
      Then open: http://localhost:8080/freeciv-web-standalone.html
   
-  4. Using PHP:
-     cd /path/to/freeciv-web/src/main/webapp
+  3. Using PHP:
+     cd target/freeciv-web
      php -S localhost:8080
      
      Then open: http://localhost:8080/freeciv-web-standalone.html
@@ -46,6 +49,14 @@
   - Includes 3 players (1 human, 2 AI)
   - Displays a 40x30 map with varied terrain
   - Shows cities, units, and game UI
+  - Proper initialization of all required game settings
+  
+  LIMITATIONS:
+  ------------
+  - No multiplayer functionality
+  - No server-side game logic (AI moves, etc.)
+  - Limited interaction (view only)
+  - Some features may not work without server
   
   NOTE: This is a demonstration version with limited functionality.
   For the full multiplayer experience, visit https://www.freecivworld.net/
