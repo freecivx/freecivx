@@ -23,7 +23,7 @@
  * in standalone mode without a full server infrastructure.
  */
 
-var standalone_mode = true;
+var standalone_mode = false;
 
 // Configuration constants for standalone mode
 var STANDALONE_STARTUP_DELAY_MS = 500;  // Delay before auto-starting the game
