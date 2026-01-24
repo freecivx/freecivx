@@ -70,7 +70,7 @@ var fcwDebug=<%= fcwDebug %>;
 
 <!-- Main application bundle -->
 <% if (useViteBuild) { %>
-<script src="/javascript/webclient-vite.min.js?ts=${initParam.buildTimeStamp}" defer></script>
+<script type="module" src="/javascript/webclient-vite.min.js?ts=${initParam.buildTimeStamp}"></script>
 <% } else { %>
 <script src="/javascript/webclient.min.js?ts=${initParam.buildTimeStamp}" defer></script>
 <% } %>
