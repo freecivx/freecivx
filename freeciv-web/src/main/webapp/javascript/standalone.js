@@ -186,7 +186,7 @@ function create_mock_map() {
         y: y,
         terrain: terrain,
         known: 2, // TILE_KNOWN_SEEN
-        extras: new BitVector(null),
+        extras: new BitVector([]),
         units: [],
         owner: null,
         claimer: null,
@@ -303,7 +303,7 @@ function create_mock_players() {
     username: "Player",
     nation: 0, // Romans
     flags: new BitVector([false]), // Not AI
-    gives_shared_vision: new BitVector(null),
+    gives_shared_vision: new BitVector([]),
     gold: 50,
     government: 0,
     tech_goal: 0,
@@ -328,7 +328,7 @@ function create_mock_players() {
     username: "AI",
     nation: 1, // Egyptians
     flags: new BitVector([true]), // Is AI
-    gives_shared_vision: new BitVector(null),
+    gives_shared_vision: new BitVector([]),
     gold: 50,
     government: 0,
     tech_goal: 0,
@@ -353,7 +353,7 @@ function create_mock_players() {
     username: "AI",
     nation: 2, // Greeks
     flags: new BitVector([true]), // Is AI
-    gives_shared_vision: new BitVector(null),
+    gives_shared_vision: new BitVector([]),
     gold: 50,
     government: 0,
     tech_goal: 0,
@@ -399,8 +399,8 @@ function create_mock_cities() {
     gold_prod: 1,
     culture: 5,
     science_prod: 1,
-    can_build_improvement: new BitVector(null),
-    can_build_unit: new BitVector(null),
+    can_build_improvement: new BitVector([]),
+    can_build_unit: new BitVector([]),
     unhappy: 0,
     ppl_happy: 1,
     ppl_content: 2,
@@ -430,8 +430,8 @@ function create_mock_cities() {
     gold_prod: 1,
     culture: 3,
     science_prod: 1,
-    can_build_improvement: new BitVector(null),
-    can_build_unit: new BitVector(null),
+    can_build_improvement: new BitVector([]),
+    can_build_unit: new BitVector([]),
     unhappy: 0,
     ppl_happy: 1,
     ppl_content: 1,
@@ -460,8 +460,8 @@ function create_mock_cities() {
     gold_prod: 1,
     culture: 3,
     science_prod: 1,
-    can_build_improvement: new BitVector(null),
-    can_build_unit: new BitVector(null),
+    can_build_improvement: new BitVector([]),
+    can_build_unit: new BitVector([]),
     unhappy: 0,
     ppl_happy: 1,
     ppl_content: 1,
