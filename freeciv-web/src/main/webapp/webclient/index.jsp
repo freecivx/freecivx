@@ -28,7 +28,7 @@ try {
 <!DOCTYPE html>
 <html>
 <head>
-<title>FreecivWorld.net - 3D browser version of the strategy game Freeciv.</title>
+<title>FreecivWorld.net - 3D version of Freeciv.</title>
 
 <link href="/static/css/bootstrap.min.css" rel="stylesheet">
 
@@ -44,10 +44,7 @@ var ts="${initParam.buildTimeStamp}";
 var fcwDebug=<%= fcwDebug %>;
 </script>
 
-<!-- External services -->
-<script src="https://apis.google.com/js/platform.js" defer></script>
-
-<!-- Three.js ES Module System - Modern import map pattern for Vite compatibility -->
+<!-- Three.js ES Module System  -->
 <script type="importmap">
   {
     "imports": {
@@ -69,20 +66,16 @@ var fcwDebug=<%= fcwDebug %>;
 
 </head>
 
-
-
 <body>
 
   <div id="introtxtja">FreecivWorld.net is the 3D version of the strategy game Freeciv. Because Civilization should be free, in 3D!</div>
 
     <div class="container">
         <%@include file="/WEB-INF/jsp/fragments/header.jsp"%>
-
     </div>
 
     <jsp:include page="pregame.jsp" flush="false"/>
     <jsp:include page="game.jsp" flush="false"/>
 
 </body>
-
 </html>
