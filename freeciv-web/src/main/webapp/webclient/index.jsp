@@ -60,9 +60,6 @@ var fcwDebug=<%= fcwDebug %>;
 <!-- Three.js and related modules loaded via bundled script -->
 <script type="module" src="/javascript/three-modules.js?ts=${initParam.buildTimeStamp}"></script>
 
-
-<script type="text/javascript" src="/javascript/webclient.min.js?ts=${initParam.buildTimeStamp}"></script>
-
 <script type="text/javascript" src="/music/audio.min.js"></script>
 
 <link rel="shortcut icon" href="/images/freeciv-shortcut-icon.png" />
