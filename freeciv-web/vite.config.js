@@ -1,8 +1,10 @@
 import { defineConfig } from 'vite'
 import { resolve } from 'path'
+import viteConcatPlugin from './vite-concat-plugin.js'
 
 export default defineConfig({
   root: 'src',
+  plugins: [viteConcatPlugin()],
   build: {
     outDir: '../target/vite-build',
     emptyOutDir: true,
@@ -16,7 +18,7 @@ export default defineConfig({
         entryFileNames: 'webclient-vite.min.js',
         chunkFileNames: 'chunks/[name]-[hash].js',
         assetFileNames: 'assets/[name]-[hash][extname]',
-        // Use IIFE format for compatibility with Closure Compiler and regular script tags
+        // Use IIFE format - the unwrap-bundle.js script will unwrap it to execute in global scope
         format: 'iife',
         // Map external 'three' module to global THREE variable
         globals: {
@@ -34,6 +36,15 @@ export default defineConfig({
       ecma: 2019,
       compress: {
         passes: 2
+      },
+      mangle: {
+        // Do not mangle global function names to keep them accessible
+        keep_fnames: true,
+        reserved: []  // We can add specific function names here if needed
+      },
+      format: {
+        // Preserve some formatting for debugging
+        comments: false
       }
     }
   },

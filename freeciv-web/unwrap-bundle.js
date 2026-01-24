@@ -17,97 +17,65 @@ console.log('Reading bundle:', bundlePath);
 let code = readFileSync(bundlePath, 'utf-8');
 
 // Check if code starts with IIFE pattern
-// Minified: !function(A){...}(THREE)
-// Non-minified: (function(three) {\n  "use strict";\n  ...})(THREE);
-const startsWithIIFE = /^[!(\s]*function\s*\(/i.test(code);
+// Minified: !function(){...}()
+const iifePattern = /^!\s*function\s*\(\s*\)\s*\{\s*["']use strict["'];\s*/;
 
-if (!startsWithIIFE) {
-  console.log('Code does not start with IIFE, likely already unwrapped or different format');
-  process.exit(0);
-}
-
-// Try to find the IIFE pattern
-// Match: !function(...){...}(...) or (function(...){...})(...)
-const minifiedPattern = /^!function\(([^)]*)\)\{/;
-const normalPattern = /^\(function\s*\(([^)]*)\)\s*\{/;
-
-let params = '';
-let bodyStart = -1;
-let isMinified = false;
-
-const minMatch = code.match(minifiedPattern);
-const normMatch = code.match(normalPattern);
-
-if (minMatch) {
-  console.log('Detected minified IIFE');
-  params = minMatch[1].trim();
-  bodyStart = code.indexOf('{') + 1;
-  isMinified = true;
-} else if (normMatch) {
-  console.log('Detected non-minified IIFE');
-  params = normMatch[1].trim();
-  bodyStart = code.indexOf('{', code.indexOf('function')) + 1;
-  isMinified = false;
-} else {
-  console.error('Could not detect IIFE pattern');
-  console.error('First 300 chars:', code.substring(0, 300));
-  process.exit(1);
-}
-
-// Find the matching closing brace
-let depth = 0;
-let bodyEnd = -1;
-
-for (let i = bodyStart - 1; i < code.length; i++) {
-  if (code[i] === '{') depth++;
-  else if (code[i] === '}') {
-    depth--;
-    if (depth === 0) {
-      bodyEnd = i;
-      break;
-    }
+if (!iifePattern.test(code)) {
+  console.log('Code does not start with expected IIFE pattern, checking if already unwrapped...');
+  // Check if it's already unwrapped (starts with "use strict" directly)
+  if (code.startsWith('"use strict"') || code.startsWith("'use strict'")) {
+    console.log('Code appears to be already unwrapped.');
+    process.exit(0);
   }
-}
-
-if (bodyEnd === -1) {
-  console.error('Could not find matching closing brace');
+  console.error('Unexpected code format');
+  console.error('First 100 chars:', code.substring(0, 100));
   process.exit(1);
 }
 
-// Extract the body
+console.log('Detected IIFE wrapper, unwrapping...');
+
+// Remove the IIFE wrapper
+// Pattern: !function(){"use strict";...}();
+// We want to remove: !function(){" use strict"; at the start and }(); at the end
+
+// Find where the actual code starts (after "use strict";)
+const useStrictMatch = code.match(/^!\s*function\s*\(\s*\)\s*\{\s*["']use strict["'];\s*/);
+if (!useStrictMatch) {
+  console.error('Could not find use strict');
+  process.exit(1);
+}
+
+const bodyStart = useStrictMatch[0].length;
+
+// Find the end by looking for the final }(); or }()
+// Everything after this pattern should be preserved (like sourcemap comments)
+const endMatch = code.match(/(\}\(\);?)(\s*\/\/[^\n]*)?(\n*)$/);
+
+if (!endMatch) {
+  console.error('Could not find closing }()');
+  console.error('Last 100 chars:', code.substring(code.length - 100));
+  process.exit(1);
+}
+
+const bodyEnd = code.length - endMatch[0].length;
+
+// Extract the body (everything between the start and end markers)
 let body = code.substring(bodyStart, bodyEnd);
 
-// Find the arguments
-const argsMatch = code.substring(bodyEnd).match(/\}\s*[\)]?\s*\(([^)]*)\)/);
-const args = argsMatch ? argsMatch[1].trim() : '';
+// The body should now contain all the actual code
+// We don't need to remove any closing brace because bodyEnd stops before }();
 
-console.log('Extracted:', {
-  params: params || '(none)',
-  args: args || '(none)',
-  bodyLength: body.length
-});
-
-// Remove "use strict"; from the beginning if present
-body = body.replace(/^[\s\n]*["']use strict["'];?\s*\n?/, '');
-
-// Assign parameters as variables
-let paramAssignments = '';
-if (params && args) {
-  const paramList = params.split(',').map(p => p.trim()).filter(p => p);
-  const argList = args.split(',').map(a => a.trim()).filter(a => a);
-  paramList.forEach((param, i) => {
-    if (param && argList[i]) {
-      if (isMinified) {
-        paramAssignments += `var ${param}=${argList[i]};`;
-      } else {
-        paramAssignments += `var ${param} = ${argList[i]};\n`;
-      }
-    }
-  });
+// Preserve the sourcemap comment and trailing newlines if they exist
+let suffix = '';
+if (endMatch[2]) {
+  suffix += endMatch[2];  // sourcemap comment
+}
+if (endMatch[3]) {
+  suffix += endMatch[3];  // trailing newlines
 }
 
 // Create the new code that executes in global scope
-const newCode = paramAssignments + body;
+const newCode = body + suffix;
 
 console.log('Writing unwrapped bundle (size:', newCode.length, 'bytes)...');
 writeFileSync(bundlePath, newCode, 'utf-8');
