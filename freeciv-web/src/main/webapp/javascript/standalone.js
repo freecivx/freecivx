@@ -656,6 +656,12 @@ function setup_mock_client_connection() {
     aifill: 0
   };
   
+  // Set calendar info (required for get_year_string)
+  calendar_info = {
+    negative_year_label: " BC",
+    positive_year_label: " AD"
+  };
+  
   // Set observing flag to false
   if (typeof observing !== 'undefined') {
     observing = false;
