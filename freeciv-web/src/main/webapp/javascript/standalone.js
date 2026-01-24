@@ -725,7 +725,7 @@ function initialize_standalone_webgl() {
   console.log("Initializing WebGL resources for standalone mode");
   
   // Initialize the GLTF loader if it hasn't been initialized yet
-  if (typeof loader === 'undefined' || loader === null) {
+  if (!loader) {
     loader = new GLTFLoader();
     const dracoLoader = new DRACOLoader();
     dracoLoader.setDecoderPath('/javascript/webgl/libs/');
@@ -735,12 +735,12 @@ function initialize_standalone_webgl() {
   }
   
   // Initialize webgl_textures if not already initialized
-  if (typeof webgl_textures === 'undefined') {
+  if (!window.webgl_textures) {
     window.webgl_textures = {};
   }
   
   // Initialize webgl_models if not already initialized  
-  if (typeof webgl_models === 'undefined') {
+  if (!window.webgl_models) {
     window.webgl_models = {};
   }
   
