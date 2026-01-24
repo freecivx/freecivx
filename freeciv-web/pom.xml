@@ -134,6 +134,39 @@
 		<finalName>freeciv-web</finalName>
 		<!-- <pluginManagement> -->
 			<plugins>
+				<!-- Create derived directory before enforcer checks for it -->
+				<plugin>
+					<groupId>org.apache.maven.plugins</groupId>
+					<artifactId>maven-antrun-plugin</artifactId>
+					<version>3.2.0</version>
+					<executions>
+						<execution>
+							<id>create-derived-webapp-dir</id>
+							<phase>validate</phase>
+							<goals>
+								<goal>run</goal>
+							</goals>
+							<configuration>
+								<target>
+									<mkdir dir="${derived-webapp.dir}"/>
+								</target>
+							</configuration>
+						</execution>
+						<execution>
+							<id>create-generated-javascript-dir</id>
+							<phase>generate-sources</phase>
+							<goals>
+								<goal>run</goal>
+							</goals>
+							<configuration>
+								<target>
+									<mkdir dir="${generated-js.dir}"/>
+								</target>
+							</configuration>
+						</execution>
+					</executions>
+				</plugin>
+
 				<plugin>
 					<groupId>org.apache.maven.plugins</groupId>
 					<artifactId>maven-enforcer-plugin</artifactId>
@@ -257,26 +290,6 @@ Rerun the sync-js-hand.js script.
 										</includes>
 									</resource>
 								</resources>
-							</configuration>
-						</execution>
-					</executions>
-				</plugin>
-
-				<plugin>
-					<groupId>org.apache.maven.plugins</groupId>
-					<artifactId>maven-antrun-plugin</artifactId>
-					<version>3.2.0</version>
-					<executions>
-						<execution>
-							<id>create-generated-javascript-dir</id>
-							<phase>generate-sources</phase>
-							<goals>
-								<goal>run</goal>
-							</goals>
-							<configuration>
-								<target>
-									<mkdir dir="${generated-js.dir}"/>
-								</target>
 							</configuration>
 						</execution>
 					</executions>
