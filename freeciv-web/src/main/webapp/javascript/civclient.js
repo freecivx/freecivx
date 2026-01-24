@@ -157,6 +157,12 @@ function civclient_init()
  Shows a intro dialog depending on game type.
 **************************************************************************/
 function init_common_intro_dialog() {
+  // Skip intro dialog in standalone mode
+  if (typeof is_standalone_mode === 'function' && is_standalone_mode()) {
+    console.log("Skipping intro dialog in standalone mode");
+    return;
+  }
+  
   if (observing) {
     show_intro_dialog("Welcome to FreecivWorld.net",
       "You have joined the game as an observer. Please enter your name:");
