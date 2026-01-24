@@ -102,6 +102,21 @@ function start_standalone_game() {
   console.log("[Standalone] Creating mock game data");
   create_mock_game_data();
   
+  // Validate tile heights to prevent NaN errors in geometry
+  var invalidTiles = 0;
+  for (var index in tiles) {
+    if (tiles[index].height === undefined || tiles[index].height === null || isNaN(tiles[index].height)) {
+      console.error("[Standalone] Invalid height for tile " + index + ": " + tiles[index].height);
+      tiles[index].height = 0.5; // Fix invalid heights
+      invalidTiles++;
+    }
+  }
+  if (invalidTiles > 0) {
+    console.warn("[Standalone] Fixed " + invalidTiles + " tiles with invalid heights");
+  } else {
+    console.log("[Standalone] All " + Object.keys(tiles).length + " tiles have valid heights");
+  }
+  
   // Initialize WebGL loader and resources before starting the game
   // This is necessary because in standalone mode we bypass the normal
   // tileset preloading flow that initializes these resources
@@ -172,35 +187,66 @@ function create_mock_map() {
   // Allocate and initialize tiles
   tiles = {};
   
-  // Create terrain types (simplified)
+  // Create terrain types with correct graphic_str values for terrain rendering
+  // Note: Ocean must use "floor" or "coast" for is_ocean_tile() to work correctly
   terrains = {
     0: { id: 0, name: "Grassland", graphic: "grassland", graphic_str: "grassland" },
-    1: { id: 1, name: "Ocean", graphic: "ocean", graphic_str: "ocean" },
+    1: { id: 1, name: "Ocean", graphic: "floor", graphic_str: "floor" }, // FIXED: was "ocean", must be "floor"
     2: { id: 2, name: "Plains", graphic: "plains", graphic_str: "plains" },
     3: { id: 3, name: "Forest", graphic: "forest", graphic_str: "forest" },
     4: { id: 4, name: "Hills", graphic: "hills", graphic_str: "hills" },
-    5: { id: 5, name: "Mountains", graphic: "mountains", graphic_str: "mountains" }
+    5: { id: 5, name: "Mountains", graphic: "mountains", graphic_str: "mountains" },
+    6: { id: 6, name: "Desert", graphic: "desert", graphic_str: "desert" },
+    7: { id: 7, name: "Tundra", graphic: "tundra", graphic_str: "tundra" },
+    8: { id: 8, name: "Swamp", graphic: "swamp", graphic_str: "swamp" }
   };
   
-  // Initialize each tile
+  // Initialize each tile with proper height values for 3D terrain rendering
   for (var y = 0; y < map.ysize; y++) {
     for (var x = 0; x < map.xsize; x++) {
       var index = x + y * map.xsize;
       
-      // Determine terrain based on position
+      // Determine terrain based on position with varied heights
       var terrain;
+      var height;
+      
+      // Create ocean borders
       if (y < 2 || y >= map.ysize - 2) {
         terrain = 1; // Ocean at top and bottom
+        height = 0; // Sea level
       } else if (x < 2 || x >= map.xsize - 2) {
         terrain = 1; // Ocean at sides
+        height = 0; // Sea level
       } else {
-        // Random terrain in the middle
+        // Create varied terrain in the middle with realistic heights
+        // Heights should be in range 0-3 for proper rendering
         var rand = Math.random();
-        if (rand < 0.4) terrain = 0; // Grassland
-        else if (rand < 0.6) terrain = 2; // Plains
-        else if (rand < 0.75) terrain = 3; // Forest
-        else if (rand < 0.9) terrain = 4; // Hills
-        else terrain = 5; // Mountains
+        
+        if (rand < 0.30) {
+          terrain = 0; // Grassland
+          height = 0.5 + Math.random() * 0.1; // Slightly above sea level
+        } else if (rand < 0.50) {
+          terrain = 2; // Plains
+          height = 0.55 + Math.random() * 0.1;
+        } else if (rand < 0.65) {
+          terrain = 3; // Forest
+          height = 0.6 + Math.random() * 0.15;
+        } else if (rand < 0.80) {
+          terrain = 4; // Hills
+          height = 1.0 + Math.random() * 0.5; // Hills are higher
+        } else if (rand < 0.88) {
+          terrain = 5; // Mountains
+          height = 2.0 + Math.random() * 1.0; // Mountains are highest
+        } else if (rand < 0.93) {
+          terrain = 6; // Desert (limited to avoid missing cactus models)
+          height = 0.5 + Math.random() * 0.15;
+        } else if (rand < 0.97) {
+          terrain = 7; // Tundra
+          height = 0.55 + Math.random() * 0.1;
+        } else {
+          terrain = 8; // Swamp
+          height = 0.45 + Math.random() * 0.05; // Swamps are low
+        }
       }
       
       tiles[index] = {
@@ -209,12 +255,12 @@ function create_mock_map() {
         y: y,
         terrain: terrain,
         known: 2, // TILE_KNOWN_SEEN
-        extras: new BitVector(['0']),
+        extras: new BitVector(['0']), // No extras to avoid missing model errors
         units: [],
         owner: null,
         claimer: null,
         worked: null,
-        height: terrain === 5 ? 15 : (terrain === 4 ? 10 : 0),
+        height: height, // Proper height values for 3D terrain rendering
         spec_sprite: null,
         goto_dir: null,
         nuke: 0
@@ -222,7 +268,7 @@ function create_mock_map() {
     }
   }
   
-  console.log("[Standalone] Created mock map: " + map.xsize + "x" + map.ysize + " tiles (" + Object.keys(tiles).length + " tiles initialized)");
+  console.log("[Standalone] Created mock map: " + map.xsize + "x" + map.ysize + " tiles (" + Object.keys(tiles).length + " tiles initialized with varied terrain and proper heights)");
 }
 
 /**************************************************************************

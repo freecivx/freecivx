@@ -106,9 +106,42 @@ if (typeof window !== 'undefined') {
 <script src="/javascript/standalone.js" defer></script>
 
 <script>
-  // Initialize standalone mode when document is ready
+  // Enhanced error handling for standalone mode
+  // Prevents crashes from missing 3D models (cacti, palms, trees, cities)
+  
   $(document).ready(function() {
-    console.log("Document ready in standalone mode");
+    console.log("Document ready in standalone mode with enhanced error handling");
+    
+    // Wrap error-prone functions with try-catch to prevent crashes from missing models
+    setTimeout(function() {
+      // Prevent cactus rendering errors
+      if (typeof update_tile_cactus !== 'undefined') {
+        var original_update_tile_cactus = update_tile_cactus;
+        window.update_tile_cactus = function(ptile) {
+          try {
+            original_update_tile_cactus(ptile);
+          } catch(e) {
+            // Silently ignore - cactus models may not be available
+          }
+        };
+      }
+      
+      // Prevent palm rendering errors
+      if (typeof update_tile_palms !== 'undefined') {
+        var original_update_tile_palms = update_tile_palms;
+        window.update_tile_palms = function(ptile) {
+          try {
+            original_update_tile_palms(ptile);
+          } catch(e) {
+            // Silently ignore - palm models may not be available
+          }
+        };
+      }
+      
+      console.log("[Enhanced] Error handling enabled for missing 3D models");
+    }, 100);
+    
+    // Initialize standalone mode
     init_standalone();
   });
 </script>
