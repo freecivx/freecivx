@@ -239,25 +239,7 @@ Rerun the sync-js-hand.js script.
 								</resources>
 							</configuration>
 						</execution>
-						<execution>
-							<!-- Copy audio.min.js into javascript directory for bundling -->
-							<id>copy-audio-js</id>
-							<phase>generate-sources</phase>
-							<goals>
-								<goal>copy-resources</goal>
-							</goals>
-							<configuration>
-								<outputDirectory>${project.build.directory}/${project.build.finalName}/javascript/music</outputDirectory>
-								<resources>
-									<resource>
-										<directory>${basedir}/src/main/webapp/music</directory>
-										<includes>
-											<include>audio.min.js</include>
-										</includes>
-									</resource>
-								</resources>
-							</configuration>
-						</execution>
+						
 					</executions>
 				</plugin>
 
@@ -291,7 +273,7 @@ Rerun the sync-js-hand.js script.
 										<!-- First, add already-minified libraries in the correct order -->
 										<filelist dir="${generated-js.dir}/libs" files="jquery.min.js"/>
 										<filelist dir="${generated-js.dir}/libs" files="stacktrace.min.js"/>
-										<filelist dir="${generated-js.dir}/music" files="audio.min.js"/>
+									
 										<!-- Then add the minified application code -->
 										<filelist dir="${generated-js.dir}" files="webclient-app.min.js"/>
 									</concat>
