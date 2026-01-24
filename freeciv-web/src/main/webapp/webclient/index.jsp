@@ -9,6 +9,7 @@ String captchaKey = null;
 boolean fcwDebug = false;
 
 boolean app = false;
+boolean useViteBuild = false;
 try {
   Properties prop = new Properties();
   prop.load(getServletContext().getResourceAsStream("/WEB-INF/config.properties"));
@@ -20,6 +21,9 @@ try {
 
   String appParam = request.getParameter("app");
   app = (appParam != null && (appParam.isEmpty() || parseBoolean(appParam)));
+
+  String viteBuildParam = request.getParameter("vite");
+  useViteBuild = (viteBuildParam != null && (viteBuildParam.isEmpty() || parseBoolean(viteBuildParam)));
 
 } catch (IOException e) {
   e.printStackTrace();
@@ -64,8 +68,12 @@ var fcwDebug=<%= fcwDebug %>;
 <!-- Three.js module loader - exports to window for backward compatibility -->
 <script type="module" src="/javascript/three-modules.js?ts=${initParam.buildTimeStamp}"></script>
 
-<!-- Main application bundle - to be replaced with ES modules in Vite migration -->
+<!-- Main application bundle -->
+<% if (useViteBuild) { %>
+<script src="/javascript/webclient-vite.min.js?ts=${initParam.buildTimeStamp}" defer></script>
+<% } else { %>
 <script src="/javascript/webclient.min.js?ts=${initParam.buildTimeStamp}" defer></script>
+<% } %>
 
 <!-- Audio system -->
 <script src="/music/audio.min.js" defer></script>
