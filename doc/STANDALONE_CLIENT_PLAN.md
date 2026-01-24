@@ -149,6 +149,7 @@ Testing approach:
 - ✅ Fixed: Standalone client interference in normal production mode
 - ✅ Fixed: Missing server_settings['borders']['is_visible'] error
 - ✅ Fixed: Duplicate standalone client files (removed -dev version)
+- ✅ Fixed: BitVector null initialization error causing "Cannot read properties of null (reading '1')" at BitVector.isSet
 
 ### Remaining Known Issues
 - ⚠️ WebGL map rendering may still have errors (need to initialize tileset and graphics data)
