@@ -59,6 +59,7 @@ var MOCK_CITY_STYLES_COUNT = 4;
 
 
 var E_CONNECTION = 98;
+var observing = false;
 
 /**
  * Initialize mock map data
