@@ -278,6 +278,26 @@ Rerun the sync-js-hand.js script.
 								</target>
 							</configuration>
 						</execution>
+						<execution>
+							<id>concatenate-javascript</id>
+							<phase>compile</phase>
+							<goals>
+								<goal>run</goal>
+							</goals>
+							<configuration>
+								<target>
+									<!-- Concatenate all JS files into a single webclient.min.js -->
+									<concat destfile="${generated-js.dir}/webclient.min.js" force="yes" fixlastline="yes">
+										<!-- First, add already-minified libraries in the correct order -->
+										<filelist dir="${generated-js.dir}/libs" files="jquery.min.js"/>
+										<filelist dir="${generated-js.dir}/libs" files="stacktrace.min.js"/>
+										<filelist dir="${generated-js.dir}/music" files="audio.min.js"/>
+										<!-- Then add the minified application code -->
+										<filelist dir="${generated-js.dir}" files="webclient-app.min.js"/>
+									</concat>
+								</target>
+							</configuration>
+						</execution>
 					</executions>
 				</plugin>
 
@@ -331,12 +351,9 @@ Rerun the sync-js-hand.js script.
 								<baseSourceDir>${project.build.directory}/${project.build.finalName}</baseSourceDir>
 								<sourceDir>javascript</sourceDir>
 								<targetDir>javascript</targetDir>
-								<outputFilename>webclient.min.js</outputFilename>
+								<outputFilename>webclient-app.min.js</outputFilename>
 								<includes>
 									<!-- order is important: these must be before sources below -->
-									<include>libs/jquery.min.js</include>
-									<include>libs/stacktrace.min.js</include>
-									<include>music/audio.min.js</include>
 									<include>libs/EventAggregator.js</include>
 									<include>map-constants.js</include>
 									<include>2dcanvas/tilespec-constants.js</include>
@@ -353,8 +370,11 @@ Rerun the sync-js-hand.js script.
 								<excludes>
 									<exclude>webclient.js</exclude>
 									<exclude>webclient.min.js</exclude>
+									<exclude>webclient-app.min.js</exclude>
 									<exclude>libs/es-module-shims.js</exclude>
+									<exclude>libs/jquery.min.js</exclude>
 									<exclude>libs/gif.worker.js</exclude>
+									<exclude>libs/stacktrace.min.js</exclude>
 									<exclude>webgl/libs/*js</exclude>
 									<exclude>webgl/effects/*js</exclude>
 									<exclude>three-modules.js</exclude>
