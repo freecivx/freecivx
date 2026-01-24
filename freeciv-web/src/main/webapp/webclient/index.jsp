@@ -49,6 +49,14 @@ var fcwDebug=<%= fcwDebug %>;
 
 <script type="text/javascript" src="/javascript/libs/stacktrace.min.js"></script>
 
+<script type="importmap">
+	{
+		"imports": {
+			"three": "/javascript/webgl/libs/threejs/three.module.min.js?ts=${initParam.buildTimeStamp}"
+		}
+	}
+</script>
+
 <!-- Three.js and related modules loaded via bundled script -->
 <script type="module" src="/javascript/three-modules.js?ts=${initParam.buildTimeStamp}"></script>
 
