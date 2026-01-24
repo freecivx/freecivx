@@ -407,8 +407,8 @@ Rerun the sync-js-hand.js script.
 									<exclude>libs/jquery.min.js</exclude>
 									<exclude>libs/gif.worker.js</exclude>
 									<exclude>libs/stacktrace.min.js</exclude>
-									<exclude>webgl/libs/*js</exclude>
-									<exclude>webgl/effects/*js</exclude>
+									<exclude>webgl/libs/*.js</exclude>
+									<exclude>webgl/effects/*.js</exclude>
 									<exclude>three-modules.js</exclude>
 								</excludes>
 							</configuration>
