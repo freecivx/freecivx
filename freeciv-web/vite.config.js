@@ -15,7 +15,13 @@ export default defineConfig({
       output: {
         entryFileNames: 'webclient-vite.min.js',
         chunkFileNames: 'chunks/[name]-[hash].js',
-        assetFileNames: 'assets/[name]-[hash][extname]'
+        assetFileNames: 'assets/[name]-[hash][extname]',
+        // Use IIFE format for compatibility with regular script tags
+        format: 'iife',
+        // Define globals for external dependencies
+        globals: {
+          three: 'THREE'
+        }
       },
       // External dependencies that should not be bundled
       external: ['three']
