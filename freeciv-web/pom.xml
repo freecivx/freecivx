@@ -16,7 +16,7 @@
 		<derived-webapp.dir>${basedir}/src/derived/webapp</derived-webapp.dir>
 		<generated-js.dir>${project.build.directory}/${project.build.finalName}/javascript</generated-js.dir>
 		<skip-minify-js>false</skip-minify-js>
-		<skip-vite-build>true</skip-vite-build>
+		<skip-vite-build>false</skip-vite-build>
 	</properties>
 
 	<repositories>
@@ -240,6 +240,47 @@ Rerun the sync-js-hand.js script.
 								</resources>
 							</configuration>
 						</execution>
+						<execution>
+							<!-- Copy Vite build output to WAR -->
+							<id>copy-vite-build</id>
+							<phase>prepare-package</phase>
+							<goals>
+								<goal>copy-resources</goal>
+							</goals>
+							<configuration>
+								<outputDirectory>${project.build.directory}/${project.build.finalName}</outputDirectory>
+								<resources>
+									<resource>
+										<directory>${project.build.directory}/freeciv-web-vite</directory>
+										<includes>
+											<include>javascript/**</include>
+										</includes>
+									</resource>
+								</resources>
+								<skip>${skip-vite-build}</skip>
+							</configuration>
+						</execution>
+						<execution>
+							<!-- Copy Vite manifest to WEB-INF -->
+							<id>copy-vite-manifest</id>
+							<phase>prepare-package</phase>
+							<goals>
+								<goal>copy-resources</goal>
+							</goals>
+							<configuration>
+								<outputDirectory>${project.build.directory}/${project.build.finalName}/WEB-INF</outputDirectory>
+								<resources>
+									<resource>
+										<directory>${project.build.directory}/freeciv-web-vite/.vite</directory>
+										<includes>
+											<include>manifest.json</include>
+										</includes>
+									</resource>
+								</resources>
+								<overwrite>true</overwrite>
+								<skip>${skip-vite-build}</skip>
+							</configuration>
+						</execution>
 					</executions>
 				</plugin>
 
@@ -258,6 +299,21 @@ Rerun the sync-js-hand.js script.
 								<target>
 									<mkdir dir="${generated-js.dir}"/>
 								</target>
+							</configuration>
+						</execution>
+						<execution>
+							<id>rename-vite-manifest</id>
+							<phase>prepare-package</phase>
+							<goals>
+								<goal>run</goal>
+							</goals>
+							<configuration>
+								<target>
+									<move file="${project.build.directory}/${project.build.finalName}/WEB-INF/manifest.json"
+										  tofile="${project.build.directory}/${project.build.finalName}/WEB-INF/vite-manifest.json"
+										  failonerror="false"/>
+								</target>
+								<skip>${skip-vite-build}</skip>
 							</configuration>
 						</execution>
 					</executions>

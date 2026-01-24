@@ -3,10 +3,13 @@
 <%@ page import="static org.apache.commons.lang3.StringUtils.stripToNull" %>
 <%@ page import="static org.apache.commons.lang3.StringUtils.stripToEmpty" %>
 <%@ page import="static java.lang.Boolean.parseBoolean" %>
+<%@ page import="org.freeciv.util.ViteManifest" %>
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
 <%
 String captchaKey = null;
 boolean fcwDebug = false;
+String threeModulesScript = null;
+boolean useViteBuild = false;
 
 boolean app = false;
 try {
@@ -20,6 +23,15 @@ try {
 
   String appParam = request.getParameter("app");
   app = (appParam != null && (appParam.isEmpty() || parseBoolean(appParam)));
+
+  // Try to load Vite bundled version
+  threeModulesScript = ViteManifest.getBundledFile(getServletContext(), "javascript/three-modules.js");
+  if (threeModulesScript != null) {
+    useViteBuild = true;
+  } else {
+    // Fallback to unbundled version
+    threeModulesScript = "/javascript/three-modules.js?ts=" + application.getInitParameter("buildTimeStamp");
+  }
 
 } catch (IOException e) {
   e.printStackTrace();
@@ -49,6 +61,8 @@ var fcwDebug=<%= fcwDebug %>;
 
 <script type="text/javascript" src="/javascript/libs/stacktrace.min.js"></script>
 
+<% if (!useViteBuild) { %>
+<!-- Import map only needed for unbundled version -->
 <script type="importmap">
 	{
 		"imports": {
@@ -56,9 +70,10 @@ var fcwDebug=<%= fcwDebug %>;
 		}
 	}
 </script>
+<% } %>
 
-<!-- Three.js and related modules loaded via bundled script -->
-<script type="module" src="/javascript/three-modules.js?ts=${initParam.buildTimeStamp}"></script>
+<!-- Three.js and related modules - either Vite bundled or unbundled -->
+<script type="module" src="<%= threeModulesScript %>"></script>
 
 <script type="text/javascript" src="/music/audio.min.js"></script>
 
