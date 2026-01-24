@@ -49,36 +49,8 @@ var fcwDebug=<%= fcwDebug %>;
 
 <script type="text/javascript" src="/javascript/libs/stacktrace.min.js"></script>
 
-
-  <script type="importmap">
-        {
-                "imports": {
-                        "three": "/javascript/webgl/libs/threejs/three.module.min.js?ts=${initParam.buildTimeStamp}"
-                }
-        }
-  </script>
-<script type="module">
-  import * as THREE from 'three';
-  window.THREE = THREE;
-
-
-
-  import { GLTFLoader } from '/javascript/webgl/libs/GLTFLoader.js?ts=${initParam.buildTimeStamp}';
-  window.GLTFLoader = GLTFLoader;
-
-  import { OrbitControls } from '/javascript/webgl/libs/OrbitControls.js?ts=${initParam.buildTimeStamp}';
-  window.OrbitControls = OrbitControls;
-
-
-
-  import { AnaglyphEffect } from '/javascript/webgl/effects/AnaglyphEffect.js?ts=${initParam.buildTimeStamp}';
-  window.AnaglyphEffect = AnaglyphEffect;
-
-  import { DRACOLoader } from '/javascript/webgl/libs/DRACOLoader.js?ts=${initParam.buildTimeStamp}';
-  window.DRACOLoader = DRACOLoader;
-
-
-</script>
+<!-- Three.js and related modules loaded via bundled script -->
+<script type="module" src="/javascript/three-modules.js?ts=${initParam.buildTimeStamp}"></script>
 
 
 <script type="text/javascript" src="/javascript/webclient.min.js?ts=${initParam.buildTimeStamp}"></script>

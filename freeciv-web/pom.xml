@@ -16,6 +16,7 @@
 		<derived-webapp.dir>${basedir}/src/derived/webapp</derived-webapp.dir>
 		<generated-js.dir>${project.build.directory}/${project.build.finalName}/javascript</generated-js.dir>
 		<skip-minify-js>false</skip-minify-js>
+		<skip-vite-build>true</skip-vite-build>
 	</properties>
 
 	<repositories>
@@ -345,6 +346,45 @@ Rerun the sync-js-hand.js script.
 
 					</executions>
 					
+				</plugin>
+
+				<plugin>
+					<groupId>org.codehaus.mojo</groupId>
+					<artifactId>exec-maven-plugin</artifactId>
+					<version>3.1.1</version>
+					<executions>
+						<!-- Install npm dependencies -->
+						<execution>
+							<id>npm-install</id>
+							<phase>generate-resources</phase>
+							<goals>
+								<goal>exec</goal>
+							</goals>
+							<configuration>
+								<executable>npm</executable>
+								<arguments>
+									<argument>install</argument>
+								</arguments>
+								<skip>${skip-vite-build}</skip>
+							</configuration>
+						</execution>
+						<!-- Run Vite build -->
+						<execution>
+							<id>vite-build</id>
+							<phase>prepare-package</phase>
+							<goals>
+								<goal>exec</goal>
+							</goals>
+							<configuration>
+								<executable>npm</executable>
+								<arguments>
+									<argument>run</argument>
+									<argument>build</argument>
+								</arguments>
+								<skip>${skip-vite-build}</skip>
+							</configuration>
+						</execution>
+					</executions>
 				</plugin>
 
 			</plugins>
