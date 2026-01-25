@@ -29,9 +29,7 @@ var standalone_mode = false;
 var STANDALONE_STARTUP_DELAY_MS = 1000;  // Increased delay to allow textures to load
 var STANDALONE_MAP_WIDTH = 40;          // Map width in tiles
 var STANDALONE_MAP_HEIGHT = 30;         // Map height in tiles
-// Delay before setting client state to allow WebGL renderer, textures, and geometry to initialize
-// This prevents race conditions where the renderer tries to use resources before they're ready
-var STANDALONE_WEBGL_INIT_DELAY_MS = 500;
+
 
 /**************************************************************************
  * Initialize standalone mode
@@ -120,17 +118,12 @@ function start_standalone_game() {
   // tileset preloading flow that initializes these resources
   console.log("[Standalone] Initializing WebGL resources");
   initialize_standalone_webgl();
-  
-  // Delay setting client state to allow WebGL resources to initialize
-  // This prevents errors with undefined textures and uninitialized geometries
-  console.log("[Standalone] Waiting " + STANDALONE_WEBGL_INIT_DELAY_MS + "ms before starting renderer");
-  setTimeout(function() {
-    console.log("[Standalone] Setting client state to C_S_RUNNING");
-    set_client_state(C_S_RUNNING);
-    console.log("[Standalone] Standalone game started successfully");
-    advance_unit_focus();
-    console.log("[Standalone] Advance unit focus called");
-  }, STANDALONE_WEBGL_INIT_DELAY_MS);
+
+  console.log("[Standalone] Setting client state to C_S_RUNNING");
+  set_client_state(C_S_RUNNING);
+  console.log("[Standalone] Standalone game started successfully");
+  advance_unit_focus();
+  console.log("[Standalone] Advance unit focus called");
 }
 
 /**************************************************************************
