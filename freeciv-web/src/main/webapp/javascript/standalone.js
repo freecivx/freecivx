@@ -42,10 +42,11 @@ function init_standalone() {
   console.log("[Standalone] Startup delay: " + STANDALONE_STARTUP_DELAY_MS + "ms");
   
   // Set global flag for other modules to detect standalone mode
-  if (typeof window !== 'undefined') {
-    window.is_standalone = true;
-  }
-  
+  window.is_standalone = true;
+
+  init_sprites();
+
+
   // Initialize any standalone-specific settings
   setup_standalone_environment();
   
@@ -60,8 +61,7 @@ function init_standalone() {
  * Configure any standalone-specific settings and overrides
  **************************************************************************/
 function setup_standalone_environment() {
-  console.log("[Standalone] Setting up standalone environment");
-  console.log("[Standalone] Map dimensions: " + STANDALONE_MAP_WIDTH + "x" + STANDALONE_MAP_HEIGHT);
+  console.log("[Standalone] Setting up standalone environmentMap dimensions: " + STANDALONE_MAP_WIDTH + "x" + STANDALONE_MAP_HEIGHT);
   
   // Override network_init to prevent websocket connection
   if (typeof network_init !== 'undefined') {
@@ -825,7 +825,8 @@ function create_placeholder_texture(width, height, color) {
  **************************************************************************/
 function initialize_standalone_webgl() {
   console.log("[Standalone] Initializing WebGL resources for standalone mode");
-  
+
+
   // Initialize the GLTF loader if it hasn't been initialized yet
   if (!loader) {
     console.log("[Standalone] Creating GLTFLoader");
