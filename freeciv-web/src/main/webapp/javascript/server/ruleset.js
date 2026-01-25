@@ -119,7 +119,7 @@ function server_create_unit_types() {
   handle_ruleset_unit({ 
     id: 0, 
     name: "Settlers",
-    graphic_str: "unit.settlers",
+    graphic_str: "u.settlers",
     move_rate: 1,
     hp: 10
   });
@@ -127,7 +127,7 @@ function server_create_unit_types() {
   handle_ruleset_unit({ 
     id: 1, 
     name: "Warriors",
-    graphic_str: "unit.warriors",
+    graphic_str: "u.warriors",
     move_rate: 1,
     hp: 10
   });
@@ -135,7 +135,7 @@ function server_create_unit_types() {
   handle_ruleset_unit({ 
     id: 2, 
     name: "Phalanx",
-    graphic_str: "unit.phalanx",
+    graphic_str: "u.phalanx",
     move_rate: 1,
     hp: 10
   });
