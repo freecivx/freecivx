@@ -55,7 +55,7 @@ function update_city_screen()
                 + pcity['name'] + "</td><td>" + numberWithCommas(city_population(pcity)*1000) +
                 "</td><td>" + pcity['size'] + "</td><td>" + get_city_state(pcity) + "</td><td>" + pcity['food_stock'] + "/" + pcity['granary_size'] +
                 "</td><td>" + city_turns_to_growth_text(pcity) + "</td>" +
-                "<td>" + prod_type['name'] + " (" + turns_to_complete_str + ")" +
+                "<td>" + (prod_type['name'] != null ? prod_type['name'] : "") + " (" + turns_to_complete_str + ")" +
                 "</td><td>" + pcity['surplus'][O_FOOD] + "/" + pcity['surplus'][O_SHIELD] + "/" + pcity['surplus'][O_TRADE] + "</td>" +
                 "<td>" + pcity['prod'][O_GOLD] + "/" + pcity['prod'][O_LUXURY] + "/" + pcity['prod'][O_SCIENCE] + "<td>";
 
