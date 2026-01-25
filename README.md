@@ -55,6 +55,8 @@ Standalone client
 The freeciv-web [freeciv-web-standalone.html](/freeciv-web/src/main/webapp/freeciv-web-standalone.html) allows running the client in a browser without a Freeciv C server.
 This can be used to make a Freeciv pure JavaScript server for running games fully in the browser, and to implement hexagonal map tiles.
 
+**For developers:** See [QUICKSTART.md](QUICKSTART.md) for a 5-minute setup guide to get the standalone client running for development with GitHub Copilot.
+
 Running FreecivWorld.net on your computer
 ------------------------------------
 Freeciv-web can be run with WSL (Linux on Windows), or Podman / Docker.
@@ -89,7 +91,25 @@ See: [Docker](/doc/Docker.md)
 Developers interested in freecivworld
 ------------------------------------
 
-If you want to contibute to freecivworld, see the [issues](https://github.com/freecivworld/freecivworld/issues) on GibHub for some tasks you can work on. Pull requests and suggestions/issues on Github are welcome! 
+If you want to contribute to freecivworld, see the [issues](https://github.com/freecivworld/freecivworld/issues) on GitHub for some tasks you can work on. Pull requests and suggestions/issues on Github are welcome!
+
+**Developer Documentation:**
+- **[QUICKSTART.md](QUICKSTART.md)** - Get started in 5 minutes (setup, build, run)
+- **[DEVELOPMENT.md](DEVELOPMENT.md)** - Detailed architecture and development guide
+- **[Standalone Client README](freeciv-web/src/main/webapp/STANDALONE-README.md)** - Standalone mode specifics
+- **[Contributing](doc/CONTRIBUTING.md)** - Pull request guidelines
+
+**Quick Setup:**
+```bash
+# Run automated setup script
+./dev-setup.sh
+
+# Or use Makefile for common tasks
+make setup      # Initial setup
+make build      # Build project
+make run        # Start dev server
+make help       # Show all commands
+```
 
 Freecivworld is the best Freeciv.
 -----------------------------

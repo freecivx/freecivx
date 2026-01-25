@@ -21,31 +21,79 @@
  * Standalone-specific initialization and functionality
  * This module provides the necessary glue code for running Freeciv-web
  * in standalone mode without a full server infrastructure.
+ * 
+ * ARCHITECTURE:
+ * ------------
+ * Standalone mode bypasses the normal network stack and creates mock game data:
+ * 1. HTML page loads and calls init_standalone()
+ * 2. After delay, setup_standalone_environment() prepares the UI
+ * 3. start_standalone_game() creates mock data (map, players, cities, units)
+ * 4. WebGL renderer initializes with the mock data
+ * 5. Client state is set to C_S_RUNNING to start the game loop
+ * 
+ * KEY DIFFERENCES FROM NORMAL MODE:
+ * - No WebSocket connection to Freeciv C server
+ * - No multiplayer or AI turns (static game state)
+ * - All game data is procedurally generated in JavaScript
+ * - Limited interaction (primarily view-only)
+ * 
+ * TIMING DEPENDENCIES:
+ * - STANDALONE_STARTUP_DELAY_MS: Wait for sprite/texture loading
+ * - STANDALONE_WEBGL_INIT_DELAY_MS: Wait for WebGL context and geometry
+ * 
+ * TODO: Replace delays with Promise-based initialization for more reliable startup
+ * 
+ * For more details, see:
+ * - QUICKSTART.md - Quick setup guide
+ * - DEVELOPMENT.md - Detailed architecture documentation
  */
 
 var standalone_mode = false;
 
 // Configuration constants for standalone mode
 var STANDALONE_STARTUP_DELAY_MS = 1000;  // Increased delay to allow textures to load
-var STANDALONE_MAP_WIDTH = 40;          // Map width in tiles
-var STANDALONE_MAP_HEIGHT = 30;         // Map height in tiles
+var STANDALONE_MAP_WIDTH = 40;          // Map width in tiles (adjustable for testing)
+var STANDALONE_MAP_HEIGHT = 30;         // Map height in tiles (adjustable for testing)
 // Delay before setting client state to allow WebGL renderer, textures, and geometry to initialize
 // This prevents race conditions where the renderer tries to use resources before they're ready
 var STANDALONE_WEBGL_INIT_DELAY_MS = 500;
 
+// Error tracking for debugging
+var standalone_errors = [];
+var standalone_warnings = [];
+
 /**************************************************************************
  * Initialize standalone mode
  * Called when the standalone HTML page loads
+ * 
+ * @public
+ * @returns {void}
  **************************************************************************/
 function init_standalone() {
   console.log("[Standalone] Initializing Freeciv-web in standalone mode");
   console.log("[Standalone] Startup delay: " + STANDALONE_STARTUP_DELAY_MS + "ms");
+  console.log("[Standalone] Map size: " + STANDALONE_MAP_WIDTH + "x" + STANDALONE_MAP_HEIGHT);
+  
+  try {
+    standalone_mode = true;
 
-  standalone_mode = true;
-
-  init_sprites();
-
-
+    // Initialize sprite system
+    console.log("[Standalone] Initializing sprites...");
+    init_sprites();
+    
+    // Schedule environment setup after sprites load
+    setTimeout(function() {
+      try {
+        setup_standalone_environment();
+        start_standalone_game();
+      } catch (error) {
+        standalone_handle_error("Failed to start standalone game", error);
+      }
+    }, STANDALONE_STARTUP_DELAY_MS);
+    
+  } catch (error) {
+    standalone_handle_error("Failed to initialize standalone mode", error);
+  }
 }
 
 /**************************************************************************
@@ -846,4 +894,196 @@ function initialize_standalone_webgl() {
   }
   
   console.log("[Standalone] WebGL resources initialized for standalone mode");
+}
+
+/**************************************************************************
+ * Error handling and debugging utilities
+ **************************************************************************/
+
+/**
+ * Handle errors in standalone mode with detailed logging
+ * 
+ * @param {string} message - Human-readable error description
+ * @param {Error} error - JavaScript Error object
+ * @public
+ */
+function standalone_handle_error(message, error) {
+  var errorInfo = {
+    message: message,
+    error: error ? error.toString() : "Unknown error",
+    stack: error && error.stack ? error.stack : "No stack trace",
+    timestamp: new Date().toISOString()
+  };
+  
+  standalone_errors.push(errorInfo);
+  
+  console.error("[Standalone ERROR] " + message);
+  console.error("[Standalone ERROR] Details:", error);
+  
+  if (error && error.stack) {
+    console.error("[Standalone ERROR] Stack trace:");
+    console.error(error.stack);
+  }
+  
+  // Make errors accessible from browser console for debugging
+  window.standalone_errors = standalone_errors;
+}
+
+/**
+ * Log warnings in standalone mode
+ * 
+ * @param {string} message - Warning message
+ * @public
+ */
+function standalone_log_warning(message) {
+  standalone_warnings.push({
+    message: message,
+    timestamp: new Date().toISOString()
+  });
+  
+  console.warn("[Standalone WARNING] " + message);
+  window.standalone_warnings = standalone_warnings;
+}
+
+/**
+ * Get diagnostic information about standalone mode state
+ * Useful for debugging and troubleshooting
+ * 
+ * @returns {Object} Diagnostic information object
+ * @public
+ */
+function standalone_get_diagnostics() {
+  var diagnostics = {
+    mode: "standalone",
+    initialized: standalone_mode,
+    mapSize: {
+      width: STANDALONE_MAP_WIDTH,
+      height: STANDALONE_MAP_HEIGHT,
+      tileCount: STANDALONE_MAP_WIDTH * STANDALONE_MAP_HEIGHT
+    },
+    gameState: {
+      tilesCreated: tiles ? Object.keys(tiles).length : 0,
+      playersCreated: players ? Object.keys(players).length : 0,
+      citiesCreated: cities ? Object.keys(cities).length : 0,
+      unitsCreated: units ? Object.keys(units).length : 0,
+      terrainsCreated: terrains ? Object.keys(terrains).length : 0
+    },
+    webgl: {
+      texturesLoaded: window.webgl_textures ? Object.keys(window.webgl_textures).length : 0,
+      modelsLoaded: window.webgl_models ? Object.keys(window.webgl_models).length : 0,
+      loaderInitialized: typeof loader !== 'undefined' && loader !== null
+    },
+    errors: standalone_errors.length,
+    warnings: standalone_warnings.length,
+    clientState: typeof client_state !== 'undefined' ? client_state : 'undefined',
+    timing: {
+      startupDelay: STANDALONE_STARTUP_DELAY_MS,
+      webglInitDelay: STANDALONE_WEBGL_INIT_DELAY_MS
+    }
+  };
+  
+  return diagnostics;
+}
+
+/**
+ * Print diagnostic report to console
+ * Call from browser console: standalone_print_diagnostics()
+ * 
+ * @public
+ */
+function standalone_print_diagnostics() {
+  var diag = standalone_get_diagnostics();
+  
+  console.log("=== STANDALONE MODE DIAGNOSTICS ===");
+  console.log("Mode: " + diag.mode);
+  console.log("Initialized: " + diag.initialized);
+  console.log("");
+  console.log("Map Configuration:");
+  console.log("  Size: " + diag.mapSize.width + "x" + diag.mapSize.height);
+  console.log("  Total tiles: " + diag.mapSize.tileCount);
+  console.log("");
+  console.log("Game State:");
+  console.log("  Tiles created: " + diag.gameState.tilesCreated);
+  console.log("  Players created: " + diag.gameState.playersCreated);
+  console.log("  Cities created: " + diag.gameState.citiesCreated);
+  console.log("  Units created: " + diag.gameState.unitsCreated);
+  console.log("  Terrains defined: " + diag.gameState.terrainsCreated);
+  console.log("");
+  console.log("WebGL:");
+  console.log("  Textures loaded: " + diag.webgl.texturesLoaded);
+  console.log("  Models loaded: " + diag.webgl.modelsLoaded);
+  console.log("  Loader initialized: " + diag.webgl.loaderInitialized);
+  console.log("");
+  console.log("Status:");
+  console.log("  Errors: " + diag.errors);
+  console.log("  Warnings: " + diag.warnings);
+  console.log("  Client state: " + diag.clientState);
+  console.log("");
+  console.log("Timing:");
+  console.log("  Startup delay: " + diag.timing.startupDelay + "ms");
+  console.log("  WebGL init delay: " + diag.timing.webglInitDelay + "ms");
+  console.log("===================================");
+  
+  if (diag.errors > 0) {
+    console.log("");
+    console.log("Errors encountered:");
+    standalone_errors.forEach(function(err, idx) {
+      console.log("  " + (idx + 1) + ". " + err.message);
+      console.log("     " + err.error);
+    });
+  }
+  
+  if (diag.warnings > 0) {
+    console.log("");
+    console.log("Warnings:");
+    standalone_warnings.forEach(function(warn, idx) {
+      console.log("  " + (idx + 1) + ". " + warn.message);
+    });
+  }
+  
+  return diag;
+}
+
+// Make diagnostics available globally for debugging
+if (typeof window !== 'undefined') {
+  window.standalone_get_diagnostics = standalone_get_diagnostics;
+  window.standalone_print_diagnostics = standalone_print_diagnostics;
+  window.standalone_handle_error = standalone_handle_error;
+  window.standalone_log_warning = standalone_log_warning;
+}
+
+/**************************************************************************
+ * Development helper functions
+ **************************************************************************/
+
+/**
+ * Reload the standalone client (useful during development)
+ * Call from browser console: standalone_reload()
+ * 
+ * @public
+ */
+function standalone_reload() {
+  console.log("[Standalone] Reloading client...");
+  window.location.reload();
+}
+
+/**
+ * Adjust map size and reload (for testing different configurations)
+ * Call from browser console: standalone_resize_map(60, 40)
+ * 
+ * @param {number} width - New map width
+ * @param {number} height - New map height
+ * @public
+ */
+function standalone_resize_map(width, height) {
+  console.log("[Standalone] Resizing map to " + width + "x" + height);
+  STANDALONE_MAP_WIDTH = width;
+  STANDALONE_MAP_HEIGHT = height;
+  standalone_reload();
+}
+
+// Make dev helpers available globally
+if (typeof window !== 'undefined') {
+  window.standalone_reload = standalone_reload;
+  window.standalone_resize_map = standalone_resize_map;
 }

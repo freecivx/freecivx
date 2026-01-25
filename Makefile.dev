@@ -1,0 +1,208 @@
+# Freeciv Standalone Client - Development Makefile
+#
+# This Makefile provides convenient shortcuts for common development tasks.
+#
+# Usage:
+#   make setup     - Initial setup (runs dev-setup.sh)
+#   make build     - Full build with Maven
+#   make quick     - Quick JavaScript-only rebuild
+#   make run       - Start local development server
+#   make clean     - Clean build artifacts
+#   make validate  - Run validation checks
+#   make test      - Run Playwright tests
+#   make help      - Show this help message
+
+.PHONY: help setup build quick run clean validate test docker-up docker-down
+
+# Default target
+.DEFAULT_GOAL := help
+
+# Configuration
+JAVA_VERSION := $(shell java -version 2>&1 | head -n 1 | awk -F '"' '{print $$2}' | awk -F '.' '{print $$1}')
+MVN := mvn
+PYTHON := python3
+PORT := 8080
+
+# Detect if we should skip minification
+ifeq ($(shell test $(JAVA_VERSION) -ge 21; echo $$?),0)
+    MVN_BUILD_FLAGS := clean compile -DskipTests=true
+else
+    MVN_BUILD_FLAGS := clean compile -DskipTests=true -Dskip-minify-js=true
+endif
+
+help: ## Show this help message
+	@echo "Freeciv Standalone Client - Development Commands"
+	@echo ""
+	@echo "Available targets:"
+	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | \
+		awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-15s\033[0m %s\n", $$1, $$2}'
+	@echo ""
+	@echo "Environment:"
+	@echo "  Java version: $(JAVA_VERSION)"
+	@echo "  Maven: $(shell which $(MVN))"
+	@echo "  Python: $(shell which $(PYTHON))"
+	@echo ""
+
+setup: ## Initial development environment setup
+	@echo "Setting up development environment..."
+	@chmod +x dev-setup.sh
+	@./dev-setup.sh
+
+build: ## Full build with Maven
+	@echo "Building freeciv-web with Maven..."
+	@cd freeciv-web && $(MVN) $(MVN_BUILD_FLAGS)
+	@echo ""
+	@echo "Build complete! Run 'make run' to start the server."
+
+quick: ## Quick JavaScript-only rebuild (for rapid iteration)
+	@echo "Quick rebuilding JavaScript files..."
+	@cd freeciv-web && \
+		if [ -f build-js.sh ]; then \
+			./build-js.sh; \
+		else \
+			$(MVN) compile -DskipTests=true -Dskip-minify-js=true; \
+		fi
+	@echo ""
+	@echo "Quick build complete! Refresh your browser."
+
+run: ## Start local development server
+	@if [ ! -d "freeciv-web/target/freeciv-web" ]; then \
+		echo "Build directory not found. Run 'make build' first."; \
+		exit 1; \
+	fi
+	@echo "Starting development server on http://localhost:$(PORT)"
+	@echo "Open: http://localhost:$(PORT)/freeciv-web-standalone.html"
+	@echo ""
+	@echo "Press Ctrl+C to stop the server"
+	@echo ""
+	@cd freeciv-web/target/freeciv-web && $(PYTHON) -m http.server $(PORT)
+
+run-php: ## Start local development server with PHP (alternative)
+	@if [ ! -d "freeciv-web/target/freeciv-web" ]; then \
+		echo "Build directory not found. Run 'make build' first."; \
+		exit 1; \
+	fi
+	@echo "Starting PHP development server on http://localhost:$(PORT)"
+	@echo "Open: http://localhost:$(PORT)/freeciv-web-standalone.html"
+	@echo ""
+	@cd freeciv-web/target/freeciv-web && php -S localhost:$(PORT)
+
+clean: ## Clean build artifacts
+	@echo "Cleaning build artifacts..."
+	@cd freeciv-web && $(MVN) clean
+	@rm -f run-standalone.sh quick-build.sh
+	@echo "Clean complete!"
+
+validate: ## Run validation checks
+	@echo "Running validation checks..."
+	@if [ -f scripts/validate-standalone.sh ]; then \
+		bash scripts/validate-standalone.sh; \
+	else \
+		echo "Validation script not found at scripts/validate-standalone.sh"; \
+		exit 1; \
+	fi
+
+test: ## Run Playwright E2E tests
+	@echo "Running Playwright tests..."
+	@cd freeciv-web && \
+		if [ -d tests/playwright ]; then \
+			npm install --prefix . && \
+			npx playwright test; \
+		else \
+			echo "Playwright tests not found in freeciv-web/tests/playwright"; \
+		fi
+
+test-ui: ## Run Playwright tests with UI
+	@echo "Running Playwright tests with UI..."
+	@cd freeciv-web && \
+		npm install --prefix . && \
+		npx playwright test --ui
+
+dev: build run ## Build and run (shortcut for development)
+
+watch: ## Watch for changes and rebuild automatically (requires fswatch)
+	@if ! command -v fswatch > /dev/null 2>&1; then \
+		echo "Error: fswatch is not installed."; \
+		echo "Install it with:"; \
+		echo "  macOS: brew install fswatch"; \
+		echo "  Linux: apt-get install fswatch or yum install fswatch"; \
+		exit 1; \
+	fi
+	@echo "Watching for changes in freeciv-web/src/main/webapp/javascript/..."
+	@echo "Press Ctrl+C to stop watching"
+	@fswatch -o freeciv-web/src/main/webapp/javascript/ | \
+		while read event; do \
+			echo ""; \
+			echo "File changed - rebuilding..."; \
+			make quick; \
+			echo "Rebuild complete!"; \
+		done
+
+docker-up: ## Start Docker development environment
+	@echo "Starting Docker environment..."
+	@if command -v docker-compose > /dev/null 2>&1; then \
+		docker-compose up; \
+	else \
+		docker compose up; \
+	fi
+
+docker-down: ## Stop Docker development environment
+	@echo "Stopping Docker environment..."
+	@if command -v docker-compose > /dev/null 2>&1; then \
+		docker-compose down; \
+	else \
+		docker compose down; \
+	fi
+
+docker-build: ## Build Docker images
+	@echo "Building Docker images..."
+	@if command -v docker-compose > /dev/null 2>&1; then \
+		docker-compose build; \
+	else \
+		docker compose build; \
+	fi
+
+status: ## Check development environment status
+	@echo "Development Environment Status"
+	@echo "==============================="
+	@echo ""
+	@echo "Java:"
+	@java -version 2>&1 | head -n 1 || echo "  Not installed"
+	@echo ""
+	@echo "Maven:"
+	@$(MVN) --version 2>&1 | head -n 1 || echo "  Not installed"
+	@echo ""
+	@echo "Python:"
+	@$(PYTHON) --version || echo "  Not installed"
+	@echo ""
+	@echo "Git:"
+	@git --version || echo "  Not installed"
+	@echo ""
+	@echo "Node.js:"
+	@node --version 2>/dev/null || echo "  Not installed"
+	@echo ""
+	@echo "Build Status:"
+	@if [ -d "freeciv-web/target/freeciv-web" ]; then \
+		echo "  ✓ Build directory exists"; \
+	else \
+		echo "  ✗ Build directory not found (run 'make build')"; \
+	fi
+	@echo ""
+
+docs: ## Open documentation in browser
+	@echo "Opening documentation..."
+	@if command -v xdg-open > /dev/null 2>&1; then \
+		xdg-open QUICKSTART.md; \
+	elif command -v open > /dev/null 2>&1; then \
+		open QUICKSTART.md; \
+	else \
+		echo "Please open QUICKSTART.md in your favorite markdown viewer"; \
+	fi
+
+# Aliases for common tasks
+b: build          ## Alias for build
+r: run            ## Alias for run
+q: quick          ## Alias for quick
+c: clean          ## Alias for clean
+t: test           ## Alias for test
+h: help           ## Alias for help
