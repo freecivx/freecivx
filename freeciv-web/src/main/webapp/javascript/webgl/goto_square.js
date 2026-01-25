@@ -74,6 +74,7 @@ function webgl_render_goto_line(start_tile, goto_packet_dir) {
 
             // Create geometry for the quad
             const geometry = new THREE.BufferGeometry();
+            geometry.name = "goto_line_geometry";
             const position = new Float32Array([
                 vertices[0].x, vertices[0].y, vertices[0].z, // Top left
                 vertices[1].x, vertices[1].y, vertices[1].z, // Bottom left

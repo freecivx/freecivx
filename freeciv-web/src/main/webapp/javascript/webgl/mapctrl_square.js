@@ -408,6 +408,7 @@ function map_draw_select_lines() {
   points.push( new THREE.Vector3( pos1['x'], height, pos1['y']));
 
   const geometry = new THREE.BufferGeometry().setFromPoints( points );
+  geometry.name = "map_select_line_geometry";
 
   const selectline = new THREE.Line( geometry, material );
   selectline.name = "map_select_line";

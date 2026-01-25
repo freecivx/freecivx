@@ -156,6 +156,7 @@ async function init_webgl_mapview() {
   // Low-resolution terrain mesh used for raycasting to find mouse postition.
   var lofiMaterial = new THREE.MeshBasicMaterial({"color" : 0x00ff00});
   lofiGeometry = new THREE.BufferGeometry();
+  lofiGeometry.name = "lofi_terrain_geometry";
   init_land_geometry(lofiGeometry, 2);
   update_land_geometry(lofiGeometry, 2);
   lofiMesh = new THREE.Mesh( lofiGeometry, lofiMaterial );
@@ -187,6 +188,7 @@ async function init_webgl_mapview() {
     });
 
   landGeometry = new THREE.BufferGeometry();
+  landGeometry.name = "land_terrain_geometry";
   init_land_geometry(landGeometry, terrain_quality);
   update_land_geometry(landGeometry, terrain_quality);
   landMesh = new THREE.Mesh( landGeometry, terrain_material );
