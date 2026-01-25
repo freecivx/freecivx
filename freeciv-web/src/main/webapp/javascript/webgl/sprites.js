@@ -41,11 +41,12 @@ function create_unit_label_sprite(punit, ptile)
     fcanvas.height = 32;
     var ctx = fcanvas.getContext("2d");
 
-    ctx.drawImage(sprites[pflag['key']], 0, 0,
+    if (!is_standalone_mode()) {
+      ctx.drawImage(sprites[pflag['key']], 0, 0,
                 sprites[pflag['key']].width, sprites[pflag['key']].height,
                 0,6,40,20);
-    width += 45;
-
+      width += 45;
+    }
 
     if (show_unit_in_label && punit.owner != null) {
       let unit_sprite = sprites[unit_type['graphic_str'] + "_Idle"];
