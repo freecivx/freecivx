@@ -91,6 +91,11 @@ if (typeof window !== 'undefined') {
   window.is_standalone = true;
 }
 
+// Define is_standalone_mode() function early so other code can check for standalone mode
+function is_standalone_mode() {
+  return standalone_mode === true;
+}
+
 </script>
 
 <!-- Three.js ES Module System  -->

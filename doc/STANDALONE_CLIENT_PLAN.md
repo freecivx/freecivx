@@ -144,6 +144,9 @@ Testing approach:
 - ✅ **Added server_settings mock data** (borders, metamessage, techlevel, landmass, nukes)
 - ✅ **Fixed "Cannot read properties of undefined (reading 'is_visible')" error**
 - ✅ **Improved documentation** in freeciv-web-standalone.html with build instructions
+- ✅ **Fixed login dialog appearing in standalone mode** (January 25, 2026)
+- ✅ **Created comprehensive Playwright test suite** for standalone client (January 25, 2026)
+- ✅ **Updated test script** to run standalone tests in CI/CD pipeline (January 25, 2026)
 
 ### Resolved Issues
 - ✅ Fixed: Standalone client interference in normal production mode
@@ -153,6 +156,8 @@ Testing approach:
 - ✅ Fixed: THREE.Material parameter 'map' has value of undefined (added placeholder texture in standalone.js)
 - ✅ Fixed: Race conditions causing WebGL errors by adding proper initialization delays
 - ✅ Enhanced: Added comprehensive console logging throughout standalone mode for better debugging
+- ✅ Fixed: Login dialog appearing in standalone mode (early function definition in HTML)
+- ✅ Fixed: Playwright test checking for non-existent elements (rewritten to test actual functionality)
 
 ### Remaining Known Issues
 - ⚠️ THREE.BufferGeometry.computeBoundingSphere() NaN warnings may still appear but don't break functionality
@@ -186,6 +191,19 @@ Testing approach:
    - Updated STANDALONE_CLIENT_PLAN.md to reflect current status and fixes
    - All changes are isolated to standalone.js and documentation files only
    - No modifications to core WebGL or game files that could affect normal mode
+
+5. **Fixed Login Dialog Issue (January 25, 2026)**:
+   - Added early `is_standalone_mode()` function definition in `freeciv-web-standalone.html`
+   - Function is now available before `webclient.min.js` loads, preventing login dialog from showing
+   - Standalone client now starts directly to game view without requiring authentication
+   - Fix ensures standalone mode is properly detected during initialization
+
+6. **Improved Playwright Testing (January 25, 2026)**:
+   - Completely rewrote `standalone.test.js` to test actual functionality
+   - Added comprehensive tests for page loading, UI elements, and mock data creation
+   - Tests now verify correct page title, game initialization, and presence of mock players/cities/units
+   - Updated `/scripts/test-freecivx.sh` to run standalone tests with local Python HTTP server
+   - Tests can now be run in CI/CD pipeline as part of automated testing
 
 ### Next Steps (Priority Order)
 
