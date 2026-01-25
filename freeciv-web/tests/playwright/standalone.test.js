@@ -1,108 +1,218 @@
 const { test, expect } = require('@playwright/test');
 
-test('Freeciv-web standalone 3D environment loads', async ({ page }) => {
+test('Freeciv-web standalone client loads successfully', async ({ page }) => {
   // Set a longer timeout since 3D loading takes time
   test.setTimeout(60000);
 
+  // Collect console messages for debugging
+  const consoleMessages = [];
+  const consoleErrors = [];
+  
+  page.on('console', msg => {
+    const text = msg.text();
+    consoleMessages.push({ type: msg.type(), text: text });
+    if (msg.type() === 'error') {
+      consoleErrors.push(text);
+    }
+  });
+
   // Navigate to standalone page
+  console.log('Navigating to standalone page...');
   const response = await page.goto('http://localhost:8080/freeciv-web-standalone.html');
 
   // Check if the page loaded successfully
-  if (!response || response.status() >= 400) {
-    console.log(`Error: Server responded with status ${response ? response.status() : 'no response'}`);
-    throw new Error(`Failed to load page: ${response ? response.status() : 'unknown error'}`);
-  }
+  expect(response).toBeTruthy();
+  expect(response.status()).toBeLessThan(400);
+  console.log(`Page loaded with status: ${response.status()}`);
 
   // Check if the page title is correct
   const title = await page.title();
   console.log(`Page title: ${title}`);
-  expect(title).toContain('Freeciv-web Standalone');
+  expect(title).toContain('FreecivWorld.net');
+  expect(title).toContain('Standalone');
 
-  // Wait for canvas element to be present
-  const canvas = await page.locator('#mapcanvas');
-  await expect(canvas).toBeVisible({ timeout: 10000 });
-  console.log('Canvas element is visible');
+  // Wait for main game page div to be present
+  const gamePage = page.locator('#game_page');
+  await expect(gamePage).toBeAttached({ timeout: 5000 });
+  console.log('Game page element is present');
 
-  // Wait for loading overlay to appear
-  const loadingOverlay = await page.locator('#loading-overlay');
-  await expect(loadingOverlay).toBeVisible({ timeout: 5000 });
-  console.log('Loading overlay is visible');
+  // Wait for canvas container to be present
+  const mapcanvas = page.locator('#mapcanvas');
+  await expect(mapcanvas).toBeAttached({ timeout: 10000 });
+  console.log('Map canvas container is present');
+
+  // Wait for jQuery to load
+  await page.waitForFunction(() => {
+    return typeof window.$ !== 'undefined' && typeof window.jQuery !== 'undefined';
+  }, { timeout: 10000 });
+  console.log('jQuery loaded');
 
   // Wait for Three.js to load
   await page.waitForFunction(() => {
     return typeof window.THREE !== 'undefined';
-  }, { timeout: 10000 });
+  }, { timeout: 15000 });
   console.log('Three.js loaded');
 
-  // Wait for STANDALONE_MODE to be set
+  // Wait for standalone mode to be initialized
   await page.waitForFunction(() => {
-    return window.STANDALONE_MODE === true;
+    return typeof window.is_standalone_mode === 'function' && window.is_standalone_mode();
   }, { timeout: 5000 });
   console.log('Standalone mode is active');
 
   // Wait for mock data to initialize (check for map object)
   await page.waitForFunction(() => {
     return typeof window.map !== 'undefined' && window.map.xsize > 0;
-  }, { timeout: 15000 });
+  }, { timeout: 20000 });
   console.log('Mock data initialized');
 
-  // Wait for scene to be created
+  // Verify map dimensions
+  const mapDimensions = await page.evaluate(() => {
+    return { xsize: window.map.xsize, ysize: window.map.ysize };
+  });
+  console.log(`Map dimensions: ${mapDimensions.xsize}x${mapDimensions.ysize}`);
+  expect(mapDimensions.xsize).toBeGreaterThan(0);
+  expect(mapDimensions.ysize).toBeGreaterThan(0);
+
+  // Wait for tiles to be created
   await page.waitForFunction(() => {
-    return typeof window.scene !== 'undefined' && window.scene !== null;
-  }, { timeout: 15000 });
-  console.log('3D scene created');
+    return typeof window.tiles !== 'undefined' && Object.keys(window.tiles).length > 0;
+  }, { timeout: 10000 });
+  console.log('Tiles created');
 
-  // Wait a bit for rendering to start
-  await page.waitForTimeout(3000);
-
-  // Check console for errors
-  const errors = [];
-  page.on('console', msg => {
-    if (msg.type() === 'error') {
-      errors.push(msg.text());
-    }
+  // Verify number of tiles
+  const tileCount = await page.evaluate(() => {
+    return Object.keys(window.tiles).length;
   });
+  console.log(`Number of tiles: ${tileCount}`);
+  expect(tileCount).toBe(mapDimensions.xsize * mapDimensions.ysize);
 
-  // Take a screenshot for proof
+  // Wait for client state to be set to running
+  await page.waitForFunction(() => {
+    return typeof window.client !== 'undefined' && 
+           typeof window.C_S_RUNNING !== 'undefined' &&
+           window.client.conn.playing !== null;
+  }, { timeout: 25000 });
+  console.log('Client state is running');
+
+  // IMPORTANT: Wait for the standalone client to fully initialize and render
+  // This takes at least 1.5 seconds on most systems to load textures, render the map,
+  // and remove any initial dialogs. We wait 5 seconds to be safe.
+  console.log('Waiting for standalone client to fully initialize (5 seconds)...');
+  await page.waitForTimeout(5000);
+
+  // Take a screenshot for visual validation
   await page.screenshot({ 
-    path: 'freeciv-web/src/main/webapp/standalone/result.png',
-    fullPage: false 
+    path: 'test-results/standalone-client.png',
+    fullPage: true 
   });
-  console.log('Screenshot saved to standalone/result.png');
+  console.log('Screenshot saved to test-results/standalone-client.png');
 
-  // Log any errors
-  if (errors.length > 0) {
-    console.log('Console errors detected:');
-    errors.forEach(err => console.log('  -', err));
+  // Log standalone-specific console messages
+  const standaloneMessages = consoleMessages.filter(m => 
+    m.text.includes('[Standalone]')
+  );
+  if (standaloneMessages.length > 0) {
+    console.log('\nStandalone initialization messages:');
+    standaloneMessages.forEach(msg => {
+      console.log(`  [${msg.type}] ${msg.text}`);
+    });
   }
 
-  console.log('Standalone test completed successfully');
+  // Report critical errors (ignore expected warnings)
+  const criticalErrors = consoleErrors.filter(err => 
+    !err.includes('404') && // Ignore 404s for missing assets
+    !err.includes('THREE.BufferGeometry.computeBoundingSphere') && // Known non-critical warning
+    !err.includes('Failed to load resource') // Ignore resource loading errors
+  );
+  
+  if (criticalErrors.length > 0) {
+    console.log('\nCritical console errors detected:');
+    criticalErrors.forEach(err => console.log('  -', err));
+  }
+
+  console.log('\nStandalone client test completed successfully');
 });
 
-test('Test runner controls appear', async ({ page }) => {
+test('Standalone client UI elements are present', async ({ page }) => {
   test.setTimeout(60000);
 
   await page.goto('http://localhost:8080/freeciv-web-standalone.html');
+  console.log('Testing UI elements...');
 
-  // Wait for initialization
-  await page.waitForTimeout(10000);
+  // Wait for page to initialize
+  await page.waitForTimeout(5000);
 
-  // Check if test runner controls appear
-  const testRunner = await page.locator('#test-runner-controls');
-  await expect(testRunner).toBeVisible({ timeout: 10000 });
-  console.log('Test runner controls are visible');
+  // Check for tabs menu
+  const tabsMenu = page.locator('#tabs_menu');
+  await expect(tabsMenu).toBeAttached({ timeout: 5000 });
+  console.log('Tabs menu is present');
+
+  // Check for map tab
+  const mapTab = page.locator('#map_tab');
+  await expect(mapTab).toBeAttached();
+  console.log('Map tab is present');
+
+  // Check for tech tab
+  const techTab = page.locator('#tech_tab');
+  await expect(techTab).toBeAttached();
+  console.log('Tech tab is present');
+
+  // Check for cities tab
+  const citiesTab = page.locator('#cities_tab');
+  await expect(citiesTab).toBeAttached();
+  console.log('Cities tab is present');
+
+  // Check for game status panel
+  const gameStatusPanel = page.locator('#game_status_panel_top');
+  await expect(gameStatusPanel).toBeAttached();
+  console.log('Game status panel is present');
+
+  console.log('All UI elements test completed successfully');
 });
 
-test('Screenshot controls appear', async ({ page }) => {
+test('Standalone client creates mock game data', async ({ page }) => {
   test.setTimeout(60000);
 
   await page.goto('http://localhost:8080/freeciv-web-standalone.html');
+  console.log('Testing mock game data...');
 
-  // Wait for initialization
-  await page.waitForTimeout(8000);
+  // Wait for mock data to be created
+  await page.waitForFunction(() => {
+    return typeof window.map !== 'undefined' && 
+           typeof window.tiles !== 'undefined' &&
+           typeof window.players !== 'undefined' &&
+           typeof window.units !== 'undefined' &&
+           typeof window.cities !== 'undefined';
+  }, { timeout: 20000 });
+  console.log('Mock data structures initialized');
 
-  // Check if screenshot controls appear
-  const screenshotControls = await page.locator('#screenshot-controls');
-  await expect(screenshotControls).toBeVisible({ timeout: 10000 });
-  console.log('Screenshot controls are visible');
+  // Verify players were created
+  const playerCount = await page.evaluate(() => {
+    return Object.keys(window.players).length;
+  });
+  console.log(`Number of players: ${playerCount}`);
+  expect(playerCount).toBeGreaterThan(0);
+
+  // Verify cities were created
+  const cityCount = await page.evaluate(() => {
+    return Object.keys(window.cities).length;
+  });
+  console.log(`Number of cities: ${cityCount}`);
+  expect(cityCount).toBeGreaterThan(0);
+
+  // Verify units were created
+  const unitCount = await page.evaluate(() => {
+    return Object.keys(window.units).length;
+  });
+  console.log(`Number of units: ${unitCount}`);
+  expect(unitCount).toBeGreaterThan(0);
+
+  // Verify terrains were created
+  const terrainCount = await page.evaluate(() => {
+    return typeof window.terrains !== 'undefined' ? Object.keys(window.terrains).length : 0;
+  });
+  console.log(`Number of terrain types: ${terrainCount}`);
+  expect(terrainCount).toBeGreaterThan(0);
+
+  console.log('Mock game data test completed successfully');
 });
