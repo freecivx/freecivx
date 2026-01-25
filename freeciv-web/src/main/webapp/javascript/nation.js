@@ -140,7 +140,7 @@ function update_nation_screen()
 **************************************************************************/
 function col_love(pplayer)
 {
-  if (standalone_game) {
+  if (standalone_mode) {
     return "-";
   }
   if (client_is_observer() || client.conn.playing == null || pplayer['playerno'] == client.conn.playing['playerno']
