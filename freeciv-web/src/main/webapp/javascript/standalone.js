@@ -76,6 +76,12 @@ function setup_standalone_environment() {
       setup_window_size();
     });
 
+    // Remove pregame intro elements
+    $("#fciv-intro").remove();
+    $("#game_text_input").blur();
+
+    $("#dialog").dialog('close');
+    $("#pregame_page").hide();
 
 }
 
