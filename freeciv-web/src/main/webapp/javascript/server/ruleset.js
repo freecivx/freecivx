@@ -51,40 +51,44 @@ function server_create_ruleset() {
  * Create nation definitions
  **************************************************************************/
 function server_create_nations() {
-  nations = {
-    0: {
-      id: 0,
-      name: "Romans",
-      adjective: "Roman",
-      graphic_str: "rome",
-      legend: "The Roman Empire",
-      color: "#8B0000"
-    },
-    1: {
-      id: 1,
-      name: "Egyptians",
-      adjective: "Egyptian",
-      graphic_str: "egypt",
-      legend: "Ancient Egypt",
-      color: "#FFD700"
-    },
-    2: {
-      id: 2,
-      name: "Greeks",
-      adjective: "Greek",
-      graphic_str: "greece",
-      legend: "Ancient Greece",
-      color: "#0000FF"
-    },
-    3: {
-      id: 3,
-      name: "Barbarians",
-      adjective: "Barbarian",
-      graphic_str: "barbarian",
-      legend: "Barbarian Tribes",
-      color: "#808080"
-    }
-  };
+  nations = {};
+  
+  // Use handle_ruleset_nation to create nations
+  handle_ruleset_nation({
+    id: 0,
+    name: "Romans",
+    adjective: "Roman",
+    graphic_str: "rome",
+    legend: "The Roman Empire",
+    color: "#8B0000"
+  });
+  
+  handle_ruleset_nation({
+    id: 1,
+    name: "Egyptians",
+    adjective: "Egyptian",
+    graphic_str: "egypt",
+    legend: "Ancient Egypt",
+    color: "#FFD700"
+  });
+  
+  handle_ruleset_nation({
+    id: 2,
+    name: "Greeks",
+    adjective: "Greek",
+    graphic_str: "greece",
+    legend: "Ancient Greece",
+    color: "#0000FF"
+  });
+  
+  handle_ruleset_nation({
+    id: 3,
+    name: "Barbarians",
+    adjective: "Barbarian",
+    graphic_str: "barbarian",
+    legend: "Barbarian Tribes",
+    color: "#808080"
+  });
   
   console.log("[Server Ruleset] Created " + Object.keys(nations).length + " nations");
 }
@@ -93,11 +97,12 @@ function server_create_nations() {
  * Create government types
  **************************************************************************/
 function server_create_governments() {
-  governments = {
-    0: { id: 0, name: "Despotism" },
-    1: { id: 1, name: "Monarchy" },
-    2: { id: 2, name: "Republic" }
-  };
+  governments = {};
+  
+  // Use handle_ruleset_government to create governments
+  handle_ruleset_government({ id: 0, name: "Despotism" });
+  handle_ruleset_government({ id: 1, name: "Monarchy" });
+  handle_ruleset_government({ id: 2, name: "Republic" });
   
   console.log("[Server Ruleset] Created " + Object.keys(governments).length + " governments");
 }
@@ -106,12 +111,13 @@ function server_create_governments() {
  * Create technology definitions
  **************************************************************************/
 function server_create_technologies() {
-  techs = {
-    0: { id: 0, name: "Alphabet" },
-    1: { id: 1, name: "Bronze Working" },
-    2: { id: 2, name: "Pottery" },
-    3: { id: 3, name: "The Wheel" }
-  };
+  techs = {};
+  
+  // Use handle_ruleset_tech to create technologies
+  handle_ruleset_tech({ id: 0, name: "Alphabet" });
+  handle_ruleset_tech({ id: 1, name: "Bronze Working" });
+  handle_ruleset_tech({ id: 2, name: "Pottery" });
+  handle_ruleset_tech({ id: 3, name: "The Wheel" });
   
   console.log("[Server Ruleset] Created " + Object.keys(techs).length + " technologies");
 }
@@ -120,29 +126,32 @@ function server_create_technologies() {
  * Create unit type definitions
  **************************************************************************/
 function server_create_unit_types() {
-  unit_types = {
-    0: { 
-      id: 0, 
-      name: "Settlers",
-      graphic_str: "unit.settlers",
-      move_rate: 1,
-      hp: 10
-    },
-    1: { 
-      id: 1, 
-      name: "Warriors",
-      graphic_str: "unit.warriors",
-      move_rate: 1,
-      hp: 10
-    },
-    2: { 
-      id: 2, 
-      name: "Phalanx",
-      graphic_str: "unit.phalanx",
-      move_rate: 1,
-      hp: 10
-    }
-  };
+  unit_types = {};
+  
+  // Use handle_ruleset_unit to create unit types
+  handle_ruleset_unit({ 
+    id: 0, 
+    name: "Settlers",
+    graphic_str: "unit.settlers",
+    move_rate: 1,
+    hp: 10
+  });
+  
+  handle_ruleset_unit({ 
+    id: 1, 
+    name: "Warriors",
+    graphic_str: "unit.warriors",
+    move_rate: 1,
+    hp: 10
+  });
+  
+  handle_ruleset_unit({ 
+    id: 2, 
+    name: "Phalanx",
+    graphic_str: "unit.phalanx",
+    move_rate: 1,
+    hp: 10
+  });
   
   console.log("[Server Ruleset] Created " + Object.keys(unit_types).length + " unit types");
 }
@@ -151,9 +160,12 @@ function server_create_unit_types() {
  * Create building/improvement definitions
  **************************************************************************/
 function server_create_improvements() {
-  improvements[0] = { id: 0, name: "Palace" };
-  improvements[1] = { id: 1, name: "Barracks" };
-  improvements[2] = { id: 2, name: "Granary" };
+  improvements = {};
+  
+  // Use handle_ruleset_building to create improvements
+  handle_ruleset_building({ id: 0, name: "Palace" });
+  handle_ruleset_building({ id: 1, name: "Barracks" });
+  handle_ruleset_building({ id: 2, name: "Granary" });
   
   console.log("[Server Ruleset] Created " + Object.keys(improvements).length + " improvements");
 }
@@ -162,23 +174,26 @@ function server_create_improvements() {
  * Create city style definitions
  **************************************************************************/
 function server_create_city_styles() {
-  city_rules = {
-    0: {
-      style_id: 0,
-      rule_name: "European",
-      name: "European"
-    },
-    1: {
-      style_id: 1,
-      rule_name: "Classical",
-      name: "Classical"
-    },
-    2: {
-      style_id: 2,
-      rule_name: "Modern",
-      name: "Modern"
-    }
-  };
+  city_rules = {};
+  
+  // Use handle_ruleset_city to create city styles
+  handle_ruleset_city({
+    style_id: 0,
+    rule_name: "European",
+    name: "European"
+  });
+  
+  handle_ruleset_city({
+    style_id: 1,
+    rule_name: "Classical",
+    name: "Classical"
+  });
+  
+  handle_ruleset_city({
+    style_id: 2,
+    rule_name: "Modern",
+    name: "Modern"
+  });
   
   console.log("[Server Ruleset] Created " + Object.keys(city_rules).length + " city styles");
 }

@@ -35,7 +35,9 @@ function server_create_units() {
   
   // Create settler for player 0
   var settler_tile_index = 7 + 5 * map.xsize;
-  units[0] = {
+  
+  // Use handle_unit_info to create the unit
+  handle_unit_info({
     id: 0,
     owner: 0,
     tile: settler_tile_index,
@@ -46,16 +48,14 @@ function server_create_units() {
     hp: 10,
     facing: 1,
     done_moving: false,
-    anim_list: [],
     action_decision_want: 0,
     action_decision_tile: 0
-  };
-  
-  tiles[settler_tile_index].units.push(0);
+  });
   
   // Create warrior for player 0
   var warrior_tile_index = 6 + 6 * map.xsize;
-  units[1] = {
+  
+  handle_unit_info({
     id: 1,
     owner: 0,
     tile: warrior_tile_index,
@@ -66,17 +66,15 @@ function server_create_units() {
     hp: 10,
     facing: 2,
     done_moving: false,
-    anim_list: [],
     action_decision_want: 0,
     action_decision_tile: 0
-  };
-  
-  tiles[warrior_tile_index].units.push(1);
+  });
   
   // Create warrior for player 1 if exists
   if (players[1]) {
     var warrior1_tile_index = 31 + 15 * map.xsize;
-    units[2] = {
+    
+    handle_unit_info({
       id: 2,
       owner: 1,
       tile: warrior1_tile_index,
@@ -87,18 +85,16 @@ function server_create_units() {
       hp: 10,
       facing: 3,
       done_moving: false,
-      anim_list: [],
       action_decision_want: 0,
       action_decision_tile: 0
-    };
-    
-    tiles[warrior1_tile_index].units.push(2);
+    });
   }
   
   // Create warrior for player 2 if exists
   if (players[2]) {
     var warrior2_tile_index = 26 + 20 * map.xsize;
-    units[3] = {
+    
+    handle_unit_info({
       id: 3,
       owner: 2,
       tile: warrior2_tile_index,
@@ -109,12 +105,9 @@ function server_create_units() {
       hp: 10,
       facing: 4,
       done_moving: false,
-      anim_list: [],
       action_decision_want: 0,
       action_decision_tile: 0
-    };
-    
-    tiles[warrior2_tile_index].units.push(3);
+    });
   }
   
   var unitDescriptions = [];
