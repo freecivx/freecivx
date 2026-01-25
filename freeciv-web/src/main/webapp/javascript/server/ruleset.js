@@ -160,7 +160,6 @@ function server_create_unit_types() {
  * Create building/improvement definitions
  **************************************************************************/
 function server_create_improvements() {
-  improvements = {};
   
   // Use handle_ruleset_building to create improvements
   handle_ruleset_building({ id: 0, name: "Palace" });
