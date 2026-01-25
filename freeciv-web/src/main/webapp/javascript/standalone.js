@@ -40,7 +40,7 @@ var STANDALONE_WEBGL_INIT_DELAY_MS = 500;
 function init_standalone() {
   console.log("[Standalone] Initializing Freeciv-web in standalone mode");
   console.log("[Standalone] Startup delay: " + STANDALONE_STARTUP_DELAY_MS + "ms");
-  
+
   standalone_mode = true;
 
   init_sprites();
