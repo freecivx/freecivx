@@ -48,6 +48,7 @@ function getInstancedMeshFromModel(modelName, gltfMesh, capacity = 30) {
     };
 
     // Add to the scene once
+    instancedMesh.name = `InstancedMesh_${modelName}`;
     scene.add(instancedMesh);
 
     return instancedMeshes[modelName];

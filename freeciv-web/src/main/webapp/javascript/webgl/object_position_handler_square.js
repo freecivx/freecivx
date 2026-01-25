@@ -102,7 +102,7 @@ function update_unit_position(ptile) {
     let rnd_rotation = Math.floor(Math.random() * 8);
     new_unit.rotateOnAxis(new THREE.Vector3(0,1,0).normalize(), (convert_unit_rotation(rnd_rotation, unit_type_name)));
     new_unit.updateMatrix();
-
+    new_unit.name = "Unit_" + visible_unit['id'];
     scene.add(new_unit);
 
     /* add flag. */
@@ -111,6 +111,7 @@ function update_unit_position(ptile) {
       new_flag = create_unit_label_sprite(visible_unit, ptile);
       if (new_flag != null) {
         new_flag.position.set(pos['x'] - 10, height + 18, pos['y'] - 20);
+        new_flag.name = "Flag_" + visible_unit['id'];
         scene.add(new_flag);
         unit_flag_positions[ptile['index']] = new_flag;
       }
@@ -133,7 +134,7 @@ function update_unit_position(ptile) {
     new_unit.position.set(pos['x'] - 12, height - 2, pos['y'] - 4);
     new_unit.rotateOnAxis(new THREE.Vector3(0, 1, 0).normalize(), (convert_unit_rotation(visible_unit['facing'], unit_type_name)));
     new_unit.updateMatrix();
-
+    new_unit.name = "Unit_" + visible_unit['id'];
     scene.add(new_unit);
 
     /* update flag. */
@@ -142,6 +143,7 @@ function update_unit_position(ptile) {
       new_flag = create_unit_label_sprite(visible_unit, ptile);
       if (new_flag != null) {
         new_flag.position.set(pos['x'] - flag_dx, height + 18, pos['y'] - flag_dy - 10);
+        new_flag.name = "Flag_" + visible_unit['id'];
         scene.add(new_flag);
         unit_flag_positions[ptile['index']] = new_flag;
       }
@@ -163,6 +165,7 @@ function update_unit_position(ptile) {
       let selected_mesh = new THREE.Mesh( new THREE.RingGeometry( 16, 20, 30), selected_unit_material );
       selected_mesh.position.set(pos['x'] - 12, height + 2, pos['y'] - 7);
       selected_mesh.rotation.x = -1 * Math.PI / 2;
+      selected_mesh.name = "SelectedUnitIndicator";
       scene.add(selected_mesh);
       selected_unit_indicator = selected_mesh;
       highlight_map_tile_selected(ptile.x, ptile.y);
@@ -217,8 +220,8 @@ function update_city_position(ptile) {
     new_city.rotateOnAxis(new THREE.Vector3(0,1,0).normalize(), (2 * Math.PI * Math.random()));
 
     if (scene != null) {
+      new_city.name = "City_" + pcity['id'];
       scene.add(new_city);
-
     }
 
     if (scene != null && pcity['walls'] && city_walls_positions[ptile['index']] == null) {
@@ -226,6 +229,7 @@ function update_city_position(ptile) {
       if (city_walls != null) {
         city_walls.position.set(pos['x'] - 11, height - 6, pos['y'] - 11);
         city_walls.scale.x = city_walls.scale.y = city_walls.scale.z = get_citywalls_scale(pcity);
+        city_walls.name = "CityWalls_" + pcity['id'];
         scene.add(city_walls);
         city_walls_positions[ptile['index']] = city_walls;
       }
@@ -236,7 +240,10 @@ function update_city_position(ptile) {
     city_label.position.set(pos['x'] + 10 , height + 27, pos['y'] - 25);
 
     pcity['webgl_label_hash'] = pcity['name'] + pcity['size'] + pcity['production_value'] + "." + pcity['production_kind'] + punits.length + pcity['nation_id'];
-    if (scene != null) scene.add(city_label);
+    if (scene != null) {
+      city_label.name = "CityLabel_" + pcity['id'];
+      scene.add(city_label);
+    }
 
     add_city_buildings(ptile, pcity, scene);
 
@@ -270,6 +277,7 @@ function update_city_position(ptile) {
       new_city.rotateOnAxis(new THREE.Vector3(0,1,0).normalize(), (2 * Math.PI * Math.random()));
 
       if (scene != null) {
+        new_city.name = "City_" + pcity['id'];
         scene.add(new_city);
 
       }
@@ -286,6 +294,7 @@ function update_city_position(ptile) {
       if (city_walls != null) {
         city_walls.position.set(pos['x'] - 11, height - 6, pos['y'] - 11);
         city_walls.scale.x = city_walls.scale.y = city_walls.scale.z = get_citywalls_scale(pcity);
+        city_walls.name = "CityWalls_" + pcity['id'];
         scene.add(city_walls);
         city_walls_positions[ptile['index']] = city_walls;
       }
@@ -310,6 +319,7 @@ function update_city_position(ptile) {
     if (city_disorder_positions[ptile['index']] == null && pcity['unhappy']) {
         let city_disorder_sprite = create_city_disorder_sprite();
         city_disorder_sprite.position.set(pos['x'] - 5, height + 14, pos['y'] - 10);
+        city_disorder_sprite.name = "CityDisorder_" + pcity['id'];
         scene.add(city_disorder_sprite);
         city_disorder_positions[ptile['index']] = city_disorder_sprite;
 
@@ -449,6 +459,7 @@ function add_wonder(ptile, pcity, scene, wonder_name) {
     if (!show_buildings) {
       wonder.visible = false;
     }
+    wonder.name = "Wonder_" + wonder_name + "_" + pcity['id'];
     scene.add(wonder);
   }
 }
@@ -566,6 +577,7 @@ function add_city_building(ptile, pcity, scene, building_name) {
       if (!show_buildings) {
         building.visible = false;
       }
+      building.name = "Building_" + original_building_name + "_" + pcity['id'];
       scene.add(building);
     }
 }
@@ -710,7 +722,10 @@ function update_tile_extra_update_model(extra_type, extra_name, ptile)
         model.rotateOnAxis(new THREE.Vector3(1,0,0).normalize(), -1 * (Math.PI  / 2));
       }
       tile_extra_positions_list[extra_type + "." + ptile['index']].push(model);
-      if (scene != null) scene.add(model);
+      if (scene != null) {
+        model.name = "TileExtra_" + extra_name + "_" + ptile['index'];
+        scene.add(model);
+      }
     }
   } else if (scene != null && tile_extra_positions_list[extra_type + "." + ptile['index']] != null && !tile_has_extra(ptile, extra_type)) {
     for (let i = 0; i < tile_extra_positions_list[extra_type + "." + ptile['index']].length; i++) {
@@ -741,7 +756,10 @@ function update_tile_cactus(ptile)
     model.translateOnAxis(new THREE.Vector3(0,0,1).normalize(), pos['y'] - 10 + (15 - Math.floor(Math.random() * 30)));
     model.rotateOnAxis(new THREE.Vector3(0,1,0).normalize(), (2 * Math.PI * Math.random()));
     tile_models_list[ptile['index']].push(model);
-    if (scene != null) scene.add(model);
+    if (scene != null) {
+      model.name = "TileCactus_" + ptile['index'];
+      scene.add(model);
+    }
 
   }
 }
@@ -797,6 +815,7 @@ function add_city_lights(x, y, height) {
   sprite.scale.set(30, 30, 1);
   sprite.renderOrder = 0.1;
   sprite.position.set(x - 10, height + 3, y - 10);
+  sprite.name = "CityLightSprite";
   scene.add(sprite);
   return sprite;
 

@@ -61,6 +61,7 @@ function show_city_worked_tiles()
         city_worked_positions[ptile['index']] = mesh;
         mesh.position.set(pos['x'] + 0, height + 10, pos['y'] - 4);
         if (scene != null) {
+          mesh.name = "City worked tile " + ptile['index'];
           scene.add(mesh);
         }
       }
@@ -79,6 +80,7 @@ function show_city_worked_tiles()
         mesh.position.set(pos['x'] - 12, height + 3, pos['y'] - 9);
         mesh.rotation.x = -1 * Math.PI / 2;
         if (scene != null) {
+          mesh.name = "Other city worked tile " + ptile['index'];
           scene.add(mesh);
         }
       }

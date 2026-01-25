@@ -152,6 +152,7 @@ function add_spaceship(ptile, pcity, scene) {
 
     pos = map_to_scene_coords(nexttile['x'], nexttile['y']);
     spaceshipmodel.position.set(pos['x'] - 1, height + 3, pos['y'] - 1);
+    spaceshipmodel.name = 'Spaceship';
     scene.add(spaceshipmodel);
     spaceships[ptile['extras_owner']] = spaceshipmodel;
 
@@ -176,6 +177,7 @@ function launch_spaceship_anim() {
     spaceships[playerno] = null;
   }
 
+  spaceshipmodel.name = 'Spaceship';
   scene.add(spaceshipmodel);
   spaceship_launched = spaceshipmodel;
 

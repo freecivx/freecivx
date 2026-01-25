@@ -78,9 +78,11 @@ function webgl_start_renderer()
 
   // Lights
   var ambientLight = new THREE.AmbientLight( 0x606060, 28 * Math.PI );
+  ambientLight.name = "ambient_light";
   scene.add(ambientLight);
 
   spotlight = new THREE.SpotLight( 0xffffff, 3.0 * Math.PI, 0, Math.PI / 3, 0.001, 0.5);
+  spotlight.name = "spotlight";
   scene.add( spotlight );
 
 
@@ -158,6 +160,7 @@ async function init_webgl_mapview() {
   update_land_geometry(lofiGeometry, 2);
   lofiMesh = new THREE.Mesh( lofiGeometry, lofiMaterial );
   lofiMesh.layers.set(6);
+  lofiMesh.name = "lofi_terrain_mesh";
   scene.add(lofiMesh);
 
   if (map.xsize > 200 || map.ysize > 200) {
@@ -189,6 +192,7 @@ async function init_webgl_mapview() {
   landMesh = new THREE.Mesh( landGeometry, terrain_material );
   landMesh.receiveShadow = false;
   landMesh.castShadow = false;
+  landMesh.name = "land_terrain_mesh";
   scene.add(landMesh);
   console.log("Land mesh triangles: " + landGeometry.index.count / 3);
 
@@ -198,6 +202,7 @@ async function init_webgl_mapview() {
     shadowmesh = new THREE.Mesh( landGeometry, shadowMaterial);
     shadowmesh.receiveShadow = true;
     shadowmesh.castShadow = false;
+    shadowmesh.name = "shadow_mesh";
     scene.add(shadowmesh);
   }
 
@@ -436,6 +441,7 @@ function add_quality_dependent_objects_webgl()
   water_hq.translateOnAxis(new THREE.Vector3(0,1,0).normalize(), -mapview_model_height / 2);
   water_hq.renderOrder = -1; // Render water first, this will solve transparency issues in city labels.
   water_hq.castShadow = false;
+  water_hq.name = "water_surface";
   scene.add( water_hq );
   console.log("Added high-quality water surface.");
 
@@ -446,6 +452,7 @@ function add_quality_dependent_objects_webgl()
       shadowmesh = new THREE.Mesh( landGeometry, shadowMaterial);
       shadowmesh.receiveShadow = true;
       shadowmesh.castShadow = false;
+      shadowmesh.name = "shadow_mesh";
       scene.add(shadowmesh);
     }
 

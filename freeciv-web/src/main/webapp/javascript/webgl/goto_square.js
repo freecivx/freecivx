@@ -87,6 +87,7 @@ function webgl_render_goto_line(start_tile, goto_packet_dir) {
 
             // Create the mesh and add to the scene
             const gotoline = new THREE.Mesh(geometry, material);
+            gotoline.name = "goto_line";
             scene.add(gotoline);
             goto_lines.push(gotoline);
         }
