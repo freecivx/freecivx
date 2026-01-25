@@ -47,9 +47,12 @@
   - Runs completely offline with mock game data
   - Automatically starts a game on load
   - Includes 3 players (1 human, 2 AI)
-  - Displays a 40x30 map with varied terrain
+  - Displays a 40x30 map with varied terrain (9 terrain types)
   - Shows cities, units, and game UI
   - Proper initialization of all required game settings
+  - 3D terrain rendering with realistic heights
+  - Error handling for missing 3D models
+  - Graceful degradation when models unavailable
   
   LIMITATIONS:
   ------------
@@ -57,6 +60,8 @@
   - No server-side game logic (AI moves, etc.)
   - Limited interaction (view only)
   - Some features may not work without server
+  - 3D models for cities and decorations may not load
+  - Terrain textures are simplified
   
   NOTE: This is a demonstration version with limited functionality.
   For the full multiplayer experience, visit https://www.freecivworld.net/
@@ -105,10 +110,103 @@ if (typeof window !== 'undefined') {
 <!-- Standalone-specific functionality -->
 <script src="/javascript/standalone.js" defer></script>
 
+<!-- Enhanced error handling - must run BEFORE standalone init -->
 <script>
-  // Initialize standalone mode when document is ready
+  // Patch heightmap and model functions IMMEDIATELY (before any initialization)
+  // This prevents NaN errors and crashes from missing models
+  
+  // Override update_heightmap to fix NaN values
+  var original_update_heightmap = null;
+  
+  // Polling function to wait for update_heightmap to be defined
+  function patch_update_heightmap() {
+    if (typeof update_heightmap !== 'undefined' && !original_update_heightmap) {
+      original_update_heightmap = update_heightmap;
+      window.update_heightmap = function(heightmap_quality) {
+        try {
+          // Call original function
+          original_update_heightmap(heightmap_quality);
+          
+          // Post-process to fix any NaN values
+          var heightmap_resolution_x = map.xsize * heightmap_quality + 1;
+          var heightmap_resolution_y = map.ysize * heightmap_quality + 1;
+          var fixedCount = 0;
+          
+          for (var x = 0; x < heightmap_resolution_x; x++) {
+            for (var y = 0; y < heightmap_resolution_y; y++) {
+              var index = y * heightmap_resolution_x + x;
+              if (isNaN(heightmap[index]) || heightmap[index] === undefined || heightmap[index] === null) {
+                heightmap[index] = 0.5; // Default safe height
+                fixedCount++;
+              }
+            }
+          }
+          
+          if (fixedCount > 0) {
+            console.log("[Enhanced] Fixed " + fixedCount + " NaN values in heightmap");
+          }
+        } catch(e) {
+          console.error("[Enhanced] Error in heightmap update:", e);
+          // Fill with safe default values
+          if (typeof heightmap !== 'undefined') {
+            for (var i = 0; i < heightmap.length; i++) {
+              if (isNaN(heightmap[i])) heightmap[i] = 0.5;
+            }
+          }
+        }
+      };
+      console.log("[Enhanced] Heightmap NaN fix enabled");
+      return true;
+    }
+    return false;
+  }
+  
+  // Try to patch immediately
+  if (!patch_update_heightmap()) {
+    // If not available yet, try again soon
+    setTimeout(function() {
+      if (!patch_update_heightmap()) {
+        console.warn("[Enhanced] Could not patch update_heightmap - function not found");
+      }
+    }, 50);
+  }
+</script>
+
+<script>
+  // Enhanced error handling for missing 3D models
   $(document).ready(function() {
-    console.log("Document ready in standalone mode");
+    console.log("Document ready in standalone mode with enhanced error handling");
+    
+    // Wrap error-prone model functions
+    setTimeout(function() {
+      // Prevent cactus rendering errors
+      if (typeof update_tile_cactus !== 'undefined') {
+        var original_update_tile_cactus = update_tile_cactus;
+        window.update_tile_cactus = function(ptile) {
+          try {
+            original_update_tile_cactus(ptile);
+          } catch(e) {
+            // Silently ignore - cactus models may not be available
+          }
+        };
+      }
+      
+      // Prevent palm rendering errors
+      if (typeof update_tile_palms !== 'undefined') {
+        var original_update_tile_palms = update_tile_palms;
+        window.update_tile_palms = function(ptile) {
+          try {
+            original_update_tile_palms(ptile);
+          } catch(e) {
+            // Silently ignore - palm models may not be available
+          }
+        };
+      }
+      
+      console.log("[Enhanced] Error handling enabled for missing 3D models");
+    }, 100);
+    
+    // Initialize standalone mode
     init_standalone();
   });
 </script>
