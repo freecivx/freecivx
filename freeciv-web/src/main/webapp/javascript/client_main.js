@@ -195,7 +195,7 @@ function show_new_game_message()
 
   } else if (client.conn.playing != null && !game_loaded) {
     var pplayer = client.conn.playing;
-    message = "Welcome to FreecivWorld.net, the free browser-based 3D version of the classic turn-based strategy game Freeciv! You can ask questions to the AI bot (OpenAI) here. Have fun playing FreecivWorld!";
+    message = "Welcome to FreecivWorld.net, the free browser-based 3D version of the classic turn-based strategy game Freeciv! Have fun playing FreecivWorld!";
 
   } else if (game_loaded) {
     message = "Welcome back, " + username;

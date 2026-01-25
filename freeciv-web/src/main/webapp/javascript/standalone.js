@@ -72,11 +72,18 @@ function setup_standalone_environment() {
   }
   
   // Ensure window sizing works in standalone mode
-  if (typeof setup_window_size === 'function') {
+
     $(window).on('resize', function() {
       setup_window_size();
     });
-  }
+
+
+    // Remove initial pregame page.
+    $("#dialog").dialog('close');
+    if (close_pregame) {
+      $("#pregame_page").hide();
+    }
+
 }
 
 /**************************************************************************
