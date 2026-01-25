@@ -47,6 +47,10 @@ function tile_get_known(ptile)
 **************************************************************************/
 function tile_has_extra(ptile, extra)
 {
+  if (is_standalone_mode()) {
+    return false; // FIXME
+  }
+
   if (ptile == null || ptile['extras'] == null) {
     return false;
   }
