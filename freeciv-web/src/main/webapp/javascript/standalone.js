@@ -70,14 +70,11 @@ function setup_standalone_environment() {
       // Don't call original network_init
     };
   }
-  
-  // Ensure window sizing works in standalone mode
+
 
     $(window).on('resize', function() {
       setup_window_size();
     });
-
-
 
 
 }
@@ -132,6 +129,8 @@ function start_standalone_game() {
     console.log("[Standalone] Setting client state to C_S_RUNNING");
     set_client_state(C_S_RUNNING);
     console.log("[Standalone] Standalone game started successfully");
+    advance_unit_focus();
+    console.log("[Standalone] Advance unit focus called");
   }, STANDALONE_WEBGL_INIT_DELAY_MS);
 }
 
@@ -235,10 +234,10 @@ function create_mock_map() {
           height = 0.6 + Math.random() * 0.15;
         } else if (rand < 0.80) {
           terrain = 4; // Hills
-          height = 1.0 + Math.random() * 0.5; // Hills are higher
+          height = 0.6 + Math.random() * 0.5; // Hills are higher
         } else if (rand < 0.88) {
           terrain = 5; // Mountains
-          height = 2.0 + Math.random() * 1.0; // Mountains are highest
+          height = 0.7 + Math.random() * 1.0; // Mountains are highest
         } else if (rand < 0.93) {
           terrain = 6; // Desert (limited to avoid missing cactus models)
           height = 0.5 + Math.random() * 0.15;
@@ -807,20 +806,6 @@ function create_mock_server_settings() {
               ", techlevel: " + server_settings['techlevel'].val + ")");
 }
 
-/**************************************************************************
- * Create a placeholder texture to prevent undefined texture errors
- * This is used during standalone initialization when actual textures
- * haven't loaded yet
- **************************************************************************/
-function create_placeholder_texture(width, height, color) {
-  var canvas = document.createElement('canvas');
-  canvas.width = width || 32;
-  canvas.height = height || 32;
-  var ctx = canvas.getContext('2d');
-  ctx.fillStyle = color || '#ffffff';
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
-  return new THREE.CanvasTexture(canvas);
-}
 
 /**************************************************************************
  * Initialize WebGL resources for standalone mode
@@ -851,13 +836,7 @@ function initialize_standalone_webgl() {
   } else {
     console.log("[Standalone] webgl_textures already initialized with " + Object.keys(window.webgl_textures).length + " textures");
   }
-  
-  // Pre-create placeholder textures to prevent undefined errors
-  // These will be replaced when actual textures load asynchronously
-  if (!window.webgl_textures["city_light"]) {
-    console.log("[Standalone] Creating placeholder city_light texture");
-    window.webgl_textures["city_light"] = create_placeholder_texture(32, 32, '#ffffff');
-  }
+
   
   // Initialize webgl_models if not already initialized  
   if (!window.webgl_models) {
