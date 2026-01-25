@@ -69,13 +69,19 @@ The JavaScript server is organized into several modules, each responsible for a 
 - [x] Update standalone.js to use new server modules
 - [x] Mark old standalone functions as deprecated
 
-### Phase 2: Integration (IN PROGRESS)
-- [ ] Ensure all server modules are loaded in freeciv-web-standalone.html
+### Phase 2: Server-to-Client Communication (COMPLETED)
+- [x] Implement server_send_chat_message() for sending messages to client
+- [x] Document server-to-client communication pattern
+- [x] Add welcome message on game start
+- [x] Verify server modules are bundled in webclient.min.js build
+
+### Phase 3: Integration and Testing (IN PROGRESS)
 - [ ] Test standalone mode with new server architecture
 - [ ] Validate game state creation
+- [ ] Debug unit rendering in standalone mode
 - [ ] Fix any compatibility issues
 
-### Phase 3: Enhancement (PLANNED)
+### Phase 4: Enhancement (PLANNED)
 - [ ] Implement advanced map generation algorithms
 - [ ] Add AI player decision-making
 - [ ] Implement turn processing
@@ -84,12 +90,75 @@ The JavaScript server is organized into several modules, each responsible for a 
 - [ ] Add unit movement and combat logic
 - [ ] Implement city production and growth
 
-### Phase 4: Server API (PLANNED)
-- [ ] Define server API for client-server communication
-- [ ] Implement message handling
+### Phase 5: Server API Extension (PLANNED)
+- [ ] Extend server API for more packet types
+- [ ] Implement game state update notifications
 - [ ] Add event system for game state changes
 - [ ] Create server command interface
 - [ ] Implement game save/load functionality
+
+## Server-to-Client Communication
+
+### Overview
+
+The JavaScript server communicates with the client by calling packet handler functions directly. This simulates the network packet handling that occurs with a remote server, but without the overhead of actual network communication.
+
+### Sending Chat Messages
+
+The primary communication method is `server_send_chat_message()`:
+
+```javascript
+server_send_chat_message(message, event, options)
+```
+
+**Parameters:**
+- `message` (string) - The message text to send
+- `event` (number) - Event type constant from fc_events.js
+- `options` (object, optional) - Additional parameters
+  - `conn_id` - Connection ID (default: null for server messages)
+  - `tile` - Tile ID for location-specific messages (default: null)
+
+**Common Event Types:**
+- `E_CHAT_MSG` (95) - General chat messages
+- `E_CONNECTION` (98) - Connection-related messages  
+- `E_LOG_ERROR` (100) - Error messages
+- See `fc_events.js` for complete list
+
+### Example Usage
+
+```javascript
+// Send welcome message when game starts
+server_send_chat_message("Welcome to the Freeciv JS server!", E_CHAT_MSG);
+
+// Send system notification
+server_send_chat_message("Game initialized successfully", E_CONNECTION);
+
+// Send tile-specific message
+server_send_chat_message("Unit discovered ruins", E_CHAT_MSG, { tile: 42 });
+```
+
+### Implementation Details
+
+The `server_send_chat_message()` function:
+1. Creates a packet object with the proper format
+2. Calls `handle_chat_msg()` directly (defined in packhand.js)
+3. The client processes it as if received from a network server
+4. Message appears in the game chatbox
+
+### Extending to Other Packet Types
+
+This pattern can be extended to other packet types:
+
+```javascript
+// General pattern for server-to-client communication
+function server_send_packet(handler_name, packet_data) {
+  console.log("[Server] Sending packet: " + handler_name);
+  // Call the appropriate handler function
+  window[handler_name](packet_data);
+}
+```
+
+All packet handlers in `packhand.js` can be called this way, enabling the server to send any type of game state update to the client.
 
 ## Usage
 
