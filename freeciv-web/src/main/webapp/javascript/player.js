@@ -161,7 +161,7 @@ function get_embassy_text(player_id)
 {
   const NO_INFO = "-";
 
-  if (player_id == null) return NO_INFO;
+  if (player_id == null || is_standalone_mode()) return NO_INFO;
 
   const me = client.conn.playing;
   if (me == null || client_is_observer()) return NO_INFO;
