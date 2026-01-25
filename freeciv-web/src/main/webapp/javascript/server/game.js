@@ -90,14 +90,14 @@ function server_create_players(numPlayers) {
   
   players = {};
   
-  // Create player 0 (human player)
-  players[0] = {
+  // Create player 0 (human player) using handle_player_info
+  handle_player_info({
     playerno: 0,
     name: "You",
     username: "Player",
     nation: 0, // Romans
-    flags: new BitVector([false]), // Not AI
-    gives_shared_vision: new BitVector([]),
+    flags: [false], // Not AI - will be converted to BitVector
+    gives_shared_vision: [], // Will be converted to BitVector
     gold: 50,
     government: 0,
     tech_goal: 0,
@@ -113,17 +113,17 @@ function server_create_players(numPlayers) {
     team: 0,
     culture: 0,
     expected_income: 5
-  };
+  });
   
   // Create AI players
   if (numPlayers > 1) {
-    players[1] = {
+    handle_player_info({
       playerno: 1,
       name: "Cleopatra",
       username: "AI",
       nation: 1, // Egyptians
-      flags: new BitVector([true]), // Is AI
-      gives_shared_vision: new BitVector([]),
+      flags: [true], // Is AI
+      gives_shared_vision: [],
       gold: 50,
       government: 0,
       tech_goal: 0,
@@ -139,17 +139,17 @@ function server_create_players(numPlayers) {
       team: 1,
       culture: 0,
       expected_income: 5
-    };
+    });
   }
   
   if (numPlayers > 2) {
-    players[2] = {
+    handle_player_info({
       playerno: 2,
       name: "Pericles",
       username: "AI",
       nation: 2, // Greeks
-      flags: new BitVector([true]), // Is AI
-      gives_shared_vision: new BitVector([]),
+      flags: [true], // Is AI
+      gives_shared_vision: [],
       gold: 50,
       government: 0,
       tech_goal: 0,
@@ -165,7 +165,7 @@ function server_create_players(numPlayers) {
       team: 2,
       culture: 0,
       expected_income: 5
-    };
+    });
   }
   
   var playerNames = [];
@@ -187,19 +187,19 @@ function server_setup_client_connection() {
     }
   };
   
-  // Set game info
-  game_info = {
+  // Set game info using handle_game_info
+  handle_game_info({
     turn: 1,
     year: -4000,
     players_max: 10,
     aifill: 0
-  };
+  });
   
-  // Set calendar info (required for get_year_string)
-  calendar_info = {
+  // Set calendar info using handle_calendar_info (required for get_year_string)
+  handle_calendar_info({
     negative_year_label: " BC",
     positive_year_label: " AD"
-  };
+  });
   
   // Set observing flag to false
   if (typeof observing !== 'undefined') {
