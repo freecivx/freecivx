@@ -35,14 +35,14 @@
  **************************************************************************/
 function server_create_ruleset() {
   console.log("[Server Ruleset] Creating ruleset data");
-  
+
+  server_create_extras();
   server_create_nations();
   server_create_governments();
   server_create_technologies();
   server_create_unit_types();
   server_create_improvements();
   server_create_city_styles();
-  server_create_extras();
   
   console.log("[Server Ruleset] Ruleset created successfully");
 }
