@@ -234,10 +234,10 @@ function create_mock_map() {
           height = 0.6 + Math.random() * 0.15;
         } else if (rand < 0.80) {
           terrain = 4; // Hills
-          height = 0.6 + Math.random() * 0.5; // Hills are higher
+          height = 0.56 + Math.random() * 0.2; // Hills are higher
         } else if (rand < 0.88) {
           terrain = 5; // Mountains
-          height = 0.7 + Math.random() * 1.0; // Mountains are highest
+          height = 0.61 + Math.random() * 0.3; // Mountains are highest
         } else if (rand < 0.93) {
           terrain = 6; // Desert (limited to avoid missing cactus models)
           height = 0.5 + Math.random() * 0.15;
