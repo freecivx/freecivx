@@ -122,35 +122,12 @@ function start_standalone_game() {
   console.log("[Standalone] Setting client state to C_S_RUNNING");
   set_client_state(C_S_RUNNING);
   console.log("[Standalone] Standalone game started successfully");
-  
-  // Trigger rendering of units by updating their positions
-  // This is necessary because in standalone mode we don't receive unit_info packets
-  console.log("[Standalone] Updating unit positions for rendering");
-  update_all_unit_positions();
+
   
   advance_unit_focus();
   console.log("[Standalone] Advance unit focus called");
 }
 
-/**************************************************************************
- * Update all unit positions to trigger 3D rendering
- * In standalone mode, we need to manually trigger unit rendering since
- * we don't receive unit_info packets from a server
- **************************************************************************/
-function update_all_unit_positions() {
-  var unitCount = 0;
-  for (var unit_id in units) {
-    var punit = units[unit_id];
-    if (punit && punit['tile'] != null) {
-      var ptile = index_to_tile(punit['tile']);
-      if (ptile != null) {
-        update_unit_position(ptile);
-        unitCount++;
-      }
-    }
-  }
-  console.log("[Standalone] Updated positions for " + unitCount + " units");
-}
 
 /**************************************************************************
  * Create mock game data for standalone mode
