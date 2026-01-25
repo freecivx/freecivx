@@ -11,6 +11,8 @@ npx playwright test tests/playwright/freeciv-web.test.js
 # Run standalone client test
 echo "Starting standalone client test server..."
 cd target/freeciv-web
+# Note: Using port 8080 for consistency with test expectations
+# If port is in use, the script will fail with clear error message
 python3 -m http.server 8080 > /tmp/standalone-server.log 2>&1 &
 SERVER_PID=$!
 echo "Test server started with PID $SERVER_PID"

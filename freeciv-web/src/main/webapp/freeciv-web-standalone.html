@@ -92,6 +92,9 @@ if (typeof window !== 'undefined') {
 }
 
 // Define is_standalone_mode() function early so other code can check for standalone mode
+// Note: This function is also defined in standalone.js, but we need it here BEFORE
+// webclient.min.js loads so that civclient.js can check for standalone mode during initialization
+// and skip showing the login dialog. This is intentional duplication for early availability.
 function is_standalone_mode() {
   return standalone_mode === true;
 }

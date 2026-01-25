@@ -55,7 +55,7 @@ test('Freeciv-web standalone client loads successfully', async ({ page }) => {
 
   // Wait for standalone mode to be initialized
   await page.waitForFunction(() => {
-    return window.standalone_mode === true || window.is_standalone === true;
+    return typeof window.is_standalone_mode === 'function' && window.is_standalone_mode();
   }, { timeout: 5000 });
   console.log('Standalone mode is active');
 
