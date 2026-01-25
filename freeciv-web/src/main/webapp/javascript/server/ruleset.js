@@ -17,6 +17,221 @@
 
 ***********************************************************************/
 
+/**
+ * Ruleset management for the JavaScript server
+ * 
+ * This module handles creating and managing game rulesets including:
+ * - Nations and their properties
+ * - Government types
+ * - Technologies
+ * - Unit types
+ * - Building/improvement types
+ * - City styles
+ * - Terrain extras (roads, mines, etc.)
+ */
 
+/**************************************************************************
+ * Create complete ruleset data
+ **************************************************************************/
+function server_create_ruleset() {
+  console.log("[Server Ruleset] Creating ruleset data");
+  
+  server_create_nations();
+  server_create_governments();
+  server_create_technologies();
+  server_create_unit_types();
+  server_create_improvements();
+  server_create_city_styles();
+  server_create_extras();
+  
+  console.log("[Server Ruleset] Ruleset created successfully");
+}
 
-/* Ruleset code goes here. */
+/**************************************************************************
+ * Create nation definitions
+ **************************************************************************/
+function server_create_nations() {
+  nations = {
+    0: {
+      id: 0,
+      name: "Romans",
+      adjective: "Roman",
+      graphic_str: "rome",
+      legend: "The Roman Empire",
+      color: "#8B0000"
+    },
+    1: {
+      id: 1,
+      name: "Egyptians",
+      adjective: "Egyptian",
+      graphic_str: "egypt",
+      legend: "Ancient Egypt",
+      color: "#FFD700"
+    },
+    2: {
+      id: 2,
+      name: "Greeks",
+      adjective: "Greek",
+      graphic_str: "greece",
+      legend: "Ancient Greece",
+      color: "#0000FF"
+    },
+    3: {
+      id: 3,
+      name: "Barbarians",
+      adjective: "Barbarian",
+      graphic_str: "barbarian",
+      legend: "Barbarian Tribes",
+      color: "#808080"
+    }
+  };
+  
+  console.log("[Server Ruleset] Created " + Object.keys(nations).length + " nations");
+}
+
+/**************************************************************************
+ * Create government types
+ **************************************************************************/
+function server_create_governments() {
+  governments = {
+    0: { id: 0, name: "Despotism" },
+    1: { id: 1, name: "Monarchy" },
+    2: { id: 2, name: "Republic" }
+  };
+  
+  console.log("[Server Ruleset] Created " + Object.keys(governments).length + " governments");
+}
+
+/**************************************************************************
+ * Create technology definitions
+ **************************************************************************/
+function server_create_technologies() {
+  techs = {
+    0: { id: 0, name: "Alphabet" },
+    1: { id: 1, name: "Bronze Working" },
+    2: { id: 2, name: "Pottery" },
+    3: { id: 3, name: "The Wheel" }
+  };
+  
+  console.log("[Server Ruleset] Created " + Object.keys(techs).length + " technologies");
+}
+
+/**************************************************************************
+ * Create unit type definitions
+ **************************************************************************/
+function server_create_unit_types() {
+  unit_types = {
+    0: { 
+      id: 0, 
+      name: "Settlers",
+      graphic_str: "unit.settlers",
+      move_rate: 1,
+      hp: 10
+    },
+    1: { 
+      id: 1, 
+      name: "Warriors",
+      graphic_str: "unit.warriors",
+      move_rate: 1,
+      hp: 10
+    },
+    2: { 
+      id: 2, 
+      name: "Phalanx",
+      graphic_str: "unit.phalanx",
+      move_rate: 1,
+      hp: 10
+    }
+  };
+  
+  console.log("[Server Ruleset] Created " + Object.keys(unit_types).length + " unit types");
+}
+
+/**************************************************************************
+ * Create building/improvement definitions
+ **************************************************************************/
+function server_create_improvements() {
+  improvements[0] = { id: 0, name: "Palace" };
+  improvements[1] = { id: 1, name: "Barracks" };
+  improvements[2] = { id: 2, name: "Granary" };
+  
+  console.log("[Server Ruleset] Created " + Object.keys(improvements).length + " improvements");
+}
+
+/**************************************************************************
+ * Create city style definitions
+ **************************************************************************/
+function server_create_city_styles() {
+  city_rules = {
+    0: {
+      style_id: 0,
+      rule_name: "European",
+      name: "European"
+    },
+    1: {
+      style_id: 1,
+      rule_name: "Classical",
+      name: "Classical"
+    },
+    2: {
+      style_id: 2,
+      rule_name: "Modern",
+      name: "Modern"
+    }
+  };
+  
+  console.log("[Server Ruleset] Created " + Object.keys(city_rules).length + " city styles");
+}
+
+/**************************************************************************
+ * Create terrain extras (roads, mines, etc.)
+ **************************************************************************/
+function server_create_extras() {
+  extras = {};
+  
+  var extraId = 0;
+  
+  // Roads and infrastructure
+  extras[extraId] = { id: extraId, name: "Road", rule_name: "Road" };
+  window.EXTRA_ROAD = extraId++;
+  
+  extras[extraId] = { id: extraId, name: "Railroad", rule_name: "Railroad" };
+  window.EXTRA_RAIL = extraId++;
+  
+  extras[extraId] = { id: extraId, name: "River", rule_name: "River" };
+  window.EXTRA_RIVER = extraId++;
+  
+  // Resources
+  extras[extraId] = { id: extraId, name: "Mine", rule_name: "Mine" };
+  window.EXTRA_MINE = extraId++;
+  
+  extras[extraId] = { id: extraId, name: "Irrigation", rule_name: "Irrigation" };
+  window.EXTRA_IRRIGATION = extraId++;
+  
+  extras[extraId] = { id: extraId, name: "Oil Well", rule_name: "Oil Well" };
+  window.EXTRA_OIL_WELL = extraId++;
+  
+  // Special features
+  extras[extraId] = { id: extraId, name: "Hut", rule_name: "Hut" };
+  window.EXTRA_HUT = extraId++;
+  
+  extras[extraId] = { id: extraId, name: "Ruins", rule_name: "Ruins" };
+  window.EXTRA_RUINS = extraId++;
+  
+  extras[extraId] = { id: extraId, name: "Fortress", rule_name: "Fortress" };
+  window.EXTRA_FORTRESS = extraId++;
+  
+  extras[extraId] = { id: extraId, name: "Airbase", rule_name: "Airbase" };
+  window.EXTRA_AIRBASE = extraId++;
+  
+  extras[extraId] = { id: extraId, name: "Fallout", rule_name: "Fallout" };
+  window.EXTRA_FALLOUT = extraId++;
+  
+  extras[extraId] = { id: extraId, name: "Pollution", rule_name: "Pollution" };
+  window.EXTRA_POLLUTION = extraId++;
+  
+  extras[extraId] = { id: extraId, name: "Buoy", rule_name: "Buoy" };
+  window.EXTRA_BUOY = extraId++;
+  
+  console.log("[Server Ruleset] Created " + Object.keys(extras).length + " extras");
+}
