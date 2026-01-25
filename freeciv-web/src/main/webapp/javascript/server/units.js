@@ -17,6 +17,109 @@
 
 ***********************************************************************/
 
+/**
+ * Unit management for the JavaScript server
+ * 
+ * This module handles:
+ * - Unit creation and initialization
+ * - Unit properties and placement
+ */
 
-
-/* Units code goes here. */
+/**************************************************************************
+ * Create units for players
+ **************************************************************************/
+function server_create_units() {
+  console.log("[Server Units] Creating units");
+  
+  units = {};
+  
+  // Create settler for player 0
+  var settler_tile_index = 7 + 5 * map.xsize;
+  units[0] = {
+    id: 0,
+    owner: 0,
+    tile: settler_tile_index,
+    homecity: 0,
+    type: 0, // Settlers
+    activity: 0,
+    moves_left: 1,
+    hp: 10,
+    facing: 1,
+    done_moving: false,
+    anim_list: [],
+    action_decision_want: 0,
+    action_decision_tile: 0
+  };
+  
+  tiles[settler_tile_index].units.push(0);
+  
+  // Create warrior for player 0
+  var warrior_tile_index = 6 + 6 * map.xsize;
+  units[1] = {
+    id: 1,
+    owner: 0,
+    tile: warrior_tile_index,
+    homecity: 0,
+    type: 1, // Warriors
+    activity: 0,
+    moves_left: 1,
+    hp: 10,
+    facing: 2,
+    done_moving: false,
+    anim_list: [],
+    action_decision_want: 0,
+    action_decision_tile: 0
+  };
+  
+  tiles[warrior_tile_index].units.push(1);
+  
+  // Create warrior for player 1 if exists
+  if (players[1]) {
+    var warrior1_tile_index = 31 + 15 * map.xsize;
+    units[2] = {
+      id: 2,
+      owner: 1,
+      tile: warrior1_tile_index,
+      homecity: 1,
+      type: 1, // Warriors
+      activity: 0,
+      moves_left: 1,
+      hp: 10,
+      facing: 3,
+      done_moving: false,
+      anim_list: [],
+      action_decision_want: 0,
+      action_decision_tile: 0
+    };
+    
+    tiles[warrior1_tile_index].units.push(2);
+  }
+  
+  // Create warrior for player 2 if exists
+  if (players[2]) {
+    var warrior2_tile_index = 26 + 20 * map.xsize;
+    units[3] = {
+      id: 3,
+      owner: 2,
+      tile: warrior2_tile_index,
+      homecity: 2,
+      type: 2, // Phalanx
+      activity: 0,
+      moves_left: 1,
+      hp: 10,
+      facing: 4,
+      done_moving: false,
+      anim_list: [],
+      action_decision_want: 0,
+      action_decision_tile: 0
+    };
+    
+    tiles[warrior2_tile_index].units.push(3);
+  }
+  
+  var unitDescriptions = [];
+  for (var id in units) {
+    unitDescriptions.push(unit_types[units[id].type].name);
+  }
+  console.log("[Server Units] Created " + Object.keys(units).length + " units: " + unitDescriptions.join(", "));
+}
