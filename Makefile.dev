@@ -134,7 +134,7 @@ watch: ## Watch for changes and rebuild automatically (requires fswatch)
 		while read event; do \
 			echo ""; \
 			echo "File changed - rebuilding..."; \
-			make quick; \
+			$(MAKE) -f Makefile.dev quick; \
 			echo "Rebuild complete!"; \
 		done
 
