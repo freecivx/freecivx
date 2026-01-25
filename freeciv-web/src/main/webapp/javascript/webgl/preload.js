@@ -34,7 +34,7 @@ var loader;
 ****************************************************************************/
 function webgl_preload()
 {
-  console.log("webgl_preload");
+  console.log("Preloading WebGL textures and models...");
 
   loader = new GLTFLoader();
   const dracoLoader = new DRACOLoader();
