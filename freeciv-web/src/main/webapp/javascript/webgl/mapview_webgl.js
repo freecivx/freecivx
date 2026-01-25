@@ -439,7 +439,7 @@ function add_quality_dependent_objects_webgl()
   scene.add( water_hq );
   console.log("Added high-quality water surface.");
 
-  if (graphics_quality === QUALITY_HIGH && !standalone_mode) {
+  if (graphics_quality === QUALITY_HIGH && !is_standalone_mode()) {
     if (shadowmesh == null) {
       var shadowMaterial = new THREE.ShadowMaterial();
       shadowMaterial.opacity = 0.85;

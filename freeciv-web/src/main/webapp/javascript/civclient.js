@@ -157,8 +157,7 @@ function civclient_init()
  Shows a intro dialog depending on game type.
 **************************************************************************/
 function init_common_intro_dialog() {
-  // Skip intro dialog in standalone mode
-  if (typeof is_standalone_mode === 'function' && is_standalone_mode()) {
+  if (is_standalone_mode()) {
     console.log("Skipping intro dialog in standalone mode");
     return;
   }

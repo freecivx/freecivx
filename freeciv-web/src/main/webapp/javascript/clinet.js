@@ -37,8 +37,7 @@ var freecivx_server = true;
 ****************************************************************************/
 function network_init()
 {
-  // Skip network initialization in standalone mode
-  if (typeof is_standalone_mode === 'function' && is_standalone_mode()) {
+  if (is_standalone_mode()) {
     console.log("Skipping network initialization in standalone mode");
     return;
   }

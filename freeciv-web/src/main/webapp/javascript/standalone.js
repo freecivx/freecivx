@@ -42,7 +42,7 @@ function init_standalone() {
   console.log("[Standalone] Startup delay: " + STANDALONE_STARTUP_DELAY_MS + "ms");
   
   // Set global flag for other modules to detect standalone mode
-  window.is_standalone = true;
+  window.standalone_mode = true;
 
   init_sprites();
 
@@ -85,7 +85,7 @@ function setup_standalone_environment() {
  * Other modules can call this to detect standalone operation
  **************************************************************************/
 function is_standalone_mode() {
-  return standalone_mode === true || (typeof window !== 'undefined' && window.is_standalone === true);
+  return standalone_mode === true;
 }
 
 /**************************************************************************
