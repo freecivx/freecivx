@@ -1273,13 +1273,15 @@ function recreate_old_tech_req(packet)
   packet['req'] = [];
 
   /* Add all techs in research_reqs. */
-  for (i = 0; i < packet['research_reqs'].length; i++) {
-    var requirement = packet['research_reqs'][i];
+  if (packet['research_reqs'] != null) {
+    for (i = 0; i < packet['research_reqs'].length; i++) {
+      var requirement = packet['research_reqs'][i];
 
-    if (requirement.kind == VUT_ADVANCE
-        && requirement.range == REQ_RANGE_PLAYER
-        && requirement.present) {
-      packet['req'].push(requirement.value);
+      if (requirement.kind == VUT_ADVANCE
+          && requirement.range == REQ_RANGE_PLAYER
+          && requirement.present) {
+        packet['req'].push(requirement.value);
+      }
     }
   }
 
