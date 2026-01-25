@@ -905,7 +905,7 @@ function show_intro_dialog(title, message) {
   $("#dialog").remove();
   $("<div id='dialog'></div>").appendTo("div#game_page");
 
-  var intro_html = message + "<br><br><form><table><tr><td>Player name:</td><td><input id='username_req' type='text' size='18' maxlength='31'></td></tr>"
+  var intro_html = message + "<br><br><form><table><tr><td>Player name:</td><td><input id='username_req' type='text' size='18' maxlength='31' autocomplete='username'></td></tr>"
       +  "<tr id='password_row'><td>Password:</td><td id='password_td'></td></tr></table></form>";
 
   $("#dialog").html(intro_html);
