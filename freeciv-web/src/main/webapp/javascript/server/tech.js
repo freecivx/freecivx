@@ -19,4 +19,17 @@
 
 
 
-/* Technology code goes here. */
+/**************************************************************************
+ * Create technology definitions
+ **************************************************************************/
+function server_create_technologies() {
+  techs = {};
+
+  // Use handle_ruleset_tech to create technologies
+  handle_ruleset_tech({ id: 0, name: "Alphabet", research_reqs: [] });
+  handle_ruleset_tech({ id: 1, name: "Bronze Working", research_reqs: [] });
+  handle_ruleset_tech({ id: 2, name: "Pottery", research_reqs: [] });
+  handle_ruleset_tech({ id: 3, name: "The Wheel", research_reqs: [] });
+
+  console.log("[Server Ruleset] Created " + Object.keys(techs).length + " technologies");
+}
