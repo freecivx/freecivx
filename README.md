@@ -49,6 +49,12 @@ Freeciv 3D
 -------------
 Freeciv 3D is the 3D version using the Three.js 3D engine, which requires WebGl 2 or WebGPU support.
 
+
+Standalone client
+=================
+The freeciv-web [freeciv-web-standalone.html](/freeciv-web/src/main/webapp/freeciv-web-standalone.html) allows running the client in a browser without a Freeciv C server.
+This can be used to make a Freeciv pure JavaScript server for running games fully in the browser, and to implement hexagonal map tiles.
+
 Running FreecivWorld.net on your computer
 ------------------------------------
 Freeciv-web can be run with WSL (Linux on Windows), or Podman / Docker.
