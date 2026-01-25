@@ -91,14 +91,14 @@ if (typeof window !== 'undefined') {
   window.is_standalone = true;
 }
 
-// Define is_standalone_mode() function early so other code can check for standalone mode
-// Note: This function is also defined in standalone.js, but we need it here BEFORE
-// webclient.min.js loads so that civclient.js can check for standalone mode during initialization
-// and skip showing the login dialog. This is intentional duplication for early availability.
+// IMPORTANT: Define is_standalone_mode() function here (before webclient.min.js loads)
+// This function is also defined in standalone.js (which is bundled in webclient.min.js),
+// but we need it available EARLY so that civclient.js can check for standalone mode during
+// its initialization and skip showing the login dialog. Without this early definition,
+// the login dialog appears briefly. This is intentional duplication to solve a timing issue.
 function is_standalone_mode() {
   return standalone_mode === true;
 }
-
 </script>
 
 <!-- Three.js ES Module System  -->
@@ -113,10 +113,8 @@ function is_standalone_mode() {
 <script type="module" src="/javascript/three-modules.js"></script>
 
 <!-- Main application bundle - includes jQuery, Stacktrace, Audio, and all application code -->
+<!-- Note: standalone.js is bundled inside webclient.min.js -->
 <script src="/javascript/webclient.min.js" ></script>
-
-<!-- Standalone-specific functionality -->
-<script src="/javascript/standalone.js" defer></script>
 
 <script>
   $(document).ready(function() {

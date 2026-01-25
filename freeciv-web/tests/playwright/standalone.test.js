@@ -94,7 +94,10 @@ test('Freeciv-web standalone client loads successfully', async ({ page }) => {
   }, { timeout: 25000 });
   console.log('Client state is running');
 
-  // Wait a bit for rendering to complete
+  // IMPORTANT: Wait for the standalone client to fully initialize and render
+  // This takes at least 1.5 seconds on most systems to load textures, render the map,
+  // and remove any initial dialogs. We wait 5 seconds to be safe.
+  console.log('Waiting for standalone client to fully initialize (5 seconds)...');
   await page.waitForTimeout(5000);
 
   // Take a screenshot for visual validation
