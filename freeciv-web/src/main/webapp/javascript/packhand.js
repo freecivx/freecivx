@@ -511,8 +511,7 @@ function handle_map_info(packet)
 
   map_allocate();
 
-  mapview_model_width = Math.floor(MAPVIEW_ASPECT_FACTOR * map['xsize']);
-  mapview_model_height = Math.floor(MAPVIEW_ASPECT_FACTOR * map['ysize']);
+  set_mapview_model_size();
 
   init_borders_image();
   init_roads_image();

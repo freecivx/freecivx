@@ -485,3 +485,11 @@ function add_quality_dependent_objects_webgl()
     scene.background = null;
   }
 }
+
+/****************************************************************************
+ ...
+ ****************************************************************************/
+function set_mapview_model_size() {
+  mapview_model_width = Math.floor(MAPVIEW_ASPECT_FACTOR * map['xsize']);
+  mapview_model_height = Math.floor(MAPVIEW_ASPECT_FACTOR * map['ysize']);
+}

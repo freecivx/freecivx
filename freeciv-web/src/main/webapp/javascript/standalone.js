@@ -269,6 +269,8 @@ function create_mock_map() {
       };
     }
   }
+
+  set_mapview_model_size();
   
   console.log("[Standalone] Created mock map: " + map.xsize + "x" + map.ysize + " tiles (" + Object.keys(tiles).length + " tiles initialized with varied terrain and proper heights)");
 }
