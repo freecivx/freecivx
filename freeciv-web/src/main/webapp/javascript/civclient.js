@@ -187,7 +187,7 @@ function init_common_intro_dialog() {
   } else {
     const introText = `
     Play the classic open source strategy game FreecivWorld. Start a singleplayer game against the AI or play others in multiplayer.
-    Start by entering your player name, or sign up as a new user, then adjust the settings to your liking. 
+    Start by entering your player name, or sign up as a new user, then adjust the settings.
     Creating an account is required.
     `;
 

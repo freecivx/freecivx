@@ -34,6 +34,7 @@ var width_offset = 10;
 **************************************************************************/
 function set_client_state(newstate)
 {
+  console.log("set_client_state: " + newstate);
   if (civclient_state != newstate) {
     civclient_state = newstate;
 
