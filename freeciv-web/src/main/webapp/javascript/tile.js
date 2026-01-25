@@ -60,6 +60,9 @@ function tile_has_extra(ptile, extra)
 
 function tile_resource(tile)
 {
+  if (is_standalone_mode()) {
+    return null; // FIXME
+  }
   if (tile != null && tile.extras != null) {
     const tile_extras = tile.extras.toBitSet();
     for (var extra in tile_extras) {
