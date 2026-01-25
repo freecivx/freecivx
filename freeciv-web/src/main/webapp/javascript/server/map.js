@@ -41,31 +41,28 @@ function server_create_map(width, height) {
   
   console.log("[Server Map] Creating map: " + width + "x" + height + " tiles");
   
-  // Create map structure
-  map = {
+  // Generate terrain types
+  server_initialize_terrain_types();
+  
+  // Use handle_map_info to create map structure and allocate tiles
+  handle_map_info({
     xsize: width,
     ysize: height,
     topology_id: 0,  // Standard topology
     wrap_id: WRAP_X, // Wrap in X direction
     num_valid_dirs: 8,
     num_cardinal_dirs: 4
-  };
+  });
   
-  // Initialize tiles array
-  tiles = {};
-  
-  // Generate terrain types
-  server_initialize_terrain_types();
-  
-  // Generate tiles with terrain
+  // Generate tiles with terrain using handle_tile_info
   for (var y = 0; y < map.ysize; y++) {
     for (var x = 0; x < map.xsize; x++) {
       var index = x + y * map.xsize;
-      tiles[index] = server_create_tile(x, y, index);
+      var tileData = server_create_tile(x, y, index);
+      // Use handle_tile_info to update tile with terrain and properties
+      handle_tile_info(tileData);
     }
   }
-  
-  set_mapview_model_size();
   
   console.log("[Server Map] Created map with " + Object.keys(tiles).length + " tiles");
   return map;
@@ -93,11 +90,11 @@ function server_initialize_terrain_types() {
 }
 
 /**************************************************************************
- * Create a single tile
+ * Create a single tile packet for handle_tile_info
  * @param {number} x - X coordinate
  * @param {number} y - Y coordinate
  * @param {number} index - Tile index
- * @returns {Object} Tile object
+ * @returns {Object} Tile packet object for handle_tile_info
  **************************************************************************/
 function server_create_tile(x, y, index) {
   var terrain;
@@ -142,14 +139,14 @@ function server_create_tile(x, y, index) {
     }
   }
   
+  // Return a packet object for handle_tile_info
   return {
-    index: index,
+    tile: index,  // handle_tile_info expects 'tile' property
     x: x,
     y: y,
     terrain: terrain,
     known: 2, // TILE_KNOWN_SEEN
-    extras: new BitVector(['0']),
-    units: [],
+    extras: ['0'],  // Will be converted to BitVector by handle_tile_info
     owner: null,
     claimer: null,
     worked: null,

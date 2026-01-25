@@ -35,14 +35,17 @@ function server_create_cities() {
   
   // Create capital city for player 0
   var capital_tile_index = 5 + 5 * map.xsize; // Near corner
-  cities[0] = {
+  
+  // Use handle_city_info to create the city
+  handle_city_info({
     id: 0,
     owner: 0,
     tile: capital_tile_index,
     name: "Rome",
     size: 3,
     style: 1, // Classical style
-    improvements: new BitVector([true, false, false]), // Has Palace
+    improvements: [true, false, false], // Has Palace - will be converted to BitVector
+    city_options: [],  // Required by handle_city_info
     production_kind: 0, // Building
     production_value: 1, // Barracks
     shield_stock: 10,
@@ -53,29 +56,33 @@ function server_create_cities() {
     gold_prod: 1,
     culture: 5,
     science_prod: 1,
-    can_build_improvement: new BitVector([]),
-    can_build_unit: new BitVector([]),
-    unhappy: 0,
+    can_build_improvement: [],  // Will be converted to BitVector
+    can_build_unit: [],  // Will be converted to BitVector
     ppl_happy: 1,
     ppl_content: 2,
     ppl_unhappy: 0
-  };
+  });
   
-  // Mark tile as owned by player 0
-  tiles[capital_tile_index].owner = 0;
-  tiles[capital_tile_index].worked = 0;
+  // Update tile ownership using handle_tile_info
+  handle_tile_info({
+    tile: capital_tile_index,
+    owner: 0,
+    worked: 0
+  });
   
   // Create city for player 1 if exists
   if (players[1]) {
     var city1_tile_index = 30 + 15 * map.xsize;
-    cities[1] = {
+    
+    handle_city_info({
       id: 1,
       owner: 1,
       tile: city1_tile_index,
       name: "Memphis",
       size: 2,
       style: 0, // European style
-      improvements: new BitVector([true, false, false]), // Has Palace
+      improvements: [true, false, false], // Has Palace
+      city_options: [],
       production_kind: 1, // Unit
       production_value: 1, // Warriors
       shield_stock: 5,
@@ -86,29 +93,33 @@ function server_create_cities() {
       gold_prod: 1,
       culture: 3,
       science_prod: 1,
-      can_build_improvement: new BitVector([]),
-      can_build_unit: new BitVector([]),
-      unhappy: 0,
+      can_build_improvement: [],
+      can_build_unit: [],
       ppl_happy: 1,
       ppl_content: 1,
       ppl_unhappy: 0
-    };
+    });
     
-    tiles[city1_tile_index].owner = 1;
-    tiles[city1_tile_index].worked = 1;
+    handle_tile_info({
+      tile: city1_tile_index,
+      owner: 1,
+      worked: 1
+    });
   }
   
   // Create city for player 2 if exists
   if (players[2]) {
     var city2_tile_index = 25 + 20 * map.xsize;
-    cities[2] = {
+    
+    handle_city_info({
       id: 2,
       owner: 2,
       tile: city2_tile_index,
       name: "Athens",
       size: 2,
       style: 1, // Classical style
-      improvements: new BitVector([true, false, false]), // Has Palace
+      improvements: [true, false, false], // Has Palace
+      city_options: [],
       production_kind: 1, // Unit
       production_value: 1, // Warriors
       shield_stock: 5,
@@ -119,16 +130,18 @@ function server_create_cities() {
       gold_prod: 1,
       culture: 3,
       science_prod: 1,
-      can_build_improvement: new BitVector([]),
-      can_build_unit: new BitVector([]),
-      unhappy: 0,
+      can_build_improvement: [],
+      can_build_unit: [],
       ppl_happy: 1,
       ppl_content: 1,
       ppl_unhappy: 0
-    };
+    });
     
-    tiles[city2_tile_index].owner = 2;
-    tiles[city2_tile_index].worked = 2;
+    handle_tile_info({
+      tile: city2_tile_index,
+      owner: 2,
+      worked: 2
+    });
   }
   
   var cityNames = [];
