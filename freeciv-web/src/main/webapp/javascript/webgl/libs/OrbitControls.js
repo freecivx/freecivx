@@ -929,6 +929,8 @@ class OrbitControls extends Controls {
 
 		const position = this._getSecondPointerPosition( event );
 
+		if ( position === undefined ) return;
+
 		const dx = event.pageX - position.x;
 		const dy = event.pageY - position.y;
 
@@ -1011,6 +1013,8 @@ class OrbitControls extends Controls {
 	_handleTouchMoveDolly( event ) {
 
 		const position = this._getSecondPointerPosition( event );
+
+		if ( position === undefined ) return;
 
 		const dx = event.pageX - position.x;
 		const dy = event.pageY - position.y;
