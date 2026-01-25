@@ -87,7 +87,7 @@ function renderer_init() {
     init_chatbox();
     keyboard_input=true;
 
-    setTimeout("$('#mapcanvas').fadeIn(2500); $.unblockUI();", 1500);
+    setTimeout("$('#mapcanvas').fadeIn(2500); $.unblockUI();", 700);
 
   }
 }
