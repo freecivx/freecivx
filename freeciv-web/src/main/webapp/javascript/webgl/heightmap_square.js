@@ -155,6 +155,8 @@ function update_heightmap(heightmap_quality)
   let heightmap_resolution_x = map.xsize * heightmap_quality + 1;
   let heightmap_resolution_y = map.ysize * heightmap_quality + 1;
 
+  console.log("Updating heightmap...");
+
   for (let x = 0; x < map.xsize ; x++) {
     for (let y = 0; y < map.ysize; y++) {
       let ptile = map_pos_to_tile(x, y);
@@ -258,6 +260,8 @@ function update_heightmap(heightmap_quality)
       }
     }
   }
+
+  console.log("Heightmap updated.");
 }
 
 

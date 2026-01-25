@@ -190,6 +190,7 @@ async function init_webgl_mapview() {
   landMesh.receiveShadow = false;
   landMesh.castShadow = false;
   scene.add(landMesh);
+  console.log("Land mesh triangles: " + landGeometry.index.count / 3);
 
   if (graphics_quality === QUALITY_HIGH) {
     var shadowMaterial = new THREE.ShadowMaterial();
@@ -436,6 +437,7 @@ function add_quality_dependent_objects_webgl()
   water_hq.renderOrder = -1; // Render water first, this will solve transparency issues in city labels.
   water_hq.castShadow = false;
   scene.add( water_hq );
+  console.log("Added high-quality water surface.");
 
   if (graphics_quality === QUALITY_HIGH) {
     if (shadowmesh == null) {

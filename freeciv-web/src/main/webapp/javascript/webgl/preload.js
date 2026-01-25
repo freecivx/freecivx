@@ -34,7 +34,7 @@ var loader;
 ****************************************************************************/
 function webgl_preload()
 {
-  show_splash_screen();
+  console.log("webgl_preload");
 
   loader = new GLTFLoader();
   const dracoLoader = new DRACOLoader();

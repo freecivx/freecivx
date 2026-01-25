@@ -65,13 +65,14 @@ function webgl_preload_complete()
  Init the map renderer
  ****************************************************************************/
 function renderer_init() {
+  console.log("renderer_init()");
   if (!Detector.webgl) {
     swal("3D WebGL not supported by your browser or you don't have a 3D graphics card. ");
+    console.log("3D WebGL not supported by your browser or you don't have a 3D graphics card. ");
     return;
   }
 
   if (C_S_RUNNING === client_state() || C_S_OVER === client_state()) {
-      show_splash_screen();
 
     webgl_start_renderer();
     init_webgl_mapview();

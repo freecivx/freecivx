@@ -59,8 +59,6 @@ function is_small_screen()
 **************************************************************************/
 function init_sprites()
 {
-  show_splash_screen();
-
   $(".container").remove();
   $("body").css("padding-top", "0px");
   $("body").css("padding-bottom", "0px");
