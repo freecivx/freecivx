@@ -60,7 +60,6 @@ var game_unit_panel_state = null;
 var chat_send_to = -1;
 var CHAT_ICON_EVERYBODY = String.fromCharCode(62075);
 var CHAT_ICON_ALLIES = String.fromCharCode(61746);
-var end_turn_info_message_shown = false;
 var mouse_touch_started_on_unit = false;
 
 /* The ID of the unit that currently is in the action selection process.
@@ -1056,10 +1055,7 @@ function advance_unit_focus()
       }
     }
     $("#turn_done_button").button("option", "label", "<i class='fa fa-check-circle-o' style='color: green;'aria-hidden='true'></i> Turn Done");
-    if (!end_turn_info_message_shown) {
-      end_turn_info_message_shown = true;
-      message_log.update({ event: E_BEGINNER_HELP, message: "All units have moved, click the \"Turn Done\" button to end your turn."});
-    }
+
   }
 }
 
