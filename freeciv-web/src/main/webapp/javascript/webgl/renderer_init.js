@@ -59,6 +59,11 @@ function webgl_preload_complete()
 
   network_init();
 
+  if (is_standalone_mode()) {
+    setup_standalone_environment();
+    start_standalone_game();
+  }
+
 }
 
 /****************************************************************************

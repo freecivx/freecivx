@@ -59,6 +59,7 @@ function is_small_screen()
 **************************************************************************/
 function init_sprites()
 {
+  console.log("Preloading 2D canvas tileset images.");
   $(".container").remove();
   $("body").css("padding-top", "0px");
   $("body").css("padding-bottom", "0px");

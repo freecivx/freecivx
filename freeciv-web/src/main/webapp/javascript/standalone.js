@@ -46,13 +46,6 @@ function init_standalone() {
   init_sprites();
 
 
-  // Initialize any standalone-specific settings
-  setup_standalone_environment();
-  
-  // Start the game automatically after a short delay to allow initialization
-  setTimeout(function() {
-    start_standalone_game();
-  }, STANDALONE_STARTUP_DELAY_MS);
 }
 
 /**************************************************************************
