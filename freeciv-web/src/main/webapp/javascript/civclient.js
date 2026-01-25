@@ -438,7 +438,7 @@ function show_auth_dialog(packet) {
   $("<div id='dialog'></div>").appendTo("div#game_page");
 
   var intro_html = packet['message']
-      + "<br><br> Password: <input id='password_req' type='text' size='25'>";
+      + "<br><br> Password: <input id='password_req' type='text' size='25' autocomplete='current-password'>";
   $("#dialog").html(intro_html);
   $("#dialog").attr("title", "Private server needs password to enter");
   $("#dialog").dialog({

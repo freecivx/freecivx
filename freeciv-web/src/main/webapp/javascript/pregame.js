@@ -923,7 +923,7 @@ function show_intro_dialog(title, message) {
       }
   }
   $("#password_row").show();
-  $("#password_td").html("<input id='password_req' type='password' size='18' maxlength='200' > <br> <div id='login_process'></div>");
+  $("#password_td").html("<input id='password_req' type='password' size='18' maxlength='200' autocomplete='current-password'> <br> <div id='login_process'></div>");
 
   var stored_password = simpleStorage.get("password", "");
   if (stored_password != null && stored_password != false) {
@@ -1128,7 +1128,7 @@ function pregame_handle_user(close_pregame)
 
         $("#password_row").show();
         $("#password_req").focus();
-        $("#password_td").html("<input id='password_req' type='password' size='25' maxlength='200'>  &nbsp; Account required, enter password.");
+        $("#password_td").html("<input id='password_req' type='password' size='25' maxlength='200' autocomplete='current-password'>  &nbsp; Account required, enter password.");
       }
     },
    error: function (request, textStatus, errorThrown) {
