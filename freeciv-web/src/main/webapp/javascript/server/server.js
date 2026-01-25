@@ -108,15 +108,15 @@ function server_create_game(options) {
   // Initialize server settings (must be first)
   console.log("[Server] Creating server settings");
   server_create_settings();
-  
+
+  // Initialize ruleset data, needs to be early.
+  console.log("[Server] Creating ruleset");
+  server_create_ruleset();
+
   // Initialize map
   console.log("[Server] Creating map");
   server_create_map(options.mapWidth, options.mapHeight);
-  
-  // Initialize ruleset data
-  console.log("[Server] Creating ruleset");
-  server_create_ruleset();
-  
+
   // Initialize players
   console.log("[Server] Creating players");
   server_create_players(options.numPlayers);
