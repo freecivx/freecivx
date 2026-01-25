@@ -58,9 +58,9 @@ function server_create_cities() {
     science_prod: 1,
     can_build_improvement: [],  // Will be converted to BitVector
     can_build_unit: [],  // Will be converted to BitVector
-    ppl_happy: [11111],
-    ppl_content: [11111],
-    ppl_unhappy: [00000]
+    ppl_happy: [1,1,1,1,1],
+    ppl_content: [1,1,1,1,1],
+    ppl_unhappy: [0,0,0,0,0]
   });
   
   // Update tile ownership using handle_tile_info
@@ -95,9 +95,9 @@ function server_create_cities() {
       science_prod: 1,
       can_build_improvement: [],
       can_build_unit: [],
-      ppl_happy: [11111],
-      ppl_content: [11111],
-      ppl_unhappy: [00000]
+      ppl_happy: [1,1,1,1,1],
+      ppl_content: [1,1,1,1,1],
+      ppl_unhappy: [0,0,0,0,0]
     });
     
     handle_tile_info({
@@ -132,9 +132,9 @@ function server_create_cities() {
       science_prod: 1,
       can_build_improvement: [],
       can_build_unit: [],
-      ppl_happy: [11111],
-      ppl_content: [11111],
-      ppl_unhappy: [00000]
+      ppl_happy: [1,1,1,1,1],
+      ppl_content: [1,1,1,1,1],
+      ppl_unhappy: [0,0,0,0,0]
     });
     
     handle_tile_info({
