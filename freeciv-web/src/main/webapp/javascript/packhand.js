@@ -655,6 +655,11 @@ function update_client_state(value)
 
 function handle_authentication_req(packet)
 {
+  // Skip authentication dialog in standalone mode
+  if (is_standalone_mode && is_standalone_mode()) {
+    console.log("[Standalone] Skipping authentication dialog in standalone mode");
+    return;
+  }
   show_auth_dialog(packet);
 }
 

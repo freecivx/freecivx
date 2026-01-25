@@ -473,9 +473,15 @@ function add_quality_dependent_objects_webgl()
 
   if (graphics_quality === QUALITY_HIGH) {
     if (is_day) {
-      const sky = new THREE.WebGLCubeRenderTarget(webgl_textures["skybox"].image.height);
-      sky.fromEquirectangularTexture(maprenderer, webgl_textures["skybox"]);
-      scene.background = sky.texture;
+      // Check if skybox texture is loaded before accessing its properties
+      if (webgl_textures["skybox"] && webgl_textures["skybox"].image && webgl_textures["skybox"].image.height) {
+        const sky = new THREE.WebGLCubeRenderTarget(webgl_textures["skybox"].image.height);
+        sky.fromEquirectangularTexture(maprenderer, webgl_textures["skybox"]);
+        scene.background = sky.texture;
+      } else {
+        console.log("Skybox texture not loaded, skipping sky rendering");
+        scene.background = null;
+      }
     } else {
       const sky = new THREE.WebGLCubeRenderTarget(2000);
       sky.fromEquirectangularTexture(maprenderer, create_star_sky_texture(18000, 5000, 2400, false));
