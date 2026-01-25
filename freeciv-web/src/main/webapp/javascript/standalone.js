@@ -78,11 +78,7 @@ function setup_standalone_environment() {
     });
 
 
-    // Remove initial pregame page.
-    $("#dialog").dialog('close');
-    if (close_pregame) {
-      $("#pregame_page").hide();
-    }
+
 
 }
 

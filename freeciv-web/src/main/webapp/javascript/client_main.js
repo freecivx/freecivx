@@ -62,6 +62,10 @@ function set_client_state(newstate)
       $("#fciv-intro").remove();
       $("#game_text_input").blur();
 
+      $("#dialog").dialog('close');
+      $("#pregame_page").hide();
+
+
       break;
     case C_S_OVER:
       setTimeout(show_endgame_dialog, 500);
