@@ -41,8 +41,7 @@ function init_standalone() {
   console.log("[Standalone] Initializing Freeciv-web in standalone mode");
   console.log("[Standalone] Startup delay: " + STANDALONE_STARTUP_DELAY_MS + "ms");
   
-  // Set global flag for other modules to detect standalone mode
-  window.standalone_mode = true;
+  standalone_mode = true;
 
   init_sprites();
 
