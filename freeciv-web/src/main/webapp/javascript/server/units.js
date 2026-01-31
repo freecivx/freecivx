@@ -41,6 +41,8 @@ function server_create_units() {
   // Clear client-side units (this will be repopulated via handle_unit_info)
   units = {};
   
+  var next_unit_id = 0;
+  
   // Helper function to create a unit on both server and client
   var create_unit = function(unit_data) {
     // Store in server's units object
@@ -63,83 +65,76 @@ function server_create_units() {
     handle_unit_info(unit_data);
   };
   
-  // Create settler for player 0
-  var settler_tile_index = 7 + 5 * map.xsize;
-  create_unit({
-    id: 0,
-    owner: 0,
-    tile: settler_tile_index,
-    homecity: 0,
-    type: 0, // Settlers
-    activity: 0,
-    moves_left: 1,
-    hp: 10,
-    facing: 1,
-    done_moving: false,
-    action_decision_want: 0,
-    action_decision_tile: 0
-  });
-  
-  // Create warrior for player 0
-  var warrior_tile_index = 6 + 6 * map.xsize;
-  create_unit({
-    id: 1,
-    owner: 0,
-    tile: warrior_tile_index,
-    homecity: 0,
-    type: 1, // Warriors
-    activity: 0,
-    moves_left: 1,
-    hp: 10,
-    facing: 2,
-    done_moving: false,
-    action_decision_want: 0,
-    action_decision_tile: 0
-  });
-  
-  // Create warrior for player 1 if exists
-  if (players[1]) {
-    var warrior1_tile_index = 31 + 15 * map.xsize;
-    create_unit({
-      id: 2,
-      owner: 1,
-      tile: warrior1_tile_index,
-      homecity: 1,
-      type: 1, // Warriors
-      activity: 0,
-      moves_left: 1,
-      hp: 10,
-      facing: 3,
-      done_moving: false,
-      action_decision_want: 0,
-      action_decision_tile: 0
-    });
-  }
-  
-  // Create warrior for player 2 if exists
-  if (players[2]) {
-    var warrior2_tile_index = 26 + 20 * map.xsize;
-    create_unit({
-      id: 3,
-      owner: 2,
-      tile: warrior2_tile_index,
-      homecity: 2,
-      type: 2, // Phalanx
-      activity: 0,
-      moves_left: 1,
-      hp: 10,
-      facing: 4,
-      done_moving: false,
-      action_decision_want: 0,
-      action_decision_tile: 0
-    });
+  // Create starting units for each player
+  for (var player_id in players) {
+    var pplayer = players[player_id];
+    var base_x = 5 + (parseInt(player_id) * 5);
+    var base_y = 5 + (parseInt(player_id) * 3);
+    
+    // Create 3 warriors for each player
+    for (var i = 0; i < 3; i++) {
+      var warrior_tile_index = (base_x + i) + (base_y + i) * map.xsize;
+      create_unit({
+        id: next_unit_id++,
+        owner: parseInt(player_id),
+        tile: warrior_tile_index,
+        homecity: 0,
+        type: 1, // Warriors
+        activity: 0,
+        moves_left: 1,
+        hp: 10,
+        facing: 1,
+        done_moving: false,
+        action_decision_want: 0,
+        action_decision_tile: 0
+      });
+    }
+    
+    // Create 2 explorers for each player
+    for (var i = 0; i < 2; i++) {
+      var explorer_tile_index = (base_x + i + 3) + (base_y + i) * map.xsize;
+      create_unit({
+        id: next_unit_id++,
+        owner: parseInt(player_id),
+        tile: explorer_tile_index,
+        homecity: 0,
+        type: 3, // Explorer
+        activity: 0,
+        moves_left: 2,
+        hp: 10,
+        facing: 2,
+        done_moving: false,
+        action_decision_want: 0,
+        action_decision_tile: 0
+      });
+    }
+    
+    // Create 3 settlers for each player
+    for (var i = 0; i < 3; i++) {
+      var settler_tile_index = (base_x + i) + (base_y + i + 1) * map.xsize;
+      create_unit({
+        id: next_unit_id++,
+        owner: parseInt(player_id),
+        tile: settler_tile_index,
+        homecity: 0,
+        type: 0, // Settlers
+        activity: 0,
+        moves_left: 1,
+        hp: 10,
+        facing: 3,
+        done_moving: false,
+        action_decision_want: 0,
+        action_decision_tile: 0
+      });
+    }
   }
   
   var unitDescriptions = [];
   for (var id in server_units) {
     unitDescriptions.push(unit_types[server_units[id].type].name);
   }
-  console.log("[Server Units] Created " + Object.keys(server_units).length + " units: " + unitDescriptions.join(", "));
+  console.log("[Server Units] Created " + Object.keys(server_units).length + " units: " + 
+              unitDescriptions.slice(0, 5).join(", ") + "...");
 }
 
 /**************************************************************************

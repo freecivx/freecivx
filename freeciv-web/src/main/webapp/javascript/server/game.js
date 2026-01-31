@@ -81,48 +81,36 @@ function server_create_settings() {
 
 /**************************************************************************
  * Create player data
- * @param {number} numPlayers - Number of players to create (default: 3)
+ * @param {number} numPlayers - Number of players to create (default: 10)
  **************************************************************************/
 function server_create_players(numPlayers) {
-  numPlayers = numPlayers || 3;
+  numPlayers = numPlayers || 10;
   
   console.log("[Server Game] Creating " + numPlayers + " players");
   
   players = {};
   
-  // Create player 0 (human player) using handle_player_info
-  handle_player_info({
-    playerno: 0,
-    name: "You",
-    username: "Player",
-    nation: 0, // Romans
-    flags: [false], // Not AI - will be converted to BitVector
-    gives_shared_vision: [], // Will be converted to BitVector
-    gold: 50,
-    government: 0,
-    tech_goal: 0,
-    researching: 0,
-    bulbs: 0,
-    tax: 50,
-    luxury: 0,
-    science: 50,
-    score: 0,
-    is_alive: true,
-    phase_done: false,
-    nturns_idle: 0,
-    team: 0,
-    culture: 0,
-    expected_income: 5
-  });
+  var playerConfigs = [
+    { name: "You", username: "Player", nation: 0, isAI: false },
+    { name: "Cleopatra", username: "AI", nation: 1, isAI: true },
+    { name: "Pericles", username: "AI", nation: 2, isAI: true },
+    { name: "Genghis Khan", username: "AI", nation: 3, isAI: true },
+    { name: "Cyrus", username: "AI", nation: 4, isAI: true },
+    { name: "Qin Shi Huang", username: "AI", nation: 5, isAI: true },
+    { name: "Ashoka", username: "AI", nation: 6, isAI: true },
+    { name: "Ragnar", username: "AI", nation: 7, isAI: true },
+    { name: "Hammurabi", username: "AI", nation: 8, isAI: true },
+    { name: "Hannibal", username: "AI", nation: 9, isAI: true }
+  ];
   
-  // Create AI players
-  if (numPlayers > 1) {
+  for (var i = 0; i < numPlayers && i < playerConfigs.length; i++) {
+    var config = playerConfigs[i];
     handle_player_info({
-      playerno: 1,
-      name: "Cleopatra",
-      username: "AI",
-      nation: 1, // Egyptians
-      flags: [true], // Is AI
+      playerno: i,
+      name: config.name,
+      username: config.username,
+      nation: config.nation,
+      flags: [config.isAI], // Will be converted to BitVector
       gives_shared_vision: [],
       gold: 50,
       government: 0,
@@ -136,33 +124,7 @@ function server_create_players(numPlayers) {
       is_alive: true,
       phase_done: false,
       nturns_idle: 0,
-      team: 1,
-      culture: 0,
-      expected_income: 5
-    });
-  }
-  
-  if (numPlayers > 2) {
-    handle_player_info({
-      playerno: 2,
-      name: "Pericles",
-      username: "AI",
-      nation: 2, // Greeks
-      flags: [true], // Is AI
-      gives_shared_vision: [],
-      gold: 50,
-      government: 0,
-      tech_goal: 0,
-      researching: 0,
-      bulbs: 0,
-      tax: 50,
-      luxury: 0,
-      science: 50,
-      score: 0,
-      is_alive: true,
-      phase_done: false,
-      nturns_idle: 0,
-      team: 2,
+      team: i,
       culture: 0,
       expected_income: 5
     });
@@ -170,7 +132,9 @@ function server_create_players(numPlayers) {
   
   var playerNames = [];
   for (var i = 0; i < numPlayers; i++) {
-    playerNames.push(players[i].name);
+    if (players[i]) {
+      playerNames.push(players[i].name);
+    }
   }
   console.log("[Server Game] Created players: " + playerNames.join(", "));
 }
@@ -223,6 +187,11 @@ function server_handle_turn_done(packet) {
   
   // Send end turn notification to client
   handle_end_turn({});
+  
+  // Process AI turns before advancing to next turn
+  if (typeof server_ai_process_turn === 'function') {
+    server_ai_process_turn();
+  }
   
   // Increment the turn counter
   game_info.turn++;

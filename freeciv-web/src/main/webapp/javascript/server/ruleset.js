@@ -90,6 +90,60 @@ function server_create_nations() {
     color: "#808080"
   });
   
+  handle_ruleset_nation({
+    id: 4,
+    name: "Persians",
+    adjective: "Persian",
+    graphic_str: "persia",
+    legend: "The Persian Empire",
+    color: "#800080"
+  });
+  
+  handle_ruleset_nation({
+    id: 5,
+    name: "Chinese",
+    adjective: "Chinese",
+    graphic_str: "china",
+    legend: "Ancient China",
+    color: "#FF0000"
+  });
+  
+  handle_ruleset_nation({
+    id: 6,
+    name: "Indians",
+    adjective: "Indian",
+    graphic_str: "india",
+    legend: "Ancient India",
+    color: "#FFA500"
+  });
+  
+  handle_ruleset_nation({
+    id: 7,
+    name: "Vikings",
+    adjective: "Viking",
+    graphic_str: "viking",
+    legend: "Norse Vikings",
+    color: "#4169E1"
+  });
+  
+  handle_ruleset_nation({
+    id: 8,
+    name: "Babylonians",
+    adjective: "Babylonian",
+    graphic_str: "babylon",
+    legend: "Babylonian Empire",
+    color: "#DAA520"
+  });
+  
+  handle_ruleset_nation({
+    id: 9,
+    name: "Carthaginians",
+    adjective: "Carthaginian",
+    graphic_str: "carthage",
+    legend: "Carthaginian Empire",
+    color: "#8B4513"
+  });
+  
   console.log("[Server Ruleset] Created " + Object.keys(nations).length + " nations");
 }
 
@@ -139,6 +193,15 @@ function server_create_unit_types() {
     name: "Phalanx",
     graphic_str: "u.phalanx",
     move_rate: 1,
+    move_bonus: [0],
+    hp: 10
+  });
+  
+  handle_ruleset_unit({ 
+    id: 3, 
+    name: "Explorer",
+    graphic_str: "u.explorer",
+    move_rate: 2,
     move_bonus: [0],
     hp: 10
   });
