@@ -49,7 +49,6 @@ var TERRAIN_SWAMP = 8;
 var NOISE_OCTAVES = 6;           // More octaves for finer detail
 var NOISE_PERSISTENCE = 0.5;     // How much each octave contributes
 var NOISE_LACUNARITY = 2.0;      // Frequency multiplier between octaves
-var LAND_PERCENT = 0.30;         // Note: Actual land percentage depends on noise + island shaping
 
 /**************************************************************************
  * Simple noise generator for terrain variation
@@ -91,8 +90,6 @@ function perlinNoise(x, y, seed, octaves, persistence, lacunarity) {
   var frequency = 1;
   var amplitude = 1;
   var maxValue = 0;
-  
-  lacunarity = lacunarity || 2.0;
   
   for (var i = 0; i < octaves; i++) {
     total += smoothNoise2D(x * frequency * 0.05, y * frequency * 0.05, seed + i) * amplitude;
