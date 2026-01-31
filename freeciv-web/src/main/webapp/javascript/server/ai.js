@@ -17,6 +17,9 @@
 
 ***********************************************************************/
 
+// Direction count constant for map navigation
+var NUM_DIRECTIONS = 8;
+
 /**
  * AI player implementation for Freeciv JavaScript server
  * 
@@ -134,7 +137,7 @@ function server_ai_can_build_city(tile, owner) {
   
   // Simple AI: build if we're not too close to another city
   // Check adjacent tiles for cities
-  for (var dir = 0; dir < 8; dir++) {
+  for (var dir = 0; dir < NUM_DIRECTIONS; dir++) {
     var adj_tile = mapstep(tile, dir);
     if (adj_tile && tile_city(adj_tile)) {
       return false; // Too close to another city
@@ -257,12 +260,12 @@ function server_ai_move_unit_randomly(punit) {
   }
   
   // Try random directions until we find a valid one or run out of attempts
-  var max_attempts = 8;
+  var max_attempts = NUM_DIRECTIONS;
   var attempts = 0;
   
   while (attempts < max_attempts && punit.moves_left > 0) {
     // Pick a random direction (0-7 for 8 directions)
-    var dir = Math.floor(Math.random() * 8);
+    var dir = Math.floor(Math.random() * NUM_DIRECTIONS);
     
     // Try to move in that direction
     var new_tile = mapstep(current_tile, dir);
@@ -311,11 +314,18 @@ function server_ai_can_move_to_tile(punit, tile) {
     return false;
   }
   
-  // For now, simple check: just make sure tile exists
+  // Check if the tile is ocean - land units cannot move to ocean
+  // (In a more complete implementation, we would check the unit type's
+  // movement capabilities, but for now we assume all units are land units)
+  if (is_ocean_tile(tile)) {
+    return false;
+  }
+  
+  // For now, simple check: just make sure tile exists and is land
   // In the future, could add checks for:
-  // - Terrain type (land units can't move to ocean)
   // - Enemy units on tile
   // - Zone of control
+  // - Impassable terrain
   // etc.
   
   return true;

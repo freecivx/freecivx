@@ -65,15 +65,44 @@ function server_create_units() {
     handle_unit_info(unit_data);
   };
   
+  // Helper function to calculate safe starting position for a player
+  var get_player_start_position = function(player_id) {
+    // Distribute players around the map in a grid pattern
+    // This ensures they don't spawn outside map boundaries
+    var players_per_row = Math.ceil(Math.sqrt(Object.keys(players).length));
+    var row = Math.floor(player_id / players_per_row);
+    var col = player_id % players_per_row;
+    
+    // Calculate position within map bounds with padding
+    var padding = 3;
+    var usable_width = map.xsize - (2 * padding);
+    var usable_height = map.ysize - (2 * padding);
+    
+    var base_x = padding + Math.floor((col * usable_width) / players_per_row);
+    var base_y = padding + Math.floor((row * usable_height) / players_per_row);
+    
+    // Ensure we're within bounds
+    base_x = Math.max(padding, Math.min(map.xsize - padding - 3, base_x));
+    base_y = Math.max(padding, Math.min(map.ysize - padding - 3, base_y));
+    
+    return { x: base_x, y: base_y };
+  };
+  
+  // Unit placement offsets relative to base position
+  // This keeps all units in a compact cluster
+  var warrior_offsets = [[0, 0], [1, 0], [0, 1]];
+  var explorer_offsets = [[2, 0], [2, 1]];
+  var settler_offsets = [[0, 2], [1, 2], [2, 2]];
+  
   // Create starting units for each player
   for (var player_id in players) {
     var pplayer = players[player_id];
-    var base_x = 5 + (parseInt(player_id) * 5);
-    var base_y = 5 + (parseInt(player_id) * 3);
+    var start_pos = get_player_start_position(parseInt(player_id));
     
     // Create 3 warriors for each player
     for (var i = 0; i < 3; i++) {
-      var warrior_tile_index = (base_x + i) + (base_y + i) * map.xsize;
+      var offset = warrior_offsets[i];
+      var warrior_tile_index = (start_pos.x + offset[0]) + (start_pos.y + offset[1]) * map.xsize;
       create_unit({
         id: next_unit_id++,
         owner: parseInt(player_id),
@@ -92,7 +121,8 @@ function server_create_units() {
     
     // Create 2 explorers for each player
     for (var i = 0; i < 2; i++) {
-      var explorer_tile_index = (base_x + i + 3) + (base_y + i) * map.xsize;
+      var offset = explorer_offsets[i];
+      var explorer_tile_index = (start_pos.x + offset[0]) + (start_pos.y + offset[1]) * map.xsize;
       create_unit({
         id: next_unit_id++,
         owner: parseInt(player_id),
@@ -111,7 +141,8 @@ function server_create_units() {
     
     // Create 3 settlers for each player
     for (var i = 0; i < 3; i++) {
-      var settler_tile_index = (base_x + i) + (base_y + i + 1) * map.xsize;
+      var offset = settler_offsets[i];
+      var settler_tile_index = (start_pos.x + offset[0]) + (start_pos.y + offset[1]) * map.xsize;
       create_unit({
         id: next_unit_id++,
         owner: parseInt(player_id),
