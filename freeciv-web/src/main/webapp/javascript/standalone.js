@@ -84,6 +84,13 @@ function setup_standalone_environment() {
         return;
       }
       
+      // Handle turn done packet
+      if (packet.pid === packet_player_phase_done) {
+        console.log("[Standalone] Handling turn done locally");
+        server_handle_turn_done(packet);
+        return;
+      }
+      
       // For other packets, log but don't process in standalone mode
       console.log("[Standalone] Ignoring packet type:", packet.pid);
     };
