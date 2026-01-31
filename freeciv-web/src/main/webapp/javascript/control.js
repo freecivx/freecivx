@@ -134,6 +134,19 @@ function control_init()
     pregame_start_game();
   });
 
+  $("#singleplayer_standalone_button").click(function(event) {
+    // Set standalone mode flag
+    standalone_mode = true;
+    // Initialize standalone mode
+    init_standalone();
+    // Setup the standalone environment (network overrides, etc.)
+    setup_standalone_environment();
+    // Start the standalone game with a slight delay to allow sprites to load
+    setTimeout(function() {
+      start_standalone_game();
+    }, STANDALONE_STARTUP_DELAY_MS);
+  });
+
   $("#load_game_button").click(function(event) {
       show_load_game_dialog();
   });
