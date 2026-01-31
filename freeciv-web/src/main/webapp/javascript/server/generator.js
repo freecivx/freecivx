@@ -45,6 +45,11 @@ var TERRAIN_DESERT = 6;
 var TERRAIN_TUNDRA = 7;
 var TERRAIN_SWAMP = 8;
 
+// Map generation parameters
+var NOISE_OCTAVES = 6;           // More octaves for finer detail
+var NOISE_PERSISTENCE = 0.5;     // How much each octave contributes
+var NOISE_LACUNARITY = 2.0;      // Frequency multiplier between octaves
+
 /**************************************************************************
  * Simple noise generator for terrain variation
  * Uses a pseudo-random hash function for deterministic noise
@@ -80,76 +85,110 @@ function smoothNoise2D(x, y, seed) {
 /**************************************************************************
  * Multi-octave noise (Perlin-like) for natural terrain variation
  **************************************************************************/
-function perlinNoise(x, y, seed, octaves, persistence) {
+function perlinNoise(x, y, seed, octaves, persistence, lacunarity) {
   var total = 0;
   var frequency = 1;
   var amplitude = 1;
   var maxValue = 0;
   
   for (var i = 0; i < octaves; i++) {
-    total += smoothNoise2D(x * frequency * 0.1, y * frequency * 0.1, seed + i) * amplitude;
+    total += smoothNoise2D(x * frequency * 0.05, y * frequency * 0.05, seed + i) * amplitude;
     maxValue += amplitude;
     amplitude *= persistence;
-    frequency *= 2;
+    frequency *= lacunarity;
   }
   
   return total / maxValue;
 }
 
 /**************************************************************************
- * Determine terrain type based on height and moisture
+ * Determine terrain type based on height, moisture, and temperature
  * @param {number} height - Height value (0-1)
  * @param {number} moisture - Moisture value (0-1)
+ * @param {number} temperature - Temperature value (0-1, where 0=cold, 1=hot)
  * @returns {number} Terrain type ID
  **************************************************************************/
-function getTerrainType(height, moisture) {
-  // Water levels
-  if (height < 0.35) {
+function getTerrainType(height, moisture, temperature) {
+  // Deep water
+  if (height < 0.42) {
+    return TERRAIN_OCEAN;
+  }
+  
+  // Shallow water / coastal
+  if (height < 0.48) {
     return TERRAIN_OCEAN;
   }
   
   // Coastal lowlands
-  if (height < 0.45) {
-    if (moisture < 0.3) {
-      return TERRAIN_DESERT;
-    } else if (moisture < 0.6) {
-      return TERRAIN_PLAINS;
-    } else {
+  if (height < 0.52) {
+    // Swamps near coast
+    if (moisture > 0.7) {
       return TERRAIN_SWAMP;
     }
+    // Desert in hot, dry areas
+    if (temperature > 0.65 && moisture < 0.35) {
+      return TERRAIN_DESERT;
+    }
+    // Cold areas get tundra
+    if (temperature < 0.3) {
+      return TERRAIN_TUNDRA;
+    }
+    // Otherwise grassland or plains
+    return (moisture > 0.5) ? TERRAIN_GRASSLAND : TERRAIN_PLAINS;
   }
   
-  // Mid elevations
-  if (height < 0.60) {
-    if (moisture < 0.3) {
-      return TERRAIN_PLAINS;
-    } else if (moisture < 0.7) {
+  // Low elevations - main biomes
+  if (height < 0.65) {
+    // Arctic/tundra
+    if (temperature < 0.25) {
+      return TERRAIN_TUNDRA;
+    }
+    // Desert belt (hot and dry)
+    if (temperature > 0.7 && moisture < 0.4) {
+      return TERRAIN_DESERT;
+    }
+    // Forests in wet areas
+    if (moisture > 0.65) {
+      return TERRAIN_FOREST;
+    }
+    // Grassland in moderate moisture
+    if (moisture > 0.4) {
       return TERRAIN_GRASSLAND;
-    } else {
-      return TERRAIN_FOREST;
     }
+    // Plains in drier areas
+    return TERRAIN_PLAINS;
   }
   
-  // High elevations
-  if (height < 0.75) {
-    if (moisture < 0.4) {
-      return TERRAIN_HILLS;
-    } else {
+  // Mid elevations - hills and forests
+  if (height < 0.78) {
+    // Cold mountains
+    if (temperature < 0.3) {
+      return TERRAIN_MOUNTAINS;
+    }
+    // Forest on wet slopes
+    if (moisture > 0.55) {
       return TERRAIN_FOREST;
     }
-  }
-  
-  // Mountain peaks
-  if (height < 0.90) {
+    // Hills
     return TERRAIN_HILLS;
   }
   
-  // Highest peaks
+  // High elevations - mountains and hills
+  if (height < 0.90) {
+    // Alpine tundra in cold areas
+    if (temperature < 0.4) {
+      return TERRAIN_TUNDRA;
+    }
+    return TERRAIN_HILLS;
+  }
+  
+  // Highest peaks - always mountains
   return TERRAIN_MOUNTAINS;
 }
 
 /**************************************************************************
  * Generate height map for terrain elevation
+ * Uses improved multi-octave Perlin noise for natural-looking landmasses
  * @param {number} width - Map width
  * @param {number} height - Map height
  * @param {number} seed - Random seed
@@ -158,24 +197,27 @@ function getTerrainType(height, moisture) {
 function generateHeightMap(width, height, seed) {
   var heightMap = [];
   
+  // Generate base noise with island shaping
   for (var y = 0; y < height; y++) {
     heightMap[y] = [];
     for (var x = 0; x < width; x++) {
-      // Use Perlin noise with multiple octaves for natural variation
-      var noise = perlinNoise(x, y, seed, 4, 0.5);
+      // Use more octaves for richer detail
+      var noise = perlinNoise(x, y, seed, NOISE_OCTAVES, NOISE_PERSISTENCE, NOISE_LACUNARITY);
       
       // Normalize to 0-1 range
       noise = (noise + 1) / 2;
       
-      // Add some island tendency - reduce height near edges
+      // Add gentle island tendency - reduce height near edges to create ocean
       var distX = Math.abs(x - width / 2) / (width / 2);
       var distY = Math.abs(y - height / 2) / (height / 2);
-      var edgeFactor = Math.max(distX, distY);
+      var distFromCenter = Math.sqrt(distX * distX + distY * distY);
+      var edgeFactor = Math.min(1.0, distFromCenter);
       
-      // Apply gentle edge reduction
-      noise = noise * (1 - edgeFactor * 0.3);
+      // Apply island shaping - stronger reduction creates more ocean
+      // Using squared distance for smoother transition
+      noise = noise * (1 - (edgeFactor * edgeFactor) * 0.7);
       
-      heightMap[y][x] = noise;
+      heightMap[y][x] = Math.max(0, Math.min(1, noise));
     }
   }
   
@@ -195,8 +237,8 @@ function generateMoistureMap(width, height, seed) {
   for (var y = 0; y < height; y++) {
     moistureMap[y] = [];
     for (var x = 0; x < width; x++) {
-      // Use different seed for moisture to get variation
-      var noise = perlinNoise(x, y, seed + 1000, 3, 0.6);
+      // Use different seed and parameters for moisture
+      var noise = perlinNoise(x, y, seed + 1000, 5, 0.55, 2.2);
       
       // Normalize to 0-1 range
       noise = (noise + 1) / 2;
@@ -206,6 +248,114 @@ function generateMoistureMap(width, height, seed) {
   }
   
   return moistureMap;
+}
+
+/**************************************************************************
+ * Generate temperature map based on latitude
+ * Temperature decreases from equator (center) to poles (edges)
+ * @param {number} width - Map width
+ * @param {number} height - Map height
+ * @param {number} seed - Random seed
+ * @returns {Array} 2D array of temperature values (0=cold, 1=hot)
+ **************************************************************************/
+function generateTemperatureMap(width, height, seed) {
+  var temperatureMap = [];
+  
+  for (var y = 0; y < height; y++) {
+    temperatureMap[y] = [];
+    for (var x = 0; x < width; x++) {
+      // Base temperature on distance from equator (vertical center)
+      var distFromEquator = Math.abs(y - height / 2) / (height / 2);
+      
+      // Temperature decreases with latitude
+      var baseTemp = 1.0 - distFromEquator * 0.8;
+      
+      // Add some noise for variation
+      var noise = perlinNoise(x, y, seed + 2000, 3, 0.4, 2.5);
+      noise = (noise + 1) / 2;
+      
+      // Combine base temperature with noise
+      var temp = baseTemp * 0.7 + noise * 0.3;
+      
+      // Clamp to valid range
+      temperatureMap[y][x] = Math.max(0, Math.min(1, temp));
+    }
+  }
+  
+  return temperatureMap;
+}
+
+/**************************************************************************
+ * Smooth terrain to reduce isolated single tiles
+ * Makes maps look more natural by ensuring terrain types cluster together
+ * @param {Array} terrainMap - 2D array of terrain types
+ * @param {number} width - Map width
+ * @param {number} height - Map height
+ * @returns {Array} Smoothed terrain map
+ **************************************************************************/
+function smoothTerrain(terrainMap, width, height) {
+  var smoothedMap = [];
+  
+  // Initialize smoothed map
+  for (var y = 0; y < height; y++) {
+    smoothedMap[y] = [];
+    for (var x = 0; x < width; x++) {
+      smoothedMap[y][x] = terrainMap[y][x];
+    }
+  }
+  
+  // Smooth pass - replace isolated tiles
+  for (var y = 0; y < height; y++) {
+    for (var x = 0; x < width; x++) {
+      var currentTerrain = terrainMap[y][x];
+      
+      // Count neighbors of same type
+      var neighbors = [];
+      var terrainCounts = {};
+      
+      // Check all 8 neighbors
+      for (var dy = -1; dy <= 1; dy++) {
+        for (var dx = -1; dx <= 1; dx++) {
+          if (dx === 0 && dy === 0) continue;
+          
+          var nx = x + dx;
+          var ny = y + dy;
+          
+          // Wrap x coordinate (maps wrap horizontally in Freeciv)
+          if (nx < 0) nx = width - 1;
+          if (nx >= width) nx = 0;
+          
+          // Don't wrap y coordinate
+          if (ny >= 0 && ny < height) {
+            var neighborTerrain = terrainMap[ny][nx];
+            neighbors.push(neighborTerrain);
+            terrainCounts[neighborTerrain] = (terrainCounts[neighborTerrain] || 0) + 1;
+          }
+        }
+      }
+      
+      // If this tile is isolated (no same-type neighbors), replace with most common neighbor
+      var sameTypeCount = terrainCounts[currentTerrain] || 0;
+      if (sameTypeCount <= 1 && neighbors.length >= 5) {
+        // Find most common neighbor terrain
+        var maxCount = 0;
+        var mostCommonTerrain = currentTerrain;
+        for (var terrain in terrainCounts) {
+          if (terrainCounts[terrain] > maxCount) {
+            maxCount = terrainCounts[terrain];
+            mostCommonTerrain = parseInt(terrain);
+          }
+        }
+        
+        // Only smooth land tiles to preserve ocean/coastline shapes
+        if (currentTerrain !== TERRAIN_OCEAN && mostCommonTerrain !== TERRAIN_OCEAN) {
+          smoothedMap[y][x] = mostCommonTerrain;
+        }
+      }
+    }
+  }
+  
+  return smoothedMap;
 }
 
 /**************************************************************************
@@ -264,26 +414,60 @@ function generator_create_map(width, height, options) {
     num_cardinal_dirs: 4
   });
   
-  // Generate height and moisture maps
+  // Generate height, moisture, and temperature maps
+  console.log("[Generator] Generating height map...");
   var heightMap = generateHeightMap(width, height, seed);
+  
+  console.log("[Generator] Generating moisture map...");
   var moistureMap = generateMoistureMap(width, height, seed);
   
+  console.log("[Generator] Generating temperature map...");
+  var temperatureMap = generateTemperatureMap(width, height, seed);
+  
+  // Generate initial terrain
+  console.log("[Generator] Assigning terrain types...");
+  var terrainMap = [];
+  for (var y = 0; y < height; y++) {
+    terrainMap[y] = [];
+    for (var x = 0; x < width; x++) {
+      var h = heightMap[y][x];
+      var m = moistureMap[y][x];
+      var t = temperatureMap[y][x];
+      
+      terrainMap[y][x] = getTerrainType(h, m, t);
+    }
+  }
+  
+  // Smooth terrain to reduce isolated tiles
+  console.log("[Generator] Smoothing terrain...");
+  terrainMap = smoothTerrain(terrainMap, width, height);
+  
   // Generate tiles
+  console.log("[Generator] Creating tiles...");
+  var landTiles = 0;
+  var waterTiles = 0;
   for (var y = 0; y < height; y++) {
     for (var x = 0; x < width; x++) {
       var index = x + y * width;
-      var h = heightMap[y][x];
-      var m = moistureMap[y][x];
+      var terrain = terrainMap[y][x];
+      var tileHeight = heightMap[y][x];
       
-      var terrain = getTerrainType(h, m);
-      var tileHeight = h;
+      if (terrain === TERRAIN_OCEAN) {
+        waterTiles++;
+      } else {
+        landTiles++;
+      }
       
       var tileData = generateTile(x, y, index, terrain, tileHeight);
       handle_tile_info(tileData);
     }
   }
   
+  var totalTiles = landTiles + waterTiles;
+  var actualLandPercent = (landTiles / totalTiles * 100).toFixed(1);
   console.log("[Generator] Created map with " + Object.keys(tiles).length + " tiles");
+  console.log("[Generator] Land: " + landTiles + " (" + actualLandPercent + "%), Water: " + waterTiles);
+  
   return map;
 }
 
