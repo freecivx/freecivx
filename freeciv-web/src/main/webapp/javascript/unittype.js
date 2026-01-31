@@ -290,8 +290,8 @@ function utype_real_base_defense_strength(ptype) {
 *************************************************************************/
 function utype_real_base_move_rate(punit_type)
 {
-  var move_bonus = parseInt(punit_type['move_bonus'][0])
-                 ? parseInt(punit_type['move_bonus'][0])
+  var move_bonus = (punit_type['move_bonus'] && punit_type['move_bonus'][0] !== undefined) 
+                 ? parseInt(punit_type['move_bonus'][0]) 
                  : 0;
   var move_rate  = parseInt(punit_type['move_rate']);
 
