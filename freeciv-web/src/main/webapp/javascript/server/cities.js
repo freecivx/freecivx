@@ -283,8 +283,7 @@ function server_handle_build_city(packet) {
   }
   
   // Check terrain type - cities cannot be built on ocean
-  var terrain = tile.terrain;
-  if (terrain && (terrain === T_OCEAN || terrain === T_DEEP_OCEAN)) {
+  if (is_ocean_tile(tile)) {
     console.error("[Server Cities] Cannot build city on ocean tile");
     return;
   }
