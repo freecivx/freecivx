@@ -336,7 +336,9 @@ function server_handle_build_city(packet) {
   delete server_units[packet.actor_id];
   
   // Send unit removal to client
-  handle_remove_unit(packet.actor_id);
+  handle_unit_remove({
+    unit_id: packet.actor_id
+  });
   
   console.log("[Server Cities] City " + city_name + " (ID: " + new_city_id + ") built successfully");
   
