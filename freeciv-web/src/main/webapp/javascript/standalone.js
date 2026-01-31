@@ -62,6 +62,32 @@ function setup_standalone_environment() {
     };
   }
 
+  // Override send_request to handle packets locally in standalone mode
+  // Only override if we're actually in standalone mode
+  if (typeof send_request !== 'undefined' && is_standalone_mode()) {
+    send_request = function(packet_payload) {
+      console.log("[Standalone] Intercepting send_request");
+      
+      // Parse the JSON packet
+      var packet;
+      try {
+        packet = JSON.parse(packet_payload);
+      } catch (e) {
+        console.error("[Standalone] Failed to parse packet:", e);
+        return;
+      }
+      
+      // Handle unit orders packet (movement)
+      if (packet.pid === packet_unit_orders) {
+        console.log("[Standalone] Handling unit movement locally");
+        server_handle_unit_orders(packet);
+        return;
+      }
+      
+      // For other packets, log but don't process in standalone mode
+      console.log("[Standalone] Ignoring packet type:", packet.pid);
+    };
+  }
 
     $(window).on('resize', function() {
       setup_window_size();
