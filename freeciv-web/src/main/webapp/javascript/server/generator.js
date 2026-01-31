@@ -46,9 +46,9 @@ var TERRAIN_TUNDRA = 7;
 var TERRAIN_SWAMP = 8;
 
 // Map generation parameters
-var NOISE_OCTAVES = 6;           // More octaves for finer detail
+var NOISE_OCTAVES = 30;           // More octaves for finer detail
 var NOISE_PERSISTENCE = 0.5;     // How much each octave contributes
-var NOISE_LACUNARITY = 2.0;      // Frequency multiplier between octaves
+var NOISE_LACUNARITY = 6.0;      // Frequency multiplier between octaves
 
 /**************************************************************************
  * Simple noise generator for terrain variation
