@@ -174,10 +174,15 @@ function server_handle_unit_orders(packet) {
     // Update the unit's tile
     punit.tile = new_tile.index;
     
-    // Reduce moves left (simple implementation)
+    // Reduce moves left
+    // TODO: In the future, consider different movement costs for terrain types
+    // For now, using a simple cost of 1 move per tile
     if (punit.moves_left > 0) {
       punit.moves_left--;
     }
+    
+    // Update facing direction, keeping current facing if direction is invalid
+    var new_facing = (dir !== undefined && dir >= 0) ? dir : punit.facing;
     
     // Send the updated unit info back to the client
     handle_unit_info({
@@ -189,7 +194,7 @@ function server_handle_unit_orders(packet) {
       activity: punit.activity,
       moves_left: punit.moves_left,
       hp: punit.hp,
-      facing: dir, // Update facing direction
+      facing: new_facing,
       done_moving: punit.moves_left <= 0,
       action_decision_want: punit.action_decision_want || 0,
       action_decision_tile: punit.action_decision_tile || 0

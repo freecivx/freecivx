@@ -64,7 +64,6 @@ function setup_standalone_environment() {
 
   // Override send_request to handle packets locally in standalone mode
   if (typeof send_request !== 'undefined') {
-    var original_send_request = send_request;
     send_request = function(packet_payload) {
       console.log("[Standalone] Intercepting send_request");
       
