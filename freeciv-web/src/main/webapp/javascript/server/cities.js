@@ -307,34 +307,37 @@ function server_handle_build_city(packet) {
     tile: punit.tile,
     name: city_name
   };
-  
+
+  let new_city_packet = {
+      id: new_city_id,
+      owner: punit.owner,
+      tile: punit.tile,
+      name: city_name,
+      size: 1,  // New cities start with size 1
+      style: 1,
+      improvements: [false, false, false],  // No improvements initially
+      city_options: [],
+      production_kind: 1, // Unit
+      production_value: 1, // Warriors
+      shield_stock: 0,
+      food_stock: 0,
+      food_prod: 2,
+      prod_prod: 1,
+      trade_prod: 1,
+      gold_prod: 0,
+      culture: 0,
+      science_prod: 0,
+      can_build_improvement: new BitVector([]),
+      can_build_unit: new BitVector([]),
+      ppl_happy: [1,1,1,1,1,1],
+      ppl_content: [1,1,1,1,1,1],
+      ppl_unhappy: [0,0,0,0,0,0],
+      ppl_angry: [0,0,0,0,0,0]
+    }
+
   // Send city info to client via handle_city_info
-  handle_city_info({
-    id: new_city_id,
-    owner: punit.owner,
-    tile: punit.tile,
-    name: city_name,
-    size: 1,  // New cities start with size 1
-    style: 1,
-    improvements: [false, false, false],  // No improvements initially
-    city_options: [],
-    production_kind: 1, // Unit
-    production_value: 1, // Warriors
-    shield_stock: 0,
-    food_stock: 0,
-    food_prod: 2,
-    prod_prod: 1,
-    trade_prod: 1,
-    gold_prod: 0,
-    culture: 0,
-    science_prod: 0,
-    can_build_improvement: new BitVector([]),
-    can_build_unit: new BitVector([]),
-    ppl_happy: [1,1,1,1,1,1],
-    ppl_content: [1,1,1,1,1,1],
-    ppl_unhappy: [0,0,0,0,0,0],
-    ppl_angry: [0,0,0,0,0,0]
-  });
+  handle_city_info(new_city_packet);
+  handle_city_short_info(new_city_packet);
   
   // Update tile ownership
   handle_tile_info({
