@@ -116,3 +116,87 @@ function server_create_units() {
   }
   console.log("[Server Units] Created " + Object.keys(units).length + " units: " + unitDescriptions.join(", "));
 }
+
+/**************************************************************************
+ * Handle unit orders from the client (e.g., movement)
+ * 
+ * This function processes unit movement requests in standalone mode.
+ * It updates the unit's position and sends the result back to the client.
+ * 
+ * @param {Object} packet - The unit orders packet from the client
+ **************************************************************************/
+function server_handle_unit_orders(packet) {
+  console.log("[Server Units] Handling unit orders for unit " + packet.unit_id);
+  
+  // Get the unit
+  var punit = units[packet.unit_id];
+  if (!punit) {
+    console.error("[Server Units] Unit not found: " + packet.unit_id);
+    return;
+  }
+  
+  // Get the orders
+  var orders = packet.orders;
+  if (!orders || orders.length === 0) {
+    console.error("[Server Units] No orders in packet");
+    return;
+  }
+  
+  // Get the current tile
+  var current_tile = index_to_tile(punit.tile);
+  if (!current_tile) {
+    console.error("[Server Units] Current tile not found for unit " + packet.unit_id);
+    return;
+  }
+  
+  // Process the first order (for now, just handle single-step movement)
+  var order = orders[0];
+  
+  // Handle movement orders
+  if (order.order === ORDER_MOVE || order.order === ORDER_ACTION_MOVE) {
+    var dir = order.dir;
+    
+    if (dir === undefined || dir < 0) {
+      console.error("[Server Units] Invalid direction: " + dir);
+      return;
+    }
+    
+    // Calculate the new tile
+    var new_tile = mapstep(current_tile, dir);
+    
+    if (!new_tile) {
+      console.error("[Server Units] Cannot move in direction " + dir);
+      return;
+    }
+    
+    console.log("[Server Units] Moving unit " + packet.unit_id + " from tile " + punit.tile + " to tile " + new_tile.index);
+    
+    // Update the unit's tile
+    punit.tile = new_tile.index;
+    
+    // Reduce moves left (simple implementation)
+    if (punit.moves_left > 0) {
+      punit.moves_left--;
+    }
+    
+    // Send the updated unit info back to the client
+    handle_unit_info({
+      id: punit.id,
+      owner: punit.owner,
+      tile: punit.tile,
+      homecity: punit.homecity,
+      type: punit.type,
+      activity: punit.activity,
+      moves_left: punit.moves_left,
+      hp: punit.hp,
+      facing: dir, // Update facing direction
+      done_moving: punit.moves_left <= 0,
+      action_decision_want: punit.action_decision_want || 0,
+      action_decision_tile: punit.action_decision_tile || 0
+    });
+    
+    console.log("[Server Units] Unit movement completed");
+  } else {
+    console.log("[Server Units] Ignoring order type: " + order.order);
+  }
+}
