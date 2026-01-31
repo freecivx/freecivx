@@ -21,7 +21,8 @@ The JavaScript server is organized into modular components:
 | Module | Purpose | Key Functions |
 |--------|---------|---------------|
 | `server.js` | Main orchestration | `server_create_game()` |
-| `map.js` | Map generation | `server_create_map()`, `server_create_tile()` |
+| `generator.js` | Advanced map generation | `generator_create_map()`, `generator_initialize_terrain_types()` |
+| `map.js` | Map interface | `server_create_map()` |
 | `ruleset.js` | Game rules | `server_create_ruleset()`, `server_create_nations()` |
 | `game.js` | Game state | `server_create_players()`, `server_setup_client_connection()` |
 | `cities.js` | City management | `server_create_cities()` |
@@ -35,7 +36,6 @@ Additional modules planned for implementation:
 - `tech.js` - Technology research
 - `tile.js` - Tile operations
 - `goto.js` - Pathfinding
-- `generator.js` - Advanced map generation
 
 ## Usage
 
@@ -60,6 +60,7 @@ To use the JavaScript server in your HTML page:
 ```html
 <!-- Load all server modules -->
 <script src="javascript/server/server.js"></script>
+<script src="javascript/server/generator.js"></script>
 <script src="javascript/server/map.js"></script>
 <script src="javascript/server/ruleset.js"></script>
 <script src="javascript/server/game.js"></script>
