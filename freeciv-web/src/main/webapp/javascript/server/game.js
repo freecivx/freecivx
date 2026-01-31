@@ -219,7 +219,7 @@ function server_setup_client_connection() {
  * @param {Object} packet - The player phase done packet from the client
  **************************************************************************/
 function server_handle_turn_done(packet) {
-  console.log("[Server Game] Handling turn done for turn " + packet.turn);
+  console.log("[Server Game] Handling turn done for turn " + game_info.turn);
   
   // Send end turn notification to client
   handle_end_turn({});
@@ -227,7 +227,10 @@ function server_handle_turn_done(packet) {
   // Increment the turn counter
   game_info.turn++;
   
-  // Calculate the new year (simple calculation: +50 years per turn for ancient era)
+  // Calculate the new year
+  // TODO: This is a simplified implementation that adds a fixed amount per turn.
+  // The real game uses variable year increments based on the current era.
+  // For now, we use +50 years per turn which is appropriate for ancient era.
   game_info.year += 50;
   
   // Update game info on client
