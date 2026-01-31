@@ -91,6 +91,20 @@ function setup_standalone_environment() {
         return;
       }
       
+      // Handle city name suggestion request
+      if (packet.pid === packet_city_name_suggestion_req) {
+        console.log("[Standalone] Handling city name suggestion request locally");
+        server_handle_city_name_suggestion_req(packet);
+        return;
+      }
+      
+      // Handle build city action (ACTION_FOUND_CITY)
+      if (packet.pid === packet_unit_do_action && packet.action_type === ACTION_FOUND_CITY) {
+        console.log("[Standalone] Handling build city action locally");
+        server_handle_build_city(packet);
+        return;
+      }
+      
       // For other packets, log but don't process in standalone mode
       console.log("[Standalone] Ignoring packet type:", packet.pid);
     };
