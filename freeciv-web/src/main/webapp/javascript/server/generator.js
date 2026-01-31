@@ -113,17 +113,17 @@ function perlinNoise(x, y, seed, octaves, persistence, lacunarity) {
  **************************************************************************/
 function getTerrainType(height, moisture, temperature) {
   // Deep water
-  if (height < 0.30) {
+  if (height < 0.42) {
     return TERRAIN_OCEAN;
   }
   
   // Shallow water / coastal
-  if (height < 0.38) {
+  if (height < 0.48) {
     return TERRAIN_OCEAN;
   }
   
   // Coastal lowlands
-  if (height < 0.42) {
+  if (height < 0.52) {
     // Swamps near coast
     if (moisture > 0.7) {
       return TERRAIN_SWAMP;
@@ -141,7 +141,7 @@ function getTerrainType(height, moisture, temperature) {
   }
   
   // Low elevations - main biomes
-  if (height < 0.55) {
+  if (height < 0.65) {
     // Arctic/tundra
     if (temperature < 0.25) {
       return TERRAIN_TUNDRA;
@@ -163,7 +163,7 @@ function getTerrainType(height, moisture, temperature) {
   }
   
   // Mid elevations - hills and forests
-  if (height < 0.70) {
+  if (height < 0.78) {
     // Cold mountains
     if (temperature < 0.3) {
       return TERRAIN_MOUNTAINS;
@@ -177,7 +177,7 @@ function getTerrainType(height, moisture, temperature) {
   }
   
   // High elevations - mountains and hills
-  if (height < 0.85) {
+  if (height < 0.90) {
     // Alpine tundra in cold areas
     if (temperature < 0.4) {
       return TERRAIN_TUNDRA;
@@ -200,7 +200,7 @@ function getTerrainType(height, moisture, temperature) {
 function generateHeightMap(width, height, seed) {
   var heightMap = [];
   
-  // First pass: Generate base noise
+  // Generate base noise with island shaping
   for (var y = 0; y < height; y++) {
     heightMap[y] = [];
     for (var x = 0; x < width; x++) {
@@ -210,42 +210,17 @@ function generateHeightMap(width, height, seed) {
       // Normalize to 0-1 range
       noise = (noise + 1) / 2;
       
-      heightMap[y][x] = noise;
-    }
-  }
-  
-  // Calculate land threshold to achieve target land percentage
-  var heightValues = [];
-  for (var y = 0; y < height; y++) {
-    for (var x = 0; x < width; x++) {
-      heightValues.push(heightMap[y][x]);
-    }
-  }
-  heightValues.sort(function(a, b) { return b - a; });
-  var landThresholdIndex = Math.floor(heightValues.length * LAND_PERCENT);
-  var landThreshold = heightValues[landThresholdIndex];
-  
-  // Second pass: Apply land threshold and island shaping
-  for (var y = 0; y < height; y++) {
-    for (var x = 0; x < width; x++) {
-      var h = heightMap[y][x];
-      
-      // Add gentle island tendency - reduce height near edges
+      // Add gentle island tendency - reduce height near edges to create ocean
       var distX = Math.abs(x - width / 2) / (width / 2);
       var distY = Math.abs(y - height / 2) / (height / 2);
       var distFromCenter = Math.sqrt(distX * distX + distY * distY);
       var edgeFactor = Math.min(1.0, distFromCenter);
       
-      // Apply island shaping (gentler than before)
-      h = h * (1 - edgeFactor * 0.25);
+      // Apply island shaping - stronger reduction creates more ocean
+      // Using squared distance for smoother transition
+      noise = noise * (1 - (edgeFactor * edgeFactor) * 0.7);
       
-      // Boost values above threshold to create distinct continents
-      if (h > landThreshold) {
-        h = landThreshold + (h - landThreshold) * 1.5;
-      }
-      
-      // Clamp to valid range
-      heightMap[y][x] = Math.max(0, Math.min(1, h));
+      heightMap[y][x] = Math.max(0, Math.min(1, noise));
     }
   }
   
