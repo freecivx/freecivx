@@ -186,7 +186,7 @@ function create_mock_game_data() {
   server_create_game({
     mapWidth: STANDALONE_MAP_WIDTH,
     mapHeight: STANDALONE_MAP_HEIGHT,
-    numPlayers: 3
+    numPlayers: 6
   });
   
   console.log("[Standalone] Mock game data created successfully");
