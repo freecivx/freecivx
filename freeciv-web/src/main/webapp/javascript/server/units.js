@@ -186,6 +186,12 @@ function server_handle_unit_orders(packet) {
       return;
     }
     
+    // Check if unit has movement points left
+    if (punit.moves_left <= 0) {
+      console.log("[Server Units] Unit " + packet.unit_id + " has no movement points left");
+      return;
+    }
+    
     // Calculate the new tile
     var new_tile = mapstep(current_tile, dir);
     
@@ -203,9 +209,7 @@ function server_handle_unit_orders(packet) {
     // Reduce moves left
     // TODO: In the future, consider different movement costs for terrain types
     // For now, using a simple cost of 1 move per tile
-    if (punit.moves_left > 0) {
-      punit.moves_left--;
-    }
+    punit.moves_left--;
     punit.done_moving = punit.moves_left <= 0;
     
     // Send the updated unit info back to the client
