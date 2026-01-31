@@ -228,7 +228,7 @@ function server_handle_city_name_suggestion_req(packet) {
   
   // If all names are used, append a number
   if (existing_names.indexOf(suggested_name) !== -1) {
-    suggested_name = player_names[0] + " " + (Object.keys(server_cities).length + 1);
+    suggested_name = player_names[0] + " " + next_city_id;
   }
   
   console.log("[Server Cities] Suggesting city name: " + suggested_name);
@@ -276,6 +276,19 @@ function server_handle_build_city(packet) {
   
   // Check if there's already a city at this location
   var tile = index_to_tile(punit.tile);
+  
+  if (!tile) {
+    console.error("[Server Cities] Tile " + punit.tile + " not found");
+    return;
+  }
+  
+  // Check terrain type - cities cannot be built on ocean
+  var terrain = tile.terrain;
+  if (terrain && (terrain === T_OCEAN || terrain === T_DEEP_OCEAN)) {
+    console.error("[Server Cities] Cannot build city on ocean tile");
+    return;
+  }
+  
   if (tile_city(tile)) {
     console.error("[Server Cities] City already exists at this location");
     return;
