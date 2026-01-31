@@ -121,6 +121,7 @@ function server_create_unit_types() {
     name: "Settlers",
     graphic_str: "u.settlers",
     move_rate: 1,
+    move_bonus: [0],
     hp: 10
   });
   
@@ -129,6 +130,7 @@ function server_create_unit_types() {
     name: "Warriors",
     graphic_str: "u.warriors",
     move_rate: 1,
+    move_bonus: [0],
     hp: 10
   });
   
@@ -137,6 +139,7 @@ function server_create_unit_types() {
     name: "Phalanx",
     graphic_str: "u.phalanx",
     move_rate: 1,
+    move_bonus: [0],
     hp: 10
   });
   
