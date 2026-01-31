@@ -1,19 +1,17 @@
 /**********************************************************************
-    Freeciv-web - Improved Map Generator (2026 Edition)
-    Copyright (C) 2009-2026 The Freeciv-web project
-
+    Freeciv-web - Natural Continental Generator (2026 Edition)
     Features:
-    - Continental Blobbing (Seed-based)
-    - Latitude-locked Climate (Arctic/Tundra poles)
-    - Horizontal Map Wrapping (X-Wrap)
-    - Double-pass Cellular Smoothing
+    - High Land-to-Water Ratio (~70% Land)
+    - Fractal Mountain Ridges (Scattered)
+    - Inland Lake Carving
+    - Latitudinal Climate (Tundra/Arctic Poles)
 ***********************************************************************/
 
 // Default map configuration
 var DEFAULT_MAP_WIDTH = 80;
 var DEFAULT_MAP_HEIGHT = 50;
 
-// Terrain type constants (standard Freeciv IDs)
+// Terrain type constants
 var TERRAIN_GRASSLAND = 0;
 var TERRAIN_OCEAN = 1;
 var TERRAIN_PLAINS = 2;
@@ -25,29 +23,25 @@ var TERRAIN_TUNDRA = 7;
 var TERRAIN_SWAMP = 8;
 var TERRAIN_ARCTIC = 9;
 
-// Global data structures for Freeciv engine
 var terrains = {};
-var tiles = {};
 
-/**
- * Main Map Generator Object
- */
 var MapGenerator = {
     seed: 0,
     width: 0,
     height: 0,
 
-    /**
-     * Deterministic pseudo-random number generator
-     */
     random: function() {
         var x = Math.sin(this.seed++) * 10000;
         return x - Math.floor(x);
     },
 
-    /**
-     * Initialize terrain definitions for the engine
-     */
+    // Simple 2D noise for natural variation
+    noise: function(x, y) {
+        var n = x + y * 57 + (this.seed % 1000);
+        n = (n << 13) ^ n;
+        return (1.0 - ((n * (n * n * 15731 + 789221) + 1376312589) & 0x7fffffff) / 1073741824.0);
+    },
+
     initialize_terrain: function() {
         terrains = {
             0: { id: 0, name: "Grassland", graphic: "grassland", graphic_str: "grassland" },
@@ -61,77 +55,79 @@ var MapGenerator = {
             8: { id: 8, name: "Swamp", graphic: "swamp", graphic_str: "swamp" },
             9: { id: 9, name: "Arctic", graphic: "arctic", graphic_str: "arctic" }
         };
-        console.log("[Generator] Terrains initialized.");
     },
 
     /**
-     * Create landmasses using radial "blobs" to create continents
+     * Creates a heightmap where high values are mountains
+     * and very low values are lakes/oceans.
      */
-    generate_height_map: function() {
-        var hMap = Array(this.height).fill().map(() => Array(this.width).fill(0));
+    generate_fractal_map: function() {
+        var map = Array(this.height).fill().map(() => Array(this.width).fill(0.5));
 
-        // Number of seeds correlates to map size
-        var numSeeds = Math.floor((this.width * this.height) / 300);
+        // Layer 1: Massive landmass (Low frequency)
+        this.apply_noise_layer(map, 0.05, 0.4);
+        // Layer 2: Medium features (Lakes/Hills)
+        this.apply_noise_layer(map, 0.15, 0.2);
+        // Layer 3: Sharp detail (Mountains/Small lakes)
+        this.apply_noise_layer(map, 0.4, 0.1);
 
-        for (var i = 0; i < numSeeds; i++) {
-            var sx = Math.floor(this.random() * this.width);
-            // Bias seeds away from the absolute poles for better gameplay
-            var sy = Math.floor(this.random() * (this.height * 0.7) + (this.height * 0.15));
-            var radius = this.random() * 14 + 5; // Variation in continent size
+        // Normalize and apply edge-carving (to ensure the map isn't a perfect rectangle)
+        for (var y = 0; y < this.height; y++) {
+            var edgeDistY = Math.min(y, this.height - y) / (this.height * 0.2);
+            var edgeFactor = Math.min(1.0, edgeDistY);
 
-            for (var y = 0; y < this.height; y++) {
-                for (var x = 0; x < this.width; x++) {
-                    // X-Wrap distance calculation
-                    var dx = Math.min(Math.abs(x - sx), this.width - Math.abs(x - sx));
-                    var dy = y - sy;
-                    var dist = Math.sqrt(dx * dx + dy * dy);
-
-                    if (dist < radius) {
-                        // Create a gradient height
-                        hMap[y][x] += (1 - (dist / radius)) * 1.2;
-                    }
-                }
+            for (var x = 0; x < this.width; x++) {
+                // Slightly lower height at edges to allow for coastal waters
+                map[y][x] *= (0.8 + 0.2 * edgeFactor);
             }
         }
-        return hMap;
+        return map;
     },
 
-    /**
-     * Determine terrain based on height and latitudinal climate
-     */
+    apply_noise_layer: function(map, freq, amp) {
+        var offsetX = this.random() * 1000;
+        var offsetY = this.random() * 1000;
+        for (var y = 0; y < this.height; y++) {
+            for (var x = 0; x < this.width; x++) {
+                map[y][x] += this.noise(x * freq + offsetX, y * freq + offsetY) * amp;
+            }
+        }
+    },
+
     get_terrain_type: function(h, y) {
-        var latitude = Math.abs(y - this.height / 2) / (this.height / 2); // 0 at equator, 1 at poles
+        var latitude = Math.abs(y - this.height / 2) / (this.height / 2);
 
-        // Ocean depth check
-        if (h < 0.5) return TERRAIN_OCEAN;
+        // --- WATER LOGIC ---
+        // Narrow threshold for water ensures "mostly land"
+        if (h < 0.38) return TERRAIN_OCEAN;
 
-        // Polar Zones
-        if (latitude > 0.85) return TERRAIN_ARCTIC;
-        if (latitude > 0.70) return (this.random() > 0.4) ? TERRAIN_TUNDRA : TERRAIN_ARCTIC;
-
-        // Tropical Zones (Equator)
-        if (latitude < 0.25) {
-            if (h > 0.9) return TERRAIN_MOUNTAINS;
-            if (h < 0.6) return (this.random() > 0.6) ? TERRAIN_SWAMP : TERRAIN_GRASSLAND;
-            return TERRAIN_FOREST;
+        // --- POLAR LOGIC ---
+        if (latitude > 0.88) return TERRAIN_ARCTIC;
+        if (latitude > 0.75) {
+            if (h > 0.8) return TERRAIN_MOUNTAINS;
+            return TERRAIN_TUNDRA;
         }
 
-        // Temperate and Arid Zones
-        if (h > 0.92) return TERRAIN_MOUNTAINS;
-        if (h > 0.82) return TERRAIN_HILLS;
+        // --- MOUNTAIN/HILL LOGIC ---
+        // Scattered peaks
+        if (h > 0.88) return TERRAIN_MOUNTAINS;
+        if (h > 0.78) return TERRAIN_HILLS;
 
-        // Deserts usually appear in specific latitude belts
-        if (latitude > 0.3 && latitude < 0.5 && h < 0.6) {
-            return (this.random() > 0.5) ? TERRAIN_DESERT : TERRAIN_PLAINS;
+        // --- VEGETATION/CLIMATE LOGIC ---
+        if (latitude < 0.25) { // Tropical
+            if (h < 0.45) return TERRAIN_SWAMP;
+            if (h > 0.65) return TERRAIN_FOREST;
+            return TERRAIN_GRASSLAND;
         }
 
-        if (h > 0.7) return TERRAIN_FOREST;
-        return (this.random() > 0.5) ? TERRAIN_GRASSLAND : TERRAIN_PLAINS;
+        if (latitude > 0.3 && latitude < 0.5 && h < 0.52) {
+            return TERRAIN_DESERT; // Arid belts
+        }
+
+        if (h > 0.6) return TERRAIN_FOREST;
+        return (h > 0.5) ? TERRAIN_GRASSLAND : TERRAIN_PLAINS;
     },
 
-    /**
-     * Cellular Automata smoothing pass to remove "noise"
-     */
     smooth: function(terrainMap) {
         var newMap = JSON.parse(JSON.stringify(terrainMap));
         for (var y = 1; y < this.height - 1; y++) {
@@ -139,15 +135,15 @@ var MapGenerator = {
                 var counts = {};
                 for (var dy = -1; dy <= 1; dy++) {
                     for (var dx = -1; dx <= 1; dx++) {
-                        var nx = (x + dx + this.width) % this.width; // Handle wrapping
+                        var nx = (x + dx + this.width) % this.width;
                         var ny = y + dy;
                         var t = terrainMap[ny][nx];
                         counts[t] = (counts[t] || 0) + 1;
                     }
                 }
-                // Majority rule: if 6 or more neighbors are the same, switch to that
+                // Stronger smoothing for landmass consistency
                 for (var type in counts) {
-                    if (counts[type] >= 6) {
+                    if (counts[type] >= 7) {
                         newMap[y][x] = parseInt(type);
                         break;
                     }
@@ -159,49 +155,45 @@ var MapGenerator = {
 };
 
 /**
- * Main map generation function called by the Freeciv-web server
+ * ENTRY POINT
  */
 function generator_create_map(width, height, options) {
     width = width || DEFAULT_MAP_WIDTH;
     height = height || DEFAULT_MAP_HEIGHT;
     options = options || {};
 
-    // Setup Generator context
     MapGenerator.width = width;
     MapGenerator.height = height;
     MapGenerator.seed = options.seed || Math.floor(Math.random() * 1000000);
 
-    console.log("[Generator] Starting Freeciv Map Generation. Seed: " + MapGenerator.seed);
+    console.log("[Generator] Generating Mostly-Land World. Seed: " + MapGenerator.seed);
 
-    // 1. Initialize data structures
     MapGenerator.initialize_terrain();
 
-    // 2. Inform engine of map dimensions and topology
     handle_map_info({
         xsize: width,
         ysize: height,
         topology_id: 0,
-        wrap_id: 1, // X-axis wrap (standard for Freeciv)
+        wrap_id: 1, // X-Wrap
         num_valid_dirs: 8,
         num_cardinal_dirs: 4
     });
 
-    // 3. Generate the physical world
-    var hMap = MapGenerator.generate_height_map();
+    var hMap = MapGenerator.generate_fractal_map();
     var terrainMap = Array(height).fill().map(() => Array(width).fill(0));
 
-    // Initial terrain assignment
+    // Assign terrain
     for (var y = 0; y < height; y++) {
         for (var x = 0; x < width; x++) {
             terrainMap[y][x] = MapGenerator.get_terrain_type(hMap[y][x], y);
         }
     }
 
-    // Apply smoothing passes for cleaner continents
+    // Two smoothing passes to ensure natural clumps
     terrainMap = MapGenerator.smooth(terrainMap);
     terrainMap = MapGenerator.smooth(terrainMap);
 
-    // 4. Create tiles and send to handle_tile_info
+    // Emission
     var landCount = 0;
     for (var y = 0; y < height; y++) {
         for (var x = 0; x < width; x++) {
@@ -210,29 +202,26 @@ function generator_create_map(width, height, options) {
 
             if (terrain !== TERRAIN_OCEAN) landCount++;
 
-            // Optional: Randomly add "Specials" (Resources)
+            // Resources placement
             var extras = [];
-            if (terrain !== TERRAIN_OCEAN && MapGenerator.random() > 0.94) {
+            if (terrain !== TERRAIN_OCEAN && MapGenerator.random() > 0.95) {
                 extras.push("1");
             }
 
-            var tileData = {
+            handle_tile_info({
                 tile: index,
                 x: x,
                 y: y,
                 terrain: terrain,
-                known: 2, // TILE_KNOWN_SEEN
+                known: 2,
                 extras: extras,
                 owner: null,
                 worked: null,
                 height: hMap[y][x],
                 nuke: 0
-            };
-
-            // Register tile with the engine
-            handle_tile_info(tileData);
+            });
         }
     }
 
-    console.log("[Generator] Finished. Land Coverage: " + ((landCount / (width * height)) * 100).toFixed(1) + "%");
+    console.log("[Generator] Finished. Land: " + ((landCount / (width * height)) * 100).toFixed(1) + "%");
 }
