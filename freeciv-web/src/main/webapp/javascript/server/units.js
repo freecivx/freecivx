@@ -41,6 +41,8 @@ function server_create_units() {
   // Clear client-side units (this will be repopulated via handle_unit_info)
   units = {};
   
+  var next_unit_id = 0;
+  
   // Helper function to create a unit on both server and client
   var create_unit = function(unit_data) {
     // Store in server's units object
@@ -63,83 +65,107 @@ function server_create_units() {
     handle_unit_info(unit_data);
   };
   
-  // Create settler for player 0
-  var settler_tile_index = 7 + 5 * map.xsize;
-  create_unit({
-    id: 0,
-    owner: 0,
-    tile: settler_tile_index,
-    homecity: 0,
-    type: 0, // Settlers
-    activity: 0,
-    moves_left: 1,
-    hp: 10,
-    facing: 1,
-    done_moving: false,
-    action_decision_want: 0,
-    action_decision_tile: 0
-  });
+  // Helper function to calculate safe starting position for a player
+  var get_player_start_position = function(player_id) {
+    // Distribute players around the map in a grid pattern
+    // This ensures they don't spawn outside map boundaries
+    var players_per_row = Math.ceil(Math.sqrt(Object.keys(players).length));
+    var row = Math.floor(player_id / players_per_row);
+    var col = player_id % players_per_row;
+    
+    // Calculate position within map bounds with padding
+    var padding = 3;
+    var usable_width = map.xsize - (2 * padding);
+    var usable_height = map.ysize - (2 * padding);
+    
+    var base_x = padding + Math.floor((col * usable_width) / players_per_row);
+    var base_y = padding + Math.floor((row * usable_height) / players_per_row);
+    
+    // Ensure we're within bounds
+    base_x = Math.max(padding, Math.min(map.xsize - padding - 3, base_x));
+    base_y = Math.max(padding, Math.min(map.ysize - padding - 3, base_y));
+    
+    return { x: base_x, y: base_y };
+  };
   
-  // Create warrior for player 0
-  var warrior_tile_index = 6 + 6 * map.xsize;
-  create_unit({
-    id: 1,
-    owner: 0,
-    tile: warrior_tile_index,
-    homecity: 0,
-    type: 1, // Warriors
-    activity: 0,
-    moves_left: 1,
-    hp: 10,
-    facing: 2,
-    done_moving: false,
-    action_decision_want: 0,
-    action_decision_tile: 0
-  });
+  // Unit placement offsets relative to base position
+  // This keeps all units in a compact cluster
+  var warrior_offsets = [[0, 0], [1, 0], [0, 1]];
+  var explorer_offsets = [[2, 0], [2, 1]];
+  var settler_offsets = [[0, 2], [1, 2], [2, 2]];
   
-  // Create warrior for player 1 if exists
-  if (players[1]) {
-    var warrior1_tile_index = 31 + 15 * map.xsize;
-    create_unit({
-      id: 2,
-      owner: 1,
-      tile: warrior1_tile_index,
-      homecity: 1,
-      type: 1, // Warriors
-      activity: 0,
-      moves_left: 1,
-      hp: 10,
-      facing: 3,
-      done_moving: false,
-      action_decision_want: 0,
-      action_decision_tile: 0
-    });
-  }
-  
-  // Create warrior for player 2 if exists
-  if (players[2]) {
-    var warrior2_tile_index = 26 + 20 * map.xsize;
-    create_unit({
-      id: 3,
-      owner: 2,
-      tile: warrior2_tile_index,
-      homecity: 2,
-      type: 2, // Phalanx
-      activity: 0,
-      moves_left: 1,
-      hp: 10,
-      facing: 4,
-      done_moving: false,
-      action_decision_want: 0,
-      action_decision_tile: 0
-    });
+  // Create starting units for each player
+  for (var player_id in players) {
+    var pplayer = players[player_id];
+    var start_pos = get_player_start_position(parseInt(player_id));
+    
+    // Create 3 warriors for each player
+    for (var i = 0; i < 3; i++) {
+      var offset = warrior_offsets[i];
+      var warrior_tile_index = (start_pos.x + offset[0]) + (start_pos.y + offset[1]) * map.xsize;
+      create_unit({
+        id: next_unit_id++,
+        owner: parseInt(player_id),
+        tile: warrior_tile_index,
+        homecity: 0,
+        type: 1, // Warriors
+        activity: 0,
+        moves_left: 1,
+        hp: 10,
+        facing: 1,
+        done_moving: false,
+        action_decision_want: 0,
+        action_decision_tile: 0
+      });
+    }
+    
+    // Create 2 explorers for each player
+    for (var i = 0; i < 2; i++) {
+      var offset = explorer_offsets[i];
+      var explorer_tile_index = (start_pos.x + offset[0]) + (start_pos.y + offset[1]) * map.xsize;
+      create_unit({
+        id: next_unit_id++,
+        owner: parseInt(player_id),
+        tile: explorer_tile_index,
+        homecity: 0,
+        type: 3, // Explorer
+        activity: 0,
+        moves_left: 2,
+        hp: 10,
+        facing: 2,
+        done_moving: false,
+        action_decision_want: 0,
+        action_decision_tile: 0
+      });
+    }
+    
+    // Create 3 settlers for each player
+    for (var i = 0; i < 3; i++) {
+      var offset = settler_offsets[i];
+      var settler_tile_index = (start_pos.x + offset[0]) + (start_pos.y + offset[1]) * map.xsize;
+      create_unit({
+        id: next_unit_id++,
+        owner: parseInt(player_id),
+        tile: settler_tile_index,
+        homecity: 0,
+        type: 0, // Settlers
+        activity: 0,
+        moves_left: 1,
+        hp: 10,
+        facing: 3,
+        done_moving: false,
+        action_decision_want: 0,
+        action_decision_tile: 0
+      });
+    }
   }
   
   var unitDescriptions = [];
   for (var id in server_units) {
     unitDescriptions.push(unit_types[server_units[id].type].name);
   }
-  console.log("[Server Units] Created " + Object.keys(server_units).length + " units: " + unitDescriptions.join(", "));
+  console.log("[Server Units] Created " + Object.keys(server_units).length + " units: " + 
+              unitDescriptions.slice(0, 5).join(", ") + "...");
 }
 
 /**************************************************************************
