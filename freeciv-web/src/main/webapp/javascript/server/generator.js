@@ -49,7 +49,7 @@ var TERRAIN_SWAMP = 8;
 var NOISE_OCTAVES = 6;           // More octaves for finer detail
 var NOISE_PERSISTENCE = 0.5;     // How much each octave contributes
 var NOISE_LACUNARITY = 2.0;      // Frequency multiplier between octaves
-var LAND_PERCENT = 0.30;         // Target percentage of land (30% like classic Freeciv)
+var LAND_PERCENT = 0.30;         // Note: Actual land percentage depends on noise + island shaping
 
 /**************************************************************************
  * Simple noise generator for terrain variation
@@ -350,8 +350,8 @@ function smoothTerrain(terrainMap, width, height) {
           }
         }
         
-        // Only smooth if it's not water (preserve coastlines better)
-        if (currentTerrain !== TERRAIN_OCEAN || mostCommonTerrain !== TERRAIN_OCEAN) {
+        // Only smooth land tiles to preserve ocean/coastline shapes
+        if (currentTerrain !== TERRAIN_OCEAN && mostCommonTerrain !== TERRAIN_OCEAN) {
           smoothedMap[y][x] = mostCommonTerrain;
         }
       }
