@@ -1069,11 +1069,23 @@ function pregame_handle_user(close_pregame)
           $("#login_process").text("Please sign up as a new player. Username not found.");
 
           if (window.location.hostname === "localhost") {
+            if (is_standalone_mode()) {
+               console.log("Starting standalone mode.");
+               username = $("#username_req").val();
+               $("#dialog").dialog('close');
+               
+               if (close_pregame) {
+                   $("#pregame_page").hide();
+                 }
+               }
+               show_standalone_pregame_dialog();
+            } else {
               username = $("#username_req").val();
               $("#dialog").dialog('close');
               init_sprites();
               if (close_pregame) {
                   $("#pregame_page").hide();
+                }
               }
           }
 
