@@ -26,6 +26,11 @@ echo "Running improved hexagon coordinate tests..."
 node tests/hexagon_improved_test.js
 echo ""
 
+# Run hexagon safety tests
+echo "Running hexagon safety and defaults tests..."
+node tests/hexagon_safety_test.js
+echo ""
+
 echo "==================================================="
 echo "  All Hexagonal Shader Tests Passed!"
 echo "==================================================="
