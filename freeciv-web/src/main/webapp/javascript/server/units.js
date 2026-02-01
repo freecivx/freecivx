@@ -75,7 +75,7 @@ function server_create_units() {
     
     // Try the starting position first
     if (start_tile && !is_ocean_tile(start_tile)) {
-      return { x: start_x, y: start_y };
+      return start_tile;
     }
     
     // Spiral outward to find land
@@ -93,7 +93,7 @@ function server_create_units() {
               var ptile = index_to_tile(tile_index);
               
               if (ptile && !is_ocean_tile(ptile)) {
-                return { x: x, y: y };
+                return ptile;
               }
             }
           }
