@@ -21,21 +21,28 @@
 /****************************************************************************
   Converts from map to scene coordinates (hexagonal tiles).
   Hexagonal tiles use an offset coordinate system where odd rows are shifted.
+  This must match the geometry generation in init_land_geometry_hexagon().
 ****************************************************************************/
 function map_to_scene_coords_hexagon(x, y)
 {
   var result = {};
   
-  // Hexagon dimensions
+  // Hexagon dimensions (must match init_land_geometry_hexagon)
   var hexRadius = (mapview_model_width / map['xsize']) * 0.5;
   var hexWidth = hexRadius * 2;
   var hexHeight = Math.sqrt(3) * hexRadius;
   var vertSpace = hexHeight * 0.75;
   
-  // Calculate position with offset for odd rows
+  var width_half = mapview_model_width / 2;
+  var height_half = mapview_model_height / 2;
+  
+  // Calculate position with offset for odd rows (matches geometry generation)
   var offsetX = (y % 2) * (hexWidth * 0.5);
-  result['x'] = Math.floor(-470 + x * hexWidth + offsetX + hexRadius);
-  result['y'] = Math.floor(30 + y * vertSpace);
+  var centerX = x * hexWidth + offsetX + hexRadius - width_half;
+  var centerY = y * vertSpace - height_half;
+  
+  result['x'] = Math.floor(centerX);
+  result['y'] = Math.floor(centerY);
 
   return result;
 }
@@ -43,32 +50,33 @@ function map_to_scene_coords_hexagon(x, y)
 /****************************************************************************
   Converts from scene to map coordinates (hexagonal tiles).
   Reverse conversion from scene coords to hexagonal tile coordinates.
+  This must match the geometry generation in init_land_geometry_hexagon().
 ****************************************************************************/
 function scene_to_map_coords_hexagon(x, y)
 {
   var result = {};
   
-  // Hexagon dimensions
+  // Hexagon dimensions (must match init_land_geometry_hexagon)
   var hexRadius = (mapview_model_width / map['xsize']) * 0.5;
   var hexWidth = hexRadius * 2;
   var hexHeight = Math.sqrt(3) * hexRadius;
   var vertSpace = hexHeight * 0.75;
   
-  // Approximate row from y coordinate
-  var approxY = Math.floor((y - 30) / vertSpace);
+  var width_half = mapview_model_width / 2;
+  var height_half = mapview_model_height / 2;
+  
+  // Approximate row from y coordinate (reverse of centerY calculation)
+  var approxY = Math.round((y + height_half) / vertSpace);
   
   // Calculate offset for this row
   var offsetX = (approxY % 2) * (hexWidth * 0.5);
   
-  // Calculate x considering the offset
-  result['x'] = Math.floor((x + 470 - hexRadius - offsetX) / hexWidth);
-  result['y'] = approxY;
+  // Calculate x considering the offset (reverse of centerX calculation)
+  var approxX = Math.round((x + width_half - hexRadius - offsetX) / hexWidth);
   
   // Clamp to map bounds
-  if (result['x'] < 0) result['x'] = 0;
-  if (result['x'] >= map['xsize']) result['x'] = map['xsize'] - 1;
-  if (result['y'] < 0) result['y'] = 0;
-  if (result['y'] >= map['ysize']) result['y'] = map['ysize'] - 1;
+  result['x'] = Math.max(0, Math.min(map['xsize'] - 1, approxX));
+  result['y'] = Math.max(0, Math.min(map['ysize'] - 1, approxY));
 
   return result;
 }
@@ -140,39 +148,4 @@ function webgl_canvas_pos_to_map_pos_hexagon(x, y) {
   }
 
   return null;
-}
-
-/****************************************************************************
-  Converts from unit['facing'] to number of rotations of 1/8 parts of full circle rotations (2PI),
-  then to radians;
-****************************************************************************/
-function convert_unit_rotation(facing_dir, unit_type_name)
-{
-  var rotation_rad = 0;
-
-  if (facing_dir == 0) rotation_rad = -3;
-  if (facing_dir == 1) rotation_rad = -4;
-  if (facing_dir == 2) rotation_rad = -5;
-  if (facing_dir == 4) rotation_rad = -6;
-  if (facing_dir == 7) rotation_rad = -7;
-  if (facing_dir == 6) rotation_rad = 0;
-  if (facing_dir == 5) rotation_rad = -1;
-  if (facing_dir == 3) rotation_rad = -2;
-
-  if (unit_type_name == "Horsemen" || unit_type_name == "Knights" || unit_type_name == "Zeppelin" || unit_type_name == "Galleon"
-      || unit_type_name == "Frigate" || unit_type_name == "Destroyer" || unit_type_name == "Battleship" || unit_type_name == "Cruiser"
-      || unit_type_name == "AEGIS Cruiser" || unit_type_name == "Carrier" || unit_type_name == "Settlers"  || unit_type_name == "Transport") {
-    return rotation_rad * Math.PI * 2 / 8 + Math.PI;
-  }
-
-  if (unit_type_name == "Ironclad" || unit_type_name == "Artillery") {
-    return rotation_rad * Math.PI * 2 / 8 - (Math.PI / 2);
-  }
-  if (unit_type_name == "Catapult" || unit_type_name == "Bomber") {
-    return rotation_rad * Math.PI * 2 / 8 + (Math.PI / 2);
-  }
-
-
-  return rotation_rad * Math.PI * 2 / 8
-
 }
