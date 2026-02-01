@@ -71,7 +71,7 @@ function show_standalone_pregame_dialog()
   dialog_html += "<h3>AI Players</h3>";
   dialog_html += "<table>";
   dialog_html += "<tr><td><label for='standalone_ai_players'>Number of AI Players:</label></td>";
-  dialog_html += "<td><input type='number' id='standalone_ai_players' value='3' min='0' max='10' /></td></tr>";
+  dialog_html += "<td><input type='number' id='standalone_ai_players' value='3' min='0' max='10' style='width: 90px;'/></td></tr>";
   dialog_html += "</table>";
   dialog_html += "</div>";
   
