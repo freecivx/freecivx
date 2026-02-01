@@ -25,9 +25,9 @@
 // Configuration variables for standalone game
 var standalone_config = {
   nation_id: 0, // Default to Roman nation (id: 0)
-  map_xsize: 40,
-  map_ysize: 30,
-  ai_players: 3
+  map_xsize: 60,
+  map_ysize: 60,
+  ai_players: 12
 };
 
 /****************************************************************************
@@ -93,6 +93,11 @@ function show_standalone_pregame_dialog()
     buttons: {
       "Cancel": function() {
         $("#standalone_pregame_dialog").dialog('close');
+      },
+      "Benchmark": function() {
+        setup_standalone_environment();
+        start_standalone_game_with_config();
+        webgl_benchmark_run();
       },
       "Start Game": function() {
         setup_standalone_environment();
