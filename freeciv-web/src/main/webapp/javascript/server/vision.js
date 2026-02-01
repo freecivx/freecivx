@@ -55,6 +55,7 @@ function server_get_unit_vision_radius(unit_type_id) {
  * 
  * Uses vision_radius_sq to determine if target tile is visible from center.
  * In Freeciv, vision_radius_sq represents the squared distance.
+ * Handles map wrapping correctly.
  * 
  * @param {number} center_x - X coordinate of viewing position
  * @param {number} center_y - Y coordinate of viewing position
@@ -64,9 +65,25 @@ function server_get_unit_vision_radius(unit_type_id) {
  * @returns {boolean} True if target is visible from center
  **************************************************************************/
 function server_tile_is_in_vision(center_x, center_y, target_x, target_y, vision_radius_sq) {
-  // Calculate squared distance using Euclidean distance
+  // Calculate distance considering map wrapping
   var dx = target_x - center_x;
   var dy = target_y - center_y;
+  
+  // Handle map wrapping for X coordinate
+  if (wrap_has_flag(WRAP_X)) {
+    var half_world = Math.floor(map.xsize / 2);
+    dx = FC_WRAP(dx + half_world, map.xsize) - half_world;
+  }
+  
+  // Handle map wrapping for Y coordinate
+  if (wrap_has_flag(WRAP_Y)) {
+    var half_world = Math.floor(map.ysize / 2);
+    dy = FC_WRAP(dy + half_world, map.ysize) - half_world;
+  }
+  
+  // Calculate squared distance
+  // For now using simple Euclidean distance (works for square maps)
+  // TODO: Use map_vector_to_sq_distance for hex/iso topologies
   var dist_sq = dx * dx + dy * dy;
   
   return dist_sq <= vision_radius_sq;
@@ -112,6 +129,7 @@ function server_reveal_tile(tile_index, player_id, seen) {
  * 
  * This is called when units or cities are created/moved to reveal
  * surrounding tiles to the owning player.
+ * Handles map wrapping correctly for both X and Y wrapped maps.
  * 
  * @param {number} center_x - X coordinate of viewing position
  * @param {number} center_y - Y coordinate of viewing position
@@ -133,8 +151,19 @@ function server_reveal_tiles_in_radius(center_x, center_y, vision_radius_sq, pla
       var target_x = center_x + dx;
       var target_y = center_y + dy;
       
-      // Skip tiles outside map bounds
-      if (target_x < 0 || target_x >= map.xsize || target_y < 0 || target_y >= map.ysize) {
+      // Handle map wrapping for X coordinate
+      if (wrap_has_flag(WRAP_X)) {
+        target_x = FC_WRAP(target_x, map.xsize);
+      } else if (target_x < 0 || target_x >= map.xsize) {
+        // Skip tiles outside map bounds if not wrapping
+        continue;
+      }
+      
+      // Handle map wrapping for Y coordinate
+      if (wrap_has_flag(WRAP_Y)) {
+        target_y = FC_WRAP(target_y, map.ysize);
+      } else if (target_y < 0 || target_y >= map.ysize) {
+        // Skip tiles outside map bounds if not wrapping
         continue;
       }
       
