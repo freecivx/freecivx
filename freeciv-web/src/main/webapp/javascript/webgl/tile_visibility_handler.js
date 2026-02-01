@@ -40,10 +40,48 @@ function webgl_update_tile_known(old_tile, new_tile)
 
 /**************************************************************************
  This will update the fog of war and unknown tiles, and farmland/irrigation
+ by storing these as vertex colors in the landscape mesh for hexagonal tiles.
+**************************************************************************/
+function update_tiles_known_vertex_colors_hexagon()
+{
+  const colors = [];
+  
+  // For hexagonal tiles: 7 vertices per tile (1 center + 6 outer)
+  for (let ty = 0; ty < map.ysize; ty++) {
+    for (let tx = 0; tx < map.xsize; tx++) {
+      const ptile = map_pos_to_tile(tx, ty);
+      if (ptile != null) {
+        const c = get_vertex_color_from_tile(ptile, tx, ty);
+        // Set color for center vertex
+        colors.push(c[0], c[1], c[2]);
+        // Set color for 6 outer vertices
+        for (let i = 0; i < 6; i++) {
+          colors.push(c[0], c[1], c[2]);
+        }
+      } else {
+        // Default black for all 7 vertices
+        for (let i = 0; i < 7; i++) {
+          colors.push(0, 0, 0);
+        }
+      }
+    }
+  }
+
+  landGeometry.setAttribute('vertColor', new THREE.Float32BufferAttribute(colors, 3));
+  landGeometry.colorsNeedUpdate = true;
+}
+
+/**************************************************************************
+ This will update the fog of war and unknown tiles, and farmland/irrigation
  by storing these as vertex colors in the landscape mesh.
 **************************************************************************/
 function update_tiles_known_vertex_colors()
 {
+  // Use hexagonal geometry if tile type is hexagonal
+  if (map_tile_type === 'hexagonal') {
+    return update_tiles_known_vertex_colors_hexagon();
+  }
+  
   const xquality = map.xsize * terrain_quality + 1;
   const yquality = map.ysize * terrain_quality + 1;
   const colors = [];
