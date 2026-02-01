@@ -36,6 +36,9 @@
 function server_create_ruleset() {
   console.log("[Server Ruleset] Creating ruleset data");
 
+  // First, initialize ruleset_control with metadata about the ruleset
+  server_create_ruleset_control();
+  
   server_create_extras();
   server_create_nations();
   server_create_governments();
@@ -45,6 +48,32 @@ function server_create_ruleset() {
   server_create_city_styles();
   
   console.log("[Server Ruleset] Ruleset created successfully");
+}
+
+/**************************************************************************
+ * Initialize ruleset control data
+ * 
+ * This provides metadata about the ruleset including counts of various
+ * game elements. This must be called first before creating other ruleset elements.
+ **************************************************************************/
+function server_create_ruleset_control() {
+  // Call handle_ruleset_control to initialize the ruleset_control object
+  // This contains counts and metadata about the ruleset
+  handle_ruleset_control({
+    num_unit_types: 4,      // We're creating 4 unit types
+    num_impr_types: 3,      // We're creating 3 improvement types
+    num_tech_types: 4,      // We're creating 4 tech types
+    num_base_types: 0,      // No bases for now
+    num_road_types: 2,      // Roads and railroads
+    num_styles: 3,          // 3 city styles
+    government_count: 3,    // 3 government types
+    nation_count: 10,       // 10 nations
+    styles_count: 3,        // 3 styles
+    terrain_count: 10,      // Terrain types
+    resource_count: 0       // No special resources for now
+  });
+  
+  console.log("[Server Ruleset] Ruleset control initialized");
 }
 
 /**************************************************************************
@@ -94,7 +123,7 @@ function server_create_nations() {
     id: 4,
     name: "Persians",
     adjective: "Persian",
-    graphic_str: "persia",
+    graphic_str: "iran_ancient",
     legend: "The Persian Empire",
     color: "#800080"
   });
@@ -139,7 +168,7 @@ function server_create_nations() {
     id: 9,
     name: "Carthaginians",
     adjective: "Carthaginian",
-    graphic_str: "carthage",
+    graphic_str: "cartago",
     legend: "Carthaginian Empire",
     color: "#8B4513"
   });
