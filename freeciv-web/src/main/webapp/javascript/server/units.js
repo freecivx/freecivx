@@ -58,7 +58,10 @@ function server_create_units() {
       facing: unit_data.facing,
       done_moving: unit_data.done_moving,
       action_decision_want: unit_data.action_decision_want,
-      action_decision_tile: unit_data.action_decision_tile
+      action_decision_tile: unit_data.action_decision_tile,
+      ssa_controller= 0,
+      transported = false
+
     };
     
     // Send to client via handle_unit_info
