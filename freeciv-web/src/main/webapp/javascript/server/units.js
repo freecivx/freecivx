@@ -65,25 +65,16 @@ function server_create_units() {
     handle_unit_info(unit_data);
   };
   
-  // Helper function to check if a tile is water (ocean)
-  var is_water_tile = function(x, y) {
-    var tile_index = x + y * map.xsize;
-    var ptile = index_to_tile(tile_index);
-    if (!ptile) {
-      console.warn("[Server Units] Tile not found at (" + x + ", " + y + "), treating as non-water");
-      return false; // If tile doesn't exist, it's likely a bug, don't treat as water
-    }
-    
-    // TERRAIN_OCEAN = 1 (from generator.js)
-    return ptile.terrain === 1;
-  };
-  
-  // Helper function to find a nearby non-water tile
+  // Helper function to find a nearby non-water tile using existing is_ocean_tile()
   var find_land_tile = function(start_x, start_y, max_search_radius) {
     max_search_radius = max_search_radius || 10;
     
+    // Get tile at starting position
+    var start_tile_index = start_x + start_y * map.xsize;
+    var start_tile = index_to_tile(start_tile_index);
+    
     // Try the starting position first
-    if (!is_water_tile(start_x, start_y)) {
+    if (start_tile && !is_ocean_tile(start_tile)) {
       return { x: start_x, y: start_y };
     }
     
@@ -98,7 +89,10 @@ function server_create_units() {
             
             // Ensure within map bounds
             if (x >= 0 && x < map.xsize && y >= 0 && y < map.ysize) {
-              if (!is_water_tile(x, y)) {
+              var tile_index = x + y * map.xsize;
+              var ptile = index_to_tile(tile_index);
+              
+              if (ptile && !is_ocean_tile(ptile)) {
                 return { x: x, y: y };
               }
             }
