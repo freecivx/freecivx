@@ -1,6 +1,6 @@
 /**********************************************************************
     Freeciv-web - the web version of Freeciv. http://www.FreecivWorld.net/
-    Copyright (C) 2009-2017  The Freeciv-web project
+    Copyright (C) 2009-2024  The Freeciv-web project
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU Affero General Public License as published by
