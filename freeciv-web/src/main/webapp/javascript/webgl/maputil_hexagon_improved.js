@@ -1,6 +1,6 @@
 /**********************************************************************
     Freeciv-web - the web version of Freeciv. http://www.FreecivWorld.net/
-    Copyright (C) 2009-2016  The Freeciv-web project
+    Copyright (C) 2009-2024  The Freeciv-web project
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU Affero General Public License as published by
@@ -19,29 +19,46 @@
 
 /**
  * Improved hexagonal map utilities with better accuracy near hex boundaries
+ * 
+ * This module provides enhanced coordinate conversion for hexagonal tiles
+ * that uses a distance-based nearest-neighbor approach to correctly identify
+ * tiles even when clicking near hexagon boundaries.
  */
 
 /****************************************************************************
   Improved scene to map coordinate conversion with accurate hex picking
   Uses distance-based approach to find the nearest hexagon center
+  
+  Algorithm:
+  1. Get approximate tile using simple mathematical conversion
+  2. Check a 3x3 grid of tiles around the approximate position
+  3. Calculate distance to each candidate hexagon center
+  4. Return the tile with the minimum distance
+  
+  This approach ensures correct tile selection even when clicking near
+  hexagon boundaries where the simple method might be ambiguous.
 ****************************************************************************/
 function scene_to_map_coords_hexagon_improved(x, y)
 {
   var result = {};
   
-  // Hexagon dimensions (must match init_land_geometry_hexagon)
-  var hexRadius = (mapview_model_width / map['xsize']) * 0.5;
-  var hexWidth = hexRadius * 2;
-  var hexHeight = Math.sqrt(3) * hexRadius;
-  var vertSpace = hexHeight * 0.75;
+  // Get hexagon dimensions (uses shared utility function)
+  var dims = get_hexagon_dimensions();
+  if (!dims) return null;
+  
+  // Validate map dimensions
+  if (!map || !map['xsize'] || !map['ysize']) {
+    console.error("Invalid map dimensions in scene_to_map_coords_hexagon_improved");
+    return null;
+  }
   
   var width_half = mapview_model_width / 2;
   var height_half = mapview_model_height / 2;
   
   // Get approximate tile coordinates using simple method
-  var approxY = Math.round((y + height_half) / vertSpace);
-  var offsetX = (approxY % 2) * (hexWidth * 0.5);
-  var approxX = Math.round((x + width_half - hexRadius - offsetX) / hexWidth);
+  var approxY = Math.round((y + height_half) / dims.vertSpace);
+  var offsetX = (approxY % 2) * (dims.hexWidth * 0.5);
+  var approxX = Math.round((x + width_half - dims.hexRadius - offsetX) / dims.hexWidth);
   
   // Check this tile and its neighbors to find the closest one
   var minDistance = Infinity;
@@ -60,11 +77,12 @@ function scene_to_map_coords_hexagon_improved(x, y)
       }
       
       // Calculate the center position of this test tile
-      var testOffsetX = (testY % 2) * (hexWidth * 0.5);
-      var testCenterX = testX * hexWidth + testOffsetX + hexRadius - width_half;
-      var testCenterY = testY * vertSpace - height_half;
+      var testOffsetX = (testY % 2) * (dims.hexWidth * 0.5);
+      var testCenterX = testX * dims.hexWidth + testOffsetX + dims.hexRadius - width_half;
+      var testCenterY = testY * dims.vertSpace - height_half;
       
-      // Calculate distance from point to this hexagon center
+      // Calculate squared distance from point to this hexagon center
+      // (squared distance is sufficient for comparison)
       var deltaX = x - testCenterX;
       var deltaY = y - testCenterY;
       var distance = deltaX * deltaX + deltaY * deltaY;
@@ -88,8 +106,21 @@ function scene_to_map_coords_hexagon_improved(x, y)
 /****************************************************************************
   Get hex neighbors for a given tile
   Returns array of up to 6 neighbor tiles (may be less at map edges)
+  
+  Hexagonal grids use an offset coordinate system where odd rows are shifted.
+  This affects the neighbor offsets:
+  - Even rows: Neighbors are at standard positions
+  - Odd rows: Neighbors are shifted to account for the row offset
+  
+  The six directions are: NE, E, SE, SW, W, NW (clockwise from northeast)
 ****************************************************************************/
 function get_hex_neighbors(tile_x, tile_y) {
+  // Validate inputs
+  if (!map || tile_x < 0 || tile_x >= map['xsize'] || tile_y < 0 || tile_y >= map['ysize']) {
+    console.error("Invalid tile coordinates in get_hex_neighbors");
+    return [];
+  }
+  
   var neighbors = [];
   var isOddRow = (tile_y % 2) === 1;
   
@@ -134,8 +165,20 @@ function get_hex_neighbors(tile_x, tile_y) {
 /****************************************************************************
   Calculate distance between two hexagon tiles
   Uses cube coordinate conversion for accurate hex distance
+  
+  Hexagonal grids can be represented in cube coordinates (q, r, s) where q+r+s=0.
+  Distance in cube space is the maximum of the absolute differences of coordinates.
+  
+  Reference: https://www.redblobgames.com/grids/hexagons/#distances
 ****************************************************************************/
 function hex_distance(x1, y1, x2, y2) {
+  // Validate inputs
+  if (!map || x1 < 0 || x1 >= map['xsize'] || y1 < 0 || y1 >= map['ysize'] ||
+      x2 < 0 || x2 >= map['xsize'] || y2 < 0 || y2 >= map['ysize']) {
+    console.error("Invalid coordinates in hex_distance");
+    return -1;
+  }
+  
   // Convert offset coordinates to cube coordinates
   function offsetToCube(x, y) {
     var q = x - Math.floor((y - (y % 2)) / 2);

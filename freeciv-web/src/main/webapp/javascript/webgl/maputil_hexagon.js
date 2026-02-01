@@ -1,6 +1,6 @@
 /**********************************************************************
     Freeciv-web - the web version of Freeciv. http://www.FreecivWorld.net/
-    Copyright (C) 2009-2016  The Freeciv-web project
+    Copyright (C) 2009-2024  The Freeciv-web project
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU Affero General Public License as published by
@@ -19,6 +19,40 @@
 
 
 /****************************************************************************
+  Calculate hexagon dimensions based on map size.
+  Centralized function to ensure consistency across all hexagon calculations.
+  
+  Returns object with:
+  - hexRadius: Radius of a single hexagon
+  - hexWidth: Full width of a hexagon (2 * radius)
+  - hexHeight: Full height of a hexagon (sqrt(3) * radius)
+  - vertSpace: Vertical spacing between hexagon centers (0.75 * height)
+  
+  The 0.75 factor comes from the hexagonal tiling overlap:
+  Each hexagon overlaps 25% with the next row, so vertical spacing is 75% of height.
+****************************************************************************/
+function get_hexagon_dimensions()
+{
+  // Validate inputs to prevent division by zero or invalid calculations
+  if (!map || !map['xsize'] || map['xsize'] <= 0 || !mapview_model_width || mapview_model_width <= 0) {
+    console.error("Invalid map dimensions for hexagon calculations");
+    return null;
+  }
+  
+  var hexRadius = (mapview_model_width / map['xsize']) * 0.5;
+  var hexWidth = hexRadius * 2;
+  var hexHeight = Math.sqrt(3) * hexRadius;
+  var vertSpace = hexHeight * 0.75;
+  
+  return {
+    hexRadius: hexRadius,
+    hexWidth: hexWidth,
+    hexHeight: hexHeight,
+    vertSpace: vertSpace
+  };
+}
+
+/****************************************************************************
   Converts from map to scene coordinates (hexagonal tiles).
   Hexagonal tiles use an offset coordinate system where odd rows are shifted.
   This must match the geometry generation in init_land_geometry_hexagon().
@@ -27,22 +61,20 @@ function map_to_scene_coords_hexagon(x, y)
 {
   var result = {};
   
-  // Hexagon dimensions (must match init_land_geometry_hexagon)
-  var hexRadius = (mapview_model_width / map['xsize']) * 0.5;
-  var hexWidth = hexRadius * 2;
-  var hexHeight = Math.sqrt(3) * hexRadius;
-  var vertSpace = hexHeight * 0.75;
+  // Get hexagon dimensions
+  var dims = get_hexagon_dimensions();
+  if (!dims) return null;
   
   var width_half = mapview_model_width / 2;
   var height_half = mapview_model_height / 2;
   
   // Calculate position with offset for odd rows (matches geometry generation)
-  var offsetX = (y % 2) * (hexWidth * 0.5);
-  var centerX = x * hexWidth + offsetX + hexRadius - width_half;
-  var centerY = y * vertSpace - height_half;
+  var offsetX = (y % 2) * (dims.hexWidth * 0.5);
+  var centerX = x * dims.hexWidth + offsetX + dims.hexRadius - width_half;
+  var centerY = y * dims.vertSpace - height_half;
   
-  result['x'] = Math.floor(centerX);
-  result['y'] = Math.floor(centerY);
+  result['x'] = centerX;
+  result['y'] = centerY;
 
   return result;
 }
@@ -51,28 +83,35 @@ function map_to_scene_coords_hexagon(x, y)
   Converts from scene to map coordinates (hexagonal tiles).
   Reverse conversion from scene coords to hexagonal tile coordinates.
   This must match the geometry generation in init_land_geometry_hexagon().
+  
+  Uses a simple approximation method that works well for most cases.
+  For higher accuracy near hexagon boundaries, use scene_to_map_coords_hexagon_improved().
 ****************************************************************************/
 function scene_to_map_coords_hexagon(x, y)
 {
   var result = {};
   
-  // Hexagon dimensions (must match init_land_geometry_hexagon)
-  var hexRadius = (mapview_model_width / map['xsize']) * 0.5;
-  var hexWidth = hexRadius * 2;
-  var hexHeight = Math.sqrt(3) * hexRadius;
-  var vertSpace = hexHeight * 0.75;
+  // Get hexagon dimensions
+  var dims = get_hexagon_dimensions();
+  if (!dims) return null;
+  
+  // Validate map dimensions
+  if (!map || !map['xsize'] || !map['ysize']) {
+    console.error("Invalid map dimensions in scene_to_map_coords_hexagon");
+    return null;
+  }
   
   var width_half = mapview_model_width / 2;
   var height_half = mapview_model_height / 2;
   
   // Approximate row from y coordinate (reverse of centerY calculation)
-  var approxY = Math.round((y + height_half) / vertSpace);
+  var approxY = Math.round((y + height_half) / dims.vertSpace);
   
   // Calculate offset for this row
-  var offsetX = (approxY % 2) * (hexWidth * 0.5);
+  var offsetX = (approxY % 2) * (dims.hexWidth * 0.5);
   
   // Calculate x considering the offset (reverse of centerX calculation)
-  var approxX = Math.round((x + width_half - hexRadius - offsetX) / hexWidth);
+  var approxX = Math.round((x + width_half - dims.hexRadius - offsetX) / dims.hexWidth);
   
   // Clamp to map bounds
   result['x'] = Math.max(0, Math.min(map['xsize'] - 1, approxX));
