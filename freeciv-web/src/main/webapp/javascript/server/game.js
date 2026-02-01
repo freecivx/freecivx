@@ -46,7 +46,7 @@ var HISTORIC_LEADERS = [
   "Barbarossa", "Richard", "John", "Edward", "Alfred",
   "Cnut", "Erik", "Olaf", "Sweyn", "Canute",
   "Vladimir", "Ivan", "Boris", "Casimir", "Stephen",
-  "Bela", "Otto", "Henry", "Conrad", "Rudolf",
+  "Bela", "Otto", "Leonidas", "Conrad", "Rudolf",
   "Charles", "Francis", "Ferdinand", "Albert", "Leopold",
   "Matthias", "Maximilian", "Joseph", "Franz", "Karl",
   "Wilhelm", "Friedrich", "Georg", "Ludwig", "Heinrich",
