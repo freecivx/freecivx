@@ -146,21 +146,6 @@ function start_standalone_game() {
   console.log("[Standalone] Creating mock game data");
   create_mock_game_data();
   
-  // Validate tile heights to prevent NaN errors in geometry
-  var invalidTiles = 0;
-  for (var index in tiles) {
-    if (tiles[index].height === undefined || tiles[index].height === null || isNaN(tiles[index].height)) {
-      console.error("[Standalone] Invalid height for tile " + index + ": " + tiles[index].height);
-      tiles[index].height = 0.5; // Fix invalid heights
-      invalidTiles++;
-    }
-  }
-  if (invalidTiles > 0) {
-    console.warn("[Standalone] Fixed " + invalidTiles + " tiles with invalid heights");
-  } else {
-    console.log("[Standalone] All " + Object.keys(tiles).length + " tiles have valid heights");
-  }
-  
   // Initialize WebGL loader and resources before starting the game
   // This is necessary because in standalone mode we bypass the normal
   // tileset preloading flow that initializes these resources
@@ -174,6 +159,8 @@ function start_standalone_game() {
   
   advance_unit_focus();
   console.log("[Standalone] Advance unit focus called");
+
+  server_send_chat_message("Welcome to the Freeciv 3D JavaScript server", E_CHAT_MSG);
 }
 
 

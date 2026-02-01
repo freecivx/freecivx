@@ -267,10 +267,6 @@ function start_standalone_game_with_config()
   console.log("[Standalone Pregame] Starting game with config:", standalone_config);
 
   try {
-    // Initialize standalone mode
-    if (typeof init_standalone !== 'function') {
-      throw new Error("init_standalone function not found. Make sure standalone.js is loaded.");
-    }
     init_standalone();
     
     // Setup the standalone environment (network overrides, etc.)
@@ -281,13 +277,9 @@ function start_standalone_game_with_config()
     
     // Start the standalone game with a slight delay to allow sprites to load
     var delay = (typeof STANDALONE_STARTUP_DELAY_MS !== 'undefined') ? STANDALONE_STARTUP_DELAY_MS : 1000;
-    setTimeout(function() {
-      if (typeof start_standalone_game !== 'function') {
-        console.error("start_standalone_game function not found.");
-        return;
-      }
-      start_standalone_game();
-    }, delay);
+
+    start_standalone_game();
+
   } catch (error) {
     console.error("Error starting singleplayer standalone game:", error);
     swal("Error", "Failed to start singleplayer game: " + error.message, "error");

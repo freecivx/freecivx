@@ -135,7 +135,5 @@ function server_create_game(options) {
   
   console.log("[Server] Game created successfully");
   
-  // Send welcome message to client
-  // This demonstrates the server-to-client communication pattern
-  server_send_chat_message("Welcome to the Freeciv 3D JavaScript server", E_CHAT_MSG);
+
 }
