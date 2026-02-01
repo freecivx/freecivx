@@ -254,6 +254,7 @@ function start_standalone_game_with_config()
   // Update standalone constants with configured values
   STANDALONE_MAP_WIDTH = standalone_config.map_xsize;
   STANDALONE_MAP_HEIGHT = standalone_config.map_ysize;
+  STANDALONE_AI_PLAYERS = standalone_config.ai_players;
 
   // Set standalone mode flag
   standalone_mode = true;

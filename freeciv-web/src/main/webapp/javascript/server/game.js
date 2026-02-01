@@ -82,16 +82,27 @@ function server_create_settings() {
 /**************************************************************************
  * Create player data
  * @param {number} numPlayers - Number of players to create (default: 10)
+ * @param {number} humanNation - Nation ID for the human player (optional, uses chosen_nation if available)
  **************************************************************************/
-function server_create_players(numPlayers) {
+function server_create_players(numPlayers, humanNation) {
   numPlayers = numPlayers || 10;
   
-  console.log("[Server Game] Creating " + numPlayers + " players");
+  // Use the specified nation or fall back to chosen_nation or default to 0
+  if (humanNation === undefined || humanNation === null) {
+    if (typeof chosen_nation !== 'undefined' && chosen_nation >= 0) {
+      humanNation = chosen_nation;
+      console.log("[Server Game] Using chosen_nation: " + humanNation);
+    } else {
+      humanNation = 0; // Default to Romans
+    }
+  }
+  
+  console.log("[Server Game] Creating " + numPlayers + " players (human nation: " + humanNation + ")");
   
   players = {};
   
   var playerConfigs = [
-    { name: "You", username: "Player", nation: 0, isAI: false },
+    { name: "You", username: "Player", nation: humanNation, isAI: false },
     { name: "Cleopatra", username: "AI", nation: 1, isAI: true },
     { name: "Pericles", username: "AI", nation: 2, isAI: true },
     { name: "Genghis Khan", username: "AI", nation: 3, isAI: true },

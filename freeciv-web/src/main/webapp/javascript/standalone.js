@@ -29,6 +29,7 @@ var standalone_mode = false;
 var STANDALONE_STARTUP_DELAY_MS = 1000;  // Increased delay to allow textures to load
 var STANDALONE_MAP_WIDTH = 40;          // Map width in tiles
 var STANDALONE_MAP_HEIGHT = 30;         // Map height in tiles
+var STANDALONE_AI_PLAYERS = 3;          // Number of AI players (total players = AI + 1 human)
 
 
 /**************************************************************************
@@ -182,11 +183,14 @@ function start_standalone_game() {
 function create_mock_game_data() {
   console.log("[Standalone] Creating mock game data using JavaScript server");
   
+  // Calculate total players (AI players + 1 human player)
+  var totalPlayers = (typeof STANDALONE_AI_PLAYERS !== 'undefined' ? STANDALONE_AI_PLAYERS : 3) + 1;
+  
   // Use the JavaScript server to create the game
   server_create_game({
     mapWidth: STANDALONE_MAP_WIDTH,
     mapHeight: STANDALONE_MAP_HEIGHT,
-    numPlayers: 6
+    numPlayers: totalPlayers
   });
   
   console.log("[Standalone] Mock game data created successfully");
