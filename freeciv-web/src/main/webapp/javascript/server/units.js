@@ -146,7 +146,13 @@ function server_create_units() {
     // Create 3 warriors for each player
     for (var i = 0; i < 3; i++) {
       var offset = warrior_offsets[i];
-      var warrior_tile_index = (start_pos.x + offset[0]) + (start_pos.y + offset[1]) * map.xsize;
+      var warrior_x = start_pos.x + offset[0];
+      var warrior_y = start_pos.y + offset[1];
+      
+      // Find land tile if offset position is on water
+      var warrior_pos = find_land_tile(warrior_x, warrior_y, 5);
+      var warrior_tile_index = warrior_pos.x + warrior_pos.y * map.xsize;
+      
       create_unit({
         id: next_unit_id++,
         owner: parseInt(player_id),
@@ -166,7 +172,13 @@ function server_create_units() {
     // Create 2 explorers for each player
     for (var i = 0; i < 2; i++) {
       var offset = explorer_offsets[i];
-      var explorer_tile_index = (start_pos.x + offset[0]) + (start_pos.y + offset[1]) * map.xsize;
+      var explorer_x = start_pos.x + offset[0];
+      var explorer_y = start_pos.y + offset[1];
+      
+      // Find land tile if offset position is on water
+      var explorer_pos = find_land_tile(explorer_x, explorer_y, 5);
+      var explorer_tile_index = explorer_pos.x + explorer_pos.y * map.xsize;
+      
       create_unit({
         id: next_unit_id++,
         owner: parseInt(player_id),
@@ -186,7 +198,13 @@ function server_create_units() {
     // Create 3 settlers for each player
     for (var i = 0; i < 3; i++) {
       var offset = settler_offsets[i];
-      var settler_tile_index = (start_pos.x + offset[0]) + (start_pos.y + offset[1]) * map.xsize;
+      var settler_x = start_pos.x + offset[0];
+      var settler_y = start_pos.y + offset[1];
+      
+      // Find land tile if offset position is on water
+      var settler_pos = find_land_tile(settler_x, settler_y, 5);
+      var settler_tile_index = settler_pos.x + settler_pos.y * map.xsize;
+      
       create_unit({
         id: next_unit_id++,
         owner: parseInt(player_id),

@@ -295,7 +295,7 @@ function server_setup_client_connection() {
  * @param {Object} packet - The player phase done packet from the client
  **************************************************************************/
 function server_handle_turn_done(packet) {
-  console.log("[Server Game] Handling turn done for turn " + game_info.turn);
+  console.log("[Server Game] Turn " + game_info.turn + " -> " + (game_info.turn + 1));
   
   // Send end turn notification to client
   handle_end_turn({});
@@ -323,6 +323,8 @@ function server_handle_turn_done(packet) {
   });
   
   // Reset movement points for all units
+  // Batch updates to avoid triggering multiple redraws
+  var units_to_update = [];
   for (var unit_id in server_units) {
     var punit = server_units[unit_id];
     
@@ -333,8 +335,8 @@ function server_handle_turn_done(packet) {
       punit.moves_left = utype_real_base_move_rate(punit_type);
       punit.done_moving = false;
       
-      // Send updated unit info to client
-      handle_unit_info({
+      // Collect unit data for batched update
+      units_to_update.push({
         id: punit.id,
         owner: punit.owner,
         tile: punit.tile,
@@ -351,10 +353,11 @@ function server_handle_turn_done(packet) {
     }
   }
   
-  console.log("[Server Game] Turn advanced to " + game_info.turn + " (year: " + game_info.year + ")");
+  // Send all unit updates at once
+  for (var i = 0; i < units_to_update.length; i++) {
+    handle_unit_info(units_to_update[i]);
+  }
   
   // Send begin turn notification to client
   handle_begin_turn({});
-  
-  console.log("[Server Game] Turn done processing completed");
 }
