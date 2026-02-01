@@ -970,7 +970,7 @@ function show_intro_dialog(title, message) {
 				icon :"ui-icon-gear"
 			  },
               {
-                  text : "Singleplayer-in-browser",
+                  text : "Play Local JS AIs",
                   click : function() {
                     dialog_close_trigger = "button";
                     standalone_mode = true;
