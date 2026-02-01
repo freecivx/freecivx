@@ -27,7 +27,8 @@ var standalone_config = {
   nation_id: 0, // Default to Roman nation (id: 0)
   map_xsize: 40,
   map_ysize: 30,
-  ai_players: 3
+  ai_players: 3,
+  tile_type: 'hexagonal' // 'hexagonal' or 'square'
 };
 
 /****************************************************************************
@@ -59,6 +60,11 @@ function show_standalone_pregame_dialog()
   dialog_html += "<div style='margin-bottom: 20px;'>";
   dialog_html += "<h3>Map Settings</h3>";
   dialog_html += "<table>";
+  dialog_html += "<tr><td><label for='standalone_tile_type'>Tile Type:</label></td>";
+  dialog_html += "<td><select id='standalone_tile_type' style='width: 150px;'>";
+  dialog_html += "<option value='hexagonal'>Hexagonal</option>";
+  dialog_html += "<option value='square'>Square</option>";
+  dialog_html += "</select></td></tr>";
   dialog_html += "<tr><td><label for='standalone_map_xsize'>Map Width:</label></td>";
   dialog_html += "<td><input type='number' id='standalone_map_xsize' value='40' min='20' max='200' /></td></tr>";
   dialog_html += "<tr><td><label for='standalone_map_ysize'>Map Height:</label></td>";
@@ -109,6 +115,7 @@ function show_standalone_pregame_dialog()
   });
 
   // Initialize the form values from config
+  $("#standalone_tile_type").val(standalone_config.tile_type);
   $("#standalone_map_xsize").val(standalone_config.map_xsize);
   $("#standalone_map_ysize").val(standalone_config.map_ysize);
   $("#standalone_ai_players").val(standalone_config.ai_players);
@@ -231,6 +238,7 @@ function start_standalone_game_with_config()
   }
 
   // Get settings from form
+  standalone_config.tile_type = $("#standalone_tile_type").val();
   standalone_config.map_xsize = parseInt($("#standalone_map_xsize").val());
   standalone_config.map_ysize = parseInt($("#standalone_map_ysize").val());
   standalone_config.ai_players = parseInt($("#standalone_ai_players").val());
@@ -252,6 +260,9 @@ function start_standalone_game_with_config()
   // Close the dialog
   $("#standalone_pregame_dialog").dialog('close');
 
+  // Set the global tile type from config
+  map_tile_type = standalone_config.tile_type;
+  
   // Update standalone constants with configured values
   STANDALONE_MAP_WIDTH = standalone_config.map_xsize;
   STANDALONE_MAP_HEIGHT = standalone_config.map_ysize;
@@ -264,6 +275,7 @@ function start_standalone_game_with_config()
   chosen_nation = standalone_config.nation_id;
 
   console.log("[Standalone Pregame] Starting game with config:", standalone_config);
+  console.log("[Standalone Pregame] Map tile type:", map_tile_type);
 
   try {
     // Initialize standalone mode
