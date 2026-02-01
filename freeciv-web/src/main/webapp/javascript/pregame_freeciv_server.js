@@ -973,7 +973,7 @@ function show_intro_dialog(title, message) {
                   text : "Singleplayer-in-browser",
                   click : function() {
                     dialog_close_trigger = "button";
-                    is_standalone_mode = true;
+                    standalone_mode = true;
                     pregame_handle_user(false);
                   },
                   icon : "ui-icon-signal-diag"
