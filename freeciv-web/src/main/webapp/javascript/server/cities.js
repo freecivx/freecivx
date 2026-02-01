@@ -183,8 +183,8 @@ function server_handle_build_city(packet) {
       production_value: 1, // Warriors
       shield_stock: 0,
       food_stock: 0,
-      food_prod: 2,
-      prod_prod: 1,
+      prod: [0,0,0,0,0,0],
+      surplus: [0,0,0,0,0,0],
       trade_prod: 1,
       gold_prod: 0,
       culture: 0,
