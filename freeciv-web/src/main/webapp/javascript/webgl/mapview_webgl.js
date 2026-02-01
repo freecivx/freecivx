@@ -242,13 +242,12 @@ function init_land_geometry_hexagon(geometry, mesh_quality)
   const hexRadius = (mapview_model_width / map.xsize) * 0.5;
   const hexWidth = hexRadius * 2;
   const hexHeight = Math.sqrt(3) * hexRadius;
-  const vertSpace = hexHeight * 0.75; // Vertical spacing for offset rows
+  const vertSpace = hexHeight * 0.75; // 0.75 = (hexHeight - hexRadius/2) / hexHeight for proper vertical overlap
   
-  let heightmap_scale = (mesh_quality === 2) ? (mesh_quality * 2) : 1;
+  let heightmap_scale = (mesh_quality === 2) ? (mesh_quality * 2) : 1; // Scale factor 4 for low-fi, 1 for high-fi
   const heightmap_resolution_x = map.xsize * mesh_quality + 1;
   
   let vertexIndex = 0;
-  const vertexMap = new Map(); // Track vertices by tile for reuse
   
   // Generate hexagon vertices for each tile
   for (let ty = 0; ty < map.ysize; ty++) {
@@ -287,8 +286,6 @@ function init_land_geometry_hexagon(geometry, mesh_quality)
         const next = (i + 1) % 6;
         indices.push(centerIdx, tileVertices[i + 1], tileVertices[next + 1]);
       }
-      
-      vertexMap.set(`${tx},${ty}`, tileVertices);
     }
   }
   
@@ -395,7 +392,7 @@ function update_land_geometry_hexagon(geometry, mesh_quality) {
   const hexHeight = Math.sqrt(3) * hexRadius;
   const vertSpace = hexHeight * 0.75;
   
-  const heightmap_scale = (mesh_quality === 2) ? 2 : 1;
+  const heightmap_scale = (mesh_quality === 2) ? (mesh_quality * 2) : 1; // Match init_land_geometry_hexagon scale
   const heightmap_resolution_x = map.xsize * mesh_quality + 1;
   const bufferAttribute = mesh_quality === 2 ? lofibufferattribute : landbufferattribute;
   
