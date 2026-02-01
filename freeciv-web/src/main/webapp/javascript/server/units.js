@@ -325,6 +325,11 @@ function server_handle_unit_orders(packet) {
       action_decision_tile: punit.action_decision_tile
     });
     
+    // Update vision after unit movement
+    // This reveals new tiles and creates fog where the unit moved from
+    console.log("[Server Units] Updating vision after unit movement");
+    server_update_player_vision(punit.owner);
+    
     console.log("[Server Units] Unit movement completed");
   } else {
     console.log("[Server Units] Ignoring order type: " + order.order);

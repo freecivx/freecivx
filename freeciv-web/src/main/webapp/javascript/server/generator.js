@@ -183,7 +183,7 @@ function generator_create_map(width, height, options) {
                 x: x,
                 y: y,
                 terrain: terrain,
-                known: 2,
+                known: TILE_UNKNOWN,  // Start with fog of war - tiles unknown
                 extras: (terrain !== TERRAIN_OCEAN && FractureGenerator.random() > 0.96) ? ["1"] : [],
                 height: h
             });
