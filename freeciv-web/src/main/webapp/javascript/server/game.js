@@ -28,6 +28,85 @@
  */
 
 /**************************************************************************
+ * Historic leader names for generating player names
+ * Contains 100 famous historic leaders from various civilizations
+ **************************************************************************/
+var HISTORIC_LEADERS = [
+  "Cleopatra", "Pericles", "Genghis Khan", "Cyrus", "Qin Shi Huang",
+  "Ashoka", "Ragnar", "Hammurabi", "Hannibal", "Alexander",
+  "Caesar", "Napoleon", "Elizabeth", "Victoria", "Gandhi",
+  "Charlemagne", "Akbar", "Saladin", "Sitting Bull", "Montezuma",
+  "Ramesses", "Nebuchadnezzar", "Darius", "Xerxes", "Attila",
+  "Suleiman", "Frederick", "Catherine", "Peter", "Tokugawa",
+  "Bismarck", "Meiji", "Shaka", "Mansa Musa", "Pachacuti",
+  "Sejong", "Gustavus", "William", "Isabella", "Philip",
+  "Maria Theresa", "Louis", "Henry", "Harald", "Harun",
+  "Ramkhamhaeng", "Trajan", "Augustus", "Marcus Aurelius", "Constantine",
+  "Justinian", "Theodora", "Wu Zetian", "Kublai Khan", "Tamerlane",
+  "Barbarossa", "Richard", "John", "Edward", "Alfred",
+  "Cnut", "Erik", "Olaf", "Sweyn", "Canute",
+  "Vladimir", "Ivan", "Boris", "Casimir", "Stephen",
+  "Bela", "Otto", "Henry", "Conrad", "Rudolf",
+  "Charles", "Francis", "Ferdinand", "Albert", "Leopold",
+  "Matthias", "Maximilian", "Joseph", "Franz", "Karl",
+  "Wilhelm", "Friedrich", "Georg", "Ludwig", "Heinrich",
+  "Phillip", "Robert", "David", "James", "George",
+  "Arthur", "Harold", "Edwin", "Edmund", "Edgar",
+  "Ethelred", "Aethelstan", "Offa", "Egbert", "Ceawlin"
+];
+
+/**************************************************************************
+ * Generate a random leader name based on permutations of historic leaders
+ * Supports up to 1000 unique leader names by combining leader names
+ **************************************************************************/
+function generate_leader_name(playerIndex) {
+  // For the first 100 players, use the historic leaders directly
+  if (playerIndex < HISTORIC_LEADERS.length) {
+    return HISTORIC_LEADERS[playerIndex];
+  }
+  
+  // For players 100-999, generate combinations
+  // Use a seeded random approach to ensure consistent names
+  var rng_seed = playerIndex * 7919; // Use prime number for better distribution
+  
+  function seeded_random() {
+    rng_seed = (rng_seed * 9301 + 49297) % 233280;
+    return rng_seed / 233280;
+  }
+  
+  // Generate name by combining two leader names or adding a suffix
+  var nameType = Math.floor(seeded_random() * 4);
+  var leader1 = HISTORIC_LEADERS[Math.floor(seeded_random() * HISTORIC_LEADERS.length)];
+  
+  if (nameType === 0) {
+    // Use "the Great" suffix
+    return leader1 + " the Great";
+  } else if (nameType === 1) {
+    // Use "the Wise" suffix
+    return leader1 + " the Wise";
+  } else if (nameType === 2) {
+    // Use roman numerals (II, III, IV, etc.)
+    var numeral = ["II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X"];
+    var numeralIndex = Math.floor(seeded_random() * numeral.length);
+    return leader1 + " " + numeral[numeralIndex];
+  } else {
+    // Combine two leader first names
+    var leader2 = HISTORIC_LEADERS[Math.floor(seeded_random() * HISTORIC_LEADERS.length)];
+    // Take first part of first name and second part of second name
+    var parts1 = leader1.split(" ");
+    var parts2 = leader2.split(" ");
+    var name1 = parts1[0];
+    var name2 = parts2[parts2.length - 1];
+    
+    // If they're the same, just use the first with a suffix
+    if (name1 === name2) {
+      return name1 + " the Bold";
+    }
+    return name1 + "-" + name2;
+  }
+}
+
+/**************************************************************************
  * Initialize server settings
  * This prevents errors when accessing server_settings in the client code
  **************************************************************************/
@@ -81,11 +160,18 @@ function server_create_settings() {
 
 /**************************************************************************
  * Create player data
- * @param {number} numPlayers - Number of players to create (default: 10)
+ * @param {number} numPlayers - Number of players to create (default: 10, max: 1000)
  * @param {number} humanNation - Nation ID for the human player (optional, uses chosen_nation if available)
  **************************************************************************/
 function server_create_players(numPlayers, humanNation) {
   numPlayers = numPlayers || 10;
+  
+  // Cap at 1000 players to match nation support
+  var MAX_PLAYERS = 1000;
+  if (numPlayers > MAX_PLAYERS) {
+    console.log("[Server Game] Requested " + numPlayers + " players, capping at " + MAX_PLAYERS);
+    numPlayers = MAX_PLAYERS;
+  }
   
   // Use the specified nation or fall back to chosen_nation or default to 0
   if (humanNation === undefined || humanNation === null) {
@@ -101,27 +187,34 @@ function server_create_players(numPlayers, humanNation) {
   
   players = {};
   
-  var playerConfigs = [
-    { name: "You", username: "Player", nation: humanNation, isAI: false },
-    { name: "Cleopatra", username: "AI", nation: 1, isAI: true },
-    { name: "Pericles", username: "AI", nation: 2, isAI: true },
-    { name: "Genghis Khan", username: "AI", nation: 3, isAI: true },
-    { name: "Cyrus", username: "AI", nation: 4, isAI: true },
-    { name: "Qin Shi Huang", username: "AI", nation: 5, isAI: true },
-    { name: "Ashoka", username: "AI", nation: 6, isAI: true },
-    { name: "Ragnar", username: "AI", nation: 7, isAI: true },
-    { name: "Hammurabi", username: "AI", nation: 8, isAI: true },
-    { name: "Hannibal", username: "AI", nation: 9, isAI: true }
-  ];
-  
-  for (var i = 0; i < numPlayers && i < playerConfigs.length; i++) {
-    var config = playerConfigs[i];
+  // Create all players
+  for (var i = 0; i < numPlayers; i++) {
+    var playerName;
+    var playerUsername;
+    var isAI;
+    var playerNation;
+    
+    if (i === 0) {
+      // First player is the human player
+      playerName = "You";
+      playerUsername = "Player";
+      isAI = false;
+      playerNation = humanNation;
+    } else {
+      // AI players get generated leader names
+      playerName = generate_leader_name(i - 1); // -1 because first player is human
+      playerUsername = "AI";
+      isAI = true;
+      // Assign nations sequentially, wrapping around if needed
+      playerNation = i % MAX_PLAYERS;
+    }
+    
     handle_player_info({
       playerno: i,
-      name: config.name,
-      username: config.username,
-      nation: config.nation,
-      flags: [config.isAI], // Will be converted to BitVector
+      name: playerName,
+      username: playerUsername,
+      nation: playerNation,
+      flags: [isAI], // Will be converted to BitVector
       gives_shared_vision: [],
       gold: 50,
       government: 0,
@@ -147,7 +240,15 @@ function server_create_players(numPlayers, humanNation) {
       playerNames.push(players[i].name);
     }
   }
-  console.log("[Server Game] Created players: " + playerNames.join(", "));
+  
+  if (numPlayers <= 20) {
+    // For small number of players, show all names
+    console.log("[Server Game] Created players: " + playerNames.join(", "));
+  } else {
+    // For large number of players, just show count and first few
+    console.log("[Server Game] Created " + numPlayers + " players");
+    console.log("[Server Game] First 10 players: " + playerNames.slice(0, 10).join(", ") + "...");
+  }
 }
 
 /**************************************************************************
