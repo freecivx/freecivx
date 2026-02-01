@@ -59,8 +59,8 @@ function server_create_units() {
       done_moving: unit_data.done_moving,
       action_decision_want: unit_data.action_decision_want,
       action_decision_tile: unit_data.action_decision_tile,
-      ssa_controller= 0,
-      transported = false
+      ssa_controller: 0,
+      transported: false
 
     };
     
