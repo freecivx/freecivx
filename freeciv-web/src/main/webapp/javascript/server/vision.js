@@ -197,6 +197,7 @@ function server_update_player_vision(player_id) {
   // First pass: Mark all currently SEEN tiles as UNSEEN (fogged)
   // This ensures proper fog of war - tiles that were seen but aren't currently visible
   for (var tile_index in tiles) {
+    if (!tiles.hasOwnProperty(tile_index)) continue;
     var ptile = tiles[tile_index];
     if (ptile && ptile['known'] === TILE_KNOWN_SEEN) {
       handle_tile_info({
@@ -214,6 +215,7 @@ function server_update_player_vision(player_id) {
   // Second pass: Reveal tiles visible by units
   if (server_units) {
     for (var unit_id in server_units) {
+      if (!server_units.hasOwnProperty(unit_id)) continue;
       var punit = server_units[unit_id];
       if (punit && punit.owner === player_id) {
         var unit_tile = index_to_tile(punit.tile);
@@ -228,6 +230,7 @@ function server_update_player_vision(player_id) {
   // Third pass: Reveal tiles visible by cities
   if (server_cities) {
     for (var city_id in server_cities) {
+      if (!server_cities.hasOwnProperty(city_id)) continue;
       var pcity = server_cities[city_id];
       if (pcity && pcity.owner === player_id) {
         var city_tile = index_to_tile(pcity.tile);
@@ -254,6 +257,7 @@ function server_initialize_all_vision() {
   
   // Update vision for each player
   for (var player_id in players) {
+    if (!players.hasOwnProperty(player_id)) continue;
     server_update_player_vision(parseInt(player_id));
   }
   
