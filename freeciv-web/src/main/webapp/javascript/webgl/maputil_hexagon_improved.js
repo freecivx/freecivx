@@ -65,9 +65,9 @@ function scene_to_map_coords_hexagon_improved(x, y)
       var testCenterY = testY * vertSpace - height_half;
       
       // Calculate distance from point to this hexagon center
-      var dx2 = x - testCenterX;
-      var dy2 = y - testCenterY;
-      var distance = dx2 * dx2 + dy2 * dy2;
+      var deltaX = x - testCenterX;
+      var deltaY = y - testCenterY;
+      var distance = deltaX * deltaX + deltaY * deltaY;
       
       // Update if this is the closest hexagon
       if (distance < minDistance) {
