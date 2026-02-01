@@ -67,7 +67,7 @@ function server_create_units() {
   
   // Helper function to find a nearby non-water tile using existing is_ocean_tile()
   var find_land_tile = function(start_x, start_y, max_search_radius) {
-    max_search_radius = max_search_radius || 10;
+    max_search_radius = max_search_radius || 100;
     
     // Get tile at starting position
     var start_tile_index = start_x + start_y * map.xsize;
@@ -150,7 +150,7 @@ function server_create_units() {
       var warrior_y = start_pos.y + offset[1];
       
       // Find land tile if offset position is on water
-      var warrior_pos = find_land_tile(warrior_x, warrior_y, 5);
+      var warrior_pos = find_land_tile(warrior_x, warrior_y, 50);
       var warrior_tile_index = warrior_pos.x + warrior_pos.y * map.xsize;
       
       create_unit({
@@ -176,7 +176,7 @@ function server_create_units() {
       var explorer_y = start_pos.y + offset[1];
       
       // Find land tile if offset position is on water
-      var explorer_pos = find_land_tile(explorer_x, explorer_y, 5);
+      var explorer_pos = find_land_tile(explorer_x, explorer_y, 50);
       var explorer_tile_index = explorer_pos.x + explorer_pos.y * map.xsize;
       
       create_unit({
@@ -202,7 +202,7 @@ function server_create_units() {
       var settler_y = start_pos.y + offset[1];
       
       // Find land tile if offset position is on water
-      var settler_pos = find_land_tile(settler_x, settler_y, 5);
+      var settler_pos = find_land_tile(settler_x, settler_y, 50);
       var settler_tile_index = settler_pos.x + settler_pos.y * map.xsize;
       
       create_unit({
