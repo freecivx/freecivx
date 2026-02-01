@@ -69,6 +69,7 @@ function update_tiles_known_vertex_colors_hexagon()
 
   landGeometry.setAttribute('vertColor', new THREE.Float32BufferAttribute(colors, 3));
   landGeometry.colorsNeedUpdate = true;
+  console.log(`Hexagonal terrain: Set ${colors.length / 3} vertex colors for ${map.xsize}x${map.ysize} tiles (${map.xsize * map.ysize * 7} expected)`);
 }
 
 /**************************************************************************

@@ -201,6 +201,7 @@ async function init_webgl_mapview() {
   landMesh.name = "land_terrain_mesh";
   scene.add(landMesh);
   console.log("Land mesh triangles: " + landGeometry.index.count / 3);
+  console.log("Tile type: " + (map_tile_type || 'square') + ", Map size: " + map.xsize + "x" + map.ysize);
 
   if (graphics_quality === QUALITY_HIGH) {
     var shadowMaterial = new THREE.ShadowMaterial();
