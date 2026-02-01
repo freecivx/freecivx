@@ -65,6 +65,50 @@ function server_create_units() {
     handle_unit_info(unit_data);
   };
   
+  // Helper function to check if a tile is water (ocean)
+  var is_water_tile = function(x, y) {
+    var tile_index = x + y * map.xsize;
+    var ptile = index_to_tile(tile_index);
+    if (!ptile) return true; // Assume water if tile not found
+    
+    // TERRAIN_OCEAN = 1 (from generator.js)
+    return ptile.terrain === 1;
+  };
+  
+  // Helper function to find a nearby non-water tile
+  var find_land_tile = function(start_x, start_y, max_search_radius) {
+    max_search_radius = max_search_radius || 10;
+    
+    // Try the starting position first
+    if (!is_water_tile(start_x, start_y)) {
+      return { x: start_x, y: start_y };
+    }
+    
+    // Spiral outward to find land
+    for (var radius = 1; radius <= max_search_radius; radius++) {
+      for (var dx = -radius; dx <= radius; dx++) {
+        for (var dy = -radius; dy <= radius; dy++) {
+          // Only check tiles at current radius (not interior)
+          if (Math.abs(dx) === radius || Math.abs(dy) === radius) {
+            var x = start_x + dx;
+            var y = start_y + dy;
+            
+            // Ensure within map bounds
+            if (x >= 0 && x < map.xsize && y >= 0 && y < map.ysize) {
+              if (!is_water_tile(x, y)) {
+                return { x: x, y: y };
+              }
+            }
+          }
+        }
+      }
+    }
+    
+    // If no land found, return original position (shouldn't happen with mostly land maps)
+    console.warn("[Server Units] Could not find land tile near (" + start_x + ", " + start_y + ")");
+    return { x: start_x, y: start_y };
+  };
+  
   // Helper function to calculate safe starting position for a player
   var get_player_start_position = function(player_id) {
     // Distribute players around the map in a grid pattern
@@ -85,7 +129,10 @@ function server_create_units() {
     base_x = Math.max(padding, Math.min(map.xsize - padding - 3, base_x));
     base_y = Math.max(padding, Math.min(map.ysize - padding - 3, base_y));
     
-    return { x: base_x, y: base_y };
+    // Find a land tile near this position (don't place on water)
+    var land_pos = find_land_tile(base_x, base_y);
+    
+    return land_pos;
   };
   
   // Unit placement offsets relative to base position
