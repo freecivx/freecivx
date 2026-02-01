@@ -33,8 +33,8 @@ const path = require('path');
 
 // Paths to shader files
 const SHADER_BASE = path.join(__dirname, '../src/main/webapp/javascript/webgl');
-const HEXAGON_VERTEX = path.join(SHADER_BASE, 'shaders_hexagon/terrain_vertex_shader.glsl');
-const HEXAGON_FRAGMENT = path.join(SHADER_BASE, 'shaders_hexagon/terrain_fragment_shader.glsl');
+const HEXAGON_VERTEX = path.join(SHADER_BASE, 'shaders_hexagonal/terrain_vertex_shader.glsl');
+const HEXAGON_FRAGMENT = path.join(SHADER_BASE, 'shaders_hexagonal/terrain_fragment_shader.glsl');
 const SQUARE_VERTEX = path.join(SHADER_BASE, 'shaders_square/terrain_vertex_shader.glsl');
 const SQUARE_FRAGMENT = path.join(SHADER_BASE, 'shaders_square/terrain_fragment_shader.glsl');
 

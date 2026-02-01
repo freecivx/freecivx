@@ -44,6 +44,15 @@ function webgl_update_tile_known(old_tile, new_tile)
 **************************************************************************/
 function update_tiles_known_vertex_colors_hexagon()
 {
+  if (!landGeometry) {
+    console.warn("landGeometry not initialized in update_tiles_known_vertex_colors_hexagon");
+    return;
+  }
+  if (!map || !map.xsize || map.xsize <= 0 || !map.ysize || map.ysize <= 0) {
+    console.error("Invalid map dimensions in update_tiles_known_vertex_colors_hexagon");
+    return;
+  }
+  
   const colors = [];
   
   // For hexagonal tiles: 7 vertices per tile (1 center + 6 outer)
@@ -59,9 +68,11 @@ function update_tiles_known_vertex_colors_hexagon()
           colors.push(c[0], c[1], c[2]);
         }
       } else {
-        // Default black for all 7 vertices
+        // Default for unknown tiles (all 7 vertices)
+        // Use a small non-zero value to ensure visibility for debugging
+        const defaultR = 0.54; // Use TILE_KNOWN_UNSEEN value as fallback
         for (let i = 0; i < 7; i++) {
-          colors.push(0, 0, 0);
+          colors.push(defaultR, 0, 0);
         }
       }
     }

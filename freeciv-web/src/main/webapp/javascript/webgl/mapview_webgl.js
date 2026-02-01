@@ -233,6 +233,16 @@ async function init_webgl_mapview() {
 ****************************************************************************/
 function init_land_geometry_hexagon(geometry, mesh_quality)
 {
+  // Ensure essential values are initialized with safe defaults
+  if (!mapview_model_width || mapview_model_width <= 0) {
+    console.warn("mapview_model_width not initialized, calling set_mapview_model_size()");
+    set_mapview_model_size();
+  }
+  if (!map || !map.xsize || map.xsize <= 0 || !map.ysize || map.ysize <= 0) {
+    console.error("Invalid map dimensions for hexagon geometry initialization");
+    return geometry;
+  }
+  
   const indices = [];
   const uvs = [];
   const vertices = [];
@@ -385,6 +395,16 @@ function init_land_geometry(geometry, mesh_quality)
   Update hexagonal land geometry
 ****************************************************************************/
 function update_land_geometry_hexagon(geometry, mesh_quality) {
+  // Ensure essential values are initialized
+  if (!mapview_model_width || mapview_model_width <= 0) {
+    console.warn("mapview_model_width not initialized in update_land_geometry_hexagon");
+    return geometry;
+  }
+  if (!map || !map.xsize || map.xsize <= 0 || !map.ysize || map.ysize <= 0) {
+    console.error("Invalid map dimensions for hexagon geometry update");
+    return geometry;
+  }
+  
   const width_half = mapview_model_width / 2;
   const height_half = mapview_model_height / 2;
   
@@ -631,6 +651,13 @@ function add_quality_dependent_objects_webgl()
  ...
  ****************************************************************************/
 function set_mapview_model_size() {
-  mapview_model_width = Math.floor(MAPVIEW_ASPECT_FACTOR * map['xsize']);
-  mapview_model_height = Math.floor(MAPVIEW_ASPECT_FACTOR * map['ysize']);
+  // Ensure map dimensions are valid, fallback to safe defaults
+  const xsize = (map && map['xsize'] > 0) ? map['xsize'] : 80;
+  const ysize = (map && map['ysize'] > 0) ? map['ysize'] : 50;
+  
+  mapview_model_width = Math.floor(MAPVIEW_ASPECT_FACTOR * xsize);
+  mapview_model_height = Math.floor(MAPVIEW_ASPECT_FACTOR * ysize);
+  
+  console.log("Map view model size set: " + mapview_model_width + " x " + mapview_model_height + 
+              " (map: " + xsize + " x " + ysize + ")");
 }
