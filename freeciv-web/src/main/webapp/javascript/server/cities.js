@@ -207,9 +207,16 @@ function server_handle_city_name_suggestion_req(packet) {
   
   // Generate a suggested city name based on player
   var suggested_names = [
-    ["New Rome", "Florence", "Milan", "Venice", "Naples", "Turin", "Genoa"],
-    ["New Memphis", "Thebes", "Alexandria", "Giza", "Luxor", "Aswan", "Cairo"],
-    ["New Athens", "Sparta", "Corinth", "Delphi", "Olympia", "Argos", "Rhodes"]
+    ["Rome", "Florence", "Milan", "Venice", "Naples", "Turin", "Genoa", "Ravenna", "Pisa", "Bologna", "Verona", "Padua", "Palermo", "Bari", "Catania", "Mantua", "Siena", "Perugia", "Ancona", "Parma"],
+    ["Memphis", "Thebes", "Alexandria", "Giza", "Luxor", "Aswan", "Cairo", "Karnak", "Abydos", "Elephantine", "Heliopolis", "Tanis", "Bubastis", "Sais", "Avaris", "Pi-Ramesses", "Hermopolis", "Edfu", "Philae", "Abu Simbel"],
+    ["Athens", "Sparta", "Corinth", "Delphi", "Olympia", "Argos", "Rhodes", "Thebes", "Mycenae", "Ephesus", "Miletus", "Pergamon", "Byzantium", "Smyrna", "Syracuse", "Massalia", "Cyrene", "Halicarnassus", "Knossos", "Phaistos"],
+    ["Babylon", "Nineveh", "Ur", "Akkad", "Lagash", "Eridu", "Nippur", "Kish", "Uruk", "Assur", "Persepolis", "Susa", "Ecbatana", "Pasargadae", "Ctesiphon", "Seleucia", "Hatra", "Palmyra", "Mari", "Ebla"],
+    ["Chang'an", "Luoyang", "Beijing", "Nanjing", "Hangzhou", "Xi'an", "Kaifeng", "Chengdu", "Guangzhou", "Suzhou", "Yangzhou", "Qufu", "Anyang", "Zhengzhou", "Dalian", "Kunming", "Shenzhen", "Tianjin", "Wuhan", "Chongqing"],
+    ["Delhi", "Mumbai", "Varanasi", "Agra", "Jaipur", "Pataliputra", "Ujjain", "Kanchipuram", "Madurai", "Thanjavur", "Vijayanagara", "Hampi", "Mysore", "Hyderabad", "Calcutta", "Lucknow", "Lahore", "Peshawar", "Taxila", "Mathura"],
+    ["Paris", "Lyon", "Marseille", "Toulouse", "Bordeaux", "Strasbourg", "Nantes", "Nice", "Lille", "Reims", "Rouen", "Orleans", "Avignon", "Dijon", "Tours", "Chartres", "Versailles", "Amiens", "Nancy", "Metz"],
+    ["London", "York", "Canterbury", "Winchester", "Bath", "Oxford", "Cambridge", "Lincoln", "Durham", "Exeter", "Norwich", "Chester", "Bristol", "Salisbury", "Coventry", "Leicester", "Nottingham", "Birmingham", "Manchester", "Liverpool"],
+    ["Constantinople", "Nicaea", "Adrianople", "Antioch", "Trebizond", "Smyrna", "Ephesus", "Thessalonica", "Philippi", "Myra", "Iconium", "Sardis", "Pergamon", "Halicarnassus", "Miletus", "Ancyra", "Caesarea", "Sinope", "Amisus", "Chalcedon"],
+    ["Tenochtitlan", "Texcoco", "Tlacopan", "Cholula", "Tlaxcala", "Teotihuacan", "Tula", "Xochicalco", "Monte Alban", "Mitla", "Palenque", "Tikal", "Chichen Itza", "Uxmal", "Mayapan", "Tulum", "Copan", "Quirigua", "Calakmul", "El Mirador"]
   ];
   
   var player_id = punit.owner;

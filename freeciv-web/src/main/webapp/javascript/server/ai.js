@@ -33,20 +33,15 @@ var NUM_DIRECTIONS = 8;
  * Called at turn change to execute all AI actions
  **************************************************************************/
 function server_ai_process_turn() {
-  console.log("[Server AI] Processing AI turn");
-  
   // Iterate through all players and process AI for those that are AI controlled
   for (var player_id in players) {
     var pplayer = players[player_id];
     
     // Check if player is AI
     if (pplayer && pplayer.flags && pplayer.flags.isSet(PLRF_AI)) {
-      console.log("[Server AI] Processing AI for player " + pplayer.name);
       server_ai_process_player(parseInt(player_id));
     }
   }
-  
-  console.log("[Server AI] AI turn processing completed");
 }
 
 /**************************************************************************
@@ -62,8 +57,6 @@ function server_ai_process_player(player_id) {
       player_units.push(punit);
     }
   }
-  
-  console.log("[Server AI] Player " + player_id + " has " + player_units.length + " units");
   
   // Process each unit
   for (var i = 0; i < player_units.length; i++) {
@@ -154,16 +147,16 @@ function server_ai_can_build_city(tile, owner) {
 function server_ai_build_city(punit) {
   // Generate a city name
   var city_names = [
-    ["New Rome", "Florence", "Milan", "Venice", "Naples", "Turin", "Genoa", "Ravenna", "Pisa"],
-    ["New Memphis", "Thebes", "Alexandria", "Giza", "Luxor", "Aswan", "Cairo", "Karnak"],
-    ["New Athens", "Sparta", "Corinth", "Delphi", "Olympia", "Argos", "Rhodes", "Thebes"],
-    ["Barbarian City", "War Camp", "Stronghold", "Fort", "Outpost"],
-    ["Persepolis", "Susa", "Ecbatana", "Babylon", "Pasargadae"],
-    ["Beijing", "Shanghai", "Xi'an", "Nanjing", "Hangzhou", "Chengdu"],
-    ["Delhi", "Mumbai", "Varanasi", "Jaipur", "Agra"],
-    ["Oslo", "Stockholm", "Copenhagen", "Reykjavik", "Bergen"],
-    ["Ur", "Nineveh", "Akkad", "Lagash", "Eridu"],
-    ["Carthage", "Utica", "Hadrumetum", "Hippo", "Leptis"]
+    ["Rome", "Florence", "Milan", "Venice", "Naples", "Turin", "Genoa", "Ravenna", "Pisa", "Bologna", "Verona", "Padua", "Palermo", "Bari", "Catania", "Mantua", "Siena", "Perugia", "Ancona", "Parma"],
+    ["Memphis", "Thebes", "Alexandria", "Giza", "Luxor", "Aswan", "Cairo", "Karnak", "Abydos", "Elephantine", "Heliopolis", "Tanis", "Bubastis", "Sais", "Avaris", "Pi-Ramesses", "Hermopolis", "Edfu", "Philae", "Abu Simbel"],
+    ["Athens", "Sparta", "Corinth", "Delphi", "Olympia", "Argos", "Rhodes", "Thebes", "Mycenae", "Ephesus", "Miletus", "Pergamon", "Byzantium", "Smyrna", "Syracuse", "Massalia", "Cyrene", "Halicarnassus", "Knossos", "Phaistos"],
+    ["Babylon", "Nineveh", "Ur", "Akkad", "Lagash", "Eridu", "Nippur", "Kish", "Uruk", "Assur", "Persepolis", "Susa", "Ecbatana", "Pasargadae", "Ctesiphon", "Seleucia", "Hatra", "Palmyra", "Mari", "Ebla"],
+    ["Chang'an", "Luoyang", "Beijing", "Nanjing", "Hangzhou", "Xi'an", "Kaifeng", "Chengdu", "Guangzhou", "Suzhou", "Yangzhou", "Qufu", "Anyang", "Zhengzhou", "Dalian", "Kunming", "Shenzhen", "Tianjin", "Wuhan", "Chongqing"],
+    ["Delhi", "Mumbai", "Varanasi", "Agra", "Jaipur", "Pataliputra", "Ujjain", "Kanchipuram", "Madurai", "Thanjavur", "Vijayanagara", "Hampi", "Mysore", "Hyderabad", "Calcutta", "Lucknow", "Lahore", "Peshawar", "Taxila", "Mathura"],
+    ["Paris", "Lyon", "Marseille", "Toulouse", "Bordeaux", "Strasbourg", "Nantes", "Nice", "Lille", "Reims", "Rouen", "Orleans", "Avignon", "Dijon", "Tours", "Chartres", "Versailles", "Amiens", "Nancy", "Metz"],
+    ["London", "York", "Canterbury", "Winchester", "Bath", "Oxford", "Cambridge", "Lincoln", "Durham", "Exeter", "Norwich", "Chester", "Bristol", "Salisbury", "Coventry", "Leicester", "Nottingham", "Birmingham", "Manchester", "Liverpool"],
+    ["Constantinople", "Nicaea", "Adrianople", "Antioch", "Trebizond", "Smyrna", "Ephesus", "Thessalonica", "Philippi", "Myra", "Iconium", "Sardis", "Pergamon", "Halicarnassus", "Miletus", "Ancyra", "Caesarea", "Sinope", "Amisus", "Chalcedon"],
+    ["Tenochtitlan", "Texcoco", "Tlacopan", "Cholula", "Tlaxcala", "Teotihuacan", "Tula", "Xochicalco", "Monte Alban", "Mitla", "Palenque", "Tikal", "Chichen Itza", "Uxmal", "Mayapan", "Tulum", "Copan", "Quirigua", "Calakmul", "El Mirador"]
   ];
   
   var player_names = city_names[punit.owner] || ["New City"];
@@ -272,8 +265,6 @@ function server_ai_move_unit_randomly(punit) {
     
     if (new_tile && server_ai_can_move_to_tile(punit, new_tile)) {
       // Move the unit
-      console.log("[Server AI] Moving unit " + punit.id + " from tile " + punit.tile + " to tile " + new_tile.index + " (dir: " + dir + ")");
-      
       punit.tile = new_tile.index;
       punit.facing = dir;
       punit.moves_left--;
