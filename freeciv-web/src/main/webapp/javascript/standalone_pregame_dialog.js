@@ -37,7 +37,7 @@ var standalone_config = {
 function show_standalone_pregame_dialog()
 {
   // Check if user is logged in (required like "Customize" button)
-  if (client.conn['player_num'] == null) {
+  if (username == null) {
     swal("Please login first", "You need to login to start a singleplayer game.", "warning");
     return;
   }
