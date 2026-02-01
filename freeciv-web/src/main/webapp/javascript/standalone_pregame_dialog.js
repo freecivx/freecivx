@@ -24,7 +24,7 @@
 
 // Configuration variables for standalone game
 var standalone_config = {
-  nation_id: -1,
+  nation_id: 0, // Default to Roman nation (id: 0)
   map_xsize: 40,
   map_ysize: 30,
   ai_players: 3
@@ -51,7 +51,7 @@ function show_standalone_pregame_dialog()
   dialog_html += "<button id='standalone_pick_nation_button' type='button' class='button'>";
   dialog_html += "<i class='fa fa-flag' aria-hidden='true'></i> Pick Your Nation</button>";
   dialog_html += "<div id='standalone_selected_nation' style='margin-top: 10px; font-weight: bold;'>";
-  dialog_html += "Nation: Not selected";
+  dialog_html += "Nation: <span style='color: green;'>Roman</span>"; // Default to Roman
   dialog_html += "</div>";
   dialog_html += "</div>";
   
@@ -181,9 +181,10 @@ function show_standalone_nation_picker()
       var flag_canvas = document.getElementById('standalone_flag_' + nation_id);
       if (flag_canvas != null) {
         var flag_ctx = flag_canvas.getContext('2d');
-        var flag_sprite = get_flag_sprite(pnation);
-        if (flag_sprite != null) {
-          flag_ctx.drawImage(flag_sprite, 0, 0, 29, 20, 0, 0, 44, 30);
+        var tag = "f." + pnation['graphic_str'];
+        
+        if (tileset[tag] != null && sprites[tag] != null) {
+          flag_ctx.drawImage(sprites[tag], 0, 0);
         }
       }
     }

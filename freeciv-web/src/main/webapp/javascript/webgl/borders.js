@@ -58,7 +58,7 @@ function update_borders_tile(ptile)
   if (ptile != null && ptile['owner'] != null && ptile['owner'] < 255) {
     var pplayer = players[ptile['owner']];
 
-    if (nations[pplayer['nation']].color != null) {
+    if (pplayer && nations[pplayer['nation']] && nations[pplayer['nation']].color != null) {
       let nation_colors = nations[pplayer['nation']].color.replace("rgb(", "").replace(")", "").split(",");
       borders_data[index] = parseInt(nation_colors[0]) * 0.65;
       borders_data[index + 1] = parseInt(nation_colors[2]) * 0.65;
