@@ -1061,7 +1061,7 @@ function pregame_handle_user(close_pregame)
   }
   $("#fciv-intro").hide();
 
-  if ($.getUrlVar('action') === "local" || is_standalone_mode()) {
+  if ($.getUrlVar('action') === "local") {
       username = $("#username_req").val();
       $("#dialog").dialog('close');
       $("#password_req").val("");
@@ -1070,9 +1070,6 @@ function pregame_handle_user(close_pregame)
       init_sprites();
       if (close_pregame) {
           $("#pregame_page").hide();
-      }
-      if (is_standalone_mode()) {
-        show_standalone_pregame_dialog();
       }
       return;
   }
@@ -1124,6 +1121,10 @@ function pregame_handle_user(close_pregame)
                    init_sprites();
                    if (close_pregame) {
                      $("#pregame_page").hide();
+                   }
+
+                   if (is_standalone_mode()) {
+                     show_standalone_pregame_dialog();
                    }
                  }
                  logged_in_with_password = true;
