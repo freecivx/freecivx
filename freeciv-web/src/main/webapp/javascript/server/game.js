@@ -360,4 +360,7 @@ function server_handle_turn_done(packet) {
   
   // Send begin turn notification to client
   handle_begin_turn({});
+  
+  // Send a chat message about the new turn
+  server_send_chat_message("Turn " + game_info.turn + " (" + game_info.year + ")", E_CHAT_MSG);
 }
