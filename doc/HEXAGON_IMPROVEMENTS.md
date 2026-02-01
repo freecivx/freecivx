@@ -39,6 +39,7 @@ var centerY = y * vertSpace - height_half;
 - For hexagonal tiles: returns 0 offsets (since `map_to_scene_coords_hexagon()` already returns center positions)
 - For square tiles: returns original hardcoded offsets (-12, -4, etc.)
 - Updated all unit, city, and selection indicator positioning to use dynamic offsets
+- Note: Unified city z-offset to -11 (original code had inconsistent -11 and -10 values in different update paths)
 
 **Benefits:**
 - Units appear at correct positions on hexagonal tiles
