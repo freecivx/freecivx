@@ -21,13 +21,14 @@
  * Ruleset management for the JavaScript server
  * 
  * This module handles creating and managing game rulesets including:
- * - Nations and their properties
  * - Government types
  * - Technologies
  * - Unit types
  * - Building/improvement types
  * - City styles
  * - Terrain extras (roads, mines, etc.)
+ * 
+ * Note: Nations are managed in server/nations.js
  */
 
 /**************************************************************************
@@ -76,105 +77,8 @@ function server_create_ruleset_control() {
   console.log("[Server Ruleset] Ruleset control initialized");
 }
 
-/**************************************************************************
- * Create nation definitions
- **************************************************************************/
-function server_create_nations() {
-  nations = {};
-  
-  // Use handle_ruleset_nation to create nations
-  handle_ruleset_nation({
-    id: 0,
-    name: "Romans",
-    adjective: "Roman",
-    graphic_str: "rome",
-    legend: "The Roman Empire",
-    color: "#8B0000"
-  });
-  
-  handle_ruleset_nation({
-    id: 1,
-    name: "Egyptians",
-    adjective: "Egyptian",
-    graphic_str: "egypt",
-    legend: "Ancient Egypt",
-    color: "#FFD700"
-  });
-  
-  handle_ruleset_nation({
-    id: 2,
-    name: "Greeks",
-    adjective: "Greek",
-    graphic_str: "greece",
-    legend: "Ancient Greece",
-    color: "#0000FF"
-  });
-  
-  handle_ruleset_nation({
-    id: 3,
-    name: "Barbarians",
-    adjective: "Barbarian",
-    graphic_str: "barbarian",
-    legend: "Barbarian Tribes",
-    color: "#808080"
-  });
-  
-  handle_ruleset_nation({
-    id: 4,
-    name: "Persians",
-    adjective: "Persian",
-    graphic_str: "iran_ancient",
-    legend: "The Persian Empire",
-    color: "#800080"
-  });
-  
-  handle_ruleset_nation({
-    id: 5,
-    name: "Chinese",
-    adjective: "Chinese",
-    graphic_str: "china",
-    legend: "Ancient China",
-    color: "#FF0000"
-  });
-  
-  handle_ruleset_nation({
-    id: 6,
-    name: "Indians",
-    adjective: "Indian",
-    graphic_str: "india",
-    legend: "Ancient India",
-    color: "#FFA500"
-  });
-  
-  handle_ruleset_nation({
-    id: 7,
-    name: "Vikings",
-    adjective: "Viking",
-    graphic_str: "viking",
-    legend: "Norse Vikings",
-    color: "#4169E1"
-  });
-  
-  handle_ruleset_nation({
-    id: 8,
-    name: "Babylonians",
-    adjective: "Babylonian",
-    graphic_str: "babylon",
-    legend: "Babylonian Empire",
-    color: "#DAA520"
-  });
-  
-  handle_ruleset_nation({
-    id: 9,
-    name: "Carthaginians",
-    adjective: "Carthaginian",
-    graphic_str: "cartago",
-    legend: "Carthaginian Empire",
-    color: "#8B4513"
-  });
-  
-  console.log("[Server Ruleset] Created " + Object.keys(nations).length + " nations");
-}
+// Nations are now created in server/nations.js
+// This function is called from there
 
 /**************************************************************************
  * Create government types
