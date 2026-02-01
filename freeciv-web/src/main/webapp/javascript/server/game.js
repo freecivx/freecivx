@@ -331,8 +331,8 @@ function server_handle_turn_done(packet) {
     // Get the unit type to determine base movement points
     var punit_type = unit_types[punit.type];
     if (punit_type) {
-      // Reset moves_left to the unit type's movement rate
-      punit.moves_left = utype_real_base_move_rate(punit_type);
+      // Reset movesleft to the unit type's movement rate
+      punit.movesleft = utype_real_base_move_rate(punit_type);
       punit.done_moving = false;
       
       // Collect unit data for batched update
@@ -343,7 +343,7 @@ function server_handle_turn_done(packet) {
         homecity: punit.homecity,
         type: punit.type,
         activity: punit.activity,
-        moves_left: punit.moves_left,
+        movesleft: punit.movesleft,
         hp: punit.hp,
         facing: punit.facing,
         done_moving: punit.done_moving,

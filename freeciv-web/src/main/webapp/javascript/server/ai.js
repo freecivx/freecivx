@@ -77,11 +77,11 @@ function server_ai_process_unit(punit) {
   var punit_type = unit_types[punit.type];
   
   // Check if unit is a settler and should build a city
-  if (punit_type.name === "Settlers" && punit.moves_left > 0) {
+  if (punit_type.name === "Settlers" && punit.movesleft > 0) {
     server_ai_settler_logic(punit);
   }
   // For other units, move randomly
-  else if (punit.moves_left > 0) {
+  else if (punit.movesleft > 0) {
     server_ai_move_unit_randomly(punit);
   }
 }
@@ -241,7 +241,7 @@ function server_ai_build_city(punit) {
  * @param {Object} punit - The unit to move
  **************************************************************************/
 function server_ai_move_unit_randomly(punit) {
-  if (punit.moves_left <= 0) {
+  if (punit.movesleft <= 0) {
     return;
   }
   
@@ -256,7 +256,7 @@ function server_ai_move_unit_randomly(punit) {
   var max_attempts = NUM_DIRECTIONS;
   var attempts = 0;
   
-  while (attempts < max_attempts && punit.moves_left > 0) {
+  while (attempts < max_attempts && punit.movesleft > 0) {
     // Pick a random direction (0-7 for 8 directions)
     var dir = Math.floor(Math.random() * NUM_DIRECTIONS);
     
@@ -267,8 +267,8 @@ function server_ai_move_unit_randomly(punit) {
       // Move the unit
       punit.tile = new_tile.index;
       punit.facing = dir;
-      punit.moves_left--;
-      punit.done_moving = punit.moves_left <= 0;
+      punit.movesleft--;
+      punit.done_moving = punit.movesleft <= 0;
       
       // Send updated unit info to client
       handle_unit_info({
@@ -278,7 +278,7 @@ function server_ai_move_unit_randomly(punit) {
         homecity: punit.homecity,
         type: punit.type,
         activity: punit.activity,
-        moves_left: punit.moves_left,
+        movesleft: punit.movesleft,
         hp: punit.hp,
         facing: punit.facing,
         done_moving: punit.done_moving,

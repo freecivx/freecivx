@@ -131,7 +131,7 @@ function server_handle_build_city(packet) {
   }
   
   // Check if unit has movement points
-  if (punit.moves_left <= 0) {
+  if (punit.movesleft <= 0) {
     console.error("[Server Cities] Unit has no movement points left");
     return;
   }

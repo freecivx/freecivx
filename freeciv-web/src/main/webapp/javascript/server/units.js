@@ -53,7 +53,7 @@ function server_create_units() {
       homecity: unit_data.homecity,
       type: unit_data.type,
       activity: unit_data.activity,
-      moves_left: unit_data.moves_left,
+      movesleft: unit_data.movesleft,
       hp: unit_data.hp,
       facing: unit_data.facing,
       done_moving: unit_data.done_moving,
@@ -160,7 +160,7 @@ function server_create_units() {
         homecity: 0,
         type: 1, // Warriors
         activity: 0,
-        moves_left: 1,
+        movesleft: 1,
         hp: 10,
         facing: 1,
         done_moving: false,
@@ -186,7 +186,7 @@ function server_create_units() {
         homecity: 0,
         type: 3, // Explorer
         activity: 0,
-        moves_left: 2,
+        movesleft: 2,
         hp: 10,
         facing: 2,
         done_moving: false,
@@ -212,7 +212,7 @@ function server_create_units() {
         homecity: 0,
         type: 0, // Settlers
         activity: 0,
-        moves_left: 1,
+        movesleft: 1,
         hp: 10,
         facing: 3,
         done_moving: false,
@@ -275,7 +275,7 @@ function server_handle_unit_orders(packet) {
     }
     
     // Check if unit has movement points left
-    if (punit.moves_left <= 0) {
+    if (punit.movesleft <= 0) {
       console.log("[Server Units] Unit " + packet.unit_id + " has no movement points left");
       return;
     }
@@ -297,8 +297,8 @@ function server_handle_unit_orders(packet) {
     // Reduce moves left
     // TODO: In the future, consider different movement costs for terrain types
     // For now, using a simple cost of 1 move per tile
-    punit.moves_left--;
-    punit.done_moving = punit.moves_left <= 0;
+    punit.movesleft--;
+    punit.done_moving = punit.movesleft <= 0;
     
     // Send the updated unit info back to the client
     handle_unit_info({
@@ -308,7 +308,7 @@ function server_handle_unit_orders(packet) {
       homecity: punit.homecity,
       type: punit.type,
       activity: punit.activity,
-      moves_left: punit.moves_left,
+      movesleft: punit.movesleft,
       hp: punit.hp,
       facing: punit.facing,
       done_moving: punit.done_moving,
