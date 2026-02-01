@@ -1073,10 +1073,9 @@ function pregame_handle_user(close_pregame)
                console.log("Starting standalone mode.");
                username = $("#username_req").val();
                $("#dialog").dialog('close');
-               
+
                if (close_pregame) {
                    $("#pregame_page").hide();
-                 }
                }
                show_standalone_pregame_dialog();
             } else {
