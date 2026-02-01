@@ -244,7 +244,7 @@ function init_land_geometry_hexagon(geometry, mesh_quality)
   const hexHeight = Math.sqrt(3) * hexRadius;
   const vertSpace = hexHeight * 0.75; // 0.75 = (hexHeight - hexRadius/2) / hexHeight for proper vertical overlap
   
-  let heightmap_scale = (mesh_quality === 2) ? (mesh_quality * 2) : 1; // Scale factor 4 for low-fi, 1 for high-fi
+  let heightmap_scale = (mesh_quality === 2) ? 2 : 1; // Scale factor 2 for low-fi, 1 for high-fi
   const heightmap_resolution_x = map.xsize * mesh_quality + 1;
   
   let vertexIndex = 0;
@@ -392,7 +392,7 @@ function update_land_geometry_hexagon(geometry, mesh_quality) {
   const hexHeight = Math.sqrt(3) * hexRadius;
   const vertSpace = hexHeight * 0.75;
   
-  const heightmap_scale = (mesh_quality === 2) ? (mesh_quality * 2) : 1; // Match init_land_geometry_hexagon scale
+  const heightmap_scale = (mesh_quality === 2) ? 2 : 1; // Match init_land_geometry_hexagon scale
   const heightmap_resolution_x = map.xsize * mesh_quality + 1;
   const bufferAttribute = mesh_quality === 2 ? lofibufferattribute : landbufferattribute;
   
