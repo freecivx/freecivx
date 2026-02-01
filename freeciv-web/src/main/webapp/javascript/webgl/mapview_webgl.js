@@ -168,10 +168,14 @@ async function init_webgl_mapview() {
     terrain_quality = 2;
   }
 
-  const vertexShaderResponse = await fetch('/javascript/webgl/shaders_square/terrain_vertex_shader.glsl');
+  // Determine shader directory based on tile type
+  var shader_dir = '/javascript/webgl/shaders_' + (map_tile_type || 'square');
+  console.log("Loading shaders from: " + shader_dir);
+
+  const vertexShaderResponse = await fetch(shader_dir + '/terrain_vertex_shader.glsl');
   const vertex_shader = await vertexShaderResponse.text();
 
-  const fragmentShaderResponse = await fetch('/javascript/webgl/shaders_square/terrain_fragment_shader.glsl');
+  const fragmentShaderResponse = await fetch(shader_dir + '/terrain_fragment_shader.glsl');
   var fragment_shader = await fragmentShaderResponse.text();
 
   if (maprenderer.capabilities.maxTextures <= 16) {
@@ -223,10 +227,94 @@ async function init_webgl_mapview() {
 }
 
 /****************************************************************************
+  Initialize hexagonal land geometry
+  Hexagonal tiles are arranged in an offset grid pattern
+****************************************************************************/
+function init_land_geometry_hexagon(geometry, mesh_quality)
+{
+  const indices = [];
+  const uvs = [];
+  const vertices = [];
+  const width_half = mapview_model_width / 2;
+  const height_half = mapview_model_height / 2;
+  
+  // Hexagon dimensions
+  const hexRadius = (mapview_model_width / map.xsize) * 0.5;
+  const hexWidth = hexRadius * 2;
+  const hexHeight = Math.sqrt(3) * hexRadius;
+  const vertSpace = hexHeight * 0.75; // 0.75 = (hexHeight - hexRadius/2) / hexHeight for proper vertical overlap
+  
+  let heightmap_scale = (mesh_quality === 2) ? (mesh_quality * 2) : 1; // Scale factor 4 for low-fi, 1 for high-fi
+  const heightmap_resolution_x = map.xsize * mesh_quality + 1;
+  
+  let vertexIndex = 0;
+  
+  // Generate hexagon vertices for each tile
+  for (let ty = 0; ty < map.ysize; ty++) {
+    for (let tx = 0; tx < map.xsize; tx++) {
+      // Calculate hexagon center position with offset for odd rows
+      const offsetX = (ty % 2) * (hexWidth * 0.5);
+      const centerX = tx * hexWidth + offsetX + hexRadius - width_half;
+      const centerY = ty * vertSpace - height_half;
+      
+      // Get height from heightmap
+      const heightmap_index = (ty * heightmap_scale) * heightmap_resolution_x + (tx * heightmap_scale);
+      const height_value = heightmap && heightmap[heightmap_index] !== undefined ? heightmap[heightmap_index] * 100 : 0;
+      
+      // Generate 6 vertices for hexagon (or 7 with center)
+      const tileVertices = [];
+      const centerIdx = vertexIndex++;
+      vertices.push(centerX, -centerY, height_value);
+      uvs.push((tx + 0.5) / map.xsize, 1 - ((ty + 0.5) / map.ysize));
+      tileVertices.push(centerIdx);
+      
+      // Add 6 outer vertices
+      for (let i = 0; i < 6; i++) {
+        const angle = (Math.PI / 3) * i;
+        const vx = centerX + hexRadius * Math.cos(angle);
+        const vy = centerY + hexRadius * Math.sin(angle);
+        
+        const outerIdx = vertexIndex++;
+        vertices.push(vx, -vy, height_value);
+        uvs.push((tx + 0.5 + 0.5 * Math.cos(angle)) / map.xsize, 
+                 1 - ((ty + 0.5 + 0.5 * Math.sin(angle)) / map.ysize));
+        tileVertices.push(outerIdx);
+      }
+      
+      // Create triangles from center to edges
+      for (let i = 0; i < 6; i++) {
+        const next = (i + 1) % 6;
+        indices.push(centerIdx, tileVertices[i + 1], tileVertices[next + 1]);
+      }
+    }
+  }
+  
+  if (mesh_quality === 2) {
+    lofibufferattribute = new THREE.Float32BufferAttribute( vertices, 3 );
+    geometry.setAttribute( 'position', lofibufferattribute);
+  } else {
+    landbufferattribute = new THREE.Float32BufferAttribute( vertices, 3 );
+    geometry.setAttribute( 'position', landbufferattribute);
+  }
+  
+  geometry.setIndex( indices );
+  geometry.setAttribute( 'uv', new THREE.Float32BufferAttribute( uvs, 2 ) );
+  geometry.computeVertexNormals();
+  
+  return geometry;
+}
+
+/****************************************************************************
   Initialize land geometry
 ****************************************************************************/
 function init_land_geometry(geometry, mesh_quality)
 {
+  // Use hexagonal geometry if tile type is hexagonal
+  if (map_tile_type === 'hexagonal') {
+    return init_land_geometry_hexagon(geometry, mesh_quality);
+  }
+  
+  // Otherwise use square geometry
   const xquality = map.xsize * mesh_quality + 1;
   const yquality = map.ysize * mesh_quality + 1;
 
@@ -293,9 +381,61 @@ function init_land_geometry(geometry, mesh_quality)
 }
 
 /****************************************************************************
+  Update hexagonal land geometry
+****************************************************************************/
+function update_land_geometry_hexagon(geometry, mesh_quality) {
+  const width_half = mapview_model_width / 2;
+  const height_half = mapview_model_height / 2;
+  
+  const hexRadius = (mapview_model_width / map.xsize) * 0.5;
+  const hexWidth = hexRadius * 2;
+  const hexHeight = Math.sqrt(3) * hexRadius;
+  const vertSpace = hexHeight * 0.75;
+  
+  const heightmap_scale = (mesh_quality === 2) ? (mesh_quality * 2) : 1; // Match init_land_geometry_hexagon scale
+  const heightmap_resolution_x = map.xsize * mesh_quality + 1;
+  const bufferAttribute = mesh_quality === 2 ? lofibufferattribute : landbufferattribute;
+  
+  let vertexIndex = 0;
+  
+  for (let ty = 0; ty < map.ysize; ty++) {
+    for (let tx = 0; tx < map.xsize; tx++) {
+      const offsetX = (ty % 2) * (hexWidth * 0.5);
+      const centerX = tx * hexWidth + offsetX + hexRadius - width_half;
+      const centerY = ty * vertSpace - height_half;
+      
+      const heightIndex = (ty * heightmap_scale) * heightmap_resolution_x + (tx * heightmap_scale);
+      const height_value = heightmap && heightmap[heightIndex] !== undefined ? heightmap[heightIndex] * 100 : 0;
+      
+      // Update center vertex
+      bufferAttribute.setXYZ(vertexIndex++, centerX, -centerY, height_value);
+      
+      // Update 6 outer vertices
+      for (let i = 0; i < 6; i++) {
+        const angle = (Math.PI / 3) * i;
+        const vx = centerX + hexRadius * Math.cos(angle);
+        const vy = centerY + hexRadius * Math.sin(angle);
+        bufferAttribute.setXYZ(vertexIndex++, vx, -vy, height_value);
+      }
+    }
+  }
+  
+  bufferAttribute.needsUpdate = true;
+  geometry.computeVertexNormals();
+  
+  return geometry;
+}
+
+/****************************************************************************
   Create the land terrain geometry
 ****************************************************************************/
 function update_land_geometry(geometry, mesh_quality) {
+  // Use hexagonal geometry if tile type is hexagonal
+  if (map_tile_type === 'hexagonal') {
+    return update_land_geometry_hexagon(geometry, mesh_quality);
+  }
+  
+  // Otherwise use square geometry
   const xquality = map.xsize * mesh_quality + 1;
   const yquality = map.ysize * mesh_quality + 1;
 

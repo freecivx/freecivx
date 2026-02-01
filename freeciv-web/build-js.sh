@@ -11,4 +11,5 @@ echo "Copying target/freeciv-web/javascript/webclient.* to ${FCW_DEST}/javascrip
 sed -i.bak -e "s/ts=\"/ts=\"1/" -e "s/\?ts=/\?ts=1/" "${FCW_DEST}"/webclient/index.jsp
 
 cp src/main/webapp/javascript/webgl/shaders_square/*.* "${FCW_DEST}"/javascript/webgl/shaders_square/
+cp src/main/webapp/javascript/webgl/shaders_hexagon/*.* "${FCW_DEST}"/javascript/webgl/shaders_hexagon/
 cp src/main/webapp/javascript/webgl/libs/*.* "${FCW_DEST}"/javascript/webgl/libs/

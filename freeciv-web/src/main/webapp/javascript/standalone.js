@@ -25,6 +25,10 @@
 
 var standalone_mode = false;
 
+// Map tile type: 'hexagonal' or 'square'
+// Default to hexagonal for standalone mode, configurable in pregame dialog
+var map_tile_type = 'hexagonal';
+
 // Configuration constants for standalone mode
 var STANDALONE_STARTUP_DELAY_MS = 1000;  // Increased delay to allow textures to load
 var STANDALONE_MAP_WIDTH = 40;          // Map width in tiles
