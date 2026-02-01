@@ -129,6 +129,10 @@ function server_create_game(options) {
   console.log("[Server] Creating units");
   server_create_units();
   
+  // Initialize fog of war and vision
+  console.log("[Server] Initializing vision and fog of war");
+  server_initialize_all_vision();
+  
   // Set up the client connection
   console.log("[Server] Setting up client connection");
   server_setup_client_connection();
