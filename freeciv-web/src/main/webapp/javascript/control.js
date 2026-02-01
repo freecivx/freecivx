@@ -135,36 +135,8 @@ function control_init()
   });
 
   $("#singleplayer_standalone_button").click(function(event) {
-    try {
-      // Set standalone mode flag (defined in standalone.js)
-      standalone_mode = true;
-      
-      // Initialize standalone mode
-      if (typeof init_standalone !== 'function') {
-        throw new Error("init_standalone function not found. Make sure standalone.js is loaded.");
-      }
-      init_standalone();
-      
-      // Setup the standalone environment (network overrides, etc.)
-      if (typeof setup_standalone_environment !== 'function') {
-        throw new Error("setup_standalone_environment function not found.");
-      }
-      setup_standalone_environment();
-      
-      // Start the standalone game with a slight delay to allow sprites to load
-      // STANDALONE_STARTUP_DELAY_MS is defined in standalone.js
-      var delay = (typeof STANDALONE_STARTUP_DELAY_MS !== 'undefined') ? STANDALONE_STARTUP_DELAY_MS : 1000;
-      setTimeout(function() {
-        if (typeof start_standalone_game !== 'function') {
-          console.error("start_standalone_game function not found.");
-          return;
-        }
-        start_standalone_game();
-      }, delay);
-    } catch (error) {
-      console.error("Error starting singleplayer standalone game:", error);
-      alert("Failed to start singleplayer game: " + error.message);
-    }
+    // Show the standalone pregame dialog (like "Customize" button, requires user login)
+    show_standalone_pregame_dialog();
   });
 
   $("#load_game_button").click(function(event) {

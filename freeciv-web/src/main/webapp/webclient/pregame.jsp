@@ -45,3 +45,5 @@
 </div>
 
 <div id="pick_nation_dialog" ></div>
+<div id="standalone_pregame_dialog" ></div>
+<div id="standalone_nation_picker_dialog" ></div>
