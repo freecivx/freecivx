@@ -48,6 +48,33 @@ var sun_mesh = null;
 var special_resources = ["Fish", "Whales", "Oasis", "Wine", "Iron", "Spice", "Ivory" , "Oil", "Coal", "Fruit", "Furs", "Gold", "Gems", "Silk", "Resources", "Fallout", "Game", "Buffalo", "Pheasant", "Wheat", "Peat", "Buoy", "Cattle"];
 
 /****************************************************************************
+  Get position offsets for the current tile type
+****************************************************************************/
+function get_tile_position_offsets() {
+  // For hexagonal tiles, map_to_scene_coords already returns the center position
+  // so we need minimal offsets
+  if (map_tile_type === 'hexagonal') {
+    return {
+      unit_x: 0,
+      unit_z: 0,
+      city_x: 0,
+      city_z: 0,
+      selected_x: 0,
+      selected_z: 0
+    };
+  }
+  // For square tiles, use the original hardcoded offsets
+  return {
+    unit_x: -12,
+    unit_z: -4,
+    city_x: -12,
+    city_z: -11,
+    selected_x: -12,
+    selected_z: -7
+  };
+}
+
+/****************************************************************************
   Handles unit positions
 ****************************************************************************/
 function update_unit_position(ptile) {
@@ -97,8 +124,9 @@ function update_unit_position(ptile) {
     // Add new unit on tile.
     unit_positions[ptile['index']] = new_unit;
 
+    let offsets = get_tile_position_offsets();
     new_unit.matrixAutoUpdate = false;
-    new_unit.position.set(pos['x'] - 12, height - 2, pos['y'] - 4);
+    new_unit.position.set(pos['x'] + offsets.unit_x, height - 2, pos['y'] + offsets.unit_z);
     let rnd_rotation = Math.floor(Math.random() * 8);
     new_unit.rotateOnAxis(new THREE.Vector3(0,1,0).normalize(), (convert_unit_rotation(rnd_rotation, unit_type_name)));
     new_unit.updateMatrix();
@@ -130,8 +158,9 @@ function update_unit_position(ptile) {
     unit_positions[ptile['index']] = new_unit;
     unit_positions[ptile['index']]['unit_type'] = unit_type_name;
 
+    let offsets = get_tile_position_offsets();
     new_unit.matrixAutoUpdate = false;
-    new_unit.position.set(pos['x'] - 12, height - 2, pos['y'] - 4);
+    new_unit.position.set(pos['x'] + offsets.unit_x, height - 2, pos['y'] + offsets.unit_z);
     new_unit.rotateOnAxis(new THREE.Vector3(0, 1, 0).normalize(), (convert_unit_rotation(visible_unit['facing'], unit_type_name)));
     new_unit.updateMatrix();
     new_unit.name = "Unit_" + visible_unit['id'];
@@ -162,8 +191,9 @@ function update_unit_position(ptile) {
       highlight_map_tile_selected(-1, -1);
     }
     if (visible_unit['anim_list'].length === 0) {
+      let offsets = get_tile_position_offsets();
       let selected_mesh = new THREE.Mesh( new THREE.RingGeometry( 16, 20, 30), selected_unit_material );
-      selected_mesh.position.set(pos['x'] - 12, height + 2, pos['y'] - 7);
+      selected_mesh.position.set(pos['x'] + offsets.selected_x, height + 2, pos['y'] + offsets.selected_z);
       selected_mesh.rotation.x = -1 * Math.PI / 2;
       selected_mesh.name = "SelectedUnitIndicator";
       scene.add(selected_mesh);
@@ -216,7 +246,8 @@ function update_city_position(ptile) {
     if (pcity['style'] == 4) height -= 1;
     if (pcity['style'] == 9) height -= 1;
 
-    new_city.position.set(pos['x'] - 12, height - 2, pos['y'] - 11);
+    let offsets = get_tile_position_offsets();
+    new_city.position.set(pos['x'] + offsets.city_x, height - 2, pos['y'] + offsets.city_z);
     new_city.rotateOnAxis(new THREE.Vector3(0,1,0).normalize(), (2 * Math.PI * Math.random()));
 
     if (scene != null) {
@@ -273,7 +304,8 @@ function update_city_position(ptile) {
       if (pcity['style'] == 4) height -= 1;
       if (pcity['style'] == 9) height -= 1;
 
-      new_city.position.set(pos['x'] - 12, height - 2, pos['y'] - 10);
+      let offsets = get_tile_position_offsets();
+      new_city.position.set(pos['x'] + offsets.city_x, height - 2, pos['y'] + offsets.city_z);
       new_city.rotateOnAxis(new THREE.Vector3(0,1,0).normalize(), (2 * Math.PI * Math.random()));
 
       if (scene != null) {

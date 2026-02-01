@@ -171,9 +171,8 @@ void main()
         if (mouse_x >= 0 && mouse_y >= 0 && mouse_x == int(floor((map_x_size * vUv.x ))) && mouse_y == int(floor((map_y_size * (1.0 - vUv.y) )))) {
             fragColor.rgba = vec4(0.3, 0.3, 0.3, 1.0);
         }
-        if ( (fract((vPosition.x + 502.0) / 35.71) < 0.028 || fract((vPosition.z + 2.0) / 35.71) < 0.028)) {
-            fragColor.rgba = vec4(0.03, 0.03, 0.03, 1.0);
-        }
+        // For hexagonal tiles, we don't render a square grid
+        // The hexagon edges are naturally visible where tiles meet
 
         return;
     }
@@ -229,9 +228,7 @@ void main()
         if (vPosition.y < beach_blend_high ) {
             texture_coord = vec2(dx , dy );
             terrain_color = texture(coast, texture_coord);
-            if ((fract((vPosition.x + 502.0) / 35.71) < 0.018 || fract((vPosition.z + 2.0) / 35.71) < 0.018)) {
-                terrain_color.rgb = terrain_color.rgb * 1.45;  // render tile grid.
-            }
+            // Hexagonal tiles don't use square grid rendering
 
         } else {
             texture_coord = vec2(dx , dy);
@@ -241,9 +238,7 @@ void main()
         if (vPosition.y < beach_blend_high ) {
             texture_coord = vec2(dx , dy);
             terrain_color = texture(ocean, texture_coord);
-            if ((fract((vPosition.x + 502.0) / 35.71) < 0.018 || fract((vPosition.z + 2.0) / 35.71) < 0.018)) {
-                terrain_color.rgb = terrain_color.rgb * 1.7;  // render tile grid.
-            }
+            // Hexagonal tiles don't use square grid rendering
         } else {
             texture_coord = vec2(dx  , dy );
             terrain_color = texture(plains, texture_coord);
@@ -338,9 +333,8 @@ void main()
     }
 
 
-    if ( (fract((vPosition.x + 502.0) / 35.71) < 0.018 || fract((vPosition.z + 2.0) / 35.71) < 0.018)) {
-        c = c - 0.085;  // render tile grid.
-    }
+    // Hexagonal tiles don't use square grid rendering
+    // The hexagon boundaries are naturally visible where tiles meet
 
 
     // render the beach.
