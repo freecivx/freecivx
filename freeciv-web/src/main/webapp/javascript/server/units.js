@@ -147,7 +147,7 @@ function server_create_units() {
     var start_pos = get_player_start_position(parseInt(player_id));
     
     // Create 3 warriors for each player
-    for (var i = 0; i < 3; i++) {
+    for (var i = 0; i < 1; i++) {
       var offset = warrior_offsets[i];
       var warrior_x = start_pos.x + offset[0];
       var warrior_y = start_pos.y + offset[1];
@@ -168,12 +168,14 @@ function server_create_units() {
         facing: 1,
         done_moving: false,
         action_decision_want: 0,
-        action_decision_tile: 0
+        action_decision_tile: 0,
+        ssa_controller: 0,
+        transported: false
       });
     }
     
     // Create 2 explorers for each player
-    for (var i = 0; i < 2; i++) {
+    for (var i = 0; i < 1; i++) {
       var offset = explorer_offsets[i];
       var explorer_x = start_pos.x + offset[0];
       var explorer_y = start_pos.y + offset[1];
@@ -194,12 +196,14 @@ function server_create_units() {
         facing: 2,
         done_moving: false,
         action_decision_want: 0,
-        action_decision_tile: 0
+        action_decision_tile: 0,
+        ssa_controller: 0,
+        transported: false
       });
     }
     
     // Create 3 settlers for each player
-    for (var i = 0; i < 3; i++) {
+    for (var i = 0; i < 1; i++) {
       var offset = settler_offsets[i];
       var settler_x = start_pos.x + offset[0];
       var settler_y = start_pos.y + offset[1];
@@ -220,7 +224,9 @@ function server_create_units() {
         facing: 3,
         done_moving: false,
         action_decision_want: 0,
-        action_decision_tile: 0
+        action_decision_tile: 0,
+        ssa_controller: 0,
+        transported: false
       });
     }
   }
