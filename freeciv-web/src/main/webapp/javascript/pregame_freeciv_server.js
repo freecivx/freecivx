@@ -970,6 +970,17 @@ function show_intro_dialog(title, message) {
 				icon :"ui-icon-gear"
 			  },
               {
+                  text : "Singleplayer-in-browser",
+                  click : function() {
+                    dialog_close_trigger = "button";
+                    pregame_handle_user(false);
+                    wait_for_text("You are logged in as", function () {
+                      show_standalone_pregame_dialog();
+                    });
+                  },
+                  icon : "ui-icon-signal-diag"
+              },
+              {
                   text : "New user",
                   click : function() {
                   	$("#fciv-intro").hide();
