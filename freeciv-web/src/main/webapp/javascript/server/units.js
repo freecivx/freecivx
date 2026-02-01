@@ -69,7 +69,10 @@ function server_create_units() {
   var is_water_tile = function(x, y) {
     var tile_index = x + y * map.xsize;
     var ptile = index_to_tile(tile_index);
-    if (!ptile) return true; // Assume water if tile not found
+    if (!ptile) {
+      console.warn("[Server Units] Tile not found at (" + x + ", " + y + "), treating as non-water");
+      return false; // If tile doesn't exist, it's likely a bug, don't treat as water
+    }
     
     // TERRAIN_OCEAN = 1 (from generator.js)
     return ptile.terrain === 1;
