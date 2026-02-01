@@ -1061,19 +1061,6 @@ function pregame_handle_user(close_pregame)
   }
   $("#fciv-intro").hide();
 
-  if ($.getUrlVar('action') === "local") {
-      username = $("#username_req").val();
-      $("#dialog").dialog('close');
-      $("#password_req").val("");
-      simpleStorage.set("password", "");
-      $("#fciv-intro").hide();
-      init_sprites();
-      if (close_pregame) {
-          $("#pregame_page").hide();
-      }
-      return;
-  }
-
   $.ajax({
    type: 'POST',
    url: "/validate_user?userstring=" + check_username,
@@ -1117,6 +1104,7 @@ function pregame_handle_user(close_pregame)
                  /* Login OK! */
                  if (validate_username()) {
                    if (is_standalone_mode()) {
+                      console.log("Starting standalone mode.");
                       show_standalone_pregame_dialog();
                    } else {
                      if (!is_touch_device()) $("#pregame_text_input").focus();

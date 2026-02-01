@@ -134,11 +134,6 @@ function control_init()
     pregame_start_game();
   });
 
-  $("#singleplayer_standalone_button").click(function(event) {
-    // Show the standalone pregame dialog (like "Customize" button, requires user login)
-    show_standalone_pregame_dialog();
-  });
-
   $("#load_game_button").click(function(event) {
       show_load_game_dialog();
   });

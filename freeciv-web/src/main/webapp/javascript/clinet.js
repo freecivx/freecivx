@@ -42,13 +42,6 @@ function network_init()
     return;
   }
 
-  if ($.getUrlVar('action') === "local") {
-      civserverport = 7800;
-      websocket_init();
-      load_game_check();
-      return;
-  }
-
   var civclient_request_url = "/civclientlauncher";
   if ($.getUrlVar('action') != null) civclient_request_url += "?action=" + $.getUrlVar('action');
   if ($.getUrlVar('action') == null && $.getUrlVar('civserverport') != null) civclient_request_url += "?";
@@ -79,25 +72,17 @@ function network_init()
   Initialized the WebSocket connection.
 ****************************************************************************/
 function websocket_init() {
-    if ($.getUrlVar('action') === "local") {
-        civserverport = 7800;
-        var freecivx_port = parseFloat(civserverport);
-        freecivx_server = true;
 
-        const ws_protocol = (window.location.protocol === 'https:') ? "wss://" : "ws://";
-        ws = new WebSocket(`${ws_protocol}${window.location.hostname}:${freecivx_port}/`);
-        ws.binaryType = 'arraybuffer';
-    } else {
-        var proxyport = parseFloat(civserverport);
-        if (proxyport < 7800) {
-            proxyport += 1000; // Freeciv C server with Websockify.
-            freecivx_server = false;
-        }
-        const ws_protocol = (window.location.protocol === 'https:') ? "wss://" : "ws://";
-        const port = window.location.port ? `:${window.location.port}` : '';
-        ws = new WebSocket(`${ws_protocol}${window.location.hostname}${port}/civsocket/${proxyport}`);
-        ws.binaryType = 'arraybuffer';
+    var proxyport = parseFloat(civserverport);
+    if (proxyport < 7800) {
+        proxyport += 1000; // Freeciv C server with Websockify.
+        freecivx_server = false;
     }
+    const ws_protocol = (window.location.protocol === 'https:') ? "wss://" : "ws://";
+    const port = window.location.port ? `:${window.location.port}` : '';
+    ws = new WebSocket(`${ws_protocol}${window.location.hostname}${port}/civsocket/${proxyport}`);
+    ws.binaryType = 'arraybuffer';
+
     ws.onopen = check_websocket_ready;
     ws.onmessage = handleWebSocketMessage;
     ws.onclose = handleWebSocketClose;
