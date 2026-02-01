@@ -147,7 +147,7 @@ function server_ai_can_build_city(tile, owner) {
 function server_ai_build_city(punit) {
   // Generate a city name
   var city_names = [
-    ["Rome", "Florence", "Milan", "Venice", "Naples", "Turin", "Genoa", "Ravenna", "Pisa", "Bologna", "Verona", "Padua", "Palermo", "Bari", "Catania", "Syracuse", "Siena", "Perugia", "Ancona", "Parma"],
+    ["Rome", "Florence", "Milan", "Venice", "Naples", "Turin", "Genoa", "Ravenna", "Pisa", "Bologna", "Verona", "Padua", "Palermo", "Bari", "Catania", "Mantua", "Siena", "Perugia", "Ancona", "Parma"],
     ["Memphis", "Thebes", "Alexandria", "Giza", "Luxor", "Aswan", "Cairo", "Karnak", "Abydos", "Elephantine", "Heliopolis", "Tanis", "Bubastis", "Sais", "Avaris", "Pi-Ramesses", "Hermopolis", "Edfu", "Philae", "Abu Simbel"],
     ["Athens", "Sparta", "Corinth", "Delphi", "Olympia", "Argos", "Rhodes", "Thebes", "Mycenae", "Ephesus", "Miletus", "Pergamon", "Byzantium", "Smyrna", "Syracuse", "Massalia", "Cyrene", "Halicarnassus", "Knossos", "Phaistos"],
     ["Babylon", "Nineveh", "Ur", "Akkad", "Lagash", "Eridu", "Nippur", "Kish", "Uruk", "Assur", "Persepolis", "Susa", "Ecbatana", "Pasargadae", "Ctesiphon", "Seleucia", "Hatra", "Palmyra", "Mari", "Ebla"],
