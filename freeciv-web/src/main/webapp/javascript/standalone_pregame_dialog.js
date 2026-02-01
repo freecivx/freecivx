@@ -95,6 +95,8 @@ function show_standalone_pregame_dialog()
         $("#standalone_pregame_dialog").dialog('close');
       },
       "Start Game": function() {
+        setup_standalone_environment();
+        start_standalone_game();
         start_standalone_game_with_config();
       }
     },

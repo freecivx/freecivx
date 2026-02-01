@@ -1069,19 +1069,11 @@ function pregame_handle_user(close_pregame)
           $("#login_process").text("Please sign up as a new player. Username not found.");
 
           if (window.location.hostname === "localhost") {
-            if (is_standalone_mode()) {
-               console.log("Starting standalone mode.");
-               username = $("#username_req").val();
-               $("#dialog").dialog('close');
-               $("#pregame_page").hide();
-               show_standalone_pregame_dialog();
-            } else {
               username = $("#username_req").val();
               $("#dialog").dialog('close');
               init_sprites();
               if (close_pregame) {
                   $("#pregame_page").hide();
-                }
               }
           }
 
@@ -1111,18 +1103,12 @@ function pregame_handle_user(close_pregame)
                  simpleStorage.set("password", password);
                  /* Login OK! */
                  if (validate_username()) {
-                   if (is_standalone_mode()) {
-                      console.log("Starting standalone mode.");
-                      $("#dialog").dialog('close');
-                      $("#pregame_page").hide();
-                      show_standalone_pregame_dialog();
-                   } else {
-                     if (!is_touch_device()) $("#pregame_text_input").focus();
-                     $("#dialog").dialog('close');
-                     init_sprites();
-                     if (close_pregame) {
-                       $("#pregame_page").hide();
-                     }
+
+                   if (!is_touch_device()) $("#pregame_text_input").focus();
+                   $("#dialog").dialog('close');
+                   init_sprites();
+                   if (close_pregame) {
+                     $("#pregame_page").hide();
                    }
 
                  }
