@@ -446,7 +446,7 @@ function handle_player_info(packet)
 
   players[packet['playerno']] = $.extend(players[packet['playerno']], packet);
 
-  if (C_S_PREPARING == client_state()) {
+  if (C_S_PREPARING == client_state() && !is_standalone_mode()) {
     update_player_info_pregame();
   }
 }
