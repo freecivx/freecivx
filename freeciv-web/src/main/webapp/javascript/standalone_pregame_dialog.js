@@ -236,16 +236,16 @@ function start_standalone_game_with_config()
   standalone_config.ai_players = parseInt($("#standalone_ai_players").val());
 
   // Validate settings
-  if (isNaN(standalone_config.map_xsize) || standalone_config.map_xsize < 20 || standalone_config.map_xsize > 200) {
-    swal("Invalid map width", "Map width must be between 20 and 200.", "error");
+  if (isNaN(standalone_config.map_xsize) || standalone_config.map_xsize < 20 || standalone_config.map_xsize > 1000) {
+    swal("Invalid map width", "Map width must be between 20 and 1000.", "error");
     return;
   }
-  if (isNaN(standalone_config.map_ysize) || standalone_config.map_ysize < 20 || standalone_config.map_ysize > 200) {
-    swal("Invalid map height", "Map height must be between 20 and 200.", "error");
+  if (isNaN(standalone_config.map_ysize) || standalone_config.map_ysize < 20 || standalone_config.map_ysize > 1000) {
+    swal("Invalid map height", "Map height must be between 20 and 1000.", "error");
     return;
   }
-  if (isNaN(standalone_config.ai_players) || standalone_config.ai_players < 0 || standalone_config.ai_players > 10) {
-    swal("Invalid AI players", "Number of AI players must be between 0 and 10.", "error");
+  if (isNaN(standalone_config.ai_players) || standalone_config.ai_players < 0 || standalone_config.ai_players > 1000) {
+    swal("Invalid AI players", "Number of AI players must be between 0 and 1000.", "error");
     return;
   }
 
