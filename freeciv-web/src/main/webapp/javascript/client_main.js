@@ -195,7 +195,7 @@ function show_new_game_message()
 
   clear_chatbox();
 
-  if (observing || $.getUrlVar('autostart') == "true") {
+  if (observing || $.getUrlVar('autostart') == "true" || is_standalone_mode()) {
     return;
 
   } else if (client.conn.playing != null && !game_loaded) {
