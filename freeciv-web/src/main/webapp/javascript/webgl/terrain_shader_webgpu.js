@@ -60,21 +60,21 @@ function createTerrainShaderTSL(uniforms) {
     const BEACH_HIGH = 50.9;
     const BEACH_BLEND_HIGH = 50.4;
 
-    // Create texture sampler nodes
-    const maptilesNode = texture(uniforms.maptiles.value);
-    const bordersNode = texture(uniforms.borders.value);
+    // Create texture references for reuse (don't call texture() yet)
+    const maptilesTex = uniforms.maptiles.value;
+    const bordersTex = uniforms.borders.value;
     
-    // Terrain texture nodes - organized by terrain type
+    // Terrain texture references - organized by terrain type
     const terrainTextures = {
-        arctic: texture(uniforms.arctic_farmland_irrigation_tundra.value),
-        grassland: texture(uniforms.grassland.value),
-        coast: texture(uniforms.coast.value),
-        desert: texture(uniforms.desert.value),
-        ocean: texture(uniforms.ocean.value),
-        plains: texture(uniforms.plains.value),
-        hills: texture(uniforms.hills.value),
-        mountains: texture(uniforms.mountains.value),
-        swamp: texture(uniforms.swamp.value)
+        arctic: uniforms.arctic_farmland_irrigation_tundra.value,
+        grassland: uniforms.grassland.value,
+        coast: uniforms.coast.value,
+        desert: uniforms.desert.value,
+        ocean: uniforms.ocean.value,
+        plains: uniforms.plains.value,
+        hills: uniforms.hills.value,
+        mountains: uniforms.mountains.value,
+        swamp: uniforms.swamp.value
     };
 
     // Map size uniforms
@@ -94,8 +94,8 @@ function createTerrainShaderTSL(uniforms) {
     const sampledUV = add(uvNode, rndOffset);
 
     // Sample terrain type and border data
-    const terrainType = maptilesNode.sample(sampledUV);
-    const borderColor = bordersNode.sample(uvNode);
+    const terrainType = texture(uniforms.maptiles.value, sampledUV);
+    const borderColor = texture(uniforms.borders.value, uvNode);
 
     // Calculate texture coordinates for different tile orientations
     const dx = mod(mul(map_x_size, uvNode.x), 1.0);
@@ -133,12 +133,12 @@ function createTerrainShaderTSL(uniforms) {
         if (blendWithCoast) {
             // Blend with coast texture at lower elevations (beaches)
             terrainColor = mix(
-                terrainTextures.coast.sample(coord),
-                textureNode.sample(coord),
+                texture(terrainTextures.coast, coord),
+                texture(textureNode, coord),
                 step(BEACH_BLEND_HIGH, posY)
             );
         } else {
-            terrainColor = textureNode.sample(coord);
+            terrainColor = texture(textureNode, coord);
         }
         
         return { mask: isTerrain, color: terrainColor };
