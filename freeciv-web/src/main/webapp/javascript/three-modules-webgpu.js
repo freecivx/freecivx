@@ -28,9 +28,6 @@ THREE.MeshBasicNodeMaterial = MeshBasicNodeMaterial;
 // Add all TSL exports to THREE
 Object.assign(THREE, TSL);
 
-// Update global reference (in case THREE was reassigned)
-window.THREE = THREE;
-
 console.log('WebGPU modules loaded successfully');
 
 export { WebGPURenderer, MeshBasicNodeMaterial, TSL };

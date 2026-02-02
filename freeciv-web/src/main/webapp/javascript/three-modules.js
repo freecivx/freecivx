@@ -19,7 +19,8 @@ import { AnaglyphEffect } from '/javascript/webgl/effects/AnaglyphEffect.js';
 
 // Create a mutable copy of THREE for potential extensions
 // ES6 module namespace objects are frozen, so we need a mutable copy
-const THREE = Object.assign({}, THREEModule);
+// Note: This is a shallow copy - nested objects are copied by reference
+const THREE = { ...THREEModule };
 
 // Export to global window object for compatibility with existing code
 window.THREE = THREE;
