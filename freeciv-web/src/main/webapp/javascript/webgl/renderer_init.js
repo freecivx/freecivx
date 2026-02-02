@@ -33,7 +33,7 @@ var stats = null;
 ****************************************************************************/
 function init_webgl_renderer()
 {
-  // Check for URL parameter override first
+  // Check for URL parameter override first (renderer_type_override is a global variable injected by JSP)
   if (typeof renderer_type_override !== 'undefined' && renderer_type_override !== '') {
     renderer_type = renderer_type_override;
     console.log("Renderer type set from URL parameter: " + renderer_type);
