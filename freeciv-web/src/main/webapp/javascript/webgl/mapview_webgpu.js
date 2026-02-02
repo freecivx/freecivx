@@ -147,21 +147,23 @@ async function init_webgpu_mapview() {
       freeciv_uniforms[terrain_name] = {type: "t", value: webgl_textures[terrain_name]};
     }
 
-  // Create low-resolution mesh for raycasting
-  lofiGeometry = new THREE.PlaneGeometry( mapview_model_width, mapview_model_height, map['xsize'], map['ysize']);
-  lofiGeometry.rotateX( - Math.PI / 2 );
-  var lofiMaterial = new THREE.MeshBasicMaterial( {color: 0x00aa00, transparent: true, opacity: 0} );
-  lofiMesh = new THREE.Mesh(lofiGeometry, lofiMaterial);
-  lofiMesh.layers.set(6);
-  lofiMesh.name = "raycaster_mesh";
-  scene.add(lofiMesh);
-
   if (map.xsize > 200 || map.ysize > 200) {
     terrain_quality = 2;
   }
 
   init_heightmap(terrain_quality);
   update_heightmap(terrain_quality);
+
+  // Create low-resolution mesh for raycasting
+  var lofiMaterial = new THREE.MeshBasicMaterial( {color: 0x00aa00, transparent: true, opacity: 0} );
+  lofiGeometry = new THREE.BufferGeometry();
+  lofiGeometry.name = "lofi_terrain_geometry";
+  init_land_geometry(lofiGeometry, 2);
+  update_land_geometry(lofiGeometry, 2);
+  lofiMesh = new THREE.Mesh(lofiGeometry, lofiMaterial);
+  lofiMesh.layers.set(6);
+  lofiMesh.name = "raycaster_mesh";
+  scene.add(lofiMesh);
 
   // Create node-based material for WebGPU using TSL shader
   console.log("Creating WebGPU terrain shader with TSL...");
