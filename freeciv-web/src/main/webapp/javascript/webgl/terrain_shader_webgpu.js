@@ -113,7 +113,16 @@ function createTerrainShaderTSL(uniforms) {
 
     /**
      * Helper function to create terrain selection and blending logic
-     * Uses step functions to create smooth transitions between terrain types
+     * 
+     * @param {number} terrainValue - The terrain type ID to match (e.g., TERRAIN_GRASSLAND)
+     * @param {object} textureNode - TSL texture node for this terrain type
+     * @param {object} coord - TSL vec2 coordinate node for texture sampling
+     * @param {boolean} blendWithCoast - If true, blends with coast texture at lower elevations
+     * @returns {object} Object with mask (selection boolean) and color (sampled texture) nodes
+     * 
+     * Uses step functions to create smooth transitions between terrain types.
+     * When blendWithCoast is true, terrain at elevations below BEACH_BLEND_HIGH
+     * transitions to coast texture, creating natural beach areas.
      */
     function createTerrainLayer(terrainValue, textureNode, coord, blendWithCoast = true) {
         // Create boolean mask for this terrain type

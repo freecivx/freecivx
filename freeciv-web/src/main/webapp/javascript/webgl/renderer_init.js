@@ -114,6 +114,8 @@ async function renderer_init() {
         if (!webgpuLoaded) {
           console.log("WebGPU failed to load, falling back to WebGL");
           renderer_type = "webgl";
+          // Update stored preference to prevent repeated WebGPU attempts
+          simpleStorage.set("renderer_type", "webgl");
           webgl_start_renderer();
           init_webgl_mapview();
         } else {
@@ -123,6 +125,8 @@ async function renderer_init() {
       } else {
         console.log("WebGPU loader not available, falling back to WebGL");
         renderer_type = "webgl";
+        // Update stored preference to prevent repeated WebGPU attempts
+        simpleStorage.set("renderer_type", "webgl");
         webgl_start_renderer();
         init_webgl_mapview();
       }
