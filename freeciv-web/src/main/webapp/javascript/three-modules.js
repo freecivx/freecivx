@@ -24,4 +24,30 @@ window.DRACOLoader = DRACOLoader;
 window.OrbitControls = OrbitControls;
 window.AnaglyphEffect = AnaglyphEffect;
 
+// Conditionally load WebGPU support asynchronously
+(async function loadWebGPUSupport() {
+  // Check if WebGPU is supported and load WebGPU modules
+  if (typeof navigator !== 'undefined' && navigator.gpu) {
+    try {
+      // Dynamically import WebGPU modules
+      const webgpuModule = await import('/javascript/webgpu/libs/threejs/three.webgpu.min.js');
+      const tslModule = await import('/javascript/webgpu/libs/threejs/three.tsl.min.js');
+      
+      const WebGPURenderer = webgpuModule.WebGPURenderer;
+      const MeshBasicNodeMaterial = webgpuModule.MeshBasicNodeMaterial;
+      const TSL = tslModule;
+      
+      THREE.WebGPURenderer = WebGPURenderer;
+      THREE.MeshBasicNodeMaterial = MeshBasicNodeMaterial;
+      Object.assign(THREE, TSL);
+      
+      window.THREE = THREE;
+      
+      console.log('WebGPU support loaded successfully');
+    } catch (error) {
+      console.log('WebGPU modules not available, using WebGL only:', error);
+    }
+  }
+})();
+
 export { THREE, GLTFLoader, DRACOLoader, OrbitControls, AnaglyphEffect };

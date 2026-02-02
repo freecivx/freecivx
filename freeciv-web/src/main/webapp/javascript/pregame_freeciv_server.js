@@ -27,6 +27,7 @@ var metamessage_changed = false;
 var logged_in_with_password = false;
 var antialiasing_setting = true;
 var password_reset_count = 0;
+var renderer_type = "webgl"; // "webgl" or "webgpu"
 
 /****************************************************************************
   ...
@@ -504,6 +505,11 @@ function pregame_settings()
       "<br><span id='settings_info'><i>3D WebGL requires a fast computer with 3D graphics card, such as Nvidia GeForce and at least 3GB of RAM. " +
       "Here you can configure the 3D WebGL version:</i></span><br><br>" +
 	    "<table id='settings_table'>" +
+	    "<tr title='Choose between WebGL and WebGPU renderer'><td>Renderer Type:</td>" +
+        	  "<td><select name='renderer_type' id='renderer_type'>" +
+              "<option value='webgl'>WebGL</option>" +
+              "<option value='webgpu'>WebGPU (Experimental)</option>" +
+              "</select></td></tr>"+
 	    "<tr title='Graphics quality level'><td>Graphics quality:</td>" +
         	  "<td><select name='graphics_quality' id='graphics_quality'>" +
               "<option value='2'>Medium</option>" +
@@ -624,6 +630,21 @@ function pregame_settings()
   }
 
   $("#3d_antialiasing_label").prop("innerHTML", "Antialiasing:");
+
+  // Load renderer type setting
+  var stored_renderer_type = simpleStorage.get("renderer_type", "");
+  if (stored_renderer_type != null && (stored_renderer_type == "webgl" || stored_renderer_type == "webgpu")) {
+    $("#renderer_type").val(stored_renderer_type);
+    renderer_type = stored_renderer_type;
+  } else {
+    renderer_type = "webgl"; // Default to WebGL
+  }
+
+  $('#renderer_type').change(function() {
+    renderer_type = $("#renderer_type").val();
+    simpleStorage.set("renderer_type", renderer_type);
+    alert("Please reload the game for the renderer change to take effect.");
+  });
 
   var stored_antialiasing_setting = simpleStorage.get("antialiasing_setting", "");
   if (stored_antialiasing_setting != null && stored_antialiasing_setting == "false") {

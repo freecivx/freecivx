@@ -33,7 +33,21 @@ var stats = null;
 ****************************************************************************/
 function init_webgl_renderer()
 {
-  if (!Detector.webgl) {
+  // Check renderer type preference
+  var stored_renderer_type = simpleStorage.get("renderer_type", "");
+  if (stored_renderer_type != null && stored_renderer_type == "webgpu") {
+    if (!navigator.gpu) {
+      console.log("WebGPU not supported, falling back to WebGL");
+      simpleStorage.set("renderer_type", "webgl");
+      renderer_type = "webgl";
+    } else {
+      renderer_type = "webgpu";
+    }
+  } else {
+    renderer_type = "webgl";
+  }
+
+  if (renderer_type === "webgl" && !Detector.webgl) {
     swal("3D WebGL not supported by your browser or you don't have a 3D graphics card. ");
     return;
   }
@@ -70,7 +84,21 @@ function webgl_preload_complete()
  ****************************************************************************/
 function renderer_init() {
   console.log("renderer_init()");
-  if (!Detector.webgl) {
+  
+  // Load renderer type preference
+  var stored_renderer_type = simpleStorage.get("renderer_type", "");
+  if (stored_renderer_type != null && stored_renderer_type == "webgpu") {
+    if (!navigator.gpu) {
+      console.log("WebGPU not supported, falling back to WebGL");
+      renderer_type = "webgl";
+    } else {
+      renderer_type = "webgpu";
+    }
+  } else {
+    renderer_type = "webgl";
+  }
+
+  if (renderer_type === "webgl" && !Detector.webgl) {
     swal("3D WebGL not supported by your browser or you don't have a 3D graphics card. ");
     console.log("3D WebGL not supported by your browser or you don't have a 3D graphics card. ");
     return;
@@ -78,8 +106,13 @@ function renderer_init() {
 
   if (C_S_RUNNING === client_state() || C_S_OVER === client_state()) {
 
-    webgl_start_renderer();
-    init_webgl_mapview();
+    if (renderer_type === "webgpu") {
+      webgpu_start_renderer();
+      init_webgpu_mapview();
+    } else {
+      webgl_start_renderer();
+      init_webgl_mapview();
+    }
 
     init_webgl_mapctrl();
     init_game_unit_panel();
