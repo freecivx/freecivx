@@ -171,9 +171,8 @@ function createTerrainShaderTSL(uniforms) {
     finalColor = vec4(mul(finalColor.rgb, vertColor), finalColor.a);
 
     // Overlay borders if visible
-    // Convert boolean to float (1.0 if true, 0.0 if false) before multiplication
-    const bordersVisibleFloat = mul(borders_visible, 1.0);
-    const borderMix = mul(bordersVisibleFloat, borderColor.a);
+    // Use mix to conditionally apply borders: if borders_visible is true, use full border alpha, otherwise 0
+    const borderMix = borders_visible.select(borderColor.a, 0.0);
     finalColor = vec4(
         mix(finalColor.rgb, borderColor.rgb, borderMix),
         finalColor.a
