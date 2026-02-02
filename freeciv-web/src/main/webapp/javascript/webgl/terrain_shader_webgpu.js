@@ -126,7 +126,7 @@ function createTerrainShaderTSL(uniforms) {
      */
     function createTerrainLayer(terrainValue, textureNode, coord, blendWithCoast = true) {
         // Create float mask for this terrain type (ensure it's a float, not boolean)
-        // Using min() to combine the two step functions as floats
+        // Split step() operations and use mul() to ensure float multiplication
         const step1 = step(terrainValue - 0.5, terrainHere);
         const step2 = step(terrainHere, terrainValue + 0.5);
         const isTerrain = mul(step1, step2);
