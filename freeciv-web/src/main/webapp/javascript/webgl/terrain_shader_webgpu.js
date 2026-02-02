@@ -94,8 +94,8 @@ function createTerrainShaderTSL(uniforms) {
     const sampledUV = add(uvNode, rndOffset);
 
     // Sample terrain type and border data
-    const terrainType = maptilesNode.uv(sampledUV);
-    const borderColor = bordersNode.uv(uvNode);
+    const terrainType = maptilesNode.sample(sampledUV);
+    const borderColor = bordersNode.sample(uvNode);
 
     // Calculate texture coordinates for different tile orientations
     const dx = mod(mul(map_x_size, uvNode.x), 1.0);
@@ -133,12 +133,12 @@ function createTerrainShaderTSL(uniforms) {
         if (blendWithCoast) {
             // Blend with coast texture at lower elevations (beaches)
             terrainColor = mix(
-                terrainTextures.coast.uv(coord),
-                textureNode.uv(coord),
+                terrainTextures.coast.sample(coord),
+                textureNode.sample(coord),
                 step(BEACH_BLEND_HIGH, posY)
             );
         } else {
-            terrainColor = textureNode.uv(coord);
+            terrainColor = textureNode.sample(coord);
         }
         
         return { mask: isTerrain, color: terrainColor };

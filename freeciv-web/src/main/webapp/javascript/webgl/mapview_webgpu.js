@@ -93,6 +93,34 @@ function webgpu_start_renderer()
 }
 
 /****************************************************************************
+ Add simple water mesh for WebGPU renderer.
+ Uses basic material instead of complex physical material for better compatibility.
+****************************************************************************/
+function add_quality_dependent_objects_webgpu() {
+  // Create simple water plane with basic material
+  var waterGeometry = new THREE.PlaneGeometry( mapview_model_width, mapview_model_height);
+  
+  // Use MeshBasicMaterial with simple color and transparency for WebGPU compatibility
+  var waterMaterial = new THREE.MeshBasicMaterial({
+    color: 0x4a9fc7, // Light blue water color
+    transparent: true,
+    opacity: 0.6,
+    side: THREE.DoubleSide
+  });
+  
+  water_hq = new THREE.Mesh(waterGeometry, waterMaterial);
+  water_hq.rotation.x = - Math.PI * 0.5;
+  water_hq.translateOnAxis(new THREE.Vector3(0,0,1).normalize(), 50);
+  water_hq.translateOnAxis(new THREE.Vector3(1,0,0).normalize(), Math.floor(mapview_model_width / 2) - 500);
+  water_hq.translateOnAxis(new THREE.Vector3(0,1,0).normalize(), -mapview_model_height / 2);
+  water_hq.renderOrder = -1; // Render water first
+  water_hq.castShadow = false;
+  water_hq.name = "water_surface";
+  scene.add( water_hq );
+  console.log("Added simple WebGPU water surface.");
+}
+
+/****************************************************************************
  This will render the map terrain mesh using WebGPU and TSL shaders.
 ****************************************************************************/
 async function init_webgpu_mapview() {
@@ -170,7 +198,7 @@ async function init_webgpu_mapview() {
 
   setInterval(update_map_known_tiles, 15);
 
-  add_quality_dependent_objects_webgl();
+  add_quality_dependent_objects_webgpu();
 
   add_all_objects_to_scene();
 
