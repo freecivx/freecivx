@@ -33,18 +33,25 @@ var stats = null;
 ****************************************************************************/
 function init_webgl_renderer()
 {
-  // Check renderer type preference
-  var stored_renderer_type = simpleStorage.get("renderer_type", "");
-  if (stored_renderer_type != null && stored_renderer_type == "webgpu") {
-    if (!navigator.gpu) {
-      console.log("WebGPU not supported, falling back to WebGL");
-      simpleStorage.set("renderer_type", "webgl");
-      renderer_type = "webgl";
-    } else {
-      renderer_type = "webgpu";
-    }
+  // Check for URL parameter override first (renderer_type_override is a global variable injected by JSP)
+  if (typeof renderer_type_override !== 'undefined' && renderer_type_override !== '') {
+    renderer_type = renderer_type_override;
+    console.log("Renderer type set from URL parameter: " + renderer_type);
+    // Note: We don't save URL parameter to storage to allow temporary overrides
   } else {
-    renderer_type = "webgl";
+    // Check renderer type preference from storage
+    var stored_renderer_type = simpleStorage.get("renderer_type", "");
+    if (stored_renderer_type != null && stored_renderer_type == "webgpu") {
+      if (!navigator.gpu) {
+        console.log("WebGPU not supported, falling back to WebGL");
+        simpleStorage.set("renderer_type", "webgl");
+        renderer_type = "webgl";
+      } else {
+        renderer_type = "webgpu";
+      }
+    } else {
+      renderer_type = "webgl";
+    }
   }
 
   if (renderer_type === "webgl" && !Detector.webgl) {

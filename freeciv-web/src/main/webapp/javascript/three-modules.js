@@ -11,11 +11,16 @@
  * 4. This pattern prepares for future Vite build integration where imports are bundled
  */
 
-import * as THREE from 'three';
+import * as THREEModule from 'three';
 import { GLTFLoader } from '/javascript/webgl/libs/GLTFLoader.js';
 import { DRACOLoader } from '/javascript/webgl/libs/DRACOLoader.js';
 import { OrbitControls } from '/javascript/webgl/libs/OrbitControls.js';
 import { AnaglyphEffect } from '/javascript/webgl/effects/AnaglyphEffect.js';
+
+// Create a mutable copy of THREE for potential extensions
+// ES6 module namespace objects are frozen, so we need a mutable copy
+// Note: This is a shallow copy - nested objects are copied by reference
+const THREE = { ...THREEModule };
 
 // Export to global window object for compatibility with existing code
 window.THREE = THREE;
@@ -24,10 +29,10 @@ window.DRACOLoader = DRACOLoader;
 window.OrbitControls = OrbitControls;
 window.AnaglyphEffect = AnaglyphEffect;
 
-// Track WebGPU loading state
+// WebGPU loading function
+// This dynamically imports the WebGPU module loader when needed
 let webgpuLoadingPromise = null;
 
-// Conditionally load WebGPU support asynchronously
 function loadWebGPUSupport() {
   // Return cached promise if already loading
   if (webgpuLoadingPromise) {
@@ -38,22 +43,8 @@ function loadWebGPUSupport() {
   if (typeof navigator !== 'undefined' && navigator.gpu) {
     webgpuLoadingPromise = (async () => {
       try {
-        // Import WebGPU module (which is referenced in import map as "three/webgpu")
-        const webgpuModule = await import('three/webgpu');
-        
-        // Import TSL module which depends on three/webgpu
-        const tslModule = await import('/javascript/webgpu/libs/threejs/three.tsl.min.js');
-        
-        // Add WebGPU exports to THREE
-        THREE.WebGPURenderer = webgpuModule.WebGPURenderer;
-        THREE.MeshBasicNodeMaterial = webgpuModule.MeshBasicNodeMaterial;
-        
-        // Add all TSL exports to THREE
-        Object.assign(THREE, tslModule);
-        
-        // Update global reference
-        window.THREE = THREE;
-        
+        // Import the WebGPU module loader
+        await import('/javascript/three-modules-webgpu.js');
         console.log('WebGPU support loaded successfully');
         return true;
       } catch (error) {
@@ -62,15 +53,13 @@ function loadWebGPUSupport() {
       }
     })();
   } else {
-    // WebGPU not supported
+    // WebGPU not supported by browser
+    console.log('WebGPU not supported by browser, using WebGL only');
     webgpuLoadingPromise = Promise.resolve(false);
   }
   
   return webgpuLoadingPromise;
 }
-
-// Start loading WebGPU modules immediately (don't await)
-loadWebGPUSupport();
 
 // Export the loading function so other modules can wait for it
 window.waitForWebGPU = loadWebGPUSupport;

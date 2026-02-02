@@ -83,6 +83,16 @@
 <script>
 var ts="standalone";
 var fcwDebug=false;
+
+// Check for renderer URL parameter
+(function() {
+  var urlParams = new URLSearchParams(window.location.search);
+  var rendererParam = urlParams.get('renderer');
+  if (rendererParam) {
+    window.renderer_type_override = rendererParam;
+    console.log("Renderer type set from URL parameter: " + rendererParam);
+  }
+})();
 </script>
 
 <!-- Standalone initialization - this ensures standalone.js only runs in standalone mode -->
@@ -96,12 +106,25 @@ standalone_mode = true;
 <script type="importmap">
   {
     "imports": {
-      "three": "/javascript/webgl/libs/threejs/three.module.min.js"
+      "three": "/javascript/webgl/libs/threejs/three.module.min.js",
+      "three/webgpu": "/javascript/webgpu/libs/threejs/three.webgpu.min.js"
     }
   }
 </script>
 <!-- Three.js module loader - exports to window for backward compatibility -->
 <script type="module" src="/javascript/three-modules.js"></script>
+<script>
+  // Preload WebGPU module if renderer=webgpu is in URL
+  (function() {
+    var urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('renderer') === 'webgpu') {
+      var script = document.createElement('script');
+      script.type = 'module';
+      script.src = '/javascript/three-modules-webgpu.js';
+      document.head.appendChild(script);
+    }
+  })();
+</script>
 
 <!-- Main application bundle - includes jQuery, Stacktrace, Audio, and all application code -->
 <!-- Note: standalone.js is bundled inside webclient.min.js -->
