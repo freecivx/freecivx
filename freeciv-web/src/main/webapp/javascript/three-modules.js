@@ -24,30 +24,55 @@ window.DRACOLoader = DRACOLoader;
 window.OrbitControls = OrbitControls;
 window.AnaglyphEffect = AnaglyphEffect;
 
+// Track WebGPU loading state
+let webgpuLoadingPromise = null;
+
 // Conditionally load WebGPU support asynchronously
-(async function loadWebGPUSupport() {
-  // Check if WebGPU is supported and load WebGPU modules
-  if (typeof navigator !== 'undefined' && navigator.gpu) {
-    try {
-      // Dynamically import WebGPU modules
-      const webgpuModule = await import('/javascript/webgpu/libs/threejs/three.webgpu.min.js');
-      const tslModule = await import('/javascript/webgpu/libs/threejs/three.tsl.min.js');
-      
-      const WebGPURenderer = webgpuModule.WebGPURenderer;
-      const MeshBasicNodeMaterial = webgpuModule.MeshBasicNodeMaterial;
-      const TSL = tslModule;
-      
-      THREE.WebGPURenderer = WebGPURenderer;
-      THREE.MeshBasicNodeMaterial = MeshBasicNodeMaterial;
-      Object.assign(THREE, TSL);
-      
-      window.THREE = THREE;
-      
-      console.log('WebGPU support loaded successfully');
-    } catch (error) {
-      console.log('WebGPU modules not available, using WebGL only:', error);
-    }
+function loadWebGPUSupport() {
+  // Return cached promise if already loading
+  if (webgpuLoadingPromise) {
+    return webgpuLoadingPromise;
   }
-})();
+  
+  // Check if WebGPU is supported
+  if (typeof navigator !== 'undefined' && navigator.gpu) {
+    webgpuLoadingPromise = (async () => {
+      try {
+        // Import WebGPU module (which is referenced in import map as "three/webgpu")
+        const webgpuModule = await import('three/webgpu');
+        
+        // Import TSL module which depends on three/webgpu
+        const tslModule = await import('/javascript/webgpu/libs/threejs/three.tsl.min.js');
+        
+        // Add WebGPU exports to THREE
+        THREE.WebGPURenderer = webgpuModule.WebGPURenderer;
+        THREE.MeshBasicNodeMaterial = webgpuModule.MeshBasicNodeMaterial;
+        
+        // Add all TSL exports to THREE
+        Object.assign(THREE, tslModule);
+        
+        // Update global reference
+        window.THREE = THREE;
+        
+        console.log('WebGPU support loaded successfully');
+        return true;
+      } catch (error) {
+        console.log('WebGPU modules not available, using WebGL only:', error);
+        return false;
+      }
+    })();
+  } else {
+    // WebGPU not supported
+    webgpuLoadingPromise = Promise.resolve(false);
+  }
+  
+  return webgpuLoadingPromise;
+}
+
+// Start loading WebGPU modules immediately (don't await)
+loadWebGPUSupport();
+
+// Export the loading function so other modules can wait for it
+window.waitForWebGPU = loadWebGPUSupport;
 
 export { THREE, GLTFLoader, DRACOLoader, OrbitControls, AnaglyphEffect };

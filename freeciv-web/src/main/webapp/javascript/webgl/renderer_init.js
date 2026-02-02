@@ -82,7 +82,7 @@ function webgl_preload_complete()
 /****************************************************************************
  Init the map renderer
  ****************************************************************************/
-function renderer_init() {
+async function renderer_init() {
   console.log("renderer_init()");
   
   // Load renderer type preference
@@ -107,8 +107,25 @@ function renderer_init() {
   if (C_S_RUNNING === client_state() || C_S_OVER === client_state()) {
 
     if (renderer_type === "webgpu") {
-      webgpu_start_renderer();
-      init_webgpu_mapview();
+      // Wait for WebGPU modules to load before starting renderer
+      if (window.waitForWebGPU) {
+        console.log("Waiting for WebGPU modules to load...");
+        const webgpuLoaded = await window.waitForWebGPU();
+        if (!webgpuLoaded) {
+          console.log("WebGPU failed to load, falling back to WebGL");
+          renderer_type = "webgl";
+          webgl_start_renderer();
+          init_webgl_mapview();
+        } else {
+          webgpu_start_renderer();
+          init_webgpu_mapview();
+        }
+      } else {
+        console.log("WebGPU loader not available, falling back to WebGL");
+        renderer_type = "webgl";
+        webgl_start_renderer();
+        init_webgl_mapview();
+      }
     } else {
       webgl_start_renderer();
       init_webgl_mapview();

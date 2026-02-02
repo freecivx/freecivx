@@ -48,7 +48,8 @@ var fcwDebug=<%= fcwDebug %>;
 <script type="importmap">
   {
     "imports": {
-      "three": "/javascript/webgl/libs/threejs/three.module.min.js?ts=${initParam.buildTimeStamp}"
+      "three": "/javascript/webgl/libs/threejs/three.module.min.js?ts=${initParam.buildTimeStamp}",
+      "three/webgpu": "/javascript/webgpu/libs/threejs/three.webgpu.min.js?ts=${initParam.buildTimeStamp}"
     }
   }
 </script>

@@ -42,7 +42,10 @@ function webgpu_start_renderer()
 
   mouse = new THREE.Vector2();
 
-  clock = new THREE.Clock();
+  // Use THREE.Timer instead of deprecated THREE.Clock
+  if (!clock) {
+    clock = new THREE.Timer();
+  }
 
   // Lights
   var ambientLight = new THREE.AmbientLight( 0x606060, 28 * Math.PI );
