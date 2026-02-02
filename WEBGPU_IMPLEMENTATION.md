@@ -27,10 +27,36 @@ New file implementing WebGPU-specific rendering:
 - `webgpu_start_renderer()`: Initializes the WebGPU renderer with Three.js WebGPURenderer
 - `init_webgpu_mapview()`: Sets up the map view using Three.js Shading Language (TSL) node materials
 - Uses `MeshBasicNodeMaterial` for WebGPU-compatible materials
+- **Loads and applies the TSL terrain shader** from `terrain_shader_webgpu.js`
 - Implements the same scene structure as WebGL but with WebGPU-compatible components
 - Note: Anaglyph 3D is currently disabled for WebGPU (logged as not yet supported)
 
-### 4. Module Loading (`three-modules.js`)
+### 4. WebGPU Terrain Shader (`webgl/terrain_shader_webgpu.js`)
+
+**NEW FILE**: Complete TSL (Three.js Shading Language) shader implementation for terrain rendering.
+
+**Key Features**:
+- **Full terrain type support**: Grassland, plains, desert, hills, mountains, swamp, coast, ocean, arctic, forest, jungle, tundra
+- **Height-based blending**: Smooth transitions between terrain and coast based on elevation
+- **Texture sampling**: Random offset for visual variety, proper UV coordinate mapping
+- **Border rendering**: Conditional border overlay when enabled in game settings
+- **Vertex color support**: For fog of war and tile visibility
+- **TSL node system**: Uses Three.js node-based shader construction for WebGPU compatibility
+
+**Shader Architecture**:
+- Defines terrain type constants matching the GLSL shader
+- Creates texture nodes for all terrain types
+- Implements conditional terrain selection using TSL `mix()` and `step()` functions
+- Calculates texture coordinates with proper tiling
+- Applies beach/coast blending based on terrain height
+- Combines all terrain layers into final color output
+
+**Performance**:
+- Compiled to WGSL (WebGPU Shading Language) at runtime
+- Optimized texture sampling with minimal overdraw
+- Efficient conditional rendering using step functions
+
+### 5. Module Loading (`three-modules.js`)
 
 - Added asynchronous loading of WebGPU modules when WebGPU is supported
 - Dynamically imports `three.webgpu.min.js` and `three.tsl.min.js` from the webgpu libs directory
@@ -68,17 +94,20 @@ To test the WebGPU renderer:
 
 ## Known Limitations
 
-1. **Anaglyph 3D**: Not yet supported with WebGPU renderer
-2. **Shader Implementation**: Currently uses basic node materials; full terrain shader conversion to TSL is planned for future enhancement
+1. **Road/Railroad Rendering**: Not yet implemented in TSL shader (planned for future)
+2. **Anaglyph 3D**: Not supported with WebGPU renderer
 3. **Browser Support**: Limited to browsers with WebGPU support
+4. **Shader Complexity**: Some advanced GLSL features may need additional TSL conversion
 
 ## Future Enhancements
 
-1. Implement complete terrain shaders using Three.js Shading Language (TSL)
-2. Add WebGPU-specific optimizations
-3. Implement compute shaders for advanced effects
-4. Add Anaglyph 3D support for WebGPU
-5. Enhance visual effects using WebGPU-specific features
+1. Add road and railroad rendering to TSL shader
+2. Implement mouse-over highlighting in shader
+3. Add WebGPU-specific optimizations
+4. Implement compute shaders for advanced effects
+5. Add Anaglyph 3D support for WebGPU
+6. Enhance visual effects using WebGPU-specific features
+7. Performance benchmarking comparison between WebGL and WebGPU
 
 ## Files Modified
 
@@ -88,8 +117,9 @@ To test the WebGPU renderer:
 
 ## Files Added
 
-- `freeciv-web/src/main/webapp/javascript/webgl/mapview_webgpu.js`
+- `freeciv-web/src/main/webapp/javascript/webgl/mapview_webgpu.js` - WebGPU renderer initialization
+- `freeciv-web/src/main/webapp/javascript/webgl/terrain_shader_webgpu.js` - TSL terrain shader
 
 ## Build Configuration
 
-The build process automatically includes the new `mapview_webgpu.js` file in the minified JavaScript bundle (`webclient-app.min.js`) through the existing `webgl/*.js` include pattern in `pom.xml`.
+The build process automatically includes the new files in the minified JavaScript bundle (`webclient-app.min.js`) through the existing `webgl/*.js` include pattern in `pom.xml`.
