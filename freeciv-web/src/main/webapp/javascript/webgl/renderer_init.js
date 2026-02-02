@@ -34,11 +34,10 @@ var stats = null;
 function init_webgl_renderer()
 {
   // Check for URL parameter override first
-  if (typeof renderer_type_override !== 'undefined' && renderer_type_override) {
+  if (typeof renderer_type_override !== 'undefined' && renderer_type_override !== '') {
     renderer_type = renderer_type_override;
     console.log("Renderer type set from URL parameter: " + renderer_type);
-    // Save to storage for consistency
-    simpleStorage.set("renderer_type", renderer_type);
+    // Note: We don't save URL parameter to storage to allow temporary overrides
   } else {
     // Check renderer type preference from storage
     var stored_renderer_type = simpleStorage.get("renderer_type", "");

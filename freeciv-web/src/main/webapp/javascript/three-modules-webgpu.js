@@ -17,7 +17,8 @@ import * as TSL from '/javascript/webgpu/libs/threejs/three.tsl.min.js';
 const THREE = window.THREE;
 
 if (!THREE) {
-  console.error('THREE not found! three-modules.js must be loaded first.');
+  console.error('THREE not found! Ensure three-modules.js is loaded first.');
+  console.error('Check that <script type="module" src="/javascript/three-modules.js"> appears before three-modules-webgpu.js in your HTML.');
   throw new Error('three-modules.js must be loaded before three-modules-webgpu.js');
 }
 
