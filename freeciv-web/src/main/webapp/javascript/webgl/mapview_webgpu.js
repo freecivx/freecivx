@@ -95,10 +95,6 @@ function webgpu_start_renderer()
 async function init_webgpu_mapview() {
   selected_unit_material = new THREE.MeshBasicMaterial( { color: 0xf6f7bf, transparent: true, opacity: 0.7} );
 
-  /* Import TSL functions for shader nodes */
-  const { texture, uniform, positionLocal, normalLocal, color, uv, 
-          vec2, vec3, vec4, float, int, mix, step, smoothstep } = THREE;
-
   /* uniforms are variables which are used in the shader */
   freeciv_uniforms = {
       maptiles: { type: "t", value: maptiletypes },
@@ -133,13 +129,17 @@ async function init_webgpu_mapview() {
     terrain_quality = 2;
   }
 
-  // For WebGPU, we use NodeMaterial with TSL (Three.js Shading Language)
-  // Create a basic material that works similarly to the WebGL shader
-  const vertColorNode = color(positionLocal);
+  // Create node-based material for WebGPU using TSL shader
+  console.log("Creating WebGPU terrain shader with TSL...");
   
-  // Create node-based material for WebGPU
+  // Create the TSL shader node
+  const terrainColorNode = createTerrainShaderTSL(freeciv_uniforms);
+  
+  // Create MeshBasicNodeMaterial with the shader
   terrain_material = new THREE.MeshBasicNodeMaterial();
-  terrain_material.colorNode = vertColorNode;
+  terrain_material.colorNode = terrainColorNode;
+  terrain_material.side = THREE.FrontSide;
+  terrain_material.transparent = false;
 
   landGeometry = new THREE.BufferGeometry();
   landGeometry.name = "land_terrain_geometry";
