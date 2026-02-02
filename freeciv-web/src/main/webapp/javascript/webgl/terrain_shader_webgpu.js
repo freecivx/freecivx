@@ -125,8 +125,11 @@ function createTerrainShaderTSL(uniforms) {
      * transitions to coast texture, creating natural beach areas.
      */
     function createTerrainLayer(terrainValue, textureNode, coord, blendWithCoast = true) {
-        // Create boolean mask for this terrain type
-        const isTerrain = step(terrainValue - 0.5, terrainHere).mul(step(terrainHere, terrainValue + 0.5));
+        // Create float mask for this terrain type (ensure it's a float, not boolean)
+        // Split step() operations and use mul() to ensure float multiplication
+        const step1 = step(terrainValue - 0.5, terrainHere);
+        const step2 = step(terrainHere, terrainValue + 0.5);
+        const isTerrain = mul(step1, step2);
         
         // Sample terrain texture
         let terrainColor;

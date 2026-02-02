@@ -160,6 +160,9 @@ async function init_webgpu_mapview() {
     terrain_quality = 2;
   }
 
+  init_heightmap(terrain_quality);
+  update_heightmap(terrain_quality);
+
   // Create node-based material for WebGPU using TSL shader
   console.log("Creating WebGPU terrain shader with TSL...");
   
