@@ -94,8 +94,8 @@ function createTerrainShaderTSL(uniforms) {
     const sampledUV = add(uvNode, rndOffset);
 
     // Sample terrain type and border data
-    const terrainType = texture(uniforms.maptiles.value, sampledUV);
-    const borderColor = texture(uniforms.borders.value, uvNode);
+    const terrainType = texture(maptilesTex, sampledUV);
+    const borderColor = texture(bordersTex, uvNode);
 
     // Calculate texture coordinates for different tile orientations
     const dx = mod(mul(map_x_size, uvNode.x), 1.0);
