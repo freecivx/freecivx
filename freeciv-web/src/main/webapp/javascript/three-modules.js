@@ -11,11 +11,15 @@
  * 4. This pattern prepares for future Vite build integration where imports are bundled
  */
 
-import * as THREE from 'three';
+import * as THREEModule from 'three';
 import { GLTFLoader } from '/javascript/webgl/libs/GLTFLoader.js';
 import { DRACOLoader } from '/javascript/webgl/libs/DRACOLoader.js';
 import { OrbitControls } from '/javascript/webgl/libs/OrbitControls.js';
 import { AnaglyphEffect } from '/javascript/webgl/effects/AnaglyphEffect.js';
+
+// Create a mutable copy of THREE for WebGPU extensions
+// ES6 module namespace objects are frozen, so we need a mutable copy
+const THREE = Object.assign({}, THREEModule);
 
 // Export to global window object for compatibility with existing code
 window.THREE = THREE;
