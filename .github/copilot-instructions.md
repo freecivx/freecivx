@@ -15,6 +15,10 @@
   - `cd freecivx-server && mvn clean package`
   - `java -jar target/freecivx-server-1.0.jar [port]`
 
+
+## Standalone Freeciv 3D client
+https://github.com/freecivworld/freecivworld/blob/main/freeciv-web/src/main/webapp/freeciv-web-standalone.html
+
 ## Tests
 - Playwright E2E: `bash ./scripts/test-freecivx.sh`.
 
