@@ -69,7 +69,7 @@ REQUIRED_JS=(
   "javascript/game.js"
   "javascript/utility.js"
   "javascript/webgl/renderer_init.js"
-  "javascript/webgl/mapview_webgpu.js"
+  "javascript/webgl/mapview_webgl.js"
   "javascript/webgl/preload.js"
 )
 
