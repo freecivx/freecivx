@@ -101,22 +101,31 @@ To test the WebGPU renderer:
 
 ## Recent Fixes (2026-02-03)
 
-### WebGPU Lighting and Material System - Final Fix (Latest)
+### WebGPU Lighting and Material System - Correct Fix (Latest - 2026-02-03)
 
-Fixed critical lighting issue where units appeared completely black in WebGPU mode with "Light node not found" errors:
+Fixed critical lighting issue where units and 3D models appeared completely black in WebGPU mode with "Light node not found" console warnings:
 
-1. **Removed Manual lightsNode Assignment**:
-   - **Problem**: Code was manually assigning `nodeMaterial.lightsNode = THREE.lights()` which is not the correct approach for WebGPU
-   - **Root Cause**: `MeshStandardNodeMaterial` automatically detects and uses lights from the scene without any manual intervention
-   - **Solution**: Removed the manual `lightsNode` assignment completely. The material now handles lighting internally and automatically
-   - **File**: `preload.js` lines 716-721 (removed incorrect code)
+1. **Added Explicit lightsNode Assignment**:
+   - **Problem**: WebGPU materials were not properly detecting scene lights, resulting in "THREE.LightsNode.setupNodeLights: Light node not found" errors
+   - **Root Cause**: In Three.js WebGPU renderer with node materials, lights must be explicitly referenced using the TSL `lights()` function
+   - **Solution**: Added explicit `nodeMaterial.lightsNode = THREE.lights()` assignment when converting materials to WebGPU-compatible node materials
+   - **File**: `preload.js` lines 716-720
    - **Result**: Units and 3D models now properly receive lighting from scene's AmbientLight, DirectionalLight, and SpotLight
 
 2. **Technical Details**:
-   - `MeshStandardNodeMaterial` has built-in lighting detection that works automatically with WebGPU renderer
-   - The lights configured in `mapview_webgpu.js` are automatically discovered during rendering
-   - No manual light node setup is required or desired for standard materials
-   - This follows Three.js r171+ best practices for WebGPU lighting
+   - `MeshStandardNodeMaterial` in WebGPU mode requires explicit light node setup via `lightsNode` property
+   - The `THREE.lights()` function (imported from 'three/tsl') creates a node that references all lights in the scene
+   - This setup occurs during material conversion in `webgl_get_model()` when cloning models for the scene
+   - The fix ensures compatibility with Three.js r171+ WebGPU lighting system
+
+### WebGPU Lighting and Material System - Previous Incorrect Attempt
+
+Previous attempt that did not resolve the issue:
+
+1. **Incorrectly Removed lightsNode Assignment**:
+   - **Problem**: Assumed that `MeshStandardNodeMaterial` would automatically detect lights without manual configuration
+   - **Issue**: This assumption was incorrect; WebGPU node materials require explicit light node references
+   - **Result**: Units and models remained unlit with "Light node not found" warnings
 
 ### WebGPU Lighting and Material System - Previous Attempt (Earlier 2026-02-03)
 
