@@ -47,11 +47,19 @@ function webgpu_start_renderer()
     clock = new THREE.Timer();
   }
 
-  // Lights
+  // Lights - Set up lighting for both terrain and 3D objects
+  // Ambient light provides base illumination for the entire scene
   var ambientLight = new THREE.AmbientLight( 0x606060, 28 * Math.PI );
   ambientLight.name = "ambient_light";
   scene.add(ambientLight);
 
+  // Directional light for general scene lighting (better WebGPU compatibility)
+  var directionalLight = new THREE.DirectionalLight( 0xffffff, 2.0 * Math.PI );
+  directionalLight.position.set(100, 200, 100);
+  directionalLight.name = "directional_light";
+  scene.add(directionalLight);
+
+  // Spotlight for focused lighting and shadows
   spotlight = new THREE.SpotLight( 0xffffff, 3.0 * Math.PI, 0, Math.PI / 3, 0.001, 0.5);
   spotlight.name = "spotlight";
   scene.add( spotlight );
