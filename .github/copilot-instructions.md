@@ -1,0 +1,24 @@
+# Copilot instructions (FreecivWorld)
+
+## Repository layout
+- `freeciv-web/`: Java web app + JavaScript client (Three.js/WebGL/WebGPU).
+- `freecivx-server/`: standalone Java game server (Copilot-friendly).
+- `freeciv/`: C Freeciv server fork.
+- `publite2/`: Python process launcher.
+- `scripts/`: build/install/start/test utilities.
+- `config/` and `doc/`: configuration templates and documentation.
+
+## Build & run
+- CI install step: `bash ./scripts/install/install.sh --mode=TEST_MYSQL`.
+- Start/stop/status: `bash ./scripts/start-freeciv-web.sh`, `bash ./scripts/stop-freeciv-web.sh`, `bash ./scripts/status-freeciv-web.sh`.
+- Freecivx server (self-contained):
+  - `cd freecivx-server && mvn clean package`
+  - `java -jar target/freecivx-server-1.0.jar [port]`
+
+## Tests
+- Playwright E2E: `bash ./scripts/test-freecivx.sh`.
+
+## Development notes
+- `freeciv-web` build requires derived files from the C server (`scripts/sync-js-hand.sh`) and external services (Tomcat/MySQL/nginx); prefer editing and rely on CI for full builds.
+- Keep PRs small (~200 LOC) and avoid whitespace-only changes (see `doc/CONTRIBUTING.md`).
+- Use PRs only; no direct commits to main branches.
