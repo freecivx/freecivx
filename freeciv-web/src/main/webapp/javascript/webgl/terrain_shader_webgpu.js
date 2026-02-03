@@ -86,8 +86,12 @@ function createTerrainShaderTSL(uniforms) {
     const uvNode = uv();
     const posNode = positionLocal;
 
-    // Access vertex color for fog of war (stored in vertex color attribute)
-    const vertColor = attribute('color');
+    // Access vertex color for fog of war (stored in vertColor attribute)
+    // The vertColor attribute contains visibility information:
+    // - 0.0 = unknown (black)
+    // - 0.54 = unseen but known (fogged)
+    // - 1.06 = fully visible
+    const vertColor = attribute('vertColor');
 
     // Add pseudo-random texture offset for visual variety
     // This prevents tiling artifacts on large uniform terrain areas
@@ -174,9 +178,12 @@ function createTerrainShaderTSL(uniforms) {
     }
 
     // Apply vertex color for fog/visibility effects
-    // Vertex color is stored in the color attribute and represents visibility/fog of war
-    // vColor.r = 0.0 means unknown (black), vColor.r = 1.0 means fully visible
-    finalColor = vec4(mul(finalColor.rgb, vertColor), finalColor.a);
+    // Vertex color is stored in the vertColor attribute and represents visibility/fog of war
+    // vertColor.x = 0.0 means unknown (black)
+    // vertColor.x = 0.54 means unseen but known (fogged)
+    // vertColor.x = 1.06 means fully visible
+    // We use only the x component as that's where the visibility value is stored
+    finalColor = vec4(mul(finalColor.rgb, vertColor.x), finalColor.a);
 
     // Overlay borders if visible
     // Use mix to conditionally apply borders: if borders_visible is true, use full border alpha, otherwise 0
