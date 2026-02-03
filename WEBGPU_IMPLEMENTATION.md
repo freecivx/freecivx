@@ -125,6 +125,22 @@ Fixed critical issues with WebGPU renderer that caused units and 3D models to ap
 
 These fixes ensure that all 3D models (units, cities, buildings) are properly lit in WebGPU mode while maintaining backward compatibility with WebGL renderer.
 
+### WebGPU TSL Function Exports (2026-02-03 Update)
+
+Fixed additional errors after initial WebGPU implementation:
+
+1. **Missing TSL Functions Error**:
+   - **Problem**: Custom terrain shader (`createTerrainShaderTSL`) was trying to destructure TSL functions from THREE that weren't exported, causing `TypeError: e is not a function`
+   - **Solution**: Extended the TSL functions export list in `three-modules-webgpu.js` to include all required functions:
+     - Vertex shader functions: `positionLocal`, `attribute`, `uv`
+     - Math/blending functions: `mix`, `step`, `floor`, `fract`, `mod`, `dot`, `sin`
+     - Arithmetic operators: `mul`, `add`, `sub`, `div`
+   - **File**: `three-modules-webgpu.js`
+
+2. **TSL Functions Organization**:
+   - Organized TSL function exports with inline comments grouping related functions by category
+   - Improved code maintainability and developer understanding of function purposes
+
 ## Future Enhancements
 
 1. Add road and railroad rendering to TSL shader
