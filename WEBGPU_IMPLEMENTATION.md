@@ -99,6 +99,32 @@ To test the WebGPU renderer:
 3. **Browser Support**: Limited to browsers with WebGPU support
 4. **Shader Complexity**: Some advanced GLSL features may need additional TSL conversion
 
+## Recent Fixes (2026-02-03)
+
+### WebGPU Lighting and Material System
+
+Fixed critical issues with WebGPU renderer that caused units and 3D models to appear completely black:
+
+1. **Multiple Three.js Instance Warning**: 
+   - **Problem**: Importing Three.js WebGPU module directly caused duplicate Three.js core imports
+   - **Solution**: Changed import to use the importmap path `'three/webgpu'` instead of direct file path
+   - **File**: `three-modules-webgpu.js`
+
+2. **Light Nodes Not Found Error**:
+   - **Problem**: WebGPU TSL (Three.js Shading Language) requires lights to be converted to light nodes
+   - **Solution**: 
+     - Added lights array to `scene.userData.lightsArray` for sharing with materials
+     - Exported TSL `lights()` function to global THREE object
+     - Convert model materials to `MeshStandardNodeMaterial` with `lightsNode` when using WebGPU
+   - **Files**: `mapview_webgpu.js`, `three-modules-webgpu.js`, `preload.js`
+
+3. **Model Material Conversion**:
+   - **Problem**: GLTF models use standard materials that aren't compatible with WebGPU node system
+   - **Solution**: In `webgl_get_model()`, detect WebGPU renderer and convert materials to `MeshStandardNodeMaterial` with proper lighting nodes
+   - **File**: `preload.js`
+
+These fixes ensure that all 3D models (units, cities, buildings) are properly lit in WebGPU mode while maintaining backward compatibility with WebGL renderer.
+
 ## Future Enhancements
 
 1. Add road and railroad rendering to TSL shader
@@ -114,6 +140,9 @@ To test the WebGPU renderer:
 - `freeciv-web/src/main/webapp/javascript/pregame_freeciv_server.js`
 - `freeciv-web/src/main/webapp/javascript/webgl/renderer_init.js`
 - `freeciv-web/src/main/webapp/javascript/three-modules.js`
+- `freeciv-web/src/main/webapp/javascript/three-modules-webgpu.js` (2026-02-03: Fixed import path and TSL exports)
+- `freeciv-web/src/main/webapp/javascript/webgl/mapview_webgpu.js` (2026-02-03: Added lights array storage)
+- `freeciv-web/src/main/webapp/javascript/webgl/preload.js` (2026-02-03: Added material conversion for WebGPU)
 
 ## Files Added
 
