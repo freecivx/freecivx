@@ -1,6 +1,5 @@
 <%@ page import="java.util.Properties" %>
 <%@ page import="java.io.IOException" %>
-<%@ page import="static org.apache.commons.lang3.StringUtils.stripToNull" %>
 <%@ page import="static org.apache.commons.lang3.StringUtils.stripToEmpty" %>
 <%@ page import="static java.lang.Boolean.parseBoolean" %>
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
@@ -9,7 +8,6 @@ String captchaKey = null;
 boolean fcwDebug = false;
 
 boolean app = false;
-String rendererParam = null;
 try {
   Properties prop = new Properties();
   prop.load(getServletContext().getResourceAsStream("/WEB-INF/config.properties"));
@@ -21,9 +19,6 @@ try {
 
   String appParam = request.getParameter("app");
   app = (appParam != null && (appParam.isEmpty() || parseBoolean(appParam)));
-
-  // Read renderer parameter from URL (renderer=webgpu or renderer=webgl)
-  rendererParam = stripToNull(request.getParameter("renderer"));
 
 } catch (IOException e) {
   e.printStackTrace();
@@ -46,17 +41,13 @@ try {
 <script>
 var ts="${initParam.buildTimeStamp}";
 var fcwDebug=<%= fcwDebug %>;
-<% if (rendererParam != null) { %>
-// Renderer type set via URL parameter
-var renderer_type_override="<%= rendererParam %>";
-<% } %>
 </script>
 
-<!-- Three.js ES Module System  -->
+<!-- Three.js ES Module System (WebGPU)  -->
 <script type="importmap">
   {
     "imports": {
-      "three": "/javascript/webgl/libs/threejs/three.module.min.js?ts=${initParam.buildTimeStamp}",
+      "three": "/javascript/webgpu/libs/threejs/three.module.min.js?ts=${initParam.buildTimeStamp}",
       "three/webgpu": "/javascript/webgpu/libs/threejs/three.webgpu.min.js?ts=${initParam.buildTimeStamp}",
       "three/tsl": "/javascript/webgpu/libs/threejs/three.tsl.min.js?ts=${initParam.buildTimeStamp}"
     }
@@ -64,10 +55,8 @@ var renderer_type_override="<%= rendererParam %>";
 </script>
 <!-- Three.js module loader - exports to window for backward compatibility -->
 <script type="module" src="/javascript/three-modules.js?ts=${initParam.buildTimeStamp}"></script>
-<% if ("webgpu".equals(rendererParam)) { %>
-<!-- WebGPU module loader - preloaded when renderer=webgpu URL parameter is set -->
+<!-- WebGPU module loader -->
 <script type="module" src="/javascript/three-modules-webgpu.js?ts=${initParam.buildTimeStamp}"></script>
-<% } %>
 
 
 <!-- Main application bundle - includes jQuery, Stacktrace, Audio, and all application code -->
