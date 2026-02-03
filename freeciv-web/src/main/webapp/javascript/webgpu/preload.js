@@ -247,8 +247,9 @@ function load_model(filename)
           node.material.transparent = true;
         }
         if (filename == "Wheat" ) {
-          node.material.emissive.set(0xEEDC82);
-          node.material.emissiveIntensity = 1.6;
+          // Reduced brightness for wheat - was too bright before
+          node.material.emissive.set(0xB5A160);
+          node.material.emissiveIntensity = 0.6;
         }
         if (filename == "city_european_0" || filename == "city_european_1" || filename == "city_european_2" || filename == "city_european_3" || filename == "city_european_4") {
           node.material.emissive.set(0x999999);

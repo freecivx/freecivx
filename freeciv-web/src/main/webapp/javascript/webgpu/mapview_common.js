@@ -207,14 +207,15 @@ function animate_webgl() {
   if (mapview_slide['active']) update_map_slide_3d();
 
   update_animated_objects();
-
-  if (selected_unit_indicator != null && selected_unit_material != null) {
-    selected_unit_material.color.multiplyScalar (0.996);
-    if (selected_unit_material_counter > 50) {
-      selected_unit_material_counter = 0;
-      selected_unit_material.color.setHex(0xffffff);
-    }
-    selected_unit_material_counter++;
+  
+  // Update water animation
+  if (typeof updateWaterAnimation === 'function') {
+    updateWaterAnimation(0.016); // ~60fps delta time
+  }
+  
+  // Update selected unit animation (TSL-based pulsing effect)
+  if (typeof updateSelectedUnitAnimation === 'function') {
+    updateSelectedUnitAnimation(0.016); // ~60fps delta time
   }
 
   if (controls != null) {

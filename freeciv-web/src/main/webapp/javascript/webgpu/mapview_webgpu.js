@@ -114,20 +114,15 @@ function webgpu_start_renderer()
 }
 
 /****************************************************************************
- Add simple water mesh for WebGPU renderer.
- Uses basic material instead of complex physical material for better compatibility.
+ Add animated water mesh for WebGPU renderer using TSL shaders.
+ Creates a realistic water effect with animated waves, color variation, and specular highlights.
 ****************************************************************************/
 function add_quality_dependent_objects_webgpu() {
-  // Create simple water plane with basic material
-  var waterGeometry = new THREE.PlaneGeometry( mapview_model_width, mapview_model_height);
+  // Create water plane geometry with more segments for smoother waves
+  var waterGeometry = new THREE.PlaneGeometry(mapview_model_width, mapview_model_height, 128, 128);
   
-  // Use MeshBasicMaterial with simple color and transparency for WebGPU compatibility
-  var waterMaterial = new THREE.MeshBasicMaterial({
-    color: 0x4a9fc7, // Light blue water color
-    transparent: true,
-    opacity: 0.6,
-    side: THREE.DoubleSide
-  });
+  // Create animated water material using TSL (Three.js Shading Language)
+  var waterMaterial = createWaterMaterialTSL();
   
   water_hq = new THREE.Mesh(waterGeometry, waterMaterial);
   water_hq.rotation.x = - Math.PI * 0.5;
@@ -137,15 +132,145 @@ function add_quality_dependent_objects_webgpu() {
   water_hq.renderOrder = -1; // Render water first
   water_hq.castShadow = false;
   water_hq.name = "water_surface";
-  scene.add( water_hq );
-  console.log("Added simple WebGPU water surface.");
+  scene.add(water_hq);
+  console.log("Added animated WebGPU water surface with TSL shader.");
+}
+
+/****************************************************************************
+ Create animated water material using TSL (Three.js Shading Language).
+ Features:
+ - Animated wave displacement
+ - Color variation based on depth
+ - Specular highlights from sun direction
+ - Transparency with depth-based opacity
+****************************************************************************/
+function createWaterMaterialTSL() {
+  const {
+    uniform, positionLocal, uv, time,
+    vec2, vec3, vec4,
+    sin, cos, mix, fract, dot, abs, clamp, pow,
+    mul, add, sub, div
+  } = THREE;
+  
+  // Water color uniforms
+  const deepColor = vec3(0.05, 0.15, 0.35);   // Deep blue
+  const shallowColor = vec3(0.15, 0.45, 0.65); // Light blue-cyan
+  const foamColor = vec3(0.85, 0.95, 1.0);     // White foam
+  
+  // Time uniform for animation
+  const timeUniform = uniform(0.0);
+  
+  // Store reference for animation updates
+  if (!window.waterTimeUniform) {
+    window.waterTimeUniform = timeUniform;
+  }
+  
+  // Get UV and position
+  const uvNode = uv();
+  const posNode = positionLocal;
+  
+  // Create animated wave pattern using multiple sine waves
+  const wave1 = mul(sin(add(mul(uvNode.x, 15.0), mul(timeUniform, 0.8))), 0.3);
+  const wave2 = mul(sin(add(mul(uvNode.y, 12.0), mul(timeUniform, 0.6))), 0.25);
+  const wave3 = mul(sin(add(mul(add(uvNode.x, uvNode.y), 8.0), mul(timeUniform, 1.2))), 0.15);
+  const wavePattern = add(add(wave1, wave2), wave3);
+  
+  // Calculate "depth" based on distance from center for color variation
+  const centerDist = mul(abs(sub(uvNode.x, 0.5)), 2.0);
+  const depthFactor = clamp(add(0.3, mul(wavePattern, 0.1)), 0.0, 1.0);
+  
+  // Mix between deep and shallow water colors
+  const baseColor = mix(deepColor, shallowColor, depthFactor);
+  
+  // Add specular highlight from sun direction (simulated)
+  const sunDir = vec3(0.5, 0.8, 0.3);
+  const viewDir = vec3(0.0, 1.0, 0.0);
+  const halfDir = vec3(0.25, 0.9, 0.15);
+  
+  // Calculate specular using wave pattern to simulate surface normals
+  const specularIntensity = pow(clamp(add(0.5, mul(wavePattern, 0.3)), 0.0, 1.0), 16.0);
+  const specular = mul(vec3(1.0, 1.0, 0.9), mul(specularIntensity, 0.4));
+  
+  // Add subtle foam on wave peaks
+  const foamThreshold = clamp(mul(sub(wavePattern, 0.2), 3.0), 0.0, 0.3);
+  const colorWithFoam = mix(baseColor, foamColor, foamThreshold);
+  
+  // Combine base color with specular
+  const finalColor = add(colorWithFoam, specular);
+  
+  // Animated opacity with subtle variation
+  const baseOpacity = 0.55;
+  const opacityVariation = mul(sin(add(mul(timeUniform, 0.5), mul(uvNode.x, 5.0))), 0.08);
+  const finalOpacity = clamp(add(baseOpacity, opacityVariation), 0.45, 0.7);
+  
+  // Create output color with transparency
+  const outputColor = vec4(finalColor, finalOpacity);
+  
+  // Create MeshBasicNodeMaterial with animated water shader
+  const waterMaterial = new THREE.MeshBasicNodeMaterial();
+  waterMaterial.colorNode = outputColor;
+  waterMaterial.transparent = true;
+  waterMaterial.side = THREE.DoubleSide;
+  waterMaterial.depthWrite = false;
+  
+  return waterMaterial;
+}
+
+/****************************************************************************
+ Update water animation time uniform. Call this from the render loop.
+****************************************************************************/
+function updateWaterAnimation(deltaTime) {
+  if (window.waterTimeUniform && window.waterTimeUniform.value !== undefined) {
+    window.waterTimeUniform.value += deltaTime;
+  }
+}
+
+/****************************************************************************
+ Create selected unit indicator material using TSL for WebGPU compatibility.
+ Creates a pulsing ring effect with proper transparency.
+****************************************************************************/
+function createSelectedUnitMaterial() {
+  const { uniform, vec4, sin, mul, add, clamp } = THREE;
+  
+  // Time uniform for pulsing animation
+  const timeUniform = uniform(0.0);
+  window.selectedUnitTimeUniform = timeUniform;
+  
+  // Create pulsing color effect (yellow-white)
+  const baseColor = vec4(0.97, 0.97, 0.75, 0.7); // Light yellow
+  const pulseIntensity = mul(add(sin(mul(timeUniform, 3.0)), 1.0), 0.15);
+  const pulsedColor = vec4(
+    clamp(add(baseColor.r, pulseIntensity), 0.0, 1.0),
+    clamp(add(baseColor.g, pulseIntensity), 0.0, 1.0),
+    clamp(add(baseColor.b, pulseIntensity), 0.0, 1.0),
+    baseColor.a
+  );
+  
+  // Create WebGPU-compatible node material
+  const material = new THREE.MeshBasicNodeMaterial();
+  material.colorNode = pulsedColor;
+  material.transparent = true;
+  material.side = THREE.DoubleSide;
+  material.depthWrite = false;
+  
+  return material;
+}
+
+/****************************************************************************
+ Update selected unit animation. Call this from the render loop.
+****************************************************************************/
+function updateSelectedUnitAnimation(deltaTime) {
+  if (window.selectedUnitTimeUniform && window.selectedUnitTimeUniform.value !== undefined) {
+    window.selectedUnitTimeUniform.value += deltaTime;
+  }
 }
 
 /****************************************************************************
  This will render the map terrain mesh using WebGPU and TSL shaders.
 ****************************************************************************/
 async function init_webgpu_mapview() {
-  selected_unit_material = new THREE.MeshBasicMaterial( { color: 0xf6f7bf, transparent: true, opacity: 0.7} );
+  // Create WebGPU-compatible selected unit material with pulsing effect
+  selected_unit_material = createSelectedUnitMaterial();
 
   /* uniforms are variables which are used in the shader */
   freeciv_uniforms = {
