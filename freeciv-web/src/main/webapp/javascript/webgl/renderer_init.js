@@ -29,47 +29,19 @@ var anaglyph_3d_enabled = false;
 var stats = null;
 
 /****************************************************************************
-  Init the Freeciv-web WebGL renderer
+  Init the Freeciv-web WebGPU renderer
 ****************************************************************************/
 function init_webgl_renderer()
 {
-  // Check for URL parameter override first (renderer_type_override is a global variable injected by JSP)
-  if (typeof renderer_type_override !== 'undefined' && renderer_type_override !== '') {
-    renderer_type = renderer_type_override;
-    console.log("Renderer type set from URL parameter: " + renderer_type);
-    // Note: We don't save URL parameter to storage to allow temporary overrides
-  } else {
-    // Check renderer type preference from storage
-    var stored_renderer_type = simpleStorage.get("renderer_type", "");
-    if (stored_renderer_type != null && stored_renderer_type != "") {
-      // User has a saved preference
-      if (stored_renderer_type == "webgpu") {
-        if (!navigator.gpu) {
-          console.log("WebGPU not supported, falling back to WebGL");
-          simpleStorage.set("renderer_type", "webgl");
-          renderer_type = "webgl";
-        } else {
-          renderer_type = "webgpu";
-        }
-      } else {
-        renderer_type = "webgl";
-      }
-    } else {
-      // No saved preference - default to WebGPU if supported, otherwise WebGL
-      if (navigator.gpu) {
-        renderer_type = "webgpu";
-        console.log("WebGPU detected and set as default renderer");
-      } else {
-        renderer_type = "webgl";
-        console.log("WebGPU not available, using WebGL renderer");
-      }
-    }
-  }
-
-  if (renderer_type === "webgl" && !Detector.webgl) {
-    swal("3D WebGL not supported by your browser or you don't have a 3D graphics card. ");
+  // WebGPU is required - no WebGL fallback
+  if (!navigator.gpu) {
+    swal("WebGPU is not supported by your browser. Please use a modern browser with WebGPU support (Chrome 113+, Edge 113+, Firefox 122+).");
+    console.log("WebGPU not supported by browser");
     return;
   }
+
+  renderer_type = "webgpu";
+  console.log("WebGPU renderer initialized");
 
   var stored_graphics_quality_setting = simpleStorage.get("graphics_quality", "");
   if (stored_graphics_quality_setting != null && stored_graphics_quality_setting > 0) {
@@ -99,71 +71,37 @@ function webgl_preload_complete()
 }
 
 /****************************************************************************
- Init the map renderer
+ Init the map renderer (WebGPU only)
  ****************************************************************************/
 async function renderer_init() {
   console.log("renderer_init()");
   
-  // Load renderer type preference
-  var stored_renderer_type = simpleStorage.get("renderer_type", "");
-  if (stored_renderer_type != null && stored_renderer_type != "") {
-    // User has a saved preference
-    if (stored_renderer_type == "webgpu") {
-      if (!navigator.gpu) {
-        console.log("WebGPU not supported, falling back to WebGL");
-        renderer_type = "webgl";
-      } else {
-        renderer_type = "webgpu";
-      }
-    } else {
-      renderer_type = "webgl";
-    }
-  } else {
-    // No saved preference - default to WebGPU if supported, otherwise WebGL
-    if (navigator.gpu) {
-      renderer_type = "webgpu";
-      console.log("WebGPU detected and set as default renderer");
-    } else {
-      renderer_type = "webgl";
-      console.log("WebGPU not available, using WebGL renderer");
-    }
-  }
-
-  if (renderer_type === "webgl" && !Detector.webgl) {
-    swal("3D WebGL not supported by your browser or you don't have a 3D graphics card. ");
-    console.log("3D WebGL not supported by your browser or you don't have a 3D graphics card. ");
+  // WebGPU is required - no fallback
+  if (!navigator.gpu) {
+    swal("WebGPU is not supported by your browser. Please use a modern browser with WebGPU support (Chrome 113+, Edge 113+, Firefox 122+).");
+    console.log("WebGPU not supported by browser");
     return;
   }
 
+  renderer_type = "webgpu";
+
   if (C_S_RUNNING === client_state() || C_S_OVER === client_state()) {
 
-    if (renderer_type === "webgpu") {
-      // Wait for WebGPU modules to load before starting renderer
-      if (window.waitForWebGPU) {
-        console.log("Waiting for WebGPU modules to load...");
-        const webgpuLoaded = await window.waitForWebGPU();
-        if (!webgpuLoaded) {
-          console.log("WebGPU failed to load, falling back to WebGL");
-          renderer_type = "webgl";
-          // Update stored preference to prevent repeated WebGPU attempts
-          simpleStorage.set("renderer_type", "webgl");
-          webgl_start_renderer();
-          await init_webgl_mapview();
-        } else {
-          webgpu_start_renderer();
-          await init_webgpu_mapview();
-        }
-      } else {
-        console.log("WebGPU loader not available, falling back to WebGL");
-        renderer_type = "webgl";
-        // Update stored preference to prevent repeated WebGPU attempts
-        simpleStorage.set("renderer_type", "webgl");
-        webgl_start_renderer();
-        await init_webgl_mapview();
+    // Wait for WebGPU modules to load before starting renderer
+    if (window.waitForWebGPU) {
+      console.log("Waiting for WebGPU modules to load...");
+      const webgpuLoaded = await window.waitForWebGPU();
+      if (!webgpuLoaded) {
+        swal("WebGPU modules failed to load. Please refresh the page and try again.");
+        console.log("WebGPU failed to load");
+        return;
       }
+      webgpu_start_renderer();
+      await init_webgpu_mapview();
     } else {
-      webgl_start_renderer();
-      await init_webgl_mapview();
+      swal("WebGPU loader not available. Please refresh the page and try again.");
+      console.log("WebGPU loader not available");
+      return;
     }
 
     init_webgl_mapctrl();
@@ -171,10 +109,8 @@ async function renderer_init() {
     init_chatbox();
     keyboard_input=true;
 
-   if (renderer_type == "webgpu") {
-     advance_unit_focus();
-     camera.position.y += 600;
-   }
+    advance_unit_focus();
+    camera.position.y += 600;
     setTimeout("$('#mapcanvas').fadeIn(2500); $.unblockUI();", 700);
 
   }
