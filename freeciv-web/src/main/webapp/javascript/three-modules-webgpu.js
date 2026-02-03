@@ -23,15 +23,12 @@ if (!THREE) {
 }
 
 // Import WebGPU-specific classes directly from the WebGPU bundle
-// Note: We import from the local three.webgpu.min.js which contains WebGPU extensions
-// This file expects THREE to already be defined globally
-import * as WebGPUModule from '/javascript/webgpu/libs/threejs/three.webgpu.min.js';
-
-// Import TSL (Three.js Shading Language) module  
-import * as TSL from '/javascript/webgpu/libs/threejs/three.tsl.min.js';
+// IMPORTANT: We use the 'three/webgpu' import path from the importmap to avoid
+// creating multiple Three.js instances. The importmap resolves this to our local file.
+import * as WebGPUModule from 'three/webgpu';
 
 // Extract the WebGPU exports and add them to the global THREE object
-// The WebGPU module extends the existing THREE namespace
+// The WebGPU module extends the existing THREE namespace and includes TSL
 if (WebGPUModule.WebGPURenderer) {
   THREE.WebGPURenderer = WebGPUModule.WebGPURenderer;
 }
@@ -42,9 +39,12 @@ if (WebGPUModule.MeshStandardNodeMaterial) {
   THREE.MeshStandardNodeMaterial = WebGPUModule.MeshStandardNodeMaterial;
 }
 
-// Add all TSL exports to THREE
-Object.assign(THREE, TSL);
+// Export TSL (Three.js Shading Language) functions to THREE
+// TSL is part of WebGPUModule and includes the lights() function needed for WebGPU
+if (WebGPUModule.lights) {
+  THREE.lights = WebGPUModule.lights;
+}
 
 console.log('WebGPU modules loaded successfully');
 
-export { WebGPUModule, TSL };
+export { WebGPUModule };
