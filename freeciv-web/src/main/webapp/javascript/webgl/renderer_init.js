@@ -171,7 +171,7 @@ async function renderer_init() {
     init_chatbox();
     keyboard_input=true;
 
-   if (renderer_type == "webgl") {}
+   if (renderer_type == "webgl") {
      advance_unit_focus();
      camera.position.y += 600;
    }
