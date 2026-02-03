@@ -36,7 +36,7 @@ function createTerrainShaderTSL(uniforms) {
     const { 
         texture, uniform, positionLocal, attribute, uv, 
         vec2, vec3, vec4,
-        mix, step, floor, fract, mod, dot, sin, smoothstep,
+        mix, step, floor, fract, mod, dot, sin,
         mul, add, sub, div
     } = THREE;
 
