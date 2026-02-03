@@ -101,7 +101,33 @@ To test the WebGPU renderer:
 
 ## Recent Fixes (2026-02-03)
 
-### WebGPU Lighting and Material System
+### WebGPU Lighting and Material System - Final Fix
+
+Fixed critical lighting issue where units appeared completely black in WebGPU mode:
+
+1. **Correct TSL lights() Usage**:
+   - **Problem**: Previous fix incorrectly passed an array to `THREE.lights()` function (`THREE.lights(scene.userData.lightsArray)`), causing "Light node not found" errors
+   - **Root Cause**: The TSL `lights()` function doesn't accept parameters - it automatically detects lights from the scene during rendering
+   - **Solution**: Changed to call `THREE.lights()` without parameters. The function automatically collects all lights from the scene.
+   - **File**: `preload.js` line 719
+
+2. **Cleaned Up Unnecessary Code**:
+   - Removed `lightsArray` creation and management in `mapview_webgpu.js`
+   - Removed `scene.userData.lightsArray` storage as it's not needed by the TSL system
+   - Simplified lighting setup code
+
+3. **Made WebGPU Default When Supported**:
+   - **Change**: Modified renderer detection logic to default to WebGPU when `navigator.gpu` is available
+   - **Behavior**: 
+     - First-time users with WebGPU support will automatically use WebGPU renderer
+     - Users without WebGPU support will use WebGL renderer
+     - Users with saved preferences keep their preference
+     - URL parameter overrides always take precedence
+   - **Files**: `renderer_init.js` in both `init_webgl_renderer()` and `renderer_init()` functions
+
+### Previous WebGPU Fixes
+
+#### WebGPU Lighting and Material System (Earlier 2026-02-03)
 
 Fixed critical issues with WebGPU renderer that caused units and 3D models to appear completely black:
 
@@ -110,22 +136,12 @@ Fixed critical issues with WebGPU renderer that caused units and 3D models to ap
    - **Solution**: Changed import to use the importmap path `'three/webgpu'` instead of direct file path
    - **File**: `three-modules-webgpu.js`
 
-2. **Light Nodes Not Found Error**:
-   - **Problem**: WebGPU TSL (Three.js Shading Language) requires lights to be converted to light nodes
-   - **Solution**: 
-     - Added lights array to `scene.userData.lightsArray` for sharing with materials
-     - Exported TSL `lights()` function to global THREE object
-     - Convert model materials to `MeshStandardNodeMaterial` with `lightsNode` when using WebGPU
-   - **Files**: `mapview_webgpu.js`, `three-modules-webgpu.js`, `preload.js`
-
-3. **Model Material Conversion**:
+2. **Model Material Conversion**:
    - **Problem**: GLTF models use standard materials that aren't compatible with WebGPU node system
    - **Solution**: In `webgl_get_model()`, detect WebGPU renderer and convert materials to `MeshStandardNodeMaterial` with proper lighting nodes
    - **File**: `preload.js`
 
-These fixes ensure that all 3D models (units, cities, buildings) are properly lit in WebGPU mode while maintaining backward compatibility with WebGL renderer.
-
-### WebGPU TSL Function Exports (2026-02-03 Update)
+#### WebGPU TSL Function Exports (Earlier 2026-02-03)
 
 Fixed additional errors after initial WebGPU implementation:
 
@@ -154,11 +170,11 @@ Fixed additional errors after initial WebGPU implementation:
 ## Files Modified
 
 - `freeciv-web/src/main/webapp/javascript/pregame_freeciv_server.js`
-- `freeciv-web/src/main/webapp/javascript/webgl/renderer_init.js`
+- `freeciv-web/src/main/webapp/javascript/webgl/renderer_init.js` (2026-02-03: Made WebGPU default when supported)
 - `freeciv-web/src/main/webapp/javascript/three-modules.js`
 - `freeciv-web/src/main/webapp/javascript/three-modules-webgpu.js` (2026-02-03: Fixed import path and TSL exports)
-- `freeciv-web/src/main/webapp/javascript/webgl/mapview_webgpu.js` (2026-02-03: Added lights array storage)
-- `freeciv-web/src/main/webapp/javascript/webgl/preload.js` (2026-02-03: Added material conversion for WebGPU)
+- `freeciv-web/src/main/webapp/javascript/webgl/mapview_webgpu.js` (2026-02-03: Cleaned up lighting array code)
+- `freeciv-web/src/main/webapp/javascript/webgl/preload.js` (2026-02-03: Fixed TSL lights() usage for WebGPU)
 
 ## Files Added
 
