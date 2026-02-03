@@ -713,12 +713,8 @@ function webgl_get_model(filename, ptile)
           nodeMaterial.side = THREE.DoubleSide;
           nodeMaterial.flatShading = false;
           
-          // Add lighting to the material using TSL lights() function
-          // The lights() function automatically collects lights from the scene
-          // No parameters needed - it will find all lights when rendering
-          if (typeof THREE.lights === 'function') {
-            nodeMaterial.lightsNode = THREE.lights();
-          }
+          // MeshStandardNodeMaterial automatically detects and uses lights from the scene
+          // No manual lightsNode assignment is needed - it handles lighting internally
           
           node.material = nodeMaterial;
           node.material.needsUpdate = true;
