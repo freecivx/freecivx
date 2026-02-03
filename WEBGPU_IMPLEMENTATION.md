@@ -13,14 +13,14 @@ This implementation adds WebGPU renderer support to Freeciv 3D, providing an alt
 - Implemented storage/retrieval of the renderer preference using `simpleStorage`
 - The setting persists across sessions and triggers a page reload when changed
 
-### 2. Renderer Initialization (`webgl/renderer_init.js`)
+### 2. Renderer Initialization (`webgpu/renderer_init.js`)
 
 - Modified `init_webgl_renderer()` to check for WebGPU support and fall back to WebGL if unavailable
 - Updated `renderer_init()` to conditionally initialize either WebGL or WebGPU renderer based on user preference
 - Added WebGPU availability detection using `navigator.gpu` API
 - Maintains backward compatibility with existing WebGL implementation
 
-### 3. WebGPU Renderer (`webgl/mapview_webgpu.js`)
+### 3. WebGPU Renderer (`webgpu/mapview_webgpu.js`)
 
 New file implementing WebGPU-specific rendering:
 
@@ -31,7 +31,7 @@ New file implementing WebGPU-specific rendering:
 - Implements the same scene structure as WebGL but with WebGPU-compatible components
 - Note: Anaglyph 3D is currently disabled for WebGPU (logged as not yet supported)
 
-### 4. WebGPU Terrain Shader (`webgl/terrain_shader_webgpu.js`)
+### 4. WebGPU Terrain Shader (`webgpu/terrain_shader_webgpu.js`)
 
 **NEW FILE**: Complete TSL (Three.js Shading Language) shader implementation for terrain rendering.
 
@@ -225,17 +225,17 @@ Fixed additional errors after initial WebGPU implementation:
 ## Files Modified
 
 - `freeciv-web/src/main/webapp/javascript/pregame_freeciv_server.js`
-- `freeciv-web/src/main/webapp/javascript/webgl/renderer_init.js` (2026-02-03: Made WebGPU default when supported)
+- `freeciv-web/src/main/webapp/javascript/webgpu/renderer_init.js` (2026-02-03: Made WebGPU default when supported)
 - `freeciv-web/src/main/webapp/javascript/three-modules.js`
 - `freeciv-web/src/main/webapp/javascript/three-modules-webgpu.js` (2026-02-03: Fixed import path and TSL exports)
-- `freeciv-web/src/main/webapp/javascript/webgl/mapview_webgpu.js` (2026-02-03: Cleaned up lighting array code)
-- `freeciv-web/src/main/webapp/javascript/webgl/preload.js` (2026-02-03: Fixed TSL lights() usage for WebGPU)
+- `freeciv-web/src/main/webapp/javascript/webgpu/mapview_webgpu.js` (2026-02-03: Cleaned up lighting array code)
+- `freeciv-web/src/main/webapp/javascript/webgpu/preload.js` (2026-02-03: Fixed TSL lights() usage for WebGPU)
 
 ## Files Added
 
-- `freeciv-web/src/main/webapp/javascript/webgl/mapview_webgpu.js` - WebGPU renderer initialization
-- `freeciv-web/src/main/webapp/javascript/webgl/terrain_shader_webgpu.js` - TSL terrain shader
+- `freeciv-web/src/main/webapp/javascript/webgpu/mapview_webgpu.js` - WebGPU renderer initialization
+- `freeciv-web/src/main/webapp/javascript/webgpu/terrain_shader_webgpu.js` - TSL terrain shader
 
 ## Build Configuration
 
-The build process automatically includes the new files in the minified JavaScript bundle (`webclient-app.min.js`) through the existing `webgl/*.js` include pattern in `pom.xml`.
+The build process automatically includes the new files in the minified JavaScript bundle (`webclient-app.min.js`) through the existing `webgpu/*.js` include pattern in `pom.xml`.

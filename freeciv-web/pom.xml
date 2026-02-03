@@ -347,8 +347,8 @@ Rerun the sync-js-hand.js script.
 									<include>libs/*.js</include>
 									<include>server/*.js</include>
 									<include>2dcanvas/*.js</include>
-									<include>webgl/*.js</include>
-									<include>webgl/libs/*.js</include>
+									<include>webgpu/*.js</include>
+									<include>webgpu/libs/*.js</include>
 
 									<include>2dcanvas/tilespec-constants.js</include>
 								</includes>
@@ -359,8 +359,8 @@ Rerun the sync-js-hand.js script.
 									<exclude>libs/es-module-shims.js</exclude>
 									<exclude>libs/gif.worker.js</exclude>
 									<exclude>libs/stacktrace.min.js</exclude>
-									<exclude>webgl/libs/*js</exclude>
-									<exclude>webgl/effects/*js</exclude>
+									<exclude>webgpu/libs/*js</exclude>
+									<exclude>webgpu/effects/*js</exclude>
 									<exclude>three-modules.js</exclude>
 									<exclude>three-modules-webgpu.js</exclude>
 								</excludes>

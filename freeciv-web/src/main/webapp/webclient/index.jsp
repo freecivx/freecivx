@@ -56,7 +56,7 @@ var renderer_type_override="<%= rendererParam %>";
 <script type="importmap">
   {
     "imports": {
-      "three": "/javascript/webgl/libs/threejs/three.module.min.js?ts=${initParam.buildTimeStamp}",
+      "three": "/javascript/webgpu/libs/threejs/three.module.min.js?ts=${initParam.buildTimeStamp}",
       "three/webgpu": "/javascript/webgpu/libs/threejs/three.webgpu.min.js?ts=${initParam.buildTimeStamp}",
       "three/tsl": "/javascript/webgpu/libs/threejs/three.tsl.min.js?ts=${initParam.buildTimeStamp}"
     }
@@ -64,10 +64,8 @@ var renderer_type_override="<%= rendererParam %>";
 </script>
 <!-- Three.js module loader - exports to window for backward compatibility -->
 <script type="module" src="/javascript/three-modules.js?ts=${initParam.buildTimeStamp}"></script>
-<% if ("webgpu".equals(rendererParam)) { %>
-<!-- WebGPU module loader - preloaded when renderer=webgpu URL parameter is set -->
+<!-- WebGPU module loader - always loaded as WebGPU is required -->
 <script type="module" src="/javascript/three-modules-webgpu.js?ts=${initParam.buildTimeStamp}"></script>
-<% } %>
 
 
 <!-- Main application bundle - includes jQuery, Stacktrace, Audio, and all application code -->

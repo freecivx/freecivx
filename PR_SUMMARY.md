@@ -19,8 +19,8 @@ This PR adds complete WebGPU renderer support to Freeciv 3D, including a full Th
 4. `mapview_webgpu.js` (modified) - WebGPU initialization with TSL shader
 
 ### Files Added (4)
-1. `webgl/mapview_webgpu.js` (175 lines) - WebGPU renderer implementation
-2. `webgl/terrain_shader_webgpu.js` (199 lines) - TSL terrain shader
+1. `webgpu/mapview_webgpu.js` (175 lines) - WebGPU renderer implementation
+2. `webgpu/terrain_shader_webgpu.js` (199 lines) - TSL terrain shader
 3. `WEBGPU_IMPLEMENTATION.md` (125 lines) - Implementation overview
 4. `WEBGPU_SHADER_GUIDE.md` (252 lines) - Detailed shader documentation
 5. `IMPLEMENTATION_SUMMARY.md` (217 lines) - Complete technical summary
