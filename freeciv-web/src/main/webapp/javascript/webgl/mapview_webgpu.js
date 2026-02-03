@@ -50,7 +50,8 @@ function webgpu_start_renderer()
   // Lights - Set up lighting for both terrain and 3D objects
   
   // Ambient light provides base illumination for the entire scene
-  var ambientLight = new THREE.AmbientLight( 0x606060, 28 * Math.PI );
+  // Using physically-based intensity values for WebGPU compatibility
+  var ambientLight = new THREE.AmbientLight( 0x606060, 1.2 * Math.PI );
   ambientLight.name = "ambient_light";
   scene.add(ambientLight);
 
