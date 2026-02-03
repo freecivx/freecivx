@@ -59,7 +59,7 @@ var MAPVIEW_ASPECT_FACTOR = 35.71;
 
 // Hexagonal tile constants
 var HEX_WIDTH_FACTOR = 1.0;  // Width multiplier for hex tiles
-var HEX_HEIGHT_FACTOR = Math.sqrt(3) / 2; // sqrt(3)/2 ≈ 0.866 for proper hex aspect ratio
+var HEX_HEIGHT_FACTOR = Math.sqrt(3) / 2; // sqrt(3)/2 ≈ 0.8660 for proper hex aspect ratio
 var HEX_STAGGER = 0.5;  // Horizontal offset for odd rows
 
 

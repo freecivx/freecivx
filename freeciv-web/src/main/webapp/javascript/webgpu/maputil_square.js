@@ -52,15 +52,15 @@ function scene_to_map_coords(x, y)
   const tileWidth = mapview_model_width / map['xsize'];
   const tileHeight = (mapview_model_height / map['ysize']) * HEX_HEIGHT_FACTOR;
   
-  // First estimate Y coordinate
-  const estimatedY = Math.floor(y / tileHeight);
+  // Calculate Y coordinate directly from scene position
+  const tileY = Math.floor(y / tileHeight);
   
-  // Calculate row offset based on estimated Y
-  const rowOffset = (estimatedY % 2 === 1) ? tileWidth * HEX_STAGGER : 0;
+  // Calculate row offset based on Y (odd rows are staggered)
+  const rowOffset = (tileY % 2 === 1) ? tileWidth * HEX_STAGGER : 0;
   
   // Calculate X accounting for hex offset
   result['x'] = Math.floor((x + 500 - rowOffset) * map['xsize'] / mapview_model_width);
-  result['y'] = estimatedY;
+  result['y'] = tileY;
 
   return result;
 }
