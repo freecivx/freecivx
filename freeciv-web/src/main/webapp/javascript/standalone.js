@@ -146,10 +146,10 @@ function start_standalone_game() {
   console.log("[Standalone] Creating mock game data");
   create_mock_game_data();
   
-  // Initialize WebGL loader and resources before starting the game
+  // Initialize WebGPU loader and resources before starting the game
   // This is necessary because in standalone mode we bypass the normal
   // tileset preloading flow that initializes these resources
-  console.log("[Standalone] Initializing WebGL resources");
+  console.log("[Standalone] Initializing WebGPU resources");
   initialize_standalone_webgl();
 
   console.log("[Standalone] Setting client state to C_S_RUNNING");
@@ -185,12 +185,12 @@ function create_mock_game_data() {
 
 
 /**************************************************************************
- * Initialize WebGL resources for standalone mode
+ * Initialize WebGPU resources for standalone mode
  * This initializes the GLTFLoader and other resources that would normally
  * be initialized during tileset preloading
  **************************************************************************/
 function initialize_standalone_webgl() {
-  console.log("[Standalone] Initializing WebGL resources for standalone mode");
+  console.log("[Standalone] Initializing WebGPU resources for standalone mode");
 
 
   // Initialize the GLTF loader if it hasn't been initialized yet
@@ -223,5 +223,5 @@ function initialize_standalone_webgl() {
     console.log("[Standalone] webgl_models already initialized with " + Object.keys(window.webgl_models).length + " models");
   }
   
-  console.log("[Standalone] WebGL resources initialized for standalone mode");
+  console.log("[Standalone] WebGPU resources initialized for standalone mode");
 }

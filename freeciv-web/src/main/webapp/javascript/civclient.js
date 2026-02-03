@@ -63,8 +63,8 @@ $(document).ready(function() {
 **************************************************************************/
 function civclient_init()
 {
-  if (!Detector.webgl) {
-    swal("3D WebGL not supported by your browser or you don't have a 3D graphics card.  ");
+  if (!navigator.gpu) {
+    swal("WebGPU is not supported by your browser. Please use a modern browser with WebGPU support (Chrome 113+, Edge 113+, Firefox 122+).");
     return;
   }
 
