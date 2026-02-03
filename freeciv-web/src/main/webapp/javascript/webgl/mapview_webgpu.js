@@ -230,6 +230,4 @@ async function init_webgpu_mapview() {
 
   benchmark_start = new Date().getTime();
 
- 
-    advance_unit_focus();
 }
