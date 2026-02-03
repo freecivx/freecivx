@@ -32,7 +32,7 @@
  */
 
 function createTerrainShaderTSL(uniforms) {
-    // Import TSL functions from THREE
+    // Import TSL functions and nodes from THREE
     // These should be available after three-modules-webgpu.js has loaded
     const { 
         texture, uniform, positionLocal, attribute, uv, 
@@ -41,12 +41,12 @@ function createTerrainShaderTSL(uniforms) {
         mul, add, sub, div
     } = THREE;
     
-    // Verify all required TSL functions are available
-    const requiredFunctionNames = ['texture', 'uniform', 'positionLocal', 'attribute', 'uv', 'vec2', 'vec3', 'vec4', 'mix', 'step', 'floor', 'fract', 'mod', 'dot', 'sin', 'mul', 'add', 'sub', 'div'];
-    const missingFunctions = requiredFunctionNames.filter(name => typeof THREE[name] !== 'function');
-    if (missingFunctions.length > 0) {
-        console.error('Missing TSL functions:', missingFunctions);
-        throw new Error(`Required TSL functions not available: ${missingFunctions.join(', ')}. Ensure three-modules-webgpu.js has loaded successfully.`);
+    // Verify all required TSL functions and nodes are available
+    const requiredTSLNames = ['texture', 'uniform', 'positionLocal', 'attribute', 'uv', 'vec2', 'vec3', 'vec4', 'mix', 'step', 'floor', 'fract', 'mod', 'dot', 'sin', 'mul', 'add', 'sub', 'div'];
+    const missing = requiredTSLNames.filter(name => THREE[name] === undefined);
+    if (missing.length > 0) {
+        console.error('Missing TSL functions/nodes:', missing);
+        throw new Error(`Required TSL functions/nodes not available: ${missing.join(', ')}. Ensure three-modules-webgpu.js has loaded successfully.`);
     }
 
     // Define terrain type constants (matching game logic)
