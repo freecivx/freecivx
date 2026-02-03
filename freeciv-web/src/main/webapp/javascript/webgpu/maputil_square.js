@@ -52,14 +52,20 @@ function scene_to_map_coords(x, y)
   const tileWidth = mapview_model_width / map['xsize'];
   const tileHeight = (mapview_model_height / map['ysize']) * HEX_HEIGHT_FACTOR;
   
+  // Account for the initial offset (30) in map_to_scene_coords
+  const adjustedY = y - 30;
+  
   // Calculate Y coordinate directly from scene position
-  const tileY = Math.floor(y / tileHeight);
+  const tileY = Math.floor(adjustedY / tileHeight);
   
   // Calculate row offset based on Y (odd rows are staggered)
   const rowOffset = (tileY % 2 === 1) ? tileWidth * HEX_STAGGER : 0;
   
+  // Account for the initial offset (-470) in map_to_scene_coords
+  const adjustedX = x + 470 - rowOffset;
+  
   // Calculate X accounting for hex offset
-  result['x'] = Math.floor((x + 500 - rowOffset) * map['xsize'] / mapview_model_width);
+  result['x'] = Math.floor(adjustedX / tileWidth);
   result['y'] = tileY;
 
   return result;
