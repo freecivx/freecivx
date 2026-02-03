@@ -47,9 +47,19 @@ var mapview_model_height;
 
 var MAPVIEW_ASPECT_FACTOR = 35.71;
 
+// Hexagonal tile constants
+var HEX_WIDTH_FACTOR = 1.0;  // Width multiplier for hex tiles
+var HEX_HEIGHT_FACTOR = 0.866; // sqrt(3)/2 for proper hex aspect ratio
+var HEX_STAGGER = 0.5;  // Horizontal offset for odd rows
+
 
 /****************************************************************************
-  Initialize land geometry
+  Initialize land geometry with hexagonal tile grid
+  
+  Creates a mesh with hexagonal tiling where:
+  - Each tile has 6 neighbors (hex topology)
+  - Odd rows are offset by half a tile width (offset coordinates)
+  - UV coordinates map to hex tile centers for proper terrain sampling
 ****************************************************************************/
 function init_land_geometry(geometry, mesh_quality)
 {
@@ -65,8 +75,9 @@ function init_land_geometry(geometry, mesh_quality)
   const gridX1 = gridX + 1;
   const gridY1 = gridY + 1;
 
+  // Hex tile dimensions
   const segment_width = mapview_model_width / gridX;
-  const segment_height = mapview_model_height / gridY;
+  const segment_height = (mapview_model_height / gridY) * HEX_HEIGHT_FACTOR;
 
   const indices = [];
   const uvs = [];
@@ -74,10 +85,14 @@ function init_land_geometry(geometry, mesh_quality)
   let heightmap_scale = (mesh_quality === 2) ? (mesh_quality * 2) : 1;
   const heightmap_resolution_x = map.xsize * mesh_quality + 1;
 
+  // Create vertices for hexagonal grid
   for ( let iy = 0; iy < gridY1; iy ++ ) {
+    // Apply hex row offset for odd rows (staggered grid)
+    const rowOffset = (iy % 2 === 1) ? segment_width * HEX_STAGGER : 0;
     const y = iy * segment_height - height_half;
+    
     for ( let ix = 0; ix < gridX1; ix ++ ) {
-      const x = ix * segment_width - width_half;
+      const x = ix * segment_width - width_half + rowOffset;
       var sx = ix % xquality, sy = iy % yquality;
 
       // Calculate 1D index for heightmap array
@@ -85,11 +100,17 @@ function init_land_geometry(geometry, mesh_quality)
       const height_value = heightmap && heightmap[heightmap_index] !== undefined ? heightmap[heightmap_index] * 100 : 0;
       
       vertices.push( x, -y, height_value );
-      uvs.push( ix / gridX );
+      
+      // UV coordinates for hex sampling
+      // Adjust UV to account for hex offset
+      const uvX = (ix + (iy % 2 === 1 ? HEX_STAGGER : 0)) / gridX;
+      uvs.push( uvX );
       uvs.push( 1 - ( iy / gridY ) );
     }
   }
 
+  // Create triangles connecting the hexagonal grid
+  // Uses standard triangle pairs but with hex-aware indexing
   for ( let iy = 0; iy < gridY; iy ++ ) {
     for ( let ix = 0; ix < gridX; ix ++ ) {
       const a = ix + gridX1 * iy;
@@ -119,7 +140,7 @@ function init_land_geometry(geometry, mesh_quality)
 }
 
 /****************************************************************************
-  Create the land terrain geometry
+  Update the land terrain geometry with hexagonal tiling
 ****************************************************************************/
 function update_land_geometry(geometry, mesh_quality) {
   const xquality = map.xsize * mesh_quality + 1;
@@ -128,8 +149,9 @@ function update_land_geometry(geometry, mesh_quality) {
   const gridX = Math.floor(xquality);
   const gridY = Math.floor(yquality);
 
+  // Hex tile dimensions
   const segment_width = mapview_model_width / gridX;
-  const segment_height = mapview_model_height / gridY;
+  const segment_height = (mapview_model_height / gridY) * HEX_HEIGHT_FACTOR;
 
   const width_half = mapview_model_width / 2;
   const height_half = mapview_model_height / 2;
@@ -139,9 +161,12 @@ function update_land_geometry(geometry, mesh_quality) {
   const bufferAttribute = mesh_quality === 2 ? lofibufferattribute : landbufferattribute;
 
   for (let iy = 0; iy <= gridY; iy++) {
+    // Apply hex row offset for odd rows (staggered grid)
+    const rowOffset = (iy % 2 === 1) ? segment_width * HEX_STAGGER : 0;
     const y = iy * segment_height - height_half;
+    
     for (let ix = 0; ix <= gridX; ix++) {
-      const x = ix * segment_width - width_half;
+      const x = ix * segment_width - width_half + rowOffset;
       const sx = ix % xquality, sy = iy % yquality;
       const index = iy * (gridX + 1) + ix;
       // Calculate 1D index for heightmap array

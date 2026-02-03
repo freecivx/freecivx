@@ -19,25 +19,48 @@
 
 
 /****************************************************************************
-  Converts from map to scene coordinates.
+  Converts from map to scene coordinates for hexagonal tiles.
+  
+  For hex topology, we need to account for:
+  - Row stagger (odd rows offset by half tile width)
+  - Hex aspect ratio (height = width * sqrt(3)/2)
 ****************************************************************************/
 function map_to_scene_coords(x, y)
 {
   var result = {};
-  result['x'] = Math.floor(-470 + x * mapview_model_width / map['xsize']);
-  result['y'] = Math.floor(30 + y * mapview_model_height / map['ysize']);
+  
+  // Calculate base position
+  const tileWidth = mapview_model_width / map['xsize'];
+  const tileHeight = (mapview_model_height / map['ysize']) * HEX_HEIGHT_FACTOR;
+  
+  // Apply hex row offset for odd rows
+  const rowOffset = (y % 2 === 1) ? tileWidth * HEX_STAGGER : 0;
+  
+  result['x'] = Math.floor(-470 + x * tileWidth + rowOffset);
+  result['y'] = Math.floor(30 + y * tileHeight);
 
   return result;
 }
 
 /****************************************************************************
-  Converts from scene to map coordinates.
+  Converts from scene to map coordinates for hexagonal tiles.
 ****************************************************************************/
 function scene_to_map_coords(x, y)
 {
   var result = {};
-  result['x'] = Math.floor((x + 500) * map['xsize'] / mapview_model_width);
-  result['y'] = Math.floor((y) * map['ysize'] / mapview_model_height);
+  
+  const tileWidth = mapview_model_width / map['xsize'];
+  const tileHeight = (mapview_model_height / map['ysize']) * HEX_HEIGHT_FACTOR;
+  
+  // First estimate Y coordinate
+  const rawY = Math.floor(y / tileHeight);
+  
+  // Calculate row offset based on estimated Y
+  const rowOffset = (rawY % 2 === 1) ? tileWidth * HEX_STAGGER : 0;
+  
+  // Calculate X accounting for hex offset
+  result['x'] = Math.floor((x + 500 - rowOffset) * map['xsize'] / mapview_model_width);
+  result['y'] = rawY;
 
   return result;
 }
