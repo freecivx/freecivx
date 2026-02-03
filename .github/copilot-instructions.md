@@ -19,6 +19,6 @@
 - Playwright E2E: `bash ./scripts/test-freecivx.sh`.
 
 ## Development notes
-- `freeciv-web` build requires derived files from the C server (`scripts/sync-js-hand.sh`) and external services (Tomcat/MySQL/nginx); prefer editing and rely on CI for full builds.
+- `freeciv-web` build requires derived files from the C server (generated via `scripts/sync-js-hand.sh`) and external services (Tomcat/MySQL/nginx); prefer local editing and rely on CI for full builds.
 - Keep PRs small (~200 LOC) and avoid whitespace-only changes (see `doc/CONTRIBUTING.md`).
 - Use PRs only; no direct commits to main branches.
