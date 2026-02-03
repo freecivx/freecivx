@@ -714,9 +714,10 @@ function webgl_get_model(filename, ptile)
           nodeMaterial.flatShading = false;
           
           // Add lighting to the material using TSL lights() function
-          // Check if THREE.lights is available (WebGPU TSL function)
-          if (typeof THREE.lights === 'function' && scene && scene.userData && scene.userData.lightsArray) {
-            nodeMaterial.lightsNode = THREE.lights(scene.userData.lightsArray);
+          // The lights() function automatically collects lights from the scene
+          // No parameters needed - it will find all lights when rendering
+          if (typeof THREE.lights === 'function') {
+            nodeMaterial.lightsNode = THREE.lights();
           }
           
           node.material = nodeMaterial;

@@ -41,16 +41,28 @@ function init_webgl_renderer()
   } else {
     // Check renderer type preference from storage
     var stored_renderer_type = simpleStorage.get("renderer_type", "");
-    if (stored_renderer_type != null && stored_renderer_type == "webgpu") {
-      if (!navigator.gpu) {
-        console.log("WebGPU not supported, falling back to WebGL");
-        simpleStorage.set("renderer_type", "webgl");
-        renderer_type = "webgl";
+    if (stored_renderer_type != null && stored_renderer_type != "") {
+      // User has a saved preference
+      if (stored_renderer_type == "webgpu") {
+        if (!navigator.gpu) {
+          console.log("WebGPU not supported, falling back to WebGL");
+          simpleStorage.set("renderer_type", "webgl");
+          renderer_type = "webgl";
+        } else {
+          renderer_type = "webgpu";
+        }
       } else {
-        renderer_type = "webgpu";
+        renderer_type = "webgl";
       }
     } else {
-      renderer_type = "webgl";
+      // No saved preference - default to WebGPU if supported, otherwise WebGL
+      if (navigator.gpu) {
+        renderer_type = "webgpu";
+        console.log("WebGPU detected and set as default renderer");
+      } else {
+        renderer_type = "webgl";
+        console.log("WebGPU not available, using WebGL renderer");
+      }
     }
   }
 
@@ -94,15 +106,27 @@ async function renderer_init() {
   
   // Load renderer type preference
   var stored_renderer_type = simpleStorage.get("renderer_type", "");
-  if (stored_renderer_type != null && stored_renderer_type == "webgpu") {
-    if (!navigator.gpu) {
-      console.log("WebGPU not supported, falling back to WebGL");
-      renderer_type = "webgl";
+  if (stored_renderer_type != null && stored_renderer_type != "") {
+    // User has a saved preference
+    if (stored_renderer_type == "webgpu") {
+      if (!navigator.gpu) {
+        console.log("WebGPU not supported, falling back to WebGL");
+        renderer_type = "webgl";
+      } else {
+        renderer_type = "webgpu";
+      }
     } else {
-      renderer_type = "webgpu";
+      renderer_type = "webgl";
     }
   } else {
-    renderer_type = "webgl";
+    // No saved preference - default to WebGPU if supported, otherwise WebGL
+    if (navigator.gpu) {
+      renderer_type = "webgpu";
+      console.log("WebGPU detected and set as default renderer");
+    } else {
+      renderer_type = "webgl";
+      console.log("WebGPU not available, using WebGL renderer");
+    }
   }
 
   if (renderer_type === "webgl" && !Detector.webgl) {
