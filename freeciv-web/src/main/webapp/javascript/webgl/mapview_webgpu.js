@@ -229,4 +229,7 @@ async function init_webgpu_mapview() {
   add_all_objects_to_scene();
 
   benchmark_start = new Date().getTime();
+
+ 
+    advance_unit_focus();
 }
