@@ -49,6 +49,9 @@ Freeciv 3D
 -------------
 Freeciv 3D is the 3D version using the Three.js 3D engine, which requires WebGl 2 or WebGPU support.
 
+Freeciv JavaScript Server
+-----------------
+The Freeciv JavaScript server https://github.com/freecivworld/freecivworld/tree/main/freeciv-web/src/main/webapp/javascript/server
 
 Standalone client
 -----------------
