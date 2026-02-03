@@ -496,6 +496,11 @@ function pregame_settings()
           "<option value='ISLAND'>Island-based</option>" +
           "<option value='FAIR'>Fair islands</option>" +
           //"<option value='FRACTURE'>Fracture map</option>" + FIXME: this one doesnt work.
+    "</select></td></tr>" +
+    "<tr title='Map tile topology: Square or Hexagonal tiles. Hex tiles provide 6-way movement.'><td>Map Topology:</td>" +
+          "<td><select name='topology' id='topology'>" +
+          "<option value='0'>Square tiles (Classic)</option>" +
+          "<option value='1' selected>Hexagonal tiles (Recommended)</option>" +
     "</select></td></tr>"
     + "</table><br>"+
 	  "<span id='settings_info'><i>Freeciv-web can be customized using the command line in many " +
@@ -617,10 +622,15 @@ function pregame_settings()
 
   if (server_settings['topology'] != null
         && server_settings['topology']['val'] != null) {
-    if (server_settings['topology']['val'] == 2) {
-      $("#topology").val(1); //hex
+    // Topology is a bitmask: TF_ISO=1, TF_HEX=2
+    // 0 = square, 1 = ISO square, 2 = pure hex, 3 = ISO hex
+    var topologyVal = server_settings['topology']['val'];
+    if (topologyVal >= 2) {
+      // Has TF_HEX flag (value 2 or 3)
+      $("#topology").val(1); // hex
     } else {
-      $("#topology").val(server_settings['topology']['val']);
+      // Square tiles (value 0 or 1)
+      $("#topology").val(0);
     }
   }
 
@@ -735,9 +745,9 @@ function pregame_settings()
 
   $('#topology').change(function() {
     if ($('#topology').val() == 0) {
-      send_message("/set topology="); // Not HEX, so it's ISO (but not really iso).
+      send_message("/set topology="); // Square tiles (no hex)
     } else {
-      send_message("/set topology " + server_settings['topology']['support_names'][$('#topology').val()]);
+      send_message("/set topology HEX|ISO"); // Hexagonal tiles with ISO view
     }
   });
 
