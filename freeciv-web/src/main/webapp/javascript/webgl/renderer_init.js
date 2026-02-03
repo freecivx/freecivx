@@ -148,10 +148,10 @@ async function renderer_init() {
           // Update stored preference to prevent repeated WebGPU attempts
           simpleStorage.set("renderer_type", "webgl");
           webgl_start_renderer();
-          init_webgl_mapview();
+          await init_webgl_mapview();
         } else {
           webgpu_start_renderer();
-          init_webgpu_mapview();
+          await init_webgpu_mapview();
         }
       } else {
         console.log("WebGPU loader not available, falling back to WebGL");
@@ -159,17 +159,20 @@ async function renderer_init() {
         // Update stored preference to prevent repeated WebGPU attempts
         simpleStorage.set("renderer_type", "webgl");
         webgl_start_renderer();
-        init_webgl_mapview();
+        await init_webgl_mapview();
       }
     } else {
       webgl_start_renderer();
-      init_webgl_mapview();
+      await init_webgl_mapview();
     }
 
     init_webgl_mapctrl();
     init_game_unit_panel();
     init_chatbox();
     keyboard_input=true;
+
+    // Set initial camera focus on player's units after renderer is fully initialized
+    advance_unit_focus();
 
     setTimeout("$('#mapcanvas').fadeIn(2500); $.unblockUI();", 700);
 
