@@ -152,7 +152,40 @@ function createWaterMaterialTSL() {
     mul, add, sub, div
   } = THREE;
   
-  // Water color uniforms
+  // =========================================================================
+  // WATER WAVE PARAMETERS
+  // =========================================================================
+  // Wave 1: Primary wave moving along X-axis
+  const WAVE1_FREQUENCY = 15.0;   // Spatial frequency (waves per unit)
+  const WAVE1_SPEED = 0.8;        // Animation speed multiplier
+  const WAVE1_AMPLITUDE = 0.3;    // Wave height contribution
+  
+  // Wave 2: Secondary wave moving along Y-axis
+  const WAVE2_FREQUENCY = 12.0;
+  const WAVE2_SPEED = 0.6;
+  const WAVE2_AMPLITUDE = 0.25;
+  
+  // Wave 3: Diagonal wave for complexity
+  const WAVE3_FREQUENCY = 8.0;
+  const WAVE3_SPEED = 1.2;
+  const WAVE3_AMPLITUDE = 0.15;
+  
+  // Specular and foam parameters
+  const SPECULAR_POWER = 16.0;    // Shininess exponent
+  const SPECULAR_INTENSITY = 0.4; // Specular brightness
+  const FOAM_THRESHOLD = 0.2;     // Wave height where foam starts
+  const FOAM_SCALE = 3.0;         // Foam intensity multiplier
+  const FOAM_MAX = 0.3;           // Maximum foam contribution
+  
+  // Opacity parameters
+  const BASE_OPACITY = 0.55;
+  const OPACITY_VARIATION = 0.08;
+  const OPACITY_MIN = 0.45;
+  const OPACITY_MAX = 0.7;
+  
+  // =========================================================================
+  // WATER COLORS
+  // =========================================================================
   const deepColor = vec3(0.05, 0.15, 0.35);   // Deep blue
   const shallowColor = vec3(0.15, 0.45, 0.65); // Light blue-cyan
   const foamColor = vec3(0.85, 0.95, 1.0);     // White foam
@@ -170,9 +203,9 @@ function createWaterMaterialTSL() {
   const posNode = positionLocal;
   
   // Create animated wave pattern using multiple sine waves
-  const wave1 = mul(sin(add(mul(uvNode.x, 15.0), mul(timeUniform, 0.8))), 0.3);
-  const wave2 = mul(sin(add(mul(uvNode.y, 12.0), mul(timeUniform, 0.6))), 0.25);
-  const wave3 = mul(sin(add(mul(add(uvNode.x, uvNode.y), 8.0), mul(timeUniform, 1.2))), 0.15);
+  const wave1 = mul(sin(add(mul(uvNode.x, WAVE1_FREQUENCY), mul(timeUniform, WAVE1_SPEED))), WAVE1_AMPLITUDE);
+  const wave2 = mul(sin(add(mul(uvNode.y, WAVE2_FREQUENCY), mul(timeUniform, WAVE2_SPEED))), WAVE2_AMPLITUDE);
+  const wave3 = mul(sin(add(mul(add(uvNode.x, uvNode.y), WAVE3_FREQUENCY), mul(timeUniform, WAVE3_SPEED))), WAVE3_AMPLITUDE);
   const wavePattern = add(add(wave1, wave2), wave3);
   
   // Calculate "depth" based on distance from center for color variation
@@ -188,20 +221,19 @@ function createWaterMaterialTSL() {
   const halfDir = vec3(0.25, 0.9, 0.15);
   
   // Calculate specular using wave pattern to simulate surface normals
-  const specularIntensity = pow(clamp(add(0.5, mul(wavePattern, 0.3)), 0.0, 1.0), 16.0);
-  const specular = mul(vec3(1.0, 1.0, 0.9), mul(specularIntensity, 0.4));
+  const specularIntensity = pow(clamp(add(0.5, mul(wavePattern, 0.3)), 0.0, 1.0), SPECULAR_POWER);
+  const specular = mul(vec3(1.0, 1.0, 0.9), mul(specularIntensity, SPECULAR_INTENSITY));
   
   // Add subtle foam on wave peaks
-  const foamThreshold = clamp(mul(sub(wavePattern, 0.2), 3.0), 0.0, 0.3);
+  const foamThreshold = clamp(mul(sub(wavePattern, FOAM_THRESHOLD), FOAM_SCALE), 0.0, FOAM_MAX);
   const colorWithFoam = mix(baseColor, foamColor, foamThreshold);
   
   // Combine base color with specular
   const finalColor = add(colorWithFoam, specular);
   
   // Animated opacity with subtle variation
-  const baseOpacity = 0.55;
-  const opacityVariation = mul(sin(add(mul(timeUniform, 0.5), mul(uvNode.x, 5.0))), 0.08);
-  const finalOpacity = clamp(add(baseOpacity, opacityVariation), 0.45, 0.7);
+  const opacityVariation = mul(sin(add(mul(timeUniform, 0.5), mul(uvNode.x, 5.0))), OPACITY_VARIATION);
+  const finalOpacity = clamp(add(BASE_OPACITY, opacityVariation), OPACITY_MIN, OPACITY_MAX);
   
   // Create output color with transparency
   const outputColor = vec4(finalColor, finalOpacity);

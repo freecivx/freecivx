@@ -208,14 +208,23 @@ function animate_webgl() {
 
   update_animated_objects();
   
+  // Get actual delta time from the timer (in seconds)
+  // This ensures animation speed is consistent regardless of frame rate
+  var deltaTime = 0.016; // Default to ~60fps if timer not available
+  if (clock && typeof clock.getDelta === 'function') {
+    deltaTime = clock.getDelta();
+    // Clamp delta time to prevent huge jumps when tab is inactive
+    deltaTime = Math.min(deltaTime, 0.1);
+  }
+  
   // Update water animation
   if (typeof updateWaterAnimation === 'function') {
-    updateWaterAnimation(0.016); // ~60fps delta time
+    updateWaterAnimation(deltaTime);
   }
   
   // Update selected unit animation (TSL-based pulsing effect)
   if (typeof updateSelectedUnitAnimation === 'function') {
-    updateSelectedUnitAnimation(0.016); // ~60fps delta time
+    updateSelectedUnitAnimation(deltaTime);
   }
 
   if (controls != null) {
