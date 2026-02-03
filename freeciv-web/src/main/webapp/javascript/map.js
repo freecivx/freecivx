@@ -340,7 +340,10 @@ function map_distance_vector(tile0, tile1)
   Step from the given tile in the given direction.  The new tile is returned,
   or NULL if the direction is invalid or leads off the map.
   
-  For hexagonal topology, uses hex-specific direction offsets.
+  For hexagonal topology, the same direction offsets (DIR_DX/DIR_DY) are used,
+  but certain directions are invalid and filtered by is_valid_dir().
+  In iso-hex: NE and SW are invalid
+  In pure hex: SE and NW are invalid
 ****************************************************************************/
 function mapstep(ptile, dir)
 {
@@ -348,30 +351,9 @@ function mapstep(ptile, dir)
     return null;
   }
 
-  var dx, dy;
-  
-  // Use hex direction offsets for hex topology
-  if (topo_has_flag(TF_HEX)) {
-    // For hex grid, direction offsets depend on whether we're on an odd or even row
-    // Odd rows are shifted right, so neighbor positions differ
-    var isOddRow = (ptile['y'] % 2 === 1);
-    
-    // Hex direction offsets differ based on row parity
-    switch (dir) {
-      case DIR8_NORTHWEST: dx = isOddRow ? 0 : -1; dy = -1; break;
-      case DIR8_NORTH:     dx = 0; dy = -1; break;
-      case DIR8_NORTHEAST: dx = isOddRow ? 1 : 0; dy = -1; break;
-      case DIR8_WEST:      dx = -1; dy = 0; break;
-      case DIR8_EAST:      dx = 1; dy = 0; break;
-      case DIR8_SOUTHWEST: dx = isOddRow ? 0 : -1; dy = 1; break;
-      case DIR8_SOUTH:     dx = 0; dy = 1; break;
-      case DIR8_SOUTHEAST: dx = isOddRow ? 1 : 0; dy = 1; break;
-      default: return null;
-    }
-  } else {
-    dx = DIR_DX[dir];
-    dy = DIR_DY[dir];
-  }
+  // Use the standard direction offsets - hex validity is handled by is_valid_dir()
+  var dx = DIR_DX[dir];
+  var dy = DIR_DY[dir];
 
   return map_pos_to_tile(dx + ptile['x'], dy + ptile['y']);
 

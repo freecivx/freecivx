@@ -63,26 +63,9 @@ function update_roads_tile(ptile, recursive)
 
   if (!recursive) return;
 
-  // Get hex-aware neighbors using the 6 valid hex directions
-  let isOddRow = (y % 2 === 1);
-  let neighbours = topo_has_flag(TF_HEX) ? (isOddRow ? [
-    // Odd row neighbors (shifted right) - 6 hex neighbors
-    { "x": x,     "y": y - 1 },  // NW
-    { "x": x + 1, "y": y - 1 },  // NE
-    { "x": x - 1, "y": y },      // W
-    { "x": x + 1, "y": y },      // E
-    { "x": x,     "y": y + 1 },  // SW
-    { "x": x + 1, "y": y + 1 },  // SE
-  ] : [
-    // Even row neighbors - 6 hex neighbors
-    { "x": x - 1, "y": y - 1 },  // NW
-    { "x": x,     "y": y - 1 },  // NE
-    { "x": x - 1, "y": y },      // W
-    { "x": x + 1, "y": y },      // E
-    { "x": x - 1, "y": y + 1 },  // SW
-    { "x": x,     "y": y + 1 },  // SE
-  ]) : [
-    // Square grid - 8 neighbors
+  // Use standard 8-connected neighbors for road updates
+  // The hex visualization is separate from the tile coordinate system
+  let neighbours = [
     { "x": x - 1 , "y": y - 1},
     { "x": x - 1, "y": y },
     { "x": x - 1,  "y": y + 1 },
@@ -93,7 +76,7 @@ function update_roads_tile(ptile, recursive)
     { "x": x + 1,  "y": y + 1},
   ];
 
-  for (let i = 0; i < neighbours.length; i++) {
+  for (let i = 0; i < 8; i++) {
     let coords = neighbours[i];
     if (coords.x < 0 || coords.x >= map.xsize || coords.y < 0 || coords.y >= map.ysize ) {
       continue;

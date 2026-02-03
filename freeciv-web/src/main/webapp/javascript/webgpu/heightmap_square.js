@@ -155,7 +155,7 @@ function update_heightmap(heightmap_quality)
   let heightmap_resolution_x = map.xsize * heightmap_quality + 1;
   let heightmap_resolution_y = map.ysize * heightmap_quality + 1;
 
-  console.log("Updating heightmap for hexagonal tiles...");
+  console.log("Updating heightmap...");
 
   for (let x = 0; x < map.xsize ; x++) {
     for (let y = 0; y < map.ysize; y++) {
@@ -171,28 +171,20 @@ function update_heightmap(heightmap_quality)
 
       if (tile_get_known(ptile) == TILE_UNKNOWN) {
         ptile['height'] = 0.51;
-        
-        // Hex neighbors - 6 directions based on row parity
-        let isOddRow = (y % 2 === 1);
-        let neighbours = isOddRow ? [
-          // Odd row neighbors (shifted right)
-          { "x": x,     "y": y - 1 },  // NW
-          { "x": x + 1, "y": y - 1 },  // NE
-          { "x": x - 1, "y": y },      // W
-          { "x": x + 1, "y": y },      // E
-          { "x": x,     "y": y + 1 },  // SW
-          { "x": x + 1, "y": y + 1 },  // SE
-        ] : [
-          // Even row neighbors
-          { "x": x - 1, "y": y - 1 },  // NW
-          { "x": x,     "y": y - 1 },  // NE
-          { "x": x - 1, "y": y },      // W
-          { "x": x + 1, "y": y },      // E
-          { "x": x - 1, "y": y + 1 },  // SW
-          { "x": x,     "y": y + 1 },  // SE
-        ];
+        // Use standard 8-connected neighbors for height propagation
+        // The hex visualization is separate from the tile coordinate system
+        let neighbours = [
+          { "x": x - 1 , "y": y - 1},
+          { "x": x - 1, "y": y },
+          { "x": x - 1,  "y": y + 1 },
+          { "x": x,  "y": y - 1},
+          { "x": x , "y": y + 1},
+          { "x": x + 1, "y": y - 1 },
+          { "x": x + 1,  "y": y },
+          { "x": x + 1,  "y": y + 1},
+          ];
 
-        for (let i = 0; i < 6; i++) {
+        for (let i = 0; i < 8; i++) {
           let coords = neighbours[i];
           if (coords.x < 0 || coords.x >= map.xsize || coords.y < 0 || coords.y >= map.ysize || ptile['height'] > 0.51) {
             continue;
@@ -272,7 +264,7 @@ function update_heightmap(heightmap_quality)
     }
   }
 
-  console.log("Hexagonal heightmap updated.");
+  console.log("Heightmap updated.");
 }
 
 
