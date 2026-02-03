@@ -17,6 +17,10 @@
 
 ***********************************************************************/
 
+// Map coordinate system offsets - used for scene <-> map coordinate conversion
+// These must match between map_to_scene_coords() and scene_to_map_coords()
+var MAP_X_OFFSET = -470;  // Initial X offset when converting map to scene coordinates
+var MAP_Y_OFFSET = 30;    // Initial Y offset when converting map to scene coordinates
 
 /****************************************************************************
   Converts from map to scene coordinates for hexagonal tiles.
@@ -36,8 +40,8 @@ function map_to_scene_coords(x, y)
   // Apply hex row offset for odd rows
   const rowOffset = (y % 2 === 1) ? tileWidth * HEX_STAGGER : 0;
   
-  result['x'] = Math.floor(-470 + x * tileWidth + rowOffset);
-  result['y'] = Math.floor(30 + y * tileHeight);
+  result['x'] = Math.floor(MAP_X_OFFSET + x * tileWidth + rowOffset);
+  result['y'] = Math.floor(MAP_Y_OFFSET + y * tileHeight);
 
   return result;
 }
@@ -52,8 +56,8 @@ function scene_to_map_coords(x, y)
   const tileWidth = mapview_model_width / map['xsize'];
   const tileHeight = (mapview_model_height / map['ysize']) * HEX_HEIGHT_FACTOR;
   
-  // Account for the initial offset (30) in map_to_scene_coords
-  const adjustedY = y - 30;
+  // Account for the MAP_Y_OFFSET in map_to_scene_coords
+  const adjustedY = y - MAP_Y_OFFSET;
   
   // Calculate Y coordinate directly from scene position
   const tileY = Math.floor(adjustedY / tileHeight);
@@ -61,8 +65,8 @@ function scene_to_map_coords(x, y)
   // Calculate row offset based on Y (odd rows are staggered)
   const rowOffset = (tileY % 2 === 1) ? tileWidth * HEX_STAGGER : 0;
   
-  // Account for the initial offset (-470) in map_to_scene_coords
-  const adjustedX = x + 470 - rowOffset;
+  // Account for the MAP_X_OFFSET in map_to_scene_coords (negate it to reverse the offset)
+  const adjustedX = x - MAP_X_OFFSET - rowOffset;
   
   // Calculate X accounting for hex offset
   result['x'] = Math.floor(adjustedX / tileWidth);
