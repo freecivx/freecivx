@@ -54,6 +54,18 @@ if (WebGPUModule.MeshBasicNodeMaterial) {
 if (WebGPUModule.MeshStandardNodeMaterial) {
   THREE.MeshStandardNodeMaterial = WebGPUModule.MeshStandardNodeMaterial;
 }
+if (WebGPUModule.AmbientLight) {
+  THREE.AmbientLight = WebGPUModule.AmbientLight;
+}
+if (WebGPUModule.DirectionalLight) {
+  THREE.DirectionalLight = WebGPUModule.DirectionalLight;
+}
+if (WebGPUModule.SpotLight) {
+  THREE.SpotLight = WebGPUModule.SpotLight;
+}
+if (WebGPUModule.PointLight) {
+  THREE.PointLight = WebGPUModule.PointLight;
+}
 
 // Export TSL (Three.js Shading Language) functions to THREE
 // The TSL module provides shader node functions needed for WebGPU materials

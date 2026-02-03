@@ -101,6 +101,11 @@ To test the WebGPU renderer:
 
 ## Recent Fixes (2026-02-03)
 
+### WebGPU Light Class Alignment and Coverage (2026-02-03)
+
+- **Fixed**: WebGPU renderer now uses WebGPU module light classes (Ambient/Directional/Spot/Point) to avoid `LightsNode.setupNodeLights` warnings.
+- **Added**: Extra point lights in WebGPU mode to validate lighting coverage for units and buildings.
+
 ### WebGPU Border Blending and Lighting Fix (Latest - 2026-02-03)
 
 Fixed two critical rendering issues in WebGPU mode:

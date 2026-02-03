@@ -61,6 +61,17 @@ function webgpu_start_renderer()
   directionalLight.name = "directional_light";
   scene.add(directionalLight);
 
+  // Additional point lights to validate WebGPU lighting coverage
+  var keyLight = new THREE.PointLight(0xffffff, 1.0 * Math.PI, 0, 2);
+  keyLight.position.set(150, 280, 150);
+  keyLight.name = "key_light";
+  scene.add(keyLight);
+
+  var fillLight = new THREE.PointLight(0xffffff, 0.6 * Math.PI, 0, 2);
+  fillLight.position.set(-200, 180, -120);
+  fillLight.name = "fill_light";
+  scene.add(fillLight);
+
   // Spotlight for focused lighting and shadows
   spotlight = new THREE.SpotLight( 0xffffff, 3.0 * Math.PI, 0, Math.PI / 3, 0.001, 0.5);
   spotlight.name = "spotlight";
