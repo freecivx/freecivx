@@ -101,14 +101,30 @@ To test the WebGPU renderer:
 
 ## Recent Fixes (2026-02-03)
 
-### WebGPU Lighting and Material System - Final Fix
+### WebGPU Lighting and Material System - Final Fix (Latest)
 
-Fixed critical lighting issue where units appeared completely black in WebGPU mode:
+Fixed critical lighting issue where units appeared completely black in WebGPU mode with "Light node not found" errors:
 
-1. **Correct TSL lights() Usage**:
-   - **Problem**: Previous fix incorrectly passed an array to `THREE.lights()` function (`THREE.lights(scene.userData.lightsArray)`), causing "Light node not found" errors
-   - **Root Cause**: The TSL `lights()` function doesn't accept parameters - it automatically detects lights from the scene during rendering
-   - **Solution**: Changed to call `THREE.lights()` without parameters. The function automatically collects all lights from the scene.
+1. **Removed Manual lightsNode Assignment**:
+   - **Problem**: Code was manually assigning `nodeMaterial.lightsNode = THREE.lights()` which is not the correct approach for WebGPU
+   - **Root Cause**: `MeshStandardNodeMaterial` automatically detects and uses lights from the scene without any manual intervention
+   - **Solution**: Removed the manual `lightsNode` assignment completely. The material now handles lighting internally and automatically
+   - **File**: `preload.js` lines 716-721 (removed incorrect code)
+   - **Result**: Units and 3D models now properly receive lighting from scene's AmbientLight, DirectionalLight, and SpotLight
+
+2. **Technical Details**:
+   - `MeshStandardNodeMaterial` has built-in lighting detection that works automatically with WebGPU renderer
+   - The lights configured in `mapview_webgpu.js` are automatically discovered during rendering
+   - No manual light node setup is required or desired for standard materials
+   - This follows Three.js r171+ best practices for WebGPU lighting
+
+### WebGPU Lighting and Material System - Previous Attempt (Earlier 2026-02-03)
+
+Previous attempt that did not fully resolve the issue:
+
+1. **Incorrect TSL lights() Usage**:
+   - **Problem**: Attempted to manually call `THREE.lights()` and assign to `lightsNode`
+   - **Issue**: While removing the array parameter was correct, manual lightsNode assignment still caused "Light node not found" warnings
    - **File**: `preload.js` line 719
 
 2. **Cleaned Up Unnecessary Code**:
