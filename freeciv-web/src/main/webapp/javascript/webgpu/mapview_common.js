@@ -210,9 +210,23 @@ function animate_webgl() {
   
   // Get actual delta time from the timer (in seconds)
   // This ensures animation speed is consistent regardless of frame rate
-  var deltaTime = 0.016; // Default to ~60fps if timer not available
-  if (clock && typeof clock.getDelta === 'function') {
-    deltaTime = clock.getDelta();
+  // THREE.Timer needs update() called before getDelta()
+  const DEFAULT_DELTA_TIME = 0.016; // Default to ~60fps if timer not available
+  var deltaTime = DEFAULT_DELTA_TIME;
+  if (clock) {
+    if (typeof clock.update === 'function') {
+      clock.update(); // Update timer state
+    }
+    if (typeof clock.getDelta === 'function') {
+      deltaTime = clock.getDelta();
+    } else if (typeof clock.getElapsedTime === 'function') {
+      // Fallback for THREE.Clock which doesn't have update()
+      var elapsed = clock.getElapsedTime();
+      if (window._lastElapsedTime !== undefined) {
+        deltaTime = elapsed - window._lastElapsedTime;
+      }
+      window._lastElapsedTime = elapsed;
+    }
     // Clamp delta time to prevent huge jumps when tab is inactive
     deltaTime = Math.min(deltaTime, 0.1);
   }

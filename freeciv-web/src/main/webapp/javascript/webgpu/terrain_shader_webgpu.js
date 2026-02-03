@@ -192,8 +192,8 @@ function createTerrainShaderTSL(uniforms) {
     // =========================================================================
     // Calculate lighting based on terrain slope and sun direction
     // Sun direction: coming from southeast, elevated position (typical daytime sun)
-    // Vector (0.5, 0.7, 0.5) normalized to unit length = (0.534, 0.748, 0.534)
-    const sunDir = vec3(0.534, 0.748, 0.534);
+    // Original (0.5, 0.7, 0.5), normalized = (0.503, 0.704, 0.503)
+    const sunDir = vec3(0.503, 0.704, 0.503);
     
     // Access vertex normal for slope calculation
     // normalLocal gives us the surface normal which indicates slope direction
