@@ -60,9 +60,8 @@ function getInstancedMeshFromModel(modelName, gltfMesh, capacity = 30) {
         nodeMaterial.flatShading = false;
         
         // Configure the material to use scene lights
-        // In WebGPU with TSL, materials automatically detect scene lights
-        // when MeshStandardNodeMaterial is used
-        nodeMaterial.lightsNode = THREE.lights();
+        // MeshStandardNodeMaterial automatically uses scene lights in WebGPU
+        // The lightsNode will be set up automatically by the renderer
         
         material = nodeMaterial;
     }
@@ -106,9 +105,48 @@ function findFirstMesh(root) {
 function update_tile_model_instancing(modelname, ptile, num_models, scale) {
     const tileIndex = ptile.index;
     const isKnown  = (tile_get_known(ptile) !== TILE_UNKNOWN);
+    
+    // Disable instancing for WebGPU renderer - add models directly instead
+    const useInstancing = !(typeof maprenderer !== 'undefined' && maprenderer && maprenderer.isWebGPURenderer);
 
     if (instancedMeshes[tileIndex] == null && isKnown) {
         let height = 3.8 + ptile.height * 100;
+
+        // For WebGPU, add models directly without instancing
+        if (!useInstancing) {
+            instancedMeshes[tileIndex] = []; // Store individual meshes instead
+            instancedMeshType[tileIndex] = modelname;
+            let pos = map_to_scene_coords(ptile.x, ptile.y);
+            
+            for (let i = 0; i < num_models; i++) {
+                let model = webgl_get_model(modelname, ptile);
+                if (!model) {
+                    continue;
+                }
+                
+                let offsetX = -10 + (12 - Math.floor(Math.random() * 25));
+                let offsetZ = -10 + (12 - Math.floor(Math.random() * 25));
+                
+                let finalX = pos.x + offsetX;
+                let finalY = height + 1.0;
+                let finalZ = pos.y + offsetZ;
+                
+                // Random rotation on Y, plus a slight tilt in X and Z
+                let rotY = 0.5 * Math.PI * Math.random();
+                let rotX = (Math.random() - 0.5) * 1.5;
+                let rotZ = (Math.random() - 0.5) * 1.0;
+                
+                model.position.set(finalX, finalY, finalZ);
+                model.scale.set(scale, scale, scale);
+                model.rotation.set(rotX, rotY, rotZ);
+                model.castShadow = true;
+                model.name = `TileModel_${modelname}_${tileIndex}_${i}`;
+                
+                scene.add(model);
+                instancedMeshes[tileIndex].push(model);
+            }
+            return;
+        }
 
         // 2) Load the GLTF scene or retrieve from your existing function
         let gltfSceneOrObj = webgl_get_model(modelname, ptile);
@@ -172,7 +210,12 @@ function update_tile_model_instancing(modelname, ptile, num_models, scale) {
         // Update the InstancedMesh so changes appear
         instancedMesh.instanceMatrix.needsUpdate = true;
     } else if (scene && instancedMeshes[tileIndex] != null) {
-        scene.remove(instancedMeshes[tileIndex]);
+        // Handle both array (non-instancing) and InstancedMesh (instancing) removal
+        if (Array.isArray(instancedMeshes[tileIndex])) {
+            instancedMeshes[tileIndex].forEach(mesh => scene.remove(mesh));
+        } else {
+            scene.remove(instancedMeshes[tileIndex]);
+        }
         instancedMeshes[tileIndex] = null;
         instancedMeshType[tileIndex] = null;
     }
@@ -190,6 +233,9 @@ function update_tile_forest_jungle(ptile) {
     const isForest = (terrain_name === "Forest");
     const isJungle = (terrain_name === "Jungle");
     const isKnown  = (tile_get_known(ptile) !== TILE_UNKNOWN);
+    
+    // Disable instancing for WebGPU renderer - add models directly instead
+    const useInstancing = !(typeof maprenderer !== 'undefined' && maprenderer && maprenderer.isWebGPURenderer);
 
     if (scene && instancedMeshes[tileIndex] == null && (isForest || isJungle) && isKnown) {
         let modelname = "";
@@ -242,7 +288,39 @@ function update_tile_forest_jungle(ptile) {
             }
         }
 
-
+        // For WebGPU, add models directly without instancing
+        if (!useInstancing) {
+            instancedMeshes[tileIndex] = []; // Store individual meshes instead
+            let pos = map_to_scene_coords(ptile.x, ptile.y);
+            
+            for (let i = 0; i < numTrees; i++) {
+                let model = webgl_get_model(modelname, ptile);
+                if (!model) {
+                    continue;
+                }
+                
+                // Random offset
+                let offsetX = -10 + (12 - Math.floor(Math.random() * 25));
+                let offsetZ = -10 + (12 - Math.floor(Math.random() * 25));
+                
+                let finalX = pos.x + offsetX;
+                let finalY = height;
+                let finalZ = pos.y + offsetZ;
+                
+                // Random rotation around Y
+                let rotY = 2 * Math.PI * Math.random();
+                
+                model.position.set(finalX, finalY, finalZ);
+                model.scale.set(scale, scale, scale);
+                model.rotateOnAxis(new THREE.Vector3(0, 1, 0).normalize(), rotY);
+                model.castShadow = true;
+                model.name = `Tree_${tileIndex}_${i}`;
+                
+                scene.add(model);
+                instancedMeshes[tileIndex].push(model);
+            }
+            return;
+        }
 
         let gltfSceneOrObj = webgl_get_model(modelname, ptile);
         if (!gltfSceneOrObj) {
@@ -309,11 +387,21 @@ function update_tile_forest_jungle(ptile) {
         // Update the InstancedMesh so changes appear
         instancedMesh.instanceMatrix.needsUpdate = true;
     } else if (scene && instancedMeshes[tileIndex] != null && !isForest && instancedMeshType[tileIndex] == "Forest" && isKnown) {
-        scene.remove(instancedMeshes[tileIndex]);
+        // Handle both array (non-instancing) and InstancedMesh (instancing) removal
+        if (Array.isArray(instancedMeshes[tileIndex])) {
+            instancedMeshes[tileIndex].forEach(mesh => scene.remove(mesh));
+        } else {
+            scene.remove(instancedMeshes[tileIndex]);
+        }
         instancedMeshes[tileIndex] = null;
         instancedMeshType[tileIndex] = null;
     } else if (scene && instancedMeshes[tileIndex] != null && !isJungle && instancedMeshType[tileIndex] == "Jungle" && isKnown) {
-        scene.remove(instancedMeshes[tileIndex]);
+        // Handle both array (non-instancing) and InstancedMesh (instancing) removal
+        if (Array.isArray(instancedMeshes[tileIndex])) {
+            instancedMeshes[tileIndex].forEach(mesh => scene.remove(mesh));
+        } else {
+            scene.remove(instancedMeshes[tileIndex]);
+        }
         instancedMeshes[tileIndex] = null;
         instancedMeshType[tileIndex] = null;
     }
