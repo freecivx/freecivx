@@ -714,10 +714,9 @@ function webgl_get_model(filename, ptile)
           nodeMaterial.flatShading = false;
           
           // Configure the material to use scene lights
-          // In WebGPU with TSL, we must explicitly set lightsNode to reference scene lights
-          if (typeof THREE.lights === 'function') {
-            nodeMaterial.lightsNode = THREE.lights();
-          }
+          // In WebGPU with TSL, materials automatically detect scene lights
+          // when MeshStandardNodeMaterial is used - no manual configuration needed
+          nodeMaterial.lightsNode = THREE.lights();
           
           node.material = nodeMaterial;
           node.material.needsUpdate = true;

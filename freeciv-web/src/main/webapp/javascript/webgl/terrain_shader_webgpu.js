@@ -195,10 +195,14 @@ function createTerrainShaderTSL(uniforms) {
     finalColor = vec4(mul(finalColor.rgb, vertColor.x), finalColor.a);
 
     // Overlay borders if visible
-    // Use mix to conditionally apply borders: if borders_visible is true, use full border alpha, otherwise 0
-    const borderMix = borders_visible.select(borderColor.a, 0.0);
+    // Blend border color with terrain color at low opacity for subtle borders
+    // This matches the WebGL shader behavior which blends borders at 0.10 or 0.70 opacity
+    // We use a fixed blend of 0.15 for WebGPU (slightly more visible than WebGL's 0.10)
+    const shouldShowBorders = mul(borders_visible.select(1.0, 0.0), borderColor.a);
+    // Reduce the border influence by multiplying with a low opacity factor
+    const borderBlendFactor = mul(shouldShowBorders, 0.15);
     finalColor = vec4(
-        mix(finalColor.rgb, borderColor.rgb, borderMix),
+        mix(finalColor.rgb, borderColor.rgb, borderBlendFactor),
         finalColor.a
     );
 
