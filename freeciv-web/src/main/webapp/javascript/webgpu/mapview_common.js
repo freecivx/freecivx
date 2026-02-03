@@ -57,19 +57,27 @@ var mapview_model_height;
 
 var MAPVIEW_ASPECT_FACTOR = 35.71;
 
-// Hexagonal tile constants
+// Hexagonal tile constants for offset coordinate system (odd-r: odd rows shifted right)
+// Reference: https://www.redblobgames.com/grids/hexagons/#coordinates-offset
 var HEX_WIDTH_FACTOR = 1.0;  // Width multiplier for hex tiles
-var HEX_HEIGHT_FACTOR = Math.sqrt(3) / 2; // sqrt(3)/2 ≈ 0.8660 for proper hex aspect ratio
-var HEX_STAGGER = 0.5;  // Horizontal offset for odd rows
+var HEX_HEIGHT_FACTOR = Math.sqrt(3) / 2; // sqrt(3)/2 ≈ 0.8660 - hex row spacing for proper aspect ratio
+var HEX_STAGGER = 0.5;  // Horizontal offset for odd rows (half tile width)
 
 
 /****************************************************************************
   Initialize land geometry with hexagonal tile grid
   
-  Creates a mesh with hexagonal tiling where:
+  Creates a mesh with hexagonal tiling using offset coordinates (odd-r).
+  Reference: https://www.redblobgames.com/grids/hexagons/#coordinates-offset
+  
+  Grid properties:
   - Each tile has 6 neighbors (hex topology)
-  - Odd rows are offset by half a tile width (offset coordinates)
+  - Odd rows are offset by half a tile width (odd-r offset coordinates)
   - UV coordinates map to hex tile centers for proper terrain sampling
+  - Heightmap values are interpolated between adjacent hex tiles
+  
+  @param {THREE.BufferGeometry} geometry - Geometry to initialize
+  @param {number} mesh_quality - Quality multiplier (1=standard, 2=low-res for raycasting)
 ****************************************************************************/
 function init_land_geometry(geometry, mesh_quality)
 {
@@ -152,6 +160,12 @@ function init_land_geometry(geometry, mesh_quality)
 
 /****************************************************************************
   Update the land terrain geometry with hexagonal tiling
+  
+  Updates vertex positions based on current heightmap values while maintaining
+  hex grid layout with odd-r offset coordinates.
+  
+  @param {THREE.BufferGeometry} geometry - Geometry to update
+  @param {number} mesh_quality - Quality multiplier matching init_land_geometry
 ****************************************************************************/
 function update_land_geometry(geometry, mesh_quality) {
   const xquality = map.xsize * mesh_quality + 1;

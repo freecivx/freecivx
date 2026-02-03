@@ -25,9 +25,16 @@ var MAP_Y_OFFSET = 30;    // Initial Y offset when converting map to scene coord
 /****************************************************************************
   Converts from map to scene coordinates for hexagonal tiles.
   
+  Uses offset hex coordinates (odd-r: odd rows shifted right).
+  Reference: https://www.redblobgames.com/grids/hexagons/#coordinates-offset
+  
   For hex topology, we need to account for:
   - Row stagger (odd rows offset by half tile width)
   - Hex aspect ratio (height = width * sqrt(3)/2)
+  
+  @param {number} x - Map tile X coordinate
+  @param {number} y - Map tile Y coordinate
+  @returns {Object} Scene coordinates {x, y}
 ****************************************************************************/
 function map_to_scene_coords(x, y)
 {
@@ -37,7 +44,7 @@ function map_to_scene_coords(x, y)
   const tileWidth = mapview_model_width / map['xsize'];
   const tileHeight = (mapview_model_height / map['ysize']) * HEX_HEIGHT_FACTOR;
   
-  // Apply hex row offset for odd rows
+  // Apply hex row offset for odd rows (odd-r offset coordinate system)
   const rowOffset = (y % 2 === 1) ? tileWidth * HEX_STAGGER : 0;
   
   result['x'] = Math.floor(MAP_X_OFFSET + x * tileWidth + rowOffset);
@@ -48,6 +55,13 @@ function map_to_scene_coords(x, y)
 
 /****************************************************************************
   Converts from scene to map coordinates for hexagonal tiles.
+  
+  Inverse of map_to_scene_coords(). Uses offset hex coordinates (odd-r).
+  Reference: https://www.redblobgames.com/grids/hexagons/#coordinates-offset
+  
+  @param {number} x - Scene X coordinate
+  @param {number} y - Scene Y coordinate (actually Z in 3D space)
+  @returns {Object} Map tile coordinates {x, y}
 ****************************************************************************/
 function scene_to_map_coords(x, y)
 {
@@ -62,7 +76,7 @@ function scene_to_map_coords(x, y)
   // Calculate Y coordinate directly from scene position
   const tileY = Math.floor(adjustedY / tileHeight);
   
-  // Calculate row offset based on Y (odd rows are staggered)
+  // Calculate row offset based on Y (odd rows are staggered in odd-r system)
   const rowOffset = (tileY % 2 === 1) ? tileWidth * HEX_STAGGER : 0;
   
   // Account for the MAP_X_OFFSET in map_to_scene_coords (negate it to reverse the offset)

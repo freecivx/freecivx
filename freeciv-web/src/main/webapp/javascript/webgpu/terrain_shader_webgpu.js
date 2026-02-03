@@ -44,7 +44,12 @@ function createTerrainShaderTSL(uniforms) {
     } = THREE;
     
     // Verify all required TSL functions and nodes are available
-    const requiredTSLNames = ['texture', 'uniform', 'positionLocal', 'attribute', 'uv', 'vec2', 'vec3', 'vec4', 'mix', 'step', 'floor', 'fract', 'mod', 'dot', 'sin', 'mul', 'add', 'sub', 'div'];
+    const requiredTSLNames = [
+        'texture', 'uniform', 'positionLocal', 'attribute', 'uv', 'normalLocal',
+        'vec2', 'vec3', 'vec4',
+        'mix', 'step', 'floor', 'fract', 'mod', 'dot', 'sin', 'cos', 'normalize', 'max', 'pow', 'clamp',
+        'mul', 'add', 'sub', 'div'
+    ];
     const missing = requiredTSLNames.filter(name => THREE[name] === undefined);
     if (missing.length > 0) {
         console.error('Missing TSL functions/nodes:', missing);
@@ -105,8 +110,14 @@ function createTerrainShaderTSL(uniforms) {
     const vertColor = attribute('vertColor');
 
     // =========================================================================
-    // HEXAGONAL UV COORDINATE TRANSFORMATION
+    // HEXAGONAL UV COORDINATE TRANSFORMATION (Offset Coordinates - Odd-R)
     // =========================================================================
+    // The geometry uses offset hex coordinates where odd rows are shifted right.
+    // The UV coordinates from the geometry include this stagger, so we need to
+    // subtract it here to get the correct tile position for texture lookups.
+    //
+    // Reference: https://www.redblobgames.com/grids/hexagons/#coordinates-offset
+    
     // Calculate the tile Y coordinate to determine row offset
     const tileY = floor(mul(map_y_size, uvNode.y));
     
@@ -117,6 +128,7 @@ function createTerrainShaderTSL(uniforms) {
     
     // Calculate hex-adjusted UV coordinates
     // For hex grid, the X coordinate needs adjustment based on row parity
+    // hexOffsetX = 0.5 / map_x_size for odd rows, 0 for even rows
     const hexOffsetX = mul(isOddRow, div(0.5, map_x_size));
     const hexUvX = sub(uvNode.x, hexOffsetX);
     const hexUV = vec2(hexUvX, uvNode.y);
@@ -183,6 +195,7 @@ function createTerrainShaderTSL(uniforms) {
     }
 
     // Build terrain layers - including all terrain types from WebGL shader
+    // Note: TERRAIN_INACCESSIBLE (0) renders as black (default finalColor)
     const layers = [
         createTerrainLayer(TERRAIN_GRASSLAND, terrainTextures.grassland, texCoord, true),
         createTerrainLayer(TERRAIN_PLAINS, terrainTextures.plains, texCoord, true),
@@ -200,6 +213,7 @@ function createTerrainShaderTSL(uniforms) {
     ];
 
     // Combine all terrain layers
+    // Starts with black (0,0,0,1) which handles TERRAIN_INACCESSIBLE and unknown tiles
     let finalColor = vec4(0, 0, 0, 1);
     for (const layer of layers) {
         finalColor = mix(finalColor, layer.color, layer.mask);
