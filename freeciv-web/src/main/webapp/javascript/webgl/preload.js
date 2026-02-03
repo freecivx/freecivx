@@ -685,7 +685,46 @@ switch (filename) {
 function webgl_get_model(filename, ptile)
 {
   if (webgl_models[filename] != null) {
-    return webgl_models[filename].clone();
+    const clonedModel = webgl_models[filename].clone();
+    
+    // Convert materials to WebGPU-compatible node materials if WebGPU renderer is active
+    if (typeof maprenderer !== 'undefined' && maprenderer && maprenderer.isWebGPURenderer) {
+      clonedModel.traverse((node) => {
+        if (node.isMesh && node.material) {
+          const originalMat = node.material;
+          
+          // Create a new MeshStandardNodeMaterial with lighting support
+          const nodeMaterial = new THREE.MeshStandardNodeMaterial();
+          
+          // Copy common properties from original material
+          if (originalMat.map) nodeMaterial.map = originalMat.map;
+          if (originalMat.color) nodeMaterial.color.copy(originalMat.color);
+          if (originalMat.emissive) nodeMaterial.emissive.copy(originalMat.emissive);
+          if (originalMat.emissiveIntensity !== undefined) {
+            nodeMaterial.emissiveIntensity = originalMat.emissiveIntensity;
+          }
+          if (originalMat.roughness !== undefined) nodeMaterial.roughness = originalMat.roughness;
+          if (originalMat.metalness !== undefined) nodeMaterial.metalness = originalMat.metalness;
+          if (originalMat.opacity !== undefined) nodeMaterial.opacity = originalMat.opacity;
+          if (originalMat.transparent !== undefined) {
+            nodeMaterial.transparent = originalMat.transparent;
+          }
+          
+          nodeMaterial.side = THREE.DoubleSide;
+          nodeMaterial.flatShading = false;
+          
+          // Add lighting to the material using TSL lights() function
+          if (scene && scene.userData && scene.userData.lightsArray) {
+            nodeMaterial.lightsNode = THREE.lights(scene.userData.lightsArray);
+          }
+          
+          node.material = nodeMaterial;
+          node.material.needsUpdate = true;
+        }
+      });
+    }
+    
+    return clonedModel;
   } else {
     // Download model and redraw the tile when loaded.
     tiles_of_unloaded_models_map[ptile['index']] = filename;
