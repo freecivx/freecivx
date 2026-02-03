@@ -30,6 +30,7 @@
  * - Randomized texture sampling for visual variety
  * - Vertex color-based fog/visibility
  * - Slope-based brightness with sun direction lighting
+ * - Hexagonal tile UV transformation (staggered row offset)
  */
 
 function createTerrainShaderTSL(uniforms) {

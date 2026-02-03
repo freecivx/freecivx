@@ -17,6 +17,16 @@
 
 ***********************************************************************/
 
+/**
+ * Mapview Common - Hexagonal Map Geometry and Rendering
+ * 
+ * This module handles the creation and update of the terrain mesh with
+ * hexagonal tile topology. Key features:
+ * - Staggered row layout (odd rows offset by half tile width)
+ * - Proper UV coordinate mapping for hex tile sampling
+ * - Height-based terrain with interpolation between hex neighbors
+ */
+
 var container, stats;
 var scene, maprenderer;
 var anaglyph_effect;
