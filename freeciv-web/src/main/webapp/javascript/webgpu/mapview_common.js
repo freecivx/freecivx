@@ -207,14 +207,38 @@ function animate_webgl() {
   if (mapview_slide['active']) update_map_slide_3d();
 
   update_animated_objects();
-
-  if (selected_unit_indicator != null && selected_unit_material != null) {
-    selected_unit_material.color.multiplyScalar (0.996);
-    if (selected_unit_material_counter > 50) {
-      selected_unit_material_counter = 0;
-      selected_unit_material.color.setHex(0xffffff);
+  
+  // Get actual delta time from the timer (in seconds)
+  // This ensures animation speed is consistent regardless of frame rate
+  // THREE.Timer needs update() called before getDelta()
+  const DEFAULT_DELTA_TIME = 0.016; // Default to ~60fps if timer not available
+  var deltaTime = DEFAULT_DELTA_TIME;
+  if (clock) {
+    if (typeof clock.update === 'function') {
+      clock.update(); // Update timer state
     }
-    selected_unit_material_counter++;
+    if (typeof clock.getDelta === 'function') {
+      deltaTime = clock.getDelta();
+    } else if (typeof clock.getElapsedTime === 'function') {
+      // Fallback for THREE.Clock which doesn't have update()
+      var elapsed = clock.getElapsedTime();
+      if (window._lastElapsedTime !== undefined) {
+        deltaTime = elapsed - window._lastElapsedTime;
+      }
+      window._lastElapsedTime = elapsed;
+    }
+    // Clamp delta time to prevent huge jumps when tab is inactive
+    deltaTime = Math.min(deltaTime, 0.1);
+  }
+  
+  // Update water animation
+  if (typeof updateWaterAnimation === 'function') {
+    updateWaterAnimation(deltaTime);
+  }
+  
+  // Update selected unit animation (TSL-based pulsing effect)
+  if (typeof updateSelectedUnitAnimation === 'function') {
+    updateSelectedUnitAnimation(deltaTime);
   }
 
   if (controls != null) {

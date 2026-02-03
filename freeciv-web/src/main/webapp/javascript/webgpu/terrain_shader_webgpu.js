@@ -29,15 +29,16 @@
  * - Border overlay rendering
  * - Randomized texture sampling for visual variety
  * - Vertex color-based fog/visibility
+ * - Slope-based brightness with sun direction lighting
  */
 
 function createTerrainShaderTSL(uniforms) {
     // Import TSL functions and nodes from THREE
     // These should be available after three-modules-webgpu.js has loaded
     const { 
-        texture, uniform, positionLocal, attribute, uv, 
+        texture, uniform, positionLocal, attribute, uv, normalLocal,
         vec2, vec3, vec4,
-        mix, step, floor, fract, mod, dot, sin,
+        mix, step, floor, fract, mod, dot, sin, cos, normalize, max, pow, clamp,
         mul, add, sub, div
     } = THREE;
     
@@ -185,6 +186,35 @@ function createTerrainShaderTSL(uniforms) {
     for (const layer of layers) {
         finalColor = mix(finalColor, layer.color, layer.mask);
     }
+
+    // =========================================================================
+    // SLOPE-BASED LIGHTING WITH SUN DIRECTION
+    // =========================================================================
+    // Calculate lighting based on terrain slope and sun direction
+    // Sun direction: coming from southeast, elevated position (typical daytime sun)
+    // Original (0.5, 0.7, 0.5), normalized = (0.503, 0.704, 0.503)
+    const sunDir = vec3(0.503, 0.704, 0.503);
+    
+    // Access vertex normal for slope calculation
+    // normalLocal gives us the surface normal which indicates slope direction
+    const normal = normalLocal;
+    
+    // Calculate diffuse lighting using Lambert's law: max(0, N·L)
+    // This gives brighter surfaces facing the sun and darker surfaces facing away
+    const NdotL = max(dot(normal, sunDir), 0.0);
+    
+    // Apply ambient + diffuse lighting model
+    // ambient: base brightness so shadows aren't completely black (0.45)
+    // diffuse: sun-facing surfaces get additional brightness (0.65)
+    // Total range: 0.45 (in shadow) to 1.10 (fully lit)
+    const ambientLight = 0.45;
+    const diffuseStrength = 0.65;
+    const lightingFactor = add(ambientLight, mul(NdotL, diffuseStrength));
+    
+    // Apply lighting to terrain color, making terrain brighter overall
+    // Also add a slight brightness boost (1.1x) to make terrain more vibrant
+    const brightnessBoost = 1.1;
+    finalColor = vec4(mul(mul(finalColor.rgb, lightingFactor), brightnessBoost), finalColor.a);
 
     // Apply vertex color for fog/visibility effects
     // Vertex color is stored in the vertColor attribute and represents visibility/fog of war

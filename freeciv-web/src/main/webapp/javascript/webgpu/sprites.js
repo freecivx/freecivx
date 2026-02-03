@@ -117,7 +117,7 @@ function create_unit_label_sprite(punit, ptile)
 
 
 /****************************************************************************
- Create a city label sprite
+ Create a city label sprite with flag, nation colors, and improved styling
 ****************************************************************************/
 function create_city_label_sprite(pcity, index) {
   var fcanvas = document.createElement("canvas");
@@ -129,79 +129,101 @@ function create_city_label_sprite(pcity, index) {
   var owner_id = pcity.owner;
   if (owner_id == null) return null;
   var owner = players[owner_id];
+  
+  // Get nation color for consistent styling
+  var nation_color = nations[owner.nation].color;
 
   // We draw from left to right, updating `width' after each call.
   var width = 0; // Total width of the bar
 
-  // Flag
+  // Flag - always draw the nation flag first
   var city_gfx = get_city_flag_sprite(pcity);
   if (city_gfx && city_gfx.key && sprites[city_gfx.key] && sprites[city_gfx.key].width) {
+    // Draw flag background with nation color for better visibility
+    ctx.fillStyle = nation_color;
+    ctx.fillRect(0, 0, 50, 32);
+    // Draw the flag sprite
     ctx.drawImage(sprites[city_gfx.key],
         0, 0,
         sprites[city_gfx.key].width, sprites[city_gfx.key].height,
-        0, 0, 48, 32);
-    width += 48;
+        1, 1, 48, 30);
+    width += 50;
   }
 
-  // Occupied
+  // Occupied indicator (garrison stars)
   var ptile = city_tile(pcity);
   var punits = tile_units(ptile);
   if (punits.length > 0) {
     var occupied_sprite_key = get_city_occupied_sprite(pcity);
     if (occupied_sprite_key && sprites[occupied_sprite_key]) {
-      // Background
-      ctx.fillStyle = 'rgba(0, 0, 0, 0.8)';
+      // Background matching nation color
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.85)';
       ctx.fillRect(width, 0, 16, 32);
       // Stars
-      ctx.drawImage(sprites[occupied_sprite_key], width, 0, 13, 32);
-      width += 13;
+      ctx.drawImage(sprites[occupied_sprite_key], width + 1, 0, 13, 32);
+      width += 14;
     }
   }
 
-  // Name and size
+  // Name and size with nation-colored background
   var city_text = pcity.name.toUpperCase() + " " + pcity.size;
   ctx.font = webgl_mapview_font;
   var txt_measure = ctx.measureText(city_text);
-  // Background with brighter overlay
-  var background_color = nations[owner.nation].color;
-  ctx.fillStyle = "rgba(0, 0, 0, 0.6)"; // Transparent black overlay
-  ctx.fillRect(width, 0, txt_measure.width + 11 /* padding */, 32);
+  
+  // Draw background using nation color with transparency
+  ctx.fillStyle = nation_color;
+  ctx.globalAlpha = 0.85;
+  ctx.fillRect(width, 0, txt_measure.width + 14, 32);
+  ctx.globalAlpha = 1.0;
+  
+  // Draw text with contrasting color (white with dark outline for readability)
+  ctx.strokeStyle = '#000000';
+  ctx.lineWidth = 3;
+  ctx.strokeText(city_text, width + 6, 13 * 2);
+  ctx.fillStyle = '#FFFFFF';
+  ctx.fillText(city_text, width + 6, 13 * 2);
+  width += txt_measure.width + 14;
 
-  ctx.fillStyle = '#FFFFFF'; // Set text color to white
-  ctx.fillText(city_text, width + 4 /* padding */, 13 * 2);
-  width += txt_measure.width + 11 /* padding */;
-
-
-  // Production
+  // Production icon
   var prod_type = get_city_production_type(pcity);
   if (prod_type != null) {
     var tag = tileset_ruleset_entity_tag_str_or_alt(prod_type, "unit or building");
     if (tag != null && sprites[tag]) {
-      ctx.fillStyle = background_color;
+      // Background with nation color
+      ctx.fillStyle = nation_color;
+      ctx.globalAlpha = 0.9;
       ctx.fillRect(width, 0, 36, 32);
-      ctx.drawImage(sprites[tag], width, 0, 34, 18 * 2);
-      width += 35;
+      ctx.globalAlpha = 1.0;
+      ctx.drawImage(sprites[tag], width + 1, 0, 34, 32);
+      width += 36;
     }
   }
   if (width > 380) width = 380;
 
-  // Outline with enhanced contrast
+  // Outline using nation color for consistent branding
   ctx.lineWidth = 2;
-  ctx.strokeStyle = '#FFFFAA'; // Slightly brighter border color
+  ctx.strokeStyle = nation_color;
   ctx.strokeRect(0, 0, width, fcanvas.height - 3);
+  
+  // Inner highlight for depth
+  ctx.lineWidth = 1;
+  ctx.strokeStyle = 'rgba(255, 255, 255, 0.4)';
+  ctx.strokeRect(1, 1, width - 2, fcanvas.height - 5);
 
   texture = new THREE.Texture(fcanvas);
   texture.needsUpdate = true;
   var key = 'city_' + pcity['id'] + index;
   texture_cache[key] = texture;
 
-  // Create material with emissive intensity
-  var material = new THREE.SpriteMaterial({ map: texture });
-  material.emissive = new THREE.Color(0xFFFFFF); // White emissive color
-  material.emissiveIntensity = 2.0; // Brighter emissive intensity
+  // Create material optimized for WebGPU rendering
+  var material = new THREE.SpriteMaterial({ 
+    map: texture,
+    transparent: true,
+    depthTest: false
+  });
 
   var sprite = new THREE.Sprite(material);
-  sprite.scale.set(width * 0.42 + 10, 9.5, 1);
+  sprite.scale.set(width * 0.40 + 8, 9.0, 1);
   return sprite;
 }
 
@@ -209,6 +231,7 @@ function create_city_label_sprite(pcity, index) {
 /****************************************************************************
  Update a city name label. This updates the canvas image of the city label,
  which then updates the corresponding Three.js Texture.
+ Matches the improved styling from create_city_label_sprite with nation colors.
 ****************************************************************************/
 function update_city_label(pcity, index)
 {
@@ -226,64 +249,85 @@ function update_city_label(pcity, index)
   var owner_id = pcity.owner;
   if (owner_id == null) return null;
   var owner = players[owner_id];
+  
+  // Get nation color for consistent styling
+  var nation_color = nations[owner.nation].color;
 
   // We draw from left to right, updating `width' after each call.
   var width = 0; // Total width of the bar
 
-  // Flag
+  // Flag - always draw the nation flag first
   var city_gfx = get_city_flag_sprite(pcity);
   if (city_gfx && city_gfx.key && sprites[city_gfx.key] && sprites[city_gfx.key].width) {
+    // Draw flag background with nation color for better visibility
+    ctx.fillStyle = nation_color;
+    ctx.fillRect(0, 0, 50, 32);
+    // Draw the flag sprite
     ctx.drawImage(sprites[city_gfx.key],
                   0, 0,
                   sprites[city_gfx.key].width, sprites[city_gfx.key].height,
-                  0, 0, 48, 32);
-    width += 48;
+                  1, 1, 48, 30);
+    width += 50;
   }
 
-  // Occupied
+  // Occupied indicator (garrison stars)
   var ptile = city_tile(pcity);
   var punits = tile_units(ptile);
   if (punits.length > 0) {
     var occupied_sprite_key = get_city_occupied_sprite(pcity);
     if (occupied_sprite_key && sprites[occupied_sprite_key]) {
-      // Background
-      ctx.fillStyle = 'black';
+      // Background matching nation color
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.85)';
       ctx.fillRect(width, 0, 16, 32);
       // Stars
-      ctx.drawImage(sprites[occupied_sprite_key], width, 0, 13, 32);
-      width += 13;
+      ctx.drawImage(sprites[occupied_sprite_key], width + 1, 0, 13, 32);
+      width += 14;
     }
   }
 
-  // Name and size
+  // Name and size with nation-colored background
   var city_text = pcity.name.toUpperCase() + " " + pcity.size;
   ctx.font = webgl_mapview_font;
   var txt_measure = ctx.measureText(city_text);
-  // Background
-  var background_color = nations[owner.nation].color;
-  ctx.fillStyle = "rgba(0,0,0,0.6)";
-  ctx.fillRect(width, 0, txt_measure.width + 11 /* padding */, 32);
-  // Text
+  
+  // Draw background using nation color with transparency
+  ctx.fillStyle = nation_color;
+  ctx.globalAlpha = 0.85;
+  ctx.fillRect(width, 0, txt_measure.width + 14, 32);
+  ctx.globalAlpha = 1.0;
+  
+  // Draw text with contrasting color (white with dark outline for readability)
+  ctx.strokeStyle = '#000000';
+  ctx.lineWidth = 3;
+  ctx.strokeText(city_text, width + 6, 13 * 2);
   ctx.fillStyle = '#FFFFFF';
-  ctx.fillText(city_text, width + 4 /* padding */, 13*2);
+  ctx.fillText(city_text, width + 6, 13 * 2);
+  width += txt_measure.width + 14;
 
-  width += txt_measure.width + 11 /* padding */;
-
-  // Production
+  // Production icon
   var prod_type = get_city_production_type(pcity);
   if (prod_type != null) {
     var tag = tileset_ruleset_entity_tag_str_or_alt(prod_type, "unit or building");
     if (tag != null && sprites[tag]) {
-      ctx.fillStyle = background_color;
+      // Background with nation color
+      ctx.fillStyle = nation_color;
+      ctx.globalAlpha = 0.9;
       ctx.fillRect(width, 0, 36, 32);
-      ctx.drawImage(sprites[tag], width, 0, 34, 18*2);
-      width += 35;
+      ctx.globalAlpha = 1.0;
+      ctx.drawImage(sprites[tag], width + 1, 0, 34, 32);
+      width += 36;
     }
   }
 
+  // Outline using nation color for consistent branding
   ctx.lineWidth = 2;
-  ctx.strokeStyle = background_color;
+  ctx.strokeStyle = nation_color;
   ctx.strokeRect(0, 0, width, canvas.height - 3);
+  
+  // Inner highlight for depth
+  ctx.lineWidth = 1;
+  ctx.strokeStyle = 'rgba(255, 255, 255, 0.4)';
+  ctx.strokeRect(1, 1, width - 2, canvas.height - 5);
 
   var key = 'city_' + pcity['id'] + index;
   if (key in texture_cache) {
