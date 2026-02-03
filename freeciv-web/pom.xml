@@ -279,6 +279,25 @@ Rerun the sync-js-hand.js script.
 								</target>
 							</configuration>
 						</execution>
+						<execution>
+							<id>concatenate-javascript</id>
+							<phase>compile</phase>
+							<goals>
+								<goal>run</goal>
+							</goals>
+							<configuration>
+								<target>
+									<!-- Concatenate all JS files into a single webclient.min.js -->
+									<concat destfile="${generated-js.dir}/webclient.min.js" force="yes" fixlastline="yes">
+										<!-- First, add already-minified jquery library -->
+										<filelist dir="${generated-js.dir}/libs" files="jquery.min.js"/>
+									
+										<!-- Then add the minified application code (including stacktrace replacement) -->
+										<filelist dir="${generated-js.dir}" files="webclient-app.min.js"/>
+									</concat>
+								</target>
+							</configuration>
+						</execution>
 					</executions>
 				</plugin>
 
@@ -332,13 +351,8 @@ Rerun the sync-js-hand.js script.
 								<baseSourceDir>${project.build.directory}/${project.build.finalName}</baseSourceDir>
 								<sourceDir>javascript</sourceDir>
 								<targetDir>javascript</targetDir>
-								<outputFilename>webclient.min.js</outputFilename>
+								<outputFilename>webclient-app.min.js</outputFilename>
 								<includes>
-									<!-- First, add already-minified libraries in the correct order -->
-									<include>libs/jquery.min.js</include>
-									<include>libs/stacktrace.min.js</include>
-									
-									<!-- Then add application code -->
 									<!-- order is important: these must be before sources below -->
 									<include>libs/EventAggregator.js</include>
 									<include>map-constants.js</include>
@@ -358,6 +372,8 @@ Rerun the sync-js-hand.js script.
 									<exclude>webclient.min.js</exclude>
 									<exclude>webclient-app.min.js</exclude>
 									<exclude>libs/es-module-shims.js</exclude>
+									<exclude>libs/jquery.min.js</exclude>
+									<exclude>libs/stacktrace.min.js</exclude>
 									<exclude>libs/gif.worker.js</exclude>
 									<exclude>webgl/libs/*js</exclude>
 									<exclude>webgl/effects/*js</exclude>

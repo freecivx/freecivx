@@ -21,31 +21,31 @@
 /**************************************************************************
  Logs JavaScript error in FreecivWorld.net DB.
 **************************************************************************/
-function errorlog_callback(stackframes)
-{
-    var stringifiedStack = stackframes.map(function(sf) {
-        return sf.toString();
-    }).join('\n');
-    if (stringifiedStack != null && (stringifiedStack.indexOf("Failed to resolve module specifier") > 0 || stringifiedStack.indexOf("'three'") > 0)) return;
-
-    $.post("/errorlog?stacktrace=" + utf8_to_b64(stringifiedStack + " " + window.navigator.userAgent)).fail(function() {});
-    console.log(stringifiedStack);
-
-}
-
-/**************************************************************************
- Logs error message.
-**************************************************************************/
-function errback(err)
-{
-  console.log(err.message);
+function logError(error, msg) {
+    // Use native Error.stack for strict mode compatibility
+    var stackTrace = '';
+    
+    if (error && error.stack) {
+        stackTrace = error.stack;
+    } else if (msg) {
+        // Create a stack trace from the message if error object is not available
+        stackTrace = msg;
+    }
+    
+    // Filter out known non-critical errors
+    if (stackTrace && (stackTrace.indexOf("Failed to resolve module specifier") > 0 || stackTrace.indexOf("'three'") > 0)) {
+        return;
+    }
+    
+    var errorInfo = stackTrace + " " + window.navigator.userAgent;
+    $.post("/errorlog?stacktrace=" + utf8_to_b64(errorInfo)).fail(function() {});
+    console.log(stackTrace);
 }
 
 
 window.onerror = function(msg, file, line, col, error) {
-    StackTrace.fromError(error).then(errorlog_callback).catch(errback);
-    if (msg != null && (msg.indexOf("Failed to resolve module specifier") > 0 || msg.indexOf("'three'") > 0)) return;
-    $.post("/errorlog?stacktrace=" + utf8_to_b64(msg + " " + window.navigator.userAgent)).fail(function() {});
+    // Use native error handling - strict mode compatible
+    logError(error, msg + " at " + file + ":" + line + ":" + col);
 };
 
 function utf8_to_b64(str) {
