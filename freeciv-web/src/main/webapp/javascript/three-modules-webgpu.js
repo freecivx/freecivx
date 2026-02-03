@@ -27,6 +27,10 @@ if (!THREE) {
 // creating multiple Three.js instances. The importmap resolves this to our local file.
 import * as WebGPUModule from 'three/webgpu';
 
+// Import TSL (Three.js Shading Language) functions from the TSL module
+// The TSL module contains shader node functions needed for WebGPU materials
+import * as TSLModule from 'three/tsl';
+
 // Extract the WebGPU exports and add them to the global THREE object
 // The WebGPU module extends the existing THREE namespace and includes TSL
 if (WebGPUModule.WebGPURenderer) {
@@ -40,7 +44,7 @@ if (WebGPUModule.MeshStandardNodeMaterial) {
 }
 
 // Export TSL (Three.js Shading Language) functions to THREE
-// The WebGPU module includes TSL which provides the lighting and shader functions needed for WebGPU
+// The TSL module provides shader node functions needed for WebGPU materials
 // We export commonly used TSL functions to the global THREE object for use in custom shaders
 const tslFunctions = [
   // Lighting and material functions
@@ -55,8 +59,8 @@ const tslFunctions = [
   'mul', 'add', 'sub', 'div'
 ];
 tslFunctions.forEach(fn => {
-  if (WebGPUModule[fn]) {
-    THREE[fn] = WebGPUModule[fn];
+  if (TSLModule[fn]) {
+    THREE[fn] = TSLModule[fn];
   }
 });
 

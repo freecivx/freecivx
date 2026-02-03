@@ -57,7 +57,8 @@ var renderer_type_override="<%= rendererParam %>";
   {
     "imports": {
       "three": "/javascript/webgl/libs/threejs/three.module.min.js?ts=${initParam.buildTimeStamp}",
-      "three/webgpu": "/javascript/webgpu/libs/threejs/three.webgpu.min.js?ts=${initParam.buildTimeStamp}"
+      "three/webgpu": "/javascript/webgpu/libs/threejs/three.webgpu.min.js?ts=${initParam.buildTimeStamp}",
+      "three/tsl": "/javascript/webgpu/libs/threejs/three.tsl.min.js?ts=${initParam.buildTimeStamp}"
     }
   }
 </script>
