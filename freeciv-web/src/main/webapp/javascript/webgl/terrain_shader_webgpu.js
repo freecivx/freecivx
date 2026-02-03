@@ -34,9 +34,9 @@
 function createTerrainShaderTSL(uniforms) {
     // Import TSL functions from THREE
     const { 
-        texture, uniform, positionLocal, color, uv, 
+        texture, uniform, positionLocal, attribute, uv, 
         vec2, vec3, vec4,
-        mix, step, floor, fract, mod, dot, sin,
+        mix, step, floor, fract, mod, dot, sin, smoothstep,
         mul, add, sub, div
     } = THREE;
 
@@ -85,6 +85,9 @@ function createTerrainShaderTSL(uniforms) {
     // Get UV coordinates and position
     const uvNode = uv();
     const posNode = positionLocal;
+
+    // Access vertex color for fog of war (stored in vertex color attribute)
+    const vertColor = attribute('color');
 
     // Add pseudo-random texture offset for visual variety
     // This prevents tiling artifacts on large uniform terrain areas
@@ -147,7 +150,7 @@ function createTerrainShaderTSL(uniforms) {
         return { mask: isTerrain, color: terrainColor };
     }
 
-    // Build terrain layers
+    // Build terrain layers - including all terrain types from WebGL shader
     const layers = [
         createTerrainLayer(TERRAIN_GRASSLAND, terrainTextures.grassland, texCoord, true),
         createTerrainLayer(TERRAIN_PLAINS, terrainTextures.plains, texCoord, true),
@@ -155,9 +158,13 @@ function createTerrainShaderTSL(uniforms) {
         createTerrainLayer(TERRAIN_HILLS, terrainTextures.hills, texCoord, true),
         createTerrainLayer(TERRAIN_MOUNTAINS, terrainTextures.mountains, texCoord, true),
         createTerrainLayer(TERRAIN_SWAMP, terrainTextures.swamp, texCoord, true),
+        createTerrainLayer(TERRAIN_FOREST, terrainTextures.grassland, texCoord, true), // Forest uses grassland texture
+        createTerrainLayer(TERRAIN_JUNGLE, terrainTextures.plains, texCoord, true), // Jungle uses plains texture
         createTerrainLayer(TERRAIN_COAST, terrainTextures.coast, texCoord, false),
         createTerrainLayer(TERRAIN_FLOOR, terrainTextures.ocean, texCoord, false),
-        createTerrainLayer(TERRAIN_ARCTIC, terrainTextures.arctic, texCoordT, false)
+        createTerrainLayer(TERRAIN_LAKE, terrainTextures.coast, texCoord, false), // Lake uses coast texture
+        createTerrainLayer(TERRAIN_ARCTIC, terrainTextures.arctic, texCoordT, false),
+        createTerrainLayer(TERRAIN_TUNDRA, terrainTextures.arctic, vec2(add(tdx, 0.5), tdy), false) // Tundra uses arctic with offset
     ];
 
     // Combine all terrain layers
@@ -167,7 +174,8 @@ function createTerrainShaderTSL(uniforms) {
     }
 
     // Apply vertex color for fog/visibility effects
-    const vertColor = color(positionLocal);
+    // Vertex color is stored in the color attribute and represents visibility/fog of war
+    // vColor.r = 0.0 means unknown (black), vColor.r = 1.0 means fully visible
     finalColor = vec4(mul(finalColor.rgb, vertColor), finalColor.a);
 
     // Overlay borders if visible
