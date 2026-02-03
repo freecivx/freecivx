@@ -101,7 +101,25 @@ To test the WebGPU renderer:
 
 ## Recent Fixes (2026-02-03)
 
-### WebGPU Lighting and Material System - Correct Fix (Latest - 2026-02-03)
+### WebGPU Border Blending and Lighting Fix (Latest - 2026-02-03)
+
+Fixed two critical rendering issues in WebGPU mode:
+
+1. **Fixed Border Color Blending**:
+   - **Problem**: After a city is built, borders completely replace terrain textures with solid red color
+   - **Root Cause**: Border alpha channel was used directly as mix factor, causing full replacement when alpha=1.0
+   - **Solution**: Reduced border blend factor to 15% opacity (`borderColor.a * 0.15`) to match WebGL shader behavior
+   - **File**: `terrain_shader_webgpu.js` lines 197-207
+   - **Result**: Borders now blend subtly with terrain instead of replacing it completely
+
+2. **Fixed Unit Lighting (Light Node Not Found Error)**:
+   - **Problem**: Units rendered completely black, "THREE.LightsNode.setupNodeLights: Light node not found" error
+   - **Root Cause**: Conditional check for `THREE.lights` function was preventing proper lightsNode assignment
+   - **Solution**: Removed conditional and unconditionally call `THREE.lights()` to set lightsNode
+   - **File**: `preload.js` lines 716-719
+   - **Result**: Units now render with proper lighting and colors
+
+### WebGPU Lighting and Material System - Correct Fix (2026-02-03)
 
 Fixed critical lighting issues in WebGPU mode that caused units and 3D models to appear completely black or washed out:
 
