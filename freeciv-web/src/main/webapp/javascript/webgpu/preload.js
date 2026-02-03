@@ -34,11 +34,11 @@ var loader;
 ****************************************************************************/
 function webgl_preload()
 {
-  console.log("Preloading WebGL textures and models...");
+  console.log("Preloading WebGPU textures and models...");
 
   loader = new GLTFLoader();
   const dracoLoader = new DRACOLoader();
-  dracoLoader.setDecoderPath( '/javascript/webgl/libs/' );
+  dracoLoader.setDecoderPath( '/javascript/webgpu/libs/' );
   dracoLoader.setDecoderConfig( { type: 'wasm' } );
   loader.setDRACOLoader(dracoLoader);
 

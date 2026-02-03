@@ -106,7 +106,7 @@ standalone_mode = true;
 <script type="importmap">
   {
     "imports": {
-      "three": "/javascript/webgl/libs/threejs/three.module.min.js",
+      "three": "/javascript/webgpu/libs/threejs/three.module.min.js",
       "three/webgpu": "/javascript/webgpu/libs/threejs/three.webgpu.min.js",
       "three/tsl": "/javascript/webgpu/libs/threejs/three.tsl.min.js"
     }
@@ -115,15 +115,12 @@ standalone_mode = true;
 <!-- Three.js module loader - exports to window for backward compatibility -->
 <script type="module" src="/javascript/three-modules.js"></script>
 <script>
-  // Preload WebGPU module if renderer=webgpu is in URL
+  // Preload WebGPU module
   (function() {
-    var urlParams = new URLSearchParams(window.location.search);
-    if (urlParams.get('renderer') === 'webgpu') {
-      var script = document.createElement('script');
-      script.type = 'module';
-      script.src = '/javascript/three-modules-webgpu.js';
-      document.head.appendChild(script);
-    }
+    var script = document.createElement('script');
+    script.type = 'module';
+    script.src = '/javascript/three-modules-webgpu.js';
+    document.head.appendChild(script);
   })();
 </script>
 

@@ -12,10 +12,10 @@
  */
 
 import * as THREEModule from 'three';
-import { GLTFLoader } from '/javascript/webgl/libs/GLTFLoader.js';
-import { DRACOLoader } from '/javascript/webgl/libs/DRACOLoader.js';
-import { OrbitControls } from '/javascript/webgl/libs/OrbitControls.js';
-import { AnaglyphEffect } from '/javascript/webgl/effects/AnaglyphEffect.js';
+import { GLTFLoader } from '/javascript/webgpu/libs/GLTFLoader.js';
+import { DRACOLoader } from '/javascript/webgpu/libs/DRACOLoader.js';
+import { OrbitControls } from '/javascript/webgpu/libs/OrbitControls.js';
+import { AnaglyphEffect } from '/javascript/webgpu/effects/AnaglyphEffect.js';
 
 // Create a mutable copy of THREE for potential extensions
 // ES6 module namespace objects are frozen, so we need a mutable copy
@@ -48,13 +48,12 @@ function loadWebGPUSupport() {
         console.log('WebGPU support loaded successfully');
         return true;
       } catch (error) {
-        console.log('WebGPU modules not available, using WebGL only:', error);
+        console.log('WebGPU modules not available:', error);
         return false;
       }
     })();
   } else {
-    // WebGPU not supported by browser
-    console.log('WebGPU not supported by browser, using WebGL only');
+    console.log('WebGPU not supported by browser');
     webgpuLoadingPromise = Promise.resolve(false);
   }
   

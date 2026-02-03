@@ -68,9 +68,9 @@ REQUIRED_JS=(
   "javascript/terrain.js"
   "javascript/game.js"
   "javascript/utility.js"
-  "javascript/webgl/renderer_init.js"
-  "javascript/webgl/mapview_webgl.js"
-  "javascript/webgl/preload.js"
+  "javascript/webgpu/renderer_init.js"
+  "javascript/webgpu/mapview_common.js"
+  "javascript/webgpu/preload.js"
 )
 
 for jsfile in "${REQUIRED_JS[@]}"; do
@@ -86,10 +86,10 @@ done
 echo ""
 echo "Checking Three.js libraries..."
 THREEJS_FILES=(
-  "javascript/webgl/libs/threejs/three.module.min.js"
-  "javascript/webgl/libs/GLTFLoader.js"
-  "javascript/webgl/libs/OrbitControls.js"
-  "javascript/webgl/libs/DRACOLoader.js"
+  "javascript/webgpu/libs/threejs/three.module.min.js"
+  "javascript/webgpu/libs/GLTFLoader.js"
+  "javascript/webgpu/libs/OrbitControls.js"
+  "javascript/webgpu/libs/DRACOLoader.js"
 )
 
 for threefile in "${THREEJS_FILES[@]}"; do

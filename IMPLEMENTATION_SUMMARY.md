@@ -26,7 +26,7 @@ This implementation provides a complete WebGPU renderer option for Freeciv 3D wi
 
 **User Impact**: Users can now choose their preferred renderer from the pregame settings dialog
 
-### 2. `freeciv-web/src/main/webapp/javascript/webgl/renderer_init.js` (+37 lines)
+### 2. `freeciv-web/src/main/webapp/javascript/webgpu/renderer_init.js` (+37 lines)
 **Purpose**: Add renderer selection logic and WebGPU initialization routing
 
 **Changes**:
@@ -37,7 +37,7 @@ This implementation provides a complete WebGPU renderer option for Freeciv 3D wi
 
 **Technical Impact**: Maintains backward compatibility while enabling new renderer path
 
-### 3. `freeciv-web/src/main/webapp/javascript/webgl/mapview_webgpu.js` (NEW FILE: +175 lines)
+### 3. `freeciv-web/src/main/webapp/javascript/webgpu/mapview_webgpu.js` (NEW FILE: +175 lines)
 **Purpose**: WebGPU-specific renderer implementation
 
 **Key Functions**:

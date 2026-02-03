@@ -73,7 +73,7 @@ Create parallel implementations for hexagonal tiles rather than modifying the ex
 
 #### Option A: Create Separate Hex Shaders (RECOMMENDED)
 Create new shader directory and files:
-- `freeciv-web/src/main/webapp/javascript/webgl/shaders_hex/`
+- `freeciv-web/src/main/webapp/javascript/webgpu/shaders_hex/`
   - `terrain_vertex_shader.glsl` - Vertex shader for hex tiles
   - `terrain_fragment_shader.glsl` - Fragment shader for hex tiles
   - `README.md` - Documentation for hex shaders
@@ -312,7 +312,7 @@ function hex_to_scene(x, y) {
 ### 9. Documentation Updates
 
 Files to update:
-1. **`freeciv-web/src/main/webapp/javascript/webgl/README.md`**
+1. **`freeciv-web/src/main/webapp/javascript/webgpu/README.md`**
    - Document hex tile support
    - Explain topology selection
 
@@ -389,7 +389,7 @@ Files to update:
 ## File Structure Overview
 
 ```
-freeciv-web/src/main/webapp/javascript/webgl/
+freeciv-web/src/main/webapp/javascript/webgpu/
 ├── shaders_square/          # Existing square tile shaders
 │   ├── terrain_vertex_shader.glsl
 │   ├── terrain_fragment_shader.glsl
@@ -1029,7 +1029,7 @@ function create_hex_tile_geometry(x, y, height) {
 
 **Challenge 5: Build System Integration**
 - **Issue**: New JavaScript file needs to be included in build
-- **Solution**: Maven minify plugin already includes `webgl/*.js` pattern
+- **Solution**: Maven minify plugin already includes `webgpu/*.js` pattern
 - **Result**: No build configuration changes needed
 
 ### What Still Needs Work
@@ -1183,7 +1183,7 @@ The hex tile implementation now includes a complete testing suite with **49 unit
 
 **Test Execution:**
 ```bash
-cd freeciv-web/src/main/webapp/javascript/webgl/tests
+cd freeciv-web/src/main/webapp/javascript/webgpu/tests
 node run-tests.js
 ```
 
@@ -1327,7 +1327,7 @@ Tests can be integrated into CI/CD pipelines:
 # GitHub Actions example
 - name: Run Hex Tile Tests
   run: |
-    cd freeciv-web/src/main/webapp/javascript/webgl/tests
+    cd freeciv-web/src/main/webapp/javascript/webgpu/tests
     node run-tests.js
 ```
 
@@ -1424,7 +1424,7 @@ This is the **primary visual proof image** demonstrating:
 
 **Prerequisites:**
 ```bash
-cd freeciv-web/src/main/webapp/javascript/webgl/tests
+cd freeciv-web/src/main/webapp/javascript/webgpu/tests
 npm install  # Install canvas dependency (first time only)
 ```
 

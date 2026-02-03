@@ -963,7 +963,7 @@ cd freeciv-web/tests/playwright && npx playwright test specific-test.js
 
 // Key directories:
 // - freeciv-web/src/main/webapp/javascript/ - Main client code
-// - freeciv-web/src/main/webapp/javascript/webgl/ - 3D rendering
+// - freeciv-web/src/main/webapp/javascript/webgpu/ - 3D rendering
 // - freeciv-web/src/main/webapp/javascript/2dcanvas/ - 2D rendering
 // - freeciv-web/src/main/webapp/javascript/libs/ - Third-party libraries
 ```
@@ -1244,7 +1244,7 @@ bash ./scripts/start-freeciv-web.sh
 cp new_model.gltf freeciv-web/src/main/webapp/gltf/
 
 # 2. Update model loader
-vim freeciv-web/src/main/webapp/javascript/webgl/models.js
+vim freeciv-web/src/main/webapp/javascript/webgpu/models.js
 
 # 3. Test in browser
 # Reload and check browser console for loading status

@@ -198,7 +198,7 @@ function initialize_standalone_webgl() {
     console.log("[Standalone] Creating GLTFLoader");
     loader = new GLTFLoader();
     const dracoLoader = new DRACOLoader();
-    dracoLoader.setDecoderPath('/javascript/webgl/libs/');
+    dracoLoader.setDecoderPath('/javascript/webgpu/libs/');
     dracoLoader.setDecoderConfig({ type: 'wasm' });
     loader.setDRACOLoader(dracoLoader);
     console.log("[Standalone] GLTFLoader initialized");
