@@ -171,9 +171,6 @@ async function renderer_init() {
     init_chatbox();
     keyboard_input=true;
 
-    // Set initial camera focus on player's units after renderer is fully initialized
-    advance_unit_focus();
-
     setTimeout("$('#mapcanvas').fadeIn(2500); $.unblockUI();", 700);
 
   }
