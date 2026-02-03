@@ -713,10 +713,8 @@ function webgl_get_model(filename, ptile)
           nodeMaterial.side = THREE.DoubleSide;
           nodeMaterial.flatShading = false;
           
-          // Configure the material to use scene lights
-          // In WebGPU with TSL, materials automatically detect scene lights
-          // when MeshStandardNodeMaterial is used - no manual configuration needed
-          nodeMaterial.lightsNode = THREE.lights();
+          // MeshStandardNodeMaterial automatically detects and uses scene lights
+          // when used with WebGPU renderer - no manual lightsNode configuration needed
           
           node.material = nodeMaterial;
           node.material.needsUpdate = true;

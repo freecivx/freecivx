@@ -59,10 +59,8 @@ function getInstancedMeshFromModel(modelName, gltfMesh, capacity = 30) {
         nodeMaterial.side = THREE.DoubleSide;
         nodeMaterial.flatShading = false;
         
-        // Configure the material to use scene lights
-        // In WebGPU with TSL, materials automatically detect scene lights
-        // when MeshStandardNodeMaterial is used
-        nodeMaterial.lightsNode = THREE.lights();
+        // MeshStandardNodeMaterial automatically detects and uses scene lights
+        // when used with WebGPU renderer - no manual lightsNode configuration needed
         
         material = nodeMaterial;
     }
