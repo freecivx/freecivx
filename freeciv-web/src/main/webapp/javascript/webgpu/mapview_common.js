@@ -112,7 +112,8 @@ function init_land_geometry(geometry, mesh_quality)
       vertices.push( x, -y, height_value );
       
       // UV coordinates for hex sampling
-      // Adjust UV to account for hex offset
+      // Add hex stagger to UV for odd rows - the shader will subtract this
+      // to get the correct tile position for terrain texture lookup
       const uvX = (ix + (iy % 2 === 1 ? HEX_STAGGER : 0)) / gridX;
       uvs.push( uvX );
       uvs.push( 1 - ( iy / gridY ) );
