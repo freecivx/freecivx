@@ -33,7 +33,40 @@ function getInstancedMeshFromModel(modelName, gltfMesh, capacity = 30) {
 
     // Otherwise, create a new InstancedMesh from the geometry and material.
     const geometry = gltfMesh.geometry;
-    const material = gltfMesh.material;
+    let material = gltfMesh.material;
+    
+    // Convert material to WebGPU-compatible node material if WebGPU renderer is active
+    if (typeof maprenderer !== 'undefined' && maprenderer && maprenderer.isWebGPURenderer) {
+        const originalMat = material;
+        
+        // Create a new MeshStandardNodeMaterial with lighting support
+        const nodeMaterial = new THREE.MeshStandardNodeMaterial();
+        
+        // Copy common properties from original material
+        if (originalMat.map) nodeMaterial.map = originalMat.map;
+        if (originalMat.color) nodeMaterial.color.copy(originalMat.color);
+        if (originalMat.emissive) nodeMaterial.emissive.copy(originalMat.emissive);
+        if (originalMat.emissiveIntensity !== undefined) {
+            nodeMaterial.emissiveIntensity = originalMat.emissiveIntensity;
+        }
+        if (originalMat.roughness !== undefined) nodeMaterial.roughness = originalMat.roughness;
+        if (originalMat.metalness !== undefined) nodeMaterial.metalness = originalMat.metalness;
+        if (originalMat.opacity !== undefined) nodeMaterial.opacity = originalMat.opacity;
+        if (originalMat.transparent !== undefined) {
+            nodeMaterial.transparent = originalMat.transparent;
+        }
+        
+        nodeMaterial.side = THREE.DoubleSide;
+        nodeMaterial.flatShading = false;
+        
+        // Configure the material to use scene lights
+        // In WebGPU with TSL, materials automatically detect scene lights
+        // when MeshStandardNodeMaterial is used
+        nodeMaterial.lightsNode = THREE.lights();
+        
+        material = nodeMaterial;
+    }
+    
     const instancedMesh = new THREE.InstancedMesh(geometry, material, capacity);
     instancedMesh.castShadow = true;
 
