@@ -171,6 +171,8 @@ function update_heightmap(heightmap_quality)
 
       if (tile_get_known(ptile) == TILE_UNKNOWN) {
         ptile['height'] = 0.51;
+        // Use standard 8-connected neighbors for height propagation
+        // The hex visualization is separate from the tile coordinate system
         let neighbours = [
           { "x": x - 1 , "y": y - 1},
           { "x": x - 1, "y": y },
@@ -212,6 +214,7 @@ function update_heightmap(heightmap_quality)
           heightmap[index] = ptile['height'] * 1.02;
         }
       } else {
+        // For hex interpolation, use the 4 nearest grid points
         let neighbours = [
           { "x": Math.floor(gx), "y": Math.floor(gy) },
           { "x": Math.floor(gx), "y": Math.ceil(gy) },

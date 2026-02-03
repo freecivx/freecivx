@@ -30,6 +30,7 @@
  * - Randomized texture sampling for visual variety
  * - Vertex color-based fog/visibility
  * - Slope-based brightness with sun direction lighting
+ * - Hexagonal tile UV transformation (staggered row offset)
  */
 
 function createTerrainShaderTSL(uniforms) {
@@ -103,28 +104,45 @@ function createTerrainShaderTSL(uniforms) {
     // - 1.06 = fully visible
     const vertColor = attribute('vertColor');
 
+    // =========================================================================
+    // HEXAGONAL UV COORDINATE TRANSFORMATION
+    // =========================================================================
+    // Calculate the tile Y coordinate to determine row offset
+    const tileY = floor(mul(map_y_size, uvNode.y));
+    
+    // Hex stagger: odd rows are offset by 0.5 tile width
+    // isOddRow = 1.0 when tileY is odd, 0.0 when even
+    // Using mod(tileY, 2.0) gives 0.0 for even rows, 1.0 for odd rows
+    const isOddRow = mod(tileY, 2.0);
+    
+    // Calculate hex-adjusted UV coordinates
+    // For hex grid, the X coordinate needs adjustment based on row parity
+    const hexOffsetX = mul(isOddRow, div(0.5, map_x_size));
+    const hexUvX = sub(uvNode.x, hexOffsetX);
+    const hexUV = vec2(hexUvX, uvNode.y);
+
     // Add pseudo-random texture offset for visual variety
     // This prevents tiling artifacts on large uniform terrain areas
-    const rndSeed = dot(uvNode, vec2(12.98, 78.233));
+    const rndSeed = dot(hexUV, vec2(12.98, 78.233));
     const rnd = fract(mul(sin(rndSeed), 43758.5453));
     const rndOffset = mul(sub(rnd, 0.5), div(1.0, mul(8.0, vec2(map_x_size, map_y_size))));
-    const sampledUV = add(uvNode, rndOffset);
+    const sampledUV = add(hexUV, rndOffset);
 
-    // Sample terrain type and border data
+    // Sample terrain type and border data using hex-adjusted UVs
     const terrainType = texture(maptilesTex, sampledUV);
-    const borderColor = texture(bordersTex, uvNode);
+    const borderColor = texture(bordersTex, hexUV);
 
-    // Calculate texture coordinates for different tile orientations
-    const dx = mod(mul(map_x_size, uvNode.x), 1.0);
-    const dy = mod(mul(map_y_size, uvNode.y), 1.0);
-    const tdx = sub(div(mul(map_x_size, uvNode.x), 2.0), mul(0.5, floor(mul(map_x_size, uvNode.x))));
-    const tdy = sub(div(mul(map_y_size, uvNode.y), 2.0), mul(0.5, floor(mul(map_y_size, uvNode.y))));
+    // Calculate texture coordinates for different tile orientations (hex-adjusted)
+    const dx = mod(mul(map_x_size, hexUV.x), 1.0);
+    const dy = mod(mul(map_y_size, hexUV.y), 1.0);
+    const tdx = sub(div(mul(map_x_size, hexUV.x), 2.0), mul(0.5, floor(mul(map_x_size, hexUV.x))));
+    const tdy = sub(div(mul(map_y_size, hexUV.y), 2.0), mul(0.5, floor(mul(map_y_size, hexUV.y))));
 
     // Extract terrain type value from texture (stored in red channel as 0-255 value)
     const terrainHere = floor(mul(terrainType.r, 256.0));
     const posY = posNode.y;
 
-    // Texture coordinate nodes
+    // Texture coordinate nodes for hexagonal tiles
     const texCoord = vec2(dx, dy);
     const texCoordT = vec2(tdx, add(tdy, 0.5));
 

@@ -339,6 +339,11 @@ function map_distance_vector(tile0, tile1)
 /****************************************************************************
   Step from the given tile in the given direction.  The new tile is returned,
   or NULL if the direction is invalid or leads off the map.
+  
+  For hexagonal topology, the same direction offsets (DIR_DX/DIR_DY) are used,
+  but certain directions are invalid and filtered by is_valid_dir().
+  In iso-hex: NE and SW are invalid
+  In pure hex: SE and NW are invalid
 ****************************************************************************/
 function mapstep(ptile, dir)
 {
@@ -346,7 +351,11 @@ function mapstep(ptile, dir)
     return null;
   }
 
-  return map_pos_to_tile(DIR_DX[dir] + ptile['x'], DIR_DY[dir] + ptile['y']);
+  // Use the standard direction offsets - hex validity is handled by is_valid_dir()
+  var dx = DIR_DX[dir];
+  var dy = DIR_DY[dir];
+
+  return map_pos_to_tile(dx + ptile['x'], dy + ptile['y']);
 
 }
 

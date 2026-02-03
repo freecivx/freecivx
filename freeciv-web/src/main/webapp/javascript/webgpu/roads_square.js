@@ -63,6 +63,8 @@ function update_roads_tile(ptile, recursive)
 
   if (!recursive) return;
 
+  // Use standard 8-connected neighbors for road updates
+  // The hex visualization is separate from the tile coordinate system
   let neighbours = [
     { "x": x - 1 , "y": y - 1},
     { "x": x - 1, "y": y },

@@ -145,13 +145,14 @@ function generator_create_map(width, height, options) {
     FractureGenerator.initialize(width, height, seed);
     FractureGenerator.generateFracture();
 
-    // Map info setup
+    // Map info setup - use hexagonal topology (TF_HEX = 2, TF_ISO = 1, combined = 3)
+    // TF_HEX | TF_ISO = 3 for isometric hex grid
     handle_map_info({
         xsize: width,
         ysize: height,
-        topology_id: 0,
+        topology_id: 3,  // TF_HEX | TF_ISO = hexagonal isometric topology
         wrap_id: 1, // X-Wrap
-        num_valid_dirs: 8
+        num_valid_dirs: 6  // Hex has 6 valid directions
     });
 
     // Register terrain types
