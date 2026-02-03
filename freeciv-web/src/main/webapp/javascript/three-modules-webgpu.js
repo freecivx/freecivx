@@ -40,9 +40,20 @@ if (WebGPUModule.MeshStandardNodeMaterial) {
 }
 
 // Export TSL (Three.js Shading Language) functions to THREE
-// The WebGPU module includes TSL which provides the lights() function needed for WebGPU
-// We need to export commonly used TSL functions to the global THREE object
-const tslFunctions = ['lights', 'uniform', 'texture', 'vec2', 'vec3', 'vec4', 'color', 'float'];
+// The WebGPU module includes TSL which provides the lighting and shader functions needed for WebGPU
+// We export commonly used TSL functions to the global THREE object for use in custom shaders
+const tslFunctions = [
+  // Lighting and material functions
+  'lights', 'uniform', 'texture', 'color',
+  // Vector constructors
+  'vec2', 'vec3', 'vec4', 'float',
+  // Vertex shader functions
+  'positionLocal', 'attribute', 'uv',
+  // Math and blending functions
+  'mix', 'step', 'floor', 'fract', 'mod', 'dot', 'sin',
+  // Arithmetic operators
+  'mul', 'add', 'sub', 'div'
+];
 tslFunctions.forEach(fn => {
   if (WebGPUModule[fn]) {
     THREE[fn] = WebGPUModule[fn];
