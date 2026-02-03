@@ -42,8 +42,8 @@ function createTerrainShaderTSL(uniforms) {
     } = THREE;
     
     // Verify all required TSL functions are available
-    const requiredFunctions = { texture, uniform, positionLocal, attribute, uv, vec2, vec3, vec4, mix, step, floor, fract, mod, dot, sin, mul, add, sub, div };
-    const missingFunctions = Object.keys(requiredFunctions).filter(key => typeof requiredFunctions[key] !== 'function');
+    const requiredFunctionNames = ['texture', 'uniform', 'positionLocal', 'attribute', 'uv', 'vec2', 'vec3', 'vec4', 'mix', 'step', 'floor', 'fract', 'mod', 'dot', 'sin', 'mul', 'add', 'sub', 'div'];
+    const missingFunctions = requiredFunctionNames.filter(name => typeof THREE[name] !== 'function');
     if (missingFunctions.length > 0) {
         console.error('Missing TSL functions:', missingFunctions);
         throw new Error(`Required TSL functions not available: ${missingFunctions.join(', ')}. Ensure three-modules-webgpu.js has loaded successfully.`);

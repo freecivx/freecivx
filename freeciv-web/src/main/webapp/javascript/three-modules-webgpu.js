@@ -29,6 +29,7 @@ import * as WebGPUModule from 'three/webgpu';
 
 // Import TSL (Three.js Shading Language) functions from the TSL module
 // The TSL module contains shader node functions needed for WebGPU materials
+// Note: 'float' is imported as 'floatFn' because 'float' is a reserved word in JavaScript
 import {
   // Lighting and material functions
   lights, uniform, texture, color,
@@ -64,6 +65,7 @@ THREE.color = color;
 THREE.vec2 = vec2;
 THREE.vec3 = vec3;
 THREE.vec4 = vec4;
+// Note: 'float' is exported from the imported 'floatFn' to avoid using reserved word
 THREE.float = floatFn;
 THREE.positionLocal = positionLocal;
 THREE.attribute = attribute;
