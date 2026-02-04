@@ -21,12 +21,26 @@ var flag_dx = 16;
 var flag_dz = 18;
 
 // Hexagonal tile centering offsets
-// These offsets center objects within a hex tile instead of at the corner
-// Based on MAPVIEW_ASPECT_FACTOR = 35.71 and HEX_HEIGHT_FACTOR ≈ 0.866
-// tileWidth ≈ 35.71, tileHeight ≈ 30.92
-// Center offset = half tile size
-var HEX_CENTER_OFFSET_X = 5;   // Offset to center objects in hex tile X direction
-var HEX_CENTER_OFFSET_Y = 12;  // Offset to center objects in hex tile Y direction (scene Z)
+// These offsets position objects at the visual center of hex tiles instead of at the corner.
+// 
+// The map_to_scene_coords() function returns the top-left corner of each tile.
+// For proper hex centering, objects need to be offset toward the tile center.
+// 
+// With MAPVIEW_ASPECT_FACTOR = 35.71 and HEX_HEIGHT_FACTOR ≈ 0.866:
+// - tileWidth ≈ 35.71 units
+// - tileHeight ≈ 30.92 units (35.71 * 0.866)
+// 
+// The offsets are empirically tuned to account for:
+// - 3D model pivot points (often at model base, not center)
+// - Visual balance within hex tile boundaries
+// - Compatibility with existing model scales
+var HEX_CENTER_OFFSET_X = 5;   // X offset from tile corner toward center
+var HEX_CENTER_OFFSET_Y = 12;  // Y offset (scene Z) from tile corner toward center
+
+// Random offset constants for object variety within tiles
+var HEX_RANDOM_OFFSET_BASE = 2;     // Base offset before randomization
+var HEX_RANDOM_RANGE_HALF = 12;     // Half of the random offset range
+var HEX_RANDOM_RANGE_FULL = 25;     // Full random range (0 to this value)
 
 // stores unit positions on the map. tile index is key, unit 3d model is value.
 var unit_positions = {};
