@@ -318,7 +318,5 @@ function set_mapview_model_size() {
   mapview_model_height = Math.floor(MAPVIEW_ASPECT_FACTOR * map['ysize']);
   
   // Update hex center offsets after model dimensions are set
-  if (typeof updateHexCenterOffsets === 'function') {
-    updateHexCenterOffsets();
-  }
+  updateHexCenterOffsets();
 }
