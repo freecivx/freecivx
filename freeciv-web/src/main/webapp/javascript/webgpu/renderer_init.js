@@ -113,11 +113,6 @@ async function renderer_init() {
     camera.position.y += 600;
     setTimeout("$('#mapcanvas').fadeIn(2500); $.unblockUI();", 700);
 
-    // Log hex debugging instructions when game starts
-    if (typeof hexDebugLogUserInstructions === 'function') {
-      setTimeout(hexDebugLogUserInstructions, 1000);
-    }
-
   }
 }
 
