@@ -861,16 +861,15 @@ function captureAsciiScreenshotHiRes() {
     
     var pixels = imageData.data;
     
-    // Extended character set for maximum detail
-    var asciiChars = ' .\'`^",:;Il!i><~+_-?][}{1)(|\\/tfjrxnuvczXYUJCLQ0OZmwqpdbkhao*#MW&8%B@$';
+    // Extended character set for maximum detail (dark to light)
+    var asciiChars = ' .\'`^",:;Il!i><~+_-?][}{1)(|/tfjrxnuvczXYUJCLQ0OZmwqpdbkhao*#MW&8%B@$';
     
     var asciiLines = [];
-    var headerLine = '╔══════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════╗';
-    asciiLines.push(headerLine.substring(0, asciiWidth + 3) + '╗');
+    // Use repeat method for consistent border width
+    asciiLines.push('╔' + '═'.repeat(asciiWidth + 2) + '╗');
     var titleLine = '║ HIGH-RES HEX MAP ASCII SCREENSHOT (' + width + 'x' + height + ' → ' + asciiWidth + 'x' + asciiHeight + ')';
-    asciiLines.push(titleLine + ' '.repeat(Math.max(0, asciiWidth - titleLine.length + 2)) + '║');
-    var sepLine = '╠══════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════╣';
-    asciiLines.push(sepLine.substring(0, asciiWidth + 3) + '╣');
+    asciiLines.push(titleLine + ' '.repeat(Math.max(0, asciiWidth - titleLine.length + 3)) + '║');
+    asciiLines.push('╠' + '═'.repeat(asciiWidth + 2) + '╣');
     
     for (var y = 0; y < asciiHeight; y++) {
       var line = '║ ';
@@ -892,8 +891,7 @@ function captureAsciiScreenshotHiRes() {
       asciiLines.push(line);
     }
     
-    var footerLine = '╚══════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════╝';
-    asciiLines.push(footerLine.substring(0, asciiWidth + 3) + '╝');
+    asciiLines.push('╚' + '═'.repeat(asciiWidth + 2) + '╝');
     
     var asciiArt = asciiLines.join('\n');
     
