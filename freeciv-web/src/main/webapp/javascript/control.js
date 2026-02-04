@@ -3035,53 +3035,10 @@ function(){
 }
 
 /**************************************************************************
- Rotate direction for the 3D hex renderer view angle.
- The 3D camera view is rotated compared to the standard numpad layout,
- so we need to rotate the directions to match visual expectations.
- 
- For the hex 3D view, the visual "left" on screen corresponds to the
- data model's WEST direction, but the numpad layout shows SW at position 1.
- We rotate counter-clockwise by 2 steps (90 degrees) to align visual and numpad.
-**************************************************************************/
-function rotate_direction_for_3d_hex(dir)
-{
-  // Only rotate for 3D hex renderer
-  if (typeof renderer_type === 'undefined' || renderer_type !== 'webgpu') {
-    return dir;
-  }
-  
-  // Check if hex topology is active
-  if (typeof topo_has_flag === 'undefined' || !topo_has_flag(TF_HEX)) {
-    return dir;
-  }
-  
-  // Rotation mapping: rotate counter-clockwise by 2 positions
-  // This aligns the numpad visual layout with the 3D camera view
-  // Standard numpad:     Rotated for 3D view:
-  //   7 8 9                  9 6 3
-  //   4   6       →          8   2
-  //   1 2 3                  7 4 1
-  var rotationMap = {};
-  rotationMap[DIR8_NORTHWEST] = DIR8_NORTH;      // 7 → 8
-  rotationMap[DIR8_NORTH] = DIR8_NORTHEAST;      // 8 → 9
-  rotationMap[DIR8_NORTHEAST] = DIR8_EAST;       // 9 → 6
-  rotationMap[DIR8_WEST] = DIR8_NORTHWEST;       // 4 → 7
-  rotationMap[DIR8_EAST] = DIR8_SOUTHEAST;       // 6 → 3
-  rotationMap[DIR8_SOUTHWEST] = DIR8_WEST;       // 1 → 4
-  rotationMap[DIR8_SOUTH] = DIR8_SOUTHWEST;      // 2 → 1
-  rotationMap[DIR8_SOUTHEAST] = DIR8_SOUTH;      // 3 → 2
-  
-  return rotationMap[dir] !== undefined ? rotationMap[dir] : dir;
-}
-
-/**************************************************************************
  Moved the unit in focus in the specified direction.
 **************************************************************************/
 function key_unit_move(dir)
 {
-  // Rotate direction for 3D hex renderer view angle
-  dir = rotate_direction_for_3d_hex(dir);
-  
   if (current_focus.length > 0) {
     var punit = current_focus[0];
     if (punit == null) {
