@@ -91,12 +91,15 @@ function createTerrainShaderTSL(uniforms) {
     // - width = R * sqrt(3) = R * 1.732
     // - height = R * 2
     // We normalize so that one tile maps to roughly 1.0 in UV space per tile
-    const HEX_ASPECT = 0.866025; // sqrt(3)/2 - ratio of hex width to height
+    const HEX_SQRT3_OVER_2 = 0.866025; // sqrt(3)/2 ≈ 0.866 - used for hex edge normals and aspect ratio
+    const HEX_ASPECT = HEX_SQRT3_OVER_2; // Ratio of hex width to height for pointy-top hexagons
     const HEX_EDGE_WIDTH = 0.03; // Width of hex edge highlight (as fraction of tile)
     const HEX_EDGE_SOFTNESS = 0.02; // Edge anti-aliasing softness
-    const HEX_EDGE_COLOR_R = 0.15;
-    const HEX_EDGE_COLOR_G = 0.12;
-    const HEX_EDGE_COLOR_B = 0.08;
+    const HEX_EDGE_BLEND_STRENGTH = 0.35; // How strongly hex edges darken the terrain (0-1)
+    const HEX_EDGE_COLOR_R = 0.15; // Red component of edge darkening color
+    const HEX_EDGE_COLOR_G = 0.12; // Green component of edge darkening color  
+    const HEX_EDGE_COLOR_B = 0.08; // Blue component of edge darkening color
+    const TEXTURE_RANDOM_SCALE = 16.0; // Divisor for random texture offset - larger = less variation
 
     // Create texture references for reuse (don't call texture() yet)
     const maptilesTex = uniforms.maptiles.value;
@@ -193,11 +196,11 @@ function createTerrainShaderTSL(uniforms) {
     // Edge 1: vertical edges (normal = (1, 0))
     const dist1 = abs(hexX);
     
-    // Edge 2: top-right and bottom-left edges (normal = (0.5, sqrt(3)/2) = (0.5, 0.866))
-    const dist2 = abs(add(mul(hexX, 0.5), mul(hexY, 0.866025)));
+    // Edge 2: top-right and bottom-left edges (normal = (0.5, sqrt(3)/2))
+    const dist2 = abs(add(mul(hexX, 0.5), mul(hexY, HEX_SQRT3_OVER_2)));
     
-    // Edge 3: top-left and bottom-right edges (normal = (-0.5, sqrt(3)/2) = (-0.5, 0.866))
-    const dist3 = abs(add(mul(hexX, -0.5), mul(hexY, 0.866025)));
+    // Edge 3: top-left and bottom-right edges (normal = (-0.5, sqrt(3)/2))
+    const dist3 = abs(add(mul(hexX, -0.5), mul(hexY, HEX_SQRT3_OVER_2)));
     
     // The distance to hex edge is the maximum of these three distances
     // For a pointy-top hex with inradius 0.5, points inside have max(dist1,dist2,dist3) < 0.5
@@ -230,9 +233,10 @@ function createTerrainShaderTSL(uniforms) {
     const tileCenterUV = vec2(tileCenterUStaggered, tileCenterV);
     
     // Add pseudo-random texture offset for visual variety within tiles
+    // TEXTURE_RANDOM_SCALE controls amplitude: larger value = smaller random offset
     const rndSeed = dot(tileCenterUV, vec2(12.98, 78.233));
     const rnd = fract(mul(sin(rndSeed), 43758.5453));
-    const rndOffset = mul(sub(rnd, 0.5), div(1.0, mul(16.0, vec2(map_x_size, map_y_size))));
+    const rndOffset = mul(sub(rnd, 0.5), div(1.0, mul(TEXTURE_RANDOM_SCALE, vec2(map_x_size, map_y_size))));
     const sampledUV = add(tileCenterUV, rndOffset);
 
     // Sample terrain type using hex tile center
@@ -353,7 +357,7 @@ function createTerrainShaderTSL(uniforms) {
     
     // Blend hex edge color with terrain based on edge mask
     // The edge mask is strongest at hex boundaries and fades toward center
-    const hexEdgeBlend = mul(hexEdgeMask, 0.35); // 35% blend at edges
+    const hexEdgeBlend = mul(hexEdgeMask, HEX_EDGE_BLEND_STRENGTH);
     finalColor = vec4(
         mix(finalColor.rgb, hexEdgeColor, hexEdgeBlend),
         finalColor.a
