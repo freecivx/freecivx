@@ -52,7 +52,7 @@ function create_nuke(ptile_id)
 
   let sprite = new THREE.Sprite( new THREE.SpriteMaterial( { map: webgl_textures["nuke_glow"]}));
   sprite.scale.set(500, 200, 1);
-  sprite.position.set(pos['x'] , height + mushroom_height + 20, pos['y']);
+  sprite.position.set(pos['x'] + HEX_CENTER_OFFSET_X, height + mushroom_height + 20, pos['y'] + HEX_CENTER_OFFSET_Y);
   sprite.name = "nuke_glow";
   scene.add(sprite);
   nuke_objects.push(sprite);
@@ -60,9 +60,9 @@ function create_nuke(ptile_id)
   // Render inner mushroom cloud.
   var innerMaterial = new THREE.SpriteMaterial( { map: webgl_textures["nuke_inner_mushroom_cloud"]});
   for (var i = 0; i < 45000; i++) {
-    var x = pos['x'] + (Math.random() * inner_radius) - (inner_radius / 2);
+    var x = pos['x'] + HEX_CENTER_OFFSET_X + (Math.random() * inner_radius) - (inner_radius / 2);
     var h = height + mushroom_height + (Math.random() * inner_radius) - (inner_radius / 2);
-    var y = pos['y']  + (Math.random() * inner_radius) - (inner_radius / 2);
+    var y = pos['y'] + HEX_CENTER_OFFSET_Y + (Math.random() * inner_radius) - (inner_radius / 2);
     let dist = Math.sqrt(((pos['x'] - x) ** 2) + (2 * (height + mushroom_height - h) ** 2) + ((pos['y'] - y) ** 2));
     if (dist > (inner_radius / 2) || dist < 45) {
       continue;
