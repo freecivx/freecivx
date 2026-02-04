@@ -120,7 +120,7 @@ function animate_explosion_on_tile(tile_id, animation_frame)
 
   var explosion_mesh = create_unit_explosion_sprite(animation_frame);
   var pos = map_to_scene_coords(ptile['x'], ptile['y']);
-  explosion_mesh.position.set(pos['x'] - 6, height + 8, pos['y'] - 6);
+  explosion_mesh.position.set(pos['x'] + HEX_CENTER_OFFSET_X - 6, height + 8, pos['y'] + HEX_CENTER_OFFSET_Y - 6);
   ptile['explosion_mesh'] = explosion_mesh;
   explosion_mesh.name = "Explosion";
   scene.add(explosion_mesh);

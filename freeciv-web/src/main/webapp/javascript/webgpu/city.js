@@ -59,7 +59,7 @@ function show_city_worked_tiles()
       if (city_worked_positions[ptile['index']] == null) {
         var mesh = create_city_worked_sprite(food_output, shield_output, trade_output);
         city_worked_positions[ptile['index']] = mesh;
-        mesh.position.set(pos['x'] + 0, height + 10, pos['y'] - 4);
+        mesh.position.set(pos['x'] + HEX_CENTER_OFFSET_X, height + 10, pos['y'] + HEX_CENTER_OFFSET_Y - 4);
         if (scene != null) {
           mesh.name = "City worked tile " + ptile['index'];
           scene.add(mesh);
@@ -77,7 +77,7 @@ function show_city_worked_tiles()
       if (city_worked_positions[ptile['index']] == null && Math.abs(d[0]) <= 2 && Math.abs(d[1]) <= 2) {
         let mesh = new THREE.Mesh( new THREE.RingGeometry( 1, 15, 30), other_city_material );
         city_worked_positions[ptile['index']] = mesh;
-        mesh.position.set(pos['x'] - 12, height + 3, pos['y'] - 9);
+        mesh.position.set(pos['x'] + HEX_CENTER_OFFSET_X - 12, height + 3, pos['y'] + HEX_CENTER_OFFSET_Y - 9);
         mesh.rotation.x = -1 * Math.PI / 2;
         if (scene != null) {
           mesh.name = "Other city worked tile " + ptile['index'];
