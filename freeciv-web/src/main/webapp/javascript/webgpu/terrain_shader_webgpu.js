@@ -404,29 +404,15 @@ function createTerrainShaderTSL(uniforms) {
     // We use only the x component as that's where the visibility value is stored
     finalColor = vec4(mul(finalColor.rgb, vertColor.x), finalColor.a);
 
-    // =========================================================================
-    // HEXAGONAL BORDER OVERLAY
-    // =========================================================================
-    // Overlay borders if visible, with hexagonal masking
-    // The border color is applied within the hex tile boundaries
-    // We use the inverse of the edge mask so borders fade at hex edges
-    // This creates proper hexagonal border regions instead of square ones
-    
-    // Calculate hex interior mask: 1.0 at center, fading to 0.0 at edges
-    // This masks the border color to only appear inside the hex shape
-    const hexInteriorMask = sub(1.0, hexEdgeMask);
-    
-    // Sample border texture using hex-adjusted UV coordinates
-    // borderColor is already sampled from hexUV which accounts for row stagger
+    // Overlay borders if visible
+    // Blend border color with terrain color at low opacity for subtle borders
+    // This matches the WebGL shader behavior which blends borders at 0.10 or 0.70 opacity
+    // We use a fixed blend of 0.15 for WebGPU (slightly more visible than WebGL's 0.10)
     const shouldShowBorders = mul(borders_visible.select(1.0, 0.0), borderColor.a);
-    
-    // Apply hexagonal mask to borders - borders only show inside hex tiles
-    // The base blend factor is 0.20 (slightly more visible for hex borders)
-    // Multiplied by interior mask to fade at hex edges
-    const hexBorderBlendFactor = mul(mul(shouldShowBorders, 0.20), hexInteriorMask);
-    
+    // Reduce the border influence by multiplying with a low opacity factor
+    const borderBlendFactor = mul(shouldShowBorders, 0.15);
     finalColor = vec4(
-        mix(finalColor.rgb, borderColor.rgb, hexBorderBlendFactor),
+        mix(finalColor.rgb, borderColor.rgb, borderBlendFactor),
         finalColor.a
     );
 
