@@ -24,13 +24,20 @@
  * Three.js Node System which compiles to WGSL for WebGPU.
  * 
  * Features:
+ * - Hexagonal tile rendering (Civ 6 style) - each map tile is a hexagon
  * - Multi-terrain type support with automatic blending
  * - Beach/coast transitions based on elevation
  * - Border overlay rendering
- * - Randomized texture sampling for visual variety
+ * - Hexagonal edge highlighting for visual clarity
  * - Vertex color-based fog/visibility
  * - Slope-based brightness with sun direction lighting
- * - Hexagonal tile UV transformation (staggered row offset)
+ * - Staggered row layout (odd-r offset coordinate system)
+ * 
+ * Hexagon Mathematics:
+ * - Uses pointy-top hexagons (flat sides left/right, points top/bottom)
+ * - Aspect ratio: width = 1.0, height = sqrt(3) ≈ 1.732
+ * - Odd rows are offset by half a tile width (odd-r offset coordinates)
+ * - Reference: https://www.redblobgames.com/grids/hexagons/
  */
 
 function createTerrainShaderTSL(uniforms) {
@@ -39,7 +46,7 @@ function createTerrainShaderTSL(uniforms) {
     const { 
         texture, uniform, positionLocal, attribute, uv, normalLocal,
         vec2, vec3, vec4,
-        mix, step, floor, fract, mod, dot, sin, cos, normalize, max, pow, clamp,
+        mix, step, floor, fract, mod, dot, sin, cos, normalize, max, min, pow, clamp, abs,
         mul, add, sub, div
     } = THREE;
     
@@ -47,7 +54,7 @@ function createTerrainShaderTSL(uniforms) {
     const requiredTSLNames = [
         'texture', 'uniform', 'positionLocal', 'attribute', 'uv', 'normalLocal',
         'vec2', 'vec3', 'vec4',
-        'mix', 'step', 'floor', 'fract', 'mod', 'dot', 'sin', 'cos', 'normalize', 'max', 'pow', 'clamp',
+        'mix', 'step', 'floor', 'fract', 'mod', 'dot', 'sin', 'cos', 'normalize', 'max', 'min', 'pow', 'clamp', 'abs',
         'mul', 'add', 'sub', 'div'
     ];
     const missing = requiredTSLNames.filter(name => THREE[name] === undefined);
@@ -75,6 +82,21 @@ function createTerrainShaderTSL(uniforms) {
     // Height constants for beach blending
     const BEACH_HIGH = 50.9;
     const BEACH_BLEND_HIGH = 50.4;
+
+    // =========================================================================
+    // HEXAGONAL TILE CONSTANTS
+    // =========================================================================
+    // Pointy-top hexagons (Civ 6 style): flat sides on left/right, points on top/bottom
+    // For a pointy-top hex with radius R (center to corner):
+    // - width = R * sqrt(3) = R * 1.732
+    // - height = R * 2
+    // We normalize so that one tile maps to roughly 1.0 in UV space per tile
+    const HEX_ASPECT = 0.866025; // sqrt(3)/2 - ratio of hex width to height
+    const HEX_EDGE_WIDTH = 0.03; // Width of hex edge highlight (as fraction of tile)
+    const HEX_EDGE_SOFTNESS = 0.02; // Edge anti-aliasing softness
+    const HEX_EDGE_COLOR_R = 0.15;
+    const HEX_EDGE_COLOR_G = 0.12;
+    const HEX_EDGE_COLOR_B = 0.08;
 
     // Create texture references for reuse (don't call texture() yet)
     const maptilesTex = uniforms.maptiles.value;
@@ -110,43 +132,117 @@ function createTerrainShaderTSL(uniforms) {
     const vertColor = attribute('vertColor');
 
     // =========================================================================
-    // HEXAGONAL UV COORDINATE TRANSFORMATION (Offset Coordinates - Odd-R)
+    // HEXAGONAL TILE COORDINATE SYSTEM (Offset Coordinates - Odd-R)
     // =========================================================================
-    // The geometry uses offset hex coordinates where odd rows are shifted right.
-    // The UV coordinates from the geometry include this stagger, so we need to
-    // subtract it here to get the correct tile position for texture lookups.
+    // Each map tile is rendered as a hexagon using the odd-r offset coordinate system.
+    // In this system:
+    // - Hexagons are pointy-top (flat sides left/right)
+    // - Odd rows are shifted right by half a tile width
+    // - Each tile has 6 neighbors in hex directions
     //
     // Reference: https://www.redblobgames.com/grids/hexagons/#coordinates-offset
     
-    // Calculate the tile Y coordinate to determine row offset
-    const tileY = floor(mul(map_y_size, uvNode.y));
+    // Calculate which tile row we're in (used for stagger offset)
+    const tileYRaw = mul(map_y_size, uvNode.y);
+    const tileY = floor(tileYRaw);
     
     // Hex stagger: odd rows are offset by 0.5 tile width
     // isOddRow = 1.0 when tileY is odd, 0.0 when even
-    // Using mod(tileY, 2.0) gives 0.0 for even rows, 1.0 for odd rows
     const isOddRow = mod(tileY, 2.0);
     
     // Calculate hex-adjusted UV coordinates
-    // For hex grid, the X coordinate needs adjustment based on row parity
-    // hexOffsetX = 0.5 / map_x_size for odd rows, 0 for even rows
+    // Remove the stagger from UV to get the logical tile X coordinate
     const hexOffsetX = mul(isOddRow, div(0.5, map_x_size));
     const hexUvX = sub(uvNode.x, hexOffsetX);
     const hexUV = vec2(hexUvX, uvNode.y);
-
-    // Add pseudo-random texture offset for visual variety
-    // This prevents tiling artifacts on large uniform terrain areas
-    const rndSeed = dot(hexUV, vec2(12.98, 78.233));
+    
+    // Calculate the tile X coordinate
+    const tileXRaw = mul(map_x_size, hexUvX);
+    const tileX = floor(tileXRaw);
+    
+    // =========================================================================
+    // HEXAGONAL CELL LOCAL COORDINATES
+    // =========================================================================
+    // Calculate position within the current hex cell (0 to 1 range)
+    // This is used for hex shape masking and edge detection
+    const localX = fract(tileXRaw);
+    const localY = fract(tileYRaw);
+    
+    // Transform local coordinates to hex-centered system (-0.5 to 0.5 range)
+    // Center is at (0, 0), corners at edges
+    const centeredX = sub(localX, 0.5);
+    const centeredY = sub(localY, 0.5);
+    
+    // =========================================================================
+    // HEXAGONAL DISTANCE FUNCTION (Signed Distance Field)
+    // =========================================================================
+    // Calculate signed distance to hexagon edge for pointy-top hex
+    // A pointy-top hexagon has vertices at 30°, 90°, 150°, 210°, 270°, 330°
+    // The hex is inscribed in a circle, so we check distance to 3 edge pairs
+    //
+    // For a regular pointy-top hexagon centered at origin with inradius 0.5:
+    // The three edge normal directions are at 0°, 60°, and 120°
+    // Edge normals: (1,0), (0.5, sqrt(3)/2), (-0.5, sqrt(3)/2)
+    
+    // Scale coordinates to account for hex aspect ratio
+    // Hexagon is taller than wide for pointy-top, so scale Y
+    const hexX = centeredX;
+    const hexY = mul(centeredY, HEX_ASPECT);
+    
+    // Calculate distance to three pairs of hex edges using dot products with edge normals
+    // Edge 1: vertical edges (normal = (1, 0))
+    const dist1 = abs(hexX);
+    
+    // Edge 2: top-right and bottom-left edges (normal = (0.5, sqrt(3)/2) = (0.5, 0.866))
+    const dist2 = abs(add(mul(hexX, 0.5), mul(hexY, 0.866025)));
+    
+    // Edge 3: top-left and bottom-right edges (normal = (-0.5, sqrt(3)/2) = (-0.5, 0.866))
+    const dist3 = abs(add(mul(hexX, -0.5), mul(hexY, 0.866025)));
+    
+    // The distance to hex edge is the maximum of these three distances
+    // For a pointy-top hex with inradius 0.5, points inside have max(dist1,dist2,dist3) < 0.5
+    const hexDist = max(max(dist1, dist2), dist3);
+    
+    // =========================================================================
+    // HEX EDGE MASK FOR VISUAL BORDERS BETWEEN TILES
+    // =========================================================================
+    // Create a soft edge mask that's 0 at hex interior and 1 at edges
+    // This creates the distinctive Civ 6-style hex tile borders
+    const hexInradius = 0.5; // Radius from center to edge midpoint
+    const edgeStart = sub(hexInradius, HEX_EDGE_WIDTH);
+    
+    // Smooth step from interior to edge
+    // hexEdgeMask = smoothstep(edgeStart, hexInradius, hexDist)
+    // Using manual smoothstep: t = clamp((x-edge0)/(edge1-edge0), 0, 1); return t*t*(3-2*t)
+    const edgeT = clamp(div(sub(hexDist, edgeStart), HEX_EDGE_WIDTH), 0.0, 1.0);
+    const hexEdgeMask = mul(mul(edgeT, edgeT), sub(3.0, mul(2.0, edgeT)));
+    
+    // =========================================================================
+    // TERRAIN SAMPLING AT HEX TILE CENTER
+    // =========================================================================
+    // Sample terrain type from the center of the current hex tile
+    // This ensures consistent terrain per hex, not per pixel
+    const tileCenterU = div(add(tileX, 0.5), map_x_size);
+    const tileCenterV = div(add(tileY, 0.5), map_y_size);
+    
+    // Add back the hex stagger offset for odd rows when sampling
+    const tileCenterUStaggered = add(tileCenterU, hexOffsetX);
+    const tileCenterUV = vec2(tileCenterUStaggered, tileCenterV);
+    
+    // Add pseudo-random texture offset for visual variety within tiles
+    const rndSeed = dot(tileCenterUV, vec2(12.98, 78.233));
     const rnd = fract(mul(sin(rndSeed), 43758.5453));
-    const rndOffset = mul(sub(rnd, 0.5), div(1.0, mul(8.0, vec2(map_x_size, map_y_size))));
-    const sampledUV = add(hexUV, rndOffset);
+    const rndOffset = mul(sub(rnd, 0.5), div(1.0, mul(16.0, vec2(map_x_size, map_y_size))));
+    const sampledUV = add(tileCenterUV, rndOffset);
 
-    // Sample terrain type and border data using hex-adjusted UVs
+    // Sample terrain type using hex tile center
     const terrainType = texture(maptilesTex, sampledUV);
     const borderColor = texture(bordersTex, hexUV);
 
-    // Calculate texture coordinates for different tile orientations (hex-adjusted)
-    const dx = mod(mul(map_x_size, hexUV.x), 1.0);
-    const dy = mod(mul(map_y_size, hexUV.y), 1.0);
+    // Calculate texture coordinates for terrain detail within the hex
+    // Use the local hex coordinates scaled for texture tiling
+    const dx = localX;
+    const dy = localY;
     const tdx = sub(div(mul(map_x_size, hexUV.x), 2.0), mul(0.5, floor(mul(map_x_size, hexUV.x))));
     const tdy = sub(div(mul(map_y_size, hexUV.y), 2.0), mul(0.5, floor(mul(map_y_size, hexUV.y))));
 
@@ -247,6 +343,21 @@ function createTerrainShaderTSL(uniforms) {
     // Also add a slight brightness boost (1.1x) to make terrain more vibrant
     const brightnessBoost = 1.1;
     finalColor = vec4(mul(mul(finalColor.rgb, lightingFactor), brightnessBoost), finalColor.a);
+
+    // =========================================================================
+    // HEXAGONAL EDGE HIGHLIGHTING (Civ 6 Style)
+    // =========================================================================
+    // Apply subtle darkening at hex edges to create visible hex tile boundaries
+    // This gives the distinctive Civilization 6 hexagonal map appearance
+    const hexEdgeColor = vec3(HEX_EDGE_COLOR_R, HEX_EDGE_COLOR_G, HEX_EDGE_COLOR_B);
+    
+    // Blend hex edge color with terrain based on edge mask
+    // The edge mask is strongest at hex boundaries and fades toward center
+    const hexEdgeBlend = mul(hexEdgeMask, 0.35); // 35% blend at edges
+    finalColor = vec4(
+        mix(finalColor.rgb, hexEdgeColor, hexEdgeBlend),
+        finalColor.a
+    );
 
     // Apply vertex color for fog/visibility effects
     // Vertex color is stored in the vertColor attribute and represents visibility/fog of war
