@@ -20,7 +20,7 @@ var flag_dy = 0;
 var flag_dx = 16;
 var flag_dz = 18;
 
-// Hexagonal tile centering offsets for flat-top hex grid
+// Hexagonal tile centering offsets
 // These offsets position objects at the visual center of hex tiles instead of at the corner.
 // 
 // The map_to_scene_coords() function returns the top-left corner of each tile.
@@ -30,13 +30,12 @@ var flag_dz = 18;
 // - tileWidth ≈ 35.71 units
 // - tileHeight ≈ 30.92 units (35.71 * 0.866)
 // 
-// For flat-top hexagonal centering:
-// - X offset should be half the tile width: tileWidth / 2 ≈ 17.86
-// - Y offset should be half the tile height: tileHeight / 2 ≈ 15.46
-// 
-// Reference: https://www.redblobgames.com/grids/hexagons/#coordinates-offset
-var HEX_CENTER_OFFSET_X = 18;  // Half of tileWidth (35.71 / 2 ≈ 17.86, rounded to 18)
-var HEX_CENTER_OFFSET_Y = 15;  // Half of tileHeight (30.92 / 2 ≈ 15.46, rounded to 15)
+// The offsets are empirically tuned to account for:
+// - 3D model pivot points (often at model base, not center)
+// - Visual balance within hex tile boundaries
+// - Compatibility with existing model scales
+var HEX_CENTER_OFFSET_X = 5;   // X offset from tile corner toward center
+var HEX_CENTER_OFFSET_Y = 12;  // Y offset (scene Z) from tile corner toward center
 
 // Random offset constants for object variety within tiles
 var HEX_RANDOM_OFFSET_BASE = 2;     // Base offset before randomization
