@@ -1535,3 +1535,111 @@ Andreas: This hexagonal map rendering improvement is not yet successful. When re
     at webgl_canvas_pos_to_tile (topology_dispatch.js:54:3)
 
 
+
+---
+
+## Hex Debugging Telemetry System (February 2026)
+
+### Overview
+A comprehensive console logging system has been added to help diagnose hexagonal map rendering issues. The system logs:
+- User instructions for testing hex map functionality
+- Coordinate conversions (map ↔ scene)
+- Unit placement positions
+- Numpad movement directions
+- Goto line path rendering
+- Fog of war visibility changes
+
+### How to Use
+
+1. **Start the game** - Debug instructions will appear in the browser console automatically
+2. **Open browser console** (F12 → Console tab)
+3. **Follow the test instructions** printed in the console
+
+### Console Commands
+
+```javascript
+// Disable/enable hex debugging
+hexDebugEnabled = false;  // Turn off logging
+hexDebugEnabled = true;   // Turn on logging
+
+// Reset log counter (if max logs reached)
+hexDebugLogCount = 0;
+
+// Check map topology
+topo_has_flag(TF_HEX);  // true if hex map
+topo_has_flag(TF_ISO);  // true if isometric
+
+// Check hex constants
+HEX_HEIGHT_FACTOR;  // Should be ~0.866
+HEX_STAGGER;        // Should be 0.5
+```
+
+### Debug Log Categories
+
+| Category | Description |
+|----------|-------------|
+| `COORD-MAP2SCENE` | Map tile (x,y) → 3D scene position conversion |
+| `COORD-SCENE2MAP` | 3D scene position → map tile (x,y) conversion |
+| `CLICK-TILE` | Mouse click → tile selection |
+| `UNIT-PLACE` | Unit 3D model placement position |
+| `MOVEMENT` | Numpad/keyboard unit movement direction |
+| `MOVEMENT-BLOCKED` | Invalid movement direction (for hex topology) |
+| `GOTO` | Goto path start and direction list |
+| `GOTO-SEGMENT` | Individual path segment coordinates |
+| `FOG` | Tile visibility state changes |
+
+### Known Issues Being Investigated
+
+1. **Unit placement misalignment** - Units may not appear centered on hex tiles
+2. **Numpad direction mismatch** - Some numpad directions are invalid for hex topology:
+   - **Iso-hex**: NE (numpad 9) and SW (numpad 1) are invalid
+   - **Pure hex**: NW (numpad 7) and SE (numpad 3) are invalid
+3. **Goto lines incorrect** - Path visualization may not follow hex tile centers
+4. **Fog of war rendering** - Unknown tiles may not render correctly as hexagons
+
+### Test Procedure
+
+1. **Select a unit** → Check `[UNIT-SELECT]` logs for tile coordinates
+2. **Move with numpad** → Check `[MOVEMENT]` logs for valid/invalid directions
+3. **Right-click for goto** → Check `[GOTO]` logs for path coordinates
+4. **Explore fog of war** → Check `[FOG]` logs for visibility changes
+5. **Click on map** → Check `[CLICK-TILE]` logs for coordinate accuracy
+
+### Files Modified for Debugging
+
+- `freeciv-web/src/main/webapp/javascript/webgpu/maputil_square.js` - Coordinate conversion logging
+- `freeciv-web/src/main/webapp/javascript/webgpu/goto_square.js` - Goto path logging
+- `freeciv-web/src/main/webapp/javascript/webgpu/object_position_handler_square.js` - Unit placement logging
+- `freeciv-web/src/main/webapp/javascript/webgpu/tile_visibility_handler.js` - Fog of war logging
+- `freeciv-web/src/main/webapp/javascript/webgpu/renderer_init.js` - User instructions trigger
+- `freeciv-web/src/main/webapp/javascript/control.js` - Movement direction logging
+
+### Expected Debug Output Format
+
+```
+═══════════════════════════════════════════════════════════════
+  HEXAGONAL MAP DEBUGGING TELEMETRY ACTIVE
+═══════════════════════════════════════════════════════════════
+
+📋 TEST INSTRUCTIONS FOR HEX MAP VERIFICATION:
+
+  1. SELECT A UNIT: Click on any unit to select it
+     → Watch for: [HEX-DEBUG][UNIT-SELECT] logs showing tile coords
+  2. MOVE UNIT WITH NUMPAD: Use numpad 1-9 (except 5) to move
+     → Watch for: [HEX-DEBUG][MOVEMENT] logs showing direction & coords
+     → HEX DIRECTIONS: Only 6 of 8 directions are valid for hex
+  ...
+
+[HEX-DEBUG][COORD-MAP2SCENE] Map(5,3) → Scene(-295,122) {tileWidth: "35.71", ...}
+[HEX-DEBUG][UNIT-PLACE] Placing "Settlers" at Tile(5,3) {...}
+[HEX-DEBUG][MOVEMENT] Unit "Settlers" trying to move E (dir=4) {...}
+```
+
+### Next Steps
+
+After collecting debug telemetry:
+1. Analyze coordinate conversion accuracy
+2. Verify hex tile centering calculations
+3. Confirm direction mapping for hex topology
+4. Validate goto path rendering coordinates
+5. Check fog of war vertex calculations
