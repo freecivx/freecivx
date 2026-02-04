@@ -20,6 +20,14 @@ var flag_dy = 0;
 var flag_dx = 16;
 var flag_dz = 18;
 
+// Hexagonal tile centering offsets
+// These offsets center objects within a hex tile instead of at the corner
+// Based on MAPVIEW_ASPECT_FACTOR = 35.71 and HEX_HEIGHT_FACTOR ≈ 0.866
+// tileWidth ≈ 35.71, tileHeight ≈ 30.92
+// Center offset = half tile size
+var HEX_CENTER_OFFSET_X = 5;   // Offset to center objects in hex tile X direction
+var HEX_CENTER_OFFSET_Y = 12;  // Offset to center objects in hex tile Y direction (scene Z)
+
 // stores unit positions on the map. tile index is key, unit 3d model is value.
 var unit_positions = {};
 // stores city positions on the map. tile index is key, unit 3d model is value.
@@ -98,7 +106,7 @@ function update_unit_position(ptile) {
     unit_positions[ptile['index']] = new_unit;
 
     new_unit.matrixAutoUpdate = false;
-    new_unit.position.set(pos['x'] - 12, height - 2, pos['y'] - 4);
+    new_unit.position.set(pos['x'] + HEX_CENTER_OFFSET_X, height - 2, pos['y'] + HEX_CENTER_OFFSET_Y);
     let rnd_rotation = Math.floor(Math.random() * 8);
     new_unit.rotateOnAxis(new THREE.Vector3(0,1,0).normalize(), (convert_unit_rotation(rnd_rotation, unit_type_name)));
     new_unit.updateMatrix();
@@ -110,7 +118,7 @@ function update_unit_position(ptile) {
     if (unit_flag_positions[ptile['index']] == null && scene != null) {
       new_flag = create_unit_label_sprite(visible_unit, ptile);
       if (new_flag != null) {
-        new_flag.position.set(pos['x'] - 10, height + 18, pos['y'] - 20);
+        new_flag.position.set(pos['x'] + HEX_CENTER_OFFSET_X + 5, height + 18, pos['y'] + HEX_CENTER_OFFSET_Y - 8);
         new_flag.name = "Flag_" + visible_unit['id'];
         scene.add(new_flag);
         unit_flag_positions[ptile['index']] = new_flag;
@@ -131,7 +139,7 @@ function update_unit_position(ptile) {
     unit_positions[ptile['index']]['unit_type'] = unit_type_name;
 
     new_unit.matrixAutoUpdate = false;
-    new_unit.position.set(pos['x'] - 12, height - 2, pos['y'] - 4);
+    new_unit.position.set(pos['x'] + HEX_CENTER_OFFSET_X, height - 2, pos['y'] + HEX_CENTER_OFFSET_Y);
     new_unit.rotateOnAxis(new THREE.Vector3(0, 1, 0).normalize(), (convert_unit_rotation(visible_unit['facing'], unit_type_name)));
     new_unit.updateMatrix();
     new_unit.name = "Unit_" + visible_unit['id'];
@@ -142,7 +150,7 @@ function update_unit_position(ptile) {
     if (unit_flag_positions[ptile['index']] == null) {
       new_flag = create_unit_label_sprite(visible_unit, ptile);
       if (new_flag != null) {
-        new_flag.position.set(pos['x'] - flag_dx, height + 18, pos['y'] - flag_dy - 10);
+        new_flag.position.set(pos['x'] + HEX_CENTER_OFFSET_X - flag_dx + 20, height + 18, pos['y'] + HEX_CENTER_OFFSET_Y - flag_dy);
         new_flag.name = "Flag_" + visible_unit['id'];
         scene.add(new_flag);
         unit_flag_positions[ptile['index']] = new_flag;
@@ -162,8 +170,9 @@ function update_unit_position(ptile) {
       highlight_map_tile_selected(-1, -1);
     }
     if (visible_unit['anim_list'].length === 0) {
-      let selected_mesh = new THREE.Mesh( new THREE.RingGeometry( 16, 20, 30), selected_unit_material );
-      selected_mesh.position.set(pos['x'] - 12, height + 2, pos['y'] - 7);
+      // Create hexagonal selected unit indicator (pointy-top hexagon)
+      let selected_mesh = new THREE.Mesh(createHexagonGeometry(16, 20), selected_unit_material);
+      selected_mesh.position.set(pos['x'] + HEX_CENTER_OFFSET_X, height + 2, pos['y'] + HEX_CENTER_OFFSET_Y);
       selected_mesh.rotation.x = -1 * Math.PI / 2;
       selected_mesh.name = "SelectedUnitIndicator";
       scene.add(selected_mesh);
@@ -216,7 +225,7 @@ function update_city_position(ptile) {
     if (pcity['style'] == 4) height -= 1;
     if (pcity['style'] == 9) height -= 1;
 
-    new_city.position.set(pos['x'] - 12, height - 2, pos['y'] - 11);
+    new_city.position.set(pos['x'] + HEX_CENTER_OFFSET_X, height - 2, pos['y'] + HEX_CENTER_OFFSET_Y);
     new_city.rotateOnAxis(new THREE.Vector3(0,1,0).normalize(), (2 * Math.PI * Math.random()));
 
     if (scene != null) {
@@ -227,7 +236,7 @@ function update_city_position(ptile) {
     if (scene != null && pcity['walls'] && city_walls_positions[ptile['index']] == null) {
       let city_walls = webgl_get_model(get_citywalls_models(pcity), ptile);
       if (city_walls != null) {
-        city_walls.position.set(pos['x'] - 11, height - 6, pos['y'] - 11);
+        city_walls.position.set(pos['x'] + HEX_CENTER_OFFSET_X + 1, height - 6, pos['y'] + HEX_CENTER_OFFSET_Y);
         city_walls.scale.x = city_walls.scale.y = city_walls.scale.z = get_citywalls_scale(pcity);
         city_walls.name = "CityWalls_" + pcity['id'];
         scene.add(city_walls);
@@ -237,7 +246,7 @@ function update_city_position(ptile) {
 
     let city_label = create_city_label_sprite(pcity, 0);
     city_label_positions[ptile['index']] = city_label;
-    city_label.position.set(pos['x'] + 10 , height + 27, pos['y'] - 25);
+    city_label.position.set(pos['x'] + HEX_CENTER_OFFSET_X + 22, height + 27, pos['y'] + HEX_CENTER_OFFSET_Y - 13);
 
     pcity['webgl_label_hash'] = pcity['name'] + pcity['size'] + pcity['production_value'] + "." + pcity['production_kind'] + punits.length + pcity['nation_id'];
     if (scene != null) {
@@ -248,7 +257,7 @@ function update_city_position(ptile) {
     add_city_buildings(ptile, pcity, scene);
 
     if (scene != null && city_light_positions[ptile['index']] == null ) {
-      let city_light = add_city_lights(pos['x'], pos['y'], height);
+      let city_light = add_city_lights(pos['x'] + HEX_CENTER_OFFSET_X + 12, pos['y'] + HEX_CENTER_OFFSET_Y + 2, height);
       city_light_positions[ptile['index']] = city_light;
     }
     return;
@@ -273,7 +282,7 @@ function update_city_position(ptile) {
       if (pcity['style'] == 4) height -= 1;
       if (pcity['style'] == 9) height -= 1;
 
-      new_city.position.set(pos['x'] - 12, height - 2, pos['y'] - 10);
+      new_city.position.set(pos['x'] + HEX_CENTER_OFFSET_X, height - 2, pos['y'] + HEX_CENTER_OFFSET_Y + 1);
       new_city.rotateOnAxis(new THREE.Vector3(0,1,0).normalize(), (2 * Math.PI * Math.random()));
 
       if (scene != null) {
@@ -292,7 +301,7 @@ function update_city_position(ptile) {
     if (scene != null && pcity['walls'] && city_walls_positions[ptile['index']] == null) {
       let city_walls = webgl_get_model(get_citywalls_models(pcity), ptile);
       if (city_walls != null) {
-        city_walls.position.set(pos['x'] - 11, height - 6, pos['y'] - 11);
+        city_walls.position.set(pos['x'] + HEX_CENTER_OFFSET_X + 1, height - 6, pos['y'] + HEX_CENTER_OFFSET_Y);
         city_walls.scale.x = city_walls.scale.y = city_walls.scale.z = get_citywalls_scale(pcity);
         city_walls.name = "CityWalls_" + pcity['id'];
         scene.add(city_walls);
@@ -303,7 +312,7 @@ function update_city_position(ptile) {
     add_city_buildings(ptile, pcity, scene);
 
     if (scene != null && city_light_positions[ptile['index']] == null) {
-      let city_light = add_city_lights(pos['x'], pos['y'], height);
+      let city_light = add_city_lights(pos['x'] + HEX_CENTER_OFFSET_X + 12, pos['y'] + HEX_CENTER_OFFSET_Y + 2, height);
       city_light_positions[ptile['index']] = city_light;
     }
 
@@ -318,7 +327,7 @@ function update_city_position(ptile) {
   if (scene != null && pcity != null) {
     if (city_disorder_positions[ptile['index']] == null && pcity['unhappy']) {
         let city_disorder_sprite = create_city_disorder_sprite();
-        city_disorder_sprite.position.set(pos['x'] - 5, height + 14, pos['y'] - 10);
+        city_disorder_sprite.position.set(pos['x'] + HEX_CENTER_OFFSET_X + 7, height + 14, pos['y'] + HEX_CENTER_OFFSET_Y + 2);
         city_disorder_sprite.name = "CityDisorder_" + pcity['id'];
         scene.add(city_disorder_sprite);
         city_disorder_positions[ptile['index']] = city_disorder_sprite;
@@ -714,9 +723,10 @@ function update_tile_extra_update_model(extra_type, extra_name, ptile)
 
       tile_extra_positions_list[extra_type + "." + ptile['index']] = [];
       let pos = map_to_scene_coords(ptile['x'], ptile['y']);
-      model.position.set( pos['x'] - 10 + (num_models == 1 ? 0 : (12 - Math.floor(Math.random() * 25))),
+      // Center tile extras within hexagonal tiles using HEX_CENTER_OFFSET
+      model.position.set( pos['x'] + HEX_CENTER_OFFSET_X + 2 + (num_models == 1 ? 0 : (12 - Math.floor(Math.random() * 25))),
                          height + 1,
-                         pos['y'] - 10 + (num_models == 1 ? 0 : (12 - Math.floor(Math.random() * 25))));
+                         pos['y'] + HEX_CENTER_OFFSET_Y + 2 + (num_models == 1 ? 0 : (12 - Math.floor(Math.random() * 25))));
       model.rotateOnAxis(new THREE.Vector3(0,1,0).normalize(), (2 * Math.PI * Math.random()));
       if (extra_name == "Furs" || extra_name == "Resources") {
         model.rotateOnAxis(new THREE.Vector3(1,0,0).normalize(), -1 * (Math.PI  / 2));
@@ -751,9 +761,10 @@ function update_tile_cactus(ptile)
     let modelname = "Cactus1";
     let model = webgl_get_model(modelname, ptile);
     let pos = map_to_scene_coords(ptile['x'], ptile['y']);
-    model.translateOnAxis(new THREE.Vector3(1,0,0).normalize(), pos['x'] - 10 + (15 - Math.floor(Math.random() * 30)));
+    // Center cactus within hexagonal tiles using HEX_CENTER_OFFSET
+    model.translateOnAxis(new THREE.Vector3(1,0,0).normalize(), pos['x'] + HEX_CENTER_OFFSET_X + 2 + (15 - Math.floor(Math.random() * 30)));
     model.translateOnAxis(new THREE.Vector3(0,1,0).normalize(), height);
-    model.translateOnAxis(new THREE.Vector3(0,0,1).normalize(), pos['y'] - 10 + (15 - Math.floor(Math.random() * 30)));
+    model.translateOnAxis(new THREE.Vector3(0,0,1).normalize(), pos['y'] + HEX_CENTER_OFFSET_Y + 2 + (15 - Math.floor(Math.random() * 30)));
     model.rotateOnAxis(new THREE.Vector3(0,1,0).normalize(), (2 * Math.PI * Math.random()));
     tile_models_list[ptile['index']].push(model);
     if (scene != null) {
@@ -814,9 +825,72 @@ function add_city_lights(x, y, height) {
   let sprite = new THREE.Sprite( new THREE.SpriteMaterial( { map: texture}));
   sprite.scale.set(30, 30, 1);
   sprite.renderOrder = 0.1;
-  sprite.position.set(x - 10, height + 3, y - 10);
+  // x and y are already hex-centered from the caller
+  sprite.position.set(x, height + 3, y);
   sprite.name = "CityLightSprite";
   scene.add(sprite);
   return sprite;
 
+}
+
+/****************************************************************************
+  Creates a hexagonal ring geometry for the selected unit indicator.
+  
+  Creates a pointy-top hexagon shape (matching the hex tile orientation).
+  The hexagon is a ring with inner and outer radii.
+  
+  @param {number} innerRadius - Inner radius of the hex ring
+  @param {number} outerRadius - Outer radius of the hex ring
+  @returns {THREE.BufferGeometry} Hexagonal ring geometry
+****************************************************************************/
+function createHexagonGeometry(innerRadius, outerRadius) {
+  const geometry = new THREE.BufferGeometry();
+  const vertices = [];
+  const indices = [];
+  
+  // 6 vertices for a hexagon, but we need inner and outer rings
+  // Pointy-top hexagon: vertices at 30°, 90°, 150°, 210°, 270°, 330°
+  const numSides = 6;
+  const angleOffset = Math.PI / 6; // 30 degrees to make it pointy-top
+  
+  // Create vertices for outer and inner hexagon
+  for (let i = 0; i < numSides; i++) {
+    const angle = (i * 2 * Math.PI / numSides) + angleOffset;
+    
+    // Outer vertex
+    vertices.push(
+      Math.cos(angle) * outerRadius,
+      Math.sin(angle) * outerRadius,
+      0
+    );
+    
+    // Inner vertex
+    vertices.push(
+      Math.cos(angle) * innerRadius,
+      Math.sin(angle) * innerRadius,
+      0
+    );
+  }
+  
+  // Create triangles for the ring
+  // Each segment of the ring needs 2 triangles
+  for (let i = 0; i < numSides; i++) {
+    const outerCurrent = i * 2;
+    const innerCurrent = i * 2 + 1;
+    const outerNext = ((i + 1) % numSides) * 2;
+    const innerNext = ((i + 1) % numSides) * 2 + 1;
+    
+    // Triangle 1: outer-current, inner-current, outer-next
+    indices.push(outerCurrent, innerCurrent, outerNext);
+    
+    // Triangle 2: inner-current, inner-next, outer-next
+    indices.push(innerCurrent, innerNext, outerNext);
+  }
+  
+  geometry.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
+  geometry.setIndex(indices);
+  geometry.computeVertexNormals();
+  geometry.name = "HexagonRingGeometry";
+  
+  return geometry;
 }
