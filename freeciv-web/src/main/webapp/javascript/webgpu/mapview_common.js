@@ -105,8 +105,8 @@ function init_land_geometry(geometry, mesh_quality)
 
   // Create vertices for hexagonal grid
   for ( let iy = 0; iy < gridY1; iy ++ ) {
-    // Apply hex row offset for odd rows (staggered grid)
-    const rowOffset = (iy % 2 === 1) ? segment_width * HEX_STAGGER : 0;
+    // Apply hex row offset for even rows (even-r staggered grid)
+    const rowOffset = (iy % 2 === 0) ? segment_width * HEX_STAGGER : 0;
     const y = iy * segment_height - height_half;
     
     for ( let ix = 0; ix < gridX1; ix ++ ) {
@@ -120,9 +120,9 @@ function init_land_geometry(geometry, mesh_quality)
       vertices.push( x, -y, height_value );
       
       // UV coordinates for hex sampling
-      // Add hex stagger to UV for odd rows - the shader will subtract this
+      // Add hex stagger to UV for even rows - the shader will subtract this
       // to get the correct tile position for terrain texture lookup
-      const uvX = (ix + (iy % 2 === 1 ? HEX_STAGGER : 0)) / gridX;
+      const uvX = (ix + (iy % 2 === 0 ? HEX_STAGGER : 0)) / gridX;
       uvs.push( uvX );
       uvs.push( 1 - ( iy / gridY ) );
     }
@@ -186,8 +186,8 @@ function update_land_geometry(geometry, mesh_quality) {
   const bufferAttribute = mesh_quality === 2 ? lofibufferattribute : landbufferattribute;
 
   for (let iy = 0; iy <= gridY; iy++) {
-    // Apply hex row offset for odd rows (staggered grid)
-    const rowOffset = (iy % 2 === 1) ? segment_width * HEX_STAGGER : 0;
+    // Apply hex row offset for even rows (even-r staggered grid)
+    const rowOffset = (iy % 2 === 0) ? segment_width * HEX_STAGGER : 0;
     const y = iy * segment_height - height_half;
     
     for (let ix = 0; ix <= gridX; ix++) {

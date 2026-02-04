@@ -213,24 +213,9 @@ function is_cardinal_dir(dir)
 
 /****************************************************************************
   Return the tile for the given cartesian (map) position.
-  Handles map wrapping if enabled, returns null if position is invalid.
 ****************************************************************************/
 function map_pos_to_tile(x, y)
 {
-  // Handle wrapping in X direction if enabled
-  if (wrap_has_flag(WRAP_X)) {
-    x = ((x % map['xsize']) + map['xsize']) % map['xsize'];
-  } else if (x < 0 || x >= map['xsize']) {
-    return null;
-  }
-  
-  // Handle wrapping in Y direction if enabled
-  if (wrap_has_flag(WRAP_Y)) {
-    y = ((y % map['ysize']) + map['ysize']) % map['ysize'];
-  } else if (y < 0 || y >= map['ysize']) {
-    return null;
-  }
-  
   return tiles[x + y * map['xsize']];
 }
 
