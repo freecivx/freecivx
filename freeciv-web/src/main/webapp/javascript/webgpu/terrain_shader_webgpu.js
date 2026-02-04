@@ -396,51 +396,13 @@ function createTerrainShaderTSL(uniforms) {
         finalColor.a
     );
 
-    // Apply vertex color for fog/visibility effects with hexagonal masking
+    // Apply vertex color for fog/visibility effects
     // Vertex color is stored in the vertColor attribute and represents visibility/fog of war
     // vertColor.x = 0.0 means unknown (black)
     // vertColor.x = 0.54 means unseen but known (fogged)
     // vertColor.x = 1.06 means fully visible
     // We use only the x component as that's where the visibility value is stored
-    
-    // For unknown tiles (vertColor.x near 0), apply hexagonal masking to prevent
-    // rectangular borders. Pixels outside the hex boundary at corners should not
-    // render as solid black.
-    //
-    // Reference: https://www.redblobgames.com/grids/hexagons/
-    // A point is inside a flat-top hex if hexDist < hexInradius (0.5)
-    
-    // Calculate hex interior mask: 1.0 if inside hex, smooth falloff at edges
-    // Use a smooth transition to avoid aliasing at hex boundaries
-    const HEX_UNKNOWN_EDGE_SOFTNESS = 0.02;  // Edge anti-aliasing for fog of war / unknown tiles
-    const hexInteriorDist = sub(0.5, hexDist);  // Positive inside hex, negative outside
-    const hexInteriorMask = clamp(div(hexInteriorDist, HEX_UNKNOWN_EDGE_SOFTNESS), 0.0, 1.0);
-    
-    // Check if this is an unknown tile (visibility near 0)
-    const isUnknown = step(vertColor.x, 0.1);
-    
-    // For unknown tiles, we want to show dark color inside hex only
-    // Outside the hex boundary, blend toward a neutral dark color to avoid blocky corners
-    const unknownDarkColor = vec3(0.05, 0.05, 0.05);  // Very dark color for unknown areas
-    
-    // Apply hexagonal masking for unknown tiles:
-    // - Inside hex: render as dark (unknown)
-    // - Outside hex corners: use edge color to blend with adjacent tiles
-    const hexMaskedVisibility = mix(
-        vertColor.x,  // Normal visibility for known/visible tiles
-        mul(hexInteriorMask, 0.08),  // Hex-masked dark for unknown tiles (0.08 gives slight visibility)
-        isUnknown
-    );
-    
-    // Apply the visibility/fog effect
-    finalColor = vec4(mul(finalColor.rgb, hexMaskedVisibility), finalColor.a);
-    
-    // For unknown tiles outside hex boundary, blend to edge color to smooth corners
-    const unknownOutsideHex = mul(isUnknown, sub(1.0, hexInteriorMask));
-    finalColor = vec4(
-        mix(finalColor.rgb, hexEdgeColor, unknownOutsideHex),
-        finalColor.a
-    );
+    finalColor = vec4(mul(finalColor.rgb, vertColor.x), finalColor.a);
 
     // Overlay borders if visible
     // Blend border color with terrain color at low opacity for subtle borders
