@@ -136,6 +136,329 @@ function stopHexDebug() {
 }
 
 /**
+ * Log detailed tile rendering information for a specific tile
+ * Call from browser console: hexLogTile(x, y)
+ */
+function hexLogTile(tileX, tileY) {
+  if (typeof map === 'undefined' || !map) {
+    console.log('[HEX-DEBUG] Map not available');
+    return null;
+  }
+  
+  var isHex = typeof topo_has_flag !== 'undefined' && topo_has_flag(TF_HEX);
+  var isIso = typeof topo_has_flag !== 'undefined' && topo_has_flag(TF_ISO);
+  
+  var tileWidth = mapview_model_width / map['xsize'];
+  var tileHeight = (mapview_model_height / map['ysize']) * (typeof HEX_HEIGHT_FACTOR !== 'undefined' ? HEX_HEIGHT_FACTOR : 1);
+  
+  var sceneCoords = map_to_scene_coords(tileX, tileY);
+  var backToMap = scene_to_map_coords(sceneCoords.x, sceneCoords.y);
+  
+  var ptile = map_pos_to_tile(tileX, tileY);
+  var tileInfo = null;
+  if (ptile) {
+    tileInfo = {
+      index: ptile.index,
+      terrain: typeof tile_terrain !== 'undefined' && tile_terrain(ptile) ? tile_terrain(ptile).name : 'unknown',
+      known: typeof tile_get_known !== 'undefined' ? tile_get_known(ptile) : 'unknown',
+      hasUnits: typeof tile_units !== 'undefined' && tile_units(ptile) ? tile_units(ptile).length : 0,
+      hasCity: typeof tile_city !== 'undefined' && tile_city(ptile) ? true : false
+    };
+  }
+  
+  var data = {
+    tileCoords: { x: tileX, y: tileY },
+    isOddRow: tileY % 2 === 1,
+    hexRowOffset: (tileY % 2 === 1) ? tileWidth * (typeof HEX_STAGGER !== 'undefined' ? HEX_STAGGER : 0.5) : 0,
+    tileDimensions: { width: tileWidth.toFixed(2), height: tileHeight.toFixed(2) },
+    sceneCoords: { x: sceneCoords.x, y: sceneCoords.y },
+    tileCenterScene: {
+      x: (sceneCoords.x + tileWidth / 2).toFixed(2),
+      y: (sceneCoords.y + tileHeight / 2).toFixed(2)
+    },
+    roundTripMap: { x: backToMap.x, y: backToMap.y },
+    roundTripMatch: (backToMap.x === tileX && backToMap.y === tileY),
+    topology: { isHex: isHex, isIso: isIso },
+    tileData: tileInfo
+  };
+  
+  console.log('╔════════════════════════════════════════════════════════════╗');
+  console.log('║ TILE DEBUG INFO: (' + tileX + ', ' + tileY + ')' + ' '.repeat(Math.max(0, 40 - (tileX + '').length - (tileY + '').length)) + '║');
+  console.log('╠════════════════════════════════════════════════════════════╣');
+  console.log('║ Odd Row: ' + data.isOddRow + ', Hex Offset: ' + data.hexRowOffset.toFixed(2));
+  console.log('║ Tile Size: ' + data.tileDimensions.width + ' x ' + data.tileDimensions.height + ' units');
+  console.log('║ Scene Position: (' + data.sceneCoords.x + ', ' + data.sceneCoords.y + ')');
+  console.log('║ Tile Center: (' + data.tileCenterScene.x + ', ' + data.tileCenterScene.y + ')');
+  console.log('║ Round-Trip Match: ' + data.roundTripMatch);
+  if (!data.roundTripMatch) {
+    console.log('║ ⚠️  ERROR: Round-trip returned (' + backToMap.x + ', ' + backToMap.y + ')');
+  }
+  if (tileInfo) {
+    console.log('║ Terrain: ' + tileInfo.terrain + ', Known: ' + tileInfo.known);
+    console.log('║ Units: ' + tileInfo.hasUnits + ', City: ' + tileInfo.hasCity);
+  }
+  console.log('╚════════════════════════════════════════════════════════════╝');
+  
+  hexLog('TILE-DEBUG', 'Tile detailed info', data);
+  return data;
+}
+
+/**
+ * Log hex neighbor calculations for a specific tile
+ * Call from browser console: hexLogNeighbors(x, y)
+ */
+function hexLogNeighbors(tileX, tileY) {
+  if (typeof map === 'undefined' || !map) {
+    console.log('[HEX-DEBUG] Map not available');
+    return null;
+  }
+  
+  var isHex = typeof topo_has_flag !== 'undefined' && topo_has_flag(TF_HEX);
+  var isIso = typeof topo_has_flag !== 'undefined' && topo_has_flag(TF_ISO);
+  var isOddRow = tileY % 2 === 1;
+  
+  // Calculate neighbor positions based on hex topology
+  var neighbors = [];
+  
+  if (isHex && !isIso) {
+    // Pure hex: N, S, E, W, NE, SW
+    var neighborDeltas = [
+      { name: 'N', dx: 0, dy: -1 },
+      { name: 'S', dx: 0, dy: 1 },
+      { name: 'E', dx: 1, dy: 0 },
+      { name: 'W', dx: -1, dy: 0 },
+      { name: 'NE', dx: isOddRow ? 1 : 0, dy: -1 },
+      { name: 'SW', dx: isOddRow ? 0 : -1, dy: 1 }
+    ];
+    neighbors = neighborDeltas;
+  } else if (isHex && isIso) {
+    // Iso-hex: N, S, E, W, NW, SE  
+    var neighborDeltas = [
+      { name: 'N', dx: 0, dy: -1 },
+      { name: 'S', dx: 0, dy: 1 },
+      { name: 'E', dx: 1, dy: 0 },
+      { name: 'W', dx: -1, dy: 0 },
+      { name: 'NW', dx: isOddRow ? 0 : -1, dy: -1 },
+      { name: 'SE', dx: isOddRow ? 1 : 0, dy: 1 }
+    ];
+    neighbors = neighborDeltas;
+  } else {
+    // Square: All 8 directions
+    var neighborDeltas = [
+      { name: 'N', dx: 0, dy: -1 },
+      { name: 'S', dx: 0, dy: 1 },
+      { name: 'E', dx: 1, dy: 0 },
+      { name: 'W', dx: -1, dy: 0 },
+      { name: 'NE', dx: 1, dy: -1 },
+      { name: 'NW', dx: -1, dy: -1 },
+      { name: 'SE', dx: 1, dy: 1 },
+      { name: 'SW', dx: -1, dy: 1 }
+    ];
+    neighbors = neighborDeltas;
+  }
+  
+  console.log('╔════════════════════════════════════════════════════════════╗');
+  console.log('║ NEIGHBOR DEBUG INFO: Tile (' + tileX + ', ' + tileY + ')' + ' '.repeat(Math.max(0, 33 - (tileX + '').length - (tileY + '').length)) + '║');
+  console.log('╠════════════════════════════════════════════════════════════╣');
+  console.log('║ Topology: ' + (isHex ? (isIso ? 'Iso-Hex' : 'Pure-Hex') : 'Square'));
+  console.log('║ Row Type: ' + (isOddRow ? 'Odd (staggered)' : 'Even'));
+  console.log('║');
+  console.log('║ NEIGHBORS:');
+  
+  var neighborData = [];
+  for (var i = 0; i < neighbors.length; i++) {
+    var n = neighbors[i];
+    var nx = tileX + n.dx;
+    var ny = tileY + n.dy;
+    var valid = nx >= 0 && nx < map.xsize && ny >= 0 && ny < map.ysize;
+    var scenePos = valid ? map_to_scene_coords(nx, ny) : null;
+    
+    console.log('║   ' + n.name.padEnd(3) + ': (' + nx + ', ' + ny + ')' + 
+      (valid ? ' Scene: (' + scenePos.x + ', ' + scenePos.y + ')' : ' [out of bounds]'));
+    
+    neighborData.push({
+      direction: n.name,
+      tileCoords: { x: nx, y: ny },
+      valid: valid,
+      scenePos: scenePos
+    });
+  }
+  
+  console.log('╚════════════════════════════════════════════════════════════╝');
+  
+  hexLog('NEIGHBORS-DEBUG', 'Neighbor calculations', {
+    centerTile: { x: tileX, y: tileY },
+    isOddRow: isOddRow,
+    topology: isHex ? (isIso ? 'iso-hex' : 'pure-hex') : 'square',
+    neighbors: neighborData
+  });
+  
+  return neighborData;
+}
+
+/**
+ * Log click-to-tile conversion for debugging mouse interaction
+ * Call from browser console: hexLogClick(canvasX, canvasY)
+ */
+function hexLogClick(canvasX, canvasY) {
+  if (typeof map === 'undefined' || !map || typeof mouse === 'undefined') {
+    console.log('[HEX-DEBUG] Map or mouse not available');
+    return null;
+  }
+  
+  console.log('╔════════════════════════════════════════════════════════════╗');
+  console.log('║ CLICK-TO-TILE DEBUG: Canvas (' + canvasX + ', ' + canvasY + ')' + ' '.repeat(Math.max(0, 27 - (canvasX + '').length - (canvasY + '').length)) + '║');
+  console.log('╠════════════════════════════════════════════════════════════╣');
+  
+  // Try to get the tile using the raycast method
+  var tile = null;
+  if (typeof webgl_canvas_pos_to_tile !== 'undefined') {
+    tile = webgl_canvas_pos_to_tile(canvasX, canvasY);
+  }
+  
+  if (tile) {
+    console.log('║ Result Tile: (' + tile.x + ', ' + tile.y + ') Index: ' + tile.index);
+    
+    // Get more info about the tile
+    var sceneCoords = map_to_scene_coords(tile.x, tile.y);
+    console.log('║ Tile Scene Position: (' + sceneCoords.x + ', ' + sceneCoords.y + ')');
+    
+    if (typeof tile_terrain !== 'undefined' && tile_terrain(tile)) {
+      console.log('║ Terrain: ' + tile_terrain(tile).name);
+    }
+    
+    hexLog('CLICK-DEBUG', 'Click to tile conversion', {
+      canvasPos: { x: canvasX, y: canvasY },
+      tileResult: { x: tile.x, y: tile.y, index: tile.index },
+      scenePos: sceneCoords
+    });
+  } else {
+    console.log('║ Result: No tile found at this position');
+    hexLog('CLICK-DEBUG', 'Click to tile - no tile found', {
+      canvasPos: { x: canvasX, y: canvasY }
+    });
+  }
+  
+  console.log('╚════════════════════════════════════════════════════════════╝');
+  
+  return tile;
+}
+
+/**
+ * Log rendering constants and verify they are correct for hex maps
+ * Call from browser console: hexLogRenderingConstants()
+ */
+function hexLogRenderingConstants() {
+  console.log('╔════════════════════════════════════════════════════════════╗');
+  console.log('║ HEX RENDERING CONSTANTS VERIFICATION                       ║');
+  console.log('╠════════════════════════════════════════════════════════════╣');
+  
+  var expected = {
+    HEX_HEIGHT_FACTOR: Math.sqrt(3) / 2, // ~0.866
+    HEX_STAGGER: 0.5
+  };
+  
+  var actual = {
+    HEX_HEIGHT_FACTOR: typeof HEX_HEIGHT_FACTOR !== 'undefined' ? HEX_HEIGHT_FACTOR : undefined,
+    HEX_STAGGER: typeof HEX_STAGGER !== 'undefined' ? HEX_STAGGER : undefined,
+    HEX_CENTER_OFFSET_X: typeof HEX_CENTER_OFFSET_X !== 'undefined' ? HEX_CENTER_OFFSET_X : undefined,
+    HEX_CENTER_OFFSET_Y: typeof HEX_CENTER_OFFSET_Y !== 'undefined' ? HEX_CENTER_OFFSET_Y : undefined,
+    MAP_X_OFFSET: MAP_X_OFFSET,
+    MAP_Y_OFFSET: MAP_Y_OFFSET
+  };
+  
+  console.log('║');
+  console.log('║ HEX_HEIGHT_FACTOR:');
+  console.log('║   Actual: ' + (actual.HEX_HEIGHT_FACTOR !== undefined ? actual.HEX_HEIGHT_FACTOR.toFixed(6) : 'UNDEFINED'));
+  console.log('║   Expected: ' + expected.HEX_HEIGHT_FACTOR.toFixed(6) + ' (sqrt(3)/2)');
+  console.log('║   Match: ' + (actual.HEX_HEIGHT_FACTOR !== undefined && Math.abs(actual.HEX_HEIGHT_FACTOR - expected.HEX_HEIGHT_FACTOR) < 0.0001 ? '✓' : '✗'));
+  console.log('║');
+  console.log('║ HEX_STAGGER:');
+  console.log('║   Actual: ' + (actual.HEX_STAGGER !== undefined ? actual.HEX_STAGGER : 'UNDEFINED'));
+  console.log('║   Expected: ' + expected.HEX_STAGGER);
+  console.log('║   Match: ' + (actual.HEX_STAGGER === expected.HEX_STAGGER ? '✓' : '✗'));
+  console.log('║');
+  console.log('║ HEX_CENTER_OFFSET_X: ' + (actual.HEX_CENTER_OFFSET_X !== undefined ? actual.HEX_CENTER_OFFSET_X : 'UNDEFINED'));
+  console.log('║ HEX_CENTER_OFFSET_Y: ' + (actual.HEX_CENTER_OFFSET_Y !== undefined ? actual.HEX_CENTER_OFFSET_Y : 'UNDEFINED'));
+  console.log('║ MAP_X_OFFSET: ' + actual.MAP_X_OFFSET);
+  console.log('║ MAP_Y_OFFSET: ' + actual.MAP_Y_OFFSET);
+  
+  if (typeof map !== 'undefined' && map) {
+    var tileWidth = mapview_model_width / map.xsize;
+    var tileHeight = (mapview_model_height / map.ysize) * (actual.HEX_HEIGHT_FACTOR || 1);
+    console.log('║');
+    console.log('║ CALCULATED TILE DIMENSIONS:');
+    console.log('║   Tile Width: ' + tileWidth.toFixed(4) + ' units');
+    console.log('║   Tile Height: ' + tileHeight.toFixed(4) + ' units');
+    console.log('║   Aspect Ratio: ' + (tileWidth / tileHeight).toFixed(4));
+    console.log('║   Expected Hex Ratio: ' + (2 / Math.sqrt(3)).toFixed(4) + ' (2/sqrt(3))');
+  }
+  
+  console.log('╚════════════════════════════════════════════════════════════╝');
+  
+  hexLog('CONSTANTS-DEBUG', 'Rendering constants verification', { expected: expected, actual: actual });
+  
+  return { expected: expected, actual: actual };
+}
+
+/**
+ * Generate a visual hex grid representation showing tile boundaries
+ * Call from browser console: hexLogGrid(startX, startY, width, height)
+ */
+function hexLogGrid(startX, startY, gridWidth, gridHeight) {
+  startX = startX || 0;
+  startY = startY || 0;
+  gridWidth = gridWidth || 8;
+  gridHeight = gridHeight || 6;
+  
+  if (typeof map === 'undefined' || !map) {
+    console.log('[HEX-DEBUG] Map not available');
+    return;
+  }
+  
+  console.log('╔════════════════════════════════════════════════════════════╗');
+  console.log('║ HEX GRID VISUALIZATION                                     ║');
+  console.log('║ Start: (' + startX + ',' + startY + ') Size: ' + gridWidth + 'x' + gridHeight + ' '.repeat(Math.max(0, 30 - (startX + '').length - (startY + '').length - (gridWidth + '').length - (gridHeight + '').length)) + '║');
+  console.log('╠════════════════════════════════════════════════════════════╣');
+  
+  var tileWidth = mapview_model_width / map.xsize;
+  var isHex = typeof topo_has_flag !== 'undefined' && topo_has_flag(TF_HEX);
+  
+  // Create ASCII representation of hex grid
+  for (var y = startY; y < startY + gridHeight && y < map.ysize; y++) {
+    var isOddRow = y % 2 === 1;
+    var indent = isOddRow ? '  ' : '';
+    var line = indent;
+    
+    for (var x = startX; x < startX + gridWidth && x < map.xsize; x++) {
+      var scenePos = map_to_scene_coords(x, y);
+      // Show first digit of X position for quick visual reference
+      var char = (Math.floor(scenePos.x / 100) % 10).toString();
+      
+      if (isHex) {
+        line += ' /' + char + '\\ ';
+      } else {
+        line += '[' + char + ']';
+      }
+    }
+    
+    console.log('║ Row ' + y.toString().padStart(2) + (isOddRow ? ' (odd) ' : ' (even)') + ': ' + line);
+  }
+  
+  console.log('║');
+  console.log('║ Legend: Numbers show scene X position (hundreds digit)');
+  if (isHex) {
+    console.log('║ Hex shape: / \\ shows stagger pattern');
+  }
+  console.log('╚════════════════════════════════════════════════════════════╝');
+  
+  hexLog('GRID-DEBUG', 'Grid visualization', {
+    startX: startX, startY: startY,
+    gridWidth: gridWidth, gridHeight: gridHeight
+  });
+}
+
+/**
  * Test coordinate conversions for a grid of tiles
  */
 function testCoordinateConversions() {
@@ -282,99 +605,126 @@ function generateAsciiMap() {
 /**
  * Capture the game canvas and convert to ASCII art for debugging
  * Call from browser console: captureAsciiScreenshot()
+ * 
+ * For WebGPU/WebGL canvases, we use toDataURL() since direct drawImage doesn't work.
+ * The renderer must be created with preserveDrawingBuffer: true for this to work.
  */
 function captureAsciiScreenshot() {
-  var canvas = document.getElementById('mapcanvas');
+  // Use maprenderer.domElement which is the actual WebGPU/WebGL canvas
+  var canvas = typeof maprenderer !== 'undefined' && maprenderer ? maprenderer.domElement : null;
   if (!canvas) {
-    console.log('[HEX-DEBUG] Canvas not found');
+    console.log('[HEX-DEBUG] WebGPU renderer canvas not found. Is the game loaded?');
     return null;
   }
   
-  // Get the WebGPU/WebGL context and read pixels
   var width = canvas.width;
   var height = canvas.height;
   
-  // Target ASCII dimensions (characters)
-  var asciiWidth = 120;
-  var asciiHeight = 40;
+  // Target ASCII dimensions (characters) - high resolution version
+  var asciiWidth = 160;
+  var asciiHeight = 50;
   
-  // Create a temporary 2D canvas to read pixels
-  var tempCanvas = document.createElement('canvas');
-  tempCanvas.width = asciiWidth;
-  tempCanvas.height = asciiHeight;
-  var ctx = tempCanvas.getContext('2d');
+  console.log('[HEX-DEBUG] Capturing screenshot from WebGPU canvas (' + width + 'x' + height + ')...');
   
-  // Draw the game canvas scaled down to ASCII dimensions
-  ctx.drawImage(canvas, 0, 0, asciiWidth, asciiHeight);
-  
-  // Get pixel data
-  var imageData;
+  // For WebGPU/WebGL canvases, we need to use toDataURL and load as image
+  var dataURL;
   try {
-    imageData = ctx.getImageData(0, 0, asciiWidth, asciiHeight);
+    dataURL = canvas.toDataURL('image/png');
   } catch (e) {
-    console.log('[HEX-DEBUG] Cannot read canvas pixels (CORS or security restriction)');
+    console.log('[HEX-DEBUG] Cannot get canvas data URL: ' + e.message);
     return null;
   }
   
-  var pixels = imageData.data;
-  
-  // ASCII character ramp from dark to light
-  var asciiChars = ' .:-=+*#%@';
-  
-  var asciiLines = [];
-  asciiLines.push('╔' + '═'.repeat(asciiWidth + 2) + '╗');
-  asciiLines.push('║ ASCII SCREENSHOT (' + width + 'x' + height + ' → ' + asciiWidth + 'x' + asciiHeight + ')' + ' '.repeat(Math.max(0, asciiWidth - 45)) + ' ║');
-  asciiLines.push('╠' + '═'.repeat(asciiWidth + 2) + '╣');
-  
-  for (var y = 0; y < asciiHeight; y++) {
-    var line = '║ ';
-    for (var x = 0; x < asciiWidth; x++) {
-      var idx = (y * asciiWidth + x) * 4;
-      var r = pixels[idx];
-      var g = pixels[idx + 1];
-      var b = pixels[idx + 2];
-      var a = pixels[idx + 3];
-      
-      // Calculate brightness (0-255)
-      var brightness = (0.299 * r + 0.587 * g + 0.114 * b) * (a / 255);
-      
-      // Map brightness to ASCII character
-      var charIndex = Math.floor((brightness / 255) * (asciiChars.length - 1));
-      line += asciiChars[charIndex];
+  // Create an image from the data URL and process it asynchronously
+  var img = new Image();
+  img.onload = function() {
+    // Create a temporary 2D canvas to process the image
+    var tempCanvas = document.createElement('canvas');
+    tempCanvas.width = asciiWidth;
+    tempCanvas.height = asciiHeight;
+    var ctx = tempCanvas.getContext('2d');
+    
+    // Draw the image scaled down to ASCII dimensions
+    ctx.drawImage(img, 0, 0, asciiWidth, asciiHeight);
+    
+    // Get pixel data
+    var imageData;
+    try {
+      imageData = ctx.getImageData(0, 0, asciiWidth, asciiHeight);
+    } catch (e) {
+      console.log('[HEX-DEBUG] Cannot read canvas pixels: ' + e.message);
+      return;
     }
-    line += ' ║';
-    asciiLines.push(line);
-  }
-  
-  asciiLines.push('╚' + '═'.repeat(asciiWidth + 2) + '╝');
-  
-  var asciiArt = asciiLines.join('\n');
-  
-  // Store in debug data
-  hexDebugData.screenshotData = {
-    timestamp: Date.now(),
-    originalSize: { width: width, height: height },
-    asciiSize: { width: asciiWidth, height: asciiHeight },
-    ascii: asciiArt
+    
+    var pixels = imageData.data;
+    
+    // Extended ASCII character ramp from dark to light (more detail)
+    var asciiChars = ' .\'`^",:;Il!i><~+_-?][}{1)(|/tfjrxnuvczXYUJCLQ0OZmwqpdbkhao*#MW&8%B@$';
+    
+    var asciiLines = [];
+    asciiLines.push('╔' + '═'.repeat(asciiWidth + 2) + '╗');
+    asciiLines.push('║ HEX MAP ASCII SCREENSHOT (' + width + 'x' + height + ' → ' + asciiWidth + 'x' + asciiHeight + ')' + ' '.repeat(Math.max(0, asciiWidth - 55)) + ' ║');
+    asciiLines.push('╠' + '═'.repeat(asciiWidth + 2) + '╣');
+    
+    for (var y = 0; y < asciiHeight; y++) {
+      var line = '║ ';
+      for (var x = 0; x < asciiWidth; x++) {
+        var idx = (y * asciiWidth + x) * 4;
+        var r = pixels[idx];
+        var g = pixels[idx + 1];
+        var b = pixels[idx + 2];
+        var a = pixels[idx + 3];
+        
+        // Calculate brightness (0-255)
+        var brightness = (0.299 * r + 0.587 * g + 0.114 * b) * (a / 255);
+        
+        // Map brightness to ASCII character
+        var charIndex = Math.floor((brightness / 255) * (asciiChars.length - 1));
+        line += asciiChars[charIndex];
+      }
+      line += ' ║';
+      asciiLines.push(line);
+    }
+    
+    asciiLines.push('╚' + '═'.repeat(asciiWidth + 2) + '╝');
+    
+    var asciiArt = asciiLines.join('\n');
+    
+    // Store in debug data
+    hexDebugData.screenshotData = {
+      timestamp: Date.now(),
+      originalSize: { width: width, height: height },
+      asciiSize: { width: asciiWidth, height: asciiHeight },
+      ascii: asciiArt
+    };
+    
+    console.log('\n' + asciiArt + '\n');
+    hexLog('SCREENSHOT', 'ASCII screenshot captured (high-res)', {
+      originalSize: width + 'x' + height,
+      asciiSize: asciiWidth + 'x' + asciiHeight
+    });
   };
   
-  console.log('\n' + asciiArt + '\n');
-  hexLog('SCREENSHOT', 'ASCII screenshot captured', {
-    originalSize: width + 'x' + height,
-    asciiSize: asciiWidth + 'x' + asciiHeight
-  });
+  img.onerror = function() {
+    console.log('[HEX-DEBUG] Failed to load canvas image data');
+  };
   
-  return asciiArt;
+  img.src = dataURL;
+  
+  return 'Screenshot capture initiated (async). Check console for output.';
 }
 
 /**
  * Capture a smaller, more compact ASCII screenshot
  * Call from browser console: captureAsciiScreenshotCompact()
+ * 
+ * For WebGPU/WebGL canvases, we use toDataURL() since direct drawImage doesn't work.
  */
 function captureAsciiScreenshotCompact() {
-  var canvas = document.getElementById('mapcanvas');
+  // Use maprenderer.domElement which is the actual WebGPU/WebGL canvas
+  var canvas = typeof maprenderer !== 'undefined' && maprenderer ? maprenderer.domElement : null;
   if (!canvas) {
-    console.log('[HEX-DEBUG] Canvas not found');
+    console.log('[HEX-DEBUG] WebGPU renderer canvas not found. Is the game loaded?');
     return null;
   }
   
@@ -382,55 +732,192 @@ function captureAsciiScreenshotCompact() {
   var height = canvas.height;
   
   // Smaller target for compact view
-  var asciiWidth = 60;
-  var asciiHeight = 20;
+  var asciiWidth = 80;
+  var asciiHeight = 25;
   
-  var tempCanvas = document.createElement('canvas');
-  tempCanvas.width = asciiWidth;
-  tempCanvas.height = asciiHeight;
-  var ctx = tempCanvas.getContext('2d');
+  console.log('[HEX-DEBUG] Capturing compact screenshot from WebGPU canvas...');
   
-  ctx.drawImage(canvas, 0, 0, asciiWidth, asciiHeight);
-  
-  var imageData;
+  // For WebGPU/WebGL canvases, we need to use toDataURL and load as image
+  var dataURL;
   try {
-    imageData = ctx.getImageData(0, 0, asciiWidth, asciiHeight);
+    dataURL = canvas.toDataURL('image/png');
   } catch (e) {
-    console.log('[HEX-DEBUG] Cannot read canvas pixels');
+    console.log('[HEX-DEBUG] Cannot get canvas data URL: ' + e.message);
     return null;
   }
   
-  var pixels = imageData.data;
-  
-  // Block characters for more detail
-  var blockChars = ' ░▒▓█';
-  
-  var asciiLines = [];
-  asciiLines.push('┌' + '─'.repeat(asciiWidth) + '┐');
-  
-  for (var y = 0; y < asciiHeight; y++) {
-    var line = '│';
-    for (var x = 0; x < asciiWidth; x++) {
-      var idx = (y * asciiWidth + x) * 4;
-      var r = pixels[idx];
-      var g = pixels[idx + 1];
-      var b = pixels[idx + 2];
-      var a = pixels[idx + 3];
-      
-      var brightness = (0.299 * r + 0.587 * g + 0.114 * b) * (a / 255);
-      var charIndex = Math.floor((brightness / 255) * (blockChars.length - 1));
-      line += blockChars[charIndex];
+  // Create an image from the data URL and process it asynchronously
+  var img = new Image();
+  img.onload = function() {
+    var tempCanvas = document.createElement('canvas');
+    tempCanvas.width = asciiWidth;
+    tempCanvas.height = asciiHeight;
+    var ctx = tempCanvas.getContext('2d');
+    
+    ctx.drawImage(img, 0, 0, asciiWidth, asciiHeight);
+    
+    var imageData;
+    try {
+      imageData = ctx.getImageData(0, 0, asciiWidth, asciiHeight);
+    } catch (e) {
+      console.log('[HEX-DEBUG] Cannot read canvas pixels: ' + e.message);
+      return;
     }
-    line += '│';
-    asciiLines.push(line);
+    
+    var pixels = imageData.data;
+    
+    // Block characters for more detail
+    var blockChars = ' ░▒▓█';
+    
+    var asciiLines = [];
+    asciiLines.push('┌─ HEX MAP COMPACT (' + width + 'x' + height + ') ' + '─'.repeat(Math.max(0, asciiWidth - 30)) + '┐');
+    
+    for (var y = 0; y < asciiHeight; y++) {
+      var line = '│';
+      for (var x = 0; x < asciiWidth; x++) {
+        var idx = (y * asciiWidth + x) * 4;
+        var r = pixels[idx];
+        var g = pixels[idx + 1];
+        var b = pixels[idx + 2];
+        var a = pixels[idx + 3];
+        
+        var brightness = (0.299 * r + 0.587 * g + 0.114 * b) * (a / 255);
+        var charIndex = Math.floor((brightness / 255) * (blockChars.length - 1));
+        line += blockChars[charIndex];
+      }
+      line += '│';
+      asciiLines.push(line);
+    }
+    
+    asciiLines.push('└' + '─'.repeat(asciiWidth) + '┘');
+    
+    var asciiArt = asciiLines.join('\n');
+    console.log('\n' + asciiArt + '\n');
+    
+    hexLog('SCREENSHOT-COMPACT', 'Compact ASCII screenshot captured', {
+      originalSize: width + 'x' + height,
+      asciiSize: asciiWidth + 'x' + asciiHeight
+    });
+  };
+  
+  img.onerror = function() {
+    console.log('[HEX-DEBUG] Failed to load canvas image data');
+  };
+  
+  img.src = dataURL;
+  
+  return 'Compact screenshot capture initiated (async). Check console for output.';
+}
+
+/**
+ * Capture a high-resolution ASCII screenshot with color approximation
+ * Call from browser console: captureAsciiScreenshotHiRes()
+ * 
+ * This version uses a larger character set and higher resolution for better detail.
+ */
+function captureAsciiScreenshotHiRes() {
+  // Use maprenderer.domElement which is the actual WebGPU/WebGL canvas
+  var canvas = typeof maprenderer !== 'undefined' && maprenderer ? maprenderer.domElement : null;
+  if (!canvas) {
+    console.log('[HEX-DEBUG] WebGPU renderer canvas not found. Is the game loaded?');
+    return null;
   }
   
-  asciiLines.push('└' + '─'.repeat(asciiWidth) + '┘');
+  var width = canvas.width;
+  var height = canvas.height;
   
-  var asciiArt = asciiLines.join('\n');
-  console.log('\n' + asciiArt + '\n');
+  // High resolution target (200x60 characters)
+  var asciiWidth = 200;
+  var asciiHeight = 60;
   
-  return asciiArt;
+  console.log('[HEX-DEBUG] Capturing high-res screenshot from WebGPU canvas (' + width + 'x' + height + ')...');
+  
+  // For WebGPU/WebGL canvases, we need to use toDataURL and load as image
+  var dataURL;
+  try {
+    dataURL = canvas.toDataURL('image/png');
+  } catch (e) {
+    console.log('[HEX-DEBUG] Cannot get canvas data URL: ' + e.message);
+    return null;
+  }
+  
+  // Create an image from the data URL and process it asynchronously
+  var img = new Image();
+  img.onload = function() {
+    var tempCanvas = document.createElement('canvas');
+    tempCanvas.width = asciiWidth;
+    tempCanvas.height = asciiHeight;
+    var ctx = tempCanvas.getContext('2d');
+    
+    ctx.drawImage(img, 0, 0, asciiWidth, asciiHeight);
+    
+    var imageData;
+    try {
+      imageData = ctx.getImageData(0, 0, asciiWidth, asciiHeight);
+    } catch (e) {
+      console.log('[HEX-DEBUG] Cannot read canvas pixels: ' + e.message);
+      return;
+    }
+    
+    var pixels = imageData.data;
+    
+    // Extended character set for maximum detail (dark to light)
+    var asciiChars = ' .\'`^",:;Il!i><~+_-?][}{1)(|/tfjrxnuvczXYUJCLQ0OZmwqpdbkhao*#MW&8%B@$';
+    
+    var asciiLines = [];
+    // Use repeat method for consistent border width
+    asciiLines.push('╔' + '═'.repeat(asciiWidth + 2) + '╗');
+    var titleLine = '║ HIGH-RES HEX MAP ASCII SCREENSHOT (' + width + 'x' + height + ' → ' + asciiWidth + 'x' + asciiHeight + ')';
+    asciiLines.push(titleLine + ' '.repeat(Math.max(0, asciiWidth - titleLine.length + 3)) + '║');
+    asciiLines.push('╠' + '═'.repeat(asciiWidth + 2) + '╣');
+    
+    for (var y = 0; y < asciiHeight; y++) {
+      var line = '║ ';
+      for (var x = 0; x < asciiWidth; x++) {
+        var idx = (y * asciiWidth + x) * 4;
+        var r = pixels[idx];
+        var g = pixels[idx + 1];
+        var b = pixels[idx + 2];
+        var a = pixels[idx + 3];
+        
+        // Calculate brightness with gamma correction for better visual output
+        var brightness = Math.pow((0.299 * r + 0.587 * g + 0.114 * b) / 255, 0.8) * 255 * (a / 255);
+        
+        // Map brightness to ASCII character
+        var charIndex = Math.floor((brightness / 255) * (asciiChars.length - 1));
+        line += asciiChars[charIndex];
+      }
+      line += ' ║';
+      asciiLines.push(line);
+    }
+    
+    asciiLines.push('╚' + '═'.repeat(asciiWidth + 2) + '╝');
+    
+    var asciiArt = asciiLines.join('\n');
+    
+    // Store in debug data
+    hexDebugData.screenshotData = {
+      timestamp: Date.now(),
+      originalSize: { width: width, height: height },
+      asciiSize: { width: asciiWidth, height: asciiHeight },
+      ascii: asciiArt,
+      type: 'high-res'
+    };
+    
+    console.log('\n' + asciiArt + '\n');
+    hexLog('SCREENSHOT-HIRES', 'High-resolution ASCII screenshot captured', {
+      originalSize: width + 'x' + height,
+      asciiSize: asciiWidth + 'x' + asciiHeight
+    });
+  };
+  
+  img.onerror = function() {
+    console.log('[HEX-DEBUG] Failed to load canvas image data');
+  };
+  
+  img.src = dataURL;
+  
+  return 'High-res screenshot capture initiated (async). Check console for output.';
 }
 
 /**
@@ -524,10 +1011,26 @@ function hexDebugSummary() {
   console.log('║   [ ] Click-to-tile mapping incorrect');
   console.log('║   [ ] Goto path rendering issues');
   
+  console.log('╠════════════════════════════════════════════════════════════════════╣');
+  
+  // Available Debug Functions
+  console.log('║ AVAILABLE DEBUG FUNCTIONS                                          ║');
+  console.log('║   startHexDebug()              - Run automated debug session       ║');
+  console.log('║   stopHexDebug()               - End debug session                 ║');
+  console.log('║   hexDebugSummary()            - Show this summary                 ║');
+  console.log('║   captureAsciiScreenshot()     - Standard ASCII screenshot (160x50)║');
+  console.log('║   captureAsciiScreenshotCompact() - Compact screenshot (80x25)     ║');
+  console.log('║   captureAsciiScreenshotHiRes() - High-res screenshot (200x60)     ║');
+  console.log('║   hexLogTile(x, y)             - Debug specific tile               ║');
+  console.log('║   hexLogNeighbors(x, y)        - Debug tile neighbors              ║');
+  console.log('║   hexLogClick(canvasX, canvasY) - Debug click-to-tile conversion   ║');
+  console.log('║   hexLogRenderingConstants()   - Verify rendering constants        ║');
+  console.log('║   hexLogGrid(x, y, w, h)       - ASCII hex grid visualization      ║');
+  console.log('║   console.table(hexDebugData.logs) - View all debug logs           ║');
+  
   console.log('╚════════════════════════════════════════════════════════════════════╝');
   console.log('');
-  console.log('To start automated debug: startHexDebug()');
-  console.log('To see all debug logs: console.table(hexDebugData.logs)');
+  console.log('Quick start: Run startHexDebug() to begin automated debug session.');
 }
 
 /****************************************************************************
