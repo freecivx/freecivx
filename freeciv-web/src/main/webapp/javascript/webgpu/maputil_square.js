@@ -1122,17 +1122,23 @@ function scene_to_map_coords(x, y)
   let bestTileY = tileY;
   let bestDist = dx * dx + (dy * HEX_ASPECT_RATIO) * (dy * HEX_ASPECT_RATIO);
   
-  // Check adjacent tiles (up to 6 neighbors for hex)
+  // Check adjacent tiles including all possible hex neighbors.
+  // We check a wider neighborhood to account for potential estimation errors
+  // at tile boundaries. For hex grids, the actual neighbors depend on row parity,
+  // but since our initial estimate might be off by one row, we check all possible
+  // neighbor positions from both even and odd row perspectives.
   const neighbors = [
     { dx: -1, dy: 0 },   // left
     { dx: 1, dy: 0 },    // right
     { dx: 0, dy: -1 },   // up
     { dx: 0, dy: 1 },    // down
-    // For odd-r offset, diagonal neighbors depend on row parity
-    { dx: (tileY % 2 === 1) ? 0 : -1, dy: -1 }, // upper-left/upper
-    { dx: (tileY % 2 === 1) ? 1 : 0, dy: -1 },  // upper-right/upper
-    { dx: (tileY % 2 === 1) ? 0 : -1, dy: 1 },  // lower-left/lower
-    { dx: (tileY % 2 === 1) ? 1 : 0, dy: 1 },   // lower-right/lower
+    // Include all diagonal neighbors for both even and odd row scenarios
+    { dx: -1, dy: -1 },  // upper-left (even row)
+    { dx: 0, dy: -1 },   // upper (odd row) / upper-right (even row)
+    { dx: 1, dy: -1 },   // upper-right (odd row)
+    { dx: -1, dy: 1 },   // lower-left (even row)
+    { dx: 0, dy: 1 },    // lower (odd row) / lower-right (even row) - already covered by "down"
+    { dx: 1, dy: 1 },    // lower-right (odd row)
   ];
   
   for (const neighbor of neighbors) {
