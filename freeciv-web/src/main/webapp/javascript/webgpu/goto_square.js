@@ -37,7 +37,6 @@ function webgl_render_goto_line(start_tile, goto_packet_dir) {
 
     const lineWidth = 1.0; // Slightly thinner lines
     const heightOffset = 10.0; // Raise the lines higher in the y-direction
-    const leftOffset = HEX_CENTER_OFFSET_X + 5; // Offset to center goto lines within hex tiles
 
     for (var i = 0; i < goto_packet_dir.length; i++) {
         if (ptile == null) break;
@@ -55,9 +54,9 @@ function webgl_render_goto_line(start_tile, goto_packet_dir) {
             var height = 5 + ptile['height'] * 100;
 
             // Apply hex center offset and height adjustment
-            var start = new THREE.Vector3(currpos.x + leftOffset, height + heightOffset, currpos.y + HEX_CENTER_OFFSET_Y);
+            var start = new THREE.Vector3(currpos.x + HEX_CENTER_OFFSET_X, height + heightOffset, currpos.y + HEX_CENTER_OFFSET_Y);
             var end = new THREE.Vector3(
-                nextpos.x + leftOffset,
+                nextpos.x + HEX_CENTER_OFFSET_X,
                 height + heightOffset + (nexttile['height'] - ptile['height']) * 50,
                 nextpos.y + HEX_CENTER_OFFSET_Y
             );
