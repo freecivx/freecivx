@@ -92,7 +92,9 @@ function createTerrainShaderTSL(uniforms) {
     // - height = R * 2
     // We normalize so that one tile maps to roughly 1.0 in UV space per tile
     const HEX_SQRT3_OVER_2 = 0.866025; // sqrt(3)/2 ≈ 0.866 - used for hex edge normals and aspect ratio
-    const HEX_ASPECT = HEX_SQRT3_OVER_2; // Ratio of hex width to height for pointy-top hexagons
+    // HEX_ASPECT is used to scale Y coordinates: pointy-top hexes are taller than wide,
+    // so we multiply Y by this value when calculating hex distance field
+    const HEX_ASPECT = HEX_SQRT3_OVER_2; // Y-coordinate scale factor for hex geometry
     const HEX_EDGE_WIDTH = 0.03; // Width of hex edge highlight (as fraction of tile)
     const HEX_EDGE_SOFTNESS = 0.02; // Edge anti-aliasing softness
     const HEX_EDGE_BLEND_STRENGTH = 0.35; // How strongly hex edges darken the terrain (0-1)
@@ -244,9 +246,15 @@ function createTerrainShaderTSL(uniforms) {
     const borderColor = texture(bordersTex, hexUV);
 
     // Calculate texture coordinates for terrain detail within the hex
-    // Use the local hex coordinates scaled for texture tiling
+    // dx/dy: Local position within the current hex tile (0-1 range)
+    // Used for standard terrain texture sampling
     const dx = localX;
     const dy = localY;
+    
+    // tdx/tdy: Diagonal texture coordinates for tundra/arctic terrain types
+    // These create a 2x2 tile pattern by mapping each tile to a quadrant of the texture atlas
+    // The formula calculates: (tile_position / 2) - (floor(tile_position) * 0.5)
+    // This gives values in [0, 0.5] range that repeat every 2 tiles
     const tdx = sub(div(mul(map_x_size, hexUV.x), 2.0), mul(0.5, floor(mul(map_x_size, hexUV.x))));
     const tdy = sub(div(mul(map_y_size, hexUV.y), 2.0), mul(0.5, floor(mul(map_y_size, hexUV.y))));
 
@@ -255,6 +263,8 @@ function createTerrainShaderTSL(uniforms) {
     const posY = posNode.y;
 
     // Texture coordinate nodes for hexagonal tiles
+    // texCoord: Standard coordinates for most terrain types
+    // texCoordT: Offset coordinates for arctic/tundra (uses 2x2 texture atlas pattern)
     const texCoord = vec2(dx, dy);
     const texCoordT = vec2(tdx, add(tdy, 0.5));
 
