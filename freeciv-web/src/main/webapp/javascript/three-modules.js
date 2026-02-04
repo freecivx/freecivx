@@ -27,6 +27,13 @@ window.GLTFLoader = GLTFLoader;
 window.DRACOLoader = DRACOLoader;
 window.OrbitControls = OrbitControls;
 
+// Log successful module loading for verification
+console.log('[JS-Verify] ✓ Three.js ES modules loaded successfully');
+console.log('[JS-Verify] ✓ THREE namespace exported to window');
+console.log('[JS-Verify] ✓ GLTFLoader exported to window');
+console.log('[JS-Verify] ✓ DRACOLoader exported to window');
+console.log('[JS-Verify] ✓ OrbitControls exported to window');
+
 // WebGPU loading function
 // This dynamically imports the WebGPU module loader when needed
 let webgpuLoadingPromise = null;

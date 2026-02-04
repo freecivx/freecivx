@@ -94,6 +94,11 @@ THREE.add = add;
 THREE.sub = sub;
 THREE.div = div;
 
-console.log('WebGPU modules loaded successfully');
+// Log successful WebGPU module loading for verification
+console.log('[JS-Verify] ✓ WebGPU modules loaded successfully');
+if (typeof THREE.WebGPURenderer !== 'undefined') {
+  console.log('[JS-Verify] ✓ THREE.WebGPURenderer available');
+}
+console.log('[JS-Verify] ✓ TSL (Three.js Shading Language) functions exported');
 
 export { WebGPUModule };

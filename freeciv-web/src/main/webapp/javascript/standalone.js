@@ -42,6 +42,31 @@ function init_standalone() {
 
   standalone_mode = true;
 
+  // Run JavaScript loading verification before proceeding
+  console.log("[Standalone] Running JavaScript module verification...");
+  
+  // Use a short delay to ensure ES modules have loaded
+  setTimeout(function() {
+    if (typeof run_js_verification === 'function') {
+      run_js_verification().then(function(result) {
+        if (result.success) {
+          console.log("[Standalone] ✓ JavaScript verification passed, proceeding with initialization");
+        } else {
+          console.warn("[Standalone] JavaScript verification found issues, proceeding anyway:");
+          if (result.syncVerification && result.syncVerification.errors) {
+            result.syncVerification.errors.forEach(function(err) {
+              console.warn("[Standalone]   - " + err);
+            });
+          }
+        }
+      }).catch(function(err) {
+        console.warn("[Standalone] Verification error:", err);
+      });
+    } else {
+      console.log("[Standalone] Verification module not available, skipping verification");
+    }
+  }, 100);
+
   init_sprites();
 
 
