@@ -34,8 +34,12 @@ var flag_dz = 18;
 // - 3D model pivot points (often at model base, not center)
 // - Visual balance within hex tile boundaries
 // - Compatibility with existing model scales
-var HEX_CENTER_OFFSET_X = 5;   // X offset from tile corner toward center
-var HEX_CENTER_OFFSET_Y = 12;  // Y offset (scene Z) from tile corner toward center
+// 
+// For proper hex tile centering:
+// - X offset should be approximately tileWidth / 2 ≈ 17.85 units
+// - Y offset should be approximately tileHeight / 2 ≈ 15.46 units
+var HEX_CENTER_OFFSET_X = 18;   // X offset from tile corner toward center (half tile width)
+var HEX_CENTER_OFFSET_Y = 15;   // Y offset (scene Z) from tile corner toward center (half tile height)
 
 // Random offset constants for object variety within tiles
 var HEX_RANDOM_OFFSET_BASE = 2;     // Base offset before randomization

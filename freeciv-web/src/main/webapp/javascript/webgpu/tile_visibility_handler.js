@@ -41,6 +41,10 @@ function webgl_update_tile_known(old_tile, new_tile)
 /**************************************************************************
  This will update the fog of war and unknown tiles, and farmland/irrigation
  by storing these as vertex colors in the landscape mesh.
+ 
+ For hexagonal maps, we need to account for the staggered row layout when
+ determining which tile a vertex belongs to. Odd rows are offset by half
+ a tile width (odd-r offset coordinate system).
 **************************************************************************/
 function update_tiles_known_vertex_colors()
 {
@@ -56,7 +60,16 @@ function update_tiles_known_vertex_colors()
   for ( let iy = 0; iy < gridY1; iy ++ ) {
     for ( let ix = 0; ix < gridX1; ix ++ ) {
         var sx = ix % xquality, sy = iy % yquality;
-        var mx = Math.floor((sx / terrain_quality) - 0.040), my = Math.floor((sy / terrain_quality) - 0.040);
+        
+        // Calculate map tile coordinates from vertex position
+        // For hex maps, we need to account for the row stagger in the mesh geometry
+        var my = Math.floor((sy / terrain_quality) - 0.040);
+        
+        // For hex grids, odd rows in the mesh are staggered by HEX_STAGGER (0.5)
+        // We need to subtract this offset when looking up the tile X coordinate
+        var hexStaggerOffset = (my % 2 === 1) ? 0.5 : 0;
+        var mx = Math.floor((sx / terrain_quality) - hexStaggerOffset - 0.040);
+        
         var ptile = map_pos_to_tile(mx, my);
         if (ptile != null) {
           var c = get_vertex_color_from_tile(ptile, ix, iy);
