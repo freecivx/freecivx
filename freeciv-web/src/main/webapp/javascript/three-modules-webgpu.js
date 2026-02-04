@@ -38,7 +38,7 @@ import {
   // Vertex shader functions
   positionLocal, normalLocal, attribute, uv,
   // Math and blending functions
-  mix, step, floor, fract, mod, dot, sin, cos, normalize, max, pow, clamp,
+  mix, step, floor, fract, mod, dot, sin, cos, normalize, max, pow, clamp, abs,
   // Arithmetic operators
   mul, add, sub, div
 } from 'three/tsl';
@@ -95,6 +95,7 @@ THREE.normalize = normalize;
 THREE.max = max;
 THREE.pow = pow;
 THREE.clamp = clamp;
+THREE.abs = abs;
 THREE.mul = mul;
 THREE.add = add;
 THREE.sub = sub;
