@@ -1643,3 +1643,75 @@ After collecting debug telemetry:
 3. Confirm direction mapping for hex topology
 4. Validate goto path rendering coordinates
 5. Check fog of war vertex calculations
+
+---
+
+## Debug Session Findings (February 2026)
+
+### Session Log Analysis
+
+From a recent test session, the following was observed:
+
+```
+mapview.js:62 Preloading 2D canvas tileset images.
+preload.js:37 Preloading WebGPU textures and models...
+packhand.js:692 Server has version 3.2.90.2-dev
+renderer_init.js:77 renderer_init()
+renderer_init.js:92 Waiting for WebGPU modules to load...
+three-modules-webgpu.js:105 WebGPU modules loaded successfully
+three-modules.js:46 WebGPU support loaded successfully
+mapview_webgpu.js:33 Three.js 183dev with WebGPU Renderer
+heightmap_square.js:158 Updating heightmap...
+heightmap_square.js:267 Heightmap updated.
+mapview_webgpu.js:347 Creating WebGPU terrain shader with TSL...
+mapview_webgpu.js:367 Land mesh triangles: 526338
+mapview_webgpu.js:136 Added animated WebGPU water surface with TSL shader.
+maputil_square.js:38 [HEX-DEBUG][UNIT-PLACE] Placing "Settlers" at Tile(16,55)
+```
+
+### Key Observations
+
+1. **Rendering Pipeline Working**: WebGPU modules load correctly, terrain shader created
+2. **Heightmap Generated**: 526,338 triangles for terrain mesh
+3. **Unit Placement Logged**: Settlers correctly positioned at tile coordinates (16,55)
+4. **Performance Note**: `requestAnimationFrame` handler took 211ms (optimization needed)
+
+### Debug System Improvements (v2)
+
+**Changes Made:**
+1. **Dark color scheme** for better console readability
+2. **Compact instructions** - reduced verbosity
+3. **New `hexDebugSummary()` function** - quick state overview from console
+4. **Simplified log format**: `[HEX][CATEGORY]` instead of `[HEX-DEBUG][CATEGORY]`
+
+**New Console Commands:**
+```javascript
+hexDebugSummary()     // Show map state, topology, tile dimensions
+hexDebugEnabled = false  // Disable all hex logging
+hexDebugLogCount = 0     // Reset log counter
+```
+
+### Hex Map Rendering Checklist
+
+Based on debug analysis, verify:
+
+- [x] WebGPU modules loading successfully
+- [x] Terrain heightmap generation
+- [x] Unit placement on hex tiles
+- [ ] Click-to-tile coordinate accuracy
+- [ ] Numpad movement validation (6 dirs for hex)
+- [ ] Goto path rendering on hex tiles
+- [ ] Fog of war hex tile masking
+
+### Performance Observations
+
+- `requestAnimationFrame` 211ms warning indicates heavy first-frame work
+- 526,338 triangles for terrain (reasonable for detailed hex mesh)
+- WebGPU async loading adds complexity but enables modern features
+
+### Recommendations
+
+1. **Test Click Accuracy**: Click on known tiles, verify coordinates match
+2. **Test Movement**: Use numpad to move units, note which directions work
+3. **Monitor Console**: Watch for MOVEMENT-BLOCKED logs on invalid hex directions
+4. **Use Summary**: Call `hexDebugSummary()` to verify hex state at any time
