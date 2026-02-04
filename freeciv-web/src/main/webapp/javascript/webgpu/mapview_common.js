@@ -310,9 +310,13 @@ function animate_webgl() {
 
 
 /****************************************************************************
- ...
+ Sets the mapview model dimensions based on map size.
+ Also updates the hex center offsets used for object placement.
  ****************************************************************************/
 function set_mapview_model_size() {
   mapview_model_width = Math.floor(MAPVIEW_ASPECT_FACTOR * map['xsize']);
   mapview_model_height = Math.floor(MAPVIEW_ASPECT_FACTOR * map['ysize']);
+  
+  // Update hex center offsets after model dimensions are set
+  updateHexCenterOffsets();
 }
