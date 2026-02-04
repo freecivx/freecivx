@@ -416,6 +416,19 @@ function createTerrainShaderTSL(uniforms) {
         finalColor.a
     );
 
+    // =========================================================================
+    // OUT-OF-BOUNDS CHECK - Render black where no tiles exist
+    // =========================================================================
+    // Check if the current pixel is outside the valid map tile range
+    // Valid tiles are in range [0, map_size-1] for both X and Y
+    // Areas outside this range should be rendered as black
+    const isOutOfBoundsX = step(map_x_size, tileX).greaterThan(0.5).or(tileX.lessThan(0.0));
+    const isOutOfBoundsY = step(map_y_size, tileY).greaterThan(0.5).or(tileY.lessThan(0.0));
+    const isOutOfBounds = isOutOfBoundsX.or(isOutOfBoundsY);
+    
+    // If out of bounds, return black; otherwise return the computed color
+    finalColor = isOutOfBounds.select(vec4(0.0, 0.0, 0.0, 1.0), finalColor);
+
     return finalColor;
 }
 

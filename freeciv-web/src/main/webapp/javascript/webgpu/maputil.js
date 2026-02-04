@@ -1056,6 +1056,7 @@ function map_to_scene_coords(x, y)
   const tileHeight = (mapview_model_height / map['ysize']) * HEX_HEIGHT_FACTOR;
   
   // Apply hex row offset for odd rows (odd-r offset coordinate system)
+  // In Freeciv hex: row 0 is normal, row 1 is staggered 0.5 tiles right, etc.
   const rowOffset = (y % 2 === 1) ? tileWidth * HEX_STAGGER : 0;
   
   result['x'] = Math.floor(MAP_X_OFFSET + x * tileWidth + rowOffset);
@@ -1122,17 +1123,21 @@ function scene_to_map_coords(x, y)
   let bestTileY = tileY;
   let bestDist = dx * dx + (dy * HEX_ASPECT_RATIO) * (dy * HEX_ASPECT_RATIO);
   
-  // Check adjacent tiles (up to 6 neighbors for hex)
+  // Check adjacent tiles including all possible hex neighbors.
+  // We check a wider neighborhood to account for potential estimation errors
+  // at tile boundaries. For hex grids, the actual neighbors depend on row parity,
+  // but since our initial estimate might be off by one row, we check all possible
+  // neighbor positions from both even and odd row perspectives.
   const neighbors = [
     { dx: -1, dy: 0 },   // left
     { dx: 1, dy: 0 },    // right
-    { dx: 0, dy: -1 },   // up
-    { dx: 0, dy: 1 },    // down
-    // For odd-r offset, diagonal neighbors depend on row parity
-    { dx: (tileY % 2 === 1) ? 0 : -1, dy: -1 }, // upper-left/upper
-    { dx: (tileY % 2 === 1) ? 1 : 0, dy: -1 },  // upper-right/upper
-    { dx: (tileY % 2 === 1) ? 0 : -1, dy: 1 },  // lower-left/lower
-    { dx: (tileY % 2 === 1) ? 1 : 0, dy: 1 },   // lower-right/lower
+    { dx: 0, dy: -1 },   // up (covers both row parities)
+    { dx: 0, dy: 1 },    // down (covers both row parities)
+    // Include all diagonal neighbors for both even and odd row scenarios
+    { dx: -1, dy: -1 },  // upper-left (even row neighbor)
+    { dx: 1, dy: -1 },   // upper-right (odd row neighbor)
+    { dx: -1, dy: 1 },   // lower-left (even row neighbor)
+    { dx: 1, dy: 1 },    // lower-right (odd row neighbor)
   ];
   
   for (const neighbor of neighbors) {

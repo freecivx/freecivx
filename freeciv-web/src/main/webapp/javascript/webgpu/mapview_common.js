@@ -105,7 +105,8 @@ function init_land_geometry(geometry, mesh_quality)
 
   // Create vertices for hexagonal grid
   for ( let iy = 0; iy < gridY1; iy ++ ) {
-    // Apply hex row offset for odd rows (staggered grid)
+    // Apply hex row offset for odd rows (odd-r staggered grid)
+    // In Freeciv hex: row 0 is normal, row 1 is staggered 0.5 tiles right, etc.
     const rowOffset = (iy % 2 === 1) ? segment_width * HEX_STAGGER : 0;
     const y = iy * segment_height - height_half;
     
@@ -186,7 +187,7 @@ function update_land_geometry(geometry, mesh_quality) {
   const bufferAttribute = mesh_quality === 2 ? lofibufferattribute : landbufferattribute;
 
   for (let iy = 0; iy <= gridY; iy++) {
-    // Apply hex row offset for odd rows (staggered grid)
+    // Apply hex row offset for odd rows (odd-r staggered grid)
     const rowOffset = (iy % 2 === 1) ? segment_width * HEX_STAGGER : 0;
     const y = iy * segment_height - height_half;
     
