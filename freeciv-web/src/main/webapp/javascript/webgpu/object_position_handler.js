@@ -41,9 +41,16 @@ var HEX_CENTER_OFFSET_Y = 15;   // Y offset (scene Z) from tile corner toward ce
   These offsets position objects at the visual center of hex tiles.
   Calculated dynamically based on actual tile dimensions.
   
-  @returns {Object} { x: number, y: number } - Center offsets
+  @returns {Object} { x: number, y: number } - Center offsets, or default values if dimensions unavailable
 ****************************************************************************/
 function getHexCenterOffsets() {
+  // Validate that required values are available and non-zero to prevent division by zero
+  if (typeof mapview_model_width === 'undefined' || typeof mapview_model_height === 'undefined' ||
+      typeof map === 'undefined' || !map['xsize'] || !map['ysize']) {
+    // Return default values if dimensions not yet available
+    return { x: 18, y: 15 };
+  }
+  
   // Calculate actual tile dimensions
   var tileWidth = mapview_model_width / map['xsize'];
   var tileHeight = (mapview_model_height / map['ysize']) * HEX_HEIGHT_FACTOR;
@@ -59,7 +66,8 @@ function getHexCenterOffsets() {
   Should be called after mapview_model_width/height are set.
 ****************************************************************************/
 function updateHexCenterOffsets() {
-  if (typeof mapview_model_width !== 'undefined' && typeof map !== 'undefined' && map['xsize'] > 0) {
+  if (typeof mapview_model_width !== 'undefined' && typeof map !== 'undefined' && 
+      map['xsize'] > 0 && map['ysize'] > 0) {
     var offsets = getHexCenterOffsets();
     HEX_CENTER_OFFSET_X = offsets.x;
     HEX_CENTER_OFFSET_Y = offsets.y;
