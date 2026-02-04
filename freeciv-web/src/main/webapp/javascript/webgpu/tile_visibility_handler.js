@@ -67,8 +67,8 @@ function update_tiles_known_vertex_colors()
         
         // For hex grids, odd rows in the mesh are staggered by HEX_STAGGER (0.5)
         // We need to subtract this offset when looking up the tile X coordinate
-        var hexStaggerOffset = (my % 2 === 1) ? 0.5 : 0;
-        var mx = Math.floor((sx / terrain_quality) - hexStaggerOffset - 0.040);
+        var hex_stagger_offset = (my % 2 === 1) ? 0.5 : 0;
+        var mx = Math.floor((sx / terrain_quality) - hex_stagger_offset - 0.040);
         
         var ptile = map_pos_to_tile(mx, my);
         if (ptile != null) {
