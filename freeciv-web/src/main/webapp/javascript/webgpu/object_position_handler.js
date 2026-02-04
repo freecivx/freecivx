@@ -44,9 +44,9 @@ var HEX_CENTER_OFFSET_Y = 15;   // Y offset (scene Z) from tile corner toward ce
   @returns {Object} { x: number, y: number } - Center offsets, or default values if dimensions unavailable
 ****************************************************************************/
 function getHexCenterOffsets() {
-  // Validate that required values are available and non-zero to prevent division by zero
+  // Validate that required values are available and positive to prevent division by zero
   if (typeof mapview_model_width === 'undefined' || typeof mapview_model_height === 'undefined' ||
-      typeof map === 'undefined' || !map['xsize'] || !map['ysize']) {
+      typeof map === 'undefined' || !(map['xsize'] > 0) || !(map['ysize'] > 0)) {
     // Return default values if dimensions not yet available
     return { x: 18, y: 15 };
   }
