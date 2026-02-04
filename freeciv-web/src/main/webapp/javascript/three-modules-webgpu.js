@@ -36,9 +36,9 @@ import {
   // Vector constructors
   vec2, vec3, vec4, float as floatFn,
   // Vertex shader functions
-  positionLocal, attribute, uv,
+  positionLocal, normalLocal, attribute, uv,
   // Math and blending functions
-  mix, step, floor, fract, mod, dot, sin, clamp,
+  mix, step, floor, fract, mod, dot, sin, cos, normalize, max, pow, clamp,
   // Arithmetic operators
   mul, add, sub, div
 } from 'three/tsl';
@@ -80,6 +80,7 @@ THREE.vec4 = vec4;
 // Note: 'float' is exported from the imported 'floatFn' to avoid using reserved word
 THREE.float = floatFn;
 THREE.positionLocal = positionLocal;
+THREE.normalLocal = normalLocal;
 THREE.attribute = attribute;
 THREE.uv = uv;
 THREE.mix = mix;
@@ -89,6 +90,10 @@ THREE.fract = fract;
 THREE.mod = mod;
 THREE.dot = dot;
 THREE.sin = sin;
+THREE.cos = cos;
+THREE.normalize = normalize;
+THREE.max = max;
+THREE.pow = pow;
 THREE.clamp = clamp;
 THREE.mul = mul;
 THREE.add = add;
