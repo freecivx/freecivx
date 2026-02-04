@@ -51,13 +51,14 @@ function webgl_render_goto_line(start_tile, goto_packet_dir) {
         if (nexttile != null) {
             var currpos = map_to_scene_coords(ptile['x'], ptile['y']);
             var nextpos = map_to_scene_coords(nexttile['x'], nexttile['y']);
-            var height = 5 + ptile['height'] * 100;
+            var startHeight = 5 + ptile['height'] * 100;
+            var endHeight = 5 + nexttile['height'] * 100;
 
             // Apply hex center offset and height adjustment
-            var start = new THREE.Vector3(currpos.x + HEX_CENTER_OFFSET_X, height + heightOffset, currpos.y + HEX_CENTER_OFFSET_Y);
+            var start = new THREE.Vector3(currpos.x + HEX_CENTER_OFFSET_X, startHeight + heightOffset, currpos.y + HEX_CENTER_OFFSET_Y);
             var end = new THREE.Vector3(
                 nextpos.x + HEX_CENTER_OFFSET_X,
-                height + heightOffset + (nexttile['height'] - ptile['height']) * 50,
+                endHeight + heightOffset,
                 nextpos.y + HEX_CENTER_OFFSET_Y
             );
 
@@ -92,7 +93,7 @@ function webgl_render_goto_line(start_tile, goto_packet_dir) {
             goto_lines.push(gotoline);
         }
 
-        ptile = mapstep(ptile, dir);
+        ptile = nexttile;
     }
 }
 
