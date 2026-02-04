@@ -24,9 +24,13 @@ var MAP_Y_OFFSET = 30;    // Initial Y offset when converting map to scene coord
 
 // ============= HEX DEBUG LOGGING SYSTEM =============
 // Enable/disable hex debugging with: hexDebugEnabled = true/false in browser console
-var hexDebugEnabled = true;
+// Set to true for hex map troubleshooting, false for production
+var hexDebugEnabled = true;  // Enabled for hex debugging - set to false for production
 var hexDebugLogCount = 0;
 var hexDebugMaxLogs = 500; // Limit logs to prevent console overflow
+
+// Sampling rate for coordinate conversion logs (0.01 = 1% of conversions logged to reduce noise)
+const COORD_LOG_SAMPLE_RATE = 0.01;
 
 function hexDebugLog(category, message, data) {
   if (!hexDebugEnabled || hexDebugLogCount > hexDebugMaxLogs) return;
@@ -95,8 +99,8 @@ function map_to_scene_coords(x, y)
   result['x'] = Math.floor(MAP_X_OFFSET + x * tileWidth + rowOffset);
   result['y'] = Math.floor(MAP_Y_OFFSET + y * tileHeight);
 
-  // Debug logging for coordinate conversion (sampled to reduce noise)
-  if (hexDebugEnabled && hexDebugLogCount < hexDebugMaxLogs && Math.random() < 0.01) {
+  // Debug logging for coordinate conversion (sampled at COORD_LOG_SAMPLE_RATE to reduce noise)
+  if (hexDebugEnabled && hexDebugLogCount < hexDebugMaxLogs && Math.random() < COORD_LOG_SAMPLE_RATE) {
     hexDebugLog('COORD-MAP2SCENE', `Map(${x},${y}) → Scene(${result['x']},${result['y']})`, {
       tileWidth: tileWidth.toFixed(2),
       tileHeight: tileHeight.toFixed(2),

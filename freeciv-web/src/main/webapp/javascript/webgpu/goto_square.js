@@ -19,6 +19,9 @@
 
 var goto_lines = [];
 
+// Maximum number of goto path segments to log (to reduce console noise on long paths)
+const MAX_GOTO_SEGMENT_LOGS = 5;
+
 /****************************************************************************
  Renders a goto line by creating thick quads along the goto path.
  ****************************************************************************/
@@ -66,8 +69,8 @@ function webgl_render_goto_line(start_tile, goto_packet_dir) {
             var nextpos = map_to_scene_coords(nexttile['x'], nexttile['y']);
             var height = 5 + ptile['height'] * 100;
 
-            // Log each goto segment for debugging
-            if (typeof hexDebugEnabled !== 'undefined' && hexDebugEnabled && i < 5) { // Log first 5 segments
+            // Log first few goto segments for debugging (limited by MAX_GOTO_SEGMENT_LOGS)
+            if (typeof hexDebugEnabled !== 'undefined' && hexDebugEnabled && i < MAX_GOTO_SEGMENT_LOGS) {
               hexDebugLog('GOTO-SEGMENT', `Step ${i}: Tile(${ptile['x']},${ptile['y']}) → Tile(${nexttile['x']},${nexttile['y']}) dir=${dir}(${dir_get_name(dir)})`, {
                 currentTile: { x: ptile['x'], y: ptile['y'] },
                 nextTile: { x: nexttile['x'], y: nexttile['y'] },
