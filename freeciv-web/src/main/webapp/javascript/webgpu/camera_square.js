@@ -58,7 +58,8 @@ function camera_look_at(x, y, z)
 }
 
 /**************************************************************************
-  Centers the mapview around the given tile..
+  Centers the mapview around the given tile.
+  Uses HEX_CENTER_OFFSET values to properly center on hex tile centers.
 **************************************************************************/
 function center_tile_mapcanvas_3d(ptile)
 {
@@ -67,7 +68,12 @@ function center_tile_mapcanvas_3d(ptile)
       enable_mapview_slide_3d(ptile);
     } else {
       var pos = map_to_scene_coords(ptile['x'], ptile['y']);
-      camera_look_at(pos['x'] - 50, 0, pos['y'] - 50);       // -50 to get the center tile more in the center of the screen.
+      // Use HEX_CENTER_OFFSET values to center on the hex tile center
+      // Then subtract additional offset to account for camera view angle
+      var hexOffsetX = (typeof HEX_CENTER_OFFSET_X !== 'undefined') ? HEX_CENTER_OFFSET_X : 18;
+      var hexOffsetY = (typeof HEX_CENTER_OFFSET_Y !== 'undefined') ? HEX_CENTER_OFFSET_Y : 15;
+      // Center the camera on the hex tile center, with view angle adjustment
+      camera_look_at(pos['x'] + hexOffsetX - 50, 0, pos['y'] + hexOffsetY - 50);
       slide_init = true;
     }
 
@@ -90,17 +96,22 @@ function center_tile_city(city)
 
 /**************************************************************************
   Enabled silding of the mapview to the given tile.
+  Uses HEX_CENTER_OFFSET values for proper hex tile centering.
 **************************************************************************/
 function enable_mapview_slide_3d(ptile)
 {
   var pos_dest = map_to_scene_coords(ptile['x'], ptile['y']);
+  
+  // Use HEX_CENTER_OFFSET values to center on the hex tile center
+  var hexOffsetX = (typeof HEX_CENTER_OFFSET_X !== 'undefined') ? HEX_CENTER_OFFSET_X : 18;
+  var hexOffsetY = (typeof HEX_CENTER_OFFSET_Y !== 'undefined') ? HEX_CENTER_OFFSET_Y : 15;
 
   camera_dx = camera.position.x - controls.target.x + 50;
   camera_dy = camera.position.y - controls.target.y + 50;
   camera_dz = camera.position.z - controls.target.z + 50;
 
-  mapview_slide['dx'] = camera_current_x - pos_dest['x'] + 50;
-  mapview_slide['dy'] = camera_current_z - pos_dest['y'] + 50;
+  mapview_slide['dx'] = camera_current_x - (pos_dest['x'] + hexOffsetX - 50);
+  mapview_slide['dy'] = camera_current_z - (pos_dest['y'] + hexOffsetY - 50);
   mapview_slide['i'] = mapview_slide['max'];
   mapview_slide['prev'] = mapview_slide['i'];
   mapview_slide['start'] = new Date().getTime();

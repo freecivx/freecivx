@@ -606,8 +606,9 @@ function generateAsciiMap() {
  * Capture the game canvas and convert to ASCII art for debugging
  * Call from browser console: captureAsciiScreenshot()
  * 
- * For WebGPU/WebGL canvases, we use toDataURL() since direct drawImage doesn't work.
- * The renderer must be created with preserveDrawingBuffer: true for this to work.
+ * For WebGPU canvases, we need to force a render and use toDataURL() with proper timing.
+ * The renderer must be created with preserveDrawingBuffer: true for this to work reliably.
+ * If that fails, we fall back to creating a temporary 2D canvas overlay.
  */
 function captureAsciiScreenshot() {
   // Use maprenderer.domElement which is the actual WebGPU/WebGL canvas
@@ -626,15 +627,144 @@ function captureAsciiScreenshot() {
   
   console.log('[HEX-DEBUG] Capturing screenshot from WebGPU canvas (' + width + 'x' + height + ')...');
   
-  // For WebGPU/WebGL canvases, we need to use toDataURL and load as image
-  var dataURL;
-  try {
-    dataURL = canvas.toDataURL('image/png');
-  } catch (e) {
-    console.log('[HEX-DEBUG] Cannot get canvas data URL: ' + e.message);
-    return null;
+  // For WebGPU, we need to use requestAnimationFrame to ensure the canvas has been rendered
+  // Then use toDataURL which may work if preserveDrawingBuffer is enabled
+  function attemptCapture() {
+    var dataURL;
+    try {
+      // Force a render if possible
+      if (typeof maprenderer !== 'undefined' && maprenderer && typeof webgpu_scene !== 'undefined' && typeof camera !== 'undefined') {
+        maprenderer.render(webgpu_scene, camera);
+      }
+      
+      // Try to get the canvas data URL
+      dataURL = canvas.toDataURL('image/png');
+      
+      // Check if we got valid data (not just a blank image)
+      if (!dataURL || dataURL === 'data:,') {
+        throw new Error('Canvas returned empty data');
+      }
+    } catch (e) {
+      console.log('[HEX-DEBUG] Cannot get canvas data URL: ' + e.message);
+      console.log('[HEX-DEBUG] Note: WebGPU screenshot requires preserveDrawingBuffer: true');
+      console.log('[HEX-DEBUG] Attempting fallback capture method...');
+      
+      // Fallback: Try to create a screenshot using a different method
+      attemptFallbackCapture(width, height, asciiWidth, asciiHeight);
+      return;
+    }
+    
+    processScreenshot(dataURL, width, height, asciiWidth, asciiHeight);
   }
   
+  // Use requestAnimationFrame to ensure we capture after the next render
+  requestAnimationFrame(attemptCapture);
+  
+  return 'Screenshot capture initiated (async). Check console for output.';
+}
+
+/**
+ * Fallback capture method when toDataURL fails
+ * Creates a simple map visualization based on tile data
+ */
+function attemptFallbackCapture(canvasWidth, canvasHeight, asciiWidth, asciiHeight) {
+  console.log('[HEX-DEBUG] Using fallback ASCII map generation from tile data...');
+  
+  if (typeof map === 'undefined' || !map || typeof tiles === 'undefined') {
+    console.log('[HEX-DEBUG] Map data not available for fallback capture');
+    return;
+  }
+  
+  // Generate ASCII art from map tiles instead of canvas pixels
+  var asciiLines = [];
+  asciiLines.push('╔' + '═'.repeat(asciiWidth + 2) + '╗');
+  asciiLines.push('║ HEX MAP ASCII (from tile data, canvas capture failed) ' + ' '.repeat(Math.max(0, asciiWidth - 53)) + '║');
+  asciiLines.push('╠' + '═'.repeat(asciiWidth + 2) + '╣');
+  
+  // Calculate tile to ASCII mapping
+  var tilesPerCharX = map.xsize / asciiWidth;
+  var tilesPerCharY = map.ysize / asciiHeight;
+  
+  // Terrain character mapping
+  var terrainChars = {
+    'Ocean': '~',
+    'Deep Ocean': '≈',
+    'Lake': '~',
+    'Coast': '·',
+    'Grassland': '"',
+    'Plains': '.',
+    'Desert': ':',
+    'Tundra': '^',
+    'Arctic': '*',
+    'Forest': '♠',
+    'Jungle': '♣',
+    'Hills': 'n',
+    'Mountains': 'M',
+    'Swamp': '≋',
+    'unknown': ' '
+  };
+  
+  for (var y = 0; y < asciiHeight; y++) {
+    var line = '║ ';
+    for (var x = 0; x < asciiWidth; x++) {
+      var tileX = Math.floor(x * tilesPerCharX);
+      var tileY = Math.floor(y * tilesPerCharY);
+      var ptile = typeof map_pos_to_tile !== 'undefined' ? map_pos_to_tile(tileX, tileY) : null;
+      
+      var ch = ' ';
+      if (ptile) {
+        var known = typeof tile_get_known !== 'undefined' ? tile_get_known(ptile) : 1;
+        if (known === 0) { // TILE_UNKNOWN
+          ch = '░';
+        } else {
+          var terrain = typeof tile_terrain !== 'undefined' ? tile_terrain(ptile) : null;
+          if (terrain && terrain.name) {
+            ch = terrainChars[terrain.name] || '?';
+          }
+          
+          // Mark units with special characters
+          if (ptile.units && ptile.units.length > 0) {
+            ch = '◆';
+          }
+          
+          // Mark cities
+          if (typeof tile_city !== 'undefined' && tile_city(ptile)) {
+            ch = '■';
+          }
+        }
+      }
+      line += ch;
+    }
+    line += ' ║';
+    asciiLines.push(line);
+  }
+  
+  asciiLines.push('╠' + '═'.repeat(asciiWidth + 2) + '╣');
+  asciiLines.push('║ Legend: ░=unknown ~=ocean "=grass .=plains ^=tundra M=mountain ◆=unit ■=city ' + ' '.repeat(Math.max(0, asciiWidth - 73)) + '║');
+  asciiLines.push('╚' + '═'.repeat(asciiWidth + 2) + '╝');
+  
+  var asciiArt = asciiLines.join('\n');
+  
+  // Store in debug data
+  hexDebugData.screenshotData = {
+    timestamp: Date.now(),
+    originalSize: { width: canvasWidth, height: canvasHeight },
+    asciiSize: { width: asciiWidth, height: asciiHeight },
+    ascii: asciiArt,
+    method: 'fallback'
+  };
+  
+  console.log('\n' + asciiArt + '\n');
+  hexLog('SCREENSHOT', 'ASCII map captured (fallback method)', {
+    mapSize: map.xsize + 'x' + map.ysize,
+    asciiSize: asciiWidth + 'x' + asciiHeight
+  });
+}
+
+/**
+ * Process screenshot data URL into ASCII art
+ */
+function processScreenshot(dataURL, canvasWidth, canvasHeight, asciiWidth, asciiHeight) {
   // Create an image from the data URL and process it asynchronously
   var img = new Image();
   img.onload = function() {
@@ -653,6 +783,7 @@ function captureAsciiScreenshot() {
       imageData = ctx.getImageData(0, 0, asciiWidth, asciiHeight);
     } catch (e) {
       console.log('[HEX-DEBUG] Cannot read canvas pixels: ' + e.message);
+      attemptFallbackCapture(canvasWidth, canvasHeight, asciiWidth, asciiHeight);
       return;
     }
     
@@ -663,7 +794,7 @@ function captureAsciiScreenshot() {
     
     var asciiLines = [];
     asciiLines.push('╔' + '═'.repeat(asciiWidth + 2) + '╗');
-    asciiLines.push('║ HEX MAP ASCII SCREENSHOT (' + width + 'x' + height + ' → ' + asciiWidth + 'x' + asciiHeight + ')' + ' '.repeat(Math.max(0, asciiWidth - 55)) + ' ║');
+    asciiLines.push('║ HEX MAP ASCII SCREENSHOT (' + canvasWidth + 'x' + canvasHeight + ' → ' + asciiWidth + 'x' + asciiHeight + ')' + ' '.repeat(Math.max(0, asciiWidth - 55)) + ' ║');
     asciiLines.push('╠' + '═'.repeat(asciiWidth + 2) + '╣');
     
     for (var y = 0; y < asciiHeight; y++) {
@@ -693,25 +824,25 @@ function captureAsciiScreenshot() {
     // Store in debug data
     hexDebugData.screenshotData = {
       timestamp: Date.now(),
-      originalSize: { width: width, height: height },
+      originalSize: { width: canvasWidth, height: canvasHeight },
       asciiSize: { width: asciiWidth, height: asciiHeight },
-      ascii: asciiArt
+      ascii: asciiArt,
+      method: 'canvas'
     };
     
     console.log('\n' + asciiArt + '\n');
     hexLog('SCREENSHOT', 'ASCII screenshot captured (high-res)', {
-      originalSize: width + 'x' + height,
+      originalSize: canvasWidth + 'x' + canvasHeight,
       asciiSize: asciiWidth + 'x' + asciiHeight
     });
   };
   
   img.onerror = function() {
-    console.log('[HEX-DEBUG] Failed to load canvas image data');
+    console.log('[HEX-DEBUG] Failed to load canvas image data, using fallback');
+    attemptFallbackCapture(canvasWidth, canvasHeight, asciiWidth, asciiHeight);
   };
   
   img.src = dataURL;
-  
-  return 'Screenshot capture initiated (async). Check console for output.';
 }
 
 /**
@@ -937,8 +1068,39 @@ function hexDebugSummary() {
     console.log('║   Topology ID: ' + map.topology_id);
     console.log('║   Is Hex: ' + (typeof topo_has_flag !== 'undefined' ? topo_has_flag(TF_HEX) : 'N/A'));
     console.log('║   Is Isometric: ' + (typeof topo_has_flag !== 'undefined' ? topo_has_flag(TF_ISO) : 'N/A'));
+    console.log('║   Wrap X: ' + (typeof wrap_has_flag !== 'undefined' ? wrap_has_flag(WRAP_X) : 'N/A'));
+    console.log('║   Wrap Y: ' + (typeof wrap_has_flag !== 'undefined' ? wrap_has_flag(WRAP_Y) : 'N/A'));
   } else {
     console.log('║   Map not loaded');
+  }
+  
+  console.log('╠════════════════════════════════════════════════════════════════════╣');
+  
+  // Renderer Info
+  console.log('║ RENDERER INFO                                                      ║');
+  console.log('║   Renderer Type: ' + (typeof renderer_type !== 'undefined' ? renderer_type : 'undefined'));
+  if (typeof maprenderer !== 'undefined' && maprenderer) {
+    console.log('║   Canvas Size: ' + maprenderer.domElement.width + 'x' + maprenderer.domElement.height);
+    console.log('║   Device Pixel Ratio: ' + (window.devicePixelRatio || 1));
+  }
+  if (typeof THREE !== 'undefined') {
+    console.log('║   THREE.js Version: ' + THREE.REVISION);
+  }
+  
+  console.log('╠════════════════════════════════════════════════════════════════════╣');
+  
+  // Camera State
+  console.log('║ CAMERA STATE                                                       ║');
+  if (typeof camera !== 'undefined' && camera) {
+    console.log('║   Position: (' + camera.position.x.toFixed(1) + ', ' + camera.position.y.toFixed(1) + ', ' + camera.position.z.toFixed(1) + ')');
+    if (typeof camera_current_x !== 'undefined') {
+      console.log('║   Look At: (' + camera_current_x.toFixed(1) + ', ' + camera_current_y.toFixed(1) + ', ' + camera_current_z.toFixed(1) + ')');
+    }
+    if (typeof camera_dx !== 'undefined') {
+      console.log('║   Camera Offsets: dx=' + camera_dx + ', dy=' + camera_dy + ', dz=' + camera_dz);
+    }
+  } else {
+    console.log('║   Camera not initialized');
   }
   
   console.log('╠════════════════════════════════════════════════════════════════════╣');
@@ -963,8 +1125,32 @@ function hexDebugSummary() {
     console.log('║   Mapview Height: ' + mapview_model_height);
     console.log('║   Tile Width: ' + tileW.toFixed(2) + ' units');
     console.log('║   Tile Height: ' + tileH.toFixed(2) + ' units');
+    console.log('║   Hex Aspect Ratio: ' + (tileW / tileH).toFixed(4));
   } else {
     console.log('║   Mapview dimensions not available');
+  }
+  
+  console.log('╠════════════════════════════════════════════════════════════════════╣');
+  
+  // Unit Positions
+  console.log('║ UNIT POSITIONS (Current Focus)                                     ║');
+  if (typeof current_focus !== 'undefined' && current_focus.length > 0) {
+    for (var i = 0; i < Math.min(current_focus.length, 5); i++) {
+      var unit = current_focus[i];
+      if (unit) {
+        var utile = typeof index_to_tile !== 'undefined' ? index_to_tile(unit['tile']) : null;
+        if (utile) {
+          var upos = typeof map_to_scene_coords !== 'undefined' ? map_to_scene_coords(utile['x'], utile['y']) : null;
+          console.log('║   Unit ' + unit['id'] + ': Tile (' + utile['x'] + ',' + utile['y'] + ')' + 
+                     (upos ? ' → Scene (' + upos['x'].toFixed(0) + ',' + upos['y'].toFixed(0) + ')' : ''));
+        }
+      }
+    }
+    if (current_focus.length > 5) {
+      console.log('║   ... and ' + (current_focus.length - 5) + ' more units');
+    }
+  } else {
+    console.log('║   No units in focus');
   }
   
   console.log('╠════════════════════════════════════════════════════════════════════╣');
@@ -976,17 +1162,45 @@ function hexDebugSummary() {
   if (isHex && isIso) {
     console.log('║   Topology: Iso-Hex (TF_ISO | TF_HEX)');
     console.log('║   Valid Directions: N, S, E, W, NW, SE (6 dirs)');
-    console.log('║   Numpad Mapping: 8=N, 2=S, 6=E, 4=W, 7=NW, 3=SE');
+    console.log('║   Numpad Mapping (rotated for 3D view):');
+    console.log('║     Visual:  9=NE  6=E   3=SE');
+    console.log('║              8=N       2=S');
+    console.log('║              7=NW  4=W   1=SW');
     console.log('║   Invalid: NE (numpad 9), SW (numpad 1)');
   } else if (isHex) {
     console.log('║   Topology: Pure-Hex (TF_HEX only)');
     console.log('║   Valid Directions: N, S, E, W, NE, SW (6 dirs)');
-    console.log('║   Numpad Mapping: 8=N, 2=S, 6=E, 4=W, 9=NE, 1=SW');
+    console.log('║   Numpad Mapping (rotated for 3D view):');
+    console.log('║     Visual:  9=NE  6=E   3=SE');
+    console.log('║              8=N       2=S');
+    console.log('║              7=NW  4=W   1=SW');
     console.log('║   Invalid: NW (numpad 7), SE (numpad 3)');
   } else {
     console.log('║   Topology: Square (not hex)');
     console.log('║   All 8 directions valid');
   }
+  
+  // Direction constants
+  console.log('║   DIR8 Constants: NW=' + DIR8_NORTHWEST + ' N=' + DIR8_NORTH + ' NE=' + DIR8_NORTHEAST);
+  console.log('║                   W=' + DIR8_WEST + '       E=' + DIR8_EAST);
+  console.log('║                   SW=' + DIR8_SOUTHWEST + ' S=' + DIR8_SOUTH + ' SE=' + DIR8_SOUTHEAST);
+  
+  console.log('╠════════════════════════════════════════════════════════════════════╣');
+  
+  // Border and Fog Info
+  console.log('║ BORDERS & FOG OF WAR                                               ║');
+  if (typeof server_settings !== 'undefined' && server_settings['borders']) {
+    console.log('║   Borders Visible: ' + server_settings['borders']['is_visible']);
+  }
+  if (typeof borders_texture !== 'undefined') {
+    console.log('║   Borders Texture: Initialized');
+  } else {
+    console.log('║   Borders Texture: Not initialized');
+  }
+  console.log('║   Fog Render Mode: Vertex Color (vertColor attribute)');
+  console.log('║   Unknown Tiles: Black (vertColor.x = 0.0)');
+  console.log('║   Fogged Tiles: Dimmed (vertColor.x = 0.54)');
+  console.log('║   Visible Tiles: Full (vertColor.x = 1.06)');
   
   console.log('╠════════════════════════════════════════════════════════════════════╣');
   
@@ -995,21 +1209,30 @@ function hexDebugSummary() {
   console.log('║   Debug Enabled: ' + hexDebugData.enabled);
   console.log('║   Total Logs: ' + hexDebugData.logs.length);
   console.log('║   Coord Conversions Tested: ' + hexDebugData.coordConversions.length);
+  console.log('║   Tile Clicks Logged: ' + hexDebugData.tileClicks.length);
+  console.log('║   Unit Moves Logged: ' + hexDebugData.unitMoves.length);
+  console.log('║   Fog Changes Logged: ' + hexDebugData.fogChanges.length);
   
   if (hexDebugData.coordConversions.length > 0) {
     var failures = hexDebugData.coordConversions.filter(function(c) { return !c.success; });
     console.log('║   Coord Round-Trip Failures: ' + failures.length);
   }
   
+  if (hexDebugData.screenshotData) {
+    console.log('║   Last Screenshot: ' + hexDebugData.screenshotData.asciiSize.width + 'x' + hexDebugData.screenshotData.asciiSize.height);
+  }
+  
   console.log('╠════════════════════════════════════════════════════════════════════╣');
   
   // Known Issues
   console.log('║ KNOWN PROBLEM AREAS TO VERIFY                                      ║');
+  console.log('║   [x] Numpad movement directions (fixed: rotated for 3D view)');
+  console.log('║   [x] Initial unit centering (fixed: uses HEX_CENTER_OFFSET)');
   console.log('║   [ ] Units placed incorrectly on hex tiles');
-  console.log('║   [ ] Numpad movement directions wrong');
   console.log('║   [ ] Unknown fog of war tiles not hexagonal');
   console.log('║   [ ] Click-to-tile mapping incorrect');
   console.log('║   [ ] Goto path rendering issues');
+  console.log('║   [ ] Border colors should be hex not square');
   
   console.log('╠════════════════════════════════════════════════════════════════════╣');
   
@@ -1026,11 +1249,119 @@ function hexDebugSummary() {
   console.log('║   hexLogClick(canvasX, canvasY) - Debug click-to-tile conversion   ║');
   console.log('║   hexLogRenderingConstants()   - Verify rendering constants        ║');
   console.log('║   hexLogGrid(x, y, w, h)       - ASCII hex grid visualization      ║');
+  console.log('║   hexLogCamera()               - Debug camera state                ║');
+  console.log('║   hexLogDirections()           - Debug direction mappings          ║');
   console.log('║   console.table(hexDebugData.logs) - View all debug logs           ║');
   
   console.log('╚════════════════════════════════════════════════════════════════════╝');
   console.log('');
   console.log('Quick start: Run startHexDebug() to begin automated debug session.');
+}
+
+/**
+ * Log detailed camera state for debugging
+ * Call from browser console: hexLogCamera()
+ */
+function hexLogCamera() {
+  console.log('');
+  console.log('╔════════════════════════════════════════════════════════════════════╗');
+  console.log('║                    CAMERA DEBUG INFO                               ║');
+  console.log('╠════════════════════════════════════════════════════════════════════╣');
+  
+  if (typeof camera !== 'undefined' && camera) {
+    console.log('║ Camera Position:');
+    console.log('║   X: ' + camera.position.x.toFixed(2));
+    console.log('║   Y: ' + camera.position.y.toFixed(2));
+    console.log('║   Z: ' + camera.position.z.toFixed(2));
+    
+    if (typeof camera_current_x !== 'undefined') {
+      console.log('║ Look At Target:');
+      console.log('║   X: ' + camera_current_x.toFixed(2));
+      console.log('║   Y: ' + camera_current_y.toFixed(2));
+      console.log('║   Z: ' + camera_current_z.toFixed(2));
+    }
+    
+    if (typeof camera_dx !== 'undefined') {
+      console.log('║ Camera Offsets:');
+      console.log('║   dx: ' + camera_dx);
+      console.log('║   dy: ' + camera_dy);
+      console.log('║   dz: ' + camera_dz);
+    }
+    
+    if (typeof controls !== 'undefined' && controls) {
+      console.log('║ OrbitControls Target:');
+      console.log('║   X: ' + controls.target.x.toFixed(2));
+      console.log('║   Y: ' + controls.target.y.toFixed(2));
+      console.log('║   Z: ' + controls.target.z.toFixed(2));
+    }
+    
+    console.log('║ Camera Properties:');
+    console.log('║   FOV: ' + (camera.fov || 'N/A'));
+    console.log('║   Aspect: ' + (camera.aspect ? camera.aspect.toFixed(4) : 'N/A'));
+    console.log('║   Near: ' + (camera.near || 'N/A'));
+    console.log('║   Far: ' + (camera.far || 'N/A'));
+  } else {
+    console.log('║ Camera not initialized');
+  }
+  
+  console.log('╚════════════════════════════════════════════════════════════════════╝');
+}
+
+/**
+ * Log detailed direction mapping info for debugging
+ * Call from browser console: hexLogDirections()
+ */
+function hexLogDirections() {
+  console.log('');
+  console.log('╔════════════════════════════════════════════════════════════════════╗');
+  console.log('║                    DIRECTION MAPPING DEBUG                         ║');
+  console.log('╠════════════════════════════════════════════════════════════════════╣');
+  
+  var isHex = typeof topo_has_flag !== 'undefined' && topo_has_flag(TF_HEX);
+  var isIso = typeof topo_has_flag !== 'undefined' && topo_has_flag(TF_ISO);
+  var is3D = typeof renderer_type !== 'undefined' && renderer_type === 'webgpu';
+  
+  console.log('║ Topology: ' + (isHex && isIso ? 'Iso-Hex' : (isHex ? 'Pure-Hex' : 'Square')));
+  console.log('║ Renderer: ' + (is3D ? 'WebGPU 3D' : '2D'));
+  console.log('║ Direction Rotation: ' + (is3D && isHex ? 'ACTIVE' : 'INACTIVE'));
+  
+  console.log('╠════════════════════════════════════════════════════════════════════╣');
+  console.log('║ DIR8 Constants:');
+  console.log('║   DIR8_NORTHWEST = ' + DIR8_NORTHWEST);
+  console.log('║   DIR8_NORTH     = ' + DIR8_NORTH);
+  console.log('║   DIR8_NORTHEAST = ' + DIR8_NORTHEAST);
+  console.log('║   DIR8_WEST      = ' + DIR8_WEST);
+  console.log('║   DIR8_EAST      = ' + DIR8_EAST);
+  console.log('║   DIR8_SOUTHWEST = ' + DIR8_SOUTHWEST);
+  console.log('║   DIR8_SOUTH     = ' + DIR8_SOUTH);
+  console.log('║   DIR8_SOUTHEAST = ' + DIR8_SOUTHEAST);
+  
+  console.log('╠════════════════════════════════════════════════════════════════════╣');
+  console.log('║ DIR_DX/DY Arrays (map coordinate offsets):');
+  console.log('║   DIR_DX = [' + DIR_DX.join(', ') + ']');
+  console.log('║   DIR_DY = [' + DIR_DY.join(', ') + ']');
+  
+  if (typeof DIR_HEX_DX !== 'undefined') {
+    console.log('║   DIR_HEX_DX = [' + DIR_HEX_DX.join(', ') + ']');
+    console.log('║   DIR_HEX_DY = [' + DIR_HEX_DY.join(', ') + ']');
+  }
+  
+  console.log('╠════════════════════════════════════════════════════════════════════╣');
+  console.log('║ Numpad to Direction Mapping:');
+  console.log('║   Standard:        Visual (3D Hex Rotated):');
+  console.log('║     7=NW 8=N  9=NE      7→N  8→NE 9→E');
+  console.log('║     4=W      6=E        4→NW      6→SE');
+  console.log('║     1=SW 2=S  3=SE      1→W  2→SW 3→S');
+  
+  console.log('╠════════════════════════════════════════════════════════════════════╣');
+  console.log('║ Valid Directions for Current Topology:');
+  for (var d = 0; d < DIR8_COUNT; d++) {
+    var valid = typeof is_valid_dir !== 'undefined' ? is_valid_dir(d) : true;
+    var name = typeof dir_get_name !== 'undefined' ? dir_get_name(d) : 'DIR' + d;
+    console.log('║   ' + name + ': ' + (valid ? '✓ valid' : '✗ invalid'));
+  }
+  
+  console.log('╚════════════════════════════════════════════════════════════════════╝');
 }
 
 /****************************************************************************
