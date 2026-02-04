@@ -59,6 +59,10 @@ function map_to_scene_coords(x, y)
   Inverse of map_to_scene_coords(). Uses offset hex coordinates (odd-r).
   Reference: https://www.redblobgames.com/grids/hexagons/#coordinates-offset
   
+  For hex tiles, we first determine the rough tile position, then check
+  if the point is actually in that hex or a neighboring one using the
+  hex distance function.
+  
   @param {number} x - Scene X coordinate
   @param {number} y - Scene Y coordinate (actually Z in 3D space)
   @returns {Object} Map tile coordinates {x, y}
@@ -73,18 +77,76 @@ function scene_to_map_coords(x, y)
   // Account for the MAP_Y_OFFSET in map_to_scene_coords
   const adjustedY = y - MAP_Y_OFFSET;
   
-  // Calculate Y coordinate directly from scene position
+  // Calculate initial Y coordinate estimate
   const tileY = Math.floor(adjustedY / tileHeight);
   
   // Calculate row offset based on Y (odd rows are staggered in odd-r system)
   const rowOffset = (tileY % 2 === 1) ? tileWidth * HEX_STAGGER : 0;
   
-  // Account for the MAP_X_OFFSET in map_to_scene_coords (negate it to reverse the offset)
+  // Account for the MAP_X_OFFSET
   const adjustedX = x - MAP_X_OFFSET - rowOffset;
   
-  // Calculate X accounting for hex offset
-  result['x'] = Math.floor(adjustedX / tileWidth);
-  result['y'] = tileY;
+  // Calculate initial X coordinate estimate
+  const tileX = Math.floor(adjustedX / tileWidth);
+  
+  // For hex tiles, we need to check if the click is actually in this tile
+  // or in an adjacent tile at the corners. Check the distance from the
+  // click point to the center of candidate tiles.
+  
+  // Get the center position of the estimated tile
+  const tileCenterPos = map_to_scene_coords(tileX, tileY);
+  const tileCenterX = tileCenterPos['x'] + tileWidth / 2;
+  const tileCenterY = tileCenterPos['y'] + tileHeight / 2;
+  
+  // Check distance to estimated tile center
+  const dx = x - tileCenterX;
+  const dy = y - tileCenterY;
+  
+  // Calculate hex-corrected distance (accounting for hex aspect ratio)
+  const HEX_ASPECT_RATIO = tileWidth / tileHeight;
+  
+  // For hex tiles, if the point is near the top/bottom corners,
+  // it might be in an adjacent tile. Check neighboring tiles.
+  let bestTileX = tileX;
+  let bestTileY = tileY;
+  let bestDist = dx * dx + (dy * HEX_ASPECT_RATIO) * (dy * HEX_ASPECT_RATIO);
+  
+  // Check adjacent tiles (up to 6 neighbors for hex)
+  const neighbors = [
+    { dx: -1, dy: 0 },   // left
+    { dx: 1, dy: 0 },    // right
+    { dx: 0, dy: -1 },   // up
+    { dx: 0, dy: 1 },    // down
+    // For odd-r offset, diagonal neighbors depend on row parity
+    { dx: (tileY % 2 === 1) ? 0 : -1, dy: -1 }, // upper-left/upper
+    { dx: (tileY % 2 === 1) ? 1 : 0, dy: -1 },  // upper-right/upper
+    { dx: (tileY % 2 === 1) ? 0 : -1, dy: 1 },  // lower-left/lower
+    { dx: (tileY % 2 === 1) ? 1 : 0, dy: 1 },   // lower-right/lower
+  ];
+  
+  for (const neighbor of neighbors) {
+    const nx = tileX + neighbor.dx;
+    const ny = tileY + neighbor.dy;
+    
+    if (nx < 0 || nx >= map['xsize'] || ny < 0 || ny >= map['ysize']) continue;
+    
+    const neighborPos = map_to_scene_coords(nx, ny);
+    const neighborCenterX = neighborPos['x'] + tileWidth / 2;
+    const neighborCenterY = neighborPos['y'] + tileHeight / 2;
+    
+    const ndx = x - neighborCenterX;
+    const ndy = y - neighborCenterY;
+    const neighborDist = ndx * ndx + (ndy * HEX_ASPECT_RATIO) * (ndy * HEX_ASPECT_RATIO);
+    
+    if (neighborDist < bestDist) {
+      bestDist = neighborDist;
+      bestTileX = nx;
+      bestTileY = ny;
+    }
+  }
+  
+  result['x'] = bestTileX;
+  result['y'] = bestTileY;
 
   return result;
 }

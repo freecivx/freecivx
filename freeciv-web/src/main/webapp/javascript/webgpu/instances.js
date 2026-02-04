@@ -141,8 +141,9 @@ function update_tile_model_instancing(modelname, ptile, num_models, scale) {
             }
             usedSlots[instanceID] = true; // mark it used
 
-            let offsetX = -10 + (12 - Math.floor(Math.random() * 25));
-            let offsetZ = -10 + (12 - Math.floor(Math.random() * 25));
+            // Center instances within hexagonal tiles using HEX_CENTER_OFFSET
+            let offsetX = HEX_CENTER_OFFSET_X + 2 + (12 - Math.floor(Math.random() * 25));
+            let offsetZ = HEX_CENTER_OFFSET_Y + 2 + (12 - Math.floor(Math.random() * 25));
 
             let finalX = pos.x + offsetX;
             let finalY = height + 1.0;
@@ -278,9 +279,9 @@ function update_tile_forest_jungle(ptile) {
             }
             usedSlots[instanceID] = true; // mark it used
 
-            // Random offset
-            let offsetX = -10 + (12 - Math.floor(Math.random() * 25));
-            let offsetZ = -10 + (12 - Math.floor(Math.random() * 25));
+            // Center tree instances within hexagonal tiles using HEX_CENTER_OFFSET
+            let offsetX = HEX_CENTER_OFFSET_X + 2 + (12 - Math.floor(Math.random() * 25));
+            let offsetZ = HEX_CENTER_OFFSET_Y + 2 + (12 - Math.floor(Math.random() * 25));
 
             let finalX = pos.x + offsetX;
             let finalY = height;

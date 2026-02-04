@@ -99,9 +99,9 @@ function createTerrainShaderTSL(uniforms) {
     // we need to stretch the hex in UV space by the inverse of the compression factor
     // This counteracts the mesh compression so the final rendered hex has correct proportions
     const HEX_ASPECT = 1.0 / HEX_MESH_HEIGHT_FACTOR; // ≈ 1.1547 - Y-coordinate scale factor for hex geometry
-    const HEX_EDGE_WIDTH = 0.03; // Width of hex edge highlight (as fraction of tile)
-    const HEX_EDGE_SOFTNESS = 0.02; // Edge anti-aliasing softness
-    const HEX_EDGE_BLEND_STRENGTH = 0.35; // How strongly hex edges darken the terrain (0-1)
+    const HEX_EDGE_WIDTH = 0.045; // Width of hex edge highlight (as fraction of tile) - increased for better horizontal visibility
+    const HEX_EDGE_SOFTNESS = 0.025; // Edge anti-aliasing softness
+    const HEX_EDGE_BLEND_STRENGTH = 0.32; // How strongly hex edges darken the terrain (0-1) - slightly reduced for balance
     const HEX_EDGE_COLOR_R = 0.15; // Red component of edge darkening color
     const HEX_EDGE_COLOR_G = 0.12; // Green component of edge darkening color  
     const HEX_EDGE_COLOR_B = 0.08; // Blue component of edge darkening color
@@ -202,7 +202,7 @@ function createTerrainShaderTSL(uniforms) {
     const hexY = mul(centeredY, HEX_ASPECT);
     
     // Calculate distance to three pairs of hex edges using dot products with edge normals
-    // Edge 1: vertical edges (normal = (1, 0))
+    // Edge 1: vertical edges (normal = (1, 0)) - horizontal direction edges
     const dist1 = abs(hexX);
     
     // Edge 2: top-right and bottom-left edges (normal = (0.5, sqrt(3)/2))
@@ -220,13 +220,29 @@ function createTerrainShaderTSL(uniforms) {
     // =========================================================================
     // Create a soft edge mask that's 0 at hex interior and 1 at edges
     // This creates the distinctive Civ 6-style hex tile borders
+    //
+    // Use different edge widths for horizontal (X) vs diagonal (Y-influenced) edges
+    // to balance visual appearance after mesh compression
     const hexInradius = 0.5; // Radius from center to edge midpoint
-    const edgeStart = sub(hexInradius, HEX_EDGE_WIDTH);
+    
+    // Calculate directionally-weighted edge distance for balanced appearance
+    // The Y-direction edges appear thicker due to mesh compression, so we use
+    // a blended approach: horizontal edges (dist1) get full width, 
+    // diagonal edges (dist2, dist3) get slightly reduced width
+    const HEX_EDGE_WIDTH_HORIZONTAL = 0.05;  // Wider edges on left/right for better X visibility
+    const HEX_EDGE_WIDTH_DIAGONAL = 0.035;   // Narrower edges on top/bottom to reduce Y edge prominence
+    
+    // Determine which edge is active and blend edge widths accordingly
+    // When dist1 is the dominant edge (horizontal), use wider edge
+    // When dist2 or dist3 is dominant (diagonal), use narrower edge
+    const isHorizontalEdge = step(max(dist2, dist3), dist1);
+    const effectiveEdgeWidth = mix(HEX_EDGE_WIDTH_DIAGONAL, HEX_EDGE_WIDTH_HORIZONTAL, isHorizontalEdge);
+    const edgeStart = sub(hexInradius, effectiveEdgeWidth);
     
     // Smooth step from interior to edge
     // hexEdgeMask = smoothstep(edgeStart, hexInradius, hexDist)
     // Using manual smoothstep: t = clamp((x-edge0)/(edge1-edge0), 0, 1); return t*t*(3-2*t)
-    const edgeT = clamp(div(sub(hexDist, edgeStart), HEX_EDGE_WIDTH), 0.0, 1.0);
+    const edgeT = clamp(div(sub(hexDist, edgeStart), effectiveEdgeWidth), 0.0, 1.0);
     const hexEdgeMask = mul(mul(edgeT, edgeT), sub(3.0, mul(2.0, edgeT)));
     
     // =========================================================================
