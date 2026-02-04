@@ -1130,15 +1130,13 @@ function scene_to_map_coords(x, y)
   const neighbors = [
     { dx: -1, dy: 0 },   // left
     { dx: 1, dy: 0 },    // right
-    { dx: 0, dy: -1 },   // up
-    { dx: 0, dy: 1 },    // down
+    { dx: 0, dy: -1 },   // up (covers both row parities)
+    { dx: 0, dy: 1 },    // down (covers both row parities)
     // Include all diagonal neighbors for both even and odd row scenarios
-    { dx: -1, dy: -1 },  // upper-left (even row)
-    { dx: 0, dy: -1 },   // upper (odd row) / upper-right (even row)
-    { dx: 1, dy: -1 },   // upper-right (odd row)
-    { dx: -1, dy: 1 },   // lower-left (even row)
-    { dx: 0, dy: 1 },    // lower (odd row) / lower-right (even row) - already covered by "down"
-    { dx: 1, dy: 1 },    // lower-right (odd row)
+    { dx: -1, dy: -1 },  // upper-left (even row neighbor)
+    { dx: 1, dy: -1 },   // upper-right (odd row neighbor)
+    { dx: -1, dy: 1 },   // lower-left (even row neighbor)
+    { dx: 1, dy: 1 },    // lower-right (odd row neighbor)
   ];
   
   for (const neighbor of neighbors) {
