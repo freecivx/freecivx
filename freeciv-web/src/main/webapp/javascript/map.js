@@ -71,8 +71,46 @@ var T_FIRST = 0;
 var DIR_DX = [ -1, 0, 1, -1, 1, -1, 0, 1 ];
 var DIR_DY = [ -1, -1, -1, 0, 0, 1, 1, 1 ];
 
-var DIR_HEX_DX = [ 0,  1, 1, 0, 1, -1,  0,  0 ];
-var DIR_HEX_DY = [ 0,   -1, 0, -1,  1,  0,  1,  0 ];
+/**
+ * Hexagonal direction offsets for hex with odd-r offset coordinate system.
+ * For odd-r offset coordinates:
+ * - Odd rows are shifted right by half a tile width
+ * - Movement direction depends on whether current tile is in an odd or even row
+ * 
+ * Reference: https://www.redblobgames.com/grids/hexagons/#neighbors-offset
+ * 
+ * Direction indices (8-direction system):
+ *   DIR8_NORTHWEST = 0   DIR8_NORTH = 1     DIR8_NORTHEAST = 2
+ *   DIR8_WEST = 3        (center)           DIR8_EAST = 4
+ *   DIR8_SOUTHWEST = 5   DIR8_SOUTH = 6     DIR8_SOUTHEAST = 7
+ * 
+ * For iso-hex (TF_HEX && TF_ISO): NW, N, W, E, S, SE are valid; NE, SW are invalid
+ * For pure hex (TF_HEX && !TF_ISO): N, NE, W, E, SW, S are valid; NW, SE are invalid
+ * 
+ * Mapping Freeciv directions to hex neighbors (for iso-hex):
+ *   NW (0) -> upper-left hex neighbor
+ *   N (1)  -> upper-right hex neighbor  
+ *   W (3)  -> left hex neighbor
+ *   E (4)  -> right hex neighbor
+ *   S (6)  -> lower-left hex neighbor
+ *   SE (7) -> lower-right hex neighbor
+ */
+
+// Direction offsets for EVEN rows (y % 2 == 0) in odd-r offset coordinates
+// Format: [NW, N, NE, W, E, SW, S, SE]
+var DIR_HEX_DX_EVEN = [  0,  1,  1, -1,  1,  0,  0,  1 ];
+var DIR_HEX_DY_EVEN = [ -1, -1, -1,  0,  0,  1,  1,  1 ];
+
+// Direction offsets for ODD rows (y % 2 == 1) in odd-r offset coordinates
+// Format: [NW, N, NE, W, E, SW, S, SE]
+var DIR_HEX_DX_ODD  = [ -1,  0,  0, -1,  1, -1, -1,  0 ];
+var DIR_HEX_DY_ODD  = [ -1, -1, -1,  0,  0,  1,  1,  1 ];
+
+// @deprecated Legacy arrays kept for backwards compatibility
+// WARNING: These arrays are incorrect for hex grids and should not be used.
+// Use DIR_HEX_DX_EVEN/DIR_HEX_DY_EVEN for even rows and DIR_HEX_DX_ODD/DIR_HEX_DY_ODD for odd rows.
+var DIR_HEX_DX = [];
+var DIR_HEX_DY = [];
 
 
 /****************************************************************************
@@ -340,10 +378,12 @@ function map_distance_vector(tile0, tile1)
   Step from the given tile in the given direction.  The new tile is returned,
   or NULL if the direction is invalid or leads off the map.
   
-  For hexagonal topology, the same direction offsets (DIR_DX/DIR_DY) are used,
-  but certain directions are invalid and filtered by is_valid_dir().
-  In iso-hex: NE and SW are invalid
-  In pure hex: SE and NW are invalid
+  For hexagonal topology with odd-r offset coordinates:
+  - The direction offsets depend on whether the current tile is in an odd or even row
+  - WEST (numpad 4) and EAST (numpad 6) always move horizontally (no Y change)
+  - Diagonal directions (NW, NE, SW, SE) have different X offsets based on row parity
+  
+  Reference: https://www.redblobgames.com/grids/hexagons/#neighbors-offset
 ****************************************************************************/
 function mapstep(ptile, dir)
 {
@@ -351,9 +391,23 @@ function mapstep(ptile, dir)
     return null;
   }
 
-  // Use the standard direction offsets - hex validity is handled by is_valid_dir()
-  var dx = DIR_DX[dir];
-  var dy = DIR_DY[dir];
+  var dx, dy;
+  
+  // For hexagonal topology, use row-parity-dependent offsets
+  if (topo_has_flag(TF_HEX)) {
+    var isOddRow = (ptile['y'] % 2 === 1);
+    if (isOddRow) {
+      dx = DIR_HEX_DX_ODD[dir];
+      dy = DIR_HEX_DY_ODD[dir];
+    } else {
+      dx = DIR_HEX_DX_EVEN[dir];
+      dy = DIR_HEX_DY_EVEN[dir];
+    }
+  } else {
+    // Use standard direction offsets for square grid
+    dx = DIR_DX[dir];
+    dy = DIR_DY[dir];
+  }
 
   return map_pos_to_tile(dx + ptile['x'], dy + ptile['y']);
 
