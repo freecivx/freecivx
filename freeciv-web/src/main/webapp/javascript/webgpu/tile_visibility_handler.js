@@ -33,6 +33,20 @@ function webgl_update_tile_known(old_tile, new_tile)
 
   if (tile_get_known(new_tile) != tile_get_known(old_tile)) {
     map_known_dirty = true;
+    
+    // Debug logging for fog of war changes
+    if (typeof hexDebugEnabled !== 'undefined' && hexDebugEnabled && hexDebugLogCount < hexDebugMaxLogs) {
+      var oldKnown = tile_get_known(old_tile);
+      var newKnown = tile_get_known(new_tile);
+      var knownNames = ['UNKNOWN', 'UNSEEN', 'SEEN'];
+      hexDebugLog('FOG', `Tile(${new_tile['x']},${new_tile['y']}) visibility: ${knownNames[oldKnown] || oldKnown} → ${knownNames[newKnown] || newKnown}`, {
+        tile: { x: new_tile['x'], y: new_tile['y'], index: new_tile['index'] },
+        oldKnownStatus: oldKnown,
+        newKnownStatus: newKnown,
+        isOddRow: new_tile['y'] % 2 === 1,
+        height: new_tile['height']
+      });
+    }
   }
 
 }

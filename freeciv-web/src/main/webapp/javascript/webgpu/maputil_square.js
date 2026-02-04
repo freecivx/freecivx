@@ -22,6 +22,55 @@
 var MAP_X_OFFSET = -470;  // Initial X offset when converting map to scene coordinates
 var MAP_Y_OFFSET = 30;    // Initial Y offset when converting map to scene coordinates
 
+// ============= HEX DEBUG LOGGING SYSTEM =============
+// Enable/disable hex debugging with: hexDebugEnabled = true/false in browser console
+// Set to true for hex map troubleshooting, false for production
+var hexDebugEnabled = true;  // Enabled for hex debugging - set to false for production
+var hexDebugLogCount = 0;
+var hexDebugMaxLogs = 500; // Limit logs to prevent console overflow
+
+// Sampling rate for coordinate conversion logs (0.01 = 1% of conversions logged to reduce noise)
+const COORD_LOG_SAMPLE_RATE = 0.01;
+
+function hexDebugLog(category, message, data) {
+  if (!hexDebugEnabled || hexDebugLogCount > hexDebugMaxLogs) return;
+  hexDebugLogCount++;
+  console.log(`[HEX-DEBUG][${category}] ${message}`, data || '');
+}
+
+// Log user instructions when game starts (called once)
+var hexDebugInstructionsLogged = false;
+function hexDebugLogUserInstructions() {
+  if (hexDebugInstructionsLogged) return;
+  hexDebugInstructionsLogged = true;
+  console.log('%c═══════════════════════════════════════════════════════════════', 'color: #00ff00');
+  console.log('%c  HEXAGONAL MAP DEBUGGING TELEMETRY ACTIVE', 'color: #00ff00; font-size: 16px; font-weight: bold');
+  console.log('%c═══════════════════════════════════════════════════════════════', 'color: #00ff00');
+  console.log('%c\n📋 TEST INSTRUCTIONS FOR HEX MAP VERIFICATION:\n', 'color: #ffff00; font-weight: bold');
+  console.log('%c  1. SELECT A UNIT: Click on any unit to select it', 'color: #ffffff');
+  console.log('%c     → Watch for: [HEX-DEBUG][UNIT-SELECT] logs showing tile coords', 'color: #aaaaaa');
+  console.log('%c  2. MOVE UNIT WITH NUMPAD: Use numpad 1-9 (except 5) to move', 'color: #ffffff');
+  console.log('%c     → Watch for: [HEX-DEBUG][MOVEMENT] logs showing direction & coords', 'color: #aaaaaa');
+  console.log('%c     → HEX DIRECTIONS: Only 6 of 8 directions are valid for hex', 'color: #aaaaaa');
+  console.log('%c  3. USE GOTO (right-click): Right-click on map to set destination', 'color: #ffffff');
+  console.log('%c     → Watch for: [HEX-DEBUG][GOTO] logs showing path coordinates', 'color: #aaaaaa');
+  console.log('%c  4. BUILD CITY: Press B with settler selected', 'color: #ffffff');
+  console.log('%c     → Watch for: [HEX-DEBUG][CITY-PLACE] logs showing position', 'color: #aaaaaa');
+  console.log('%c  5. EXPLORE FOG OF WAR: Move units to reveal unknown tiles', 'color: #ffffff');
+  console.log('%c     → Watch for: [HEX-DEBUG][FOG] logs showing visibility changes', 'color: #aaaaaa');
+  console.log('%c  6. CLICK ON MAP: Click anywhere to see coordinate conversion', 'color: #ffffff');
+  console.log('%c     → Watch for: [HEX-DEBUG][CLICK-TILE] logs showing coords', 'color: #aaaaaa');
+  console.log('%c\n🔍 KEY VARIABLES TO CHECK (type in console):', 'color: #ffff00; font-weight: bold');
+  console.log('%c  - map.xsize, map.ysize: Map dimensions', 'color: #ffffff');
+  console.log('%c  - topo_has_flag(TF_HEX): Is hex topology?', 'color: #ffffff');
+  console.log('%c  - topo_has_flag(TF_ISO): Is isometric?', 'color: #ffffff');
+  console.log('%c  - HEX_HEIGHT_FACTOR: Should be ~0.866', 'color: #ffffff');
+  console.log('%c  - HEX_STAGGER: Should be 0.5', 'color: #ffffff');
+  console.log('%c  - hexDebugEnabled = false: Disable logging', 'color: #ffffff');
+  console.log('%c  - hexDebugLogCount = 0: Reset log counter', 'color: #ffffff');
+  console.log('%c\n═══════════════════════════════════════════════════════════════\n', 'color: #00ff00');
+}
+
 /****************************************************************************
   Converts from map to scene coordinates for hexagonal tiles.
   
@@ -49,6 +98,19 @@ function map_to_scene_coords(x, y)
   
   result['x'] = Math.floor(MAP_X_OFFSET + x * tileWidth + rowOffset);
   result['y'] = Math.floor(MAP_Y_OFFSET + y * tileHeight);
+
+  // Debug logging for coordinate conversion (sampled at COORD_LOG_SAMPLE_RATE to reduce noise)
+  if (hexDebugEnabled && hexDebugLogCount < hexDebugMaxLogs && Math.random() < COORD_LOG_SAMPLE_RATE) {
+    hexDebugLog('COORD-MAP2SCENE', `Map(${x},${y}) → Scene(${result['x']},${result['y']})`, {
+      tileWidth: tileWidth.toFixed(2),
+      tileHeight: tileHeight.toFixed(2),
+      rowOffset: rowOffset.toFixed(2),
+      isOddRow: y % 2 === 1,
+      mapSize: `${map['xsize']}x${map['ysize']}`,
+      HEX_HEIGHT_FACTOR: HEX_HEIGHT_FACTOR,
+      HEX_STAGGER: HEX_STAGGER
+    });
+  }
 
   return result;
 }
@@ -148,6 +210,18 @@ function scene_to_map_coords(x, y)
   result['x'] = bestTileX;
   result['y'] = bestTileY;
 
+  // Debug logging for scene-to-map conversion
+  if (hexDebugEnabled && hexDebugLogCount < hexDebugMaxLogs) {
+    hexDebugLog('COORD-SCENE2MAP', `Scene(${x.toFixed(1)},${y.toFixed(1)}) → Map(${result['x']},${result['y']})`, {
+      initialEstimate: `(${tileX},${tileY})`,
+      correctedTo: `(${bestTileX},${bestTileY})`,
+      tileWidth: tileWidth.toFixed(2),
+      tileHeight: tileHeight.toFixed(2),
+      isOddRow: tileY % 2 === 1,
+      distanceToCenter: bestDist.toFixed(2)
+    });
+  }
+
   return result;
 }
 
@@ -168,7 +242,18 @@ function webgl_canvas_pos_to_tile(x, y) {
     var intersect = intersects[i];
     var pos = scene_to_map_coords(intersect.point.x, intersect.point.z);
     var ptile = map_pos_to_tile(pos['x'], pos['y']);
-    if (ptile != null) return ptile;
+    if (ptile != null) {
+      // Log tile click for debugging
+      if (hexDebugEnabled && hexDebugLogCount < hexDebugMaxLogs) {
+        hexDebugLog('CLICK-TILE', `Canvas(${x},${y}) → Tile(${ptile['x']},${ptile['y']}) index=${ptile['index']}`, {
+          intersectPoint: { x: intersect.point.x.toFixed(2), z: intersect.point.z.toFixed(2) },
+          mapPos: pos,
+          tileIndex: ptile['index'],
+          isOddRow: ptile['y'] % 2 === 1
+        });
+      }
+      return ptile;
+    }
   }
 
   return null;

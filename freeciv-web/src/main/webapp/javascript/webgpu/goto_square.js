@@ -19,6 +19,9 @@
 
 var goto_lines = [];
 
+// Maximum number of goto path segments to log (to reduce console noise on long paths)
+const MAX_GOTO_SEGMENT_LOGS = 5;
+
 /****************************************************************************
  Renders a goto line by creating thick quads along the goto path.
  ****************************************************************************/
@@ -27,6 +30,18 @@ function webgl_render_goto_line(start_tile, goto_packet_dir) {
     if (!goto_active) return;
 
     var ptile = start_tile;
+
+    // Log goto path start
+    if (typeof hexDebugEnabled !== 'undefined' && hexDebugEnabled) {
+      var dirNames = goto_packet_dir.map(d => dir_get_name(d)).join('→');
+      hexDebugLog('GOTO', `Rendering goto path from Tile(${start_tile['x']},${start_tile['y']})`, {
+        startTile: { x: start_tile['x'], y: start_tile['y'], index: start_tile['index'] },
+        pathLength: goto_packet_dir.length,
+        directions: goto_packet_dir,
+        directionNames: dirNames,
+        isHexMap: typeof topo_has_flag !== 'undefined' ? topo_has_flag(TF_HEX) : 'unknown'
+      });
+    }
 
     const material = new THREE.MeshBasicMaterial({
         color: 0x55c0ff,
@@ -53,6 +68,19 @@ function webgl_render_goto_line(start_tile, goto_packet_dir) {
             var currpos = map_to_scene_coords(ptile['x'], ptile['y']);
             var nextpos = map_to_scene_coords(nexttile['x'], nexttile['y']);
             var height = 5 + ptile['height'] * 100;
+
+            // Log first few goto segments for debugging (limited by MAX_GOTO_SEGMENT_LOGS)
+            if (typeof hexDebugEnabled !== 'undefined' && hexDebugEnabled && i < MAX_GOTO_SEGMENT_LOGS) {
+              hexDebugLog('GOTO-SEGMENT', `Step ${i}: Tile(${ptile['x']},${ptile['y']}) → Tile(${nexttile['x']},${nexttile['y']}) dir=${dir}(${dir_get_name(dir)})`, {
+                currentTile: { x: ptile['x'], y: ptile['y'] },
+                nextTile: { x: nexttile['x'], y: nexttile['y'] },
+                direction: dir,
+                dirName: dir_get_name(dir),
+                currScenePos: currpos,
+                nextScenePos: nextpos,
+                isValidDir: is_valid_dir(dir)
+              });
+            }
 
             // Apply hex center offset and height adjustment
             var start = new THREE.Vector3(currpos.x + leftOffset, height + heightOffset, currpos.y + HEX_CENTER_OFFSET_Y);
