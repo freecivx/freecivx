@@ -32,10 +32,23 @@ var hexDebugMaxLogs = 500; // Limit logs to prevent console overflow
 // Sampling rate for coordinate conversion logs (0.01 = 1% of conversions logged to reduce noise)
 const COORD_LOG_SAMPLE_RATE = 0.01;
 
+// Dark color scheme for console logging (easier to read)
+const HEX_DEBUG_COLORS = {
+  border: 'color: #2e7d32; font-weight: bold',     // Dark green for borders
+  header: 'color: #1565c0; font-size: 14px; font-weight: bold',  // Dark blue for headers
+  section: 'color: #6a1b9a; font-weight: bold',    // Dark purple for section titles
+  label: 'color: #424242',                          // Dark gray for labels
+  value: 'color: #0277bd',                          // Dark cyan for values
+  warning: 'color: #e65100; font-weight: bold',    // Dark orange for warnings
+  success: 'color: #2e7d32',                        // Dark green for success
+  error: 'color: #c62828; font-weight: bold',      // Dark red for errors
+};
+
 function hexDebugLog(category, message, data) {
   if (!hexDebugEnabled || hexDebugLogCount > hexDebugMaxLogs) return;
   hexDebugLogCount++;
-  console.log(`[HEX-DEBUG][${category}] ${message}`, data || '');
+  // Use dark colors from HEX_DEBUG_COLORS for consistency
+  console.log(`%c[HEX][${category}]%c ${message}`, HEX_DEBUG_COLORS.header, HEX_DEBUG_COLORS.label, data || '');
 }
 
 // Log user instructions when game starts (called once)
@@ -43,32 +56,65 @@ var hexDebugInstructionsLogged = false;
 function hexDebugLogUserInstructions() {
   if (hexDebugInstructionsLogged) return;
   hexDebugInstructionsLogged = true;
-  console.log('%c═══════════════════════════════════════════════════════════════', 'color: #00ff00');
-  console.log('%c  HEXAGONAL MAP DEBUGGING TELEMETRY ACTIVE', 'color: #00ff00; font-size: 16px; font-weight: bold');
-  console.log('%c═══════════════════════════════════════════════════════════════', 'color: #00ff00');
-  console.log('%c\n📋 TEST INSTRUCTIONS FOR HEX MAP VERIFICATION:\n', 'color: #ffff00; font-weight: bold');
-  console.log('%c  1. SELECT A UNIT: Click on any unit to select it', 'color: #ffffff');
-  console.log('%c     → Watch for: [HEX-DEBUG][UNIT-SELECT] logs showing tile coords', 'color: #aaaaaa');
-  console.log('%c  2. MOVE UNIT WITH NUMPAD: Use numpad 1-9 (except 5) to move', 'color: #ffffff');
-  console.log('%c     → Watch for: [HEX-DEBUG][MOVEMENT] logs showing direction & coords', 'color: #aaaaaa');
-  console.log('%c     → HEX DIRECTIONS: Only 6 of 8 directions are valid for hex', 'color: #aaaaaa');
-  console.log('%c  3. USE GOTO (right-click): Right-click on map to set destination', 'color: #ffffff');
-  console.log('%c     → Watch for: [HEX-DEBUG][GOTO] logs showing path coordinates', 'color: #aaaaaa');
-  console.log('%c  4. BUILD CITY: Press B with settler selected', 'color: #ffffff');
-  console.log('%c     → Watch for: [HEX-DEBUG][CITY-PLACE] logs showing position', 'color: #aaaaaa');
-  console.log('%c  5. EXPLORE FOG OF WAR: Move units to reveal unknown tiles', 'color: #ffffff');
-  console.log('%c     → Watch for: [HEX-DEBUG][FOG] logs showing visibility changes', 'color: #aaaaaa');
-  console.log('%c  6. CLICK ON MAP: Click anywhere to see coordinate conversion', 'color: #ffffff');
-  console.log('%c     → Watch for: [HEX-DEBUG][CLICK-TILE] logs showing coords', 'color: #aaaaaa');
-  console.log('%c\n🔍 KEY VARIABLES TO CHECK (type in console):', 'color: #ffff00; font-weight: bold');
-  console.log('%c  - map.xsize, map.ysize: Map dimensions', 'color: #ffffff');
-  console.log('%c  - topo_has_flag(TF_HEX): Is hex topology?', 'color: #ffffff');
-  console.log('%c  - topo_has_flag(TF_ISO): Is isometric?', 'color: #ffffff');
-  console.log('%c  - HEX_HEIGHT_FACTOR: Should be ~0.866', 'color: #ffffff');
-  console.log('%c  - HEX_STAGGER: Should be 0.5', 'color: #ffffff');
-  console.log('%c  - hexDebugEnabled = false: Disable logging', 'color: #ffffff');
-  console.log('%c  - hexDebugLogCount = 0: Reset log counter', 'color: #ffffff');
-  console.log('%c\n═══════════════════════════════════════════════════════════════\n', 'color: #00ff00');
+  
+  // Compact, dark-themed instructions
+  console.log('%c══════════════════════════════════════════════════════════', HEX_DEBUG_COLORS.border);
+  console.log('%c  🔷 HEX MAP DEBUGGING ACTIVE', HEX_DEBUG_COLORS.header);
+  console.log('%c══════════════════════════════════════════════════════════', HEX_DEBUG_COLORS.border);
+  
+  console.log('%c\n📋 QUICK TESTS:', HEX_DEBUG_COLORS.section);
+  console.log('%c  1. Click unit → UNIT-PLACE logs', HEX_DEBUG_COLORS.label);
+  console.log('%c  2. Numpad move → MOVEMENT logs (6 valid hex dirs)', HEX_DEBUG_COLORS.label);
+  console.log('%c  3. Right-click → GOTO path logs', HEX_DEBUG_COLORS.label);
+  console.log('%c  4. Click map → CLICK-TILE coord logs', HEX_DEBUG_COLORS.label);
+  
+  console.log('%c\n🔧 CONSOLE COMMANDS:', HEX_DEBUG_COLORS.section);
+  console.log('%c  hexDebugEnabled = false  %c// disable logging', HEX_DEBUG_COLORS.label, HEX_DEBUG_COLORS.value);
+  console.log('%c  hexDebugSummary()        %c// show hex state', HEX_DEBUG_COLORS.label, HEX_DEBUG_COLORS.value);
+  console.log('%c══════════════════════════════════════════════════════════\n', HEX_DEBUG_COLORS.border);
+}
+
+/**
+ * Show hex map state summary - call from console: hexDebugSummary()
+ */
+function hexDebugSummary() {
+  console.log('%c\n╔═══════════════════════════════════════╗', HEX_DEBUG_COLORS.border);
+  console.log('%c║     HEX MAP STATE SUMMARY             ║', HEX_DEBUG_COLORS.header);
+  console.log('%c╠═══════════════════════════════════════╣', HEX_DEBUG_COLORS.border);
+  
+  // Map dimensions
+  const mapX = (typeof map !== 'undefined' && map) ? map.xsize : 'N/A';
+  const mapY = (typeof map !== 'undefined' && map) ? map.ysize : 'N/A';
+  console.log('%c║ Map Size:       %c' + mapX + ' x ' + mapY + ' tiles', HEX_DEBUG_COLORS.label, HEX_DEBUG_COLORS.value);
+  
+  // Topology flags
+  const isHex = (typeof topo_has_flag !== 'undefined') ? topo_has_flag(TF_HEX) : 'N/A';
+  const isIso = (typeof topo_has_flag !== 'undefined') ? topo_has_flag(TF_ISO) : 'N/A';
+  console.log('%c║ Is Hex:         %c' + isHex, HEX_DEBUG_COLORS.label, isHex ? HEX_DEBUG_COLORS.success : HEX_DEBUG_COLORS.warning);
+  console.log('%c║ Is Isometric:   %c' + isIso, HEX_DEBUG_COLORS.label, HEX_DEBUG_COLORS.value);
+  
+  // Hex constants
+  console.log('%c║ HEX_HEIGHT:     %c' + HEX_HEIGHT_FACTOR.toFixed(4) + ' (expected: 0.8660)', HEX_DEBUG_COLORS.label, HEX_DEBUG_COLORS.value);
+  console.log('%c║ HEX_STAGGER:    %c' + HEX_STAGGER + ' (expected: 0.5)', HEX_DEBUG_COLORS.label, HEX_DEBUG_COLORS.value);
+  
+  // Tile dimensions
+  if (typeof mapview_model_width !== 'undefined' && typeof map !== 'undefined' && map) {
+    const tileW = (mapview_model_width / map.xsize).toFixed(2);
+    const tileH = ((mapview_model_height / map.ysize) * HEX_HEIGHT_FACTOR).toFixed(2);
+    console.log('%c║ Tile Width:     %c' + tileW + ' units', HEX_DEBUG_COLORS.label, HEX_DEBUG_COLORS.value);
+    console.log('%c║ Tile Height:    %c' + tileH + ' units', HEX_DEBUG_COLORS.label, HEX_DEBUG_COLORS.value);
+  }
+  
+  // Debug state
+  console.log('%c║ Debug Logs:     %c' + hexDebugLogCount + '/' + hexDebugMaxLogs, HEX_DEBUG_COLORS.label, HEX_DEBUG_COLORS.value);
+  console.log('%c╚═══════════════════════════════════════╝\n', HEX_DEBUG_COLORS.border);
+  
+  // Valid hex directions hint
+  if (isHex && isIso) {
+    console.log('%c⬡ Iso-Hex: Valid dirs = N, S, E, W, NW, SE (numpad: 2,4,6,8,7,3)', HEX_DEBUG_COLORS.section);
+  } else if (isHex) {
+    console.log('%c⬡ Pure-Hex: Valid dirs = N, S, E, W, NE, SW (numpad: 2,4,6,8,9,1)', HEX_DEBUG_COLORS.section);
+  }
 }
 
 /****************************************************************************
