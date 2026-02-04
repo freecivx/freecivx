@@ -127,23 +127,6 @@ function update_unit_position(ptile) {
     new_unit.name = "Unit_" + visible_unit['id'];
     scene.add(new_unit);
 
-    // Debug logging for unit placement
-    if (typeof hexDebugEnabled !== 'undefined' && hexDebugEnabled && hexDebugLogCount < hexDebugMaxLogs) {
-      hexDebugLog('UNIT-PLACE', `Placing "${unit_type_name}" at Tile(${ptile['x']},${ptile['y']})`, {
-        unitId: visible_unit['id'],
-        unitType: unit_type_name,
-        mapCoords: { x: ptile['x'], y: ptile['y'], index: ptile['index'] },
-        scenePos: { x: pos['x'], y: pos['y'] },
-        finalPosition: { 
-          x: pos['x'] + HEX_CENTER_OFFSET_X, 
-          y: height - 2, 
-          z: pos['y'] + HEX_CENTER_OFFSET_Y 
-        },
-        hexOffsets: { HEX_CENTER_OFFSET_X, HEX_CENTER_OFFSET_Y },
-        isOddRow: ptile['y'] % 2 === 1
-      });
-    }
-
     /* add flag. */
     var new_flag;
     if (unit_flag_positions[ptile['index']] == null && scene != null) {

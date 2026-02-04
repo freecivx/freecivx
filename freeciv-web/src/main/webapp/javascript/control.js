@@ -3051,34 +3051,6 @@ function key_unit_move(dir)
     }
 
     var newtile = mapstep(ptile, dir);
-    
-    // Debug logging for unit movement
-    if (typeof hexDebugEnabled !== 'undefined' && hexDebugEnabled) {
-      var unitType = unit_type(punit);
-      var unitName = unitType ? unitType['name'] : 'Unknown';
-      hexDebugLog('MOVEMENT', `Unit "${unitName}" trying to move ${dir_get_name(dir)} (dir=${dir})`, {
-        unitId: punit['id'],
-        unitType: unitName,
-        fromTile: { x: ptile['x'], y: ptile['y'], index: ptile['index'] },
-        toTile: newtile ? { x: newtile['x'], y: newtile['y'], index: newtile['index'] } : null,
-        direction: dir,
-        directionName: dir_get_name(dir),
-        isValidDirection: is_valid_dir(dir),
-        isHexMap: topo_has_flag(TF_HEX),
-        isIsoMap: topo_has_flag(TF_ISO),
-        validHexDirs: 'N,S,E,W + (iso-hex: NW,SE | pure-hex: NE,SW)',
-        moveSuccess: newtile != null
-      });
-      
-      if (newtile == null) {
-        hexDebugLog('MOVEMENT-BLOCKED', `Movement blocked! Direction ${dir_get_name(dir)} (${dir}) is invalid or leads off map`, {
-          isValidDir: is_valid_dir(dir),
-          isHexMap: topo_has_flag(TF_HEX),
-          reason: !is_valid_dir(dir) ? 'Invalid direction for hex topology' : 'Leads off map edge'
-        });
-      }
-    }
-    
     if (newtile == null) {
       return;
     }

@@ -23,98 +23,511 @@ var MAP_X_OFFSET = -470;  // Initial X offset when converting map to scene coord
 var MAP_Y_OFFSET = 30;    // Initial Y offset when converting map to scene coordinates
 
 // ============= HEX DEBUG LOGGING SYSTEM =============
-// Enable/disable hex debugging with: hexDebugEnabled = true/false in browser console
-// Set to true for hex map troubleshooting, false for production
-var hexDebugEnabled = true;  // Enabled for hex debugging - set to false for production
-var hexDebugLogCount = 0;
-var hexDebugMaxLogs = 500; // Limit logs to prevent console overflow
+// New comprehensive hex debug system for diagnosing hex map tile issues
+// Usage: startHexDebug() - runs automated debug actions
+//        hexDebugSummary() - prints debug info to console
 
-// Sampling rate for coordinate conversion logs (0.01 = 1% of conversions logged to reduce noise)
-const COORD_LOG_SAMPLE_RATE = 0.01;
-
-// Dark color scheme for console logging (easier to read)
-const HEX_DEBUG_COLORS = {
-  border: 'color: #2e7d32; font-weight: bold',     // Dark green for borders
-  header: 'color: #1565c0; font-size: 14px; font-weight: bold',  // Dark blue for headers
-  section: 'color: #6a1b9a; font-weight: bold',    // Dark purple for section titles
-  label: 'color: #424242',                          // Dark gray for labels
-  value: 'color: #0277bd',                          // Dark cyan for values
-  warning: 'color: #e65100; font-weight: bold',    // Dark orange for warnings
-  success: 'color: #2e7d32',                        // Dark green for success
-  error: 'color: #c62828; font-weight: bold',      // Dark red for errors
+var hexDebugData = {
+  enabled: false,
+  logs: [],
+  tileClicks: [],
+  unitMoves: [],
+  coordConversions: [],
+  fogChanges: [],
+  screenshotData: null
 };
 
-function hexDebugLog(category, message, data) {
-  if (!hexDebugEnabled || hexDebugLogCount > hexDebugMaxLogs) return;
-  hexDebugLogCount++;
-  // Use dark colors from HEX_DEBUG_COLORS for consistency
-  console.log(`%c[HEX][${category}]%c ${message}`, HEX_DEBUG_COLORS.header, HEX_DEBUG_COLORS.label, data || '');
-}
-
-// Log user instructions when game starts (called once)
-var hexDebugInstructionsLogged = false;
-function hexDebugLogUserInstructions() {
-  if (hexDebugInstructionsLogged) return;
-  hexDebugInstructionsLogged = true;
-  
-  // Compact, dark-themed instructions
-  console.log('%c══════════════════════════════════════════════════════════', HEX_DEBUG_COLORS.border);
-  console.log('%c  🔷 HEX MAP DEBUGGING ACTIVE', HEX_DEBUG_COLORS.header);
-  console.log('%c══════════════════════════════════════════════════════════', HEX_DEBUG_COLORS.border);
-  
-  console.log('%c\n📋 QUICK TESTS:', HEX_DEBUG_COLORS.section);
-  console.log('%c  1. Click unit → UNIT-PLACE logs', HEX_DEBUG_COLORS.label);
-  console.log('%c  2. Numpad move → MOVEMENT logs (6 valid hex dirs)', HEX_DEBUG_COLORS.label);
-  console.log('%c  3. Right-click → GOTO path logs', HEX_DEBUG_COLORS.label);
-  console.log('%c  4. Click map → CLICK-TILE coord logs', HEX_DEBUG_COLORS.label);
-  
-  console.log('%c\n🔧 CONSOLE COMMANDS:', HEX_DEBUG_COLORS.section);
-  console.log('%c  hexDebugEnabled = false  %c// disable logging', HEX_DEBUG_COLORS.label, HEX_DEBUG_COLORS.value);
-  console.log('%c  hexDebugSummary()        %c// show hex state', HEX_DEBUG_COLORS.label, HEX_DEBUG_COLORS.value);
-  console.log('%c══════════════════════════════════════════════════════════\n', HEX_DEBUG_COLORS.border);
+/**
+ * Logs a hex debug message with category and data
+ */
+function hexLog(category, message, data) {
+  if (!hexDebugData.enabled) return;
+  var entry = {
+    timestamp: Date.now(),
+    category: category,
+    message: message,
+    data: data || {}
+  };
+  hexDebugData.logs.push(entry);
+  console.log('[HEX-DEBUG][' + category + '] ' + message, data || '');
 }
 
 /**
- * Show hex map state summary - call from console: hexDebugSummary()
+ * Start hex debug mode - runs automated browser actions to debug hex implementation
+ * Call from browser console: startHexDebug()
+ */
+function startHexDebug() {
+  hexDebugData.enabled = true;
+  hexDebugData.logs = [];
+  hexDebugData.tileClicks = [];
+  hexDebugData.unitMoves = [];
+  hexDebugData.coordConversions = [];
+  hexDebugData.fogChanges = [];
+  
+  console.log('╔════════════════════════════════════════════════════════════╗');
+  console.log('║          HEX MAP DEBUG SESSION STARTED                     ║');
+  console.log('╚════════════════════════════════════════════════════════════╝');
+  console.log('');
+  console.log('AUTOMATED DEBUG ACTIONS RUNNING...');
+  console.log('');
+  
+  // Log initial state
+  hexLog('INIT', 'Debug session started');
+  
+  // Log map configuration
+  if (typeof map !== 'undefined' && map) {
+    hexLog('MAP-CONFIG', 'Map configuration', {
+      xsize: map.xsize,
+      ysize: map.ysize,
+      topology: map.topology_id,
+      isHex: typeof topo_has_flag !== 'undefined' ? topo_has_flag(TF_HEX) : 'unknown',
+      isIso: typeof topo_has_flag !== 'undefined' ? topo_has_flag(TF_ISO) : 'unknown'
+    });
+  }
+  
+  // Log hex constants
+  hexLog('HEX-CONSTANTS', 'Hex rendering constants', {
+    HEX_HEIGHT_FACTOR: typeof HEX_HEIGHT_FACTOR !== 'undefined' ? HEX_HEIGHT_FACTOR : 'undefined',
+    HEX_STAGGER: typeof HEX_STAGGER !== 'undefined' ? HEX_STAGGER : 'undefined',
+    HEX_CENTER_OFFSET_X: typeof HEX_CENTER_OFFSET_X !== 'undefined' ? HEX_CENTER_OFFSET_X : 'undefined',
+    HEX_CENTER_OFFSET_Y: typeof HEX_CENTER_OFFSET_Y !== 'undefined' ? HEX_CENTER_OFFSET_Y : 'undefined',
+    MAP_X_OFFSET: MAP_X_OFFSET,
+    MAP_Y_OFFSET: MAP_Y_OFFSET
+  });
+  
+  // Log mapview dimensions
+  hexLog('MAPVIEW', 'Mapview dimensions', {
+    mapview_model_width: typeof mapview_model_width !== 'undefined' ? mapview_model_width : 'undefined',
+    mapview_model_height: typeof mapview_model_height !== 'undefined' ? mapview_model_height : 'undefined'
+  });
+  
+  // Test coordinate conversions for sample tiles
+  console.log('');
+  console.log('TESTING COORDINATE CONVERSIONS...');
+  testCoordinateConversions();
+  
+  // Log unit positions
+  console.log('');
+  console.log('LOGGING UNIT POSITIONS...');
+  logAllUnitPositions();
+  
+  // Generate ASCII map representation
+  console.log('');
+  console.log('GENERATING ASCII MAP...');
+  generateAsciiMap();
+  
+  // Capture ASCII screenshot of the canvas
+  console.log('');
+  console.log('CAPTURING ASCII SCREENSHOT...');
+  captureAsciiScreenshotCompact();
+  
+  console.log('');
+  console.log('DEBUG SESSION ACTIVE. Call hexDebugSummary() for full report.');
+  console.log('Call captureAsciiScreenshot() for detailed screenshot.');
+  console.log('Call stopHexDebug() to end session.');
+}
+
+/**
+ * Stop hex debug mode
+ */
+function stopHexDebug() {
+  hexDebugData.enabled = false;
+  console.log('Hex debug session ended. Total logs: ' + hexDebugData.logs.length);
+}
+
+/**
+ * Test coordinate conversions for a grid of tiles
+ */
+function testCoordinateConversions() {
+  if (typeof map === 'undefined' || !map) {
+    hexLog('ERROR', 'Map not available for coordinate testing');
+    return;
+  }
+  
+  var testPoints = [];
+  var stepX = Math.max(1, Math.floor(map.xsize / 5));
+  var stepY = Math.max(1, Math.floor(map.ysize / 5));
+  
+  for (var y = 0; y < map.ysize; y += stepY) {
+    for (var x = 0; x < map.xsize; x += stepX) {
+      var sceneCoords = map_to_scene_coords(x, y);
+      var backToMap = scene_to_map_coords(sceneCoords.x, sceneCoords.y);
+      var roundTrip = (backToMap.x === x && backToMap.y === y);
+      
+      testPoints.push({
+        original: {x: x, y: y},
+        scene: sceneCoords,
+        backToMap: backToMap,
+        roundTripOK: roundTrip,
+        isOddRow: y % 2 === 1
+      });
+      
+      hexDebugData.coordConversions.push({
+        mapX: x, mapY: y,
+        sceneX: sceneCoords.x, sceneY: sceneCoords.y,
+        roundTripX: backToMap.x, roundTripY: backToMap.y,
+        success: roundTrip
+      });
+    }
+  }
+  
+  var failures = testPoints.filter(function(p) { return !p.roundTripOK; });
+  hexLog('COORD-TEST', 'Coordinate conversion test results', {
+    totalTests: testPoints.length,
+    passed: testPoints.length - failures.length,
+    failed: failures.length,
+    failures: failures.slice(0, 5) // Show first 5 failures
+  });
+}
+
+/**
+ * Log positions of all visible units
+ */
+function logAllUnitPositions() {
+  if (typeof units === 'undefined') {
+    hexLog('ERROR', 'Units not available');
+    return;
+  }
+  
+  var unitList = [];
+  for (var unitId in units) {
+    var unit = units[unitId];
+    if (unit && unit.tile !== undefined) {
+      var ptile = index_to_tile(unit.tile);
+      if (ptile) {
+        var scenePos = map_to_scene_coords(ptile.x, ptile.y);
+        unitList.push({
+          id: unit.id,
+          type: typeof unit_type !== 'undefined' ? unit_type(unit).name : 'unknown',
+          tileX: ptile.x,
+          tileY: ptile.y,
+          tileIndex: ptile.index,
+          sceneX: scenePos.x,
+          sceneY: scenePos.y,
+          isOddRow: ptile.y % 2 === 1
+        });
+      }
+    }
+  }
+  
+  hexLog('UNITS', 'Unit positions logged', {
+    count: unitList.length,
+    units: unitList.slice(0, 10) // Show first 10 units
+  });
+}
+
+/**
+ * Generate an ASCII representation of the map around the camera focus
+ */
+function generateAsciiMap() {
+  if (typeof map === 'undefined' || !map) {
+    hexLog('ERROR', 'Map not available for ASCII generation');
+    return;
+  }
+  
+  var width = Math.min(20, map.xsize);
+  var height = Math.min(10, map.ysize);
+  var startX = 0;
+  var startY = 0;
+  
+  // Try to center on player's first unit
+  if (typeof units !== 'undefined') {
+    for (var unitId in units) {
+      var unit = units[unitId];
+      if (unit && unit.tile !== undefined) {
+        var ptile = index_to_tile(unit.tile);
+        if (ptile) {
+          startX = Math.max(0, ptile.x - Math.floor(width / 2));
+          startY = Math.max(0, ptile.y - Math.floor(height / 2));
+          break;
+        }
+      }
+    }
+  }
+  
+  var asciiLines = [];
+  asciiLines.push('ASCII MAP (hex stagger shown with indentation):');
+  asciiLines.push('Legend: . = land, ~ = ocean, ? = unknown, U = unit, C = city');
+  asciiLines.push('');
+  
+  for (var y = startY; y < startY + height && y < map.ysize; y++) {
+    var indent = (y % 2 === 1) ? '  ' : ''; // Hex stagger for odd rows
+    var line = indent;
+    
+    for (var x = startX; x < startX + width && x < map.xsize; x++) {
+      var ptile = map_pos_to_tile(x, y);
+      var char = '?';
+      
+      if (ptile) {
+        if (tile_get_known(ptile) === TILE_UNKNOWN) {
+          char = '?';
+        } else if (tile_city(ptile)) {
+          char = 'C';
+        } else if (tile_units(ptile) && tile_units(ptile).length > 0) {
+          char = 'U';
+        } else if (is_ocean_tile(ptile)) {
+          char = '~';
+        } else {
+          char = '.';
+        }
+      }
+      line += char + '   '; // Extra spacing for hex tiles
+    }
+    asciiLines.push('Row ' + y.toString().padStart(2, '0') + ': ' + line);
+  }
+  
+  hexLog('ASCII-MAP', asciiLines.join('\n'));
+}
+
+/**
+ * Capture the game canvas and convert to ASCII art for debugging
+ * Call from browser console: captureAsciiScreenshot()
+ */
+function captureAsciiScreenshot() {
+  var canvas = document.getElementById('mapcanvas');
+  if (!canvas) {
+    console.log('[HEX-DEBUG] Canvas not found');
+    return null;
+  }
+  
+  // Get the WebGPU/WebGL context and read pixels
+  var width = canvas.width;
+  var height = canvas.height;
+  
+  // Target ASCII dimensions (characters)
+  var asciiWidth = 120;
+  var asciiHeight = 40;
+  
+  // Create a temporary 2D canvas to read pixels
+  var tempCanvas = document.createElement('canvas');
+  tempCanvas.width = asciiWidth;
+  tempCanvas.height = asciiHeight;
+  var ctx = tempCanvas.getContext('2d');
+  
+  // Draw the game canvas scaled down to ASCII dimensions
+  ctx.drawImage(canvas, 0, 0, asciiWidth, asciiHeight);
+  
+  // Get pixel data
+  var imageData;
+  try {
+    imageData = ctx.getImageData(0, 0, asciiWidth, asciiHeight);
+  } catch (e) {
+    console.log('[HEX-DEBUG] Cannot read canvas pixels (CORS or security restriction)');
+    return null;
+  }
+  
+  var pixels = imageData.data;
+  
+  // ASCII character ramp from dark to light
+  var asciiChars = ' .:-=+*#%@';
+  
+  var asciiLines = [];
+  asciiLines.push('╔' + '═'.repeat(asciiWidth + 2) + '╗');
+  asciiLines.push('║ ASCII SCREENSHOT (' + width + 'x' + height + ' → ' + asciiWidth + 'x' + asciiHeight + ')' + ' '.repeat(Math.max(0, asciiWidth - 45)) + ' ║');
+  asciiLines.push('╠' + '═'.repeat(asciiWidth + 2) + '╣');
+  
+  for (var y = 0; y < asciiHeight; y++) {
+    var line = '║ ';
+    for (var x = 0; x < asciiWidth; x++) {
+      var idx = (y * asciiWidth + x) * 4;
+      var r = pixels[idx];
+      var g = pixels[idx + 1];
+      var b = pixels[idx + 2];
+      var a = pixels[idx + 3];
+      
+      // Calculate brightness (0-255)
+      var brightness = (0.299 * r + 0.587 * g + 0.114 * b) * (a / 255);
+      
+      // Map brightness to ASCII character
+      var charIndex = Math.floor((brightness / 255) * (asciiChars.length - 1));
+      line += asciiChars[charIndex];
+    }
+    line += ' ║';
+    asciiLines.push(line);
+  }
+  
+  asciiLines.push('╚' + '═'.repeat(asciiWidth + 2) + '╝');
+  
+  var asciiArt = asciiLines.join('\n');
+  
+  // Store in debug data
+  hexDebugData.screenshotData = {
+    timestamp: Date.now(),
+    originalSize: { width: width, height: height },
+    asciiSize: { width: asciiWidth, height: asciiHeight },
+    ascii: asciiArt
+  };
+  
+  console.log('\n' + asciiArt + '\n');
+  hexLog('SCREENSHOT', 'ASCII screenshot captured', {
+    originalSize: width + 'x' + height,
+    asciiSize: asciiWidth + 'x' + asciiHeight
+  });
+  
+  return asciiArt;
+}
+
+/**
+ * Capture a smaller, more compact ASCII screenshot
+ * Call from browser console: captureAsciiScreenshotCompact()
+ */
+function captureAsciiScreenshotCompact() {
+  var canvas = document.getElementById('mapcanvas');
+  if (!canvas) {
+    console.log('[HEX-DEBUG] Canvas not found');
+    return null;
+  }
+  
+  var width = canvas.width;
+  var height = canvas.height;
+  
+  // Smaller target for compact view
+  var asciiWidth = 60;
+  var asciiHeight = 20;
+  
+  var tempCanvas = document.createElement('canvas');
+  tempCanvas.width = asciiWidth;
+  tempCanvas.height = asciiHeight;
+  var ctx = tempCanvas.getContext('2d');
+  
+  ctx.drawImage(canvas, 0, 0, asciiWidth, asciiHeight);
+  
+  var imageData;
+  try {
+    imageData = ctx.getImageData(0, 0, asciiWidth, asciiHeight);
+  } catch (e) {
+    console.log('[HEX-DEBUG] Cannot read canvas pixels');
+    return null;
+  }
+  
+  var pixels = imageData.data;
+  
+  // Block characters for more detail
+  var blockChars = ' ░▒▓█';
+  
+  var asciiLines = [];
+  asciiLines.push('┌' + '─'.repeat(asciiWidth) + '┐');
+  
+  for (var y = 0; y < asciiHeight; y++) {
+    var line = '│';
+    for (var x = 0; x < asciiWidth; x++) {
+      var idx = (y * asciiWidth + x) * 4;
+      var r = pixels[idx];
+      var g = pixels[idx + 1];
+      var b = pixels[idx + 2];
+      var a = pixels[idx + 3];
+      
+      var brightness = (0.299 * r + 0.587 * g + 0.114 * b) * (a / 255);
+      var charIndex = Math.floor((brightness / 255) * (blockChars.length - 1));
+      line += blockChars[charIndex];
+    }
+    line += '│';
+    asciiLines.push(line);
+  }
+  
+  asciiLines.push('└' + '─'.repeat(asciiWidth) + '┘');
+  
+  var asciiArt = asciiLines.join('\n');
+  console.log('\n' + asciiArt + '\n');
+  
+  return asciiArt;
+}
+
+/**
+ * Print comprehensive hex debug summary to console
+ * Call from browser console: hexDebugSummary()
  */
 function hexDebugSummary() {
-  console.log('%c\n╔═══════════════════════════════════════╗', HEX_DEBUG_COLORS.border);
-  console.log('%c║     HEX MAP STATE SUMMARY             ║', HEX_DEBUG_COLORS.header);
-  console.log('%c╠═══════════════════════════════════════╣', HEX_DEBUG_COLORS.border);
+  console.log('');
+  console.log('╔════════════════════════════════════════════════════════════════════╗');
+  console.log('║                    HEX MAP DEBUG SUMMARY                           ║');
+  console.log('╠════════════════════════════════════════════════════════════════════╣');
   
-  // Map dimensions
-  const mapX = (typeof map !== 'undefined' && map) ? map.xsize : 'N/A';
-  const mapY = (typeof map !== 'undefined' && map) ? map.ysize : 'N/A';
-  console.log('%c║ Map Size:       %c' + mapX + ' x ' + mapY + ' tiles', HEX_DEBUG_COLORS.label, HEX_DEBUG_COLORS.value);
+  // Map Configuration
+  console.log('║ MAP CONFIGURATION                                                  ║');
+  if (typeof map !== 'undefined' && map) {
+    console.log('║   Map Size: ' + map.xsize + ' x ' + map.ysize + ' tiles');
+    console.log('║   Topology ID: ' + map.topology_id);
+    console.log('║   Is Hex: ' + (typeof topo_has_flag !== 'undefined' ? topo_has_flag(TF_HEX) : 'N/A'));
+    console.log('║   Is Isometric: ' + (typeof topo_has_flag !== 'undefined' ? topo_has_flag(TF_ISO) : 'N/A'));
+  } else {
+    console.log('║   Map not loaded');
+  }
   
-  // Topology flags
-  const isHex = (typeof topo_has_flag !== 'undefined') ? topo_has_flag(TF_HEX) : 'N/A';
-  const isIso = (typeof topo_has_flag !== 'undefined') ? topo_has_flag(TF_ISO) : 'N/A';
-  console.log('%c║ Is Hex:         %c' + isHex, HEX_DEBUG_COLORS.label, isHex ? HEX_DEBUG_COLORS.success : HEX_DEBUG_COLORS.warning);
-  console.log('%c║ Is Isometric:   %c' + isIso, HEX_DEBUG_COLORS.label, HEX_DEBUG_COLORS.value);
+  console.log('╠════════════════════════════════════════════════════════════════════╣');
   
-  // Hex constants
-  console.log('%c║ HEX_HEIGHT:     %c' + HEX_HEIGHT_FACTOR.toFixed(4) + ' (expected: 0.8660)', HEX_DEBUG_COLORS.label, HEX_DEBUG_COLORS.value);
-  console.log('%c║ HEX_STAGGER:    %c' + HEX_STAGGER + ' (expected: 0.5)', HEX_DEBUG_COLORS.label, HEX_DEBUG_COLORS.value);
+  // Hex Constants
+  console.log('║ HEX RENDERING CONSTANTS                                            ║');
+  console.log('║   HEX_HEIGHT_FACTOR: ' + (typeof HEX_HEIGHT_FACTOR !== 'undefined' ? HEX_HEIGHT_FACTOR.toFixed(4) : 'undefined') + ' (expected: 0.8660)');
+  console.log('║   HEX_STAGGER: ' + (typeof HEX_STAGGER !== 'undefined' ? HEX_STAGGER : 'undefined') + ' (expected: 0.5)');
+  console.log('║   HEX_CENTER_OFFSET_X: ' + (typeof HEX_CENTER_OFFSET_X !== 'undefined' ? HEX_CENTER_OFFSET_X : 'undefined'));
+  console.log('║   HEX_CENTER_OFFSET_Y: ' + (typeof HEX_CENTER_OFFSET_Y !== 'undefined' ? HEX_CENTER_OFFSET_Y : 'undefined'));
+  console.log('║   MAP_X_OFFSET: ' + MAP_X_OFFSET);
+  console.log('║   MAP_Y_OFFSET: ' + MAP_Y_OFFSET);
   
-  // Tile dimensions
+  console.log('╠════════════════════════════════════════════════════════════════════╣');
+  
+  // Tile Dimensions
+  console.log('║ TILE DIMENSIONS                                                    ║');
   if (typeof mapview_model_width !== 'undefined' && typeof map !== 'undefined' && map) {
-    const tileW = (mapview_model_width / map.xsize).toFixed(2);
-    const tileH = ((mapview_model_height / map.ysize) * HEX_HEIGHT_FACTOR).toFixed(2);
-    console.log('%c║ Tile Width:     %c' + tileW + ' units', HEX_DEBUG_COLORS.label, HEX_DEBUG_COLORS.value);
-    console.log('%c║ Tile Height:    %c' + tileH + ' units', HEX_DEBUG_COLORS.label, HEX_DEBUG_COLORS.value);
+    var tileW = mapview_model_width / map.xsize;
+    var tileH = (mapview_model_height / map.ysize) * (typeof HEX_HEIGHT_FACTOR !== 'undefined' ? HEX_HEIGHT_FACTOR : 1);
+    console.log('║   Mapview Width: ' + mapview_model_width);
+    console.log('║   Mapview Height: ' + mapview_model_height);
+    console.log('║   Tile Width: ' + tileW.toFixed(2) + ' units');
+    console.log('║   Tile Height: ' + tileH.toFixed(2) + ' units');
+  } else {
+    console.log('║   Mapview dimensions not available');
   }
   
-  // Debug state
-  console.log('%c║ Debug Logs:     %c' + hexDebugLogCount + '/' + hexDebugMaxLogs, HEX_DEBUG_COLORS.label, HEX_DEBUG_COLORS.value);
-  console.log('%c╚═══════════════════════════════════════╝\n', HEX_DEBUG_COLORS.border);
+  console.log('╠════════════════════════════════════════════════════════════════════╣');
   
-  // Valid hex directions hint
+  // Direction Info for Hex
+  console.log('║ HEX DIRECTION INFO                                                 ║');
+  var isHex = typeof topo_has_flag !== 'undefined' && topo_has_flag(TF_HEX);
+  var isIso = typeof topo_has_flag !== 'undefined' && topo_has_flag(TF_ISO);
   if (isHex && isIso) {
-    console.log('%c⬡ Iso-Hex: Valid dirs = N, S, E, W, NW, SE (numpad: 2,4,6,8,7,3)', HEX_DEBUG_COLORS.section);
+    console.log('║   Topology: Iso-Hex (TF_ISO | TF_HEX)');
+    console.log('║   Valid Directions: N, S, E, W, NW, SE (6 dirs)');
+    console.log('║   Numpad Mapping: 8=N, 2=S, 6=E, 4=W, 7=NW, 3=SE');
+    console.log('║   Invalid: NE (numpad 9), SW (numpad 1)');
   } else if (isHex) {
-    console.log('%c⬡ Pure-Hex: Valid dirs = N, S, E, W, NE, SW (numpad: 2,4,6,8,9,1)', HEX_DEBUG_COLORS.section);
+    console.log('║   Topology: Pure-Hex (TF_HEX only)');
+    console.log('║   Valid Directions: N, S, E, W, NE, SW (6 dirs)');
+    console.log('║   Numpad Mapping: 8=N, 2=S, 6=E, 4=W, 9=NE, 1=SW');
+    console.log('║   Invalid: NW (numpad 7), SE (numpad 3)');
+  } else {
+    console.log('║   Topology: Square (not hex)');
+    console.log('║   All 8 directions valid');
   }
+  
+  console.log('╠════════════════════════════════════════════════════════════════════╣');
+  
+  // Debug Session Data
+  console.log('║ DEBUG SESSION DATA                                                 ║');
+  console.log('║   Debug Enabled: ' + hexDebugData.enabled);
+  console.log('║   Total Logs: ' + hexDebugData.logs.length);
+  console.log('║   Coord Conversions Tested: ' + hexDebugData.coordConversions.length);
+  
+  if (hexDebugData.coordConversions.length > 0) {
+    var failures = hexDebugData.coordConversions.filter(function(c) { return !c.success; });
+    console.log('║   Coord Round-Trip Failures: ' + failures.length);
+  }
+  
+  console.log('╠════════════════════════════════════════════════════════════════════╣');
+  
+  // Known Issues
+  console.log('║ KNOWN PROBLEM AREAS TO VERIFY                                      ║');
+  console.log('║   [ ] Units placed incorrectly on hex tiles');
+  console.log('║   [ ] Numpad movement directions wrong');
+  console.log('║   [ ] Unknown fog of war tiles not hexagonal');
+  console.log('║   [ ] Click-to-tile mapping incorrect');
+  console.log('║   [ ] Goto path rendering issues');
+  
+  console.log('╚════════════════════════════════════════════════════════════════════╝');
+  console.log('');
+  console.log('To start automated debug: startHexDebug()');
+  console.log('To see all debug logs: console.table(hexDebugData.logs)');
 }
 
 /****************************************************************************
@@ -144,19 +557,6 @@ function map_to_scene_coords(x, y)
   
   result['x'] = Math.floor(MAP_X_OFFSET + x * tileWidth + rowOffset);
   result['y'] = Math.floor(MAP_Y_OFFSET + y * tileHeight);
-
-  // Debug logging for coordinate conversion (sampled at COORD_LOG_SAMPLE_RATE to reduce noise)
-  if (hexDebugEnabled && hexDebugLogCount < hexDebugMaxLogs && Math.random() < COORD_LOG_SAMPLE_RATE) {
-    hexDebugLog('COORD-MAP2SCENE', `Map(${x},${y}) → Scene(${result['x']},${result['y']})`, {
-      tileWidth: tileWidth.toFixed(2),
-      tileHeight: tileHeight.toFixed(2),
-      rowOffset: rowOffset.toFixed(2),
-      isOddRow: y % 2 === 1,
-      mapSize: `${map['xsize']}x${map['ysize']}`,
-      HEX_HEIGHT_FACTOR: HEX_HEIGHT_FACTOR,
-      HEX_STAGGER: HEX_STAGGER
-    });
-  }
 
   return result;
 }
@@ -256,18 +656,6 @@ function scene_to_map_coords(x, y)
   result['x'] = bestTileX;
   result['y'] = bestTileY;
 
-  // Debug logging for scene-to-map conversion
-  if (hexDebugEnabled && hexDebugLogCount < hexDebugMaxLogs) {
-    hexDebugLog('COORD-SCENE2MAP', `Scene(${x.toFixed(1)},${y.toFixed(1)}) → Map(${result['x']},${result['y']})`, {
-      initialEstimate: `(${tileX},${tileY})`,
-      correctedTo: `(${bestTileX},${bestTileY})`,
-      tileWidth: tileWidth.toFixed(2),
-      tileHeight: tileHeight.toFixed(2),
-      isOddRow: tileY % 2 === 1,
-      distanceToCenter: bestDist.toFixed(2)
-    });
-  }
-
   return result;
 }
 
@@ -288,18 +676,7 @@ function webgl_canvas_pos_to_tile(x, y) {
     var intersect = intersects[i];
     var pos = scene_to_map_coords(intersect.point.x, intersect.point.z);
     var ptile = map_pos_to_tile(pos['x'], pos['y']);
-    if (ptile != null) {
-      // Log tile click for debugging
-      if (hexDebugEnabled && hexDebugLogCount < hexDebugMaxLogs) {
-        hexDebugLog('CLICK-TILE', `Canvas(${x},${y}) → Tile(${ptile['x']},${ptile['y']}) index=${ptile['index']}`, {
-          intersectPoint: { x: intersect.point.x.toFixed(2), z: intersect.point.z.toFixed(2) },
-          mapPos: pos,
-          tileIndex: ptile['index'],
-          isOddRow: ptile['y'] % 2 === 1
-        });
-      }
-      return ptile;
-    }
+    if (ptile != null) return ptile;
   }
 
   return null;

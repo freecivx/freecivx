@@ -1535,183 +1535,152 @@ Andreas: This hexagonal map rendering improvement is not yet successful. When re
     at webgl_canvas_pos_to_tile (topology_dispatch.js:54:3)
 
 
-
 ---
 
-## Hex Debugging Telemetry System (February 2026)
+## Hex Debug Logging System (February 2026 - v3)
 
 ### Overview
-A comprehensive console logging system has been added to help diagnose hexagonal map rendering issues. The system logs:
-- User instructions for testing hex map functionality
-- Coordinate conversions (map ↔ scene)
-- Unit placement positions
-- Numpad movement directions
-- Goto line path rendering
-- Fog of war visibility changes
 
-### How to Use
+A new comprehensive hex debug logging system has been implemented to help diagnose and fix hexagonal map tile issues. The system is designed to be manually invoked from the browser console.
 
-1. **Start the game** - Debug instructions will appear in the browser console automatically
-2. **Open browser console** (F12 → Console tab)
-3. **Follow the test instructions** printed in the console
+### Known Problem Areas
 
-### Console Commands
+1. **Units placed incorrectly** - Units may not appear centered on hex tiles
+2. **Numpad movement incorrect** - Movement directions don't work properly for hex topology
+3. **Fog of war not hexagonal** - Unknown map tiles are not rendered as hexagons
+4. **Click-to-tile incorrect** - Clicking on map tiles doesn't select the correct tile
+5. **General verification needed** - All hex-related functionality needs review
+
+### Debug Functions
+
+#### `startHexDebug()`
+Runs automated debug actions to collect hex map state information:
 
 ```javascript
-// Disable/enable hex debugging
-hexDebugEnabled = false;  // Turn off logging
-hexDebugEnabled = true;   // Turn on logging
-
-// Reset log counter (if max logs reached)
-hexDebugLogCount = 0;
-
-// Check map topology
-topo_has_flag(TF_HEX);  // true if hex map
-topo_has_flag(TF_ISO);  // true if isometric
-
-// Check hex constants
-HEX_HEIGHT_FACTOR;  // Should be ~0.866
-HEX_STAGGER;        // Should be 0.5
+// From browser console:
+startHexDebug()
 ```
 
-### Debug Log Categories
+This will:
+- Enable debug logging
+- Log map configuration (size, topology)
+- Log hex constants (HEX_HEIGHT_FACTOR, HEX_STAGGER, etc.)
+- Test coordinate conversions (map → scene → map round-trip)
+- Log all unit positions
+- Generate an ASCII representation of the map
+- Capture an ASCII screenshot of the game canvas
 
-| Category | Description |
-|----------|-------------|
-| `COORD-MAP2SCENE` | Map tile (x,y) → 3D scene position conversion |
-| `COORD-SCENE2MAP` | 3D scene position → map tile (x,y) conversion |
-| `CLICK-TILE` | Mouse click → tile selection |
-| `UNIT-PLACE` | Unit 3D model placement position |
-| `MOVEMENT` | Numpad/keyboard unit movement direction |
-| `MOVEMENT-BLOCKED` | Invalid movement direction (for hex topology) |
-| `GOTO` | Goto path start and direction list |
-| `GOTO-SEGMENT` | Individual path segment coordinates |
-| `FOG` | Tile visibility state changes |
+#### `hexDebugSummary()`
+Prints comprehensive debug information to console:
 
-### Known Issues Being Investigated
-
-1. **Unit placement misalignment** - Units may not appear centered on hex tiles
-2. **Numpad direction mismatch** - Some numpad directions are invalid for hex topology:
-   - **Iso-hex**: NE (numpad 9) and SW (numpad 1) are invalid
-   - **Pure hex**: NW (numpad 7) and SE (numpad 3) are invalid
-3. **Goto lines incorrect** - Path visualization may not follow hex tile centers
-4. **Fog of war rendering** - Unknown tiles may not render correctly as hexagons
-
-### Test Procedure
-
-1. **Select a unit** → Check `[UNIT-SELECT]` logs for tile coordinates
-2. **Move with numpad** → Check `[MOVEMENT]` logs for valid/invalid directions
-3. **Right-click for goto** → Check `[GOTO]` logs for path coordinates
-4. **Explore fog of war** → Check `[FOG]` logs for visibility changes
-5. **Click on map** → Check `[CLICK-TILE]` logs for coordinate accuracy
-
-### Files Modified for Debugging
-
-- `freeciv-web/src/main/webapp/javascript/webgpu/maputil_square.js` - Coordinate conversion logging
-- `freeciv-web/src/main/webapp/javascript/webgpu/goto_square.js` - Goto path logging
-- `freeciv-web/src/main/webapp/javascript/webgpu/object_position_handler_square.js` - Unit placement logging
-- `freeciv-web/src/main/webapp/javascript/webgpu/tile_visibility_handler.js` - Fog of war logging
-- `freeciv-web/src/main/webapp/javascript/webgpu/renderer_init.js` - User instructions trigger
-- `freeciv-web/src/main/webapp/javascript/control.js` - Movement direction logging
-
-### Expected Debug Output Format
-
+```javascript
+// From browser console:
+hexDebugSummary()
 ```
-═══════════════════════════════════════════════════════════════
-  HEXAGONAL MAP DEBUGGING TELEMETRY ACTIVE
-═══════════════════════════════════════════════════════════════
 
-📋 TEST INSTRUCTIONS FOR HEX MAP VERIFICATION:
+This displays:
+- Map configuration (size, topology ID, is hex, is isometric)
+- Hex rendering constants (HEX_HEIGHT_FACTOR, HEX_STAGGER, offsets)
+- Tile dimensions (calculated from mapview dimensions)
+- Hex direction info (valid directions for current topology)
+- Debug session data (logs collected, conversion test results)
+- Known problem areas checklist
 
-  1. SELECT A UNIT: Click on any unit to select it
-     → Watch for: [HEX-DEBUG][UNIT-SELECT] logs showing tile coords
-  2. MOVE UNIT WITH NUMPAD: Use numpad 1-9 (except 5) to move
-     → Watch for: [HEX-DEBUG][MOVEMENT] logs showing direction & coords
-     → HEX DIRECTIONS: Only 6 of 8 directions are valid for hex
-  ...
+#### `captureAsciiScreenshot()`
+Captures the game canvas and converts to ASCII art:
 
-[HEX-DEBUG][COORD-MAP2SCENE] Map(5,3) → Scene(-295,122) {tileWidth: "35.71", ...}
-[HEX-DEBUG][UNIT-PLACE] Placing "Settlers" at Tile(5,3) {...}
-[HEX-DEBUG][MOVEMENT] Unit "Settlers" trying to move E (dir=4) {...}
+```javascript
+// From browser console:
+captureAsciiScreenshot()     // Full-size ASCII art (120x40 chars)
+captureAsciiScreenshotCompact()  // Compact version (60x20 chars)
 ```
+
+Output example:
+```
+┌────────────────────────────────────────────────────────────┐
+│░░░░░░░░░░░░▒▒▒▒▒▒▓▓▓▓▓▓████████████▓▓▓▓▓▓▒▒▒▒▒▒░░░░░░░░░░░│
+│░░░░░░▒▒▒▒▒▓▓▓▓▓▓████████████████████████████▓▓▓▓▒▒▒░░░░░░│
+│░░░▒▒▒▓▓▓▓▓████████████████░░░░████████████████▓▓▓▒▒▒░░░░│
+│...etc...                                                   │
+└────────────────────────────────────────────────────────────┘
+```
+
+Uses brightness-to-character mapping:
+- ` ` (space) = black/dark areas
+- `░▒▓█` = increasing brightness levels
+
+#### `stopHexDebug()`
+Ends the debug session:
+
+```javascript
+// From browser console:
+stopHexDebug()
+```
+
+### Debug Data Structure
+
+The debug system collects data in `hexDebugData`:
+
+```javascript
+hexDebugData = {
+  enabled: false,           // Whether debug logging is active
+  logs: [],                 // Array of all debug log entries
+  tileClicks: [],           // Tile click events
+  unitMoves: [],            // Unit movement events
+  coordConversions: [],     // Coordinate conversion tests
+  fogChanges: [],           // Fog of war changes
+  screenshotData: null      // Last captured ASCII screenshot data
+}
+```
+
+### Debug Log Format
+
+Logs are output in the format:
+```
+[HEX-DEBUG][CATEGORY] message {data}
+```
+
+Categories include:
+- `INIT` - Debug session initialization
+- `SCREENSHOT` - ASCII screenshot captured
+- `MAP-CONFIG` - Map configuration
+- `HEX-CONSTANTS` - Hex rendering constants
+- `MAPVIEW` - Mapview dimensions
+- `COORD-TEST` - Coordinate conversion test results
+- `UNITS` - Unit positions
+- `ASCII-MAP` - ASCII map representation
+- `ERROR` - Error conditions
+
+### Verification Checklist
+
+When debugging hex issues:
+
+- [ ] Run `startHexDebug()` and check for errors
+- [ ] Verify `MAP-CONFIG` shows correct hex topology (isHex: true)
+- [ ] Check `HEX-CONSTANTS` are defined (HEX_HEIGHT_FACTOR ≈ 0.866)
+- [ ] Confirm `COORD-TEST` shows round-trip conversions pass
+- [ ] Review `ASCII-MAP` shows expected stagger pattern for hex
+- [ ] Call `hexDebugSummary()` for full state overview
+- [ ] Test actual gameplay (click tiles, move units)
+
+### Files Modified
+
+- `freeciv-web/src/main/webapp/javascript/webgpu/maputil_square.js`
+  - Added `hexDebugData` object
+  - Added `hexLog()` helper function
+  - Added `startHexDebug()` function
+  - Added `stopHexDebug()` function
+  - Added `hexDebugSummary()` function
+  - Added `testCoordinateConversions()` helper
+  - Added `logAllUnitPositions()` helper
+  - Added `generateAsciiMap()` helper
+  - Added `captureAsciiScreenshot()` function (canvas to ASCII art)
+  - Added `captureAsciiScreenshotCompact()` function (smaller version)
 
 ### Next Steps
 
-After collecting debug telemetry:
-1. Analyze coordinate conversion accuracy
-2. Verify hex tile centering calculations
-3. Confirm direction mapping for hex topology
-4. Validate goto path rendering coordinates
-5. Check fog of war vertex calculations
-
----
-
-## Debug Session Findings (February 2026)
-
-### Session Log Analysis
-
-From a recent test session, the following was observed:
-
-```
-mapview.js:62 Preloading 2D canvas tileset images.
-preload.js:37 Preloading WebGPU textures and models...
-packhand.js:692 Server has version 3.2.90.2-dev
-renderer_init.js:77 renderer_init()
-renderer_init.js:92 Waiting for WebGPU modules to load...
-three-modules-webgpu.js:105 WebGPU modules loaded successfully
-three-modules.js:46 WebGPU support loaded successfully
-mapview_webgpu.js:33 Three.js 183dev with WebGPU Renderer
-heightmap_square.js:158 Updating heightmap...
-heightmap_square.js:267 Heightmap updated.
-mapview_webgpu.js:347 Creating WebGPU terrain shader with TSL...
-mapview_webgpu.js:367 Land mesh triangles: 526338
-mapview_webgpu.js:136 Added animated WebGPU water surface with TSL shader.
-maputil_square.js:38 [HEX-DEBUG][UNIT-PLACE] Placing "Settlers" at Tile(16,55)
-```
-
-### Key Observations
-
-1. **Rendering Pipeline Working**: WebGPU modules load correctly, terrain shader created
-2. **Heightmap Generated**: 526,338 triangles for terrain mesh
-3. **Unit Placement Logged**: Settlers correctly positioned at tile coordinates (16,55)
-4. **Performance Note**: `requestAnimationFrame` handler took 211ms (optimization needed)
-
-### Debug System Improvements (v2)
-
-**Changes Made:**
-1. **Dark color scheme** for better console readability
-2. **Compact instructions** - reduced verbosity
-3. **New `hexDebugSummary()` function** - quick state overview from console
-4. **Simplified log format**: `[HEX][CATEGORY]` instead of `[HEX-DEBUG][CATEGORY]`
-
-**New Console Commands:**
-```javascript
-hexDebugSummary()     // Show map state, topology, tile dimensions
-hexDebugEnabled = false  // Disable all hex logging
-hexDebugLogCount = 0     // Reset log counter
-```
-
-### Hex Map Rendering Checklist
-
-Based on debug analysis, verify:
-
-- [x] WebGPU modules loading successfully
-- [x] Terrain heightmap generation
-- [x] Unit placement on hex tiles
-- [ ] Click-to-tile coordinate accuracy
-- [ ] Numpad movement validation (6 dirs for hex)
-- [ ] Goto path rendering on hex tiles
-- [ ] Fog of war hex tile masking
-
-### Performance Observations
-
-- `requestAnimationFrame` 211ms warning indicates heavy first-frame work
-- 526,338 triangles for terrain (reasonable for detailed hex mesh)
-- WebGPU async loading adds complexity but enables modern features
-
-### Recommendations
-
-1. **Test Click Accuracy**: Click on known tiles, verify coordinates match
-2. **Test Movement**: Use numpad to move units, note which directions work
-3. **Monitor Console**: Watch for MOVEMENT-BLOCKED logs on invalid hex directions
-4. **Use Summary**: Call `hexDebugSummary()` to verify hex state at any time
+1. Run `startHexDebug()` to collect diagnostic data
+2. Review ASCII screenshot for visual rendering issues
+3. Share console output to identify specific issues
+4. Focus fixes on areas where coordinate conversions fail
+5. Iterate with additional logging as needed
