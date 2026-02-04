@@ -15,7 +15,6 @@ import * as THREEModule from 'three';
 import { GLTFLoader } from '/javascript/webgpu/libs/GLTFLoader.js';
 import { DRACOLoader } from '/javascript/webgpu/libs/DRACOLoader.js';
 import { OrbitControls } from '/javascript/webgpu/libs/OrbitControls.js';
-import { AnaglyphEffect } from '/javascript/webgpu/effects/AnaglyphEffect.js';
 
 // Create a mutable copy of THREE for potential extensions
 // ES6 module namespace objects are frozen, so we need a mutable copy
@@ -27,7 +26,6 @@ window.THREE = THREE;
 window.GLTFLoader = GLTFLoader;
 window.DRACOLoader = DRACOLoader;
 window.OrbitControls = OrbitControls;
-window.AnaglyphEffect = AnaglyphEffect;
 
 // WebGPU loading function
 // This dynamically imports the WebGPU module loader when needed
@@ -63,4 +61,4 @@ function loadWebGPUSupport() {
 // Export the loading function so other modules can wait for it
 window.waitForWebGPU = loadWebGPUSupport;
 
-export { THREE, GLTFLoader, DRACOLoader, OrbitControls, AnaglyphEffect };
+export { THREE, GLTFLoader, DRACOLoader, OrbitControls};
