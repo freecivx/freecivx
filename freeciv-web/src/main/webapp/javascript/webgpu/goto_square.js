@@ -57,7 +57,7 @@ function webgl_render_goto_line(start_tile, goto_packet_dir) {
             var start = new THREE.Vector3(currpos.x + HEX_CENTER_OFFSET_X, height + heightOffset, currpos.y + HEX_CENTER_OFFSET_Y);
             var end = new THREE.Vector3(
                 nextpos.x + HEX_CENTER_OFFSET_X,
-                height + heightOffset + (nexttile['height'] - ptile['height']) * 50,
+                height + heightOffset + (nexttile['height'] - ptile['height']) * 100,
                 nextpos.y + HEX_CENTER_OFFSET_Y
             );
 
