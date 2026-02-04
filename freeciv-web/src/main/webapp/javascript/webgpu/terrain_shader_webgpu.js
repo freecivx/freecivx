@@ -91,10 +91,14 @@ function createTerrainShaderTSL(uniforms) {
     // - width = R * sqrt(3) = R * 1.732
     // - height = R * 2
     // We normalize so that one tile maps to roughly 1.0 in UV space per tile
-    const HEX_SQRT3_OVER_2 = 0.866025; // sqrt(3)/2 ≈ 0.866 - used for hex edge normals and aspect ratio
-    // HEX_ASPECT is used to scale Y coordinates: pointy-top hexes are taller than wide,
-    // so we multiply Y by this value when calculating hex distance field
-    const HEX_ASPECT = HEX_SQRT3_OVER_2; // Y-coordinate scale factor for hex geometry
+    const HEX_SQRT3_OVER_2 = 0.866025; // sqrt(3)/2 ≈ 0.866 - used for hex edge normals
+    // HEX_MESH_HEIGHT_FACTOR matches the mesh geometry compression factor (sqrt(3)/2)
+    // The mesh compresses Y by this factor, so tiles appear wider than tall in world space
+    const HEX_MESH_HEIGHT_FACTOR = HEX_SQRT3_OVER_2;
+    // To draw a proper pointy-top hex (taller than wide) that looks correct after mesh compression,
+    // we need to stretch the hex in UV space by the inverse of the compression factor
+    // This counteracts the mesh compression so the final rendered hex has correct proportions
+    const HEX_ASPECT = 1.0 / HEX_MESH_HEIGHT_FACTOR; // ≈ 1.1547 - Y-coordinate scale factor for hex geometry
     const HEX_EDGE_WIDTH = 0.03; // Width of hex edge highlight (as fraction of tile)
     const HEX_EDGE_SOFTNESS = 0.02; // Edge anti-aliasing softness
     const HEX_EDGE_BLEND_STRENGTH = 0.35; // How strongly hex edges darken the terrain (0-1)
@@ -189,8 +193,11 @@ function createTerrainShaderTSL(uniforms) {
     // The three edge normal directions are at 0°, 60°, and 120°
     // Edge normals: (1,0), (0.5, sqrt(3)/2), (-0.5, sqrt(3)/2)
     
-    // Scale coordinates to account for hex aspect ratio
-    // Hexagon is taller than wide for pointy-top, so scale Y
+    // Scale Y coordinate to account for the mesh's height compression
+    // The mesh compresses tiles by HEX_MESH_HEIGHT_FACTOR in the Y direction,
+    // making tiles appear wider than tall. To draw hexes that look correct
+    // after this compression (pointy-top hexes should be taller than wide),
+    // we stretch the hex shape in UV space by HEX_ASPECT (the inverse factor)
     const hexX = centeredX;
     const hexY = mul(centeredY, HEX_ASPECT);
     
