@@ -30,16 +30,41 @@ var flag_dz = 18;
 // - tileWidth ≈ 35.71 units
 // - tileHeight ≈ 30.92 units (35.71 * 0.866)
 // 
-// The offsets are empirically tuned to account for:
-// - 3D model pivot points (often at model base, not center)
-// - Visual balance within hex tile boundaries
-// - Compatibility with existing model scales
-// 
-// For proper hex tile centering:
-// - X offset should be approximately tileWidth / 2 ≈ 17.85 units
-// - Y offset should be approximately tileHeight / 2 ≈ 15.46 units
-var HEX_CENTER_OFFSET_X = 18;   // X offset from tile corner toward center (half tile width)
-var HEX_CENTER_OFFSET_Y = 15;   // Y offset (scene Z) from tile corner toward center (half tile height)
+// The offsets are calculated dynamically based on actual tile dimensions to ensure
+// proper centering regardless of map size or aspect ratio.
+var HEX_CENTER_OFFSET_X = 18;   // X offset from tile corner toward center (half tile width) - default value, recalculated later
+var HEX_CENTER_OFFSET_Y = 15;   // Y offset (scene Z) from tile corner toward center (half tile height) - default value, recalculated later
+
+/****************************************************************************
+  Returns the hex tile center offsets for object placement.
+  
+  These offsets position objects at the visual center of hex tiles.
+  Calculated dynamically based on actual tile dimensions.
+  
+  @returns {Object} { x: number, y: number } - Center offsets
+****************************************************************************/
+function getHexCenterOffsets() {
+  // Calculate actual tile dimensions
+  var tileWidth = mapview_model_width / map['xsize'];
+  var tileHeight = (mapview_model_height / map['ysize']) * HEX_HEIGHT_FACTOR;
+  
+  return {
+    x: Math.round(tileWidth / 2),
+    y: Math.round(tileHeight / 2)
+  };
+}
+
+/****************************************************************************
+  Updates the global HEX_CENTER_OFFSET values based on current map dimensions.
+  Should be called after mapview_model_width/height are set.
+****************************************************************************/
+function updateHexCenterOffsets() {
+  if (typeof mapview_model_width !== 'undefined' && typeof map !== 'undefined' && map['xsize'] > 0) {
+    var offsets = getHexCenterOffsets();
+    HEX_CENTER_OFFSET_X = offsets.x;
+    HEX_CENTER_OFFSET_Y = offsets.y;
+  }
+}
 
 // Random offset constants for object variety within tiles
 var HEX_RANDOM_OFFSET_BASE = 2;     // Base offset before randomization
@@ -471,16 +496,17 @@ function add_wonder(ptile, pcity, scene, wonder_name) {
 
     let pos;
     if (wonder_name == 'Colossus') {
-      pos = map_to_scene_coords(ntile['x'] - 0.4, ntile['y'] - 0.4);
+      pos = map_to_scene_coords(ntile['x'], ntile['y']);
       height += 4.2;
     } else if (wonder_name == 'Eiffel Tower') {
-      pos = map_to_scene_coords(ntile['x'] - 0.4, ntile['y'] - 0.4);
+      pos = map_to_scene_coords(ntile['x'], ntile['y']);
       height = 22 + ntile['height'] * 100;
     } else {
       pos = map_to_scene_coords(nexttile['x'], nexttile['y']);
     }
 
-    wonder.position.set(pos['x'] - 10, height - 7, pos['y'] - 6);
+    // Center wonders within hexagonal tiles using HEX_CENTER_OFFSET
+    wonder.position.set(pos['x'] + HEX_CENTER_OFFSET_X, height - 7, pos['y'] + HEX_CENTER_OFFSET_Y);
     pcity[wonder_name + '_added'] = true;
     city_building_positions[nexttile['index']] = wonder;
     if (!show_buildings) {
@@ -596,7 +622,8 @@ function add_city_building(ptile, pcity, scene, building_name) {
       }
       pos = map_to_scene_coords(nexttile['x'], nexttile['y']);
 
-      building.position.set(pos['x'] - 14, height - 5, pos['y'] - 14 + y_offset);
+      // Center buildings within hexagonal tiles using HEX_CENTER_OFFSET
+      building.position.set(pos['x'] + HEX_CENTER_OFFSET_X, height - 5, pos['y'] + HEX_CENTER_OFFSET_Y + y_offset);
 
       pcity[original_building_name + '_added'] = true;
 
