@@ -47,8 +47,8 @@ const HEX_DEBUG_COLORS = {
 function hexDebugLog(category, message, data) {
   if (!hexDebugEnabled || hexDebugLogCount > hexDebugMaxLogs) return;
   hexDebugLogCount++;
-  // Use dark blue for category, dark gray for message
-  console.log(`%c[HEX][${category}]%c ${message}`, 'color: #1565c0; font-weight: bold', 'color: #424242', data || '');
+  // Use dark colors from HEX_DEBUG_COLORS for consistency
+  console.log(`%c[HEX][${category}]%c ${message}`, HEX_DEBUG_COLORS.header, HEX_DEBUG_COLORS.label, data || '');
 }
 
 // Log user instructions when game starts (called once)
