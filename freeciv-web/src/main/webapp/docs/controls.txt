@@ -26,15 +26,11 @@
   w: (w)ait: focus on next unit
 
 
-<h2>Unit Movement:</h2>
-  1: move south-west
-  2: move south
-  3: move south-east
-  4: move west
-  6: move east
-  7: move north-west
-  8: move north
-  9: move north-east
+<h2>Unit Movement (Numpad):</h2>
+  Numpad keys move units in visual directions matching the 3D camera view:
+  7: move up-left        8: move up         9: move up-right
+  4: move left                              6: move right
+  1: move down-left      2: move down       3: move down-right
 
 <h2>Main Map - Mouse:</h2>
   Left-click on city:            Pop up city dialog
