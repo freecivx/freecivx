@@ -32,7 +32,8 @@ var flag_dz = 18;
 // 
 // The offsets are calculated dynamically based on actual tile dimensions to ensure
 // proper centering regardless of map size or aspect ratio.
-var HEX_CENTER_OFFSET_X = 18;   // X offset from tile corner toward center (half tile width) - default value, recalculated later
+// Objects are shifted 0.5 tiles left from tile center for better model alignment.
+var HEX_CENTER_OFFSET_X = 0;    // X offset from tile corner (shifted 0.5 tiles left from center)
 var HEX_CENTER_OFFSET_Y = 15;   // Y offset (scene Z) from tile corner toward center (half tile height) - default value, recalculated later
 
 /****************************************************************************
@@ -48,15 +49,18 @@ function getHexCenterOffsets() {
   if (typeof mapview_model_width === 'undefined' || typeof mapview_model_height === 'undefined' ||
       typeof map === 'undefined' || !(map['xsize'] > 0) || !(map['ysize'] > 0)) {
     // Return default values if dimensions not yet available
-    return { x: 18, y: 15 };
+    // X offset is 0 (shifted 0.5 tiles left from center for better model alignment)
+    return { x: 0, y: 15 };
   }
   
   // Calculate actual tile dimensions
   var tileWidth = mapview_model_width / map['xsize'];
   var tileHeight = (mapview_model_height / map['ysize']) * HEX_HEIGHT_FACTOR;
   
+  // X offset is 0 (shifted 0.5 tiles left from center for better model alignment)
+  // Y offset remains at half tile height for proper centering
   return {
-    x: Math.round(tileWidth / 2),
+    x: 0,
     y: Math.round(tileHeight / 2)
   };
 }
