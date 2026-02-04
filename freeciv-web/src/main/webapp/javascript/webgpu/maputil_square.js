@@ -168,8 +168,8 @@ function hexLogTile(tileX, tileY) {
   
   var data = {
     tileCoords: { x: tileX, y: tileY },
-    isEvenRow: tileY % 2 === 0,
-    hexRowOffset: (tileY % 2 === 0) ? tileWidth * (typeof HEX_STAGGER !== 'undefined' ? HEX_STAGGER : 0.5) : 0,
+    isOddRow: tileY % 2 === 1,
+    hexRowOffset: (tileY % 2 === 1) ? tileWidth * (typeof HEX_STAGGER !== 'undefined' ? HEX_STAGGER : 0.5) : 0,
     tileDimensions: { width: tileWidth.toFixed(2), height: tileHeight.toFixed(2) },
     sceneCoords: { x: sceneCoords.x, y: sceneCoords.y },
     tileCenterScene: {
@@ -574,7 +574,7 @@ function generateAsciiMap() {
   asciiLines.push('');
   
   for (var y = startY; y < startY + height && y < map.ysize; y++) {
-    var indent = (y % 2 === 0) ? '  ' : ''; // Hex stagger for even rows
+    var indent = (y % 2 === 1) ? '  ' : ''; // Hex stagger for odd rows
     var line = indent;
     
     for (var x = startX; x < startX + width && x < map.xsize; x++) {
@@ -1055,9 +1055,9 @@ function map_to_scene_coords(x, y)
   const tileWidth = mapview_model_width / map['xsize'];
   const tileHeight = (mapview_model_height / map['ysize']) * HEX_HEIGHT_FACTOR;
   
-  // Apply hex row offset for even rows (even-r offset coordinate system)
-  // Freeciv uses even-r where even rows are staggered
-  const rowOffset = (y % 2 === 0) ? tileWidth * HEX_STAGGER : 0;
+  // Apply hex row offset for odd rows (odd-r offset coordinate system)
+  // In Freeciv hex: row 0 is normal, row 1 is staggered 0.5 tiles right, etc.
+  const rowOffset = (y % 2 === 1) ? tileWidth * HEX_STAGGER : 0;
   
   result['x'] = Math.floor(MAP_X_OFFSET + x * tileWidth + rowOffset);
   result['y'] = Math.floor(MAP_Y_OFFSET + y * tileHeight);
@@ -1092,8 +1092,8 @@ function scene_to_map_coords(x, y)
   // Calculate initial Y coordinate estimate
   const tileY = Math.floor(adjustedY / tileHeight);
   
-  // Calculate row offset based on Y (even rows are staggered in even-r system)
-  const rowOffset = (tileY % 2 === 0) ? tileWidth * HEX_STAGGER : 0;
+  // Calculate row offset based on Y (odd rows are staggered in odd-r system)
+  const rowOffset = (tileY % 2 === 1) ? tileWidth * HEX_STAGGER : 0;
   
   // Account for the MAP_X_OFFSET
   const adjustedX = x - MAP_X_OFFSET - rowOffset;
