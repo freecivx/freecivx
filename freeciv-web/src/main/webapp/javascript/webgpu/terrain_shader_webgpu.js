@@ -412,9 +412,9 @@ function createTerrainShaderTSL(uniforms) {
     
     // Calculate hex interior mask: 1.0 if inside hex, smooth falloff at edges
     // Use a smooth transition to avoid aliasing at hex boundaries
-    const HEX_FOW_EDGE_SOFTNESS = 0.02;  // Edge anti-aliasing for fog of war
+    const HEX_UNKNOWN_EDGE_SOFTNESS = 0.02;  // Edge anti-aliasing for fog of war / unknown tiles
     const hexInteriorDist = sub(0.5, hexDist);  // Positive inside hex, negative outside
-    const hexInteriorMask = clamp(div(hexInteriorDist, HEX_FOW_EDGE_SOFTNESS), 0.0, 1.0);
+    const hexInteriorMask = clamp(div(hexInteriorDist, HEX_UNKNOWN_EDGE_SOFTNESS), 0.0, 1.0);
     
     // Check if this is an unknown tile (visibility near 0)
     const isUnknown = step(vertColor.x, 0.1);

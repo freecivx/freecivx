@@ -106,9 +106,11 @@ var DIR_HEX_DY_EVEN = [ -1, -1, -1,  0,  0,  1,  1,  1 ];
 var DIR_HEX_DX_ODD  = [ -1,  0,  0, -1,  1, -1, -1,  0 ];
 var DIR_HEX_DY_ODD  = [ -1, -1, -1,  0,  0,  1,  1,  1 ];
 
-// Legacy arrays kept for backwards compatibility (not used for hex grids)
-var DIR_HEX_DX = [ 0,  1, 1, -1, 1, -1,  0,  0 ];
-var DIR_HEX_DY = [ -1, -1, -1, 0, 0, 1, 1, 1 ];
+// @deprecated Legacy arrays kept for backwards compatibility
+// WARNING: These arrays are incorrect for hex grids and should not be used.
+// Use DIR_HEX_DX_EVEN/DIR_HEX_DY_EVEN for even rows and DIR_HEX_DX_ODD/DIR_HEX_DY_ODD for odd rows.
+var DIR_HEX_DX = [];
+var DIR_HEX_DY = [];
 
 
 /****************************************************************************
