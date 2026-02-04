@@ -155,9 +155,12 @@ function createTerrainShaderTSL(uniforms) {
     const tileYRaw = mul(map_y_size, uvNode.y);
     const tileY = floor(tileYRaw);
     
-    // Hex stagger: odd rows are offset by 0.5 tile width
-    // isOddRow = 1.0 when tileY is odd, 0.0 when even
-    const isOddRow = mod(tileY, 2.0);
+    // Hex stagger: mesh geometry offsets odd rows by 0.5 tile width
+    // However, UV.y is inverted (1 - meshRow/gridY), so we need to calculate
+    // the original mesh row parity. The mesh row ≈ (map_y_size - 1 - tileY),
+    // so isOddRow = ((map_y_size - 1) - tileY) % 2
+    // This ensures row 0 is normal and row 1+ alternates correctly
+    const isOddRow = mod(sub(sub(map_y_size, 1.0), tileY), 2.0);
     
     // Calculate hex-adjusted UV coordinates
     // Remove the stagger from UV to get the logical tile X coordinate
