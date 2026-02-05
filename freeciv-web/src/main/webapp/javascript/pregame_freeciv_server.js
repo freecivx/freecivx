@@ -997,7 +997,8 @@ function show_intro_dialog(title, message) {
 				icon :"ui-icon-gear"
 			  },
               {
-                  text : "Play Local JS AIs",
+                  text : "Local",
+                  tooltip: "Play a local game against AI players. No internet connection required.",
                   click : function() {
                     dialog_close_trigger = "button";
                     standalone_mode = true;
