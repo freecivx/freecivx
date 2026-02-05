@@ -63,11 +63,11 @@ function update_webgpu_debug_labels() {
     clear_webgpu_debug_labels();
     
     var tiles_labeled = 0;
-    var max_labels = 500; // Limit labels for performance
+    var max_labels = 5000; // Limit labels for performance
     
     // Get camera position to only label nearby tiles
     var cam_pos = camera.position.clone();
-    var label_radius = 800; // Only label tiles within this radius of camera
+    var label_radius = 3000; // Only label tiles within this radius of camera
     
     for (var y = 0; y < map.ysize && tiles_labeled < max_labels; y++) {
         for (var x = 0; x < map.xsize && tiles_labeled < max_labels; x++) {
@@ -89,7 +89,7 @@ function update_webgpu_debug_labels() {
             // Create and position the label sprite
             var label_sprite = create_debug_tile_label_sprite(x, y);
             if (label_sprite != null) {
-                label_sprite.position.set(pos.x, 80, pos.y); // Elevated above terrain
+                label_sprite.position.set(pos.x, 50, pos.y); // Elevated above terrain
                 label_sprite.name = "debug_tile_label_" + x + "_" + y;
                 scene.add(label_sprite);
                 webgpu_debug_labels[x + "_" + y] = label_sprite;
