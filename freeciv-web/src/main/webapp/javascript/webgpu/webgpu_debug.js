@@ -32,16 +32,6 @@
 var webgpu_debug_labels = {};
 var webgpu_debug_initialized = false;
 
-// Load saved webgpu_debug_enabled setting from storage
-(function() {
-    if (typeof simpleStorage !== 'undefined') {
-        var stored_webgpu_debug = simpleStorage.get("webgpu_debug_enabled", "");
-        if (stored_webgpu_debug != null && stored_webgpu_debug == "true") {
-            webgpu_debug_enabled = true;
-        }
-    }
-})();
-
 /**
  * Initialize WebGPU debug mode when game starts
  * Called after the map is rendered

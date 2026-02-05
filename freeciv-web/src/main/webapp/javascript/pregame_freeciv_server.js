@@ -668,7 +668,7 @@ function pregame_settings()
 
   // WebGPU Debug Mode checkbox handler
   var stored_webgpu_debug = simpleStorage.get("webgpu_debug_enabled", "");
-  if (stored_webgpu_debug != null && stored_webgpu_debug == "true") {
+  if (stored_webgpu_debug != null && stored_webgpu_debug === "true") {
     $("#webgpu_debug_setting").prop("checked", true);
     webgpu_debug_enabled = true;
   }
