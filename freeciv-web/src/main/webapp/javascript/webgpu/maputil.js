@@ -19,8 +19,11 @@
 
 // Map coordinate system offsets - used for scene <-> map coordinate conversion
 // These must match between map_to_scene_coords() and scene_to_map_coords()
-var MAP_X_OFFSET = -470;  // Initial X offset when converting map to scene coordinates
-var MAP_Y_OFFSET = 30;    // Initial Y offset when converting map to scene coordinates
+// These values are derived from the terrain mesh geometry transformation:
+// - Mesh is centered at origin, then translated by (mapview_model_width/2 - 500, 0, mapview_model_height/2)
+// - After rotation, tile (0,0) maps to scene position (-500, 0)
+var MAP_X_OFFSET = -500;  // Initial X offset when converting map to scene coordinates
+var MAP_Y_OFFSET = 0;     // Initial Y offset when converting map to scene coordinates
 
 // ============= HEX DEBUG LOGGING SYSTEM =============
 // New comprehensive hex debug system for diagnosing hex map tile issues
