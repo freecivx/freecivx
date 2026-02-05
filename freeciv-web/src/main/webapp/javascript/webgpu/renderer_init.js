@@ -109,6 +109,11 @@ async function renderer_init() {
     init_chatbox();
     keyboard_input=true;
 
+    // Initialize WebGPU debug mode if enabled
+    if (typeof init_webgpu_debug === 'function') {
+      init_webgpu_debug();
+    }
+
     advance_unit_focus();
     camera.position.y += 600;
     setTimeout("$('#mapcanvas').fadeIn(2500); $.unblockUI();", 700);

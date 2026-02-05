@@ -522,6 +522,8 @@ function pregame_settings()
         "<tr id='anaglyph_enabled'><td id='anaglyph_label' style='min-width: 150px;'></td>" +
                 "<td><input type='checkbox' id='anaglyph_setting'>Enable Anaglyph 3D (Red+Cyan glasses) "+
                 "</td></tr>"+
+        "<tr id='webgpu_debug_enabled'><td id='webgpu_debug_label' style='min-width: 150px;'></td>" +
+                "<td><input type='checkbox' id='webgpu_debug_setting'>Enable WebGPU Debug Mode (shows tile coordinates and debug logging)</td></tr>"+
          "</table>" +
       "</div>" +
 
@@ -662,6 +664,17 @@ function pregame_settings()
   $("#anaglyph_label").prop("innerHTML", "3D Anaglyph glasses:");
   $('#anaglyph_setting').change(function() {
     anaglyph_3d_enabled = !anaglyph_3d_enabled;
+  });
+
+  // WebGPU Debug Mode checkbox handler
+  var stored_webgpu_debug = simpleStorage.get("webgpu_debug_enabled", "");
+  if (stored_webgpu_debug != null && stored_webgpu_debug == "true") {
+    $("#webgpu_debug_setting").prop("checked", true);
+    webgpu_debug_enabled = true;
+  }
+  $('#webgpu_debug_setting').change(function() {
+    webgpu_debug_enabled = this.checked;
+    simpleStorage.set("webgpu_debug_enabled", webgpu_debug_enabled ? "true" : "false");
   });
 
   if (server_settings['metamessage'] != null
