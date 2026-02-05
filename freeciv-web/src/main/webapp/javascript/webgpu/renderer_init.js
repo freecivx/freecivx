@@ -119,7 +119,7 @@ async function renderer_init() {
     // correctly if units aren't available yet
     setTimeout(function() {
       advance_unit_focus();
-      camera.position.y += 300;
+      camera.position.y = 450;
     }, 100);
 
     setTimeout("$('#mapcanvas').fadeIn(2500); $.unblockUI();", 700);
