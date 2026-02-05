@@ -3,7 +3,6 @@ FreecivWorld.net - Freeciv in 3D for the web!
 
 [![License: AGPL v3](https://img.shields.io/badge/License-AGPL%20v3-blue.svg)](https://www.gnu.org/licenses/agpl-3.0)
 [![Build Status](https://github.com/freecivworld/freecivworld/workflows/continuous%20integration/badge.svg)](https://github.com/freecivworld/freecivworld/actions?query=workflow%3A%22continuous+integration%22)
-[![CodeFactor](https://www.codefactor.io/repository/github/freecivworld/freecivworld/badge)](https://www.codefactor.io/repository/github/freecivworld/freecivworld)
 [![Codacy Badge](https://app.codacy.com/project/badge/Grade/70b76d922923473d8793e0019f157992)](https://app.codacy.com/gh/freecivworld/freecivworld/dashboard?utm_source=gh&utm_medium=referral&utm_content=&utm_campaign=Badge_grade)
 
 
