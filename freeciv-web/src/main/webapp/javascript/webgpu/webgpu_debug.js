@@ -57,7 +57,7 @@ function init_webgpu_debug() {
     // Create debug labels for visible tiles (sprite overlay)
     update_webgpu_debug_labels();
     
-    console.log('[WebGPU Debug] Debug mode enabled. Tile coordinates (x:y) are now rendered on the terrain.');
+    console.log('[WebGPU Debug] Debug mode enabled. Tile coordinates (x:y) will be rendered on the terrain.');
     console.log('[WebGPU Debug] Click on map tiles to see detailed info in console.');
 }
 

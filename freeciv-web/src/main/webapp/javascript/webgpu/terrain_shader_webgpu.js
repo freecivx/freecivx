@@ -423,7 +423,7 @@ function createTerrainShaderTSL(uniforms) {
     // =========================================================================
     // DEBUG MODE: TILE COORDINATE DISPLAY
     // =========================================================================
-    // When webgpu_debug_enabled is true, render tile coordinates (x: y) as text
+    // When webgpu_debug_enabled is true, render tile coordinates (x:y) as text
     // using a 7-segment style digit display in the shader
     
     // 7-segment display encoding for digits 0-9
@@ -451,7 +451,6 @@ function createTerrainShaderTSL(uniforms) {
         const segW = 0.7;  // Segment width (horizontal segments)
         const segH = 0.12; // Segment height/thickness
         const segL = 0.35; // Segment length (vertical segments)
-        const margin = 0.08; // Margin from edges
         
         // Helper: Create a horizontal segment
         function hSeg(cx, cy) {
@@ -578,7 +577,7 @@ function createTerrainShaderTSL(uniforms) {
     
     // Get tile coordinates (need to flip Y to match game coordinate system)
     const displayTileX = tileX;
-    const displayTileY = sub(sub(map_y_size, 1.0), tileY); // Flip Y axis
+    const displayTileY = sub(map_y_size, add(tileY, 1.0)); // Flip Y axis: (map_y_size - 1 - tileY)
     
     // Extract digits for X coordinate (tens and ones)
     const xTens = floor(div(displayTileX, 10.0));
