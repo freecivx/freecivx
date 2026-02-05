@@ -460,6 +460,7 @@ function hexLogGrid(startX, startY, gridWidth, gridHeight) {
 
 /**
  * Test coordinate conversions for a grid of tiles
+ * Tests both corner-based and center-based round trips
  */
 function testCoordinateConversions() {
   if (typeof map === 'undefined' || !map) {
@@ -468,11 +469,16 @@ function testCoordinateConversions() {
   }
   
   var testPoints = [];
+  var centerTestPoints = [];
   var stepX = Math.max(1, Math.floor(map.xsize / 5));
   var stepY = Math.max(1, Math.floor(map.ysize / 5));
   
+  var tileWidth = mapview_model_width / map['xsize'];
+  var tileHeight = (mapview_model_height / map['ysize']) * HEX_HEIGHT_FACTOR;
+  
   for (var y = 0; y < map.ysize; y += stepY) {
     for (var x = 0; x < map.xsize; x += stepX) {
+      // Test corner-based round trip
       var sceneCoords = map_to_scene_coords(x, y);
       var backToMap = scene_to_map_coords(sceneCoords.x, sceneCoords.y);
       var roundTrip = (backToMap.x === x && backToMap.y === y);
@@ -485,21 +491,47 @@ function testCoordinateConversions() {
         isOddRow: y % 2 === 1
       });
       
+      // Test center-based round trip (more representative of actual clicks)
+      var centerX = sceneCoords.x + tileWidth / 2;
+      var centerY = sceneCoords.y + tileHeight / 2;
+      var centerBackToMap = scene_to_map_coords(centerX, centerY);
+      var centerRoundTrip = (centerBackToMap.x === x && centerBackToMap.y === y);
+      
+      centerTestPoints.push({
+        original: {x: x, y: y},
+        sceneCenter: {x: centerX, y: centerY},
+        backToMap: centerBackToMap,
+        roundTripOK: centerRoundTrip,
+        isOddRow: y % 2 === 1
+      });
+      
       hexDebugData.coordConversions.push({
         mapX: x, mapY: y,
         sceneX: sceneCoords.x, sceneY: sceneCoords.y,
+        sceneCenterX: centerX, sceneCenterY: centerY,
         roundTripX: backToMap.x, roundTripY: backToMap.y,
-        success: roundTrip
+        centerRoundTripX: centerBackToMap.x, centerRoundTripY: centerBackToMap.y,
+        cornerSuccess: roundTrip,
+        centerSuccess: centerRoundTrip
       });
     }
   }
   
-  var failures = testPoints.filter(function(p) { return !p.roundTripOK; });
-  hexLog('COORD-TEST', 'Coordinate conversion test results', {
+  var cornerFailures = testPoints.filter(function(p) { return !p.roundTripOK; });
+  var centerFailures = centerTestPoints.filter(function(p) { return !p.roundTripOK; });
+  
+  hexLog('COORD-TEST', 'Corner-based coordinate conversion test results', {
     totalTests: testPoints.length,
-    passed: testPoints.length - failures.length,
-    failed: failures.length,
-    failures: failures.slice(0, 5) // Show first 5 failures
+    passed: testPoints.length - cornerFailures.length,
+    failed: cornerFailures.length,
+    failures: cornerFailures.slice(0, 5) // Show first 5 failures
+  });
+  
+  hexLog('COORD-TEST', 'Center-based coordinate conversion test results', {
+    totalTests: centerTestPoints.length,
+    passed: centerTestPoints.length - centerFailures.length,
+    failed: centerFailures.length,
+    failures: centerFailures.slice(0, 5) // Show first 5 failures
   });
 }
 
@@ -1059,8 +1091,9 @@ function map_to_scene_coords(x, y)
   // In Freeciv hex: row 0 is normal, row 1 is staggered 0.5 tiles right, etc.
   const rowOffset = (y % 2 === 1) ? tileWidth * HEX_STAGGER : 0;
   
-  result['x'] = Math.floor(MAP_X_OFFSET + x * tileWidth + rowOffset);
-  result['y'] = Math.floor(MAP_Y_OFFSET + y * tileHeight);
+  // Use full precision for accurate coordinate conversion (avoid flooring which causes drift)
+  result['x'] = MAP_X_OFFSET + x * tileWidth + rowOffset;
+  result['y'] = MAP_Y_OFFSET + y * tileHeight;
 
   return result;
 }
@@ -1089,24 +1122,31 @@ function scene_to_map_coords(x, y)
   // Account for the MAP_Y_OFFSET in map_to_scene_coords
   const adjustedY = y - MAP_Y_OFFSET;
   
-  // Calculate initial Y coordinate estimate
-  const tileY = Math.floor(adjustedY / tileHeight);
+  // Calculate initial Y coordinate estimate using round for better accuracy at boundaries
+  const tileY = Math.round(adjustedY / tileHeight);
+  
+  // Clamp tileY to valid range for calculating row offset
+  const clampedTileY = Math.max(0, Math.min(map['ysize'] - 1, tileY));
   
   // Calculate row offset based on Y (odd rows are staggered in odd-r system)
-  const rowOffset = (tileY % 2 === 1) ? tileWidth * HEX_STAGGER : 0;
+  const rowOffset = (clampedTileY % 2 === 1) ? tileWidth * HEX_STAGGER : 0;
   
   // Account for the MAP_X_OFFSET
   const adjustedX = x - MAP_X_OFFSET - rowOffset;
   
-  // Calculate initial X coordinate estimate
-  const tileX = Math.floor(adjustedX / tileWidth);
+  // Calculate initial X coordinate estimate using round for better accuracy
+  const tileX = Math.round(adjustedX / tileWidth);
+  
+  // Clamp initial estimates to valid range
+  let bestTileX = Math.max(0, Math.min(map['xsize'] - 1, tileX));
+  let bestTileY = Math.max(0, Math.min(map['ysize'] - 1, tileY));
   
   // For hex tiles, we need to check if the click is actually in this tile
   // or in an adjacent tile at the corners. Check the distance from the
   // click point to the center of candidate tiles.
   
   // Get the center position of the estimated tile
-  const tileCenterPos = map_to_scene_coords(tileX, tileY);
+  const tileCenterPos = map_to_scene_coords(bestTileX, bestTileY);
   const tileCenterX = tileCenterPos['x'] + tileWidth / 2;
   const tileCenterY = tileCenterPos['y'] + tileHeight / 2;
   
@@ -1119,8 +1159,6 @@ function scene_to_map_coords(x, y)
   
   // For hex tiles, if the point is near the top/bottom corners,
   // it might be in an adjacent tile. Check neighboring tiles.
-  let bestTileX = tileX;
-  let bestTileY = tileY;
   let bestDist = dx * dx + (dy * HEX_ASPECT_RATIO) * (dy * HEX_ASPECT_RATIO);
   
   // Check adjacent tiles including all possible hex neighbors.
@@ -1141,8 +1179,8 @@ function scene_to_map_coords(x, y)
   ];
   
   for (const neighbor of neighbors) {
-    const nx = tileX + neighbor.dx;
-    const ny = tileY + neighbor.dy;
+    const nx = bestTileX + neighbor.dx;
+    const ny = bestTileY + neighbor.dy;
     
     if (nx < 0 || nx >= map['xsize'] || ny < 0 || ny >= map['ysize']) continue;
     

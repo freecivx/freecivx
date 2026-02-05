@@ -86,10 +86,15 @@ function update_webgpu_debug_labels() {
             // Only show labels for known tiles
             if (tile_get_known(ptile) === TILE_UNKNOWN) continue;
             
-            // Create and position the label sprite
+            // Create and position the label sprite at the tile CENTER (not corner)
             var label_sprite = create_debug_tile_label_sprite(x, y);
             if (label_sprite != null) {
-                label_sprite.position.set(pos.x, 50, pos.y); // Elevated above terrain
+                // Calculate tile dimensions for centering
+                var tileWidth = mapview_model_width / map.xsize;
+                var tileHeight = (mapview_model_height / map.ysize) * HEX_HEIGHT_FACTOR;
+                
+                // Position label at tile center by adding half tile dimensions
+                label_sprite.position.set(pos.x + tileWidth / 2, 50, pos.y + tileHeight / 2); // Elevated above terrain
                 label_sprite.name = "debug_tile_label_" + x + "_" + y;
                 scene.add(label_sprite);
                 webgpu_debug_labels[x + "_" + y] = label_sprite;

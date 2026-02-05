@@ -32,8 +32,8 @@ var flag_dz = 18;
 // 
 // The offsets are calculated dynamically based on actual tile dimensions to ensure
 // proper centering regardless of map size or aspect ratio.
-// Objects are shifted 0.5 tiles left from tile center for better model alignment.
-var HEX_CENTER_OFFSET_X = 0;    // X offset from tile corner (shifted 0.5 tiles left from center)
+// Default values are half tile dimensions (for approximate 64x64 map).
+var HEX_CENTER_OFFSET_X = 18;   // X offset from tile corner toward center (half tile width) - default value, recalculated later
 var HEX_CENTER_OFFSET_Y = 15;   // Y offset (scene Z) from tile corner toward center (half tile height) - default value, recalculated later
 
 /****************************************************************************
@@ -42,6 +42,9 @@ var HEX_CENTER_OFFSET_Y = 15;   // Y offset (scene Z) from tile corner toward ce
   These offsets position objects at the visual center of hex tiles.
   Calculated dynamically based on actual tile dimensions.
   
+  Since map_to_scene_coords() returns the top-left corner of each tile,
+  objects need to be offset by half the tile dimensions to be centered.
+  
   @returns {Object} { x: number, y: number } - Center offsets, or default values if dimensions unavailable
 ****************************************************************************/
 function getHexCenterOffsets() {
@@ -49,18 +52,16 @@ function getHexCenterOffsets() {
   if (typeof mapview_model_width === 'undefined' || typeof mapview_model_height === 'undefined' ||
       typeof map === 'undefined' || !(map['xsize'] > 0) || !(map['ysize'] > 0)) {
     // Return default values if dimensions not yet available
-    // X offset is 0 (shifted 0.5 tiles left from center for better model alignment)
-    return { x: 0, y: 15 };
+    return { x: 18, y: 15 };  // Approximate defaults for 64x64 map
   }
   
   // Calculate actual tile dimensions
   var tileWidth = mapview_model_width / map['xsize'];
   var tileHeight = (mapview_model_height / map['ysize']) * HEX_HEIGHT_FACTOR;
   
-  // X offset is 0 (shifted 0.5 tiles left from center for better model alignment)
-  // Y offset remains at half tile height for proper centering
+  // Center offsets are half tile dimensions to move from corner to center
   return {
-    x: 0,
+    x: Math.round(tileWidth / 2),
     y: Math.round(tileHeight / 2)
   };
 }
