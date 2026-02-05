@@ -114,7 +114,12 @@ async function renderer_init() {
       init_webgpu_debug();
     }
 
-    advance_unit_focus();
+    // Delay advance_unit_focus to ensure units are fully loaded from server
+    // This addresses timing issues where the camera position might not be set
+    // correctly if units aren't available yet
+    setTimeout(function() {
+      advance_unit_focus();
+    }, 100);
 
     setTimeout("$('#mapcanvas').fadeIn(2500); $.unblockUI();", 700);
 
