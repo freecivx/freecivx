@@ -42,12 +42,23 @@ function init_webgpu_debug() {
     }
     
     console.log('[WebGPU Debug] Debug mode initializing...');
+    console.log('[WebGPU Debug] webgpu_debug_enabled = ' + webgpu_debug_enabled);
     webgpu_debug_initialized = true;
     
-    // Create debug labels for visible tiles
+    // Verify shader debug uniform is set correctly
+    if (typeof freeciv_uniforms !== 'undefined' && freeciv_uniforms != null) {
+        if (freeciv_uniforms.debug_enabled) {
+            console.log('[WebGPU Debug] Shader debug uniform found: debug_enabled = ' + freeciv_uniforms.debug_enabled.value);
+        } else {
+            console.warn('[WebGPU Debug] Shader debug uniform not found - tile coordinates may not render in shader');
+        }
+    }
+    
+    // Create debug labels for visible tiles (sprite overlay)
     update_webgpu_debug_labels();
     
-    console.log('[WebGPU Debug] Debug mode enabled. Click on map tiles to see detailed info.');
+    console.log('[WebGPU Debug] Debug mode enabled. Tile coordinates (x:y) will be rendered on the terrain.');
+    console.log('[WebGPU Debug] Click on map tiles to see detailed info in console.');
 }
 
 /**
@@ -299,12 +310,20 @@ function log_webgpu_debug_tile_info(ptile) {
 function toggle_webgpu_debug() {
     webgpu_debug_enabled = !webgpu_debug_enabled;
     
+    // Update shader uniform if available
+    if (typeof freeciv_uniforms !== 'undefined' && freeciv_uniforms != null && freeciv_uniforms.debug_enabled) {
+        freeciv_uniforms.debug_enabled.value = webgpu_debug_enabled;
+        console.log('[WebGPU Debug] Updated shader debug_enabled uniform to: ' + webgpu_debug_enabled);
+    }
+    
     if (webgpu_debug_enabled) {
         console.log('[WebGPU Debug] Debug mode ENABLED');
+        console.log('[WebGPU Debug] Tile coordinates (x:y) will now be rendered on the terrain.');
         webgpu_debug_initialized = false;
         init_webgpu_debug();
     } else {
         console.log('[WebGPU Debug] Debug mode DISABLED');
+        console.log('[WebGPU Debug] Tile coordinate display turned off.');
         clear_webgpu_debug_labels();
         webgpu_debug_initialized = false;
     }

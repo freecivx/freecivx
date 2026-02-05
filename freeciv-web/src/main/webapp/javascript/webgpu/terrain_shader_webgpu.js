@@ -128,6 +128,7 @@ function createTerrainShaderTSL(uniforms) {
     const map_x_size = uniform(uniforms.map_x_size.value);
     const map_y_size = uniform(uniforms.map_y_size.value);
     const borders_visible = uniform(uniforms.borders_visible.value);
+    const debug_enabled = uniform(uniforms.debug_enabled.value);
 
     // Get UV coordinates and position
     const uvNode = uv();
@@ -417,6 +418,208 @@ function createTerrainShaderTSL(uniforms) {
     finalColor = vec4(
         mix(finalColor.rgb, borderColor.rgb, borderBlendFactor),
         finalColor.a
+    );
+
+    // =========================================================================
+    // DEBUG MODE: TILE COORDINATE DISPLAY
+    // =========================================================================
+    // When webgpu_debug_enabled is true, render tile coordinates (x:y) as text
+    // using a 7-segment style digit display in the shader
+    
+    // 7-segment display encoding for digits 0-9
+    // Each digit is represented as a 7-bit value where each bit represents a segment:
+    //   Segment layout:   --0--
+    //                    |     |
+    //                    5     1
+    //                    |     |
+    //                     --6--
+    //                    |     |
+    //                    4     2
+    //                    |     |
+    //                     --3--
+    // Digit encodings: 0=0x3F, 1=0x06, 2=0x5B, 3=0x4F, 4=0x66, 5=0x6D, 6=0x7D, 7=0x07, 8=0x7F, 9=0x6F
+    
+    /**
+     * Helper function to create a 7-segment digit mask at a given position
+     * @param {node} digitValue - The digit to display (0-9)
+     * @param {node} pixelX - Current pixel X position within digit area (0-1)
+     * @param {node} pixelY - Current pixel Y position within digit area (0-1)
+     * @returns {node} - 1.0 if pixel should be lit, 0.0 otherwise
+     */
+    function renderDigit(digitValue, pixelX, pixelY) {
+        // Segment dimensions (relative to digit cell)
+        const segW = 0.7;  // Segment width (horizontal segments)
+        const segH = 0.12; // Segment height/thickness
+        const segL = 0.35; // Segment length (vertical segments)
+        
+        // Helper: Create a horizontal segment
+        function hSeg(cx, cy) {
+            const inX = step(sub(cx, div(segW, 2.0)), pixelX).mul(step(pixelX, add(cx, div(segW, 2.0))));
+            const inY = step(sub(cy, div(segH, 2.0)), pixelY).mul(step(pixelY, add(cy, div(segH, 2.0))));
+            return mul(inX, inY);
+        }
+        
+        // Helper: Create a vertical segment
+        function vSeg(cx, cy) {
+            const inX = step(sub(cx, div(segH, 2.0)), pixelX).mul(step(pixelX, add(cx, div(segH, 2.0))));
+            const inY = step(sub(cy, div(segL, 2.0)), pixelY).mul(step(pixelY, add(cy, div(segL, 2.0))));
+            return mul(inX, inY);
+        }
+        
+        // Define segment positions (centered in 0-1 range)
+        const centerX = 0.5;
+        const topY = 0.88;
+        const midY = 0.5;
+        const botY = 0.12;
+        const leftX = 0.18;
+        const rightX = 0.82;
+        const topMidY = 0.69;
+        const botMidY = 0.31;
+        
+        // Create all 7 segments
+        const seg0 = hSeg(centerX, topY);     // Top
+        const seg1 = vSeg(rightX, topMidY);   // Top-right
+        const seg2 = vSeg(rightX, botMidY);   // Bottom-right
+        const seg3 = hSeg(centerX, botY);     // Bottom
+        const seg4 = vSeg(leftX, botMidY);    // Bottom-left
+        const seg5 = vSeg(leftX, topMidY);    // Top-left
+        const seg6 = hSeg(centerX, midY);     // Middle
+        
+        // Digit segment patterns (which segments are on for each digit)
+        // 0: segments 0,1,2,3,4,5 (all except middle)
+        // 1: segments 1,2
+        // 2: segments 0,1,6,4,3
+        // 3: segments 0,1,6,2,3
+        // 4: segments 5,6,1,2
+        // 5: segments 0,5,6,2,3
+        // 6: segments 0,5,4,3,2,6
+        // 7: segments 0,1,2
+        // 8: all segments
+        // 9: segments 0,1,2,3,5,6
+        
+        // Use step functions to select segments based on digit value
+        const is0 = mul(step(digitValue, 0.5), step(-0.5, digitValue));
+        const is1 = mul(step(digitValue, 1.5), step(0.5, digitValue));
+        const is2 = mul(step(digitValue, 2.5), step(1.5, digitValue));
+        const is3 = mul(step(digitValue, 3.5), step(2.5, digitValue));
+        const is4 = mul(step(digitValue, 4.5), step(3.5, digitValue));
+        const is5 = mul(step(digitValue, 5.5), step(4.5, digitValue));
+        const is6 = mul(step(digitValue, 6.5), step(5.5, digitValue));
+        const is7 = mul(step(digitValue, 7.5), step(6.5, digitValue));
+        const is8 = mul(step(digitValue, 8.5), step(7.5, digitValue));
+        const is9 = mul(step(digitValue, 9.5), step(8.5, digitValue));
+        
+        // Segment 0 (top): on for 0,2,3,5,6,7,8,9
+        const s0on = add(add(add(add(add(add(add(is0, is2), is3), is5), is6), is7), is8), is9);
+        // Segment 1 (top-right): on for 0,1,2,3,4,7,8,9
+        const s1on = add(add(add(add(add(add(add(is0, is1), is2), is3), is4), is7), is8), is9);
+        // Segment 2 (bottom-right): on for 0,1,3,4,5,6,7,8,9
+        const s2on = add(add(add(add(add(add(add(add(is0, is1), is3), is4), is5), is6), is7), is8), is9);
+        // Segment 3 (bottom): on for 0,2,3,5,6,8,9
+        const s3on = add(add(add(add(add(add(is0, is2), is3), is5), is6), is8), is9);
+        // Segment 4 (bottom-left): on for 0,2,6,8
+        const s4on = add(add(add(is0, is2), is6), is8);
+        // Segment 5 (top-left): on for 0,4,5,6,8,9
+        const s5on = add(add(add(add(add(is0, is4), is5), is6), is8), is9);
+        // Segment 6 (middle): on for 2,3,4,5,6,8,9
+        const s6on = add(add(add(add(add(add(is2, is3), is4), is5), is6), is8), is9);
+        
+        // Combine segments with their on/off states
+        const digitMask = add(
+            add(add(mul(seg0, s0on), mul(seg1, s1on)), add(mul(seg2, s2on), mul(seg3, s3on))),
+            add(add(mul(seg4, s4on), mul(seg5, s5on)), mul(seg6, s6on))
+        );
+        
+        return clamp(digitMask, 0.0, 1.0);
+    }
+    
+    // Render colon character
+    function renderColon(pixelX, pixelY) {
+        const dotRadius = 0.12;
+        const centerX = 0.5;
+        const topDotY = 0.65;
+        const botDotY = 0.35;
+        
+        // Create two dots for colon
+        const topDist = add(mul(sub(pixelX, centerX), sub(pixelX, centerX)), 
+                           mul(sub(pixelY, topDotY), sub(pixelY, topDotY)));
+        const botDist = add(mul(sub(pixelX, centerX), sub(pixelX, centerX)), 
+                           mul(sub(pixelY, botDotY), sub(pixelY, botDotY)));
+        
+        const topDot = step(topDist, mul(dotRadius, dotRadius));
+        const botDot = step(botDist, mul(dotRadius, dotRadius));
+        
+        return clamp(add(topDot, botDot), 0.0, 1.0);
+    }
+    
+    // Calculate the debug display area (center of each tile)
+    // The display shows "XX:YY" format where XX and YY are 2-digit coordinates
+    const debugAreaWidth = 0.8;   // 80% of tile width
+    const debugAreaHeight = 0.25; // 25% of tile height  
+    const debugAreaX = sub(localX, div(sub(1.0, debugAreaWidth), 2.0));  // Centered X
+    const debugAreaY = sub(localY, div(sub(1.0, debugAreaHeight), 2.0)); // Centered Y
+    
+    // Normalize to debug area coordinates (0-1 within the debug display area)
+    const debugNormX = div(debugAreaX, debugAreaWidth);
+    const debugNormY = div(debugAreaY, debugAreaHeight);
+    
+    // Check if pixel is within the debug display area
+    const inDebugAreaX = mul(step(0.0, debugNormX), step(debugNormX, 1.0));
+    const inDebugAreaY = mul(step(0.0, debugNormY), step(debugNormY, 1.0));
+    const inDebugArea = mul(inDebugAreaX, inDebugAreaY);
+    
+    // Character layout: [X tens] [X ones] [:] [Y tens] [Y ones]
+    // Each character takes 1/5 of the width
+    const charWidth = 0.2;
+    const charIndex = floor(mul(debugNormX, 5.0));
+    const charLocalX = fract(mul(debugNormX, 5.0)); // 0-1 within current character
+    const charLocalY = debugNormY;
+    
+    // Get tile coordinates (need to flip Y to match game coordinate system)
+    const displayTileX = tileX;
+    const displayTileY = sub(map_y_size, add(tileY, 1.0)); // Flip Y axis: (map_y_size - 1 - tileY)
+    
+    // Extract digits for X coordinate (tens and ones)
+    const xTens = floor(div(displayTileX, 10.0));
+    const xOnes = sub(displayTileX, mul(xTens, 10.0));
+    
+    // Extract digits for Y coordinate (tens and ones)
+    const yTens = floor(div(displayTileY, 10.0));
+    const yOnes = sub(displayTileY, mul(yTens, 10.0));
+    
+    // Render each character based on charIndex
+    const isChar0 = mul(step(charIndex, 0.5), step(-0.5, charIndex)); // X tens
+    const isChar1 = mul(step(charIndex, 1.5), step(0.5, charIndex));  // X ones
+    const isChar2 = mul(step(charIndex, 2.5), step(1.5, charIndex));  // Colon
+    const isChar3 = mul(step(charIndex, 3.5), step(2.5, charIndex));  // Y tens
+    const isChar4 = mul(step(charIndex, 4.5), step(3.5, charIndex));  // Y ones
+    
+    // Render the appropriate digit/character for each position
+    const char0Mask = mul(isChar0, renderDigit(xTens, charLocalX, charLocalY));
+    const char1Mask = mul(isChar1, renderDigit(xOnes, charLocalX, charLocalY));
+    const char2Mask = mul(isChar2, renderColon(charLocalX, charLocalY));
+    const char3Mask = mul(isChar3, renderDigit(yTens, charLocalX, charLocalY));
+    const char4Mask = mul(isChar4, renderDigit(yOnes, charLocalX, charLocalY));
+    
+    // Combine all character masks
+    const textMask = add(add(add(add(char0Mask, char1Mask), char2Mask), char3Mask), char4Mask);
+    
+    // Apply debug overlay: yellow text on semi-transparent dark background
+    const debugBgColor = vec3(0.0, 0.0, 0.0);       // Black background
+    const debugTextColor = vec3(1.0, 1.0, 0.0);     // Yellow text
+    const bgOpacity = 0.5;  // 50% opacity for background
+    
+    // Create the debug display color
+    const debugDisplayColor = mix(
+        mix(finalColor.rgb, debugBgColor, mul(inDebugArea, bgOpacity)),
+        debugTextColor,
+        mul(inDebugArea, textMask)
+    );
+    
+    // Only apply debug display when debug mode is enabled
+    finalColor = debug_enabled.select(
+        vec4(debugDisplayColor, finalColor.a),
+        finalColor
     );
 
     // =========================================================================

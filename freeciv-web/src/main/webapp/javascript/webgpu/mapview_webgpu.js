@@ -317,7 +317,8 @@ async function init_webgpu_mapview() {
       roadsmap: { type: "t", value: roads_texture},
       roadsprites: {type: "t", value: webgl_textures["roads"]},
       railroadsprites: {type: "t", value: webgl_textures["railroads"]},
-      borders_visible: {type: "bool", value: server_settings['borders']['is_visible']}
+      borders_visible: {type: "bool", value: server_settings['borders']['is_visible']},
+      debug_enabled: {type: "bool", value: typeof webgpu_debug_enabled !== 'undefined' && webgpu_debug_enabled}
     };
 
     for (var i = 0; i < tiletype_terrains.length ; i++) {
