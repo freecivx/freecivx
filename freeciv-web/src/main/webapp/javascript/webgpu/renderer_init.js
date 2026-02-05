@@ -115,7 +115,7 @@ async function renderer_init() {
     }
 
     advance_unit_focus();
-    camera.position.y += 600;
+    camera.position.y += 900;
     setTimeout("$('#mapcanvas').fadeIn(2500); $.unblockUI();", 700);
 
   }
