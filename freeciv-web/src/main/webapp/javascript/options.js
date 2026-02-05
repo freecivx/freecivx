@@ -107,6 +107,7 @@ var show_buildings = true;
 
 var dialogs_minimized_setting = false;
 var tile_info_popup_setting = true;
+var webgpu_debug_enabled = false;
 var options_init = false;
 
 function init_options_dialog()
