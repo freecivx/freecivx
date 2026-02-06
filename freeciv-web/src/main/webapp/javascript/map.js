@@ -71,6 +71,11 @@ var T_FIRST = 0;
 var DIR_DX = [ -1, 0, 1, -1, 1, -1, 0, 1 ];
 var DIR_DY = [ -1, -1, -1, 0, 0, 1, 1, 1 ];
 
+// TODO: DIR_HEX_DX/DIR_HEX_DY are defined but not used. For hex maps, the square grid
+// offsets in DIR_DX/DIR_DY may not correctly represent hex neighbor relationships.
+// This needs investigation - hex maps might require using DIR_HEX_DX/DIR_HEX_DY instead,
+// or the offsets may need to be computed differently based on the tile's position
+// (even/odd row offset in hex grids).
 var DIR_HEX_DX = [ 0,  1, 1, 0, 1, -1,  0,  0 ];
 var DIR_HEX_DY = [ 0,   -1, 0, -1,  1,  0,  1,  0 ];
 

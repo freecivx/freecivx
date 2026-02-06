@@ -131,13 +131,15 @@ function webgl_render_goto_line(start_tile, goto_packet_dir) {
         
         // Validate the rotated direction is valid for current topology.
         // dir_ccw() returns -1 for invalid input, and is_valid_dir() handles topology checks.
-        // Note: DIR_DX/DIR_DY use square grid offsets which work for map coordinates
-        // even on hex maps (the hex-specific rendering is handled elsewhere).
         if (!is_valid_dir(rotatedDir)) {
             continue;
         }
         
-        // Calculate next tile directly using DIR_DX/DIR_DY instead of mapstep
+        // Calculate next tile directly using DIR_DX/DIR_DY instead of mapstep.
+        // TODO: DIR_DX/DIR_DY use square grid offsets. For hex maps, these offsets may not
+        // correctly represent hex neighbor relationships - DIR_HEX_DX/DIR_HEX_DY exist in
+        // map.js but are unused. This might need investigation if goto paths are incorrect
+        // on hex maps.
         var dx = DIR_DX[rotatedDir];
         var dy = DIR_DY[rotatedDir];
         var targetTile = map_pos_to_tile(currentTile['x'] + dx, currentTile['y'] + dy);
