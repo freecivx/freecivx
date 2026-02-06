@@ -652,12 +652,11 @@ bool dio_get_unit_order_json(struct connection *pc, struct data_in *din,
       return FALSE;
     }
 
-    /* Read tile index for goto orders */
+    /* Read tile index for goto orders; optional field, default to -1 */
     loc->sub_location->name = "tile";
     if (!dio_get_sint32_json(pc, din, location, &order->tile)) {
-      log_packet("Corrupt order.tile");
-      FC_FREE(loc->sub_location);
-      return FALSE;
+      /* Tile field is optional - only sent by goto, not by other movement */
+      order->tile = -1;
     }
 
     /*

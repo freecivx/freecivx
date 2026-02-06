@@ -3073,7 +3073,6 @@ function key_unit_move(dir)
     var order = {
       "order"      : ORDER_ACTION_MOVE,
       "dir"        : dir,
-      "tile"       : newtile['index'],
       "activity"   : ACTIVITY_LAST,
       "target"     : 0,
       "sub_target" : 0,

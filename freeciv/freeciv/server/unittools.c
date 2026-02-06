@@ -4456,8 +4456,12 @@ bool execute_orders(struct unit *punit, const bool fresh)
     case ORDER_MOVE:
     case ORDER_ACTION_MOVE:
       /* Move unit */
-      /* Use tile index from order (sent by web client) */
-      dst_tile = index_to_tile(&(wld.map), order.tile);
+      /* Use tile index if provided (from web client goto), otherwise use direction */
+      if (order.tile >= 0) {
+        dst_tile = index_to_tile(&(wld.map), order.tile);
+      } else {
+        dst_tile = mapstep(&(wld.map), unit_tile(punit), order.dir);
+      }
       if (dst_tile == NULL) {
         cancel_orders(punit, "  move order sent us to invalid location");
         notify_player(pplayer, unit_tile(punit), E_UNIT_ORDERS, ftc_server,
