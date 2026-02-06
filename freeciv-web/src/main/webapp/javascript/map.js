@@ -203,25 +203,9 @@ function is_cardinal_dir(dir)
 
 /****************************************************************************
   Return the tile for the given cartesian (map) position.
-  Handles coordinate wrapping for cylindrical/toroidal maps.
-  Returns null if the coordinates are outside the valid map bounds.
 ****************************************************************************/
 function map_pos_to_tile(x, y)
 {
-  // Handle X wrapping for cylindrical maps
-  if (wrap_has_flag(WRAP_X)) {
-    x = FC_WRAP(x, map['xsize']);
-  } else if (x < 0 || x >= map['xsize']) {
-    return null;
-  }
-  
-  // Handle Y wrapping for toroidal maps
-  if (wrap_has_flag(WRAP_Y)) {
-    y = FC_WRAP(y, map['ysize']);
-  } else if (y < 0 || y >= map['ysize']) {
-    return null;
-  }
-  
   return tiles[x + y * map['xsize']];
 }
 
