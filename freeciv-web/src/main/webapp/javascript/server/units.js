@@ -276,10 +276,20 @@ function server_handle_unit_orders(packet) {
   
   // Handle movement orders
   if (order.order === ORDER_MOVE || order.order === ORDER_ACTION_MOVE) {
+    var new_tile;
     var dir = order.dir;
     
-    if (dir === undefined || dir < 0) {
-      console.error("[Server Units] Invalid direction: " + dir);
+    // Prefer tile field if provided, otherwise use dir
+    if (order.tile !== undefined && order.tile >= 0) {
+      new_tile = index_to_tile(order.tile);
+      // Compute direction from current tile to target tile
+      dir = get_direction_for_step(current_tile, new_tile);
+    } else if (dir !== undefined && dir >= 0) {
+      new_tile = mapstep(current_tile, dir);
+    }
+    
+    if (!new_tile) {
+      console.error("[Server Units] Cannot determine target tile");
       return;
     }
     
@@ -289,19 +299,11 @@ function server_handle_unit_orders(packet) {
       return;
     }
     
-    // Calculate the new tile
-    var new_tile = mapstep(current_tile, dir);
-    
-    if (!new_tile) {
-      console.error("[Server Units] Cannot move in direction " + dir);
-      return;
-    }
-    
     console.log("[Server Units] Moving unit " + packet.unit_id + " from tile " + punit.tile + " to tile " + new_tile.index);
     
     // Update the server's unit state
     punit.tile = new_tile.index;
-    punit.facing = dir;
+    punit.facing = dir >= 0 ? dir : punit.facing;
     
     // Reduce moves left
     // TODO: In the future, consider different movement costs for terrain types

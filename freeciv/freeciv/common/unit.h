@@ -99,6 +99,9 @@ struct unit_order {
   int action;
   /* Valid for ORDER_MOVE and ORDER_ACTION_MOVE. */
   enum direction8 dir;
+  /* Valid for ORDER_MOVE and ORDER_ACTION_MOVE when sent from web client.
+   * The server computes dir from consecutive tiles. */
+  int tile;
 };
 
 /* Used in the network protocol */

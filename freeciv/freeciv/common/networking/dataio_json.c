@@ -352,6 +352,7 @@ int dio_put_unit_order_json(struct json_data_out *dout,
     } else {
       e |= json_object_set_new(obj, "dir", json_integer(order->dir));
     }
+    e |= json_object_set_new(obj, "tile", json_integer(order->tile));
     e |= plocation_write_data(dout->json, location, obj);
   } else {
     e = dio_put_unit_order_raw(&dout->raw, order);
@@ -648,6 +649,12 @@ bool dio_get_unit_order_json(struct connection *pc, struct data_in *din,
       log_packet("Corrupt order.dir");
       FC_FREE(loc->sub_location);
       return FALSE;
+    }
+
+    loc->sub_location->name = "tile";
+    if (!dio_get_sint32_json(pc, din, location, &order->tile)) {
+      /* tile field is optional for backward compatibility */
+      order->tile = -1;
     }
 
     /*
