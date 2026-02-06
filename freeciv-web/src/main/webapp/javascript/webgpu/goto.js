@@ -124,11 +124,11 @@ function webgl_render_goto_line(start_tile, goto_packet_dir) {
             continue;
         }
 
-        // Rotate direction clockwise by 45 degrees to compensate for the 3D camera
-        // perspective, which views the map from the SE direction. Without this
-        // correction, the path would appear rotated 45 degrees counterclockwise.
-        var adjustedDir = dir_cw(moveDir);
-        var targetTile = mapstep(currentTile, adjustedDir);
+        // Use the direction directly from the goto packet - it's already in the correct
+        // map coordinate system. The mapstep function handles all topology-specific
+        // direction validation (iso-hex has 6 valid directions: N, S, E, W, NW, SE).
+        // Visual alignment with the camera is handled by the terrain rendering, not here.
+        var targetTile = mapstep(currentTile, moveDir);
         if (targetTile != null) {
             // Mark the target tile as part of the goto path
             mark_goto_tile(targetTile);
