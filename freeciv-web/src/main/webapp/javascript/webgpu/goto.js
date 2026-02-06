@@ -124,7 +124,11 @@ function webgl_render_goto_line(start_tile, goto_packet_dir) {
             continue;
         }
 
-        var targetTile = mapstep(currentTile, moveDir);
+        // Rotate direction clockwise by 45 degrees to compensate for the 3D camera
+        // perspective, which views the map from the SE direction. Without this
+        // correction, the path would appear rotated 45 degrees counterclockwise.
+        var adjustedDir = dir_cw(moveDir);
+        var targetTile = mapstep(currentTile, adjustedDir);
         if (targetTile != null) {
             // Mark the target tile as part of the goto path
             mark_goto_tile(targetTile);
