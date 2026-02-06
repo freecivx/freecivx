@@ -1673,10 +1673,12 @@ function do_map_click(ptile, qtype, first_time_called)
         /* Add each individual order. */
         packet['orders'] = [];
         /* Send tile indices directly to the server instead of directions.
-         * The server now accepts tile indices for move orders. */
+         * The server now accepts tile indices for move orders.
+         * We still compute step_dir to detect refuel situations (non-adjacent tiles). */
         var prev_tile = old_tile;
         for (var i = 0; i < goto_path['length']; i++) {
           var next_tile = index_to_tile(goto_path['tiles'][i]);
+          /* Compute direction to detect refuel (step_dir == -1 means non-adjacent) */
           var step_dir = get_direction_for_step(prev_tile, next_tile);
 
           if (step_dir == -1) {
