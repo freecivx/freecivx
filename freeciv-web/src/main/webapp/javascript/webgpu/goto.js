@@ -129,10 +129,11 @@ function webgl_render_goto_line(start_tile, goto_packet_dir) {
         // to unit controls in control.js (see numpad direction handling around line 2056).
         var rotatedDir = dir_ccw(moveDir);
         
-        // Validate the rotated direction is within bounds and valid for current topology.
+        // Validate the rotated direction is valid for current topology.
+        // dir_ccw() returns -1 for invalid input, and is_valid_dir() handles topology checks.
         // Note: DIR_DX/DIR_DY use square grid offsets which work for map coordinates
         // even on hex maps (the hex-specific rendering is handled elsewhere).
-        if (rotatedDir < 0 || rotatedDir >= DIR8_LAST || !is_valid_dir(rotatedDir)) {
+        if (!is_valid_dir(rotatedDir)) {
             continue;
         }
         
