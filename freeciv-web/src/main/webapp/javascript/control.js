@@ -1671,11 +1671,14 @@ function do_map_click(ptile, qtype, first_time_called)
 
         /* Add each individual order. */
         packet['orders'] = [];
+        /* The server now sends tile indices instead of directions.
+         * Compute direction for each step from consecutive tiles. */
+        var prev_tile = old_tile;
         for (var i = 0; i < goto_path['length']; i++) {
-          /* TODO: Have the server send the full orders in stead of just the
-           * dir part. Use that data in stead. */
+          var next_tile = index_to_tile(goto_path['tiles'][i]);
+          var step_dir = get_direction_for_step(prev_tile, next_tile);
 
-          if (goto_path['dir'][i] == -1) {
+          if (step_dir == -1) {
             /* Assume that this means refuel. */
             order['order'] = ORDER_FULL_MP;
           } else if (i + 1 != goto_path['length']) {
@@ -1686,13 +1689,14 @@ function do_map_click(ptile, qtype, first_time_called)
             order['order'] = ORDER_ACTION_MOVE;
           }
 
-          order['dir'] = goto_path['dir'][i];
+          order['dir'] = step_dir;
           order['activity'] = ACTIVITY_LAST;
           order['target'] = 0;
           order['sub_target'] = 0;
           order['action'] = ACTION_COUNT;
 
           packet['orders'][i] = Object.assign({}, order);
+          prev_tile = next_tile;
         }
 
         if (goto_last_order != ORDER_LAST) {
