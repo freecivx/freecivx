@@ -32,6 +32,9 @@ var DIR8_SOUTHEAST = 7;
 var DIR8_LAST = 8;
 var DIR8_COUNT = DIR8_LAST;
 
+// Note: DIR6_* constants are unused and not part of the Freeciv C code.
+// Hexagonal maps use the standard DIR8_* directions with is_valid_dir()
+// filtering out invalid directions (2 out of 8 are invalid for hex).
 var DIR6_NORTHEAST = 1;
 var DIR6_EAST = 2;
 var DIR6_NORTHWEST = 3;
@@ -56,7 +59,6 @@ var T_FIRST = 0;
 /* Direction offsets for computing neighboring tiles.
  * These work for both square and hexagonal topologies.
  * For hex maps, invalid directions are filtered by is_valid_dir().
- * Coordinate wrapping is handled by map_pos_to_tile().
  *
  * Direction indices correspond to:
  *   0=NW, 1=N, 2=NE, 3=W, 4=E, 5=SW, 6=S, 7=SE
@@ -334,8 +336,7 @@ function map_distance_vector(tile0, tile1)
   - In iso-hex: NE and SW are invalid
   - In pure hex: SE and NW are invalid
   
-  The validity is handled by is_valid_dir(), and coordinate wrapping is
-  handled by map_pos_to_tile().
+  The validity is handled by is_valid_dir().
 ****************************************************************************/
 function mapstep(ptile, dir)
 {
