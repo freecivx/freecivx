@@ -130,6 +130,9 @@ function webgl_render_goto_line(start_tile, goto_packet_dir) {
         }
         
         // Calculate next tile directly using DIR_DX/DIR_DY instead of mapstep.
+        // Note: Previously a 45-degree rotation (dir_ccw) was applied here as a workaround
+        // because mapstep was incorrect. Using DIR_DX/DIR_DY directly fixes the issue
+        // without needing the rotation workaround.
         // TODO: DIR_DX/DIR_DY use square grid offsets. For hex maps, these offsets may not
         // correctly represent hex neighbor relationships - DIR_HEX_DX/DIR_HEX_DY exist in
         // map.js but are unused. This might need investigation if goto paths are incorrect
