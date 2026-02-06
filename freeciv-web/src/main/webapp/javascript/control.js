@@ -1721,7 +1721,7 @@ function do_map_click(ptile, qtype, first_time_called)
             /* Initialize the order to "empty" values. */
             order['order'] = ORDER_LAST;
             order['dir'] = -1;
-            order['tile'] = ptile['index'];
+            order['tile'] = -1;
             order['activity'] = ACTIVITY_LAST;
             order['target'] = 0;
             order['sub_target'] = 0;
@@ -1738,7 +1738,10 @@ function do_map_click(ptile, qtype, first_time_called)
           /* Perform the final action. */
           order['action'] = goto_last_action;
           order['target'] = ptile['index'];
-          order['tile'] = ptile['index'];
+          /* Only set tile for move orders - server uses it for ORDER_MOVE/ORDER_ACTION_MOVE */
+          if (goto_last_order == ORDER_MOVE || goto_last_order == ORDER_ACTION_MOVE) {
+            order['tile'] = ptile['index'];
+          }
 
           packet['orders'][pos] = Object.assign({}, order);
         }
