@@ -4240,7 +4240,6 @@ void handle_web_goto_path_req(struct player *pplayer, int unit_id, int goal)
   struct pf_parameter parameter;
   struct pf_map *pfm;
   struct pf_path *path;
-  struct tile *old_tile;
   int i = 0;
   struct packet_web_goto_path p;
 
@@ -4282,23 +4281,14 @@ void handle_web_goto_path_req(struct player *pplayer, int unit_id, int goal)
   if (path) {
     int total_mc = 0;
 
-    p.length = path->length - 1;
+    /* Send all tiles in the path (including start tile) */
+    p.length = path->length;
 
-    old_tile = path->positions[0].tile;
-
-    for (i = 0; i < path->length - 1; i++) {
-      struct tile *new_tile = path->positions[i + 1].tile;
-      int dir;
-
-      total_mc += path->positions[1].total_MC;
-      if (same_pos(new_tile, old_tile)) {
-        dir = -1;
-      } else {
-        dir = get_direction_for_step(&(wld.map), old_tile, new_tile);
-      }
-      old_tile = new_tile;
-      p.dir[i] = dir;
-
+    for (i = 0; i < path->length; i++) {
+      struct tile *path_tile = path->positions[i].tile;
+      
+      total_mc += path->positions[i].total_MC;
+      p.tiles[i] = tile_index(path_tile);
     }
     pf_path_destroy(path);
     p.turns = total_mc / unit_move_rate(punit);

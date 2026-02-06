@@ -3145,16 +3145,16 @@ function check_request_goto_path()
 
 /****************************************************************************
   Show the GOTO path in the unit_goto_path packet.
+  The packet now contains an array of tile indices instead of directions.
 ****************************************************************************/
 function update_goto_path(goto_packet)
 {
   var punit = units[goto_packet['unit_id']];
   if (punit == null) return;
-  var t0 = index_to_tile(punit['tile']);
-  var ptile = t0;
   var goaltile = index_to_tile(goto_packet['dest']);
 
-  webgl_render_goto_line(ptile, goto_packet['dir']);
+  // Pass the array of tile indices directly to the renderer
+  webgl_render_goto_line(goto_packet['tiles']);
 
   current_goto_turns = goto_packet['turns'];
 

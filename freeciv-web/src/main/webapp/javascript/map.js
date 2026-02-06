@@ -208,29 +208,6 @@ function index_to_tile(index)
 }
 
 /****************************************************************************
-  Return the tile for the given native position, with bounds checking.
-  Handles coordinate wrapping for maps that wrap in X or Y direction.
-****************************************************************************/
-function native_pos_to_tile(nat_x, nat_y)
-{
-  // Handle X coordinate - wrap if wrapping is enabled, otherwise bounds check
-  if (wrap_has_flag(WRAP_X)) {
-    nat_x = ((nat_x % map['xsize']) + map['xsize']) % map['xsize'];
-  } else if (nat_x < 0 || nat_x >= map['xsize']) {
-    return null;
-  }
-  
-  // Handle Y coordinate - wrap if wrapping is enabled, otherwise bounds check
-  if (wrap_has_flag(WRAP_Y)) {
-    nat_y = ((nat_y % map['ysize']) + map['ysize']) % map['ysize'];
-  } else if (nat_y < 0 || nat_y >= map['ysize']) {
-    return null;
-  }
-  
-  return tiles[nat_x + nat_y * map['xsize']];
-}
-
-/****************************************************************************
   Obscure math.  See explanation in doc/HACKING.
 ****************************************************************************/
 function NATIVE_TO_MAP_POS(nat_x, nat_y)
@@ -348,13 +325,6 @@ function map_distance_vector(tile0, tile1)
   - In pure hex: SE and NW are invalid
   
   The validity is handled by is_valid_dir().
-  
-  IMPORTANT: For iso-hex maps, the tile's (x, y) are native coordinates,
-  but DIR_DX/DIR_DY work in map coordinates. We must convert:
-  1. Native coords -> Map coords (using NATIVE_TO_MAP_POS)
-  2. Apply direction offset in map coords
-  3. Map coords -> Native coords (using MAP_TO_NATIVE_POS)
-  4. Look up tile using native coords
 ****************************************************************************/
 function mapstep(ptile, dir)
 {
@@ -365,25 +335,7 @@ function mapstep(ptile, dir)
   var dx = DIR_DX[dir];
   var dy = DIR_DY[dir];
 
-  // For iso-hex topology, we need to convert between native and map coordinates
-  // because DIR_DX/DIR_DY are defined in map coordinate space
-  if (topo_has_flag(TF_ISO)) {
-    // Convert tile's native position to map coordinates
-    var map_pos = NATIVE_TO_MAP_POS(ptile['x'], ptile['y']);
-    
-    // Apply direction offset in map coordinates
-    var new_map_x = map_pos['map_x'] + dx;
-    var new_map_y = map_pos['map_y'] + dy;
-    
-    // Convert back to native coordinates
-    var nat_pos = MAP_TO_NATIVE_POS(new_map_x, new_map_y);
-    
-    // Look up tile using native coordinates
-    return native_pos_to_tile(nat_pos['nat_x'], nat_pos['nat_y']);
-  } else {
-    // For non-iso topologies, native and map coordinates are the same
-    return map_pos_to_tile(ptile['x'] + dx, ptile['y'] + dy);
-  }
+  return map_pos_to_tile(ptile['x'] + dx, ptile['y'] + dy);
 }
 
 /****************************************************************************
