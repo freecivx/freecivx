@@ -2446,7 +2446,7 @@ end
 PACKET_WEB_GOTO_PATH = 288; sc, dsend, handle-via-fields, no-handle
   UNIT unit_id;
   UINT16 length;
-  DIRECTION dir[MAX_LEN_ROUTE:length];
+  TILE tiles[MAX_LEN_ROUTE:length];
   TILE dest;
   UINT32 turns;
 end

@@ -203,9 +203,9 @@ void handle_unit_type_upgrade(struct player *pplayer, Unit_type_id uti)
     return;
   }
 
-  /* 
+  /*
    * Try to upgrade units. The order we upgrade in is arbitrary (if
-   * the player really cared they should have done it manually). 
+   * the player really cared they should have done it manually).
    */
   conn_list_do_buffer(pplayer->connections);
   unit_list_iterate(pplayer->units, punit) {
@@ -2671,7 +2671,7 @@ void illegal_action_msg(struct player *pplayer,
     notify_player(pplayer, unit_tile(actor),
                   event, ftc_server,
                   /* TRANS: action name.
-                   * "Your Riflemen can't do Expel Unit to domestic 
+                   * "Your Riflemen can't do Expel Unit to domestic
                    * unit stacks." */
                   _("Your %s can't do %s to domestic %s."),
                   unit_name_translation(actor),
@@ -4240,7 +4240,6 @@ void handle_web_goto_path_req(struct player *pplayer, int unit_id, int goal)
   struct pf_parameter parameter;
   struct pf_map *pfm;
   struct pf_path *path;
-  struct tile *old_tile;
   int i = 0;
   struct packet_web_goto_path p;
 
@@ -4280,28 +4279,18 @@ void handle_web_goto_path_req(struct player *pplayer, int unit_id, int goal)
   pf_map_destroy(pfm);
 
   if (path) {
-    int total_mc = 0;
+    /* Send all tiles in the path (including start tile) */
+    p.length = path->length;
 
-    p.length = path->length - 1;
-
-    old_tile = path->positions[0].tile;
-
-    for (i = 0; i < path->length - 1; i++) {
-      struct tile *new_tile = path->positions[i + 1].tile;
-      int dir;
-
-      total_mc += path->positions[1].total_MC;
-      if (same_pos(new_tile, old_tile)) {
-        dir = -1;
-      } else {
-        dir = get_direction_for_step(&(wld.map), old_tile, new_tile);
-      }
-      old_tile = new_tile;
-      p.dir[i] = dir;
-
+    for (i = 0; i < path->length; i++) {
+      struct tile *path_tile = path->positions[i].tile;
+      p.tiles[i] = tile_index(path_tile);
     }
+
+    /* Use the total movement cost from the last position in the path */
+    p.turns = path->positions[path->length - 1].total_MC / unit_move_rate(punit);
+
     pf_path_destroy(path);
-    p.turns = total_mc / unit_move_rate(punit);
     send_packet_web_goto_path(pplayer->current_conn, &p);
 
   } else {
@@ -4442,9 +4431,9 @@ static void see_combat(struct unit *pattacker, struct unit *pdefender)
   struct packet_unit_short_info unit_att_short_packet, unit_def_short_packet;
   struct packet_unit_info unit_att_packet, unit_def_packet;
 
-  /* 
+  /*
    * Special case for attacking/defending:
-   * 
+   *
    * Normally the player doesn't get the information about the units inside a
    * city. However for attacking/defending the player has to know the unit of
    * the other side.  After the combat a remove_unit packet will be sent
@@ -4478,7 +4467,7 @@ static void see_combat(struct unit *pattacker, struct unit *pdefender)
         } else {
           send_packet_unit_short_info(pconn, &unit_att_short_packet, FALSE);
         }
-        
+
         if (pplayer == unit_owner(pdefender)) {
           send_packet_unit_info(pconn, &unit_def_packet);
         } else {
@@ -4496,7 +4485,7 @@ static void see_combat(struct unit *pattacker, struct unit *pdefender)
 /**********************************************************************//**
   Send combat info to players.
 **************************************************************************/
-static void send_combat(struct unit *pattacker, struct unit *pdefender, 
+static void send_combat(struct unit *pattacker, struct unit *pdefender,
                         int att_veteran, int def_veteran, int bombard)
 {
   struct packet_unit_combat_info combat;
@@ -4516,7 +4505,7 @@ static void send_combat(struct unit *pattacker, struct unit *pdefender,
                                  V_MAIN)) {
       lsend_packet_unit_combat_info(other_player->connections, &combat);
 
-      /* 
+      /*
        * Remove the client knowledge of the units.  This corresponds to the
        * send_packet_unit_short_info calls up above.
        */
@@ -4688,7 +4677,7 @@ static bool unit_bombard(struct unit *punit, struct tile *ptile,
 
   unit_did_action(punit);
   unit_forget_last_activity(punit);
-  
+
   unit_attack_civilian_casualties(punit, pcity, paction, "bombard");
 
   send_unit_info(NULL, punit);
@@ -4957,7 +4946,7 @@ static bool do_attack(struct unit *punit, struct tile *def_tile,
   char attacker_fp[MAX_LEN_LINK], defender_fp[MAX_LEN_LINK];
   char attacker_tired[MAX_LEN_LINK];
   struct unit *ploser, *pwinner;
-  int moves_used, def_moves_used; 
+  int moves_used, def_moves_used;
   int old_unit_vet, old_defender_vet, vet;
   int winner_id;
   struct player *pplayer = unit_owner(punit);
@@ -4975,7 +4964,7 @@ static bool do_attack(struct unit *punit, struct tile *def_tile,
     /* Can't fight air... */
     return FALSE;
   }
-  
+
   att_hp_start = punit->hp;
   def_hp_start = pdefender->hp;
   def_power = get_total_defense_power(punit, pdefender);
@@ -4984,7 +4973,7 @@ static bool do_attack(struct unit *punit, struct tile *def_tile,
 
   log_debug("Start attack: %s %s against %s %s.",
             nation_rule_name(nation_of_player(pplayer)),
-            unit_rule_name(punit), 
+            unit_rule_name(punit),
             nation_rule_name(nation_of_unit(pdefender)),
             unit_rule_name(pdefender));
 
@@ -5044,9 +5033,9 @@ static bool do_attack(struct unit *punit, struct tile *def_tile,
   /* Adjust attackers moves_left _after_ unit_versus_unit() so that
    * the movement attack modifier is correct! --dwp
    *
-   * For greater Civ2 compatibility (and game balance issues), we recompute 
-   * the new total MP based on the HP the unit has left after being damaged, 
-   * and subtract the MPs that had been used before the combat (plus the 
+   * For greater Civ2 compatibility (and game balance issues), we recompute
+   * the new total MP based on the HP the unit has left after being damaged,
+   * and subtract the MPs that had been used before the combat (plus the
    * points used in the attack itself, for the attacker). -GJW, Glip
    */
   punit->moves_left = unit_move_rate(punit) - moves_used;
@@ -5226,7 +5215,7 @@ static bool do_attack(struct unit *punit, struct tile *def_tile,
 
   /* If attacker wins, and occupychance > 0, it might move in.  Don't move in
    * if there are enemy units in the tile (a fortress, city or air base with
-   * multiple defenders and unstacked combat). Note that this could mean 
+   * multiple defenders and unstacked combat). Note that this could mean
    * capturing (or destroying) a city. */
 
   if (pwinner == punit && fc_rand(100) < game.server.occupychance) {
@@ -5856,7 +5845,7 @@ static bool unit_do_help_build(struct player *pplayer,
                 unit_link(punit),
                 action_name_translation(paction),
                 prod,
-                city_link(pcity_dest), 
+                city_link(pcity_dest),
                 abs(build_points_left(pcity_dest)),
                 work);
 
@@ -6465,7 +6454,7 @@ static void unit_activity_dependencies(struct unit *punit,
   switch (punit->activity) {
   case ACTIVITY_IDLE:
     switch (old_activity) {
-    case ACTIVITY_PILLAGE: 
+    case ACTIVITY_PILLAGE:
       {
         if (old_target != NULL) {
           unit_list_iterate_safe(unit_tile(punit)->units, punit2) {
@@ -6486,7 +6475,7 @@ static void unit_activity_dependencies(struct unit *punit,
       /* Restore unit's control status */
       punit->ssa_controller = SSA_NONE;
       break;
-    default: 
+    default:
       ; /* do nothing */
     }
     break;
