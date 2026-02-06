@@ -24,6 +24,9 @@
  * terrain shader uses to draw white edge highlights on path tiles.
  * This approach provides consistent, high-quality path visualization
  * that integrates seamlessly with the hexagonal terrain rendering.
+ * 
+ * For hexagonal maps, only 6 directions are valid for movement:
+ *   W (West), NW (NorthWest), NE (NorthEast), E (East), SE (SouthEast), SW (SouthWest)
  */
 
 // Texture data for goto path tiles
@@ -41,7 +44,8 @@ function init_goto_tiles_texture() {
     // R channel: 255 if tile is part of goto path, 0 otherwise
     // G channel: stores (direction_index + 1) where direction_index is 0-7
     //            Result: 0 = start tile (no incoming direction), 1-8 = directions
-    //            Direction indices: 0=NW, 1=N, 2=NE, 3=W, 4=E, 5=SW, 6=S, 7=SE
+    //            Direction indices (DIR8_*): 0=NW, 1=N, 2=NE, 3=W, 4=E, 5=SW, 6=S, 7=SE
+    //            Note: For hex maps, only 6 directions are valid (W, NW, NE, E, SE, SW)
     //            This allows the shader to display direction info for debugging
     // B channel: path step index (0-254), for path order visualization
     // A channel: set to 255 for RGBA format compatibility (required by THREE.DataTexture)

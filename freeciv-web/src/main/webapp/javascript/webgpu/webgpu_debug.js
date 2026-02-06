@@ -35,14 +35,24 @@
  * - log_webgpu_debug_tile_info(tile) - Log detailed info for a tile
  * - log_webgpu_goto_path(start_tile, dir_array, dest_tile) - Log goto path details
  * - debug_dir_to_name(dir) - Convert direction index to name (e.g., 0 -> "NW")
+ * - debug_get_valid_directions() - Get description of valid directions for current map
+ * 
+ * Hexagonal Map Directions:
+ * For hex maps, only 6 directions are valid (not N and S for visual movement):
+ *   - Non-iso hex: W, NW, NE, E, SE, SW (N=1 and S=6 still used internally)
+ *   - Iso-hex: W, NW, NE, E, SE, SW
+ * 
+ * Direction indices (DIR8_* constants):
+ *   0=NW, 1=N, 2=NE, 3=W, 4=E, 5=SW, 6=S, 7=SE
  * 
  * Goto Path Debug Features:
  * When debug mode is enabled and a goto path is requested:
- * 1. Console shows full path traversal with tile coordinates and directions
- * 2. Direction names are shown (NW, N, NE, W, E, SW, S, SE)
- * 3. Warnings are logged if movements don't match expected direction offsets
- * 4. The terrain shader displays "D# S##" on goto path tiles where:
- *    - D# = Direction index (0=start, 1=NW, 2=N, 3=NE, 4=W, 5=E, 6=SW, 7=S, 8=SE)
+ * 1. Console shows map topology and valid directions
+ * 2. Console shows full path traversal with tile coordinates and directions
+ * 3. Direction names are shown for each step
+ * 4. Warnings are logged if movements don't match expected direction offsets
+ * 5. The terrain shader displays "D# S##" on goto path tiles where:
+ *    - D# = Direction index (0=start, 1-8=direction from DIR8_* +1)
  *    - S## = Step index in the path (00 = start, 01 = first move, etc.)
  */
 
@@ -339,7 +349,8 @@ function toggle_webgpu_debug() {
         console.log('[WebGPU Debug] Debug mode ENABLED');
         console.log('[WebGPU Debug] - Tile coordinates (x:y) will now be rendered on the terrain.');
         console.log('[WebGPU Debug] - Goto paths will show D# (direction) and S## (step index) in cyan.');
-        console.log('[WebGPU Debug] - Direction codes: 0=START, 1=NW, 2=N, 3=NE, 4=W, 5=E, 6=SW, 7=S, 8=SE');
+        console.log('[WebGPU Debug] - Direction codes: 0=START, then DIR8 index +1');
+        console.log('[WebGPU Debug] - Hex directions: W, NW, NE, E, SE, SW (6 valid directions)');
         console.log('[WebGPU Debug] - Full goto path details will be logged to console.');
         webgpu_debug_initialized = false;
         init_webgpu_debug();
@@ -397,7 +408,13 @@ function log_webgpu_performance() {
 
 /**
  * Convert direction index to human-readable direction name
- * Direction indices: 0=NW, 1=N, 2=NE, 3=W, 4=E, 5=SW, 6=S, 7=SE
+ * Direction indices match DIR8_* constants from map.js:
+ *   0=NW, 1=N, 2=NE, 3=W, 4=E, 5=SW, 6=S, 7=SE
+ * 
+ * Note: For hexagonal maps, only 6 directions are valid:
+ *   - Non-iso hex: N, NE, E, W, SW, S (NW and SE are invalid)
+ *   - Iso-hex: N, NW, E, W, SE, S (NE and SW are invalid)
+ * 
  * @param {number} dir - Direction index (0-7)
  * @returns {string} - Direction name (e.g., "N", "NE", "E")
  */
@@ -409,6 +426,26 @@ function debug_dir_to_name(dir) {
         return "REFUEL";
     }
     return "INVALID(" + dir + ")";
+}
+
+/**
+ * Get a description of valid directions for the current map topology
+ * @returns {string} - Description of valid hex directions
+ */
+function debug_get_valid_directions() {
+    if (typeof topo_has_flag === 'undefined' || typeof TF_HEX === 'undefined') {
+        return "Unknown (topology functions not available)";
+    }
+    
+    if (!topo_has_flag(TF_HEX)) {
+        return "Square map: All 8 directions valid (N, NE, E, SE, S, SW, W, NW)";
+    }
+    
+    if (topo_has_flag(TF_ISO)) {
+        return "Iso-Hex map: 6 directions valid (N, NW, W, S, SE, E) - NE and SW are INVALID";
+    } else {
+        return "Hex map: 6 directions valid (N, NE, E, S, SW, W) - NW and SE are INVALID";
+    }
 }
 
 /**
@@ -427,6 +464,10 @@ function log_webgpu_goto_path(start_tile, goto_packet_dir, dest_tile) {
     console.log('╔════════════════════════════════════════════════════════════╗');
     console.log('║          WEBGPU GOTO PATH DEBUG INFO                       ║');
     console.log('╚════════════════════════════════════════════════════════════╝');
+    
+    // Log map topology info for hex direction understanding
+    console.log('Map Topology: ' + debug_get_valid_directions());
+    console.log('');
     
     // Log request info
     if (start_tile != null) {
@@ -607,3 +648,4 @@ window.log_webgpu_debug_tile_info = log_webgpu_debug_tile_info;
 window.log_webgpu_goto_path = log_webgpu_goto_path;
 window.log_webgpu_goto_request = log_webgpu_goto_request;
 window.debug_dir_to_name = debug_dir_to_name;
+window.debug_get_valid_directions = debug_get_valid_directions;
