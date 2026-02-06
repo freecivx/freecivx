@@ -17,110 +17,99 @@
 
 ***********************************************************************/
 
-var goto_lines = [];
+/**
+ * Goto Path Visualization using Shader-Based Tile Highlighting
+ * 
+ * This module renders goto paths by marking tiles in a texture that the
+ * terrain shader uses to draw white edge highlights on path tiles.
+ * This approach provides consistent, high-quality path visualization
+ * that integrates seamlessly with the hexagonal terrain rendering.
+ */
 
-// Minimum horizontal distance threshold for direction calculations
-var GOTO_MIN_HORIZ_DIST = 0.001;
-
-/****************************************************************************
- Computes the 3D scene position for the center of a given tile.
- This directly calculates the center without relying on global offset variables.
- 
- @param {Object} tile - The tile object with x, y, and height properties
- @param {number} heightOffset - Additional height to add above the terrain
- @returns {THREE.Vector3} - The 3D position at the tile's center
- ****************************************************************************/
-function compute_tile_center_3d(tile, heightOffset) {
-    if (tile == null || typeof map === 'undefined') return null;
-    
-    // Get tile dimensions from map
-    var tileW = mapview_model_width / map['xsize'];
-    var tileH = (mapview_model_height / map['ysize']) * HEX_HEIGHT_FACTOR;
-    
-    // Compute half-tile offsets for centering
-    var halfTileW = tileW * 0.5;
-    var halfTileH = tileH * 0.5;
-    
-    // Get corner position from standard conversion
-    var cornerPos = map_to_scene_coords(tile['x'], tile['y']);
-    
-    // Compute center by adding half-tile offsets
-    var centerX = cornerPos['x'] + halfTileW;
-    var centerZ = cornerPos['y'] + halfTileH;
-    
-    // Compute Y (height) based on terrain elevation
-    var terrainY = 5 + tile['height'] * 100 + heightOffset;
-    
-    return new THREE.Vector3(centerX, terrainY, centerZ);
-}
+// Texture data for goto path tiles
+var goto_tiles_texture = null;
+var goto_tiles_data = null;
 
 /****************************************************************************
- Creates a ribbon segment (quad) between two 3D points.
- 
- @param {THREE.Vector3} pointA - Start point
- @param {THREE.Vector3} pointB - End point  
- @param {number} ribbonWidth - Half-width of the ribbon
- @returns {Float32Array} - Vertex positions for two triangles forming the quad
+ Initialize the goto tiles texture.
+ Called during map initialization to create the texture that stores goto path data.
  ****************************************************************************/
-function build_ribbon_segment(pointA, pointB, ribbonWidth) {
-    // Compute horizontal direction vector (ignoring Y)
-    var horizDirX = pointB.x - pointA.x;
-    var horizDirZ = pointB.z - pointA.z;
-    var horizLen = Math.sqrt(horizDirX * horizDirX + horizDirZ * horizDirZ);
+function init_goto_tiles_texture() {
+    if (typeof map === 'undefined' || map == null) return;
     
-    // Compute perpendicular vector in XZ plane for ribbon width
-    var perpX, perpZ;
-    if (horizLen > GOTO_MIN_HORIZ_DIST) {
-        // Normalize and rotate 90 degrees: (dx, dz) -> (-dz, dx)
-        perpX = (-horizDirZ / horizLen) * ribbonWidth;
-        perpZ = (horizDirX / horizLen) * ribbonWidth;
-    } else {
-        // Fallback for vertical-only movement
-        perpX = ribbonWidth;
-        perpZ = 0;
+    // Create RGBA texture data (4 bytes per tile)
+    // R channel: 255 if tile is part of goto path, 0 otherwise
+    // G channel: reserved for future use (e.g., path segment index)
+    // B channel: reserved for future use
+    // A channel: always 255
+    goto_tiles_data = new Uint8Array(4 * map.xsize * map.ysize);
+    
+    // Initialize all tiles as not part of goto path
+    for (let i = 0; i < map.xsize * map.ysize; i++) {
+        let index = i * 4;
+        goto_tiles_data[index] = 0;     // R: not on path
+        goto_tiles_data[index + 1] = 0; // G: reserved
+        goto_tiles_data[index + 2] = 0; // B: reserved
+        goto_tiles_data[index + 3] = 255; // A: full opacity
     }
     
-    // Build four corner vertices of the quad
-    var v0x = pointA.x + perpX, v0y = pointA.y, v0z = pointA.z + perpZ;
-    var v1x = pointA.x - perpX, v1y = pointA.y, v1z = pointA.z - perpZ;
-    var v2x = pointB.x + perpX, v2y = pointB.y, v2z = pointB.z + perpZ;
-    var v3x = pointB.x - perpX, v3y = pointB.y, v3z = pointB.z - perpZ;
-    
-    // Return vertices for two triangles: (v0,v1,v2) and (v1,v3,v2)
-    return new Float32Array([
-        v0x, v0y, v0z,
-        v1x, v1y, v1z,
-        v2x, v2y, v2z,
-        v1x, v1y, v1z,
-        v3x, v3y, v3z,
-        v2x, v2y, v2z
-    ]);
+    goto_tiles_texture = new THREE.DataTexture(goto_tiles_data, map.xsize, map.ysize);
+    goto_tiles_texture.flipY = true;
+    goto_tiles_texture.needsUpdate = true;
 }
 
 /****************************************************************************
- Renders goto path as a series of ribbon segments connecting tile centers.
+ Mark a single tile as part of the goto path.
+ @param {Object} tile - The tile to mark
+ ****************************************************************************/
+function mark_goto_tile(tile) {
+    if (goto_tiles_data == null || tile == null) return;
+    if (tile.x < 0 || tile.x >= map.xsize || tile.y < 0 || tile.y >= map.ysize) return;
+    
+    let index = (tile.y * map.xsize + tile.x) * 4;
+    goto_tiles_data[index] = 255; // Mark as part of goto path
+}
+
+/****************************************************************************
+ Clear all goto tile markers from the texture.
+ ****************************************************************************/
+function clear_goto_texture() {
+    if (goto_tiles_data == null) return;
+    
+    for (let i = 0; i < map.xsize * map.ysize; i++) {
+        let index = i * 4;
+        goto_tiles_data[index] = 0; // Clear path marker
+    }
+    
+    if (goto_tiles_texture != null) {
+        goto_tiles_texture.needsUpdate = true;
+    }
+}
+
+/****************************************************************************
+ Renders goto path by marking tiles in the goto texture.
+ The terrain shader will read this texture and render white edge highlights
+ on marked tiles.
+ 
+ @param {Object} start_tile - The starting tile of the path
+ @param {Array} goto_packet_dir - Array of direction indices for the path
  ****************************************************************************/
 function webgl_render_goto_line(start_tile, goto_packet_dir) {
     clear_goto_tiles();
     if (!goto_active) return;
+    if (goto_tiles_data == null) {
+        init_goto_tiles_texture();
+    }
+    if (goto_tiles_data == null) return;
 
     var currentTile = start_tile;
     
-    // Visual parameters
-    var ribbonWidth = 1.5;
-    var elevationBoost = 12.0;
+    // Mark the starting tile
+    if (currentTile != null) {
+        mark_goto_tile(currentTile);
+    }
 
-    // Shared material for all segments
-    var ribbonMaterial = new THREE.MeshBasicMaterial({
-        color: 0x55c0ff,
-        side: THREE.DoubleSide,
-        transparent: true,
-        opacity: 0.8,
-        depthTest: true,
-        depthWrite: false
-    });
-
-    // Iterate through each direction in the path
+    // Iterate through each direction in the path and mark tiles
     for (var stepIdx = 0; stepIdx < goto_packet_dir.length; stepIdx++) {
         if (currentTile == null) break;
         
@@ -133,41 +122,34 @@ function webgl_render_goto_line(start_tile, goto_packet_dir) {
 
         var targetTile = mapstep(currentTile, moveDir);
         if (targetTile != null) {
-            // Compute 3D center positions for both tiles
-            var startPos3D = compute_tile_center_3d(currentTile, elevationBoost);
-            var endPos3D = compute_tile_center_3d(targetTile, elevationBoost);
-            
-            if (startPos3D != null && endPos3D != null) {
-                // Build ribbon geometry between the two points
-                var ribbonVerts = build_ribbon_segment(startPos3D, endPos3D, ribbonWidth);
-                
-                var ribbonGeom = new THREE.BufferGeometry();
-                ribbonGeom.setAttribute('position', new THREE.BufferAttribute(ribbonVerts, 3));
-                
-                var ribbonMesh = new THREE.Mesh(ribbonGeom, ribbonMaterial);
-                ribbonMesh.name = "goto_path_segment";
-                
-                scene.add(ribbonMesh);
-                goto_lines.push(ribbonMesh);
-            }
+            // Mark the target tile as part of the goto path
+            mark_goto_tile(targetTile);
         }
 
         // Advance to next tile in path
         currentTile = targetTile;
     }
+    
+    // Update the texture so the shader can read the new data
+    if (goto_tiles_texture != null) {
+        goto_tiles_texture.needsUpdate = true;
+    }
 }
 
-
+/**************************************************************************
+ Removes goto path visualization by clearing the goto tiles texture.
+**************************************************************************/
+function clear_goto_tiles() {
+    clear_goto_texture();
+}
 
 /**************************************************************************
- Removes goto lines and clears goto tiles.
+ Returns the goto tiles texture for use as a shader uniform.
+ @returns {THREE.DataTexture} The goto tiles texture
 **************************************************************************/
-function clear_goto_tiles()
-{
-  if (scene != null && goto_lines != null) {
-    for (var i = 0; i < goto_lines.length; i++) {
-      scene.remove(goto_lines[i]);
+function get_goto_tiles_texture() {
+    if (goto_tiles_texture == null) {
+        init_goto_tiles_texture();
     }
-    goto_lines = [];
-  }
+    return goto_tiles_texture;
 }

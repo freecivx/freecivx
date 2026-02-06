@@ -107,9 +107,19 @@ function createTerrainShaderTSL(uniforms) {
     const HEX_EDGE_COLOR_B = 0.08; // Blue component of edge darkening color
     const TEXTURE_RANDOM_SCALE = 16.0; // Divisor for random texture offset - larger = less variation
 
+    // =========================================================================
+    // GOTO PATH HIGHLIGHTING CONSTANTS
+    // =========================================================================
+    // These control the white edge highlight effect for goto path tiles
+    const GOTO_EDGE_WIDTH = 0.08;       // Width of the white edge highlight (as fraction of tile)
+    const GOTO_EDGE_SOFTNESS = 0.03;    // Edge anti-aliasing softness
+    const GOTO_EDGE_BRIGHTNESS = 0.95;  // Brightness of the white edge (0-1)
+    const GOTO_FILL_BRIGHTNESS = 0.25;  // Subtle fill brightness for goto tiles (0-1)
+
     // Create texture references for reuse (don't call texture() yet)
     const maptilesTex = uniforms.maptiles.value;
     const bordersTex = uniforms.borders.value;
+    const gotoTilesTex = uniforms.goto_tiles.value;
     
     // Terrain texture references - organized by terrain type
     const terrainTextures = {
@@ -417,6 +427,37 @@ function createTerrainShaderTSL(uniforms) {
     const borderBlendFactor = mul(shouldShowBorders, 0.15);
     finalColor = vec4(
         mix(finalColor.rgb, borderColor.rgb, borderBlendFactor),
+        finalColor.a
+    );
+
+    // =========================================================================
+    // GOTO PATH HIGHLIGHTING
+    // =========================================================================
+    // Sample the goto tiles texture to check if this tile is part of the goto path
+    // The goto_tiles texture has R channel = 255 for tiles on the path, 0 otherwise
+    const gotoTileValue = texture(gotoTilesTex, sampledUV);
+    const isGotoTile = step(0.5, gotoTileValue.r); // 1.0 if on goto path, 0.0 otherwise
+    
+    // Calculate goto path edge highlight using hex distance
+    // Create a bright white edge around the hexagon for goto path tiles
+    const gotoEdgeStart = sub(0.5, GOTO_EDGE_WIDTH);
+    const gotoEdgeT = clamp(div(sub(hexDist, gotoEdgeStart), GOTO_EDGE_WIDTH), 0.0, 1.0);
+    // Smooth step for anti-aliased edges
+    const gotoEdgeMask = mul(mul(gotoEdgeT, gotoEdgeT), sub(3.0, mul(2.0, gotoEdgeT)));
+    
+    // Create a subtle fill for the entire goto tile interior
+    const gotoFillIntensity = mul(sub(1.0, gotoEdgeMask), GOTO_FILL_BRIGHTNESS);
+    
+    // Combine edge and fill for final goto highlight intensity
+    const gotoHighlightIntensity = add(mul(gotoEdgeMask, GOTO_EDGE_BRIGHTNESS), gotoFillIntensity);
+    
+    // White color for goto path highlight
+    const gotoHighlightColor = vec3(1.0, 1.0, 1.0);
+    
+    // Apply goto highlight only to tiles that are part of the goto path
+    const gotoBlendAmount = mul(isGotoTile, gotoHighlightIntensity);
+    finalColor = vec4(
+        mix(finalColor.rgb, gotoHighlightColor, gotoBlendAmount),
         finalColor.a
     );
 
