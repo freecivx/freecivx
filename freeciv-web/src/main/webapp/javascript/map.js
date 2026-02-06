@@ -32,18 +32,6 @@ var DIR8_SOUTHEAST = 7;
 var DIR8_LAST = 8;
 var DIR8_COUNT = DIR8_LAST;
 
-// Note: DIR6_* constants are unused and not part of the Freeciv C code.
-// Hexagonal maps use the standard DIR8_* directions with is_valid_dir()
-// filtering out invalid directions (2 out of 8 are invalid for hex).
-var DIR6_NORTHEAST = 1;
-var DIR6_EAST = 2;
-var DIR6_NORTHWEST = 3;
-var DIR6_SOUTHEAST = 4;
-var DIR6_WEST = 5;
-var DIR6_SOUTHWEST = 6;
-var DIR6_LAST = 6;
-var DIR6_COUNT = DIR6_LAST;
-
 var WRAP_X = 1;
 var WRAP_Y = 2;
 
