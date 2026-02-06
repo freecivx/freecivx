@@ -666,6 +666,104 @@ function createTerrainShaderTSL(uniforms) {
     );
 
     // =========================================================================
+    // DEBUG MODE: GOTO PATH DIRECTION DISPLAY
+    // =========================================================================
+    // When debug mode is enabled and tile is part of goto path, show direction info
+    // The goto_tiles texture encodes:
+    //   R channel: 255 if on path (isGotoTile)
+    //   G channel: direction + 1 (1-8, or 0 for start tile)
+    //   B channel: step index (0-254)
+    
+    // Extract direction and step info from goto texture
+    // Direction is stored as (direction_index + 1) in G channel, scaled 0-1
+    // Values: 0 = start, 1-8 = directions (NW=1, N=2, NE=3, W=4, E=5, SW=6, S=7, SE=8)
+    const gotoDirection = floor(mul(gotoTileValue.g, 255.1)); // Convert 0-1 to 0-8
+    const gotoStepIndex = floor(mul(gotoTileValue.b, 255.1)); // Convert 0-1 to 0-254
+    
+    // Define positions for goto debug display (below the coordinate display)
+    const gotoDebugAreaY = sub(localY, div(sub(1.0, 0.35), 2.0)); // Shifted down for second line
+    const gotoDebugNormY = div(add(gotoDebugAreaY, 0.15), 0.25); // Offset down from coordinate display
+    
+    // Check if in goto debug display area (below coordinate display)
+    const inGotoDebugY = mul(step(0.0, gotoDebugNormY), step(gotoDebugNormY, 1.0));
+    const inGotoDebugArea = mul(mul(inDebugAreaX, inGotoDebugY), isGotoTile);
+    
+    // Direction encoding for display: show as single digit (0-8) or letter symbol
+    // We'll display "D#" where # is direction, and "S##" where ## is step (simplified)
+    
+    // Use charIndex from coordinate display code for positioning
+    // Reuse the character rendering infrastructure
+    // Display format: "D# S##" (Direction, Space, Step)
+    const gotoCharIndex = floor(mul(debugNormX, 5.0));
+    const gotoCharLocalX = fract(mul(debugNormX, 5.0));
+    
+    // For goto debug, we show:
+    // Position 0: D (direction label)
+    // Position 1: direction digit (0-8)
+    // Position 2: space (empty)
+    // Position 3: step tens digit
+    // Position 4: step ones digit
+    
+    const isGotoChar0 = mul(step(gotoCharIndex, 0.5), step(-0.5, gotoCharIndex)); // D
+    const isGotoChar1 = mul(step(gotoCharIndex, 1.5), step(0.5, gotoCharIndex));  // direction digit
+    const isGotoChar2 = mul(step(gotoCharIndex, 2.5), step(1.5, gotoCharIndex));  // space
+    const isGotoChar3 = mul(step(gotoCharIndex, 3.5), step(2.5, gotoCharIndex));  // step tens
+    const isGotoChar4 = mul(step(gotoCharIndex, 4.5), step(3.5, gotoCharIndex));  // step ones
+    
+    // Extract step digits
+    const stepTens = floor(div(gotoStepIndex, 10.0));
+    const stepOnes = sub(gotoStepIndex, mul(stepTens, 10.0));
+    
+    // Render "D" as a custom pattern (simplified rectangle with gap)
+    function renderLetterD(pixelX, pixelY) {
+        // Vertical bar on left
+        const leftBar = mul(step(0.15, pixelX), step(pixelX, 0.35)).mul(
+            mul(step(0.1, pixelY), step(pixelY, 0.9))
+        );
+        // Top horizontal bar
+        const topBar = mul(step(0.15, pixelX), step(pixelX, 0.7)).mul(
+            mul(step(0.75, pixelY), step(pixelY, 0.9))
+        );
+        // Bottom horizontal bar
+        const botBar = mul(step(0.15, pixelX), step(pixelX, 0.7)).mul(
+            mul(step(0.1, pixelY), step(pixelY, 0.25))
+        );
+        // Right curved section (simplified as vertical bar)
+        const rightBar = mul(step(0.55, pixelX), step(pixelX, 0.75)).mul(
+            mul(step(0.25, pixelY), step(pixelY, 0.75))
+        );
+        return clamp(add(add(add(leftBar, topBar), botBar), rightBar), 0.0, 1.0);
+    }
+    
+    // Render the goto debug characters
+    const gotoChar0Mask = mul(isGotoChar0, renderLetterD(gotoCharLocalX, gotoDebugNormY));
+    const gotoChar1Mask = mul(isGotoChar1, renderDigit(gotoDirection, gotoCharLocalX, gotoDebugNormY));
+    const gotoChar3Mask = mul(isGotoChar3, renderDigit(stepTens, gotoCharLocalX, gotoDebugNormY));
+    const gotoChar4Mask = mul(isGotoChar4, renderDigit(stepOnes, gotoCharLocalX, gotoDebugNormY));
+    
+    // Combine goto debug character masks
+    const gotoTextMask = add(add(add(gotoChar0Mask, gotoChar1Mask), gotoChar3Mask), gotoChar4Mask);
+    
+    // Apply goto debug overlay: cyan text for goto path info (different color to distinguish from coord display)
+    const gotoDebugTextColor = vec3(0.0, 1.0, 1.0); // Cyan text for goto info
+    
+    // Create the goto debug display color
+    const gotoDebugDisplayColor = mix(
+        finalColor.rgb,
+        gotoDebugTextColor,
+        mul(inGotoDebugArea, gotoTextMask)
+    );
+    
+    // Only apply goto debug display when debug mode is enabled AND tile is on goto path
+    finalColor = debug_enabled.select(
+        vec4(
+            mul(isGotoTile, gotoDebugDisplayColor).add(mul(sub(1.0, isGotoTile), finalColor.rgb)),
+            finalColor.a
+        ),
+        finalColor
+    );
+
+    // =========================================================================
     // OUT-OF-BOUNDS CHECK - Render black where no tiles exist
     // =========================================================================
     // Check if the current pixel is outside the valid map tile range

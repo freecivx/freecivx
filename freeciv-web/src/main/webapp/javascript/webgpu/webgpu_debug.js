@@ -24,8 +24,26 @@
  * - Debug tile label sprites showing tile coordinates (x,y)
  * - Enhanced tile click logging with terrain, units, resources info
  * - WebGPU performance logging
+ * - Goto path debugging with detailed console output and visual shader display
  * 
  * Enable via: webgpu_debug_enabled = true (set in pregame settings)
+ * 
+ * Console commands available when debug mode is enabled:
+ * - toggle_webgpu_debug() - Toggle debug mode on/off
+ * - refresh_webgpu_debug_labels() - Refresh tile coordinate labels
+ * - log_webgpu_performance() - Log WebGPU renderer performance stats
+ * - log_webgpu_debug_tile_info(tile) - Log detailed info for a tile
+ * - log_webgpu_goto_path(start_tile, dir_array, dest_tile) - Log goto path details
+ * - debug_dir_to_name(dir) - Convert direction index to name (e.g., 0 -> "NW")
+ * 
+ * Goto Path Debug Features:
+ * When debug mode is enabled and a goto path is requested:
+ * 1. Console shows full path traversal with tile coordinates and directions
+ * 2. Direction names are shown (NW, N, NE, W, E, SW, S, SE)
+ * 3. Warnings are logged if movements don't match expected direction offsets
+ * 4. The terrain shader displays "D# S##" on goto path tiles where:
+ *    - D# = Direction index (0=start, 1=NW, 2=N, 3=NE, 4=W, 5=E, 6=SW, 7=S, 8=SE)
+ *    - S## = Step index in the path (00 = start, 01 = first move, etc.)
  */
 
 // Store debug tile labels for cleanup
@@ -58,6 +76,7 @@ function init_webgpu_debug() {
     update_webgpu_debug_labels();
     
     console.log('[WebGPU Debug] Debug mode enabled. Tile coordinates (x:y) will be rendered on the terrain.');
+    console.log('[WebGPU Debug] Goto paths will show detailed debug info: direction (D#) and step index (S##)');
     console.log('[WebGPU Debug] Click on map tiles to see detailed info in console.');
 }
 
@@ -318,12 +337,15 @@ function toggle_webgpu_debug() {
     
     if (webgpu_debug_enabled) {
         console.log('[WebGPU Debug] Debug mode ENABLED');
-        console.log('[WebGPU Debug] Tile coordinates (x:y) will now be rendered on the terrain.');
+        console.log('[WebGPU Debug] - Tile coordinates (x:y) will now be rendered on the terrain.');
+        console.log('[WebGPU Debug] - Goto paths will show D# (direction) and S## (step index) in cyan.');
+        console.log('[WebGPU Debug] - Direction codes: 0=START, 1=NW, 2=N, 3=NE, 4=W, 5=E, 6=SW, 7=S, 8=SE');
+        console.log('[WebGPU Debug] - Full goto path details will be logged to console.');
         webgpu_debug_initialized = false;
         init_webgpu_debug();
     } else {
         console.log('[WebGPU Debug] Debug mode DISABLED');
-        console.log('[WebGPU Debug] Tile coordinate display turned off.');
+        console.log('[WebGPU Debug] Tile coordinate and goto path debug displays turned off.');
         clear_webgpu_debug_labels();
         webgpu_debug_initialized = false;
     }
@@ -373,8 +395,215 @@ function log_webgpu_performance() {
     console.log('════════════════════════════════════════════════════════════');
 }
 
+/**
+ * Convert direction index to human-readable direction name
+ * Direction indices: 0=NW, 1=N, 2=NE, 3=W, 4=E, 5=SW, 6=S, 7=SE
+ * @param {number} dir - Direction index (0-7)
+ * @returns {string} - Direction name (e.g., "N", "NE", "E")
+ */
+function debug_dir_to_name(dir) {
+    var dir_names = ["NW", "N", "NE", "W", "E", "SW", "S", "SE"];
+    if (dir >= 0 && dir < 8) {
+        return dir_names[dir];
+    } else if (dir === -1) {
+        return "REFUEL";
+    }
+    return "INVALID(" + dir + ")";
+}
+
+/**
+ * Log detailed goto path information for debugging
+ * Called when a goto path is requested/rendered
+ * 
+ * @param {Object} start_tile - The starting tile of the path
+ * @param {Array} goto_packet_dir - Array of direction indices for the path
+ * @param {Object} dest_tile - The destination tile (optional)
+ */
+function log_webgpu_goto_path(start_tile, goto_packet_dir, dest_tile) {
+    if (!webgpu_debug_enabled) {
+        return;
+    }
+    
+    console.log('╔════════════════════════════════════════════════════════════╗');
+    console.log('║          WEBGPU GOTO PATH DEBUG INFO                       ║');
+    console.log('╚════════════════════════════════════════════════════════════╝');
+    
+    // Log request info
+    if (start_tile != null) {
+        console.log('Start Tile: (' + start_tile.x + ', ' + start_tile.y + ') index=' + start_tile.index);
+    } else {
+        console.log('Start Tile: NULL (error!)');
+    }
+    
+    if (dest_tile != null) {
+        console.log('Destination Tile: (' + dest_tile.x + ', ' + dest_tile.y + ') index=' + dest_tile.index);
+    }
+    
+    // Log direction array
+    if (goto_packet_dir != null && goto_packet_dir.length > 0) {
+        console.log('Path Length: ' + goto_packet_dir.length + ' steps');
+        
+        // Build direction string with names
+        var dir_str = goto_packet_dir.map(function(dir, idx) {
+            return debug_dir_to_name(dir);
+        }).join(' -> ');
+        console.log('Directions: ' + dir_str);
+        
+        // Log raw direction array for detailed debugging
+        console.log('Direction Indices (raw): [' + goto_packet_dir.join(', ') + ']');
+    } else {
+        console.log('Path: EMPTY or NULL');
+    }
+    
+    // Log full tile-by-tile path traversal
+    console.log('');
+    console.log('--- Full Path Traversal ---');
+    
+    var currentTile = start_tile;
+    var path_tiles = [];
+    
+    if (currentTile != null) {
+        path_tiles.push({
+            step: 0,
+            tile: currentTile,
+            dir: 'START',
+            dir_idx: -2
+        });
+        console.log('Step 0: START at (' + currentTile.x + ', ' + currentTile.y + ')');
+    }
+    
+    if (goto_packet_dir != null) {
+        for (var stepIdx = 0; stepIdx < goto_packet_dir.length; stepIdx++) {
+            if (currentTile == null) {
+                console.warn('Step ' + (stepIdx + 1) + ': ERROR - currentTile is NULL, path broken!');
+                break;
+            }
+            
+            var moveDir = goto_packet_dir[stepIdx];
+            var dir_name = debug_dir_to_name(moveDir);
+            
+            // Skip refuel markers
+            if (moveDir === -1) {
+                console.log('Step ' + (stepIdx + 1) + ': REFUEL (stay at current tile)');
+                path_tiles.push({
+                    step: stepIdx + 1,
+                    tile: currentTile,
+                    dir: 'REFUEL',
+                    dir_idx: moveDir
+                });
+                continue;
+            }
+            
+            // Get the next tile using mapstep
+            var targetTile = null;
+            if (typeof mapstep !== 'undefined') {
+                targetTile = mapstep(currentTile, moveDir);
+            }
+            
+            if (targetTile != null) {
+                // Calculate expected position based on direction
+                var expected_dx = typeof DIR_DX !== 'undefined' ? DIR_DX[moveDir] : '?';
+                var expected_dy = typeof DIR_DY !== 'undefined' ? DIR_DY[moveDir] : '?';
+                var actual_dx = targetTile.x - currentTile.x;
+                var actual_dy = targetTile.y - currentTile.y;
+                
+                console.log('Step ' + (stepIdx + 1) + ': ' + dir_name + ' (dir=' + moveDir + ')' +
+                    ' from (' + currentTile.x + ',' + currentTile.y + ')' +
+                    ' -> (' + targetTile.x + ',' + targetTile.y + ')' +
+                    ' [expected dx=' + expected_dx + ',dy=' + expected_dy + 
+                    ', actual dx=' + actual_dx + ',dy=' + actual_dy + ']');
+                
+                // Warn if actual movement doesn't match expected
+                if (expected_dx !== '?' && expected_dy !== '?' && 
+                    (actual_dx !== expected_dx || actual_dy !== expected_dy)) {
+                    console.warn('  WARNING: Movement mismatch! Expected dx=' + expected_dx + 
+                        ',dy=' + expected_dy + ' but got dx=' + actual_dx + ',dy=' + actual_dy);
+                }
+                
+                path_tiles.push({
+                    step: stepIdx + 1,
+                    tile: targetTile,
+                    dir: dir_name,
+                    dir_idx: moveDir
+                });
+            } else {
+                console.error('Step ' + (stepIdx + 1) + ': ' + dir_name + ' (dir=' + moveDir + ')' +
+                    ' from (' + currentTile.x + ',' + currentTile.y + ')' +
+                    ' -> NULL (invalid direction or off map!)');
+                
+                // Check if direction is valid for current topology
+                if (typeof is_valid_dir !== 'undefined') {
+                    var is_valid = is_valid_dir(moveDir);
+                    console.error('  is_valid_dir(' + moveDir + ') = ' + is_valid);
+                }
+            }
+            
+            // Advance to next tile in path
+            currentTile = targetTile;
+        }
+    }
+    
+    // Summary
+    console.log('');
+    console.log('--- Path Summary ---');
+    console.log('Total tiles in path: ' + path_tiles.length);
+    
+    // Log tiles as coordinate list for easy visualization
+    var coord_list = path_tiles.map(function(p) {
+        return '(' + p.tile.x + ',' + p.tile.y + ')';
+    }).join(' -> ');
+    console.log('Tile coordinates: ' + coord_list);
+    
+    // Check for potential issues
+    if (dest_tile != null && currentTile != null) {
+        if (currentTile.x !== dest_tile.x || currentTile.y !== dest_tile.y) {
+            console.warn('WARNING: Final tile (' + currentTile.x + ',' + currentTile.y + 
+                ') does not match destination (' + dest_tile.x + ',' + dest_tile.y + ')!');
+        } else {
+            console.log('Path ends correctly at destination.');
+        }
+    }
+    
+    console.log('════════════════════════════════════════════════════════════');
+    
+    return path_tiles;
+}
+
+/**
+ * Log goto path request information (called when user initiates goto)
+ * @param {number} unit_id - The unit ID requesting the path
+ * @param {number} dst_x - Destination X coordinate
+ * @param {number} dst_y - Destination Y coordinate
+ */
+function log_webgpu_goto_request(unit_id, dst_x, dst_y) {
+    if (!webgpu_debug_enabled) {
+        return;
+    }
+    
+    console.log('[WebGPU Debug] Goto path requested: unit_id=' + unit_id + 
+        ', destination=(' + dst_x + ', ' + dst_y + ')');
+    
+    // Log unit info if available
+    if (typeof units !== 'undefined' && units[unit_id] != null) {
+        var punit = units[unit_id];
+        var unit_tile = null;
+        if (typeof index_to_tile !== 'undefined') {
+            unit_tile = index_to_tile(punit.tile);
+        }
+        if (unit_tile != null) {
+            console.log('[WebGPU Debug] Unit location: (' + unit_tile.x + ', ' + unit_tile.y + ')');
+        }
+        if (typeof unit_types !== 'undefined' && unit_types[punit.type] != null) {
+            console.log('[WebGPU Debug] Unit type: ' + unit_types[punit.type].name);
+        }
+    }
+}
+
 // Make functions available globally for console access
 window.toggle_webgpu_debug = toggle_webgpu_debug;
 window.refresh_webgpu_debug_labels = refresh_webgpu_debug_labels;
 window.log_webgpu_performance = log_webgpu_performance;
 window.log_webgpu_debug_tile_info = log_webgpu_debug_tile_info;
+window.log_webgpu_goto_path = log_webgpu_goto_path;
+window.log_webgpu_goto_request = log_webgpu_goto_request;
+window.debug_dir_to_name = debug_dir_to_name;
