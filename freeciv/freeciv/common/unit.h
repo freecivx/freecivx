@@ -99,6 +99,10 @@ struct unit_order {
   int action;
   /* Valid for ORDER_MOVE and ORDER_ACTION_MOVE. */
   enum direction8 dir;
+  /* Tile index for ORDER_MOVE and ORDER_ACTION_MOVE. When set (non-negative),
+   * this takes precedence over dir. Used by web client which sends tile
+   * indices instead of directions. */
+  int tile;
 };
 
 /* Used in the network protocol */

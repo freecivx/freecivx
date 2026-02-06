@@ -352,6 +352,8 @@ int dio_put_unit_order_json(struct json_data_out *dout,
     } else {
       e |= json_object_set_new(obj, "dir", json_integer(order->dir));
     }
+    /* Include tile index for web client compatibility */
+    e |= json_object_set_new(obj, "tile", json_integer(order->tile));
     e |= plocation_write_data(dout->json, location, obj);
   } else {
     e = dio_put_unit_order_raw(&dout->raw, order);
@@ -646,6 +648,14 @@ bool dio_get_unit_order_json(struct connection *pc, struct data_in *din,
     loc->sub_location->name = "dir";
     if (!dio_get_uint8_json(pc, din, location, &idir)) {
       log_packet("Corrupt order.dir");
+      FC_FREE(loc->sub_location);
+      return FALSE;
+    }
+
+    /* Read tile index for goto orders */
+    loc->sub_location->name = "tile";
+    if (!dio_get_sint32_json(pc, din, location, &order->tile)) {
+      log_packet("Corrupt order.tile");
       FC_FREE(loc->sub_location);
       return FALSE;
     }

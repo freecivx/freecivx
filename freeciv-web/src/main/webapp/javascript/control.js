@@ -1666,13 +1666,14 @@ function do_map_click(ptile, qtype, first_time_called)
           "target"     : 0,
           "sub_target" : 0,
           "action"     : ACTION_COUNT,
-          "dir"        : -1
+          "dir"        : -1,
+          "tile"       : -1
         };
 
         /* Add each individual order. */
         packet['orders'] = [];
-        /* The server now sends tile indices instead of directions.
-         * Compute direction for each step from consecutive tiles. */
+        /* Send tile indices directly to the server instead of directions.
+         * The server now accepts tile indices for move orders. */
         var prev_tile = old_tile;
         for (var i = 0; i < goto_path['length']; i++) {
           var next_tile = index_to_tile(goto_path['tiles'][i]);
@@ -1690,6 +1691,8 @@ function do_map_click(ptile, qtype, first_time_called)
           }
 
           order['dir'] = step_dir;
+          /* Send tile index directly - server will use this instead of dir */
+          order['tile'] = goto_path['tiles'][i];
           order['activity'] = ACTIVITY_LAST;
           order['target'] = 0;
           order['sub_target'] = 0;
@@ -1716,6 +1719,7 @@ function do_map_click(ptile, qtype, first_time_called)
             /* Initialize the order to "empty" values. */
             order['order'] = ORDER_LAST;
             order['dir'] = -1;
+            order['tile'] = ptile['index'];
             order['activity'] = ACTIVITY_LAST;
             order['target'] = 0;
             order['sub_target'] = 0;
@@ -1732,6 +1736,7 @@ function do_map_click(ptile, qtype, first_time_called)
           /* Perform the final action. */
           order['action'] = goto_last_action;
           order['target'] = ptile['index'];
+          order['tile'] = ptile['index'];
 
           packet['orders'][pos] = Object.assign({}, order);
         }
@@ -3066,6 +3071,7 @@ function key_unit_move(dir)
     var order = {
       "order"      : ORDER_ACTION_MOVE,
       "dir"        : dir,
+      "tile"       : newtile['index'],
       "activity"   : ACTIVITY_LAST,
       "target"     : 0,
       "sub_target" : 0,

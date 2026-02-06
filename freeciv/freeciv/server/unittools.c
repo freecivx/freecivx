@@ -4456,7 +4456,9 @@ bool execute_orders(struct unit *punit, const bool fresh)
     case ORDER_MOVE:
     case ORDER_ACTION_MOVE:
       /* Move unit */
-      if (!(dst_tile = mapstep(&(wld.map), unit_tile(punit), order.dir))) {
+      /* Use tile index from order (sent by web client) */
+      dst_tile = index_to_tile(&(wld.map), order.tile);
+      if (dst_tile == NULL) {
         cancel_orders(punit, "  move order sent us to invalid location");
         notify_player(pplayer, unit_tile(punit), E_UNIT_ORDERS, ftc_server,
                       _("Orders for %s aborted since they "
