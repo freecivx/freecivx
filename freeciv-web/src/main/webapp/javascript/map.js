@@ -32,6 +32,9 @@ var DIR8_SOUTHEAST = 7;
 var DIR8_LAST = 8;
 var DIR8_COUNT = DIR8_LAST;
 
+// Note: DIR6_* constants are unused and not part of the Freeciv C code.
+// Hexagonal maps use the standard DIR8_* directions with is_valid_dir()
+// filtering out invalid directions (2 out of 8 are invalid for hex).
 var DIR6_NORTHEAST = 1;
 var DIR6_EAST = 2;
 var DIR6_NORTHWEST = 3;
@@ -53,26 +56,15 @@ var T_UNKNOWN = 0; /* An unknown terrain. */
 /* The first terrain value. */
 var T_FIRST = 0;
 
-/* used to compute neighboring tiles.
+/* Direction offsets for computing neighboring tiles.
+ * These work for both square and hexagonal topologies.
+ * For hex maps, invalid directions are filtered by is_valid_dir().
  *
- * using
- *   x1 = x + DIR_DX[dir];
- *   y1 = y + DIR_DY[dir];
- * will give you the tile as shown below.
- *   -------
- *   |0|1|2|
- *   |-+-+-|
- *   |3| |4|
- *   |-+-+-|
- *   |5|6|7|
- *   -------
- * Note that you must normalize x1 and y1 yourself.
+ * Direction indices correspond to:
+ *   0=NW, 1=N, 2=NE, 3=W, 4=E, 5=SW, 6=S, 7=SE
  */
 var DIR_DX = [ -1, 0, 1, -1, 1, -1, 0, 1 ];
 var DIR_DY = [ -1, -1, -1, 0, 0, 1, 1, 1 ];
-
-var DIR_HEX_DX = [ 0,  1, 1, 0, 1, -1,  0,  0 ];
-var DIR_HEX_DY = [ 0,   -1, 0, -1,  1,  0,  1,  0 ];
 
 
 /****************************************************************************
@@ -338,12 +330,13 @@ function map_distance_vector(tile0, tile1)
 
 /****************************************************************************
   Step from the given tile in the given direction.  The new tile is returned,
-  or NULL if the direction is invalid or leads off the map.
+  or null if the direction is invalid or leads off the map.
   
-  For hexagonal topology, the same direction offsets (DIR_DX/DIR_DY) are used,
-  but certain directions are invalid and filtered by is_valid_dir().
-  In iso-hex: NE and SW are invalid
-  In pure hex: SE and NW are invalid
+  For hexagonal topology, certain directions are invalid:
+  - In iso-hex: NE and SW are invalid
+  - In pure hex: SE and NW are invalid
+  
+  The validity is handled by is_valid_dir().
 ****************************************************************************/
 function mapstep(ptile, dir)
 {
@@ -351,12 +344,10 @@ function mapstep(ptile, dir)
     return null;
   }
 
-  // Use the standard direction offsets - hex validity is handled by is_valid_dir()
   var dx = DIR_DX[dir];
   var dy = DIR_DY[dir];
 
-  return map_pos_to_tile(dx + ptile['x'], dy + ptile['y']);
-
+  return map_pos_to_tile(ptile['x'] + dx, ptile['y'] + dy);
 }
 
 /****************************************************************************

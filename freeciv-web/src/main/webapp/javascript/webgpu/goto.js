@@ -124,11 +124,10 @@ function webgl_render_goto_line(start_tile, goto_packet_dir) {
             continue;
         }
 
-        // Use the direction directly from the goto packet - it's already in the correct
-        // map coordinate system. The mapstep function handles all topology-specific
-        // direction validation (iso-hex has 6 valid directions: N, S, E, W, NW, SE).
-        // Visual alignment with the camera is handled by the terrain rendering, not here.
+        // Get the next tile using mapstep which handles direction validation
+        // and coordinate wrapping for hexagonal maps
         var targetTile = mapstep(currentTile, moveDir);
+        
         if (targetTile != null) {
             // Mark the target tile as part of the goto path
             mark_goto_tile(targetTile);
