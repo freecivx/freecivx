@@ -41,7 +41,7 @@ function init_goto_tiles_texture() {
     // R channel: 255 if tile is part of goto path, 0 otherwise
     // G channel: reserved for future use (e.g., path segment index)
     // B channel: reserved for future use
-    // A channel: always 255
+    // A channel: set to 255 for RGBA format compatibility (required by THREE.DataTexture)
     goto_tiles_data = new Uint8Array(4 * map.xsize * map.ysize);
     
     // Initialize all tiles as not part of goto path
@@ -54,6 +54,10 @@ function init_goto_tiles_texture() {
     }
     
     goto_tiles_texture = new THREE.DataTexture(goto_tiles_data, map.xsize, map.ysize);
+    goto_tiles_texture.format = THREE.RGBAFormat;
+    goto_tiles_texture.type = THREE.UnsignedByteType;
+    goto_tiles_texture.magFilter = THREE.NearestFilter;
+    goto_tiles_texture.minFilter = THREE.NearestFilter;
     goto_tiles_texture.flipY = true;
     goto_tiles_texture.needsUpdate = true;
 }

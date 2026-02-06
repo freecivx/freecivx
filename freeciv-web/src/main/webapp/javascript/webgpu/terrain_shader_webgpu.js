@@ -111,7 +111,8 @@ function createTerrainShaderTSL(uniforms) {
     // GOTO PATH HIGHLIGHTING CONSTANTS
     // =========================================================================
     // These control the white edge highlight effect for goto path tiles
-    const GOTO_EDGE_WIDTH = 0.08;       // Width of the white edge highlight (as fraction of tile)
+    // Note: GOTO_EDGE_WIDTH must be > 0 to avoid division by zero in edge calculations
+    const GOTO_EDGE_WIDTH = 0.08;       // Width of the white edge highlight (as fraction of tile, must be > 0)
     const GOTO_EDGE_SOFTNESS = 0.03;    // Edge anti-aliasing softness
     const GOTO_EDGE_BRIGHTNESS = 0.95;  // Brightness of the white edge (0-1)
     const GOTO_FILL_BRIGHTNESS = 0.25;  // Subtle fill brightness for goto tiles (0-1)
@@ -442,7 +443,8 @@ function createTerrainShaderTSL(uniforms) {
     // Create a bright white edge around the hexagon for goto path tiles
     const gotoEdgeStart = sub(0.5, GOTO_EDGE_WIDTH);
     const gotoEdgeT = clamp(div(sub(hexDist, gotoEdgeStart), GOTO_EDGE_WIDTH), 0.0, 1.0);
-    // Smooth step for anti-aliased edges
+    // Manual smoothstep implementation: t*t*(3-2*t) where t is clamped to [0,1]
+    // This creates a smooth interpolation curve for anti-aliased edges
     const gotoEdgeMask = mul(mul(gotoEdgeT, gotoEdgeT), sub(3.0, mul(2.0, gotoEdgeT)));
     
     // Create a subtle fill for the entire goto tile interior
