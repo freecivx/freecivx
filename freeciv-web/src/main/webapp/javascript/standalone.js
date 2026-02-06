@@ -85,6 +85,13 @@ function setup_standalone_environment() {
         return;
       }
       
+      // Handle goto path request
+      if (packet.pid === packet_web_goto_path_req) {
+        console.log("[Standalone] Handling goto path request locally");
+        server_handle_goto_path_req(packet);
+        return;
+      }
+      
       // Handle turn done packet
       if (packet.pid === packet_player_phase_done) {
         console.log("[Standalone] Handling turn done locally");
