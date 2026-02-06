@@ -1672,7 +1672,7 @@ function do_map_click(ptile, qtype, first_time_called)
 
         /* Add each individual order. */
         packet['orders'] = [];
-        /* Send tile indices directly; server computes directions. */
+        /* Send tile indices along with directions; server can use either. */
         var prev_tile = old_tile;
         for (var i = 0; i < goto_path['length']; i++) {
           var next_tile = index_to_tile(goto_path['tiles'][i]);

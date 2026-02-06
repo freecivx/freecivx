@@ -284,6 +284,11 @@ function server_handle_unit_orders(packet) {
       new_tile = index_to_tile(order.tile);
       // Compute direction from current tile to target tile
       dir = get_direction_for_step(current_tile, new_tile);
+      if (dir < 0 && new_tile) {
+        // Tiles are not adjacent - invalid move order
+        console.error("[Server Units] Target tile " + order.tile + " is not adjacent to current tile " + punit.tile);
+        return;
+      }
     } else if (dir !== undefined && dir >= 0) {
       new_tile = mapstep(current_tile, dir);
     }
