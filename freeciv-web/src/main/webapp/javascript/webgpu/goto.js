@@ -124,14 +124,8 @@ function webgl_render_goto_line(start_tile, goto_packet_dir) {
             continue;
         }
 
-        // Rotate direction 45 degrees counterclockwise to match the 3D camera perspective,
-        // which views the map from the SE direction. This is the same rotation applied
-        // to unit controls in control.js (see numpad direction handling around line 2056).
-        var rotatedDir = dir_ccw(moveDir);
-        
-        // Validate the rotated direction is valid for current topology.
-        // dir_ccw() returns -1 for invalid input, and is_valid_dir() handles topology checks.
-        if (!is_valid_dir(rotatedDir)) {
+        // Validate the direction is valid for current topology.
+        if (!is_valid_dir(moveDir)) {
             continue;
         }
         
@@ -140,8 +134,8 @@ function webgl_render_goto_line(start_tile, goto_packet_dir) {
         // correctly represent hex neighbor relationships - DIR_HEX_DX/DIR_HEX_DY exist in
         // map.js but are unused. This might need investigation if goto paths are incorrect
         // on hex maps.
-        var dx = DIR_DX[rotatedDir];
-        var dy = DIR_DY[rotatedDir];
+        var dx = DIR_DX[moveDir];
+        var dy = DIR_DY[moveDir];
         var targetTile = map_pos_to_tile(currentTile['x'] + dx, currentTile['y'] + dy);
         
         if (targetTile != null) {
