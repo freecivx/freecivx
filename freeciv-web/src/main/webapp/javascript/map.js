@@ -213,18 +213,17 @@ function index_to_tile(index)
 ****************************************************************************/
 function native_pos_to_tile(nat_x, nat_y)
 {
-  // Handle X wrapping
+  // Handle X coordinate - wrap if wrapping is enabled, otherwise bounds check
   if (wrap_has_flag(WRAP_X)) {
     nat_x = ((nat_x % map['xsize']) + map['xsize']) % map['xsize'];
+  } else if (nat_x < 0 || nat_x >= map['xsize']) {
+    return null;
   }
   
-  // Handle Y wrapping
+  // Handle Y coordinate - wrap if wrapping is enabled, otherwise bounds check
   if (wrap_has_flag(WRAP_Y)) {
     nat_y = ((nat_y % map['ysize']) + map['ysize']) % map['ysize'];
-  }
-  
-  // Check bounds
-  if (nat_x < 0 || nat_x >= map['xsize'] || nat_y < 0 || nat_y >= map['ysize']) {
+  } else if (nat_y < 0 || nat_y >= map['ysize']) {
     return null;
   }
   
