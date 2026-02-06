@@ -4279,19 +4279,18 @@ void handle_web_goto_path_req(struct player *pplayer, int unit_id, int goal)
   pf_map_destroy(pfm);
 
   if (path) {
-    int total_mc = 0;
-
     /* Send all tiles in the path (including start tile) */
     p.length = path->length;
 
     for (i = 0; i < path->length; i++) {
       struct tile *path_tile = path->positions[i].tile;
-      
-      total_mc += path->positions[i].total_MC;
       p.tiles[i] = tile_index(path_tile);
     }
+    
+    /* Use the total movement cost from the last position in the path */
+    p.turns = path->positions[path->length - 1].total_MC / unit_move_rate(punit);
+    
     pf_path_destroy(path);
-    p.turns = total_mc / unit_move_rate(punit);
     send_packet_web_goto_path(pplayer->current_conn, &p);
 
   } else {
