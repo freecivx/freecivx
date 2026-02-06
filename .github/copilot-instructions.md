@@ -22,6 +22,9 @@ https://github.com/freecivworld/freecivworld/blob/main/freeciv-web/src/main/weba
 ## Tests
 - Playwright E2E: `bash ./scripts/test-freecivx.sh`.
 
+## Documentation
+Put all copilot documentation files in the doc directory.
+
 ## Development notes
 - `freeciv-web` build requires derived files from the C server (generated via `scripts/sync-js-hand.sh`) and external services (Tomcat/MySQL/nginx); prefer local editing and rely on CI for full builds.
 - Keep PRs small (~200 LOC) and avoid whitespace-only changes (see `doc/CONTRIBUTING.md`).

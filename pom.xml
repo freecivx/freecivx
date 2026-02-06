@@ -22,8 +22,6 @@
 
     <modules>
         <module>freeciv-web</module>
-        <module>freecivx-client</module>
-        <module>freecivx-server</module>
     </modules>
 
     <properties>

@@ -40,9 +40,6 @@ killall -9 freeciv-web
 #4. websockify
 ps aux | grep -ie websockify | awk '{print $2}' | xargs kill -9 
 
-# Freecivx-server
-ps aux | grep -ie freecivx-server | awk '{print $2}' | xargs kill -9
-killall -9 java
 
 # Clean up server list in metaserver database.
 echo "delete from servers" | mysql -u "${DB_USER}" -p"${DB_PASSWORD}" "${DB_NAME}"

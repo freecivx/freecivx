@@ -34,10 +34,6 @@ FreecivWorld.net consists of these components:
   Implemented in Javascript, Java, JSP, HTML and CSS. Built with maven and runs 
   on Tomcat and nginx. Three.js 3D engine, jQuery and jQuery UI.
 
-* [freecivworld-server](freecivworld-server) - the freecivworld server. Implemented in Java.  Multiplayer and large MMO-games.
-
-* [freecivworld-client](freecivworld-client) - the freecivworld 2D Java Swing client.
-
 * [Freeciv](freeciv) - the Freeciv C server. Forked. Implemented in C.
 
 * [Publite2](publite2) - a process launcher for Freeciv C servers, which manages
@@ -50,7 +46,7 @@ Freeciv 3D is the 3D version using the Three.js 3D engine, which requires WebGl 
 
 Freeciv JavaScript Server
 -----------------
-The Freeciv JavaScript server https://github.com/freecivworld/freecivworld/tree/main/freeciv-web/src/main/webapp/javascript/server
+The Freeciv JavaScript server.
 
 Standalone client
 -----------------
