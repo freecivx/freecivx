@@ -53,31 +53,16 @@ var T_UNKNOWN = 0; /* An unknown terrain. */
 /* The first terrain value. */
 var T_FIRST = 0;
 
-/* used to compute neighboring tiles.
+/* Direction offsets for computing neighboring tiles.
+ * These work for both square and hexagonal topologies.
+ * For hex maps, invalid directions are filtered by is_valid_dir().
+ * Coordinate wrapping is handled by map_pos_to_tile().
  *
- * using
- *   x1 = x + DIR_DX[dir];
- *   y1 = y + DIR_DY[dir];
- * will give you the tile as shown below.
- *   -------
- *   |0|1|2|
- *   |-+-+-|
- *   |3| |4|
- *   |-+-+-|
- *   |5|6|7|
- *   -------
- * Note that you must normalize x1 and y1 yourself.
+ * Direction indices correspond to:
+ *   0=NW, 1=N, 2=NE, 3=W, 4=E, 5=SW, 6=S, 7=SE
  */
 var DIR_DX = [ -1, 0, 1, -1, 1, -1, 0, 1 ];
 var DIR_DY = [ -1, -1, -1, 0, 0, 1, 1, 1 ];
-
-// TODO: DIR_HEX_DX/DIR_HEX_DY are defined but not used. For hex maps, the square grid
-// offsets in DIR_DX/DIR_DY may not correctly represent hex neighbor relationships.
-// This needs investigation - hex maps might require using DIR_HEX_DX/DIR_HEX_DY instead,
-// or the offsets may need to be computed differently based on the tile's position
-// (even/odd row offset in hex grids).
-var DIR_HEX_DX = [ 0,  1, 1, 0, 1, -1,  0,  0 ];
-var DIR_HEX_DY = [ 0,   -1, 0, -1,  1,  0,  1,  0 ];
 
 
 /****************************************************************************
@@ -218,9 +203,25 @@ function is_cardinal_dir(dir)
 
 /****************************************************************************
   Return the tile for the given cartesian (map) position.
+  Handles coordinate wrapping for cylindrical/toroidal maps.
+  Returns null if the coordinates are outside the valid map bounds.
 ****************************************************************************/
 function map_pos_to_tile(x, y)
 {
+  // Handle X wrapping for cylindrical maps
+  if (wrap_has_flag(WRAP_X)) {
+    x = FC_WRAP(x, map['xsize']);
+  } else if (x < 0 || x >= map['xsize']) {
+    return null;
+  }
+  
+  // Handle Y wrapping for toroidal maps
+  if (wrap_has_flag(WRAP_Y)) {
+    y = FC_WRAP(y, map['ysize']);
+  } else if (y < 0 || y >= map['ysize']) {
+    return null;
+  }
+  
   return tiles[x + y * map['xsize']];
 }
 
@@ -343,16 +344,14 @@ function map_distance_vector(tile0, tile1)
 
 /****************************************************************************
   Step from the given tile in the given direction.  The new tile is returned,
-  or NULL if the direction is invalid or leads off the map.
+  or null if the direction is invalid or leads off the map.
   
-  For hexagonal topology, the same direction offsets (DIR_DX/DIR_DY) are used,
-  but certain directions are invalid and filtered by is_valid_dir().
-  In iso-hex: NE and SW are invalid
-  In pure hex: SE and NW are invalid
+  For hexagonal topology, certain directions are invalid:
+  - In iso-hex: NE and SW are invalid
+  - In pure hex: SE and NW are invalid
   
-  WARNING: This function does not account for the 3D camera rotation. For visual
-  path rendering (e.g., goto paths), use DIR_DX/DIR_DY directly with dir_ccw()
-  rotation to match the camera perspective. See webgl_render_goto_line() in goto.js.
+  The validity is handled by is_valid_dir(), and coordinate wrapping is
+  handled by map_pos_to_tile().
 ****************************************************************************/
 function mapstep(ptile, dir)
 {
@@ -360,12 +359,10 @@ function mapstep(ptile, dir)
     return null;
   }
 
-  // Use the standard direction offsets - hex validity is handled by is_valid_dir()
   var dx = DIR_DX[dir];
   var dy = DIR_DY[dir];
 
-  return map_pos_to_tile(dx + ptile['x'], dy + ptile['y']);
-
+  return map_pos_to_tile(ptile['x'] + dx, ptile['y'] + dy);
 }
 
 /****************************************************************************

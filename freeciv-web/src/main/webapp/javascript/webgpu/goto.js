@@ -124,22 +124,9 @@ function webgl_render_goto_line(start_tile, goto_packet_dir) {
             continue;
         }
 
-        // Validate the direction is valid for current topology.
-        if (!is_valid_dir(moveDir)) {
-            continue;
-        }
-        
-        // Calculate next tile directly using DIR_DX/DIR_DY instead of mapstep.
-        // Note: Previously a 45-degree rotation (dir_ccw) was applied here as a workaround
-        // because mapstep was incorrect. Using DIR_DX/DIR_DY directly fixes the issue
-        // without needing the rotation workaround.
-        // TODO: DIR_DX/DIR_DY use square grid offsets. For hex maps, these offsets may not
-        // correctly represent hex neighbor relationships - DIR_HEX_DX/DIR_HEX_DY exist in
-        // map.js but are unused. This might need investigation if goto paths are incorrect
-        // on hex maps.
-        var dx = DIR_DX[moveDir];
-        var dy = DIR_DY[moveDir];
-        var targetTile = map_pos_to_tile(currentTile['x'] + dx, currentTile['y'] + dy);
+        // Get the next tile using mapstep which handles direction validation
+        // and coordinate wrapping for hexagonal maps
+        var targetTile = mapstep(currentTile, moveDir);
         
         if (targetTile != null) {
             // Mark the target tile as part of the goto path
