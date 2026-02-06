@@ -344,6 +344,10 @@ function map_distance_vector(tile0, tile1)
   but certain directions are invalid and filtered by is_valid_dir().
   In iso-hex: NE and SW are invalid
   In pure hex: SE and NW are invalid
+  
+  WARNING: This function does not account for the 3D camera rotation. For visual
+  path rendering (e.g., goto paths), use DIR_DX/DIR_DY directly with dir_ccw()
+  rotation to match the camera perspective. See webgl_render_goto_line() in goto.js.
 ****************************************************************************/
 function mapstep(ptile, dir)
 {

@@ -124,11 +124,23 @@ function webgl_render_goto_line(start_tile, goto_packet_dir) {
             continue;
         }
 
-        // Use the direction directly from the goto packet - it's already in the correct
-        // map coordinate system. The mapstep function handles all topology-specific
-        // direction validation (iso-hex has 6 valid directions: N, S, E, W, NW, SE).
-        // Visual alignment with the camera is handled by the terrain rendering, not here.
-        var targetTile = mapstep(currentTile, moveDir);
+        // Rotate direction 45 degrees counterclockwise to match the 3D camera perspective,
+        // which views the map from the SE direction. This is the same rotation applied
+        // to unit controls in control.js (see numpad direction handling around line 2056).
+        var rotatedDir = dir_ccw(moveDir);
+        
+        // Validate the rotated direction is within bounds and valid for current topology.
+        // Note: DIR_DX/DIR_DY use square grid offsets which work for map coordinates
+        // even on hex maps (the hex-specific rendering is handled elsewhere).
+        if (rotatedDir < 0 || rotatedDir >= DIR8_LAST || !is_valid_dir(rotatedDir)) {
+            continue;
+        }
+        
+        // Calculate next tile directly using DIR_DX/DIR_DY instead of mapstep
+        var dx = DIR_DX[rotatedDir];
+        var dy = DIR_DY[rotatedDir];
+        var targetTile = map_pos_to_tile(currentTile['x'] + dx, currentTile['y'] + dy);
+        
         if (targetTile != null) {
             // Mark the target tile as part of the goto path
             mark_goto_tile(targetTile);
