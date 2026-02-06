@@ -39,7 +39,9 @@ function init_goto_tiles_texture() {
     
     // Create RGBA texture data (4 bytes per tile)
     // R channel: 255 if tile is part of goto path, 0 otherwise
-    // G channel: direction index (0-7) + 1, or 0 if no direction (start tile)
+    // G channel: stores (direction_index + 1) where direction_index is 0-7
+    //            Result: 0 = start tile (no incoming direction), 1-8 = directions
+    //            Direction indices: 0=NW, 1=N, 2=NE, 3=W, 4=E, 5=SW, 6=S, 7=SE
     //            This allows the shader to display direction info for debugging
     // B channel: path step index (0-254), for path order visualization
     // A channel: set to 255 for RGBA format compatibility (required by THREE.DataTexture)
@@ -49,7 +51,7 @@ function init_goto_tiles_texture() {
     for (let i = 0; i < map.xsize * map.ysize; i++) {
         let index = i * 4;
         goto_tiles_data[index] = 0;     // R: not on path
-        goto_tiles_data[index + 1] = 0; // G: direction (0 = none)
+        goto_tiles_data[index + 1] = 0; // G: direction (0 = start/none, 1-8 = directions)
         goto_tiles_data[index + 2] = 0; // B: step index
         goto_tiles_data[index + 3] = 255; // A: full opacity
     }
