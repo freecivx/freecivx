@@ -682,50 +682,56 @@ switch (filename) {
 
 /****************************************************************************
  Returns a single 3D model mesh object.
+ If the model is loaded, returns a clone with WebGPU-compatible materials.
+ If not loaded, initiates async loading and returns null.
+ 
+ @param {string} filename - The model filename (without extension)
+ @param {Object} ptile - The tile object for tracking unloaded models
+ @returns {THREE.Object3D|null} Cloned model or null if not yet loaded
 ****************************************************************************/
 function webgl_get_model(filename, ptile)
 {
   if (webgl_models[filename] != null) {
     const clonedModel = webgl_models[filename].clone();
     
-    // Convert materials to WebGPU-compatible node materials if WebGPU renderer is active
-    if (typeof maprenderer !== 'undefined' && maprenderer && maprenderer.isWebGPURenderer) {
-      clonedModel.traverse((node) => {
-        if (node.isMesh && node.material) {
-          const originalMat = node.material;
-          
-          // Create a new MeshStandardNodeMaterial with lighting support
-          const nodeMaterial = new THREE.MeshStandardNodeMaterial();
-          
-          // Copy common properties from original material
-          if (originalMat.map) nodeMaterial.map = originalMat.map;
-          if (originalMat.color) nodeMaterial.color.copy(originalMat.color);
-          if (originalMat.emissive) nodeMaterial.emissive.copy(originalMat.emissive);
-          if (originalMat.emissiveIntensity !== undefined) {
-            nodeMaterial.emissiveIntensity = originalMat.emissiveIntensity;
+    // Convert materials to WebGPU-compatible node materials if needed
+    if (isWebGPURenderer && isWebGPURenderer()) {
+      // Use material factory if available
+      if (typeof convertModelMaterials === 'function') {
+        convertModelMaterials(clonedModel, { doubleSided: true, flatShading: false });
+      } else {
+        // Fallback inline conversion for backwards compatibility
+        clonedModel.traverse((node) => {
+          if (node.isMesh && node.material) {
+            const originalMat = node.material;
+            const nodeMaterial = new THREE.MeshStandardNodeMaterial();
+            
+            if (originalMat.map) nodeMaterial.map = originalMat.map;
+            if (originalMat.color) nodeMaterial.color.copy(originalMat.color);
+            if (originalMat.emissive) nodeMaterial.emissive.copy(originalMat.emissive);
+            if (originalMat.emissiveIntensity !== undefined) {
+              nodeMaterial.emissiveIntensity = originalMat.emissiveIntensity;
+            }
+            if (originalMat.roughness !== undefined) nodeMaterial.roughness = originalMat.roughness;
+            if (originalMat.metalness !== undefined) nodeMaterial.metalness = originalMat.metalness;
+            if (originalMat.opacity !== undefined) nodeMaterial.opacity = originalMat.opacity;
+            if (originalMat.transparent !== undefined) {
+              nodeMaterial.transparent = originalMat.transparent;
+            }
+            
+            nodeMaterial.side = THREE.DoubleSide;
+            nodeMaterial.flatShading = false;
+            
+            node.material = nodeMaterial;
+            node.material.needsUpdate = true;
           }
-          if (originalMat.roughness !== undefined) nodeMaterial.roughness = originalMat.roughness;
-          if (originalMat.metalness !== undefined) nodeMaterial.metalness = originalMat.metalness;
-          if (originalMat.opacity !== undefined) nodeMaterial.opacity = originalMat.opacity;
-          if (originalMat.transparent !== undefined) {
-            nodeMaterial.transparent = originalMat.transparent;
-          }
-          
-          nodeMaterial.side = THREE.DoubleSide;
-          nodeMaterial.flatShading = false;
-          
-          // MeshStandardNodeMaterial automatically detects and uses scene lights
-          // when used with WebGPU renderer - no manual lightsNode configuration needed
-          
-          node.material = nodeMaterial;
-          node.material.needsUpdate = true;
-        }
-      });
+        });
+      }
     }
     
     return clonedModel;
   } else {
-    // Download model and redraw the tile when loaded.
+    // Download model and redraw the tile when loaded
     tiles_of_unloaded_models_map[ptile['index']] = filename;
 
     if (models_loading_map[filename] == null) {

@@ -20,21 +20,32 @@
 /****************************************************************************
   Start the Freeciv-web WebGPU renderer
 ****************************************************************************/
+/**
+ * Initializes and starts the WebGPU renderer for the Freeciv map view.
+ * Sets up the Three.js scene with camera, lighting, and renderer configuration.
+ * Uses centralized configuration from config.js for consistent settings.
+ */
 function webgpu_start_renderer()
 {
-  var new_mapview_width = $(window).width() - width_offset;
-  var new_mapview_height;
-  if (!is_small_screen()) {
-    new_mapview_height = $(window).height() - height_offset;
-  } else {
-    new_mapview_height = $(window).height() - height_offset - 40;
-  }
+  // Calculate viewport dimensions
+  const new_mapview_width = $(window).width() - width_offset;
+  const new_mapview_height = is_small_screen() 
+    ? $(window).height() - height_offset - 40
+    : $(window).height() - height_offset;
 
   console.log("Three.js " + THREE.REVISION + " with WebGPU Renderer");
   THREE.ColorManagement.enabled = true;
 
   container = document.getElementById('mapcanvas');
-  camera = new THREE.PerspectiveCamera( 45, new_mapview_width / new_mapview_height, 1, 12000 );
+  
+  // Use CameraConfig for consistent camera settings
+  const camConfig = window.CameraConfig || { FOV: 45, NEAR: 1, FAR: 12000 };
+  camera = new THREE.PerspectiveCamera(
+    camConfig.FOV, 
+    new_mapview_width / new_mapview_height, 
+    camConfig.NEAR, 
+    camConfig.FAR
+  );
   scene = new THREE.Scene();
 
   raycaster = new THREE.Raycaster();
@@ -47,74 +58,21 @@ function webgpu_start_renderer()
     clock = new THREE.Timer();
   }
 
-  // Lights - Set up lighting for both terrain and 3D objects
-  
-  // Ambient light provides base illumination for the entire scene
-  // Using physically-based intensity values for WebGPU compatibility
-  var ambientLight = new THREE.AmbientLight( 0x606060, 1.2 * Math.PI );
-  ambientLight.name = "ambient_light";
-  scene.add(ambientLight);
+  // Set up scene lighting using LightingConfig
+  setupSceneLighting();
 
-  // Directional light for general scene lighting and shadow casting
-  // Positioned to simulate sunlight from the southeast at an elevated angle
-  directionalLight = new THREE.DirectionalLight( 0xffffff, 2.0 * Math.PI );
-  directionalLight.position.set(500, 800, 500);
-  directionalLight.name = "directional_light";
-  
-  // Enable shadow casting on directional light for sun-like parallel shadows
-  directionalLight.castShadow = true;
-  directionalLight.shadow.mapSize.width = 4096;
-  directionalLight.shadow.mapSize.height = 4096;
-  // Shadow camera clipping planes: near=100 avoids artifacts near camera,
-  // far=3000 encompasses terrain depth range (camera height ~450-900, terrain ~0-200)
-  directionalLight.shadow.camera.near = 100;
-  directionalLight.shadow.camera.far = 3000;
-  // Large orthographic frustum to cover visible terrain area (±1500 units in x/z)
-  directionalLight.shadow.camera.left = -1500;
-  directionalLight.shadow.camera.right = 1500;
-  directionalLight.shadow.camera.top = 1500;
-  directionalLight.shadow.camera.bottom = -1500;
-  // Shadow bias prevents shadow acne (self-shadowing artifacts) on surfaces
-  // normalBias shifts shadow slightly along surface normal to reduce peter-panning
-  directionalLight.shadow.bias = -0.0005;
-  directionalLight.shadow.normalBias = 0.02;
-  
-  scene.add(directionalLight);
-  // Add the directional light's target to the scene (required for shadow direction)
-  scene.add(directionalLight.target);
-
-  // Additional point lights to validate WebGPU lighting coverage
-  var keyLight = new THREE.PointLight(0xffffff, 1.0 * Math.PI, 0, 2);
-  keyLight.position.set(150, 280, 150);
-  keyLight.name = "key_light";
-  scene.add(keyLight);
-
-  var fillLight = new THREE.PointLight(0xffffff, 0.6 * Math.PI, 0, 2);
-  fillLight.position.set(-200, 180, -120);
-  fillLight.name = "fill_light";
-  scene.add(fillLight);
-
-  // Spotlight for focused lighting and shadows
-  spotlight = new THREE.SpotLight( 0xffffff, 3.0 * Math.PI, 0, Math.PI / 3, 0.001, 0.5);
-  spotlight.name = "spotlight";
-  scene.add( spotlight );
-
-  spotlight.castShadow = true;
-  spotlight.shadow.camera.near = 100;
-  spotlight.shadow.camera.far = 3000;
-  spotlight.shadow.bias = 0.0001;
-
-  spotlight.shadow.mapSize.x = 4096;
-  spotlight.shadow.mapSize.y = 4096;
-
-  var enable_antialiasing = graphics_quality >= QUALITY_MEDIUM;
-  var stored_antialiasing_setting = simpleStorage.get("antialiasing_setting", "");
-  if (stored_antialiasing_setting != null && stored_antialiasing_setting == "false") {
+  // Determine antialiasing based on quality settings
+  let enable_antialiasing = graphics_quality >= QUALITY_MEDIUM;
+  const stored_antialiasing_setting = simpleStorage.get("antialiasing_setting", "");
+  if (stored_antialiasing_setting != null && stored_antialiasing_setting === "false") {
     enable_antialiasing = false;
   }
 
   // Create WebGPU Renderer with shadow map support
-  maprenderer = new THREE.WebGPURenderer( { antialias: enable_antialiasing, preserveDrawingBuffer: true } );
+  maprenderer = new THREE.WebGPURenderer({ 
+    antialias: enable_antialiasing, 
+    preserveDrawingBuffer: true 
+  });
   maprenderer.outputColorSpace = THREE.LinearSRGBColorSpace;
   maprenderer.frustumCulled = true;
   maprenderer.setAnimationLoop(animate_webgl);
@@ -137,6 +95,126 @@ function webgpu_start_renderer()
   }
 
   $("#pregame_page").hide();
+}
+
+/**
+ * Sets up the scene lighting with ambient, directional, point, and spot lights.
+ * Uses centralized LightingConfig and ShadowConfig for consistent settings.
+ * @private
+ */
+function setupSceneLighting() {
+  // Get configuration or use inline defaults for backwards compatibility
+  const lightConfig = window.LightingConfig || {
+    AMBIENT_COLOR: 0x606060,
+    AMBIENT_INTENSITY: 1.2 * Math.PI,
+    DIRECTIONAL_COLOR: 0xffffff,
+    DIRECTIONAL_INTENSITY: 2.0 * Math.PI,
+    DIRECTIONAL_POSITION: { x: 500, y: 800, z: 500 },
+    KEY_LIGHT_COLOR: 0xffffff,
+    KEY_LIGHT_INTENSITY: 1.0 * Math.PI,
+    KEY_LIGHT_POSITION: { x: 150, y: 280, z: 150 },
+    FILL_LIGHT_COLOR: 0xffffff,
+    FILL_LIGHT_INTENSITY: 0.6 * Math.PI,
+    FILL_LIGHT_POSITION: { x: -200, y: 180, z: -120 },
+    SPOTLIGHT_COLOR: 0xffffff,
+    SPOTLIGHT_INTENSITY: 3.0 * Math.PI,
+    SPOTLIGHT_ANGLE: Math.PI / 3,
+    SPOTLIGHT_PENUMBRA: 0.001,
+    SPOTLIGHT_DECAY: 0.5
+  };
+  
+  const shadowConfig = window.ShadowConfig || {
+    MAP_SIZE: 4096,
+    CAMERA_NEAR: 100,
+    CAMERA_FAR: 3000,
+    FRUSTUM_SIZE: 1500,
+    BIAS: -0.0005,
+    NORMAL_BIAS: 0.02
+  };
+
+  // Ambient light provides base illumination for the entire scene
+  const ambientLight = new THREE.AmbientLight(
+    lightConfig.AMBIENT_COLOR, 
+    lightConfig.AMBIENT_INTENSITY
+  );
+  ambientLight.name = "ambient_light";
+  scene.add(ambientLight);
+
+  // Directional light for general scene lighting and shadow casting
+  directionalLight = new THREE.DirectionalLight(
+    lightConfig.DIRECTIONAL_COLOR, 
+    lightConfig.DIRECTIONAL_INTENSITY
+  );
+  directionalLight.position.set(
+    lightConfig.DIRECTIONAL_POSITION.x,
+    lightConfig.DIRECTIONAL_POSITION.y,
+    lightConfig.DIRECTIONAL_POSITION.z
+  );
+  directionalLight.name = "directional_light";
+  
+  // Configure shadows for directional light
+  directionalLight.castShadow = true;
+  directionalLight.shadow.mapSize.width = shadowConfig.MAP_SIZE;
+  directionalLight.shadow.mapSize.height = shadowConfig.MAP_SIZE;
+  directionalLight.shadow.camera.near = shadowConfig.CAMERA_NEAR;
+  directionalLight.shadow.camera.far = shadowConfig.CAMERA_FAR;
+  directionalLight.shadow.camera.left = -shadowConfig.FRUSTUM_SIZE;
+  directionalLight.shadow.camera.right = shadowConfig.FRUSTUM_SIZE;
+  directionalLight.shadow.camera.top = shadowConfig.FRUSTUM_SIZE;
+  directionalLight.shadow.camera.bottom = -shadowConfig.FRUSTUM_SIZE;
+  directionalLight.shadow.bias = shadowConfig.BIAS;
+  directionalLight.shadow.normalBias = shadowConfig.NORMAL_BIAS;
+  
+  scene.add(directionalLight);
+  scene.add(directionalLight.target);
+
+  // Key light for additional illumination
+  const keyLight = new THREE.PointLight(
+    lightConfig.KEY_LIGHT_COLOR, 
+    lightConfig.KEY_LIGHT_INTENSITY, 
+    0, 
+    2
+  );
+  keyLight.position.set(
+    lightConfig.KEY_LIGHT_POSITION.x,
+    lightConfig.KEY_LIGHT_POSITION.y,
+    lightConfig.KEY_LIGHT_POSITION.z
+  );
+  keyLight.name = "key_light";
+  scene.add(keyLight);
+
+  // Fill light for softer shadows
+  const fillLight = new THREE.PointLight(
+    lightConfig.FILL_LIGHT_COLOR, 
+    lightConfig.FILL_LIGHT_INTENSITY, 
+    0, 
+    2
+  );
+  fillLight.position.set(
+    lightConfig.FILL_LIGHT_POSITION.x,
+    lightConfig.FILL_LIGHT_POSITION.y,
+    lightConfig.FILL_LIGHT_POSITION.z
+  );
+  fillLight.name = "fill_light";
+  scene.add(fillLight);
+
+  // Spotlight for focused lighting and shadows
+  spotlight = new THREE.SpotLight(
+    lightConfig.SPOTLIGHT_COLOR, 
+    lightConfig.SPOTLIGHT_INTENSITY, 
+    0, 
+    lightConfig.SPOTLIGHT_ANGLE, 
+    lightConfig.SPOTLIGHT_PENUMBRA, 
+    lightConfig.SPOTLIGHT_DECAY
+  );
+  spotlight.name = "spotlight";
+  spotlight.castShadow = true;
+  spotlight.shadow.camera.near = shadowConfig.CAMERA_NEAR;
+  spotlight.shadow.camera.far = shadowConfig.CAMERA_FAR;
+  spotlight.shadow.bias = 0.0001;
+  spotlight.shadow.mapSize.x = shadowConfig.MAP_SIZE;
+  spotlight.shadow.mapSize.y = shadowConfig.MAP_SIZE;
+  scene.add(spotlight);
 }
 
 /****************************************************************************
@@ -502,6 +580,7 @@ function createSelectedUnitMaterial() {
 
 /****************************************************************************
  Update selected unit animation. Call this from the render loop.
+ @param {number} deltaTime - Time since last frame in seconds
 ****************************************************************************/
 function updateSelectedUnitAnimation(deltaTime) {
   if (window.selectedUnitTimeUniform && window.selectedUnitTimeUniform.value !== undefined) {
@@ -510,33 +589,19 @@ function updateSelectedUnitAnimation(deltaTime) {
 }
 
 /****************************************************************************
- This will render the map terrain mesh using WebGPU and TSL shaders.
+ Initializes the WebGPU map view with terrain mesh, materials, and shaders.
+ This is the main entry point for setting up the terrain rendering pipeline.
+ 
+ @returns {Promise<void>}
 ****************************************************************************/
 async function init_webgpu_mapview() {
   // Create WebGPU-compatible selected unit material with pulsing effect
   selected_unit_material = createSelectedUnitMaterial();
 
-  /* uniforms are variables which are used in the shader */
-  freeciv_uniforms = {
-      maptiles: { type: "t", value: maptiletypes },
-      borders: { type: "t", value: borders_texture },
-      map_x_size: { type: "f", value: map['xsize'] },
-      map_y_size: { type: "f", value: map['ysize'] },
-      mouse_x: { type: "i", value: -1 },
-      mouse_y: { type: "i", value: -1 },
-      selected_x: { type: "i", value: -1 },
-      selected_y: { type: "i", value: -1 },
-      roadsmap: { type: "t", value: roads_texture},
-      roadsprites: {type: "t", value: webgl_textures["roads"]},
-      railroadsprites: {type: "t", value: webgl_textures["railroads"]},
-      borders_visible: {type: "bool", value: server_settings['borders']['is_visible']}
-    };
+  // Set up shader uniforms for terrain rendering
+  freeciv_uniforms = createTerrainUniforms();
 
-    for (var i = 0; i < tiletype_terrains.length ; i++) {
-      var terrain_name = tiletype_terrains[i];
-      freeciv_uniforms[terrain_name] = {type: "t", value: webgl_textures[terrain_name]};
-    }
-
+  // Adjust terrain quality for large maps to maintain performance
   if (map.xsize > 200 || map.ysize > 200) {
     terrain_quality = 2;
   }
@@ -544,8 +609,11 @@ async function init_webgpu_mapview() {
   init_heightmap(terrain_quality);
   update_heightmap(terrain_quality);
 
-  // Create low-resolution mesh for raycasting
-  var lofiMaterial = new THREE.MeshBasicMaterial( {color: 0x00aa00, transparent: true, opacity: 0} );
+  // Create low-resolution mesh for raycasting (invisible, used for picking)
+  const lofiMaterial = createBasicMaterial 
+    ? createBasicMaterial(0x00aa00, { transparent: true, opacity: 0 })
+    : new THREE.MeshBasicMaterial({ color: 0x00aa00, transparent: true, opacity: 0 });
+  
   lofiGeometry = new THREE.BufferGeometry();
   lofiGeometry.name = "lofi_terrain_geometry";
   init_land_geometry(lofiGeometry, 2);
@@ -567,26 +635,30 @@ async function init_webgpu_mapview() {
   terrain_material.side = THREE.FrontSide;
   terrain_material.transparent = false;
 
+  // Create the terrain land mesh
   landGeometry = new THREE.BufferGeometry();
   landGeometry.name = "land_terrain_geometry";
   init_land_geometry(landGeometry, terrain_quality);
   update_land_geometry(landGeometry, terrain_quality);
-  landMesh = new THREE.Mesh( landGeometry, terrain_material );
+  landMesh = new THREE.Mesh(landGeometry, terrain_material);
   landMesh.receiveShadow = false;
   landMesh.castShadow = false;
   landMesh.name = "land_terrain_mesh";
   scene.add(landMesh);
   console.log("Land mesh triangles: " + landGeometry.index.count / 3);
 
+  // Create shadow mesh for medium+ quality settings
   if (graphics_quality >= QUALITY_MEDIUM) {
-    // Shadow mesh overlays the terrain to receive shadows from 3D objects
-    // Uses ShadowMaterial which only renders shadows cast onto it
-    var shadowMaterial = new THREE.ShadowMaterial();
-    // Shadow opacity varies by quality: higher quality = darker, more defined shadows
-    // QUALITY_HIGH: 0.75 opacity for more defined shadows
-    // QUALITY_MEDIUM: 0.55 opacity for subtler shadows to balance performance
-    shadowMaterial.opacity = (graphics_quality === QUALITY_HIGH) ? 0.75 : 0.55;
-    shadowmesh = new THREE.Mesh( landGeometry, shadowMaterial);
+    const shadowConfig = window.ShadowConfig || { OPACITY_HIGH: 0.75, OPACITY_MEDIUM: 0.55 };
+    const shadowOpacity = (graphics_quality === QUALITY_HIGH) 
+      ? shadowConfig.OPACITY_HIGH 
+      : shadowConfig.OPACITY_MEDIUM;
+    
+    const shadowMaterial = createShadowMaterial 
+      ? createShadowMaterial({ opacity: shadowOpacity })
+      : new THREE.ShadowMaterial({ opacity: shadowOpacity });
+    
+    shadowmesh = new THREE.Mesh(landGeometry, shadowMaterial);
     shadowmesh.receiveShadow = true;
     shadowmesh.castShadow = false;
     shadowmesh.name = "shadow_mesh";
@@ -594,15 +666,46 @@ async function init_webgpu_mapview() {
     console.log("Shadow mesh enabled for terrain shadow receiving");
   }
 
+  // Set up terrain geometry updates
   update_map_terrain_geometry();
   setInterval(update_map_terrain_geometry, 40);
-
   setInterval(update_map_known_tiles, 15);
 
+  // Add water and other quality-dependent objects
   add_quality_dependent_objects_webgpu();
-
   add_all_objects_to_scene();
 
   benchmark_start = new Date().getTime();
+}
 
+/**
+ * Creates the uniform objects for the terrain shader.
+ * Centralizes uniform creation for better maintainability.
+ * 
+ * @returns {Object} Uniform object for terrain shader
+ * @private
+ */
+function createTerrainUniforms() {
+  const uniforms = {
+    maptiles: { type: "t", value: maptiletypes },
+    borders: { type: "t", value: borders_texture },
+    map_x_size: { type: "f", value: map['xsize'] },
+    map_y_size: { type: "f", value: map['ysize'] },
+    mouse_x: { type: "i", value: -1 },
+    mouse_y: { type: "i", value: -1 },
+    selected_x: { type: "i", value: -1 },
+    selected_y: { type: "i", value: -1 },
+    roadsmap: { type: "t", value: roads_texture },
+    roadsprites: { type: "t", value: webgl_textures["roads"] },
+    railroadsprites: { type: "t", value: webgl_textures["railroads"] },
+    borders_visible: { type: "bool", value: server_settings['borders']['is_visible'] }
+  };
+
+  // Add terrain textures
+  for (let i = 0; i < tiletype_terrains.length; i++) {
+    const terrain_name = tiletype_terrains[i];
+    uniforms[terrain_name] = { type: "t", value: webgl_textures[terrain_name] };
+  }
+
+  return uniforms;
 }

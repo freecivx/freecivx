@@ -17,8 +17,18 @@
 
 ***********************************************************************/
 
+/**
+ * Animation Module for WebGPU
+ * 
+ * Handles animated objects in the 3D scene including:
+ * - Unit movement animations
+ * - Spaceship launch animations
+ * - Explosion effects
+ * - Nuclear detonation effects
+ */
 
-var anim_objs = {};
+/** @type {Object.<number, Object>} Map of unit ID to animation data */
+const anim_objs = {};
 
 /****************************************************************************
  Updates unit movement animation.
