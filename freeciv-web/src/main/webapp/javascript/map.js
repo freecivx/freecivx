@@ -21,14 +21,14 @@
 var map = {};
 var tiles = {};
 
-var DIR8_NORTHWEST = 1;
-var DIR8_NORTH = 2;
-var DIR8_NORTHEAST = 3;
-var DIR8_WEST = 4;
-var DIR8_EAST = 5;
-var DIR8_SOUTHWEST = 6;
-var DIR8_SOUTH = 7;
-var DIR8_SOUTHEAST = 0;
+var DIR8_NORTHWEST = 7;
+var DIR8_NORTH = 0;
+var DIR8_NORTHEAST = 1;
+var DIR8_WEST = 2;
+var DIR8_EAST = 3;
+var DIR8_SOUTHWEST = 4;
+var DIR8_SOUTH = 5;
+var DIR8_SOUTHEAST = 6;
 var DIR8_LAST = 8;
 var DIR8_COUNT = DIR8_LAST;
 
