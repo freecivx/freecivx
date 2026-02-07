@@ -250,7 +250,7 @@ function load_model(filename)
           // Brighter, smaller, and more transparent wheat
           node.material.emissive.set(0xE8D080);  // Brighter golden wheat color
           node.material.emissiveIntensity = 0.85;  // Increased brightness
-          node.material.opacity = 0.75;  // More transparent
+          node.material.opacity = 0.85;  // More transparent
           node.material.transparent = true;
         }
         if (filename == "city_european_0" || filename == "city_european_1" || filename == "city_european_2" || filename == "city_european_3" || filename == "city_european_4") {
@@ -487,7 +487,7 @@ switch (filename) {
     modelscale = 1.0;
     break;
   case 'Wheat':
-    modelscale = 1.4;  // Smaller wheat tiles
+    modelscale = 1.2;  // Smaller wheat tiles
     break;
   case 'Galleon':
     modelscale = 4.4;
