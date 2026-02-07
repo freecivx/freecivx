@@ -21,14 +21,14 @@
 var map = {};
 var tiles = {};
 
-var DIR8_NORTHWEST = 0;
-var DIR8_NORTH = 1;
-var DIR8_NORTHEAST = 2;
-var DIR8_WEST = 3;
-var DIR8_EAST = 4;
-var DIR8_SOUTHWEST = 5;
-var DIR8_SOUTH = 6;
-var DIR8_SOUTHEAST = 7;
+var DIR8_NORTHWEST = 1;
+var DIR8_NORTH = 2;
+var DIR8_NORTHEAST = 3;
+var DIR8_WEST = 4;
+var DIR8_EAST = 5;
+var DIR8_SOUTHWEST = 6;
+var DIR8_SOUTH = 7;
+var DIR8_SOUTHEAST = 0;
 var DIR8_LAST = 8;
 var DIR8_COUNT = DIR8_LAST;
 
@@ -53,8 +53,8 @@ var T_FIRST = 0;
  *
  * Valid hex directions: NW(0), NE(2), W(3), E(4), SW(5), SE(7)
  */
-var DIR_DX = [ 1, -1, 0, 1, -1, 1, -1, 0];
-var DIR_DY = [ 1, -1, -1, -1, 0, 0, 1, 1];
+var DIR_DX = [ -1, 0, 1, -1, 1, -1, 0, 1 ];
+var DIR_DY = [ -1, -1, -1, 0, 0, 1, 1, 1 ];
 
 
 /****************************************************************************
