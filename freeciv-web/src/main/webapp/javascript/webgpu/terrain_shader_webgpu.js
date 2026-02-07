@@ -782,7 +782,7 @@ function createTerrainShaderTSL(uniforms) {
     const borderLineFactor = mul(dashedTotalEdgeFactor, hexEdgeMask);
     
     // Border line width and intensity
-    const borderLineIntensity = 0.55;  // How opaque the border line is (more transparent)
+    const borderLineIntensity = 0.45;  // How opaque the border line is (more transparent)
     
     // Brighten the nation color for the border line (make it more visible)
     const brightenedBorderColor = vec3(
