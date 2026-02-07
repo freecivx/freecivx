@@ -2964,7 +2964,7 @@ function key_unit_move(dir)
       return;
     }
 
-    var newtile = mapstep(ptile, dir_ccw(dir));
+    var newtile = mapstep(ptile, dir_cw(dir));
     if (newtile == null) {
       return;
     }
