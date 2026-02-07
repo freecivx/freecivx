@@ -82,8 +82,11 @@ function createTerrainShaderTSL(uniforms) {
     // Height constants for beach blending
     // Beach appears at shoreline where land meets water
     const BEACH_HIGH = 52.5;        // Upper limit of beach zone (above this = full land texture)
-    const BEACH_BLEND_HIGH = 50.4;  // Lower limit of beach zone (below this = water/coast)
+    const BEACH_BLEND_HIGH = 50.4;  // Lower limit of beach zone (slightly above water to start beach blend)
     const BEACH_MID = 51.5;         // Middle of beach zone (peak sand color)
+    // Water surface level must match water mesh position in mapview_webgpu.js (line 130)
+    // Terrain below this level is underwater and should not display beach colors
+    const WATER_LEVEL = 50.0;
     
     // Beach sand colour (warm golden sand) - precomputed for efficiency
     const BEACH_SAND_COLOR = { r: 0.92, g: 0.85, b: 0.65 };
@@ -334,16 +337,21 @@ function createTerrainShaderTSL(uniforms) {
             
             // Calculate beach blend factor based on elevation
             // Creates a smooth gradient: coast -> beach sand -> land texture
-            // Below BEACH_BLEND_HIGH: coast texture (handled by water)
-            // BEACH_BLEND_HIGH to BEACH_MID: blend coast to sand
+            // Below WATER_LEVEL: underwater terrain - use coast/water texture, no beach
+            // WATER_LEVEL to BEACH_MID: blend coast to sand (only above water)
             // BEACH_MID to BEACH_HIGH: blend sand to terrain
             // Above BEACH_HIGH: full terrain texture
             
+            // Check if terrain is underwater (below water level)
+            // Returns 1.0 when above water, 0.0 when underwater
+            const aboveWater = step(WATER_LEVEL, posY);
+            
             // Lower beach zone (coast to sand) - smooth transition
             // Uses precomputed BEACH_LOWER_RANGE for efficiency
-            const lowerBeachT = clamp(
-                div(sub(posY, BEACH_BLEND_HIGH), BEACH_LOWER_RANGE),
-                0.0, 1.0
+            // Only apply beach blending when above water
+            const lowerBeachT = mul(
+                clamp(div(sub(posY, BEACH_BLEND_HIGH), BEACH_LOWER_RANGE), 0.0, 1.0),
+                aboveWater  // Zero out beach blending when underwater
             );
             // Upper beach zone (sand to terrain) - smooth transition
             // Uses precomputed BEACH_UPPER_RANGE for efficiency
@@ -353,6 +361,7 @@ function createTerrainShaderTSL(uniforms) {
             );
             
             // Blend: coast texture -> sand -> terrain texture
+            // When underwater (aboveWater=0), lowerBeachT=0 so result is pure coast texture
             const coastTex = texture(terrainTextures.coast, coord);
             const lowerBlend = mix(coastTex, vec4(beachSandColor, 1.0), lowerBeachT);
             terrainColor = mix(lowerBlend, baseTerrainColor, upperBeachT);
