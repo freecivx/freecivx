@@ -85,10 +85,12 @@ function createTerrainShaderTSL(uniforms) {
     const BEACH_BLEND_HIGH = 50.4;  // Lower limit of beach zone (below this = water/coast)
     const BEACH_MID = 51.5;         // Middle of beach zone (peak sand color)
     
-    // Beach sand colour (warm golden sand)
-    const BEACH_SAND_R = 0.92;
-    const BEACH_SAND_G = 0.85;
-    const BEACH_SAND_B = 0.65;
+    // Beach sand colour (warm golden sand) - precomputed for efficiency
+    const BEACH_SAND_COLOR = { r: 0.92, g: 0.85, b: 0.65 };
+    
+    // Precomputed beach zone ranges for shader efficiency
+    const BEACH_LOWER_RANGE = BEACH_MID - BEACH_BLEND_HIGH;  // ≈ 1.1
+    const BEACH_UPPER_RANGE = BEACH_HIGH - BEACH_MID;        // ≈ 1.0
 
     // =========================================================================
     // HEXAGONAL TILE CONSTANTS
@@ -301,6 +303,9 @@ function createTerrainShaderTSL(uniforms) {
     const texCoord = vec2(dx, dy);
     const texCoordT = vec2(tdx, add(tdy, 0.5));
 
+    // Precompute beach sand colour as vec3 for reuse in terrain layers
+    const beachSandColor = vec3(BEACH_SAND_COLOR.r, BEACH_SAND_COLOR.g, BEACH_SAND_COLOR.b);
+
     /**
      * Helper function to create terrain selection and blending logic
      * 
@@ -324,9 +329,6 @@ function createTerrainShaderTSL(uniforms) {
         // Sample terrain texture
         let terrainColor;
         if (blendWithBeach) {
-            // Define sand beach colour for smooth coastal transitions
-            const sandColor = vec3(BEACH_SAND_R, BEACH_SAND_G, BEACH_SAND_B);
-            
             // Get base terrain texture
             const baseTerrainColor = texture(textureNode, coord);
             
@@ -338,19 +340,21 @@ function createTerrainShaderTSL(uniforms) {
             // Above BEACH_HIGH: full terrain texture
             
             // Lower beach zone (coast to sand) - smooth transition
+            // Uses precomputed BEACH_LOWER_RANGE for efficiency
             const lowerBeachT = clamp(
-                div(sub(posY, BEACH_BLEND_HIGH), sub(BEACH_MID, BEACH_BLEND_HIGH)),
+                div(sub(posY, BEACH_BLEND_HIGH), BEACH_LOWER_RANGE),
                 0.0, 1.0
             );
-            // Upper beach zone (sand to terrain) - smooth transition  
+            // Upper beach zone (sand to terrain) - smooth transition
+            // Uses precomputed BEACH_UPPER_RANGE for efficiency
             const upperBeachT = clamp(
-                div(sub(posY, BEACH_MID), sub(BEACH_HIGH, BEACH_MID)),
+                div(sub(posY, BEACH_MID), BEACH_UPPER_RANGE),
                 0.0, 1.0
             );
             
             // Blend: coast texture -> sand -> terrain texture
             const coastTex = texture(terrainTextures.coast, coord);
-            const lowerBlend = mix(coastTex, vec4(sandColor, 1.0), lowerBeachT);
+            const lowerBlend = mix(coastTex, vec4(beachSandColor, 1.0), lowerBeachT);
             terrainColor = mix(lowerBlend, baseTerrainColor, upperBeachT);
         } else {
             terrainColor = texture(textureNode, coord);
