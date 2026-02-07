@@ -3241,7 +3241,7 @@ function should_use_simple_move(punit, newtile)
 ****************************************************************************/
 function create_single_move_packet(punit, ptile, newtile, dir)
 {
-  // Rotate direction counterclockwise to match server's direction interpretation
+  /* Rotate direction counterclockwise to match server's direction interpretation. */
   var server_dir = dir_ccw(dir);
   
   var order = {
