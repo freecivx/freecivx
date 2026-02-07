@@ -109,12 +109,7 @@ async function renderer_init() {
     init_chatbox();
     keyboard_input=true;
 
-    // Initialize WebGPU debug mode if enabled
-    if (typeof init_webgpu_debug === 'function') {
-      init_webgpu_debug();
-    }
-
-    // Delay advance_unit_focus to ensure units are fully loaded from server
+    // Delay unit focus to ensure units are fully loaded from server
     // This addresses timing issues where the camera position might not be set
     // correctly if units aren't available yet
     setTimeout(function() {

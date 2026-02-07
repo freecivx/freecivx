@@ -103,11 +103,6 @@ function webglOnDocumentMouseUp( e ) {
   var ptile = webgl_canvas_pos_to_tile(e.clientX, e.clientY - $("#mapcanvas").offset().top);
   if (ptile == null) return;
 
-  // WebGPU Debug Mode: Log tile info on any click
-  if (typeof webgpu_debug_enabled !== 'undefined' && webgpu_debug_enabled && typeof log_webgpu_debug_tile_info === 'function') {
-    log_webgpu_debug_tile_info(ptile);
-  }
-
   if (rightclick) {
     /* right click to recenter. */
     if (!map_select_active) {

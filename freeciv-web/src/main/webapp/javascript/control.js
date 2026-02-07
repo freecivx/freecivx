@@ -1037,7 +1037,7 @@ function advance_unit_focus()
   }
 
   if (candidate != null) {
-    set_unit_focus_and_redraw(candidate);
+    set_unit_focus_and_activate(candidate);
   } else {
     /* Couldn't center on a unit, then try to center on a city... */
     current_focus = []; /* Reset focus units. */
