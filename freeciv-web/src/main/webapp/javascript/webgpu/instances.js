@@ -17,69 +17,85 @@
 
  ***********************************************************************/
 
+/**
+ * Instance Management Module for WebGPU
+ * 
+ * Handles instanced mesh rendering for performance optimization.
+ * Uses Three.js InstancedMesh for efficient rendering of repeated objects
+ * like trees, buildings, and other tile decorations.
+ */
 
+/** @type {Object.<string, Object>} Map of model name to instanced mesh data */
 const instancedMeshes = {};
+
+/** @type {Object.<string, string>} Map of tile index to model type */
 const instancedMeshType = {};
 
 
 /****************************************************************************
- Returns THREE.InstancedMesh based on provided model and mesh.
+ Creates or returns an existing InstancedMesh for the given model.
+ Uses the material factory for WebGPU-compatible material conversion.
+ 
+ @param {string} modelName - Unique identifier for the model
+ @param {THREE.Mesh} gltfMesh - Source mesh with geometry and material
+ @param {number} [capacity=30] - Maximum number of instances
+ @returns {Object} Object containing instancedMesh, usedSlots array, and capacity
 ****************************************************************************/
 function getInstancedMeshFromModel(modelName, gltfMesh, capacity = 30) {
-    // If we already have an instanced mesh for this model, return it
+    // Return existing instanced mesh if available
     if (instancedMeshes[modelName]) {
         return instancedMeshes[modelName];
     }
 
-    // Otherwise, create a new InstancedMesh from the geometry and material.
+    // Extract geometry and material from the source mesh
     const geometry = gltfMesh.geometry;
     let material = gltfMesh.material;
     
-    // Convert material to WebGPU-compatible node material if WebGPU renderer is active
-    if (typeof maprenderer !== 'undefined' && maprenderer && maprenderer.isWebGPURenderer) {
-        const originalMat = material;
-        
-        // Create a new MeshStandardNodeMaterial with lighting support
-        const nodeMaterial = new THREE.MeshStandardNodeMaterial();
-        
-        // Copy common properties from original material
-        if (originalMat.map) nodeMaterial.map = originalMat.map;
-        if (originalMat.color) nodeMaterial.color.copy(originalMat.color);
-        if (originalMat.emissive) nodeMaterial.emissive.copy(originalMat.emissive);
-        if (originalMat.emissiveIntensity !== undefined) {
-            nodeMaterial.emissiveIntensity = originalMat.emissiveIntensity;
+    // Convert material to WebGPU-compatible node material if needed
+    if (typeof isWebGPURenderer === 'function' && isWebGPURenderer()) {
+        // Use material factory if available, otherwise inline conversion
+        if (typeof convertToNodeMaterial === 'function') {
+            material = convertToNodeMaterial(material, { doubleSided: true, flatShading: false });
+        } else {
+            // Fallback inline conversion for backwards compatibility
+            const originalMat = material;
+            const nodeMaterial = new THREE.MeshStandardNodeMaterial();
+            
+            if (originalMat.map) nodeMaterial.map = originalMat.map;
+            if (originalMat.color) nodeMaterial.color.copy(originalMat.color);
+            if (originalMat.emissive) nodeMaterial.emissive.copy(originalMat.emissive);
+            if (originalMat.emissiveIntensity !== undefined) {
+                nodeMaterial.emissiveIntensity = originalMat.emissiveIntensity;
+            }
+            if (originalMat.roughness !== undefined) nodeMaterial.roughness = originalMat.roughness;
+            if (originalMat.metalness !== undefined) nodeMaterial.metalness = originalMat.metalness;
+            if (originalMat.opacity !== undefined) nodeMaterial.opacity = originalMat.opacity;
+            if (originalMat.transparent !== undefined) {
+                nodeMaterial.transparent = originalMat.transparent;
+            }
+            
+            nodeMaterial.side = THREE.DoubleSide;
+            nodeMaterial.flatShading = false;
+            material = nodeMaterial;
         }
-        if (originalMat.roughness !== undefined) nodeMaterial.roughness = originalMat.roughness;
-        if (originalMat.metalness !== undefined) nodeMaterial.metalness = originalMat.metalness;
-        if (originalMat.opacity !== undefined) nodeMaterial.opacity = originalMat.opacity;
-        if (originalMat.transparent !== undefined) {
-            nodeMaterial.transparent = originalMat.transparent;
-        }
-        
-        nodeMaterial.side = THREE.DoubleSide;
-        nodeMaterial.flatShading = false;
-        
-        // MeshStandardNodeMaterial automatically detects and uses scene lights
-        // when used with WebGPU renderer - no manual lightsNode configuration needed
-        
-        material = nodeMaterial;
     }
     
+    // Create the instanced mesh
     const instancedMesh = new THREE.InstancedMesh(geometry, material, capacity);
     instancedMesh.castShadow = true;
+    instancedMesh.name = `InstancedMesh_${modelName}`;
 
-    // Mark all slots as free initially
+    // Initialize slot tracking array
     const usedSlots = new Array(capacity).fill(false);
 
-    // Save in our global dictionary
+    // Store in global dictionary
     instancedMeshes[modelName] = {
         instancedMesh,
         usedSlots,
         capacity
     };
 
-    // Add to the scene once
-    instancedMesh.name = `InstancedMesh_${modelName}`;
+    // Add to scene
     scene.add(instancedMesh);
 
     return instancedMeshes[modelName];
