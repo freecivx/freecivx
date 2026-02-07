@@ -41,7 +41,6 @@ function set_client_state(newstate)
     switch (civclient_state) {
     case C_S_RUNNING:
       clear_chatbox();
-      $("#game_text_input").blur();
       $.unblockUI();
       show_new_game_message();
 
@@ -65,7 +64,6 @@ function set_client_state(newstate)
 
       $("#dialog").dialog('close');
       $("#pregame_page").hide();
-      $("#game_text_input").blur();
 
       break;
     case C_S_OVER:

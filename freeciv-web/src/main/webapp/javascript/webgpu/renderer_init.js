@@ -115,6 +115,7 @@ async function renderer_init() {
     setTimeout(function() {
       camera.position.y = 450;
       advance_unit_focus();
+      $("#game_text_input").blur();
     }, 100);
 
     setTimeout("$('#mapcanvas').fadeIn(2500); $.unblockUI();", 700);
