@@ -46,7 +46,7 @@ function show_city_worked_tiles()
   }
   
   // Material for tiles worked by other cities
-  const other_city_material = createRingMaterial 
+  const other_city_material = typeof createRingMaterial === 'function'
     ? createRingMaterial(0xc33b3b, { transparent: true, opacity: 0.4 })
     : new THREE.MeshBasicMaterial({ color: 0xc33b3b, transparent: true, opacity: 0.4 });
 

@@ -610,7 +610,7 @@ async function init_webgpu_mapview() {
   update_heightmap(terrain_quality);
 
   // Create low-resolution mesh for raycasting (invisible, used for picking)
-  const lofiMaterial = createBasicMaterial 
+  const lofiMaterial = typeof createBasicMaterial === 'function'
     ? createBasicMaterial(0x00aa00, { transparent: true, opacity: 0 })
     : new THREE.MeshBasicMaterial({ color: 0x00aa00, transparent: true, opacity: 0 });
   
@@ -654,7 +654,7 @@ async function init_webgpu_mapview() {
       ? shadowConfig.OPACITY_HIGH 
       : shadowConfig.OPACITY_MEDIUM;
     
-    const shadowMaterial = createShadowMaterial 
+    const shadowMaterial = typeof createShadowMaterial === 'function'
       ? createShadowMaterial({ opacity: shadowOpacity })
       : new THREE.ShadowMaterial({ opacity: shadowOpacity });
     

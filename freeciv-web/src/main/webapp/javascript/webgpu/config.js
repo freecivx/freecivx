@@ -320,6 +320,10 @@ const MapviewConfig = Object.freeze({
 });
 
 // Export configuration objects to global scope for compatibility with existing code
+// Note: This project uses script concatenation for bundling, not ES modules.
+// The build system (Maven minify plugin) concatenates all JS files into webclient.min.js.
+// ES modules are only used for Three.js imports via importmap.
+// TODO: Consider migrating to full ES module system in future refactor.
 window.QualityLevel = QualityLevel;
 window.CameraConfig = CameraConfig;
 window.LightingConfig = LightingConfig;
