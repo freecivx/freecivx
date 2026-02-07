@@ -18,179 +18,236 @@
 ***********************************************************************/
 
 /**
- * Goto Path Visualization using Shader-Based Tile Highlighting
+ * Goto Path Visualization using Arrow Line
  * 
- * This module renders goto paths by marking tiles in a texture that the
- * terrain shader uses to draw white edge highlights on path tiles.
- * This approach provides consistent, high-quality path visualization
- * that integrates seamlessly with the hexagonal terrain rendering.
- * 
- * For hexagonal maps, only 6 directions are valid for movement:
- *   W (West), NW (NorthWest), NE (NorthEast), E (East), SE (SouthEast), SW (SouthWest)
+ * This module renders goto paths by drawing a straight arrow line from
+ * the unit's current position to the destination tile. This provides
+ * clear visual feedback of the goto path start and end points.
  */
 
-// Texture data for goto path tiles
-var goto_tiles_texture = null;
-var goto_tiles_data = null;
+// The goto arrow line object in the scene
+var goto_arrow_line = null;
+// The goto arrow head (cone) object in the scene  
+var goto_arrow_head = null;
+// Group containing all goto visualization objects
+var goto_arrow_group = null;
+
+// Arrow styling constants
+var GOTO_ARROW_COLOR = 0x00ff00;  // Green color for the arrow
+var GOTO_ARROW_LINE_WIDTH = 3;    // Line width (note: may not work on all platforms)
+var GOTO_ARROW_HEAD_LENGTH = 12;  // Length of the arrow head cone
+var GOTO_ARROW_HEAD_RADIUS = 6;   // Radius of the arrow head cone base
+var GOTO_ARROW_HEIGHT_OFFSET = 25; // Height above terrain for the arrow
 
 /****************************************************************************
- Initialize the goto tiles texture.
- Called during map initialization to create the texture that stores goto path data.
+ Initialize the goto arrow visualization.
+ Creates the arrow group and adds it to the scene.
  ****************************************************************************/
-function init_goto_tiles_texture() {
-    if (typeof map === 'undefined' || map == null) return;
+function init_goto_arrow() {
+    if (goto_arrow_group != null) return;
     
-    // Create RGBA texture data (4 bytes per tile)
-    // R channel: 255 if tile is part of goto path, 0 otherwise
-    // G channel: stores (direction_index + 1) where direction_index is 0-7
-    //            Result: 0 = start tile (no incoming direction), 1-8 = directions
-    //            Direction indices (DIR8_*): 0=NW, 1=N, 2=NE, 3=W, 4=E, 5=SW, 6=S, 7=SE
-    //            Note: For hex maps, only 6 directions are valid (W, NW, NE, E, SE, SW)
-    //            This allows the shader to display direction info for debugging
-    // B channel: path step index (0-254), for path order visualization
-    // A channel: set to 255 for RGBA format compatibility (required by THREE.DataTexture)
-    goto_tiles_data = new Uint8Array(4 * map.xsize * map.ysize);
+    goto_arrow_group = new THREE.Group();
+    goto_arrow_group.name = "goto_arrow_group";
+    goto_arrow_group.visible = false;
     
-    // Initialize all tiles as not part of goto path
-    for (let i = 0; i < map.xsize * map.ysize; i++) {
-        let index = i * 4;
-        goto_tiles_data[index] = 0;     // R: not on path
-        goto_tiles_data[index + 1] = 0; // G: direction (0 = start/none, 1-8 = directions)
-        goto_tiles_data[index + 2] = 0; // B: step index
-        goto_tiles_data[index + 3] = 255; // A: full opacity
-    }
-    
-    goto_tiles_texture = new THREE.DataTexture(goto_tiles_data, map.xsize, map.ysize);
-    goto_tiles_texture.format = THREE.RGBAFormat;
-    goto_tiles_texture.type = THREE.UnsignedByteType;
-    goto_tiles_texture.magFilter = THREE.NearestFilter;
-    goto_tiles_texture.minFilter = THREE.NearestFilter;
-    goto_tiles_texture.flipY = true;
-    goto_tiles_texture.needsUpdate = true;
-}
-
-/****************************************************************************
- Mark a single tile as part of the goto path with optional debug info.
- @param {Object} tile - The tile to mark
- @param {number} direction - The direction used to reach this tile (0-7), or -1 for start
- @param {number} stepIndex - The step index in the path (0 = start)
- ****************************************************************************/
-function mark_goto_tile(tile, direction, stepIndex) {
-    if (goto_tiles_data == null || tile == null) return;
-    if (tile.x < 0 || tile.x >= map.xsize || tile.y < 0 || tile.y >= map.ysize) return;
-    
-    let index = (tile.y * map.xsize + tile.x) * 4;
-    goto_tiles_data[index] = 255; // R: Mark as part of goto path
-    
-    // Store direction info for debugging (direction + 1 so 0 means "start/no direction")
-    // Direction indices: 0=NW, 1=N, 2=NE, 3=W, 4=E, 5=SW, 6=S, 7=SE
-    if (direction !== undefined && direction >= 0 && direction <= 7) {
-        goto_tiles_data[index + 1] = direction + 1; // G: direction (1-8)
-    } else {
-        goto_tiles_data[index + 1] = 0; // G: start tile or invalid direction
-    }
-    
-    // Store step index for path order (clamped to 0-254)
-    if (stepIndex !== undefined && stepIndex >= 0) {
-        goto_tiles_data[index + 2] = Math.min(stepIndex, 254); // B: step index
+    if (scene != null) {
+        scene.add(goto_arrow_group);
     }
 }
 
 /****************************************************************************
- Clear all goto tile markers from the texture.
+ Get the 3D scene position for a tile, centered on the tile.
+ @param {Object} tile - The map tile
+ @returns {THREE.Vector3} The 3D position in scene coordinates
  ****************************************************************************/
-function clear_goto_texture() {
-    if (goto_tiles_data == null) return;
+function get_tile_center_position(tile) {
+    if (tile == null) return null;
     
-    for (let i = 0; i < map.xsize * map.ysize; i++) {
-        let index = i * 4;
-        goto_tiles_data[index] = 0;     // R: Clear path marker
-        goto_tiles_data[index + 1] = 0; // G: Clear direction info
-        goto_tiles_data[index + 2] = 0; // B: Clear step index
+    var pos = map_to_scene_coords(tile['x'], tile['y']);
+    if (pos == null) return null;
+    
+    // Get hex center offsets for proper centering
+    var centerOffsets = getHexCenterOffsets();
+    
+    // Calculate height at this tile (using tile height if available)
+    var height = GOTO_ARROW_HEIGHT_OFFSET;
+    if (tile['height'] !== undefined) {
+        height += tile['height'] * 100;
     }
     
-    if (goto_tiles_texture != null) {
-        goto_tiles_texture.needsUpdate = true;
-    }
+    return new THREE.Vector3(
+        pos['x'] + centerOffsets.x,
+        height,
+        pos['y'] + centerOffsets.y
+    );
 }
 
 /****************************************************************************
- Renders goto path by marking tiles in the goto texture.
- The terrain shader will read this texture and render white edge highlights
- on marked tiles.
+ Renders goto path as a straight arrow line from start tile to destination.
  
- @param {Object} start_tile - The starting tile of the path
+ @param {Object} start_tile - The starting tile of the path (unit position)
  @param {Array} goto_packet_dir - Array of direction indices for the path
  ****************************************************************************/
 function webgl_render_goto_line(start_tile, goto_packet_dir) {
+    // Clear any existing goto visualization
     clear_goto_tiles();
-    if (!goto_active) return;
-    if (goto_tiles_data == null) {
-        init_goto_tiles_texture();
-    }
-    if (goto_tiles_data == null) return;
-
-    // Log goto path details when debug mode is enabled
-    if (typeof webgpu_debug_enabled !== 'undefined' && webgpu_debug_enabled) {
-        if (typeof log_webgpu_goto_path !== 'undefined') {
-            log_webgpu_goto_path(start_tile, goto_packet_dir, null);
-        }
-    }
-
-    var currentTile = start_tile;
-    var stepIndex = 0;
     
-    // Mark the starting tile (direction = -1 indicates start tile)
-    if (currentTile != null) {
-        mark_goto_tile(currentTile, -1, stepIndex);
-        stepIndex++;
+    if (!goto_active) return;
+    if (start_tile == null) return;
+    if (goto_packet_dir == null || goto_packet_dir.length === 0) return;
+    
+    // Initialize the arrow group if needed
+    if (goto_arrow_group == null) {
+        init_goto_arrow();
     }
-
-    // Iterate through each direction in the path and mark tiles
-    for (var stepIdx = 0; stepIdx < goto_packet_dir.length; stepIdx++) {
+    
+    // Find the destination tile by following the path
+    var currentTile = start_tile;
+    var destTile = start_tile;
+    
+    for (var i = 0; i < goto_packet_dir.length; i++) {
         if (currentTile == null) break;
         
-        var moveDir = goto_packet_dir[stepIdx];
+        var moveDir = goto_packet_dir[i];
         
         // Skip refuel markers
         if (moveDir == -1) {
             continue;
         }
-
+        
         // Get the next tile using mapstep which handles direction validation
         // and coordinate wrapping for hexagonal maps
-        var targetTile = mapstep(currentTile, moveDir);
+        var nextTile = mapstep(currentTile, moveDir);
         
-        if (targetTile != null) {
-            // Mark the target tile as part of the goto path with direction info
-            mark_goto_tile(targetTile, moveDir, stepIndex);
-            stepIndex++;
+        if (nextTile != null) {
+            destTile = nextTile;
+            currentTile = nextTile;
+        } else {
+            break;
         }
-
-        // Advance to next tile in path
-        currentTile = targetTile;
     }
     
-    // Update the texture so the shader can read the new data
-    if (goto_tiles_texture != null) {
-        goto_tiles_texture.needsUpdate = true;
+    // Get 3D positions for start and destination
+    var startPos = get_tile_center_position(start_tile);
+    var destPos = get_tile_center_position(destTile);
+    
+    if (startPos == null || destPos == null) return;
+    
+    // Log goto path details when debug mode is enabled
+    if (typeof webgpu_debug_enabled !== 'undefined' && webgpu_debug_enabled) {
+        console.log("Goto arrow: from (" + start_tile.x + "," + start_tile.y + ") to (" + 
+                    destTile.x + "," + destTile.y + "), " + goto_packet_dir.length + " steps");
     }
+    
+    // Create the arrow line
+    create_goto_arrow(startPos, destPos);
+}
+
+/****************************************************************************
+ Creates the goto arrow from start position to destination position.
+ 
+ @param {THREE.Vector3} startPos - The starting 3D position
+ @param {THREE.Vector3} destPos - The destination 3D position
+ ****************************************************************************/
+function create_goto_arrow(startPos, destPos) {
+    if (goto_arrow_group == null) {
+        init_goto_arrow();
+    }
+    
+    // Clear previous arrow objects from the group
+    while (goto_arrow_group.children.length > 0) {
+        goto_arrow_group.remove(goto_arrow_group.children[0]);
+    }
+    
+    // Calculate direction vector and length
+    var direction = new THREE.Vector3().subVectors(destPos, startPos);
+    var length = direction.length();
+    
+    if (length < 1) {
+        // Start and end are too close, don't draw arrow
+        goto_arrow_group.visible = false;
+        return;
+    }
+    
+    // Normalize direction
+    var dirNormalized = direction.clone().normalize();
+    
+    // Create arrow line (from start to just before the arrow head)
+    var lineEndPos = new THREE.Vector3().copy(destPos).sub(
+        dirNormalized.clone().multiplyScalar(GOTO_ARROW_HEAD_LENGTH * 0.8)
+    );
+    
+    var lineGeometry = new THREE.BufferGeometry();
+    var lineVertices = new Float32Array([
+        startPos.x, startPos.y, startPos.z,
+        lineEndPos.x, lineEndPos.y, lineEndPos.z
+    ]);
+    lineGeometry.setAttribute('position', new THREE.BufferAttribute(lineVertices, 3));
+    lineGeometry.name = "goto_line_geometry";
+    
+    var lineMaterial = new THREE.LineBasicMaterial({
+        color: GOTO_ARROW_COLOR,
+        linewidth: GOTO_ARROW_LINE_WIDTH,
+        depthTest: true,
+        depthWrite: true
+    });
+    
+    goto_arrow_line = new THREE.Line(lineGeometry, lineMaterial);
+    goto_arrow_line.name = "goto_arrow_line";
+    goto_arrow_group.add(goto_arrow_line);
+    
+    // Create arrow head (cone)
+    var coneGeometry = new THREE.ConeGeometry(
+        GOTO_ARROW_HEAD_RADIUS,
+        GOTO_ARROW_HEAD_LENGTH,
+        8  // radial segments
+    );
+    coneGeometry.name = "goto_cone_geometry";
+    
+    var coneMaterial = new THREE.MeshBasicMaterial({
+        color: GOTO_ARROW_COLOR,
+        depthTest: true,
+        depthWrite: true
+    });
+    
+    goto_arrow_head = new THREE.Mesh(coneGeometry, coneMaterial);
+    goto_arrow_head.name = "goto_arrow_head";
+    
+    // Position the cone at the destination
+    goto_arrow_head.position.copy(destPos);
+    
+    // Orient the cone to point in the direction of travel
+    // ConeGeometry points up (0, 1, 0) by default, so we need to rotate it
+    var up = new THREE.Vector3(0, 1, 0);
+    var quaternion = new THREE.Quaternion().setFromUnitVectors(up, dirNormalized);
+    goto_arrow_head.quaternion.copy(quaternion);
+    
+    // Move cone back slightly so its tip is at the destination
+    goto_arrow_head.position.sub(dirNormalized.clone().multiplyScalar(GOTO_ARROW_HEAD_LENGTH / 2));
+    
+    goto_arrow_group.add(goto_arrow_head);
+    
+    // Make the group visible
+    goto_arrow_group.visible = true;
 }
 
 /**************************************************************************
- Removes goto path visualization by clearing the goto tiles texture.
+ Removes goto path visualization by hiding the arrow.
 **************************************************************************/
 function clear_goto_tiles() {
-    clear_goto_texture();
-}
-
-/**************************************************************************
- Returns the goto tiles texture for use as a shader uniform.
- @returns {THREE.DataTexture} The goto tiles texture
-**************************************************************************/
-function get_goto_tiles_texture() {
-    if (goto_tiles_texture == null) {
-        init_goto_tiles_texture();
+    if (goto_arrow_group != null) {
+        goto_arrow_group.visible = false;
+        
+        // Clear all children from the group
+        while (goto_arrow_group.children.length > 0) {
+            var child = goto_arrow_group.children[0];
+            if (child.geometry) {
+                child.geometry.dispose();
+            }
+            if (child.material) {
+                child.material.dispose();
+            }
+            goto_arrow_group.remove(child);
+        }
     }
-    return goto_tiles_texture;
 }
