@@ -118,8 +118,9 @@ function webgpu_start_renderer()
  Creates a realistic water effect with animated waves, color variation, and specular highlights.
 ****************************************************************************/
 function add_quality_dependent_objects_webgpu() {
-  // Create water plane geometry with more segments for smoother waves
-  var waterGeometry = new THREE.PlaneGeometry(mapview_model_width, mapview_model_height, 128, 128);
+  // Create water plane geometry with same dimensions as land mesh
+  // Uses HEX_HEIGHT_FACTOR to match the hexagonal grid height scaling
+  var waterGeometry = new THREE.PlaneGeometry(mapview_model_width, mapview_model_height * HEX_HEIGHT_FACTOR, 128, 128);
   
   // Create animated water material using TSL (Three.js Shading Language)
   var waterMaterial = createWaterMaterialTSL();
