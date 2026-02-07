@@ -109,12 +109,6 @@ function webgl_render_goto_line(start_tile, dest_tile) {
     
     if (startPos == null || destPos == null) return;
     
-    // Log goto path details when debug mode is enabled
-    if (typeof webgpu_debug_enabled !== 'undefined' && webgpu_debug_enabled) {
-        console.log("Goto arrow: from (" + start_tile.x + "," + start_tile.y + ") to (" + 
-                    dest_tile.x + "," + dest_tile.y + ")");
-    }
-    
     // Create the arrow line
     create_goto_arrow(startPos, destPos);
 }

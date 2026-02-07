@@ -109,17 +109,23 @@ async function renderer_init() {
     init_chatbox();
     keyboard_input=true;
 
-    // Initialize WebGPU debug mode if enabled
-    if (typeof init_webgpu_debug === 'function') {
-      init_webgpu_debug();
-    }
-
-    // Delay advance_unit_focus to ensure units are fully loaded from server
+    // Delay unit focus to ensure units are fully loaded from server
     // This addresses timing issues where the camera position might not be set
     // correctly if units aren't available yet
+    // Use set_unit_focus_and_activate to properly activate the focused unit
+    // so that it can receive orders immediately (fixes issue where unit appears
+    // focused but can't receive goto/orders until manually selected)
     setTimeout(function() {
       camera.position.y = 450;
-      advance_unit_focus();
+      var candidate = find_best_focus_candidate(false);
+      if (candidate == null) {
+        candidate = find_best_focus_candidate(true);
+      }
+      if (candidate != null) {
+        set_unit_focus_and_activate(candidate);
+      } else {
+        advance_unit_focus();
+      }
     }, 100);
 
     setTimeout("$('#mapcanvas').fadeIn(2500); $.unblockUI();", 700);

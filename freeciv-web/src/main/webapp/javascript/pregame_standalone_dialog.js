@@ -45,6 +45,12 @@ function show_standalone_pregame_dialog()
   // Build the dialog HTML
   var dialog_html = "<div id='standalone_pregame_settings'>";
   
+  // Beta warning for local server mode
+  dialog_html += "<div style='margin-bottom: 20px; padding: 12px; background-color: #fff3cd; border: 1px solid #ffc107; border-radius: 4px;'>";
+  dialog_html += "<strong style='color: #856404;'><i class='fa fa-exclamation-triangle' aria-hidden='true'></i> Warning:</strong> ";
+  dialog_html += "<span style='color: #856404;'>Local server mode is in beta and very unstable.</span>";
+  dialog_html += "</div>";
+  
   // Nation selection
   dialog_html += "<div style='margin-bottom: 20px;'>";
   dialog_html += "<h3>Nation Selection</h3>";
