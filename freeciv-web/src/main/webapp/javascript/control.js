@@ -3154,7 +3154,7 @@ function update_goto_path(goto_packet)
   var ptile = t0;
   var goaltile = index_to_tile(goto_packet['dest']);
 
-  webgl_render_goto_line(ptile, goto_packet['dir']);
+  webgl_render_goto_line(ptile, goaltile);
 
   current_goto_turns = goto_packet['turns'];
 
