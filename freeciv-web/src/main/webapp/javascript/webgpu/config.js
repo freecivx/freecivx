@@ -160,97 +160,74 @@ const HexConfig = Object.freeze({
 });
 
 /**
- * Water shader configuration
+ * Water shader configuration (Stylized Game Water)
+ * 
+ * This configuration is for a calm, stylized water appearance suitable for
+ * strategy games like Civilization. Instead of big animated ocean waves,
+ * it uses subtle UV-scrolling patterns and caustic effects.
+ * 
  * @readonly
  * @type {Object}
  */
 const WaterConfig = Object.freeze({
-    /** Primary wave settings (ocean swell) */
-    WAVE1: Object.freeze({
-        DIR: Object.freeze({ x: 1.0, y: 0.3 }),
-        FREQ: 8.0,
-        SPEED: 0.6,
-        AMP: 0.35,
-        STEEP: 0.4
-    }),
-    /** Secondary wave settings (wind waves) */
-    WAVE2: Object.freeze({
-        DIR: Object.freeze({ x: 0.4, y: 1.0 }),
-        FREQ: 12.0,
-        SPEED: 0.8,
-        AMP: 0.25,
-        STEEP: 0.35
-    }),
-    /** Detail wave settings (ripples) */
-    WAVE3: Object.freeze({
-        DIR: Object.freeze({ x: -0.6, y: 0.8 }),
-        FREQ: 20.0,
-        SPEED: 1.2,
-        AMP: 0.12,
-        STEEP: 0.25
-    }),
-    /** Micro detail wave settings */
-    WAVE4: Object.freeze({
-        DIR: Object.freeze({ x: 0.7, y: -0.7 }),
-        FREQ: 35.0,
-        SPEED: 1.5,
-        AMP: 0.06,
-        STEEP: 0.2
-    }),
-    /** Cross wave settings for interference */
-    WAVE5: Object.freeze({
-        DIR: Object.freeze({ x: -0.3, y: -0.9 }),
-        FREQ: 15.0,
-        SPEED: 0.9,
-        AMP: 0.15,
-        STEEP: 0.3
-    }),
-    /** Specular highlight settings */
-    SPECULAR: Object.freeze({
-        POWER: 64.0,
-        INTENSITY: 0.6,
-        TIGHTNESS: 128.0
-    }),
-    /** Foam settings */
-    FOAM: Object.freeze({
-        THRESHOLD: 0.25,
-        SOFTNESS: 4.0,
-        INTENSITY: 0.45,
-        NOISE_SCALE: 25.0,
-        MOVEMENT: 0.3
-    }),
-    /** Fresnel effect settings */
-    FRESNEL: Object.freeze({
-        POWER: 3.0,
-        BIAS: 0.1,
-        SCALE: 0.6
-    }),
-    /** Subsurface scattering settings */
-    SSS: Object.freeze({
-        STRENGTH: 0.35,
-        POWER: 2.5
-    }),
-    /** Caustic pattern settings */
+    /** Caustic pattern settings - creates cell-like underwater light patterns */
     CAUSTICS: Object.freeze({
-        SCALE: 18.0,
-        SPEED: 0.4,
-        INTENSITY: 0.12
+        /** Scale of the caustic pattern (higher = smaller patterns) */
+        SCALE: 12.0,
+        /** Speed of caustic animation (very slow for calm water) */
+        SPEED: 0.08,
+        /** Intensity of caustic highlights on the water surface */
+        INTENSITY: 0.15
+    }),
+    /** Ripple settings - very subtle surface movement */
+    RIPPLES: Object.freeze({
+        /** Scale of ripple pattern */
+        SCALE: 25.0,
+        /** Speed of ripple movement */
+        SPEED: 0.15,
+        /** Amplitude of ripple effect (keep very low for calm water) */
+        AMPLITUDE: 0.1
+    }),
+    /** Shimmer settings - surface sparkle effect */
+    SHIMMER: Object.freeze({
+        /** Scale of shimmer noise */
+        SCALE: 40.0,
+        /** Speed of shimmer movement */
+        SPEED: 0.2,
+        /** Intensity of shimmer highlights */
+        INTENSITY: 0.03
+    }),
+    /** Specular highlight settings (very soft for stylized look) */
+    SPECULAR: Object.freeze({
+        /** Specular power (lower = softer highlights) */
+        POWER: 8.0,
+        /** Specular intensity (keep low for calm appearance) */
+        INTENSITY: 0.08
+    }),
+    /** Edge darkening settings (vignette effect) */
+    EDGE: Object.freeze({
+        /** Edge darkening strength */
+        DARKEN: 0.15,
+        /** Maximum darkening amount */
+        MAX: 0.1
     }),
     /** Opacity settings */
     OPACITY: Object.freeze({
-        BASE: 0.65,
-        MIN: 0.55,
-        MAX: 0.8
+        /** Base opacity (constant for clean game look) */
+        BASE: 0.72
     }),
-    /** Water color palette */
+    /** Water color palette (stylized game colors) */
     COLORS: Object.freeze({
-        DEEP_OCEAN: Object.freeze({ r: 0.02, g: 0.08, b: 0.22 }),
-        MID_OCEAN: Object.freeze({ r: 0.05, g: 0.18, b: 0.38 }),
-        SHALLOW: Object.freeze({ r: 0.12, g: 0.42, b: 0.58 }),
-        SURFACE: Object.freeze({ r: 0.18, g: 0.52, b: 0.68 }),
-        FOAM: Object.freeze({ r: 0.92, g: 0.97, b: 1.0 }),
-        SSS: Object.freeze({ r: 0.15, g: 0.65, b: 0.55 }),
-        SKY_REFLECT: Object.freeze({ r: 0.45, g: 0.65, b: 0.85 })
+        /** Deep ocean color - rich blue */
+        DEEP_OCEAN: Object.freeze({ r: 0.04, g: 0.12, b: 0.28 }),
+        /** Mid ocean color - medium blue */
+        MID_OCEAN: Object.freeze({ r: 0.08, g: 0.25, b: 0.45 }),
+        /** Shallow water color - teal/turquoise */
+        SHALLOW: Object.freeze({ r: 0.15, g: 0.45, b: 0.55 }),
+        /** Surface highlight color - light tint */
+        SURFACE: Object.freeze({ r: 0.35, g: 0.60, b: 0.72 }),
+        /** Caustic highlight color */
+        CAUSTIC: Object.freeze({ r: 0.50, g: 0.75, b: 0.85 })
     })
 });
 
