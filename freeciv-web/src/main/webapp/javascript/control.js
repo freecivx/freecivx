@@ -56,6 +56,7 @@ var show_citybar = true;
 var context_menu_active = true;
 var has_movesleft_warning_been_shown = false;
 var game_unit_panel_state = null;
+var remaining_goto_path = {}; // Stores remaining path directions for continued movement
 
 var chat_send_to = -1;
 var CHAT_ICON_EVERYBODY = String.fromCharCode(62075);
@@ -1634,128 +1635,37 @@ function do_map_click(ptile, qtype, first_time_called)
 
   if (goto_active) {
     if (current_focus.length > 0) {
-      // send goto order for all units in focus. 
+      // Execute goto using key_unit_move for each step (client-side execution)
       for (var s = 0; s < current_focus.length; s++) {
         punit = current_focus[s];
-        /* Get the path the server sent using PACKET_WEB_GOTO_PATH. */
+        /* Get the path from client-side pathfinding. */
         var goto_path = goto_request_map[punit['id'] + "," + ptile['x'] + "," + ptile['y']];
-        if (goto_path == null) {
+        if (goto_path == null || goto_path['dir'] == null || goto_path['dir'].length == 0) {
           continue;
         }
-
-        /* The tile the unit currently is standing on. */
-        var old_tile = index_to_tile(punit['tile']);
-
-        /* Create an order to move along the path. */
-        packet = {
-          "pid"      : packet_unit_orders,
-          "unit_id"  : punit['id'],
-          "src_tile" : old_tile['index'],
-          "length"   : goto_path['length'],
-          "repeat"   : false,
-          "vigilant" : false,
-
-          /* Each individual order is added later. */
-
-          "dest_tile": ptile['index']
-        };
-
-        var order = {
-          "order"      : ORDER_LAST,
-          "activity"   : ACTIVITY_LAST,
-          "target"     : 0,
-          "sub_target" : 0,
-          "action"     : ACTION_COUNT,
-          "dir"        : -1
-        };
-
-        /* Add each individual order. */
-        packet['orders'] = [];
-        for (var i = 0; i < goto_path['length']; i++) {
-          /* TODO: Have the server send the full orders in stead of just the
-           * dir part. Use that data in stead. */
-
-          if (goto_path['dir'][i] == -1) {
-            /* Assume that this means refuel. */
-            order['order'] = ORDER_FULL_MP;
-          } else if (i + 1 != goto_path['length']) {
-            /* Don't try to do an action in the middle of the path. */
-            order['order'] = ORDER_MOVE;
-          } else {
-            /* It is OK to end the path in an action. */
-            order['order'] = ORDER_ACTION_MOVE;
-          }
-
-          order['dir'] = goto_path['dir'][i];
-          order['activity'] = ACTIVITY_LAST;
-          order['target'] = 0;
-          order['sub_target'] = 0;
-          order['action'] = ACTION_COUNT;
-
-          packet['orders'][i] = Object.assign({}, order);
-        }
-
-        if (goto_last_order != ORDER_LAST) {
-          /* The final order is specified. */
-          var pos;
-
-          /* Should the final order be performed from the final tile or
-           * from the tile before it? In some cases both are legal. */
-          if (!order_wants_direction(goto_last_order, goto_last_action,
-                                     ptile)) {
-            /* Append the final order. */
-            pos = packet['length'];
-
-            /* Increase orders length */
-            packet['length'] = packet['length'] + 1;
-
-            /* Initialize the order to "empty" values. */
-            order['order'] = ORDER_LAST;
-            order['dir'] = -1;
-            order['activity'] = ACTIVITY_LAST;
-            order['target'] = 0;
-            order['sub_target'] = 0;
-            order['action'] = ACTION_COUNT;
-
-          } else {
-            /* Replace the existing last order with the final order */
-            pos = packet['length'] - 1;
-          }
-
-          /* Set the final order. */
-          order['order'] = goto_last_order;
-
-          /* Perform the final action. */
-          order['action'] = goto_last_action;
-          order['target'] = ptile['index'];
-
-          packet['orders'][pos] = Object.assign({}, order);
-        }
-
-        /* The last order has now been used. Clear it. */
-        goto_last_order = ORDER_LAST;
-        goto_last_action = ACTION_COUNT;
 
         if (punit['id'] != goto_path['unit_id']) {
           /* Shouldn't happen. Maybe an old path wasn't cleared out. */
           console.log("Error: Tried to order unit " + punit['id']
                       + " to move along a path made for unit "
                       + goto_path['unit_id']);
-          return;
-        }
-        /* Send the order to move using the orders system. */
-        send_request(JSON.stringify(packet));
-        if (punit['movesleft'] > 0) {
-          unit_move_sound_play(punit);
-        } else if (!has_movesleft_warning_been_shown) {
-          has_movesleft_warning_been_shown = true;
-          var ptype = unit_type(punit);
-          message_log.update({
-            event: E_BAD_COMMAND,
-            message: ptype['name'] + " has no moves left. Press turn done for the next turn."
-          });
+          continue;
         }
 
+        if (punit['movesleft'] <= 0) {
+          if (!has_movesleft_warning_been_shown) {
+            has_movesleft_warning_been_shown = true;
+            var ptype = unit_type(punit);
+            message_log.update({
+              event: E_BAD_COMMAND,
+              message: ptype['name'] + " has no moves left. Press turn done for the next turn."
+            });
+          }
+          continue;
+        }
+
+        // Execute moves step by step using key_unit_move
+        execute_goto_path_steps(punit['id'], goto_path['dir'].slice());
       }
       clear_goto_tiles();
 
@@ -3101,23 +3011,99 @@ function key_unit_move(dir)
 }
 
 /****************************************************************************
+  Client-side pathfinding using BFS for hexagonal maps.
+  Returns an array of directions (DIR8_*) to reach from start_tile to end_tile,
+  or null if no path is found.
+****************************************************************************/
+function find_client_goto_path(start_tile, end_tile)
+{
+  if (start_tile == null || end_tile == null) return null;
+  if (start_tile['index'] === end_tile['index']) return [];
+
+  // BFS for finding shortest path
+  var queue = [];
+  var visited = {};
+  var parent = {};  // Maps tile index to {tile, direction}
+  
+  queue.push(start_tile);
+  visited[start_tile['index']] = true;
+  
+  while (queue.length > 0) {
+    var current = queue.shift();
+    
+    // Try all valid directions
+    for (var dir = 0; dir < DIR8_LAST; dir++) {
+      if (!is_valid_dir(dir)) continue;
+      
+      var next_tile = mapstep(current, dir);
+      if (next_tile == null) continue;
+      if (visited[next_tile['index']]) continue;
+      
+      visited[next_tile['index']] = true;
+      parent[next_tile['index']] = { 'tile': current, 'dir': dir };
+      
+      if (next_tile['index'] === end_tile['index']) {
+        // Found the path, reconstruct it
+        var path = [];
+        var trace_tile = end_tile;
+        while (parent[trace_tile['index']] != null) {
+          var p = parent[trace_tile['index']];
+          path.unshift(p['dir']);
+          trace_tile = p['tile'];
+        }
+        return path;
+      }
+      
+      queue.push(next_tile);
+    }
+  }
+  
+  // No path found
+  return null;
+}
+
+/****************************************************************************
   Request GOTO path for unit with unit_id, and dst_x, dst_y in map coords.
+  Now uses client-side pathfinding instead of server request.
 ****************************************************************************/
 function request_goto_path(unit_id, dst_x, dst_y)
 {
   if (!goto_active) return;
 
-  if (goto_request_map[unit_id + "," + dst_x + "," + dst_y] == null) {
-    goto_request_map[unit_id + "," + dst_x + "," + dst_y] = true;
-
-    var packet = {"pid" : packet_web_goto_path_req, "unit_id" : unit_id,
-                  "goal" : map_pos_to_tile(dst_x, dst_y)['index']};
-    send_request(JSON.stringify(packet));
-    current_goto_turns = null;
-    $("#unit_text_details").html("Choose unit goto");
-    setTimeout(update_mouse_cursor, 700);
+  var cache_key = unit_id + "," + dst_x + "," + dst_y;
+  
+  if (goto_request_map[cache_key] == null || goto_request_map[cache_key] === true) {
+    var punit = units[unit_id];
+    if (punit == null) return;
+    
+    var start_tile = index_to_tile(punit['tile']);
+    var end_tile = map_pos_to_tile(dst_x, dst_y);
+    
+    if (start_tile == null || end_tile == null) return;
+    
+    // Use client-side pathfinding
+    var path_dirs = find_client_goto_path(start_tile, end_tile);
+    
+    if (path_dirs == null) {
+      // No path found
+      goto_request_map[cache_key] = null;
+      current_goto_turns = null;
+      return;
+    }
+    
+    // Create a goto packet-like structure for compatibility
+    var goto_packet = {
+      'unit_id': unit_id,
+      'dest': end_tile['index'],
+      'dir': path_dirs,
+      'length': path_dirs.length,
+      'turns': Math.ceil(path_dirs.length / 3)  // Rough estimate
+    };
+    
+    goto_request_map[cache_key] = goto_packet;
+    update_goto_path(goto_packet);
   } else {
-    update_goto_path(goto_request_map[unit_id + "," + dst_x + "," + dst_y]);
+    update_goto_path(goto_request_map[cache_key]);
   }
 }
 
@@ -3133,7 +3119,7 @@ function check_request_goto_path()
     var ptile = webgl_canvas_pos_to_tile(mouse_x, mouse_y);
 
     if (ptile != null) {
-      /* Send request for goto_path to server. */
+      /* Use client-side pathfinding for goto preview. */
       for (var i = 0; i < current_focus.length; i++) {
         request_goto_path(current_focus[i]['id'], ptile['x'], ptile['y']);
       }
@@ -3141,6 +3127,184 @@ function check_request_goto_path()
   }
   prev_mouse_x = mouse_x;
   prev_mouse_y = mouse_y;
+}
+
+/****************************************************************************
+  Store the remaining goto path for a unit to continue movement.
+****************************************************************************/
+function store_remaining_goto_path(unit_id, dest_tile, path_dirs)
+{
+  if (path_dirs != null && path_dirs.length > 0) {
+    remaining_goto_path[unit_id] = {
+      'dest_tile': dest_tile,
+      'path': path_dirs
+    };
+  } else {
+    delete remaining_goto_path[unit_id];
+  }
+}
+
+/****************************************************************************
+  Continue the goto path for a unit if there's remaining movement.
+  Call this after a unit finishes moving.
+****************************************************************************/
+function continue_goto_path(unit_id)
+{
+  var remaining = remaining_goto_path[unit_id];
+  if (remaining == null || remaining['path'] == null || remaining['path'].length == 0) {
+    delete remaining_goto_path[unit_id];
+    return false;
+  }
+  
+  var punit = units[unit_id];
+  if (punit == null || punit['movesleft'] <= 0) {
+    // Clear remaining path if unit has no moves left
+    delete remaining_goto_path[unit_id];
+    return false;
+  }
+  
+  var next_dir = remaining['path'][0];
+  var remaining_path = remaining['path'].slice(1);
+  
+  if (remaining_path.length == 0) {
+    delete remaining_goto_path[unit_id];
+  } else {
+    remaining['path'] = remaining_path;
+  }
+  
+  if (next_dir >= 0 && next_dir < DIR8_LAST && is_valid_dir(next_dir)) {
+    // Execute the move using the same pattern as execute_goto_path_steps
+    var ptile = index_to_tile(punit['tile']);
+    if (ptile == null) return false;
+    
+    var newtile = mapstep(ptile, next_dir);
+    if (newtile == null) return false;
+    
+    /* Send the order to move using the orders system. */
+    var order = {
+      "order"      : ORDER_ACTION_MOVE,
+      "dir"        : next_dir,
+      "activity"   : ACTIVITY_LAST,
+      "target"     : 0,
+      "sub_target" : 0,
+      "action"     : ACTION_COUNT
+    };
+
+    if (punit['transported']
+        && newtile['units'].every(function(ounit) {
+             return ounit['owner'] == client.conn.playing.playerno;
+           })
+        && (tile_city(newtile) == null
+            || tile_city(newtile)['owner'] == client.conn.playing.playerno)
+        && !tile_has_extra(newtile, EXTRA_HUT)
+        && (newtile['extras_owner'] == client.conn.playing.playerno
+            || !tile_has_territory_claiming_extra(newtile))) {
+      order["order"] = ORDER_MOVE;
+    }
+
+    var packet = {
+      "pid"      : packet_unit_orders,
+      "unit_id"  : punit['id'],
+      "src_tile" : ptile['index'],
+      "length"   : 1,
+      "repeat"   : false,
+      "vigilant" : false,
+      "orders"   : [order],
+      "dest_tile": newtile['index']
+    };
+
+    send_request(JSON.stringify(packet));
+    unit_move_sound_play(punit);
+    
+    // Schedule the next step if there are more moves
+    if (remaining_path.length > 0) {
+      setTimeout(function() {
+        continue_goto_path(unit_id);
+      }, 300);
+    }
+    
+    return true;
+  }
+  
+  return false;
+}
+
+/****************************************************************************
+  Clear any remaining goto path for a unit.
+****************************************************************************/
+function clear_remaining_goto_path(unit_id)
+{
+  delete remaining_goto_path[unit_id];
+}
+
+/****************************************************************************
+  Execute goto path steps sequentially using key_unit_move.
+  Sends individual move orders for each direction in the path.
+****************************************************************************/
+function execute_goto_path_steps(unit_id, path_dirs)
+{
+  if (path_dirs == null || path_dirs.length == 0) return;
+  
+  var punit = units[unit_id];
+  if (punit == null) return;
+  
+  // Execute the first step immediately
+  var first_dir = path_dirs[0];
+  if (first_dir >= 0 && first_dir < DIR8_LAST && is_valid_dir(first_dir)) {
+    // Execute the single move using key_unit_move logic
+    var ptile = index_to_tile(punit['tile']);
+    if (ptile == null) return;
+    
+    var newtile = mapstep(ptile, first_dir);
+    if (newtile == null) return;
+    
+    /* Send the order to move using the orders system. */
+    var order = {
+      "order"      : ORDER_ACTION_MOVE,
+      "dir"        : first_dir,
+      "activity"   : ACTIVITY_LAST,
+      "target"     : 0,
+      "sub_target" : 0,
+      "action"     : ACTION_COUNT
+    };
+
+    if (punit['transported']
+        /* No non domestic units */
+        && newtile['units'].every(function(ounit) {
+             return ounit['owner'] == client.conn.playing.playerno;
+           })
+        /* No non domestic cities */
+        && (tile_city(newtile) == null
+            || tile_city(newtile)['owner'] == client.conn.playing.playerno)
+        && !tile_has_extra(newtile, EXTRA_HUT)
+        && (newtile['extras_owner'] == client.conn.playing.playerno
+            || !tile_has_territory_claiming_extra(newtile))) {
+      order["order"] = ORDER_MOVE;
+    }
+
+    var packet = {
+      "pid"      : packet_unit_orders,
+      "unit_id"  : punit['id'],
+      "src_tile" : ptile['index'],
+      "length"   : 1,
+      "repeat"   : false,
+      "vigilant" : false,
+      "orders"   : [order],
+      "dest_tile": newtile['index']
+    };
+
+    send_request(JSON.stringify(packet));
+    unit_move_sound_play(punit);
+    
+    // Store remaining path for continued execution
+    if (path_dirs.length > 1) {
+      store_remaining_goto_path(unit_id, null, path_dirs.slice(1));
+      // Schedule the next step after a short delay
+      setTimeout(function() {
+        continue_goto_path(unit_id);
+      }, 300);
+    }
+  }
 }
 
 /****************************************************************************
