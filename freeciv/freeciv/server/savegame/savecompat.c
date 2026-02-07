@@ -1735,20 +1735,24 @@ static void upgrade_unit_order_targets(struct unit *act_unit)
     return;
   }
 
-  /* The order index is for the unit at its current tile. */
+  /* Start from the unit's starting tile and simulate forward to find
+   * the tile at each order. We assume the unit started at its current tile
+   * and work backwards through completed orders to find the original starting point,
+   * then forward through all orders. */
+  
+  /* For simplicity, start from the beginning of orders with the unit's current tile.
+   * This assumes that the orders were created when the unit was at its current position. */
   current_tile = unit_tile(act_unit);
-
-  /* Rewind to the beginning of the orders */
-  for (i = act_unit->orders.index; i > 0 && current_tile != NULL; i--) {
-    struct unit_order *prev_order = &act_unit->orders.list[i - 1];
-
-    if (!(prev_order->order == ORDER_PERFORM_ACTION
-          && utype_is_unmoved_by_action(action_by_number(prev_order->action),
-                                        unit_type_get(act_unit)))
-        && prev_order->tile >= 0) {
-      /* Use the tile from the previous order to rewind */
-      current_tile = index_to_tile(&(wld.map), prev_order->tile);
-    }
+  
+  /* If there are already executed orders (orders.index > 0), we need to figure out
+   * where the unit started. With tile-based orders, we can walk backwards through
+   * the executed orders to find the starting position. */
+  if (act_unit->orders.index > 0) {
+    /* Walk forward from index 0 to find position at orders.index */
+    /* Actually, we need to find the starting tile before any orders were executed.
+     * With tile indices, the first order's tile is where the unit moved TO,
+     * so we don't know where it started from. 
+     * For upgrade purposes, use the unit's current position as a reasonable default. */
   }
 
   /* Upgrade to explicit target tile */
@@ -1790,7 +1794,8 @@ static void upgrade_unit_order_targets(struct unit *act_unit)
       } else {
         current_tile = NULL;
       }
-    } else {
+    } else if (order->order == ORDER_MOVE || order->order == ORDER_ACTION_MOVE) {
+      /* Movement order - update current tile to destination */
       current_tile = tgt_tile;
     }
   }

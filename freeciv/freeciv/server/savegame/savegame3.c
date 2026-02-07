@@ -5301,7 +5301,8 @@ static bool sg_load_player_city(struct loaddata *loading, struct player *plr,
         if (tile_index >= 0) {
           order->tile = tile_index;
           current_tile = index_to_tile(&(wld.map), tile_index);
-        } else if (rally_dirs[i] != '\0') {
+        } else if (rally_dirs != NULL && rally_dirs[0] != '\0' 
+                   && (size_t)i < strlen(rally_dirs) && rally_dirs[i] != '\0') {
           /* Fall back to converting from direction for old saves */
           enum direction8 dir = char2dir(rally_dirs[i]);
           if (direction8_is_valid(dir) && current_tile != NULL) {
@@ -6258,7 +6259,8 @@ static bool sg_load_player_unit(struct loaddata *loading,
         if (tile_index >= 0) {
           order->tile = tile_index;
           current_tile = index_to_tile(&(wld.map), tile_index);
-        } else if (dir_unitstr[j] != '\0') {
+        } else if (dir_unitstr != NULL && dir_unitstr[0] != '\0'
+                   && (size_t)j < strlen(dir_unitstr) && dir_unitstr[j] != '\0') {
           /* Fall back to converting from direction for old saves */
           enum direction8 dir = char2dir(dir_unitstr[j]);
           if (direction8_is_valid(dir) && current_tile != NULL) {
