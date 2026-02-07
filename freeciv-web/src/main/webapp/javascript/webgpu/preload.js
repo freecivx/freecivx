@@ -252,6 +252,7 @@ function load_model(filename)
           node.material.emissiveIntensity = 0.85;  // Increased brightness
           node.material.opacity = 0.85;  // More transparent
           node.material.transparent = true;
+          node.castShadow = false;
         }
         if (filename == "city_european_0" || filename == "city_european_1" || filename == "city_european_2" || filename == "city_european_3" || filename == "city_european_4") {
           node.material.emissive.set(0x999999);
