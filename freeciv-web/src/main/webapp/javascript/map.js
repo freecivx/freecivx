@@ -46,10 +46,12 @@ var T_FIRST = 0;
 
 /* Direction offsets for computing neighboring tiles.
  * These work for both square and hexagonal topologies.
- * For hex maps, invalid directions are filtered by is_valid_dir().
+ * For hex maps, N (1) and S (6) are invalid directions - filtered by is_valid_dir().
  *
  * Direction indices correspond to:
  *   0=NW, 1=N, 2=NE, 3=W, 4=E, 5=SW, 6=S, 7=SE
+ *
+ * Valid hex directions: NW(0), NE(2), W(3), E(4), SW(5), SE(7)
  */
 var DIR_DX = [ -1, 0, 1, -1, 1, -1, 0, 1 ];
 var DIR_DY = [ -1, -1, -1, 0, 0, 1, 1, 1 ];
@@ -145,23 +147,28 @@ function map_init_topology(set_sizes)
 }
 
 /****************************************************************************
-  ...
+  Returns true if the given direction is valid for the current map topology.
+  
+  For hexagonal (iso-hex) maps used in Freeciv 3D:
+    Valid directions: NW, NE, W, E, SW, SE (6 directions)
+    Invalid directions: N, S (direct north/south movement not allowed)
+    
+  This matches the hexagonal grid where tiles are offset and only 6 neighbors
+  are adjacent, not the 8 neighbors of a square grid.
 ****************************************************************************/
 function is_valid_dir(dir)
 {
   switch (dir) {
-  case DIR8_SOUTHEAST:
-  case DIR8_NORTHWEST:
-    /* These directions are invalid in hex topologies. */
-    return !(topo_has_flag(TF_HEX) && !topo_has_flag(TF_ISO));
-  case DIR8_NORTHEAST:
-  case DIR8_SOUTHWEST:
-    /* These directions are invalid in iso-hex topologies. */
-    return !(topo_has_flag(TF_HEX) && topo_has_flag(TF_ISO));
   case DIR8_NORTH:
-  case DIR8_EAST:
   case DIR8_SOUTH:
+    /* Direct north and south are invalid in hexagonal topologies. */
+    return !topo_has_flag(TF_HEX);
+  case DIR8_NORTHWEST:
+  case DIR8_NORTHEAST:
   case DIR8_WEST:
+  case DIR8_EAST:
+  case DIR8_SOUTHWEST:
+  case DIR8_SOUTHEAST:
     return true;
   default:
     return false;
@@ -169,26 +176,39 @@ function is_valid_dir(dir)
 }
 
 /****************************************************************************
-  ...
+  Returns true if the given direction is a cardinal direction.
+  
+  For hexagonal maps, the cardinal directions are the 6 valid hex directions:
+    NW, NE, W, E, SW, SE
+    
+  For square maps, the cardinal directions are the 4 orthogonal directions:
+    N, E, S, W
 ****************************************************************************/
 function is_cardinal_dir(dir)
 {
-  switch (dir) {
-  case DIR8_NORTH:
-  case DIR8_SOUTH:
-  case DIR8_EAST:
-  case DIR8_WEST:
-    return true;
-  case DIR8_SOUTHEAST:
-  case DIR8_NORTHWEST:
-    /* These directions are cardinal in iso-hex topologies. */
-    return topo_has_flag(TF_HEX) && topo_has_flag(TF_ISO);
-  case DIR8_NORTHEAST:
-  case DIR8_SOUTHWEST:
-    /* These directions are cardinal in hexagonal topologies. */
-    return topo_has_flag(TF_HEX) && !topo_has_flag(TF_ISO);
+  if (topo_has_flag(TF_HEX)) {
+    /* In hexagonal maps, all 6 valid directions are cardinal */
+    switch (dir) {
+    case DIR8_NORTHWEST:
+    case DIR8_NORTHEAST:
+    case DIR8_WEST:
+    case DIR8_EAST:
+    case DIR8_SOUTHWEST:
+    case DIR8_SOUTHEAST:
+      return true;
+    }
+    return false;
+  } else {
+    /* In square maps, only the 4 orthogonal directions are cardinal */
+    switch (dir) {
+    case DIR8_NORTH:
+    case DIR8_SOUTH:
+    case DIR8_EAST:
+    case DIR8_WEST:
+      return true;
+    }
+    return false;
   }
-  return false;
 }
 
 /****************************************************************************
@@ -320,9 +340,8 @@ function map_distance_vector(tile0, tile1)
   Step from the given tile in the given direction.  The new tile is returned,
   or null if the direction is invalid or leads off the map.
   
-  For hexagonal topology, certain directions are invalid:
-  - In iso-hex: NE and SW are invalid
-  - In pure hex: SE and NW are invalid
+  For hexagonal topology, N (north) and S (south) are invalid directions
+  because hexagonal tiles only have 6 neighbors: NW, NE, W, E, SW, SE.
   
   The validity is handled by is_valid_dir().
 ****************************************************************************/

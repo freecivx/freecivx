@@ -45,8 +45,9 @@ function init_goto_tiles_texture() {
     // G channel: stores (direction_index + 1) where direction_index is 0-7
     //            Result: 0 = start tile (no incoming direction), 1-8 = directions
     //            Direction indices (DIR8_*): 0=NW, 1=N, 2=NE, 3=W, 4=E, 5=SW, 6=S, 7=SE
-    //            Note: For hex maps, only 6 directions are valid (W, NW, NE, E, SE, SW)
-    //            This allows the shader to display direction info for debugging
+    //            Note: For hex maps, only 6 directions are valid:
+    //                  NW(0), NE(2), W(3), E(4), SW(5), SE(7)
+    //                  N(1) and S(6) are invalid in hex topology
     // B channel: path step index (0-254), for path order visualization
     // A channel: set to 255 for RGBA format compatibility (required by THREE.DataTexture)
     goto_tiles_data = new Uint8Array(4 * map.xsize * map.ysize);
