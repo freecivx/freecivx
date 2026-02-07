@@ -79,9 +79,11 @@ function createTerrainShaderTSL(uniforms) {
     const TERRAIN_SWAMP = 120.0;
     const TERRAIN_TUNDRA = 130.0;
 
-    // Height constants for beach blending
-    const BEACH_HIGH = 50.9;
-    const BEACH_BLEND_HIGH = 50.4;
+    // Height constants for beach blending (improved range for smoother transitions)
+    const BEACH_HIGH = 51.5;          // Upper edge of beach zone
+    const BEACH_BLEND_HIGH = 50.8;    // Start of beach-to-land blend
+    const BEACH_BLEND_LOW = 49.5;     // Start of water-to-beach blend
+    const WATER_LEVEL = 50.0;         // Water surface level
 
     // =========================================================================
     // HEXAGONAL TILE CONSTANTS
@@ -99,13 +101,20 @@ function createTerrainShaderTSL(uniforms) {
     // we need to stretch the hex in UV space by the inverse of the compression factor
     // This counteracts the mesh compression so the final rendered hex has correct proportions
     const HEX_ASPECT = 1.0 / HEX_MESH_HEIGHT_FACTOR; // ≈ 1.1547 - Y-coordinate scale factor for hex geometry
-    const HEX_EDGE_WIDTH = 0.045; // Width of hex edge highlight (as fraction of tile) - increased for better horizontal visibility
-    const HEX_EDGE_SOFTNESS = 0.025; // Edge anti-aliasing softness
-    const HEX_EDGE_BLEND_STRENGTH = 0.32; // How strongly hex edges darken the terrain (0-1) - slightly reduced for balance
-    const HEX_EDGE_COLOR_R = 0.15; // Red component of edge darkening color
-    const HEX_EDGE_COLOR_G = 0.12; // Green component of edge darkening color  
-    const HEX_EDGE_COLOR_B = 0.08; // Blue component of edge darkening color
+    
+    // Uniform edge width for all hex edges - creates consistent, smooth borders
+    const HEX_EDGE_WIDTH = 0.038;     // Uniform width for all edges
+    const HEX_EDGE_SOFTNESS = 0.035;  // Increased softness for smoother anti-aliasing
+    const HEX_EDGE_BLEND_STRENGTH = 0.22; // Subtler edge darkening for more natural look
+    const HEX_EDGE_COLOR_R = 0.18;    // Slightly warmer edge color
+    const HEX_EDGE_COLOR_G = 0.15;    // Green component of edge darkening color  
+    const HEX_EDGE_COLOR_B = 0.10;    // Blue component of edge darkening color
     const TEXTURE_RANDOM_SCALE = 16.0; // Divisor for random texture offset - larger = less variation
+    
+    // Beach rendering colors (warm sand tones)
+    const BEACH_COLOR_R = 0.76;
+    const BEACH_COLOR_G = 0.70;
+    const BEACH_COLOR_B = 0.50;
 
     // Create texture references for reuse (don't call texture() yet)
     const maptilesTex = uniforms.maptiles.value;
@@ -224,28 +233,20 @@ function createTerrainShaderTSL(uniforms) {
     // Create a soft edge mask that's 0 at hex interior and 1 at edges
     // This creates the distinctive Civ 6-style hex tile borders
     //
-    // Use different edge widths for horizontal (X) vs diagonal (Y-influenced) edges
-    // to balance visual appearance after mesh compression
+    // Use uniform edge width for all edges to create consistent, smooth borders
     const hexInradius = 0.5; // Radius from center to edge midpoint
     
-    // Calculate directionally-weighted edge distance for balanced appearance
-    // The Y-direction edges appear thicker due to mesh compression, so we use
-    // a blended approach: horizontal edges (dist1) get full width, 
-    // diagonal edges (dist2, dist3) get slightly reduced width
-    const HEX_EDGE_WIDTH_HORIZONTAL = 0.05;  // Wider edges on left/right for better X visibility
-    const HEX_EDGE_WIDTH_DIAGONAL = 0.035;   // Narrower edges on top/bottom to reduce Y edge prominence
+    // Calculate smooth edge distance using the maximum hex distance
+    // This gives uniform-width edges on all six sides of the hexagon
+    const edgeStart = sub(hexInradius, HEX_EDGE_WIDTH);
+    const edgeEnd = add(hexInradius, HEX_EDGE_SOFTNESS);
     
-    // Determine which edge is active and blend edge widths accordingly
-    // When dist1 is the dominant edge (horizontal), use wider edge
-    // When dist2 or dist3 is dominant (diagonal), use narrower edge
-    const isHorizontalEdge = step(max(dist2, dist3), dist1);
-    const effectiveEdgeWidth = mix(HEX_EDGE_WIDTH_DIAGONAL, HEX_EDGE_WIDTH_HORIZONTAL, isHorizontalEdge);
-    const edgeStart = sub(hexInradius, effectiveEdgeWidth);
-    
-    // Smooth step from interior to edge
-    // hexEdgeMask = smoothstep(edgeStart, hexInradius, hexDist)
+    // Smooth step from interior to edge with extended softness for smoother appearance
+    // hexEdgeMask = smoothstep(edgeStart, edgeEnd, hexDist)
     // Using manual smoothstep: t = clamp((x-edge0)/(edge1-edge0), 0, 1); return t*t*(3-2*t)
-    const edgeT = clamp(div(sub(hexDist, edgeStart), effectiveEdgeWidth), 0.0, 1.0);
+    const edgeRange = sub(edgeEnd, edgeStart);
+    const edgeT = clamp(div(sub(hexDist, edgeStart), edgeRange), 0.0, 1.0);
+    // Apply smoother Hermite interpolation for softer edges
     const hexEdgeMask = mul(mul(edgeT, edgeT), sub(3.0, mul(2.0, edgeT)));
     
     // =========================================================================
@@ -300,14 +301,14 @@ function createTerrainShaderTSL(uniforms) {
      * @param {number} terrainValue - The terrain type ID to match (e.g., TERRAIN_GRASSLAND)
      * @param {object} textureNode - TSL texture node for this terrain type
      * @param {object} coord - TSL vec2 coordinate node for texture sampling
-     * @param {boolean} blendWithCoast - If true, blends with coast texture at lower elevations
+     * @param {boolean} blendWithBeach - If true, blends with beach/sand color at lower elevations
      * @returns {object} Object with mask (selection boolean) and color (sampled texture) nodes
      * 
      * Uses step functions to create smooth transitions between terrain types.
-     * When blendWithCoast is true, terrain at elevations below BEACH_BLEND_HIGH
-     * transitions to coast texture, creating natural beach areas.
+     * When blendWithBeach is true, terrain at elevations near water level
+     * transitions smoothly to a warm sand/beach color, creating natural shorelines.
      */
-    function createTerrainLayer(terrainValue, textureNode, coord, blendWithCoast = true) {
+    function createTerrainLayer(terrainValue, textureNode, coord, blendWithBeach = true) {
         // Create float mask for this terrain type (ensure it's a float, not boolean)
         // Split step() operations and use mul() to ensure float multiplication
         const step1 = step(terrainValue - 0.5, terrainHere);
@@ -316,13 +317,32 @@ function createTerrainShaderTSL(uniforms) {
         
         // Sample terrain texture
         let terrainColor;
-        if (blendWithCoast) {
-            // Blend with coast texture at lower elevations (beaches)
-            terrainColor = mix(
-                texture(terrainTextures.coast, coord),
-                texture(textureNode, coord),
-                step(BEACH_BLEND_HIGH, posY)
+        if (blendWithBeach) {
+            // Beach color for smooth shoreline transitions (warm sand tone)
+            const beachColor = vec4(BEACH_COLOR_R, BEACH_COLOR_G, BEACH_COLOR_B, 1.0);
+            const coastTex = texture(terrainTextures.coast, coord);
+            const mainTex = texture(textureNode, coord);
+            
+            // Create smooth beach blending based on elevation
+            // Transition: water -> coast texture -> beach sand -> main terrain
+            // Lower elevations near water get more beach/coast influence
+            const beachFactor = clamp(
+                div(sub(posY, BEACH_BLEND_LOW), sub(BEACH_BLEND_HIGH, BEACH_BLEND_LOW)),
+                0.0, 1.0
             );
+            // Smooth the transition using Hermite interpolation
+            const smoothBeach = mul(mul(beachFactor, beachFactor), sub(3.0, mul(2.0, beachFactor)));
+            
+            // Blend from coast->beach->main terrain based on elevation
+            const beachToTerrain = clamp(
+                div(sub(posY, BEACH_BLEND_HIGH), sub(BEACH_HIGH, BEACH_BLEND_HIGH)),
+                0.0, 1.0
+            );
+            const smoothTerrain = mul(mul(beachToTerrain, beachToTerrain), sub(3.0, mul(2.0, beachToTerrain)));
+            
+            // Mix coast with beach color, then beach with main terrain
+            const coastToBeach = mix(coastTex, beachColor, smoothBeach);
+            terrainColor = mix(coastToBeach, mainTex, smoothTerrain);
         } else {
             terrainColor = texture(textureNode, coord);
         }
@@ -356,12 +376,12 @@ function createTerrainShaderTSL(uniforms) {
     }
 
     // =========================================================================
-    // SLOPE-BASED LIGHTING WITH SUN DIRECTION
+    // SLOPE-BASED LIGHTING WITH SUN DIRECTION (Enhanced Natural Lighting)
     // =========================================================================
     // Calculate lighting based on terrain slope and sun direction
-    // Sun direction: coming from southeast, elevated position (typical daytime sun)
-    // Original (0.5, 0.7, 0.5), normalized = (0.503, 0.704, 0.503)
-    const sunDir = vec3(0.503, 0.704, 0.503);
+    // Sun direction: coming from southeast-ish, elevated position (bright daytime sun)
+    // Warmer, higher sun angle for brighter, more vibrant terrain
+    const sunDir = vec3(0.45, 0.75, 0.48);
     
     // Access vertex normal for slope calculation
     // normalLocal gives us the surface normal which indicates slope direction
@@ -371,18 +391,28 @@ function createTerrainShaderTSL(uniforms) {
     // This gives brighter surfaces facing the sun and darker surfaces facing away
     const NdotL = max(dot(normal, sunDir), 0.0);
     
-    // Apply ambient + diffuse lighting model
-    // ambient: base brightness so shadows aren't completely black (0.45)
-    // diffuse: sun-facing surfaces get additional brightness (0.65)
-    // Total range: 0.45 (in shadow) to 1.10 (fully lit)
-    const ambientLight = 0.45;
-    const diffuseStrength = 0.65;
+    // Apply enhanced ambient + diffuse lighting model for brighter terrain
+    // Increased ambient for brighter shadows, higher diffuse for more contrast
+    // ambient: base brightness so shadows aren't too dark (0.55)
+    // diffuse: sun-facing surfaces get additional brightness (0.55)
+    // Total range: 0.55 (in shadow) to 1.10 (fully lit)
+    const ambientLight = 0.55;
+    const diffuseStrength = 0.55;
     const lightingFactor = add(ambientLight, mul(NdotL, diffuseStrength));
     
-    // Apply lighting to terrain color, making terrain brighter overall
-    // Also add a slight brightness boost (1.1x) to make terrain more vibrant
-    const brightnessBoost = 1.1;
+    // Apply lighting to terrain color with increased brightness boost
+    // Higher multiplier for more vibrant, natural-looking terrain
+    const brightnessBoost = 1.18;
     finalColor = vec4(mul(mul(finalColor.rgb, lightingFactor), brightnessBoost), finalColor.a);
+    
+    // Add subtle color enhancement for more natural appearance
+    // Slightly boost greens and reduce blues for warmer, more lush terrain
+    const colorEnhanced = vec3(
+        mul(finalColor.r, 1.02),
+        mul(finalColor.g, 1.04),
+        mul(finalColor.b, 0.98)
+    );
+    finalColor = vec4(colorEnhanced, finalColor.a);
 
     // =========================================================================
     // HEXAGONAL EDGE HIGHLIGHTING (Civ 6 Style)
