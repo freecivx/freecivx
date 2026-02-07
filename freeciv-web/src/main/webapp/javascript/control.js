@@ -58,6 +58,10 @@ var has_movesleft_warning_been_shown = false;
 var game_unit_panel_state = null;
 var remaining_goto_path = {}; // Stores remaining path directions for continued movement
 
+/* Constants for client-side goto */
+var GOTO_STEP_DELAY_MS = 300; // Delay between sequential goto steps
+var ESTIMATED_MOVES_PER_TURN = 3; // Rough estimate for turn calculation
+
 var chat_send_to = -1;
 var CHAT_ICON_EVERYBODY = String.fromCharCode(62075);
 var CHAT_ICON_ALLIES = String.fromCharCode(61746);
@@ -3020,6 +3024,12 @@ function find_client_goto_path(start_tile, end_tile)
   if (start_tile == null || end_tile == null) return null;
   if (start_tile['index'] === end_tile['index']) return [];
 
+  // Cache valid directions to avoid repeated is_valid_dir calls
+  var valid_dirs = [];
+  for (var d = 0; d < DIR8_LAST; d++) {
+    if (is_valid_dir(d)) valid_dirs.push(d);
+  }
+
   // BFS for finding shortest path
   var queue = [];
   var visited = {};
@@ -3031,9 +3041,9 @@ function find_client_goto_path(start_tile, end_tile)
   while (queue.length > 0) {
     var current = queue.shift();
     
-    // Try all valid directions
-    for (var dir = 0; dir < DIR8_LAST; dir++) {
-      if (!is_valid_dir(dir)) continue;
+    // Try all valid directions (using cached list)
+    for (var i = 0; i < valid_dirs.length; i++) {
+      var dir = valid_dirs[i];
       
       var next_tile = mapstep(current, dir);
       if (next_tile == null) continue;
@@ -3097,7 +3107,7 @@ function request_goto_path(unit_id, dst_x, dst_y)
       'dest': end_tile['index'],
       'dir': path_dirs,
       'length': path_dirs.length,
-      'turns': Math.ceil(path_dirs.length / 3)  // Rough estimate
+      'turns': Math.ceil(path_dirs.length / ESTIMATED_MOVES_PER_TURN)
     };
     
     goto_request_map[cache_key] = goto_packet;
@@ -3132,11 +3142,10 @@ function check_request_goto_path()
 /****************************************************************************
   Store the remaining goto path for a unit to continue movement.
 ****************************************************************************/
-function store_remaining_goto_path(unit_id, dest_tile, path_dirs)
+function store_remaining_goto_path(unit_id, path_dirs)
 {
   if (path_dirs != null && path_dirs.length > 0) {
     remaining_goto_path[unit_id] = {
-      'dest_tile': dest_tile,
       'path': path_dirs
     };
   } else {
@@ -3190,15 +3199,7 @@ function continue_goto_path(unit_id)
       "action"     : ACTION_COUNT
     };
 
-    if (punit['transported']
-        && newtile['units'].every(function(ounit) {
-             return ounit['owner'] == client.conn.playing.playerno;
-           })
-        && (tile_city(newtile) == null
-            || tile_city(newtile)['owner'] == client.conn.playing.playerno)
-        && !tile_has_extra(newtile, EXTRA_HUT)
-        && (newtile['extras_owner'] == client.conn.playing.playerno
-            || !tile_has_territory_claiming_extra(newtile))) {
+    if (should_use_simple_move(punit, newtile)) {
       order["order"] = ORDER_MOVE;
     }
 
@@ -3220,7 +3221,7 @@ function continue_goto_path(unit_id)
     if (remaining_path.length > 0) {
       setTimeout(function() {
         continue_goto_path(unit_id);
-      }, 300);
+      }, GOTO_STEP_DELAY_MS);
     }
     
     return true;
@@ -3235,6 +3236,25 @@ function continue_goto_path(unit_id)
 function clear_remaining_goto_path(unit_id)
 {
   delete remaining_goto_path[unit_id];
+}
+
+/****************************************************************************
+  Determines if a simple ORDER_MOVE should be used instead of ORDER_ACTION_MOVE.
+  Returns true if the move should use ORDER_MOVE (simple move without action).
+****************************************************************************/
+function should_use_simple_move(punit, newtile)
+{
+  return punit['transported']
+      /* No non domestic units */
+      && newtile['units'].every(function(ounit) {
+           return ounit['owner'] == client.conn.playing.playerno;
+         })
+      /* No non domestic cities */
+      && (tile_city(newtile) == null
+          || tile_city(newtile)['owner'] == client.conn.playing.playerno)
+      && !tile_has_extra(newtile, EXTRA_HUT)
+      && (newtile['extras_owner'] == client.conn.playing.playerno
+          || !tile_has_territory_claiming_extra(newtile));
 }
 
 /****************************************************************************
@@ -3268,17 +3288,7 @@ function execute_goto_path_steps(unit_id, path_dirs)
       "action"     : ACTION_COUNT
     };
 
-    if (punit['transported']
-        /* No non domestic units */
-        && newtile['units'].every(function(ounit) {
-             return ounit['owner'] == client.conn.playing.playerno;
-           })
-        /* No non domestic cities */
-        && (tile_city(newtile) == null
-            || tile_city(newtile)['owner'] == client.conn.playing.playerno)
-        && !tile_has_extra(newtile, EXTRA_HUT)
-        && (newtile['extras_owner'] == client.conn.playing.playerno
-            || !tile_has_territory_claiming_extra(newtile))) {
+    if (should_use_simple_move(punit, newtile)) {
       order["order"] = ORDER_MOVE;
     }
 
@@ -3298,11 +3308,11 @@ function execute_goto_path_steps(unit_id, path_dirs)
     
     // Store remaining path for continued execution
     if (path_dirs.length > 1) {
-      store_remaining_goto_path(unit_id, null, path_dirs.slice(1));
+      store_remaining_goto_path(unit_id, path_dirs.slice(1));
       // Schedule the next step after a short delay
       setTimeout(function() {
         continue_goto_path(unit_id);
-      }, 300);
+      }, GOTO_STEP_DELAY_MS);
     }
   }
 }
