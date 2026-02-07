@@ -436,8 +436,11 @@ function createTerrainShaderTSL(uniforms) {
     // =========================================================================
     // Sample the goto tiles texture to check if this tile is part of the goto path
     // The goto_tiles texture has R channel = 255 for tiles on the path, 0 otherwise
-    // Use tileCenterUV (not sampledUV) to avoid random offset affecting tile lookup
-    const gotoTileValue = texture(gotoTilesTex, tileCenterUV);
+    // IMPORTANT: Use tileCenterU/tileCenterV WITHOUT the hex stagger offset.
+    // The goto_tiles texture stores data at logical tile coordinates (x, y),
+    // so we must not add the hex stagger when sampling it.
+    const gotoSampleUV = vec2(tileCenterU, tileCenterV);
+    const gotoTileValue = texture(gotoTilesTex, gotoSampleUV);
     const isGotoTile = step(0.5, gotoTileValue.r); // 1.0 if on goto path, 0.0 otherwise
     
     // Calculate goto path edge highlight using hex distance
