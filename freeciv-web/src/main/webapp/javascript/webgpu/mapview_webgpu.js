@@ -65,13 +65,17 @@ function webgpu_start_renderer()
   directionalLight.castShadow = true;
   directionalLight.shadow.mapSize.width = 4096;
   directionalLight.shadow.mapSize.height = 4096;
+  // Shadow camera clipping planes: near=100 avoids artifacts near camera,
+  // far=3000 encompasses terrain depth range (camera height ~450-900, terrain ~0-200)
   directionalLight.shadow.camera.near = 100;
   directionalLight.shadow.camera.far = 3000;
-  // Large orthographic frustum to cover visible terrain area
+  // Large orthographic frustum to cover visible terrain area (±1500 units in x/z)
   directionalLight.shadow.camera.left = -1500;
   directionalLight.shadow.camera.right = 1500;
   directionalLight.shadow.camera.top = 1500;
   directionalLight.shadow.camera.bottom = -1500;
+  // Shadow bias prevents shadow acne (self-shadowing artifacts) on surfaces
+  // normalBias shifts shadow slightly along surface normal to reduce peter-panning
   directionalLight.shadow.bias = -0.0005;
   directionalLight.shadow.normalBias = 0.02;
   
