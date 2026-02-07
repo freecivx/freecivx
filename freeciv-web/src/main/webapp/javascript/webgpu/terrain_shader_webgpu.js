@@ -27,7 +27,10 @@
  * - Hexagonal tile rendering (Civ 6 style) - each map tile is a hexagon
  * - Multi-terrain type support with automatic blending
  * - Beach/coast transitions based on elevation
- * - Border overlay rendering
+ * - Roads and railroads rendering from sprite sheets
+ * - Irrigation and farmland visual indicators
+ * - Nation border rendering with distinct colored edge lines
+ * - Soft edges between unknown and known map tiles
  * - Hexagonal edge highlighting for visual clarity
  * - Vertex color-based fog/visibility
  * - Slope-based brightness with sun direction lighting
@@ -128,6 +131,9 @@ function createTerrainShaderTSL(uniforms) {
     // Create texture references for reuse (don't call texture() yet)
     const maptilesTex = uniforms.maptiles.value;
     const bordersTex = uniforms.borders.value;
+    const roadsmapTex = uniforms.roadsmap.value;
+    const roadspritesTex = uniforms.roadsprites.value;
+    const railroadspritesTex = uniforms.railroadsprites.value;
     
     // Terrain texture references - organized by terrain type
     const terrainTextures = {
@@ -141,6 +147,16 @@ function createTerrainShaderTSL(uniforms) {
         mountains: uniforms.mountains.value,
         swamp: uniforms.swamp.value
     };
+    
+    // =========================================================================
+    // INFRASTRUCTURE CONSTANTS
+    // =========================================================================
+    // Road sprite sheet layout: 4x4 grid, sprite indices 1-9 for roads, 10-19 for railroads
+    const ROAD_SPRITE_COLS = 4.0;
+    const ROAD_SPRITE_ROWS = 4.0;
+    // Irrigation/Farmland flags from maptiles blue channel
+    const IRRIGATION_FLAG = 1.0;
+    const FARMLAND_FLAG = 2.0;
 
     // Map size uniforms
     const map_x_size = uniform(uniforms.map_x_size.value);
@@ -287,8 +303,6 @@ function createTerrainShaderTSL(uniforms) {
 
     // Sample terrain type using hex tile center
     const terrainType = texture(maptilesTex, sampledUV);
-    // Sample border color using tile center UV (like terrain) for consistent border color per hex tile
-    const borderColor = texture(bordersTex, tileCenterUV);
 
     // Calculate texture coordinates for terrain detail within the hex
     // dx/dy: Local position within the current hex tile (0-1 range)
@@ -405,6 +419,117 @@ function createTerrainShaderTSL(uniforms) {
     }
 
     // =========================================================================
+    // IRRIGATION AND FARMLAND RENDERING
+    // =========================================================================
+    // The maptiles texture blue channel stores irrigation/farmland flags:
+    // - 0 = none
+    // - 1 = irrigation
+    // - 2 = farmland
+    // We render a subtle tint overlay to indicate these improvements
+    const irrigationFlag = floor(mul(terrainType.b, 256.0));
+    
+    // Irrigation: subtle blue-green tint (water channels)
+    const hasIrrigation = mul(step(0.5, irrigationFlag), step(irrigationFlag, 1.5));
+    const irrigationColor = vec3(0.6, 0.85, 0.75);  // Blue-green tint
+    finalColor = vec4(
+        mix(finalColor.rgb, irrigationColor, mul(hasIrrigation, 0.15)),
+        finalColor.a
+    );
+    
+    // Farmland: golden/wheat colored tint (cultivated fields)
+    const hasFarmland = step(1.5, irrigationFlag);
+    const farmlandColor = vec3(0.85, 0.78, 0.45);  // Golden wheat color
+    finalColor = vec4(
+        mix(finalColor.rgb, farmlandColor, mul(hasFarmland, 0.18)),
+        finalColor.a
+    );
+
+    // =========================================================================
+    // ROADS AND RAILROADS RENDERING
+    // =========================================================================
+    // Sample road/railroad data from roadsmap texture at tile center
+    // The roadsmap stores sprite indices in RGB channels:
+    // - R channel: primary road/rail sprite index (1-9 roads, 10-19 rails, 42/43 junctions)
+    // - G channel: secondary connection sprite index
+    // - B channel: tertiary connection sprite index
+    const roadData = texture(roadsmapTex, tileCenterUV);
+    const roadIndex = floor(mul(roadData.r, 256.0));
+    
+    // Determine if this tile has roads (indices 1-9, 42) or railroads (indices 10-19, 43)
+    const hasRoad = mul(step(0.5, roadIndex), step(roadIndex, 9.5));
+    const hasRoadJunction = mul(step(41.5, roadIndex), step(roadIndex, 42.5));
+    const hasRailroad = mul(step(9.5, roadIndex), step(roadIndex, 19.5));
+    const hasRailroadJunction = mul(step(42.5, roadIndex), step(roadIndex, 43.5));
+    
+    // Map sprite index to sprite sheet coordinates
+    // Roads: indices 1-9 map to sprites in first 2 rows
+    // Railroads: indices 10-19 map to sprites (subtract 9 to get row offset)
+    // Junction special cases: 42 = road junction (row 0, col 0), 43 = rail junction (row 0, col 0)
+    
+    // Calculate sprite UV coordinates within tile
+    // Each sprite is 1/4 of the texture in both dimensions (4x4 grid)
+    const spriteU = div(1.0, ROAD_SPRITE_COLS);
+    const spriteV = div(1.0, ROAD_SPRITE_ROWS);
+    
+    // Road sprite selection (simplified - use index to select sprite)
+    // Sprite layout: row 0 = junctions + specials, rows 1-3 = directional segments
+    const roadSpriteIndex = sub(roadIndex, 1.0);  // Convert 1-based to 0-based
+    const roadCol = mod(roadSpriteIndex, ROAD_SPRITE_COLS);
+    const roadRow = floor(div(roadSpriteIndex, ROAD_SPRITE_COLS));
+    
+    // Railroad sprite selection (indices 10-19)
+    const railSpriteIndex = sub(roadIndex, 10.0);  // Convert 10-based to 0-based
+    const railCol = mod(railSpriteIndex, ROAD_SPRITE_COLS);
+    const railRow = floor(div(railSpriteIndex, ROAD_SPRITE_COLS));
+    
+    // Sample road sprite (scale local coords to sprite sheet)
+    const roadSpriteUV = vec2(
+        add(mul(localX, spriteU), mul(roadCol, spriteU)),
+        add(mul(localY, spriteV), mul(roadRow, spriteV))
+    );
+    const roadSprite = texture(roadspritesTex, roadSpriteUV);
+    
+    // Sample railroad sprite
+    const railSpriteUV = vec2(
+        add(mul(localX, spriteU), mul(railCol, spriteU)),
+        add(mul(localY, spriteV), mul(railRow, spriteV))
+    );
+    const railSprite = texture(railroadspritesTex, railSpriteUV);
+    
+    // Junction sprites (both use position 0,0 in sprite sheet)
+    const junctionUV = vec2(mul(localX, spriteU), mul(localY, spriteV));
+    const roadJunctionSprite = texture(roadspritesTex, junctionUV);
+    const railJunctionSprite = texture(railroadspritesTex, junctionUV);
+    
+    // Blend roads onto terrain (only where sprite alpha > 0)
+    const roadAlpha = mul(add(hasRoad, hasRoadJunction), roadSprite.a);
+    finalColor = vec4(
+        mix(finalColor.rgb, roadSprite.rgb, mul(roadAlpha, 0.9)),
+        finalColor.a
+    );
+    
+    // Blend road junctions
+    const roadJunctionAlpha = mul(hasRoadJunction, roadJunctionSprite.a);
+    finalColor = vec4(
+        mix(finalColor.rgb, roadJunctionSprite.rgb, mul(roadJunctionAlpha, 0.9)),
+        finalColor.a
+    );
+    
+    // Blend railroads onto terrain
+    const railAlpha = mul(add(hasRailroad, hasRailroadJunction), railSprite.a);
+    finalColor = vec4(
+        mix(finalColor.rgb, railSprite.rgb, mul(railAlpha, 0.95)),
+        finalColor.a
+    );
+    
+    // Blend railroad junctions
+    const railJunctionAlpha = mul(hasRailroadJunction, railJunctionSprite.a);
+    finalColor = vec4(
+        mix(finalColor.rgb, railJunctionSprite.rgb, mul(railJunctionAlpha, 0.95)),
+        finalColor.a
+    );
+
+    // =========================================================================
     // SLOPE-BASED LIGHTING WITH SUN DIRECTION
     // =========================================================================
     // Calculate lighting based on terrain slope and sun direction
@@ -473,9 +598,50 @@ function createTerrainShaderTSL(uniforms) {
     // After scaling by VISIBILITY_VISIBLE (1.06): 0, ~0.57, 1.06
     const hexVisibilityScaled = mul(hexVisibility, VISIBILITY_VISIBLE);
     
+    // =========================================================================
+    // SOFT EDGES BETWEEN UNKNOWN AND KNOWN TILES
+    // =========================================================================
+    // Sample visibility from neighboring hex tiles to create soft blending
+    // at the boundary between unknown (black) tiles and known/visible tiles.
+    // This creates a gradual fade rather than a hard edge.
+    
+    // Calculate neighbor sampling offsets (in UV space)
+    const neighborOffsetX = div(1.0, map_x_size);
+    const neighborOffsetY = div(1.0, map_y_size);
+    
+    // Sample 6 hex neighbors' visibility for edge softening
+    // We sample at offsets corresponding to hex neighbor directions
+    const neighborUV_E = vec2(add(tileCenterUV.x, neighborOffsetX), tileCenterUV.y);
+    const neighborUV_W = vec2(sub(tileCenterUV.x, neighborOffsetX), tileCenterUV.y);
+    const neighborUV_NE = vec2(add(tileCenterUV.x, mul(neighborOffsetX, 0.5)), add(tileCenterUV.y, neighborOffsetY));
+    const neighborUV_NW = vec2(sub(tileCenterUV.x, mul(neighborOffsetX, 0.5)), add(tileCenterUV.y, neighborOffsetY));
+    const neighborUV_SE = vec2(add(tileCenterUV.x, mul(neighborOffsetX, 0.5)), sub(tileCenterUV.y, neighborOffsetY));
+    const neighborUV_SW = vec2(sub(tileCenterUV.x, mul(neighborOffsetX, 0.5)), sub(tileCenterUV.y, neighborOffsetY));
+    
+    // Sample neighbor visibilities
+    const visE = texture(maptilesTex, neighborUV_E).a;
+    const visW = texture(maptilesTex, neighborUV_W).a;
+    const visNE = texture(maptilesTex, neighborUV_NE).a;
+    const visNW = texture(maptilesTex, neighborUV_NW).a;
+    const visSE = texture(maptilesTex, neighborUV_SE).a;
+    const visSW = texture(maptilesTex, neighborUV_SW).a;
+    
+    // Calculate average neighbor visibility
+    const avgNeighborVis = mul(add(add(add(add(add(visE, visW), visNE), visNW), visSE), visSW), div(1.0, 6.0));
+    
+    // Create soft edge factor based on distance from hex center
+    // At hex edges, blend with neighbor visibility for softer transitions
+    // hexDist is the distance to hex edge (0 at center, 0.5 at edge)
+    const edgeProximity = clamp(mul(sub(hexDist, 0.3), 5.0), 0.0, 1.0);  // 0 at center, 1 near edge
+    
+    // Blend current tile visibility with neighbor average at edges
+    // This creates soft transitions at boundaries between unknown and known tiles
+    const softVisibility = mix(hexVisibility, avgNeighborVis, mul(edgeProximity, 0.4));
+    const softVisibilityScaled = mul(softVisibility, VISIBILITY_VISIBLE);
+    
     // Apply smoothstep curve for softer edges within the visible/fogged regions
     // This maintains smooth transitions for brightness while using hex-sampled visibility
-    const visNormalized = clamp(div(hexVisibilityScaled, VISIBILITY_VISIBLE), 0.0, 1.0);
+    const visNormalized = clamp(div(softVisibilityScaled, VISIBILITY_VISIBLE), 0.0, 1.0);
     // Smoothstep formula: t² × (3 - 2t) creates an S-curve that eases in and out
     const visSmooth = mul(mul(visNormalized, visNormalized), sub(3.0, mul(2.0, visNormalized)));
     
@@ -502,15 +668,97 @@ function createTerrainShaderTSL(uniforms) {
     // Apply the visibility to the terrain color
     finalColor = vec4(mul(finalColor.rgb, effectiveVisibility), finalColor.a);
 
-    // Overlay borders if visible
-    // Blend border color with terrain color at low opacity for subtle borders
-    // This matches the WebGL shader behavior which blends borders at 0.10 or 0.70 opacity
-    // We use a fixed blend of 0.15 for WebGPU (slightly more visible than WebGL's 0.10)
-    const shouldShowBorders = mul(borders_visible.select(1.0, 0.0), borderColor.a);
-    // Reduce the border influence by multiplying with a low opacity factor
-    const borderBlendFactor = mul(shouldShowBorders, 0.15);
+    // =========================================================================
+    // NATION BORDERS WITH DISTINCT BORDER LINES
+    // =========================================================================
+    // Render map borders for each nation color with a distinct border line
+    // at the edge of the player's nation map tiles.
+    //
+    // We detect border edges by comparing the current tile's owner with neighbors.
+    // Where ownership changes, we draw a colored border line.
+    
+    // Sample border color (nation color) for current tile and neighbors
+    const currentBorder = texture(bordersTex, tileCenterUV);
+    const borderE = texture(bordersTex, neighborUV_E);
+    const borderW = texture(bordersTex, neighborUV_W);
+    const borderNE = texture(bordersTex, neighborUV_NE);
+    const borderNW = texture(bordersTex, neighborUV_NW);
+    const borderSE = texture(bordersTex, neighborUV_SE);
+    const borderSW = texture(bordersTex, neighborUV_SW);
+    
+    // Check if this tile has a border (non-default alpha)
+    const hasBorder = step(0.1, currentBorder.a);
+    
+    // Detect border edges by comparing RGB values with neighbors
+    // A border edge exists where the current tile's border color differs from a neighbor
+    const borderDiffE = abs(sub(currentBorder.r, borderE.r));
+    const borderDiffW = abs(sub(currentBorder.r, borderW.r));
+    const borderDiffNE = abs(sub(currentBorder.r, borderNE.r));
+    const borderDiffNW = abs(sub(currentBorder.r, borderNW.r));
+    const borderDiffSE = abs(sub(currentBorder.r, borderSE.r));
+    const borderDiffSW = abs(sub(currentBorder.r, borderSW.r));
+    
+    // Also check green channel for more accurate color comparison
+    const borderDiffGE = abs(sub(currentBorder.g, borderE.g));
+    const borderDiffGW = abs(sub(currentBorder.g, borderW.g));
+    const borderDiffGNE = abs(sub(currentBorder.g, borderNE.g));
+    const borderDiffGNW = abs(sub(currentBorder.g, borderNW.g));
+    const borderDiffGSE = abs(sub(currentBorder.g, borderSE.g));
+    const borderDiffGSW = abs(sub(currentBorder.g, borderSW.g));
+    
+    // Combine color differences (threshold for detecting different nations)
+    const borderThreshold = 0.05;
+    const isEdgeE = step(borderThreshold, add(borderDiffE, borderDiffGE));
+    const isEdgeW = step(borderThreshold, add(borderDiffW, borderDiffGW));
+    const isEdgeNE = step(borderThreshold, add(borderDiffNE, borderDiffGNE));
+    const isEdgeNW = step(borderThreshold, add(borderDiffNW, borderDiffGNW));
+    const isEdgeSE = step(borderThreshold, add(borderDiffSE, borderDiffGSE));
+    const isEdgeSW = step(borderThreshold, add(borderDiffSW, borderDiffGSW));
+    
+    // Calculate directional edge factors based on position within hex
+    // This creates border lines at the actual hex edges facing different directions
+    
+    // East edge: line appears when x is near +0.5 and there's a border difference
+    const eastEdgeFactor = mul(isEdgeE, clamp(mul(sub(localX, 0.75), 8.0), 0.0, 1.0));
+    // West edge: line appears when x is near 0 and there's a border difference  
+    const westEdgeFactor = mul(isEdgeW, clamp(mul(sub(0.25, localX), 8.0), 0.0, 1.0));
+    // NE edge: appears at upper-right corner region
+    const neEdgeFactor = mul(isEdgeNE, mul(clamp(mul(sub(localX, 0.5), 4.0), 0.0, 1.0), clamp(mul(sub(localY, 0.5), 4.0), 0.0, 1.0)));
+    // NW edge: appears at upper-left corner region
+    const nwEdgeFactor = mul(isEdgeNW, mul(clamp(mul(sub(0.5, localX), 4.0), 0.0, 1.0), clamp(mul(sub(localY, 0.5), 4.0), 0.0, 1.0)));
+    // SE edge: appears at lower-right corner region
+    const seEdgeFactor = mul(isEdgeSE, mul(clamp(mul(sub(localX, 0.5), 4.0), 0.0, 1.0), clamp(mul(sub(0.5, localY), 4.0), 0.0, 1.0)));
+    // SW edge: appears at lower-left corner region
+    const swEdgeFactor = mul(isEdgeSW, mul(clamp(mul(sub(0.5, localX), 4.0), 0.0, 1.0), clamp(mul(sub(0.5, localY), 4.0), 0.0, 1.0)));
+    
+    // Combine all edge factors
+    const totalEdgeFactor = max(max(max(max(max(eastEdgeFactor, westEdgeFactor), neEdgeFactor), nwEdgeFactor), seEdgeFactor), swEdgeFactor);
+    
+    // Use hex edge mask to concentrate border lines at hex boundaries
+    const borderLineFactor = mul(totalEdgeFactor, hexEdgeMask);
+    
+    // Border line width and intensity
+    const borderLineIntensity = 0.85;  // How opaque the border line is
+    
+    // Brighten the nation color for the border line (make it more visible)
+    const brightenedBorderColor = vec3(
+        min(add(currentBorder.r, 0.3), 1.0),
+        min(add(currentBorder.g, 0.3), 1.0),
+        min(add(currentBorder.b, 0.3), 1.0)
+    );
+    
+    // Apply border line only where borders are visible and at nation edges
+    const shouldShowBorderLine = mul(borders_visible.select(1.0, 0.0), mul(hasBorder, borderLineFactor));
     finalColor = vec4(
-        mix(finalColor.rgb, borderColor.rgb, borderBlendFactor),
+        mix(finalColor.rgb, brightenedBorderColor, mul(shouldShowBorderLine, borderLineIntensity)),
+        finalColor.a
+    );
+    
+    // Also apply subtle area fill for border territories (reduced from original 0.15)
+    const shouldShowBorderFill = mul(borders_visible.select(1.0, 0.0), hasBorder);
+    const borderFillFactor = mul(shouldShowBorderFill, 0.08);  // Subtle territory tint
+    finalColor = vec4(
+        mix(finalColor.rgb, currentBorder.rgb, borderFillFactor),
         finalColor.a
     );
 
