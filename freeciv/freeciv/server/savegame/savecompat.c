@@ -1696,33 +1696,6 @@ static void unit_order_activity_to_action(struct unit *act_unit)
 }
 
 /************************************************************************//**
-  Returns the opposite direction.
-****************************************************************************/
-static enum direction8 dir_opposite(enum direction8 dir)
-{
-  switch (dir) {
-  case DIR8_NORTH:
-    return DIR8_SOUTH;
-  case DIR8_NORTHEAST:
-    return DIR8_SOUTHWEST;
-  case DIR8_EAST:
-    return DIR8_WEST;
-  case DIR8_SOUTHEAST:
-    return DIR8_NORTHWEST;
-  case DIR8_SOUTH:
-    return DIR8_NORTH;
-  case DIR8_SOUTHWEST:
-    return DIR8_NORTHEAST;
-  case DIR8_WEST:
-    return DIR8_EAST;
-  case DIR8_NORTHWEST:
-    return DIR8_SOUTHEAST;
-  }
-
-  return DIR8_ORIGIN;
-}
-
-/************************************************************************//**
   Upgrade unit action order target encoding.
 ****************************************************************************/
 static void upgrade_unit_order_targets(struct unit *act_unit)
