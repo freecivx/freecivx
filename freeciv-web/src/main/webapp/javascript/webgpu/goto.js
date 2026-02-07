@@ -37,8 +37,8 @@ var GOTO_ARROW_COLOR = 0x00ff00;  // Green color for the arrow
 // Note: WebGL/WebGPU linewidth is often limited to 1 on many platforms/browsers.
 // The arrow head (cone) provides the primary visual weight regardless of line width.
 var GOTO_ARROW_LINE_WIDTH = 3;    // Line width (may be clamped to 1 on some platforms)
-var GOTO_ARROW_HEAD_LENGTH = 12;  // Length of the arrow head cone
-var GOTO_ARROW_HEAD_RADIUS = 6;   // Radius of the arrow head cone base
+var GOTO_ARROW_HEAD_LENGTH = 6;   // Length of the arrow head cone
+var GOTO_ARROW_HEAD_RADIUS = 3;   // Radius of the arrow head cone base
 var GOTO_ARROW_HEIGHT_OFFSET = 25; // Height above terrain for the arrow
 
 /****************************************************************************
@@ -88,57 +88,31 @@ function get_tile_center_position(tile) {
  Renders goto path as a straight arrow line from start tile to destination.
  
  @param {Object} start_tile - The starting tile of the path (unit position)
- @param {Array} goto_packet_dir - Array of direction indices for the path
+ @param {Object} dest_tile - The destination tile of the path
  ****************************************************************************/
-function webgl_render_goto_line(start_tile, goto_packet_dir) {
+function webgl_render_goto_line(start_tile, dest_tile) {
     // Clear any existing goto visualization
     clear_goto_tiles();
     
     if (!goto_active) return;
     if (start_tile == null) return;
-    if (goto_packet_dir == null || goto_packet_dir.length === 0) return;
+    if (dest_tile == null) return;
     
     // Initialize the arrow group if needed
     if (goto_arrow_group == null) {
         init_goto_arrow();
     }
     
-    // Find the destination tile by following the path
-    var currentTile = start_tile;
-    var destTile = start_tile;
-    
-    for (var i = 0; i < goto_packet_dir.length; i++) {
-        if (currentTile == null) break;
-        
-        var moveDir = goto_packet_dir[i];
-        
-        // Skip refuel markers
-        if (moveDir == -1) {
-            continue;
-        }
-        
-        // Get the next tile using mapstep which handles direction validation
-        // and coordinate wrapping for hexagonal maps
-        var nextTile = mapstep(currentTile, moveDir);
-        
-        if (nextTile != null) {
-            destTile = nextTile;
-            currentTile = nextTile;
-        } else {
-            break;
-        }
-    }
-    
     // Get 3D positions for start and destination
     var startPos = get_tile_center_position(start_tile);
-    var destPos = get_tile_center_position(destTile);
+    var destPos = get_tile_center_position(dest_tile);
     
     if (startPos == null || destPos == null) return;
     
     // Log goto path details when debug mode is enabled
     if (typeof webgpu_debug_enabled !== 'undefined' && webgpu_debug_enabled) {
         console.log("Goto arrow: from (" + start_tile.x + "," + start_tile.y + ") to (" + 
-                    destTile.x + "," + destTile.y + "), " + goto_packet_dir.length + " steps");
+                    dest_tile.x + "," + dest_tile.y + ")");
     }
     
     // Create the arrow line
