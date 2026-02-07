@@ -24,7 +24,7 @@ set aifill 0
 set generator FAIR
 
 set wetness 25
-set topology HEX
+set topology ISO|HEX
 set wrap=
 set steepness 12
 
