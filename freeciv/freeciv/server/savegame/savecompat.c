@@ -1745,9 +1745,9 @@ static void upgrade_unit_order_targets(struct unit *act_unit)
     if (!(prev_order->order == ORDER_PERFORM_ACTION
           && utype_is_unmoved_by_action(action_by_number(prev_order->action),
                                         unit_type_get(act_unit)))
-        && direction8_is_valid(prev_order->dir)) {
-      current_tile = mapstep(&(wld.map), current_tile,
-                             dir_opposite(prev_order->dir));
+        && prev_order->tile >= 0) {
+      /* Use the tile from the previous order to rewind */
+      current_tile = index_to_tile(&(wld.map), prev_order->tile);
     }
   }
 
@@ -1765,12 +1765,12 @@ static void upgrade_unit_order_targets(struct unit *act_unit)
       return;
     }
 
-    if (!direction8_is_valid(order->dir)) {
+    if (order->tile < 0) {
       /* The target of the action is on the actor's tile. */
       tgt_tile = current_tile;
     } else {
-      /* The target of the action is on a tile next to the actor. */
-      tgt_tile = mapstep(&(wld.map), current_tile, order->dir);
+      /* The target of the action is on the tile specified in the order. */
+      tgt_tile = index_to_tile(&(wld.map), order->tile);
     }
 
     if (order->order == ORDER_PERFORM_ACTION) {
@@ -1778,8 +1778,6 @@ static void upgrade_unit_order_targets(struct unit *act_unit)
         struct action *paction = action_by_number(order->action);
 
         order->target = tgt_tile->index;
-        /* Leave no traces. */
-        order->dir = DIR8_ORIGIN;
 
         if (!utype_is_unmoved_by_action(paction, unit_type_get(act_unit))) {
           /* The action moves the unit to the target tile (unless this is the

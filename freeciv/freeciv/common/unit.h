@@ -98,7 +98,7 @@ struct unit_order {
   /* Only valid for ORDER_PERFORM_ACTION */
   int action;
   /* Valid for ORDER_MOVE and ORDER_ACTION_MOVE. */
-  enum direction8 dir;
+  int tile;
 };
 
 /* Used in the network protocol */

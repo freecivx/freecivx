@@ -567,7 +567,7 @@ int dio_put_unit_order_raw(struct raw_data_out *dout,
   e |= dio_put_sint32_raw(dout, order->target);
   e |= dio_put_sint16_raw(dout, order->sub_target);
   e |= dio_put_uint8_raw(dout, order->action);
-  e |= dio_put_sint8_raw(dout, order->dir);
+  e |= dio_put_sint32_raw(dout, order->tile);
 
   return e;
 }
@@ -906,21 +906,20 @@ bool dio_get_cm_parameter_raw(struct data_in *din,
 bool dio_get_unit_order_raw(struct data_in *din, struct unit_order *order)
 {
   /* These fields are enums */
-  int iorder, iactivity, idir;
+  int iorder, iactivity;
 
   if (!dio_get_uint8_raw(din, &iorder)
       || !dio_get_uint8_raw(din, &iactivity)
       || !dio_get_sint32_raw(din, &order->target)
       || !dio_get_sint16_raw(din, &order->sub_target)
       || !dio_get_uint8_raw(din, &order->action)
-      || !dio_get_sint8_raw(din, &idir)) {
+      || !dio_get_sint32_raw(din, &order->tile)) {
     log_packet("Got a bad unit_order");
     return FALSE;
   }
 
   order->order = iorder;
   order->activity = iactivity;
-  order->dir = idir;
 
   return TRUE;
 }

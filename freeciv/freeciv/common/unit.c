@@ -64,7 +64,7 @@ bool are_unit_orders_equal(const struct unit_order *order1,
       && order1->target == order2->target
       && order1->sub_target == order2->sub_target
       && order1->action == order2->action
-      && order1->dir == order2->dir;
+      && order1->tile == order2->tile;
 }
 
 /**********************************************************************//**
@@ -2555,8 +2555,9 @@ bool unit_order_list_is_sane(int length, const struct unit_order *orders)
     switch (orders[i].order) {
     case ORDER_MOVE:
     case ORDER_ACTION_MOVE:
-      if (!map_untrusted_dir_is_valid(orders[i].dir)) {
-        log_error("in order %d, invalid move direction %d.", i, orders[i].dir);
+      /* Validate the tile target for movement orders */
+      if (index_to_tile(&(wld.map), orders[i].tile) == NULL) {
+        log_error("in order %d, invalid move tile %d.", i, orders[i].tile);
         return FALSE;
       }
       break;
@@ -2614,12 +2615,6 @@ bool unit_order_list_is_sane(int length, const struct unit_order *orders)
         log_error("at index %d, invalid tile target %d for the action %d.",
                   i, orders[i].target, orders[i].action);
         return FALSE;
-      }
-
-      if (orders[i].dir != DIR8_ORIGIN) {
-        log_error("at index %d, the action %d sets the outdated target"
-                  " specification dir.",
-                  i, orders[i].action);
       }
 
       /* Validate sub target. */
