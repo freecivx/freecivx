@@ -119,6 +119,12 @@ function createTerrainShaderTSL(uniforms) {
     const HEX_EDGE_COLOR_B = 0.08; // Blue component of edge darkening color
     const TEXTURE_RANDOM_SCALE = 16.0; // Divisor for random texture offset - larger = less variation
 
+    // Visibility constants (matching vertex color values from tile_visibility_handler.js)
+    // These values are set in get_vertex_color_from_tile() and interpolated across vertices
+    const VISIBILITY_UNKNOWN = 0.0;   // Tile is unknown (black)
+    const VISIBILITY_FOGGED = 0.54;   // Tile was seen but currently not visible (fogged)
+    const VISIBILITY_VISIBLE = 1.06;  // Tile is fully visible (slightly > 1.0 for brightness boost)
+
     // Create texture references for reuse (don't call texture() yet)
     const maptilesTex = uniforms.maptiles.value;
     const bordersTex = uniforms.borders.value;
@@ -447,9 +453,7 @@ function createTerrainShaderTSL(uniforms) {
     // =========================================================================
     // Apply vertex color for fog/visibility effects with smooth edge transitions
     // Vertex color is stored in the vertColor attribute and represents visibility/fog of war
-    // vertColor.x = 0.0 means unknown (black)
-    // vertColor.x = 0.54 means unseen but known (fogged)
-    // vertColor.x = 1.06 means fully visible
+    // vertColor.x values defined by VISIBILITY_* constants (see above)
     // We use only the x component as that's where the visibility value is stored
     //
     // To create smooth edges between unknown (black) tiles and visible tiles,
@@ -462,12 +466,13 @@ function createTerrainShaderTSL(uniforms) {
     // Apply smoothstep curve to create smoother transitions at visibility boundaries
     // This converts the linear interpolation from vertex colors into a smooth S-curve
     // The smoothstep makes the transition appear more gradual and natural
-    // Range: input [0.0, 1.06] -> output [0.0, 1.0] with smooth easing
-    const visNormalized = clamp(div(rawVisibility, 1.06), 0.0, 1.0);
+    // Range: input [0.0, VISIBILITY_VISIBLE] -> output [0.0, 1.0] with smooth easing
+    const visNormalized = clamp(div(rawVisibility, VISIBILITY_VISIBLE), 0.0, 1.0);
+    // Smoothstep formula: t² × (3 - 2t) creates an S-curve that eases in and out
     const visSmooth = mul(mul(visNormalized, visNormalized), sub(3.0, mul(2.0, visNormalized)));
     
     // Scale back to original range to maintain brightness levels
-    const smoothVisibility = mul(visSmooth, 1.06);
+    const smoothVisibility = mul(visSmooth, VISIBILITY_VISIBLE);
     
     // Apply the smoothed visibility to the terrain color
     finalColor = vec4(mul(finalColor.rgb, smoothVisibility), finalColor.a);
