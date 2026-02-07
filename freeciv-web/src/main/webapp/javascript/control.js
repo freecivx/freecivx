@@ -1672,8 +1672,6 @@ function do_map_click(ptile, qtype, first_time_called)
         /* Add each individual order. */
         packet['orders'] = [];
         /* Send tile indices directly instead of computing directions. */
-        var prev_tile = old_tile;
-        var path_valid = true;
         for (var i = 0; i < goto_path['length']; i++) {
           var next_tile = index_to_tile(goto_path['tiles'][i]);
           var next_tile_index = goto_path['tiles'][i];
@@ -1681,22 +1679,12 @@ function do_map_click(ptile, qtype, first_time_called)
           if (next_tile == null) {
             /* Assume that this means refuel. */
             order['order'] = ORDER_FULL_MP;
+          } else if (i + 1 != goto_path['length']) {
+            /* Don't try to do an action in the middle of the path. */
+            order['order'] = ORDER_MOVE;
           } else {
-            /* Validate that the next tile is adjacent to the previous tile */
-            if (!is_tiles_adjacent(prev_tile, next_tile)) {
-              console.log("Error: Invalid goto path - tile " + next_tile_index 
-                          + " is not adjacent to tile " + prev_tile['index']);
-              path_valid = false;
-              break;
-            }
-
-            if (i + 1 != goto_path['length']) {
-              /* Don't try to do an action in the middle of the path. */
-              order['order'] = ORDER_MOVE;
-            } else {
-              /* It is OK to end the path in an action. */
-              order['order'] = ORDER_ACTION_MOVE;
-            }
+            /* It is OK to end the path in an action. */
+            order['order'] = ORDER_ACTION_MOVE;
           }
 
           order['tile'] = next_tile_index;
@@ -1706,16 +1694,6 @@ function do_map_click(ptile, qtype, first_time_called)
           order['action'] = ACTION_COUNT;
 
           packet['orders'][i] = Object.assign({}, order);
-          
-          /* Update prev_tile for next iteration (only for movement orders) */
-          if (next_tile != null) {
-            prev_tile = next_tile;
-          }
-        }
-
-        /* Skip this unit if the path was invalid */
-        if (!path_valid) {
-          continue;
         }
 
         if (goto_last_order != ORDER_LAST) {
