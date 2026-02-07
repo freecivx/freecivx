@@ -394,7 +394,10 @@ async function init_webgpu_mapview() {
     // Shadow mesh overlays the terrain to receive shadows from 3D objects
     // Uses ShadowMaterial which only renders shadows cast onto it
     var shadowMaterial = new THREE.ShadowMaterial();
-    shadowMaterial.opacity = 0.65;  // Shadow darkness (0=invisible, 1=fully dark)
+    // Shadow opacity varies by quality: higher quality = darker, more defined shadows
+    // QUALITY_HIGH: 0.75 opacity for more defined shadows
+    // QUALITY_MEDIUM: 0.55 opacity for subtler shadows to balance performance
+    shadowMaterial.opacity = (graphics_quality === QUALITY_HIGH) ? 0.75 : 0.55;
     shadowmesh = new THREE.Mesh( landGeometry, shadowMaterial);
     shadowmesh.receiveShadow = true;
     shadowmesh.castShadow = false;
