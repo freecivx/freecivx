@@ -63,8 +63,8 @@ function webgpu_start_renderer()
   
   // Enable shadow casting on directional light for sun-like parallel shadows
   directionalLight.castShadow = true;
-  directionalLight.shadow.mapSize.width = 4096;
-  directionalLight.shadow.mapSize.height = 4096;
+  directionalLight.shadow.mapSize.width = 2048;
+  directionalLight.shadow.mapSize.height = 2048;
   // Shadow camera clipping planes: near=100 avoids artifacts near camera,
   // far=3000 encompasses terrain depth range (camera height ~450-900, terrain ~0-200)
   directionalLight.shadow.camera.near = 100;
