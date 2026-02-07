@@ -219,318 +219,133 @@ function setupSceneLighting() {
 
 /****************************************************************************
  Add animated water mesh for WebGPU renderer using TSL shaders.
- Creates a realistic ocean water effect with:
- - Multi-octave Gerstner waves for natural wave motion
- - Procedural normals for surface detail and specular highlights
- - Fresnel effect for view-dependent reflections
- - Subsurface scattering simulation on wave crests
- - Dynamic foam patterns with noise variation
- - Caustic-like light patterns
+ 
+ Design goals:
+ - Fast: Reduced from 5 wave layers to 3 for better performance
+ - Simple: Clean code structure with clear sections
+ - Good looking: Maintains visual quality with optimized effects
+ 
+ The water mesh covers the entire map, so performance is critical.
+ This optimized shader uses:
+ - 3 wave layers (primary swell, wind waves, ripples)
+ - Single-pass specular calculation
+ - Simplified foam and color gradients
 ****************************************************************************/
 function add_quality_dependent_objects_webgpu() {
-  // Create water plane geometry with same dimensions as land mesh
-  // Uses HEX_HEIGHT_FACTOR to match the hexagonal grid height scaling
-  // Higher segment count (256x256) for smoother UV interpolation and better wave detail
-  var waterGeometry = new THREE.PlaneGeometry(mapview_model_width, mapview_model_height * HEX_HEIGHT_FACTOR, 256, 256);
+  // Create water plane geometry matching land mesh dimensions
+  // Use moderate segments (128x128) - sufficient for visual quality, better performance
+  var waterGeometry = new THREE.PlaneGeometry(
+    mapview_model_width,
+    mapview_model_height * HEX_HEIGHT_FACTOR,
+    128,
+    128
+  );
   
-  // Create animated water material using TSL (Three.js Shading Language)
   var waterMaterial = createWaterMaterialTSL();
   
   water_hq = new THREE.Mesh(waterGeometry, waterMaterial);
-  water_hq.rotation.x = - Math.PI * 0.5;
-  water_hq.translateOnAxis(new THREE.Vector3(0,0,1).normalize(), 50);
-  water_hq.translateOnAxis(new THREE.Vector3(1,0,0).normalize(), Math.floor(mapview_model_width / 2) - 500);
-  // Apply HEX_HEIGHT_FACTOR to Y-axis translation to match the scaled water geometry height
-  water_hq.translateOnAxis(new THREE.Vector3(0,1,0).normalize(), -Math.floor(mapview_model_height * HEX_HEIGHT_FACTOR / 2));
-  water_hq.renderOrder = -1; // Render water first
+  water_hq.rotation.x = -Math.PI * 0.5;
+  water_hq.translateOnAxis(new THREE.Vector3(0, 0, 1).normalize(), 50);
+  water_hq.translateOnAxis(new THREE.Vector3(1, 0, 0).normalize(), Math.floor(mapview_model_width / 2) - 500);
+  water_hq.translateOnAxis(new THREE.Vector3(0, 1, 0).normalize(), -Math.floor(mapview_model_height * HEX_HEIGHT_FACTOR / 2));
+  water_hq.renderOrder = -1;
   water_hq.castShadow = false;
   water_hq.name = "water_surface";
   scene.add(water_hq);
-  console.log("Added enhanced WebGPU water surface with realistic ocean shader.");
+  console.log("Added optimized WebGPU water surface.");
 }
 
 /****************************************************************************
  Create animated water material using TSL (Three.js Shading Language).
- Enhanced realistic water with:
- - Multi-octave Gerstner-style waves for natural wave shapes
- - Procedural normal mapping derived from wave derivatives
- - Fresnel effect for view-dependent reflections
- - Subsurface scattering simulation for wave translucency
- - Dynamic foam on wave crests with noise variation
- - Caustic-like light patterns
- - Depth-based color gradients
+ 
+ Optimized for performance while maintaining visual appeal:
+ - 3 wave layers instead of 5 (40% fewer wave calculations)
+ - Simplified specular with single highlight pass
+ - Efficient color gradients using fewer mix operations
+ - Streamlined foam calculation
 ****************************************************************************/
 function createWaterMaterialTSL() {
-  const {
-    uniform, positionLocal, uv,
-    vec2, vec3, vec4,
-    sin, cos, mix, fract, dot, abs, clamp, pow, sqrt, max, min, normalize,
-    mul, add, sub, div, floor
-  } = THREE;
-  
-  // =========================================================================
-  // WAVE CONFIGURATION - Multiple wave layers for natural ocean appearance
-  // =========================================================================
-  // Large primary waves (ocean swell)
-  const WAVE1_DIR = { x: 1.0, y: 0.3 };
-  const WAVE1_FREQ = 8.0;
-  const WAVE1_SPEED = 0.6;
-  const WAVE1_AMP = 0.35;
-  const WAVE1_STEEP = 0.4;  // Gerstner steepness (0-1)
-  
-  // Medium secondary waves (wind waves)
-  const WAVE2_DIR = { x: 0.4, y: 1.0 };
-  const WAVE2_FREQ = 12.0;
-  const WAVE2_SPEED = 0.8;
-  const WAVE2_AMP = 0.25;
-  const WAVE2_STEEP = 0.35;
-  
-  // Small detail waves (ripples)
-  const WAVE3_DIR = { x: -0.6, y: 0.8 };
-  const WAVE3_FREQ = 20.0;
-  const WAVE3_SPEED = 1.2;
-  const WAVE3_AMP = 0.12;
-  const WAVE3_STEEP = 0.25;
-  
-  // Micro detail waves (surface texture)
-  const WAVE4_DIR = { x: 0.7, y: -0.7 };
-  const WAVE4_FREQ = 35.0;
-  const WAVE4_SPEED = 1.5;
-  const WAVE4_AMP = 0.06;
-  const WAVE4_STEEP = 0.2;
-  
-  // Cross waves for interference patterns
-  const WAVE5_DIR = { x: -0.3, y: -0.9 };
-  const WAVE5_FREQ = 15.0;
-  const WAVE5_SPEED = 0.9;
-  const WAVE5_AMP = 0.15;
-  const WAVE5_STEEP = 0.3;
-  
-  // =========================================================================
-  // VISUAL PARAMETERS
-  // =========================================================================
-  // Specular (sun reflection)
-  const SPECULAR_POWER = 64.0;
-  const SPECULAR_INTENSITY = 0.6;
-  const SPECULAR_TIGHTNESS = 128.0;  // Secondary tight specular
-  
-  // Foam
-  const FOAM_THRESHOLD = 0.25;
-  const FOAM_SOFTNESS = 4.0;
-  const FOAM_INTENSITY = 0.45;
-  const FOAM_NOISE_SCALE = 25.0;
-  const FOAM_MOVEMENT = 0.3;
-  
-  // Fresnel (edge reflection)
-  const FRESNEL_POWER = 3.0;
-  const FRESNEL_BIAS = 0.1;
-  const FRESNEL_SCALE = 0.6;
-  
-  // Subsurface scattering
-  const SSS_STRENGTH = 0.35;
-  const SSS_POWER = 2.5;
-  
-  // Caustics (light patterns)
-  const CAUSTIC_SCALE = 18.0;
-  const CAUSTIC_SPEED = 0.4;
-  const CAUSTIC_INTENSITY = 0.12;
-  
-  // Opacity
-  const BASE_OPACITY = 0.65;
-  const OPACITY_MIN = 0.55;
-  const OPACITY_MAX = 0.8;
-  
-  // =========================================================================
-  // WATER COLORS - More nuanced palette
-  // =========================================================================
-  const deepOceanColor = vec3(0.02, 0.08, 0.22);     // Very deep blue
-  const midOceanColor = vec3(0.05, 0.18, 0.38);      // Deep blue
-  const shallowColor = vec3(0.12, 0.42, 0.58);       // Ocean blue
-  const surfaceColor = vec3(0.18, 0.52, 0.68);       // Light blue
-  const foamColor = vec3(0.92, 0.97, 1.0);           // White foam
-  const sssColor = vec3(0.15, 0.65, 0.55);           // Cyan-green for SSS
-  const skyReflectColor = vec3(0.45, 0.65, 0.85);    // Sky reflection tint
+  const { uniform, uv, vec3, vec4, sin, cos, mix, fract, clamp, pow, sqrt, mul, add, sub } = THREE;
   
   // Time uniform for animation
   const timeUniform = uniform(0.0);
+  window.waterTimeUniform = timeUniform;
   
-  // Store reference for animation updates
-  if (!window.waterTimeUniform) {
-    window.waterTimeUniform = timeUniform;
-  }
-  
-  // Get UV coordinates
   const uvNode = uv();
   
-  // =========================================================================
-  // GERSTNER WAVE FUNCTION
-  // Creates realistic wave shapes with steeper peaks and flatter troughs
-  // Returns: height contribution and derivative for normal calculation
-  // =========================================================================
-  function gerstnerWave(uvCoord, dirX, dirY, frequency, speed, amplitude, steepness, time) {
-    // Wave direction dot product with position
-    const dotProduct = add(mul(uvCoord.x, dirX), mul(uvCoord.y, dirY));
-    const phase = add(mul(dotProduct, frequency), mul(time, speed));
-    
-    // Gerstner wave height (steeper peaks, flatter troughs)
-    const sinPhase = sin(phase);
-    const cosPhase = cos(phase);
-    
-    // Height with steepness control
-    const height = mul(amplitude, sinPhase);
-    
-    // Add steepness effect - sharpens wave peaks
-    const steepnessEffect = mul(mul(steepness, amplitude), mul(cosPhase, cosPhase));
-    const totalHeight = add(height, steepnessEffect);
-    
-    return totalHeight;
+  // ==== WAVE CONFIGURATION ====
+  // 3 optimized wave layers: primary swell, wind waves, and detail ripples
+  const waves = [
+    { dx: 1.0, dy: 0.3, freq: 8.0, speed: 0.5, amp: 0.4 },   // Primary ocean swell
+    { dx: 0.4, dy: 1.0, freq: 14.0, speed: 0.7, amp: 0.25 }, // Secondary wind waves
+    { dx: -0.5, dy: 0.7, freq: 22.0, speed: 1.0, amp: 0.15 } // Detail ripples
+  ];
+  
+  // ==== COLORS ====
+  const deepColor = vec3(0.02, 0.10, 0.25);    // Deep ocean
+  const shallowColor = vec3(0.10, 0.40, 0.55); // Shallow water
+  const foamColor = vec3(0.90, 0.95, 1.0);     // Wave foam
+  const skyTint = vec3(0.40, 0.60, 0.80);      // Sky reflection
+  
+  // ==== CALCULATE WAVES ====
+  // Simple wave function: amplitude * sin(direction · uv * freq + time * speed)
+  function wave(w) {
+    const phase = add(mul(add(mul(uvNode.x, w.dx), mul(uvNode.y, w.dy)), w.freq), mul(timeUniform, w.speed));
+    return mul(w.amp, sin(phase));
   }
   
-  // =========================================================================
-  // CALCULATE ALL WAVE LAYERS
-  // =========================================================================
-  const wave1 = gerstnerWave(uvNode, WAVE1_DIR.x, WAVE1_DIR.y, WAVE1_FREQ, WAVE1_SPEED, WAVE1_AMP, WAVE1_STEEP, timeUniform);
-  const wave2 = gerstnerWave(uvNode, WAVE2_DIR.x, WAVE2_DIR.y, WAVE2_FREQ, WAVE2_SPEED, WAVE2_AMP, WAVE2_STEEP, timeUniform);
-  const wave3 = gerstnerWave(uvNode, WAVE3_DIR.x, WAVE3_DIR.y, WAVE3_FREQ, WAVE3_SPEED, WAVE3_AMP, WAVE3_STEEP, timeUniform);
-  const wave4 = gerstnerWave(uvNode, WAVE4_DIR.x, WAVE4_DIR.y, WAVE4_FREQ, WAVE4_SPEED, WAVE4_AMP, WAVE4_STEEP, timeUniform);
-  const wave5 = gerstnerWave(uvNode, WAVE5_DIR.x, WAVE5_DIR.y, WAVE5_FREQ, WAVE5_SPEED, WAVE5_AMP, WAVE5_STEEP, timeUniform);
+  const waveHeight = add(add(wave(waves[0]), wave(waves[1])), wave(waves[2]));
+  const normalizedHeight = clamp(waveHeight, -1.0, 1.0);
   
-  // Combined wave height (normalized to roughly -1 to 1 range)
-  const totalWaveHeight = add(add(add(add(wave1, wave2), wave3), wave4), wave5);
-  const normalizedHeight = clamp(mul(totalWaveHeight, 1.2), -1.0, 1.0);
-  
-  // =========================================================================
-  // PROCEDURAL NORMAL CALCULATION
-  // Derive surface normals from wave derivatives for lighting
-  // =========================================================================
-  // Calculate wave derivatives for normal mapping
-  const dx1 = mul(cos(add(mul(add(mul(uvNode.x, WAVE1_DIR.x), mul(uvNode.y, WAVE1_DIR.y)), WAVE1_FREQ), mul(timeUniform, WAVE1_SPEED))), mul(WAVE1_AMP, WAVE1_FREQ));
-  const dx2 = mul(cos(add(mul(add(mul(uvNode.x, WAVE2_DIR.x), mul(uvNode.y, WAVE2_DIR.y)), WAVE2_FREQ), mul(timeUniform, WAVE2_SPEED))), mul(WAVE2_AMP, WAVE2_FREQ));
-  const dx3 = mul(cos(add(mul(add(mul(uvNode.x, WAVE3_DIR.x), mul(uvNode.y, WAVE3_DIR.y)), WAVE3_FREQ), mul(timeUniform, WAVE3_SPEED))), mul(WAVE3_AMP, WAVE3_FREQ));
-  
-  // Combined derivative scaled down for stable normals
-  const dxTotal = mul(add(add(mul(dx1, WAVE1_DIR.x), mul(dx2, WAVE2_DIR.x)), mul(dx3, WAVE3_DIR.x)), 0.15);
-  const dyTotal = mul(add(add(mul(dx1, WAVE1_DIR.y), mul(dx2, WAVE2_DIR.y)), mul(dx3, WAVE3_DIR.y)), 0.15);
-  
-  // Construct normal (approximation for visual effect)
-  const normalX = mul(dxTotal, -1.0);
-  const normalY = 1.0;
-  const normalZ = mul(dyTotal, -1.0);
-  
-  // =========================================================================
-  // NOISE FUNCTION FOR DETAIL
-  // Simple procedural noise for foam and caustics variation
-  // =========================================================================
-  function pseudoNoise(x, y) {
-    const nx = sin(add(mul(x, 12.9898), mul(y, 78.233)));
-    const fracPart = fract(mul(nx, 43758.5453));
-    return fracPart;
+  // ==== WAVE DERIVATIVES FOR NORMALS ====
+  // Calculate derivatives for specular lighting
+  function waveDeriv(w) {
+    const phase = add(mul(add(mul(uvNode.x, w.dx), mul(uvNode.y, w.dy)), w.freq), mul(timeUniform, w.speed));
+    return mul(mul(w.amp, w.freq), cos(phase));
   }
   
-  // Animated noise coordinates
-  const noiseX = add(mul(uvNode.x, FOAM_NOISE_SCALE), mul(timeUniform, FOAM_MOVEMENT));
-  const noiseY = add(mul(uvNode.y, FOAM_NOISE_SCALE), mul(timeUniform, mul(FOAM_MOVEMENT, 0.7)));
-  const noise = pseudoNoise(noiseX, noiseY);
+  const d0 = waveDeriv(waves[0]);
+  const d1 = waveDeriv(waves[1]);
+  const d2 = waveDeriv(waves[2]);
   
-  // =========================================================================
-  // DEPTH-BASED COLOR
-  // =========================================================================
-  // Use wave height to simulate depth perception
-  const depthFactor = clamp(add(0.5, mul(normalizedHeight, 0.3)), 0.0, 1.0);
+  // Surface normal approximation (scaled for visual effect)
+  const nx = mul(add(add(mul(d0, waves[0].dx), mul(d1, waves[1].dx)), mul(d2, waves[2].dx)), -0.12);
+  const nz = mul(add(add(mul(d0, waves[0].dy), mul(d1, waves[1].dy)), mul(d2, waves[2].dy)), -0.12);
   
-  // Multi-level color blending for realistic depth appearance
-  const deepToMid = mix(deepOceanColor, midOceanColor, depthFactor);
-  const midToShallow = mix(midOceanColor, shallowColor, depthFactor);
-  const waterColor = mix(deepToMid, midToShallow, mul(depthFactor, depthFactor));
+  // ==== DEPTH-BASED COLOR ====
+  const depthFactor = clamp(add(0.5, mul(normalizedHeight, 0.35)), 0.0, 1.0);
+  const baseColor = mix(deepColor, shallowColor, depthFactor);
   
-  // =========================================================================
-  // FRESNEL EFFECT
-  // More reflection at grazing angles (edges), more refraction when looking down
-  // =========================================================================
-  // Simplified fresnel based on UV distance from center (simulates view angle)
-  const centerDistX = sub(uvNode.x, 0.5);
-  const centerDistY = sub(uvNode.y, 0.5);
-  const distFromCenter = sqrt(add(mul(centerDistX, centerDistX), mul(centerDistY, centerDistY)));
-  const fresnel = clamp(add(FRESNEL_BIAS, mul(pow(distFromCenter, FRESNEL_POWER), FRESNEL_SCALE)), 0.0, 1.0);
+  // ==== FRESNEL (edge brightness) ====
+  const cx = sub(uvNode.x, 0.5);
+  const cy = sub(uvNode.y, 0.5);
+  const dist = sqrt(add(mul(cx, cx), mul(cy, cy)));
+  const fresnel = clamp(mul(pow(dist, 2.5), 0.5), 0.0, 0.3);
+  const colorWithFresnel = mix(baseColor, skyTint, fresnel);
   
-  // Apply fresnel - blend between water color and sky reflection
-  const fresnelColor = mix(waterColor, skyReflectColor, mul(fresnel, 0.4));
+  // ==== SPECULAR HIGHLIGHT ====
+  // Sun reflection based on wave normals (simplified single-pass)
+  const sunDot = clamp(add(mul(nx, 0.5), add(0.8, mul(nz, 0.5))), 0.0, 1.0);
+  const specular = mul(pow(sunDot, 48.0), 0.5);
+  const specularColor = mul(vec3(1.0, 0.98, 0.92), specular);
   
-  // =========================================================================
-  // SUBSURFACE SCATTERING (SSS)
-  // Light passing through thin parts of waves (crests)
-  // =========================================================================
-  const waveCrests = clamp(mul(add(normalizedHeight, 0.3), SSS_STRENGTH), 0.0, 1.0);
-  const sssEffect = mul(pow(waveCrests, SSS_POWER), 0.5);
-  const colorWithSSS = add(fresnelColor, mul(sssColor, sssEffect));
+  // ==== FOAM ====
+  // Simple foam on wave peaks using pseudo-noise
+  const noiseInput = add(mul(uvNode.x, 20.0), mul(timeUniform, 0.2));
+  const noise = fract(mul(sin(add(noiseInput, mul(uvNode.y, 15.0))), 43758.5453));
+  const foamMask = clamp(mul(sub(normalizedHeight, 0.2), 3.0), 0.0, 1.0);
+  const foamAmount = clamp(mul(foamMask, add(0.5, mul(noise, 0.5))), 0.0, 0.35);
+  const colorWithFoam = mix(colorWithFresnel, foamColor, foamAmount);
   
-  // =========================================================================
-  // SPECULAR HIGHLIGHTS (Sun reflection)
-  // =========================================================================
-  // Sun direction (matches directional light)
-  const sunDirX = 0.5;
-  const sunDirY = 0.8;
-  const sunDirZ = 0.5;
+  // ==== FINAL COMPOSITION ====
+  const finalColor = add(colorWithFoam, specularColor);
   
-  // View direction (simplified - looking down from above)
-  const viewDirY = 1.0;
+  // Opacity varies slightly with wave height
+  const opacity = clamp(add(0.65, mul(normalizedHeight, 0.06)), 0.55, 0.75);
   
-  // Reflect sun off wave normals
-  const reflectDotView = clamp(add(mul(normalX, sunDirX), add(mul(normalY, sunDirY), mul(normalZ, sunDirZ))), 0.0, 1.0);
-  
-  // Main specular highlight
-  const specular1 = mul(pow(reflectDotView, SPECULAR_POWER), SPECULAR_INTENSITY);
-  
-  // Secondary tight specular for sun sparkle
-  const specular2 = mul(pow(reflectDotView, SPECULAR_TIGHTNESS), mul(SPECULAR_INTENSITY, 0.5));
-  
-  // Combine specular terms
-  const totalSpecular = add(specular1, specular2);
-  const specularColor = mul(vec3(1.0, 0.98, 0.9), totalSpecular);
-  
-  // =========================================================================
-  // FOAM ON WAVE CRESTS
-  // =========================================================================
-  // Foam appears on wave peaks with noise variation
-  const foamBase = clamp(mul(sub(normalizedHeight, FOAM_THRESHOLD), FOAM_SOFTNESS), 0.0, 1.0);
-  const foamWithNoise = mul(foamBase, add(0.6, mul(noise, 0.4)));
-  const foamAmount = clamp(mul(foamWithNoise, FOAM_INTENSITY), 0.0, 0.5);
-  
-  // Add foam to color
-  const colorWithFoam = mix(colorWithSSS, foamColor, foamAmount);
-  
-  // =========================================================================
-  // CAUSTIC PATTERNS
-  // Light patterns from water surface focusing light
-  // =========================================================================
-  const causticX = add(mul(uvNode.x, CAUSTIC_SCALE), mul(timeUniform, CAUSTIC_SPEED));
-  const causticY = add(mul(uvNode.y, CAUSTIC_SCALE), mul(timeUniform, mul(CAUSTIC_SPEED, 0.8)));
-  const caustic1 = sin(add(causticX, mul(sin(causticY), 2.0)));
-  const caustic2 = sin(add(mul(causticY, 1.3), mul(cos(causticX), 1.7)));
-  const causticPattern = mul(mul(add(caustic1, caustic2), 0.5), CAUSTIC_INTENSITY);
-  const causticBrightness = clamp(add(1.0, causticPattern), 0.95, 1.15);
-  
-  // Apply caustics as brightness modulation
-  const colorWithCaustics = mul(colorWithFoam, causticBrightness);
-  
-  // =========================================================================
-  // FINAL COLOR COMPOSITION
-  // =========================================================================
-  const finalColor = add(colorWithCaustics, specularColor);
-  
-  // =========================================================================
-  // OPACITY WITH WAVE-BASED VARIATION
-  // =========================================================================
-  const opacityWaveEffect = mul(normalizedHeight, 0.08);
-  const opacityFoamEffect = mul(foamAmount, 0.15);
-  const finalOpacity = clamp(add(add(BASE_OPACITY, opacityWaveEffect), opacityFoamEffect), OPACITY_MIN, OPACITY_MAX);
-  
-  // Create output color with transparency
-  const outputColor = vec4(finalColor, finalOpacity);
-  
-  // Create MeshBasicNodeMaterial with animated water shader
+  // Create material
   const waterMaterial = new THREE.MeshBasicNodeMaterial();
-  waterMaterial.colorNode = outputColor;
+  waterMaterial.colorNode = vec4(finalColor, opacity);
   waterMaterial.transparent = true;
   waterMaterial.side = THREE.DoubleSide;
   waterMaterial.depthWrite = false;
@@ -539,7 +354,7 @@ function createWaterMaterialTSL() {
 }
 
 /****************************************************************************
- Update water animation time uniform. Call this from the render loop.
+ Update water animation time uniform. Called from render loop.
 ****************************************************************************/
 function updateWaterAnimation(deltaTime) {
   if (window.waterTimeUniform && window.waterTimeUniform.value !== undefined) {
