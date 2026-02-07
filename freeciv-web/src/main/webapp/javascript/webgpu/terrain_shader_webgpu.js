@@ -442,13 +442,35 @@ function createTerrainShaderTSL(uniforms) {
         finalColor.a
     );
 
-    // Apply vertex color for fog/visibility effects
+    // =========================================================================
+    // SMOOTH VISIBILITY BLENDING (Unknown Tile Edge Smoothing)
+    // =========================================================================
+    // Apply vertex color for fog/visibility effects with smooth edge transitions
     // Vertex color is stored in the vertColor attribute and represents visibility/fog of war
     // vertColor.x = 0.0 means unknown (black)
     // vertColor.x = 0.54 means unseen but known (fogged)
     // vertColor.x = 1.06 means fully visible
     // We use only the x component as that's where the visibility value is stored
-    finalColor = vec4(mul(finalColor.rgb, vertColor.x), finalColor.a);
+    //
+    // To create smooth edges between unknown (black) tiles and visible tiles,
+    // we apply a smoothstep-based transition that creates a gradual fade
+    // instead of a sharp linear interpolation.
+    
+    // Get the raw visibility value from vertex color (interpolated across the mesh)
+    const rawVisibility = vertColor.x;
+    
+    // Apply smoothstep curve to create smoother transitions at visibility boundaries
+    // This converts the linear interpolation from vertex colors into a smooth S-curve
+    // The smoothstep makes the transition appear more gradual and natural
+    // Range: input [0.0, 1.06] -> output [0.0, 1.0] with smooth easing
+    const visNormalized = clamp(div(rawVisibility, 1.06), 0.0, 1.0);
+    const visSmooth = mul(mul(visNormalized, visNormalized), sub(3.0, mul(2.0, visNormalized)));
+    
+    // Scale back to original range to maintain brightness levels
+    const smoothVisibility = mul(visSmooth, 1.06);
+    
+    // Apply the smoothed visibility to the terrain color
+    finalColor = vec4(mul(finalColor.rgb, smoothVisibility), finalColor.a);
 
     // Overlay borders if visible
     // Blend border color with terrain color at low opacity for subtle borders
