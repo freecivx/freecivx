@@ -52,6 +52,9 @@ var T_FIRST = 0;
  *   0=NW, 1=N, 2=NE, 3=W, 4=E, 5=SW, 6=S, 7=SE
  *
  * Valid hex directions: NW(0), NE(2), W(3), E(4), SW(5), SE(7)
+ *
+ * For hexagonal maps, the offsets are designed to match the layout of hex tiles.
+ * Freeciv 3D now has hardcoded hexagonal maps, with hex topology in Freeciv C server.
  */
 var DIR_DX = [ -1, 0, 1, -1, 1, -1, 0, 1 ];
 var DIR_DY = [ -1, -1, -1, 0, 0, 1, 1, 1 ];
@@ -162,7 +165,7 @@ function is_valid_dir(dir)
   case DIR8_NORTH:
   case DIR8_SOUTH:
     /* Direct north and south are invalid in hexagonal topologies. */
-    return !topo_has_flag(TF_HEX);
+    return false;
   case DIR8_NORTHWEST:
   case DIR8_NORTHEAST:
   case DIR8_WEST:
