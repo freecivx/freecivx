@@ -357,6 +357,19 @@ function get_direction_for_step(start_tile, end_tile)
   return -1;
 }
 
+/****************************************************************************
+  Check if two tiles are adjacent to each other.
+  Returns true if the tiles are exactly one step apart.
+****************************************************************************/
+function is_tiles_adjacent(tile0, tile1)
+{
+  if (tile0 == null || tile1 == null) {
+    return false;
+  }
+  /* Two tiles are adjacent if you can step from one to the other */
+  return get_direction_for_step(tile0, tile1) != -1;
+}
+
 /**************************************************************************
 Return the debugging name of the direction.
 **************************************************************************/

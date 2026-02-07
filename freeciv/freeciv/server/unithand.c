@@ -6686,6 +6686,41 @@ void handle_unit_orders(struct player *pplayer,
                 player_name(pplayer), unit_rule_name(punit), packet->unit_id);
       return;
     }
+
+    /* Validate that movement orders have valid adjacent tiles */
+    {
+      struct tile *current_tile = unit_tile(punit);
+      int i;
+
+      for (i = 0; i < length; i++) {
+        if (order_list[i].order == ORDER_MOVE
+            || order_list[i].order == ORDER_ACTION_MOVE) {
+          struct tile *dest_tile = index_to_tile(&(wld.map), order_list[i].tile);
+
+          if (dest_tile == NULL) {
+            log_error("received invalid order tile from %s for %s (%d) at order %d.",
+                      player_name(pplayer), unit_rule_name(punit), packet->unit_id, i);
+            free(order_list);
+            return;
+          }
+
+          /* Check that the destination tile is adjacent to the current tile */
+          if (!is_tiles_adjacent(current_tile, dest_tile)) {
+            log_error("received non-adjacent movement order from %s for %s (%d) "
+                      "at order %d: tile %d is not adjacent to tile %d.",
+                      player_name(pplayer), unit_rule_name(punit), packet->unit_id,
+                      i, order_list[i].tile, current_tile->index);
+            free(order_list);
+            return;
+          }
+
+          /* Update current tile for next iteration */
+          current_tile = dest_tile;
+        }
+        /* For non-movement orders (ORDER_ACTIVITY, ORDER_PERFORM_ACTION, ORDER_FULL_MP),
+         * the unit stays on the current tile, so we don't update current_tile */
+      }
+    }
   }
 
   /* This must be before old orders are freed. If this is
