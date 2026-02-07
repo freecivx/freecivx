@@ -141,56 +141,83 @@ function add_quality_dependent_objects_webgpu() {
 /****************************************************************************
  Create animated water material using TSL (Three.js Shading Language).
  Features:
- - Animated wave displacement
- - Color variation based on depth
- - Specular highlights from sun direction
- - Transparency with depth-based opacity
+ - Animated wave displacement with natural ocean movement
+ - Color variation based on depth (tropical turquoise to deep ocean blue)
+ - Enhanced specular highlights from sun direction
+ - Natural transparency with depth-based opacity
+ - Brighter, more vibrant colors for attractive appearance
+ - High detail texturing with multiple wave frequencies
 ****************************************************************************/
 function createWaterMaterialTSL() {
   const {
     uniform, positionLocal, uv, time,
     vec2, vec3, vec4,
-    sin, cos, mix, fract, dot, abs, clamp, pow,
+    sin, cos, mix, fract, dot, abs, clamp, pow, sqrt,
     mul, add, sub, div
   } = THREE;
   
   // =========================================================================
-  // WATER WAVE PARAMETERS
+  // WATER WAVE PARAMETERS - Enhanced for natural ocean movement with high detail
   // =========================================================================
-  // Wave 1: Primary wave moving along X-axis
-  const WAVE1_FREQUENCY = 15.0;   // Spatial frequency (waves per unit)
-  const WAVE1_SPEED = 0.8;        // Animation speed multiplier
-  const WAVE1_AMPLITUDE = 0.3;    // Wave height contribution
+  // Wave 1: Primary wave moving along X-axis (large swells)
+  const WAVE1_FREQUENCY = 12.0;
+  const WAVE1_SPEED = 0.7;
+  const WAVE1_AMPLITUDE = 0.32;
   
-  // Wave 2: Secondary wave moving along Y-axis
-  const WAVE2_FREQUENCY = 12.0;
-  const WAVE2_SPEED = 0.6;
-  const WAVE2_AMPLITUDE = 0.25;
+  // Wave 2: Secondary wave moving along Y-axis (cross swells)
+  const WAVE2_FREQUENCY = 10.0;
+  const WAVE2_SPEED = 0.5;
+  const WAVE2_AMPLITUDE = 0.26;
   
-  // Wave 3: Diagonal wave for complexity
-  const WAVE3_FREQUENCY = 8.0;
-  const WAVE3_SPEED = 1.2;
-  const WAVE3_AMPLITUDE = 0.15;
+  // Wave 3: Diagonal wave for complexity (wind chop)
+  const WAVE3_FREQUENCY = 18.0;
+  const WAVE3_SPEED = 1.0;
+  const WAVE3_AMPLITUDE = 0.14;
   
-  // Specular and foam parameters
-  const SPECULAR_POWER = 16.0;    // Shininess exponent
-  const SPECULAR_INTENSITY = 0.4; // Specular brightness
-  const FOAM_THRESHOLD = 0.2;     // Wave height where foam starts
-  const FOAM_SCALE = 3.0;         // Foam intensity multiplier
-  const FOAM_MAX = 0.3;           // Maximum foam contribution
+  // Wave 4: Small ripples for detail
+  const WAVE4_FREQUENCY = 28.0;
+  const WAVE4_SPEED = 1.4;
+  const WAVE4_AMPLITUDE = 0.09;
   
-  // Opacity parameters
-  const BASE_OPACITY = 0.55;
-  const OPACITY_VARIATION = 0.08;
-  const OPACITY_MIN = 0.45;
-  const OPACITY_MAX = 0.7;
+  // Wave 5: Fine detail - high frequency texture detail
+  const WAVE5_FREQUENCY = 45.0;
+  const WAVE5_SPEED = 1.8;
+  const WAVE5_AMPLITUDE = 0.05;
+  
+  // Wave 6: Very fine detail - micro ripples
+  const WAVE6_FREQUENCY = 72.0;
+  const WAVE6_SPEED = 2.2;
+  const WAVE6_AMPLITUDE = 0.03;
+  
+  // Wave 7: Ultra-fine texture detail
+  const WAVE7_FREQUENCY = 110.0;
+  const WAVE7_SPEED = 2.8;
+  const WAVE7_AMPLITUDE = 0.02;
+  
+  // Specular and foam parameters - enhanced for brightness
+  const SPECULAR_POWER = 24.0;    // Higher shininess for sharper highlights
+  const SPECULAR_INTENSITY = 0.55; // Brighter specular
+  const FOAM_THRESHOLD = 0.16;    // Wave height where foam starts
+  const FOAM_SCALE = 4.5;         // Foam intensity multiplier
+  const FOAM_MAX = 0.38;          // Maximum foam contribution
+  
+  // Opacity parameters - slightly more transparent for natural look
+  const BASE_OPACITY = 0.58;
+  const OPACITY_VARIATION = 0.1;
+  const OPACITY_MIN = 0.48;
+  const OPACITY_MAX = 0.72;
   
   // =========================================================================
-  // WATER COLORS
+  // ENHANCED WATER COLORS - Brighter, more natural tropical water
   // =========================================================================
-  const deepColor = vec3(0.05, 0.15, 0.35);   // Deep blue
-  const shallowColor = vec3(0.15, 0.45, 0.65); // Light blue-cyan
-  const foamColor = vec3(0.85, 0.95, 1.0);     // White foam
+  // Deep ocean: Rich, vibrant blue
+  const deepColor = vec3(0.08, 0.22, 0.48);
+  // Shallow/mid water: Bright tropical turquoise-cyan  
+  const shallowColor = vec3(0.18, 0.58, 0.72);
+  // Surface highlights: Sun-kissed aqua
+  const surfaceColor = vec3(0.35, 0.72, 0.85);
+  // Foam: Bright white with slight blue tint
+  const foamColor = vec3(0.92, 0.98, 1.0);
   
   // Time uniform for animation
   const timeUniform = uniform(0.0);
@@ -204,38 +231,81 @@ function createWaterMaterialTSL() {
   const uvNode = uv();
   const posNode = positionLocal;
   
-  // Create animated wave pattern using multiple sine waves
+  // =========================================================================
+  // MULTI-FREQUENCY WAVE PATTERN - Creates realistic water detail
+  // =========================================================================
+  // Large-scale waves (ocean swells)
   const wave1 = mul(sin(add(mul(uvNode.x, WAVE1_FREQUENCY), mul(timeUniform, WAVE1_SPEED))), WAVE1_AMPLITUDE);
   const wave2 = mul(sin(add(mul(uvNode.y, WAVE2_FREQUENCY), mul(timeUniform, WAVE2_SPEED))), WAVE2_AMPLITUDE);
   const wave3 = mul(sin(add(mul(add(uvNode.x, uvNode.y), WAVE3_FREQUENCY), mul(timeUniform, WAVE3_SPEED))), WAVE3_AMPLITUDE);
-  const wavePattern = add(add(wave1, wave2), wave3);
   
-  // Calculate "depth" based on distance from center for color variation
-  const centerDist = mul(abs(sub(uvNode.x, 0.5)), 2.0);
-  const depthFactor = clamp(add(0.3, mul(wavePattern, 0.1)), 0.0, 1.0);
+  // Medium-scale waves (wind ripples)
+  const wave4 = mul(sin(add(mul(sub(uvNode.x, uvNode.y), WAVE4_FREQUENCY), mul(timeUniform, WAVE4_SPEED))), WAVE4_AMPLITUDE);
+  const wave5 = mul(sin(add(mul(add(mul(uvNode.x, 1.3), uvNode.y), WAVE5_FREQUENCY), mul(timeUniform, WAVE5_SPEED))), WAVE5_AMPLITUDE);
   
-  // Mix between deep and shallow water colors
-  const baseColor = mix(deepColor, shallowColor, depthFactor);
+  // Fine detail waves (micro texture)
+  const wave6 = mul(sin(add(mul(sub(mul(uvNode.x, 0.7), mul(uvNode.y, 1.2)), WAVE6_FREQUENCY), mul(timeUniform, WAVE6_SPEED))), WAVE6_AMPLITUDE);
+  const wave7 = mul(sin(add(mul(add(mul(uvNode.x, 1.1), mul(uvNode.y, 0.9)), WAVE7_FREQUENCY), mul(timeUniform, WAVE7_SPEED))), WAVE7_AMPLITUDE);
   
-  // Add specular highlight from sun direction (simulated)
-  const sunDir = vec3(0.5, 0.8, 0.3);
-  const viewDir = vec3(0.0, 1.0, 0.0);
-  const halfDir = vec3(0.25, 0.9, 0.15);
+  // Combine waves with weighted layering (larger waves have more influence)
+  const largeWaves = add(add(wave1, wave2), wave3);
+  const mediumWaves = add(wave4, wave5);
+  const fineWaves = add(wave6, wave7);
+  const wavePattern = add(add(largeWaves, mediumWaves), fineWaves);
   
-  // Calculate specular using wave pattern to simulate surface normals
-  const specularIntensity = pow(clamp(add(0.5, mul(wavePattern, 0.3)), 0.0, 1.0), SPECULAR_POWER);
-  const specular = mul(vec3(1.0, 1.0, 0.9), mul(specularIntensity, SPECULAR_INTENSITY));
+  // Separate detail pattern for color variation (emphasizes fine detail)
+  const detailPattern = add(mul(fineWaves, 2.5), mul(mediumWaves, 1.5));
   
-  // Add subtle foam on wave peaks
-  const foamThreshold = clamp(mul(sub(wavePattern, FOAM_THRESHOLD), FOAM_SCALE), 0.0, FOAM_MAX);
-  const colorWithFoam = mix(baseColor, foamColor, foamThreshold);
+  // Calculate "depth" factor for color variation with more natural distribution
+  const depthBase = clamp(add(0.4, mul(wavePattern, 0.15)), 0.0, 1.0);
   
-  // Combine base color with specular
-  const finalColor = add(colorWithFoam, specular);
+  // Create a more interesting depth pattern using position and detail
+  const posVariation = mul(sin(add(mul(uvNode.x, 3.0), mul(uvNode.y, 2.5))), 0.12);
+  const detailVariation = mul(detailPattern, 0.08);
+  const depthFactor = clamp(add(add(depthBase, posVariation), detailVariation), 0.0, 1.0);
   
-  // Animated opacity with subtle variation
-  const opacityVariation = mul(sin(add(mul(timeUniform, 0.5), mul(uvNode.x, 5.0))), OPACITY_VARIATION);
-  const finalOpacity = clamp(add(BASE_OPACITY, opacityVariation), OPACITY_MIN, OPACITY_MAX);
+  // Three-way color blend: deep -> shallow -> surface based on wave height and depth
+  const midColor = mix(deepColor, shallowColor, depthFactor);
+  const surfaceFactor = clamp(mul(add(wavePattern, 0.2), 1.2), 0.0, 0.5);
+  const baseColor = mix(midColor, surfaceColor, surfaceFactor);
+  
+  // Add fine color detail variation for more texture
+  const colorDetailR = mul(detailPattern, 0.04);
+  const colorDetailG = mul(detailPattern, 0.06);
+  const colorDetailB = mul(detailPattern, 0.03);
+  const detailedColor = vec3(
+    add(baseColor.x, colorDetailR),
+    add(baseColor.y, colorDetailG),
+    add(baseColor.z, colorDetailB)
+  );
+  
+  // Add specular highlight from sun direction (enhanced for brighter appearance)
+  // Simulated fresnel effect - water is brighter at glancing angles
+  const fresnelBase = clamp(add(0.45, mul(wavePattern, 0.35)), 0.0, 1.0);
+  const specularIntensity = pow(fresnelBase, SPECULAR_POWER);
+  
+  // Add detail to specular for more realistic shimmering
+  const specularDetail = mul(add(1.0, mul(detailPattern, 0.3)), specularIntensity);
+  const specular = mul(vec3(1.0, 0.98, 0.92), mul(specularDetail, SPECULAR_INTENSITY));
+  
+  // Add subtle foam on wave peaks with detail-enhanced appearance
+  const foamBase = clamp(mul(sub(wavePattern, FOAM_THRESHOLD), FOAM_SCALE), 0.0, FOAM_MAX);
+  const foamDetail = clamp(mul(sub(add(wavePattern, mul(fineWaves, 1.5)), FOAM_THRESHOLD), mul(FOAM_SCALE, 0.6)), 0.0, mul(FOAM_MAX, 0.4));
+  const foamThreshold = add(foamBase, foamDetail);
+  const colorWithFoam = mix(detailedColor, foamColor, foamThreshold);
+  
+  // Combine base color with specular highlights
+  const colorWithSpecular = add(colorWithFoam, specular);
+  
+  // Apply brightness boost for more vibrant water
+  const brightnessBoost = 1.12;
+  const finalColor = mul(colorWithSpecular, brightnessBoost);
+  
+  // Animated opacity with subtle variation for natural water shimmer (enhanced detail)
+  const opacityWave1 = mul(sin(add(mul(timeUniform, 0.4), mul(uvNode.x, 4.0))), OPACITY_VARIATION);
+  const opacityWave2 = mul(sin(add(mul(timeUniform, 0.6), mul(uvNode.y, 3.0))), mul(OPACITY_VARIATION, 0.5));
+  const opacityDetail = mul(detailPattern, 0.03); // Fine opacity variation
+  const finalOpacity = clamp(add(add(add(BASE_OPACITY, opacityWave1), opacityWave2), opacityDetail), OPACITY_MIN, OPACITY_MAX);
   
   // Create output color with transparency
   const outputColor = vec4(finalColor, finalOpacity);
