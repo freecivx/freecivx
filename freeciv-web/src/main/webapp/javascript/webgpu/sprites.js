@@ -178,7 +178,7 @@ function create_city_label_sprite(pcity, index) {
   
   // Draw text with contrasting color (white with dark outline for readability)
   ctx.strokeStyle = '#000000';
-  ctx.lineWidth = 3;
+  ctx.lineWidth = 5;
   ctx.strokeText(city_text, width + 6, 13 * 2);
   ctx.fillStyle = '#FFFFFF';
   ctx.fillText(city_text, width + 6, 13 * 2);
