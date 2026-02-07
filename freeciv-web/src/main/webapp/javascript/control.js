@@ -3267,7 +3267,7 @@ function execute_goto_path_steps(unit_id, path_dirs)
   if (punit == null) return;
   
   // Execute the first step immediately
-  var first_dir = path_dirs[0];
+  var first_dir = dir_ccw(path_dirs[0]);
   if (first_dir >= 0 && first_dir < DIR8_LAST && is_valid_dir(first_dir)) {
     var ptile = index_to_tile(punit['tile']);
     if (ptile == null) return;
