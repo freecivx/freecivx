@@ -56,11 +56,11 @@ var show_citybar = true;
 var context_menu_active = true;
 var has_movesleft_warning_been_shown = false;
 var game_unit_panel_state = null;
-var remaining_goto_path = {}; // Stores remaining path directions for continued movement
+var remaining_goto_path = {}; // Maps unit_id to { path: array of DIR8_* directions }
 
 /* Constants for client-side goto */
-var GOTO_STEP_DELAY_MS = 300; // Delay between sequential goto steps
-var ESTIMATED_MOVES_PER_TURN = 3; // Rough estimate for turn calculation
+var GOTO_STEP_DELAY_MS = 300; // Delay in ms between sequential goto steps
+var ESTIMATED_MOVES_PER_TURN = 3; // Rough estimate of moves per turn for display
 
 var chat_send_to = -1;
 var CHAT_ICON_EVERYBODY = String.fromCharCode(62075);
@@ -3182,38 +3182,13 @@ function continue_goto_path(unit_id)
   }
   
   if (next_dir >= 0 && next_dir < DIR8_LAST && is_valid_dir(next_dir)) {
-    // Execute the move using the same pattern as execute_goto_path_steps
     var ptile = index_to_tile(punit['tile']);
     if (ptile == null) return false;
     
     var newtile = mapstep(ptile, next_dir);
     if (newtile == null) return false;
     
-    /* Send the order to move using the orders system. */
-    var order = {
-      "order"      : ORDER_ACTION_MOVE,
-      "dir"        : next_dir,
-      "activity"   : ACTIVITY_LAST,
-      "target"     : 0,
-      "sub_target" : 0,
-      "action"     : ACTION_COUNT
-    };
-
-    if (should_use_simple_move(punit, newtile)) {
-      order["order"] = ORDER_MOVE;
-    }
-
-    var packet = {
-      "pid"      : packet_unit_orders,
-      "unit_id"  : punit['id'],
-      "src_tile" : ptile['index'],
-      "length"   : 1,
-      "repeat"   : false,
-      "vigilant" : false,
-      "orders"   : [order],
-      "dest_tile": newtile['index']
-    };
-
+    var packet = create_single_move_packet(punit, ptile, newtile, next_dir);
     send_request(JSON.stringify(packet));
     unit_move_sound_play(punit);
     
@@ -3258,7 +3233,33 @@ function should_use_simple_move(punit, newtile)
 }
 
 /****************************************************************************
-  Execute goto path steps sequentially using key_unit_move.
+  Create a move order packet for a single step.
+****************************************************************************/
+function create_single_move_packet(punit, ptile, newtile, dir)
+{
+  var order = {
+    "order"      : should_use_simple_move(punit, newtile) ? ORDER_MOVE : ORDER_ACTION_MOVE,
+    "dir"        : dir,
+    "activity"   : ACTIVITY_LAST,
+    "target"     : 0,
+    "sub_target" : 0,
+    "action"     : ACTION_COUNT
+  };
+
+  return {
+    "pid"      : packet_unit_orders,
+    "unit_id"  : punit['id'],
+    "src_tile" : ptile['index'],
+    "length"   : 1,
+    "repeat"   : false,
+    "vigilant" : false,
+    "orders"   : [order],
+    "dest_tile": newtile['index']
+  };
+}
+
+/****************************************************************************
+  Execute goto path steps sequentially.
   Sends individual move orders for each direction in the path.
 ****************************************************************************/
 function execute_goto_path_steps(unit_id, path_dirs)
@@ -3271,38 +3272,13 @@ function execute_goto_path_steps(unit_id, path_dirs)
   // Execute the first step immediately
   var first_dir = path_dirs[0];
   if (first_dir >= 0 && first_dir < DIR8_LAST && is_valid_dir(first_dir)) {
-    // Execute the single move using key_unit_move logic
     var ptile = index_to_tile(punit['tile']);
     if (ptile == null) return;
     
     var newtile = mapstep(ptile, first_dir);
     if (newtile == null) return;
     
-    /* Send the order to move using the orders system. */
-    var order = {
-      "order"      : ORDER_ACTION_MOVE,
-      "dir"        : first_dir,
-      "activity"   : ACTIVITY_LAST,
-      "target"     : 0,
-      "sub_target" : 0,
-      "action"     : ACTION_COUNT
-    };
-
-    if (should_use_simple_move(punit, newtile)) {
-      order["order"] = ORDER_MOVE;
-    }
-
-    var packet = {
-      "pid"      : packet_unit_orders,
-      "unit_id"  : punit['id'],
-      "src_tile" : ptile['index'],
-      "length"   : 1,
-      "repeat"   : false,
-      "vigilant" : false,
-      "orders"   : [order],
-      "dest_tile": newtile['index']
-    };
-
+    var packet = create_single_move_packet(punit, ptile, newtile, first_dir);
     send_request(JSON.stringify(packet));
     unit_move_sound_play(punit);
     
