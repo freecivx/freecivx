@@ -33,6 +33,7 @@ var anaglyph_effect;
 
 var mouse, raycaster;
 var spotlight;
+var directionalLight;  // Main directional light for sun-like shadows
 var clock;
 
 var controls;
