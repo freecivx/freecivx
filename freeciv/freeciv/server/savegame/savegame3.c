@@ -5277,10 +5277,13 @@ static bool sg_load_player_city(struct loaddata *loading, struct player *plr,
         = secfile_lookup_str_default(loading->file, "",
                                      "%s.rally_point_activities", citystr);
 
+      /* Track current tile to compute destination tiles from directions (for old saves) */
+      struct tile *current_tile = city_tile(pcity);
+
       for (i = 0; i < len; i++) {
         struct unit_order *order = &pcity->rally_point.orders[i];
 
-        if (rally_orders[i] == '\0' || rally_dirs[i] == '\0'
+        if (rally_orders[i] == '\0'
             || rally_activities[i] == '\0') {
           log_sg("Invalid rally point.");
           free(pcity->rally_point.orders);
@@ -5289,8 +5292,29 @@ static bool sg_load_player_city(struct loaddata *loading, struct player *plr,
           break;
         }
         order->order = char2order(rally_orders[i]);
-        order->dir = char2dir(rally_dirs[i]);
         order->activity = char2activity(rally_activities[i]);
+
+        /* Try to load tile index from new format first */
+        int tile_index = secfile_lookup_int_default(loading->file, -1,
+                                                    "%s.rally_point_tile_vec,%d",
+                                                    citystr, i);
+        if (tile_index >= 0) {
+          order->tile = tile_index;
+          current_tile = index_to_tile(&(wld.map), tile_index);
+        } else if (rally_dirs != NULL && rally_dirs[0] != '\0' 
+                   && (size_t)i < strlen(rally_dirs) && rally_dirs[i] != '\0') {
+          /* Fall back to converting from direction for old saves */
+          enum direction8 dir = char2dir(rally_dirs[i]);
+          if (direction8_is_valid(dir) && current_tile != NULL) {
+            struct tile *dst_tile = mapstep(&(wld.map), current_tile, dir);
+            order->tile = dst_tile ? dst_tile->index : -1;
+            current_tile = dst_tile;
+          } else {
+            order->tile = -1;
+          }
+        } else {
+          order->tile = -1;
+        }
 
         unconverted = secfile_lookup_int_default(loading->file, ACTION_NONE,
                                                  "%s.rally_point_action_vec,%d",
@@ -5659,10 +5683,11 @@ static void sg_save_player_cities(struct savedata *saving,
                        "%s.rally_point_length", buf);
     if (pcity->rally_point.length) {
       int len = pcity->rally_point.length;
-      char orders[len + 1], dirs[len + 1], activities[len + 1];
+      char orders[len + 1], activities[len + 1];
       int actions[len];
       int targets[len];
       int sub_targets[len];
+      int tiles[len];
 
       secfile_insert_bool(saving->file, pcity->rally_point.persistent,
                           "%s.rally_point_persistent", buf);
@@ -5671,15 +5696,15 @@ static void sg_save_player_cities(struct savedata *saving,
 
       for (j = 0; j < len; j++) {
         orders[j] = order2char(pcity->rally_point.orders[j].order);
-        dirs[j] = '?';
         activities[j] = '?';
         targets[j] = NO_TARGET;
         sub_targets[j] = NO_TARGET;
         actions[j] = -1;
+        tiles[j] = -1;
         switch (pcity->rally_point.orders[j].order) {
         case ORDER_MOVE:
         case ORDER_ACTION_MOVE:
-          dirs[j] = dir2char(pcity->rally_point.orders[j].dir);
+          tiles[j] = pcity->rally_point.orders[j].tile;
           break;
         case ORDER_ACTIVITY:
           sub_targets[j] = pcity->rally_point.orders[j].sub_target;
@@ -5696,10 +5721,12 @@ static void sg_save_player_cities(struct savedata *saving,
           break;
         }
       }
-      orders[len] = dirs[len] = activities[len] = '\0';
+      orders[len] = activities[len] = '\0';
 
       secfile_insert_str(saving->file, orders, "%s.rally_point_orders", buf);
-      secfile_insert_str(saving->file, dirs, "%s.rally_point_dirs", buf);
+      /* Save tiles as vector instead of dir string for new format */
+      secfile_insert_int_vec(saving->file, tiles, len,
+                             "%s.rally_point_tile_vec", buf);
       secfile_insert_str(saving->file, activities,
                          "%s.rally_point_activities", buf);
 
@@ -6208,20 +6235,44 @@ static bool sg_load_player_unit(struct loaddata *loading,
 
       punit->has_orders = TRUE;
 
+      /* Track current tile to compute destination tiles from directions (for old saves) */
+      struct tile *current_tile = unit_tile(punit);
+
       for (j = 0; j < len; j++) {
         struct unit_order *order = &punit->orders.list[j];
         bool action_wants_extra = FALSE;
         int order_sub_tgt;
 
-        if (orders_unitstr[j] == '\0' || dir_unitstr[j] == '\0'
+        if (orders_unitstr[j] == '\0'
             || act_unitstr[j] == '\0') {
           log_sg("Invalid unit orders.");
           free_unit_orders(punit);
           break;
         }
         order->order = char2order(orders_unitstr[j]);
-        order->dir = char2dir(dir_unitstr[j]);
         order->activity = char2activity(act_unitstr[j]);
+
+        /* Try to load tile index from new format first */
+        int tile_index = secfile_lookup_int_default(loading->file, -1,
+                                                    "%s.tile_vec,%d",
+                                                    unitstr, j);
+        if (tile_index >= 0) {
+          order->tile = tile_index;
+          current_tile = index_to_tile(&(wld.map), tile_index);
+        } else if (dir_unitstr != NULL && dir_unitstr[0] != '\0'
+                   && (size_t)j < strlen(dir_unitstr) && dir_unitstr[j] != '\0') {
+          /* Fall back to converting from direction for old saves */
+          enum direction8 dir = char2dir(dir_unitstr[j]);
+          if (direction8_is_valid(dir) && current_tile != NULL) {
+            struct tile *dst_tile = mapstep(&(wld.map), current_tile, dir);
+            order->tile = dst_tile ? dst_tile->index : -1;
+            current_tile = dst_tile;
+          } else {
+            order->tile = -1;
+          }
+        } else {
+          order->tile = -1;
+        }
 
         unconverted = secfile_lookup_int_default(loading->file, ACTION_NONE,
                                                  "%s.action_vec,%d",
@@ -6239,9 +6290,8 @@ static bool sg_load_player_unit(struct loaddata *loading,
         }
 
         if (order->order == ORDER_LAST
-            || (order->order == ORDER_MOVE && !direction8_is_valid(order->dir))
-            || (order->order == ORDER_ACTION_MOVE
-                && !direction8_is_valid(order->dir))
+            || (order->order == ORDER_MOVE && order->tile < 0)
+            || (order->order == ORDER_ACTION_MOVE && order->tile < 0)
             || (order->order == ORDER_PERFORM_ACTION
                 && !action_id_exists(order->action))
             || (order->order == ORDER_ACTIVITY
@@ -6584,11 +6634,12 @@ static void sg_save_player_units(struct savedata *saving,
 
     if (punit->has_orders) {
       int len = punit->orders.length;
-      char orders_buf[len + 1], dir_buf[len + 1];
+      char orders_buf[len + 1];
       char act_buf[len + 1];
       int action_buf[len];
       int tgt_vec[len];
       int sub_tgt_vec[len];
+      int tile_vec[len];
 
       last_order = len;
 
@@ -6602,15 +6653,15 @@ static void sg_save_player_units(struct savedata *saving,
 
       for (j = 0; j < len; j++) {
         orders_buf[j] = order2char(punit->orders.list[j].order);
-        dir_buf[j] = '?';
         act_buf[j] = '?';
         tgt_vec[j] = NO_TARGET;
         sub_tgt_vec[j] = -1;
         action_buf[j] = -1;
+        tile_vec[j] = -1;
         switch (punit->orders.list[j].order) {
         case ORDER_MOVE:
         case ORDER_ACTION_MOVE:
-          dir_buf[j] = dir2char(punit->orders.list[j].dir);
+          tile_vec[j] = punit->orders.list[j].tile;
           break;
         case ORDER_ACTIVITY:
           sub_tgt_vec[j] = punit->orders.list[j].sub_target;
@@ -6626,10 +6677,12 @@ static void sg_save_player_units(struct savedata *saving,
           break;
         }
       }
-      orders_buf[len] = dir_buf[len] = act_buf[len] = '\0';
+      orders_buf[len] = act_buf[len] = '\0';
 
       secfile_insert_str(saving->file, orders_buf, "%s.orders_list", buf);
-      secfile_insert_str(saving->file, dir_buf, "%s.dir_list", buf);
+      /* Save tiles as vector instead of dir string for new format */
+      secfile_insert_int_vec(saving->file, tile_vec, len,
+                             "%s.tile_vec", buf);
       secfile_insert_str(saving->file, act_buf, "%s.activity_list", buf);
 
       secfile_insert_int_vec(saving->file, action_buf, len,
@@ -6665,11 +6718,16 @@ static void sg_save_player_units(struct savedata *saving,
       secfile_insert_bool(saving->file, FALSE, "%s.orders_repeat", buf);
       secfile_insert_bool(saving->file, FALSE, "%s.orders_vigilant", buf);
       secfile_insert_str(saving->file, "-", "%s.orders_list", buf);
-      secfile_insert_str(saving->file, "-", "%s.dir_list", buf);
       secfile_insert_str(saving->file, "-", "%s.activity_list", buf);
 
       /* Fill in dummy values for order targets so the registry will save
        * the unit table in a tabular format. */
+
+      /* The start of a vector has no number. */
+      secfile_insert_int(saving->file, -1, "%s.tile_vec", buf);
+      for (j = 1; j < longest_order; j++) {
+        secfile_insert_int(saving->file, -1, "%s.tile_vec,%d", buf, j);
+      }
 
       /* The start of a vector has no number. */
       secfile_insert_int(saving->file, -1, "%s.action_vec", buf);
