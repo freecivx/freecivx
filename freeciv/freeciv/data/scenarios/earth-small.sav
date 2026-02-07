@@ -4,7 +4,7 @@ game_version=3010000
 is_scenario=TRUE
 name=_("Earth (classic/small)")
 authors=_("Map: Daniel Gudlat, Daniel Markstedt\nStart positions: Jason Dorje Short, Mateusz Stefek, David Fernandez")
-description=_("Overhead 80x50 map of the Earth.")
+description=_("Hexagonal 80x50 map of the Earth.")
 save_random=FALSE
 players=FALSE
 startpos_nations=FALSE
@@ -117,7 +117,7 @@ set={"name","value","gamestart","gamesetdef"
 "temperature",50,50,"Changed"
 "tilesperplayer",100,100,"Changed"
 "tinyisles",FALSE,FALSE,"Changed"
-"topology","WRAPX","WRAPX","Changed"
+"topology","HEX","HEX","Changed"
 "victories","","","Changed"
 "wetness",50,50,"Changed"
 "xsize",80,80,"Changed"
