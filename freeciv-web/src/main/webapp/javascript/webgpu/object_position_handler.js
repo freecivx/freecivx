@@ -722,7 +722,7 @@ function update_tile_extra_update_model(extra_type, extra_name, ptile)
       height -= 2;
     }
     if (extra_name == "Wheat") {
-      num_models = 25;
+      num_models = 18;  // Fewer, smaller wheat instances
       height -= 0.5;
       use_instancing = true;
     }
