@@ -246,7 +246,7 @@ function createTerrainShaderTSL(uniforms) {
     // Using manual smoothstep: t = clamp((x-edge0)/(edge1-edge0), 0, 1); return t*t*(3-2*t)
     const edgeRange = sub(edgeEnd, edgeStart);
     const edgeT = clamp(div(sub(hexDist, edgeStart), edgeRange), 0.0, 1.0);
-    // Apply smoother Hermite interpolation for softer edges
+    // Apply smoothstep interpolation for softer edges
     const hexEdgeMask = mul(mul(edgeT, edgeT), sub(3.0, mul(2.0, edgeT)));
     
     // =========================================================================
@@ -330,7 +330,7 @@ function createTerrainShaderTSL(uniforms) {
                 div(sub(posY, BEACH_BLEND_LOW), sub(BEACH_BLEND_HIGH, BEACH_BLEND_LOW)),
                 0.0, 1.0
             );
-            // Smooth the transition using Hermite interpolation
+            // Smooth the transition using smoothstep interpolation
             const smoothBeach = mul(mul(beachFactor, beachFactor), sub(3.0, mul(2.0, beachFactor)));
             
             // Blend from coast->beach->main terrain based on elevation
@@ -338,6 +338,7 @@ function createTerrainShaderTSL(uniforms) {
                 div(sub(posY, BEACH_BLEND_HIGH), sub(BEACH_HIGH, BEACH_BLEND_HIGH)),
                 0.0, 1.0
             );
+            // Smooth transition from beach to main terrain using smoothstep
             const smoothTerrain = mul(mul(beachToTerrain, beachToTerrain), sub(3.0, mul(2.0, beachToTerrain)));
             
             // Mix coast with beach color, then beach with main terrain

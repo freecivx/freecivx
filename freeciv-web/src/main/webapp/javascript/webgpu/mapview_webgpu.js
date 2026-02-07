@@ -246,7 +246,7 @@ function createWaterMaterialTSL() {
   // Natural foam on wave peaks with soft edges
   const foamBase = mul(sub(wavePattern, FOAM_THRESHOLD), FOAM_SCALE);
   const foamAmount = clamp(foamBase, 0.0, FOAM_MAX);
-  // Smooth foam edges
+  // Smooth foam edges using smoothstep for natural appearance
   const foamSmooth = mul(mul(foamAmount, foamAmount), sub(3.0, mul(2.0, foamAmount)));
   const colorWithFoam = mix(baseColor, foamColor, foamSmooth);
   
