@@ -6690,16 +6690,16 @@ void handle_unit_orders(struct player *pplayer,
     /* Validate that movement orders have valid adjacent tiles */
     {
       struct tile *current_tile = unit_tile(punit);
-      int i;
+      int order_idx;
 
-      for (i = 0; i < length; i++) {
-        if (order_list[i].order == ORDER_MOVE
-            || order_list[i].order == ORDER_ACTION_MOVE) {
-          struct tile *dest_tile = index_to_tile(&(wld.map), order_list[i].tile);
+      for (order_idx = 0; order_idx < length; order_idx++) {
+        if (order_list[order_idx].order == ORDER_MOVE
+            || order_list[order_idx].order == ORDER_ACTION_MOVE) {
+          struct tile *dest_tile = index_to_tile(&(wld.map), order_list[order_idx].tile);
 
           if (dest_tile == NULL) {
             log_error("received invalid order tile from %s for %s (%d) at order %d.",
-                      player_name(pplayer), unit_rule_name(punit), packet->unit_id, i);
+                      player_name(pplayer), unit_rule_name(punit), packet->unit_id, order_idx);
             free(order_list);
             return;
           }
@@ -6709,7 +6709,7 @@ void handle_unit_orders(struct player *pplayer,
             log_error("received non-adjacent movement order from %s for %s (%d) "
                       "at order %d: tile %d is not adjacent to tile %d.",
                       player_name(pplayer), unit_rule_name(punit), packet->unit_id,
-                      i, order_list[i].tile, current_tile->index);
+                      order_idx, order_list[order_idx].tile, current_tile->index);
             free(order_list);
             return;
           }
