@@ -34,7 +34,9 @@ var goto_arrow_group = null;
 
 // Arrow styling constants
 var GOTO_ARROW_COLOR = 0x00ff00;  // Green color for the arrow
-var GOTO_ARROW_LINE_WIDTH = 3;    // Line width (note: may not work on all platforms)
+// Note: WebGL/WebGPU linewidth is often limited to 1 on many platforms/browsers.
+// The arrow head (cone) provides the primary visual weight regardless of line width.
+var GOTO_ARROW_LINE_WIDTH = 3;    // Line width (may be clamped to 1 on some platforms)
 var GOTO_ARROW_HEAD_LENGTH = 12;  // Length of the arrow head cone
 var GOTO_ARROW_HEAD_RADIUS = 6;   // Radius of the arrow head cone base
 var GOTO_ARROW_HEIGHT_OFFSET = 25; // Height above terrain for the arrow
@@ -241,10 +243,10 @@ function clear_goto_tiles() {
         // Clear all children from the group
         while (goto_arrow_group.children.length > 0) {
             var child = goto_arrow_group.children[0];
-            if (child.geometry) {
+            if (child.geometry && typeof child.geometry.dispose === 'function') {
                 child.geometry.dispose();
             }
-            if (child.material) {
+            if (child.material && typeof child.material.dispose === 'function') {
                 child.material.dispose();
             }
             goto_arrow_group.remove(child);
