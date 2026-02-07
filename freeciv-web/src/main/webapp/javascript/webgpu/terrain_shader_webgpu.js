@@ -449,33 +449,58 @@ function createTerrainShaderTSL(uniforms) {
     );
 
     // =========================================================================
-    // SMOOTH VISIBILITY BLENDING (Unknown Tile Edge Smoothing)
+    // HEXAGONAL VISIBILITY BLENDING (Hex-Aligned Unknown Tile Edges)
     // =========================================================================
-    // Apply vertex color for fog/visibility effects with smooth edge transitions
-    // Vertex color is stored in the vertColor attribute and represents visibility/fog of war
-    // vertColor.x values defined by VISIBILITY_* constants (see above)
-    // We use only the x component as that's where the visibility value is stored
+    // Sample visibility from maptiles texture alpha channel at hex tile center.
+    // This ensures visibility boundaries follow hexagonal tile edges instead of
+    // the square vertex grid, creating proper Civ 6-style hex-aligned fog of war.
     //
-    // To create smooth edges between unknown (black) tiles and visible tiles,
-    // we apply a smoothstep-based transition that creates a gradual fade
-    // instead of a sharp linear interpolation.
+    // The maptiles texture stores visibility in the alpha channel:
+    // - 0 = TILE_UNKNOWN (black)
+    // - 138/255 ≈ 0.54 = TILE_KNOWN_UNSEEN (fogged)
+    // - 255/255 = 1.0 = TILE_KNOWN_SEEN (visible)
+    //
+    // By sampling at the hex tile center (tileCenterUV), we get a single visibility
+    // value for the entire hexagonal tile, creating crisp hex-aligned boundaries.
     
-    // Get the raw visibility value from vertex color (interpolated across the mesh)
-    const rawVisibility = vertColor.x;
+    // Sample visibility from maptiles texture alpha channel at hex tile center
+    // tileCenterUV already accounts for hex stagger offset
+    const tileVisibilityTex = texture(maptilesTex, tileCenterUV);
+    const hexVisibility = tileVisibilityTex.a;  // Alpha channel contains visibility
     
-    // Apply smoothstep curve to create smoother transitions at visibility boundaries
-    // This converts the linear interpolation from vertex colors into a smooth S-curve
-    // The smoothstep makes the transition appear more gradual and natural
-    // Range: input [0.0, VISIBILITY_VISIBLE] -> output [0.0, 1.0] with smooth easing
-    const visNormalized = clamp(div(rawVisibility, VISIBILITY_VISIBLE), 0.0, 1.0);
+    // Convert texture value (0-1) to visibility scale (0 to VISIBILITY_VISIBLE)
+    // Texture stores: 0=unknown, 0.54=fogged, 1.0=visible
+    // Scale to match original visibility values: 0, 0.54, 1.06
+    const hexVisibilityScaled = mul(hexVisibility, VISIBILITY_VISIBLE);
+    
+    // Apply smoothstep curve for softer edges within the visible/fogged regions
+    // This maintains smooth transitions for brightness while using hex-sampled visibility
+    const visNormalized = clamp(div(hexVisibilityScaled, VISIBILITY_VISIBLE), 0.0, 1.0);
     // Smoothstep formula: t² × (3 - 2t) creates an S-curve that eases in and out
     const visSmooth = mul(mul(visNormalized, visNormalized), sub(3.0, mul(2.0, visNormalized)));
     
     // Scale back to original range to maintain brightness levels
     const smoothVisibility = mul(visSmooth, VISIBILITY_VISIBLE);
     
-    // Apply the smoothed visibility to the terrain color
-    finalColor = vec4(mul(finalColor.rgb, smoothVisibility), finalColor.a);
+    // =========================================================================
+    // ACTIVE CITY HIGHLIGHTING (Vertex Color Based)
+    // =========================================================================
+    // The vertex color (vertColor) is used for active city highlighting:
+    // - When a city is selected, tiles belonging to the city remain at full brightness
+    // - Other tiles are dimmed to 0.30 brightness
+    // This uses vertex interpolation which provides smooth transitions at tile boundaries
+    // 
+    // We compare the vertex color with the hex visibility to detect active city dimming:
+    // - If vertColor.x < hexVisibilityScaled, the tile is being dimmed for active city view
+    // - In this case, use the dimmed vertex color value instead of the texture visibility
+    const vertexVisibility = vertColor.x;
+    
+    // Use the minimum of hex visibility and vertex visibility
+    // This allows active city highlighting to dim tiles that would otherwise be visible
+    const effectiveVisibility = min(smoothVisibility, vertexVisibility);
+    
+    // Apply the visibility to the terrain color
+    finalColor = vec4(mul(finalColor.rgb, effectiveVisibility), finalColor.a);
 
     // Overlay borders if visible
     // Blend border color with terrain color at low opacity for subtle borders
