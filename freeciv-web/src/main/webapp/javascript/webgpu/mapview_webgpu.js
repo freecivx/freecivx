@@ -304,14 +304,10 @@ async function init_webgpu_mapview() {
   // Create WebGPU-compatible selected unit material with pulsing effect
   selected_unit_material = createSelectedUnitMaterial();
 
-  // Initialize goto tiles texture for shader-based path rendering
-  init_goto_tiles_texture();
-
   /* uniforms are variables which are used in the shader */
   freeciv_uniforms = {
       maptiles: { type: "t", value: maptiletypes },
       borders: { type: "t", value: borders_texture },
-      goto_tiles: { type: "t", value: get_goto_tiles_texture() },
       map_x_size: { type: "f", value: map['xsize'] },
       map_y_size: { type: "f", value: map['ysize'] },
       mouse_x: { type: "i", value: -1 },

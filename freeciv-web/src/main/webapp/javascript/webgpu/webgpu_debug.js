@@ -51,9 +51,7 @@
  * 2. Console shows full path traversal with tile coordinates and directions
  * 3. Direction names are shown for each step
  * 4. Warnings are logged if movements don't match expected direction offsets
- * 5. The terrain shader displays "D# S##" on goto path tiles where:
- *    - D# = Direction index (0=start, 1-8=direction from DIR8_* +1)
- *    - S## = Step index in the path (00 = start, 01 = first move, etc.)
+ * 5. A green arrow line is drawn from the unit to the destination tile
  */
 
 // Store debug tile labels for cleanup
