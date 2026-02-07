@@ -64,7 +64,7 @@ function webgpu_start_renderer()
   // Determine antialiasing based on quality settings
   let enable_antialiasing = graphics_quality >= QUALITY_MEDIUM;
   const stored_antialiasing_setting = simpleStorage.get("antialiasing_setting", "");
-  if (stored_antialiasing_setting != null && stored_antialiasing_setting === "false") {
+  if (stored_antialiasing_setting !== null && stored_antialiasing_setting === "false") {
     enable_antialiasing = false;
   }
 

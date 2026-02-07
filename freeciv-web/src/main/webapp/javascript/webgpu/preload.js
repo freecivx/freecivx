@@ -695,7 +695,7 @@ function webgl_get_model(filename, ptile)
     const clonedModel = webgl_models[filename].clone();
     
     // Convert materials to WebGPU-compatible node materials if needed
-    if (isWebGPURenderer && isWebGPURenderer()) {
+    if (typeof isWebGPURenderer === 'function' && isWebGPURenderer()) {
       // Use material factory if available
       if (typeof convertModelMaterials === 'function') {
         convertModelMaterials(clonedModel, { doubleSided: true, flatShading: false });

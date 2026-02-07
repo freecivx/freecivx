@@ -52,7 +52,7 @@ function getInstancedMeshFromModel(modelName, gltfMesh, capacity = 30) {
     let material = gltfMesh.material;
     
     // Convert material to WebGPU-compatible node material if needed
-    if (isWebGPURenderer && isWebGPURenderer()) {
+    if (typeof isWebGPURenderer === 'function' && isWebGPURenderer()) {
         // Use material factory if available, otherwise inline conversion
         if (typeof convertToNodeMaterial === 'function') {
             material = convertToNodeMaterial(material, { doubleSided: true, flatShading: false });
