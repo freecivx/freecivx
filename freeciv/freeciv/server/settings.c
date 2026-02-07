@@ -1331,7 +1331,20 @@ static bool topology_callback(unsigned value, struct connection *caller,
     return FALSE;
   }
 
+#ifdef FREECIV_WEB
+  /* Remember to update the help text too if Freeciv-web gets the ability
+   * to display other map topologies. */
 
+  /* Are you removing this because Freeciv-web gained the ability to
+   * display isometric maps? Why don't you remove the Freeciv-web
+   * specific MAP_DEFAULT_TOPO too? */
+  if ((value & (TF_ISO)) != 0) {
+    /* The Freeciv-web client can't display these topologies yet. */
+    settings_snprintf(reject_msg, reject_msg_len,
+                      _("Freeciv-web doesn't support this topology."));
+    return FALSE;
+  }
+#endif /* FREECIV_WEB */
 
   return TRUE;
 }
