@@ -4409,9 +4409,6 @@ static bool sg_load_player_unit(struct loaddata *loading,
 
       punit->has_orders = TRUE;
 
-      /* Track current tile to compute destination tiles from directions */
-      struct tile *current_tile = unit_tile(punit);
-
       for (j = 0; j < len; j++) {
         struct unit_order *order = &punit->orders.list[j];
 
@@ -4422,24 +4419,16 @@ static bool sg_load_player_unit(struct loaddata *loading,
           break;
         }
         order->order = char2order(orders_unitstr[j]);
-        enum direction8 dir = char2dir(dir_unitstr[j]);
+        order->dir = char2dir(dir_unitstr[j]);
         order->activity = char2activity(act_unitstr[j]);
         /* Target, if needed, is set in compat_post_load_030100() */
         order->target = NO_TARGET;
         order->sub_target = NO_TARGET;
 
-        /* Convert direction to tile index */
-        if (direction8_is_valid(dir) && current_tile != NULL) {
-          struct tile *dst_tile = mapstep(&(wld.map), current_tile, dir);
-          order->tile = dst_tile ? dst_tile->index : -1;
-          current_tile = dst_tile;
-        } else {
-          order->tile = -1;
-        }
-
         if (order->order == ORDER_LAST
-            || (order->order == ORDER_MOVE && order->tile < 0)
-            || (order->order == ORDER_ACTION_MOVE && order->tile < 0)
+            || (order->order == ORDER_MOVE && !direction8_is_valid(order->dir))
+            || (order->order == ORDER_ACTION_MOVE
+                && !direction8_is_valid(order->dir))
             || (order->order == ORDER_ACTIVITY
                 && order->activity == ACTIVITY_LAST)) {
           /* An invalid order. Just drop the orders for this unit. */

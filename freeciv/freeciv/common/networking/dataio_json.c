@@ -346,7 +346,12 @@ int dio_put_unit_order_json(struct json_data_out *dout,
     e |= json_object_set_new(obj, "target", json_integer(order->target));
     e |= json_object_set_new(obj, "sub_target", json_integer(order->sub_target));
     e |= json_object_set_new(obj, "action", json_integer(order->action));
-    e |= json_object_set_new(obj, "tile", json_integer(order->tile));
+    if (order->dir == -1) {
+      /* Avoid integer underflow */
+      e |= json_object_set_new(obj, "dir", json_integer(-1));
+    } else {
+      e |= json_object_set_new(obj, "dir", json_integer(order->dir));
+    }
     e |= plocation_write_data(dout->json, location, obj);
   } else {
     e = dio_put_unit_order_raw(&dout->raw, order);
@@ -595,7 +600,7 @@ bool dio_get_unit_order_json(struct connection *pc, struct data_in *din,
 {
   if (pc->json_mode) {
     struct plocation *loc;
-    int iorder, iactivity; /* These fields are enums */
+    int iorder, iactivity, idir; /* These fields are enums */
 
     /* Orders may be located in a nested field (as items in an array) */
     loc = location;
@@ -638,9 +643,9 @@ bool dio_get_unit_order_json(struct connection *pc, struct data_in *din,
       return FALSE;
     }
 
-    loc->sub_location->name = "tile";
-    if (!dio_get_sint32_json(pc, din, location, &order->tile)) {
-      log_packet("Corrupt order.tile");
+    loc->sub_location->name = "dir";
+    if (!dio_get_uint8_json(pc, din, location, &idir)) {
+      log_packet("Corrupt order.dir");
       FC_FREE(loc->sub_location);
       return FALSE;
     }
@@ -650,6 +655,7 @@ bool dio_get_unit_order_json(struct connection *pc, struct data_in *din,
      */
     order->order = iorder;
     order->activity = iactivity;
+    order->dir = idir;
 
     FC_FREE(loc->sub_location);
   } else {

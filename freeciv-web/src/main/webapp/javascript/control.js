@@ -1646,23 +1646,12 @@ function do_map_click(ptile, qtype, first_time_called)
         /* The tile the unit currently is standing on. */
         var old_tile = index_to_tile(punit['tile']);
 
-        /* The path from the server includes the starting tile at index 0.
-         * We need to skip it and compute directions from each tile to the next.
-         * The number of movement orders = tiles.length - 1 (since first tile is start) */
-        var path_tiles = goto_path['tiles'];
-        var num_orders = path_tiles.length - 1;
-        
-        if (num_orders <= 0) {
-          /* No actual movement needed (already at destination) */
-          continue;
-        }
-
         /* Create an order to move along the path. */
         packet = {
           "pid"      : packet_unit_orders,
           "unit_id"  : punit['id'],
           "src_tile" : old_tile['index'],
-          "length"   : num_orders,
+          "length"   : goto_path['length'],
           "repeat"   : false,
           "vigilant" : false,
 
@@ -1673,47 +1662,31 @@ function do_map_click(ptile, qtype, first_time_called)
 
         var order = {
           "order"      : ORDER_LAST,
-          "dir"        : -1,
           "activity"   : ACTIVITY_LAST,
           "target"     : 0,
           "sub_target" : 0,
-          "action"     : ACTION_COUNT
+          "action"     : ACTION_COUNT,
+          "dir"        : -1
         };
 
         /* Add each individual order. */
         packet['orders'] = [];
-        /* Compute directions from consecutive tiles in the path.
-         * Start from index 0 (current position) and compute direction to index 1, etc. */
-        for (var i = 0; i < num_orders; i++) {
-          var from_tile = index_to_tile(path_tiles[i]);
-          var to_tile = index_to_tile(path_tiles[i + 1]);
+        for (var i = 0; i < goto_path['length']; i++) {
+          /* TODO: Have the server send the full orders in stead of just the
+           * dir part. Use that data in stead. */
 
-          if (from_tile == null || to_tile == null) {
-            /* Invalid tile data - could be a refuel waypoint or data issue.
-             * Use ORDER_FULL_MP as a fallback. */
+          if (goto_path['dir'][i] == -1) {
+            /* Assume that this means refuel. */
             order['order'] = ORDER_FULL_MP;
-            order['dir'] = -1;
+          } else if (i + 1 != goto_path['length']) {
+            /* Don't try to do an action in the middle of the path. */
+            order['order'] = ORDER_MOVE;
           } else {
-            /* Compute direction from current tile to next tile */
-            var dir = get_direction_for_step(from_tile, to_tile);
-            
-            if (dir < 0) {
-              /* Tiles are not adjacent - this shouldn't happen with valid paths
-               * from the server. Log error but continue to let server validate. */
-              console.error("Invalid direction in goto path: tiles " + 
-                           from_tile.index + " and " + to_tile.index + " are not adjacent");
-            }
-            
-            if (i + 1 != num_orders) {
-              /* Don't try to do an action in the middle of the path. */
-              order['order'] = ORDER_MOVE;
-            } else {
-              /* It is OK to end the path in an action. */
-              order['order'] = ORDER_ACTION_MOVE;
-            }
-            order['dir'] = dir;
+            /* It is OK to end the path in an action. */
+            order['order'] = ORDER_ACTION_MOVE;
           }
 
+          order['dir'] = goto_path['dir'][i];
           order['activity'] = ACTIVITY_LAST;
           order['target'] = 0;
           order['sub_target'] = 0;
@@ -3172,16 +3145,16 @@ function check_request_goto_path()
 
 /****************************************************************************
   Show the GOTO path in the unit_goto_path packet.
-  The packet now contains an array of tile indices instead of directions.
 ****************************************************************************/
 function update_goto_path(goto_packet)
 {
   var punit = units[goto_packet['unit_id']];
   if (punit == null) return;
+  var t0 = index_to_tile(punit['tile']);
+  var ptile = t0;
   var goaltile = index_to_tile(goto_packet['dest']);
 
-  // Pass the array of tile indices directly to the renderer
-  webgl_render_goto_line(goto_packet['tiles']);
+  webgl_render_goto_line(ptile, goto_packet['dir']);
 
   current_goto_turns = goto_packet['turns'];
 
