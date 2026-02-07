@@ -2964,7 +2964,7 @@ function key_unit_move(dir)
       return;
     }
 
-    var newtile = mapstep(ptile, dir_cw(dir));
+    var newtile = mapstep(ptile, dir_ccw(dir));
     if (newtile == null) {
       return;
     }
@@ -2972,7 +2972,7 @@ function key_unit_move(dir)
     /* Send the order to move using the orders system. */
     var order = {
       "order"      : ORDER_ACTION_MOVE,
-      "dir"        : dir,
+      "dir"        : dir_ccw(dir),
       "activity"   : ACTIVITY_LAST,
       "target"     : 0,
       "sub_target" : 0,
