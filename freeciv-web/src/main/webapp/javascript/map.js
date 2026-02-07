@@ -392,22 +392,18 @@ function dir_cw(dir)
 {
   /* a switch statement is used so the ordering can be changed easily */
   switch (dir) {
-  case DIR8_NORTH:
-    return DIR8_NORTHEAST;
   case DIR8_NORTHEAST:
     return DIR8_EAST;
   case DIR8_EAST:
     return DIR8_SOUTHEAST;
   case DIR8_SOUTHEAST:
-    return DIR8_SOUTH;
-  case DIR8_SOUTH:
     return DIR8_SOUTHWEST;
   case DIR8_SOUTHWEST:
     return DIR8_WEST;
   case DIR8_WEST:
     return DIR8_NORTHWEST;
   case DIR8_NORTHWEST:
-    return DIR8_NORTH;
+    return DIR8_NORTHEAST;
   }
 
   return -1;
@@ -420,18 +416,14 @@ function dir_ccw(dir)
 {
   /* a switch statement is used so the ordering can be changed easily */
   switch (dir) {
-  case DIR8_NORTH:
-    return DIR8_NORTHWEST;
   case DIR8_NORTHEAST:
-    return DIR8_NORTH;
+    return DIR8_NORTHWEST;
   case DIR8_EAST:
     return DIR8_NORTHEAST;
   case DIR8_SOUTHEAST:
     return DIR8_EAST;
-  case DIR8_SOUTH:
-    return DIR8_SOUTHEAST;
   case DIR8_SOUTHWEST:
-    return DIR8_SOUTH;
+    return DIR8_SOUTHEAST;
   case DIR8_WEST:
     return DIR8_SOUTHWEST;
   case DIR8_NORTHWEST:

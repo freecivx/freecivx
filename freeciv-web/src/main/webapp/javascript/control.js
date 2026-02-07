@@ -1967,48 +1967,45 @@ map_handle_key(keyboard_key, key_code, ctrl, alt, shift, the_event)
 
   }
 
-  // Numpad directions are rotated 45 degrees counterclockwise to match
-  // the 3D camera perspective, which views the map from the SE direction.
-  // This makes visual directions on screen match numpad expectations.
   switch (key_code) {
     case 35: // Numpad 1 (End) - visual down-left
     case 97:
-      key_unit_move(DIR8_SOUTH);
+      key_unit_move(DIR8_SOUTHWEST);
       break;
 
     case 40: // Numpad 2 (Down arrow) - visual down
     case 98:
-      key_unit_move(DIR8_SOUTHEAST);
+
       break;
 
     case 34: // Numpad 3 (Page Down) - visual down-right
     case 99:
-      key_unit_move(DIR8_EAST);
+      key_unit_move(DIR8_SOUTHEAST);
       break;
 
     case 37: // Numpad 4 (Left arrow) - visual left
     case 100:
-      key_unit_move(DIR8_SOUTHWEST);
+      key_unit_move(DIR8_WEST);
       break;
 
     case 39: // Numpad 6 (Right arrow) - visual right
     case 102:
-      key_unit_move(DIR8_NORTHEAST);
+      key_unit_move(DIR8_EAST);
       break;
 
     case 36: // Numpad 7 (Home) - visual up-left
     case 103:
-      key_unit_move(DIR8_WEST);
+      key_unit_move(DIR8_NORTHWEST);
       break;
 
     case 38: // Numpad 8 (Up arrow) - visual up
     case 104:
-      key_unit_move(DIR8_NORTHWEST);
+
       break;
 
     case 33: // Numpad 9 (Page Up) - visual up-right
     case 105:
-      key_unit_move(DIR8_NORTH);
+      key_unit_move(DIR8_NORTHEAST);
       break;
 
     case 27:
@@ -2967,7 +2964,7 @@ function key_unit_move(dir)
       return;
     }
 
-    var newtile = mapstep(ptile, dir);
+    var newtile = mapstep(ptile, dir_ccw(dir));
     if (newtile == null) {
       return;
     }
