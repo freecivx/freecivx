@@ -457,7 +457,7 @@ function createTerrainShaderTSL(uniforms) {
     //
     // The maptiles texture stores visibility in the alpha channel:
     // - 0 = TILE_UNKNOWN (black)
-    // - 138/255 ≈ 0.54 = TILE_KNOWN_UNSEEN (fogged)
+    // - 138/255 ≈ 0.541 = TILE_KNOWN_UNSEEN (fogged)
     // - 255/255 = 1.0 = TILE_KNOWN_SEEN (visible)
     //
     // By sampling at the hex tile center (tileCenterUV), we get a single visibility
@@ -468,9 +468,9 @@ function createTerrainShaderTSL(uniforms) {
     const tileVisibilityTex = texture(maptilesTex, tileCenterUV);
     const hexVisibility = tileVisibilityTex.a;  // Alpha channel contains visibility
     
-    // Convert texture value (0-1) to visibility scale (0 to VISIBILITY_VISIBLE)
-    // Texture stores: 0=unknown, 0.54=fogged, 1.0=visible
-    // Scale to match original visibility values: 0, 0.54, 1.06
+    // Convert texture value (0-1) to visibility scale
+    // Texture stores: 0=unknown, ~0.541=fogged, 1.0=visible
+    // After scaling by VISIBILITY_VISIBLE (1.06): 0, ~0.57, 1.06
     const hexVisibilityScaled = mul(hexVisibility, VISIBILITY_VISIBLE);
     
     // Apply smoothstep curve for softer edges within the visible/fogged regions

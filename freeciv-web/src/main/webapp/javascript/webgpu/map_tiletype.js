@@ -72,8 +72,8 @@ function update_tiletypes_tile(ptile)
   // Store visibility in alpha channel for hexagonal visibility edges
   // Visibility values (matching terrain shader constants):
   // - 0 = TILE_UNKNOWN (black)
-  // - 138 (~0.54 * 255) = TILE_KNOWN_UNSEEN (fogged)
-  // - 255 (~1.0 * 255) = TILE_KNOWN_SEEN (visible)
+  // - 138 (≈0.541 * 255) = TILE_KNOWN_UNSEEN (fogged)
+  // - 255 (1.0 * 255) = TILE_KNOWN_SEEN (visible)
   // The shader will sample this at hex tile center to create hex-aligned visibility boundaries
   if (typeof tile_get_known !== 'undefined') {
     let known_status = tile_get_known(ptile);
