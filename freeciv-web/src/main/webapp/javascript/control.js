@@ -1689,12 +1689,20 @@ function do_map_click(ptile, qtype, first_time_called)
           var to_tile = index_to_tile(path_tiles[i + 1]);
 
           if (from_tile == null || to_tile == null) {
-            /* Assume that this means refuel. */
+            /* Invalid tile data - could be a refuel waypoint or data issue.
+             * Use ORDER_FULL_MP as a fallback. */
             order['order'] = ORDER_FULL_MP;
             order['dir'] = -1;
           } else {
             /* Compute direction from current tile to next tile */
             var dir = get_direction_for_step(from_tile, to_tile);
+            
+            if (dir < 0) {
+              /* Tiles are not adjacent - this shouldn't happen with valid paths
+               * from the server. Log error but continue to let server validate. */
+              console.error("Invalid direction in goto path: tiles " + 
+                           from_tile.index + " and " + to_tile.index + " are not adjacent");
+            }
             
             if (i + 1 != num_orders) {
               /* Don't try to do an action in the middle of the path. */
