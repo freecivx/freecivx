@@ -680,13 +680,17 @@ function createTerrainShaderTSL(uniforms) {
     // We detect border edges by comparing the current tile's owner with neighbors.
     // Where ownership changes, we draw a colored border line.
     
-    // Border edge detection constants
-    const BORDER_EDGE_THRESHOLD_POS = 0.75;    // Position threshold for E/W edge detection (0.75 = last 25% of tile)
-    const BORDER_EDGE_WIDTH_POS = 0.25;        // Position for W edge (first 25% of tile)
-    const BORDER_EDGE_SHARPNESS = 8.0;         // Sharpness factor for edge falloff
-    const BORDER_DIAGONAL_SHARPNESS = 4.0;     // Sharpness factor for diagonal edges
-    const BORDER_CORNER_THRESHOLD = 0.5;       // Center threshold for corner detection
+    // Border edge detection constants - narrower lines for less intrusive borders
+    const BORDER_EDGE_THRESHOLD_POS = 0.88;    // Position threshold for E/W edge detection (0.88 = last 12% of tile, narrower)
+    const BORDER_EDGE_WIDTH_POS = 0.12;        // Position for W edge (first 12% of tile, narrower)
+    const BORDER_EDGE_SHARPNESS = 12.0;        // Sharpness factor for edge falloff (sharper for narrower lines)
+    const BORDER_DIAGONAL_SHARPNESS = 6.0;     // Sharpness factor for diagonal edges
+    const BORDER_CORNER_THRESHOLD = 0.6;       // Center threshold for corner detection (narrower corners)
     const BORDER_COLOR_DIFF_THRESHOLD = 0.05;  // Minimum RGB difference to detect nation boundary
+    
+    // Dashed line pattern constants
+    const DASH_FREQUENCY = 8.0;                // Number of dashes per tile edge
+    const DASH_RATIO = 0.6;                    // Ratio of dash to gap (0.6 = 60% dash, 40% gap)
     
     // Sample border color (nation color) for current tile and neighbors
     const currentBorder = texture(bordersTex, tileCenterUV);
@@ -753,8 +757,29 @@ function createTerrainShaderTSL(uniforms) {
     // Combine all edge factors
     const totalEdgeFactor = max(max(max(max(max(eastEdgeFactor, westEdgeFactor), neEdgeFactor), nwEdgeFactor), seEdgeFactor), swEdgeFactor);
     
+    // Create dashed line pattern using position along the edge
+    // For E/W edges, use Y position; for diagonal edges, use combined X+Y
+    // The dash pattern is created by taking the fractional part of (position * frequency)
+    // and comparing it to the dash ratio
+    const dashPatternY = step(fract(mul(localY, DASH_FREQUENCY)), DASH_RATIO);
+    const dashPatternX = step(fract(mul(localX, DASH_FREQUENCY)), DASH_RATIO);
+    const dashPatternDiagonal = step(fract(mul(add(localX, localY), DASH_FREQUENCY)), DASH_RATIO);
+    
+    // Apply dash pattern to each edge type:
+    // - E/W edges use Y-based pattern (dashes along vertical edges)
+    // - Diagonal edges use combined pattern
+    const dashedEastEdge = mul(eastEdgeFactor, dashPatternY);
+    const dashedWestEdge = mul(westEdgeFactor, dashPatternY);
+    const dashedNEEdge = mul(neEdgeFactor, dashPatternDiagonal);
+    const dashedNWEdge = mul(nwEdgeFactor, dashPatternDiagonal);
+    const dashedSEEdge = mul(seEdgeFactor, dashPatternDiagonal);
+    const dashedSWEdge = mul(swEdgeFactor, dashPatternDiagonal);
+    
+    // Combine all dashed edge factors
+    const dashedTotalEdgeFactor = max(max(max(max(max(dashedEastEdge, dashedWestEdge), dashedNEEdge), dashedNWEdge), dashedSEEdge), dashedSWEdge);
+    
     // Use hex edge mask to concentrate border lines at hex boundaries
-    const borderLineFactor = mul(totalEdgeFactor, hexEdgeMask);
+    const borderLineFactor = mul(dashedTotalEdgeFactor, hexEdgeMask);
     
     // Border line width and intensity
     const borderLineIntensity = 0.85;  // How opaque the border line is

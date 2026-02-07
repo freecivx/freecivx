@@ -35,10 +35,11 @@ function init_borders_image()
   for (let x = 0; x < map.xsize; x++) {
     for (let y = 0; y < map.ysize; y++) {
       let index = (y * map.xsize + x) * 4;
-      borders_data[index] = 142;
+      // Initialize with transparent (alpha=0) so unowned tiles don't show any border
+      borders_data[index] = 0;
       borders_data[index + 1] = 0;
       borders_data[index + 2] = 0;
-      borders_data[index + 3] = 255;
+      borders_data[index + 3] = 0;
     }
   }
 }
@@ -59,19 +60,25 @@ function update_borders_tile(ptile)
     var pplayer = players[ptile['owner']];
 
     if (pplayer && nations[pplayer['nation']] && nations[pplayer['nation']].color != null) {
+      // Valid nation color - set the border with full alpha
       let nation_colors = nations[pplayer['nation']].color.replace("rgb(", "").replace(")", "").split(",");
       borders_data[index] = parseInt(nation_colors[0]) * 0.65;
       borders_data[index + 1] = parseInt(nation_colors[1]) * 0.65;
       borders_data[index + 2] = parseInt(nation_colors[2]) * 0.65;
+      borders_data[index + 3] = 255;
     } else {
-      borders_data[index] = 142;
+      // No valid nation color - set transparent (no border)
+      borders_data[index] = 0;
       borders_data[index + 1] = 0;
       borders_data[index + 2] = 0;
+      borders_data[index + 3] = 0;
     }
   } else {
-    borders_data[index] = 142;
+    // No owner - set transparent (no border)
+    borders_data[index] = 0;
     borders_data[index + 1] = 0;
     borders_data[index + 2] = 0;
+    borders_data[index + 3] = 0;
   }
   if ((borders_data[index] + borders_data[index + 1] + borders_data[index + 2]) != old_value) {
     borders_texture.needsUpdate = true;
