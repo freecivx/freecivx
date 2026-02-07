@@ -21,15 +21,16 @@
 var map = {};
 var tiles = {};
 
+/* Reordered Direction Constants (6-way Hex) */
 var DIR8_NORTHWEST = 0;
-var DIR8_NORTH = 1;
-var DIR8_NORTHEAST = 2;
-var DIR8_WEST = 3;
-var DIR8_EAST = 4;
-var DIR8_SOUTHWEST = 5;
-var DIR8_SOUTH = 6;
-var DIR8_SOUTHEAST = 7;
-var DIR8_LAST = 8;
+var DIR8_NORTHEAST = 1;
+var DIR8_WEST      = 2;
+var DIR8_EAST      = 3;
+var DIR8_SOUTHWEST = 4;
+var DIR8_SOUTHEAST = 5;
+
+/* Updated count for 6 directions */
+var DIR8_LAST  = 6;
 var DIR8_COUNT = DIR8_LAST;
 
 var WRAP_X = 1;
@@ -38,23 +39,15 @@ var WRAP_Y = 2;
 var TF_ISO = 1;
 var TF_HEX = 2;
 
-var T_NONE = 0; /* A special flag meaning no terrain type. */
-var T_UNKNOWN = 0; /* An unknown terrain. */
-
-/* The first terrain value. */
+var T_NONE = 0;
+var T_UNKNOWN = 0;
 var T_FIRST = 0;
 
 /* Direction offsets for computing neighboring tiles.
- * These work for both square and hexagonal topologies.
- * For hex maps, N (1) and S (6) are invalid directions - filtered by is_valid_dir().
- *
- * Direction indices correspond to:
- *   0=NW, 1=N, 2=NE, 3=W, 4=E, 5=SW, 6=S, 7=SE
- *
- * Valid hex directions: NW(0), NE(2), W(3), E(4), SW(5), SE(7)
+ * Order: NW, NE, W, E, SW, SE
  */
-var DIR_DX = [ 0, 1, -1, 1, -1, 0, 1, -1 ];
-var DIR_DY = [ -1, -1, 0, 0, 1, 1, 1, -1 ];
+var DIR_DX = [ -1, 1, -1, 1, -1, 1 ];
+var DIR_DY = [  1, 1,  0, 0, -1, -1 ];
 
 
 /****************************************************************************
