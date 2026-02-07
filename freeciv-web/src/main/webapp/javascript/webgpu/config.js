@@ -74,7 +74,7 @@ const LightingConfig = Object.freeze({
     /** Ambient light color (hex) */
     AMBIENT_COLOR: 0x606060,
     /** Ambient light intensity (using PI for physically-based lighting) */
-    AMBIENT_INTENSITY: 1.2 * Math.PI,
+    AMBIENT_INTENSITY: 1.3 * Math.PI,
     
     /** Directional light color (hex) */
     DIRECTIONAL_COLOR: 0xffffff,
