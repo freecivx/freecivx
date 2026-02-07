@@ -281,7 +281,8 @@ function createTerrainShaderTSL(uniforms) {
 
     // Sample terrain type using hex tile center
     const terrainType = texture(maptilesTex, sampledUV);
-    const borderColor = texture(bordersTex, hexUV);
+    // Sample border color using tile center UV (like terrain) for consistent border color per hex tile
+    const borderColor = texture(bordersTex, tileCenterUV);
 
     // Calculate texture coordinates for terrain detail within the hex
     // dx/dy: Local position within the current hex tile (0-1 range)

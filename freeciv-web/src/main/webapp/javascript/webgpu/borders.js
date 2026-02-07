@@ -61,8 +61,8 @@ function update_borders_tile(ptile)
     if (pplayer && nations[pplayer['nation']] && nations[pplayer['nation']].color != null) {
       let nation_colors = nations[pplayer['nation']].color.replace("rgb(", "").replace(")", "").split(",");
       borders_data[index] = parseInt(nation_colors[0]) * 0.65;
-      borders_data[index + 1] = parseInt(nation_colors[2]) * 0.65;
-      borders_data[index + 2] =  parseInt(nation_colors[1]) * 0.65;
+      borders_data[index + 1] = parseInt(nation_colors[1]) * 0.65;
+      borders_data[index + 2] = parseInt(nation_colors[2]) * 0.65;
     } else {
       borders_data[index] = 142;
       borders_data[index + 1] = 0;
