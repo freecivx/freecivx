@@ -65,7 +65,7 @@ function set_client_state(newstate)
 
       $("#dialog").dialog('close');
       $("#pregame_page").hide();
-
+      $("#game_text_input").blur();
 
       break;
     case C_S_OVER:
