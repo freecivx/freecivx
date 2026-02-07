@@ -22,6 +22,7 @@ var map_geometry_dirty = true;
 
 /**************************************************************************
  Updates the terrain vertex colors to set tile to known, unknown or fogged.
+ Also updates the maptiles texture visibility for hexagonal edge rendering.
 **************************************************************************/
 function webgl_update_tile_known(old_tile, new_tile)
 {
@@ -33,6 +34,10 @@ function webgl_update_tile_known(old_tile, new_tile)
 
   if (tile_get_known(new_tile) != tile_get_known(old_tile)) {
     map_known_dirty = true;
+    // Update visibility in maptiles texture for hex-aligned visibility boundaries
+    if (typeof update_tiletypes_visibility !== 'undefined') {
+      update_tiletypes_visibility(new_tile);
+    }
   }
 
 }

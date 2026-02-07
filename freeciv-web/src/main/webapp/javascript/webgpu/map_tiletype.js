@@ -69,6 +69,52 @@ function update_tiletypes_tile(ptile)
     maptiles_data[index + 2] = 0;
   }
 
+  // Store visibility in alpha channel for hexagonal visibility edges
+  // Visibility values (matching terrain shader constants):
+  // - 0 = TILE_UNKNOWN (black)
+  // - 138 (≈0.541 * 255) = TILE_KNOWN_UNSEEN (fogged)
+  // - 255 (1.0 * 255) = TILE_KNOWN_SEEN (visible)
+  // The shader will sample this at hex tile center to create hex-aligned visibility boundaries
+  if (typeof tile_get_known !== 'undefined') {
+    let known_status = tile_get_known(ptile);
+    if (known_status == TILE_KNOWN_SEEN) {
+      maptiles_data[index + 3] = 255;  // Fully visible
+    } else if (known_status == TILE_KNOWN_UNSEEN) {
+      maptiles_data[index + 3] = 138;  // Fogged (0.54 * 255 ≈ 138)
+    } else {
+      maptiles_data[index + 3] = 0;    // Unknown
+    }
+  } else {
+    maptiles_data[index + 3] = 0;
+  }
+
   maptiletypes.needsUpdate = true;
 
+}
+
+/****************************************************************************
+  Updates just the visibility information for a tile in the maptiles texture.
+  Called when tile visibility changes (fog of war updates).
+****************************************************************************/
+function update_tiletypes_visibility(ptile)
+{
+  if (ptile == null || maptiles_data == null) return;
+  
+  let x = ptile.x;
+  let y = ptile.y;
+  let index = (y * map.xsize + x) * 4;
+  
+  // Update alpha channel with visibility
+  if (typeof tile_get_known !== 'undefined') {
+    let known_status = tile_get_known(ptile);
+    if (known_status == TILE_KNOWN_SEEN) {
+      maptiles_data[index + 3] = 255;  // Fully visible
+    } else if (known_status == TILE_KNOWN_UNSEEN) {
+      maptiles_data[index + 3] = 138;  // Fogged
+    } else {
+      maptiles_data[index + 3] = 0;    // Unknown
+    }
+  }
+  
+  maptiletypes.needsUpdate = true;
 }
