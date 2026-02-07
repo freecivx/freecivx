@@ -2972,12 +2972,10 @@ function key_unit_move(dir)
       return;
     }
 
-    /* Send the order to move using the orders system.
-     * Rotate direction counterclockwise to match server's direction interpretation. */
-    var server_dir = dir_ccw(dir);
+    /* Send the order to move using the orders system. */
     var order = {
       "order"      : ORDER_ACTION_MOVE,
-      "dir"        : server_dir,
+      "dir"        : dir,
       "activity"   : ACTIVITY_LAST,
       "target"     : 0,
       "sub_target" : 0,
@@ -3236,17 +3234,12 @@ function should_use_simple_move(punit, newtile)
 
 /****************************************************************************
   Create a move order packet for a single step.
-  Note: The direction is rotated counterclockwise to match server's 
-  interpretation of directions, which differs from the client's mapstep().
 ****************************************************************************/
 function create_single_move_packet(punit, ptile, newtile, dir)
 {
-  /* Rotate direction counterclockwise to match server's direction interpretation. */
-  var server_dir = dir_ccw(dir);
-  
   var order = {
     "order"      : should_use_simple_move(punit, newtile) ? ORDER_MOVE : ORDER_ACTION_MOVE,
-    "dir"        : server_dir,
+    "dir"        : dir,
     "activity"   : ACTIVITY_LAST,
     "target"     : 0,
     "sub_target" : 0,
