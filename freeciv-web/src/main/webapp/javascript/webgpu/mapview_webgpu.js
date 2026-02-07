@@ -55,11 +55,29 @@ function webgpu_start_renderer()
   ambientLight.name = "ambient_light";
   scene.add(ambientLight);
 
-  // Directional light for general scene lighting (better WebGPU compatibility)
-  var directionalLight = new THREE.DirectionalLight( 0xffffff, 2.0 * Math.PI );
-  directionalLight.position.set(100, 200, 100);
+  // Directional light for general scene lighting and shadow casting
+  // Positioned to simulate sunlight from the southeast at an elevated angle
+  directionalLight = new THREE.DirectionalLight( 0xffffff, 2.0 * Math.PI );
+  directionalLight.position.set(500, 800, 500);
   directionalLight.name = "directional_light";
+  
+  // Enable shadow casting on directional light for sun-like parallel shadows
+  directionalLight.castShadow = true;
+  directionalLight.shadow.mapSize.width = 4096;
+  directionalLight.shadow.mapSize.height = 4096;
+  directionalLight.shadow.camera.near = 100;
+  directionalLight.shadow.camera.far = 3000;
+  // Large orthographic frustum to cover visible terrain area
+  directionalLight.shadow.camera.left = -1500;
+  directionalLight.shadow.camera.right = 1500;
+  directionalLight.shadow.camera.top = 1500;
+  directionalLight.shadow.camera.bottom = -1500;
+  directionalLight.shadow.bias = -0.0005;
+  directionalLight.shadow.normalBias = 0.02;
+  
   scene.add(directionalLight);
+  // Add the directional light's target to the scene (required for shadow direction)
+  scene.add(directionalLight.target);
 
   // Additional point lights to validate WebGPU lighting coverage
   var keyLight = new THREE.PointLight(0xffffff, 1.0 * Math.PI, 0, 2);
@@ -91,11 +109,15 @@ function webgpu_start_renderer()
     enable_antialiasing = false;
   }
 
-  // Create WebGPU Renderer
+  // Create WebGPU Renderer with shadow map support
   maprenderer = new THREE.WebGPURenderer( { antialias: enable_antialiasing, preserveDrawingBuffer: true } );
   maprenderer.outputColorSpace = THREE.LinearSRGBColorSpace;
   maprenderer.frustumCulled = true;
   maprenderer.setAnimationLoop(animate_webgl);
+  
+  // Enable shadow maps for rendering shadows from lights onto geometry
+  maprenderer.shadowMap.enabled = true;
+  maprenderer.shadowMap.type = THREE.PCFSoftShadowMap;
 
   maprenderer.setPixelRatio(window.devicePixelRatio);
   maprenderer.setSize(new_mapview_width, new_mapview_height);
@@ -368,14 +390,17 @@ async function init_webgpu_mapview() {
   scene.add(landMesh);
   console.log("Land mesh triangles: " + landGeometry.index.count / 3);
 
-  if (graphics_quality === QUALITY_HIGH) {
+  if (graphics_quality >= QUALITY_MEDIUM) {
+    // Shadow mesh overlays the terrain to receive shadows from 3D objects
+    // Uses ShadowMaterial which only renders shadows cast onto it
     var shadowMaterial = new THREE.ShadowMaterial();
-    shadowMaterial.opacity = 0.92;
+    shadowMaterial.opacity = 0.65;  // Shadow darkness (0=invisible, 1=fully dark)
     shadowmesh = new THREE.Mesh( landGeometry, shadowMaterial);
     shadowmesh.receiveShadow = true;
     shadowmesh.castShadow = false;
     shadowmesh.name = "shadow_mesh";
     scene.add(shadowmesh);
+    console.log("Shadow mesh enabled for terrain shadow receiving");
   }
 
   update_map_terrain_geometry();

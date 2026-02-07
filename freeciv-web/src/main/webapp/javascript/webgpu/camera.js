@@ -46,6 +46,14 @@ function camera_look_at(x, y, z)
     spotlight.shadow.camera.position.copy(spotlight.position);
     spotlight.shadow.camera.lookAt(new THREE.Vector3(x - 200, 0, z + 500));
 
+    // Update directional light position for shadow casting
+    // The light follows the camera view to ensure shadows are rendered in visible area
+    if (directionalLight != null) {
+      directionalLight.position.set(x + 500, 800, z + 500);
+      directionalLight.target.position.set(x, 0, z);
+      directionalLight.target.updateMatrixWorld();
+    }
+
     if (sun_mesh != null) {
       sun_mesh.position.set( x + 500, 900, z + 500);
     }
