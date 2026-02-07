@@ -108,6 +108,7 @@ function clear_goto_texture() {
  on marked tiles.
  
  @param {Array} tile_indices - Array of tile indices for the path (from server)
+                              Note: First tile (index 0) is the unit's starting position
  ****************************************************************************/
 function webgl_render_goto_line(tile_indices) {
     clear_goto_tiles();
@@ -116,15 +117,18 @@ function webgl_render_goto_line(tile_indices) {
         init_goto_tiles_texture();
     }
     if (goto_tiles_data == null) return;
-    if (tile_indices == null || tile_indices.length == 0) return;
+    if (tile_indices == null || tile_indices.length <= 1) return;
 
     // Mark each tile in the path using the tile indices from the server
-    for (var stepIndex = 0; stepIndex < tile_indices.length; stepIndex++) {
+    // Skip the first tile (index 0) since it's the unit's current position
+    // We only want to highlight where the unit will GO, not where it IS
+    for (var stepIndex = 1; stepIndex < tile_indices.length; stepIndex++) {
         var tileIndex = tile_indices[stepIndex];
         var tile = index_to_tile(tileIndex);
         
         if (tile != null) {
-            mark_goto_tile(tile, stepIndex);
+            // stepIndex - 1 so the first destination tile has step index 0
+            mark_goto_tile(tile, stepIndex - 1);
         }
     }
     
