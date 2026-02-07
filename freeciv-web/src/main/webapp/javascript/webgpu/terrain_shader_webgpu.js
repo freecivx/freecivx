@@ -462,67 +462,70 @@ function createTerrainShaderTSL(uniforms) {
     const hasRailroadJunction = mul(step(42.5, roadIndex), step(roadIndex, 43.5));
     
     // Map sprite index to sprite sheet coordinates
-    // Roads: indices 1-9 map to sprites in first 2 rows
-    // Railroads: indices 10-19 map to sprites (subtract 9 to get row offset)
-    // Junction special cases: 42 = road junction (row 0, col 0), 43 = rail junction (row 0, col 0)
+    // The sprite sheet is a 4x4 grid (16 sprites total)
+    // Roads: indices 1-9 map to different directional sprites
+    // Railroads: indices 10-19 map to different directional sprites
+    // Junction special cases: 42 = road 4-way, 43 = rail 4-way (both use row 0, col 0)
     
     // Calculate sprite UV coordinates within tile
     // Each sprite is 1/4 of the texture in both dimensions (4x4 grid)
     const spriteU = div(1.0, ROAD_SPRITE_COLS);
     const spriteV = div(1.0, ROAD_SPRITE_ROWS);
     
-    // Road sprite selection (simplified - use index to select sprite)
-    // Sprite layout: row 0 = junctions + specials, rows 1-3 = directional segments
-    const roadSpriteIndex = sub(roadIndex, 1.0);  // Convert 1-based to 0-based
+    // Road sprite selection (indices 1-9 for regular roads)
+    // For junctions (index 42), we handle separately with junctionUV
+    const roadSpriteIndex = sub(roadIndex, 1.0);  // Convert 1-based to 0-based (0-8)
     const roadCol = mod(roadSpriteIndex, ROAD_SPRITE_COLS);
     const roadRow = floor(div(roadSpriteIndex, ROAD_SPRITE_COLS));
     
-    // Railroad sprite selection (indices 10-19)
-    const railSpriteIndex = sub(roadIndex, 10.0);  // Convert 10-based to 0-based
+    // Railroad sprite selection (indices 10-19 for regular railroads)
+    // For junctions (index 43), we handle separately with junctionUV
+    const railSpriteIndex = sub(roadIndex, 10.0);  // Convert 10-based to 0-based (0-9)
     const railCol = mod(railSpriteIndex, ROAD_SPRITE_COLS);
     const railRow = floor(div(railSpriteIndex, ROAD_SPRITE_COLS));
     
-    // Sample road sprite (scale local coords to sprite sheet)
+    // Sample road sprite for regular roads (scale local coords to sprite sheet)
     const roadSpriteUV = vec2(
         add(mul(localX, spriteU), mul(roadCol, spriteU)),
         add(mul(localY, spriteV), mul(roadRow, spriteV))
     );
     const roadSprite = texture(roadspritesTex, roadSpriteUV);
     
-    // Sample railroad sprite
+    // Sample railroad sprite for regular railroads
     const railSpriteUV = vec2(
         add(mul(localX, spriteU), mul(railCol, spriteU)),
         add(mul(localY, spriteV), mul(railRow, spriteV))
     );
     const railSprite = texture(railroadspritesTex, railSpriteUV);
     
-    // Junction sprites (both use position 0,0 in sprite sheet)
+    // Junction sprites - 4-way junctions use position 0,0 in sprite sheet (top-left)
     const junctionUV = vec2(mul(localX, spriteU), mul(localY, spriteV));
     const roadJunctionSprite = texture(roadspritesTex, junctionUV);
     const railJunctionSprite = texture(railroadspritesTex, junctionUV);
     
-    // Blend roads onto terrain (only where sprite alpha > 0)
-    const roadAlpha = mul(add(hasRoad, hasRoadJunction), roadSprite.a);
+    // Blend regular roads onto terrain (only where sprite alpha > 0)
+    // hasRoad is 1 for indices 1-9, hasRoadJunction is separate
+    const roadAlpha = mul(hasRoad, roadSprite.a);
     finalColor = vec4(
         mix(finalColor.rgb, roadSprite.rgb, mul(roadAlpha, 0.9)),
         finalColor.a
     );
     
-    // Blend road junctions
+    // Blend road junctions separately (index 42 only)
     const roadJunctionAlpha = mul(hasRoadJunction, roadJunctionSprite.a);
     finalColor = vec4(
         mix(finalColor.rgb, roadJunctionSprite.rgb, mul(roadJunctionAlpha, 0.9)),
         finalColor.a
     );
     
-    // Blend railroads onto terrain
-    const railAlpha = mul(add(hasRailroad, hasRailroadJunction), railSprite.a);
+    // Blend regular railroads onto terrain (indices 10-19)
+    const railAlpha = mul(hasRailroad, railSprite.a);
     finalColor = vec4(
         mix(finalColor.rgb, railSprite.rgb, mul(railAlpha, 0.95)),
         finalColor.a
     );
     
-    // Blend railroad junctions
+    // Blend railroad junctions separately (index 43 only)
     const railJunctionAlpha = mul(hasRailroadJunction, railJunctionSprite.a);
     finalColor = vec4(
         mix(finalColor.rgb, railJunctionSprite.rgb, mul(railJunctionAlpha, 0.95)),
@@ -677,6 +680,14 @@ function createTerrainShaderTSL(uniforms) {
     // We detect border edges by comparing the current tile's owner with neighbors.
     // Where ownership changes, we draw a colored border line.
     
+    // Border edge detection constants
+    const BORDER_EDGE_THRESHOLD_POS = 0.75;    // Position threshold for E/W edge detection (0.75 = last 25% of tile)
+    const BORDER_EDGE_WIDTH_POS = 0.25;        // Position for W edge (first 25% of tile)
+    const BORDER_EDGE_SHARPNESS = 8.0;         // Sharpness factor for edge falloff
+    const BORDER_DIAGONAL_SHARPNESS = 4.0;     // Sharpness factor for diagonal edges
+    const BORDER_CORNER_THRESHOLD = 0.5;       // Center threshold for corner detection
+    const BORDER_COLOR_DIFF_THRESHOLD = 0.05;  // Minimum RGB difference to detect nation boundary
+    
     // Sample border color (nation color) for current tile and neighbors
     const currentBorder = texture(bordersTex, tileCenterUV);
     const borderE = texture(bordersTex, neighborUV_E);
@@ -690,15 +701,16 @@ function createTerrainShaderTSL(uniforms) {
     const hasBorder = step(0.1, currentBorder.a);
     
     // Detect border edges by comparing RGB values with neighbors
-    // A border edge exists where the current tile's border color differs from a neighbor
-    const borderDiffE = abs(sub(currentBorder.r, borderE.r));
-    const borderDiffW = abs(sub(currentBorder.r, borderW.r));
-    const borderDiffNE = abs(sub(currentBorder.r, borderNE.r));
-    const borderDiffNW = abs(sub(currentBorder.r, borderNW.r));
-    const borderDiffSE = abs(sub(currentBorder.r, borderSE.r));
-    const borderDiffSW = abs(sub(currentBorder.r, borderSW.r));
+    // Compare all three color channels for accurate nation detection
+    // Red channel differences
+    const borderDiffRE = abs(sub(currentBorder.r, borderE.r));
+    const borderDiffRW = abs(sub(currentBorder.r, borderW.r));
+    const borderDiffRNE = abs(sub(currentBorder.r, borderNE.r));
+    const borderDiffRNW = abs(sub(currentBorder.r, borderNW.r));
+    const borderDiffRSE = abs(sub(currentBorder.r, borderSE.r));
+    const borderDiffRSW = abs(sub(currentBorder.r, borderSW.r));
     
-    // Also check green channel for more accurate color comparison
+    // Green channel differences
     const borderDiffGE = abs(sub(currentBorder.g, borderE.g));
     const borderDiffGW = abs(sub(currentBorder.g, borderW.g));
     const borderDiffGNE = abs(sub(currentBorder.g, borderNE.g));
@@ -706,30 +718,37 @@ function createTerrainShaderTSL(uniforms) {
     const borderDiffGSE = abs(sub(currentBorder.g, borderSE.g));
     const borderDiffGSW = abs(sub(currentBorder.g, borderSW.g));
     
-    // Combine color differences (threshold for detecting different nations)
-    const borderThreshold = 0.05;
-    const isEdgeE = step(borderThreshold, add(borderDiffE, borderDiffGE));
-    const isEdgeW = step(borderThreshold, add(borderDiffW, borderDiffGW));
-    const isEdgeNE = step(borderThreshold, add(borderDiffNE, borderDiffGNE));
-    const isEdgeNW = step(borderThreshold, add(borderDiffNW, borderDiffGNW));
-    const isEdgeSE = step(borderThreshold, add(borderDiffSE, borderDiffGSE));
-    const isEdgeSW = step(borderThreshold, add(borderDiffSW, borderDiffGSW));
+    // Blue channel differences
+    const borderDiffBE = abs(sub(currentBorder.b, borderE.b));
+    const borderDiffBW = abs(sub(currentBorder.b, borderW.b));
+    const borderDiffBNE = abs(sub(currentBorder.b, borderNE.b));
+    const borderDiffBNW = abs(sub(currentBorder.b, borderNW.b));
+    const borderDiffBSE = abs(sub(currentBorder.b, borderSE.b));
+    const borderDiffBSW = abs(sub(currentBorder.b, borderSW.b));
+    
+    // Combine all color channel differences (RGB sum) for threshold comparison
+    const isEdgeE = step(BORDER_COLOR_DIFF_THRESHOLD, add(add(borderDiffRE, borderDiffGE), borderDiffBE));
+    const isEdgeW = step(BORDER_COLOR_DIFF_THRESHOLD, add(add(borderDiffRW, borderDiffGW), borderDiffBW));
+    const isEdgeNE = step(BORDER_COLOR_DIFF_THRESHOLD, add(add(borderDiffRNE, borderDiffGNE), borderDiffBNE));
+    const isEdgeNW = step(BORDER_COLOR_DIFF_THRESHOLD, add(add(borderDiffRNW, borderDiffGNW), borderDiffBNW));
+    const isEdgeSE = step(BORDER_COLOR_DIFF_THRESHOLD, add(add(borderDiffRSE, borderDiffGSE), borderDiffBSE));
+    const isEdgeSW = step(BORDER_COLOR_DIFF_THRESHOLD, add(add(borderDiffRSW, borderDiffGSW), borderDiffBSW));
     
     // Calculate directional edge factors based on position within hex
     // This creates border lines at the actual hex edges facing different directions
     
-    // East edge: line appears when x is near +0.5 and there's a border difference
-    const eastEdgeFactor = mul(isEdgeE, clamp(mul(sub(localX, 0.75), 8.0), 0.0, 1.0));
-    // West edge: line appears when x is near 0 and there's a border difference  
-    const westEdgeFactor = mul(isEdgeW, clamp(mul(sub(0.25, localX), 8.0), 0.0, 1.0));
+    // East edge: line appears at right side of tile (x near 1.0)
+    const eastEdgeFactor = mul(isEdgeE, clamp(mul(sub(localX, BORDER_EDGE_THRESHOLD_POS), BORDER_EDGE_SHARPNESS), 0.0, 1.0));
+    // West edge: line appears at left side of tile (x near 0)  
+    const westEdgeFactor = mul(isEdgeW, clamp(mul(sub(BORDER_EDGE_WIDTH_POS, localX), BORDER_EDGE_SHARPNESS), 0.0, 1.0));
     // NE edge: appears at upper-right corner region
-    const neEdgeFactor = mul(isEdgeNE, mul(clamp(mul(sub(localX, 0.5), 4.0), 0.0, 1.0), clamp(mul(sub(localY, 0.5), 4.0), 0.0, 1.0)));
+    const neEdgeFactor = mul(isEdgeNE, mul(clamp(mul(sub(localX, BORDER_CORNER_THRESHOLD), BORDER_DIAGONAL_SHARPNESS), 0.0, 1.0), clamp(mul(sub(localY, BORDER_CORNER_THRESHOLD), BORDER_DIAGONAL_SHARPNESS), 0.0, 1.0)));
     // NW edge: appears at upper-left corner region
-    const nwEdgeFactor = mul(isEdgeNW, mul(clamp(mul(sub(0.5, localX), 4.0), 0.0, 1.0), clamp(mul(sub(localY, 0.5), 4.0), 0.0, 1.0)));
+    const nwEdgeFactor = mul(isEdgeNW, mul(clamp(mul(sub(BORDER_CORNER_THRESHOLD, localX), BORDER_DIAGONAL_SHARPNESS), 0.0, 1.0), clamp(mul(sub(localY, BORDER_CORNER_THRESHOLD), BORDER_DIAGONAL_SHARPNESS), 0.0, 1.0)));
     // SE edge: appears at lower-right corner region
-    const seEdgeFactor = mul(isEdgeSE, mul(clamp(mul(sub(localX, 0.5), 4.0), 0.0, 1.0), clamp(mul(sub(0.5, localY), 4.0), 0.0, 1.0)));
+    const seEdgeFactor = mul(isEdgeSE, mul(clamp(mul(sub(localX, BORDER_CORNER_THRESHOLD), BORDER_DIAGONAL_SHARPNESS), 0.0, 1.0), clamp(mul(sub(BORDER_CORNER_THRESHOLD, localY), BORDER_DIAGONAL_SHARPNESS), 0.0, 1.0)));
     // SW edge: appears at lower-left corner region
-    const swEdgeFactor = mul(isEdgeSW, mul(clamp(mul(sub(0.5, localX), 4.0), 0.0, 1.0), clamp(mul(sub(0.5, localY), 4.0), 0.0, 1.0)));
+    const swEdgeFactor = mul(isEdgeSW, mul(clamp(mul(sub(BORDER_CORNER_THRESHOLD, localX), BORDER_DIAGONAL_SHARPNESS), 0.0, 1.0), clamp(mul(sub(BORDER_CORNER_THRESHOLD, localY), BORDER_DIAGONAL_SHARPNESS), 0.0, 1.0)));
     
     // Combine all edge factors
     const totalEdgeFactor = max(max(max(max(max(eastEdgeFactor, westEdgeFactor), neEdgeFactor), nwEdgeFactor), seEdgeFactor), swEdgeFactor);
