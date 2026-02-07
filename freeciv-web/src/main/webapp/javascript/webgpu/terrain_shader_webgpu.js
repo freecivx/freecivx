@@ -80,15 +80,8 @@ function createTerrainShaderTSL(uniforms) {
     const TERRAIN_TUNDRA = 130.0;
 
     // Height constants for beach blending
-    // Beach zone extends from water level (50.0) up to this height
-    const BEACH_HIGH = 51.5;  // Upper edge of beach zone
-    const BEACH_BLEND_HIGH = 50.8;  // Start of beach transition from terrain
-    const BEACH_BLEND_LOW = 50.2;  // Lower beach edge near water
-    
-    // Natural beach sand colors (warm sandy tones)
-    const BEACH_COLOR_R = 0.92;  // Warm sand red component
-    const BEACH_COLOR_G = 0.82;  // Warm sand green component
-    const BEACH_COLOR_B = 0.62;  // Warm sand blue component
+    const BEACH_HIGH = 50.9;
+    const BEACH_BLEND_HIGH = 50.4;
 
     // =========================================================================
     // HEXAGONAL TILE CONSTANTS
@@ -307,14 +300,14 @@ function createTerrainShaderTSL(uniforms) {
      * @param {number} terrainValue - The terrain type ID to match (e.g., TERRAIN_GRASSLAND)
      * @param {object} textureNode - TSL texture node for this terrain type
      * @param {object} coord - TSL vec2 coordinate node for texture sampling
-     * @param {boolean} blendWithBeach - If true, blends with beach color at lower elevations
+     * @param {boolean} blendWithCoast - If true, blends with coast texture at lower elevations
      * @returns {object} Object with mask (selection boolean) and color (sampled texture) nodes
      * 
      * Uses step functions to create smooth transitions between terrain types.
-     * When blendWithBeach is true, terrain at elevations below BEACH_BLEND_HIGH
-     * transitions to sand-colored beach, creating natural coastal areas.
+     * When blendWithCoast is true, terrain at elevations below BEACH_BLEND_HIGH
+     * transitions to coast texture, creating natural beach areas.
      */
-    function createTerrainLayer(terrainValue, textureNode, coord, blendWithBeach = true) {
+    function createTerrainLayer(terrainValue, textureNode, coord, blendWithCoast = true) {
         // Create float mask for this terrain type (ensure it's a float, not boolean)
         // Split step() operations and use mul() to ensure float multiplication
         const step1 = step(terrainValue - 0.5, terrainHere);
@@ -323,25 +316,12 @@ function createTerrainShaderTSL(uniforms) {
         
         // Sample terrain texture
         let terrainColor;
-        if (blendWithBeach) {
-            // Smooth beach transition based on elevation
-            // Create a smooth blend factor from 0 (at beach level) to 1 (above beach zone)
-            const beachBlendRange = BEACH_HIGH - BEACH_BLEND_LOW;
-            const beachBlendT = clamp(div(sub(posY, BEACH_BLEND_LOW), beachBlendRange), 0.0, 1.0);
-            
-            // Apply smoothstep curve for natural transition: t*t*(3-2*t)
-            const beachSmoothT = mul(mul(beachBlendT, beachBlendT), sub(3.0, mul(2.0, beachBlendT)));
-            
-            // Natural beach sand color (warm sandy tones)
-            const beachColor = vec3(BEACH_COLOR_R, BEACH_COLOR_G, BEACH_COLOR_B);
-            
-            // Get the terrain texture sample
-            const terrainSample = texture(textureNode, coord);
-            
-            // Blend from beach sand to terrain based on elevation
-            terrainColor = vec4(
-                mix(beachColor, terrainSample.rgb, beachSmoothT),
-                terrainSample.a
+        if (blendWithCoast) {
+            // Blend with coast texture at lower elevations (beaches)
+            terrainColor = mix(
+                texture(terrainTextures.coast, coord),
+                texture(textureNode, coord),
+                step(BEACH_BLEND_HIGH, posY)
             );
         } else {
             terrainColor = texture(textureNode, coord);
@@ -376,9 +356,9 @@ function createTerrainShaderTSL(uniforms) {
     }
 
     // =========================================================================
-    // ENHANCED SLOPE-BASED LIGHTING WITH HEIGHT VARIATION
+    // SLOPE-BASED LIGHTING WITH SUN DIRECTION
     // =========================================================================
-    // Calculate lighting based on terrain slope, height, and sun direction
+    // Calculate lighting based on terrain slope and sun direction
     // Sun direction: coming from southeast, elevated position (typical daytime sun)
     // Original (0.5, 0.7, 0.5), normalized = (0.503, 0.704, 0.503)
     const sunDir = vec3(0.503, 0.704, 0.503);
@@ -391,36 +371,18 @@ function createTerrainShaderTSL(uniforms) {
     // This gives brighter surfaces facing the sun and darker surfaces facing away
     const NdotL = max(dot(normal, sunDir), 0.0);
     
-    // Calculate height-based lighting adjustment
-    // Lower terrain (near water) gets slightly cooler/darker lighting
-    // Higher terrain gets slightly warmer/brighter lighting
-    const heightNormalized = clamp(div(sub(posY, 45.0), 80.0), 0.0, 1.0);
-    const heightLightBoost = add(0.92, mul(heightNormalized, 0.18)); // Range: 0.92 to 1.10
+    // Apply ambient + diffuse lighting model
+    // ambient: base brightness so shadows aren't completely black (0.45)
+    // diffuse: sun-facing surfaces get additional brightness (0.65)
+    // Total range: 0.45 (in shadow) to 1.10 (fully lit)
+    const ambientLight = 0.45;
+    const diffuseStrength = 0.65;
+    const lightingFactor = add(ambientLight, mul(NdotL, diffuseStrength));
     
-    // Calculate tilt-based color variation
-    // Slopes facing the sun get a subtle warm tint, away get cooler
-    const tiltWarmth = mul(NdotL, 0.08);  // Warm tint multiplier based on sun-facing
-    
-    // Apply enhanced ambient + diffuse lighting model
-    // Increased ambient and diffuse for brighter, more vibrant terrain
-    // ambient: base brightness so shadows aren't completely black (0.52)
-    // diffuse: sun-facing surfaces get additional brightness (0.58)
-    // Total range: 0.52 (in shadow) to 1.10 (fully lit) before brightness boost
-    const ambientLight = 0.52;
-    const diffuseStrength = 0.58;
-    const baseLightingFactor = add(ambientLight, mul(NdotL, diffuseStrength));
-    
-    // Apply height-based adjustment to lighting
-    const lightingFactor = mul(baseLightingFactor, heightLightBoost);
-    
-    // Brightness boost to make terrain more vibrant and natural-looking
-    // Also apply subtle color warming for sun-facing slopes
-    const brightnessBoost = 1.18;
-    const litColor = mul(mul(finalColor.rgb, lightingFactor), brightnessBoost);
-    
-    // Add subtle warm tint to sun-facing surfaces (more natural outdoor lighting)
-    const warmTint = vec3(add(1.0, tiltWarmth), add(1.0, mul(tiltWarmth, 0.5)), sub(1.0, mul(tiltWarmth, 0.3)));
-    finalColor = vec4(mul(litColor, warmTint), finalColor.a);
+    // Apply lighting to terrain color, making terrain brighter overall
+    // Also add a slight brightness boost (1.1x) to make terrain more vibrant
+    const brightnessBoost = 1.1;
+    finalColor = vec4(mul(mul(finalColor.rgb, lightingFactor), brightnessBoost), finalColor.a);
 
     // =========================================================================
     // HEXAGONAL EDGE HIGHLIGHTING (Civ 6 Style)
