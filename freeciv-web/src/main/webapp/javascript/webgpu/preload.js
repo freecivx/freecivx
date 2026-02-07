@@ -267,8 +267,10 @@ function load_model(filename)
           node.material.emissive.set(0xFFFFFF);
           node.material.emissiveIntensity = 0.15;
         }
-
-        node.castShadow = true;
+        
+        if (filename != "Wheat" ) {
+          node.castShadow = true;
+        }
       }
     });
 
