@@ -80,8 +80,15 @@ function createTerrainShaderTSL(uniforms) {
     const TERRAIN_TUNDRA = 130.0;
 
     // Height constants for beach blending
-    const BEACH_HIGH = 50.9;
-    const BEACH_BLEND_HIGH = 50.4;
+    // Beach appears at shoreline where land meets water
+    const BEACH_HIGH = 52.5;        // Upper limit of beach zone (above this = full land texture)
+    const BEACH_BLEND_HIGH = 50.4;  // Lower limit of beach zone (below this = water/coast)
+    const BEACH_MID = 51.5;         // Middle of beach zone (peak sand color)
+    
+    // Beach sand colour (warm golden sand)
+    const BEACH_SAND_R = 0.92;
+    const BEACH_SAND_G = 0.85;
+    const BEACH_SAND_B = 0.65;
 
     // =========================================================================
     // HEXAGONAL TILE CONSTANTS
@@ -300,14 +307,14 @@ function createTerrainShaderTSL(uniforms) {
      * @param {number} terrainValue - The terrain type ID to match (e.g., TERRAIN_GRASSLAND)
      * @param {object} textureNode - TSL texture node for this terrain type
      * @param {object} coord - TSL vec2 coordinate node for texture sampling
-     * @param {boolean} blendWithCoast - If true, blends with coast texture at lower elevations
+     * @param {boolean} blendWithBeach - If true, blends with beach sand colour at shore elevations
      * @returns {object} Object with mask (selection boolean) and color (sampled texture) nodes
      * 
      * Uses step functions to create smooth transitions between terrain types.
-     * When blendWithCoast is true, terrain at elevations below BEACH_BLEND_HIGH
-     * transitions to coast texture, creating natural beach areas.
+     * When blendWithBeach is true, terrain at elevations in the beach zone
+     * transitions to a warm sand colour, creating natural beach areas.
      */
-    function createTerrainLayer(terrainValue, textureNode, coord, blendWithCoast = true) {
+    function createTerrainLayer(terrainValue, textureNode, coord, blendWithBeach = true) {
         // Create float mask for this terrain type (ensure it's a float, not boolean)
         // Split step() operations and use mul() to ensure float multiplication
         const step1 = step(terrainValue - 0.5, terrainHere);
@@ -316,13 +323,35 @@ function createTerrainShaderTSL(uniforms) {
         
         // Sample terrain texture
         let terrainColor;
-        if (blendWithCoast) {
-            // Blend with coast texture at lower elevations (beaches)
-            terrainColor = mix(
-                texture(terrainTextures.coast, coord),
-                texture(textureNode, coord),
-                step(BEACH_BLEND_HIGH, posY)
+        if (blendWithBeach) {
+            // Define sand beach colour for smooth coastal transitions
+            const sandColor = vec3(BEACH_SAND_R, BEACH_SAND_G, BEACH_SAND_B);
+            
+            // Get base terrain texture
+            const baseTerrainColor = texture(textureNode, coord);
+            
+            // Calculate beach blend factor based on elevation
+            // Creates a smooth gradient: coast -> beach sand -> land texture
+            // Below BEACH_BLEND_HIGH: coast texture (handled by water)
+            // BEACH_BLEND_HIGH to BEACH_MID: blend coast to sand
+            // BEACH_MID to BEACH_HIGH: blend sand to terrain
+            // Above BEACH_HIGH: full terrain texture
+            
+            // Lower beach zone (coast to sand) - smooth transition
+            const lowerBeachT = clamp(
+                div(sub(posY, BEACH_BLEND_HIGH), sub(BEACH_MID, BEACH_BLEND_HIGH)),
+                0.0, 1.0
             );
+            // Upper beach zone (sand to terrain) - smooth transition  
+            const upperBeachT = clamp(
+                div(sub(posY, BEACH_MID), sub(BEACH_HIGH, BEACH_MID)),
+                0.0, 1.0
+            );
+            
+            // Blend: coast texture -> sand -> terrain texture
+            const coastTex = texture(terrainTextures.coast, coord);
+            const lowerBlend = mix(coastTex, vec4(sandColor, 1.0), lowerBeachT);
+            terrainColor = mix(lowerBlend, baseTerrainColor, upperBeachT);
         } else {
             terrainColor = texture(textureNode, coord);
         }
@@ -380,8 +409,8 @@ function createTerrainShaderTSL(uniforms) {
     const lightingFactor = add(ambientLight, mul(NdotL, diffuseStrength));
     
     // Apply lighting to terrain color, making terrain brighter overall
-    // Also add a slight brightness boost (1.1x) to make terrain more vibrant
-    const brightnessBoost = 1.1;
+    // Brightness boost makes terrain colours more vibrant and visible
+    const brightnessBoost = 1.35;
     finalColor = vec4(mul(mul(finalColor.rgb, lightingFactor), brightnessBoost), finalColor.a);
 
     // =========================================================================
