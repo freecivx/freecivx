@@ -782,7 +782,7 @@ function createTerrainShaderTSL(uniforms) {
     const borderLineFactor = mul(dashedTotalEdgeFactor, hexEdgeMask);
     
     // Border line width and intensity
-    const borderLineIntensity = 0.85;  // How opaque the border line is
+    const borderLineIntensity = 0.65;  // How opaque the border line is (more transparent)
     
     // Brighten the nation color for the border line (make it more visible)
     const brightenedBorderColor = vec3(
@@ -798,9 +798,9 @@ function createTerrainShaderTSL(uniforms) {
         finalColor.a
     );
     
-    // Also apply subtle area fill for border territories (reduced from original 0.15)
+    // Also apply subtle area fill for border territories (more transparent)
     const shouldShowBorderFill = mul(borders_visible.select(1.0, 0.0), hasBorder);
-    const borderFillFactor = mul(shouldShowBorderFill, 0.08);  // Subtle territory tint
+    const borderFillFactor = mul(shouldShowBorderFill, 0.05);  // Very subtle territory tint
     finalColor = vec4(
         mix(finalColor.rgb, currentBorder.rgb, borderFillFactor),
         finalColor.a
