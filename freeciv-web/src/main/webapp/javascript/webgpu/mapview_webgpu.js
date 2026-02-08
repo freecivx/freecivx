@@ -500,6 +500,8 @@ async function init_webgpu_mapview() {
   console.log("Land mesh triangles: " + landGeometry.index.count / 3);
 
   // Create shadow mesh for medium+ quality settings
+  // Performance optimization: Use lofiGeometry (lower polygon count) for shadow receiving
+  // This significantly reduces shadow calculation overhead while maintaining visual quality
   if (graphics_quality >= QUALITY_MEDIUM) {
     const shadowConfig = window.ShadowConfig || { OPACITY_HIGH: 0.75, OPACITY_MEDIUM: 0.55 };
     const shadowOpacity = (graphics_quality === QUALITY_HIGH) 
@@ -510,12 +512,14 @@ async function init_webgpu_mapview() {
       ? createShadowMaterial({ opacity: shadowOpacity })
       : new THREE.ShadowMaterial({ opacity: shadowOpacity });
     
-    shadowmesh = new THREE.Mesh(landGeometry, shadowMaterial);
+    // Use lofiGeometry for shadow mesh to improve rendering performance
+    // lofiGeometry has fewer polygons than landGeometry, reducing shadow calculations
+    shadowmesh = new THREE.Mesh(lofiGeometry, shadowMaterial);
     shadowmesh.receiveShadow = true;
     shadowmesh.castShadow = false;
     shadowmesh.name = "shadow_mesh";
     scene.add(shadowmesh);
-    console.log("Shadow mesh enabled for terrain shadow receiving");
+    console.log("Shadow mesh enabled for terrain shadow receiving (using optimized geometry)");
   }
 
   // Set up terrain geometry updates
