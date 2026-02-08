@@ -30,6 +30,11 @@ function init_map_tiletype_image()
 
   maptiletypes = new THREE.DataTexture(maptiles_data, map.xsize, map.ysize);
   maptiletypes.flipY = true;
+  // Use NearestFilter for WebGPU compatibility with non-power-of-two textures
+  // This ensures proper sampler binding for discrete tile data
+  maptiletypes.minFilter = THREE.NearestFilter;
+  maptiletypes.magFilter = THREE.NearestFilter;
+  maptiletypes.generateMipmaps = false;
 
   for (let x = 0; x < map.xsize; x++) {
     for (let y = 0; y < map.ysize; y++) {
