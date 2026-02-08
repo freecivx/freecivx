@@ -672,7 +672,7 @@ function createTerrainShaderTSL(uniforms) {
     const BORDER_COLOR_DIFF_THRESHOLD = 0.05;  // Minimum RGB difference to detect nation boundary
     
     // Dashed line pattern constants
-    const DASH_FREQUENCY = 8.0;                // Number of dashes per tile edge
+    const DASH_FREQUENCY = 12.0;                // Number of dashes per tile edge
     const DASH_RATIO = 0.6;                    // Ratio of dash to gap (0.6 = 60% dash, 40% gap)
     
     // Sample border color (nation color) for current tile and neighbors
