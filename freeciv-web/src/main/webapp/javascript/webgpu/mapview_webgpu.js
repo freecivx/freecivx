@@ -499,9 +499,26 @@ async function init_webgpu_mapview() {
   scene.add(landMesh);
   console.log("Land mesh triangles: " + landGeometry.index.count / 3);
 
-  // Note: Shadow receiving is now integrated into the terrain shader via slope-based lighting.
-  // The terrain shader calculates lighting based on surface normals and sun direction,
-  // providing natural shading for terrain elevation changes without needing a separate shadow mesh.
+  // Create shadow receiving mesh for units and cities to cast shadows on terrain.
+  // This mesh uses ShadowMaterial which only renders shadows, overlaying the terrain.
+  // The terrain shader provides slope-based lighting, while this mesh adds dynamic shadows.
+  if (graphics_quality >= QUALITY_MEDIUM) {
+    const shadowConfig = window.ShadowConfig || { OPACITY_HIGH: 0.75, OPACITY_MEDIUM: 0.55 };
+    const shadowOpacity = (graphics_quality === QUALITY_HIGH) 
+      ? shadowConfig.OPACITY_HIGH 
+      : shadowConfig.OPACITY_MEDIUM;
+    
+    const shadowMaterial = typeof createShadowMaterial === 'function'
+      ? createShadowMaterial({ opacity: shadowOpacity })
+      : new THREE.ShadowMaterial({ opacity: shadowOpacity });
+    
+    shadowmesh = new THREE.Mesh(landGeometry, shadowMaterial);
+    shadowmesh.receiveShadow = true;
+    shadowmesh.castShadow = false;
+    shadowmesh.name = "shadow_mesh";
+    scene.add(shadowmesh);
+    console.log("Shadow mesh enabled for unit and city shadows on terrain");
+  }
 
   // Set up terrain geometry updates
   update_map_terrain_geometry();
