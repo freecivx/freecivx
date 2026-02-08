@@ -116,7 +116,7 @@ const LightingConfig = Object.freeze({
  */
 const ShadowConfig = Object.freeze({
     /** Shadow map resolution */
-    MAP_SIZE: 2048,
+    MAP_SIZE: 4096,
     /** Shadow camera near plane */
     CAMERA_NEAR: 100,
     /** Shadow camera far plane */
