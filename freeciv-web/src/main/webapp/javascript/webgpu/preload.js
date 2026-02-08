@@ -727,7 +727,10 @@ function webgl_get_model(filename, ptile)
         });
       } else {
         // Fallback inline conversion for backwards compatibility
-        const BRIGHTNESS_BOOST = shouldBoostBrightness ? 1.10 : 1.0;
+        // Use the global constant if available, otherwise fallback to 1.10
+        const BRIGHTNESS_BOOST = shouldBoostBrightness 
+          ? (window.UNIT_CITY_BRIGHTNESS_BOOST || 1.10) 
+          : 1.0;
         clonedModel.traverse((node) => {
           if (node.isMesh && node.material) {
             const originalMat = node.material;
