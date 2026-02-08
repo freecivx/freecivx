@@ -104,29 +104,9 @@ function setup_window_size ()
 
   $("#city_viewport").height( new_mapview_height - 20);
 
-  $("#opt_tab").show();
-  $("#players_tab").show();
-  $("#cities_tab").show();
-  $("#freeciv_logo").show();
-  $("#tabs-hel").hide();
-
-  // Use icons for tabs - works well on both mobile and desktop
-  $("#map_tab").children().html("<i class='fa fa-map' aria-hidden='true'></i>");
-  $("#globe_tab").children().html("<i class='fa fa-globe' aria-hidden='true'></i>");
-  $("#opt_tab").children().html("<i class='fa fa-cogs' aria-hidden='true'></i>");
-  $("#players_tab").children().html("<i class='fa fa-flag' aria-hidden='true'></i>");
-  $("#cities_tab").children().html("<i class='fa fa-city' aria-hidden='true'></i>");
-  $("#tech_tab").children().html("<i class='fa fa-flask' aria-hidden='true'></i>");
-  $("#civ_tab").children().html("<i class='fa fa-university' aria-hidden='true'></i>");
-  $("#hel_tab").children().html("<i class='fa fa-question' aria-hidden='true'></i>");
-  $("#mentat_tab").children().html("<i class='fa fa-user-circle' aria-hidden='true'></i>");
-
-  $(".ui-tabs-anchor").css("padding", "3px");
-
   $("#tabs-map").css("overflow", "hidden");
 
   $(".chatbox_dialog").css("top", "52px");
-
 
 }
 
