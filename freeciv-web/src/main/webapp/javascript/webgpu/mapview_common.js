@@ -43,7 +43,6 @@ var tiletype_terrains = ["coast","ocean","desert","grassland","hills","mountains
 var landGeometry;
 var landMesh; // the terrain land geometry
 var water_hq;
-var shadowmesh;
 
 var lofiGeometry;
 var lofiMesh;  // low resolution mesh used for raycasting.
