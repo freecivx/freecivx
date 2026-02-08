@@ -31,6 +31,11 @@ function init_borders_image()
 
   borders_texture = new THREE.DataTexture(borders_data, map.xsize, map.ysize);
   borders_texture.flipY = true;
+  // Use NearestFilter for WebGPU compatibility with non-power-of-two textures
+  // This ensures proper sampler binding for discrete border data
+  borders_texture.minFilter = THREE.NearestFilter;
+  borders_texture.magFilter = THREE.NearestFilter;
+  borders_texture.generateMipmaps = false;
 
   for (let x = 0; x < map.xsize; x++) {
     for (let y = 0; y < map.ysize; y++) {

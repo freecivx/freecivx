@@ -29,6 +29,11 @@ function init_roads_image()
 
   roads_texture = new THREE.DataTexture(roads_data, map.xsize, map.ysize);
   roads_texture.flipY = true;
+  // Use NearestFilter for WebGPU compatibility with non-power-of-two textures
+  // This ensures proper sampler binding for discrete road data
+  roads_texture.minFilter = THREE.NearestFilter;
+  roads_texture.magFilter = THREE.NearestFilter;
+  roads_texture.generateMipmaps = false;
 
   for (let x = 0; x < map.xsize; x++) {
     for (let y = 0; y < map.ysize; y++) {
