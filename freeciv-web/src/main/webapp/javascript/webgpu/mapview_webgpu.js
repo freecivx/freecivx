@@ -499,24 +499,9 @@ async function init_webgpu_mapview() {
   scene.add(landMesh);
   console.log("Land mesh triangles: " + landGeometry.index.count / 3);
 
-  // Create shadow mesh for medium+ quality settings
-  if (graphics_quality >= QUALITY_MEDIUM) {
-    const shadowConfig = window.ShadowConfig || { OPACITY_HIGH: 0.75, OPACITY_MEDIUM: 0.55 };
-    const shadowOpacity = (graphics_quality === QUALITY_HIGH) 
-      ? shadowConfig.OPACITY_HIGH 
-      : shadowConfig.OPACITY_MEDIUM;
-    
-    const shadowMaterial = typeof createShadowMaterial === 'function'
-      ? createShadowMaterial({ opacity: shadowOpacity })
-      : new THREE.ShadowMaterial({ opacity: shadowOpacity });
-    
-    shadowmesh = new THREE.Mesh(landGeometry, shadowMaterial);
-    shadowmesh.receiveShadow = true;
-    shadowmesh.castShadow = false;
-    shadowmesh.name = "shadow_mesh";
-    scene.add(shadowmesh);
-    console.log("Shadow mesh enabled for terrain shadow receiving");
-  }
+  // Note: Shadow receiving is now integrated into the terrain shader via slope-based lighting.
+  // The terrain shader calculates lighting based on surface normals and sun direction,
+  // providing natural shading for terrain elevation changes without needing a separate shadow mesh.
 
   // Set up terrain geometry updates
   update_map_terrain_geometry();
