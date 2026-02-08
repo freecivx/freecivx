@@ -6,12 +6,7 @@
       centuries of progress, from humble beginnings to the wonders of the Space Age.
     </p>
     <p>
-      Play directly in your web browser for free! For an immersive experience, press <strong>F11</strong>
-      to enter fullscreen mode.
-    </p>
-    <p>
-      We value your privacy; learn more in our <a href="/privacy-policy.jsp">Privacy Policy</a>.<br>
-      FreecivWorld.net is proudly open source and licensed under the
+      FreecivWorld.net is open source and licensed under the
       <a href="https://www.gnu.org/licenses/agpl-3.0.en.html">AGPL license</a>.
     </p>
 
