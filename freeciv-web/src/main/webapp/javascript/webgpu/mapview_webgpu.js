@@ -481,11 +481,15 @@ async function init_webgpu_mapview() {
   // Create the TSL shader node
   const terrainColorNode = createTerrainShaderTSL(freeciv_uniforms);
   
-  // Create MeshBasicNodeMaterial with the shader
-  terrain_material = new THREE.MeshBasicNodeMaterial();
+  // Create MeshStandardNodeMaterial with the shader - supports shadow receiving
+  // The terrain shader provides the color, while the material handles shadow reception
+  terrain_material = new THREE.MeshStandardNodeMaterial();
   terrain_material.colorNode = terrainColorNode;
   terrain_material.side = THREE.FrontSide;
   terrain_material.transparent = false;
+  // Reduce default lighting influence since terrain shader has its own slope-based lighting
+  terrain_material.roughness = 1.0;
+  terrain_material.metalness = 0.0;
 
   // Create the terrain land mesh
   landGeometry = new THREE.BufferGeometry();
@@ -493,31 +497,14 @@ async function init_webgpu_mapview() {
   init_land_geometry(landGeometry, terrain_quality);
   update_land_geometry(landGeometry, terrain_quality);
   landMesh = new THREE.Mesh(landGeometry, terrain_material);
-  landMesh.receiveShadow = false;
+  // Enable shadow receiving for units and cities to cast shadows on terrain
+  landMesh.receiveShadow = (graphics_quality >= QUALITY_MEDIUM);
   landMesh.castShadow = false;
   landMesh.name = "land_terrain_mesh";
   scene.add(landMesh);
   console.log("Land mesh triangles: " + landGeometry.index.count / 3);
-
-  // Create shadow receiving mesh for units and cities to cast shadows on terrain.
-  // This mesh uses ShadowMaterial which only renders shadows, overlaying the terrain.
-  // The terrain shader provides slope-based lighting, while this mesh adds dynamic shadows.
-  if (graphics_quality >= QUALITY_MEDIUM) {
-    const shadowConfig = window.ShadowConfig || { OPACITY_HIGH: 0.75, OPACITY_MEDIUM: 0.55 };
-    const shadowOpacity = (graphics_quality === QUALITY_HIGH) 
-      ? shadowConfig.OPACITY_HIGH 
-      : shadowConfig.OPACITY_MEDIUM;
-    
-    const shadowMaterial = typeof createShadowMaterial === 'function'
-      ? createShadowMaterial({ opacity: shadowOpacity })
-      : new THREE.ShadowMaterial({ opacity: shadowOpacity });
-    
-    shadowmesh = new THREE.Mesh(landGeometry, shadowMaterial);
-    shadowmesh.receiveShadow = true;
-    shadowmesh.castShadow = false;
-    shadowmesh.name = "shadow_mesh";
-    scene.add(shadowmesh);
-    console.log("Shadow mesh enabled for unit and city shadows on terrain");
+  if (landMesh.receiveShadow) {
+    console.log("Terrain mesh shadow receiving enabled");
   }
 
   // Set up terrain geometry updates
