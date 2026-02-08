@@ -41,18 +41,7 @@ mapview_slide['slide_time'] = 700;
 
 
 
-/**************************************************************************
-  ...
-**************************************************************************/
-function is_small_screen()
-{
-  if ($(window).width() <= 640 || $(window).height() <= 590) {
-    return true;
-  } else {
-    return false;
-  }
 
-}
 
 /**************************************************************************
   This will load the tileset, blocking the UI while loading.
@@ -166,7 +155,7 @@ function mapview_put_tile(pcanvas, tag, canvas_x, canvas_y) {
 **************************************************************************/
 function set_default_mapview_inactive()
 {
-  if (!is_small_screen()) $("#game_unit_panel").parent().hide();
+  $("#game_unit_panel").parent().hide();
   if (chatbox_active) $("#game_chatbox_panel").parent().hide();
   $("#tile_dialog").parent().hide();
 

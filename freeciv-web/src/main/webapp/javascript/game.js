@@ -74,7 +74,7 @@ function civ_population(playerno) {
 **************************************************************************/
 function update_game_status_panel() {
 
-  if (C_S_RUNNING != client_state() || is_small_screen()) return;
+  if (C_S_RUNNING != client_state()) return;
 
   var status_html = "";
 
@@ -89,36 +89,33 @@ function update_game_status_panel() {
       net_income = "+" + pplayer['expected_income'];
     }
 
-    if (!is_small_screen()) {
-      var pnation = nations[pplayer['nation']];
-      var flag_file = pnation['graphic_str'] + ".svg";
+    var pnation = nations[pplayer['nation']];
+    var flag_file = pnation['graphic_str'] + ".svg";
 
-      status_html += "<b>" + pplayer['name'] + "</b> &nbsp; <img src='/images/flags/" + flag_file
-          + "' height='26px' id='top_flag' title='" + pnation['adjective'] + "'>&nbsp;&nbsp;";
+    status_html += "<b>" + pplayer['name'] + "</b> &nbsp; <img src='/images/flags/" + flag_file
+        + "' height='26px' id='top_flag' title='" + pnation['adjective'] + "'>&nbsp;&nbsp;";
 
-      if (!is_small_screen()) {
-        status_html += "<span style='cursor:pointer;' onclick='javascript:show_revolution_dialog()'>";
-        var gov_name = governments[client.conn.playing['government']]['name'];
+    status_html += "<span style='cursor:pointer;' onclick='javascript:show_revolution_dialog()'>";
+    var gov_name = governments[client.conn.playing['government']]['name'];
 
-        if (gov_name == "Anarchy") status_html += "<img class='lowered_gov' src='/images/gov.anarchy.png' title='Anarchy'>";
-        else if (gov_name == "Despotism") status_html += "<img class='lowered_gov' src='/images/gov.despotism.png' title='Despotism'>";
-        else if (gov_name == "Monarchy") status_html += "<img class='lowered_gov' src='/images/gov.monarchy.png' title='Monarchy'>";
-        else if (gov_name == "Communism") status_html += "<img class='lowered_gov' src='/images/gov.communism.png' title='Communism'>";
-        else if (gov_name == "Republic") status_html += "<img class='lowered_gov' src='/images/gov.republic.png' title='Republic'>";
-        else if (gov_name == "Democracy") status_html += "<img class='lowered_gov' src='/images/gov.democracy.png' title='Democracy'>";
-        else if (gov_name == "Fundamentalism") status_html += "<img class='lowered_gov' src='/images/gov.fundamentalism.png' title='Fundamentalism'>";
-        else if (gov_name == "Theocracy") status_html += "<img class='lowered_gov' src='/images/gov.theocracy.png' title='Theocracy'>";
-        else if (gov_name == "Federation") status_html += "<img class='lowered_gov' src='/images/gov.federation.png' title='Federation'>";
-        else if (gov_name == "Nationalism") status_html += "<img class='lowered_gov' src='/images/gov.nationalism.png' title='Nationalism'>";
-        else status_html += "<img class='lowered_gov' src='/images/gov.despotism.png' title='"+gov_name+"'>"; // other gov/custom ruleset
-        status_html += "</span> &nbsp;";
-      }
+    if (gov_name == "Anarchy") status_html += "<img class='lowered_gov' src='/images/gov.anarchy.png' title='Anarchy'>";
+    else if (gov_name == "Despotism") status_html += "<img class='lowered_gov' src='/images/gov.despotism.png' title='Despotism'>";
+    else if (gov_name == "Monarchy") status_html += "<img class='lowered_gov' src='/images/gov.monarchy.png' title='Monarchy'>";
+    else if (gov_name == "Communism") status_html += "<img class='lowered_gov' src='/images/gov.communism.png' title='Communism'>";
+    else if (gov_name == "Republic") status_html += "<img class='lowered_gov' src='/images/gov.republic.png' title='Republic'>";
+    else if (gov_name == "Democracy") status_html += "<img class='lowered_gov' src='/images/gov.democracy.png' title='Democracy'>";
+    else if (gov_name == "Fundamentalism") status_html += "<img class='lowered_gov' src='/images/gov.fundamentalism.png' title='Fundamentalism'>";
+    else if (gov_name == "Theocracy") status_html += "<img class='lowered_gov' src='/images/gov.theocracy.png' title='Theocracy'>";
+    else if (gov_name == "Federation") status_html += "<img class='lowered_gov' src='/images/gov.federation.png' title='Federation'>";
+    else if (gov_name == "Nationalism") status_html += "<img class='lowered_gov' src='/images/gov.nationalism.png' title='Nationalism'>";
+    else status_html += "<img class='lowered_gov' src='/images/gov.despotism.png' title='"+gov_name+"'>"; // other gov/custom ruleset
+    status_html += "</span> &nbsp;";
 
-      status_html += "<i class='fa fa-child' aria-hidden='true' title='Population'></i>: ";
-      status_html += "<b>" + civ_population(client.conn.playing.playerno) + "</b>  &nbsp;&nbsp;";
-      status_html += "<i class='far fa-clock' title='Year (turn)'></i>: <b>" + get_year_string() + "</b> &nbsp;&nbsp;";
-    }
-     status_html += "<img src='/images/coinage.png'>: ";
+    status_html += "<i class='fa fa-child' aria-hidden='true' title='Population'></i>: ";
+    status_html += "<b>" + civ_population(client.conn.playing.playerno) + "</b>  &nbsp;&nbsp;";
+    status_html += "<i class='far fa-clock' title='Year (turn)'></i>: <b>" + get_year_string() + "</b> &nbsp;&nbsp;";
+
+    status_html += "<img src='/images/coinage.png'>: ";
     if (pplayer['expected_income'] >= 0) {
       status_html += "<b title='Gold (net income)'>";
     } else {
@@ -171,11 +168,7 @@ function get_year_string()
     year_string = game_info['year']
                   + calendar_info['positive_year_label'] + " ";
   }
-  if (is_small_screen()) {
-    year_string += game_info['turn'];
-  } else {
-    year_string += "Turn:" + game_info['turn'];
-  }
+  year_string += "T:" + game_info['turn'];
   return year_string;
 }
 

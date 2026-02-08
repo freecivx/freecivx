@@ -52,8 +52,8 @@ function show_revolution_dialog()
   $(id).dialog({
 			bgiframe: true,
 			modal: true,
-			width: is_small_screen() ? "99%" : "450",
-			height: is_small_screen() ? $(window).height() - 40 : 600,
+			width: "450",
+			height: Math.min(600, $(window).height() - 40),
 			  buttons: {
 				"Start revolution!" : function() {
 					start_revolution();
@@ -82,9 +82,7 @@ function init_civ_dialog()
     var civ_description = "<div>" + nations[pplayer['nation']]['legend']  +"</div><br>";
     $("#nation_title").html(pplayer['name'] + " rules the " + nations[pplayer['nation']]['adjective']
                             	    + " with government form " + governments[client.conn.playing['government']]['name']);
-    if (!is_small_screen()) {
-      $("#civ_dialog_text").html(civ_description);
-    }
+    $("#civ_dialog_text").html(civ_description);
     if (!pnation['customized']) {
         $("#civ_dialog_flag").html("<img src='/images/flags/" + tag + ".svg' width='220'>");
     }

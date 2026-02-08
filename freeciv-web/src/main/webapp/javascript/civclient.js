@@ -167,9 +167,6 @@ function init_common_intro_dialog() {
       "You have joined the game as an observer. Please enter your name:");
     $("#turn_done_button").button( "option", "disabled", true);
 
-  } else if (is_small_screen()) {
-      show_intro_dialog("Welcome to FreecivWorld.net",
-        "Welcome to FreecivX, where you can play Freeciv. Enter your name:");
   } else if ($.getUrlVar('action') == "load") {
     show_intro_dialog("Welcome to FreecivWorld.net",
       "You are about to join this game server, where you can " +
@@ -226,7 +223,7 @@ function show_dialog_message(title, message) {
   $("#generic_dialog").dialog({
 			bgiframe: true,
 			modal: false,
-			width: is_small_screen() ? "90%" : "50%",
+			width: "70%",
 			close: closing_dialog_message,
 			buttons: {
 				Ok: close_dialog_message
@@ -300,12 +297,8 @@ function update_timeout()
     var remaining = Math.floor(seconds_to_phasedone - ((now - seconds_to_phasedone_sync) / 1000));
 
     if (remaining >= 0 && turn_change_elapsed == 0) {
-      if (is_small_screen()) {
-        $("#turn_done_button").button("option", "label", "Turn " + remaining);
-        $("#turn_done_button .ui-button-text").css("padding", "3px");
-      } else {
-        $("#turn_done_button").button("option", "label", "Turn Done (" + seconds_to_human_time(remaining) + ")");
-      }
+      // Use compact format for all screen sizes
+      $("#turn_done_button").button("option", "label", "Turn (" + seconds_to_human_time(remaining) + ")");
       if (!is_touch_device()) {
         $("#turn_done_button").tooltip({ disabled: false });
       }
@@ -444,7 +437,7 @@ function show_auth_dialog(packet) {
   $("#dialog").dialog({
 			bgiframe: true,
 			modal: true,
-			width: is_small_screen() ? "80%" : "60%",
+			width: "70%",
 			buttons:
 			{
 				"Ok" : function() {

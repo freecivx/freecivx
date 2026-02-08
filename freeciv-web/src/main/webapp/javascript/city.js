@@ -337,24 +337,12 @@ function show_city_dialog(pcity)
      "Add to worklist" : city_add_to_worklist
   });
 
-  if (!is_small_screen()) {
-    dialog_buttons = $.extend(dialog_buttons,
-      {
-       "Rename" : rename_city
-     });
-   } else {
-       dialog_buttons = $.extend(dialog_buttons,
-         {
-          "Next" : next_city
-        });
-   }
+  dialog_buttons = $.extend(dialog_buttons, {"Rename" : rename_city});
   if (pcity['buy_cost'] > 0) {
     dialog_buttons = $.extend(dialog_buttons, {"Buy (B)": request_city_buy});
   }
-  if (!is_small_screen()) {
-    dialog_buttons = $.extend(dialog_buttons, {"Previous city": previous_city});
-    dialog_buttons = $.extend(dialog_buttons, {"Next city (N)": next_city});
-  }
+  dialog_buttons = $.extend(dialog_buttons, {"Previous city": previous_city});
+  dialog_buttons = $.extend(dialog_buttons, {"Next city (N)": next_city});
 
   dialog_buttons = $.extend(dialog_buttons, {"Close (W)": close_city_dialog});
 
@@ -364,7 +352,7 @@ function show_city_dialog(pcity)
 			bgiframe: true,
 			modal: false,
 			width:  "99.5%" ,
-                        height: is_small_screen() ? 250 : 372,
+                        height: Math.min(372, $(window).height() - 100),
                         close : city_dialog_close_handler,
             position: {my: 'left bottom', at: 'left bottom', of: window},
             buttons: dialog_buttons
@@ -383,7 +371,7 @@ function show_city_dialog(pcity)
 
   $("#city_tabs").tabs({ active: city_tab_index});
 
-  $(".citydlg_tabs").height(is_small_screen() ? 250 : 242);
+  $(".citydlg_tabs").height(242);
 
   city_worklist_dialog(pcity);
   set_default_mapview_inactive();
@@ -579,23 +567,7 @@ function show_city_dialog(pcity)
   $(".ui-dialog-titlebar").css("padding", "0px");
   $(".ui-dialog-buttonpane").css("margin-top", "-47px");
 
-  if (is_small_screen()) {
-   $(".ui-dialog-titlebar").css("font-size", "11px");
-   $(".ui-tabs-anchor").css("padding", "1px");
-   $(".ui-dialog-titlebar").css("padding", "0px");
-   //$(".ui-dialog").height(260);
-   $(".citydlg_tabs").height(365);
-   $("#city_dialog").height(400);
-   $(".ui-dialog-buttonpane").css("font-size", "10px");
-   $(".ui-dialog").css("padding", "0px");
-   $("#cma_form").css("padding-left", "0px");
-   $("#city_dialog").parent().css("margin-top", "-200px");
-   $("#city_improvements_panel").hide();
-   $("#city_overview_tab").height(330);
-   $("#city_production_tab").height(330);
-  } else {
-    $("#city_dialog").parent().css("margin-top", "60px");
-  }
+  $("#city_dialog").parent().css("margin-top", "60px");
 
   $("#city_dialog").parent().css("z-index", 100000)
   $(".ui-dialog-buttonset").css("margin-top", "-18px");
@@ -882,7 +854,7 @@ function request_city_buy()
   $("#buy_dialog").dialog({
 			bgiframe: true,
 			modal: true,
-			width: is_small_screen() ? "95%" : "50%",
+			width: "72%",
 			buttons: {
 				"Yes": function() {
 						send_city_buy();
@@ -1568,7 +1540,7 @@ function city_worklist_dialog(pcity)
   }
 
   var headline = prod_img_html + "<div id='prod_descr'>" // universal_build_shield_cost(pcity, target); // pcity['shield_stock']
-    + (is_small_screen() ? " " : " Production: <b>")
+    + " Production: <b>"
     + (prod_type != null ? prod_type['type']['name'] : "None")
     + "</b> ("
     + pcity['shield_stock'] + "/"

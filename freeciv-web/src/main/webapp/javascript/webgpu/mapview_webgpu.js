@@ -29,9 +29,7 @@ function webgpu_start_renderer()
 {
   // Calculate viewport dimensions
   const new_mapview_width = $(window).width() - width_offset;
-  const new_mapview_height = is_small_screen() 
-    ? $(window).height() - height_offset - 40
-    : $(window).height() - height_offset;
+  const new_mapview_height = $(window).height() - height_offset;
 
   console.log("Three.js " + THREE.REVISION + " with WebGPU Renderer");
   THREE.ColorManagement.enabled = true;
@@ -90,7 +88,8 @@ function webgpu_start_renderer()
     anaglyph_3d_enabled = false;
   }
 
-  if (is_small_screen()) {
+  // Adjust camera distance for smaller screens
+  if ($(window).width() <= 800) {
     camera_dy = camera_dy * 1.6;
   }
 

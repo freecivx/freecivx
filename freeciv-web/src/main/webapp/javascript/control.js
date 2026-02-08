@@ -299,7 +299,7 @@ function is_touch_device()
 ****************************************************************************/
 function blur_input_on_touchdevice() 
 {
-  if (is_touch_device() || is_small_screen()) {
+  if (is_touch_device()) {
     $('input[type=text], textarea').blur();
   }
 }
@@ -1261,7 +1261,7 @@ function update_unit_order_commands()
 **************************************************************************/
 function init_game_unit_panel()
 {
-  if (observing || is_small_screen()) return;
+  if (observing) return;
   unitpanel_active = true;
 
   $("#game_unit_panel").attr("title", "Units");

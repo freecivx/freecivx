@@ -35,8 +35,8 @@ function view_game_scores() {
   $("#scores_dialog").dialog({
 			bgiframe: true,
 			modal: true,
-			width: is_small_screen() ? "95%" : "80%",
-                        height: is_small_screen() ? 560 : 710,
+			width: "88%",
+                        height: Math.min(710, $(window).height() - 50),
 			buttons: {
 				Ok: function() {
 					$("#scores_dialog").dialog('close');
@@ -124,7 +124,6 @@ function handle_scorelog(scorelog) {
       }
     }
   }
-  if (is_small_screen()) scoretags = {"0" : "score"};
 
   for (var key in scoretags) {
     var tagname = scoretags[key];
@@ -156,9 +155,6 @@ function handle_scorelog(scorelog) {
   $("#scores_tabs").tabs();
   $(".scores_tabber").css("padding", "1px");
   $("#scores_wait").hide();
-  if (is_small_screen()) {
-    $(".scorechart").height($("#scores_dialog").height() - 10);
-  }
 }
 
 /****************************************************************************

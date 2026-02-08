@@ -26,6 +26,7 @@ var is_tech_tree_init = false;
 var tech_dialog_active = false;
 
 var tech_xscale = 1.2;
+var tech_canvas_scale = 1.0;  // Responsive scale for tech tree canvas
 var wikipedia_url = "http://en.wikipedia.org/wiki/";
 
 /* TECH_KNOWN is self-explanatory, TECH_PREREQS_KNOWN are those for which all
@@ -118,7 +119,15 @@ function player_invention_state(pplayer, tech_id)
 **************************************************************************/
 function init_tech_screen()
 {
-  if (is_small_screen()) tech_canvas_text_font = "20px Arial";
+  // Calculate responsive scale based on window width (0.6 for small screens, 1.0 for large)
+  tech_canvas_scale = Math.min(1.0, Math.max(0.6, $(window).width() / 1000));
+  if (tech_canvas_scale < 0.8) {
+    tech_canvas_text_font = "20px Arial";
+    $("#tech_result_text").css("font-size", "85%");
+    $("#tech_color_help").css("font-size", "65%");
+    $("#tech_progress_box").css("padding-left", "10px");
+  }
+  
   $("#technologies").width($(window).width() - 20);
   $("#technologies").height($(window).height() - $("#technologies").offset().top - 15);
 
@@ -152,13 +161,10 @@ function init_tech_screen()
   tech_canvas.width = (max_width + tech_item_width) * tech_xscale;
   tech_canvas.height = max_height + tech_item_height;
 
-  if (is_small_screen()) {
-    tech_canvas.width = Math.floor(tech_canvas.width * 0.6);
-    tech_canvas.height = Math.floor(tech_canvas.height * 0.6);
-    tech_canvas_ctx.scale(0.6,0.6);
-    $("#tech_result_text").css("font-size", "85%");
-    $("#tech_color_help").css("font-size", "65%");
-    $("#tech_progress_box").css("padding-left", "10px");
+  if (tech_canvas_scale < 1.0) {
+    tech_canvas.width = Math.floor(tech_canvas.width * tech_canvas_scale);
+    tech_canvas.height = Math.floor(tech_canvas.height * tech_canvas_scale);
+    tech_canvas_ctx.scale(tech_canvas_scale, tech_canvas_scale);
   }
 
   is_tech_tree_init = true;
@@ -575,9 +581,9 @@ function tech_mapview_mouse_click(e)
       var x = Math.floor(reqtree[tech_id+'']['x'] * tech_xscale)+2;  //scale in X direction.
       var y = reqtree[tech_id+'']['y']+2;
 
-      if (is_small_screen()) {
-        x = x * 0.6;
-        y = y * 0.6;
+      if (tech_canvas_scale < 1.0) {
+        x = x * tech_canvas_scale;
+        y = y * tech_canvas_scale;
       }
 
       if (tech_mouse_x > x && tech_mouse_x < x + tech_item_width
@@ -612,22 +618,15 @@ function get_tech_infobox_html(tech_id)
   var height = tileset[tag][3];
   var i = tileset[tag][4];
   var image_src = "/tileset/freeciv-web-tileset-" + tileset_name + "-" + i + get_tileset_file_extention() + "?ts=" + ts;
-  if (is_small_screen()) {
-    infobox_html += "<div class='specific_tech' onclick='send_player_research(" + tech_id + ");' title='"
-	   + get_advances_text(tech_id).replace(/(<([^>]+)>)/ig,"") + "'>"
-	   +  ptech['name']
-	   + "</div>";
-  } else {
-    infobox_html += "<div class='specific_tech' onclick='send_player_research(" + tech_id + ");' title='"
-	   + get_advances_text(tech_id).replace(/(<([^>]+)>)/ig,"") + "'>"
-           + "<div class='tech_infobox_image' style='background: transparent url("
-           + image_src
-	   + ");background-position:-" + tileset_x + "px -" + tileset_y
-           + "px;  width: " + width + "px;height: " + height + "px;'"
-           + "'></div>"
-	   +  ptech['name']
-	   + "</div>";
-  }
+  infobox_html += "<div class='specific_tech' onclick='send_player_research(" + tech_id + ");' title='"
+     + get_advances_text(tech_id).replace(/(<([^>]+)>)/ig,"") + "'>"
+         + "<div class='tech_infobox_image' style='background: transparent url("
+         + image_src
+     + ");background-position:-" + tileset_x + "px -" + tileset_y
+         + "px;  width: " + width + "px;height: " + height + "px;'"
+         + "'></div>"
+     +  ptech['name']
+     + "</div>";
 
   return infobox_html;
 }
@@ -684,7 +683,7 @@ function show_tech_gained_dialog(tech_gained_id)
   $("#tech_dialog").dialog({
 			bgiframe: true,
 			modal: false,
-			width: is_small_screen() ? "90%" : "60%",
+			width: "75%",
 			buttons: [
 			 {
                 text : "Close",
@@ -748,7 +747,7 @@ function show_wikipedia_dialog(tech_name)
   $("#wiki_dialog").dialog({
 			bgiframe: true,
 			modal: true,
-			width: is_small_screen() ? "90%" : "60%",
+			width: "75%",
 			buttons: {
 				Ok: function() {
 					$("#wiki_dialog").dialog('close');
@@ -807,7 +806,7 @@ function show_tech_info_dialog(tech_name, unit_type_id, improvement_id)
   $("#wiki_dialog").dialog({
 			bgiframe: true,
 			modal: true,
-			width: is_small_screen() ? "95%" : "70%",
+			width: "82%",
 			height: $(window).height() - 60,
 			buttons: {
 				Ok: function() {
@@ -837,9 +836,9 @@ function update_tech_dialog_cursor()
       var x = Math.floor(reqtree[tech_id+'']['x'] * tech_xscale)+2;  //scale in X direction.
       var y = reqtree[tech_id+'']['y']+2;
 
-      if (is_small_screen()) {
-        x = x * 0.6;
-        y = y * 0.6;
+      if (tech_canvas_scale < 1.0) {
+        x = x * tech_canvas_scale;
+        y = y * tech_canvas_scale;
       }
 
       if (tech_mouse_x > x && tech_mouse_x < x + tech_item_width
