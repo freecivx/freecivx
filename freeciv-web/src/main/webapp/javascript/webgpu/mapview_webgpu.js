@@ -104,20 +104,21 @@ function webgpu_start_renderer()
  */
 function setupSceneLighting() {
   // Get configuration or use inline defaults for backwards compatibility
+  // These values should match config.js LightingConfig for consistency
   const lightConfig = window.LightingConfig || {
-    AMBIENT_COLOR: 0x606060,
-    AMBIENT_INTENSITY: 1.2 * Math.PI,
-    DIRECTIONAL_COLOR: 0xffffff,
-    DIRECTIONAL_INTENSITY: 2.0 * Math.PI,
+    AMBIENT_COLOR: 0x707065,
+    AMBIENT_INTENSITY: 0.9 * Math.PI,
+    DIRECTIONAL_COLOR: 0xfffaf0,
+    DIRECTIONAL_INTENSITY: 1.6 * Math.PI,
     DIRECTIONAL_POSITION: { x: 500, y: 800, z: 500 },
     KEY_LIGHT_COLOR: 0xffffff,
-    KEY_LIGHT_INTENSITY: 1.0 * Math.PI,
+    KEY_LIGHT_INTENSITY: 0.6 * Math.PI,
     KEY_LIGHT_POSITION: { x: 150, y: 280, z: 150 },
-    FILL_LIGHT_COLOR: 0xffffff,
-    FILL_LIGHT_INTENSITY: 0.6 * Math.PI,
+    FILL_LIGHT_COLOR: 0xe8e8ff,
+    FILL_LIGHT_INTENSITY: 0.35 * Math.PI,
     FILL_LIGHT_POSITION: { x: -200, y: 180, z: -120 },
     SPOTLIGHT_COLOR: 0xffffff,
-    SPOTLIGHT_INTENSITY: 3.0 * Math.PI,
+    SPOTLIGHT_INTENSITY: 2.0 * Math.PI,
     SPOTLIGHT_ANGLE: Math.PI / 3,
     SPOTLIGHT_PENUMBRA: 0.001,
     SPOTLIGHT_DECAY: 0.5
