@@ -663,14 +663,16 @@ function createTerrainShaderTSL(uniforms) {
     // We detect border edges by comparing the current tile's owner with neighbors.
     // Where ownership changes, we draw a colored border line.
     
-    // Hexagonal border edge detection constants
-    // Using the hex distance function components (dist1, dist2, dist3) to detect which edge we're near
-    const BORDER_HEX_EDGE_THRESHOLD = 0.40;    // Distance threshold for hex edge detection (0.5 = at edge, lower = wider band)
-    const BORDER_HEX_EDGE_WIDTH = 0.08;        // Width of the border line band
+    // Border edge detection constants - narrower lines for less intrusive borders
+    const BORDER_EDGE_THRESHOLD_POS = 0.88;    // Position threshold for E/W edge detection (0.88 = last 12% of tile, narrower)
+    const BORDER_EDGE_WIDTH_POS = 0.12;        // Position for W edge (first 12% of tile, narrower)
+    const BORDER_EDGE_SHARPNESS = 12.0;        // Sharpness factor for edge falloff (sharper for narrower lines)
+    const BORDER_DIAGONAL_SHARPNESS = 6.0;     // Sharpness factor for diagonal edges
+    const BORDER_CORNER_THRESHOLD = 0.6;       // Center threshold for corner detection (narrower corners)
     const BORDER_COLOR_DIFF_THRESHOLD = 0.05;  // Minimum RGB difference to detect nation boundary
     
     // Dashed line pattern constants
-    const DASH_FREQUENCY = 6.0;                // Number of dashes per hex edge
+    const DASH_FREQUENCY = 8.0;                // Number of dashes per tile edge
     const DASH_RATIO = 0.6;                    // Ratio of dash to gap (0.6 = 60% dash, 40% gap)
     
     // Sample border color (nation color) for current tile and neighbors
@@ -719,81 +721,51 @@ function createTerrainShaderTSL(uniforms) {
     const isEdgeSE = step(BORDER_COLOR_DIFF_THRESHOLD, add(add(borderDiffRSE, borderDiffGSE), borderDiffBSE));
     const isEdgeSW = step(BORDER_COLOR_DIFF_THRESHOLD, add(add(borderDiffRSW, borderDiffGSW), borderDiffBSW));
     
-    // Calculate directional edge factors based on hexagonal distance components
-    // The hex distance function uses three edge-pair distances (dist1, dist2, dist3)
-    // For each pair, we determine which specific edge we're near based on sign of hexX/hexY
+    // Calculate directional edge factors based on position within hex
+    // This creates border lines at the actual hex edges facing different directions
     
-    // Calculate how close we are to each hex edge pair (higher = closer to that edge pair)
-    // When a distance approaches the hexInradius (0.5), we're near that edge
-    const hexInradiusVal = 0.5;
-    const edgeProximity1 = clamp(div(sub(dist1, sub(hexInradiusVal, BORDER_HEX_EDGE_WIDTH)), BORDER_HEX_EDGE_WIDTH), 0.0, 1.0);
-    const edgeProximity2 = clamp(div(sub(dist2, sub(hexInradiusVal, BORDER_HEX_EDGE_WIDTH)), BORDER_HEX_EDGE_WIDTH), 0.0, 1.0);
-    const edgeProximity3 = clamp(div(sub(dist3, sub(hexInradiusVal, BORDER_HEX_EDGE_WIDTH)), BORDER_HEX_EDGE_WIDTH), 0.0, 1.0);
-    
-    // Edge pair 1 (dist1): E and W edges (vertical edges, normal (1,0))
-    // hexX > 0 means East edge, hexX < 0 means West edge
-    const isEastSide = step(0.0, hexX);
-    const isWestSide = sub(1.0, isEastSide);
-    
-    // Edge pair 2 (dist2): NE and SW edges (normal (0.5, sqrt(3)/2))
-    // Positive dot product (0.5*hexX + sqrt(3)/2*hexY > 0) means NE, negative means SW  
-    const dotProduct2 = add(mul(hexX, 0.5), mul(hexY, HEX_SQRT3_OVER_2));
-    const isNESide = step(0.0, dotProduct2);
-    const isSWSide = sub(1.0, isNESide);
-    
-    // Edge pair 3 (dist3): NW and SE edges (normal (-0.5, sqrt(3)/2))
-    // Positive dot product (-0.5*hexX + sqrt(3)/2*hexY > 0) means NW, negative means SE
-    const dotProduct3 = add(mul(hexX, -0.5), mul(hexY, HEX_SQRT3_OVER_2));
-    const isNWSide = step(0.0, dotProduct3);
-    const isSESide = sub(1.0, isNWSide);
-    
-    // Calculate individual edge factors (edge proximity * correct side * has boundary)
-    const eastEdgeFactor = mul(mul(edgeProximity1, isEastSide), isEdgeE);
-    const westEdgeFactor = mul(mul(edgeProximity1, isWestSide), isEdgeW);
-    const neEdgeFactor = mul(mul(edgeProximity2, isNESide), isEdgeNE);
-    const swEdgeFactor = mul(mul(edgeProximity2, isSWSide), isEdgeSW);
-    const nwEdgeFactor = mul(mul(edgeProximity3, isNWSide), isEdgeNW);
-    const seEdgeFactor = mul(mul(edgeProximity3, isSESide), isEdgeSE);
+    // East edge: line appears at right side of tile (x near 1.0)
+    const eastEdgeFactor = mul(isEdgeE, clamp(mul(sub(localX, BORDER_EDGE_THRESHOLD_POS), BORDER_EDGE_SHARPNESS), 0.0, 1.0));
+    // West edge: line appears at left side of tile (x near 0)  
+    const westEdgeFactor = mul(isEdgeW, clamp(mul(sub(BORDER_EDGE_WIDTH_POS, localX), BORDER_EDGE_SHARPNESS), 0.0, 1.0));
+    // NE edge: appears at upper-right corner region
+    const neEdgeFactor = mul(isEdgeNE, mul(clamp(mul(sub(localX, BORDER_CORNER_THRESHOLD), BORDER_DIAGONAL_SHARPNESS), 0.0, 1.0), clamp(mul(sub(localY, BORDER_CORNER_THRESHOLD), BORDER_DIAGONAL_SHARPNESS), 0.0, 1.0)));
+    // NW edge: appears at upper-left corner region
+    const nwEdgeFactor = mul(isEdgeNW, mul(clamp(mul(sub(BORDER_CORNER_THRESHOLD, localX), BORDER_DIAGONAL_SHARPNESS), 0.0, 1.0), clamp(mul(sub(localY, BORDER_CORNER_THRESHOLD), BORDER_DIAGONAL_SHARPNESS), 0.0, 1.0)));
+    // SE edge: appears at lower-right corner region
+    const seEdgeFactor = mul(isEdgeSE, mul(clamp(mul(sub(localX, BORDER_CORNER_THRESHOLD), BORDER_DIAGONAL_SHARPNESS), 0.0, 1.0), clamp(mul(sub(BORDER_CORNER_THRESHOLD, localY), BORDER_DIAGONAL_SHARPNESS), 0.0, 1.0)));
+    // SW edge: appears at lower-left corner region
+    const swEdgeFactor = mul(isEdgeSW, mul(clamp(mul(sub(BORDER_CORNER_THRESHOLD, localX), BORDER_DIAGONAL_SHARPNESS), 0.0, 1.0), clamp(mul(sub(BORDER_CORNER_THRESHOLD, localY), BORDER_DIAGONAL_SHARPNESS), 0.0, 1.0)));
     
     // Combine all edge factors
     const totalEdgeFactor = max(max(max(max(max(eastEdgeFactor, westEdgeFactor), neEdgeFactor), nwEdgeFactor), seEdgeFactor), swEdgeFactor);
     
-    // Create dashed line patterns using hex-centered coordinates
-    // Each edge type needs a pattern that varies along that edge direction
-    // For E/W edges (vertical), use hexY for pattern variation
-    // For NE/SW edges, use direction perpendicular to edge normal (0.5, sqrt(3)/2), which is (sqrt(3)/2, -0.5)
-    // For NW/SE edges, use direction perpendicular to edge normal (-0.5, sqrt(3)/2), which is (sqrt(3)/2, 0.5)
+    // Create dashed line pattern using position along the edge
+    // For E/W edges, use Y position; for diagonal edges, use combined X+Y
+    // The dash pattern is created by taking the fractional part of (position * frequency)
+    // and comparing it to the dash ratio
+    const dashPatternY = step(fract(mul(localY, DASH_FREQUENCY)), DASH_RATIO);
+    const dashPatternX = step(fract(mul(localX, DASH_FREQUENCY)), DASH_RATIO);
+    const dashPatternDiagonal = step(fract(mul(add(localX, localY), DASH_FREQUENCY)), DASH_RATIO);
     
-    // E/W edges: dashes vary along Y
-    const dashPatternEW = step(fract(mul(add(hexY, 0.5), DASH_FREQUENCY)), DASH_RATIO);
-    
-    // NE/SW edges: dashes vary along the edge (perpendicular to normal)
-    // Perpendicular direction to (0.5, sqrt(3)/2) is (sqrt(3)/2, -0.5)
-    const edgeCoordNESW = add(mul(hexX, HEX_SQRT3_OVER_2), mul(hexY, -0.5));
-    const dashPatternNESW = step(fract(mul(add(edgeCoordNESW, 0.5), DASH_FREQUENCY)), DASH_RATIO);
-    
-    // NW/SE edges: dashes vary along the edge (perpendicular to normal)
-    // Perpendicular direction to (-0.5, sqrt(3)/2) is (sqrt(3)/2, 0.5)
-    const edgeCoordNWSE = add(mul(hexX, HEX_SQRT3_OVER_2), mul(hexY, 0.5));
-    const dashPatternNWSE = step(fract(mul(add(edgeCoordNWSE, 0.5), DASH_FREQUENCY)), DASH_RATIO);
-    
-    // Apply dash pattern to each edge type
-    const dashedEastEdge = mul(eastEdgeFactor, dashPatternEW);
-    const dashedWestEdge = mul(westEdgeFactor, dashPatternEW);
-    const dashedNEEdge = mul(neEdgeFactor, dashPatternNESW);
-    const dashedSWEdge = mul(swEdgeFactor, dashPatternNESW);
-    const dashedNWEdge = mul(nwEdgeFactor, dashPatternNWSE);
-    const dashedSEEdge = mul(seEdgeFactor, dashPatternNWSE);
+    // Apply dash pattern to each edge type:
+    // - E/W edges use Y-based pattern (dashes along vertical edges)
+    // - Diagonal edges use combined pattern
+    const dashedEastEdge = mul(eastEdgeFactor, dashPatternY);
+    const dashedWestEdge = mul(westEdgeFactor, dashPatternY);
+    const dashedNEEdge = mul(neEdgeFactor, dashPatternDiagonal);
+    const dashedNWEdge = mul(nwEdgeFactor, dashPatternDiagonal);
+    const dashedSEEdge = mul(seEdgeFactor, dashPatternDiagonal);
+    const dashedSWEdge = mul(swEdgeFactor, dashPatternDiagonal);
     
     // Combine all dashed edge factors
     const dashedTotalEdgeFactor = max(max(max(max(max(dashedEastEdge, dashedWestEdge), dashedNEEdge), dashedNWEdge), dashedSEEdge), dashedSWEdge);
     
-    // The border line factor already represents proximity to hex edges
-    // No need to multiply by hexEdgeMask since our edge detection is hex-based
-    const borderLineFactor = dashedTotalEdgeFactor;
+    // Use hex edge mask to concentrate border lines at hex boundaries
+    const borderLineFactor = mul(dashedTotalEdgeFactor, hexEdgeMask);
     
     // Border line width and intensity
-    const borderLineIntensity = 0.55;  // Increased opacity for better visibility of hex border lines
+    const borderLineIntensity = 0.38;  // How opaque the border line is (more transparent)
     
     // Brighten the nation color for the border line (make it more visible)
     const brightenedBorderColor = vec3(
