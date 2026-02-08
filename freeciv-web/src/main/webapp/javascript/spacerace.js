@@ -79,7 +79,7 @@ function show_spaceship_dialog()
   $("#dialog").dialog({
 			bgiframe: true,
 			modal: true,
-			width: is_small_screen() ? "90%" : "40%",
+			width: "65%",
 			buttons: {
 				Close: function() {
 					$("#dialog").dialog('close');

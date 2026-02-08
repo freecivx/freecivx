@@ -94,7 +94,7 @@ function show_standalone_pregame_dialog()
   $("#standalone_pregame_dialog").dialog({
     bgiframe: true,
     modal: true,
-    width: is_small_screen() ? "90%" : "50%",
+    width: "70%",
     height: "auto",
     buttons: {
       "Cancel": function() {
@@ -165,7 +165,7 @@ function show_standalone_nation_picker()
   $("#standalone_nation_picker_dialog").dialog({
     bgiframe: true,
     modal: true,
-    width: is_small_screen() ? "99%" : "70%",
+    width: "85%",
     height: $(window).height() - 150,
     buttons: {
       "Select Nation": function() {

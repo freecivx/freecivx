@@ -112,10 +112,6 @@ function update_nation_screen()
 
   select_no_nation();
 
-  if (is_small_screen) {
-    $('#take_player_button').hide();
-  }
-
   for (let player_id in players) {
     let pplayer = players[player_id];
     let flag_canvas = $('#nation_dlg_flags_' + player_id);
@@ -470,7 +466,7 @@ function show_send_private_message_dialog()
   $("#dialog").dialog({
 			bgiframe: true,
 			modal: true,
-			width: is_small_screen() ? "80%" : "40%",
+			width: "60%",
 			buttons:
 			{
 				"Send" : function() {

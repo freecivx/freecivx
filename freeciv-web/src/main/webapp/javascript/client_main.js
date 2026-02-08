@@ -110,31 +110,18 @@ function setup_window_size ()
   $("#freeciv_logo").show();
   $("#tabs-hel").hide();
 
-  if (is_small_screen()) {
-    $("#map_tab").children().html("<i class='fa fa-map' aria-hidden='true'></i>");
-    $("#globe_tab").children().html("<i class='fa fa-globe' aria-hidden='true'></i>");
-    $("#opt_tab").children().html("<i class='fa fa-cogs' aria-hidden='true'></i>");
-    $("#players_tab").children().html("<i class='fa fa-flag' aria-hidden='true'></i>");
-    $("#cities_tab").children().html("<i class='fa fa-city' aria-hidden='true'></i>");
-    $("#tech_tab").children().html("<i class='fa fa-flask' aria-hidden='true'></i>");
-    $("#civ_tab").children().html("<i class='fa fa-university' aria-hidden='true'></i>");
-    $("#hel_tab").children().html("<i class='fa fa-question' aria-hidden='true'></i>");
-    $("#mentat_tab").children().html("<i class='fa fa-user-circle' aria-hidden='true'></i>");
+  // Use icons for tabs - works well on both mobile and desktop
+  $("#map_tab").children().html("<i class='fa fa-map' aria-hidden='true'></i>");
+  $("#globe_tab").children().html("<i class='fa fa-globe' aria-hidden='true'></i>");
+  $("#opt_tab").children().html("<i class='fa fa-cogs' aria-hidden='true'></i>");
+  $("#players_tab").children().html("<i class='fa fa-flag' aria-hidden='true'></i>");
+  $("#cities_tab").children().html("<i class='fa fa-city' aria-hidden='true'></i>");
+  $("#tech_tab").children().html("<i class='fa fa-flask' aria-hidden='true'></i>");
+  $("#civ_tab").children().html("<i class='fa fa-university' aria-hidden='true'></i>");
+  $("#hel_tab").children().html("<i class='fa fa-question' aria-hidden='true'></i>");
+  $("#mentat_tab").children().html("<i class='fa fa-user-circle' aria-hidden='true'></i>");
 
-    $(".ui-tabs-anchor").css("padding", "3px");
-
-    $("#freeciv_logo").hide();
-
-    $("#game_status_panel_bar").css("font-size", "0.8em");
-
-    game_unit_panel_state = "minimized";
-    $("#pregame_player_list").hide();
-    $("#pregame_message_area").width($(window).width() - 20);
-    $("#pregame_custom_scrollbar_div").width("100%");
-    $("#pregame_text_input").width($(window).width() - 20);
-    $("#pregame_text_input").css("margin-left", "0px");
-
-  }
+  $(".ui-tabs-anchor").css("padding", "3px");
 
   $("#tabs-map").css("overflow", "hidden");
 
@@ -249,7 +236,7 @@ function show_endgame_dialog()
   $("#dialog").dialog({
 			bgiframe: true,
 			modal: true,
-			width: is_small_screen() ? "90%" : "50%",
+			width: "70%",
 			buttons: {
 				Ok: function() {
 					$("#dialog").dialog('close');

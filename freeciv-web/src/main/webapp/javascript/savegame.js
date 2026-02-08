@@ -67,7 +67,7 @@ function save_game()
   $("#save_dialog").dialog({
 			bgiframe: true,
 			modal: true,
-			width: is_small_screen() ? "90%" : "40%",
+			width: "65%",
 			close : function(){
 			  keyboard_input = true;
                         },
@@ -217,8 +217,8 @@ function show_load_game_dialog_cb(savegames_data)
   $("#dialog").dialog({
 			bgiframe: true,
 			modal: true,
-			width: is_small_screen() ? "90%" : "50%",
-			height: is_small_screen() ? $(window).height() - 20 : $(window).height() - 80,
+			width: "70%",
+			height: $(window).height() - 60,
 			buttons: dialog_buttons
 		});
 
@@ -403,7 +403,7 @@ function show_scenario_dialog()
   $("#dialog").dialog({
             bgiframe: true,
             modal: true,
-            width: is_small_screen() ? "90%" : "40%",
+            width: "65%",
             position: {my: 'center bottom', at: 'center bottom', of: window},
             buttons: {
                 "Cancel" : function() {

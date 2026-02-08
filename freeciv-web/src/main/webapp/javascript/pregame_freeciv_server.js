@@ -259,7 +259,7 @@ function pick_nation(player_id)
   $("#pick_nation_dialog").dialog({
 			bgiframe: true,
 			modal: true,
-			width: is_small_screen() ? "99%" : "70%",
+			width: "85%",
             height: $(window).height() - 150,
 			buttons: {
 			    "Customize this nation": function() {
@@ -280,13 +280,6 @@ function pick_nation(player_id)
       source: nation_name_list,
       close: function (event, ui) { update_nation_selection(); }
   });
-
-  if (is_small_screen()) {
-    $("#select_nation_flag").hide();
-    $("#nation_legend").hide();
-    $("#nation_style_choices").hide();
-    $("#nation_list").width("80%");
-  }
 
   nation_select_id = setTimeout (update_nation_selection, 150);
   $("#pick_nation_dialog").dialog('open');
@@ -537,8 +530,8 @@ function pregame_settings()
   $(id).dialog({
 			bgiframe: true,
 			modal: true,
-			width: is_small_screen() ? "98%" : "60%",
-            height: is_small_screen() ?  $(window).height() - 40 : $(window).height() - 250,
+			width: "80%",
+            height: $(window).height() - 100,
 			 buttons: {
 				Ok: function() {
 					$("#pregame_settings").dialog('close');
@@ -850,7 +843,7 @@ function pregame_settings()
 
   $("#settings_table").tooltip();
 
-  if (is_touch_device() || is_small_screen()) {
+  if (is_touch_device()) {
       $('#metamessage').blur();
   }
 
@@ -947,7 +940,7 @@ function show_intro_dialog(title, message) {
   $("#dialog").dialog({
 			bgiframe: false,
 			modal: true,
-			width: is_small_screen() ? "85%" : "44%",
+			width: "65%",
             position: { my: "center", at: "center-0 center-100", of: window },
 			buttons:
 			[
@@ -1013,14 +1006,6 @@ function show_intro_dialog(title, message) {
   if (($.getUrlVar('action') == "multi")
          && $.getUrlVar('load') != "tutorial") {
     $(".ui-dialog-buttonset button").first().hide();
-  }
-
-  if (is_small_screen()) {
-    /* some fixes for pregame screen on small devices.*/
-    $("#freeciv_logo").remove();
-    $("#pregame_message_area").css("width", "73%");
-    $("#observe_button").remove();
-    $("#fciv-intro-txt").text("FreecivWorld.net is a open source empire-building strategy game inspired by the history of human civilization.");
   }
 
   $("#dialog").dialog('open');
@@ -1174,7 +1159,7 @@ function show_new_user_account_dialog(gametype)
   $("#dialog").dialog({
 			bgiframe: true,
 			modal: true,
-			width: is_small_screen() ? "90%" : "60%",
+			width: "75%",
 			buttons:
 			{
                 "Cancel" : function() {
@@ -1226,10 +1211,6 @@ function show_new_user_account_dialog(gametype)
       }
     });
   });
-
-  if (is_small_screen()) {
-    $("#new_user_extra_info").hide();
-  }
 
 }
 
@@ -1313,7 +1294,7 @@ function show_customize_nation_dialog(player_id) {
   $("#dialog").dialog({
 			bgiframe: true,
 			modal: true,
-			width: is_small_screen() ? "90%" : "50%",
+			width: "70%",
 			buttons:
 			{
                 "Cancel" : function() {
