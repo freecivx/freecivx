@@ -168,7 +168,7 @@ function get_year_string()
     year_string = game_info['year']
                   + calendar_info['positive_year_label'] + " ";
   }
-  year_string += "T:" + game_info['turn'];
+  year_string += "Turn:" + game_info['turn'];
   return year_string;
 }
 

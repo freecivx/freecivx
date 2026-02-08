@@ -297,8 +297,7 @@ function update_timeout()
     var remaining = Math.floor(seconds_to_phasedone - ((now - seconds_to_phasedone_sync) / 1000));
 
     if (remaining >= 0 && turn_change_elapsed == 0) {
-      // Use compact format for all screen sizes
-      $("#turn_done_button").button("option", "label", "Turn (" + seconds_to_human_time(remaining) + ")");
+      $("#turn_done_button").button("option", "label", "Turn Done (" + seconds_to_human_time(remaining) + ")");
       if (!is_touch_device()) {
         $("#turn_done_button").tooltip({ disabled: false });
       }
