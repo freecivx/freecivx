@@ -940,7 +940,7 @@ function show_intro_dialog(title, message) {
   $("#dialog").dialog({
 			bgiframe: false,
 			modal: true,
-			width: "48%",
+			width: ($(window).width() <= 800) ? "100%" : "48%",
             position: { my: "center", at: "center-0 center-100", of: window },
 			buttons:
 			[
