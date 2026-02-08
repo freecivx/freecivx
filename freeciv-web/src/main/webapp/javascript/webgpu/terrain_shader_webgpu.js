@@ -24,7 +24,7 @@
  * Three.js Node System which compiles to WGSL for WebGPU.
  * 
  * Features:
- * - Hexagonal tile rendering (Civ 6 style) - each map tile is a hexagon
+ * - Hexagonal tile rendering - each map tile is a hexagon
  * - Multi-terrain type support with automatic blending
  * - Beach/coast transitions based on elevation
  * - Roads and railroads rendering from sprite sheets
@@ -765,7 +765,7 @@ function createTerrainShaderTSL(uniforms) {
     const borderLineFactor = mul(dashedTotalEdgeFactor, hexEdgeMask);
     
     // Border line width and intensity
-    const borderLineIntensity = 0.45;  // How opaque the border line is (more transparent)
+    const borderLineIntensity = 0.38;  // How opaque the border line is (more transparent)
     
     // Brighten the nation color for the border line (make it more visible)
     const brightenedBorderColor = vec3(
