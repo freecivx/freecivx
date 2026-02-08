@@ -700,11 +700,37 @@ function webgl_get_model(filename, ptile)
     
     // Convert materials to WebGPU-compatible node materials if needed
     if (typeof isWebGPURenderer === 'function' && isWebGPURenderer()) {
+      // Determine if this model is a unit or city (which should get brightness boost)
+      // Cities are prefixed with "city_", units are all other models except terrain features
+      // Terrain features: trees (Tree*, Pine*, Palm*), resources (Cactus*, Fish*, Whales, Wheat, etc.)
+      const isCity = filename.startsWith('city_') || filename.startsWith('citywalls_');
+      const isTerrainFeature = filename.startsWith('Tree') || filename.startsWith('Pine') || 
+                               filename.startsWith('Palm') || filename.startsWith('Cactus') ||
+                               filename.startsWith('Fish') || filename === 'Whales' || 
+                               filename === 'Wheat' || filename === 'Oasis' || filename === 'Hut' ||
+                               filename === 'Mine' || filename === 'Windmill' || filename === 'Oil' ||
+                               filename === 'OilWell' || filename === 'Peat' || filename === 'Buoy' ||
+                               filename === 'Fortress' || filename === 'Airbase' || filename === 'Ruins' ||
+                               filename === 'Fallout' || filename === 'Pollution' || filename === 'Harbor' ||
+                               filename === 'Airport' || filename === 'Lighthouse' || filename === 'NuclearPlant';
+      const isUnit = !isCity && !isTerrainFeature;
+      
+      // Apply brightness boost for units and cities (10% brighter)
+      const shouldBoostBrightness = isUnit || isCity;
+      
       // Use material factory if available
       if (typeof convertModelMaterials === 'function') {
-        convertModelMaterials(clonedModel, { doubleSided: true, flatShading: false });
+        convertModelMaterials(clonedModel, { 
+          doubleSided: true, 
+          flatShading: false,
+          brightnessBoost: shouldBoostBrightness
+        });
       } else {
         // Fallback inline conversion for backwards compatibility
+        // Use the global constant if available, otherwise fallback to 1.10
+        const BRIGHTNESS_BOOST = shouldBoostBrightness 
+          ? (window.UNIT_CITY_BRIGHTNESS_BOOST || 1.10) 
+          : 1.0;
         clonedModel.traverse((node) => {
           if (node.isMesh && node.material) {
             const originalMat = node.material;
@@ -714,7 +740,14 @@ function webgl_get_model(filename, ptile)
             if (originalMat.color) nodeMaterial.color.copy(originalMat.color);
             if (originalMat.emissive) nodeMaterial.emissive.copy(originalMat.emissive);
             if (originalMat.emissiveIntensity !== undefined) {
-              nodeMaterial.emissiveIntensity = originalMat.emissiveIntensity;
+              nodeMaterial.emissiveIntensity = originalMat.emissiveIntensity * BRIGHTNESS_BOOST;
+            } else if (shouldBoostBrightness) {
+              // If no emissive intensity defined but brightness boost requested,
+              // set a small emissive intensity for the brightness boost effect
+              nodeMaterial.emissiveIntensity = 0.1 * BRIGHTNESS_BOOST;
+              if (!originalMat.emissive) {
+                nodeMaterial.emissive.set(0xFFFFFF);
+              }
             }
             if (originalMat.roughness !== undefined) nodeMaterial.roughness = originalMat.roughness;
             if (originalMat.metalness !== undefined) nodeMaterial.metalness = originalMat.metalness;

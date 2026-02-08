@@ -39,6 +39,13 @@ function isWebGPURenderer() {
 }
 
 /**
+ * Brightness boost multiplier for units and cities (10% brighter)
+ * @readonly
+ * @type {number}
+ */
+const UNIT_CITY_BRIGHTNESS_BOOST = 1.10;
+
+/**
  * Converts a standard Three.js material to a WebGPU-compatible node material.
  * This is the central conversion function used throughout the codebase.
  * 
@@ -46,6 +53,7 @@ function isWebGPURenderer() {
  * @param {Object} options - Optional configuration
  * @param {boolean} [options.doubleSided=true] - Whether to render both sides
  * @param {boolean} [options.flatShading=false] - Whether to use flat shading
+ * @param {boolean} [options.brightnessBoost=false] - Whether to apply 10% brightness boost for units/cities
  * @returns {THREE.MeshStandardNodeMaterial} WebGPU-compatible node material
  * 
  * @example
@@ -55,7 +63,8 @@ function isWebGPURenderer() {
 function convertToNodeMaterial(originalMaterial, options = {}) {
     const {
         doubleSided = true,
-        flatShading = false
+        flatShading = false,
+        brightnessBoost = false
     } = options;
     
     // Create a new MeshStandardNodeMaterial with lighting support
@@ -74,8 +83,18 @@ function convertToNodeMaterial(originalMaterial, options = {}) {
         nodeMaterial.emissive.copy(originalMaterial.emissive);
     }
     
+    // Apply emissiveIntensity with optional brightness boost for units/cities
     if (originalMaterial.emissiveIntensity !== undefined) {
-        nodeMaterial.emissiveIntensity = originalMaterial.emissiveIntensity;
+        nodeMaterial.emissiveIntensity = brightnessBoost 
+            ? originalMaterial.emissiveIntensity * UNIT_CITY_BRIGHTNESS_BOOST 
+            : originalMaterial.emissiveIntensity;
+    } else if (brightnessBoost) {
+        // If no emissive intensity defined but brightness boost requested,
+        // set a small emissive intensity for the brightness boost effect
+        nodeMaterial.emissiveIntensity = 0.1 * UNIT_CITY_BRIGHTNESS_BOOST;
+        if (!originalMaterial.emissive) {
+            nodeMaterial.emissive.set(0xFFFFFF);
+        }
     }
     
     if (originalMaterial.roughness !== undefined) {
@@ -256,6 +275,7 @@ function createRingMaterial(color, options = {}) {
 // The build system (Maven minify plugin) concatenates all JS files into webclient.min.js.
 // ES modules are only used for Three.js imports via importmap.
 // TODO: Consider migrating to full ES module system in future refactor.
+window.UNIT_CITY_BRIGHTNESS_BOOST = UNIT_CITY_BRIGHTNESS_BOOST;
 window.isWebGPURenderer = isWebGPURenderer;
 window.convertToNodeMaterial = convertToNodeMaterial;
 window.convertModelMaterials = convertModelMaterials;
