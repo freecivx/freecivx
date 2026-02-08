@@ -165,13 +165,13 @@ function create_city_label_sprite(pcity, index) {
     }
   }
 
-  // Name and size with nation-colored background
+  // Name and size with black background
   var city_text = pcity.name.toUpperCase() + " " + pcity.size;
   ctx.font = webgl_mapview_font;
   var txt_measure = ctx.measureText(city_text);
   
-  // Draw background using nation color with transparency
-  ctx.fillStyle = nation_color;
+  // Draw background using black
+  ctx.fillStyle = '#000000';
   ctx.globalAlpha = 0.85;
   ctx.fillRect(width, 0, txt_measure.width + 14, 32);
   ctx.globalAlpha = 1.0;
@@ -189,8 +189,8 @@ function create_city_label_sprite(pcity, index) {
   if (prod_type != null) {
     var tag = tileset_ruleset_entity_tag_str_or_alt(prod_type, "unit or building");
     if (tag != null && sprites[tag]) {
-      // Background with nation color
-      ctx.fillStyle = nation_color;
+      // Background with black
+      ctx.fillStyle = '#000000';
       ctx.globalAlpha = 0.9;
       ctx.fillRect(width, 0, 36, 32);
       ctx.globalAlpha = 1.0;
@@ -285,13 +285,13 @@ function update_city_label(pcity, index)
     }
   }
 
-  // Name and size with nation-colored background
+  // Name and size with black background
   var city_text = pcity.name.toUpperCase() + " " + pcity.size;
   ctx.font = webgl_mapview_font;
   var txt_measure = ctx.measureText(city_text);
   
-  // Draw background using nation color with transparency
-  ctx.fillStyle = nation_color;
+  // Draw background using black
+  ctx.fillStyle = '#000000';
   ctx.globalAlpha = 0.85;
   ctx.fillRect(width, 0, txt_measure.width + 14, 32);
   ctx.globalAlpha = 1.0;
@@ -309,8 +309,8 @@ function update_city_label(pcity, index)
   if (prod_type != null) {
     var tag = tileset_ruleset_entity_tag_str_or_alt(prod_type, "unit or building");
     if (tag != null && sprites[tag]) {
-      // Background with nation color
-      ctx.fillStyle = nation_color;
+      // Background with black
+      ctx.fillStyle = '#000000';
       ctx.globalAlpha = 0.9;
       ctx.fillRect(width, 0, 36, 32);
       ctx.globalAlpha = 1.0;
