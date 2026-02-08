@@ -530,17 +530,18 @@ function createTerrainShaderTSL(uniforms) {
     // This gives brighter surfaces facing the sun and darker surfaces facing away
     const NdotL = max(dot(normal, sunDir), 0.0);
     
-    // Apply ambient + diffuse lighting model
-    // ambient: base brightness so shadows aren't completely black (0.45)
-    // diffuse: sun-facing surfaces get additional brightness (0.65)
-    // Total range: 0.45 (in shadow) to 1.10 (fully lit)
-    const ambientLight = 0.45;
-    const diffuseStrength = 0.65;
+    // Apply ambient + diffuse lighting model for natural terrain appearance
+    // ambient: base brightness so shadows aren't completely black (0.35 - reduced for better contrast)
+    // diffuse: sun-facing surfaces get additional brightness (0.55 - adjusted for natural look)
+    // Total range: 0.35 (in shadow) to 0.90 (fully lit) before boost
+    const ambientLight = 0.35;
+    const diffuseStrength = 0.55;
     const lightingFactor = add(ambientLight, mul(NdotL, diffuseStrength));
     
-    // Apply lighting to terrain color, making terrain brighter overall
-    // Brightness boost makes terrain colours more vibrant and visible
-    const brightnessBoost = 1.35;
+    // Apply lighting to terrain color with moderate brightness
+    // Brightness boost of 1.08 provides slight vibrancy without washing out colors
+    // This gives final range of ~0.38 (shadow) to ~0.97 (lit) - natural looking
+    const brightnessBoost = 1.08;
     finalColor = vec4(mul(mul(finalColor.rgb, lightingFactor), brightnessBoost), finalColor.a);
 
     // =========================================================================
