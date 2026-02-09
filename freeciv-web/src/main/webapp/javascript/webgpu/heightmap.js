@@ -60,6 +60,14 @@ const FLAT_TERRAIN_TYPES = new Set(['Plains', 'Grassland', 'Desert', 'Tundra', '
 // Terrain type detection helpers
 const ELEVATED_TERRAIN_TYPES = new Set(['Hills', 'Mountains']);
 
+// Variation constants for terrain noise (prime numbers for pseudo-random distribution)
+const HILL_VARIATION_PRIME = 17;           // Prime number for hills pseudo-random variation
+const MOUNTAIN_VARIATION_MULTIPLIER = 7;   // Multiplier for mountain variation input
+const MOUNTAIN_VARIATION_PRIME = 23;       // Prime number for mountains pseudo-random variation
+
+// Interpolation constants
+const MAX_NEIGHBOR_BLEND_DISTANCE = 1.5;   // Maximum distance for neighbor height blending
+
 /****************************************************************************
   Returns height offset for units. This will make units higher above cities.
 ****************************************************************************/
@@ -410,15 +418,15 @@ function update_heightmap(heightmap_quality)
       // Hills: slight elevation towards center
       if (terrainName === 'Hills') {
         const hillElevation = (HEIGHT_HILLS_CENTER - HEIGHT_HILLS_BASE) * hexCenterFactor;
-        // Add subtle variation
-        const variation = (((hx * hy) % 17) / 17 - 0.5) * 0.005;
+        // Add subtle pseudo-random variation using prime modulo for natural appearance
+        const variation = (((hx * hy) % HILL_VARIATION_PRIME) / HILL_VARIATION_PRIME - 0.5) * 0.005;
         finalHeight = baseHeight + hillElevation + variation;
       }
       // Mountains: more pronounced central elevation
       else if (terrainName === 'Mountains') {
         const mountainElevation = (HEIGHT_MOUNTAIN_CENTER - HEIGHT_MOUNTAIN_BASE) * hexCenterFactor;
-        // Add subtle rocky variation
-        const variation = (((hx * hy * 7) % 23) / 23 - 0.5) * 0.008;
+        // Add subtle pseudo-random rocky variation using prime modulo
+        const variation = (((hx * hy * MOUNTAIN_VARIATION_MULTIPLIER) % MOUNTAIN_VARIATION_PRIME) / MOUNTAIN_VARIATION_PRIME - 0.5) * 0.008;
         finalHeight = baseHeight + mountainElevation + variation;
       }
       // Flat terrains: stay flat in center, slight transition at edges
@@ -460,7 +468,7 @@ function update_heightmap(heightmap_quality)
           const ndy = (n.y - primaryTileY) * HEX_HEIGHT_FACTOR;
           const neighborDist = Math.sqrt(ndx * ndx + ndy * ndy);
           
-          if (neighborDist > 0 && neighborDist < 1.5) {
+          if (neighborDist > 0 && neighborDist < MAX_NEIGHBOR_BLEND_DISTANCE) {
             const nHeight = ntile['height'];
             const nWeight = (1 - hexCenterFactor) / (neighborDist * neighborDist + 0.5);
             
