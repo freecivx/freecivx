@@ -386,6 +386,10 @@ function createWaterMaterialTSL(maptilesTex, mapXSize, mapYSize) {
   const neighborOffsetY = div(1.0, map_y_size);
   
   // Diagonal neighbor offsets for proper hex coordinate system (odd-r layout)
+  // In odd-r hex coordinates, diagonal neighbors require different X offsets based on row parity:
+  // - NE/SE neighbors: X offset = 0.5 for odd rows (target is half-left), 1.5 for even rows (target is half-right)
+  // - NW/SW neighbors: X offset = -1.5 for odd rows (target is half-left), -0.5 for even rows (target is half-right)
+  // These values (1.5, -0.5) are the base offsets that get adjusted by subtracting isOddRow (0 or 1)
   const neSeOffsetXFactor = sub(1.5, isOddRow);
   const nwSwOffsetXFactor = sub(-0.5, isOddRow);
   
@@ -523,8 +527,13 @@ function createWaterMaterialTSL(maptilesTex, mapXSize, mapYSize) {
   const riverRippleIntensity = mul(add(riverRipple1, riverRipple2), 0.06);
   
   // River foam/rapids effect (appears on faster-flowing sections)
+  // River foam constants: threshold (0.6) determines foam rarity, 
+  // range cap (0.4) limits maximum intensity, multiplier (2.0) scales final effect
+  const RIVER_FOAM_THRESHOLD = 0.6;     // Noise value above which foam appears
+  const RIVER_FOAM_RANGE = 0.4;         // Maximum foam intensity range
+  const RIVER_FOAM_MULTIPLIER = 2.0;    // Scales foam visibility
   const riverFoamNoise = noise2D(add(mul(uvNode.x, 30.0), mul(timeUniform, 0.4)), add(mul(uvNode.y, 25.0), mul(timeUniform, 0.3)));
-  const riverFoamIntensity = mul(clamp(sub(riverFoamNoise, 0.6), 0.0, 0.4), 2.0);
+  const riverFoamIntensity = mul(clamp(sub(riverFoamNoise, RIVER_FOAM_THRESHOLD), 0.0, RIVER_FOAM_RANGE), RIVER_FOAM_MULTIPLIER);
   
   // ==== ATMOSPHERIC WAVE ANIMATION ====
   // Gentle undulating waves for atmospheric ocean feel
@@ -629,14 +638,18 @@ function createWaterMaterialTSL(maptilesTex, mapXSize, mapYSize) {
   // ==== SOFT VISIBILITY HANDLING WITH BLURRED TRANSITIONS ====
   // Create soft transitions at the boundary between visible and unknown tiles
   
+  // Visibility blending constants
+  const VISIBILITY_EDGE_BLEND_FACTOR = 0.45;  // How much to blend with neighbors at hex edges (0-1)
+  const VISIBILITY_AMPLIFY_FACTOR = 1.5;      // Amplifies fogged tiles (~0.54 -> ~0.81) for better visibility
+  
   // Calculate edge proximity for blending (stronger at hex edges)
   const edgeProximity = clamp(mul(sub(hexDist, 0.25), 4.0), 0.0, 1.0);
   
   // Blend current tile visibility with neighbor average at edges for soft transitions
-  const softVisibility = mix(visibility, avgNeighborVis, mul(edgeProximity, 0.45));
+  const softVisibility = mix(visibility, avgNeighborVis, mul(edgeProximity, VISIBILITY_EDGE_BLEND_FACTOR));
   
   // Apply smoothstep curve for softer edges
-  const visNormalized = clamp(mul(softVisibility, 1.5), 0.0, 1.0);
+  const visNormalized = clamp(mul(softVisibility, VISIBILITY_AMPLIFY_FACTOR), 0.0, 1.0);
   const visSmooth = mul(mul(visNormalized, visNormalized), sub(3.0, mul(2.0, visNormalized)));
   
   const finalColor = mix(unknownBlack, waterColor, visSmooth);
