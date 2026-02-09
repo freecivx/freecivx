@@ -149,67 +149,30 @@ function init_heightmap(heightmap_quality)
 
 /****************************************************************************
   Create heightmap based on tile.height.
-  
-  Unified heightmap for terrain mesh that includes:
-  - Ocean tiles at lower elevation for water depth
-  - Coastline transitions for beach rendering
-  - River channels as subtle depressions
-  - Mountain peaks with slight random variation
 ****************************************************************************/
 function update_heightmap(heightmap_quality)
 {
   let heightmap_resolution_x = map.xsize * heightmap_quality + 1;
   let heightmap_resolution_y = map.ysize * heightmap_quality + 1;
 
-  console.log("Updating heightmap for unified terrain...");
+  console.log("Updating heightmap...");
 
-  // =========================================================================
-  // PASS 1: Set base heights for tiles, handling ocean, coast, and land
-  // =========================================================================
   for (let x = 0; x < map.xsize ; x++) {
     for (let y = 0; y < map.ysize; y++) {
       let ptile = map_pos_to_tile(x, y);
-      let terrain = tile_terrain(ptile);
-      let terrainName = terrain ? terrain['name'] : null;
-      
-      // Handle ocean/water tiles - set below water level for depth effect
-      if (is_ocean_tile(ptile)) {
-        // Ocean and deep water tiles - lower height
-        if (is_land_tile_near(ptile)) {
-          // Coastal waters - slightly higher (shallower)
-          ptile['height'] = 0.46;
-        } else {
-          // Deep ocean - lower
-          ptile['height'] = 0.42;
-        }
+
+      // Make coastline more distinct, to make it easier to distinguish ocean from land.
+      if (is_ocean_tile(ptile) && is_land_tile_near(ptile)) {
+        ptile['height'] = 0.45;
       }
-      // Handle land tiles
-      else {
-        // Beach/coastal land tiles - just above water level
-        if (is_ocean_tile_near(ptile)) {
-          // Rivers on coast should be slightly lower
-          if (tile_has_extra(ptile, EXTRA_RIVER)) {
-            ptile['height'] = 0.52;
-          } else {
-            ptile['height'] = 0.54;
-          }
-        }
-        // Rivers on non-coastal tiles - create subtle depression
-        else if (tile_has_extra(ptile, EXTRA_RIVER)) {
-          // Keep river height slightly below terrain but above water level
-          ptile['height'] = Math.max(0.51, ptile['height'] * 0.96);
-        }
-        // Regular terrain - use default height, adjust for terrain type
-        else if (terrainName == "Mountains") {
-          ptile['height'] = Math.min(ptile['height'] * 1.02, 0.75);
-        } else if (terrainName == "Hills") {
-          ptile['height'] = Math.min(ptile['height'] * 1.01, 0.68);
-        }
+      if (!is_ocean_tile(ptile) && is_ocean_tile_near(ptile) && !tile_has_extra(ptile, EXTRA_RIVER)) {
+        ptile['height'] = 0.55;
       }
 
-      // Unknown tiles - propagate height from known neighbors
       if (tile_get_known(ptile) == TILE_UNKNOWN) {
         ptile['height'] = 0.51;
+        // Use standard 8-connected neighbors for height propagation
+        // The hex visualization is separate from the tile coordinate system
         let neighbours = [
           { "x": x - 1 , "y": y - 1},
           { "x": x - 1, "y": y },
@@ -219,48 +182,59 @@ function update_heightmap(heightmap_quality)
           { "x": x + 1, "y": y - 1 },
           { "x": x + 1,  "y": y },
           { "x": x + 1,  "y": y + 1},
-        ];
+          ];
 
         for (let i = 0; i < 8; i++) {
           let coords = neighbours[i];
-          if (coords.x < 0 || coords.x >= map.xsize || coords.y < 0 || coords.y >= map.ysize) {
+          if (coords.x < 0 || coords.x >= map.xsize || coords.y < 0 || coords.y >= map.ysize || ptile['height'] > 0.51) {
             continue;
           }
           let ntile = map_pos_to_tile(coords.x, coords.y);
           if (tile_get_known(ntile) != TILE_UNKNOWN) {
             ptile['height'] = ntile['height'];
-            break;
           }
         }
+
       }
     }
   }
 
-  // =========================================================================
-  // PASS 2: Generate heightmap with smooth interpolation
-  // =========================================================================
   for (let x = 0; x < heightmap_resolution_x; x++) {
     for (let y = 0; y < heightmap_resolution_y; y++) {
       let index = y * heightmap_resolution_x + x;
       let gx = x / heightmap_quality - 0.5;
       let gy = y / heightmap_quality - 0.5;
-      
-      // At tile centers, use direct height
-      if (Math.round(gx) == gx && Math.round(gy) == gy) {
+       if (Math.round(gx) == gx && Math.round(gy) == gy) {
         let ptile = map_pos_to_tile(gx, gy);
         heightmap[index] = ptile['height'];
+        if (tile_has_extra(ptile, EXTRA_RIVER)) {
+          heightmap[index] = ptile['height'] * 0.98;
+        }
+        if (tile_terrain(ptile)['name'] == "Mountains") {
+          heightmap[index] = ptile['height'] * 1.02;
+        }
       } else {
-        // Between tiles - smooth interpolation using inverse distance weighting
+        // For hex interpolation, use the 4 nearest grid points
         let neighbours = [
           { "x": Math.floor(gx), "y": Math.floor(gy) },
           { "x": Math.floor(gx), "y": Math.ceil(gy) },
           { "x": Math.ceil(gx),  "y": Math.floor(gy) },
-          { "x": Math.ceil(gx),  "y": Math.ceil(gy) }
-        ];
+          { "x": Math.ceil(gx),  "y": Math.ceil(gy) }];
+
+        let num_river_neighbours = 0;
+        for (let i = 0; i < 4; i++) {
+          let coords = neighbours[i];
+          if (coords.x < 0 || coords.x >= map.xsize || coords.y < 0 || coords.y >= map.ysize) {
+            continue;
+          }
+          let ptile = map_pos_to_tile(coords.x, coords.y);
+          if (tile_has_extra(ptile, EXTRA_RIVER)) {
+            num_river_neighbours++;
+          }
+        }
 
         let norm = 0;
         let sum = 0;
-        
         for (let i = 0; i < 4; i++) {
           let coords = neighbours[i];
           if (coords.x < 0 || coords.x >= map.xsize || coords.y < 0 || coords.y >= map.ysize) {
@@ -269,26 +243,23 @@ function update_heightmap(heightmap_quality)
           let dx = gx - coords.x;
           let dy = gy - coords.y;
           let distance = Math.sqrt(dx*dx + dy*dy);
-          if (distance < 0.001) distance = 0.001; // Prevent division by very small numbers
-          
           let ptile = map_pos_to_tile(coords.x, coords.y);
-          let terrain = tile_terrain(ptile);
-          let terrainName = terrain ? terrain['name'] : null;
-          let height = ptile['height'];
-          
-          // Add slight random variation for hills and mountains
-          if (terrainName == "Hills" || terrainName == "Mountains") {
+          let height = 0;
+          if (tile_terrain(ptile)['name'] == "Hills" || tile_terrain(ptile)['name'] == "Mountains") {
             let rnd = ((x * y) % 10) / 10;
-            height += ((rnd - 0.5) / 60);
+            height = ptile['height'] + ((rnd - 0.5) / 50) - 0.01;
+          } else {
+            height = ptile['height'];
+          }
+          if (tile_has_extra(ptile, EXTRA_RIVER)) {
+            height = ptile['height'] * 1.045  - ((num_river_neighbours / 4) * 0.02);
           }
 
-          // Use inverse distance squared weighting
-          let weight = 1 / (distance * distance);
-          sum += height * weight;
-          norm += weight;
+          sum += height / distance / distance;
+          norm += 1 / distance / distance;
         }
 
-        heightmap[index] = norm > 0 ? (sum / norm) : 0.5;
+        heightmap[index] = (sum / norm);
       }
     }
   }
