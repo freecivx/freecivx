@@ -114,12 +114,12 @@ function createTerrainShaderTSL(uniforms) {
     // we need to stretch the hex in UV space by the inverse of the compression factor
     // This counteracts the mesh compression so the final rendered hex has correct proportions
     const HEX_ASPECT = 1.0 / HEX_MESH_HEIGHT_FACTOR; // ≈ 1.1547 - Y-coordinate scale factor for hex geometry
-    const HEX_EDGE_WIDTH = 0.055; // Width of hex edge highlight (as fraction of tile) - increased for terrain_quality=10
-    const HEX_EDGE_SOFTNESS = 0.02; // Edge anti-aliasing softness - reduced for crisper edges at higher quality
-    const HEX_EDGE_BLEND_STRENGTH = 0.38; // How strongly hex edges darken the terrain (0-1) - increased for more visible borders
-    const HEX_EDGE_COLOR_R = 0.12; // Red component of edge darkening color - darkened for better contrast
-    const HEX_EDGE_COLOR_G = 0.10; // Green component of edge darkening color - darkened for better contrast
-    const HEX_EDGE_COLOR_B = 0.06; // Blue component of edge darkening color - darkened for better contrast
+    const HEX_EDGE_WIDTH = 0.045; // Width of hex edge highlight (as fraction of tile) - increased for better horizontal visibility
+    const HEX_EDGE_SOFTNESS = 0.025; // Edge anti-aliasing softness
+    const HEX_EDGE_BLEND_STRENGTH = 0.32; // How strongly hex edges darken the terrain (0-1) - slightly reduced for balance
+    const HEX_EDGE_COLOR_R = 0.15; // Red component of edge darkening color
+    const HEX_EDGE_COLOR_G = 0.12; // Green component of edge darkening color  
+    const HEX_EDGE_COLOR_B = 0.08; // Blue component of edge darkening color
     const TEXTURE_RANDOM_SCALE = 16.0; // Divisor for random texture offset - larger = less variation
 
     // Visibility constants (matching vertex color values from tile_visibility_handler.js)
@@ -265,9 +265,8 @@ function createTerrainShaderTSL(uniforms) {
     // The Y-direction edges appear thicker due to mesh compression, so we use
     // a blended approach: horizontal edges (dist1) get full width, 
     // diagonal edges (dist2, dist3) get slightly reduced width
-    // Increased values for terrain_quality=10 to maintain consistent hexagonal appearance
-    const HEX_EDGE_WIDTH_HORIZONTAL = 0.06;  // Wider edges on left/right for better X visibility
-    const HEX_EDGE_WIDTH_DIAGONAL = 0.045;   // Balanced diagonal edges for consistent hex shape
+    const HEX_EDGE_WIDTH_HORIZONTAL = 0.05;  // Wider edges on left/right for better X visibility
+    const HEX_EDGE_WIDTH_DIAGONAL = 0.035;   // Narrower edges on top/bottom to reduce Y edge prominence
     
     // Determine which edge is active and blend edge widths accordingly
     // When dist1 is the dominant edge (horizontal), use wider edge
