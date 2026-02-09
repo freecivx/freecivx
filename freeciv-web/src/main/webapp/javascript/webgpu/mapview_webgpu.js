@@ -418,21 +418,23 @@ function createWaterMaterialTSL(maptilesTex, mapXSize, mapYSize) {
   }
   
   // Improved 2D noise with smoother interpolation for more water-like blur effect
+  // Helper function for quintic interpolation (smoother than smoothstep)
+  // t = 6t^5 - 15t^4 + 10t^3
+  function quinticSmooth(t) {
+    const t3 = mul(mul(t, t), t);
+    const t4 = mul(t3, t);
+    const t5 = mul(t4, t);
+    return add(sub(mul(6.0, t5), mul(15.0, t4)), mul(10.0, t3));
+  }
+  
   function noise2D(x, y) {
     const ix = floor(x);
     const iy = floor(y);
     const fx = fract(x);
     const fy = fract(y);
     // Quintic interpolation for smoother, more blurred appearance
-    // t = 6t^5 - 15t^4 + 10t^3 (smoother than cubic smoothstep)
-    const fx3 = mul(mul(fx, fx), fx);
-    const fx4 = mul(fx3, fx);
-    const fx5 = mul(fx4, fx);
-    const ux = add(sub(mul(6.0, fx5), mul(15.0, fx4)), mul(10.0, fx3));
-    const fy3 = mul(mul(fy, fy), fy);
-    const fy4 = mul(fy3, fy);
-    const fy5 = mul(fy4, fy);
-    const uy = add(sub(mul(6.0, fy5), mul(15.0, fy4)), mul(10.0, fy3));
+    const ux = quinticSmooth(fx);
+    const uy = quinticSmooth(fy);
     const a = hash(add(ix, mul(iy, 157.0)));
     const b = hash(add(add(ix, 1.0), mul(iy, 157.0)));
     const c = hash(add(ix, mul(add(iy, 1.0), 157.0)));
@@ -444,13 +446,14 @@ function createWaterMaterialTSL(maptilesTex, mapXSize, mapYSize) {
   
   // ==== MULTI-LAYER BLURRED NOISE ====
   // Fractal Brownian Motion (fBm) for softer, more natural water appearance
-  // Multiple octaves of noise blended together create a blur-like effect
-  function blurredNoise(x, y, octaves) {
+  // Three octaves of noise blended together create a blur-like effect
+  function blurredNoise(x, y) {
+    // First octave: base frequency
     let result = noise2D(x, y);
-    // Second octave at higher frequency, lower amplitude
+    // Second octave: higher frequency, lower amplitude
     const n2 = noise2D(mul(x, 2.1), mul(y, 2.1));
     result = add(result, mul(n2, 0.5));
-    // Third octave for extra softness
+    // Third octave: highest frequency, lowest amplitude
     const n3 = noise2D(mul(x, 4.3), mul(y, 4.3));
     result = add(result, mul(n3, 0.25));
     // Normalize: sum of weights = 1 + 0.5 + 0.25 = 1.75
@@ -462,10 +465,10 @@ function createWaterMaterialTSL(maptilesTex, mapXSize, mapYSize) {
   const causticSpeed = 0.06; // Slower, more gentle animation
   const causticU1 = add(mul(uvNode.x, causticScale), mul(timeUniform, causticSpeed));
   const causticV1 = add(mul(uvNode.y, causticScale), mul(timeUniform, mul(causticSpeed, 0.7)));
-  const caustic1 = blurredNoise(causticU1, causticV1, 3);
+  const caustic1 = blurredNoise(causticU1, causticV1);
   const causticU2 = sub(mul(uvNode.x, mul(causticScale, 1.3)), mul(timeUniform, mul(causticSpeed, 0.5)));
   const causticV2 = add(mul(uvNode.y, mul(causticScale, 1.1)), mul(timeUniform, mul(causticSpeed, 0.3)));
-  const caustic2 = blurredNoise(causticU2, causticV2, 3); // Use blurred noise for second layer too
+  const caustic2 = blurredNoise(causticU2, causticV2);
   const causticPattern = mul(add(caustic1, caustic2), 0.5);
   // Softer caustic intensity with smoother falloff
   const causticIntensity = clamp(mul(sub(causticPattern, 0.35), 2.0), 0.0, 1.0);
@@ -494,23 +497,40 @@ function createWaterMaterialTSL(maptilesTex, mapXSize, mapYSize) {
   const foamPattern = mul(add(add(foamWave1, foamWave2), 1.5), 0.33);
   
   // Foam intensity based on proximity to land (using blurred noise for softer, natural edge)
-  const foamNoise = blurredNoise(mul(uvNode.x, 18.0), add(mul(uvNode.y, 18.0), mul(timeUniform, 0.08)), 3);
+  const foamNoiseX = mul(uvNode.x, 18.0);
+  const foamNoiseY = add(mul(uvNode.y, 18.0), mul(timeUniform, 0.08));
+  const foamNoise = blurredNoise(foamNoiseX, foamNoiseY);
   const foamIntensity = mul(mul(nearLand, foamPattern), clamp(add(foamNoise, 0.25), 0.0, 1.0));
   
   // ==== SOFT SURFACE RIPPLES (Ocean) - More blurred, water-like ====
   const rippleScale = 16.0; // Reduced scale for larger, softer ripples
   const rippleSpeed = 0.10; // Slower for calmer water
+  
   // Multi-directional ripples for natural water appearance
-  const ripple1 = sin(add(mul(add(mul(uvNode.x, 1.0), mul(uvNode.y, 0.5)), rippleScale), mul(timeUniform, rippleSpeed)));
-  const ripple2 = sin(add(mul(add(mul(uvNode.x, 0.7), mul(uvNode.y, 1.0)), mul(rippleScale, 0.85)), mul(timeUniform, mul(rippleSpeed, 1.2))));
-  const ripple3 = sin(add(mul(add(mul(uvNode.x, 0.4), mul(uvNode.y, 0.8)), mul(rippleScale, 1.15)), mul(timeUniform, mul(rippleSpeed, 0.8))));
+  // Ripple 1: diagonal direction
+  const ripple1Dir = add(mul(uvNode.x, 1.0), mul(uvNode.y, 0.5));
+  const ripple1Phase = add(mul(ripple1Dir, rippleScale), mul(timeUniform, rippleSpeed));
+  const ripple1 = sin(ripple1Phase);
+  
+  // Ripple 2: different diagonal
+  const ripple2Dir = add(mul(uvNode.x, 0.7), mul(uvNode.y, 1.0));
+  const ripple2Phase = add(mul(ripple2Dir, mul(rippleScale, 0.85)), mul(timeUniform, mul(rippleSpeed, 1.2)));
+  const ripple2 = sin(ripple2Phase);
+  
+  // Ripple 3: third direction for fuller coverage
+  const ripple3Dir = add(mul(uvNode.x, 0.4), mul(uvNode.y, 0.8));
+  const ripple3Phase = add(mul(ripple3Dir, mul(rippleScale, 1.15)), mul(timeUniform, mul(rippleSpeed, 0.8)));
+  const ripple3 = sin(ripple3Phase);
+  
   // Blend three ripple layers for smoother, more blurred effect
   const rippleValue = mul(add(add(ripple1, ripple2), ripple3), 0.06); // Reduced amplitude for subtlety
   
   // ==== BASE OCEAN COLOR - Smoother gradients ====
   const positionFactor = mul(add(uvNode.x, uvNode.y), 0.3);
   // Add blurred noise for organic color variation
-  const colorNoise = blurredNoise(mul(uvNode.x, 6.0), add(mul(uvNode.y, 6.0), mul(timeUniform, 0.02)), 3);
+  const colorNoiseX = mul(uvNode.x, 6.0);
+  const colorNoiseY = add(mul(uvNode.y, 6.0), mul(timeUniform, 0.02));
+  const colorNoise = blurredNoise(colorNoiseX, colorNoiseY);
   const variation = add(add(positionFactor, rippleValue), mul(sub(colorNoise, 0.5), 0.15));
   const normalizedVariation = clamp(add(0.5, mul(variation, 0.18)), 0.0, 1.0); // Softer variation range
   const deepToMid = mix(deepOcean, midOcean, clamp(mul(normalizedVariation, 1.4), 0.0, 1.0));
