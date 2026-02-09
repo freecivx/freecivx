@@ -121,11 +121,6 @@ function createTerrainShaderTSL(uniforms) {
     const HEX_EDGE_COLOR_G = 0.12; // Green component of edge darkening color  
     const HEX_EDGE_COLOR_B = 0.08; // Blue component of edge darkening color
     const TEXTURE_RANDOM_SCALE = 16.0; // Divisor for random texture offset - larger = less variation
-    
-    // World coordinate scale: Must match MAPVIEW_ASPECT_FACTOR in mapview_common.js (line 58)
-    // This is used to convert fragment position (world coords) to tile coordinates
-    // The value is duplicated here for shader performance (avoiding uniform overhead)
-    const MAPVIEW_ASPECT_FACTOR = 35.71;
 
     // Visibility constants (matching vertex color values from tile_visibility_handler.js)
     // These values are set in get_vertex_color_from_tile() and interpolated across vertices
@@ -187,42 +182,8 @@ function createTerrainShaderTSL(uniforms) {
     // - Odd rows are shifted right by half a tile width
     // - Each tile has 6 neighbors in hex directions
     //
-    // We use fragment position (positionLocal) in addition to UV coordinates for
-    // more precise hex edge calculation. Fragment position provides per-pixel
-    // precision whereas UV coordinates are interpolated from vertices.
-    //
     // Reference: https://www.redblobgames.com/grids/hexagons/#coordinates-offset
     
-    // -------------------------------------------------------------------------
-    // Fragment Position-Based Tile Coordinates (for precise hex edge rendering)
-    // -------------------------------------------------------------------------
-    // Convert fragment world position to tile coordinates
-    // posNode.x is in world units (MAPVIEW_ASPECT_FACTOR units per tile)
-    // posNode.z is the Y coordinate in world space (note: mesh is rotated so Z = map Y)
-    // The mesh is also scaled by HEX_MESH_HEIGHT_FACTOR in Y direction
-    
-    // Calculate tile coordinates from fragment position
-    // World space formula: tile = position / MAPVIEW_ASPECT_FACTOR
-    // Note: X coordinate is straightforward, Z needs to account for HEX_HEIGHT_FACTOR
-    const fragTileXRaw = div(posNode.x, MAPVIEW_ASPECT_FACTOR);
-    const fragTileYRaw = div(posNode.z, mul(MAPVIEW_ASPECT_FACTOR, HEX_MESH_HEIGHT_FACTOR));
-    
-    // Calculate which tile row we're in from fragment position
-    const fragTileY = floor(fragTileYRaw);
-    
-    // Hex stagger for fragment-based coordinates
-    const fragIsOddRow = mod(fragTileY, 2.0);
-    const fragHexOffsetX = mul(fragIsOddRow, 0.5);
-    const fragTileXAdj = sub(fragTileXRaw, fragHexOffsetX);
-    const fragTileX = floor(fragTileXAdj);
-    
-    // Fragment-based local coordinates within hex cell (0 to 1 range)
-    const fragLocalX = fract(fragTileXAdj);
-    const fragLocalY = fract(fragTileYRaw);
-    
-    // -------------------------------------------------------------------------
-    // UV-Based Tile Coordinates (for texture sampling consistency)
-    // -------------------------------------------------------------------------
     // Calculate which tile row we're in (used for stagger offset)
     const tileYRaw = mul(map_y_size, uvNode.y);
     const tileY = floor(tileYRaw);
@@ -247,15 +208,10 @@ function createTerrainShaderTSL(uniforms) {
     // =========================================================================
     // HEXAGONAL CELL LOCAL COORDINATES
     // =========================================================================
-    // Use fragment position-based local coordinates for hex edge rendering
-    // This provides more precise, even hex edges compared to UV interpolation
-    // UV-based coordinates are still used for texture sampling (localX_uv, localY_uv)
-    const localX_uv = fract(tileXRaw);
-    const localY_uv = fract(tileYRaw);
-    
-    // Use fragment-based coordinates for hex geometry calculations
-    const localX = fragLocalX;
-    const localY = fragLocalY;
+    // Calculate position within the current hex cell (0 to 1 range)
+    // This is used for hex shape masking and edge detection
+    const localX = fract(tileXRaw);
+    const localY = fract(tileYRaw);
     
     // Transform local coordinates to hex-centered system (-0.5 to 0.5 range)
     // Center is at (0, 0), corners at edges
@@ -350,9 +306,8 @@ function createTerrainShaderTSL(uniforms) {
     // Calculate texture coordinates for terrain detail within the hex
     // dx/dy: Local position within the current hex tile (0-1 range)
     // Used for standard terrain texture sampling
-    // Use UV-based local coordinates for texture sampling consistency
-    const dx = localX_uv;
-    const dy = localY_uv;
+    const dx = localX;
+    const dy = localY;
     
     // tdx/tdy: Diagonal texture coordinates for tundra/arctic terrain types
     // These create a 2x2 tile pattern by mapping each tile to a quadrant of the texture atlas
@@ -594,18 +549,11 @@ function createTerrainShaderTSL(uniforms) {
     // =========================================================================
     // Apply subtle darkening at hex edges to create visible hex tile boundaries
     // This gives the distinctive Civilization 6 hexagonal map appearance
-    // Note: Hex grid is NOT rendered underwater (posY < WATER_LEVEL) since
-    // the water mesh has its own hex grid rendering
     const hexEdgeColor = vec3(HEX_EDGE_COLOR_R, HEX_EDGE_COLOR_G, HEX_EDGE_COLOR_B);
-    
-    // Only apply hex edge when above water level
-    // This prevents double hex grid rendering (terrain + water mesh)
-    const aboveWaterForGrid = step(WATER_LEVEL, posY);
     
     // Blend hex edge color with terrain based on edge mask
     // The edge mask is strongest at hex boundaries and fades toward center
-    // Multiply by aboveWaterForGrid to disable hex grid underwater
-    const hexEdgeBlend = mul(mul(hexEdgeMask, HEX_EDGE_BLEND_STRENGTH), aboveWaterForGrid);
+    const hexEdgeBlend = mul(hexEdgeMask, HEX_EDGE_BLEND_STRENGTH);
     finalColor = vec4(
         mix(finalColor.rgb, hexEdgeColor, hexEdgeBlend),
         finalColor.a
