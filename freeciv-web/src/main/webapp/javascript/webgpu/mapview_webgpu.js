@@ -305,7 +305,9 @@ function createWaterMaterialTSL(maptilesTex, mapXSize, mapYSize) {
   const tileXRaw = mul(map_x_size, uvNode.x);
   const tileX = floor(tileXRaw);
   
-  // Hex stagger: odd rows are offset
+  // Hex stagger: determine if this row should be offset (odd-r coordinate system)
+  // The mesh geometry offsets odd rows, so we compute: (map_y_size - 1 - tileY) % 2
+  // This matches the terrain shader's coordinate system
   const isOddRow = mod(sub(sub(map_y_size, 1.0), tileY), 2.0);
   const hexOffsetX = mul(isOddRow, div(0.5, map_x_size));
   const hexUvX = sub(uvNode.x, hexOffsetX);
