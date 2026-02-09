@@ -251,6 +251,92 @@ function createRingMaterial(color, options = {}) {
     });
 }
 
+/**
+ * Converts a model's materials to underwater-tinted materials.
+ * This applies a blue-green color shift and slight transparency to make
+ * objects appear as if they are submerged in water.
+ * 
+ * @param {THREE.Object3D} model - The model to apply underwater effect to
+ * @param {Object} options - Configuration options
+ * @param {number} [options.tintStrength=0.3] - How strongly to apply the underwater tint (0-1)
+ * @param {number} [options.depthDarkening=0.15] - How much to darken for depth effect (0-1)
+ * @param {boolean} [options.addCaustics=true] - Whether to add subtle caustic-like color variation
+ * @returns {THREE.Object3D} The same model with underwater materials
+ * 
+ * @example
+ * const fishModel = webgl_get_model("Fish1", ptile);
+ * applyUnderwaterEffect(fishModel, { tintStrength: 0.35 });
+ */
+function applyUnderwaterEffect(model, options = {}) {
+    const {
+        tintStrength = 0.3,
+        depthDarkening = 0.15,
+        addCaustics = true
+    } = options;
+    
+    // Underwater tint color (blue-green)
+    const underwaterTint = new THREE.Color(0.2, 0.5, 0.6);
+    
+    model.traverse((node) => {
+        if (node.isMesh && node.material) {
+            const mat = node.material;
+            
+            // Store original color if not already stored
+            if (!mat.userData.originalColor && mat.color) {
+                mat.userData.originalColor = mat.color.clone();
+            }
+            
+            if (mat.color) {
+                const origColor = mat.userData.originalColor || mat.color.clone();
+                
+                // Apply underwater tint by lerping towards blue-green
+                const tintedColor = origColor.clone().lerp(underwaterTint, tintStrength);
+                
+                // Apply depth darkening (water absorbs light)
+                tintedColor.multiplyScalar(1.0 - depthDarkening);
+                
+                mat.color.copy(tintedColor);
+            }
+            
+            // Add subtle caustic-like brightness variation
+            if (addCaustics && mat.emissive) {
+                // Very subtle emissive glow to simulate caustic light patterns
+                const causticIntensity = 0.03;
+                mat.emissive.setRGB(
+                    causticIntensity * 0.3,
+                    causticIntensity * 0.6,
+                    causticIntensity * 0.5
+                );
+                mat.emissiveIntensity = 1.0;
+            }
+            
+            mat.needsUpdate = true;
+        }
+    });
+    
+    return model;
+}
+
+/**
+ * Converts model materials for underwater objects (fish, whales, etc.)
+ * Combines WebGPU material conversion with underwater visual effects.
+ * 
+ * @param {THREE.Object3D} model - The model to convert
+ * @param {Object} options - Configuration options passed to both conversions
+ * @returns {THREE.Object3D} The model with converted and tinted materials
+ */
+function convertUnderwaterModelMaterials(model, options = {}) {
+    // First convert to WebGPU-compatible materials if needed
+    if (isWebGPURenderer()) {
+        convertModelMaterials(model, { doubleSided: true, flatShading: false });
+    }
+    
+    // Then apply underwater visual effect
+    applyUnderwaterEffect(model, options);
+    
+    return model;
+}
+
 // Export functions to global scope for compatibility with existing code
 // Note: This project uses script concatenation for bundling, not ES modules.
 // The build system (Maven minify plugin) concatenates all JS files into webclient.min.js.
@@ -264,3 +350,5 @@ window.createLineMaterial = createLineMaterial;
 window.createShadowMaterial = createShadowMaterial;
 window.createSpriteMaterial = createSpriteMaterial;
 window.createRingMaterial = createRingMaterial;
+window.applyUnderwaterEffect = applyUnderwaterEffect;
+window.convertUnderwaterModelMaterials = convertUnderwaterModelMaterials;

@@ -664,6 +664,7 @@ function update_tile_extra_update_model(extra_type, extra_name, ptile)
     let num_models = 1;
     let height = 5 + ptile['height'] * 100;
     var use_instancing = false;
+    var is_underwater = false; // Track if object should have underwater effect
 
     if (tile_has_extra(ptile, EXTRA_OIL_WELL)) {
       extra_name = "Oil Well";
@@ -684,6 +685,7 @@ function update_tile_extra_update_model(extra_type, extra_name, ptile)
       extra_name = extra_name +  Math.floor(1 + Math.random() * 3);
       height -= 0.50;
       num_models = 3;
+      is_underwater = true; // Fish are underwater
     }
     if (extra_name == "Buffalo") {
       num_models = 3;
@@ -699,6 +701,7 @@ function update_tile_extra_update_model(extra_type, extra_name, ptile)
     }
     if (extra_name == "Whales") {
       height += 0.3;
+      is_underwater = true; // Whales are in water
     }
     if (extra_name == "Mine") {
       height -= 7;
@@ -777,6 +780,15 @@ function update_tile_extra_update_model(extra_type, extra_name, ptile)
       let model = webgl_get_model(extra_name.replaceAll(" ", ""), ptile);
       if (model == null) {
         return;
+      }
+
+      // Apply underwater effect to aquatic objects (fish, whales)
+      if (is_underwater && typeof applyUnderwaterEffect === 'function') {
+        applyUnderwaterEffect(model, {
+          tintStrength: 0.25,      // Moderate blue-green tint
+          depthDarkening: 0.12,    // Subtle darkening
+          addCaustics: true        // Add caustic-like brightness
+        });
       }
 
       tile_extra_positions_list[extra_type + "." + ptile['index']] = [];
