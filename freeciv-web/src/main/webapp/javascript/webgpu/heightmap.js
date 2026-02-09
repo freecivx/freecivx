@@ -17,9 +17,52 @@
 
 ***********************************************************************/
 
+/**
+ * Hexagonal Heightmap Generator
+ * 
+ * This module generates heightmaps that respect hexagonal tile geometry.
+ * Key features:
+ * - Hexagonal tile shape awareness (heights properly consider hex boundaries)
+ * - Flat terrain types (plains, grassland, etc.) are flat in center with edge transitions
+ * - Mountains and hills have natural elevation near tile center
+ * - Rivers create valleys where terrain height goes under water mesh
+ * - River flow between tiles properly connects neighboring river tiles
+ * - Landscape is relatively flat to avoid excessive inland elevation
+ * 
+ * The heightmap uses odd-r offset coordinates (staggered rows) matching the
+ * hex tile coordinate system used in the shader and geometry.
+ * Reference: https://www.redblobgames.com/grids/hexagons/#coordinates-offset
+ */
 
 var heightmap = null;
 var heightmap_hash = -1;
+
+// =========================================================================
+// HEXAGONAL GEOMETRY CONSTANTS
+// =========================================================================
+// These constants define the hexagonal tile geometry for height calculations
+// Matching the values in mapview_common.js and terrain_shader_webgpu.js
+
+const HEX_HEIGHT_FACTOR = Math.sqrt(3) / 2;  // ≈ 0.866 - hex row spacing
+const HEX_INRADIUS = 0.5;  // Distance from center to edge midpoint (in tile units)
+
+// Height constants - matching water level and beach zones from terrain shader
+const WATER_LEVEL = 0.50;           // Water surface level
+const OCEAN_HEIGHT = 0.45;          // Ocean/deep water height
+const COAST_HEIGHT = 0.48;          // Coast/shallow water height
+const BEACH_HEIGHT = 0.52;          // Beach/shore height
+const LAND_BASE_HEIGHT = 0.54;      // Base land height
+const FLAT_TERRAIN_HEIGHT = 0.55;   // Flat terrain (plains, grassland, etc.)
+const HILLS_BASE_HEIGHT = 0.58;     // Hills base height
+const HILLS_PEAK_HEIGHT = 0.62;     // Hills peak at center
+const MOUNTAINS_BASE_HEIGHT = 0.60; // Mountains base height
+const MOUNTAINS_PEAK_HEIGHT = 0.68; // Mountains peak at center (not too high)
+const RIVER_VALLEY_DEPTH = 0.46;    // River valley depth (below water level for visual effect)
+const RIVER_EDGE_HEIGHT = 0.49;     // River edge height (slight depression)
+
+// Terrain classification helpers
+const FLAT_TERRAINS = ["Plains", "Grassland", "Desert", "Tundra", "Arctic", "Swamp", "Forest", "Jungle"];
+const ELEVATED_TERRAINS = ["Hills", "Mountains"];
 
 /****************************************************************************
   Returns height offset for units. This will make units higher above cities.
@@ -136,135 +179,376 @@ function get_city_height_offset(pcity)
 }
 
 /****************************************************************************
-  Create heightmap based on tile.height.
+  Initialize heightmap array with proper size for hexagonal resolution.
+  Uses Float32Array for efficient memory usage and GPU compatibility.
 ****************************************************************************/
 function init_heightmap(heightmap_quality)
 {
-  let heightmap_resolution_x = map.xsize * heightmap_quality + 1;
-  let heightmap_resolution_y = map.ysize * heightmap_quality + 1;
-
+  const heightmap_resolution_x = map.xsize * heightmap_quality + 1;
+  const heightmap_resolution_y = map.ysize * heightmap_quality + 1;
+  
+  // Use Float32Array for efficient memory and GPU transfer
   heightmap = new Float32Array(heightmap_resolution_x * heightmap_resolution_y);
-
 }
 
 /****************************************************************************
-  Create heightmap based on tile.height.
+  Get the 6 hex neighbors for a tile in iso-hex coordinate system.
+  In iso-hex, valid directions are: N, S, E, W, NW, SE (not NE, SW)
+  Returns array of neighbor tile coordinates.
+****************************************************************************/
+function get_hex_neighbors(x, y) {
+  // In iso-hex offset coordinates, the neighbor offsets depend on whether
+  // we're in an even or odd row. Using the valid directions for iso-hex.
+  const neighbors = [];
+  
+  // Direction offsets for 8-connected grid (we'll filter to 6 valid hex directions)
+  const directions = [
+    { dx: -1, dy: -1, name: "NW" },  // Valid in iso-hex
+    { dx:  0, dy: -1, name: "N" },   // Valid
+    { dx:  1, dy: -1, name: "NE" },  // Invalid in iso-hex
+    { dx: -1, dy:  0, name: "W" },   // Valid
+    { dx:  1, dy:  0, name: "E" },   // Valid
+    { dx: -1, dy:  1, name: "SW" },  // Invalid in iso-hex
+    { dx:  0, dy:  1, name: "S" },   // Valid
+    { dx:  1, dy:  1, name: "SE" }   // Valid in iso-hex
+  ];
+  
+  // Filter to valid iso-hex directions (skip NE and SW)
+  const validDirs = directions.filter(d => d.name !== "NE" && d.name !== "SW");
+  
+  for (const dir of validDirs) {
+    const nx = x + dir.dx;
+    const ny = y + dir.dy;
+    if (nx >= 0 && nx < map.xsize && ny >= 0 && ny < map.ysize) {
+      neighbors.push({ x: nx, y: ny });
+    }
+  }
+  
+  return neighbors;
+}
+
+/****************************************************************************
+  Calculate distance from point to hexagon edge (signed distance field).
+  Returns 0 at center, 1 at edge for a unit hex.
+  Uses pointy-top hexagon geometry.
+****************************************************************************/
+function hex_distance_from_center(localX, localY) {
+  // Transform to centered coordinates (-0.5 to 0.5)
+  const cx = localX - 0.5;
+  const cy = (localY - 0.5) * (1.0 / HEX_HEIGHT_FACTOR);  // Compensate for hex aspect
+  
+  // Calculate distance to three pairs of hex edges using dot products
+  const HEX_SQRT3_2 = Math.sqrt(3) / 2;
+  
+  const dist1 = Math.abs(cx);  // Vertical edges
+  const dist2 = Math.abs(cx * 0.5 + cy * HEX_SQRT3_2);  // Top-right/bottom-left
+  const dist3 = Math.abs(cx * -0.5 + cy * HEX_SQRT3_2); // Top-left/bottom-right
+  
+  // Maximum distance determines which edge we're closest to
+  const hexDist = Math.max(dist1, dist2, dist3);
+  
+  // Normalize so that 0 = center, 1 = edge
+  return hexDist / HEX_INRADIUS;
+}
+
+/****************************************************************************
+  Check if a terrain type is considered "flat" terrain.
+****************************************************************************/
+function is_flat_terrain(ptile) {
+  if (ptile == null || tile_terrain(ptile) == null) return true;
+  const terrainName = tile_terrain(ptile)['name'];
+  return FLAT_TERRAINS.includes(terrainName);
+}
+
+/****************************************************************************
+  Check if a terrain type is elevated (hills or mountains).
+****************************************************************************/
+function is_elevated_terrain(ptile) {
+  if (ptile == null || tile_terrain(ptile) == null) return false;
+  const terrainName = tile_terrain(ptile)['name'];
+  return ELEVATED_TERRAINS.includes(terrainName);
+}
+
+/****************************************************************************
+  Get base height for a tile based on its terrain type and neighbors.
+****************************************************************************/
+function get_tile_base_height(ptile) {
+  if (ptile == null) return LAND_BASE_HEIGHT;
+  
+  const terrain = tile_terrain(ptile);
+  if (terrain == null) return LAND_BASE_HEIGHT;
+  
+  const terrainName = terrain['name'];
+  
+  // Ocean tiles
+  if (is_ocean_tile(ptile)) {
+    if (is_land_tile_near(ptile)) {
+      return COAST_HEIGHT;  // Shallow water near coast
+    }
+    return OCEAN_HEIGHT;  // Deep ocean
+  }
+  
+  // River tiles - create valley
+  if (tile_has_extra(ptile, EXTRA_RIVER)) {
+    return RIVER_VALLEY_DEPTH;
+  }
+  
+  // Coast-adjacent land
+  if (is_ocean_tile_near(ptile)) {
+    return BEACH_HEIGHT;
+  }
+  
+  // Elevated terrain
+  if (terrainName === "Mountains") {
+    return MOUNTAINS_BASE_HEIGHT;
+  }
+  if (terrainName === "Hills") {
+    return HILLS_BASE_HEIGHT;
+  }
+  
+  // Flat terrain
+  return FLAT_TERRAIN_HEIGHT;
+}
+
+/****************************************************************************
+  Get peak height for elevated terrain at tile center.
+****************************************************************************/
+function get_tile_peak_height(ptile) {
+  if (ptile == null) return FLAT_TERRAIN_HEIGHT;
+  
+  const terrain = tile_terrain(ptile);
+  if (terrain == null) return FLAT_TERRAIN_HEIGHT;
+  
+  const terrainName = terrain['name'];
+  
+  if (terrainName === "Mountains") {
+    return MOUNTAINS_PEAK_HEIGHT;
+  }
+  if (terrainName === "Hills") {
+    return HILLS_PEAK_HEIGHT;
+  }
+  
+  // Flat terrains have same height at center as edges
+  return get_tile_base_height(ptile);
+}
+
+/****************************************************************************
+  Count neighboring river tiles for river flow calculations.
+****************************************************************************/
+function count_river_neighbors(x, y) {
+  let count = 0;
+  const neighbors = get_hex_neighbors(x, y);
+  
+  for (const n of neighbors) {
+    const ntile = map_pos_to_tile(n.x, n.y);
+    if (ntile && tile_has_extra(ntile, EXTRA_RIVER)) {
+      count++;
+    }
+  }
+  
+  return count;
+}
+
+/****************************************************************************
+  Calculate interpolated height at a point considering hexagonal geometry.
+  
+  This is the core of the hexagonal heightmap algorithm:
+  1. Determine which hex tile the point is in
+  2. Calculate position within the hex (0-1 local coordinates)
+  3. Calculate distance from hex center (for elevation profile)
+  4. Blend with neighboring tiles at hex edges
+  
+  For flat terrain: height is constant across tile
+  For elevated terrain: height peaks at center, decreases toward edges
+  For rivers: create valley that goes below water level between river tiles
+****************************************************************************/
+function calculate_hex_height(gx, gy, heightmap_quality) {
+  // Get integer tile coordinates
+  const tileX = Math.floor(gx + 0.5);
+  const tileY = Math.floor(gy + 0.5);
+  
+  // Clamp to valid tile range
+  const clampedX = Math.max(0, Math.min(map.xsize - 1, tileX));
+  const clampedY = Math.max(0, Math.min(map.ysize - 1, tileY));
+  
+  const ptile = map_pos_to_tile(clampedX, clampedY);
+  if (ptile == null) return LAND_BASE_HEIGHT;
+  
+  // Calculate local position within tile (0 to 1)
+  const localX = gx - tileX + 0.5;
+  const localY = gy - tileY + 0.5;
+  
+  // Calculate distance from hex center (0 at center, 1 at edge)
+  const hexDist = hex_distance_from_center(localX, localY);
+  
+  // Get base and peak heights for this tile
+  const baseHeight = get_tile_base_height(ptile);
+  const peakHeight = get_tile_peak_height(ptile);
+  
+  // Calculate height based on terrain type and position within hex
+  let height;
+  
+  if (is_ocean_tile(ptile)) {
+    // Ocean tiles are flat
+    height = baseHeight;
+  }
+  else if (tile_has_extra(ptile, EXTRA_RIVER)) {
+    // River tiles create valleys
+    // Center of river tile is deepest
+    // Edges blend with neighboring terrain
+    const riverNeighbors = count_river_neighbors(clampedX, clampedY);
+    
+    // Create deeper valley when more river neighbors (river confluence)
+    const valleyDepth = RIVER_VALLEY_DEPTH - (riverNeighbors * 0.005);
+    
+    // Smooth valley profile: deepest at center, rises toward edges
+    const valleyProfile = hexDist * hexDist;  // Parabolic valley
+    height = valleyDepth + valleyProfile * (RIVER_EDGE_HEIGHT - valleyDepth);
+    
+    // Ensure rivers connect properly between tiles
+    if (hexDist > 0.7) {
+      // At edge, blend with neighbor heights for smooth river flow
+      const neighbors = get_hex_neighbors(clampedX, clampedY);
+      let neighborSum = 0;
+      let neighborCount = 0;
+      
+      for (const n of neighbors) {
+        const ntile = map_pos_to_tile(n.x, n.y);
+        if (ntile && tile_has_extra(ntile, EXTRA_RIVER)) {
+          // Neighboring river - maintain low elevation for flow
+          neighborSum += RIVER_VALLEY_DEPTH;
+          neighborCount++;
+        }
+      }
+      
+      if (neighborCount > 0) {
+        const edgeBlend = (hexDist - 0.7) / 0.3;  // 0 to 1 in edge zone
+        const neighborAvg = neighborSum / neighborCount;
+        height = height * (1 - edgeBlend) + neighborAvg * edgeBlend;
+      }
+    }
+  }
+  else if (is_elevated_terrain(ptile)) {
+    // Hills and mountains: peak at center, blend to base at edges
+    // Use smooth hermite interpolation for natural look
+    const t = Math.min(1, hexDist);  // Clamp to 0-1
+    const smoothT = t * t * (3 - 2 * t);  // Smoothstep
+    
+    height = peakHeight * (1 - smoothT) + baseHeight * smoothT;
+    
+    // Add subtle variation for natural appearance
+    const variation = ((clampedX * 7 + clampedY * 13) % 17) / 170;  // Deterministic pseudo-random
+    height += (variation - 0.05) * 0.02;
+  }
+  else {
+    // Flat terrain: mostly constant, slight variation at edges
+    height = baseHeight;
+    
+    // Very subtle edge depression for tile boundaries
+    if (hexDist > 0.8) {
+      const edgeBlend = (hexDist - 0.8) / 0.2;
+      height -= edgeBlend * 0.005;  // Tiny edge depression
+    }
+  }
+  
+  // Handle edge blending with neighboring tiles
+  if (hexDist > 0.6) {
+    const neighbors = get_hex_neighbors(clampedX, clampedY);
+    let blendHeight = 0;
+    let blendWeight = 0;
+    
+    for (const n of neighbors) {
+      const ntile = map_pos_to_tile(n.x, n.y);
+      if (ntile == null) continue;
+      
+      // Calculate direction to this neighbor
+      const dx = n.x - clampedX;
+      const dy = n.y - clampedY;
+      
+      // Calculate how much this neighbor should influence based on direction
+      const neighborDir = Math.atan2(dy, dx);
+      const pointDir = Math.atan2(localY - 0.5, localX - 0.5);
+      let angleDiff = Math.abs(neighborDir - pointDir);
+      if (angleDiff > Math.PI) angleDiff = 2 * Math.PI - angleDiff;
+      
+      // Only blend with neighbors in the direction we're heading
+      if (angleDiff < Math.PI / 3) {
+        const neighborBaseHeight = get_tile_base_height(ntile);
+        const weight = (1 - angleDiff / (Math.PI / 3)) * (hexDist - 0.6) / 0.4;
+        blendHeight += neighborBaseHeight * weight;
+        blendWeight += weight;
+      }
+    }
+    
+    if (blendWeight > 0) {
+      const neighborAvg = blendHeight / blendWeight;
+      const blendFactor = Math.min(0.5, blendWeight) * (hexDist - 0.6) / 0.4;
+      height = height * (1 - blendFactor) + neighborAvg * blendFactor;
+    }
+  }
+  
+  return height;
+}
+
+/****************************************************************************
+  Update heightmap based on tile heights with hexagonal geometry support.
+  
+  This improved version:
+  1. Pre-processes tile heights for consistency
+  2. Uses hexagonal geometry for height calculations
+  3. Properly handles rivers as valleys
+  4. Creates smooth transitions between terrain types
+  5. Keeps landscape relatively flat
 ****************************************************************************/
 function update_heightmap(heightmap_quality)
 {
-  let heightmap_resolution_x = map.xsize * heightmap_quality + 1;
-  let heightmap_resolution_y = map.ysize * heightmap_quality + 1;
+  const heightmap_resolution_x = map.xsize * heightmap_quality + 1;
+  const heightmap_resolution_y = map.ysize * heightmap_quality + 1;
 
-  console.log("Updating heightmap...");
+  console.log("Updating hexagonal heightmap...");
 
-  for (let x = 0; x < map.xsize ; x++) {
+  // Pre-process: Ensure all tiles have proper base heights
+  for (let x = 0; x < map.xsize; x++) {
     for (let y = 0; y < map.ysize; y++) {
-      let ptile = map_pos_to_tile(x, y);
-
-      // Make coastline more distinct, to make it easier to distinguish ocean from land.
-      if (is_ocean_tile(ptile) && is_land_tile_near(ptile)) {
-        ptile['height'] = 0.45;
-      }
-      if (!is_ocean_tile(ptile) && is_ocean_tile_near(ptile) && !tile_has_extra(ptile, EXTRA_RIVER)) {
-        ptile['height'] = 0.55;
-      }
-
+      const ptile = map_pos_to_tile(x, y);
+      if (ptile == null) continue;
+      
+      // Handle unknown tiles - use neighbor height for smooth fog of war
       if (tile_get_known(ptile) == TILE_UNKNOWN) {
-        ptile['height'] = 0.51;
-        // Use standard 8-connected neighbors for height propagation
-        // The hex visualization is separate from the tile coordinate system
-        let neighbours = [
-          { "x": x - 1 , "y": y - 1},
-          { "x": x - 1, "y": y },
-          { "x": x - 1,  "y": y + 1 },
-          { "x": x,  "y": y - 1},
-          { "x": x , "y": y + 1},
-          { "x": x + 1, "y": y - 1 },
-          { "x": x + 1,  "y": y },
-          { "x": x + 1,  "y": y + 1},
-          ];
-
-        for (let i = 0; i < 8; i++) {
-          let coords = neighbours[i];
-          if (coords.x < 0 || coords.x >= map.xsize || coords.y < 0 || coords.y >= map.ysize || ptile['height'] > 0.51) {
-            continue;
-          }
-          let ntile = map_pos_to_tile(coords.x, coords.y);
-          if (tile_get_known(ntile) != TILE_UNKNOWN) {
-            ptile['height'] = ntile['height'];
+        ptile['height'] = LAND_BASE_HEIGHT;
+        
+        const neighbors = get_hex_neighbors(x, y);
+        for (const n of neighbors) {
+          const ntile = map_pos_to_tile(n.x, n.y);
+          if (ntile && tile_get_known(ntile) != TILE_UNKNOWN) {
+            ptile['height'] = get_tile_base_height(ntile);
+            break;
           }
         }
-
+        continue;
       }
+      
+      // Set tile height based on terrain type
+      ptile['height'] = get_tile_base_height(ptile);
     }
   }
 
-  for (let x = 0; x < heightmap_resolution_x; x++) {
-    for (let y = 0; y < heightmap_resolution_y; y++) {
-      let index = y * heightmap_resolution_x + x;
-      let gx = x / heightmap_quality - 0.5;
-      let gy = y / heightmap_quality - 0.5;
-       if (Math.round(gx) == gx && Math.round(gy) == gy) {
-        let ptile = map_pos_to_tile(gx, gy);
-        heightmap[index] = ptile['height'];
-        if (tile_has_extra(ptile, EXTRA_RIVER)) {
-          heightmap[index] = ptile['height'] * 0.98;
-        }
-        if (tile_terrain(ptile)['name'] == "Mountains") {
-          heightmap[index] = ptile['height'] * 1.02;
-        }
-      } else {
-        // For hex interpolation, use the 4 nearest grid points
-        let neighbours = [
-          { "x": Math.floor(gx), "y": Math.floor(gy) },
-          { "x": Math.floor(gx), "y": Math.ceil(gy) },
-          { "x": Math.ceil(gx),  "y": Math.floor(gy) },
-          { "x": Math.ceil(gx),  "y": Math.ceil(gy) }];
-
-        let num_river_neighbours = 0;
-        for (let i = 0; i < 4; i++) {
-          let coords = neighbours[i];
-          if (coords.x < 0 || coords.x >= map.xsize || coords.y < 0 || coords.y >= map.ysize) {
-            continue;
-          }
-          let ptile = map_pos_to_tile(coords.x, coords.y);
-          if (tile_has_extra(ptile, EXTRA_RIVER)) {
-            num_river_neighbours++;
-          }
-        }
-
-        let norm = 0;
-        let sum = 0;
-        for (let i = 0; i < 4; i++) {
-          let coords = neighbours[i];
-          if (coords.x < 0 || coords.x >= map.xsize || coords.y < 0 || coords.y >= map.ysize) {
-            continue;
-          }
-          let dx = gx - coords.x;
-          let dy = gy - coords.y;
-          let distance = Math.sqrt(dx*dx + dy*dy);
-          let ptile = map_pos_to_tile(coords.x, coords.y);
-          let height = 0;
-          if (tile_terrain(ptile)['name'] == "Hills" || tile_terrain(ptile)['name'] == "Mountains") {
-            let rnd = ((x * y) % 10) / 10;
-            height = ptile['height'] + ((rnd - 0.5) / 50) - 0.01;
-          } else {
-            height = ptile['height'];
-          }
-          if (tile_has_extra(ptile, EXTRA_RIVER)) {
-            height = ptile['height'] * 1.045  - ((num_river_neighbours / 4) * 0.02);
-          }
-
-          sum += height / distance / distance;
-          norm += 1 / distance / distance;
-        }
-
-        heightmap[index] = (sum / norm);
-      }
+  // Generate heightmap using hexagonal interpolation
+  for (let hx = 0; hx < heightmap_resolution_x; hx++) {
+    for (let hy = 0; hy < heightmap_resolution_y; hy++) {
+      const index = hy * heightmap_resolution_x + hx;
+      
+      // Convert heightmap coordinates to tile coordinates
+      // Account for staggered hex rows (odd rows offset by 0.5)
+      const gx = hx / heightmap_quality - 0.5;
+      const gy = hy / heightmap_quality - 0.5;
+      
+      // Calculate height using hexagonal geometry
+      heightmap[index] = calculate_hex_height(gx, gy, heightmap_quality);
     }
   }
 
-  console.log("Heightmap updated.");
+  console.log("Hexagonal heightmap updated.");
 }
 
 
