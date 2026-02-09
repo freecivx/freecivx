@@ -279,7 +279,7 @@ function add_quality_dependent_objects_webgpu() {
  @param {number} mapYSize - Map height in tiles
 ****************************************************************************/
 function createWaterMaterialTSL(maptilesTex, mapXSize, mapYSize) {
-  const { texture, uniform, uv, vec2, vec3, vec4, sin, cos, mix, fract, clamp, pow, sqrt, mul, add, sub, abs, floor, max, min, mod, step, div, dot, positionLocal } = THREE;
+  const { texture, uniform, uv, vec2, vec3, vec4, sin, cos, mix, fract, clamp, pow, sqrt, mul, add, sub, abs, floor, max, min, mod, step, div, dot } = THREE;
   
   // Time uniform for animation
   const timeUniform = uniform(0.0);
@@ -296,17 +296,11 @@ function createWaterMaterialTSL(maptilesTex, mapXSize, mapYSize) {
   const map_y_size = uniform(mapYSize);
   
   const uvNode = uv();
-  const posNode = positionLocal;
   
   // ==== CONSTANTS ====
   // Texture values are stored as 0-255 in the DataTexture, but sampled as 0-1 floats
   // Multiply by 256.0 to convert back to original integer range for comparisons
   const TEXTURE_VALUE_SCALE = 256.0;
-  
-  // World coordinate scale: Must match MAPVIEW_ASPECT_FACTOR in mapview_common.js (line 58)
-  // This is used to convert fragment position (world coords) to tile coordinates
-  // The value is duplicated here for shader performance (avoiding uniform overhead)
-  const MAPVIEW_ASPECT_FACTOR = 35.71;
   
   // ==== HEXAGONAL CONSTANTS ====
   // Match terrain shader's hex system for proper alignment
@@ -318,35 +312,9 @@ function createWaterMaterialTSL(maptilesTex, mapXSize, mapYSize) {
   const HEX_EDGE_BLEND_STRENGTH = 0.25; // How strongly hex edges darken the water
   
   // ==== HEXAGONAL COORDINATE CALCULATIONS ====
-  // Use fragment position for precise hex edge rendering (same approach as terrain shader)
-  // Fragment position provides per-pixel precision for more even hexagonal tiles
+  // Match the terrain shader's hex coordinate system for proper tile alignment
   
-  // -------------------------------------------------------------------------
-  // Fragment Position-Based Tile Coordinates (for precise hex edge rendering)
-  // -------------------------------------------------------------------------
-  // Water mesh is a PlaneGeometry that's rotated, so X and Y in local space are
-  // different from the terrain mesh. For PlaneGeometry:
-  // - posNode.x maps to world X
-  // - posNode.y maps to world Z (after rotation)
-  const fragTileXRaw = div(posNode.x, MAPVIEW_ASPECT_FACTOR);
-  const fragTileYRaw = div(posNode.y, mul(MAPVIEW_ASPECT_FACTOR, HEX_MESH_HEIGHT_FACTOR));
-  
-  // Calculate which tile row we're in from fragment position  
-  const fragTileY = floor(fragTileYRaw);
-  
-  // Hex stagger for fragment-based coordinates
-  const fragIsOddRow = mod(fragTileY, 2.0);
-  const fragHexOffsetX = mul(fragIsOddRow, 0.5);
-  const fragTileXAdj = sub(fragTileXRaw, fragHexOffsetX);
-  
-  // Fragment-based local coordinates within hex cell (0 to 1 range)
-  const fragLocalX = fract(fragTileXAdj);
-  const fragLocalY = fract(fragTileYRaw);
-  
-  // -------------------------------------------------------------------------
-  // UV-Based Tile Coordinates (for texture sampling consistency)
-  // -------------------------------------------------------------------------
-  // Calculate tile coordinates from UV
+  // Calculate tile coordinates
   const tileYRaw = mul(map_y_size, uvNode.y);
   const tileY = floor(tileYRaw);
   const tileXRaw = mul(map_x_size, uvNode.x);
@@ -360,10 +328,9 @@ function createWaterMaterialTSL(maptilesTex, mapXSize, mapYSize) {
   const hexUvX = sub(uvNode.x, hexOffsetX);
   
   // ==== HEXAGONAL CELL LOCAL COORDINATES ====
-  // Use fragment position-based local coordinates for hex edge rendering
-  // This provides more precise, even hex edges compared to UV interpolation
-  const localX = fragLocalX;
-  const localY = fragLocalY;
+  // Calculate position within the current hex cell (0 to 1 range)
+  const localX = fract(mul(map_x_size, hexUvX));
+  const localY = fract(tileYRaw);
   
   // Transform to hex-centered system (-0.5 to 0.5 range)
   const centeredX = sub(localX, 0.5);
