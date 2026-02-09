@@ -50,6 +50,10 @@ const RIVER_BASE_HEIGHT_FACTOR = 0.98;
 const RIVER_NEIGHBOR_DEPTH_DIVISOR = 7; // center tile + 6 hex neighbors
 const RIVER_NEIGHBOR_DEPTH_FACTOR = 0.005;
 
+// Mountain height adjustment constant
+// Mountains are raised slightly to emphasize their elevation
+const MOUNTAIN_HEIGHT_FACTOR = 1.02;
+
 // Cache for hex neighbor offsets (pre-computed for efficiency)
 // Key: row parity (0 or 1), Value: array of {dx, dy} neighbor offsets
 const HEX_NEIGHBOR_OFFSETS = {
@@ -319,11 +323,11 @@ function update_heightmap(heightmap_quality)
         
         if (tile_has_extra(ptile, EXTRA_RIVER)) {
           // River tiles are slightly lower to create valley effect
-          heightmap[index] = ptile['height'] * 0.98;
+          heightmap[index] = ptile['height'] * RIVER_BASE_HEIGHT_FACTOR;
         }
         if (terrain && terrain['name'] == "Mountains") {
           // Mountains are slightly higher
-          heightmap[index] = ptile['height'] * 1.02;
+          heightmap[index] = ptile['height'] * MOUNTAIN_HEIGHT_FACTOR;
         }
       } else {
         // Between tiles - use hex-aware interpolation
