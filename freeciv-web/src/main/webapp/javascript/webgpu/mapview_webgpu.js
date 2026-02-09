@@ -463,12 +463,14 @@ function createWaterMaterialTSL(maptilesTex, mapXSize, mapYSize) {
     return mix(mixAB, mixCD, uy);
   }
   
-  // Fractal Brownian Motion for natural-looking patterns
-  function fbm(x, y, octaves) {
-    let value = noise2D(x, y);
-    value = add(value, mul(noise2D(mul(x, 2.0), mul(y, 2.0)), 0.5));
-    value = add(value, mul(noise2D(mul(x, 4.0), mul(y, 4.0)), 0.25));
-    return mul(value, 0.571); // Normalize (1 + 0.5 + 0.25 = 1.75, 1/1.75 ≈ 0.571)
+  // Fractal Brownian Motion for natural-looking patterns (3 octaves)
+  function fbm(x, y) {
+    // Compute all three octaves
+    const octave1 = noise2D(x, y);
+    const octave2 = mul(noise2D(mul(x, 2.0), mul(y, 2.0)), 0.5);
+    const octave3 = mul(noise2D(mul(x, 4.0), mul(y, 4.0)), 0.25);
+    // Combine and normalize (1 + 0.5 + 0.25 = 1.75, 1/1.75 ≈ 0.571)
+    return mul(add(add(octave1, octave2), octave3), 0.571);
   }
   
   // ==== ENHANCED CAUSTIC PATTERN (Ocean) ====
