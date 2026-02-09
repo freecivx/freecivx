@@ -348,10 +348,12 @@ function createWaterMaterialTSL(maptilesTex, mapXSize, mapYSize) {
   
   // ==== HEXAGONAL DISTANCE FUNCTION ====
   // Calculate signed distance to hex edge for pointy-top hexagon
-  // Edge normals at 0°, 60°, 120° for three edge pairs
-  const dist1 = abs(hexX); // Vertical edges (left/right)
-  const dist2 = abs(add(mul(hexX, 0.5), mul(hexY, HEX_SQRT3_OVER_2))); // Top-right/bottom-left
-  const dist3 = abs(add(mul(hexX, -0.5), mul(hexY, HEX_SQRT3_OVER_2))); // Top-left/bottom-right
+  // Edge normals are at 0°, 60°, 120° for the three edge pairs
+  // The coefficients 0.5 and -0.5 are cos(60°) and cos(120°) respectively
+  // HEX_SQRT3_OVER_2 is sin(60°) = sqrt(3)/2 ≈ 0.866
+  const dist1 = abs(hexX); // Vertical edges (left/right) - normal at 0°
+  const dist2 = abs(add(mul(hexX, 0.5), mul(hexY, HEX_SQRT3_OVER_2))); // Top-right/bottom-left edges - normal at 60°
+  const dist3 = abs(add(mul(hexX, -0.5), mul(hexY, HEX_SQRT3_OVER_2))); // Top-left/bottom-right edges - normal at 120°
   
   // Distance to hex edge is max of the three edge distances
   const hexDist = max(max(dist1, dist2), dist3);
@@ -447,17 +449,22 @@ function createWaterMaterialTSL(maptilesTex, mapXSize, mapYSize) {
   // ==== MULTI-LAYER BLURRED NOISE ====
   // Fractal Brownian Motion (fBm) for softer, more natural water appearance
   // Three octaves of noise blended together create a blur-like effect
+  // Using non-power-of-2 frequency multipliers (2.1, 4.3) to avoid visible aliasing patterns
+  // that can occur when octave frequencies are exact multiples of each other
+  const FBM_OCTAVE_WEIGHTS = { first: 1.0, second: 0.5, third: 0.25 };
+  const FBM_NORMALIZATION = FBM_OCTAVE_WEIGHTS.first + FBM_OCTAVE_WEIGHTS.second + FBM_OCTAVE_WEIGHTS.third; // 1.75
+  
   function blurredNoise(x, y) {
     // First octave: base frequency
     let result = noise2D(x, y);
-    // Second octave: higher frequency, lower amplitude
+    // Second octave: ~2x frequency, half amplitude
     const n2 = noise2D(mul(x, 2.1), mul(y, 2.1));
-    result = add(result, mul(n2, 0.5));
-    // Third octave: highest frequency, lowest amplitude
+    result = add(result, mul(n2, FBM_OCTAVE_WEIGHTS.second));
+    // Third octave: ~4x frequency, quarter amplitude  
     const n3 = noise2D(mul(x, 4.3), mul(y, 4.3));
-    result = add(result, mul(n3, 0.25));
-    // Normalize: sum of weights = 1 + 0.5 + 0.25 = 1.75
-    return div(result, 1.75);
+    result = add(result, mul(n3, FBM_OCTAVE_WEIGHTS.third));
+    // Normalize to [0, 1] range
+    return div(result, FBM_NORMALIZATION);
   }
   
   // ==== SOFT CAUSTIC PATTERN (Ocean) - More blurred and water-like ====
