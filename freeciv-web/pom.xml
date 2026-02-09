@@ -363,7 +363,6 @@ Rerun the sync-js-hand.js script.
 									<exclude>webgpu/effects/*js</exclude>
 									<exclude>three-modules.js</exclude>
 									<exclude>three-modules-webgpu.js</exclude>
-									<exclude>rapier-module.js</exclude>
 								</excludes>
 							</configuration>
 							<goals>
