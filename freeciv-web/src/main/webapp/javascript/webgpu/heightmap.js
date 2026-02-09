@@ -269,7 +269,7 @@ function update_heightmap(heightmap_quality)
           let dx = gx - coords.x;
           let dy = gy - coords.y;
           let distance = Math.sqrt(dx*dx + dy*dy);
-          if (distance < 0.001) distance = 0.001; // Prevent division by zero
+          if (distance < 0.001) distance = 0.001; // Prevent division by very small numbers
           
           let ptile = map_pos_to_tile(coords.x, coords.y);
           let terrain = tile_terrain(ptile);

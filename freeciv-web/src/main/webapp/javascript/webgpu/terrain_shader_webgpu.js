@@ -417,8 +417,8 @@ function createTerrainShaderTSL(uniforms) {
     // Generate animated water color for ocean, coast, and lake tiles.
     // Uses caustic patterns and subtle ripples for stylized game appearance.
     
-    // Hash function for procedural noise
-    function hash(p) {
+    // Pseudo-random hash function for procedural noise generation
+    function noiseHash(p) {
         return fract(mul(sin(mul(p, 127.1)), 43758.5453));
     }
     
@@ -434,10 +434,10 @@ function createTerrainShaderTSL(uniforms) {
         const uy = mul(mul(fy, fy), sub(3.0, mul(2.0, fy)));
         
         // Corner values
-        const a = hash(add(ix, mul(iy, 157.0)));
-        const b = hash(add(add(ix, 1.0), mul(iy, 157.0)));
-        const c = hash(add(ix, mul(add(iy, 1.0), 157.0)));
-        const d = hash(add(add(ix, 1.0), mul(add(iy, 1.0), 157.0)));
+        const a = noiseHash(add(ix, mul(iy, 157.0)));
+        const b = noiseHash(add(add(ix, 1.0), mul(iy, 157.0)));
+        const c = noiseHash(add(ix, mul(add(iy, 1.0), 157.0)));
+        const d = noiseHash(add(add(ix, 1.0), mul(add(iy, 1.0), 157.0)));
         
         // Bilinear interpolation
         const mixAB = mix(a, b, ux);
