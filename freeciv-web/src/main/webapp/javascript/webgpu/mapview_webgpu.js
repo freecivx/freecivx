@@ -279,6 +279,12 @@ function createWaterMaterialTSL(maptilesTex, mapXSize, mapYSize) {
   const timeUniform = uniform(0.0);
   window.waterTimeUniform = timeUniform;
   
+  // Store reference to maptiles texture for the water shader
+  // This is the same DataTexture used by the terrain shader (maptiletypes)
+  // When the map is revealed, schedule_maptiles_texture_update() sets needsUpdate=true
+  // which causes THREE.js to re-upload the texture data to the GPU on next render
+  window.waterMaptilesTex = maptilesTex;
+  
   // Map size uniforms
   const map_x_size = uniform(mapXSize);
   const map_y_size = uniform(mapYSize);
@@ -307,13 +313,15 @@ function createWaterMaterialTSL(maptilesTex, mapXSize, mapYSize) {
   const tileCenterUV = vec2(tileCenterUStaggered, tileCenterV);
   
   // ==== SAMPLE MAPTILES TEXTURE ====
-  // Red channel: terrain type (multiplied by 10)
-  // Green channel: river flag (10 = river present)
+  // Red channel: terrain type (multiplied by 10 in game data)
+  // Green channel: river flag (value of 10 indicates river present)
   // Blue channel: irrigation/farmland
   // Alpha channel: visibility (0=unknown, ~0.54=fogged, 1.0=visible)
   const tileData = texture(maptilesTex, tileCenterUV);
   const visibility = tileData.a;
-  const hasRiver = step(9.5, mul(tileData.g, 256.0)); // Green channel > 9 indicates river
+  // River detection: green channel value of 10 (or higher) indicates river
+  // step(9.5, x) returns 1 when x >= 10 (after floor), 0 otherwise
+  const hasRiver = step(9.5, mul(tileData.g, 256.0));
   
   // Detect coast tiles (terrain type 20 = TERRAIN_COAST)
   const terrainType = floor(mul(tileData.r, 256.0));
@@ -330,11 +338,13 @@ function createWaterMaterialTSL(maptilesTex, mapXSize, mapYSize) {
   const neighborN = texture(maptilesTex, vec2(tileCenterUV.x, add(tileCenterUV.y, neighborOffsetY)));
   const neighborS = texture(maptilesTex, vec2(tileCenterUV.x, sub(tileCenterUV.y, neighborOffsetY)));
   
-  // Detect if neighbors are land (terrain type > 30 is land-based terrain)
-  const isLandE = step(30.5, floor(mul(neighborE.r, 256.0)));
-  const isLandW = step(30.5, floor(mul(neighborW.r, 256.0)));
-  const isLandN = step(30.5, floor(mul(neighborN.r, 256.0)));
-  const isLandS = step(30.5, floor(mul(neighborS.r, 256.0)));
+  // Detect if neighbors are land (terrain types >= 40 are land-based)
+  // Water terrain types: INACCESSIBLE(0), LAKE(10), COAST(20), OCEAN/FLOOR(30)
+  // Land terrain types: ARCTIC(40), DESERT(50), FOREST(60), GRASSLAND(70), etc.
+  const isLandE = step(39.5, floor(mul(neighborE.r, 256.0)));
+  const isLandW = step(39.5, floor(mul(neighborW.r, 256.0)));
+  const isLandN = step(39.5, floor(mul(neighborN.r, 256.0)));
+  const isLandS = step(39.5, floor(mul(neighborS.r, 256.0)));
   const nearLand = max(max(max(isLandE, isLandW), isLandN), isLandS);
   
   // ==== COLOR PALETTE (Stylized Game Colors) ====
@@ -458,10 +468,17 @@ function createWaterMaterialTSL(maptilesTex, mapXSize, mapYSize) {
   const waterColor = sub(colorWithShimmer, vec3(edgeDarken, edgeDarken, edgeDarken));
   
   // ==== VISIBILITY HANDLING ====
+  // The visibility value comes from maptiles texture alpha channel which updates
+  // as the map is revealed during gameplay. The texture is automatically refreshed
+  // by THREE.js when maptiletypes.needsUpdate = true is set.
+  //
   // Unknown tiles (visibility = 0) should be rendered as black
   // Fogged tiles (~0.54) get slightly dimmed water
   // Visible tiles (1.0) show full water color
-  const visibilityFactor = clamp(mul(visibility, 1.5), 0.0, 1.0); // Boost mid-range visibility
+  //
+  // The 1.5 multiplier amplifies fogged tiles (~0.54 -> ~0.81) for better visibility
+  // while keeping fully visible tiles clamped at 1.0
+  const visibilityFactor = clamp(mul(visibility, 1.5), 0.0, 1.0);
   const finalColor = mix(unknownBlack, waterColor, visibilityFactor);
   
   // Opacity: unknown tiles are fully opaque black, visible tiles have normal transparency
