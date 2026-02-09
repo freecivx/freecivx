@@ -247,7 +247,7 @@ function add_quality_dependent_objects_webgpu() {
   
   water_hq = new THREE.Mesh(waterGeometry, waterMaterial);
   water_hq.rotation.x = -Math.PI * 0.5;
-  water_hq.translateOnAxis(new THREE.Vector3(0, 0, 1).normalize(), 50);
+  water_hq.translateOnAxis(new THREE.Vector3(0, 0, 1).normalize(), 53);
   water_hq.translateOnAxis(new THREE.Vector3(1, 0, 0).normalize(), Math.floor(mapview_model_width / 2) - 500);
   water_hq.translateOnAxis(new THREE.Vector3(0, 1, 0).normalize(), -Math.floor(mapview_model_height * HEX_HEIGHT_FACTOR / 2));
   water_hq.renderOrder = -1;

@@ -84,12 +84,12 @@ function createTerrainShaderTSL(uniforms) {
 
     // Height constants for beach blending
     // Beach appears at shoreline where land meets water
-    const BEACH_HIGH = 52.5;        // Upper limit of beach zone (above this = full land texture)
-    const BEACH_BLEND_HIGH = 50.4;  // Lower limit of beach zone (slightly above water to start beach blend)
-    const BEACH_MID = 51.5;         // Middle of beach zone (peak sand color)
-    // Water surface level must match water mesh position in mapview_webgpu.js (line 130)
+    const BEACH_HIGH = 55.5;        // Upper limit of beach zone (above this = full land texture)
+    const BEACH_BLEND_HIGH = 53.4;  // Lower limit of beach zone (slightly above water to start beach blend)
+    const BEACH_MID = 54.5;         // Middle of beach zone (peak sand color)
+    // Water surface level must match water mesh position in mapview_webgpu.js (line 250)
     // Terrain below this level is underwater and should not display beach colors
-    const WATER_LEVEL = 50.0;
+    const WATER_LEVEL = 53.0;
     
     // Beach sand colour (warm golden sand) - precomputed for efficiency
     const BEACH_SAND_COLOR = { r: 0.92, g: 0.85, b: 0.65 };
