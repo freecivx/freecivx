@@ -331,6 +331,15 @@ function applyUnderwaterEffect(model, options = {}) {
  * @param {THREE.Object3D} model - The model to convert
  * @param {Object} options - Configuration options passed to both conversions
  * @returns {THREE.Object3D} The model with converted and tinted materials
+ * 
+ * @example
+ * // One-step conversion for models loaded from GLTF that go underwater
+ * const submarineModel = gltfLoader.parse(data);
+ * convertUnderwaterModelMaterials(submarineModel, { tintStrength: 0.2 });
+ * 
+ * @note This is a convenience function combining WebGPU conversion + underwater effect.
+ *       Currently, object_position_handler.js applies effects separately for more control,
+ *       but this function is available for future use cases requiring combined conversion.
  */
 function convertUnderwaterModelMaterials(model, options = {}) {
     // First convert to WebGPU-compatible materials if needed
