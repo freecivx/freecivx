@@ -102,13 +102,14 @@ standalone_mode = true;
 
 </script>
 
-<!-- Three.js ES Module System  -->
+<!-- Three.js and Rapier.js ES Module System  -->
 <script type="importmap">
   {
     "imports": {
       "three": "/javascript/webgpu/libs/threejs/three.module.min.js",
       "three/webgpu": "/javascript/webgpu/libs/threejs/three.webgpu.min.js",
-      "three/tsl": "/javascript/webgpu/libs/threejs/three.tsl.min.js"
+      "three/tsl": "/javascript/webgpu/libs/threejs/three.tsl.min.js",
+      "@dimforge/rapier3d-compat": "https://cdn.jsdelivr.net/npm/@dimforge/rapier3d-compat@0.19.3/rapier.mjs"
     }
   }
 </script>
@@ -123,6 +124,8 @@ standalone_mode = true;
     document.head.appendChild(script);
   })();
 </script>
+<!-- Rapier.js physics module loader -->
+<script type="module" src="/javascript/rapier-module.js"></script>
 
 <!-- Main application bundle - includes jQuery, Stacktrace, Audio, and all application code -->
 <!-- Note: standalone.js is bundled inside webclient.min.js -->

@@ -168,6 +168,15 @@ function update_unit_position(ptile) {
     new_unit.updateMatrix();
     new_unit.name = "Unit_" + visible_unit['id'];
     scene.add(new_unit);
+    
+    // Create physics body for this unit (if physics is enabled)
+    if (typeof createUnitPhysicsBody === 'function' && typeof isPhysicsEnabled === 'function' && isPhysicsEnabled()) {
+      createUnitPhysicsBody(visible_unit['id'], {
+        x: new_unit.position.x,
+        y: new_unit.position.y,
+        z: new_unit.position.z
+      });
+    }
 
     /* add flag. */
     var new_flag;
@@ -200,6 +209,26 @@ function update_unit_position(ptile) {
     new_unit.updateMatrix();
     new_unit.name = "Unit_" + visible_unit['id'];
     scene.add(new_unit);
+    
+    // Update physics body position (if physics is enabled)
+    if (typeof setUnitPhysicsTarget === 'function' && typeof isPhysicsEnabled === 'function' && isPhysicsEnabled()) {
+      // Create body if it doesn't exist, or update position
+      if (typeof getUnitPhysicsBody === 'function' && !getUnitPhysicsBody(visible_unit['id'])) {
+        if (typeof createUnitPhysicsBody === 'function') {
+          createUnitPhysicsBody(visible_unit['id'], {
+            x: new_unit.position.x,
+            y: new_unit.position.y,
+            z: new_unit.position.z
+          });
+        }
+      } else {
+        setUnitPhysicsTarget(visible_unit['id'], {
+          x: new_unit.position.x,
+          y: new_unit.position.y,
+          z: new_unit.position.z
+        });
+      }
+    }
 
     /* update flag. */
     let new_flag;
