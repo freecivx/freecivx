@@ -82,7 +82,7 @@ const PhysicsConfig = Object.freeze({
     ARRIVAL_THRESHOLD: 2.0,
     
     /** Maximum time (ms) to wait for RAPIER module to load */
-    RAPIER_LOAD_TIMEOUT_MS: 5000,
+    RAPIER_LOAD_TIMEOUT_MS: 10000,
     
     /** Interval (ms) between checks for RAPIER module availability */
     RAPIER_CHECK_INTERVAL_MS: 100
@@ -132,11 +132,8 @@ async function initPhysics() {
             }
         }
         
-        // RAPIER is now available
+        // RAPIER is now available and initialized (init() called in rapier-module.js)
         RAPIER = window.RAPIER;
-        
-        // Initialize the RAPIER WASM module
-        await RAPIER.init();
         
         // Create physics world with gravity
         const gravity = PhysicsConfig.GRAVITY;
