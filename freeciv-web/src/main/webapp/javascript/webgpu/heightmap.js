@@ -26,6 +26,30 @@ var heightmap_hash = -1;
 const HEX_SQRT3 = Math.sqrt(3);
 const HEX_SQRT3_OVER_2 = HEX_SQRT3 / 2;
 
+// Hex stagger offset for distance calculations between rows with different parities
+// In odd-r offset coordinates, odd rows are shifted 0.5 tiles right.
+// When calculating distances between tiles in different row parities,
+// we need to account for this visual offset. The value 0.25 represents
+// half of the 0.5 stagger, used to center the distance calculation.
+const HEX_STAGGER_DISTANCE_OFFSET = 0.25;
+
+// River valley rendering constants
+// RIVER_VALLEY_DISTANCE_THRESHOLD: Maximum distance from tile boundary midpoint
+// to apply valley depth. Tiles closer than this to a river boundary get lowered.
+const RIVER_VALLEY_DISTANCE_THRESHOLD = 0.5;
+
+// RIVER_VALLEY_DEPTH_FACTOR: Controls how deep the valley dips between river tiles.
+// Higher values create more pronounced valleys for river flow visualization.
+const RIVER_VALLEY_DEPTH_FACTOR = 0.06;
+
+// River height adjustment constants for tiles with rivers
+// RIVER_BASE_HEIGHT_FACTOR: Base multiplier for river tile heights (slightly raised)
+// RIVER_NEIGHBOR_DEPTH_DIVISOR: Divides by (center tile + 6 neighbors) = 7 max tiles
+// RIVER_NEIGHBOR_DEPTH_FACTOR: Additional depth reduction per nearby river tile
+const RIVER_BASE_HEIGHT_FACTOR = 1.045;
+const RIVER_NEIGHBOR_DEPTH_DIVISOR = 7; // center tile + 6 hex neighbors
+const RIVER_NEIGHBOR_DEPTH_FACTOR = 0.025;
+
 // Cache for hex neighbor offsets (pre-computed for efficiency)
 // Key: row parity (0 or 1), Value: array of {dx, dy} neighbor offsets
 const HEX_NEIGHBOR_OFFSETS = {
@@ -215,8 +239,8 @@ function hex_distance(gx, gy, tx, ty) {
   const rowParityT = Math.floor(ty) & 1;
   let staggerDx = 0;
   if (rowParityG !== rowParityT) {
-    // Different row parities - adjust for stagger
-    staggerDx = (rowParityT === 1 ? 0.25 : -0.25);
+    // Different row parities - adjust for the visual stagger offset
+    staggerDx = (rowParityT === 1 ? HEX_STAGGER_DISTANCE_OFFSET : -HEX_STAGGER_DISTANCE_OFFSET);
   }
   
   const adjustedDx = dx + staggerDx;
@@ -358,8 +382,8 @@ function interpolate_hex_height(gx, gy, pixelX, pixelY, quality) {
           let distToMid = Math.sqrt((gx - midX) * (gx - midX) + (gy - midY) * (gy - midY));
           
           // Increase valley strength when closer to the boundary between river tiles
-          if (distToMid < 0.5) {
-            riverConnectionStrength += (0.5 - distToMid) * 0.06;
+          if (distToMid < RIVER_VALLEY_DISTANCE_THRESHOLD) {
+            riverConnectionStrength += (RIVER_VALLEY_DISTANCE_THRESHOLD - distToMid) * RIVER_VALLEY_DEPTH_FACTOR;
           }
         }
       }
@@ -393,7 +417,8 @@ function interpolate_hex_height(gx, gy, pixelX, pixelY, quality) {
     // Apply river height reduction
     if (tile_has_extra(ptile, EXTRA_RIVER)) {
       // River tiles get lowered, more so when multiple river tiles are nearby
-      let riverFactor = 1.045 - ((numRiverTiles / 7) * 0.025);
+      // Uses base factor minus reduction based on nearby river tile count
+      let riverFactor = RIVER_BASE_HEIGHT_FACTOR - ((numRiverTiles / RIVER_NEIGHBOR_DEPTH_DIVISOR) * RIVER_NEIGHBOR_DEPTH_FACTOR);
       height = height * riverFactor;
     }
     
