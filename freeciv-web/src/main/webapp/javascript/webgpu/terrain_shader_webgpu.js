@@ -122,8 +122,9 @@ function createTerrainShaderTSL(uniforms) {
     const HEX_EDGE_COLOR_B = 0.08; // Blue component of edge darkening color
     const TEXTURE_RANDOM_SCALE = 16.0; // Divisor for random texture offset - larger = less variation
     
-    // World coordinate scale: MAPVIEW_ASPECT_FACTOR = 35.71 (from mapview_common.js)
+    // World coordinate scale: Must match MAPVIEW_ASPECT_FACTOR in mapview_common.js (line 58)
     // This is used to convert fragment position (world coords) to tile coordinates
+    // The value is duplicated here for shader performance (avoiding uniform overhead)
     const MAPVIEW_ASPECT_FACTOR = 35.71;
 
     // Visibility constants (matching vertex color values from tile_visibility_handler.js)

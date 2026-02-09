@@ -303,8 +303,9 @@ function createWaterMaterialTSL(maptilesTex, mapXSize, mapYSize) {
   // Multiply by 256.0 to convert back to original integer range for comparisons
   const TEXTURE_VALUE_SCALE = 256.0;
   
-  // World coordinate scale: MAPVIEW_ASPECT_FACTOR = 35.71 (from mapview_common.js)
+  // World coordinate scale: Must match MAPVIEW_ASPECT_FACTOR in mapview_common.js (line 58)
   // This is used to convert fragment position (world coords) to tile coordinates
+  // The value is duplicated here for shader performance (avoiding uniform overhead)
   const MAPVIEW_ASPECT_FACTOR = 35.71;
   
   // ==== HEXAGONAL CONSTANTS ====
