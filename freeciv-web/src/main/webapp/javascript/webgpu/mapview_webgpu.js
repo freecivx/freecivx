@@ -291,9 +291,13 @@ function createWaterMaterialTSL(maptilesTex, mapXSize, mapYSize) {
   
   const uvNode = uv();
   
+  // ==== CONSTANTS ====
+  // Texture values are stored as 0-255 in the DataTexture, but sampled as 0-1 floats
+  // Multiply by 256.0 to convert back to original integer range for comparisons
+  const TEXTURE_VALUE_SCALE = 256.0;
+  
   // ==== HEXAGONAL COORDINATE CALCULATIONS ====
   // Match the terrain shader's hex coordinate system for proper tile alignment
-  const HEX_HEIGHT_FACTOR = 0.866025; // sqrt(3)/2
   
   // Calculate tile coordinates
   const tileYRaw = mul(map_y_size, uvNode.y);
@@ -320,11 +324,12 @@ function createWaterMaterialTSL(maptilesTex, mapXSize, mapYSize) {
   const tileData = texture(maptilesTex, tileCenterUV);
   const visibility = tileData.a;
   // River detection: green channel value of 10 (or higher) indicates river
-  // step(9.5, x) returns 1 when x >= 10 (after floor), 0 otherwise
-  const hasRiver = step(9.5, mul(tileData.g, 256.0));
+  // step(9.5, x) returns 1 when x >= 9.5 - we use 9.5 threshold to detect value 10
+  // accounting for floating point precision
+  const hasRiver = step(9.5, mul(tileData.g, TEXTURE_VALUE_SCALE));
   
   // Detect coast tiles (terrain type 20 = TERRAIN_COAST)
-  const terrainType = floor(mul(tileData.r, 256.0));
+  const terrainType = floor(mul(tileData.r, TEXTURE_VALUE_SCALE));
   const isCoast = mul(step(19.5, terrainType), step(terrainType, 20.5));
   
   // ==== SAMPLE NEIGHBORS FOR SHORELINE DETECTION ====
@@ -341,10 +346,10 @@ function createWaterMaterialTSL(maptilesTex, mapXSize, mapYSize) {
   // Detect if neighbors are land (terrain types >= 40 are land-based)
   // Water terrain types: INACCESSIBLE(0), LAKE(10), COAST(20), OCEAN/FLOOR(30)
   // Land terrain types: ARCTIC(40), DESERT(50), FOREST(60), GRASSLAND(70), etc.
-  const isLandE = step(39.5, floor(mul(neighborE.r, 256.0)));
-  const isLandW = step(39.5, floor(mul(neighborW.r, 256.0)));
-  const isLandN = step(39.5, floor(mul(neighborN.r, 256.0)));
-  const isLandS = step(39.5, floor(mul(neighborS.r, 256.0)));
+  const isLandE = step(39.5, floor(mul(neighborE.r, TEXTURE_VALUE_SCALE)));
+  const isLandW = step(39.5, floor(mul(neighborW.r, TEXTURE_VALUE_SCALE)));
+  const isLandN = step(39.5, floor(mul(neighborN.r, TEXTURE_VALUE_SCALE)));
+  const isLandS = step(39.5, floor(mul(neighborS.r, TEXTURE_VALUE_SCALE)));
   const nearLand = max(max(max(isLandE, isLandW), isLandN), isLandS);
   
   // ==== COLOR PALETTE (Stylized Game Colors) ====
