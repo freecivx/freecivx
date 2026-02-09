@@ -320,6 +320,21 @@ function createTerrainShaderTSL(uniforms) {
     const terrainHere = floor(mul(terrainType.r, 256.0));
     const posY = posNode.y;
 
+    // =========================================================================
+    // WATER TILE DETECTION
+    // =========================================================================
+    // Detect if this tile is underwater (TERRAIN_LAKE, TERRAIN_COAST, TERRAIN_FLOOR)
+    // Water terrain types are: LAKE(10), COAST(20), FLOOR/OCEAN(30)
+    // We exclude hex edge rendering for water tiles since the water shader
+    // handles its own hexagonal edges (prevents double hex edge layering)
+    // 
+    // isWaterTile = 1.0 if terrainHere is LAKE, COAST, or FLOOR; 0.0 otherwise
+    const isLake = mul(step(TERRAIN_LAKE - 0.5, terrainHere), step(terrainHere, TERRAIN_LAKE + 0.5));
+    const isCoast = mul(step(TERRAIN_COAST - 0.5, terrainHere), step(terrainHere, TERRAIN_COAST + 0.5));
+    const isOceanFloor = mul(step(TERRAIN_FLOOR - 0.5, terrainHere), step(terrainHere, TERRAIN_FLOOR + 0.5));
+    // Combine: isWaterTile = 1.0 if any water terrain type matches
+    const isWaterTile = max(max(isLake, isCoast), isOceanFloor);
+
     // Texture coordinate nodes for hexagonal tiles
     // texCoord: Standard coordinates for most terrain types
     // texCoordT: Offset coordinates for arctic/tundra (uses 2x2 texture atlas pattern)
@@ -549,11 +564,16 @@ function createTerrainShaderTSL(uniforms) {
     // =========================================================================
     // Apply subtle darkening at hex edges to create visible hex tile boundaries
     // This gives the distinctive Civilization 6 hexagonal map appearance
+    // 
+    // Skip hex edge rendering for water tiles (LAKE, COAST, OCEAN/FLOOR) because
+    // the water shader renders its own hexagonal edges. This prevents double
+    // hex edge layering when the water layer is rendered on top of terrain.
     const hexEdgeColor = vec3(HEX_EDGE_COLOR_R, HEX_EDGE_COLOR_G, HEX_EDGE_COLOR_B);
     
     // Blend hex edge color with terrain based on edge mask
     // The edge mask is strongest at hex boundaries and fades toward center
-    const hexEdgeBlend = mul(hexEdgeMask, HEX_EDGE_BLEND_STRENGTH);
+    // Multiply by (1 - isWaterTile) to skip hex edges for water terrain types
+    const hexEdgeBlend = mul(mul(hexEdgeMask, HEX_EDGE_BLEND_STRENGTH), sub(1.0, isWaterTile));
     finalColor = vec4(
         mix(finalColor.rgb, hexEdgeColor, hexEdgeBlend),
         finalColor.a
