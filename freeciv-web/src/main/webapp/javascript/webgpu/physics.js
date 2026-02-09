@@ -79,11 +79,35 @@ const PhysicsConfig = Object.freeze({
     MAX_VELOCITY: 200.0,
     
     /** Minimum distance to consider unit "arrived" at target */
-    ARRIVAL_THRESHOLD: 2.0
+    ARRIVAL_THRESHOLD: 2.0,
+    
+    /** Maximum time (ms) to wait for RAPIER module to load */
+    RAPIER_LOAD_TIMEOUT_MS: 5000,
+    
+    /** Interval (ms) between checks for RAPIER module availability */
+    RAPIER_CHECK_INTERVAL_MS: 100
 });
 
 // Export physics config to global scope
 window.PhysicsConfig = PhysicsConfig;
+
+/**
+ * Wait for RAPIER module to be loaded with timeout
+ * @param {number} maxWaitMs - Maximum time to wait in milliseconds (default from PhysicsConfig)
+ * @returns {Promise<boolean>} True if RAPIER is available
+ */
+async function waitForRapier(maxWaitMs = PhysicsConfig.RAPIER_LOAD_TIMEOUT_MS) {
+    const startTime = Date.now();
+    const checkInterval = PhysicsConfig.RAPIER_CHECK_INTERVAL_MS;
+    
+    while (Date.now() - startTime < maxWaitMs) {
+        if (window.RAPIER) {
+            return true;
+        }
+        await new Promise(resolve => setTimeout(resolve, checkInterval));
+    }
+    return false;
+}
 
 /**
  * Initialize the Rapier physics engine
@@ -98,13 +122,18 @@ async function initPhysics() {
     }
     
     try {
-        // Check if RAPIER is available globally (loaded via ES module)
-        if (window.RAPIER) {
-            RAPIER = window.RAPIER;
-        } else {
-            console.log("RAPIER not available globally, physics disabled");
-            return false;
+        // Wait for RAPIER module to be loaded (it's loaded as an ES module asynchronously)
+        if (!window.RAPIER) {
+            console.log("Waiting for RAPIER module to load...");
+            const rapierAvailable = await waitForRapier();
+            if (!rapierAvailable) {
+                console.log("RAPIER module did not load within timeout, physics disabled");
+                return false;
+            }
         }
+        
+        // RAPIER is now available
+        RAPIER = window.RAPIER;
         
         // Initialize the RAPIER WASM module
         await RAPIER.init();
