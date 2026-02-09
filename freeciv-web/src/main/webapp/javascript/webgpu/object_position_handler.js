@@ -663,8 +663,8 @@ function update_tile_extra_update_model(extra_type, extra_name, ptile)
       )) {
     let num_models = 1;
     let height = 5 + ptile['height'] * 100;
-    var use_instancing = false;
-    var is_underwater = false; // Track if object should have underwater effect
+    let use_instancing = false;
+    let is_underwater = false; // Track if object should have underwater effect
 
     if (tile_has_extra(ptile, EXTRA_OIL_WELL)) {
       extra_name = "Oil Well";

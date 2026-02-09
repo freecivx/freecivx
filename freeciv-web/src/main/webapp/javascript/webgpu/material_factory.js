@@ -281,7 +281,12 @@ function applyUnderwaterEffect(model, options = {}) {
         if (node.isMesh && node.material) {
             const mat = node.material;
             
-            // Store original color if not already stored
+            // Skip if underwater effect already applied to prevent progressive darkening
+            if (mat.userData.underwaterEffectApplied) {
+                return;
+            }
+            
+            // Store original color for potential future restoration
             if (!mat.userData.originalColor && mat.color) {
                 mat.userData.originalColor = mat.color.clone();
             }
@@ -310,6 +315,8 @@ function applyUnderwaterEffect(model, options = {}) {
                 mat.emissiveIntensity = 1.0;
             }
             
+            // Mark as having underwater effect applied
+            mat.userData.underwaterEffectApplied = true;
             mat.needsUpdate = true;
         }
     });
