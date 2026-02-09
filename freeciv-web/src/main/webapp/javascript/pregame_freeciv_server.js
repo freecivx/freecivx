@@ -490,9 +490,11 @@ function pregame_settings()
           "<option value='FAIR'>Fair islands</option>" +
           //"<option value='FRACTURE'>Fracture map</option>" + FIXME: this one doesnt work.
     "</select></td></tr>" +
-    "<tr title='Map tile topology: Hexagonal tiles provide 6-way movement.'><td>Map Topology:</td>" +
-          "<td>Hexagonal tiles (3D optimized)</td>" +
-    "</tr>"
+    "<tr title='Map tile topology: Square or Hexagonal tiles. Hex tiles provide 6-way movement.'><td>Map Topology:</td>" +
+          "<td><select name='topology' id='topology'>" +
+          "<option value='0'>Square tiles (Classic)</option>" +
+          "<option value='1' selected>Hexagonal tiles (Recommended)</option>" +
+    "</select></td></tr>"
     + "</table><br>"+
 	  "<span id='settings_info'><i>Freeciv-web can be customized using the command line in many " +
           "other ways also. Type /help in the command line for more information.</i></span></div>" +
@@ -608,8 +610,19 @@ function pregame_settings()
                         server_settings['generator']['val']]);
   }
 
-  // Hexagonal topology is now the only supported topology for 3D
-  // No user selection needed - always use HEX|ISO (topology_id: 3)
+  if (server_settings['topology'] != null
+        && server_settings['topology']['val'] != null) {
+    // Topology is a bitmask: TF_ISO=1, TF_HEX=2
+    // 0 = square, 1 = ISO square, 2 = pure hex, 3 = ISO hex
+    var topologyVal = server_settings['topology']['val'];
+    if (topologyVal >= 2) {
+      // Has TF_HEX flag (value 2 or 3)
+      $("#topology").val(1); // hex
+    } else {
+      // Square tiles (value 0 or 1)
+      $("#topology").val(0);
+    }
+  }
 
   $("#3d_antialiasing_label").prop("innerHTML", "Antialiasing:");
 
@@ -715,8 +728,13 @@ function pregame_settings()
     send_message("/set generator " + $('#generator').val());
   });
 
-  // Hexagonal topology is enforced - no user selection available
-  // The server always uses HEX|ISO topology for 3D rendering
+  $('#topology').change(function() {
+    if ($('#topology').val() == 0) {
+      send_message("/set topology="); // Square tiles (no hex)
+    } else {
+      send_message("/set topology HEX|ISO"); // Hexagonal tiles with ISO view
+    }
+  });
 
   /* Make the long ruleset description available in the pregame. The
    * ruleset's README isn't located at the player's computer. */

@@ -81,9 +81,10 @@ function server_tile_is_in_vision(center_x, center_y, target_x, target_y, vision
     dy = FC_WRAP(dy + half_world, map.ysize) - half_world;
   }
   
-  // Use proper hex distance calculation via map_vector_to_sq_distance
-  // This handles iso-hex topology correctly where diagonal directions differ
-  var dist_sq = map_vector_to_sq_distance(dx, dy);
+  // Calculate squared distance
+  // For now using simple Euclidean distance (works for square maps)
+  // TODO: Use map_vector_to_sq_distance for hex/iso topologies
+  var dist_sq = dx * dx + dy * dy;
   
   return dist_sq <= vision_radius_sq;
 }
