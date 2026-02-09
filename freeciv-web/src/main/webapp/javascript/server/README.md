@@ -12,6 +12,17 @@ This directory contains the JavaScript server implementation for Freeciv-web. Un
 - **Local game state** - All game logic runs client-side
 - **Future multiplayer** - Foundation for peer-to-peer or hybrid architectures
 
+## Map Topology
+
+**This server exclusively supports hexagonal map tiles (ISO-HEX topology).**
+
+The hexagonal tile system is optimized for the 3D WebGPU renderer and provides:
+- 6-way movement (N, S, E, W, NW, SE for iso-hex)
+- Better visual representation in 3D
+- More natural terrain appearance
+
+Square map topology is not supported.
+
 ## Architecture
 
 The JavaScript server is organized into modular components:
@@ -27,6 +38,7 @@ The JavaScript server is organized into modular components:
 | `game.js` | Game state | `server_create_players()`, `server_setup_client_connection()` |
 | `cities.js` | City management | `server_create_cities()` |
 | `units.js` | Unit management | `server_create_units()` |
+| `vision.js` | Fog of war | `server_tile_is_in_vision()`, `server_update_player_vision()` |
 
 ### Future Modules
 
