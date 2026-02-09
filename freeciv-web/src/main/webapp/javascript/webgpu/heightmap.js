@@ -59,7 +59,7 @@ const HEX_NEIGHBOR_OFFSETS = {
     { dx: 0, dy: 1 },    // S
     { dx: 1, dy: 0 },    // E
     { dx: -1, dy: 0 },   // W
-    { dx: -1, dy: -1 },  // NW (for iso-hex: NE would be different)
+    { dx: -1, dy: -1 },  // NW
     { dx: -1, dy: 1 }    // SW
   ],
   // Odd row neighbors (row % 2 === 1) - staggered right
@@ -314,13 +314,14 @@ function update_heightmap(heightmap_quality)
       if (isAtTileCenter && gx >= 0 && gx < map.xsize && gy >= 0 && gy < map.ysize) {
         // At tile center - use tile's height directly with adjustments
         let ptile = map_pos_to_tile(gx, gy);
+        let terrain = tile_terrain(ptile);
         heightmap[index] = ptile['height'];
         
         if (tile_has_extra(ptile, EXTRA_RIVER)) {
           // River tiles are slightly lower to create valley effect
           heightmap[index] = ptile['height'] * 0.98;
         }
-        if (tile_terrain(ptile) && tile_terrain(ptile)['name'] == "Mountains") {
+        if (terrain && terrain['name'] == "Mountains") {
           // Mountains are slightly higher
           heightmap[index] = ptile['height'] * 1.02;
         }
@@ -364,27 +365,29 @@ function interpolate_hex_height(gx, gy, pixelX, pixelY, quality) {
   let numRiverTiles = 0;
   let riverConnectionStrength = 0;
   
-  for (let i = 0; i < tilesToInterpolate.length; i++) {
+  // Track which tiles have rivers for efficient valley checking
+  let centerHasRiver = tile_has_extra(tilesToInterpolate[0].tile, EXTRA_RIVER);
+  if (centerHasRiver) numRiverTiles++;
+  
+  for (let i = 1; i < tilesToInterpolate.length; i++) {
     if (tile_has_extra(tilesToInterpolate[i].tile, EXTRA_RIVER)) {
       numRiverTiles++;
     }
   }
   
-  // Check for river connections between adjacent tiles
-  // If two adjacent tiles both have rivers, there's a valley between them
-  if (numRiverTiles >= 2) {
-    for (let i = 0; i < tilesToInterpolate.length - 1; i++) {
-      for (let j = i + 1; j < tilesToInterpolate.length; j++) {
-        if (tiles_share_river_connection(tilesToInterpolate[i].tile, tilesToInterpolate[j].tile)) {
-          // Calculate if we're near the boundary between these river tiles
-          let midX = (tilesToInterpolate[i].x + tilesToInterpolate[j].x) / 2;
-          let midY = (tilesToInterpolate[i].y + tilesToInterpolate[j].y) / 2;
-          let distToMid = Math.sqrt((gx - midX) * (gx - midX) + (gy - midY) * (gy - midY));
-          
-          // Increase valley strength when closer to the boundary between river tiles
-          if (distToMid < RIVER_VALLEY_DISTANCE_THRESHOLD) {
-            riverConnectionStrength += (RIVER_VALLEY_DISTANCE_THRESHOLD - distToMid) * RIVER_VALLEY_DEPTH_FACTOR;
-          }
+  // Check for river connections between center tile and its hex neighbors only
+  // This is O(n) instead of O(n²) - only 6 comparisons instead of 21
+  if (numRiverTiles >= 2 && centerHasRiver) {
+    for (let i = 1; i < tilesToInterpolate.length; i++) {
+      if (tile_has_extra(tilesToInterpolate[i].tile, EXTRA_RIVER)) {
+        // River connection between center and this neighbor - create valley
+        let midX = (tilesToInterpolate[0].x + tilesToInterpolate[i].x) / 2;
+        let midY = (tilesToInterpolate[0].y + tilesToInterpolate[i].y) / 2;
+        let distToMid = Math.sqrt((gx - midX) * (gx - midX) + (gy - midY) * (gy - midY));
+        
+        // Increase valley strength when closer to the boundary between river tiles
+        if (distToMid < RIVER_VALLEY_DISTANCE_THRESHOLD) {
+          riverConnectionStrength += (RIVER_VALLEY_DISTANCE_THRESHOLD - distToMid) * RIVER_VALLEY_DEPTH_FACTOR;
         }
       }
     }
@@ -417,8 +420,10 @@ function interpolate_hex_height(gx, gy, pixelX, pixelY, quality) {
     // Apply river height reduction
     if (tile_has_extra(ptile, EXTRA_RIVER)) {
       // River tiles get lowered, more so when multiple river tiles are nearby
-      // Uses base factor minus reduction based on nearby river tile count
-      let riverFactor = RIVER_BASE_HEIGHT_FACTOR - ((numRiverTiles / RIVER_NEIGHBOR_DEPTH_DIVISOR) * RIVER_NEIGHBOR_DEPTH_FACTOR);
+      // Calculate reduction: ratio of river tiles to max possible (7) times depth factor
+      let riverTileRatio = numRiverTiles / RIVER_NEIGHBOR_DEPTH_DIVISOR;
+      let depthReduction = riverTileRatio * RIVER_NEIGHBOR_DEPTH_FACTOR;
+      let riverFactor = RIVER_BASE_HEIGHT_FACTOR - depthReduction;
       height = height * riverFactor;
     }
     
