@@ -49,7 +49,7 @@ function createTerrainShaderTSL(uniforms) {
     const { 
         texture, uniform, positionLocal, attribute, uv, normalLocal,
         vec2, vec3, vec4,
-        mix, step, floor, fract, mod, dot, sin, cos, normalize, max, min, pow, clamp, abs,
+        mix, step, floor, fract, mod, dot, sin, cos, normalize, max, min, pow, clamp, abs, sqrt,
         mul, add, sub, div
     } = THREE;
     
@@ -57,7 +57,7 @@ function createTerrainShaderTSL(uniforms) {
     const requiredTSLNames = [
         'texture', 'uniform', 'positionLocal', 'attribute', 'uv', 'normalLocal',
         'vec2', 'vec3', 'vec4',
-        'mix', 'step', 'floor', 'fract', 'mod', 'dot', 'sin', 'cos', 'normalize', 'max', 'min', 'pow', 'clamp', 'abs',
+        'mix', 'step', 'floor', 'fract', 'mod', 'dot', 'sin', 'cos', 'normalize', 'max', 'min', 'pow', 'clamp', 'abs', 'sqrt',
         'mul', 'add', 'sub', 'div'
     ];
     const missing = requiredTSLNames.filter(name => THREE[name] === undefined);
@@ -87,8 +87,7 @@ function createTerrainShaderTSL(uniforms) {
     const BEACH_HIGH = 52.5;        // Upper limit of beach zone (above this = full land texture)
     const BEACH_BLEND_HIGH = 50.4;  // Lower limit of beach zone (slightly above water to start beach blend)
     const BEACH_MID = 51.5;         // Middle of beach zone (peak sand color)
-    // Water surface level must match water mesh position in mapview_webgpu.js (line 130)
-    // Terrain below this level is underwater and should not display beach colors
+    // Water surface level - unified terrain renders water at and below this level
     const WATER_LEVEL = 50.0;
     
     // Beach sand colour (warm golden sand) - precomputed for efficiency
@@ -97,6 +96,22 @@ function createTerrainShaderTSL(uniforms) {
     // Precomputed beach zone ranges for shader efficiency
     const BEACH_LOWER_RANGE = BEACH_MID - BEACH_BLEND_HIGH;  // ≈ 1.1
     const BEACH_UPPER_RANGE = BEACH_HIGH - BEACH_MID;        // ≈ 1.0
+
+    // =========================================================================
+    // WATER RENDERING CONSTANTS (Stylized Game Water)
+    // =========================================================================
+    // Integrated water rendering for ocean, coast, and lake tiles.
+    // Uses caustic patterns and subtle ripples for a calm, game-like appearance.
+    const WATER_CAUSTIC_SCALE = 8.0;     // Scale of caustic patterns
+    const WATER_CAUSTIC_SPEED = 0.06;    // Animation speed for caustics
+    const WATER_RIPPLE_SCALE = 15.0;     // Scale of surface ripples
+    const WATER_RIPPLE_SPEED = 0.1;      // Animation speed for ripples
+    
+    // Water color palette (stylized game colors)
+    const WATER_DEEP = { r: 0.05, g: 0.15, b: 0.32 };      // Deep ocean blue
+    const WATER_MID = { r: 0.10, g: 0.28, b: 0.48 };       // Mid ocean blue
+    const WATER_SHALLOW = { r: 0.18, g: 0.48, b: 0.58 };   // Shallow/coast teal
+    const WATER_CAUSTIC = { r: 0.45, g: 0.70, b: 0.82 };   // Caustic highlight
 
     // =========================================================================
     // HEXAGONAL TILE CONSTANTS
@@ -161,6 +176,10 @@ function createTerrainShaderTSL(uniforms) {
     const map_x_size = uniform(uniforms.map_x_size.value);
     const map_y_size = uniform(uniforms.map_y_size.value);
     const borders_visible = uniform(uniforms.borders_visible.value);
+    
+    // Time uniform for water animation (updated from render loop)
+    const timeUniform = uniform(0.0);
+    window.terrainTimeUniform = timeUniform;
 
     // Get UV coordinates and position
     const uvNode = uv();
@@ -392,8 +411,112 @@ function createTerrainShaderTSL(uniforms) {
         return { mask: isTerrain, color: terrainColor };
     }
 
+    // =========================================================================
+    // ANIMATED WATER COLOR GENERATION
+    // =========================================================================
+    // Generate animated water color for ocean, coast, and lake tiles.
+    // Uses caustic patterns and subtle ripples for stylized game appearance.
+    
+    // Pseudo-random hash function for procedural noise generation
+    function noiseHash(p) {
+        return fract(mul(sin(mul(p, 127.1)), 43758.5453));
+    }
+    
+    // 2D noise function using hash
+    function noise2D(x, y) {
+        const ix = floor(x);
+        const iy = floor(y);
+        const fx = fract(x);
+        const fy = fract(y);
+        
+        // Smooth interpolation curve
+        const ux = mul(mul(fx, fx), sub(3.0, mul(2.0, fx)));
+        const uy = mul(mul(fy, fy), sub(3.0, mul(2.0, fy)));
+        
+        // Corner values
+        const a = noiseHash(add(ix, mul(iy, 157.0)));
+        const b = noiseHash(add(add(ix, 1.0), mul(iy, 157.0)));
+        const c = noiseHash(add(ix, mul(add(iy, 1.0), 157.0)));
+        const d = noiseHash(add(add(ix, 1.0), mul(add(iy, 1.0), 157.0)));
+        
+        // Bilinear interpolation
+        const mixAB = mix(a, b, ux);
+        const mixCD = mix(c, d, ux);
+        return mix(mixAB, mixCD, uy);
+    }
+    
+    // Create animated water color using UV coordinates and time
+    function createAnimatedWaterColor(uvCoord, terrainTypeValue) {
+        // Caustic pattern layer 1
+        const causticU1 = add(mul(uvCoord.x, WATER_CAUSTIC_SCALE), mul(timeUniform, WATER_CAUSTIC_SPEED));
+        const causticV1 = add(mul(uvCoord.y, WATER_CAUSTIC_SCALE), mul(timeUniform, mul(WATER_CAUSTIC_SPEED, 0.7)));
+        const caustic1 = noise2D(causticU1, causticV1);
+        
+        // Caustic pattern layer 2 (different direction and scale)
+        const causticU2 = sub(mul(uvCoord.x, mul(WATER_CAUSTIC_SCALE, 1.4)), mul(timeUniform, mul(WATER_CAUSTIC_SPEED, 0.5)));
+        const causticV2 = add(mul(uvCoord.y, mul(WATER_CAUSTIC_SCALE, 1.2)), mul(timeUniform, mul(WATER_CAUSTIC_SPEED, 0.35)));
+        const caustic2 = noise2D(causticU2, causticV2);
+        
+        // Combine caustics
+        const causticPattern = mul(add(caustic1, caustic2), 0.5);
+        const causticIntensity = clamp(mul(sub(causticPattern, 0.3), 2.0), 0.0, 1.0);
+        
+        // Gentle surface ripples
+        const ripple1 = sin(add(mul(add(mul(uvCoord.x, 1.0), mul(uvCoord.y, 0.5)), WATER_RIPPLE_SCALE), mul(timeUniform, WATER_RIPPLE_SPEED)));
+        const ripple2 = sin(add(mul(add(mul(uvCoord.x, 0.7), mul(uvCoord.y, 1.0)), mul(WATER_RIPPLE_SCALE, 0.8)), mul(timeUniform, mul(WATER_RIPPLE_SPEED, 1.2))));
+        const rippleValue = mul(add(ripple1, ripple2), 0.08);
+        
+        // Base color variation using position
+        const positionFactor = mul(add(uvCoord.x, uvCoord.y), 0.25);
+        const variation = add(positionFactor, rippleValue);
+        const normalizedVariation = clamp(add(0.5, mul(variation, 0.15)), 0.0, 1.0);
+        
+        // Color definitions
+        const deepColor = vec3(WATER_DEEP.r, WATER_DEEP.g, WATER_DEEP.b);
+        const midColor = vec3(WATER_MID.r, WATER_MID.g, WATER_MID.b);
+        const shallowColor = vec3(WATER_SHALLOW.r, WATER_SHALLOW.g, WATER_SHALLOW.b);
+        const causticColor = vec3(WATER_CAUSTIC.r, WATER_CAUSTIC.g, WATER_CAUSTIC.b);
+        
+        // Determine water depth based on terrain type
+        // TERRAIN_FLOOR (ocean) = deep, TERRAIN_COAST = shallow, TERRAIN_LAKE = mid
+        const isDeepOcean = mul(step(TERRAIN_FLOOR - 0.5, terrainTypeValue), step(terrainTypeValue, TERRAIN_FLOOR + 0.5));
+        const isCoast = mul(step(TERRAIN_COAST - 0.5, terrainTypeValue), step(terrainTypeValue, TERRAIN_COAST + 0.5));
+        const isLake = mul(step(TERRAIN_LAKE - 0.5, terrainTypeValue), step(terrainTypeValue, TERRAIN_LAKE + 0.5));
+        
+        // Base color gradient: deep -> mid -> shallow
+        const deepToMid = mix(deepColor, midColor, clamp(mul(normalizedVariation, 1.5), 0.0, 1.0));
+        let baseWaterColor = mix(deepToMid, shallowColor, clamp(sub(mul(normalizedVariation, 1.5), 0.5), 0.0, 1.0));
+        
+        // Adjust color based on water type
+        // Coast is shallower (more teal), ocean is deeper (more blue), lake is in between
+        const coastBlend = mul(isCoast, 0.4);
+        baseWaterColor = mix(baseWaterColor, shallowColor, coastBlend);
+        const oceanBlend = mul(isDeepOcean, 0.3);
+        baseWaterColor = mix(baseWaterColor, deepColor, oceanBlend);
+        
+        // Add caustic highlights
+        const colorWithCaustics = mix(baseWaterColor, causticColor, mul(causticIntensity, 0.12));
+        
+        // Soft specular from ripples
+        const specularBase = clamp(add(rippleValue, 0.5), 0.0, 1.0);
+        const specular = mul(pow(specularBase, 6.0), 0.06);
+        const finalWaterColor = add(colorWithCaustics, vec3(specular, specular, specular));
+        
+        return vec4(finalWaterColor, 1.0);
+    }
+    
+    // Generate animated water color for water tiles
+    const animatedWaterColor = createAnimatedWaterColor(hexUV, terrainHere);
+    
+    // Check if this is a water tile (coast, ocean floor, or lake)
+    const isWaterTile = max(max(
+        mul(step(TERRAIN_COAST - 0.5, terrainHere), step(terrainHere, TERRAIN_COAST + 0.5)),
+        mul(step(TERRAIN_FLOOR - 0.5, terrainHere), step(terrainHere, TERRAIN_FLOOR + 0.5))
+    ), mul(step(TERRAIN_LAKE - 0.5, terrainHere), step(terrainHere, TERRAIN_LAKE + 0.5)));
+
     // Build terrain layers - including all terrain types from WebGL shader
     // Note: TERRAIN_INACCESSIBLE (0) renders as black (default finalColor)
+    // Water tiles (coast, ocean, lake) use animated water color instead of textures
     const layers = [
         createTerrainLayer(TERRAIN_GRASSLAND, terrainTextures.grassland, texCoord, true),
         createTerrainLayer(TERRAIN_PLAINS, terrainTextures.plains, texCoord, true),
@@ -403,9 +526,6 @@ function createTerrainShaderTSL(uniforms) {
         createTerrainLayer(TERRAIN_SWAMP, terrainTextures.swamp, texCoord, true),
         createTerrainLayer(TERRAIN_FOREST, terrainTextures.grassland, texCoord, true), // Forest uses grassland texture
         createTerrainLayer(TERRAIN_JUNGLE, terrainTextures.plains, texCoord, true), // Jungle uses plains texture
-        createTerrainLayer(TERRAIN_COAST, terrainTextures.coast, texCoord, false),
-        createTerrainLayer(TERRAIN_FLOOR, terrainTextures.ocean, texCoord, false),
-        createTerrainLayer(TERRAIN_LAKE, terrainTextures.coast, texCoord, false), // Lake uses coast texture
         createTerrainLayer(TERRAIN_ARCTIC, terrainTextures.arctic, texCoordT, false),
         createTerrainLayer(TERRAIN_TUNDRA, terrainTextures.arctic, vec2(add(tdx, 0.5), tdy), false) // Tundra uses arctic with offset
     ];
@@ -416,6 +536,9 @@ function createTerrainShaderTSL(uniforms) {
     for (const layer of layers) {
         finalColor = mix(finalColor, layer.color, layer.mask);
     }
+    
+    // Apply animated water color for water tiles (replaces static texture)
+    finalColor = mix(finalColor, animatedWaterColor, isWaterTile);
 
     // =========================================================================
     // IRRIGATION AND FARMLAND RENDERING
