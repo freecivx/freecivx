@@ -52,13 +52,14 @@ var renderer_type_override="<%= rendererParam %>";
 <% } %>
 </script>
 
-<!-- Three.js ES Module System  -->
+<!-- Three.js and Rapier.js ES Module System  -->
 <script type="importmap">
   {
     "imports": {
       "three": "/javascript/webgpu/libs/threejs/three.module.min.js?ts=${initParam.buildTimeStamp}",
       "three/webgpu": "/javascript/webgpu/libs/threejs/three.webgpu.min.js?ts=${initParam.buildTimeStamp}",
-      "three/tsl": "/javascript/webgpu/libs/threejs/three.tsl.min.js?ts=${initParam.buildTimeStamp}"
+      "three/tsl": "/javascript/webgpu/libs/threejs/three.tsl.min.js?ts=${initParam.buildTimeStamp}",
+      "@dimforge/rapier3d-compat": "https://cdn.jsdelivr.net/npm/@dimforge/rapier3d-compat@0.19.3/rapier.mjs"
     }
   }
 </script>
@@ -66,6 +67,8 @@ var renderer_type_override="<%= rendererParam %>";
 <script type="module" src="/javascript/three-modules.js?ts=${initParam.buildTimeStamp}"></script>
 <!-- WebGPU module loader - always loaded as WebGPU is required -->
 <script type="module" src="/javascript/three-modules-webgpu.js?ts=${initParam.buildTimeStamp}"></script>
+<!-- Rapier.js physics module loader -->
+<script type="module" src="/javascript/rapier-module.js?ts=${initParam.buildTimeStamp}"></script>
 
 
 <!-- Main application bundle - includes jQuery, Stacktrace, Audio, and all application code -->

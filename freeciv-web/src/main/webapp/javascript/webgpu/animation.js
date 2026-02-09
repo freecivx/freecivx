@@ -21,20 +21,33 @@
  * Animation Module for WebGPU
  * 
  * Handles animated objects in the 3D scene including:
- * - Unit movement animations
+ * - Unit movement animations (with optional Rapier.js physics)
  * - Spaceship launch animations
  * - Explosion effects
  * - Nuclear detonation effects
+ * 
+ * Physics Integration:
+ * When Rapier.js physics is enabled, unit movement uses kinematic physics bodies
+ * for smoother, more natural motion with proper interpolation.
  */
 
 /** @type {Object.<number, Object>} Map of unit ID to animation data */
 const anim_objs = {};
 
+/** @type {Object.<number, Object>} Map of unit ID to physics animation target data */
+const physics_anim_targets = {};
+
 /****************************************************************************
  Updates unit movement animation.
+ Uses Rapier.js physics when available for smoother movement.
 ****************************************************************************/
 function update_animated_objects()
 {
+  // Step physics simulation if enabled
+  if (typeof stepPhysics === 'function' && typeof isPhysicsEnabled === 'function' && isPhysicsEnabled()) {
+    stepPhysics();
+  }
+  
   for (var unit_id in anim_objs) {
 
     var punit = units[anim_objs[unit_id]['unit']];
@@ -42,11 +55,17 @@ function update_animated_objects()
     var flag = anim_objs[unit_id]['flag'];
 
     if (punit == null || mesh == null) {
+      // Cleanup physics body when unit is removed
+      if (typeof removeUnitPhysicsBody === 'function') {
+        removeUnitPhysicsBody(parseInt(unit_id));
+      }
+      delete physics_anim_targets[unit_id];
       delete anim_objs[unit_id];
       continue;
     }
     var anim_list = punit['anim_list'];
     if (anim_list[0] == null || anim_list[1] == null) {
+      delete physics_anim_targets[unit_id];
       delete anim_objs[unit_id];
       continue;
     }
@@ -55,6 +74,137 @@ function update_animated_objects()
     var tile_end = tiles[anim_list[1]['tile']];
     var pos_start = map_to_scene_coords(tile_start['x'], tile_start['y']);
     var pos_end = map_to_scene_coords(tile_end['x'], tile_end['y']);
+    
+    // Check if physics-based movement is available
+    var usePhysics = typeof isPhysicsEnabled === 'function' && isPhysicsEnabled() &&
+                     typeof setUnitPhysicsTarget === 'function' &&
+                     typeof syncMeshWithPhysics === 'function';
+    
+    if (usePhysics) {
+      // Physics-based movement using Rapier.js
+      update_unit_with_physics(unit_id, punit, mesh, flag, tile_start, tile_end, pos_start, pos_end, anim_list);
+    } else {
+      // Fallback to classic frame-based movement
+      update_unit_classic(unit_id, punit, mesh, flag, tile_start, tile_end, pos_start, pos_end, anim_list);
+    }
+  }
+
+  if (spaceship_launched != null) {
+    spaceship_launched.translateOnAxis(new THREE.Vector3(0,1,0).normalize(), spaceship_speed);
+    spaceship_speed = spaceship_speed * spaceship_acc;
+    if (spaceship_launched.position.y > 10000) {
+      scene.remove(spaceship_launched);
+      spaceship_launched = null;
+      spaceship_speed = 1;
+    }
+
+  }
+
+  if (nuke_objects.length > 0) {
+    animate_nuke();
+  }
+
+}
+
+/****************************************************************************
+ Update unit position using Rapier.js physics for smooth interpolated movement.
+ Kinematic bodies are controlled by setting target positions.
+****************************************************************************/
+function update_unit_with_physics(unit_id, punit, mesh, flag, tile_start, tile_end, pos_start, pos_end, anim_list) {
+  var unitIdNum = parseInt(unit_id);
+  
+  // Calculate target position
+  var height_start = 5 + tile_start['height'] * 100 + get_unit_height_offset(punit);
+  var height_end = 5 + tile_end['height'] * 100 + get_unit_height_offset(punit);
+  
+  // Store or update target position for physics
+  if (!physics_anim_targets[unit_id]) {
+    physics_anim_targets[unit_id] = {
+      targetX: pos_end['x'] + HEX_CENTER_OFFSET_X,
+      targetY: height_end - 2,
+      targetZ: pos_end['y'] + HEX_CENTER_OFFSET_Y,
+      startX: pos_start['x'] + HEX_CENTER_OFFSET_X,
+      startY: height_start - 2,
+      startZ: pos_start['y'] + HEX_CENTER_OFFSET_Y,
+      progress: 0
+    };
+    
+    // Create physics body if it doesn't exist
+    if (typeof createUnitPhysicsBody === 'function' && !getUnitPhysicsBody(unitIdNum)) {
+      createUnitPhysicsBody(unitIdNum, {
+        x: mesh.position.x,
+        y: mesh.position.y,
+        z: mesh.position.z
+      });
+    }
+  }
+  
+  var target = physics_anim_targets[unit_id];
+  
+  // Calculate interpolation progress based on ANIM_STEPS
+  var totalSteps = ANIM_STEPS;
+  var currentStep = totalSteps - anim_list[0]['i'];
+  var t = currentStep / totalSteps;
+  
+  // Apply easing for smoother movement (ease-out cubic)
+  var easedT = 1 - Math.pow(1 - t, 3);
+  
+  // Interpolate position
+  var interpX = target.startX + (target.targetX - target.startX) * easedT;
+  var interpY = target.startY + (target.targetY - target.startY) * easedT;
+  var interpZ = target.startZ + (target.targetZ - target.startZ) * easedT;
+  
+  // Set physics target (kinematic body will move towards this)
+  if (typeof setUnitPhysicsTarget === 'function') {
+    setUnitPhysicsTarget(unitIdNum, { x: interpX, y: interpY, z: interpZ });
+  }
+  
+  // Sync mesh with physics body (with interpolation for extra smoothness)
+  var lerpFactor = typeof PhysicsConfig !== 'undefined' ? PhysicsConfig.POSITION_LERP : 0.15;
+  if (typeof syncMeshWithPhysics === 'function') {
+    syncMeshWithPhysics(mesh, unitIdNum, lerpFactor);
+  } else {
+    // Fallback: directly interpolate mesh position
+    mesh.position.x += (interpX - mesh.position.x) * lerpFactor;
+    mesh.position.y += (interpY - mesh.position.y) * lerpFactor;
+    mesh.position.z += (interpZ - mesh.position.z) * lerpFactor;
+  }
+  
+  // Update rotation to face movement direction
+  var rotation = convert_unit_rotation(punit['facing'], unit_type(punit)['name']);
+  mesh.rotation.y = rotation;
+  mesh.updateMatrix();
+  
+  // Update flag position to follow unit
+  if (flag != null) {
+    flag.position.x = mesh.position.x + 5;
+    flag.position.y = mesh.position.y + 20;
+    flag.position.z = mesh.position.z - 8;
+    flag.updateMatrix();
+  }
+  
+  // Handle animation progress
+  anim_list[0]['i'] = anim_list[0]['i'] - 1;
+  if (anim_list[0]['i'] == 0) {
+    punit['anim_list'].splice(0, 1);
+    if (punit['anim_list'].length == 1) {
+      punit['anim_list'].splice(0, 1);
+    }
+    // Reset physics target for next segment
+    delete physics_anim_targets[unit_id];
+  }
+  if (anim_list.length <= 1) {
+    punit['anim_list'] = [];
+    delete physics_anim_targets[unit_id];
+    delete anim_objs[unit_id];
+    update_unit_position(tile_end);
+  }
+}
+
+/****************************************************************************
+ Classic frame-based unit movement (fallback when physics is disabled).
+****************************************************************************/
+function update_unit_classic(unit_id, punit, mesh, flag, tile_start, tile_end, pos_start, pos_end, anim_list) {
     var delta_x = (pos_end['x'] - pos_start['x'])  / ANIM_STEPS;
     var delta_y = (pos_end['y'] - pos_start['y'])  / ANIM_STEPS;
     var delta_z = ((tile_end['height'] - tile_start['height']) * 100) / ANIM_STEPS;
@@ -85,24 +235,6 @@ function update_animated_objects()
       delete anim_objs[unit_id];
       update_unit_position(tile_end);
     }
-
-  }
-
-  if (spaceship_launched != null) {
-    spaceship_launched.translateOnAxis(new THREE.Vector3(0,1,0).normalize(), spaceship_speed);
-    spaceship_speed = spaceship_speed * spaceship_acc;
-    if (spaceship_launched.position.y > 10000) {
-      scene.remove(spaceship_launched);
-      spaceship_launched = null;
-      spaceship_speed = 1;
-    }
-
-  }
-
-  if (nuke_objects.length > 0) {
-    animate_nuke();
-  }
-
 }
 
 

@@ -102,6 +102,9 @@ async function renderer_init() {
       console.log("WebGPU loader not available");
       return;
     }
+    
+    // Initialize Rapier.js physics engine (non-blocking)
+    init_physics_engine();
 
     init_webgl_mapctrl();
     init_game_unit_panel();
@@ -119,6 +122,30 @@ async function renderer_init() {
 
     setTimeout("$('#mapcanvas').fadeIn(2500); $.unblockUI();", 700);
 
+  }
+}
+
+/****************************************************************************
+ Initialize the Rapier.js physics engine asynchronously.
+ Physics is optional - the game works without it but has smoother animations with it.
+ ****************************************************************************/
+async function init_physics_engine() {
+  try {
+    // Check if the physics module is available
+    if (typeof initPhysics === 'function') {
+      console.log("Initializing Rapier.js physics engine...");
+      const physicsReady = await initPhysics();
+      if (physicsReady) {
+        console.log("Rapier.js physics engine ready - enhanced unit animations enabled");
+      } else {
+        console.log("Physics engine not available - using classic animations");
+      }
+    } else {
+      console.log("Physics module not loaded - using classic animations");
+    }
+  } catch (error) {
+    console.log("Physics initialization error (non-fatal):", error);
+    // Physics is optional, continue without it
   }
 }
 
