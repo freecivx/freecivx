@@ -262,16 +262,17 @@ function createTerrainShaderTSL(uniforms) {
     const hexInradius = 0.5; // Radius from center to edge midpoint
     
     // Calculate directionally-weighted edge distance for balanced appearance
-    // The mesh compresses Y by HEX_MESH_HEIGHT_FACTOR (0.866), and the shader
-    // compensates by stretching hexY by HEX_ASPECT (1.1547). However, the diagonal
-    // edge distance calculation uses hexY * 0.866, which cancels the stretch
-    // (1.1547 * 0.866 ≈ 1.0). This means diagonal edges render in "world space"
-    // while horizontal edges render in "stretched space", causing diagonal edges
-    // to appear wider. To balance visually, we scale diagonal edge width by
-    // HEX_SQRT3_OVER_2 to match the aspect compensation.
-    const HEX_EDGE_WIDTH_BASE = 0.045;  // Base edge width for all directions
-    const HEX_EDGE_WIDTH_HORIZONTAL = HEX_EDGE_WIDTH_BASE;  // E-W edges (flat sides)
-    const HEX_EDGE_WIDTH_DIAGONAL = HEX_EDGE_WIDTH_BASE * HEX_SQRT3_OVER_2;  // NE/NW/SE/SW edges (~0.039)
+    // The Y-direction edges appear thicker due to mesh compression, so we use
+    // a blended approach: horizontal edges (dist1) get full width, 
+    // diagonal edges (dist2, dist3) get reduced width to match
+    // 
+    // The mesh compresses Y by HEX_MESH_HEIGHT_FACTOR (0.866), then the shader
+    // stretches hexY by HEX_ASPECT (1.1547) to compensate. For diagonal edges,
+    // the perpendicular distance calculation uses hexY * 0.866, which effectively
+    // cancels the stretch. This means diagonal edges appear ~15% wider visually.
+    // To balance, we reduce diagonal edge width by roughly the inverse of HEX_ASPECT.
+    const HEX_EDGE_WIDTH_HORIZONTAL = 0.055; // Wider edges on E-W sides (flat hex edges)
+    const HEX_EDGE_WIDTH_DIAGONAL = 0.028;   // Narrower edges on NE/NW/SE/SW (pointed hex edges)
     
     // Determine which edge is active and blend edge widths accordingly
     // When dist1 is the dominant edge (horizontal), use wider edge

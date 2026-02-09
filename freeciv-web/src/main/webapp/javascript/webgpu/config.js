@@ -150,8 +150,10 @@ const HexConfig = Object.freeze({
     HEIGHT_FACTOR: Math.sqrt(3) / 2,
     /** Horizontal offset for staggered odd rows */
     STAGGER: 0.5,
-    /** Edge width for hex border highlighting */
-    EDGE_WIDTH: 0.045,
+    /** Edge width for E-W hex border highlighting (horizontal/flat edges) */
+    EDGE_WIDTH_HORIZONTAL: 0.055,
+    /** Edge width for diagonal hex border highlighting (NE/NW/SE/SW edges) */
+    EDGE_WIDTH_DIAGONAL: 0.028,
     /** Edge anti-aliasing softness */
     EDGE_SOFTNESS: 0.025,
     /** Edge blend strength (0-1) */
