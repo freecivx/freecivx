@@ -20,6 +20,10 @@
 var map_known_dirty = true;
 var map_geometry_dirty = true;
 
+// Reusable buffer for vertex colors to avoid GC pressure during bulk updates
+var vertColorBuffer = null;
+var vertColorAttribute = null;
+
 /**************************************************************************
  Updates the terrain vertex colors to set tile to known, unknown or fogged.
  Also updates the maptiles texture visibility for hexagonal edge rendering.
@@ -50,18 +54,30 @@ function webgl_update_tile_known(old_tile, new_tile)
  For hexagonal maps, we need to account for the staggered row layout when
  determining which tile a vertex belongs to. Odd rows are offset by half
  a tile width (odd-r offset coordinate system).
+ 
+ PERFORMANCE OPTIMIZATION: Reuses a pre-allocated Float32Array buffer
+ instead of creating a new one each update. This significantly reduces
+ GC pressure during bulk map reveals (e.g., game end).
 **************************************************************************/
 function update_tiles_known_vertex_colors()
 {
   const xquality = map.xsize * terrain_quality + 1;
   const yquality = map.ysize * terrain_quality + 1;
-  const colors = [];
   const gridX = Math.floor(xquality);
   const gridY = Math.floor(yquality);
 
   const gridX1 = gridX + 1;
   const gridY1 = gridY + 1;
+  const totalVertices = gridX1 * gridY1;
+  const bufferSize = totalVertices * 3;
 
+  // Reuse existing buffer if size matches, otherwise create new one
+  if (vertColorBuffer === null || vertColorBuffer.length !== bufferSize) {
+    vertColorBuffer = new Float32Array(bufferSize);
+    vertColorAttribute = null; // Force new attribute creation
+  }
+
+  let bufferIndex = 0;
   for ( let iy = 0; iy < gridY1; iy ++ ) {
     for ( let ix = 0; ix < gridX1; ix ++ ) {
         var sx = ix % xquality, sy = iy % yquality;
@@ -78,18 +94,28 @@ function update_tiles_known_vertex_colors()
         var ptile = map_pos_to_tile(mx, my);
         if (ptile != null) {
           var c = get_vertex_color_from_tile(ptile, ix, iy);
-          colors.push(c[0], c[1], c[2]);
+          vertColorBuffer[bufferIndex++] = c[0];
+          vertColorBuffer[bufferIndex++] = c[1];
+          vertColorBuffer[bufferIndex++] = c[2];
         } else {
-          colors.push(0,0,0);
+          vertColorBuffer[bufferIndex++] = 0;
+          vertColorBuffer[bufferIndex++] = 0;
+          vertColorBuffer[bufferIndex++] = 0;
         }
     }
   }
 
-  landGeometry.setAttribute( 'vertColor', new THREE.Float32BufferAttribute( colors, 3) );
+  // Reuse existing attribute if possible, just update the data
+  if (vertColorAttribute === null) {
+    vertColorAttribute = new THREE.Float32BufferAttribute(vertColorBuffer, 3);
+    landGeometry.setAttribute('vertColor', vertColorAttribute);
+  } else {
+    // Copy data to the existing attribute's array
+    vertColorAttribute.array.set(vertColorBuffer);
+    vertColorAttribute.needsUpdate = true;
+  }
 
   landGeometry.colorsNeedUpdate = true;
-  //console.log("updated vertex colours (tiles known, irrigation).");
-
 }
 
 

@@ -22,6 +22,10 @@ var borders_texture;
 var borders_hash = -1;
 var borders_data;
 
+// Deferred texture update system for batching bulk border operations
+var borders_needs_update = false;
+var borders_update_pending = false;
+
 /****************************************************************************
  Initialize borders image.
 ****************************************************************************/
@@ -86,6 +90,36 @@ function update_borders_tile(ptile)
     borders_data[index + 3] = 0;
   }
   if ((borders_data[index] + borders_data[index + 1] + borders_data[index + 2]) != old_value) {
+    // Use deferred update to batch multiple border updates
+    schedule_borders_texture_update();
+  }
+}
+
+/****************************************************************************
+  Schedule a deferred borders texture update. This batches multiple tile
+  updates into a single texture upload, improving performance during bulk
+  operations like revealing the entire map at game end.
+****************************************************************************/
+function schedule_borders_texture_update()
+{
+  borders_needs_update = true;
+  
+  // Schedule update for next animation frame if not already pending
+  if (!borders_update_pending) {
+    borders_update_pending = true;
+    requestAnimationFrame(flush_borders_texture_update);
+  }
+}
+
+/****************************************************************************
+  Flush pending borders texture updates. Called on next animation frame to
+  batch all border modifications into a single GPU upload.
+****************************************************************************/
+function flush_borders_texture_update()
+{
+  borders_update_pending = false;
+  if (borders_needs_update && borders_texture != null) {
     borders_texture.needsUpdate = true;
+    borders_needs_update = false;
   }
 }

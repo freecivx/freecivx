@@ -20,6 +20,10 @@
 var maptiletypes;
 var maptiles_data;
 
+// Deferred texture update system for batching bulk tile operations
+var maptiles_needs_update = false;
+var maptiles_update_pending = false;
+
 /****************************************************************************
   Returns a texture containing each map tile, where the color of each pixel
   indicates which Freeciv tile type the pixel is.
@@ -93,8 +97,37 @@ function update_tiletypes_tile(ptile)
     maptiles_data[index + 3] = 0;
   }
 
-  maptiletypes.needsUpdate = true;
+  // Use deferred update to batch multiple tile updates
+  schedule_maptiles_texture_update();
+}
 
+/****************************************************************************
+  Schedule a deferred texture update. This batches multiple tile updates
+  into a single texture upload, significantly improving performance during
+  bulk operations like revealing the entire map at game end.
+****************************************************************************/
+function schedule_maptiles_texture_update()
+{
+  maptiles_needs_update = true;
+  
+  // Schedule update for next animation frame if not already pending
+  if (!maptiles_update_pending) {
+    maptiles_update_pending = true;
+    requestAnimationFrame(flush_maptiles_texture_update);
+  }
+}
+
+/****************************************************************************
+  Flush pending texture updates. Called on next animation frame to
+  batch all tile modifications into a single GPU upload.
+****************************************************************************/
+function flush_maptiles_texture_update()
+{
+  maptiles_update_pending = false;
+  if (maptiles_needs_update && maptiletypes != null) {
+    maptiletypes.needsUpdate = true;
+    maptiles_needs_update = false;
+  }
 }
 
 /****************************************************************************
@@ -121,5 +154,6 @@ function update_tiletypes_visibility(ptile)
     }
   }
   
-  maptiletypes.needsUpdate = true;
+  // Use deferred update to batch multiple visibility updates
+  schedule_maptiles_texture_update();
 }
