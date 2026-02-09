@@ -235,14 +235,20 @@ function update_map_terrain_geometry()
 
 /****************************************************************************
   Update the map known tiles!
+  
+  NOTE: The visibility vertex color updates are now handled by the deferred
+  flush_visibility_update() system which batches multiple tile changes into
+  a single vertex buffer update per animation frame. This function only
+  triggers geometry updates when visibility changes affect terrain heights.
 ****************************************************************************/
 function update_map_known_tiles()
 {
-  if (map_known_dirty) {
-    update_tiles_known_vertex_colors();
+  // Geometry updates are handled by update_map_terrain_geometry() which
+  // checks and clears the map_geometry_dirty flag. This is triggered when
+  // tile heights change during visibility reveals.
+  if (map_geometry_dirty) {
     update_map_terrain_geometry();
   }
-  map_known_dirty = false;
 }
 
 /****************************************************************************

@@ -24,6 +24,10 @@ var map_geometry_dirty = true;
 var vertColorBuffer = null;
 var vertColorAttribute = null;
 
+// Deferred update system for batching bulk visibility operations
+// This prevents multiple expensive full-mesh iterations during bulk map reveals
+var visibility_update_pending = false;
+
 /**************************************************************************
  Updates the terrain vertex colors to set tile to known, unknown or fogged.
  Also updates the maptiles texture visibility for hexagonal edge rendering.
@@ -38,12 +42,44 @@ function webgl_update_tile_known(old_tile, new_tile)
 
   if (tile_get_known(new_tile) != tile_get_known(old_tile)) {
     map_known_dirty = true;
+    // Schedule deferred visibility update to batch multiple tile changes
+    schedule_visibility_update();
     // Update visibility in maptiles texture for hex-aligned visibility boundaries
     if (typeof update_tiletypes_visibility !== 'undefined') {
       update_tiletypes_visibility(new_tile);
     }
   }
 
+}
+
+/**************************************************************************
+  Schedule a deferred visibility vertex color update. This batches multiple
+  tile visibility changes into a single vertex buffer update, significantly
+  improving performance during bulk operations like revealing the entire
+  map at game end.
+**************************************************************************/
+function schedule_visibility_update()
+{
+  // Schedule update for next animation frame if not already pending
+  if (!visibility_update_pending) {
+    visibility_update_pending = true;
+    requestAnimationFrame(flush_visibility_update);
+  }
+}
+
+/**************************************************************************
+  Flush pending visibility updates. Called on next animation frame to
+  batch all visibility modifications into a single vertex buffer update.
+  This is the performance-critical optimization that prevents multiple
+  expensive full-mesh iterations during bulk map reveals.
+**************************************************************************/
+function flush_visibility_update()
+{
+  visibility_update_pending = false;
+  if (map_known_dirty && landGeometry != null) {
+    update_tiles_known_vertex_colors();
+    map_known_dirty = false;
+  }
 }
 
 

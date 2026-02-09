@@ -317,6 +317,10 @@ function show_city_dialog(pcity)
   active_city = pcity;
   if (pcity == null) return;
   map_known_dirty = true;
+  // Schedule deferred visibility update for city tile highlighting
+  if (typeof schedule_visibility_update !== 'undefined') {
+    schedule_visibility_update();
+  }
 
   // reset dialog page.
   $("#city_dialog").remove();
@@ -928,6 +932,10 @@ function city_dialog_close_handler()
   keyboard_input=true;
   worklist_dialog_active = false;
   map_known_dirty = true;
+  // Schedule deferred visibility update after city dialog closes
+  if (typeof schedule_visibility_update !== 'undefined') {
+    schedule_visibility_update();
+  }
 }
 
 /**************************************************************************

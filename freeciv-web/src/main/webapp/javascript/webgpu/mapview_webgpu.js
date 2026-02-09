@@ -511,6 +511,12 @@ async function init_webgpu_mapview() {
   update_map_terrain_geometry();
   setInterval(update_map_terrain_geometry, 40);
   setInterval(update_map_known_tiles, 15);
+  
+  // Schedule initial visibility update for map tiles
+  // This uses the deferred batching system for consistency
+  if (typeof schedule_visibility_update !== 'undefined') {
+    schedule_visibility_update();
+  }
 
   // Add water and other quality-dependent objects
   add_quality_dependent_objects_webgpu();
