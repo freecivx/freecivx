@@ -1232,18 +1232,20 @@ function webgl_canvas_pos_to_tile(x, y) {
 }
 
 /****************************************************************************
-  Converts from canvas coordinates to a tile, fast using the lofi terrain mesh.
+  Converts from canvas coordinates to a tile, fast using the water mesh.
 ****************************************************************************/
 function webgl_canvas_pos_to_tile_quick(x, y) {
   if (mouse == null || lofiMesh == null) return null;
 
-  raycaster.layers.set(6);
+  raycaster.layers.set(0);
 
   mouse.set( ( x / $('#mapcanvas').width() ) * 2 - 1, - ( y / $('#mapcanvas').height() ) * 2 + 1);
 
   raycaster.setFromCamera( mouse, camera );
 
-  var intersects = raycaster.intersectObject(lofiMesh, false);
+  var intersects = raycaster.intersectObject(water_hq, false);
+
+  raycaster.layers.set(6);
 
   for (var i = 0; i < intersects.length; i++) {
     var intersect = intersects[i];
