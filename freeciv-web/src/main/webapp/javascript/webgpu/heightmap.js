@@ -51,8 +51,20 @@ const HEIGHTMAP_HILLS_BOOST = 1.12;      // Hills height multiplier
 const HEIGHTMAP_MOUNTAINS_BOOST = 1.20;  // Mountains height multiplier
 
 // Terrain type classification for heightmap generation
+// Note: Both 'Glacier' and 'Arctic' are included as they may appear as separate terrain types
+// in different game rulesets (Glacier is civ2civ3 style, Arctic is classic Freeciv)
 const FLAT_TERRAIN_TYPES = new Set(['Plains', 'Grassland', 'Desert', 'Tundra', 'Glacier', 'Arctic', 'Swamp', 'Jungle', 'Forest']);
 const ELEVATED_TERRAIN_TYPES = new Set(['Hills', 'Mountains']);
+
+// Variation constants for natural terrain appearance
+// Prime numbers used for pseudo-random coordinate hashing to avoid grid artifacts
+const VARIATION_PRIME_X_MT = 7;     // X coordinate multiplier for mountains
+const VARIATION_PRIME_Y_MT = 13;    // Y coordinate multiplier for mountains
+const VARIATION_PRIME_X_HILLS = 11; // X coordinate multiplier for hills
+const VARIATION_PRIME_Y_HILLS = 17; // Y coordinate multiplier for hills
+const VARIATION_MOD = 100;          // Modulo for pseudo-random range
+const MOUNTAIN_VARIATION_SCALE = 0.02;  // Height variation amplitude for mountains
+const HILLS_VARIATION_SCALE = 0.01;     // Height variation amplitude for hills
 
 /****************************************************************************
   Returns height offset for units. This will make units higher above cities.
@@ -229,6 +241,14 @@ function is_elevated_terrain(terrainName) {
   Calculate distance from point (px, py) to hex center (cx, cy).
   Accounts for hex aspect ratio (pointy-top hex is taller than wide).
   
+  For pointy-top hexagons:
+  - Width = sqrt(3) * radius ≈ 1.732 * R
+  - Height = 2 * radius = 2 * R
+  - Height/Width ratio = 2/sqrt(3) ≈ 1.1547
+  
+  We multiply dy by this ratio to normalize distances so that moving
+  the same visual distance in X or Y produces the same distance value.
+  
   @param {number} px - Point X
   @param {number} py - Point Y  
   @param {number} cx - Center X
@@ -236,8 +256,9 @@ function is_elevated_terrain(terrainName) {
   @returns {number} Distance normalized to hex inradius (0 = center, 1 = edge)
 ****************************************************************************/
 function hex_distance_to_center(px, py, cx, cy) {
+  const HEX_HEIGHT_TO_WIDTH_RATIO = 1.1547; // 2/sqrt(3) for pointy-top hex
   const dx = px - cx;
-  const dy = (py - cy) * 1.1547; // Adjust for hex aspect ratio (2/sqrt(3))
+  const dy = (py - cy) * HEX_HEIGHT_TO_WIDTH_RATIO;
   return Math.sqrt(dx * dx + dy * dy);
 }
 
@@ -395,13 +416,13 @@ function calculate_hex_height(gx, gy, heightmap_quality) {
     let peakHeight;
     if (terrainName === 'Mountains') {
       peakHeight = baseHeight * HEIGHTMAP_MOUNTAINS_BOOST;
-      // Add subtle variation for natural appearance
-      const variation = (((clampedX * 7 + clampedY * 13) % 100) / 100 - 0.5) * 0.02;
+      // Add subtle pseudo-random variation for natural appearance using coordinate hashing
+      const variation = (((clampedX * VARIATION_PRIME_X_MT + clampedY * VARIATION_PRIME_Y_MT) % VARIATION_MOD) / VARIATION_MOD - 0.5) * MOUNTAIN_VARIATION_SCALE;
       peakHeight += variation;
     } else { // Hills
       peakHeight = baseHeight * HEIGHTMAP_HILLS_BOOST;
-      // Smaller variation for hills
-      const variation = (((clampedX * 11 + clampedY * 17) % 100) / 100 - 0.5) * 0.01;
+      // Smaller pseudo-random variation for gentler hills
+      const variation = (((clampedX * VARIATION_PRIME_X_HILLS + clampedY * VARIATION_PRIME_Y_HILLS) % VARIATION_MOD) / VARIATION_MOD - 0.5) * HILLS_VARIATION_SCALE;
       peakHeight += variation;
     }
     
