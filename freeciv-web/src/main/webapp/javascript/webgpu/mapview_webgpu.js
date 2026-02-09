@@ -404,15 +404,16 @@ function createWaterMaterialTSL(maptilesTex, mapXSize, mapYSize) {
   const nearLand = max(max(max(isLandE, isLandW), isLandN), isLandS);
   
   // ==== COLOR PALETTE (Stylized Game Colors) ====
-  const deepOcean = vec3(0.04, 0.12, 0.28);     // Deep blue
-  const midOcean = vec3(0.08, 0.25, 0.45);      // Medium blue  
-  const shallowWater = vec3(0.15, 0.45, 0.55);  // Teal/turquoise
-  const riverBlue = vec3(0.12, 0.35, 0.52);     // River water color
-  const riverHighlight = vec3(0.25, 0.55, 0.68); // River surface highlights
-  const causticColor = vec3(0.50, 0.75, 0.85);  // Caustic highlight
-  const foamWhite = vec3(0.92, 0.95, 0.98);     // Shoreline foam color
+  const deepOcean = vec3(0.02, 0.08, 0.22);     // Deep blue - darker for more depth
+  const midOcean = vec3(0.06, 0.20, 0.40);      // Medium blue  
+  const shallowWater = vec3(0.12, 0.42, 0.52);  // Teal/turquoise
+  const riverBlue = vec3(0.10, 0.32, 0.48);     // River water color
+  const riverHighlight = vec3(0.22, 0.52, 0.65); // River surface highlights
+  const causticColor = vec3(0.55, 0.80, 0.90);  // Caustic highlight - brighter
+  const foamWhite = vec3(0.95, 0.97, 1.0);      // Shoreline foam color - whiter
   const unknownBlack = vec3(0.0, 0.0, 0.0);     // Unknown tile color
   const hexEdgeColor = vec3(HEX_EDGE_COLOR_R, HEX_EDGE_COLOR_G, HEX_EDGE_COLOR_B); // Hex tile edge tint
+  const skyReflectionColor = vec3(0.45, 0.65, 0.85); // Sky reflection tint for Fresnel
   
   // ==== PROCEDURAL NOISE FUNCTIONS ====
   function hash(p) {
@@ -555,27 +556,56 @@ function createWaterMaterialTSL(maptilesTex, mapXSize, mapYSize) {
   
   // ==== ADD SHORELINE FOAM ====
   // Blend foam at coastline areas near land with softer transition
-  const colorWithFoam = mix(colorWithCaustics, foamWhite, mul(foamIntensity, 0.38)); // Reduced foam opacity
+  const colorWithFoam = mix(colorWithCaustics, foamWhite, mul(foamIntensity, 0.45)); // Slightly more visible foam
   
-  // ==== SOFT SPECULAR - More subtle, blurred highlights ====
+  // ==== FRESNEL REFLECTION - Makes water more reflective at glancing angles ====
+  // Simplified Fresnel approximation using Schlick's formula
+  // For a top-down-ish camera, we simulate view angle variation using UV position
+  // This creates a more realistic water surface that reflects more at edges
+  const fresnelBase = 0.02; // Base reflectivity (water's R0 at normal incidence)
+  const fresnelPower = 3.5; // How quickly reflection increases at glancing angles
+  // Use a combination of ripple value and position to create view-angle-like variation
+  const viewAngleSim = clamp(add(mul(rippleValue, 0.3), 0.7), 0.0, 1.0);
+  const fresnelTerm = add(fresnelBase, mul(sub(1.0, fresnelBase), pow(sub(1.0, viewAngleSim), fresnelPower)));
+  
+  // Apply Fresnel-based sky reflection
+  const fresnelReflection = mul(skyReflectionColor, mul(fresnelTerm, 0.35));
+  const colorWithFresnel = add(colorWithFoam, fresnelReflection);
+  
+  // ==== GERSTNER-STYLE WAVE HIGHLIGHTS ====
+  // Create more natural wave crests with directional lighting
+  const waveHighlightDir1 = sin(add(mul(add(uvNode.x, mul(uvNode.y, 0.6)), 20.0), mul(timeUniform, 0.12)));
+  const waveHighlightDir2 = sin(add(mul(sub(mul(uvNode.x, 0.8), mul(uvNode.y, 0.4)), 18.0), mul(timeUniform, 0.10)));
+  const waveHighlight = mul(add(waveHighlightDir1, waveHighlightDir2), 0.035);
+  const waveCrestIntensity = clamp(waveHighlight, 0.0, 1.0);
+  
+  // ==== SOFT SPECULAR - Directional sun reflection ====
   const specularBase = clamp(add(rippleValue, 0.5), 0.0, 1.0);
-  const specular = mul(pow(specularBase, 6.0), 0.06); // Lower power for broader, softer highlights
-  const specularTint = mul(vec3(1.0, 0.98, 0.95), specular);
+  const specular = mul(pow(specularBase, 8.0), 0.08); // Tighter highlights
+  const specularColor = vec3(1.0, 0.98, 0.92); // Warm sun color
+  const specularTint = mul(specularColor, add(specular, mul(waveCrestIntensity, 0.06)));
   
-  // ==== SOFT SURFACE SHIMMER - More subtle, blurred ====
-  const shimmerU = add(mul(uvNode.x, 28.0), mul(timeUniform, 0.15)); // Reduced scale for softer shimmer
-  const shimmerV = add(mul(uvNode.y, 24.0), mul(timeUniform, 0.12));
-  const shimmer = mul(fract(mul(sin(add(shimmerU, shimmerV)), 43758.5)), 0.02); // Reduced intensity
+  // ==== SOFT SURFACE SHIMMER - Subtle sparkle effect ====
+  const shimmerU = add(mul(uvNode.x, 32.0), mul(timeUniform, 0.18));
+  const shimmerV = add(mul(uvNode.y, 28.0), mul(timeUniform, 0.14));
+  const shimmer = mul(fract(mul(sin(add(shimmerU, shimmerV)), 43758.5)), 0.025);
+  
+  // ==== SUBSURFACE SCATTERING APPROXIMATION ====
+  // Adds a subtle glow where light penetrates water, especially in shallower areas
+  const subsurfaceStrength = mul(isCoast, 0.06); // Stronger near coasts
+  const subsurfaceColor = vec3(0.15, 0.55, 0.50); // Turquoise glow
+  const subsurfaceGlow = mul(subsurfaceColor, subsurfaceStrength);
   
   // ==== EDGE DARKENING (Vignette) ====
   const cx = sub(uvNode.x, 0.5);
   const cy = sub(uvNode.y, 0.5);
   const edgeDist = sqrt(add(mul(cx, cx), mul(cy, cy)));
-  const edgeDarken = clamp(mul(edgeDist, 0.12), 0.0, 0.08); // Softer vignette
+  const edgeDarken = clamp(mul(edgeDist, 0.10), 0.0, 0.06); // Softer vignette
   
   // ==== FINAL WATER COLOR COMPOSITION ====
-  const colorWithSpecular = add(colorWithFoam, specularTint);
-  const colorWithShimmer = add(colorWithSpecular, vec3(shimmer, shimmer, shimmer));
+  const colorWithSpecular = add(colorWithFresnel, specularTint);
+  const colorWithSubsurface = add(colorWithSpecular, subsurfaceGlow);
+  const colorWithShimmer = add(colorWithSubsurface, vec3(shimmer, shimmer, shimmer));
   const baseWaterColor = sub(colorWithShimmer, vec3(edgeDarken, edgeDarken, edgeDarken));
   
   // ==== HEXAGONAL TILE EDGE EFFECT ====
