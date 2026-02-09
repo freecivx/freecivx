@@ -304,12 +304,12 @@ function createWaterMaterialTSL(maptilesTex, mapXSize, mapYSize) {
   const HEX_SQRT3_OVER_2 = 0.866025; // sqrt(3)/2 for hex edge normals
   const HEX_MESH_HEIGHT_FACTOR = HEX_SQRT3_OVER_2; // Mesh Y compression factor
   const HEX_ASPECT = 1.0 / HEX_MESH_HEIGHT_FACTOR; // ~1.1547 - Y scale to counteract mesh compression
-  const HEX_EDGE_WIDTH = 0.04; // Width of hex edge highlight as fraction of tile
-  const HEX_EDGE_SOFTNESS = 0.03; // Edge anti-aliasing softness
-  const HEX_EDGE_BLEND_STRENGTH = 0.25; // How strongly hex edges darken water (0-1)
-  const HEX_EDGE_COLOR_R = 0.02; // Edge darkening color (deep blue tint)
-  const HEX_EDGE_COLOR_G = 0.06;
-  const HEX_EDGE_COLOR_B = 0.15;
+  const HEX_EDGE_WIDTH = 0.035; // Width of hex edge highlight as fraction of tile - sharper than before
+  const HEX_EDGE_SOFTNESS = 0.008; // Edge anti-aliasing softness - reduced for sharper edges
+  const HEX_EDGE_BLEND_STRENGTH = 0.38; // How strongly hex edges darken water (0-1) - increased for visibility
+  const HEX_EDGE_COLOR_R = 0.01; // Edge darkening color (deeper blue tint)
+  const HEX_EDGE_COLOR_G = 0.04;
+  const HEX_EDGE_COLOR_B = 0.12;
   
   // ==== HEXAGONAL COORDINATE CALCULATIONS ====
   // Match the terrain shader's hex coordinate system for proper tile alignment
