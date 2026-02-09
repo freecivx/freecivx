@@ -20,6 +20,10 @@
 var roads_texture;
 var roads_data;
 
+// Deferred texture update system for batching bulk road operations
+var roads_needs_update = false;
+var roads_update_pending = false;
+
 /****************************************************************************
  Initialize roads image
 ****************************************************************************/
@@ -62,8 +66,8 @@ function update_roads_tile(ptile, recursive)
   roads_data[index + 2] = color[2];
 
   if ((roads_data[index] + roads_data[index + 1] + roads_data[index + 2] ) != old_value) {
-    roads_texture.needsUpdate = true;
-    //console.log("updated roads.");
+    // Use deferred update to batch multiple road updates
+    schedule_roads_texture_update();
   }
 
   if (!recursive) return;
@@ -90,6 +94,35 @@ function update_roads_tile(ptile, recursive)
     update_roads_tile(ntile, false);
   }
 
+}
+
+/****************************************************************************
+  Schedule a deferred roads texture update. This batches multiple tile
+  updates into a single texture upload, improving performance during bulk
+  operations like revealing the entire map at game end.
+****************************************************************************/
+function schedule_roads_texture_update()
+{
+  roads_needs_update = true;
+  
+  // Schedule update for next animation frame if not already pending
+  if (!roads_update_pending) {
+    roads_update_pending = true;
+    requestAnimationFrame(flush_roads_texture_update);
+  }
+}
+
+/****************************************************************************
+  Flush pending roads texture updates. Called on next animation frame to
+  batch all road modifications into a single GPU upload.
+****************************************************************************/
+function flush_roads_texture_update()
+{
+  roads_update_pending = false;
+  if (roads_needs_update && roads_texture != null) {
+    roads_texture.needsUpdate = true;
+    roads_needs_update = false;
+  }
 }
 
 /****************************************************************************
