@@ -41,8 +41,7 @@ var controls;
 var tiletype_terrains = ["coast","ocean","desert","grassland","hills","mountains","plains","swamp", "arctic_farmland_irrigation_tundra"];
 
 var landGeometry;
-var landMesh; // the terrain land geometry
-var water_hq;
+var landMesh; // the terrain land geometry (includes water rendering)
 
 var lofiGeometry;
 var lofiMesh;  // low resolution mesh used for raycasting.
@@ -288,9 +287,9 @@ function animate_webgl() {
     deltaTime = Math.min(deltaTime, 0.1);
   }
   
-  // Update water animation
-  if (typeof updateWaterAnimation === 'function') {
-    updateWaterAnimation(deltaTime);
+  // Update terrain animation (includes integrated water rendering)
+  if (typeof updateTerrainAnimation === 'function') {
+    updateTerrainAnimation(deltaTime);
   }
   
   // Update selected unit animation (TSL-based pulsing effect)
