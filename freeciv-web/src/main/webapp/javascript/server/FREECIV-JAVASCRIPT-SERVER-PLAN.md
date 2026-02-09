@@ -7,6 +7,18 @@ Place for documenting the plan and progress of making the Freeciv pure Javascrip
 
 The Freeciv JavaScript server is a pure JavaScript implementation of server-side game logic that runs in the browser. It acts as a "server" for the Freeciv-web client, enabling standalone gameplay without requiring a backend server.
 
+## Map Topology
+
+**The JavaScript server exclusively supports hexagonal map tiles (ISO-HEX topology).**
+
+Square map topology has been removed to optimize for the 3D WebGPU renderer. The hexagonal tile system provides:
+- 6-way movement (N, S, E, W, NW, SE for iso-hex)
+- Better visual representation in 3D
+- More natural terrain appearance
+- Consistent with modern Freeciv implementations
+
+The topology is set automatically: `topology_id: 3` (TF_HEX | TF_ISO)
+
 ## Architecture
 
 The JavaScript server is organized into several modules, each responsible for a specific aspect of game state:
@@ -46,6 +58,11 @@ The JavaScript server is organized into several modules, each responsible for a 
 6. **units.js** - Unit management
    - `server_create_units()` - Creates units for all players
    - Manages unit placement and properties
+
+7. **vision.js** - Vision and fog of war
+   - `server_tile_is_in_vision()` - Hex-aware vision calculation
+   - `server_reveal_tiles_in_radius()` - Reveals tiles around units/cities
+   - `server_update_player_vision()` - Updates fog of war
 
 ### Future Modules (Planned)
 

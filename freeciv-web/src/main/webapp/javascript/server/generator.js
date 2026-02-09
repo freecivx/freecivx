@@ -133,26 +133,37 @@ var FractureGenerator = {
 };
 
 /**
- * Entry point for Freeciv-web
+ * Entry point for Freeciv-web map generation
+ * 
+ * Creates a hexagonal map with the specified dimensions.
+ * This generator ONLY supports hexagonal (ISO-HEX) topology, which is
+ * optimized for the 3D WebGPU renderer. Square topology is not supported.
+ * 
+ * @param {number} width - Map width in tiles (default: 80)
+ * @param {number} height - Map height in tiles (default: 50)
+ * @param {Object} options - Optional generation parameters
+ * @param {number} options.seed - Random seed for reproducible generation
+ * @returns {void}
  */
 function generator_create_map(width, height, options) {
     width = width || 80;
     height = height || 50;
     var seed = (options && options.seed) ? options.seed : Math.floor(Math.random() * 1000000);
 
-    console.log("[Fracture] Generating " + width + "x" + height + " (Seed: " + seed + ")");
+    console.log("[Fracture] Generating " + width + "x" + height + " hex map (Seed: " + seed + ")");
 
     FractureGenerator.initialize(width, height, seed);
     FractureGenerator.generateFracture();
 
-    // Map info setup - use hexagonal topology (TF_HEX = 2, TF_ISO = 1, combined = 3)
-    // TF_HEX | TF_ISO = 3 for isometric hex grid
+    // Map info setup - ALWAYS use hexagonal topology (TF_HEX = 2, TF_ISO = 1, combined = 3)
+    // TF_HEX | TF_ISO = 3 for isometric hex grid - this is the ONLY supported topology
+    // Square topology is NOT supported by this JavaScript server
     handle_map_info({
         xsize: width,
         ysize: height,
-        topology_id: 3,  // TF_HEX | TF_ISO = hexagonal isometric topology
-        wrap_id: 1, // X-Wrap
-        num_valid_dirs: 6  // Hex has 6 valid directions
+        topology_id: 3,  // TF_HEX | TF_ISO = hexagonal isometric topology (REQUIRED)
+        wrap_id: 1, // X-Wrap (world wraps horizontally)
+        num_valid_dirs: 6  // Hex has 6 valid directions (N, S, E, W, NW, SE)
     });
 
     // Register terrain types
