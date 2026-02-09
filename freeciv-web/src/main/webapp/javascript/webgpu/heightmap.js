@@ -60,9 +60,16 @@ const MOUNTAINS_PEAK_HEIGHT = 0.68; // Mountains peak at center (not too high)
 const RIVER_VALLEY_DEPTH = 0.46;    // River valley depth (below water level for visual effect)
 const RIVER_EDGE_HEIGHT = 0.49;     // River edge height (slight depression)
 
-// Terrain classification helpers
-const FLAT_TERRAINS = ["Plains", "Grassland", "Desert", "Tundra", "Arctic", "Swamp", "Forest", "Jungle"];
-const ELEVATED_TERRAINS = ["Hills", "Mountains"];
+// Terrain classification helpers - using Set for O(1) lookup performance
+const FLAT_TERRAINS = new Set(["Plains", "Grassland", "Desert", "Tundra", "Arctic", "Swamp", "Forest", "Jungle"]);
+const ELEVATED_TERRAINS = new Set(["Hills", "Mountains"]);
+
+// Pseudo-random variation constants for terrain detail
+// Using prime numbers for better distribution in hash calculations
+const VARIATION_PRIME_X = 7;    // Prime multiplier for X coordinate
+const VARIATION_PRIME_Y = 13;   // Prime multiplier for Y coordinate
+const VARIATION_MODULO = 17;    // Prime modulo for wrapping
+const VARIATION_SCALE = 170;    // Scale factor (10x modulo for 0-0.1 range)
 
 /****************************************************************************
   Returns height offset for units. This will make units higher above cities.
@@ -194,29 +201,28 @@ function init_heightmap(heightmap_quality)
 /****************************************************************************
   Get the 6 hex neighbors for a tile in iso-hex coordinate system.
   In iso-hex, valid directions are: N, S, E, W, NW, SE (not NE, SW)
+  
+  For height blending purposes, we use a simplified approach that works
+  well for the visual height interpolation regardless of exact hex topology.
+  
   Returns array of neighbor tile coordinates.
 ****************************************************************************/
 function get_hex_neighbors(x, y) {
-  // In iso-hex offset coordinates, the neighbor offsets depend on whether
-  // we're in an even or odd row. Using the valid directions for iso-hex.
   const neighbors = [];
   
-  // Direction offsets for 8-connected grid (we'll filter to 6 valid hex directions)
+  // For iso-hex topology (TF_HEX | TF_ISO), the valid 6 directions are:
+  // N, S, E, W, NW, SE - and NE/SW are invalid
+  // These offsets work for height blending across hex boundaries
   const directions = [
-    { dx: -1, dy: -1, name: "NW" },  // Valid in iso-hex
-    { dx:  0, dy: -1, name: "N" },   // Valid
-    { dx:  1, dy: -1, name: "NE" },  // Invalid in iso-hex
-    { dx: -1, dy:  0, name: "W" },   // Valid
-    { dx:  1, dy:  0, name: "E" },   // Valid
-    { dx: -1, dy:  1, name: "SW" },  // Invalid in iso-hex
-    { dx:  0, dy:  1, name: "S" },   // Valid
-    { dx:  1, dy:  1, name: "SE" }   // Valid in iso-hex
+    { dx: -1, dy: -1 },  // NW
+    { dx:  0, dy: -1 },  // N
+    { dx: -1, dy:  0 },  // W
+    { dx:  1, dy:  0 },  // E
+    { dx:  0, dy:  1 },  // S
+    { dx:  1, dy:  1 }   // SE
   ];
   
-  // Filter to valid iso-hex directions (skip NE and SW)
-  const validDirs = directions.filter(d => d.name !== "NE" && d.name !== "SW");
-  
-  for (const dir of validDirs) {
+  for (const dir of directions) {
     const nx = x + dir.dx;
     const ny = y + dir.dy;
     if (nx >= 0 && nx < map.xsize && ny >= 0 && ny < map.ysize) {
@@ -257,7 +263,7 @@ function hex_distance_from_center(localX, localY) {
 function is_flat_terrain(ptile) {
   if (ptile == null || tile_terrain(ptile) == null) return true;
   const terrainName = tile_terrain(ptile)['name'];
-  return FLAT_TERRAINS.includes(terrainName);
+  return FLAT_TERRAINS.has(terrainName);
 }
 
 /****************************************************************************
@@ -266,7 +272,7 @@ function is_flat_terrain(ptile) {
 function is_elevated_terrain(ptile) {
   if (ptile == null || tile_terrain(ptile) == null) return false;
   const terrainName = tile_terrain(ptile)['name'];
-  return ELEVATED_TERRAINS.includes(terrainName);
+  return ELEVATED_TERRAINS.has(terrainName);
 }
 
 /****************************************************************************
@@ -436,8 +442,8 @@ function calculate_hex_height(gx, gy, heightmap_quality) {
     
     height = peakHeight * (1 - smoothT) + baseHeight * smoothT;
     
-    // Add subtle variation for natural appearance
-    const variation = ((clampedX * 7 + clampedY * 13) % 17) / 170;  // Deterministic pseudo-random
+    // Add subtle variation for natural appearance using named constants
+    const variation = ((clampedX * VARIATION_PRIME_X + clampedY * VARIATION_PRIME_Y) % VARIATION_MODULO) / VARIATION_SCALE;
     height += (variation - 0.05) * 0.02;
   }
   else {
@@ -457,6 +463,9 @@ function calculate_hex_height(gx, gy, heightmap_quality) {
     let blendHeight = 0;
     let blendWeight = 0;
     
+    // Calculate point direction once before the loop (optimization)
+    const pointDir = Math.atan2(localY - 0.5, localX - 0.5);
+    
     for (const n of neighbors) {
       const ntile = map_pos_to_tile(n.x, n.y);
       if (ntile == null) continue;
@@ -467,7 +476,6 @@ function calculate_hex_height(gx, gy, heightmap_quality) {
       
       // Calculate how much this neighbor should influence based on direction
       const neighborDir = Math.atan2(dy, dx);
-      const pointDir = Math.atan2(localY - 0.5, localX - 0.5);
       let angleDiff = Math.abs(neighborDir - pointDir);
       if (angleDiff > Math.PI) angleDiff = 2 * Math.PI - angleDiff;
       
