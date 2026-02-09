@@ -35,6 +35,10 @@
 var heightmap = null;
 var heightmap_hash = -1;
 
+// Hexagonal geometry constants (matching mapview_common.js)
+const HEX_HEIGHT_FACTOR = Math.sqrt(3) / 2;  // sqrt(3)/2 ≈ 0.8660 for hex row spacing
+const HEX_STAGGER = 0.5;  // Horizontal offset for odd rows (half tile width)
+
 // Height constants for terrain types
 const HEIGHT_OCEAN = 0.45;           // Ocean floor (below water)
 const HEIGHT_COAST = 0.48;           // Coast transition
