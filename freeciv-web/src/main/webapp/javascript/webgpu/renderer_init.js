@@ -22,7 +22,7 @@ var QUALITY_HIGH = 3;   // best quality, add features which require high-end gra
 
 var graphics_quality = QUALITY_HIGH;
 
-var terrain_quality = 10; // 10 for high quality hexagonal tiles, 8 is slow, 7 has problems with rivers.
+var terrain_quality = 8; // 8 is slow, 7 has problems with rivers.
 
 var anaglyph_3d_enabled = false;
 
