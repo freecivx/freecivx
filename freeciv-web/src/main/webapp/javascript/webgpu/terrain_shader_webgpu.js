@@ -597,12 +597,22 @@ function createTerrainShaderTSL(uniforms) {
     
     // Sample 6 hex neighbors' visibility for edge softening
     // We sample at offsets corresponding to hex neighbor directions
+    //
+    // For odd-r hex coordinates, diagonal neighbor X offsets depend on row parity:
+    // - NE/SE neighbors: X offset = 0.5 for odd rows, 1.5 for even rows (= 1.5 - isOddRow)
+    // - NW/SW neighbors: X offset = -1.5 for odd rows, -0.5 for even rows (= -0.5 - isOddRow)
+    //
+    // This is because when moving to a diagonal neighbor, the target row has opposite
+    // stagger from the current row, requiring a different X offset in UV space.
+    const neSeOffsetXFactor = sub(1.5, isOddRow);  // 0.5 for odd, 1.5 for even
+    const nwSwOffsetXFactor = sub(-0.5, isOddRow); // -1.5 for odd, -0.5 for even
+    
     const neighborUV_E = vec2(add(tileCenterUV.x, neighborOffsetX), tileCenterUV.y);
     const neighborUV_W = vec2(sub(tileCenterUV.x, neighborOffsetX), tileCenterUV.y);
-    const neighborUV_NE = vec2(add(tileCenterUV.x, mul(neighborOffsetX, 0.5)), add(tileCenterUV.y, neighborOffsetY));
-    const neighborUV_NW = vec2(sub(tileCenterUV.x, mul(neighborOffsetX, 0.5)), add(tileCenterUV.y, neighborOffsetY));
-    const neighborUV_SE = vec2(add(tileCenterUV.x, mul(neighborOffsetX, 0.5)), sub(tileCenterUV.y, neighborOffsetY));
-    const neighborUV_SW = vec2(sub(tileCenterUV.x, mul(neighborOffsetX, 0.5)), sub(tileCenterUV.y, neighborOffsetY));
+    const neighborUV_NE = vec2(add(tileCenterUV.x, mul(neighborOffsetX, neSeOffsetXFactor)), add(tileCenterUV.y, neighborOffsetY));
+    const neighborUV_NW = vec2(add(tileCenterUV.x, mul(neighborOffsetX, nwSwOffsetXFactor)), add(tileCenterUV.y, neighborOffsetY));
+    const neighborUV_SE = vec2(add(tileCenterUV.x, mul(neighborOffsetX, neSeOffsetXFactor)), sub(tileCenterUV.y, neighborOffsetY));
+    const neighborUV_SW = vec2(add(tileCenterUV.x, mul(neighborOffsetX, nwSwOffsetXFactor)), sub(tileCenterUV.y, neighborOffsetY));
     
     // Sample neighbor visibilities
     const visE = texture(maptilesTex, neighborUV_E).a;
