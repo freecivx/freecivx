@@ -43,12 +43,12 @@ const RIVER_VALLEY_DISTANCE_THRESHOLD = 0.5;
 const RIVER_VALLEY_DEPTH_FACTOR = 0.06;
 
 // River height adjustment constants for tiles with rivers
-// RIVER_BASE_HEIGHT_FACTOR: Base multiplier for river tile heights (slightly raised)
+// RIVER_BASE_HEIGHT_FACTOR: Base multiplier for river tile heights (< 1.0 to lower terrain)
 // RIVER_NEIGHBOR_DEPTH_DIVISOR: Divides by (center tile + 6 neighbors) = 7 max tiles
 // RIVER_NEIGHBOR_DEPTH_FACTOR: Additional depth reduction per nearby river tile
-const RIVER_BASE_HEIGHT_FACTOR = 1.045;
+const RIVER_BASE_HEIGHT_FACTOR = 0.98;
 const RIVER_NEIGHBOR_DEPTH_DIVISOR = 7; // center tile + 6 hex neighbors
-const RIVER_NEIGHBOR_DEPTH_FACTOR = 0.025;
+const RIVER_NEIGHBOR_DEPTH_FACTOR = 0.005;
 
 // Cache for hex neighbor offsets (pre-computed for efficiency)
 // Key: row parity (0 or 1), Value: array of {dx, dy} neighbor offsets
@@ -377,13 +377,17 @@ function interpolate_hex_height(gx, gy, pixelX, pixelY, quality) {
   
   // Check for river connections between center tile and its hex neighbors only
   // This is O(n) instead of O(n²) - only 6 comparisons instead of 21
+  // Note: We only create valleys for river flow paths from the center tile
+  // Valleys between two neighbor river tiles without center involvement are
+  // handled when those tiles become the center in their own interpolation pass
   if (numRiverTiles >= 2 && centerHasRiver) {
     for (let i = 1; i < tilesToInterpolate.length; i++) {
       if (tile_has_extra(tilesToInterpolate[i].tile, EXTRA_RIVER)) {
         // River connection between center and this neighbor - create valley
         let midX = (tilesToInterpolate[0].x + tilesToInterpolate[i].x) / 2;
         let midY = (tilesToInterpolate[0].y + tilesToInterpolate[i].y) / 2;
-        let distToMid = Math.sqrt((gx - midX) * (gx - midX) + (gy - midY) * (gy - midY));
+        // Use hex-aware distance for consistency with rest of interpolation
+        let distToMid = hex_distance(gx, gy, midX, midY);
         
         // Increase valley strength when closer to the boundary between river tiles
         if (distToMid < RIVER_VALLEY_DISTANCE_THRESHOLD) {
@@ -412,8 +416,9 @@ function interpolate_hex_height(gx, gy, pixelX, pixelY, quality) {
     // Apply terrain-specific variations
     let terrain = tile_terrain(ptile);
     if (terrain && (terrain['name'] == "Hills" || terrain['name'] == "Mountains")) {
-      // Add subtle variation for hills/mountains
-      let rnd = ((pixelX * pixelY) % 10) / 10;
+      // Add subtle variation for hills/mountains using tile coordinates for consistency
+      // This ensures the same variation regardless of heightmap quality/resolution
+      let rnd = ((tileData.x * tileData.y) % 10) / 10;
       height = height + ((rnd - 0.5) / 50) - 0.01;
     }
     
@@ -423,6 +428,7 @@ function interpolate_hex_height(gx, gy, pixelX, pixelY, quality) {
       // Calculate reduction: ratio of river tiles to max possible (7) times depth factor
       let riverTileRatio = numRiverTiles / RIVER_NEIGHBOR_DEPTH_DIVISOR;
       let depthReduction = riverTileRatio * RIVER_NEIGHBOR_DEPTH_FACTOR;
+      // River factor lowers the height (base factor < 1.0, reduction makes it even lower)
       let riverFactor = RIVER_BASE_HEIGHT_FACTOR - depthReduction;
       height = height * riverFactor;
     }
