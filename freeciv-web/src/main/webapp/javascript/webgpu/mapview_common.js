@@ -235,14 +235,20 @@ function update_map_terrain_geometry()
 
 /****************************************************************************
   Update the map known tiles!
+  
+  NOTE: The visibility vertex color updates are now handled by the deferred
+  flush_visibility_update() system which batches multiple tile changes into
+  a single vertex buffer update per animation frame.
+  
+  The geometry updates (heightmap changes) are handled separately by
+  update_map_terrain_geometry() which runs on its own 40ms setInterval.
+  This function is now essentially a no-op but is kept for backward
+  compatibility with any code that might call it directly.
 ****************************************************************************/
 function update_map_known_tiles()
 {
-  if (map_known_dirty) {
-    update_tiles_known_vertex_colors();
-    update_map_terrain_geometry();
-  }
-  map_known_dirty = false;
+  // No-op: visibility updates are handled by flush_visibility_update()
+  // and geometry updates are handled by update_map_terrain_geometry()
 }
 
 /****************************************************************************
