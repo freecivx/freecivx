@@ -220,20 +220,17 @@ function setupSceneLighting() {
 /****************************************************************************
  Add animated water mesh for WebGPU renderer using TSL shaders.
  
- Design goals (Stylized Game Water - Civ 6-style):
- - Hexagonal: Water tiles and edges are hexagonal, matching the terrain grid
- - Atmospheric: Beautiful color gradients, depth variation, and subtle wave animations
- - Animated: Enhanced river flow with multiple layers and varying speeds
- - Blurred Transitions: Soft edges between water tiles and visibility states
- - Game-appropriate: Works well at strategy game camera angles
+ Design goals (Stylized Game Water - Civ-style):
+ - Calm: Gentle, subtle movement instead of big ocean waves
+ - Stylized: Color gradients and caustic patterns for visual interest
+ - Fast: Efficient shader without heavy wave calculations
+ - Game-appropriate: Works well at top-down/isometric strategy game camera angles
  
  This stylized water shader uses:
- - Hexagonal tile boundaries with soft edge blending (matching terrain shader)
- - Multi-layered caustic patterns for realistic underwater light
- - Enhanced river flow animations with turbulence and foam effects
- - Atmospheric wave patterns and depth-based color variation
- - Shoreline foam effects near land tiles
- - Soft visibility transitions at fog of war boundaries
+ - UV-scrolling patterns for gentle surface animation
+ - Layered caustic/ripple effects
+ - Gradient-based color transitions (deep to shallow)
+ - Soft specular highlights without dramatic waves
 ****************************************************************************/
 function add_quality_dependent_objects_webgpu() {
   // Create water plane geometry matching land mesh dimensions
@@ -264,22 +261,19 @@ function add_quality_dependent_objects_webgpu() {
  Create stylized water material using TSL (Three.js Shading Language).
  
  Enhanced features:
- - Hexagonal tile rendering with soft edge transitions (matching terrain shader)
  - Unknown map tiles render as black (fog of war support)
- - River tiles have distinct multi-layered animated river flow effects
+ - River tiles have distinct animated river flow effects
  - Coast/shoreline areas near land have wave foam and white water effects
  - Smooth color gradients from deep ocean to shallow coastal waters
- - Atmospheric depth variation and color transitions
- - Enhanced layered caustic patterns for realistic underwater light
- - Blurred/soft transitions between water tiles for seamless appearance
- - Gentle specular highlights and surface shimmer
+ - Layered caustic/cell-noise for visual interest
+ - Gentle specular highlights that don't dominate the scene
  
  @param {THREE.DataTexture} maptilesTex - Texture containing tile data (visibility in alpha, river in green)
  @param {number} mapXSize - Map width in tiles
  @param {number} mapYSize - Map height in tiles
 ****************************************************************************/
 function createWaterMaterialTSL(maptilesTex, mapXSize, mapYSize) {
-  const { texture, uniform, uv, vec2, vec3, vec4, sin, cos, mix, fract, clamp, pow, sqrt, mul, add, sub, abs, floor, max, min, mod, step, div, dot } = THREE;
+  const { texture, uniform, uv, vec2, vec3, vec4, sin, cos, mix, fract, clamp, pow, sqrt, mul, add, sub, abs, floor, max, min, mod, step, div } = THREE;
   
   // Time uniform for animation
   const timeUniform = uniform(0.0);
@@ -302,15 +296,6 @@ function createWaterMaterialTSL(maptilesTex, mapXSize, mapYSize) {
   // Multiply by 256.0 to convert back to original integer range for comparisons
   const TEXTURE_VALUE_SCALE = 256.0;
   
-  // ==== HEXAGONAL CONSTANTS ====
-  // Match terrain shader's hex system for proper alignment
-  const HEX_SQRT3_OVER_2 = 0.866025; // sqrt(3)/2 for hex edge normals
-  const HEX_MESH_HEIGHT_FACTOR = HEX_SQRT3_OVER_2;
-  const HEX_ASPECT = 1.0 / HEX_MESH_HEIGHT_FACTOR; // ~1.1547 for proper hex shape
-  const HEX_EDGE_WIDTH = 0.06;        // Width of hex edge highlight
-  const HEX_EDGE_SOFTNESS = 0.035;    // Edge anti-aliasing softness (blurred transitions)
-  const HEX_EDGE_BLEND_STRENGTH = 0.25; // How strongly hex edges darken the water
-  
   // ==== HEXAGONAL COORDINATE CALCULATIONS ====
   // Match the terrain shader's hex coordinate system for proper tile alignment
   
@@ -327,40 +312,6 @@ function createWaterMaterialTSL(maptilesTex, mapXSize, mapYSize) {
   const hexOffsetX = mul(isOddRow, div(0.5, map_x_size));
   const hexUvX = sub(uvNode.x, hexOffsetX);
   
-  // ==== HEXAGONAL CELL LOCAL COORDINATES ====
-  // Calculate position within the current hex cell (0 to 1 range)
-  const localX = fract(mul(map_x_size, hexUvX));
-  const localY = fract(tileYRaw);
-  
-  // Transform to hex-centered system (-0.5 to 0.5 range)
-  const centeredX = sub(localX, 0.5);
-  const centeredY = sub(localY, 0.5);
-  
-  // ==== HEXAGONAL DISTANCE FUNCTION (Signed Distance Field) ====
-  // Calculate signed distance to hexagon edge for pointy-top hex
-  // Scale Y coordinate to account for mesh's height compression
-  const hexX = centeredX;
-  const hexY = mul(centeredY, HEX_ASPECT);
-  
-  // Calculate distance to three pairs of hex edges using dot products with edge normals
-  // Edge 1: vertical edges (normal = (1, 0))
-  const dist1 = abs(hexX);
-  // Edge 2: top-right and bottom-left edges (normal = (0.5, sqrt(3)/2))
-  const dist2 = abs(add(mul(hexX, 0.5), mul(hexY, HEX_SQRT3_OVER_2)));
-  // Edge 3: top-left and bottom-right edges (normal = (-0.5, sqrt(3)/2))
-  const dist3 = abs(add(mul(hexX, -0.5), mul(hexY, HEX_SQRT3_OVER_2)));
-  
-  // The distance to hex edge is the maximum of these three distances
-  const hexDist = max(max(dist1, dist2), dist3);
-  
-  // ==== HEX EDGE MASK FOR SOFT WATER BOUNDARIES ====
-  // Create a soft edge mask with blurred transitions between tiles
-  const hexInradius = 0.5;
-  const edgeStart = sub(hexInradius, HEX_EDGE_WIDTH);
-  const edgeT = clamp(div(sub(hexDist, edgeStart), mul(HEX_EDGE_WIDTH, 1.5)), 0.0, 1.0);
-  // Smoothstep for soft/blurred edge transitions
-  const hexEdgeMask = mul(mul(edgeT, edgeT), sub(3.0, mul(2.0, edgeT)));
-  
   // Calculate tile center UV for texture sampling
   const tileCenterU = div(add(floor(mul(map_x_size, hexUvX)), 0.5), map_x_size);
   const tileCenterV = div(add(tileY, 0.5), map_y_size);
@@ -375,79 +326,47 @@ function createWaterMaterialTSL(maptilesTex, mapXSize, mapYSize) {
   const tileData = texture(maptilesTex, tileCenterUV);
   const visibility = tileData.a;
   // River detection: green channel value of 10 (or higher) indicates river
+  // step(9.5, x) returns 1 when x >= 9.5 - we use 9.5 threshold to detect value 10
+  // accounting for floating point precision
   const hasRiver = step(9.5, mul(tileData.g, TEXTURE_VALUE_SCALE));
   
   // Detect coast tiles (terrain type 20 = TERRAIN_COAST)
   const terrainType = floor(mul(tileData.r, TEXTURE_VALUE_SCALE));
   const isCoast = mul(step(19.5, terrainType), step(terrainType, 20.5));
   
-  // ==== SAMPLE NEIGHBORS FOR SHORELINE AND BLENDING ====
+  // ==== SAMPLE NEIGHBORS FOR SHORELINE DETECTION ====
+  // Check if any adjacent tile is land (for shoreline foam effects)
   const neighborOffsetX = div(1.0, map_x_size);
   const neighborOffsetY = div(1.0, map_y_size);
   
-  // Diagonal neighbor offsets for proper hex coordinate system (odd-r layout)
-  // In odd-r hex coordinates, diagonal neighbors require different X offsets based on row parity:
-  // - NE/SE neighbors: X offset = 0.5 for odd rows (target is half-left), 1.5 for even rows (target is half-right)
-  // - NW/SW neighbors: X offset = -1.5 for odd rows (target is half-left), -0.5 for even rows (target is half-right)
-  // These values (1.5, -0.5) are the base offsets that get adjusted by subtracting isOddRow (0 or 1)
-  const neSeOffsetXFactor = sub(1.5, isOddRow);
-  const nwSwOffsetXFactor = sub(-0.5, isOddRow);
-  
-  // Sample all 6 hex neighbors for visibility blending
-  const neighborUV_E = vec2(add(tileCenterUV.x, neighborOffsetX), tileCenterUV.y);
-  const neighborUV_W = vec2(sub(tileCenterUV.x, neighborOffsetX), tileCenterUV.y);
-  const neighborUV_NE = vec2(add(tileCenterUV.x, mul(neighborOffsetX, neSeOffsetXFactor)), add(tileCenterUV.y, neighborOffsetY));
-  const neighborUV_NW = vec2(add(tileCenterUV.x, mul(neighborOffsetX, nwSwOffsetXFactor)), add(tileCenterUV.y, neighborOffsetY));
-  const neighborUV_SE = vec2(add(tileCenterUV.x, mul(neighborOffsetX, neSeOffsetXFactor)), sub(tileCenterUV.y, neighborOffsetY));
-  const neighborUV_SW = vec2(add(tileCenterUV.x, mul(neighborOffsetX, nwSwOffsetXFactor)), sub(tileCenterUV.y, neighborOffsetY));
-  
-  // Sample terrain data from neighbors
-  const neighborE = texture(maptilesTex, neighborUV_E);
-  const neighborW = texture(maptilesTex, neighborUV_W);
-  const neighborNE = texture(maptilesTex, neighborUV_NE);
-  const neighborNW = texture(maptilesTex, neighborUV_NW);
-  const neighborSE = texture(maptilesTex, neighborUV_SE);
-  const neighborSW = texture(maptilesTex, neighborUV_SW);
+  // Sample 4 cardinal neighbors
+  const neighborE = texture(maptilesTex, vec2(add(tileCenterUV.x, neighborOffsetX), tileCenterUV.y));
+  const neighborW = texture(maptilesTex, vec2(sub(tileCenterUV.x, neighborOffsetX), tileCenterUV.y));
+  const neighborN = texture(maptilesTex, vec2(tileCenterUV.x, add(tileCenterUV.y, neighborOffsetY)));
+  const neighborS = texture(maptilesTex, vec2(tileCenterUV.x, sub(tileCenterUV.y, neighborOffsetY)));
   
   // Detect if neighbors are land (terrain types >= 40 are land-based)
+  // Water terrain types: INACCESSIBLE(0), LAKE(10), COAST(20), OCEAN/FLOOR(30)
+  // Land terrain types: ARCTIC(40), DESERT(50), FOREST(60), GRASSLAND(70), etc.
   const isLandE = step(39.5, floor(mul(neighborE.r, TEXTURE_VALUE_SCALE)));
   const isLandW = step(39.5, floor(mul(neighborW.r, TEXTURE_VALUE_SCALE)));
-  const isLandNE = step(39.5, floor(mul(neighborNE.r, TEXTURE_VALUE_SCALE)));
-  const isLandNW = step(39.5, floor(mul(neighborNW.r, TEXTURE_VALUE_SCALE)));
-  const isLandSE = step(39.5, floor(mul(neighborSE.r, TEXTURE_VALUE_SCALE)));
-  const isLandSW = step(39.5, floor(mul(neighborSW.r, TEXTURE_VALUE_SCALE)));
-  const nearLand = max(max(max(max(max(isLandE, isLandW), isLandNE), isLandNW), isLandSE), isLandSW);
+  const isLandN = step(39.5, floor(mul(neighborN.r, TEXTURE_VALUE_SCALE)));
+  const isLandS = step(39.5, floor(mul(neighborS.r, TEXTURE_VALUE_SCALE)));
+  const nearLand = max(max(max(isLandE, isLandW), isLandN), isLandS);
   
-  // Calculate neighbor visibility average for soft edge blending
-  const visE = neighborE.a;
-  const visW = neighborW.a;
-  const visNE = neighborNE.a;
-  const visNW = neighborNW.a;
-  const visSE = neighborSE.a;
-  const visSW = neighborSW.a;
-  const avgNeighborVis = mul(add(add(add(add(add(visE, visW), visNE), visNW), visSE), visSW), div(1.0, 6.0));
-  
-  // ==== ENHANCED COLOR PALETTE (Atmospheric Game Colors) ====
-  const deepOcean = vec3(0.02, 0.08, 0.22);       // Deep rich blue
-  const midOcean = vec3(0.06, 0.20, 0.42);        // Medium blue
-  const shallowWater = vec3(0.12, 0.40, 0.52);    // Teal/turquoise
-  const coastalWater = vec3(0.18, 0.50, 0.58);    // Light coastal blue
-  const riverBlue = vec3(0.08, 0.30, 0.48);       // River water color (darker, clearer)
-  const riverHighlight = vec3(0.22, 0.52, 0.65);  // River surface highlights
-  const riverFoam = vec3(0.45, 0.68, 0.78);       // River foam/rapids
-  const causticColor = vec3(0.55, 0.80, 0.90);    // Caustic highlight (brighter)
-  const foamWhite = vec3(0.95, 0.98, 1.0);        // Shoreline foam color
-  const waveHighlight = vec3(0.70, 0.88, 0.95);   // Wave crest highlight
-  const hexEdgeColor = vec3(0.03, 0.10, 0.25);    // Subtle hex edge darkening
-  const unknownBlack = vec3(0.0, 0.0, 0.0);       // Unknown tile color
+  // ==== COLOR PALETTE (Stylized Game Colors) ====
+  const deepOcean = vec3(0.04, 0.12, 0.28);     // Deep blue
+  const midOcean = vec3(0.08, 0.25, 0.45);      // Medium blue  
+  const shallowWater = vec3(0.15, 0.45, 0.55);  // Teal/turquoise
+  const riverBlue = vec3(0.12, 0.35, 0.52);     // River water color
+  const riverHighlight = vec3(0.25, 0.55, 0.68); // River surface highlights
+  const causticColor = vec3(0.50, 0.75, 0.85);  // Caustic highlight
+  const foamWhite = vec3(0.92, 0.95, 0.98);     // Shoreline foam color
+  const unknownBlack = vec3(0.0, 0.0, 0.0);     // Unknown tile color
   
   // ==== PROCEDURAL NOISE FUNCTIONS ====
   function hash(p) {
     return fract(mul(sin(mul(p, 127.1)), 43758.5453));
-  }
-  
-  function hash2D(x, y) {
-    return fract(mul(sin(add(mul(x, 127.1), mul(y, 311.7))), 43758.5453));
   }
   
   function noise2D(x, y) {
@@ -455,7 +374,6 @@ function createWaterMaterialTSL(maptilesTex, mapXSize, mapYSize) {
     const iy = floor(y);
     const fx = fract(x);
     const fy = fract(y);
-    // Improved smoothstep interpolation
     const ux = mul(mul(fx, fx), sub(3.0, mul(2.0, fx)));
     const uy = mul(mul(fy, fy), sub(3.0, mul(2.0, fy)));
     const a = hash(add(ix, mul(iy, 157.0)));
@@ -467,197 +385,114 @@ function createWaterMaterialTSL(maptilesTex, mapXSize, mapYSize) {
     return mix(mixAB, mixCD, uy);
   }
   
-  // Fractal Brownian Motion for natural-looking patterns (3 octaves)
-  function fbm(x, y) {
-    // Compute all three octaves
-    const octave1 = noise2D(x, y);
-    const octave2 = mul(noise2D(mul(x, 2.0), mul(y, 2.0)), 0.5);
-    const octave3 = mul(noise2D(mul(x, 4.0), mul(y, 4.0)), 0.25);
-    // Combine and normalize (1 + 0.5 + 0.25 = 1.75, 1/1.75 ≈ 0.571)
-    return mul(add(add(octave1, octave2), octave3), 0.571);
-  }
-  
-  // ==== ENHANCED CAUSTIC PATTERN (Ocean) ====
-  // Multi-layered caustics for realistic underwater light patterns
-  const causticScale1 = 10.0;
-  const causticScale2 = 15.0;
-  const causticScale3 = 22.0;
-  const causticSpeed = 0.06;
-  
-  // Layer 1: Large slow caustics
-  const causticU1 = add(mul(uvNode.x, causticScale1), mul(timeUniform, causticSpeed));
-  const causticV1 = add(mul(uvNode.y, causticScale1), mul(timeUniform, mul(causticSpeed, 0.8)));
+  // ==== CAUSTIC PATTERN (Ocean) ====
+  const causticScale = 12.0;
+  const causticSpeed = 0.08;
+  const causticU1 = add(mul(uvNode.x, causticScale), mul(timeUniform, causticSpeed));
+  const causticV1 = add(mul(uvNode.y, causticScale), mul(timeUniform, mul(causticSpeed, 0.7)));
   const caustic1 = noise2D(causticU1, causticV1);
-  
-  // Layer 2: Medium caustics
-  const causticU2 = sub(mul(uvNode.x, causticScale2), mul(timeUniform, mul(causticSpeed, 0.7)));
-  const causticV2 = add(mul(uvNode.y, causticScale2), mul(timeUniform, mul(causticSpeed, 0.5)));
+  const causticU2 = sub(mul(uvNode.x, mul(causticScale, 1.5)), mul(timeUniform, mul(causticSpeed, 0.5)));
+  const causticV2 = add(mul(uvNode.y, mul(causticScale, 1.3)), mul(timeUniform, mul(causticSpeed, 0.3)));
   const caustic2 = noise2D(causticU2, causticV2);
+  const causticPattern = mul(add(caustic1, caustic2), 0.5);
+  const causticIntensity = clamp(mul(sub(causticPattern, 0.3), 2.5), 0.0, 1.0);
   
-  // Layer 3: Fine detail caustics
-  const causticU3 = add(mul(uvNode.x, causticScale3), mul(timeUniform, mul(causticSpeed, 1.2)));
-  const causticV3 = sub(mul(uvNode.y, causticScale3), mul(timeUniform, mul(causticSpeed, 0.9)));
-  const caustic3 = noise2D(causticU3, causticV3);
+  // ==== RIVER FLOW ANIMATION ====
+  // Faster, more linear flow pattern for rivers
+  const riverFlowSpeed = 0.35;
+  const riverFlowScale = 18.0;
+  // Create directional flow (primarily along one axis to simulate current)
+  const riverFlow1 = sin(add(mul(sub(uvNode.y, mul(uvNode.x, 0.3)), riverFlowScale), mul(timeUniform, riverFlowSpeed)));
+  const riverFlow2 = sin(add(mul(sub(uvNode.y, mul(uvNode.x, 0.5)), mul(riverFlowScale, 1.3)), mul(timeUniform, mul(riverFlowSpeed, 1.2))));
+  const riverFlowPattern = mul(add(riverFlow1, riverFlow2), 0.15);
   
-  // Combine caustic layers with weighted blend
-  const causticPattern = add(add(mul(caustic1, 0.5), mul(caustic2, 0.35)), mul(caustic3, 0.15));
-  const causticIntensity = clamp(mul(sub(causticPattern, 0.25), 2.8), 0.0, 1.0);
-  
-  // ==== ENHANCED RIVER FLOW ANIMATION ====
-  // Multiple layers with different speeds for dynamic river appearance
-  const riverFlowSpeed1 = 0.55;  // Main flow (faster)
-  const riverFlowSpeed2 = 0.38;  // Secondary flow
-  const riverFlowSpeed3 = 0.72;  // Fast surface ripples
-  const riverFlowScale = 20.0;
-  
-  // Main river flow - diagonal current direction
-  const riverFlow1 = sin(add(mul(sub(uvNode.y, mul(uvNode.x, 0.25)), riverFlowScale), mul(timeUniform, riverFlowSpeed1)));
-  const riverFlow2 = sin(add(mul(sub(uvNode.y, mul(uvNode.x, 0.45)), mul(riverFlowScale, 1.2)), mul(timeUniform, riverFlowSpeed2)));
-  
-  // Surface turbulence layer
-  const riverTurbulence = sin(add(mul(add(uvNode.x, mul(uvNode.y, 0.8)), mul(riverFlowScale, 1.8)), mul(timeUniform, riverFlowSpeed3)));
-  
-  // Combined flow pattern
-  const riverFlowPattern = add(add(mul(riverFlow1, 0.12), mul(riverFlow2, 0.08)), mul(riverTurbulence, 0.06));
-  
-  // River ripples and sparkles (faster, smaller scale)
-  const riverRippleScale = 35.0;
-  const riverRipple1 = sin(add(mul(add(uvNode.x, uvNode.y), riverRippleScale), mul(timeUniform, 0.8)));
-  const riverRipple2 = sin(add(mul(sub(mul(uvNode.x, 1.2), uvNode.y), mul(riverRippleScale, 0.7)), mul(timeUniform, 0.65)));
-  const riverRippleIntensity = mul(add(riverRipple1, riverRipple2), 0.06);
-  
-  // River foam/rapids effect (appears on faster-flowing sections)
-  // River foam constants: threshold (0.6) determines foam rarity, 
-  // range cap (0.4) limits maximum intensity, multiplier (2.0) scales final effect
-  const RIVER_FOAM_THRESHOLD = 0.6;     // Noise value above which foam appears
-  const RIVER_FOAM_RANGE = 0.4;         // Maximum foam intensity range
-  const RIVER_FOAM_MULTIPLIER = 2.0;    // Scales foam visibility
-  const riverFoamNoise = noise2D(add(mul(uvNode.x, 30.0), mul(timeUniform, 0.4)), add(mul(uvNode.y, 25.0), mul(timeUniform, 0.3)));
-  const riverFoamIntensity = mul(clamp(sub(riverFoamNoise, RIVER_FOAM_THRESHOLD), 0.0, RIVER_FOAM_RANGE), RIVER_FOAM_MULTIPLIER);
-  
-  // ==== ATMOSPHERIC WAVE ANIMATION ====
-  // Gentle undulating waves for atmospheric ocean feel
-  const waveScale1 = 8.0;
-  const waveScale2 = 12.0;
-  const waveSpeed = 0.12;
-  
-  // Large gentle swells
-  const wave1 = sin(add(add(mul(uvNode.x, waveScale1), mul(uvNode.y, mul(waveScale1, 0.6))), mul(timeUniform, waveSpeed)));
-  const wave2 = sin(add(sub(mul(uvNode.x, mul(waveScale2, 0.8)), mul(uvNode.y, waveScale2)), mul(timeUniform, mul(waveSpeed, 1.3))));
-  const wavePattern = mul(add(wave1, wave2), 0.04);
+  // River ripples (smaller scale, faster)
+  const riverRippleScale = 30.0;
+  const riverRipple = sin(add(mul(add(uvNode.x, uvNode.y), riverRippleScale), mul(timeUniform, 0.5)));
+  const riverRippleIntensity = mul(riverRipple, 0.08);
   
   // ==== SHORELINE FOAM/WAVE ANIMATION ====
-  // Enhanced animated foam at land edges
-  const foamSpeed = 0.32;
-  const foamScale = 25.0;
-  
-  // Multi-layer foam waves
+  // Animated foam that appears at the edge of land
+  const foamSpeed = 0.25;
+  const foamScale = 20.0;
+  // Create wave-like foam pattern
   const foamWave1 = sin(add(mul(uvNode.x, foamScale), mul(timeUniform, foamSpeed)));
-  const foamWave2 = sin(add(mul(uvNode.y, mul(foamScale, 0.85)), mul(timeUniform, mul(foamSpeed, 1.15))));
-  const foamWave3 = sin(add(mul(add(uvNode.x, uvNode.y), mul(foamScale, 0.6)), mul(timeUniform, mul(foamSpeed, 0.8))));
-  const foamPattern = mul(add(add(foamWave1, foamWave2), mul(foamWave3, 0.5)), 0.28);
+  const foamWave2 = sin(add(mul(uvNode.y, mul(foamScale, 0.8)), mul(timeUniform, mul(foamSpeed, 1.3))));
+  const foamPattern = mul(add(add(foamWave1, foamWave2), 1.5), 0.33);
   
-  // Foam noise for natural edge appearance
-  const foamNoise = fbm(add(mul(uvNode.x, 20.0), mul(timeUniform, 0.08)), add(mul(uvNode.y, 20.0), mul(timeUniform, 0.06)));
-  const foamIntensity = mul(mul(nearLand, foamPattern), clamp(add(foamNoise, 0.2), 0.0, 1.0));
+  // Foam intensity based on proximity to land (using noise for natural edge)
+  const foamNoise = noise2D(mul(uvNode.x, 25.0), add(mul(uvNode.y, 25.0), mul(timeUniform, 0.1)));
+  const foamIntensity = mul(mul(nearLand, foamPattern), clamp(add(foamNoise, 0.3), 0.0, 1.0));
   
   // ==== GENTLE SURFACE RIPPLES (Ocean) ====
-  const rippleScale = 28.0;
-  const rippleSpeed = 0.18;
+  const rippleScale = 25.0;
+  const rippleSpeed = 0.15;
   const ripple1 = sin(add(mul(add(mul(uvNode.x, 1.0), mul(uvNode.y, 0.5)), rippleScale), mul(timeUniform, rippleSpeed)));
-  const ripple2 = sin(add(mul(add(mul(uvNode.x, 0.7), mul(uvNode.y, 1.0)), mul(rippleScale, 0.85)), mul(timeUniform, mul(rippleSpeed, 1.2))));
-  const rippleValue = mul(add(ripple1, ripple2), 0.08);
+  const ripple2 = sin(add(mul(add(mul(uvNode.x, 0.7), mul(uvNode.y, 1.0)), mul(rippleScale, 0.8)), mul(timeUniform, mul(rippleSpeed, 1.3))));
+  const rippleValue = mul(add(ripple1, ripple2), 0.1);
   
-  // ==== ATMOSPHERIC DEPTH VARIATION ====
-  // Create natural color variation based on position (simulating depth/distance)
-  const depthNoise = fbm(mul(uvNode.x, 3.0), mul(uvNode.y, 3.0));
-  const depthFactor = clamp(add(0.4, mul(depthNoise, 0.6)), 0.0, 1.0);
+  // ==== BASE OCEAN COLOR ====
+  const positionFactor = mul(add(uvNode.x, uvNode.y), 0.3);
+  const variation = add(positionFactor, rippleValue);
+  const normalizedVariation = clamp(add(0.5, mul(variation, 0.2)), 0.0, 1.0);
+  const deepToMid = mix(deepOcean, midOcean, clamp(mul(normalizedVariation, 1.5), 0.0, 1.0));
+  const oceanBaseColor = mix(deepToMid, shallowWater, clamp(sub(mul(normalizedVariation, 1.5), 0.5), 0.0, 1.0));
   
-  // ==== BASE OCEAN COLOR (Enhanced) ====
-  const positionFactor = mul(add(uvNode.x, uvNode.y), 0.25);
-  const variation = add(add(positionFactor, rippleValue), wavePattern);
-  const normalizedVariation = clamp(add(0.5, mul(variation, 0.25)), 0.0, 1.0);
-  
-  // Three-stage gradient: deep -> mid -> shallow with coastal highlights
-  const deepToMid = mix(deepOcean, midOcean, clamp(mul(normalizedVariation, 1.6), 0.0, 1.0));
-  const midToShallow = mix(deepToMid, shallowWater, clamp(sub(mul(normalizedVariation, 1.6), 0.5), 0.0, 1.0));
-  const oceanBaseColor = mix(midToShallow, coastalWater, mul(nearLand, 0.3));
-  
-  // Add depth variation for atmospheric feel
-  const oceanColorWithDepth = mix(deepOcean, oceanBaseColor, depthFactor);
-  
-  // ==== RIVER COLOR (Enhanced) ====
-  // River water with flowing appearance and foam highlights
-  const riverFlowColor = mix(riverBlue, riverHighlight, clamp(add(riverFlowPattern, riverRippleIntensity), 0.0, 1.0));
-  const riverWithFoam = mix(riverFlowColor, riverFoam, riverFoamIntensity);
-  const riverBaseColor = riverWithFoam;
+  // ==== RIVER COLOR ====
+  // River water is slightly different - more of a flowing appearance
+  const riverBaseColor = mix(riverBlue, riverHighlight, clamp(add(riverFlowPattern, riverRippleIntensity), 0.0, 1.0));
   
   // ==== COMBINE BASE COLORS (Ocean vs River) ====
-  const baseColor = mix(oceanColorWithDepth, riverBaseColor, hasRiver);
+  const baseColor = mix(oceanBaseColor, riverBaseColor, hasRiver);
   
-  // ==== ADD CAUSTIC HIGHLIGHTS (enhanced, reduced for rivers) ====
-  const causticStrength = mix(0.18, 0.04, hasRiver);
+  // ==== ADD CAUSTIC HIGHLIGHTS (reduced for rivers) ====
+  const causticStrength = mix(0.15, 0.05, hasRiver);
   const colorWithCaustics = mix(baseColor, causticColor, mul(causticIntensity, causticStrength));
   
-  // ==== ADD WAVE HIGHLIGHTS ====
-  // Subtle highlights on wave crests
-  const waveHighlightIntensity = mul(clamp(add(wavePattern, 0.02), 0.0, 0.08), 1.5);
-  const colorWithWaves = mix(colorWithCaustics, waveHighlight, waveHighlightIntensity);
-  
   // ==== ADD SHORELINE FOAM ====
-  const colorWithFoam = mix(colorWithWaves, foamWhite, mul(foamIntensity, 0.55));
+  // Blend foam at coastline areas near land
+  const colorWithFoam = mix(colorWithCaustics, foamWhite, mul(foamIntensity, 0.45));
   
   // ==== GENTLE SPECULAR ====
   const specularBase = clamp(add(rippleValue, 0.5), 0.0, 1.0);
-  const specular = mul(pow(specularBase, 10.0), 0.10);
-  const specularTint = mul(vec3(1.0, 0.98, 0.96), specular);
+  const specular = mul(pow(specularBase, 8.0), 0.08);
+  const specularTint = mul(vec3(1.0, 0.98, 0.95), specular);
   
   // ==== SURFACE SHIMMER ====
-  const shimmerU = add(mul(uvNode.x, 45.0), mul(timeUniform, 0.25));
-  const shimmerV = add(mul(uvNode.y, 40.0), mul(timeUniform, 0.18));
-  const shimmer = mul(fract(mul(sin(add(shimmerU, shimmerV)), 43758.5)), 0.025);
-  
-  // ==== HEXAGONAL EDGE BLENDING ====
-  // Apply subtle darkening at hex edges for visual tile boundaries (matching terrain)
-  const hexEdgeBlend = mul(hexEdgeMask, HEX_EDGE_BLEND_STRENGTH);
+  const shimmerU = add(mul(uvNode.x, 40.0), mul(timeUniform, 0.2));
+  const shimmerV = add(mul(uvNode.y, 35.0), mul(timeUniform, 0.15));
+  const shimmer = mul(fract(mul(sin(add(shimmerU, shimmerV)), 43758.5)), 0.03);
   
   // ==== EDGE DARKENING (Vignette) ====
   const cx = sub(uvNode.x, 0.5);
   const cy = sub(uvNode.y, 0.5);
   const edgeDist = sqrt(add(mul(cx, cx), mul(cy, cy)));
-  const edgeDarken = clamp(mul(edgeDist, 0.12), 0.0, 0.08);
+  const edgeDarken = clamp(mul(edgeDist, 0.15), 0.0, 0.1);
   
   // ==== FINAL WATER COLOR COMPOSITION ====
   const colorWithSpecular = add(colorWithFoam, specularTint);
   const colorWithShimmer = add(colorWithSpecular, vec3(shimmer, shimmer, shimmer));
-  const colorWithVignette = sub(colorWithShimmer, vec3(edgeDarken, edgeDarken, edgeDarken));
+  const waterColor = sub(colorWithShimmer, vec3(edgeDarken, edgeDarken, edgeDarken));
   
-  // Apply hexagonal edge darkening for tile boundaries
-  const waterColor = mix(colorWithVignette, hexEdgeColor, hexEdgeBlend);
-  
-  // ==== SOFT VISIBILITY HANDLING WITH BLURRED TRANSITIONS ====
-  // Create soft transitions at the boundary between visible and unknown tiles
-  
-  // Visibility blending constants
-  const VISIBILITY_EDGE_BLEND_FACTOR = 0.45;  // How much to blend with neighbors at hex edges (0-1)
-  const VISIBILITY_AMPLIFY_FACTOR = 1.5;      // Amplifies fogged tiles (~0.54 -> ~0.81) for better visibility
-  
-  // Calculate edge proximity for blending (stronger at hex edges)
-  const edgeProximity = clamp(mul(sub(hexDist, 0.25), 4.0), 0.0, 1.0);
-  
-  // Blend current tile visibility with neighbor average at edges for soft transitions
-  const softVisibility = mix(visibility, avgNeighborVis, mul(edgeProximity, VISIBILITY_EDGE_BLEND_FACTOR));
-  
-  // Apply smoothstep curve for softer edges
-  const visNormalized = clamp(mul(softVisibility, VISIBILITY_AMPLIFY_FACTOR), 0.0, 1.0);
-  const visSmooth = mul(mul(visNormalized, visNormalized), sub(3.0, mul(2.0, visNormalized)));
-  
-  const finalColor = mix(unknownBlack, waterColor, visSmooth);
+  // ==== VISIBILITY HANDLING ====
+  // The visibility value comes from maptiles texture alpha channel which updates
+  // as the map is revealed during gameplay. The texture is automatically refreshed
+  // by THREE.js when maptiletypes.needsUpdate = true is set.
+  //
+  // Unknown tiles (visibility = 0) should be rendered as black
+  // Fogged tiles (~0.54) get slightly dimmed water
+  // Visible tiles (1.0) show full water color
+  //
+  // The 1.5 multiplier amplifies fogged tiles (~0.54 -> ~0.81) for better visibility
+  // while keeping fully visible tiles clamped at 1.0
+  const visibilityFactor = clamp(mul(visibility, 1.5), 0.0, 1.0);
+  const finalColor = mix(unknownBlack, waterColor, visibilityFactor);
   
   // Opacity: unknown tiles are fully opaque black, visible tiles have normal transparency
-  const baseOpacity = 0.75;
+  // Use higher opacity for unknown areas to ensure solid black appearance
+  const baseOpacity = 0.72;
   const unknownOpacity = 1.0;
-  const finalOpacity = mix(unknownOpacity, baseOpacity, step(0.01, softVisibility));
+  const finalOpacity = mix(unknownOpacity, baseOpacity, step(0.01, visibility));
   
   // Create material
   const waterMaterial = new THREE.MeshBasicNodeMaterial();
