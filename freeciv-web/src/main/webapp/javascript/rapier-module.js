@@ -12,10 +12,17 @@
 // Import RAPIER from the CDN via importmap
 import RAPIER from '@dimforge/rapier3d-compat';
 
-// Export to global window object for compatibility with existing code
-window.RAPIER = RAPIER;
-
-// Log successful load
-console.log('Rapier.js physics module loaded successfully');
+// Initialize RAPIER WASM module before exporting
+// This ensures the module is fully ready when physics.js uses it
+(async () => {
+    try {
+        await RAPIER.init();
+        // Export to global window object only after initialization
+        window.RAPIER = RAPIER;
+        console.log('Rapier.js physics module loaded and initialized successfully');
+    } catch (error) {
+        console.error('Failed to initialize Rapier.js WASM module:', error);
+    }
+})();
 
 export { RAPIER };
