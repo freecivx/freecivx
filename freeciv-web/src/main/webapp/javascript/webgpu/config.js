@@ -262,13 +262,13 @@ const TerrainType = Object.freeze({
  */
 const BeachConfig = Object.freeze({
     /** Upper limit of beach zone (above = full land texture) */
-    HIGH: 55.5,
+    HIGH: 52.5,
     /** Lower limit of beach zone blend start */
-    BLEND_HIGH: 53.4,
+    BLEND_HIGH: 50.4,
     /** Middle of beach zone (peak sand color) */
-    MID: 54.5,
+    MID: 51.5,
     /** Water surface level */
-    WATER_LEVEL: 53.0,
+    WATER_LEVEL: 50.0,
     /** Beach sand color (warm golden sand) */
     SAND_COLOR: Object.freeze({ r: 0.92, g: 0.85, b: 0.65 })
 });
