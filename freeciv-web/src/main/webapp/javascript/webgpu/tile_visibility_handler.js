@@ -72,13 +72,18 @@ function schedule_visibility_update()
   batch all visibility modifications into a single vertex buffer update.
   This is the performance-critical optimization that prevents multiple
   expensive full-mesh iterations during bulk map reveals.
+  
+  Note: JavaScript is single-threaded, so there's no true race condition.
+  We clear map_known_dirty before processing to ensure any updates that
+  arrive during processing will schedule another flush.
 **************************************************************************/
 function flush_visibility_update()
 {
   visibility_update_pending = false;
   if (map_known_dirty && landGeometry != null) {
-    update_tiles_known_vertex_colors();
+    // Clear flag first so any new updates during processing will re-schedule
     map_known_dirty = false;
+    update_tiles_known_vertex_colors();
   }
 }
 
