@@ -218,34 +218,71 @@ function setupSceneLighting() {
 }
 
 /****************************************************************************
- Add animated water mesh for WebGPU renderer using TSL shaders.
+ Add animated water mesh for WebGPU renderer using Three.js WaterMesh.
  
- Design goals (Stylized Game Water - Civ-style):
- - Calm: Gentle, subtle movement instead of big ocean waves
- - Stylized: Color gradients and caustic patterns for visual interest
- - Fast: Efficient shader without heavy wave calculations
- - Game-appropriate: Works well at top-down/isometric strategy game camera angles
+ Design goals (Realistic Reflective Water):
+ - Reflective: Real-time scene reflections for immersion
+ - Animated: Normal map-based wave movement
+ - Beautiful: Fresnel effects and specular sun highlights
+ - Game-appropriate: Works well at strategy game camera angles
  
- This stylized water shader uses:
- - UV-scrolling patterns for gentle surface animation
- - Layered caustic/ripple effects
- - Gradient-based color transitions (deep to shallow)
- - Soft specular highlights without dramatic waves
+ This water implementation uses Three.js WaterMesh which provides:
+ - Real-time planar reflections
+ - Normal map-based surface distortion for wave effects
+ - Fresnel-based reflectance (more reflective at glancing angles)
+ - Sun specular highlights
+ - Configurable water and sun colors
 ****************************************************************************/
 function add_quality_dependent_objects_webgpu() {
   // Create water plane geometry matching land mesh dimensions
-  // Lower segment count (64x64) - stylized water doesn't need high tessellation
+  // Higher segment count (128x128) for better wave detail
   var waterGeometry = new THREE.PlaneGeometry(
     mapview_model_width,
     mapview_model_height * HEX_HEIGHT_FACTOR,
-    64,
-    64
+    128,
+    128
   );
   
-  // Pass map data to water shader for visibility and river detection
-  var waterMaterial = createWaterMaterialTSL(maptiletypes, map['xsize'], map['ysize']);
+  // Check if WaterMesh is available (loaded via three-modules-webgpu.js)
+  if (typeof THREE.WaterMesh !== 'undefined') {
+    // Use the new Three.js WaterMesh with real-time reflections
+    console.log("Using Three.js WaterMesh with reflections...");
+    
+    // Get preloaded water normal texture
+    var waterNormalTexture = webgl_textures["water1"];
+    if (!waterNormalTexture) {
+      console.warn("Water normal texture not loaded, creating placeholder...");
+      waterNormalTexture = new THREE.Texture();
+    }
+    
+    // Configure water options for Freeciv 3D style
+    // These settings are tuned for a nice looking strategy game water
+    var waterOptions = {
+      // Resolution scale for reflections (0.5 = half resolution for performance)
+      resolution: 0.5,
+      // Normal map for wave patterns
+      waterNormals: waterNormalTexture,
+      // Transparency (slightly transparent for depth effect)
+      alpha: 0.85,
+      // Size affects normal map tiling (smaller = more wave detail)
+      size: 0.15,
+      // Sun settings for specular highlights
+      sunColor: 0xffffee,
+      sunDirection: new THREE.Vector3(0.5, 0.6, 0.3).normalize(),
+      // Water base color - deep ocean blue with slight teal tint
+      waterColor: 0x0a3d62,
+      // Distortion scale affects reflection waviness (lower = calmer water)
+      distortionScale: 3.5
+    };
+    
+    water_hq = new THREE.WaterMesh(waterGeometry, waterOptions);
+  } else {
+    // Fallback to the custom TSL shader if WaterMesh not available
+    console.log("WaterMesh not available, using fallback TSL shader...");
+    var waterMaterial = createWaterMaterialTSL(maptiletypes, map['xsize'], map['ysize']);
+    water_hq = new THREE.Mesh(waterGeometry, waterMaterial);
+  }
   
-  water_hq = new THREE.Mesh(waterGeometry, waterMaterial);
   water_hq.rotation.x = -Math.PI * 0.5;
   water_hq.translateOnAxis(new THREE.Vector3(0, 0, 1).normalize(), 50.5);
   water_hq.translateOnAxis(new THREE.Vector3(1, 0, 0).normalize(), Math.floor(mapview_model_width / 2) - 500);
@@ -254,7 +291,7 @@ function add_quality_dependent_objects_webgpu() {
   water_hq.castShadow = false;
   water_hq.name = "water_surface";
   scene.add(water_hq);
-  console.log("Added stylized game water surface.");
+  console.log("Added Three.js WaterMesh water surface with reflections.");
 }
 
 /****************************************************************************
