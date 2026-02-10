@@ -40,8 +40,13 @@ import {
   // Math and blending functions
   mix, step, floor, fract, mod, dot, sin, cos, normalize, max, min, pow, clamp, abs, sqrt,
   // Arithmetic operators
-  mul, add, sub, div
+  mul, add, sub, div,
+  // Additional TSL functions needed for WaterMesh
+  Fn, cameraPosition, positionWorld, time, reflect, length, reflector, diffuseColor
 } from 'three/tsl';
+
+// Import WaterMesh from local libs
+import { WaterMesh } from '/javascript/webgpu/libs/WaterMesh.js';
 
 // Extract the WebGPU exports and add them to the global THREE object
 // The WebGPU module extends the existing THREE namespace and includes TSL
@@ -105,4 +110,7 @@ THREE.div = div;
 
 console.log('WebGPU modules loaded successfully');
 
-export { WebGPUModule };
+// Export WaterMesh to global THREE object for use in non-module scripts
+THREE.WaterMesh = WaterMesh;
+
+export { WebGPUModule, WaterMesh };
