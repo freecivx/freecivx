@@ -235,12 +235,12 @@ function setupSceneLighting() {
 ****************************************************************************/
 function add_quality_dependent_objects_webgpu() {
   // Create water plane geometry matching land mesh dimensions
-  // Segment count balanced for wave detail vs performance (64x64)
+  // Segment count balanced for wave detail vs performance (32x32 for better performance)
   var waterGeometry = new THREE.PlaneGeometry(
     mapview_model_width,
     mapview_model_height * HEX_HEIGHT_FACTOR,
-    64,
-    64
+    32,
+    32
   );
   
   // Check if WaterMesh is available (loaded via three-modules-webgpu.js)
@@ -258,8 +258,8 @@ function add_quality_dependent_objects_webgpu() {
     // Configure water options for Freeciv 3D style
     // These settings are tuned for a nice looking strategy game water
     var waterOptions = {
-      // Resolution scale for reflections (0.25 = quarter resolution for better performance)
-      resolution: 0.25,
+      // Resolution scale for reflections (0.125 = eighth resolution for better performance)
+      resolution: 0.125,
       // Normal map for wave patterns
       waterNormals: waterNormalTexture,
       // Transparency (slightly transparent for depth effect)
@@ -269,8 +269,8 @@ function add_quality_dependent_objects_webgpu() {
       // Sun settings for specular highlights
       sunColor: 0xffffee,
       sunDirection: new THREE.Vector3(0.5, 0.6, 0.3).normalize(),
-      // Water base color - brighter tropical blue for natural look
-      waterColor: 0x1a6b9e,
+      // Water base color - brighter light blue with slight green tint (tropical water)
+      waterColor: 0x2a8bb8,
       // Distortion scale affects reflection waviness (lower = calmer water)
       distortionScale: 3.0,
       // Pass maptiles texture for visibility and land awareness
@@ -290,7 +290,7 @@ function add_quality_dependent_objects_webgpu() {
   }
   
   water_hq.rotation.x = -Math.PI * 0.5;
-  water_hq.translateOnAxis(new THREE.Vector3(0, 0, 1).normalize(), 50.6);
+  water_hq.translateOnAxis(new THREE.Vector3(0, 0, 1).normalize(), 50.7);
   water_hq.translateOnAxis(new THREE.Vector3(1, 0, 0).normalize(), Math.floor(mapview_model_width / 2) - 500);
   water_hq.translateOnAxis(new THREE.Vector3(0, 1, 0).normalize(), -Math.floor(mapview_model_height * HEX_HEIGHT_FACTOR / 2));
   water_hq.renderOrder = -1;
@@ -445,17 +445,17 @@ function createWaterMaterialTSL(maptilesTex, mapXSize, mapYSize) {
   const isLandS = step(39.5, floor(mul(neighborS.r, TEXTURE_VALUE_SCALE)));
   const nearLand = max(max(max(isLandE, isLandW), isLandN), isLandS);
   
-  // ==== COLOR PALETTE (Stylized Game Colors) - Brighter, more natural water ====
-  const deepOcean = vec3(0.08, 0.22, 0.42);     // Brighter deep blue
-  const midOcean = vec3(0.12, 0.30, 0.50);      // Medium blue - brighter
-  const shallowWater = vec3(0.18, 0.42, 0.58);  // Brighter teal/turquoise
-  const riverBlue = vec3(0.14, 0.35, 0.52);     // River water color - brighter
-  const riverHighlight = vec3(0.20, 0.45, 0.60); // River surface highlights - brighter
-  const causticColor = vec3(0.35, 0.55, 0.65);  // Caustic highlight - brighter
+  // ==== COLOR PALETTE (Stylized Game Colors) - Brighter, more natural water with light blue-green tint ====
+  const deepOcean = vec3(0.10, 0.28, 0.48);     // Brighter deep blue with green tint
+  const midOcean = vec3(0.14, 0.38, 0.56);      // Medium blue-green - brighter
+  const shallowWater = vec3(0.22, 0.50, 0.64);  // Brighter teal/turquoise with green
+  const riverBlue = vec3(0.16, 0.42, 0.58);     // River water color - brighter blue-green
+  const riverHighlight = vec3(0.24, 0.52, 0.66); // River surface highlights - brighter
+  const causticColor = vec3(0.40, 0.60, 0.70);  // Caustic highlight - brighter
   const foamWhite = vec3(0.95, 0.97, 1.0);      // Shoreline foam color - whiter
   const unknownBlack = vec3(0.0, 0.0, 0.0);     // Unknown tile color
   const hexEdgeColor = vec3(HEX_EDGE_COLOR_R, HEX_EDGE_COLOR_G, HEX_EDGE_COLOR_B); // Hex tile edge tint
-  const skyReflectionColor = vec3(0.30, 0.45, 0.60); // Sky reflection tint - brighter
+  const skyReflectionColor = vec3(0.35, 0.52, 0.65); // Sky reflection tint - brighter with green
   
   // ==== PROCEDURAL NOISE FUNCTIONS ====
   function hash(p) {
