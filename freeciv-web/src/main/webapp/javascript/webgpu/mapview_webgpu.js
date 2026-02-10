@@ -248,7 +248,7 @@ function add_quality_dependent_objects_webgpu() {
     // Use the new Three.js WaterMesh with real-time reflections
     console.log("Using Three.js WaterMesh with reflections...");
     
-    // Get preloaded water normal texture
+    // Get preloaded water normal texture (webgl_textures is the shared texture storage)
     var waterNormalTexture = webgl_textures["water1"];
     if (!waterNormalTexture) {
       console.warn("Water normal texture not loaded, creating placeholder...");
@@ -276,11 +276,13 @@ function add_quality_dependent_objects_webgpu() {
     };
     
     water_hq = new THREE.WaterMesh(waterGeometry, waterOptions);
+    console.log("Added Three.js WaterMesh water surface with reflections.");
   } else {
     // Fallback to the custom TSL shader if WaterMesh not available
     console.log("WaterMesh not available, using fallback TSL shader...");
     var waterMaterial = createWaterMaterialTSL(maptiletypes, map['xsize'], map['ysize']);
     water_hq = new THREE.Mesh(waterGeometry, waterMaterial);
+    console.log("Added fallback TSL water surface.");
   }
   
   water_hq.rotation.x = -Math.PI * 0.5;
@@ -291,7 +293,6 @@ function add_quality_dependent_objects_webgpu() {
   water_hq.castShadow = false;
   water_hq.name = "water_surface";
   scene.add(water_hq);
-  console.log("Added Three.js WaterMesh water surface with reflections.");
 }
 
 /****************************************************************************
