@@ -54,7 +54,7 @@ function getInstancedMeshFromModel(modelName, gltfMesh, capacity = 30) {
     // Convert material to WebGPU-compatible node material if needed
     if (typeof isWebGPURenderer === 'function' && isWebGPURenderer()) {
         // Check if raytracing is enabled - use enhanced materials
-        if (typeof is_raytracing_enabled === 'function' && is_raytracing_enabled()) {
+        if (typeof shouldUseRaytracing === 'function' && shouldUseRaytracing()) {
             // Use raytraced material for enhanced reflections
             if (typeof createRaytracedModelMaterial === 'function') {
                 material = createRaytracedModelMaterial(material);

@@ -124,8 +124,8 @@ function convertModelMaterials(model, options = {}) {
         return model;
     }
     
-    // Check if raytracing is enabled
-    const useRaytracing = typeof is_raytracing_enabled === 'function' && is_raytracing_enabled();
+    // Check if raytracing is enabled using centralized helper
+    const useRaytracing = typeof shouldUseRaytracing === 'function' && shouldUseRaytracing();
     
     model.traverse((node) => {
         if (node.isMesh && node.material) {

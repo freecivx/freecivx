@@ -37,10 +37,20 @@
  * for WebGPU compatibility and real-time performance at 60fps.
  */
 
-// Store original materials for restoration when raytracing is disabled
-var originalMaterials = new Map();
+// Store original render state (materials, lights, settings) for restoration when raytracing is disabled
+var originalRenderState = new Map();
 var raytracingPostProcessing = null;
 var raytracingComposer = null;
+
+/**
+ * Helper function to check if raytracing should be used.
+ * Centralizes the raytracing check logic for consistency.
+ * 
+ * @returns {boolean} True if raytracing is enabled and available
+ */
+function shouldUseRaytracing() {
+    return typeof is_raytracing_enabled === 'function' && is_raytracing_enabled();
+}
 
 /**
  * Creates a raytraced water material using TSL for WebGPU.
@@ -363,12 +373,12 @@ function applyRaytracingToSceneMeshes() {
             if (object.name === "water_surface" || 
                 object.name === "land_terrain_mesh" ||
                 object.name === "raycaster_mesh" ||
-                originalMaterials.has(object.uuid)) {
+                originalRenderState.has(object.uuid)) {
                 return;
             }
             
             // Store original material for later restoration
-            originalMaterials.set(object.uuid, object.material);
+            originalRenderState.set(object.uuid, object.material);
             
             // Apply raytraced material enhancement
             const originalMat = object.material;
@@ -379,7 +389,7 @@ function applyRaytracingToSceneMeshes() {
         }
     });
     
-    console.log(`Enhanced ${originalMaterials.size} meshes with raytracing materials`);
+    console.log(`Enhanced ${originalRenderState.size} meshes with raytracing materials`);
 }
 
 /**
@@ -394,14 +404,14 @@ function removeRaytracingFromSceneMeshes() {
     console.log("Removing raytracing from scene meshes...");
     
     scene.traverse((object) => {
-        if (object.isMesh && originalMaterials.has(object.uuid)) {
+        if (object.isMesh && originalRenderState.has(object.uuid)) {
             // Restore original material
-            object.material = originalMaterials.get(object.uuid);
+            object.material = originalRenderState.get(object.uuid);
             object.material.needsUpdate = true;
         }
     });
     
-    originalMaterials.clear();
+    originalRenderState.clear();
     console.log("Original materials restored");
 }
 
@@ -416,8 +426,8 @@ function applyRaytracingToTerrain() {
     }
     
     // Store original terrain material
-    if (!originalMaterials.has("terrain")) {
-        originalMaterials.set("terrain", {
+    if (!originalRenderState.has("terrain")) {
+        originalRenderState.set("terrain", {
             roughness: landMesh.material.roughness,
             metalness: landMesh.material.metalness,
             envMapIntensity: landMesh.material.envMapIntensity
@@ -443,13 +453,13 @@ function removeRaytracingFromTerrain() {
     }
     
     // Restore original terrain material properties
-    if (originalMaterials.has("terrain")) {
-        const original = originalMaterials.get("terrain");
+    if (originalRenderState.has("terrain")) {
+        const original = originalRenderState.get("terrain");
         landMesh.material.roughness = original.roughness;
         landMesh.material.metalness = original.metalness;
         landMesh.material.envMapIntensity = original.envMapIntensity || 1.0;
         landMesh.material.needsUpdate = true;
-        originalMaterials.delete("terrain");
+        originalRenderState.delete("terrain");
     }
 }
 
@@ -463,9 +473,21 @@ function createSSAOEffect() {
     // to simulate ambient occlusion through enhanced shadow settings
     
     if (directionalLight && directionalLight.shadow) {
+        // Store original shadow settings for restoration
+        if (!originalRenderState.has("shadowSettings")) {
+            originalRenderState.set("shadowSettings", {
+                mapSizeWidth: directionalLight.shadow.mapSize.width,
+                mapSizeHeight: directionalLight.shadow.mapSize.height,
+                bias: directionalLight.shadow.bias,
+                normalBias: directionalLight.shadow.normalBias
+            });
+        }
+        
         // Increase shadow map resolution for sharper shadows
-        directionalLight.shadow.mapSize.width = 8192;
-        directionalLight.shadow.mapSize.height = 8192;
+        // Use 4096 for good quality without excessive memory usage
+        // (8192 would use ~128MB per shadow map which is too much)
+        directionalLight.shadow.mapSize.width = 4096;
+        directionalLight.shadow.mapSize.height = 4096;
         
         // Reduce shadow bias for tighter shadows
         directionalLight.shadow.bias = -0.0003;
@@ -486,16 +508,19 @@ function createSSAOEffect() {
  * Removes SSAO effect.
  */
 function removeSSAOEffect() {
-    // Restore original shadow settings
-    if (directionalLight && directionalLight.shadow) {
-        directionalLight.shadow.mapSize.width = 4096;
-        directionalLight.shadow.mapSize.height = 4096;
-        directionalLight.shadow.bias = -0.0005;
-        directionalLight.shadow.normalBias = 0.02;
+    // Restore original shadow settings from stored values
+    if (directionalLight && directionalLight.shadow && originalRenderState.has("shadowSettings")) {
+        const original = originalRenderState.get("shadowSettings");
+        directionalLight.shadow.mapSize.width = original.mapSizeWidth;
+        directionalLight.shadow.mapSize.height = original.mapSizeHeight;
+        directionalLight.shadow.bias = original.bias;
+        directionalLight.shadow.normalBias = original.normalBias;
         
         if (directionalLight.shadow.camera) {
             directionalLight.shadow.camera.updateProjectionMatrix();
         }
+        
+        originalRenderState.delete("shadowSettings");
     }
     
     window.raytracingSSAOActive = false;
@@ -568,8 +593,8 @@ function applyRaytracingEnhancements() {
     console.log("=== Applying FULL SCENE raytracing enhancements ===");
     
     // Store original directional light intensity for restoration
-    if (directionalLight && !originalMaterials.has("directionalLight")) {
-        originalMaterials.set("directionalLight", {
+    if (directionalLight && !originalRenderState.has("directionalLight")) {
+        originalRenderState.set("directionalLight", {
             intensity: directionalLight.intensity,
             shadowRadius: directionalLight.shadow ? directionalLight.shadow.radius : 1
         });
@@ -577,8 +602,8 @@ function applyRaytracingEnhancements() {
     
     // Store original ambient light intensity for restoration
     const ambientLight = scene.getObjectByName("ambient_light");
-    if (ambientLight && !originalMaterials.has("ambientLight")) {
-        originalMaterials.set("ambientLight", {
+    if (ambientLight && !originalRenderState.has("ambientLight")) {
+        originalRenderState.set("ambientLight", {
             intensity: ambientLight.intensity
         });
     }
@@ -652,19 +677,19 @@ function removeRaytracingEnhancements() {
     console.log("✓ Enhanced shadows removed");
     
     // 6. Reset directional light to original values
-    if (directionalLight && originalMaterials.has("directionalLight")) {
-        const original = originalMaterials.get("directionalLight");
+    if (directionalLight && originalRenderState.has("directionalLight")) {
+        const original = originalRenderState.get("directionalLight");
         directionalLight.intensity = original.intensity;
         directionalLight.shadow.radius = original.shadowRadius;
-        originalMaterials.delete("directionalLight");
+        originalRenderState.delete("directionalLight");
     }
     
     // 7. Reset ambient light to original values
     const ambientLight = scene.getObjectByName("ambient_light");
-    if (ambientLight && originalMaterials.has("ambientLight")) {
-        const original = originalMaterials.get("ambientLight");
+    if (ambientLight && originalRenderState.has("ambientLight")) {
+        const original = originalRenderState.get("ambientLight");
         ambientLight.intensity = original.intensity;
-        originalMaterials.delete("ambientLight");
+        originalRenderState.delete("ambientLight");
     }
     
     console.log("=== Full scene raytracing enhancements removed ===");
@@ -704,3 +729,4 @@ window.switchWaterMaterial = switchWaterMaterial;
 window.applyRaytracingEnhancements = applyRaytracingEnhancements;
 window.removeRaytracingEnhancements = removeRaytracingEnhancements;
 window.toggleRaytracing = toggleRaytracing;
+window.shouldUseRaytracing = shouldUseRaytracing;
