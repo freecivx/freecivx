@@ -296,7 +296,13 @@ function animate_webgl() {
     controls.update();
   }
 
-  if (anaglyph_3d_enabled) {
+  // Check if path tracer should render
+  if (typeof isPathTracerEnabled === 'function' && isPathTracerEnabled()) {
+    // Render using path tracer
+    if (typeof renderPathTracer === 'function') {
+      renderPathTracer(maprenderer, camera);
+    }
+  } else if (anaglyph_3d_enabled) {
     anaglyph_effect.render(scene,camera);
   } else {
     maprenderer.render(scene, camera);

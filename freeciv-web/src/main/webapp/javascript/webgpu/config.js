@@ -297,6 +297,83 @@ const MapviewConfig = Object.freeze({
     ASPECT_FACTOR: 35.71
 });
 
+/**
+ * Path Tracer Configuration for photorealistic rendering
+ * 
+ * This configuration controls the real-time path tracing renderer which
+ * provides Global Illumination, soft shadows, and PBR materials.
+ * 
+ * @readonly
+ * @type {Object}
+ */
+const PathTracerConfig = Object.freeze({
+    /** Enable/disable path tracing mode - when true, renders via path tracer */
+    ENABLED: false,
+    
+    /** Maximum number of ray bounces for Global Illumination (2+ for realistic GI) */
+    MAX_BOUNCES: 2,
+    
+    /** Samples per pixel per frame (higher = faster convergence, slower frames) */
+    SAMPLES_PER_FRAME: 1,
+    
+    /** Maximum accumulated samples before stopping (0 = unlimited) */
+    MAX_ACCUMULATED_SAMPLES: 512,
+    
+    /** Enable sample accumulation when camera is stationary */
+    ENABLE_ACCUMULATION: true,
+    
+    /** Sun/Sky lighting configuration for environment */
+    SKY: Object.freeze({
+        /** Sun direction (normalized vector) */
+        SUN_DIRECTION: Object.freeze({ x: 0.5, y: 0.8, z: 0.5 }),
+        /** Sun intensity */
+        SUN_INTENSITY: 3.0,
+        /** Sun color (warm daylight) */
+        SUN_COLOR: Object.freeze({ r: 1.0, g: 0.95, b: 0.85 }),
+        /** Sky color (ambient lighting) */
+        SKY_COLOR: Object.freeze({ r: 0.4, g: 0.6, b: 0.9 }),
+        /** Ground color (bounce light from below) */
+        GROUND_COLOR: Object.freeze({ r: 0.3, g: 0.25, b: 0.2 })
+    }),
+    
+    /** PBR Material properties for terrain types */
+    MATERIALS: Object.freeze({
+        /** Default land material */
+        TERRAIN: Object.freeze({
+            ROUGHNESS: 0.85,
+            METALNESS: 0.0
+        }),
+        /** Water material with refraction */
+        WATER: Object.freeze({
+            ROUGHNESS: 0.05,
+            METALNESS: 0.0,
+            IOR: 1.33,  // Index of Refraction for water
+            TRANSMISSION: 0.9,
+            COLOR: Object.freeze({ r: 0.1, g: 0.3, b: 0.5 })
+        }),
+        /** Metallic unit materials for reflections */
+        UNIT_METAL: Object.freeze({
+            ROUGHNESS: 0.3,
+            METALNESS: 0.9,
+            COLOR: Object.freeze({ r: 0.8, g: 0.8, b: 0.85 })
+        }),
+        /** Stone/building materials */
+        STONE: Object.freeze({
+            ROUGHNESS: 0.7,
+            METALNESS: 0.0,
+            COLOR: Object.freeze({ r: 0.6, g: 0.55, b: 0.5 })
+        })
+    }),
+    
+    /** Soft shadow configuration */
+    SHADOWS: Object.freeze({
+        /** Number of shadow rays for soft shadows */
+        SHADOW_RAYS: 1,
+        /** Sun angular radius for soft shadows (radians) */
+        SUN_ANGULAR_RADIUS: 0.02
+    })
+});
+
 // Export configuration objects to global scope for compatibility with existing code
 // Note: This project uses script concatenation for bundling, not ES modules.
 // The build system (Maven minify plugin) concatenates all JS files into webclient.min.js.
@@ -312,3 +389,4 @@ window.TerrainType = TerrainType;
 window.BeachConfig = BeachConfig;
 window.AnimationConfig = AnimationConfig;
 window.MapviewConfig = MapviewConfig;
+window.PathTracerConfig = PathTracerConfig;
