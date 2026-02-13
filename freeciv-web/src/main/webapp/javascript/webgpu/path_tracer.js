@@ -397,7 +397,9 @@ function createPathTracerMaterial() {
     const terrainRoughnessUniform = uniform(0.85);
 
     // Store uniforms for external updates
-    // Note: Texture nodes are stored directly since they support .value updates
+    // Note: For TSL texture nodes, .value can be updated to swap textures
+    // For static textures (terrain/unit data), we store wrapper objects that
+    // can be used for reference, though updating them requires shader recreation
     window.pathTracerTSLUniforms = {
         time: timeUniform,
         frameCount: frameCountUniform,
@@ -405,8 +407,9 @@ function createPathTracerMaterial() {
         resolution: resolutionUniform,
         cameraWorldMatrix: cameraWorldMatrixUniform,
         cameraProjectionMatrixInverse: cameraProjectionMatrixInverseUniform,
-        // For textures, store the texture node - its .value can be updated
+        // previousFrame is a TSL texture node - its .value can be updated for ping-pong buffering
         previousFrame: previousFrameTextureNode,
+        // These are reference wrappers (note: shader uses baked-in texture refs)
         terrainData: { value: terrainDataTex },
         unitData: { value: unitDataTex },
         mapSize: mapSizeUniform,
@@ -708,8 +711,9 @@ function createPathTracerMaterial() {
 
     // ==== ACCUMULATION ====
     // Blend with previous frame for progressive rendering
-    // previousFrameTextureNode is a texture node that samples at default UV (uv())
-    // Its .value can be updated for ping-pong buffer swapping
+    // previousFrameTextureNode is a texture node created with texture(tex) which defaults to uv()
+    // This is equivalent to texture(tex, uv()) - sampling at the fragment's UV coordinates
+    // Its .value property can be updated for ping-pong buffer swapping
     const previousColor = previousFrameTextureNode;
     const sampleWeight = div(1.0, add(accumulatedSamplesUniform, 1.0));
     
