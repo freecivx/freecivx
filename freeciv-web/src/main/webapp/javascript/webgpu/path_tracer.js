@@ -371,9 +371,16 @@ function createPathTracerMaterial() {
     const resolutionUniform = uniform(new THREE.Vector2(1, 1));
     const cameraWorldMatrixUniform = uniform(new THREE.Matrix4());
     const cameraProjectionMatrixInverseUniform = uniform(new THREE.Matrix4());
-    const previousFrameUniform = uniform(accumulationBufferA.texture);
-    const terrainDataUniform = uniform(terrainDataTexture);
-    const unitDataUniform = uniform(unitDataTexture);
+    
+    // For textures in TSL, we create texture nodes that can be sampled.
+    // The actual THREE.Texture instances are passed directly to texture() calls.
+    // Store texture references for use in sampling functions.
+    const terrainDataTex = terrainDataTexture;
+    const unitDataTex = unitDataTexture;
+    // Previous frame texture - for accumulation, we create a texture node
+    // that can have its .value updated for ping-pong buffer swapping
+    const previousFrameTextureNode = texture(accumulationBufferA.texture);
+    
     const mapSizeUniform = uniform(new THREE.Vector2(64, 64));
     const mapWorldSizeUniform = uniform(new THREE.Vector2(2000, 2000));
     const maxBouncesUniform = uniform(2);
@@ -390,6 +397,9 @@ function createPathTracerMaterial() {
     const terrainRoughnessUniform = uniform(0.85);
 
     // Store uniforms for external updates
+    // Note: For TSL texture nodes, .value can be updated to swap textures
+    // For static textures (terrain/unit data), we store wrapper objects that
+    // can be used for reference, though updating them requires shader recreation
     window.pathTracerTSLUniforms = {
         time: timeUniform,
         frameCount: frameCountUniform,
@@ -397,9 +407,11 @@ function createPathTracerMaterial() {
         resolution: resolutionUniform,
         cameraWorldMatrix: cameraWorldMatrixUniform,
         cameraProjectionMatrixInverse: cameraProjectionMatrixInverseUniform,
-        previousFrame: previousFrameUniform,
-        terrainData: terrainDataUniform,
-        unitData: unitDataUniform,
+        // previousFrame is a TSL texture node - its .value can be updated for ping-pong buffering
+        previousFrame: previousFrameTextureNode,
+        // These are reference wrappers (note: shader uses baked-in texture refs)
+        terrainData: { value: terrainDataTex },
+        unitData: { value: unitDataTex },
         mapSize: mapSizeUniform,
         mapWorldSize: mapWorldSizeUniform,
         maxBounces: maxBouncesUniform,
@@ -506,7 +518,7 @@ function createPathTracerMaterial() {
         const mapV = div(add(worldZ, mul(mapWorldSizeUniform.y, 0.5)), mapWorldSizeUniform.y);
         
         // Sample terrain data texture
-        const terrainSample = texture(terrainDataUniform, vec2(clamp(mapU, 0.0, 1.0), clamp(mapV, 0.0, 1.0)));
+        const terrainSample = texture(terrainDataTex, vec2(clamp(mapU, 0.0, 1.0), clamp(mapV, 0.0, 1.0)));
         
         // Height is in R channel, scaled
         return mul(terrainSample.r, 100.0);
@@ -516,7 +528,7 @@ function createPathTracerMaterial() {
     function sampleIsWater(worldX, worldZ) {
         const mapU = div(add(worldX, mul(mapWorldSizeUniform.x, 0.5)), mapWorldSizeUniform.x);
         const mapV = div(add(worldZ, mul(mapWorldSizeUniform.y, 0.5)), mapWorldSizeUniform.y);
-        const terrainSample = texture(terrainDataUniform, vec2(clamp(mapU, 0.0, 1.0), clamp(mapV, 0.0, 1.0)));
+        const terrainSample = texture(terrainDataTex, vec2(clamp(mapU, 0.0, 1.0), clamp(mapV, 0.0, 1.0)));
         return terrainSample.b;  // B channel = is_water
     }
 
@@ -524,7 +536,7 @@ function createPathTracerMaterial() {
     function sampleUnit(worldX, worldZ) {
         const mapU = div(add(worldX, mul(mapWorldSizeUniform.x, 0.5)), mapWorldSizeUniform.x);
         const mapV = div(add(worldZ, mul(mapWorldSizeUniform.y, 0.5)), mapWorldSizeUniform.y);
-        return texture(unitDataUniform, vec2(clamp(mapU, 0.0, 1.0), clamp(mapV, 0.0, 1.0)));
+        return texture(unitDataTex, vec2(clamp(mapU, 0.0, 1.0), clamp(mapV, 0.0, 1.0)));
     }
 
     // ==== PATH TRACING CORE ====
@@ -699,8 +711,10 @@ function createPathTracerMaterial() {
 
     // ==== ACCUMULATION ====
     // Blend with previous frame for progressive rendering
-
-    const previousColor = texture(previousFrameUniform, uvCoord);
+    // previousFrameTextureNode is a texture node created with texture(tex) which defaults to uv()
+    // This is equivalent to texture(tex, uv()) - sampling at the fragment's UV coordinates
+    // Its .value property can be updated for ping-pong buffer swapping
+    const previousColor = previousFrameTextureNode;
     const sampleWeight = div(1.0, add(accumulatedSamplesUniform, 1.0));
     
     // Mix based on accumulation
