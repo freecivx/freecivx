@@ -70,6 +70,9 @@ let pathTracerUniforms = null;
 let prevCameraPosition = null;
 let prevCameraQuaternion = null;
 
+// Debug configuration
+const DEBUG_LOG_INTERVAL_MS = 5000;
+
 /**
  * Initialize the path tracer renderer.
  * Creates the full-screen quad, shader material, accumulation buffers,
@@ -900,10 +903,13 @@ function renderPathTracer(renderer, camera) {
     pathTracerRenderCallCount++;
     const now = Date.now();
     
-    // Debug output every 5 seconds
-    if (now - pathTracerLastDebugTime > 5000) {
+    // Debug output at configured interval
+    if (now - pathTracerLastDebugTime > DEBUG_LOG_INTERVAL_MS) {
         console.log('[PathTracer] Render call #' + pathTracerRenderCallCount);
-        console.log('[PathTracer] Main camera position:', camera.position.x.toFixed(2), camera.position.y.toFixed(2), camera.position.z.toFixed(2));
+        console.log('[PathTracer] Main camera position:', 
+            camera.position?.x?.toFixed(2) ?? 'N/A', 
+            camera.position?.y?.toFixed(2) ?? 'N/A', 
+            camera.position?.z?.toFixed(2) ?? 'N/A');
         console.log('[PathTracer] Accumulated samples:', accumulatedSamples);
         console.log('[PathTracer] Current buffer:', currentAccumulationBuffer);
         
@@ -911,17 +917,17 @@ function renderPathTracer(renderer, camera) {
         if (window.pathTracerTSLUniforms) {
             console.log('[PathTracer] TSL Uniforms present: yes');
             console.log('[PathTracer] Resolution:', 
-                window.pathTracerTSLUniforms.resolution?.value?.x || 'N/A', 
+                window.pathTracerTSLUniforms.resolution?.value?.x ?? 'N/A', 
                 'x', 
-                window.pathTracerTSLUniforms.resolution?.value?.y || 'N/A');
+                window.pathTracerTSLUniforms.resolution?.value?.y ?? 'N/A');
             
             // Debug camera uniforms
             const camPosUniform = window.pathTracerTSLUniforms.mainCameraPosition?.value;
             if (camPosUniform) {
                 console.log('[PathTracer] Camera uniform position:', 
-                    camPosUniform.x?.toFixed(2) || 'N/A',
-                    camPosUniform.y?.toFixed(2) || 'N/A',
-                    camPosUniform.z?.toFixed(2) || 'N/A');
+                    camPosUniform.x?.toFixed(2) ?? 'N/A',
+                    camPosUniform.y?.toFixed(2) ?? 'N/A',
+                    camPosUniform.z?.toFixed(2) ?? 'N/A');
             } else {
                 console.log('[PathTracer] Camera position uniform: MISSING');
             }
