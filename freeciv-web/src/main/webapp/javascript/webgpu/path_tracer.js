@@ -371,7 +371,7 @@ function createPathTracerMaterial() {
     const resolutionUniform = uniform(new THREE.Vector2(1, 1));
     const cameraWorldMatrixUniform = uniform(new THREE.Matrix4());
     const cameraProjectionMatrixInverseUniform = uniform(new THREE.Matrix4());
-    const previousFrameUniform = uniform(null);
+    const previousFrameUniform = uniform(accumulationBufferA.texture);
     const terrainDataUniform = uniform(terrainDataTexture);
     const unitDataUniform = uniform(unitDataTexture);
     const mapSizeUniform = uniform(new THREE.Vector2(64, 64));
