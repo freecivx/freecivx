@@ -37,8 +37,11 @@ import {
   vec2, vec3, vec4, float as floatFn,
   // Vertex shader functions
   positionLocal, normalLocal, attribute, uv,
+  // World-space vertex attributes for raytracing
+  positionWorld, normalWorld, cameraPosition,
   // Math and blending functions
   mix, step, floor, fract, mod, dot, sin, cos, normalize, max, min, pow, clamp, abs, sqrt,
+  smoothstep, length, reflect,
   // Arithmetic operators
   mul, add, sub, div
 } from 'three/tsl';
@@ -83,6 +86,10 @@ THREE.positionLocal = positionLocal;
 THREE.normalLocal = normalLocal;
 THREE.attribute = attribute;
 THREE.uv = uv;
+// World-space vertex attributes for raytracing
+THREE.positionWorld = positionWorld;
+THREE.normalWorld = normalWorld;
+THREE.cameraPosition = cameraPosition;
 THREE.mix = mix;
 THREE.step = step;
 THREE.floor = floor;
@@ -98,6 +105,10 @@ THREE.pow = pow;
 THREE.clamp = clamp;
 THREE.abs = abs;
 THREE.sqrt = sqrt;
+// Raytracing-specific functions
+THREE.smoothstep = smoothstep;
+THREE.length = length;
+THREE.reflect = reflect;
 THREE.mul = mul;
 THREE.add = add;
 THREE.sub = sub;
