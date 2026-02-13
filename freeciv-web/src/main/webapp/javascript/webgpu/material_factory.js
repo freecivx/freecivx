@@ -107,6 +107,7 @@ function convertToNodeMaterial(originalMaterial, options = {}) {
 /**
  * Converts all materials in a model's hierarchy to WebGPU-compatible node materials.
  * Traverses the entire scene graph and converts each mesh's material.
+ * When raytracing is enabled, uses enhanced materials with reflections.
  * 
  * @param {THREE.Object3D} model - The root object to traverse
  * @param {Object} options - Optional configuration passed to convertToNodeMaterial
@@ -123,9 +124,17 @@ function convertModelMaterials(model, options = {}) {
         return model;
     }
     
+    // Check if raytracing is enabled
+    const useRaytracing = typeof is_raytracing_enabled === 'function' && is_raytracing_enabled();
+    
     model.traverse((node) => {
         if (node.isMesh && node.material) {
-            node.material = convertToNodeMaterial(node.material, options);
+            // Use raytraced material if raytracing is enabled
+            if (useRaytracing && typeof createRaytracedModelMaterial === 'function') {
+                node.material = createRaytracedModelMaterial(node.material);
+            } else {
+                node.material = convertToNodeMaterial(node.material, options);
+            }
             node.material.needsUpdate = true;
         }
     });

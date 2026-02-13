@@ -53,8 +53,16 @@ function getInstancedMeshFromModel(modelName, gltfMesh, capacity = 30) {
     
     // Convert material to WebGPU-compatible node material if needed
     if (typeof isWebGPURenderer === 'function' && isWebGPURenderer()) {
-        // Use material factory if available, otherwise inline conversion
-        if (typeof convertToNodeMaterial === 'function') {
+        // Check if raytracing is enabled - use enhanced materials
+        if (typeof is_raytracing_enabled === 'function' && is_raytracing_enabled()) {
+            // Use raytraced material for enhanced reflections
+            if (typeof createRaytracedModelMaterial === 'function') {
+                material = createRaytracedModelMaterial(material);
+            } else if (typeof convertToNodeMaterial === 'function') {
+                material = convertToNodeMaterial(material, { doubleSided: true, flatShading: false });
+            }
+        } else if (typeof convertToNodeMaterial === 'function') {
+            // Use standard material factory
             material = convertToNodeMaterial(material, { doubleSided: true, flatShading: false });
         } else {
             // Fallback inline conversion for backwards compatibility
