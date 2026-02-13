@@ -1913,6 +1913,20 @@ civclient_handle_key(keyboard_key, key_code, ctrl, alt, shift, the_event)
       }
     break;
 
+    case 'P':
+      // Ctrl+P toggles path tracer (experimental photorealistic rendering)
+      if (ctrl) {
+        the_event.preventDefault();
+        if (typeof togglePathTracer === 'function') {
+          var enabled = togglePathTracer();
+          message_log.update({
+            event: "toggle_pathtracer",
+            message: "Path Tracer " + (enabled ? "enabled" : "disabled") + " (experimental)"
+          });
+        }
+      }
+    break;
+
     default:
       if (key_code == 13 && shift && C_S_RUNNING == client_state()) {
         send_end_turn();
