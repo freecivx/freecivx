@@ -655,8 +655,9 @@ function pregame_settings()
     var enabled = $(this).prop('checked');
     if (typeof set_raytracing_enabled === 'function') {
       set_raytracing_enabled(enabled);
+    } else {
+      simpleStorage.set("raytracing_enabled", enabled);
     }
-    simpleStorage.set("raytracing_enabled", enabled);
   });
 
   if (is_speech_supported()) {

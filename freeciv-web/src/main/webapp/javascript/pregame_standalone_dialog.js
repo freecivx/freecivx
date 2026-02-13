@@ -86,7 +86,7 @@ function show_standalone_pregame_dialog()
   dialog_html += "<h3>Graphics Settings</h3>";
   dialog_html += "<table>";
   dialog_html += "<tr title='Enable real-time raytracing for enhanced reflections and shadows (experimental)'>";
-  dialog_html += "<td><label for='standalone_raytracing'>Raytracing:</label></td>";
+  dialog_html += "<td><label for='standalone_raytracing_setting'>Raytracing:</label></td>";
   dialog_html += "<td><input type='checkbox' id='standalone_raytracing_setting' /> ";
   dialog_html += "Enable raytracing (real reflections &amp; shadows - experimental)</td></tr>";
   dialog_html += "</table>";
@@ -149,8 +149,9 @@ function show_standalone_pregame_dialog()
     var enabled = $(this).prop('checked');
     if (typeof set_raytracing_enabled === 'function') {
       set_raytracing_enabled(enabled);
+    } else {
+      simpleStorage.set("raytracing_enabled", enabled);
     }
-    simpleStorage.set("raytracing_enabled", enabled);
   });
 }
 
