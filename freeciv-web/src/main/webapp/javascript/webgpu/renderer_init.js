@@ -51,6 +51,14 @@ function init_webgl_renderer()
     graphics_quality = ($(window).width() <= 800) ? QUALITY_MEDIUM : QUALITY_HIGH;
   }
 
+  // Load raytracing settings
+  if (typeof load_raytracing_settings === 'function') {
+    load_raytracing_settings();
+    if (typeof is_raytracing_enabled === 'function' && is_raytracing_enabled()) {
+      console.log("Raytracing mode enabled");
+    }
+  }
+
 }
 
 

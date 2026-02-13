@@ -516,6 +516,13 @@ async function init_webgpu_mapview() {
   add_quality_dependent_objects_webgpu();
   add_all_objects_to_scene();
 
+  // Apply raytracing enhancements if enabled
+  if (typeof is_raytracing_enabled === 'function' && is_raytracing_enabled()) {
+    if (typeof applyRaytracingEnhancements === 'function') {
+      applyRaytracingEnhancements();
+    }
+  }
+
   benchmark_start = new Date().getTime();
 }
 

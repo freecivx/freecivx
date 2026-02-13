@@ -510,6 +510,8 @@ function pregame_settings()
               "</select></td></tr>"+
 	    "<tr id='3d_antialiasing_enabled'><td id='3d_antialiasing_label' style='min-width: 150px;'><br></td>" +
         "<td><input type='checkbox' id='3d_antialiasing_setting' checked>Enable antialiasing (game looks nicer, but is slower)</td></tr>" +
+        "<tr id='raytracing_enabled' title='Enable real-time raytracing for enhanced reflections and shadows (experimental)'><td id='raytracing_label' style='min-width: 150px;'>Raytracing:</td>" +
+        "<td><input type='checkbox' id='raytracing_setting'>Enable raytracing (real reflections &amp; shadows - experimental)</td></tr>" +
         "<tr><td style='min-width: 150px;'>Benchmark of 3D WebGPU version:</td>" +
                 "<td><button id='bechmark_run' type='button' class='benchmark button'>Run benchmark</button></td></tr>" +
          "</table>" +
@@ -638,6 +640,23 @@ function pregame_settings()
   $('#3d_antialiasing_setting').change(function() {
     antialiasing_setting = !antialiasing_setting;
     simpleStorage.set("antialiasing_setting", antialiasing_setting ? "true" : "false");
+  });
+
+  // Raytracing setting
+  if (typeof load_raytracing_settings === 'function') {
+    load_raytracing_settings();
+  }
+  var stored_raytracing_setting = simpleStorage.get("raytracing_enabled", "");
+  if (stored_raytracing_setting != null && (stored_raytracing_setting === true || stored_raytracing_setting === "true")) {
+    $("#raytracing_setting").prop("checked", true);
+  }
+
+  $('#raytracing_setting').change(function() {
+    var enabled = $(this).prop('checked');
+    if (typeof set_raytracing_enabled === 'function') {
+      set_raytracing_enabled(enabled);
+    }
+    simpleStorage.set("raytracing_enabled", enabled);
   });
 
   if (is_speech_supported()) {
