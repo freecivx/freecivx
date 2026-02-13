@@ -41,10 +41,16 @@ import {
   mix, step, floor, fract, mod, dot, sin, cos, normalize, max, min, pow, clamp, abs, sqrt,
   // Arithmetic operators
   mul, add, sub, div,
-  // Reflection function (used by path tracer for water and metal surfaces)
-  reflect,
+  // Reflection and refraction functions (used by path tracer for water and metal surfaces)
+  reflect, refract,
   // Camera-related nodes (needed for path tracer ray generation)
-  cameraPosition, cameraProjectionMatrixInverse, cameraViewMatrix, cameraWorldMatrix
+  cameraPosition, cameraProjectionMatrixInverse, cameraViewMatrix, cameraWorldMatrix,
+  // TSL control flow and function definition (needed for path tracer)
+  Fn, If, Loop, Break, Return,
+  // Additional math functions for path tracing
+  cross, length, negate, atan2, exp, log, sign,
+  // Comparison and logical operators
+  lessThan, greaterThan, equal, and, or, not, select
 } from 'three/tsl';
 
 // Extract the WebGPU exports and add them to the global THREE object
@@ -107,10 +113,36 @@ THREE.add = add;
 THREE.sub = sub;
 THREE.div = div;
 THREE.reflect = reflect;
+THREE.refract = refract;
 THREE.cameraPosition = cameraPosition;
 THREE.cameraProjectionMatrixInverse = cameraProjectionMatrixInverse;
 THREE.cameraViewMatrix = cameraViewMatrix;
 THREE.cameraWorldMatrix = cameraWorldMatrix;
+
+// TSL control flow and function definition (needed for path tracer)
+THREE.Fn = Fn;
+THREE.If = If;
+THREE.Loop = Loop;
+THREE.Break = Break;
+THREE.Return = Return;
+
+// Additional math functions for path tracing
+THREE.cross = cross;
+THREE.length = length;
+THREE.negate = negate;
+THREE.atan2 = atan2;
+THREE.exp = exp;
+THREE.log = log;
+THREE.sign = sign;
+
+// Comparison and logical operators
+THREE.lessThan = lessThan;
+THREE.greaterThan = greaterThan;
+THREE.equal = equal;
+THREE.and = and;
+THREE.or = or;
+THREE.not = not;
+THREE.select = select;
 
 console.log('WebGPU modules loaded successfully');
 
