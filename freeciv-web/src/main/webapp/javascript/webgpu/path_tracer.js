@@ -874,9 +874,8 @@ function updatePathTracerUniforms(camera, deltaTime) {
     // Update camera position uniform
     tslUniforms.mainCameraPosition.value.copy(camera.position);
     
-    // Update projection matrix inverse
-    const projMatrixInverse = camera.projectionMatrixInverse.clone();
-    tslUniforms.mainCameraProjectionMatrixInverse.value.copy(projMatrixInverse);
+    // Update projection matrix inverse (copy directly without cloning)
+    tslUniforms.mainCameraProjectionMatrixInverse.value.copy(camera.projectionMatrixInverse);
     
     // Update world matrix
     tslUniforms.mainCameraWorldMatrix.value.copy(camera.matrixWorld);
