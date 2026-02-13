@@ -160,7 +160,7 @@ function createTerrainDataTexture() {
     for (let y = 0; y < mapHeight; y++) {
         for (let x = 0; x < mapWidth; x++) {
             const idx = (y * mapWidth + x) * 4;
-            const tile = tiles ? tiles[tile_index(x, y)] : null;
+            const tile = tiles ? tiles[x + y * mapWidth] : null;
             
             if (tile) {
                 // Height (normalized to 0-1 range)
