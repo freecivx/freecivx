@@ -425,19 +425,22 @@ function applyRaytracingToTerrain() {
         return;
     }
     
-    // Store original terrain material
+    // Store original terrain material with safe defaults
     if (!originalRenderState.has("terrain")) {
         originalRenderState.set("terrain", {
-            roughness: landMesh.material.roughness,
-            metalness: landMesh.material.metalness,
-            envMapIntensity: landMesh.material.envMapIntensity
+            roughness: landMesh.material.roughness !== undefined ? landMesh.material.roughness : 1.0,
+            metalness: landMesh.material.metalness !== undefined ? landMesh.material.metalness : 0.0,
+            envMapIntensity: landMesh.material.envMapIntensity !== undefined ? landMesh.material.envMapIntensity : 1.0
         });
     }
     
     // Enhance terrain for raytracing
     // Add subtle reflections to wet/water-adjacent areas
-    landMesh.material.roughness = Math.max(landMesh.material.roughness - 0.15, 0.3);
-    landMesh.material.metalness = Math.min(landMesh.material.metalness + 0.05, 0.15);
+    const currentRoughness = landMesh.material.roughness !== undefined ? landMesh.material.roughness : 1.0;
+    const currentMetalness = landMesh.material.metalness !== undefined ? landMesh.material.metalness : 0.0;
+    
+    landMesh.material.roughness = Math.max(currentRoughness - 0.15, 0.3);
+    landMesh.material.metalness = Math.min(currentMetalness + 0.05, 0.15);
     landMesh.material.envMapIntensity = 0.8;
     landMesh.material.needsUpdate = true;
     
