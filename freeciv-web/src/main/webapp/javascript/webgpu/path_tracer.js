@@ -85,12 +85,21 @@ function initPathTracer(renderer, mainScene, mainCamera) {
         return;
     }
 
-    console.log('Initializing Path Tracer...');
+    console.log('[PathTracer] Initializing Path Tracer...');
+    console.log('[PathTracer] Renderer type:', renderer.constructor.name);
+    console.log('[PathTracer] Camera type:', mainCamera.constructor.name);
+    console.log('[PathTracer] Camera position:', mainCamera.position.x, mainCamera.position.y, mainCamera.position.z);
 
     // Get viewport size
     const size = renderer.getSize(new THREE.Vector2());
     const width = size.x;
     const height = size.y;
+    console.log('[PathTracer] Viewport size:', width, 'x', height);
+
+    if (width === 0 || height === 0) {
+        console.error('[PathTracer] Invalid viewport size: width or height is 0');
+        return;
+    }
 
     // Create accumulation render targets (ping-pong buffers)
     const rtOptions = {
@@ -106,37 +115,55 @@ function initPathTracer(renderer, mainScene, mainCamera) {
     accumulationBufferB = new THREE.WebGLRenderTarget(width, height, rtOptions);
     accumulationBufferA.texture.name = 'PathTracer_AccumA';
     accumulationBufferB.texture.name = 'PathTracer_AccumB';
+    console.log('[PathTracer] Accumulation buffers created');
 
     // Create terrain data texture from heightmap
     createTerrainDataTexture();
+    console.log('[PathTracer] Terrain data texture created:', terrainDataTexture ? 'OK' : 'FAILED');
 
     // Create unit data texture (initially empty)
     createUnitDataTexture();
+    console.log('[PathTracer] Unit data texture created:', unitDataTexture ? 'OK' : 'FAILED');
 
     // Create path tracer uniforms
     createPathTracerUniforms(mainCamera, width, height);
+    console.log('[PathTracer] Uniforms created:', pathTracerUniforms ? 'OK' : 'FAILED');
 
     // Create path tracer material using TSL
-    pathTracerMaterial = createPathTracerMaterial();
+    try {
+        pathTracerMaterial = createPathTracerMaterial();
+        console.log('[PathTracer] Material created:', pathTracerMaterial ? 'OK' : 'FAILED');
+        if (pathTracerMaterial) {
+            console.log('[PathTracer] Material colorNode:', pathTracerMaterial.colorNode ? 'present' : 'MISSING');
+        }
+    } catch (e) {
+        console.error('[PathTracer] Failed to create material:', e);
+        return;
+    }
 
     // Create full-screen quad
     const quadGeometry = new THREE.PlaneGeometry(2, 2);
     pathTracerQuad = new THREE.Mesh(quadGeometry, pathTracerMaterial);
     pathTracerQuad.frustumCulled = false;
     pathTracerQuad.name = 'PathTracerQuad';
+    console.log('[PathTracer] Quad mesh created');
 
     // Create orthographic camera for quad rendering
     pathTracerCamera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
+    console.log('[PathTracer] Orthographic camera created');
 
     // Create scene for path tracer quad
     pathTracerScene = new THREE.Scene();
     pathTracerScene.add(pathTracerQuad);
+    console.log('[PathTracer] Scene created with quad');
 
     // Store previous camera state
     prevCameraPosition = mainCamera.position.clone();
     prevCameraQuaternion = mainCamera.quaternion.clone();
 
-    console.log('Path Tracer initialized successfully');
+    console.log('[PathTracer] Initialized successfully');
+    console.log('[PathTracer] Map dimensions:', map ? map.xsize + 'x' + map.ysize : 'map not available');
+    console.log('[PathTracer] Map world size:', mapview_model_width, 'x', mapview_model_height);
 }
 
 /**
@@ -342,14 +369,17 @@ function createPathTracerUniforms(camera, width, height) {
  * @returns {THREE.MeshBasicNodeMaterial} The path tracer material
  */
 function createPathTracerMaterial() {
+    console.log('[PathTracer] Creating path tracer material...');
+    
     // Import TSL functions and nodes from THREE
     // These should be available after three-modules-webgpu.js has loaded
+    // Note: We do NOT use built-in cameraPosition, cameraProjectionMatrixInverse, cameraWorldMatrix
+    // because we render with an orthographic camera but need main game camera matrices
     const { 
         texture, uniform, uv,
         vec2, vec3, vec4,
         mix, step, floor, fract, mod, dot, sin, cos, normalize, max, min, pow, clamp, abs, sqrt,
-        mul, add, sub, div, reflect,
-        cameraPosition, cameraProjectionMatrixInverse, cameraWorldMatrix
+        mul, add, sub, div, reflect
     } = THREE;
 
     // Verify all required TSL functions and nodes are available
@@ -357,21 +387,28 @@ function createPathTracerMaterial() {
         'texture', 'uniform', 'uv',
         'vec2', 'vec3', 'vec4',
         'mix', 'step', 'floor', 'fract', 'mod', 'dot', 'sin', 'cos', 'normalize', 'max', 'min', 'pow', 'clamp', 'abs', 'sqrt',
-        'mul', 'add', 'sub', 'div', 'reflect',
-        'cameraPosition', 'cameraProjectionMatrixInverse', 'cameraWorldMatrix'
+        'mul', 'add', 'sub', 'div', 'reflect'
     ];
     const missing = requiredTSLNames.filter(name => THREE[name] === undefined);
     if (missing.length > 0) {
-        console.error('Path Tracer: Missing TSL functions/nodes:', missing);
+        console.error('[PathTracer] Missing TSL functions/nodes:', missing);
         throw new Error(`Path Tracer: Required TSL functions/nodes not available: ${missing.join(', ')}. Ensure three-modules-webgpu.js has loaded successfully.`);
     }
+    console.log('[PathTracer] All TSL functions available');
 
     // Create uniforms as TSL uniform nodes
-    // Note: Camera matrices now use built-in TSL nodes (cameraPosition, cameraProjectionMatrixInverse, cameraWorldMatrix)
+    // IMPORTANT: We pass main camera matrices as custom uniforms because we render
+    // the fullscreen quad with an orthographic camera, but need the main game camera's
+    // view/projection for ray generation
     const timeUniform = uniform(0.0);
     const frameCountUniform = uniform(0);
     const accumulatedSamplesUniform = uniform(0);
     const resolutionUniform = uniform(new THREE.Vector2(1, 1));
+    
+    // Main camera uniforms - these are updated each frame with the game camera values
+    const mainCameraPositionUniform = uniform(new THREE.Vector3(0, 100, 0));
+    const mainCameraProjectionMatrixInverseUniform = uniform(new THREE.Matrix4());
+    const mainCameraWorldMatrixUniform = uniform(new THREE.Matrix4());
     
     // For textures in TSL, we create texture nodes that can be sampled.
     // The actual THREE.Texture instances are passed directly to texture() calls.
@@ -399,12 +436,16 @@ function createPathTracerMaterial() {
 
     // Store uniforms for external updates
     // Note: For TSL texture nodes, .value can be updated to swap textures
-    // Camera matrices now use built-in TSL nodes which auto-update each frame
+    // Camera matrices are now passed as custom uniforms since we render with orthographic camera
     window.pathTracerTSLUniforms = {
         time: timeUniform,
         frameCount: frameCountUniform,
         accumulatedSamples: accumulatedSamplesUniform,
         resolution: resolutionUniform,
+        // Main camera uniforms - updated each frame with main game camera values
+        mainCameraPosition: mainCameraPositionUniform,
+        mainCameraProjectionMatrixInverse: mainCameraProjectionMatrixInverseUniform,
+        mainCameraWorldMatrix: mainCameraWorldMatrixUniform,
         // previousFrame is a TSL texture node - its .value can be updated for ping-pong buffering
         previousFrame: previousFrameTextureNode,
         // These are reference wrappers (note: shader uses baked-in texture refs)
@@ -475,20 +516,18 @@ function createPathTracerMaterial() {
     const jitteredNdcX = add(ndcX, jitterX);
     const jitteredNdcY = add(ndcY, jitterY);
 
-    // RAY ORIGIN: Use the built-in cameraPosition TSL node
-    // This automatically provides the camera's world position
-    const camPos = cameraPosition;
-    const rayOrigin = vec3(camPos.x, camPos.y, camPos.z);
+    // RAY ORIGIN: Use our custom camera position uniform (main game camera)
+    // We pass the main camera position as a uniform because we render with an orthographic camera
+    const rayOrigin = vec3(mainCameraPositionUniform.x, mainCameraPositionUniform.y, mainCameraPositionUniform.z);
 
     // RAY DIRECTION: Transform NDC coordinates through inverse projection and camera matrices
-    // Using TSL built-in matrix nodes for proper ray generation
+    // Using our custom matrix uniforms (main game camera) for proper ray generation
     
     // Create clip-space coordinate (NDC with z=-1 for near plane, w=1)
     const clipSpace = vec4(jitteredNdcX, jitteredNdcY, -1.0, 1.0);
     
-    // Transform clip space to view space using inverse projection matrix
-    // TSL cameraProjectionMatrixInverse is a mat4 node
-    const projInv = cameraProjectionMatrixInverse;
+    // Transform clip space to view space using inverse projection matrix from main camera
+    const projInv = mainCameraProjectionMatrixInverseUniform;
     
     // Manually compute matrix * vector since TSL doesn't support direct mat4 * vec4
     // projInv is column-major, access as projInv[col][row]
@@ -520,7 +559,7 @@ function createPathTracerMaterial() {
 
     // Transform view-space direction to world-space using camera world matrix (rotation only)
     // worldDir = cameraWorldMatrix * viewDir (3x3 upper-left for rotation)
-    const camWorld = cameraWorldMatrix;
+    const camWorld = mainCameraWorldMatrixUniform;
     const worldDirX = add(add(
         mul(camWorld[0].x, viewDirX),
         mul(camWorld[1].x, viewDirY)),
@@ -787,13 +826,17 @@ function createPathTracerMaterial() {
     material.depthTest = false;
     material.depthWrite = false;
 
+    console.log('[PathTracer] Material created successfully');
+    console.log('[PathTracer] Material type:', material.constructor.name);
+    console.log('[PathTracer] colorNode set:', material.colorNode ? 'yes' : 'no');
+
     return material;
 }
 
 /**
  * Update path tracer uniforms each frame.
  * Updates time and checks for camera movement.
- * Note: Camera matrices now use built-in TSL nodes which auto-update.
+ * Updates main camera matrices for shader use.
  * 
  * @param {THREE.Camera} camera - The main camera
  * @param {number} deltaTime - Time since last frame
@@ -823,9 +866,20 @@ function updatePathTracerUniforms(camera, deltaTime) {
 
     tslUniforms.accumulatedSamples.value = accumulatedSamples;
 
-    // Note: Camera matrices are handled by built-in TSL nodes (cameraPosition, 
-    // cameraProjectionMatrixInverse, cameraWorldMatrix) which auto-update each frame
+    // Update main camera matrices - we pass these as uniforms because we render
+    // with an orthographic camera but need the main game camera's view/projection
     camera.updateMatrixWorld();
+    camera.updateProjectionMatrix();
+    
+    // Update camera position uniform
+    tslUniforms.mainCameraPosition.value.copy(camera.position);
+    
+    // Update projection matrix inverse
+    const projMatrixInverse = camera.projectionMatrixInverse.clone();
+    tslUniforms.mainCameraProjectionMatrixInverse.value.copy(projMatrixInverse);
+    
+    // Update world matrix
+    tslUniforms.mainCameraWorldMatrix.value.copy(camera.matrixWorld);
 }
 
 /**
@@ -835,9 +889,60 @@ function updatePathTracerUniforms(camera, deltaTime) {
  * @param {THREE.WebGPURenderer} renderer - The WebGPU renderer
  * @param {THREE.Camera} camera - The main camera
  */
+// Debug: track render calls
+let pathTracerRenderCallCount = 0;
+let pathTracerLastDebugTime = 0;
+
 function renderPathTracer(renderer, camera) {
     if (!pathTracerEnabled || !pathTracerScene || !pathTracerCamera) {
         return false;
+    }
+
+    pathTracerRenderCallCount++;
+    const now = Date.now();
+    
+    // Debug output every 5 seconds
+    if (now - pathTracerLastDebugTime > 5000) {
+        console.log('[PathTracer] Render call #' + pathTracerRenderCallCount);
+        console.log('[PathTracer] Main camera position:', camera.position.x.toFixed(2), camera.position.y.toFixed(2), camera.position.z.toFixed(2));
+        console.log('[PathTracer] Accumulated samples:', accumulatedSamples);
+        console.log('[PathTracer] Current buffer:', currentAccumulationBuffer);
+        
+        // Check uniforms
+        if (window.pathTracerTSLUniforms) {
+            console.log('[PathTracer] TSL Uniforms present: yes');
+            console.log('[PathTracer] Resolution:', 
+                window.pathTracerTSLUniforms.resolution?.value?.x || 'N/A', 
+                'x', 
+                window.pathTracerTSLUniforms.resolution?.value?.y || 'N/A');
+            
+            // Debug camera uniforms
+            const camPosUniform = window.pathTracerTSLUniforms.mainCameraPosition?.value;
+            if (camPosUniform) {
+                console.log('[PathTracer] Camera uniform position:', 
+                    camPosUniform.x?.toFixed(2) || 'N/A',
+                    camPosUniform.y?.toFixed(2) || 'N/A',
+                    camPosUniform.z?.toFixed(2) || 'N/A');
+            } else {
+                console.log('[PathTracer] Camera position uniform: MISSING');
+            }
+            
+            const projInvUniform = window.pathTracerTSLUniforms.mainCameraProjectionMatrixInverse?.value;
+            console.log('[PathTracer] Projection inverse uniform:', projInvUniform ? 'present' : 'MISSING');
+            
+            const worldMatUniform = window.pathTracerTSLUniforms.mainCameraWorldMatrix?.value;
+            console.log('[PathTracer] World matrix uniform:', worldMatUniform ? 'present' : 'MISSING');
+        } else {
+            console.log('[PathTracer] TSL Uniforms present: NO - this is a problem!');
+        }
+        
+        // Check material and quad
+        if (pathTracerQuad) {
+            console.log('[PathTracer] Quad visible:', pathTracerQuad.visible);
+            console.log('[PathTracer] Quad material:', pathTracerQuad.material ? 'present' : 'MISSING');
+        }
+        
+        pathTracerLastDebugTime = now;
     }
 
     // Update uniforms
@@ -872,12 +977,24 @@ function renderPathTracer(renderer, camera) {
  * @param {boolean} enabled - Whether to enable path tracing
  */
 function setPathTracerEnabled(enabled) {
+    console.log('[PathTracer] setPathTracerEnabled called with:', enabled);
+    console.log('[PathTracer] pathTracerScene:', pathTracerScene ? 'present' : 'MISSING');
+    console.log('[PathTracer] pathTracerCamera:', pathTracerCamera ? 'present' : 'MISSING');
+    console.log('[PathTracer] pathTracerQuad:', pathTracerQuad ? 'present' : 'MISSING');
+    console.log('[PathTracer] pathTracerMaterial:', pathTracerMaterial ? 'present' : 'MISSING');
+    console.log('[PathTracer] accumulationBufferA:', accumulationBufferA ? 'present' : 'MISSING');
+    console.log('[PathTracer] accumulationBufferB:', accumulationBufferB ? 'present' : 'MISSING');
+    console.log('[PathTracer] terrainDataTexture:', terrainDataTexture ? 'present' : 'MISSING');
+    console.log('[PathTracer] unitDataTexture:', unitDataTexture ? 'present' : 'MISSING');
+    
     pathTracerEnabled = enabled;
-    console.log('Path Tracer ' + (enabled ? 'enabled' : 'disabled'));
+    console.log('[PathTracer] Path Tracer ' + (enabled ? 'enabled' : 'disabled'));
     
     // Reset accumulation when enabling
     if (enabled) {
         accumulatedSamples = 0;
+        pathTracerRenderCallCount = 0;
+        pathTracerLastDebugTime = 0;
     }
 }
 
