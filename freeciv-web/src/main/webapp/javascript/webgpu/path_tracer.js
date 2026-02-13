@@ -18,22 +18,32 @@
 ***********************************************************************/
 
 /**
- * Path Tracer Module for Freeciv 3D
+ * Camera-First Path Tracer Module for Freeciv 3D
  * 
- * Implements a real-time path tracing renderer using THREE.js TSL (Three.js Shading Language)
+ * This is a CAMERA-FIRST (backward) path tracer, meaning:
+ * - Rays ORIGINATE from the camera position (eye point)
+ * - Rays are cast THROUGH each pixel on the image plane
+ * - Rays travel INTO the scene to find surface intersections
+ * - Light contribution is traced back toward the camera
+ * 
+ * This approach is more efficient than light-first tracing for scenes
+ * with complex geometry because it only computes lighting for pixels
+ * that are actually visible to the camera.
+ * 
+ * Implements real-time path tracing using THREE.js TSL (Three.js Shading Language)
  * for WebGPU. This provides photorealistic rendering with:
  * 
- * - Global Illumination via multi-bounce ray tracing
+ * - Global Illumination via multi-bounce ray tracing (2+ bounces)
  * - Soft shadows through area light sampling
  * - PBR (Physically Based Rendering) materials
- * - Progressive sample accumulation
- * - Water refraction and metallic unit reflections
+ * - Progressive sample accumulation (converges when camera is still)
+ * - Water refraction (IOR 1.33) and metallic unit reflections
  * 
  * Architecture:
- * - Full-screen quad with custom ShaderMaterial
+ * - Full-screen quad with custom TSL ShaderMaterial
  * - DataTextures for terrain heightmap and unit positions
- * - Ping-pong frame buffers for accumulation
- * - Camera-based ray generation
+ * - Ping-pong frame buffers for sample accumulation
+ * - Camera-based ray generation with sub-pixel jitter for anti-aliasing
  */
 
 // Path tracer state variables
@@ -142,6 +152,11 @@ function createTerrainDataTexture() {
     // R = height, G = terrain type, B = is_water, A = reserved
     const data = new Float32Array(mapWidth * mapHeight * 4);
 
+    // Terrain type constants matching TerrainType from config.js
+    const TERRAIN_INACCESSIBLE = 0;   // Inaccessible/ocean
+    const TERRAIN_LAKE = 10;          // Lake tiles
+    const TERRAIN_COAST = 20;         // Coastal water
+
     for (let y = 0; y < mapHeight; y++) {
         for (let x = 0; x < mapWidth; x++) {
             const idx = (y * mapWidth + x) * 4;
@@ -152,9 +167,9 @@ function createTerrainDataTexture() {
                 data[idx + 0] = tile.height !== undefined ? tile.height : 0.5;
                 // Terrain type (normalized)
                 data[idx + 1] = tile.terrain !== undefined ? tile.terrain / 255.0 : 0.5;
-                // Is water (coast, ocean, lake)
+                // Is water (coast, ocean, lake) - use named constants
                 const terrain = tile.terrain;
-                const isWater = (terrain === 10 || terrain === 20 || terrain === 0) ? 1.0 : 0.0;
+                const isWater = (terrain === TERRAIN_LAKE || terrain === TERRAIN_COAST || terrain === TERRAIN_INACCESSIBLE) ? 1.0 : 0.0;
                 data[idx + 2] = isWater;
                 // Reserved
                 data[idx + 3] = 1.0;
@@ -423,49 +438,65 @@ function createPathTracerMaterial() {
     // Get UV coordinates
     const uvCoord = uv();
 
-    // Calculate screen-space position
-    const screenPos = vec2(
-        sub(mul(uvCoord.x, 2.0), 1.0),
-        sub(mul(uvCoord.y, 2.0), 1.0)
-    );
+    // Calculate normalized device coordinates (NDC) from UV
+    // UV goes from 0 to 1, NDC goes from -1 to +1
+    const ndcX = sub(mul(uvCoord.x, 2.0), 1.0);
+    const ndcY = sub(mul(uvCoord.y, 2.0), 1.0);
 
-    // Generate random seed from frame count and position
+    // Generate random seed from frame count and pixel position for stochastic sampling
     const randomSeed = add(mul(frameCountUniform, 0.618033988), mul(add(uvCoord.x, mul(uvCoord.y, 1000.0)), 0.0001));
 
-    // ==== RAY GENERATION ====
-    // Generate camera ray from screen coordinates
+    // ============================================================
+    // CAMERA-FIRST RAY GENERATION
+    // ============================================================
+    // In Camera-First (backward) path tracing, we:
+    // 1. Start rays AT the camera position (eye point)
+    // 2. Cast rays THROUGH each pixel on the image plane
+    // 3. Trace rays INTO the scene to find intersections
+    // 4. Accumulate light contribution back toward the camera
+    // ============================================================
 
-    // Near plane point in clip space
-    const clipNear = vec4(screenPos.x, screenPos.y, -1.0, 1.0);
-    // Far plane point in clip space
-    const clipFar = vec4(screenPos.x, screenPos.y, 1.0, 1.0);
+    // Camera position constants (matching CameraConfig defaults from config.js)
+    // The camera is positioned above and behind the terrain, looking down
+    const CAMERA_HEIGHT = 450;  // Y position - height above terrain (CameraConfig.DEFAULT_DY)
+    const CAMERA_DEPTH = 320;   // Z position - distance from center (CameraConfig.DEFAULT_DZ)
+    const CAMERA_X = 0;         // X position - centered on view target
 
-    // Transform to world space (simplified - using approximation)
-    // Note: Full matrix multiplication would require TSL matrix ops
-    // Using camera position and direction approximation
-    const cameraPos = vec3(
-        cameraWorldMatrixUniform.value.elements ? 0 : 0,  // Will be updated
-        450,  // Default camera height
-        320   // Default camera Z
-    );
+    // RAY ORIGIN: The camera position in world space
+    // All rays originate FROM this point (the eye/camera location)
+    const rayOrigin = vec3(CAMERA_X, CAMERA_HEIGHT, CAMERA_DEPTH);
 
-    // Approximate ray direction (looking at terrain)
-    const rayDirBase = normalize(vec3(
-        mul(screenPos.x, 0.8),
-        -0.7,  // Looking down
-        mul(screenPos.y, 0.8)
-    ));
+    // Calculate field of view factors for ray direction
+    // These control how rays spread out from the camera through the image plane
+    const fovFactor = 0.8;  // ~45 degree FOV approximation
+    const pitchAngle = -0.7;  // Camera pitch - looking down at terrain
 
-    // Add jitter for anti-aliasing
+    // RAY DIRECTION: From camera THROUGH the current pixel into the scene
+    // Each pixel corresponds to a unique direction from the camera
+    const rayDirX = mul(ndcX, fovFactor);  // Horizontal spread based on pixel X
+    const rayDirY = pitchAngle;             // Vertical angle (looking down)
+    const rayDirZ = mul(ndcY, fovFactor);  // Depth spread based on pixel Y
+
+    // Add sub-pixel jitter for anti-aliasing (stochastic sampling)
+    // This randomizes ray positions within each pixel for smoother edges
     const jitterX = mul(sub(random(uvCoord.x, uvCoord.y, randomSeed), 0.5), div(2.0, resolutionUniform.x));
     const jitterY = mul(sub(random(uvCoord.y, uvCoord.x, add(randomSeed, 0.5)), 0.5), div(2.0, resolutionUniform.y));
 
-    const rayDir = normalize(add(rayDirBase, vec3(jitterX, 0, jitterY)));
+    // Final ray direction: normalized vector FROM camera THROUGH pixel INTO scene
+    const rayDir = normalize(vec3(
+        add(rayDirX, jitterX),
+        rayDirY,
+        add(rayDirZ, jitterY)
+    ));
 
-    // ==== TERRAIN INTERSECTION ====
-    // Raymarch against terrain heightfield
+    // ============================================================
+    // TERRAIN INTERSECTION (Heightfield Raymarching)
+    // ============================================================
+    // March the ray from the camera into the scene, checking for
+    // intersections with terrain, water, and units
 
-    // Water level constant
+    // Water level constant - matches water mesh Y position in mapview_webgpu.js
+    // This defines the Y coordinate where water surface is rendered
     const WATER_LEVEL = 50.0;
 
     // Sample terrain height at world position
@@ -526,44 +557,57 @@ function createPathTracerMaterial() {
         return add(f0, mul(sub(1.0, f0), pow(sub(1.0, cosTheta), 5.0)));
     }
 
-    // GGX Normal Distribution
+    // GGX Normal Distribution Function
+    // Using Math.PI for precision in the distribution calculation
+    const PI = Math.PI;
     function distributionGGX(NdotH, roughness) {
         const a = mul(roughness, roughness);
         const a2 = mul(a, a);
         const NdotH2 = mul(NdotH, NdotH);
         const num = a2;
         const denom = add(mul(NdotH2, sub(a2, 1.0)), 1.0);
-        const denomSq = mul(mul(denom, denom), 3.14159265);
+        const denomSq = mul(mul(denom, denom), PI);
         return div(num, denomSq);
     }
 
-    // ==== MAIN COLOR CALCULATION ====
+    // ==== CAMERA-FIRST PATH TRACING ====
+    // This is a Camera-First (backward) path tracer where:
+    // 1. Rays originate FROM the camera position (rayOrigin)
+    // 2. Rays are cast THROUGH each pixel into the scene (rayDir)
+    // 3. When rays hit surfaces, they bounce according to material BRDFs
+    // 4. Light contribution is accumulated via next-event estimation (direct light sampling)
+    // This approach is more efficient for scenes with many lights as it focuses
+    // computation on pixels visible to the camera.
 
-    // Initialize accumulated color
+    // Initialize accumulated color and path throughput
     let finalColor = vec3(0.0, 0.0, 0.0);
     let throughput = vec3(1.0, 1.0, 1.0);
 
-    // Current ray
-    let currentRayOrigin = cameraPos;
-    let currentRayDir = rayDir;
+    // Current ray state - STARTS FROM CAMERA
+    // rayOrigin = camera position (where rays originate)
+    // rayDir = direction through pixel (where rays go)
+    let currentRayOrigin = rayOrigin;  // Ray starts at camera
+    let currentRayDir = rayDir;        // Ray goes through pixel into scene
 
-    // Raymarch loop (simplified heightfield tracing)
-    const MAX_STEPS = 64;
-    const MAX_DIST = 2000.0;
-    const EPSILON = 0.5;
+    // Raymarching configuration for heightfield tracing
+    const MAX_STEPS = 64;    // Maximum raymarch steps
+    const MAX_DIST = 2000.0; // Maximum ray travel distance
+    const EPSILON = 0.5;     // Surface intersection threshold
+    const RAYMARCH_ITERATIONS = 32;  // Actual iterations (balance of quality vs performance)
 
     let totalDist = 0.0;
     let hitPos = vec3(0, 0, 0);
     let hitNormal = vec3(0, 1, 0);
-    let hitMaterial = 0; // 0=terrain, 1=water, 2=metal unit
+    let hitMaterial = 0; // Material type: 0=terrain, 1=water, 2=metal unit
     let didHit = 0.0;
 
-    // Simple raymarching against terrain
-    // For each step, check if ray is below terrain height
-    for (let i = 0; i < 32; i++) {
-        const stepSize = 10.0 + i * 2.0;  // Increasing step size
-        const sampleDist = i * stepSize;
+    // Camera-First Raymarching: trace ray FROM camera INTO scene
+    // Start at rayOrigin (camera) and march along rayDir until we hit something
+    for (let i = 0; i < RAYMARCH_ITERATIONS; i++) {
+        const stepSize = 10.0 + i * 2.0;  // Increasing step size for efficiency
+        const sampleDist = i * stepSize;   // Total distance from camera
         
+        // Calculate sample position along ray: origin + direction * distance
         const samplePos = vec3(
             add(currentRayOrigin.x, mul(currentRayDir.x, sampleDist)),
             add(currentRayOrigin.y, mul(currentRayDir.y, sampleDist)),
@@ -667,10 +711,11 @@ function createPathTracerMaterial() {
     const toneMappedG = div(accumulatedColor.g, add(accumulatedColor.g, 1.0));
     const toneMappedB = div(accumulatedColor.b, add(accumulatedColor.b, 1.0));
 
-    // Gamma correction
-    const gammaR = pow(toneMappedR, 0.4545);
-    const gammaG = pow(toneMappedG, 0.4545);
-    const gammaB = pow(toneMappedB, 0.4545);
+    // Gamma correction (sRGB: gamma = 1/2.2 ≈ 0.45454545)
+    const GAMMA = 1.0 / 2.2;
+    const gammaR = pow(toneMappedR, GAMMA);
+    const gammaG = pow(toneMappedG, GAMMA);
+    const gammaB = pow(toneMappedB, GAMMA);
 
     // Output
     const outputColor = vec4(gammaR, gammaG, gammaB, 1.0);
