@@ -81,6 +81,17 @@ function show_standalone_pregame_dialog()
   dialog_html += "</table>";
   dialog_html += "</div>";
   
+  // Graphics settings
+  dialog_html += "<div style='margin-bottom: 20px;'>";
+  dialog_html += "<h3>Graphics Settings</h3>";
+  dialog_html += "<table>";
+  dialog_html += "<tr title='Enable real-time raytracing for enhanced reflections and shadows (experimental)'>";
+  dialog_html += "<td><label for='standalone_raytracing_setting'>Raytracing:</label></td>";
+  dialog_html += "<td><input type='checkbox' id='standalone_raytracing_setting' /> ";
+  dialog_html += "Enable raytracing (real reflections &amp; shadows - experimental)</td></tr>";
+  dialog_html += "</table>";
+  dialog_html += "</div>";
+  
   dialog_html += "</div>";
 
   // Remove existing dialog if any
@@ -124,6 +135,24 @@ function show_standalone_pregame_dialog()
   $("#standalone_map_xsize").val(standalone_config.map_xsize);
   $("#standalone_map_ysize").val(standalone_config.map_ysize);
   $("#standalone_ai_players").val(standalone_config.ai_players);
+  
+  // Initialize raytracing setting
+  if (typeof load_raytracing_settings === 'function') {
+    load_raytracing_settings();
+  }
+  var stored_raytracing = simpleStorage.get("raytracing_enabled", "");
+  if (stored_raytracing === true || stored_raytracing === "true") {
+    $("#standalone_raytracing_setting").prop("checked", true);
+  }
+  
+  $('#standalone_raytracing_setting').change(function() {
+    var enabled = $(this).prop('checked');
+    if (typeof set_raytracing_enabled === 'function') {
+      set_raytracing_enabled(enabled);
+    } else {
+      simpleStorage.set("raytracing_enabled", enabled);
+    }
+  });
 }
 
 /****************************************************************************

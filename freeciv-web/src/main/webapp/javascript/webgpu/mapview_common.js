@@ -287,6 +287,13 @@ function animate_webgl() {
     updateWaterAnimation(deltaTime);
   }
   
+  // Update raytraced water animation when raytracing is enabled
+  if (typeof is_raytracing_enabled === 'function' && is_raytracing_enabled()) {
+    if (typeof updateRaytracedWaterAnimation === 'function') {
+      updateRaytracedWaterAnimation(deltaTime);
+    }
+  }
+  
   // Update selected unit animation (TSL-based pulsing effect)
   if (typeof updateSelectedUnitAnimation === 'function') {
     updateSelectedUnitAnimation(deltaTime);
