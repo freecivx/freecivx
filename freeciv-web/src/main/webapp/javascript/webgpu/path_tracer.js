@@ -249,6 +249,7 @@ function createUnitDataTexture() {
 
 /**
  * Create uniforms for the path tracer shader.
+ * Note: Camera matrices now use built-in TSL nodes.
  * 
  * @param {THREE.Camera} camera - The main camera
  * @param {number} width - Viewport width
@@ -268,9 +269,8 @@ function createPathTracerUniforms(camera, width, height) {
         // Resolution
         resolution: { value: new THREE.Vector2(width, height) },
         
-        // Camera matrices
-        cameraWorldMatrix: { value: camera.matrixWorld.clone() },
-        cameraProjectionMatrixInverse: { value: camera.projectionMatrixInverse.clone() },
+        // Note: Camera matrices now use built-in TSL nodes (cameraPosition,
+        // cameraProjectionMatrixInverse, cameraWorldMatrix) which auto-update
         
         // Previous accumulation buffer
         previousFrame: { value: null },
@@ -348,7 +348,8 @@ function createPathTracerMaterial() {
         texture, uniform, uv,
         vec2, vec3, vec4,
         mix, step, floor, fract, mod, dot, sin, cos, normalize, max, min, pow, clamp, abs, sqrt,
-        mul, add, sub, div, reflect
+        mul, add, sub, div, reflect,
+        cameraPosition, cameraProjectionMatrixInverse, cameraWorldMatrix
     } = THREE;
 
     // Verify all required TSL functions and nodes are available
@@ -356,7 +357,8 @@ function createPathTracerMaterial() {
         'texture', 'uniform', 'uv',
         'vec2', 'vec3', 'vec4',
         'mix', 'step', 'floor', 'fract', 'mod', 'dot', 'sin', 'cos', 'normalize', 'max', 'min', 'pow', 'clamp', 'abs', 'sqrt',
-        'mul', 'add', 'sub', 'div', 'reflect'
+        'mul', 'add', 'sub', 'div', 'reflect',
+        'cameraPosition', 'cameraProjectionMatrixInverse', 'cameraWorldMatrix'
     ];
     const missing = requiredTSLNames.filter(name => THREE[name] === undefined);
     if (missing.length > 0) {
@@ -365,12 +367,11 @@ function createPathTracerMaterial() {
     }
 
     // Create uniforms as TSL uniform nodes
+    // Note: Camera matrices now use built-in TSL nodes (cameraPosition, cameraProjectionMatrixInverse, cameraWorldMatrix)
     const timeUniform = uniform(0.0);
     const frameCountUniform = uniform(0);
     const accumulatedSamplesUniform = uniform(0);
     const resolutionUniform = uniform(new THREE.Vector2(1, 1));
-    const cameraWorldMatrixUniform = uniform(new THREE.Matrix4());
-    const cameraProjectionMatrixInverseUniform = uniform(new THREE.Matrix4());
     
     // For textures in TSL, we create texture nodes that can be sampled.
     // The actual THREE.Texture instances are passed directly to texture() calls.
@@ -398,15 +399,12 @@ function createPathTracerMaterial() {
 
     // Store uniforms for external updates
     // Note: For TSL texture nodes, .value can be updated to swap textures
-    // For static textures (terrain/unit data), we store wrapper objects that
-    // can be used for reference, though updating them requires shader recreation
+    // Camera matrices now use built-in TSL nodes which auto-update each frame
     window.pathTracerTSLUniforms = {
         time: timeUniform,
         frameCount: frameCountUniform,
         accumulatedSamples: accumulatedSamplesUniform,
         resolution: resolutionUniform,
-        cameraWorldMatrix: cameraWorldMatrixUniform,
-        cameraProjectionMatrixInverse: cameraProjectionMatrixInverseUniform,
         // previousFrame is a TSL texture node - its .value can be updated for ping-pong buffering
         previousFrame: previousFrameTextureNode,
         // These are reference wrappers (note: shader uses baked-in texture refs)
@@ -468,38 +466,76 @@ function createPathTracerMaterial() {
     // 4. Accumulate light contribution back toward the camera
     // ============================================================
 
-    // Camera position constants (matching CameraConfig defaults from config.js)
-    // The camera is positioned above and behind the terrain, looking down
-    const CAMERA_HEIGHT = 450;  // Y position - height above terrain (CameraConfig.DEFAULT_DY)
-    const CAMERA_DEPTH = 320;   // Z position - distance from center (CameraConfig.DEFAULT_DZ)
-    const CAMERA_X = 0;         // X position - centered on view target
-
-    // RAY ORIGIN: The camera position in world space
-    // All rays originate FROM this point (the eye/camera location)
-    const rayOrigin = vec3(CAMERA_X, CAMERA_HEIGHT, CAMERA_DEPTH);
-
-    // Calculate field of view factors for ray direction
-    // These control how rays spread out from the camera through the image plane
-    const fovFactor = 0.8;  // ~45 degree FOV approximation
-    const pitchAngle = -0.7;  // Camera pitch - looking down at terrain
-
-    // RAY DIRECTION: From camera THROUGH the current pixel into the scene
-    // Each pixel corresponds to a unique direction from the camera
-    const rayDirX = mul(ndcX, fovFactor);  // Horizontal spread based on pixel X
-    const rayDirY = pitchAngle;             // Vertical angle (looking down)
-    const rayDirZ = mul(ndcY, fovFactor);  // Depth spread based on pixel Y
-
     // Add sub-pixel jitter for anti-aliasing (stochastic sampling)
     // This randomizes ray positions within each pixel for smoother edges
     const jitterX = mul(sub(random(uvCoord.x, uvCoord.y, randomSeed), 0.5), div(2.0, resolutionUniform.x));
     const jitterY = mul(sub(random(uvCoord.y, uvCoord.x, add(randomSeed, 0.5)), 0.5), div(2.0, resolutionUniform.y));
 
-    // Final ray direction: normalized vector FROM camera THROUGH pixel INTO scene
-    const rayDir = normalize(vec3(
-        add(rayDirX, jitterX),
-        rayDirY,
-        add(rayDirZ, jitterY)
-    ));
+    // Apply jitter to NDC coordinates
+    const jitteredNdcX = add(ndcX, jitterX);
+    const jitteredNdcY = add(ndcY, jitterY);
+
+    // RAY ORIGIN: Use the built-in cameraPosition TSL node
+    // This automatically provides the camera's world position
+    const camPos = cameraPosition;
+    const rayOrigin = vec3(camPos.x, camPos.y, camPos.z);
+
+    // RAY DIRECTION: Transform NDC coordinates through inverse projection and camera matrices
+    // Using TSL built-in matrix nodes for proper ray generation
+    
+    // Create clip-space coordinate (NDC with z=-1 for near plane, w=1)
+    const clipSpace = vec4(jitteredNdcX, jitteredNdcY, -1.0, 1.0);
+    
+    // Transform clip space to view space using inverse projection matrix
+    // TSL cameraProjectionMatrixInverse is a mat4 node
+    const projInv = cameraProjectionMatrixInverse;
+    
+    // Manually compute matrix * vector since TSL doesn't support direct mat4 * vec4
+    // projInv is column-major, access as projInv[col][row]
+    const viewX = add(add(add(
+        mul(projInv[0].x, clipSpace.x),
+        mul(projInv[1].x, clipSpace.y)),
+        mul(projInv[2].x, clipSpace.z)),
+        mul(projInv[3].x, clipSpace.w));
+    const viewY = add(add(add(
+        mul(projInv[0].y, clipSpace.x),
+        mul(projInv[1].y, clipSpace.y)),
+        mul(projInv[2].y, clipSpace.z)),
+        mul(projInv[3].y, clipSpace.w));
+    const viewZ = add(add(add(
+        mul(projInv[0].z, clipSpace.x),
+        mul(projInv[1].z, clipSpace.y)),
+        mul(projInv[2].z, clipSpace.z)),
+        mul(projInv[3].z, clipSpace.w));
+    const viewW = add(add(add(
+        mul(projInv[0].w, clipSpace.x),
+        mul(projInv[1].w, clipSpace.y)),
+        mul(projInv[2].w, clipSpace.z)),
+        mul(projInv[3].w, clipSpace.w));
+
+    // Perspective divide to get view-space direction
+    const viewDirX = div(viewX, viewW);
+    const viewDirY = div(viewY, viewW);
+    const viewDirZ = div(viewZ, viewW);
+
+    // Transform view-space direction to world-space using camera world matrix (rotation only)
+    // worldDir = cameraWorldMatrix * viewDir (3x3 upper-left for rotation)
+    const camWorld = cameraWorldMatrix;
+    const worldDirX = add(add(
+        mul(camWorld[0].x, viewDirX),
+        mul(camWorld[1].x, viewDirY)),
+        mul(camWorld[2].x, viewDirZ));
+    const worldDirY = add(add(
+        mul(camWorld[0].y, viewDirX),
+        mul(camWorld[1].y, viewDirY)),
+        mul(camWorld[2].y, viewDirZ));
+    const worldDirZ = add(add(
+        mul(camWorld[0].z, viewDirX),
+        mul(camWorld[1].z, viewDirY)),
+        mul(camWorld[2].z, viewDirZ));
+
+    // Final ray direction: normalized world-space vector FROM camera THROUGH pixel INTO scene
+    const rayDir = normalize(vec3(worldDirX, worldDirY, worldDirZ));
 
     // ============================================================
     // TERRAIN INTERSECTION (Heightfield Raymarching)
@@ -615,9 +651,18 @@ function createPathTracerMaterial() {
 
     // Camera-First Raymarching: trace ray FROM camera INTO scene
     // Start at rayOrigin (camera) and march along rayDir until we hit something
+    // Use cumulative distance calculation for proper linear marching
     for (let i = 0; i < RAYMARCH_ITERATIONS; i++) {
-        const stepSize = 10.0 + i * 2.0;  // Increasing step size for efficiency
-        const sampleDist = i * stepSize;   // Total distance from camera
+        // Step size increases with distance for efficiency
+        // Start at 10 units, increase by 2 units per iteration
+        const stepSize = 10.0 + i * 2.0;
+        
+        // Cumulative distance: sum of all previous steps
+        // This is the arithmetic series: sum(10 + 2*k) for k=0 to i-1
+        // = 10*i + 2*(0+1+2+...+(i-1)) = 10*i + 2*(i*(i-1)/2) = 10*i + i*(i-1)
+        // = i * (10 + i - 1) = i * (9 + i)
+        // For current sample position, we use the distance to the START of this step
+        const sampleDist = i * (9 + i);
         
         // Calculate sample position along ray: origin + direction * distance
         const samplePos = vec3(
@@ -747,7 +792,8 @@ function createPathTracerMaterial() {
 
 /**
  * Update path tracer uniforms each frame.
- * Updates camera matrices, time, and checks for camera movement.
+ * Updates time and checks for camera movement.
+ * Note: Camera matrices now use built-in TSL nodes which auto-update.
  * 
  * @param {THREE.Camera} camera - The main camera
  * @param {number} deltaTime - Time since last frame
@@ -777,10 +823,9 @@ function updatePathTracerUniforms(camera, deltaTime) {
 
     tslUniforms.accumulatedSamples.value = accumulatedSamples;
 
-    // Update camera matrices
+    // Note: Camera matrices are handled by built-in TSL nodes (cameraPosition, 
+    // cameraProjectionMatrixInverse, cameraWorldMatrix) which auto-update each frame
     camera.updateMatrixWorld();
-    tslUniforms.cameraWorldMatrix.value.copy(camera.matrixWorld);
-    tslUniforms.cameraProjectionMatrixInverse.value.copy(camera.projectionMatrixInverse);
 }
 
 /**

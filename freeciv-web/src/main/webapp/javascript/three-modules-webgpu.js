@@ -42,7 +42,9 @@ import {
   // Arithmetic operators
   mul, add, sub, div,
   // Reflection function (used by path tracer for water and metal surfaces)
-  reflect
+  reflect,
+  // Camera-related nodes (needed for path tracer ray generation)
+  cameraPosition, cameraProjectionMatrixInverse, cameraViewMatrix, cameraWorldMatrix
 } from 'three/tsl';
 
 // Extract the WebGPU exports and add them to the global THREE object
@@ -105,6 +107,10 @@ THREE.add = add;
 THREE.sub = sub;
 THREE.div = div;
 THREE.reflect = reflect;
+THREE.cameraPosition = cameraPosition;
+THREE.cameraProjectionMatrixInverse = cameraProjectionMatrixInverse;
+THREE.cameraViewMatrix = cameraViewMatrix;
+THREE.cameraWorldMatrix = cameraWorldMatrix;
 
 console.log('WebGPU modules loaded successfully');
 
