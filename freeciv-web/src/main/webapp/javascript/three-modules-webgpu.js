@@ -40,7 +40,9 @@ import {
   // Math and blending functions
   mix, step, floor, fract, mod, dot, sin, cos, normalize, max, min, pow, clamp, abs, sqrt,
   // Arithmetic operators
-  mul, add, sub, div
+  mul, add, sub, div,
+  // Reflection function (used by path tracer for water and metal surfaces)
+  reflect
 } from 'three/tsl';
 
 // Extract the WebGPU exports and add them to the global THREE object
@@ -102,6 +104,7 @@ THREE.mul = mul;
 THREE.add = add;
 THREE.sub = sub;
 THREE.div = div;
+THREE.reflect = reflect;
 
 console.log('WebGPU modules loaded successfully');
 
