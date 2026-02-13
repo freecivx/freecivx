@@ -386,10 +386,12 @@ function createPathTracerMaterial() {
         // TSL control flow and function definition
         Fn, If, Loop, Break, Return,
         // Additional math functions
-        cross, length, negate, exp, sign,
-        // Comparison and logical operators
-        lessThan, greaterThan, select
+        cross, length, negate, exp, sign
     } = THREE;
+
+    // Pre-computed constants for efficiency
+    const PI = Math.PI;
+    const TWO_PI = 2.0 * Math.PI;
 
     // Verify all required TSL functions and nodes are available
     const requiredTSLNames = [
@@ -398,8 +400,7 @@ function createPathTracerMaterial() {
         'mix', 'step', 'floor', 'fract', 'mod', 'dot', 'sin', 'cos', 'normalize', 'max', 'min', 'pow', 'clamp', 'abs', 'sqrt',
         'mul', 'add', 'sub', 'div', 'reflect', 'refract',
         'Fn', 'If', 'Loop', 'Break', 'Return',
-        'cross', 'length', 'negate', 'exp', 'sign',
-        'lessThan', 'greaterThan', 'select'
+        'cross', 'length', 'negate', 'exp', 'sign'
     ];
     const missing = requiredTSLNames.filter(name => THREE[name] === undefined);
     if (missing.length > 0) {
@@ -504,7 +505,7 @@ function createPathTracerMaterial() {
     function cosineWeightedDirection(normalX, normalY, normalZ, r1, r2) {
         // Convert uniform random numbers to spherical coordinates
         // r1, r2 are uniform random values in [0, 1]
-        const phi = mul(2.0 * Math.PI, r1);
+        const phi = mul(TWO_PI, r1);
         const cosTheta = sqrt(r2);
         const sinTheta = sqrt(sub(1.0, r2));
         
@@ -802,8 +803,7 @@ function createPathTracerMaterial() {
     }
 
     // GGX Normal Distribution Function
-    // Using Math.PI for precision in the distribution calculation
-    const PI = Math.PI;
+    // Uses PI constant defined at the top of createPathTracerMaterial
     function distributionGGX(NdotH, roughness) {
         const a = mul(roughness, roughness);
         const a2 = mul(a, a);
@@ -897,28 +897,35 @@ function createPathTracerMaterial() {
         const terrainFinal = add(terrainDirect, terrainAmbient);
         
         // Water material (reflection + refraction)
+        // Note: Water surface is always horizontal in this heightfield renderer,
+        // so we optimize by assuming normal = (0, 1, 0) for water calculations.
         // Calculate Fresnel for water using Schlick approximation
+        // cosTheta = -rayDir · normal = -rayDir.y (since normal.y = 1)
         const cosTheta = max(0.0, negate(currentRayDirY));  // View angle with surface
         const waterF0 = 0.02;  // Water base reflectance
         const waterFresnel = fresnelSchlick(cosTheta, waterF0);
         
-        // Reflection direction
+        // Reflection direction: R = I - 2*(I·N)*N
+        // For horizontal surface (normal = 0,1,0): R.x = I.x, R.y = -I.y, R.z = I.z
         const reflectDirX = currentRayDirX;
-        const reflectDirY = sub(0.0, currentRayDirY);  // Reflect Y
+        const reflectDirY = negate(currentRayDirY);  // Reflect Y
         const reflectDirZ = currentRayDirZ;
         const reflectionColor = getSkyColor(reflectDirY);
         
         // Refraction direction (IOR 1.33 for water)
-        // Using Snell's law: sin(theta_t) = (n1/n2) * sin(theta_i)
-        const etaRatio = div(1.0, WATER_IOR);  // Air to water
-        const cosThetaI = negate(currentRayDirY);
+        // Using Snell's law for horizontal surface: sin(theta_t) = (n1/n2) * sin(theta_i)
+        // For horizontal normal, we only need to modify the Y component
+        const etaRatio = div(1.0, WATER_IOR);  // Air to water (1.0 / 1.33)
+        const cosThetaI = negate(currentRayDirY);  // cos(incident angle) = -ray.y for downward rays
         const sinThetaI2 = sub(1.0, mul(cosThetaI, cosThetaI));
         const sinThetaT2 = mul(mul(etaRatio, etaRatio), sinThetaI2);
         const cosThetaT = sqrt(max(0.0, sub(1.0, sinThetaT2)));
         
-        // Refracted direction (simplified for horizontal surface)
+        // Refracted direction for horizontal surface
+        // T = eta * I + (eta * cosI - cosT) * N
+        // For N = (0,1,0): T.x = eta*I.x, T.y = eta*I.y + eta*cosI - cosT, T.z = eta*I.z
         const refractDirX = mul(etaRatio, currentRayDirX);
-        const refractDirY = negate(cosThetaT);  // Downward into water
+        const refractDirY = sub(mul(etaRatio, currentRayDirY), cosThetaT);  // Downward into water
         const refractDirZ = mul(etaRatio, currentRayDirZ);
         
         // Blend reflection and refraction based on Fresnel
