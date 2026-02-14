@@ -81,6 +81,7 @@ let prevCameraQuaternion = null;
 
 // Debug configuration
 const DEBUG_LOG_INTERVAL_MS = 5000;
+const DEBUG_LOG_PIXEL_RENDERING = false; // Set to true to log pixel rendering progress each frame
 
 // Default map size fallback (used when map object is not available)
 const DEFAULT_MAP_SIZE = 64;
@@ -667,23 +668,30 @@ function createPathTracerMaterial() {
     // The GPU handles millions of pixels simultaneously, which is more efficient than
     // rendering one tile at a time on the CPU
     
-    // Calculate pixel coordinates
-    const pixelCoordX = mul(uvCoord.x, resolutionUniform.x);
-    const pixelCoordY = mul(uvCoord.y, resolutionUniform.y);
-    const currentTileX = floor(div(pixelCoordX, TILE_SIZE));
-    const currentTileY = floor(div(pixelCoordY, TILE_SIZE));
+    // Pixel selection and UV calculation
+    // When RENDER_ALL_PIXELS is true, use direct UV (all pixels processed)
+    // Otherwise, use tile-based approach (legacy mode for reduced GPU load)
+    let isSelectedTile, tileUvX, tileUvY;
     
-    // When TILE_SIZE=1 and RENDER_ALL_PIXELS=true, all pixels are "selected"
-    // This allows the GPU to process all pixels in a single draw call
-    // isSelectedTile is always 1.0 when rendering all pixels
-    const isSelectedTileX = RENDER_ALL_PIXELS ? 1.0 : step(abs(sub(currentTileX, randomTileUniform.x)), 0.5);
-    const isSelectedTileY = RENDER_ALL_PIXELS ? 1.0 : step(abs(sub(currentTileY, randomTileUniform.y)), 0.5);
-    const isSelectedTile = RENDER_ALL_PIXELS ? 1.0 : mul(isSelectedTileX, isSelectedTileY);
-    
-    // For full resolution rendering (TILE_SIZE=1), use exact UV coordinates
-    // This ensures each pixel gets its own unique ray for maximum quality
-    const tileUvX = RENDER_ALL_PIXELS ? uvCoord.x : div(add(mul(currentTileX, TILE_SIZE), TILE_HALF_SIZE), resolutionUniform.x);
-    const tileUvY = RENDER_ALL_PIXELS ? uvCoord.y : div(add(mul(currentTileY, TILE_SIZE), TILE_HALF_SIZE), resolutionUniform.y);
+    if (RENDER_ALL_PIXELS) {
+        // Full resolution mode: all pixels selected, use exact UV coordinates
+        isSelectedTile = 1.0;
+        tileUvX = uvCoord.x;
+        tileUvY = uvCoord.y;
+    } else {
+        // Tile-based mode: only selected tile's pixels are rendered
+        const pixelCoordX = mul(uvCoord.x, resolutionUniform.x);
+        const pixelCoordY = mul(uvCoord.y, resolutionUniform.y);
+        const currentTileX = floor(div(pixelCoordX, TILE_SIZE));
+        const currentTileY = floor(div(pixelCoordY, TILE_SIZE));
+        
+        const isSelectedTileX = step(abs(sub(currentTileX, randomTileUniform.x)), 0.5);
+        const isSelectedTileY = step(abs(sub(currentTileY, randomTileUniform.y)), 0.5);
+        isSelectedTile = mul(isSelectedTileX, isSelectedTileY);
+        
+        tileUvX = div(add(mul(currentTileX, TILE_SIZE), TILE_HALF_SIZE), resolutionUniform.x);
+        tileUvY = div(add(mul(currentTileY, TILE_SIZE), TILE_HALF_SIZE), resolutionUniform.y);
+    }
 
     // Calculate normalized device coordinates (NDC) from UV
     // UV goes from 0 to 1, NDC goes from -1 to +1
@@ -1531,12 +1539,14 @@ function renderPathTracer(renderer, camera) {
     // Swap buffers
     currentAccumulationBuffer = 1 - currentAccumulationBuffer;
 
-    // Log pixel rendering progress after each frame
+    // Log pixel rendering progress after each frame (only when debug flag is enabled)
     // Since all pixels are rendered on the GPU in parallel, we log per-frame progress
-    const resolution = window.pathTracerTSLUniforms?.resolution?.value;
-    if (resolution) {
-        const totalPixels = resolution.x * resolution.y;
-        console.log(`[PathTracer] Frame ${pathTracerRenderCallCount}: Rendered ${totalPixels} pixels on GPU (${resolution.x}x${resolution.y}), accumulated samples: ${accumulatedSamples}`);
+    if (DEBUG_LOG_PIXEL_RENDERING) {
+        const resolution = window.pathTracerTSLUniforms?.resolution?.value;
+        if (resolution) {
+            const totalPixels = resolution.x * resolution.y;
+            console.log(`[PathTracer] Frame ${pathTracerRenderCallCount}: Rendered ${totalPixels} pixels on GPU (${resolution.x}x${resolution.y}), accumulated samples: ${accumulatedSamples}`);
+        }
     }
 
     return true;
