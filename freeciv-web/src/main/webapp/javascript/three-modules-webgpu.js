@@ -48,15 +48,8 @@ webGpuKeys.forEach(key => {
 // Bulk-add all TSL functions to THREE namespace
 // This replaces the massive list of manual assignments and handles all available exports automatically
 Object.keys(TSL).forEach(key => {
-  // TSL exports 'float' directly, but we assign it to THREE.float as-is
-  // The TSL module handles any naming conflicts internally
   THREE[key] = TSL[key];
 });
-
-// Ensure 'float' is available (handles edge case if TSL exports it differently)
-if (TSL.float) {
-  THREE.float = TSL.float;
-}
 
 console.log('WebGPU & TSL modules bridged to THREE successfully');
 
