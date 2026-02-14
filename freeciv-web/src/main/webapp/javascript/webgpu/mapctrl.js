@@ -38,9 +38,16 @@ function init_webgl_mapctrl()
   $(window).mousemove(mouse_moved_cb);
 
   if (is_touch_device()) {
-    $('#mapcanvas').bind('touchstart', webgl_mapview_touch_start);
-    $('#mapcanvas').bind('touchend', webgl_mapview_touch_end);
-    $('#mapcanvas').bind('touchmove', webgl_mapview_touch_move);
+    // Use native addEventListener with explicit passive options.
+    // touchstart and touchmove need { passive: false } because they call preventDefault()
+    // to prevent unwanted browser scrolling during map interaction.
+    // touchend can be passive since it doesn't need to prevent default behavior.
+    var mapCanvas = document.getElementById('mapcanvas');
+    if (mapCanvas) {
+      mapCanvas.addEventListener('touchstart', webgl_mapview_touch_start, { passive: false });
+      mapCanvas.addEventListener('touchend', webgl_mapview_touch_end, { passive: true });
+      mapCanvas.addEventListener('touchmove', webgl_mapview_touch_move, { passive: false });
+    }
   }
 
   $("#zoom_map_image").click(function(event) {
@@ -181,8 +188,9 @@ function webgl_mapview_touch_start(e)
 {
   e.preventDefault();
 
-  touch_start_x = e.originalEvent.touches[0].pageX - $('#mapcanvas').position().left;
-  touch_start_y = e.originalEvent.touches[0].pageY - $('#mapcanvas').position().top;
+  // Native event: use e.touches directly (not e.originalEvent.touches)
+  touch_start_x = e.touches[0].pageX - $('#mapcanvas').position().left;
+  touch_start_y = e.touches[0].pageY - $('#mapcanvas').position().top;
 
   var ptile = webgl_canvas_pos_to_tile(touch_start_x, touch_start_y);
   set_mouse_touch_started_on_unit(ptile);
@@ -209,8 +217,12 @@ function webgl_mapview_touch_end(e)
 ****************************************************************************/
 function webgl_mapview_touch_move(e)
 {
-  mouse_x = e.originalEvent.touches[0].pageX - $('#mapcanvas').position().left;
-  mouse_y = e.originalEvent.touches[0].pageY - $('#mapcanvas').position().top;
+  // Prevent default browser scrolling while dragging the map
+  e.preventDefault();
+
+  // Native event: use e.touches directly (not e.originalEvent.touches)
+  mouse_x = e.touches[0].pageX - $('#mapcanvas').position().left;
+  mouse_y = e.touches[0].pageY - $('#mapcanvas').position().top;
 
   var spos = webgl_canvas_pos_to_map_pos(touch_start_x, touch_start_y);
   var epos = webgl_canvas_pos_to_map_pos(mouse_x, mouse_y);
