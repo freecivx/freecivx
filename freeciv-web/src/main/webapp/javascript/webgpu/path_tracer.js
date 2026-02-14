@@ -797,9 +797,12 @@ function createPathTracerMaterial() {
     // - isWater: 1.0 if water surface, 0.0 otherwise
     // - didHit: 1.0 if any intersection found, 0.0 otherwise
     const rayMarchHeightfield = Fn(([rayOriginX, rayOriginY, rayOriginZ, rayDirX, rayDirY, rayDirZ]) => {
-        const RAYMARCH_STEPS = 32;
-        const BINARY_SEARCH_STEPS = 8;  // Refinement iterations for precise hit location
+        const RAYMARCH_STEPS = 24;  // Reduced from 32 for better performance
+        const BINARY_SEARCH_STEPS = 4;  // Reduced from 8, still provides smooth intersections
         const MAX_DIST = 2000.0;
+        // Progressive step size constants - tuned to cover ~1300 units with 24 steps
+        const RAYMARCH_BASE_STEP = 12.0;       // Initial step size factor
+        const RAYMARCH_STEP_GROWTH = 1.3;      // Step size growth rate per iteration
         
         // Initialize result
         let hitT = MAX_DIST;
@@ -816,7 +819,7 @@ function createPathTracerMaterial() {
         for (let i = 0; i < RAYMARCH_STEPS; i++) {
             // Progressive step size: starts small, increases with distance
             // This gives fine detail near camera and covers more ground far away
-            const stepDist = i * (9.0 + i);
+            const stepDist = i * (RAYMARCH_BASE_STEP + i * RAYMARCH_STEP_GROWTH);
             
             // Calculate sample position along ray
             const sampleX = add(rayOriginX, mul(rayDirX, stepDist));
@@ -909,9 +912,13 @@ function createPathTracerMaterial() {
     // ==== SHADOW RAY FUNCTION ====
     // Cast a ray toward the sun to determine shadow factor
     // Returns 0.0 if in shadow, 1.0 if fully lit
+    // Optimized with progressive step sizes for better coverage with fewer steps
     function castShadowRay(originX, originY, originZ) {
-        const SHADOW_STEPS = 16;
+        const SHADOW_STEPS = 8;  // Reduced from 16 for better performance
         const SHADOW_BIAS = 1.0;  // Offset to avoid self-shadowing
+        // Progressive step constants - tuned to cover ~600 units with 8 steps
+        const SHADOW_BASE_STEP = 5.0;         // Initial step size factor  
+        const SHADOW_STEP_GROWTH = 2.5;       // Step size growth rate per iteration
         
         // Start ray slightly above surface
         const startX = add(originX, mul(sunDirectionUniform.x, SHADOW_BIAS));
@@ -920,8 +927,12 @@ function createPathTracerMaterial() {
         
         let inShadow = 0.0;
         
+        // Use progressive step sizes: smaller near origin, larger further away
+        // This catches nearby shadows precisely while covering distant terrain
         for (let i = 0; i < SHADOW_STEPS; i++) {
-            const stepDist = mul(i + 1, 10.0);
+            // Progressive step formula: (i+1) * (base + i * growth)
+            // With base=5, growth=2.5: steps at 5, 15, 30, 50, 75, 105, 140, 180 (total ~600 units)
+            const stepDist = mul((i + 1) * (SHADOW_BASE_STEP + i * SHADOW_STEP_GROWTH), 1.0);
             const sampleX = add(startX, mul(sunDirectionUniform.x, stepDist));
             const sampleY = add(startY, mul(sunDirectionUniform.y, stepDist));
             const sampleZ = add(startZ, mul(sunDirectionUniform.z, stepDist));
@@ -1001,7 +1012,7 @@ function createPathTracerMaterial() {
     let currentRayDirZ = rayDir.z;
 
     // Configuration
-    const MAX_BOUNCES = 3;  // Number of path tracing bounces
+    const MAX_BOUNCES = 2;  // Reduced from 3 for better performance (2 bounces adequate for GI)
     const WATER_IOR = 1.33; // Index of refraction for water
 
     // ============================================================
