@@ -30,6 +30,10 @@ function webgl_update_tile_known(old_tile, new_tile)
 
   if (new_tile['height'] != old_tile['height']) {
     map_geometry_dirty = true;
+    // Notify path tracer of terrain height change
+    if (typeof markPathTracerTerrainDirty !== 'undefined') {
+      markPathTracerTerrainDirty();
+    }
   }
 
   if (tile_get_known(new_tile) != tile_get_known(old_tile)) {
@@ -37,6 +41,10 @@ function webgl_update_tile_known(old_tile, new_tile)
     // Update visibility in maptiles texture for hex-aligned visibility boundaries
     if (typeof update_tiletypes_visibility !== 'undefined') {
       update_tiletypes_visibility(new_tile);
+    }
+    // Notify path tracer of fog of war change (new area explored)
+    if (typeof markPathTracerTerrainDirty !== 'undefined') {
+      markPathTracerTerrainDirty();
     }
   }
 

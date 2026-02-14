@@ -73,6 +73,9 @@ let prevCameraQuaternion = null;
 // Debug configuration
 const DEBUG_LOG_INTERVAL_MS = 5000;
 
+// Default map size fallback (used when map object is not available)
+const DEFAULT_MAP_SIZE = 64;
+
 /**
  * Initialize the path tracer renderer.
  * Creates the full-screen quad, shader material, accumulation buffers,
@@ -218,8 +221,8 @@ function initPathTracer(renderer, mainScene, mainCamera) {
  */
 function createTerrainDataTexture() {
     // Get map dimensions
-    const mapWidth = map ? map.xsize : 64;
-    const mapHeight = map ? map.ysize : 64;
+    const mapWidth = map ? map.xsize : DEFAULT_MAP_SIZE;
+    const mapHeight = map ? map.ysize : DEFAULT_MAP_SIZE;
 
     // Create data array (RGBA float)
     // R = height, G = terrain type, B = is_water, A = reserved
@@ -274,8 +277,8 @@ function createTerrainDataTexture() {
  */
 function createUnitDataTexture() {
     // Get map dimensions
-    const mapWidth = map ? map.xsize : 64;
-    const mapHeight = map ? map.ysize : 64;
+    const mapWidth = map ? map.xsize : DEFAULT_MAP_SIZE;
+    const mapHeight = map ? map.ysize : DEFAULT_MAP_SIZE;
 
     // Create data array (RGBA float)
     // R = has_unit, G = unit_type, B = is_metallic, A = reserved
@@ -351,7 +354,7 @@ function createPathTracerUniforms(camera, width, height) {
         // Terrain data
         terrainData: { value: terrainDataTexture },
         unitData: { value: unitDataTexture },
-        mapSize: { value: new THREE.Vector2(map ? map.xsize : 64, map ? map.ysize : 64) },
+        mapSize: { value: new THREE.Vector2(map ? map.xsize : DEFAULT_MAP_SIZE, map ? map.ysize : DEFAULT_MAP_SIZE) },
         
         // Map world dimensions
         mapWorldSize: { value: new THREE.Vector2(
@@ -542,6 +545,46 @@ function createPathTracerMaterial() {
         return hash(add(add(mul(px, 12.9898), mul(py, 78.233)), mul(seed, 43758.5453)));
     }
 
+    // ==== BLUE NOISE SAMPLING ====
+    // Blue noise provides better sample distribution than white noise,
+    // leading to faster convergence in path tracing. This is an approximation
+    // using interleaved gradient noise which has blue noise-like properties.
+    
+    // Interleaved Gradient Noise - approximates blue noise properties
+    // Reference: "Next Generation Post Processing in Call of Duty: Advanced Warfare" (Jimenez, 2014)
+    function interleavedGradientNoise(px, py, frame) {
+        // Magic numbers for interleaved gradient noise
+        const magic = vec3(0.06711056, 0.00583715, 52.9829189);
+        // Add frame-based temporal offset using golden ratio for good distribution
+        const frameOffset = mul(frame, 0.618033988749895);
+        const dotProduct = add(add(mul(px, magic.x), mul(py, magic.y)), frameOffset);
+        return fract(mul(magic.z, fract(dotProduct)));
+    }
+    
+    // 2D Blue Noise sample using R2 quasi-random sequence (low-discrepancy)
+    // R2 sequence provides excellent 2D coverage with blue noise properties
+    // Reference: "The Unreasonable Effectiveness of Quasirandom Sequences" (Roberts, 2018)
+    function blueNoise2D(px, py, frame) {
+        // R2 sequence constants (based on the plastic number / plastic ratio)
+        const g = 1.32471795724474602596;  // Plastic number (unique real solution to x³ = x + 1)
+        const a1 = div(1.0, g);        // ≈ 0.7548776662
+        const a2 = div(1.0, mul(g, g)); // ≈ 0.5698402910
+        
+        // Base sample from interleaved gradient noise
+        const base = interleavedGradientNoise(px, py, frame);
+        
+        // Add R2 sequence offset based on frame number for temporal variation
+        const r2x = fract(add(base, mul(frame, a1)));
+        const r2y = fract(add(base, mul(frame, a2)));
+        
+        return vec2(r2x, r2y);
+    }
+    
+    // Blue noise random value (single dimension)
+    function blueNoiseRandom(px, py, seed) {
+        return interleavedGradientNoise(px, py, seed);
+    }
+
     // ==== COSINE-WEIGHTED HEMISPHERE SAMPLING ====
     // Generates a random direction for indirect lighting (Lambertian BRDF)
     // This sampling strategy is importance-sampled for diffuse surfaces
@@ -614,10 +657,20 @@ function createPathTracerMaterial() {
     // 4. Accumulate light contribution back toward the camera
     // ============================================================
 
-    // Add sub-pixel jitter for anti-aliasing (stochastic sampling)
-    // This randomizes ray positions within each pixel for smoother edges
-    const jitterX = mul(sub(random(uvCoord.x, uvCoord.y, randomSeed), 0.5), div(2.0, resolutionUniform.x));
-    const jitterY = mul(sub(random(uvCoord.y, uvCoord.x, add(randomSeed, 0.5)), 0.5), div(2.0, resolutionUniform.y));
+    // ==== BLUE NOISE SUB-PIXEL JITTER ====
+    // Use blue noise for anti-aliasing jitter instead of white noise
+    // Blue noise provides better sample distribution, leading to:
+    // - Faster convergence (fewer samples needed for smooth image)
+    // - Less visible noise patterns during accumulation
+    // - More perceptually pleasing intermediate results
+    const pixelX = mul(uvCoord.x, resolutionUniform.x);
+    const pixelY = mul(uvCoord.y, resolutionUniform.y);
+    const blueNoiseSample = blueNoise2D(pixelX, pixelY, frameCountUniform);
+    
+    // Convert blue noise [0,1] to centered sub-pixel jitter in NDC space
+    // Result is in range [-0.5/resolution, +0.5/resolution] which covers one pixel in NDC
+    const jitterX = mul(sub(blueNoiseSample.x, 0.5), div(1.0, resolutionUniform.x));
+    const jitterY = mul(sub(blueNoiseSample.y, 0.5), div(1.0, resolutionUniform.y));
 
     // Apply jitter to NDC coordinates
     const jitteredNdcX = add(ndcX, jitterX);
@@ -694,16 +747,29 @@ function createPathTracerMaterial() {
     // This defines the Y coordinate where water surface is rendered
     const WATER_LEVEL = 50.0;
 
+    // ==== WORLD-TO-UV COORDINATE CONVERSION ====
+    // World coordinates are centered at (0,0,0) in the middle of the map.
+    // Map extends from -mapWorldSize/2 to +mapWorldSize/2 in X and Z.
+    // UV coordinates range from 0 to 1, where:
+    //   UV(0,0) = world position (-mapWorldSize.x/2, -mapWorldSize.y/2)
+    //   UV(1,1) = world position (+mapWorldSize.x/2, +mapWorldSize.y/2)
+    //   UV(0.5,0.5) = world position (0, 0) = map center
+    //
+    // Formula: UV = (worldPos + mapWorldSize/2) / mapWorldSize
+
     // Sample terrain height at world position - helper function
     function sampleTerrainHeight(worldX, worldZ) {
-        // Convert world coords to map UV
+        // Convert world coords to map UV using the world-to-UV formula
+        // mapU = (worldX + mapWorldSize.x/2) / mapWorldSize.x
+        // This maps world X range [-mapWorldSize.x/2, +mapWorldSize.x/2] to UV range [0, 1]
         const mapU = div(add(worldX, mul(mapWorldSizeUniform.x, 0.5)), mapWorldSizeUniform.x);
         const mapV = div(add(worldZ, mul(mapWorldSizeUniform.y, 0.5)), mapWorldSizeUniform.y);
         
-        // Sample terrain data texture
+        // Sample terrain data texture (clamped to [0,1] to handle out-of-bounds)
         const terrainSample = texture(terrainDataTex, vec2(clamp(mapU, 0.0, 1.0), clamp(mapV, 0.0, 1.0)));
         
-        // Height is in R channel, scaled
+        // Height is in R channel, scaled by 100 to convert normalized height to world units
+        // The terrain data stores heights in [0,1] range, multiply by 100 for world Y coordinates
         return mul(terrainSample.r, 100.0);
     }
 
@@ -712,7 +778,7 @@ function createPathTracerMaterial() {
         const mapU = div(add(worldX, mul(mapWorldSizeUniform.x, 0.5)), mapWorldSizeUniform.x);
         const mapV = div(add(worldZ, mul(mapWorldSizeUniform.y, 0.5)), mapWorldSizeUniform.y);
         const terrainSample = texture(terrainDataTex, vec2(clamp(mapU, 0.0, 1.0), clamp(mapV, 0.0, 1.0)));
-        return terrainSample.b;  // B channel = is_water
+        return terrainSample.b;  // B channel = is_water (1.0 if water, 0.0 otherwise)
     }
 
     // Sample unit presence - helper function
@@ -724,13 +790,15 @@ function createPathTracerMaterial() {
 
     // ==== RAY-HEIGHTMAP INTERSECTION FUNCTION (TSL Fn) ====
     // Performs ray marching through the terrain heightfield texture
+    // with Binary Search refinement to eliminate stepping artifacts (ring patterns)
     // Returns: vec4(hitT, materialType, isWater, didHit)
-    // - hitT: distance along ray to intersection point
+    // - hitT: distance along ray to intersection point (refined via binary search)
     // - materialType: 0=terrain, 1=water, 2=metal unit
     // - isWater: 1.0 if water surface, 0.0 otherwise
     // - didHit: 1.0 if any intersection found, 0.0 otherwise
     const rayMarchHeightfield = Fn(([rayOriginX, rayOriginY, rayOriginZ, rayDirX, rayDirY, rayDirZ]) => {
         const RAYMARCH_STEPS = 32;
+        const BINARY_SEARCH_STEPS = 8;  // Refinement iterations for precise hit location
         const MAX_DIST = 2000.0;
         
         // Initialize result
@@ -739,9 +807,15 @@ function createPathTracerMaterial() {
         let hitIsWater = 0.0;
         let didHit = 0.0;
         
+        // Track the previous step distance for binary search refinement
+        let prevStepDist = 0.0;
+        let hitStepPrev = 0.0;  // Distance just before hit (above terrain)
+        let hitStepCurr = 0.0;  // Distance at hit (below terrain)
+        
         // March along the ray
         for (let i = 0; i < RAYMARCH_STEPS; i++) {
             // Progressive step size: starts small, increases with distance
+            // This gives fine detail near camera and covers more ground far away
             const stepDist = i * (9.0 + i);
             
             // Calculate sample position along ray
@@ -771,7 +845,13 @@ function createPathTracerMaterial() {
             const notHitYet = sub(1.0, didHit);
             const anyHit = max(terrainHit, max(waterHit, unitHit));
             
-            // Update hit distance (take first hit)
+            // Store step bounds for binary search refinement
+            // hitStepPrev = distance where we were still above terrain
+            // hitStepCurr = distance where we crossed below terrain
+            hitStepPrev = mix(hitStepPrev, prevStepDist, mul(anyHit, notHitYet));
+            hitStepCurr = mix(hitStepCurr, stepDist, mul(anyHit, notHitYet));
+            
+            // Update hit distance (initially use current step, will be refined later)
             hitT = mix(hitT, stepDist, mul(anyHit, notHitYet));
             
             // Determine material type: 0=terrain, 1=water, 2=unit
@@ -781,7 +861,47 @@ function createPathTracerMaterial() {
             
             // Mark as hit
             didHit = max(didHit, anyHit);
+            
+            // Remember previous step distance for next iteration
+            prevStepDist = stepDist;
         }
+        
+        // ==== BINARY SEARCH REFINEMENT ====
+        // After finding an intersection bracket [hitStepPrev, hitStepCurr],
+        // perform binary search to find the precise intersection point.
+        // This eliminates the visible "rings" caused by discrete step boundaries.
+        let binaryLow = hitStepPrev;
+        let binaryHigh = hitStepCurr;
+        
+        for (let b = 0; b < BINARY_SEARCH_STEPS; b++) {
+            // Midpoint of current bracket
+            const binaryMid = mul(add(binaryLow, binaryHigh), 0.5);
+            
+            // Sample at midpoint
+            const midX = add(rayOriginX, mul(rayDirX, binaryMid));
+            const midY = add(rayOriginY, mul(rayDirY, binaryMid));
+            const midZ = add(rayOriginZ, mul(rayDirZ, binaryMid));
+            
+            const midTerrainH = sampleTerrainHeight(midX, midZ);
+            const midIsWater = sampleIsWater(midX, midZ);
+            
+            // Check if midpoint is below terrain or water
+            const midHeightDiff = sub(midY, midTerrainH);
+            const midTerrainHit = step(midHeightDiff, 0.0);
+            const midWaterHit = mul(midIsWater, step(sub(midY, WATER_LEVEL), 0.0));
+            const midAnyHit = max(midTerrainHit, midWaterHit);
+            
+            // Binary search: if hit at mid, search lower half; else search upper half
+            // If midAnyHit == 1: intersection is in [low, mid], so high = mid
+            // If midAnyHit == 0: intersection is in [mid, high], so low = mid
+            binaryHigh = mix(binaryHigh, binaryMid, midAnyHit);
+            binaryLow = mix(binaryMid, binaryLow, midAnyHit);
+        }
+        
+        // Final refined hit distance is the midpoint of the final bracket
+        // Only apply refinement if we actually hit something
+        const refinedT = mul(add(binaryLow, binaryHigh), 0.5);
+        hitT = mix(hitT, refinedT, didHit);
         
         return vec4(hitT, hitMaterial, hitIsWater, didHit);
     });
@@ -939,7 +1059,7 @@ function createPathTracerMaterial() {
         const terrainAmbient = mul(terrainDiffuse, 0.2);
         const terrainFinal = add(terrainDirect, terrainAmbient);
         
-        // Water material (reflection + refraction)
+        // Water material (reflection + refraction + Beer-Lambert absorption)
         // Note: Water surface is always horizontal in this heightfield renderer,
         // so we optimize by assuming normal = (0, 1, 0) for water calculations.
         // Calculate Fresnel for water using Schlick approximation
@@ -954,6 +1074,35 @@ function createPathTracerMaterial() {
         const reflectDirY = negate(currentRayDirY);  // Reflect Y
         const reflectDirZ = currentRayDirZ;
         const reflectionColor = getSkyColor(reflectDirY);
+        
+        // ==== BEER-LAMBERT WATER DEPTH ABSORPTION ====
+        // Beer-Lambert law: I = I_0 * e^(-absorption_coefficient * distance)
+        // This makes deeper water appear darker as light is absorbed
+        // 
+        // Calculate water depth at hit position (WATER_LEVEL - terrainHeight)
+        const terrainAtHit = sampleTerrainHeight(hitPosX, hitPosZ);
+        const waterDepth = max(0.0, sub(WATER_LEVEL, terrainAtHit));
+        
+        // Water absorption coefficients (per unit depth)
+        // Different wavelengths absorb at different rates:
+        // - Red light absorbs fastest (higher coefficient)
+        // - Blue light absorbs slowest (lower coefficient)
+        // This creates the characteristic blue-green color of deep water
+        const waterAbsorptionR = 0.15;  // Red absorbs fastest
+        const waterAbsorptionG = 0.07;  // Green absorbs moderately
+        const waterAbsorptionB = 0.03;  // Blue absorbs slowest
+        
+        // Beer-Lambert absorption factor: e^(-absorption * depth)
+        // Clamp depth to reasonable range to avoid extreme values
+        const clampedDepth = min(waterDepth, 100.0);
+        const absorptionR = exp(mul(negate(waterAbsorptionR), clampedDepth));
+        const absorptionG = exp(mul(negate(waterAbsorptionG), clampedDepth));
+        const absorptionB = exp(mul(negate(waterAbsorptionB), clampedDepth));
+        const waterAbsorption = vec3(absorptionR, absorptionG, absorptionB);
+        
+        // Deep water color (what we see when all light is absorbed)
+        // This is the color of the water at maximum depth
+        const deepWaterColor = vec3(0.02, 0.05, 0.15);  // Dark blue-black
         
         // Refraction direction (IOR 1.33 for water)
         // Using Snell's law for horizontal surface: sin(theta_t) = (n1/n2) * sin(theta_i)
@@ -971,9 +1120,15 @@ function createPathTracerMaterial() {
         const refractDirY = sub(mul(etaRatio, currentRayDirY), cosThetaT);  // Downward into water
         const refractDirZ = mul(etaRatio, currentRayDirZ);
         
-        // Blend reflection and refraction based on Fresnel
+        // Apply Beer-Lambert absorption to water color
+        // Shallow water: shows more of the base water color
+        // Deep water: shows more of the deep water color (darker)
+        const absorbedWaterColor = mul(waterColorUniform, waterAbsorption);
+        const depthBlendedWaterColor = add(absorbedWaterColor, mul(deepWaterColor, sub(vec3(1.0, 1.0, 1.0), waterAbsorption)));
+        
+        // Blend reflection and refraction based on Fresnel, with depth-based absorption
         const waterReflect = mul(reflectionColor, waterFresnel);
-        const waterRefract = mul(waterColorUniform, sub(1.0, waterFresnel));
+        const waterRefract = mul(depthBlendedWaterColor, sub(1.0, waterFresnel));
         const waterFinal = add(waterReflect, waterRefract);
         
         // Metal unit material (high reflectance)
@@ -999,9 +1154,12 @@ function createPathTracerMaterial() {
         // ==== PREPARE NEXT BOUNCE ====
         // Generate new ray direction based on material type
         
-        // Random numbers for this bounce
-        const rand1 = random(uvCoord.x, uvCoord.y, add(randomSeed, mul(bounce, 7.13)));
-        const rand2 = random(uvCoord.y, uvCoord.x, add(randomSeed, mul(bounce, 11.31)));
+        // Use blue noise for bounce random numbers (better convergence than white noise)
+        // Add bounce index as offset for decorrelation between bounces
+        const bounceOffset = mul(bounce, 17.0);  // Use 17 (prime) for good decorrelation
+        const bounceNoise = blueNoise2D(pixelX, pixelY, add(frameCountUniform, bounceOffset));
+        const rand1 = bounceNoise.x;
+        const rand2 = bounceNoise.y;
         
         // Cosine-weighted hemisphere sampling for diffuse bounce
         const bounceDir = cosineWeightedDirection(hitNormalX, hitNormalY, hitNormalZ, rand1, rand2);
@@ -1162,6 +1320,7 @@ function renderPathTracer(renderer, camera) {
     
     // Debug output at configured interval
     if (now - pathTracerLastDebugTime > DEBUG_LOG_INTERVAL_MS) {
+        console.log('[PathTracer] ========== DEBUG OUTPUT ==========');
         console.log('[PathTracer] Render call #' + pathTracerRenderCallCount);
         console.log('[PathTracer] Main camera position:', 
             camera.position?.x?.toFixed(2) ?? 'N/A', 
@@ -1192,8 +1351,70 @@ function renderPathTracer(renderer, camera) {
             const projInvUniform = window.pathTracerTSLUniforms.mainCameraProjectionMatrixInverse?.value;
             console.log('[PathTracer] Projection inverse uniform:', projInvUniform ? 'present' : 'MISSING');
             
+            // Debug projection matrix inverse details for ray generation verification
+            if (projInvUniform && projInvUniform.elements) {
+                const e = projInvUniform.elements;
+                console.log('[PathTracer] ProjInv diagonal (FOV related): [' + 
+                    e[0].toFixed(4) + ', ' + e[5].toFixed(4) + ', ' + e[10].toFixed(4) + ', ' + e[15].toFixed(4) + ']');
+                console.log('[PathTracer] ProjInv translation col: [' + 
+                    e[12].toFixed(4) + ', ' + e[13].toFixed(4) + ', ' + e[14].toFixed(4) + ', ' + e[15].toFixed(4) + ']');
+            }
+            
             const worldMatUniform = window.pathTracerTSLUniforms.mainCameraWorldMatrix?.value;
             console.log('[PathTracer] World matrix uniform:', worldMatUniform ? 'present' : 'MISSING');
+            
+            // Debug camera world matrix rotation for ray direction verification
+            if (worldMatUniform && worldMatUniform.elements) {
+                const w = worldMatUniform.elements;
+                // First 3 columns of upper-left 3x3 are the camera's local axes in world space
+                console.log('[PathTracer] Camera Right axis (col0): [' + 
+                    w[0].toFixed(3) + ', ' + w[1].toFixed(3) + ', ' + w[2].toFixed(3) + ']');
+                console.log('[PathTracer] Camera Up axis (col1): [' + 
+                    w[4].toFixed(3) + ', ' + w[5].toFixed(3) + ', ' + w[6].toFixed(3) + ']');
+                console.log('[PathTracer] Camera Forward axis (col2, -lookDir): [' + 
+                    w[8].toFixed(3) + ', ' + w[9].toFixed(3) + ', ' + w[10].toFixed(3) + ']');
+            }
+            
+            // Debug World-to-UV mapping parameters
+            const mapSize = window.pathTracerTSLUniforms.mapSize?.value;
+            const mapWorldSize = window.pathTracerTSLUniforms.mapWorldSize?.value;
+            if (mapSize && mapWorldSize) {
+                console.log('[PathTracer] Map size (tiles):', mapSize.x, 'x', mapSize.y);
+                console.log('[PathTracer] Map world size (units):', mapWorldSize.x, 'x', mapWorldSize.y);
+                console.log('[PathTracer] World units per tile:', 
+                    (mapWorldSize.x / mapSize.x).toFixed(2), 'x', 
+                    (mapWorldSize.y / mapSize.y).toFixed(2));
+                
+                // Calculate expected UV at camera position for debugging
+                if (camPosUniform) {
+                    const camWorldX = camPosUniform.x;
+                    const camWorldZ = camPosUniform.z;
+                    const expectedU = (camWorldX + mapWorldSize.x * 0.5) / mapWorldSize.x;
+                    const expectedV = (camWorldZ + mapWorldSize.y * 0.5) / mapWorldSize.y;
+                    console.log('[PathTracer] Expected UV at camera XZ: U=' + expectedU.toFixed(4) + ', V=' + expectedV.toFixed(4));
+                    console.log('[PathTracer] UV in valid range [0,1]:', 
+                        (expectedU >= 0 && expectedU <= 1 && expectedV >= 0 && expectedV <= 1) ? 'YES' : 'NO - camera may be outside map bounds');
+                }
+            }
+            
+            // Debug sun/lighting uniforms
+            const sunDir = window.pathTracerTSLUniforms.sunDirection?.value;
+            const sunInt = window.pathTracerTSLUniforms.sunIntensity?.value;
+            if (sunDir) {
+                console.log('[PathTracer] Sun direction:', 
+                    sunDir.x?.toFixed(3) ?? 'N/A', 
+                    sunDir.y?.toFixed(3) ?? 'N/A', 
+                    sunDir.z?.toFixed(3) ?? 'N/A');
+            }
+            console.log('[PathTracer] Sun intensity:', sunInt ?? 'N/A');
+            
+            // Debug terrain data texture
+            if (terrainDataTexture) {
+                console.log('[PathTracer] Terrain texture size:', 
+                    terrainDataTexture.image?.width ?? 'N/A', 'x', 
+                    terrainDataTexture.image?.height ?? 'N/A');
+            }
+            
         } else {
             console.log('[PathTracer] TSL Uniforms present: NO - this is a problem!');
         }
@@ -1204,6 +1425,7 @@ function renderPathTracer(renderer, camera) {
             console.log('[PathTracer] Quad material:', pathTracerQuad.material ? 'present' : 'MISSING');
         }
         
+        console.log('[PathTracer] ========== END DEBUG ==========');
         pathTracerLastDebugTime = now;
     }
 
@@ -1279,25 +1501,142 @@ function isPathTracerEnabled() {
     return pathTracerEnabled;
 }
 
+// Track if path tracer terrain data needs update
+let pathTracerTerrainDirty = true;
+let pathTracerUnitsDirty = true;
+let lastTerrainUpdateFrame = 0;
+const TERRAIN_UPDATE_MIN_FRAMES = 30;  // Minimum frames between full terrain updates
+
+/**
+ * Mark the path tracer terrain data as dirty (needing update).
+ * Call this when map exploration changes, terrain is modified, or fog of war updates.
+ */
+function markPathTracerTerrainDirty() {
+    pathTracerTerrainDirty = true;
+    console.log('[PathTracer] Terrain marked as dirty - will update on next render');
+}
+
+/**
+ * Mark the path tracer unit data as dirty (needing update).
+ * Call this when units move, are created, or are destroyed.
+ */
+function markPathTracerUnitsDirty() {
+    pathTracerUnitsDirty = true;
+}
+
 /**
  * Update scene data textures.
  * Call this when terrain or units change.
+ * Can be called even when path tracer is disabled to keep data ready.
+ * 
+ * @param {boolean} force - Force update even if not marked dirty
  */
-function updatePathTracerSceneData() {
-    if (!pathTracerEnabled) return;
+function updatePathTracerSceneData(force = false) {
+    // Track if any updates were made
+    let updated = false;
     
-    // Recreate textures with updated data
-    createTerrainDataTexture();
-    createUnitDataTexture();
+    // Update terrain data if dirty or forced
+    if (pathTracerTerrainDirty || force) {
+        console.log('[PathTracer] Updating terrain data texture...');
+        createTerrainDataTexture();
+        pathTracerTerrainDirty = false;
+        updated = true;
+        
+        // Update uniform reference if available
+        if (window.pathTracerTSLUniforms) {
+            window.pathTracerTSLUniforms.terrainData.value = terrainDataTexture;
+        }
+    }
     
-    // Update uniform references
-    if (window.pathTracerTSLUniforms) {
-        window.pathTracerTSLUniforms.terrainData.value = terrainDataTexture;
-        window.pathTracerTSLUniforms.unitData.value = unitDataTexture;
+    // Update unit data if dirty or forced
+    if (pathTracerUnitsDirty || force) {
+        createUnitDataTexture();
+        pathTracerUnitsDirty = false;
+        updated = true;
+        
+        // Update uniform reference if available
+        if (window.pathTracerTSLUniforms) {
+            window.pathTracerTSLUniforms.unitData.value = unitDataTexture;
+        }
     }
     
     // Reset accumulation since scene changed
-    accumulatedSamples = 0;
+    if (updated && pathTracerEnabled) {
+        accumulatedSamples = 0;
+        console.log('[PathTracer] Scene data updated, accumulation reset');
+    }
+    
+    return updated;
+}
+
+/**
+ * Automatically check and update path tracer data if map has changed.
+ * This should be called periodically (e.g., each frame) to detect map changes.
+ * Uses the global map_known_dirty and map_geometry_dirty flags from tile_visibility_handler.js
+ */
+function checkPathTracerMapUpdates() {
+    // Check global dirty flags from tile_visibility_handler.js
+    if (typeof map_known_dirty !== 'undefined' && map_known_dirty) {
+        markPathTracerTerrainDirty();
+        // Note: We don't clear map_known_dirty here as other systems may also need it
+    }
+    
+    if (typeof map_geometry_dirty !== 'undefined' && map_geometry_dirty) {
+        markPathTracerTerrainDirty();
+        // Note: We don't clear map_geometry_dirty here as other systems may also need it
+    }
+    
+    // Update terrain data if dirty
+    if (pathTracerTerrainDirty || pathTracerUnitsDirty) {
+        updatePathTracerSceneData(false);
+    }
+}
+
+/**
+ * Update a single tile in the path tracer terrain texture.
+ * More efficient than recreating the entire texture for single tile changes.
+ * 
+ * @param {object} tile - The tile that changed
+ */
+function updatePathTracerTile(tile) {
+    if (!terrainDataTexture || !tile) return;
+    
+    const mapWidth = map ? map.xsize : DEFAULT_MAP_SIZE;
+    const x = tile.x;
+    const y = tile.y;
+    
+    if (x < 0 || x >= mapWidth || y < 0 || y >= (map ? map.ysize : DEFAULT_MAP_SIZE)) {
+        return;  // Out of bounds
+    }
+    
+    // Calculate index into texture data
+    const idx = (y * mapWidth + x) * 4;
+    
+    // Get the texture data array
+    const data = terrainDataTexture.image.data;
+    if (!data) return;
+    
+    // Terrain type constants
+    const TERRAIN_INACCESSIBLE = 0;
+    const TERRAIN_LAKE = 10;
+    const TERRAIN_COAST = 20;
+    
+    // Update tile data
+    data[idx + 0] = tile.height !== undefined ? tile.height : 0.5;
+    data[idx + 1] = tile.terrain !== undefined ? tile.terrain / 255.0 : 0.5;
+    
+    const terrain = tile.terrain;
+    const isWater = (terrain === TERRAIN_LAKE || terrain === TERRAIN_COAST || terrain === TERRAIN_INACCESSIBLE) ? 1.0 : 0.0;
+    data[idx + 2] = isWater;
+    data[idx + 3] = 1.0;
+    
+    // Mark texture as needing upload to GPU
+    terrainDataTexture.needsUpdate = true;
+    
+    // Reset accumulation
+    if (pathTracerEnabled) {
+        accumulatedSamples = 0;
+    }
 }
 
 /**
@@ -1527,3 +1866,7 @@ window.disposePathTracer = disposePathTracer;
 window.getPathTracerSampleCount = getPathTracerSampleCount;
 window.updatePathTracerRenderLoop = updatePathTracerRenderLoop;
 window.isCameraStatic = isCameraStatic;
+window.markPathTracerTerrainDirty = markPathTracerTerrainDirty;
+window.markPathTracerUnitsDirty = markPathTracerUnitsDirty;
+window.checkPathTracerMapUpdates = checkPathTracerMapUpdates;
+window.updatePathTracerTile = updatePathTracerTile;
