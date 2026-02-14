@@ -382,15 +382,25 @@ function createPathTracerMaterial() {
         texture, uniform, uv,
         vec2, vec3, vec4,
         mix, step, floor, fract, mod, dot, sin, cos, normalize, max, min, pow, clamp, abs, sqrt,
-        mul, add, sub, div, reflect
+        mul, add, sub, div, reflect, refract,
+        // TSL control flow and function definition
+        Fn, If, Loop, Break, Return,
+        // Additional math functions
+        cross, length, negate, exp, sign
     } = THREE;
+
+    // Pre-computed constants for efficiency
+    const PI = Math.PI;
+    const TWO_PI = 2.0 * Math.PI;
 
     // Verify all required TSL functions and nodes are available
     const requiredTSLNames = [
         'texture', 'uniform', 'uv',
         'vec2', 'vec3', 'vec4',
         'mix', 'step', 'floor', 'fract', 'mod', 'dot', 'sin', 'cos', 'normalize', 'max', 'min', 'pow', 'clamp', 'abs', 'sqrt',
-        'mul', 'add', 'sub', 'div', 'reflect'
+        'mul', 'add', 'sub', 'div', 'reflect', 'refract',
+        'Fn', 'If', 'Loop', 'Break', 'Return',
+        'cross', 'length', 'negate', 'exp', 'sign'
     ];
     const missing = requiredTSLNames.filter(name => THREE[name] === undefined);
     if (missing.length > 0) {
@@ -477,7 +487,7 @@ function createPathTracerMaterial() {
         return fract(mul(sin(mul(p, 127.1)), 43758.5453));
     }
 
-    // 2D hash
+    // 2D hash for random number generation
     function hash2(px, py) {
         const h1 = hash(add(mul(px, 12.9898), mul(py, 78.233)));
         const h2 = hash(add(mul(px, 63.7264), mul(py, 10.873)));
@@ -487,6 +497,57 @@ function createPathTracerMaterial() {
     // Random value based on pixel and frame
     function random(px, py, seed) {
         return hash(add(add(mul(px, 12.9898), mul(py, 78.233)), mul(seed, 43758.5453)));
+    }
+
+    // ==== COSINE-WEIGHTED HEMISPHERE SAMPLING ====
+    // Generates a random direction for indirect lighting (Lambertian BRDF)
+    // This sampling strategy is importance-sampled for diffuse surfaces
+    function cosineWeightedDirection(normalX, normalY, normalZ, r1, r2) {
+        // Convert uniform random numbers to spherical coordinates
+        // r1, r2 are uniform random values in [0, 1]
+        const phi = mul(TWO_PI, r1);
+        const cosTheta = sqrt(r2);
+        const sinTheta = sqrt(sub(1.0, r2));
+        
+        // Create tangent space direction
+        const localX = mul(sinTheta, cos(phi));
+        const localY = mul(sinTheta, sin(phi));
+        const localZ = cosTheta;
+        
+        // Build orthonormal basis from normal
+        // Find a vector not parallel to normal for cross product
+        const absNormalX = abs(normalX);
+        const absNormalY = abs(normalY);
+        const pickX = step(absNormalX, 0.9);
+        
+        // Reference vector: (1,0,0) if normal.y is dominant, otherwise (0,1,0)
+        const refX = pickX;
+        const refY = sub(1.0, pickX);
+        const refZ = 0.0;
+        
+        // Tangent = cross(normal, ref)
+        const tangentX = sub(mul(normalY, refZ), mul(normalZ, refY));
+        const tangentY = sub(mul(normalZ, refX), mul(normalX, refZ));
+        const tangentZ = sub(mul(normalX, refY), mul(normalY, refX));
+        
+        // Normalize tangent
+        const tangentLen = sqrt(add(add(mul(tangentX, tangentX), mul(tangentY, tangentY)), mul(tangentZ, tangentZ)));
+        const tanX = div(tangentX, max(tangentLen, 0.0001));
+        const tanY = div(tangentY, max(tangentLen, 0.0001));
+        const tanZ = div(tangentZ, max(tangentLen, 0.0001));
+        
+        // Bitangent = cross(normal, tangent)
+        const bitX = sub(mul(normalY, tanZ), mul(normalZ, tanY));
+        const bitY = sub(mul(normalZ, tanX), mul(normalX, tanZ));
+        const bitZ = sub(mul(normalX, tanY), mul(normalY, tanX));
+        
+        // Transform local direction to world space
+        // worldDir = localX * tangent + localY * bitangent + localZ * normal
+        const worldDirX = add(add(mul(localX, tanX), mul(localY, bitX)), mul(localZ, normalX));
+        const worldDirY = add(add(mul(localX, tanY), mul(localY, bitY)), mul(localZ, normalY));
+        const worldDirZ = add(add(mul(localX, tanZ), mul(localY, bitZ)), mul(localZ, normalZ));
+        
+        return vec3(worldDirX, worldDirY, worldDirZ);
     }
 
     // Get UV coordinates
@@ -582,6 +643,7 @@ function createPathTracerMaterial() {
     // ============================================================
     // TERRAIN INTERSECTION (Heightfield Raymarching)
     // ============================================================
+    // Using TSL Fn for reusable GPU shader functions
     // March the ray from the camera into the scene, checking for
     // intersections with terrain, water, and units
 
@@ -589,7 +651,7 @@ function createPathTracerMaterial() {
     // This defines the Y coordinate where water surface is rendered
     const WATER_LEVEL = 50.0;
 
-    // Sample terrain height at world position
+    // Sample terrain height at world position - helper function
     function sampleTerrainHeight(worldX, worldZ) {
         // Convert world coords to map UV
         const mapU = div(add(worldX, mul(mapWorldSizeUniform.x, 0.5)), mapWorldSizeUniform.x);
@@ -602,7 +664,7 @@ function createPathTracerMaterial() {
         return mul(terrainSample.r, 100.0);
     }
 
-    // Sample if position is water
+    // Sample if position is water - helper function
     function sampleIsWater(worldX, worldZ) {
         const mapU = div(add(worldX, mul(mapWorldSizeUniform.x, 0.5)), mapWorldSizeUniform.x);
         const mapV = div(add(worldZ, mul(mapWorldSizeUniform.y, 0.5)), mapWorldSizeUniform.y);
@@ -610,11 +672,104 @@ function createPathTracerMaterial() {
         return terrainSample.b;  // B channel = is_water
     }
 
-    // Sample unit presence
+    // Sample unit presence - helper function
     function sampleUnit(worldX, worldZ) {
         const mapU = div(add(worldX, mul(mapWorldSizeUniform.x, 0.5)), mapWorldSizeUniform.x);
         const mapV = div(add(worldZ, mul(mapWorldSizeUniform.y, 0.5)), mapWorldSizeUniform.y);
         return texture(unitDataTex, vec2(clamp(mapU, 0.0, 1.0), clamp(mapV, 0.0, 1.0)));
+    }
+
+    // ==== RAY-HEIGHTMAP INTERSECTION FUNCTION (TSL Fn) ====
+    // Performs ray marching through the terrain heightfield texture
+    // Returns: vec4(hitT, materialType, isWater, didHit)
+    // - hitT: distance along ray to intersection point
+    // - materialType: 0=terrain, 1=water, 2=metal unit
+    // - isWater: 1.0 if water surface, 0.0 otherwise
+    // - didHit: 1.0 if any intersection found, 0.0 otherwise
+    const rayMarchHeightfield = Fn(([rayOriginX, rayOriginY, rayOriginZ, rayDirX, rayDirY, rayDirZ]) => {
+        const RAYMARCH_STEPS = 32;
+        const MAX_DIST = 2000.0;
+        
+        // Initialize result
+        let hitT = MAX_DIST;
+        let hitMaterial = 0.0;
+        let hitIsWater = 0.0;
+        let didHit = 0.0;
+        
+        // March along the ray
+        for (let i = 0; i < RAYMARCH_STEPS; i++) {
+            // Progressive step size: starts small, increases with distance
+            const stepDist = i * (9.0 + i);
+            
+            // Calculate sample position along ray
+            const sampleX = add(rayOriginX, mul(rayDirX, stepDist));
+            const sampleY = add(rayOriginY, mul(rayDirY, stepDist));
+            const sampleZ = add(rayOriginZ, mul(rayDirZ, stepDist));
+            
+            // Sample terrain data
+            const terrainH = sampleTerrainHeight(sampleX, sampleZ);
+            const isWater = sampleIsWater(sampleX, sampleZ);
+            const unitInfo = sampleUnit(sampleX, sampleZ);
+            
+            // Check terrain intersection: ray.y < sampledHeight
+            const heightDiff = sub(sampleY, terrainH);
+            const terrainHit = step(heightDiff, 0.0);
+            
+            // Check water surface intersection
+            const waterHit = mul(isWater, step(sub(sampleY, WATER_LEVEL), 0.0));
+            
+            // Check unit intersection (sphere test)
+            const hasUnit = unitInfo.r;
+            const unitY = add(terrainH, 5.0);
+            const unitDistSq = add(mul(sub(sampleY, unitY), sub(sampleY, unitY)), 9.0);
+            const unitHit = mul(hasUnit, step(unitDistSq, 25.0));
+            
+            // Determine first hit (only update if not already hit)
+            const notHitYet = sub(1.0, didHit);
+            const anyHit = max(terrainHit, max(waterHit, unitHit));
+            
+            // Update hit distance (take first hit)
+            hitT = mix(hitT, stepDist, mul(anyHit, notHitYet));
+            
+            // Determine material type: 0=terrain, 1=water, 2=unit
+            const newMaterial = add(mul(waterHit, 1.0), mul(unitHit, 2.0));
+            hitMaterial = mix(hitMaterial, newMaterial, mul(anyHit, notHitYet));
+            hitIsWater = mix(hitIsWater, isWater, mul(anyHit, notHitYet));
+            
+            // Mark as hit
+            didHit = max(didHit, anyHit);
+        }
+        
+        return vec4(hitT, hitMaterial, hitIsWater, didHit);
+    });
+
+    // ==== SHADOW RAY FUNCTION ====
+    // Cast a ray toward the sun to determine shadow factor
+    // Returns 0.0 if in shadow, 1.0 if fully lit
+    function castShadowRay(originX, originY, originZ) {
+        const SHADOW_STEPS = 16;
+        const SHADOW_BIAS = 1.0;  // Offset to avoid self-shadowing
+        
+        // Start ray slightly above surface
+        const startX = add(originX, mul(sunDirectionUniform.x, SHADOW_BIAS));
+        const startY = add(originY, mul(sunDirectionUniform.y, SHADOW_BIAS));
+        const startZ = add(originZ, mul(sunDirectionUniform.z, SHADOW_BIAS));
+        
+        let inShadow = 0.0;
+        
+        for (let i = 0; i < SHADOW_STEPS; i++) {
+            const stepDist = mul(i + 1, 10.0);
+            const sampleX = add(startX, mul(sunDirectionUniform.x, stepDist));
+            const sampleY = add(startY, mul(sunDirectionUniform.y, stepDist));
+            const sampleZ = add(startZ, mul(sunDirectionUniform.z, stepDist));
+            
+            const terrainH = sampleTerrainHeight(sampleX, sampleZ);
+            const blocked = step(sampleY, terrainH);
+            
+            inShadow = max(inShadow, blocked);
+        }
+        
+        return sub(1.0, inShadow);
     }
 
     // ==== PATH TRACING CORE ====
@@ -648,8 +803,7 @@ function createPathTracerMaterial() {
     }
 
     // GGX Normal Distribution Function
-    // Using Math.PI for precision in the distribution calculation
-    const PI = Math.PI;
+    // Uses PI constant defined at the top of createPathTracerMaterial
     function distributionGGX(NdotH, roughness) {
         const a = mul(roughness, roughness);
         const a2 = mul(a, a);
@@ -676,125 +830,185 @@ function createPathTracerMaterial() {
     // Current ray state - STARTS FROM CAMERA
     // rayOrigin = camera position (where rays originate)
     // rayDir = direction through pixel (where rays go)
-    let currentRayOrigin = rayOrigin;  // Ray starts at camera
-    let currentRayDir = rayDir;        // Ray goes through pixel into scene
+    let currentRayOriginX = rayOrigin.x;
+    let currentRayOriginY = rayOrigin.y;
+    let currentRayOriginZ = rayOrigin.z;
+    let currentRayDirX = rayDir.x;
+    let currentRayDirY = rayDir.y;
+    let currentRayDirZ = rayDir.z;
 
-    // Raymarching configuration for heightfield tracing
-    const MAX_STEPS = 64;    // Maximum raymarch steps
-    const MAX_DIST = 2000.0; // Maximum ray travel distance
-    const EPSILON = 0.5;     // Surface intersection threshold
-    const RAYMARCH_ITERATIONS = 32;  // Actual iterations (balance of quality vs performance)
+    // Configuration
+    const MAX_BOUNCES = 3;  // Number of path tracing bounces
+    const WATER_IOR = 1.33; // Index of refraction for water
 
-    let totalDist = 0.0;
-    let hitPos = vec3(0, 0, 0);
-    let hitNormal = vec3(0, 1, 0);
-    let hitMaterial = 0; // Material type: 0=terrain, 1=water, 2=metal unit
-    let didHit = 0.0;
-
-    // Camera-First Raymarching: trace ray FROM camera INTO scene
-    // Start at rayOrigin (camera) and march along rayDir until we hit something
-    // Use cumulative distance calculation for proper linear marching
-    for (let i = 0; i < RAYMARCH_ITERATIONS; i++) {
-        // Step size increases with distance for efficiency
-        // Start at 10 units, increase by 2 units per iteration
-        const stepSize = 10.0 + i * 2.0;
-        
-        // Cumulative distance: sum of all previous steps
-        // This is the arithmetic series: sum(10 + 2*k) for k=0 to i-1
-        // = 10*i + 2*(0+1+2+...+(i-1)) = 10*i + 2*(i*(i-1)/2) = 10*i + i*(i-1)
-        // = i * (10 + i - 1) = i * (9 + i)
-        // For current sample position, we use the distance to the START of this step
-        const sampleDist = i * (9 + i);
-        
-        // Calculate sample position along ray: origin + direction * distance
-        const samplePos = vec3(
-            add(currentRayOrigin.x, mul(currentRayDir.x, sampleDist)),
-            add(currentRayOrigin.y, mul(currentRayDir.y, sampleDist)),
-            add(currentRayOrigin.z, mul(currentRayDir.z, sampleDist))
+    // ============================================================
+    // PATH TRACING LOOP (Multi-bounce)
+    // ============================================================
+    // Unrolled loop for 3 bounces to avoid GPU branching issues
+    // Each bounce: trace ray, hit test, shade, generate new ray
+    
+    for (let bounce = 0; bounce < MAX_BOUNCES; bounce++) {
+        // Cast ray using raymarching function
+        const hitResult = rayMarchHeightfield(
+            currentRayOriginX, currentRayOriginY, currentRayOriginZ,
+            currentRayDirX, currentRayDirY, currentRayDirZ
         );
         
-        const terrainH = sampleTerrainHeight(samplePos.x, samplePos.z);
-        const isWater = sampleIsWater(samplePos.x, samplePos.z);
-        const unitInfo = sampleUnit(samplePos.x, samplePos.z);
+        const hitT = hitResult.x;
+        const hitMaterial = hitResult.y;
+        const isWater = hitResult.z;
+        const didHit = hitResult.w;
         
-        // Check terrain hit
-        const heightDiff = sub(samplePos.y, terrainH);
-        const isUnderTerrain = step(heightDiff, 0.0);
+        // Calculate hit position
+        const hitPosX = add(currentRayOriginX, mul(currentRayDirX, hitT));
+        const hitPosY = add(currentRayOriginY, mul(currentRayDirY, hitT));
+        const hitPosZ = add(currentRayOriginZ, mul(currentRayDirZ, hitT));
         
-        // Check water hit (if water and above water level)
-        const waterSurface = WATER_LEVEL;
-        const waterHit = mul(isWater, step(sub(samplePos.y, waterSurface), 0.0));
+        // Hit normal (simplified - assume Y-up for terrain)
+        const hitNormalX = 0.0;
+        const hitNormalY = 1.0;
+        const hitNormalZ = 0.0;
         
-        // Check unit hit (units are small spheres)
-        const hasUnit = unitInfo.r;
-        const unitY = add(terrainH, 5.0);  // Units sit above terrain
-        const unitDist = sqrt(add(
-            mul(sub(samplePos.y, unitY), sub(samplePos.y, unitY)),
-            mul(3.0, 3.0)  // Unit radius
+        // ==== SKY CONTRIBUTION (no hit) ====
+        const skyColor = getSkyColor(currentRayDirY);
+        const sunLight = getSunLight(currentRayDirX, currentRayDirY, currentRayDirZ);
+        const noHitContrib = mul(add(skyColor, sunLight), sub(1.0, didHit));
+        finalColor = add(finalColor, mul(throughput, noHitContrib));
+        
+        // ==== DIRECT LIGHTING WITH SUN SHADOWS ====
+        // Cast shadow ray toward sun
+        const shadowFactor = castShadowRay(hitPosX, hitPosY, hitPosZ);
+        
+        // Calculate N·L for diffuse lighting
+        const NdotL = max(0.0, add(
+            add(
+                mul(hitNormalX, sunDirectionUniform.x),
+                mul(hitNormalY, sunDirectionUniform.y)
+            ),
+            mul(hitNormalZ, sunDirectionUniform.z)
         ));
-        const unitHitTest = mul(hasUnit, step(unitDist, 5.0));
         
-        // Accumulate hit info (take first hit)
-        hitPos = mix(hitPos, samplePos, mul(isUnderTerrain, sub(1.0, didHit)));
-        hitNormal = mix(hitNormal, vec3(0, 1, 0), mul(isUnderTerrain, sub(1.0, didHit)));
-        hitMaterial = mix(hitMaterial, mul(isWater, 1.0), mul(waterHit, sub(1.0, didHit)));
-        hitMaterial = mix(hitMaterial, 2.0, mul(unitHitTest, sub(1.0, didHit)));
+        // ==== MATERIAL SHADING ====
         
-        didHit = max(didHit, max(isUnderTerrain, max(waterHit, unitHitTest)));
+        // Terrain material (diffuse Lambertian)
+        const terrainDiffuse = vec3(0.3, 0.5, 0.2);  // Green terrain
+        const terrainDirect = mul(mul(mul(terrainDiffuse, NdotL), shadowFactor), sunIntensityUniform);
+        const terrainAmbient = mul(terrainDiffuse, 0.2);
+        const terrainFinal = add(terrainDirect, terrainAmbient);
+        
+        // Water material (reflection + refraction)
+        // Note: Water surface is always horizontal in this heightfield renderer,
+        // so we optimize by assuming normal = (0, 1, 0) for water calculations.
+        // Calculate Fresnel for water using Schlick approximation
+        // cosTheta = -rayDir · normal = -rayDir.y (since normal.y = 1)
+        const cosTheta = max(0.0, negate(currentRayDirY));  // View angle with surface
+        const waterF0 = 0.02;  // Water base reflectance
+        const waterFresnel = fresnelSchlick(cosTheta, waterF0);
+        
+        // Reflection direction: R = I - 2*(I·N)*N
+        // For horizontal surface (normal = 0,1,0): R.x = I.x, R.y = -I.y, R.z = I.z
+        const reflectDirX = currentRayDirX;
+        const reflectDirY = negate(currentRayDirY);  // Reflect Y
+        const reflectDirZ = currentRayDirZ;
+        const reflectionColor = getSkyColor(reflectDirY);
+        
+        // Refraction direction (IOR 1.33 for water)
+        // Using Snell's law for horizontal surface: sin(theta_t) = (n1/n2) * sin(theta_i)
+        // For horizontal normal, we only need to modify the Y component
+        const etaRatio = div(1.0, WATER_IOR);  // Air to water (1.0 / 1.33)
+        const cosThetaI = negate(currentRayDirY);  // cos(incident angle) = -ray.y for downward rays
+        const sinThetaI2 = sub(1.0, mul(cosThetaI, cosThetaI));
+        const sinThetaT2 = mul(mul(etaRatio, etaRatio), sinThetaI2);
+        const cosThetaT = sqrt(max(0.0, sub(1.0, sinThetaT2)));
+        
+        // Refracted direction for horizontal surface
+        // T = eta * I + (eta * cosI - cosT) * N
+        // For N = (0,1,0): T.x = eta*I.x, T.y = eta*I.y + eta*cosI - cosT, T.z = eta*I.z
+        const refractDirX = mul(etaRatio, currentRayDirX);
+        const refractDirY = sub(mul(etaRatio, currentRayDirY), cosThetaT);  // Downward into water
+        const refractDirZ = mul(etaRatio, currentRayDirZ);
+        
+        // Blend reflection and refraction based on Fresnel
+        const waterReflect = mul(reflectionColor, waterFresnel);
+        const waterRefract = mul(waterColorUniform, sub(1.0, waterFresnel));
+        const waterFinal = add(waterReflect, waterRefract);
+        
+        // Metal unit material (high reflectance)
+        const metalReflectColor = getSkyColor(reflectDirY);
+        const metalFinal = mul(metalColorUniform, metalReflectColor);
+        
+        // Select material based on hit type
+        // hitMaterial: 0=terrain, 1=water, 2=metal unit
+        const isTerrain = step(hitMaterial, 0.5);
+        const isWaterMat = mul(step(0.5, hitMaterial), step(hitMaterial, 1.5));
+        const isMetal = step(1.5, hitMaterial);
+        
+        const materialColor = add(add(
+            mul(terrainFinal, isTerrain),
+            mul(waterFinal, isWaterMat)),
+            mul(metalFinal, isMetal)
+        );
+        
+        // Add material contribution to final color
+        const hitContrib = mul(materialColor, didHit);
+        finalColor = add(finalColor, mul(throughput, hitContrib));
+        
+        // ==== PREPARE NEXT BOUNCE ====
+        // Generate new ray direction based on material type
+        
+        // Random numbers for this bounce
+        const rand1 = random(uvCoord.x, uvCoord.y, add(randomSeed, mul(bounce, 7.13)));
+        const rand2 = random(uvCoord.y, uvCoord.x, add(randomSeed, mul(bounce, 11.31)));
+        
+        // Cosine-weighted hemisphere sampling for diffuse bounce
+        const bounceDir = cosineWeightedDirection(hitNormalX, hitNormalY, hitNormalZ, rand1, rand2);
+        
+        // Select bounce direction based on material
+        // Terrain: cosine-weighted random (diffuse)
+        // Water: refracted direction
+        // Metal: reflected direction
+        const nextDirX = add(add(
+            mul(bounceDir.x, isTerrain),
+            mul(refractDirX, isWaterMat)),
+            mul(reflectDirX, isMetal)
+        );
+        const nextDirY = add(add(
+            mul(bounceDir.y, isTerrain),
+            mul(refractDirY, isWaterMat)),
+            mul(reflectDirY, isMetal)
+        );
+        const nextDirZ = add(add(
+            mul(bounceDir.z, isTerrain),
+            mul(refractDirZ, isWaterMat)),
+            mul(reflectDirZ, isMetal)
+        );
+        
+        // Update throughput
+        // Terrain: multiply by albedo / PI (Lambertian BRDF)
+        // Water: multiply by transparency
+        // Metal: multiply by reflectance
+        const terrainThroughput = mul(terrainDiffuse, div(1.0, PI));
+        const waterThroughput = mul(waterColorUniform, sub(1.0, waterFresnel));
+        const metalThroughput = metalColorUniform;
+        
+        const newThroughput = add(add(
+            mul(terrainThroughput, isTerrain),
+            mul(waterThroughput, isWaterMat)),
+            mul(metalThroughput, isMetal)
+        );
+        
+        // Update throughput (only if we hit something)
+        throughput = mul(throughput, mix(vec3(1, 1, 1), newThroughput, didHit));
+        
+        // Update ray for next bounce
+        const BOUNCE_OFFSET = 0.5;
+        currentRayOriginX = add(hitPosX, mul(nextDirX, BOUNCE_OFFSET));
+        currentRayOriginY = add(hitPosY, mul(nextDirY, BOUNCE_OFFSET));
+        currentRayOriginZ = add(hitPosZ, mul(nextDirZ, BOUNCE_OFFSET));
+        currentRayDirX = nextDirX;
+        currentRayDirY = nextDirY;
+        currentRayDirZ = nextDirZ;
     }
-
-    // ==== SHADING ====
-
-    // Sky contribution (no hit)
-    const skyContrib = mul(getSkyColor(currentRayDir.y), sub(1.0, didHit));
-    const sunContrib = mul(getSunLight(currentRayDir.x, currentRayDir.y, currentRayDir.z), sub(1.0, didHit));
-
-    // Terrain shading (diffuse)
-    const terrainDiffuse = vec3(0.3, 0.5, 0.2);  // Green terrain
-    const NdotL_terrain = max(0.0, add(
-        add(
-            mul(hitNormal.x, sunDirectionUniform.x),
-            mul(hitNormal.y, sunDirectionUniform.y)
-        ),
-        mul(hitNormal.z, sunDirectionUniform.z)
-    ));
-    const terrainLit = mul(mul(terrainDiffuse, NdotL_terrain), sunIntensityUniform);
-    const terrainAmbient = mul(terrainDiffuse, 0.3);
-    const terrainColor = add(terrainLit, terrainAmbient);
-
-    // Water shading (reflective with fresnel)
-    const waterReflectDir = reflect(currentRayDir, hitNormal);
-    const waterReflectColor = getSkyColor(waterReflectDir.y);
-    const waterFresnelTerm = fresnelSchlick(
-        max(0.0, sub(0.0, mul(currentRayDir.y, hitNormal.y))),
-        0.02  // F0 for water
-    );
-    const waterSurfaceColor = mix(waterColorUniform, waterReflectColor, waterFresnelTerm);
-
-    // Metal shading (highly reflective)
-    const metalReflectDir = reflect(currentRayDir, hitNormal);
-    const metalReflectColor = getSkyColor(metalReflectDir.y);
-    const metalSpecular = mul(metalColorUniform, metalReflectColor);
-
-    // Select material color based on hit type
-    const materialColorStep1 = mix(terrainColor, waterSurfaceColor, step(0.5, hitMaterial));
-    const materialColor = mix(materialColorStep1, metalSpecular, step(1.5, hitMaterial));
-
-    // Final color with hit
-    const hitColor = mul(materialColor, didHit);
-
-    // Combine sky and hit contributions
-    finalColor = add(add(skyContrib, sunContrib), hitColor);
-
-    // ==== SECOND BOUNCE (Global Illumination) ====
-    // Simplified: add ambient occlusion approximation
-
-    const aoFactor = mix(0.8, 1.0, didHit);
-    finalColor = mul(finalColor, aoFactor);
-
-    // Add slight bounce light from terrain
-    const bounceLight = mul(vec3(0.1, 0.15, 0.08), mul(didHit, 0.3));
-    finalColor = add(finalColor, bounceLight);
 
     // ==== ACCUMULATION ====
     // Blend with previous frame for progressive rendering
@@ -1109,6 +1323,155 @@ function getPathTracerSampleCount() {
     return accumulatedSamples;
 }
 
+/**
+ * External Render Loop Controller
+ * 
+ * This function provides a high-level API for controlling the path tracer's
+ * render loop from external code. It handles:
+ * 
+ * 1. Camera static detection - determines if camera has moved
+ * 2. Accumulation counter management - increments when camera is static
+ * 3. Ping-pong buffer swapping - only swaps when accumulating
+ * 4. Convergence detection - signals when image has converged
+ * 
+ * Usage:
+ * ```javascript
+ * // In your animation loop:
+ * const loopState = updatePathTracerRenderLoop(renderer, camera);
+ * if (loopState.shouldRender) {
+ *     // Path tracer rendered this frame
+ * }
+ * if (loopState.converged) {
+ *     // Image has converged, can reduce frame rate
+ * }
+ * ```
+ * 
+ * @param {THREE.WebGPURenderer} renderer - The WebGPU renderer
+ * @param {THREE.Camera} camera - The main game camera
+ * @param {Object} options - Optional configuration
+ * @param {number} options.maxSamples - Max samples before considered converged (default: 256)
+ * @param {number} options.movementThreshold - Camera movement threshold (default: 0.001)
+ * @returns {Object} State object with render loop information
+ */
+function updatePathTracerRenderLoop(renderer, camera, options = {}) {
+    const maxSamples = options.maxSamples || 256;
+    const movementThreshold = options.movementThreshold || 0.001;
+    
+    // Return early if path tracer not ready
+    if (!pathTracerEnabled || !pathTracerScene || !pathTracerCamera) {
+        return {
+            shouldRender: false,
+            cameraStatic: false,
+            accumulatedSamples: 0,
+            converged: false,
+            bufferIndex: currentAccumulationBuffer
+        };
+    }
+    
+    // Determine if camera has moved
+    const cameraMoved = !prevCameraPosition || 
+        Math.abs(camera.position.x - prevCameraPosition.x) > movementThreshold ||
+        Math.abs(camera.position.y - prevCameraPosition.y) > movementThreshold ||
+        Math.abs(camera.position.z - prevCameraPosition.z) > movementThreshold ||
+        !prevCameraQuaternion ||
+        Math.abs(camera.quaternion.x - prevCameraQuaternion.x) > movementThreshold ||
+        Math.abs(camera.quaternion.y - prevCameraQuaternion.y) > movementThreshold ||
+        Math.abs(camera.quaternion.z - prevCameraQuaternion.z) > movementThreshold ||
+        Math.abs(camera.quaternion.w - prevCameraQuaternion.w) > movementThreshold;
+    
+    const cameraStatic = !cameraMoved;
+    
+    // Update accumulated samples counter
+    if (cameraMoved) {
+        // Camera moved - reset accumulation
+        accumulatedSamples = 0;
+        prevCameraPosition = camera.position.clone();
+        prevCameraQuaternion = camera.quaternion.clone();
+    } else if (accumulatedSamples < maxSamples) {
+        // Camera static and not yet converged - continue accumulation
+        accumulatedSamples++;
+    }
+    
+    // Update uniforms
+    if (window.pathTracerTSLUniforms) {
+        window.pathTracerTSLUniforms.accumulatedSamples.value = accumulatedSamples;
+        window.pathTracerTSLUniforms.frameCount.value++;
+        
+        // Update camera matrices
+        camera.updateMatrixWorld();
+        camera.updateProjectionMatrix();
+        window.pathTracerTSLUniforms.mainCameraPosition.value.copy(camera.position);
+        window.pathTracerTSLUniforms.mainCameraProjectionMatrixInverse.value.copy(camera.projectionMatrixInverse);
+        window.pathTracerTSLUniforms.mainCameraWorldMatrix.value.copy(camera.matrixWorld);
+    }
+    
+    // Determine ping-pong buffer configuration
+    const readBuffer = currentAccumulationBuffer === 0 ? accumulationBufferB : accumulationBufferA;
+    const writeBuffer = currentAccumulationBuffer === 0 ? accumulationBufferA : accumulationBufferB;
+    
+    // Set previous frame texture for accumulation
+    if (window.pathTracerTSLUniforms && window.pathTracerTSLUniforms.previousFrame) {
+        window.pathTracerTSLUniforms.previousFrame.value = readBuffer.texture;
+    }
+    
+    // Render to accumulation buffer
+    renderer.setRenderTarget(writeBuffer);
+    renderer.render(pathTracerScene, pathTracerCamera);
+    
+    // Render to screen
+    renderer.setRenderTarget(null);
+    renderer.render(pathTracerScene, pathTracerCamera);
+    
+    // Only swap buffers when camera is static (accumulating)
+    // This is key for proper progressive rendering:
+    // - When camera moves, we start fresh and don't need to accumulate
+    // - When camera is static, we blend with previous frame
+    if (cameraStatic) {
+        currentAccumulationBuffer = 1 - currentAccumulationBuffer;
+    }
+    
+    // Determine convergence
+    const converged = accumulatedSamples >= maxSamples;
+    
+    return {
+        shouldRender: true,
+        cameraStatic: cameraStatic,
+        accumulatedSamples: accumulatedSamples,
+        converged: converged,
+        bufferIndex: currentAccumulationBuffer,
+        maxSamples: maxSamples
+    };
+}
+
+/**
+ * Check if camera has been static (not moving) recently.
+ * Useful for determining when to enable higher quality rendering.
+ * 
+ * @param {THREE.Camera} camera - The camera to check
+ * @param {number} threshold - Movement threshold (default: 0.001)
+ * @returns {boolean} True if camera is static
+ */
+function isCameraStatic(camera, threshold = 0.001) {
+    if (!prevCameraPosition || !prevCameraQuaternion) {
+        return false;
+    }
+    
+    const positionDelta = Math.sqrt(
+        Math.pow(camera.position.x - prevCameraPosition.x, 2) +
+        Math.pow(camera.position.y - prevCameraPosition.y, 2) +
+        Math.pow(camera.position.z - prevCameraPosition.z, 2)
+    );
+    
+    const quatDelta = Math.sqrt(
+        Math.pow(camera.quaternion.x - prevCameraQuaternion.x, 2) +
+        Math.pow(camera.quaternion.y - prevCameraQuaternion.y, 2) +
+        Math.pow(camera.quaternion.z - prevCameraQuaternion.z, 2) +
+        Math.pow(camera.quaternion.w - prevCameraQuaternion.w, 2)
+    );
+    
+    return positionDelta < threshold && quatDelta < threshold;
+}
+
 // Export functions to global scope
 window.initPathTracer = initPathTracer;
 window.renderPathTracer = renderPathTracer;
@@ -1119,3 +1482,5 @@ window.updatePathTracerSceneData = updatePathTracerSceneData;
 window.resizePathTracer = resizePathTracer;
 window.disposePathTracer = disposePathTracer;
 window.getPathTracerSampleCount = getPathTracerSampleCount;
+window.updatePathTracerRenderLoop = updatePathTracerRenderLoop;
+window.isCameraStatic = isCameraStatic;
