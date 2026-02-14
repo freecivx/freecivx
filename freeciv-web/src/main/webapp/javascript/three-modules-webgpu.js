@@ -74,22 +74,24 @@ const _exp = exp !== undefined ? exp : TSL?.exp;
 const _sign = sign !== undefined ? sign : TSL?.sign;
 
 // Log if any fallbacks were used (for debugging)
-const usedFallbacks = [];
-if (reflect === undefined && _reflect !== undefined) usedFallbacks.push('reflect');
-if (refract === undefined && _refract !== undefined) usedFallbacks.push('refract');
-if (Fn === undefined && _Fn !== undefined) usedFallbacks.push('Fn');
-if (If === undefined && _If !== undefined) usedFallbacks.push('If');
-if (Loop === undefined && _Loop !== undefined) usedFallbacks.push('Loop');
-if (Break === undefined && _Break !== undefined) usedFallbacks.push('Break');
-if (Return === undefined && _Return !== undefined) usedFallbacks.push('Return');
-if (cross === undefined && _cross !== undefined) usedFallbacks.push('cross');
-if (length === undefined && _length !== undefined) usedFallbacks.push('length');
-if (negate === undefined && _negate !== undefined) usedFallbacks.push('negate');
-if (exp === undefined && _exp !== undefined) usedFallbacks.push('exp');
-if (sign === undefined && _sign !== undefined) usedFallbacks.push('sign');
+const tslFallbacksUsed = [
+  ['reflect', reflect, _reflect],
+  ['refract', refract, _refract],
+  ['Fn', Fn, _Fn],
+  ['If', If, _If],
+  ['Loop', Loop, _Loop],
+  ['Break', Break, _Break],
+  ['Return', Return, _Return],
+  ['cross', cross, _cross],
+  ['length', length, _length],
+  ['negate', negate, _negate],
+  ['exp', exp, _exp],
+  ['sign', sign, _sign]
+].filter(([name, original, fallback]) => original === undefined && fallback !== undefined)
+ .map(([name]) => name);
 
-if (usedFallbacks.length > 0) {
-  console.log('WebGPU TSL: Used fallbacks from TSL object for:', usedFallbacks.join(', '));
+if (tslFallbacksUsed.length > 0) {
+  console.log('WebGPU TSL: Used fallbacks from TSL object for:', tslFallbacksUsed.join(', '));
 }
 
 // Extract the WebGPU exports and add them to the global THREE object
