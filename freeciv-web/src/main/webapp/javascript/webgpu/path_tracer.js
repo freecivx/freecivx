@@ -73,6 +73,9 @@ let prevCameraQuaternion = null;
 // Debug configuration
 const DEBUG_LOG_INTERVAL_MS = 5000;
 
+// Default map size fallback (used when map object is not available)
+const DEFAULT_MAP_SIZE = 64;
+
 /**
  * Initialize the path tracer renderer.
  * Creates the full-screen quad, shader material, accumulation buffers,
@@ -218,8 +221,8 @@ function initPathTracer(renderer, mainScene, mainCamera) {
  */
 function createTerrainDataTexture() {
     // Get map dimensions
-    const mapWidth = map ? map.xsize : 64;
-    const mapHeight = map ? map.ysize : 64;
+    const mapWidth = map ? map.xsize : DEFAULT_MAP_SIZE;
+    const mapHeight = map ? map.ysize : DEFAULT_MAP_SIZE;
 
     // Create data array (RGBA float)
     // R = height, G = terrain type, B = is_water, A = reserved
@@ -274,8 +277,8 @@ function createTerrainDataTexture() {
  */
 function createUnitDataTexture() {
     // Get map dimensions
-    const mapWidth = map ? map.xsize : 64;
-    const mapHeight = map ? map.ysize : 64;
+    const mapWidth = map ? map.xsize : DEFAULT_MAP_SIZE;
+    const mapHeight = map ? map.ysize : DEFAULT_MAP_SIZE;
 
     // Create data array (RGBA float)
     // R = has_unit, G = unit_type, B = is_metallic, A = reserved
@@ -351,7 +354,7 @@ function createPathTracerUniforms(camera, width, height) {
         // Terrain data
         terrainData: { value: terrainDataTexture },
         unitData: { value: unitDataTexture },
-        mapSize: { value: new THREE.Vector2(map ? map.xsize : 64, map ? map.ysize : 64) },
+        mapSize: { value: new THREE.Vector2(map ? map.xsize : DEFAULT_MAP_SIZE, map ? map.ysize : DEFAULT_MAP_SIZE) },
         
         // Map world dimensions
         mapWorldSize: { value: new THREE.Vector2(
@@ -562,8 +565,8 @@ function createPathTracerMaterial() {
     // R2 sequence provides excellent 2D coverage with blue noise properties
     // Reference: "The Unreasonable Effectiveness of Quasirandom Sequences" (Roberts, 2018)
     function blueNoise2D(px, py, frame) {
-        // R2 sequence constants (based on plastic constant)
-        const g = 1.32471795724474602596;  // Plastic constant
+        // R2 sequence constants (based on the plastic number / plastic ratio)
+        const g = 1.32471795724474602596;  // Plastic number (unique real solution to x³ = x + 1)
         const a1 = div(1.0, g);        // ≈ 0.7548776662
         const a2 = div(1.0, mul(g, g)); // ≈ 0.5698402910
         
@@ -664,7 +667,8 @@ function createPathTracerMaterial() {
     const pixelY = mul(uvCoord.y, resolutionUniform.y);
     const blueNoiseSample = blueNoise2D(pixelX, pixelY, frameCountUniform);
     
-    // Convert blue noise [0,1] to centered jitter [-0.5, 0.5] pixel range
+    // Convert blue noise [0,1] to centered sub-pixel jitter in NDC space
+    // Result is in range [-0.5/resolution, +0.5/resolution] which covers one pixel in NDC
     const jitterX = mul(sub(blueNoiseSample.x, 0.5), div(1.0, resolutionUniform.x));
     const jitterY = mul(sub(blueNoiseSample.y, 0.5), div(1.0, resolutionUniform.y));
 
@@ -1152,7 +1156,7 @@ function createPathTracerMaterial() {
         
         // Use blue noise for bounce random numbers (better convergence than white noise)
         // Add bounce index as offset for decorrelation between bounces
-        const bounceOffset = mul(bounce, 17.31);  // Prime-ish offset for decorrelation
+        const bounceOffset = mul(bounce, 17.0);  // Use 17 (prime) for good decorrelation
         const bounceNoise = blueNoise2D(pixelX, pixelY, add(frameCountUniform, bounceOffset));
         const rand1 = bounceNoise.x;
         const rand2 = bounceNoise.y;
@@ -1597,11 +1601,11 @@ function checkPathTracerMapUpdates() {
 function updatePathTracerTile(tile) {
     if (!terrainDataTexture || !tile) return;
     
-    const mapWidth = map ? map.xsize : 64;
+    const mapWidth = map ? map.xsize : DEFAULT_MAP_SIZE;
     const x = tile.x;
     const y = tile.y;
     
-    if (x < 0 || x >= mapWidth || y < 0 || y >= (map ? map.ysize : 64)) {
+    if (x < 0 || x >= mapWidth || y < 0 || y >= (map ? map.ysize : DEFAULT_MAP_SIZE)) {
         return;  // Out of bounds
     }
     
