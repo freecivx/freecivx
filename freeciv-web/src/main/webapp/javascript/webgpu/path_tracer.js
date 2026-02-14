@@ -800,6 +800,9 @@ function createPathTracerMaterial() {
         const RAYMARCH_STEPS = 24;  // Reduced from 32 for better performance
         const BINARY_SEARCH_STEPS = 4;  // Reduced from 8, still provides smooth intersections
         const MAX_DIST = 2000.0;
+        // Progressive step size constants - tuned to cover ~1300 units with 24 steps
+        const RAYMARCH_BASE_STEP = 12.0;       // Initial step size factor
+        const RAYMARCH_STEP_GROWTH = 1.3;      // Step size growth rate per iteration
         
         // Initialize result
         let hitT = MAX_DIST;
@@ -816,8 +819,7 @@ function createPathTracerMaterial() {
         for (let i = 0; i < RAYMARCH_STEPS; i++) {
             // Progressive step size: starts small, increases with distance
             // This gives fine detail near camera and covers more ground far away
-            // Adjusted formula to cover same distance (~1300 units) with fewer steps
-            const stepDist = i * (12.0 + i * 1.3);
+            const stepDist = i * (RAYMARCH_BASE_STEP + i * RAYMARCH_STEP_GROWTH);
             
             // Calculate sample position along ray
             const sampleX = add(rayOriginX, mul(rayDirX, stepDist));
@@ -914,6 +916,9 @@ function createPathTracerMaterial() {
     function castShadowRay(originX, originY, originZ) {
         const SHADOW_STEPS = 8;  // Reduced from 16 for better performance
         const SHADOW_BIAS = 1.0;  // Offset to avoid self-shadowing
+        // Progressive step constants - tuned to cover ~600 units with 8 steps
+        const SHADOW_BASE_STEP = 5.0;         // Initial step size factor  
+        const SHADOW_STEP_GROWTH = 2.5;       // Step size growth rate per iteration
         
         // Start ray slightly above surface
         const startX = add(originX, mul(sunDirectionUniform.x, SHADOW_BIAS));
@@ -925,8 +930,9 @@ function createPathTracerMaterial() {
         // Use progressive step sizes: smaller near origin, larger further away
         // This catches nearby shadows precisely while covering distant terrain
         for (let i = 0; i < SHADOW_STEPS; i++) {
-            // Progressive step: 5, 15, 30, 50, 75, 105, 140, 180 (total ~600 units)
-            const stepDist = mul((i + 1) * (5 + i * 2.5), 1.0);
+            // Progressive step formula: (i+1) * (base + i * growth)
+            // With base=5, growth=2.5: steps at 5, 15, 30, 50, 75, 105, 140, 180 (total ~600 units)
+            const stepDist = mul((i + 1) * (SHADOW_BASE_STEP + i * SHADOW_STEP_GROWTH), 1.0);
             const sampleX = add(startX, mul(sunDirectionUniform.x, stepDist));
             const sampleY = add(startY, mul(sunDirectionUniform.y, stepDist));
             const sampleZ = add(startZ, mul(sunDirectionUniform.z, stepDist));
