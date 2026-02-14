@@ -147,40 +147,44 @@ function initPathTracer(renderer, mainScene, mainCamera) {
     // Initialize TSL uniforms with actual values from pathTracerUniforms
     // This is necessary because TSL uniforms are created with defaults in createPathTracerMaterial()
     if (window.pathTracerTSLUniforms && pathTracerUniforms) {
-        // Initialize resolution with actual viewport dimensions
-        window.pathTracerTSLUniforms.resolution.value.copy(pathTracerUniforms.resolution.value);
-        console.log('[PathTracer] Resolution uniform initialized:', width, 'x', height);
-        
-        // Initialize camera uniforms with main camera values
-        mainCamera.updateMatrixWorld();
-        mainCamera.updateProjectionMatrix();
-        window.pathTracerTSLUniforms.mainCameraPosition.value.copy(mainCamera.position);
-        window.pathTracerTSLUniforms.mainCameraProjectionMatrixInverse.value.copy(mainCamera.projectionMatrixInverse);
-        window.pathTracerTSLUniforms.mainCameraWorldMatrix.value.copy(mainCamera.matrixWorld);
-        console.log('[PathTracer] Camera uniforms initialized:', 
-            mainCamera.position.x.toFixed(2), 
-            mainCamera.position.y.toFixed(2), 
-            mainCamera.position.z.toFixed(2));
-        
-        // Initialize map uniforms
-        window.pathTracerTSLUniforms.mapSize.value.copy(pathTracerUniforms.mapSize.value);
-        window.pathTracerTSLUniforms.mapWorldSize.value.copy(pathTracerUniforms.mapWorldSize.value);
-        
-        // Initialize lighting and material uniforms
-        window.pathTracerTSLUniforms.sunDirection.value.copy(pathTracerUniforms.sunDirection.value);
-        window.pathTracerTSLUniforms.sunIntensity.value = pathTracerUniforms.sunIntensity.value;
-        window.pathTracerTSLUniforms.sunColor.value.copy(pathTracerUniforms.sunColor.value);
-        window.pathTracerTSLUniforms.skyColor.value.copy(pathTracerUniforms.skyColor.value);
-        window.pathTracerTSLUniforms.groundColor.value.copy(pathTracerUniforms.groundColor.value);
-        window.pathTracerTSLUniforms.waterRoughness.value = pathTracerUniforms.waterRoughness.value;
-        window.pathTracerTSLUniforms.waterIOR.value = pathTracerUniforms.waterIOR.value;
-        window.pathTracerTSLUniforms.waterColor.value.copy(pathTracerUniforms.waterColor.value);
-        window.pathTracerTSLUniforms.metalRoughness.value = pathTracerUniforms.metalRoughness.value;
-        window.pathTracerTSLUniforms.metalColor.value.copy(pathTracerUniforms.metalColor.value);
-        window.pathTracerTSLUniforms.terrainRoughness.value = pathTracerUniforms.terrainRoughness.value;
-        window.pathTracerTSLUniforms.maxBounces.value = pathTracerUniforms.maxBounces.value;
-        
-        console.log('[PathTracer] All TSL uniforms initialized from pathTracerUniforms');
+        try {
+            // Initialize resolution with actual viewport dimensions
+            window.pathTracerTSLUniforms.resolution.value.copy(pathTracerUniforms.resolution.value);
+            console.log('[PathTracer] Resolution uniform initialized:', width, 'x', height);
+            
+            // Initialize camera uniforms with main camera values
+            mainCamera.updateMatrixWorld();
+            mainCamera.updateProjectionMatrix();
+            window.pathTracerTSLUniforms.mainCameraPosition.value.copy(mainCamera.position);
+            window.pathTracerTSLUniforms.mainCameraProjectionMatrixInverse.value.copy(mainCamera.projectionMatrixInverse);
+            window.pathTracerTSLUniforms.mainCameraWorldMatrix.value.copy(mainCamera.matrixWorld);
+            console.log('[PathTracer] Camera uniforms initialized:', 
+                mainCamera.position.x.toFixed(2), 
+                mainCamera.position.y.toFixed(2), 
+                mainCamera.position.z.toFixed(2));
+            
+            // Initialize map uniforms
+            window.pathTracerTSLUniforms.mapSize.value.copy(pathTracerUniforms.mapSize.value);
+            window.pathTracerTSLUniforms.mapWorldSize.value.copy(pathTracerUniforms.mapWorldSize.value);
+            
+            // Initialize lighting and material uniforms
+            window.pathTracerTSLUniforms.sunDirection.value.copy(pathTracerUniforms.sunDirection.value);
+            window.pathTracerTSLUniforms.sunIntensity.value = pathTracerUniforms.sunIntensity.value;
+            window.pathTracerTSLUniforms.sunColor.value.copy(pathTracerUniforms.sunColor.value);
+            window.pathTracerTSLUniforms.skyColor.value.copy(pathTracerUniforms.skyColor.value);
+            window.pathTracerTSLUniforms.groundColor.value.copy(pathTracerUniforms.groundColor.value);
+            window.pathTracerTSLUniforms.waterRoughness.value = pathTracerUniforms.waterRoughness.value;
+            window.pathTracerTSLUniforms.waterIOR.value = pathTracerUniforms.waterIOR.value;
+            window.pathTracerTSLUniforms.waterColor.value.copy(pathTracerUniforms.waterColor.value);
+            window.pathTracerTSLUniforms.metalRoughness.value = pathTracerUniforms.metalRoughness.value;
+            window.pathTracerTSLUniforms.metalColor.value.copy(pathTracerUniforms.metalColor.value);
+            window.pathTracerTSLUniforms.terrainRoughness.value = pathTracerUniforms.terrainRoughness.value;
+            window.pathTracerTSLUniforms.maxBounces.value = pathTracerUniforms.maxBounces.value;
+            
+            console.log('[PathTracer] All TSL uniforms initialized from pathTracerUniforms');
+        } catch (e) {
+            console.warn('[PathTracer] Error initializing some uniforms:', e.message);
+        }
     }
 
     // Create full-screen quad
