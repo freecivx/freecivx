@@ -44,6 +44,15 @@
  * - DataTextures for terrain heightmap and unit positions
  * - Ping-pong frame buffers for sample accumulation
  * - Camera-based ray generation with sub-pixel jitter for anti-aliasing
+ * 
+ * Performance Notes:
+ * - All pixel rendering runs entirely on the GPU via WebGPU/TSL shaders
+ * - GPU processes millions of pixels in parallel each frame
+ * - Web Workers are NOT used because:
+ *   1. WebGPU context cannot be shared with Web Workers
+ *   2. GPU parallelism (thousands of cores) far exceeds Web Worker parallelism (8-16 threads)
+ *   3. GPU memory bandwidth is orders of magnitude higher than CPU
+ * - The RENDER_ALL_PIXELS flag enables full GPU utilization each frame
  */
 
 // Path tracer state variables
@@ -77,9 +86,12 @@ const DEBUG_LOG_INTERVAL_MS = 5000;
 const DEFAULT_MAP_SIZE = 64;
 
 // Tile-based rendering configuration
-// Instead of rendering all pixels every frame, render one random tile at a time
-const TILE_SIZE = 4;                    // Tile width/height in pixels (4x4 tiles)
+// Render all pixels every frame for maximum GPU utilization
+// Set TILE_SIZE = 1 to render every pixel (full GPU parallelism)
+// Set TILE_SIZE > 1 for reduced quality but faster convergence per tile
+const TILE_SIZE = 1;                    // Tile width/height in pixels (1 = full resolution)
 const TILE_HALF_SIZE = TILE_SIZE * 0.5; // Half tile size for center calculation
+const RENDER_ALL_PIXELS = true;         // When true, render all pixels each frame on GPU
 
 /**
  * Initialize the path tracer renderer.
@@ -649,36 +661,36 @@ function createPathTracerMaterial() {
     // Get UV coordinates
     const uvCoord = uv();
     
-    // ==== PERFORMANCE OPTIMIZATION: TILE-BASED RENDERING ====
-    // Instead of rendering all pixels every frame, render one random 4x4 tile at a time.
-    // This dramatically reduces per-frame computation while still converging to a complete image.
+    // ==== GPU-BASED FULL RESOLUTION RENDERING ====
+    // When RENDER_ALL_PIXELS is true (TILE_SIZE=1), render every pixel every frame
+    // This maximizes GPU utilization by running path tracing on all pixels in parallel
+    // The GPU handles millions of pixels simultaneously, which is more efficient than
+    // rendering one tile at a time on the CPU
     
-    // Calculate which 4x4 tile this pixel belongs to
+    // Calculate pixel coordinates
     const pixelCoordX = mul(uvCoord.x, resolutionUniform.x);
     const pixelCoordY = mul(uvCoord.y, resolutionUniform.y);
     const currentTileX = floor(div(pixelCoordX, TILE_SIZE));
     const currentTileY = floor(div(pixelCoordY, TILE_SIZE));
     
-    // Check if this pixel is in the randomly selected tile
-    // randomTileUniform contains the tile coordinates to render this frame
-    // step(abs(a - b), 0.5) returns 1 when |a - b| <= 0.5, which for integer tile indices
-    // means the tiles match exactly (0.5 threshold handles floating-point precision)
-    const isSelectedTileX = step(abs(sub(currentTileX, randomTileUniform.x)), 0.5);
-    const isSelectedTileY = step(abs(sub(currentTileY, randomTileUniform.y)), 0.5);
-    const isSelectedTile = mul(isSelectedTileX, isSelectedTileY);
+    // When TILE_SIZE=1 and RENDER_ALL_PIXELS=true, all pixels are "selected"
+    // This allows the GPU to process all pixels in a single draw call
+    // isSelectedTile is always 1.0 when rendering all pixels
+    const isSelectedTileX = RENDER_ALL_PIXELS ? 1.0 : step(abs(sub(currentTileX, randomTileUniform.x)), 0.5);
+    const isSelectedTileY = RENDER_ALL_PIXELS ? 1.0 : step(abs(sub(currentTileY, randomTileUniform.y)), 0.5);
+    const isSelectedTile = RENDER_ALL_PIXELS ? 1.0 : mul(isSelectedTileX, isSelectedTileY);
     
-    // Quantize UV to 4x4 pixel blocks - all pixels in a tile use the center UV
-    // This makes each "pixel" appear as a 4x4 block for artistic effect
-    const tileUvX = div(add(mul(currentTileX, TILE_SIZE), TILE_HALF_SIZE), resolutionUniform.x);
-    const tileUvY = div(add(mul(currentTileY, TILE_SIZE), TILE_HALF_SIZE), resolutionUniform.y);
+    // For full resolution rendering (TILE_SIZE=1), use exact UV coordinates
+    // This ensures each pixel gets its own unique ray for maximum quality
+    const tileUvX = RENDER_ALL_PIXELS ? uvCoord.x : div(add(mul(currentTileX, TILE_SIZE), TILE_HALF_SIZE), resolutionUniform.x);
+    const tileUvY = RENDER_ALL_PIXELS ? uvCoord.y : div(add(mul(currentTileY, TILE_SIZE), TILE_HALF_SIZE), resolutionUniform.y);
 
-    // Calculate normalized device coordinates (NDC) from quantized UV
+    // Calculate normalized device coordinates (NDC) from UV
     // UV goes from 0 to 1, NDC goes from -1 to +1
     const ndcX = sub(mul(tileUvX, 2.0), 1.0);
     const ndcY = sub(mul(tileUvY, 2.0), 1.0);
 
-    // Generate random seed from frame count and tile position for stochastic sampling
-    // Use tile UV to ensure all pixels in a tile use the same random values
+    // Generate random seed from frame count and pixel position for stochastic sampling
     const randomSeed = add(mul(frameCountUniform, 0.618033988), mul(add(tileUvX, mul(tileUvY, 1000.0)), 0.0001));
 
     // ============================================================
@@ -1336,17 +1348,20 @@ function updatePathTracerUniforms(camera, deltaTime) {
 
     tslUniforms.accumulatedSamples.value = accumulatedSamples;
 
-    // ==== RANDOM TILE SELECTION ====
-    // Each frame, select a random tile to render (TILE_SIZE defined at module level)
-    // This distributes path tracing work across frames for better performance
-    const resolution = tslUniforms.resolution.value;
-    const numTilesX = Math.ceil(resolution.x / TILE_SIZE);
-    const numTilesY = Math.ceil(resolution.y / TILE_SIZE);
-    
-    // Select a random tile
-    const randomTileX = Math.floor(Math.random() * numTilesX);
-    const randomTileY = Math.floor(Math.random() * numTilesY);
-    tslUniforms.randomTile.value.set(randomTileX, randomTileY);
+    // ==== GPU-BASED RENDERING MODE ====
+    // When RENDER_ALL_PIXELS is true, all pixels are processed by the GPU each frame
+    // No need for CPU-based random tile selection - the GPU handles all pixels in parallel
+    if (!RENDER_ALL_PIXELS) {
+        // Legacy tile-based mode: Select a random tile to render (for reduced GPU load)
+        const resolution = tslUniforms.resolution.value;
+        const numTilesX = Math.ceil(resolution.x / TILE_SIZE);
+        const numTilesY = Math.ceil(resolution.y / TILE_SIZE);
+        
+        const randomTileX = Math.floor(Math.random() * numTilesX);
+        const randomTileY = Math.floor(Math.random() * numTilesY);
+        tslUniforms.randomTile.value.set(randomTileX, randomTileY);
+    }
+    // When RENDER_ALL_PIXELS is true, randomTile is not used (all pixels are selected on GPU)
 
     // Update main camera matrices - we pass these as uniforms because we render
     // with an orthographic camera but need the main game camera's view/projection
@@ -1515,6 +1530,14 @@ function renderPathTracer(renderer, camera) {
 
     // Swap buffers
     currentAccumulationBuffer = 1 - currentAccumulationBuffer;
+
+    // Log pixel rendering progress after each frame
+    // Since all pixels are rendered on the GPU in parallel, we log per-frame progress
+    const resolution = window.pathTracerTSLUniforms?.resolution?.value;
+    if (resolution) {
+        const totalPixels = resolution.x * resolution.y;
+        console.log(`[PathTracer] Frame ${pathTracerRenderCallCount}: Rendered ${totalPixels} pixels on GPU (${resolution.x}x${resolution.y}), accumulated samples: ${accumulatedSamples}`);
+    }
 
     return true;
 }
