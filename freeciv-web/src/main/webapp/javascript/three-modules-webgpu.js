@@ -53,7 +53,7 @@ import {
   // TSL control flow and function definition (needed for path tracer)
   Fn, If, Loop, Break, Return,
   // Additional math functions for path tracing
-  cross, length, negate, atan2, exp, log, sign,
+  cross, length, negate, exp, sign,
   // Comparison and logical operators
   lessThan, greaterThan, equal, and, or, not, select
 } from 'three/tsl';
@@ -72,6 +72,9 @@ const _length = length !== undefined ? length : TSL?.length;
 const _negate = negate !== undefined ? negate : TSL?.negate;
 const _exp = exp !== undefined ? exp : TSL?.exp;
 const _sign = sign !== undefined ? sign : TSL?.sign;
+// Note: atan2 and log are not exported from three/tsl directly, so we only use TSL object fallback
+const _atan2 = TSL?.atan2;
+const _log = TSL?.log;
 
 // Log if any fallbacks were used (for debugging)
 const tslFallbacksUsed = [
@@ -171,9 +174,9 @@ THREE.Return = _Return;
 THREE.cross = _cross;
 THREE.length = _length;
 THREE.negate = _negate;
-THREE.atan2 = atan2;
+THREE.atan2 = _atan2;
 THREE.exp = _exp;
-THREE.log = log;
+THREE.log = _log;
 THREE.sign = _sign;
 
 // Comparison and logical operators
