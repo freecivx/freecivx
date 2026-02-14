@@ -76,6 +76,11 @@ const DEBUG_LOG_INTERVAL_MS = 5000;
 // Default map size fallback (used when map object is not available)
 const DEFAULT_MAP_SIZE = 64;
 
+// Tile-based rendering configuration
+// Instead of rendering all pixels every frame, render one random tile at a time
+const TILE_SIZE = 4;                    // Tile width/height in pixels (4x4 tiles)
+const TILE_HALF_SIZE = TILE_SIZE * 0.5; // Half tile size for center calculation
+
 /**
  * Initialize the path tracer renderer.
  * Creates the full-screen quad, shader material, accumulation buffers,
@@ -494,8 +499,7 @@ function createPathTracerMaterial() {
     const terrainRoughnessUniform = uniform(0.85);
     
     // Performance optimization: render one random tile at a time
-    // Each tile is TILE_SIZE x TILE_SIZE pixels (4x4 by default)
-    const TILE_SIZE = 4;
+    // TILE_SIZE is defined at module level (currently 4x4 pixels)
     const randomTileUniform = uniform(new THREE.Vector2(0, 0)); // Current tile coordinates to render
 
     // Store uniforms for external updates
@@ -657,14 +661,16 @@ function createPathTracerMaterial() {
     
     // Check if this pixel is in the randomly selected tile
     // randomTileUniform contains the tile coordinates to render this frame
+    // step(abs(a - b), 0.5) returns 1 when |a - b| <= 0.5, which for integer tile indices
+    // means the tiles match exactly (0.5 threshold handles floating-point precision)
     const isSelectedTileX = step(abs(sub(currentTileX, randomTileUniform.x)), 0.5);
     const isSelectedTileY = step(abs(sub(currentTileY, randomTileUniform.y)), 0.5);
     const isSelectedTile = mul(isSelectedTileX, isSelectedTileY);
     
     // Quantize UV to 4x4 pixel blocks - all pixels in a tile use the center UV
     // This makes each "pixel" appear as a 4x4 block for artistic effect
-    const tileUvX = div(add(mul(currentTileX, TILE_SIZE), TILE_SIZE * 0.5), resolutionUniform.x);
-    const tileUvY = div(add(mul(currentTileY, TILE_SIZE), TILE_SIZE * 0.5), resolutionUniform.y);
+    const tileUvX = div(add(mul(currentTileX, TILE_SIZE), TILE_HALF_SIZE), resolutionUniform.x);
+    const tileUvY = div(add(mul(currentTileY, TILE_SIZE), TILE_HALF_SIZE), resolutionUniform.y);
 
     // Calculate normalized device coordinates (NDC) from quantized UV
     // UV goes from 0 to 1, NDC goes from -1 to +1
@@ -1331,9 +1337,8 @@ function updatePathTracerUniforms(camera, deltaTime) {
     tslUniforms.accumulatedSamples.value = accumulatedSamples;
 
     // ==== RANDOM TILE SELECTION ====
-    // Each frame, select a random 4x4 pixel tile to render
+    // Each frame, select a random tile to render (TILE_SIZE defined at module level)
     // This distributes path tracing work across frames for better performance
-    const TILE_SIZE = 4;
     const resolution = tslUniforms.resolution.value;
     const numTilesX = Math.ceil(resolution.x / TILE_SIZE);
     const numTilesY = Math.ceil(resolution.y / TILE_SIZE);
