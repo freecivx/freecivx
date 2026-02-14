@@ -30,6 +30,11 @@ import * as WebGPUModule from 'three/webgpu';
 // Import TSL (Three.js Shading Language) functions from the TSL module
 // The TSL module contains shader node functions needed for WebGPU materials
 // Note: 'float' is imported as 'floatFn' because 'float' is a reserved word in JavaScript
+
+// First, import TSL directly from the WebGPU module to ensure availability
+// This provides a fallback if direct tsl imports don't work
+import { TSL } from 'three/webgpu';
+
 import {
   // Lighting and material functions
   lights, uniform, texture, color,
@@ -52,6 +57,42 @@ import {
   // Comparison and logical operators
   lessThan, greaterThan, equal, and, or, not, select
 } from 'three/tsl';
+
+// Fallback to TSL object if any imports are undefined
+// This handles edge cases where the three/tsl module might not properly re-export everything
+const _reflect = reflect !== undefined ? reflect : TSL?.reflect;
+const _refract = refract !== undefined ? refract : TSL?.refract;
+const _Fn = Fn !== undefined ? Fn : TSL?.Fn;
+const _If = If !== undefined ? If : TSL?.If;
+const _Loop = Loop !== undefined ? Loop : TSL?.Loop;
+const _Break = Break !== undefined ? Break : TSL?.Break;
+const _Return = Return !== undefined ? Return : TSL?.Return;
+const _cross = cross !== undefined ? cross : TSL?.cross;
+const _length = length !== undefined ? length : TSL?.length;
+const _negate = negate !== undefined ? negate : TSL?.negate;
+const _exp = exp !== undefined ? exp : TSL?.exp;
+const _sign = sign !== undefined ? sign : TSL?.sign;
+
+// Log if any fallbacks were used (for debugging)
+const tslFallbacksUsed = [
+  ['reflect', reflect, _reflect],
+  ['refract', refract, _refract],
+  ['Fn', Fn, _Fn],
+  ['If', If, _If],
+  ['Loop', Loop, _Loop],
+  ['Break', Break, _Break],
+  ['Return', Return, _Return],
+  ['cross', cross, _cross],
+  ['length', length, _length],
+  ['negate', negate, _negate],
+  ['exp', exp, _exp],
+  ['sign', sign, _sign]
+].filter(([name, original, fallback]) => original === undefined && fallback !== undefined)
+ .map(([name]) => name);
+
+if (tslFallbacksUsed.length > 0) {
+  console.log('WebGPU TSL: Used fallbacks from TSL object for:', tslFallbacksUsed.join(', '));
+}
 
 // Extract the WebGPU exports and add them to the global THREE object
 // The WebGPU module extends the existing THREE namespace and includes TSL
@@ -112,28 +153,28 @@ THREE.mul = mul;
 THREE.add = add;
 THREE.sub = sub;
 THREE.div = div;
-THREE.reflect = reflect;
-THREE.refract = refract;
+THREE.reflect = _reflect;
+THREE.refract = _refract;
 THREE.cameraPosition = cameraPosition;
 THREE.cameraProjectionMatrixInverse = cameraProjectionMatrixInverse;
 THREE.cameraViewMatrix = cameraViewMatrix;
 THREE.cameraWorldMatrix = cameraWorldMatrix;
 
 // TSL control flow and function definition (needed for path tracer)
-THREE.Fn = Fn;
-THREE.If = If;
-THREE.Loop = Loop;
-THREE.Break = Break;
-THREE.Return = Return;
+THREE.Fn = _Fn;
+THREE.If = _If;
+THREE.Loop = _Loop;
+THREE.Break = _Break;
+THREE.Return = _Return;
 
 // Additional math functions for path tracing
-THREE.cross = cross;
-THREE.length = length;
-THREE.negate = negate;
+THREE.cross = _cross;
+THREE.length = _length;
+THREE.negate = _negate;
 THREE.atan2 = atan2;
-THREE.exp = exp;
+THREE.exp = _exp;
 THREE.log = log;
-THREE.sign = sign;
+THREE.sign = _sign;
 
 // Comparison and logical operators
 THREE.lessThan = lessThan;
