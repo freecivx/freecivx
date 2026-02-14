@@ -38,15 +38,15 @@ function init_webgl_mapctrl()
   $(window).mousemove(mouse_moved_cb);
 
   if (is_touch_device()) {
-    // Use native addEventListener with explicit passive options to avoid
-    // "[Violation] Added non-passive event listener to a scroll-blocking" warnings.
-    // touchstart needs { passive: false } because it calls preventDefault().
-    // touchend and touchmove can be passive since they don't call preventDefault().
+    // Use native addEventListener with explicit passive options.
+    // touchstart and touchmove need { passive: false } because they call preventDefault()
+    // to prevent unwanted browser scrolling during map interaction.
+    // touchend can be passive since it doesn't need to prevent default behavior.
     var mapCanvas = document.getElementById('mapcanvas');
     if (mapCanvas) {
       mapCanvas.addEventListener('touchstart', webgl_mapview_touch_start, { passive: false });
       mapCanvas.addEventListener('touchend', webgl_mapview_touch_end, { passive: true });
-      mapCanvas.addEventListener('touchmove', webgl_mapview_touch_move, { passive: true });
+      mapCanvas.addEventListener('touchmove', webgl_mapview_touch_move, { passive: false });
     }
   }
 
@@ -217,6 +217,9 @@ function webgl_mapview_touch_end(e)
 ****************************************************************************/
 function webgl_mapview_touch_move(e)
 {
+  // Prevent default browser scrolling while dragging the map
+  e.preventDefault();
+
   // Native event: use e.touches directly (not e.originalEvent.touches)
   mouse_x = e.touches[0].pageX - $('#mapcanvas').position().left;
   mouse_y = e.touches[0].pageY - $('#mapcanvas').position().top;
