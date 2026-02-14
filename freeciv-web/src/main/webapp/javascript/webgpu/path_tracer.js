@@ -76,6 +76,11 @@ const DEBUG_LOG_INTERVAL_MS = 5000;
 // Default map size fallback (used when map object is not available)
 const DEFAULT_MAP_SIZE = 64;
 
+// Tile-based rendering configuration
+// Instead of rendering all pixels every frame, render one random tile at a time
+const TILE_SIZE = 4;                    // Tile width/height in pixels (4x4 tiles)
+const TILE_HALF_SIZE = TILE_SIZE * 0.5; // Half tile size for center calculation
+
 /**
  * Initialize the path tracer renderer.
  * Creates the full-screen quad, shader material, accumulation buffers,
@@ -492,6 +497,10 @@ function createPathTracerMaterial() {
     const metalRoughnessUniform = uniform(0.3);
     const metalColorUniform = uniform(new THREE.Vector3(0.8, 0.8, 0.85));
     const terrainRoughnessUniform = uniform(0.85);
+    
+    // Performance optimization: render one random tile at a time
+    // TILE_SIZE is defined at module level (currently 4x4 pixels)
+    const randomTileUniform = uniform(new THREE.Vector2(0, 0)); // Current tile coordinates to render
 
     // Store uniforms for external updates
     // Note: For TSL texture nodes, .value can be updated to swap textures
@@ -523,7 +532,8 @@ function createPathTracerMaterial() {
         waterColor: waterColorUniform,
         metalRoughness: metalRoughnessUniform,
         metalColor: metalColorUniform,
-        terrainRoughness: terrainRoughnessUniform
+        terrainRoughness: terrainRoughnessUniform,
+        randomTile: randomTileUniform
     };
 
     // ==== UTILITY FUNCTIONS ====
@@ -638,14 +648,38 @@ function createPathTracerMaterial() {
 
     // Get UV coordinates
     const uvCoord = uv();
+    
+    // ==== PERFORMANCE OPTIMIZATION: TILE-BASED RENDERING ====
+    // Instead of rendering all pixels every frame, render one random 4x4 tile at a time.
+    // This dramatically reduces per-frame computation while still converging to a complete image.
+    
+    // Calculate which 4x4 tile this pixel belongs to
+    const pixelCoordX = mul(uvCoord.x, resolutionUniform.x);
+    const pixelCoordY = mul(uvCoord.y, resolutionUniform.y);
+    const currentTileX = floor(div(pixelCoordX, TILE_SIZE));
+    const currentTileY = floor(div(pixelCoordY, TILE_SIZE));
+    
+    // Check if this pixel is in the randomly selected tile
+    // randomTileUniform contains the tile coordinates to render this frame
+    // step(abs(a - b), 0.5) returns 1 when |a - b| <= 0.5, which for integer tile indices
+    // means the tiles match exactly (0.5 threshold handles floating-point precision)
+    const isSelectedTileX = step(abs(sub(currentTileX, randomTileUniform.x)), 0.5);
+    const isSelectedTileY = step(abs(sub(currentTileY, randomTileUniform.y)), 0.5);
+    const isSelectedTile = mul(isSelectedTileX, isSelectedTileY);
+    
+    // Quantize UV to 4x4 pixel blocks - all pixels in a tile use the center UV
+    // This makes each "pixel" appear as a 4x4 block for artistic effect
+    const tileUvX = div(add(mul(currentTileX, TILE_SIZE), TILE_HALF_SIZE), resolutionUniform.x);
+    const tileUvY = div(add(mul(currentTileY, TILE_SIZE), TILE_HALF_SIZE), resolutionUniform.y);
 
-    // Calculate normalized device coordinates (NDC) from UV
+    // Calculate normalized device coordinates (NDC) from quantized UV
     // UV goes from 0 to 1, NDC goes from -1 to +1
-    const ndcX = sub(mul(uvCoord.x, 2.0), 1.0);
-    const ndcY = sub(mul(uvCoord.y, 2.0), 1.0);
+    const ndcX = sub(mul(tileUvX, 2.0), 1.0);
+    const ndcY = sub(mul(tileUvY, 2.0), 1.0);
 
-    // Generate random seed from frame count and pixel position for stochastic sampling
-    const randomSeed = add(mul(frameCountUniform, 0.618033988), mul(add(uvCoord.x, mul(uvCoord.y, 1000.0)), 0.0001));
+    // Generate random seed from frame count and tile position for stochastic sampling
+    // Use tile UV to ensure all pixels in a tile use the same random values
+    const randomSeed = add(mul(frameCountUniform, 0.618033988), mul(add(tileUvX, mul(tileUvY, 1000.0)), 0.0001));
 
     // ============================================================
     // CAMERA-FIRST RAY GENERATION
@@ -663,8 +697,9 @@ function createPathTracerMaterial() {
     // - Faster convergence (fewer samples needed for smooth image)
     // - Less visible noise patterns during accumulation
     // - More perceptually pleasing intermediate results
-    const pixelX = mul(uvCoord.x, resolutionUniform.x);
-    const pixelY = mul(uvCoord.y, resolutionUniform.y);
+    // Use tile center position for blue noise sampling (since we render 4x4 tiles as single pixels)
+    const pixelX = mul(tileUvX, resolutionUniform.x);
+    const pixelY = mul(tileUvY, resolutionUniform.y);
     const blueNoiseSample = blueNoise2D(pixelX, pixelY, frameCountUniform);
     
     // Convert blue noise [0,1] to centered sub-pixel jitter in NDC space
@@ -1230,8 +1265,14 @@ function createPathTracerMaterial() {
     const previousColor = previousFrameTextureNode;
     const sampleWeight = div(1.0, add(accumulatedSamplesUniform, 1.0));
     
-    // Mix based on accumulation
-    const accumulatedColor = mix(previousColor, vec4(finalColor.x, finalColor.y, finalColor.z, 1.0), sampleWeight);
+    // ==== TILE-BASED RENDERING ====
+    // For pixels in the selected tile: blend new path-traced color with accumulated history
+    // For pixels NOT in the selected tile: pass through the previous frame color unchanged
+    const newFrameColor = vec4(finalColor.x, finalColor.y, finalColor.z, 1.0);
+    const blendedColor = mix(previousColor, newFrameColor, sampleWeight);
+    
+    // Select: if this is the selected tile, use blended color; otherwise use previous color
+    const accumulatedColor = mix(previousColor, blendedColor, isSelectedTile);
 
     // Tone mapping (simple Reinhard)
     const toneMappedR = div(accumulatedColor.r, add(accumulatedColor.r, 1.0));
@@ -1294,6 +1335,18 @@ function updatePathTracerUniforms(camera, deltaTime) {
     }
 
     tslUniforms.accumulatedSamples.value = accumulatedSamples;
+
+    // ==== RANDOM TILE SELECTION ====
+    // Each frame, select a random tile to render (TILE_SIZE defined at module level)
+    // This distributes path tracing work across frames for better performance
+    const resolution = tslUniforms.resolution.value;
+    const numTilesX = Math.ceil(resolution.x / TILE_SIZE);
+    const numTilesY = Math.ceil(resolution.y / TILE_SIZE);
+    
+    // Select a random tile
+    const randomTileX = Math.floor(Math.random() * numTilesX);
+    const randomTileY = Math.floor(Math.random() * numTilesY);
+    tslUniforms.randomTile.value.set(randomTileX, randomTileY);
 
     // Update main camera matrices - we pass these as uniforms because we render
     // with an orthographic camera but need the main game camera's view/projection
