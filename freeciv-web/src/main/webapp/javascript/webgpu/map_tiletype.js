@@ -103,16 +103,15 @@ function update_tiletypes_visibility(ptile)
   let index = (y * map.xsize + x) * 4;
   
   // Update alpha channel with visibility
-  if (typeof tile_get_known !== 'undefined') {
-    let known_status = tile_get_known(ptile);
-    if (known_status == TILE_KNOWN_SEEN) {
-      maptiles_data[index + 3] = 255;  // Fully visible
-    } else if (known_status == TILE_KNOWN_UNSEEN) {
-      maptiles_data[index + 3] = 138;  // Fogged
-    } else {
-      maptiles_data[index + 3] = 0;    // Unknown
-    }
+  let known_status = tile_get_known(ptile);
+  if (known_status == TILE_KNOWN_SEEN) {
+    maptiles_data[index + 3] = 255;  // Fully visible
+  } else if (known_status == TILE_KNOWN_UNSEEN) {
+    maptiles_data[index + 3] = 138;  // Fogged
+  } else {
+    maptiles_data[index + 3] = 0;    // Unknown
   }
+
   
   maptiletypes.needsUpdate = true;
 }
