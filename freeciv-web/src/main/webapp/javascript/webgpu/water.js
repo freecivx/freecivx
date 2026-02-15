@@ -100,6 +100,7 @@ function createWaterMaterialTSL() {
   const tileY = floor(tileYRaw);
   
   // Hex stagger: odd rows offset by 0.5 tile width
+  // Mesh row parity: (map_y_size - 1 - tileY) % 2 determines odd row offset
   const isOddRow = mod(sub(sub(map_y_size, 1.0), tileY), 2.0);
   
   // Calculate hex-adjusted UV coordinates
