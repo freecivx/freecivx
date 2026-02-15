@@ -68,11 +68,9 @@ function update_tiles_known_vertex_colors()
         // For hex maps, we need to account for the row stagger in the mesh geometry
         var my = Math.floor((sy / terrain_quality) - 0.040);
         
-        // For hex grids, odd MESH rows are staggered by HEX_STAGGER (0.5)
-        // The stagger is applied based on mesh row parity (sy % 2), NOT tile row parity (my % 2)
-        // This matches the geometry setup in init_land_geometry() where odd mesh rows get stagger
-        // in UV.x coordinates: const uvX = (ix + (iy % 2 === 1 ? HEX_STAGGER : 0)) / gridX;
-        var hex_stagger_offset = (sy % 2 === 1) ? 0.5 : 0;
+        // For hex grids, odd rows in the mesh are staggered by HEX_STAGGER (0.5)
+        // We need to subtract this offset when looking up the tile X coordinate
+        var hex_stagger_offset = (my % 2 === 1) ? 0.5 : 0;
         var mx = Math.floor((sx / terrain_quality) - hex_stagger_offset - 0.040);
         
         var ptile = map_pos_to_tile(mx, my);
