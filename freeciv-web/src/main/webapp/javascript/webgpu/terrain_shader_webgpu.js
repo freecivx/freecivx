@@ -122,6 +122,12 @@ function createTerrainShaderTSL(uniforms) {
     const HEX_EDGE_COLOR_B = 0.08; // Blue component of edge darkening color
     const TEXTURE_RANDOM_SCALE = 16.0; // Divisor for random texture offset - larger = less variation
 
+    // Visibility constants (matching vertex color values from tile_visibility_handler.js)
+    // These values are set in get_vertex_color_from_tile() and interpolated across vertices
+    const VISIBILITY_UNKNOWN = 0.0;   // Tile is unknown (black)
+    const VISIBILITY_FOGGED = 0.54;   // Tile was seen but currently not visible (fogged)
+    const VISIBILITY_VISIBLE = 1.06;  // Tile is fully visible (slightly > 1.0 for brightness boost)
+
     // Create texture references for reuse (don't call texture() yet)
     const maptilesTex = uniforms.maptiles.value;
     const bordersTex = uniforms.borders.value;
@@ -160,7 +166,11 @@ function createTerrainShaderTSL(uniforms) {
     const uvNode = uv();
     const posNode = positionLocal;
 
-    // Vertex color attribute (reserved for future features like active city highlighting)
+    // Access vertex color for fog of war (stored in vertColor attribute)
+    // The vertColor attribute contains visibility information:
+    // - 0.0 = unknown (black)
+    // - 0.54 = unseen but known (fogged)
+    // - 1.06 = fully visible
     const vertColor = attribute('vertColor');
 
     // =========================================================================
@@ -550,38 +560,43 @@ function createTerrainShaderTSL(uniforms) {
     );
 
     // =========================================================================
-    // TILE VISIBILITY (Unknown, Known Unseen, Known Seen)
+    // HEXAGONAL VISIBILITY BLENDING (Hex-Aligned Unknown Tile Edges)
     // =========================================================================
     // Sample visibility from maptiles texture alpha channel at hex tile center.
-    // This ensures visibility boundaries follow hexagonal tile edges.
+    // This ensures visibility boundaries follow hexagonal tile edges instead of
+    // the square vertex grid, creating proper Civ 6-style hex-aligned fog of war.
     //
     // The maptiles texture stores visibility in the alpha channel:
-    // - 0 = TILE_UNKNOWN (pink for debugging)
-    // - 138/255 ≈ 0.541 = TILE_KNOWN_UNSEEN (red for debugging)
-    // - 255/255 = 1.0 = TILE_KNOWN_SEEN (blue for debugging)
+    // - 0 = TILE_UNKNOWN (black)
+    // - 138/255 ≈ 0.541 = TILE_KNOWN_UNSEEN (fogged)
+    // - 255/255 = 1.0 = TILE_KNOWN_SEEN (visible)
+    //
+    // By sampling at the hex tile center (tileCenterUV), we get a single visibility
+    // value for the entire hexagonal tile, creating crisp hex-aligned boundaries.
     
     // Sample visibility from maptiles texture alpha channel at hex tile center
+    // tileCenterUV already accounts for hex stagger offset
     const tileVisibilityTex = texture(maptilesTex, tileCenterUV);
-    const tileVisibility = tileVisibilityTex.a;  // Alpha channel contains visibility
+    const hexVisibility = tileVisibilityTex.a;  // Alpha channel contains visibility
     
-    // Define visibility thresholds
-    // Unknown: alpha = 0
-    // Known unseen (fogged): alpha ≈ 0.541 (138/255)
-    // Known seen (visible): alpha = 1.0
-    const KNOWN_UNSEEN_THRESHOLD = 0.27;  // Midpoint between 0 and 0.541
-    const KNOWN_SEEN_THRESHOLD = 0.77;    // Midpoint between 0.541 and 1.0
+    // Convert texture value (0-1) to visibility scale
+    // Texture stores: 0=unknown, ~0.541=fogged, 1.0=visible
+    // After scaling by VISIBILITY_VISIBLE (1.06): 0, ~0.57, 1.06
+    const hexVisibilityScaled = mul(hexVisibility, VISIBILITY_VISIBLE);
     
-    // Determine tile visibility state using step functions
-    // isKnown: 1 if tile is known (unseen or seen), 0 if unknown
-    // isSeen: 1 if tile is known and currently seen, 0 otherwise
-    const isKnown = step(KNOWN_UNSEEN_THRESHOLD, tileVisibility);
-    const isSeen = step(KNOWN_SEEN_THRESHOLD, tileVisibility);
+    // =========================================================================
+    // SOFT EDGES BETWEEN UNKNOWN AND KNOWN TILES
+    // =========================================================================
+    // Sample visibility from neighboring hex tiles to create soft blending
+    // at the boundary between unknown (black) tiles and known/visible tiles.
+    // This creates a gradual fade rather than a hard edge.
     
-    // Calculate neighbor sampling offsets (in UV space) - used for nation border detection below
+    // Calculate neighbor sampling offsets (in UV space)
     const neighborOffsetX = div(1.0, map_x_size);
     const neighborOffsetY = div(1.0, map_y_size);
     
-    // Sample 6 hex neighbor UV coordinates - used for nation border edge detection (see NATION BORDERS section)
+    // Sample 6 hex neighbors' visibility for edge softening
+    // We sample at offsets corresponding to hex neighbor directions
     const neighborUV_E = vec2(add(tileCenterUV.x, neighborOffsetX), tileCenterUV.y);
     const neighborUV_W = vec2(sub(tileCenterUV.x, neighborOffsetX), tileCenterUV.y);
     const neighborUV_NE = vec2(add(tileCenterUV.x, mul(neighborOffsetX, 0.5)), add(tileCenterUV.y, neighborOffsetY));
@@ -589,25 +604,55 @@ function createTerrainShaderTSL(uniforms) {
     const neighborUV_SE = vec2(add(tileCenterUV.x, mul(neighborOffsetX, 0.5)), sub(tileCenterUV.y, neighborOffsetY));
     const neighborUV_SW = vec2(sub(tileCenterUV.x, mul(neighborOffsetX, 0.5)), sub(tileCenterUV.y, neighborOffsetY));
     
-    // DEBUG COLORS for visibility states:
-    // - Unknown = pink (1.0, 0.4, 0.7)
-    // - Known unseen = red (1.0, 0.0, 0.0)
-    // - Known seen = blue (0.0, 0.0, 1.0)
-    const DEBUG_COLOR_UNKNOWN = vec3(1.0, 0.4, 0.7);      // Pink
-    const DEBUG_COLOR_KNOWN_UNSEEN = vec3(1.0, 0.0, 0.0); // Red
-    const DEBUG_COLOR_KNOWN_SEEN = vec3(0.0, 0.0, 1.0);   // Blue
+    // Sample neighbor visibilities
+    const visE = texture(maptilesTex, neighborUV_E).a;
+    const visW = texture(maptilesTex, neighborUV_W).a;
+    const visNE = texture(maptilesTex, neighborUV_NE).a;
+    const visNW = texture(maptilesTex, neighborUV_NW).a;
+    const visSE = texture(maptilesTex, neighborUV_SE).a;
+    const visSW = texture(maptilesTex, neighborUV_SW).a;
     
-    // Apply debug colors based on visibility state
-    // Start with unknown (pink), then override with unseen (red) if known, then seen (blue) if seen
-    const debugVisibilityColor = mix(
-        mix(DEBUG_COLOR_UNKNOWN, DEBUG_COLOR_KNOWN_UNSEEN, isKnown),
-        DEBUG_COLOR_KNOWN_SEEN,
-        isSeen
-    );
+    // Calculate average neighbor visibility
+    const avgNeighborVis = mul(add(add(add(add(add(visE, visW), visNE), visNW), visSE), visSW), div(1.0, 6.0));
     
-    // Apply debug visibility color to final output (blended with terrain)
-    // Use 0.7 blend factor to show both terrain and debug color
-    finalColor = vec4(mix(finalColor.rgb, debugVisibilityColor, 0.7), finalColor.a);
+    // Create soft edge factor based on distance from hex center
+    // At hex edges, blend with neighbor visibility for softer transitions
+    // hexDist is the distance to hex edge (0 at center, 0.5 at edge)
+    const edgeProximity = clamp(mul(sub(hexDist, 0.3), 5.0), 0.0, 1.0);  // 0 at center, 1 near edge
+    
+    // Blend current tile visibility with neighbor average at edges
+    // This creates soft transitions at boundaries between unknown and known tiles
+    const softVisibility = mix(hexVisibility, avgNeighborVis, mul(edgeProximity, 0.4));
+    const softVisibilityScaled = mul(softVisibility, VISIBILITY_VISIBLE);
+    
+    // Apply smoothstep curve for softer edges within the visible/fogged regions
+    // This maintains smooth transitions for brightness while using hex-sampled visibility
+    const visNormalized = clamp(div(softVisibilityScaled, VISIBILITY_VISIBLE), 0.0, 1.0);
+    // Smoothstep formula: t² × (3 - 2t) creates an S-curve that eases in and out
+    const visSmooth = mul(mul(visNormalized, visNormalized), sub(3.0, mul(2.0, visNormalized)));
+    
+    // Scale back to original range to maintain brightness levels
+    const smoothVisibility = mul(visSmooth, VISIBILITY_VISIBLE);
+    
+    // =========================================================================
+    // ACTIVE CITY HIGHLIGHTING (Vertex Color Based)
+    // =========================================================================
+    // The vertex color (vertColor) is used for active city highlighting:
+    // - When a city is selected, tiles belonging to the city remain at full brightness
+    // - Other tiles are dimmed to 0.30 brightness
+    // This uses vertex interpolation which provides smooth transitions at tile boundaries
+    // 
+    // We compare the vertex color with the hex visibility to detect active city dimming:
+    // - If vertColor.x < hexVisibilityScaled, the tile is being dimmed for active city view
+    // - In this case, use the dimmed vertex color value instead of the texture visibility
+    const vertexVisibility = vertColor.x;
+    
+    // Use the minimum of hex visibility and vertex visibility
+    // This allows active city highlighting to dim tiles that would otherwise be visible
+    const effectiveVisibility = min(smoothVisibility, vertexVisibility);
+    
+    // Apply the visibility to the terrain color
+    finalColor = vec4(mul(finalColor.rgb, effectiveVisibility), finalColor.a);
 
     // =========================================================================
     // NATION BORDERS WITH DISTINCT BORDER LINES
