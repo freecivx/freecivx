@@ -100,7 +100,7 @@ function update_tiles_known_vertex_colors()
 **************************************************************************/
 function get_permissive_vertex_color(mx, my, vertex_x, vertex_y)
 {
-    var best_color = 0;
+    var max_visibility = 0;
     
     // Check the computed tile and its immediate neighbors (3x3 grid)
     // Use the maximum visibility value found
@@ -118,14 +118,16 @@ function get_permissive_vertex_color(mx, my, vertex_x, vertex_y)
             if (ptile != null) {
                 var c = get_vertex_color_from_tile(ptile, vertex_x, vertex_y);
                 // Use the maximum visibility (most permissive)
-                if (c[0] > best_color) {
-                    best_color = c[0];
+                // c[0] contains the visibility value (red channel)
+                if (c[0] > max_visibility) {
+                    max_visibility = c[0];
                 }
             }
         }
     }
     
-    return [best_color, 0, 0];
+    // Return visibility in red channel; green/blue channels are unused (always 0)
+    return [max_visibility, 0, 0];
 }
 
 
