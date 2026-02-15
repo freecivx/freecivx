@@ -51,9 +51,9 @@ function webgpu_start_renderer()
 
   mouse = new THREE.Vector2();
 
-  // Use THREE.Timer instead of deprecated THREE.Clock
-  if (!clock) {
-    clock = new THREE.Timer();
+  // Initialize THREE.Timer for frame timing
+  if (!timer) {
+    timer = new THREE.Timer();
   }
 
   // Set up scene lighting using LightingConfig

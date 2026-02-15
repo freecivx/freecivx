@@ -34,7 +34,7 @@ var anaglyph_effect;
 var mouse, raycaster;
 var spotlight;
 var directionalLight;  // Main directional light for sun-like shadows
-var clock;
+var timer;
 
 var controls;
 
@@ -263,9 +263,9 @@ function animate_webgl() {
   // This ensures animation speed is consistent regardless of frame rate
   const DEFAULT_DELTA_TIME = 0.016; // Default to ~60fps if timer not available
   var deltaTime = DEFAULT_DELTA_TIME;
-  if (clock) {
-    clock.update();
-    deltaTime = clock.getDelta();
+  if (timer) {
+    timer.update();
+    deltaTime = timer.getDelta();
     // Clamp delta time to prevent huge jumps when tab is inactive
     deltaTime = Math.min(deltaTime, 0.1);
   }
