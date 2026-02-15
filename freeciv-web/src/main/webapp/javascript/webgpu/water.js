@@ -27,12 +27,14 @@
  * - Stylized: Color gradients and caustic patterns for visual interest
  * - Fast: Efficient shader without heavy wave calculations
  * - Game-appropriate: Works well at top-down/isometric strategy game camera angles
+ * - Fog of War: Respects map tile visibility (unknown tiles render black)
  * 
  * This stylized water shader uses:
  * - UV-scrolling patterns for gentle surface animation
  * - Layered caustic/ripple effects
  * - Gradient-based color transitions (deep to shallow)
  * - Soft specular highlights without dramatic waves
+ * - Tile visibility from maptiles texture (alpha channel)
  */
 
 /****************************************************************************
@@ -73,13 +75,54 @@ function add_quality_dependent_objects_webgpu() {
  - Works well at various camera distances and angles
 ****************************************************************************/
 function createWaterMaterialTSL() {
-  const { uniform, uv, vec3, vec4, sin, cos, mix, fract, clamp, pow, sqrt, mul, add, sub, abs, floor } = THREE;
+  const { uniform, uv, vec3, vec4, sin, cos, mix, fract, clamp, pow, sqrt, mul, add, sub, abs, floor, texture, mod, max, div, step } = THREE;
   
   // Time uniform for animation
   const timeUniform = uniform(0.0);
   window.waterTimeUniform = timeUniform;
   
   const uvNode = uv();
+  
+  // ==== MAP TILE VISIBILITY SYSTEM ====
+  // Access maptiles texture for visibility (uses global maptiletypes texture)
+  // Visibility is stored in alpha channel: 0=unknown, ~0.541=fogged, 1.0=visible
+  const maptilesTex = maptiletypes;
+  const map_x_size = uniform(map['xsize']);
+  const map_y_size = uniform(map['ysize']);
+  
+  // Hexagonal tile constants (must match terrain shader)
+  const HEX_SQRT3_OVER_2 = 0.866025; // sqrt(3)/2
+  const HEX_MESH_HEIGHT_FACTOR = HEX_SQRT3_OVER_2;
+  const HEX_ASPECT = 1.0 / HEX_MESH_HEIGHT_FACTOR; // ~1.1547
+  
+  // Calculate which tile row we're in (used for stagger offset)
+  const tileYRaw = mul(map_y_size, uvNode.y);
+  const tileY = floor(tileYRaw);
+  
+  // Hex stagger: odd rows offset by 0.5 tile width
+  const isOddRow = mod(sub(sub(map_y_size, 1.0), tileY), 2.0);
+  
+  // Calculate hex-adjusted UV coordinates
+  const hexOffsetX = mul(isOddRow, div(0.5, map_x_size));
+  const hexUvX = sub(uvNode.x, hexOffsetX);
+  
+  // Calculate tile coordinates
+  const tileXRaw = mul(map_x_size, hexUvX);
+  const tileX = floor(tileXRaw);
+  
+  // Calculate tile center UV for visibility sampling
+  const tileCenterX = div(add(tileX, 0.5), map_x_size);
+  const tileCenterY = div(add(tileY, 0.5), map_y_size);
+  // Re-apply stagger offset for correct texture sampling
+  const tileCenterXWithStagger = add(tileCenterX, hexOffsetX);
+  const tileCenterUV = THREE.vec2(tileCenterXWithStagger, tileCenterY);
+  
+  // Sample visibility from maptiles texture alpha channel
+  const tileVisibility = texture(maptilesTex, tileCenterUV).a;
+  
+  // Visibility scale factor (matches terrain shader VISIBILITY_VISIBLE = 1.06)
+  const VISIBILITY_VISIBLE = 1.06;
+  const visibility = mul(tileVisibility, VISIBILITY_VISIBLE);
   
   // ==== COLOR PALETTE (Stylized Game Colors) ====
   const deepOcean = vec3(0.04, 0.12, 0.28);     // Deep blue
@@ -181,7 +224,11 @@ function createWaterMaterialTSL() {
   // ==== FINAL COMPOSITION ====
   const colorWithSpecular = add(colorWithCaustics, specularTint);
   const colorWithShimmer = add(colorWithSpecular, vec3(shimmer, shimmer, shimmer));
-  const finalColor = sub(colorWithShimmer, vec3(edgeDarken, edgeDarken, edgeDarken));
+  const colorBeforeVisibility = sub(colorWithShimmer, vec3(edgeDarken, edgeDarken, edgeDarken));
+  
+  // Apply tile visibility - unknown tiles render as black
+  // visibility ranges from 0 (unknown/black) to 1.06 (fully visible with brightness boost)
+  const finalColor = mul(colorBeforeVisibility, visibility);
   
   // Constant opacity for clean, game-like appearance
   const opacity = 0.72;
