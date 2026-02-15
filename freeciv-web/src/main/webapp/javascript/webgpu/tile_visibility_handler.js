@@ -62,7 +62,9 @@ function update_tiles_known_vertex_colors()
 
   for ( let iy = 0; iy < gridY1; iy ++ ) {
     for ( let ix = 0; ix < gridX1; ix ++ ) {
-        var sx = ix % xquality, sy = iy % yquality;
+        // Clamp to valid range instead of wrapping with modulo
+        // The modulo would incorrectly map edge vertices (ix=xquality) back to 0
+        var sx = Math.min(ix, xquality - 1), sy = Math.min(iy, yquality - 1);
         
         // Calculate map tile coordinates from vertex position
         // For hex maps, we need to account for the row stagger in the mesh geometry

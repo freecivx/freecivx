@@ -111,7 +111,9 @@ function init_land_geometry(geometry, mesh_quality)
     
     for ( let ix = 0; ix < gridX1; ix ++ ) {
       const x = ix * segment_width - width_half + rowOffset;
-      var sx = ix % xquality, sy = iy % yquality;
+      // Clamp to valid range instead of wrapping with modulo
+      // The modulo would incorrectly map edge vertices back to position 0
+      var sx = Math.min(ix, xquality - 1), sy = Math.min(iy, yquality - 1);
 
       // Calculate 1D index for heightmap array
       const heightmap_index = (sy * heightmap_scale) * heightmap_resolution_x + (sx * heightmap_scale);
@@ -192,7 +194,9 @@ function update_land_geometry(geometry, mesh_quality) {
     
     for (let ix = 0; ix <= gridX; ix++) {
       const x = ix * segment_width - width_half + rowOffset;
-      const sx = ix % xquality, sy = iy % yquality;
+      // Clamp to valid range instead of wrapping with modulo
+      // The modulo would incorrectly map edge vertices back to position 0
+      const sx = Math.min(ix, xquality - 1), sy = Math.min(iy, yquality - 1);
       const index = iy * (gridX + 1) + ix;
       // Calculate 1D index for heightmap array
       const heightIndex = (sy * heightmap_scale) * heightmap_resolution_x + (sx * heightmap_scale);
