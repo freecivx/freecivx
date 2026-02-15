@@ -649,7 +649,12 @@ function createTerrainShaderTSL(uniforms) {
     
     // Use the minimum of hex visibility and vertex visibility
     // This allows active city highlighting to dim tiles that would otherwise be visible
-    const effectiveVisibility = min(smoothVisibility, vertexVisibility);
+    let effectiveVisibility = min(smoothVisibility, vertexVisibility);
+    
+    // If terrain type is known (terrainHere > 0), the tile is at least known (not unknown).
+    // Ensure minimum visibility of VISIBILITY_FOGGED for known terrain.
+    const isKnownTerrain = step(0.5, terrainHere);
+    effectiveVisibility = max(effectiveVisibility, mul(isKnownTerrain, VISIBILITY_FOGGED));
     
     // Apply the visibility to the terrain color
     finalColor = vec4(mul(finalColor.rgb, effectiveVisibility), finalColor.a);
