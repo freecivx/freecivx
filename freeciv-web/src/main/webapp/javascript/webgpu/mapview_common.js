@@ -271,30 +271,19 @@ function animate_webgl() {
   }
   
   // Update water animation
-  if (typeof updateWaterAnimation === 'function') {
-    updateWaterAnimation(deltaTime);
-  }
+  updateWaterAnimation(deltaTime);
+
   
   // Update selected unit animation (TSL-based pulsing effect)
-  if (typeof updateSelectedUnitAnimation === 'function') {
+
     updateSelectedUnitAnimation(deltaTime);
-  }
+
 
   if (controls != null) {
     controls.update();
   }
 
-  // Check if path tracer should render
-  if (typeof isPathTracerEnabled === 'function' && isPathTracerEnabled()) {
-    // Render using path tracer
-    if (typeof renderPathTracer === 'function') {
-      renderPathTracer(maprenderer, camera);
-    }
-  } else if (anaglyph_3d_enabled) {
-    anaglyph_effect.render(scene,camera);
-  } else {
-    maprenderer.render(scene, camera);
-  }
+  maprenderer.render(scene, camera);
 
   if (goto_active) check_request_goto_path();
   if (stats != null) stats.end();

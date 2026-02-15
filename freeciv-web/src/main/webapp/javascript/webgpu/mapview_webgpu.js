@@ -334,23 +334,6 @@ async function init_webgpu_mapview() {
   add_quality_dependent_objects_webgpu();
   add_all_objects_to_scene();
 
-  // Initialize path tracer (if available)
-  if (typeof initPathTracer === 'function') {
-    try {
-      initPathTracer(maprenderer, scene, camera);
-      console.log("Path Tracer initialized - toggle with Ctrl+P or in settings");
-      
-      // Apply stored path tracer setting
-      var stored_pathtracer_setting = simpleStorage.get("pathtracer_setting", "");
-      if (stored_pathtracer_setting === "true" && typeof setPathTracerEnabled === 'function') {
-        setPathTracerEnabled(true);
-        console.log("Path Tracer enabled from saved settings");
-      }
-    } catch (e) {
-      console.warn("Path Tracer initialization failed:", e.message);
-    }
-  }
-
   benchmark_start = new Date().getTime();
 }
 
