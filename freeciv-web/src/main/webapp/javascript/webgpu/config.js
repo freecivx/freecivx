@@ -313,4 +313,3 @@ window.TerrainType = TerrainType;
 window.BeachConfig = BeachConfig;
 window.AnimationConfig = AnimationConfig;
 window.MapviewConfig = MapviewConfig;
-window.PathTracerConfig = PathTracerConfig;
