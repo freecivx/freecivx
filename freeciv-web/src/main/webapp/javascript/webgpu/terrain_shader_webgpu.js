@@ -651,8 +651,14 @@ function createTerrainShaderTSL(uniforms) {
     // This allows active city highlighting to dim tiles that would otherwise be visible
     const effectiveVisibility = min(smoothVisibility, vertexVisibility);
     
-    // Apply the visibility to the terrain color
-    finalColor = vec4(mul(finalColor.rgb, effectiveVisibility), finalColor.a);
+    // DEBUG: Render unknown tiles as pink for testing visibility bugs
+    // Unknown tiles have effectiveVisibility = 0, pink = (1, 0, 1)
+    const PINK_DEBUG_COLOR = vec3(1.0, 0.0, 1.0);
+    const isUnknown = step(effectiveVisibility, 0.01);  // 1 if visibility <= 0.01 (unknown), 0 otherwise
+    
+    // Apply visibility: for known tiles, multiply by visibility; for unknown, show pink
+    const visibilityApplied = mul(finalColor.rgb, effectiveVisibility);
+    finalColor = vec4(mix(visibilityApplied, PINK_DEBUG_COLOR, isUnknown), finalColor.a);
 
     // =========================================================================
     // NATION BORDERS WITH DISTINCT BORDER LINES

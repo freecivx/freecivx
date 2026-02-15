@@ -48,6 +48,10 @@ function webgl_update_tile_known(old_tile, new_tile)
  For hexagonal maps, we need to account for the staggered row layout when
  determining which tile a vertex belongs to. Odd rows are offset by half
  a tile width (odd-r offset coordinate system).
+ 
+ Uses a permissive approach: for boundary vertices, checks neighboring tiles
+ and uses the maximum visibility value to avoid incorrectly showing tiles
+ as unknown when they should be visible.
 **************************************************************************/
 function update_tiles_known_vertex_colors()
 {
@@ -62,24 +66,23 @@ function update_tiles_known_vertex_colors()
 
   for ( let iy = 0; iy < gridY1; iy ++ ) {
     for ( let ix = 0; ix < gridX1; ix ++ ) {
-        var sx = ix % xquality, sy = iy % yquality;
+        // Clamp to valid range instead of wrapping (handles edge vertices at ix == xquality)
+        var sx = Math.min(ix, xquality - 1), sy = Math.min(iy, yquality - 1);
         
         // Calculate map tile coordinates from vertex position
-        // For hex maps, we need to account for the row stagger in the mesh geometry
-        var my = Math.floor((sy / terrain_quality) - 0.040);
+        // Divide by terrain_quality to convert from vertex index to tile index
+        var my = Math.floor(sy / terrain_quality);
         
-        // For hex grids, odd rows in the mesh are staggered by HEX_STAGGER (0.5)
-        // We need to subtract this offset when looking up the tile X coordinate
-        var hex_stagger_offset = (my % 2 === 1) ? 0.5 : 0;
-        var mx = Math.floor((sx / terrain_quality) - hex_stagger_offset - 0.040);
+        // For hex grids, the MESH geometry staggers odd rows by HEX_STAGGER (0.5)
+        // The stagger is applied based on mesh row (iy), not tile row (my)
+        // This matches init_land_geometry() which uses: (iy % 2 === 1 ? HEX_STAGGER : 0)
+        var hex_stagger_offset = (iy % 2 === 1) ? 0.5 : 0;
+        var mx = Math.floor((sx / terrain_quality) - hex_stagger_offset);
         
-        var ptile = map_pos_to_tile(mx, my);
-        if (ptile != null) {
-          var c = get_vertex_color_from_tile(ptile, ix, iy);
-          colors.push(c[0], c[1], c[2]);
-        } else {
-          colors.push(0,0,0);
-        }
+        // Use permissive visibility: check the computed tile AND neighbors,
+        // use the maximum visibility to avoid incorrectly showing unknown tiles
+        var c = get_permissive_vertex_color(mx, my, ix, iy);
+        colors.push(c[0], c[1], c[2]);
     }
   }
 
@@ -87,6 +90,42 @@ function update_tiles_known_vertex_colors()
 
   landGeometry.colorsNeedUpdate = true;
 
+}
+
+/**************************************************************************
+ Gets the vertex color using a permissive approach: checks the tile at (mx, my)
+ and its immediate neighbors, returning the maximum visibility value.
+ This prevents edge/boundary vertices from incorrectly showing as unknown
+ when a neighboring tile is actually visible.
+**************************************************************************/
+function get_permissive_vertex_color(mx, my, vertex_x, vertex_y)
+{
+    var best_color = 0;
+    
+    // Check the computed tile and its immediate neighbors (3x3 grid)
+    // Use the maximum visibility value found
+    for (var dy = -1; dy <= 1; dy++) {
+        for (var dx = -1; dx <= 1; dx++) {
+            var check_x = mx + dx;
+            var check_y = my + dy;
+            
+            // Skip out-of-bounds tiles
+            if (check_x < 0 || check_x >= map.xsize || check_y < 0 || check_y >= map.ysize) {
+                continue;
+            }
+            
+            var ptile = map_pos_to_tile(check_x, check_y);
+            if (ptile != null) {
+                var c = get_vertex_color_from_tile(ptile, vertex_x, vertex_y);
+                // Use the maximum visibility (most permissive)
+                if (c[0] > best_color) {
+                    best_color = c[0];
+                }
+            }
+        }
+    }
+    
+    return [best_color, 0, 0];
 }
 
 
