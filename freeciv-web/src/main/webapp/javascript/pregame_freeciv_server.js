@@ -510,8 +510,6 @@ function pregame_settings()
               "</select></td></tr>"+
 	    "<tr id='3d_antialiasing_enabled'><td id='3d_antialiasing_label' style='min-width: 150px;'><br></td>" +
         "<td><input type='checkbox' id='3d_antialiasing_setting' checked>Enable antialiasing (game looks nicer, but is slower)</td></tr>" +
-	    "<tr id='3d_pathtracer_enabled'><td id='3d_pathtracer_label' style='min-width: 150px;'><br></td>" +
-        "<td><input type='checkbox' id='3d_pathtracer_setting'>Enable Path Tracing (experimental photorealistic rendering)</td></tr>" +
         "<tr><td style='min-width: 150px;'>Benchmark of 3D WebGPU version:</td>" +
                 "<td><button id='bechmark_run' type='button' class='benchmark button'>Run benchmark</button></td></tr>" +
          "</table>" +
@@ -640,21 +638,6 @@ function pregame_settings()
   $('#3d_antialiasing_setting').change(function() {
     antialiasing_setting = !antialiasing_setting;
     simpleStorage.set("antialiasing_setting", antialiasing_setting ? "true" : "false");
-  });
-
-  // Path tracer setting
-  var stored_pathtracer_setting = simpleStorage.get("pathtracer_setting", "");
-  if (stored_pathtracer_setting != null && stored_pathtracer_setting == "true") {
-      $("#3d_pathtracer_setting").prop("checked", true);
-  }
-
-  $('#3d_pathtracer_setting').change(function() {
-    var enabled = $(this).is(":checked");
-    simpleStorage.set("pathtracer_setting", enabled ? "true" : "false");
-    // Apply path tracer setting if already in game
-    if (typeof setPathTracerEnabled === 'function') {
-      setPathTracerEnabled(enabled);
-    }
   });
 
   if (is_speech_supported()) {
