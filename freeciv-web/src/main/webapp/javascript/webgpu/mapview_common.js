@@ -29,7 +29,6 @@
 
 var container, stats;
 var scene, maprenderer;
-var anaglyph_effect;
 
 var mouse, raycaster;
 var spotlight;
@@ -284,11 +283,7 @@ function animate_webgl() {
     controls.update();
   }
 
-  if (anaglyph_3d_enabled) {
-    anaglyph_effect.render(scene,camera);
-  } else {
-    maprenderer.render(scene, camera);
-  }
+  maprenderer.render(scene, camera);
 
   if (goto_active) check_request_goto_path();
   if (stats != null) stats.end();

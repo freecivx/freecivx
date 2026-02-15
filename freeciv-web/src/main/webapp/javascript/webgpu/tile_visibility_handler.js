@@ -35,9 +35,7 @@ function webgl_update_tile_known(old_tile, new_tile)
   if (tile_get_known(new_tile) != tile_get_known(old_tile)) {
     map_known_dirty = true;
     // Update visibility in maptiles texture for hex-aligned visibility boundaries
-    if (typeof update_tiletypes_visibility !== 'undefined') {
-      update_tiletypes_visibility(new_tile);
-    }
+    update_tiletypes_visibility(new_tile);
   }
 
 }
@@ -88,7 +86,6 @@ function update_tiles_known_vertex_colors()
   landGeometry.setAttribute( 'vertColor', new THREE.Float32BufferAttribute( colors, 3) );
 
   landGeometry.colorsNeedUpdate = true;
-  //console.log("updated vertex colours (tiles known, irrigation).");
 
 }
 

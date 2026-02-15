@@ -83,11 +83,6 @@ function webgpu_start_renderer()
   maprenderer.setSize(new_mapview_width, new_mapview_height);
   container.appendChild(maprenderer.domElement);
 
-  if (anaglyph_3d_enabled) {
-    console.log("Anaglyph 3D is not yet supported with WebGPU renderer");
-    anaglyph_3d_enabled = false;
-  }
-
   // Adjust camera distance for smaller screens
   if ($(window).width() <= 800) {
     camera_dy = camera_dy * 1.6;
