@@ -160,8 +160,7 @@ function createTerrainShaderTSL(uniforms) {
     const uvNode = uv();
     const posNode = positionLocal;
 
-    // Access vertex color attribute (currently unused - kept for future features like active city highlighting)
-    // The vertColor attribute contains visibility information from tile_visibility_handler.js
+    // Vertex color attribute (reserved for future features like active city highlighting)
     const vertColor = attribute('vertColor');
 
     // =========================================================================
@@ -578,11 +577,11 @@ function createTerrainShaderTSL(uniforms) {
     const isKnown = step(KNOWN_UNSEEN_THRESHOLD, tileVisibility);
     const isSeen = step(KNOWN_SEEN_THRESHOLD, tileVisibility);
     
-    // Calculate neighbor sampling offsets for borders (in UV space)
+    // Calculate neighbor sampling offsets (in UV space) - used for nation border detection below
     const neighborOffsetX = div(1.0, map_x_size);
     const neighborOffsetY = div(1.0, map_y_size);
     
-    // Sample 6 hex neighbors for border detection (used later)
+    // Sample 6 hex neighbor UV coordinates - used for nation border edge detection (see NATION BORDERS section)
     const neighborUV_E = vec2(add(tileCenterUV.x, neighborOffsetX), tileCenterUV.y);
     const neighborUV_W = vec2(sub(tileCenterUV.x, neighborOffsetX), tileCenterUV.y);
     const neighborUV_NE = vec2(add(tileCenterUV.x, mul(neighborOffsetX, 0.5)), add(tileCenterUV.y, neighborOffsetY));
