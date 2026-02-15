@@ -65,13 +65,18 @@ function add_water_mesh_webgpu() {
  - Smooth color gradients from deep ocean to shallow coastal waters
  - Gentle specular highlights that don't dominate the scene
  - Works well at various camera distances and angles
+ - Visibility-aware: renders unknown tiles as black (fog of war support)
 ****************************************************************************/
 function createWaterMaterialTSL() {
-  const { uniform, uv, vec3, vec4, sin, cos, mix, fract, clamp, pow, sqrt, mul, add, sub, abs, floor } = THREE;
+  const { uniform, uv, vec2, vec3, vec4, sin, cos, mix, fract, clamp, pow, sqrt, mul, add, sub, abs, floor, div, texture } = THREE;
   
   // Time uniform for animation
   const timeUniform = uniform(0.0);
   window.waterTimeUniform = timeUniform;
+  
+  // Map size uniforms for tile coordinate calculations
+  const map_x_size = uniform(map['xsize']);
+  const map_y_size = uniform(map['ysize']);
   
   const uvNode = uv();
   
@@ -172,10 +177,39 @@ function createWaterMaterialTSL() {
   const edgeDist = sqrt(add(mul(cx, cx), mul(cy, cy)));
   const edgeDarken = clamp(mul(edgeDist, 0.15), 0.0, 0.1);
   
+  // ==== TILE VISIBILITY (Fog of War) ====
+  // Sample visibility from the maptiles texture alpha channel.
+  // The maptiles texture stores visibility in the alpha channel:
+  // - 0 = TILE_UNKNOWN (should render black)
+  // - 138/255 ≈ 0.541 = TILE_KNOWN_UNSEEN (fogged)
+  // - 255/255 = 1.0 = TILE_KNOWN_SEEN (fully visible)
+  //
+  // The water UV coordinates map directly to the tile grid, so we can
+  // calculate the tile center UV by scaling UV by map size and taking floor.
+  
+  // Calculate which tile this fragment belongs to
+  const tileX = mul(uvNode.x, map_x_size);
+  const tileY = mul(uvNode.y, map_y_size);
+  
+  // Get tile center UV for sampling visibility (add 0.5 to get center of tile)
+  const tileCenterU = div(add(floor(tileX), 0.5), map_x_size);
+  const tileCenterV = div(add(floor(tileY), 0.5), map_y_size);
+  const tileCenterUV = vec2(tileCenterU, tileCenterV);
+  
+  // Sample visibility from maptiles texture alpha channel
+  const tileVisibility = texture(maptiletypes, tileCenterUV);
+  const visibility = tileVisibility.a;
+  
   // ==== FINAL COMPOSITION ====
   const colorWithSpecular = add(colorWithCaustics, specularTint);
   const colorWithShimmer = add(colorWithSpecular, vec3(shimmer, shimmer, shimmer));
-  const finalColor = sub(colorWithShimmer, vec3(edgeDarken, edgeDarken, edgeDarken));
+  const colorWithDarkening = sub(colorWithShimmer, vec3(edgeDarken, edgeDarken, edgeDarken));
+  
+  // Apply visibility: multiply color by visibility value
+  // Unknown tiles (visibility = 0) become black
+  // Fogged tiles (visibility ≈ 0.54) are dimmed
+  // Visible tiles (visibility = 1.0) show full color
+  const finalColor = mul(colorWithDarkening, visibility);
   
   // Constant opacity for clean, game-like appearance
   const opacity = 0.72;
