@@ -62,34 +62,27 @@ function webgl_preload()
   }
 
 
-  /* Preload road textures. */
+  /* Preload road textures as DataArrayTexture (texture_2d_array).
+   * The sprite sheet is a 4x4 grid (16 sprites), each 256x256 pixels.
+   * We convert this into a DataArrayTexture with 16 layers for efficient sampling.
+   */
   var imgurl = "/textures/large/roads.png";
   textureLoader.load(imgurl, (function () {
           return function (image) {
                 $("#download_progress").html(" road textures 15%");
-                webgl_textures["roads"] = new THREE.Texture();
-                webgl_textures["roads"].image = image;
-                webgl_textures["roads"].wrapS = THREE.RepeatWrapping;
-                webgl_textures["roads"].wrapT = THREE.RepeatWrapping;
-                webgl_textures["roads"].magFilter = THREE.LinearFilter;
-                webgl_textures["roads"].minFilter = THREE.LinearFilter;
-                webgl_textures["roads"].needsUpdate = true;
+                webgl_textures["roads"] = createSpriteArrayTexture(image, 4, 4);
             }
     })()
   );
 
-  /* Preload railroads textures. */
+  /* Preload railroads textures as DataArrayTexture (texture_2d_array).
+   * Same format as roads: 4x4 grid of sprites converted to 16 texture array layers.
+   */
   imgurl = "/textures/large/railroads.png";
   textureLoader.load(imgurl, (function () {
           return function (image) {
                 $("#download_progress").html(" railroad textures 25%");
-                webgl_textures["railroads"] = new THREE.Texture();
-                webgl_textures["railroads"].image = image;
-                webgl_textures["railroads"].wrapS = THREE.RepeatWrapping;
-                webgl_textures["railroads"].wrapT = THREE.RepeatWrapping;
-                webgl_textures["railroads"].magFilter = THREE.LinearFilter;
-                webgl_textures["railroads"].minFilter = THREE.LinearFilter;
-                webgl_textures["railroads"].needsUpdate = true;
+                webgl_textures["railroads"] = createSpriteArrayTexture(image, 4, 4);
             }
     })()
   );
@@ -209,6 +202,65 @@ function handle_new_texture(url, terrain_name)
                 texture.needsUpdate = true;
                 webgl_textures[terrain_name] = texture;
   }
+}
+
+/****************************************************************************
+ Creates a DataArrayTexture (texture_2d_array) from a sprite sheet image.
+ Splits the sprite sheet into individual layers for efficient GPU sampling.
+ 
+ @param {HTMLImageElement} image - The sprite sheet image
+ @param {number} cols - Number of columns in the sprite grid (e.g., 4)
+ @param {number} rows - Number of rows in the sprite grid (e.g., 4)
+ @returns {THREE.DataArrayTexture} A texture array with cols*rows layers
+****************************************************************************/
+function createSpriteArrayTexture(image, cols, rows) {
+  const spriteWidth = image.width / cols;
+  const spriteHeight = image.height / rows;
+  const depth = cols * rows;  // Total number of sprite layers
+  
+  // Create a canvas to extract pixel data from each sprite
+  const canvas = document.createElement('canvas');
+  canvas.width = spriteWidth;
+  canvas.height = spriteHeight;
+  const ctx = canvas.getContext('2d');
+  
+  // Allocate typed array for all sprite data (RGBA, 4 bytes per pixel)
+  const data = new Uint8Array(spriteWidth * spriteHeight * depth * 4);
+  
+  // Extract each sprite from the grid and store in the data array
+  // Layout: row-major order (top-left sprite is layer 0, then right, then next row)
+  for (let row = 0; row < rows; row++) {
+    for (let col = 0; col < cols; col++) {
+      const layerIndex = row * cols + col;
+      
+      // Clear canvas and draw the sprite region
+      ctx.clearRect(0, 0, spriteWidth, spriteHeight);
+      ctx.drawImage(
+        image,
+        col * spriteWidth, row * spriteHeight,  // Source position
+        spriteWidth, spriteHeight,              // Source size
+        0, 0,                                   // Dest position
+        spriteWidth, spriteHeight               // Dest size
+      );
+      
+      // Get pixel data and copy to the appropriate layer offset
+      const imageData = ctx.getImageData(0, 0, spriteWidth, spriteHeight);
+      const layerOffset = layerIndex * spriteWidth * spriteHeight * 4;
+      data.set(imageData.data, layerOffset);
+    }
+  }
+  
+  // Create the DataArrayTexture
+  const textureArray = new THREE.DataArrayTexture(data, spriteWidth, spriteHeight, depth);
+  textureArray.format = THREE.RGBAFormat;
+  textureArray.type = THREE.UnsignedByteType;
+  textureArray.wrapS = THREE.RepeatWrapping;
+  textureArray.wrapT = THREE.RepeatWrapping;
+  textureArray.magFilter = THREE.LinearFilter;
+  textureArray.minFilter = THREE.LinearFilter;
+  textureArray.needsUpdate = true;
+  
+  return textureArray;
 }
 
 /****************************************************************************
