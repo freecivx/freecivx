@@ -143,10 +143,10 @@ function createTerrainShaderTSL(uniforms) {
     const roadsmapTex = uniforms.roadsmap.value;
     const roadspritesTex = uniforms.roadsprites.value;
     const railroadspritesTex = uniforms.railroadsprites.value;
+    const terrainLayersTex = uniforms.terrain_layers.value;
     
     // Terrain texture references - organized by terrain type
     const terrainTextures = {
-        arctic: uniforms.arctic_farmland_irrigation_tundra.value,
         grassland: uniforms.grassland.value,
         coast: uniforms.coast.value,
         desert: uniforms.desert.value,
@@ -156,6 +156,13 @@ function createTerrainShaderTSL(uniforms) {
         mountains: uniforms.mountains.value,
         swamp: uniforms.swamp.value
     };
+    
+    // Terrain layer indices for terrain_layers DataArrayTexture
+    // Layer indices: 0 = arctic, 1 = tundra, 2 = farmland, 3 = irrigation
+    const TERRAIN_LAYER_ARCTIC = 0;
+    const TERRAIN_LAYER_TUNDRA = 1;
+    const TERRAIN_LAYER_FARMLAND = 2;
+    const TERRAIN_LAYER_IRRIGATION = 3;
     
     // =========================================================================
     // INFRASTRUCTURE CONSTANTS
@@ -325,23 +332,13 @@ function createTerrainShaderTSL(uniforms) {
     // Used for standard terrain texture sampling
     const dx = localX;
     const dy = localY;
-    
-    // tdx/tdy: Diagonal texture coordinates for tundra/arctic terrain types
-    // These create a 2x2 tile pattern by mapping each tile to a quadrant of the texture atlas
-    // The formula calculates: (tile_position / 2) - (floor(tile_position) * 0.5)
-    // This gives values in [0, 0.5] range that repeat every 2 tiles
-    const tdx = sub(div(mul(map_x_size, hexUV.x), 2.0), mul(0.5, floor(mul(map_x_size, hexUV.x))));
-    const tdy = sub(div(mul(map_y_size, hexUV.y), 2.0), mul(0.5, floor(mul(map_y_size, hexUV.y))));
 
     // Extract terrain type value from texture (stored in red channel as 0-255 value)
     const terrainHere = floor(mul(terrainType.r, 256.0));
     const posY = posNode.y;
 
-    // Texture coordinate nodes for hexagonal tiles
-    // texCoord: Standard coordinates for most terrain types
-    // texCoordT: Offset coordinates for arctic/tundra (uses 2x2 texture atlas pattern)
+    // Texture coordinate node for hexagonal tiles
     const texCoord = vec2(dx, dy);
-    const texCoordT = vec2(tdx, add(tdy, 0.5));
 
     // Precompute beach sand colour as vec3 for reuse in terrain layers
     const beachSandColor = vec3(BEACH_SAND_COLOR.r, BEACH_SAND_COLOR.g, BEACH_SAND_COLOR.b);
@@ -408,6 +405,25 @@ function createTerrainShaderTSL(uniforms) {
         
         return { mask: isTerrain, color: terrainColor };
     }
+    
+    /**
+     * Helper function to create terrain layer from terrain_layers DataArrayTexture
+     * 
+     * @param {number} terrainValue - The terrain type ID to match (e.g., TERRAIN_ARCTIC)
+     * @param {number} layerIndex - The layer index in terrain_layers texture (0-3)
+     * @param {object} coord - TSL vec2 coordinate node for texture sampling
+     * @returns {object} Object with mask (selection boolean) and color (sampled texture) nodes
+     */
+    function createTerrainLayerFromArray(terrainValue, layerIndex, coord) {
+        const step1 = step(terrainValue - 0.5, terrainHere);
+        const step2 = step(terrainHere, terrainValue + 0.5);
+        const isTerrain = mul(step1, step2);
+        
+        // Sample from terrain_layers DataArrayTexture using .depth() for layer selection
+        const terrainColor = texture(terrainLayersTex, coord).depth(int(layerIndex));
+        
+        return { mask: isTerrain, color: terrainColor };
+    }
 
     // Build terrain layers - including all terrain types from WebGL shader
     // Note: TERRAIN_INACCESSIBLE (0) renders as black (default finalColor)
@@ -423,8 +439,8 @@ function createTerrainShaderTSL(uniforms) {
         createTerrainLayer(TERRAIN_COAST, terrainTextures.coast, texCoord, false),
         createTerrainLayer(TERRAIN_FLOOR, terrainTextures.ocean, texCoord, false),
         createTerrainLayer(TERRAIN_LAKE, terrainTextures.coast, texCoord, false), // Lake uses coast texture
-        createTerrainLayer(TERRAIN_ARCTIC, terrainTextures.arctic, texCoordT, false),
-        createTerrainLayer(TERRAIN_TUNDRA, terrainTextures.arctic, vec2(add(tdx, 0.5), tdy), false) // Tundra uses arctic with offset
+        createTerrainLayerFromArray(TERRAIN_ARCTIC, TERRAIN_LAYER_ARCTIC, texCoord),
+        createTerrainLayerFromArray(TERRAIN_TUNDRA, TERRAIN_LAYER_TUNDRA, texCoord)
     ];
 
     // Combine all terrain layers
@@ -441,22 +457,22 @@ function createTerrainShaderTSL(uniforms) {
     // - 0 = none
     // - 1 = irrigation
     // - 2 = farmland
-    // We render a subtle tint overlay to indicate these improvements
+    // We render textures from terrain_layers DataArrayTexture overlaid on the terrain
     const irrigationFlag = floor(mul(terrainType.b, 256.0));
     
-    // Irrigation: subtle blue-green tint (water channels)
+    // Irrigation: sample irrigation texture from terrain_layers and blend over terrain
     const hasIrrigation = mul(step(0.5, irrigationFlag), step(irrigationFlag, 1.5));
-    const irrigationColor = vec3(0.6, 0.85, 0.75);  // Blue-green tint
+    const irrigationTexColor = texture(terrainLayersTex, texCoord).depth(int(TERRAIN_LAYER_IRRIGATION));
     finalColor = vec4(
-        mix(finalColor.rgb, irrigationColor, mul(hasIrrigation, 0.15)),
+        mix(finalColor.rgb, irrigationTexColor.rgb, mul(hasIrrigation, irrigationTexColor.a)),
         finalColor.a
     );
     
-    // Farmland: golden/wheat colored tint (cultivated fields)
+    // Farmland: sample farmland texture from terrain_layers and blend over terrain
     const hasFarmland = step(1.5, irrigationFlag);
-    const farmlandColor = vec3(0.85, 0.78, 0.45);  // Golden wheat color
+    const farmlandTexColor = texture(terrainLayersTex, texCoord).depth(int(TERRAIN_LAYER_FARMLAND));
     finalColor = vec4(
-        mix(finalColor.rgb, farmlandColor, mul(hasFarmland, 0.18)),
+        mix(finalColor.rgb, farmlandTexColor.rgb, mul(hasFarmland, farmlandTexColor.a)),
         finalColor.a
     );
 

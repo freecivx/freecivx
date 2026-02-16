@@ -117,10 +117,10 @@ function createTerrainShaderSquareTSL(uniforms) {
     const roadsmapTex = uniforms.roadsmap.value;
     const roadspritesTex = uniforms.roadsprites.value;
     const railroadspritesTex = uniforms.railroadsprites.value;
+    const terrainLayersTex = uniforms.terrain_layers.value;
     
     // Terrain texture references
     const terrainTextures = {
-        arctic: uniforms.arctic_farmland_irrigation_tundra.value,
         grassland: uniforms.grassland.value,
         coast: uniforms.coast.value,
         desert: uniforms.desert.value,
@@ -130,6 +130,13 @@ function createTerrainShaderSquareTSL(uniforms) {
         mountains: uniforms.mountains.value,
         swamp: uniforms.swamp.value
     };
+    
+    // Terrain layer indices for terrain_layers DataArrayTexture
+    // Layer indices: 0 = arctic, 1 = tundra, 2 = farmland, 3 = irrigation
+    const TERRAIN_LAYER_ARCTIC = 0;
+    const TERRAIN_LAYER_TUNDRA = 1;
+    const TERRAIN_LAYER_FARMLAND = 2;
+    const TERRAIN_LAYER_IRRIGATION = 3;
     
     // =========================================================================
     // INFRASTRUCTURE CONSTANTS
@@ -202,18 +209,13 @@ function createTerrainShaderSquareTSL(uniforms) {
     // Texture coordinates for terrain detail
     const dx = localX;
     const dy = localY;
-    
-    // Tiled texture coordinates for tundra/arctic
-    const tdx = sub(div(mul(map_x_size, uvNode.x), 2.0), mul(0.5, floor(mul(map_x_size, uvNode.x))));
-    const tdy = sub(div(mul(map_y_size, uvNode.y), 2.0), mul(0.5, floor(mul(map_y_size, uvNode.y))));
 
     // Extract terrain type value
     const terrainHere = floor(mul(terrainType.r, 256.0));
     const posY = posNode.y;
 
-    // Texture coordinate nodes
+    // Texture coordinate node
     const texCoord = vec2(dx, dy);
-    const texCoordT = vec2(tdx, add(tdy, 0.5));
 
     // Beach sand colour as vec3
     const beachSandColor = vec3(BEACH_SAND_COLOR.r, BEACH_SAND_COLOR.g, BEACH_SAND_COLOR.b);
@@ -292,10 +294,21 @@ function createTerrainShaderSquareTSL(uniforms) {
     }
     
     /**
+     * Helper function to create terrain layer from terrain_layers DataArrayTexture
+     */
+    function createTerrainLayerFromArray(terrainValue, layerIndex, coord) {
+        const step1 = step(terrainValue - 0.5, terrainHere);
+        const step2 = step(terrainHere, terrainValue + 0.5);
+        const isTerrain = mul(step1, step2);
+        const terrainColor = texture(terrainLayersTex, coord).depth(int(layerIndex));
+        return { mask: isTerrain, color: terrainColor };
+    }
+    
+    /**
      * Helper function to get terrain color for a given terrain type value
      * This is used for neighbor terrain blending
      */
-    function getTerrainColorForType(tType, coord, coordT) {
+    function getTerrainColorForType(tType, coord) {
         // Start with black (unknown terrain)
         let color = vec4(0, 0, 0, 1);
         
@@ -305,6 +318,15 @@ function createTerrainShaderSquareTSL(uniforms) {
             const step2 = step(tType, terrainValue + 0.5);
             const isTerrain = mul(step1, step2);
             const terrainColor = computeTerrainColor(textureNode, useCoord, blendWithBeach);
+            return { mask: isTerrain, color: terrainColor };
+        }
+        
+        // Helper to check terrain from array texture
+        function matchTerrainFromArray(terrainValue, layerIndex, useCoord) {
+            const step1 = step(terrainValue - 0.5, tType);
+            const step2 = step(tType, terrainValue + 0.5);
+            const isTerrain = mul(step1, step2);
+            const terrainColor = texture(terrainLayersTex, useCoord).depth(int(layerIndex));
             return { mask: isTerrain, color: terrainColor };
         }
         
@@ -321,8 +343,8 @@ function createTerrainShaderSquareTSL(uniforms) {
             matchTerrain(TERRAIN_COAST, terrainTextures.coast, coord, false),
             matchTerrain(TERRAIN_FLOOR, terrainTextures.ocean, coord, false),
             matchTerrain(TERRAIN_LAKE, terrainTextures.coast, coord, false),
-            matchTerrain(TERRAIN_ARCTIC, terrainTextures.arctic, coordT, false),
-            matchTerrain(TERRAIN_TUNDRA, terrainTextures.arctic, vec2(add(tdx, 0.5), tdy), false)
+            matchTerrainFromArray(TERRAIN_ARCTIC, TERRAIN_LAYER_ARCTIC, coord),
+            matchTerrainFromArray(TERRAIN_TUNDRA, TERRAIN_LAYER_TUNDRA, coord)
         ];
         
         // Combine all terrain layers
@@ -346,8 +368,8 @@ function createTerrainShaderSquareTSL(uniforms) {
         createTerrainLayer(TERRAIN_COAST, terrainTextures.coast, texCoord, false),
         createTerrainLayer(TERRAIN_FLOOR, terrainTextures.ocean, texCoord, false),
         createTerrainLayer(TERRAIN_LAKE, terrainTextures.coast, texCoord, false),
-        createTerrainLayer(TERRAIN_ARCTIC, terrainTextures.arctic, texCoordT, false),
-        createTerrainLayer(TERRAIN_TUNDRA, terrainTextures.arctic, vec2(add(tdx, 0.5), tdy), false)
+        createTerrainLayerFromArray(TERRAIN_ARCTIC, TERRAIN_LAYER_ARCTIC, texCoord),
+        createTerrainLayerFromArray(TERRAIN_TUNDRA, TERRAIN_LAYER_TUNDRA, texCoord)
     ];
 
     // Combine all terrain layers for current tile
@@ -360,10 +382,10 @@ function createTerrainShaderSquareTSL(uniforms) {
     // TERRAIN EDGE BLENDING (blend terrain textures at tile borders)
     // =========================================================================
     // Get terrain colors for neighboring tiles
-    const colorE = getTerrainColorForType(terrainE, texCoord, texCoordT);
-    const colorW = getTerrainColorForType(terrainW, texCoord, texCoordT);
-    const colorN = getTerrainColorForType(terrainN, texCoord, texCoordT);
-    const colorS = getTerrainColorForType(terrainS, texCoord, texCoordT);
+    const colorE = getTerrainColorForType(terrainE, texCoord);
+    const colorW = getTerrainColorForType(terrainW, texCoord);
+    const colorN = getTerrainColorForType(terrainN, texCoord);
+    const colorS = getTerrainColorForType(terrainS, texCoord);
     
     // Calculate edge proximity factors (1.0 at edge, 0.0 at center)
     // East edge: localX close to 1.0
@@ -402,19 +424,26 @@ function createTerrainShaderSquareTSL(uniforms) {
     // =========================================================================
     // IRRIGATION AND FARMLAND RENDERING
     // =========================================================================
+    // The maptiles texture blue channel stores irrigation/farmland flags:
+    // - 0 = none
+    // - 1 = irrigation
+    // - 2 = farmland
+    // We render textures from terrain_layers DataArrayTexture overlaid on the terrain
     const irrigationFlag = floor(mul(terrainType.b, 256.0));
     
+    // Irrigation: sample irrigation texture from terrain_layers and blend over terrain
     const hasIrrigation = mul(step(0.5, irrigationFlag), step(irrigationFlag, 1.5));
-    const irrigationColor = vec3(0.6, 0.85, 0.75);
+    const irrigationTexColor = texture(terrainLayersTex, texCoord).depth(int(TERRAIN_LAYER_IRRIGATION));
     finalColor = vec4(
-        mix(finalColor.rgb, irrigationColor, mul(hasIrrigation, 0.15)),
+        mix(finalColor.rgb, irrigationTexColor.rgb, mul(hasIrrigation, irrigationTexColor.a)),
         finalColor.a
     );
     
+    // Farmland: sample farmland texture from terrain_layers and blend over terrain
     const hasFarmland = step(1.5, irrigationFlag);
-    const farmlandColor = vec3(0.85, 0.78, 0.45);
+    const farmlandTexColor = texture(terrainLayersTex, texCoord).depth(int(TERRAIN_LAYER_FARMLAND));
     finalColor = vec4(
-        mix(finalColor.rgb, farmlandColor, mul(hasFarmland, 0.18)),
+        mix(finalColor.rgb, farmlandTexColor.rgb, mul(hasFarmland, farmlandTexColor.a)),
         finalColor.a
     );
 
