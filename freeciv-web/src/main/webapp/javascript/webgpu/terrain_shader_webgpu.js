@@ -172,9 +172,12 @@ function createTerrainShaderTSL(uniforms) {
     const map_y_size = uniform(uniforms.map_y_size.value);
     const borders_visible = uniform(uniforms.borders_visible.value);
     
-    // Selected tile uniforms for highlighting
+    // Selected tile uniforms for highlighting (exported globally for dynamic updates)
     const selected_x = uniform(uniforms.selected_x.value);
     const selected_y = uniform(uniforms.selected_y.value);
+    // Export uniform nodes globally so they can be updated from mapctrl.js
+    window.terrain_selected_x_uniform = selected_x;
+    window.terrain_selected_y_uniform = selected_y;
 
     // Get UV coordinates and position
     const uvNode = uv();
