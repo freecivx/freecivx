@@ -427,7 +427,6 @@ function createTerrainShaderSquareTSL(uniforms) {
     
     const dashedTotalEdgeFactor = max(max(max(dashedEastEdge, dashedWestEdge), dashedNorthEdge), dashedSouthEdge);
     
-    const borderLineFactor = mul(dashedTotalEdgeFactor, gridLineMask);
     const borderLineIntensity = 0.45;
     
     const brightenedBorderColor = vec3(
