@@ -53,7 +53,7 @@ const CameraConfig = Object.freeze({
     /** Far clipping plane distance */
     FAR: 12000,
     /** Default camera X offset from target */
-    DEFAULT_DX: 50,
+    DEFAULT_DX: 150,
     /** Default camera Y (height) offset from target */
     DEFAULT_DY: 450,
     /** Default camera Z offset from target */
