@@ -226,8 +226,16 @@ function update_unit_position(ptile) {
       highlight_map_tile_selected(-1, -1);
     }
     if (visible_unit['anim_list'].length === 0) {
-      // Create hexagonal selected unit indicator (pointy-top hexagon)
-      let selected_mesh = new THREE.Mesh(createHexagonGeometry(16, 20), selected_unit_material);
+      // Create selected unit indicator - hexagon for hex maps, dotted circle for square maps
+      let indicatorGeometry;
+      if (typeof is_hex === 'function' && is_hex()) {
+        // Hex map: use hexagonal indicator (pointy-top hexagon)
+        indicatorGeometry = createHexagonGeometry(16, 20);
+      } else {
+        // Square map: use dotted circle with same radius as hex indicator
+        indicatorGeometry = createDottedCircleGeometry(16, 20, 24, 0.5);
+      }
+      let selected_mesh = new THREE.Mesh(indicatorGeometry, selected_unit_material);
       selected_mesh.position.set(pos['x'] + HEX_CENTER_OFFSET_X, height + 2, pos['y'] + HEX_CENTER_OFFSET_Y);
       selected_mesh.rotation.x = -1 * Math.PI / 2;
       selected_mesh.name = "SelectedUnitIndicator";
@@ -949,6 +957,87 @@ function createHexagonGeometry(innerRadius, outerRadius) {
   geometry.setIndex(indices);
   geometry.computeVertexNormals();
   geometry.name = "HexagonRingGeometry";
+  
+  return geometry;
+}
+
+/****************************************************************************
+  Creates a dotted circle ring geometry for the selected unit indicator.
+  Used on non-hex (square) maps as an alternative to the hexagon indicator.
+  
+  The circle is created as a series of segments with gaps between them to
+  create a dotted line effect. Uses the same radius as the hex indicator.
+  
+  @param {number} innerRadius - Inner radius of the circle ring (default: 16)
+  @param {number} outerRadius - Outer radius of the circle ring (default: 20)
+  @param {number} numSegments - Total number of segments around the circle (default: 24)
+  @param {number} dotRatio - Ratio of visible segment to gap (default: 0.5, meaning 50% visible)
+  @returns {THREE.BufferGeometry} Dotted circular ring geometry
+****************************************************************************/
+function createDottedCircleGeometry(innerRadius = 16, outerRadius = 20, numSegments = 24, dotRatio = 0.5) {
+  const geometry = new THREE.BufferGeometry();
+  const vertices = [];
+  const indices = [];
+  
+  // Calculate angle per segment
+  const segmentAngle = (2 * Math.PI) / numSegments;
+  const dotAngle = segmentAngle * dotRatio;
+  
+  let vertexIndex = 0;
+  
+  // Create vertices for each dotted segment
+  for (let i = 0; i < numSegments; i++) {
+    const startAngle = i * segmentAngle;
+    const endAngle = startAngle + dotAngle;
+    
+    // Create 4 vertices for this segment (2 at start, 2 at end)
+    // Start outer
+    vertices.push(
+      Math.cos(startAngle) * outerRadius,
+      Math.sin(startAngle) * outerRadius,
+      0
+    );
+    
+    // Start inner
+    vertices.push(
+      Math.cos(startAngle) * innerRadius,
+      Math.sin(startAngle) * innerRadius,
+      0
+    );
+    
+    // End outer
+    vertices.push(
+      Math.cos(endAngle) * outerRadius,
+      Math.sin(endAngle) * outerRadius,
+      0
+    );
+    
+    // End inner
+    vertices.push(
+      Math.cos(endAngle) * innerRadius,
+      Math.sin(endAngle) * innerRadius,
+      0
+    );
+    
+    // Create 2 triangles for this segment
+    const startOuter = vertexIndex;
+    const startInner = vertexIndex + 1;
+    const endOuter = vertexIndex + 2;
+    const endInner = vertexIndex + 3;
+    
+    // Triangle 1: start-outer, start-inner, end-outer
+    indices.push(startOuter, startInner, endOuter);
+    
+    // Triangle 2: start-inner, end-inner, end-outer
+    indices.push(startInner, endInner, endOuter);
+    
+    vertexIndex += 4;
+  }
+  
+  geometry.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
+  geometry.setIndex(indices);
+  geometry.computeVertexNormals();
+  geometry.name = "DottedCircleRingGeometry";
   
   return geometry;
 }
