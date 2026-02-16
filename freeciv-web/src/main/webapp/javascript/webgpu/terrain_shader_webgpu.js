@@ -826,15 +826,19 @@ function createTerrainShaderTSL(uniforms) {
     const SELECTION_EDGE_INTENSITY = 0.8;  // Strong edge highlight
     const SELECTION_FILL_INTENSITY = 0.15; // Subtle fill highlight
     
+    // Calculate selection visibility factor (1.0 if selected, 0.0 if not)
+    const selectionActive = shouldHighlightTile.select(1.0, 0.0);
+    
     // Apply edge highlighting on selected tile (using hexEdgeMask for edge detection)
-    const selectionEdgeFactor = mul(shouldHighlightTile.select(1.0, 0.0), mul(hexEdgeMask, SELECTION_EDGE_INTENSITY));
+    const scaledEdgeMask = mul(hexEdgeMask, SELECTION_EDGE_INTENSITY);
+    const selectionEdgeFactor = mul(selectionActive, scaledEdgeMask);
     finalColor = vec4(
         mix(finalColor.rgb, SELECTION_HIGHLIGHT_COLOR, selectionEdgeFactor),
         finalColor.a
     );
     
     // Apply subtle fill highlighting to the entire selected tile
-    const selectionFillFactor = mul(shouldHighlightTile.select(1.0, 0.0), SELECTION_FILL_INTENSITY);
+    const selectionFillFactor = mul(selectionActive, SELECTION_FILL_INTENSITY);
     finalColor = vec4(
         mix(finalColor.rgb, SELECTION_HIGHLIGHT_COLOR, selectionFillFactor),
         finalColor.a
