@@ -328,23 +328,13 @@ function createTerrainShaderTSL(uniforms) {
     // Used for standard terrain texture sampling
     const dx = localX;
     const dy = localY;
-    
-    // tdx/tdy: Diagonal texture coordinates for tundra/arctic terrain types
-    // These create a 2x2 tile pattern by mapping each tile to a quadrant of the texture atlas
-    // The formula calculates: (tile_position / 2) - (floor(tile_position) * 0.5)
-    // This gives values in [0, 0.5] range that repeat every 2 tiles
-    const tdx = sub(div(mul(map_x_size, hexUV.x), 2.0), mul(0.5, floor(mul(map_x_size, hexUV.x))));
-    const tdy = sub(div(mul(map_y_size, hexUV.y), 2.0), mul(0.5, floor(mul(map_y_size, hexUV.y))));
 
     // Extract terrain type value from texture (stored in red channel as 0-255 value)
     const terrainHere = floor(mul(terrainType.r, 256.0));
     const posY = posNode.y;
 
     // Texture coordinate nodes for hexagonal tiles
-    // texCoord: Standard coordinates for most terrain types
-    // texCoordT: Offset coordinates for arctic/tundra (uses 2x2 texture atlas pattern)
     const texCoord = vec2(dx, dy);
-    const texCoordT = vec2(tdx, add(tdy, 0.5));
 
     // Precompute beach sand colour as vec3 for reuse in terrain layers
     const beachSandColor = vec3(BEACH_SAND_COLOR.r, BEACH_SAND_COLOR.g, BEACH_SAND_COLOR.b);

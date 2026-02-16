@@ -205,10 +205,6 @@ function createTerrainShaderSquareTSL(uniforms) {
     // Texture coordinates for terrain detail
     const dx = localX;
     const dy = localY;
-    
-    // Tiled texture coordinates for tundra/arctic
-    const tdx = sub(div(mul(map_x_size, uvNode.x), 2.0), mul(0.5, floor(mul(map_x_size, uvNode.x))));
-    const tdy = sub(div(mul(map_y_size, uvNode.y), 2.0), mul(0.5, floor(mul(map_y_size, uvNode.y))));
 
     // Extract terrain type value
     const terrainHere = floor(mul(terrainType.r, 256.0));
@@ -216,7 +212,6 @@ function createTerrainShaderSquareTSL(uniforms) {
 
     // Texture coordinate nodes
     const texCoord = vec2(dx, dy);
-    const texCoordT = vec2(tdx, add(tdy, 0.5));
 
     // Beach sand colour as vec3
     const beachSandColor = vec3(BEACH_SAND_COLOR.r, BEACH_SAND_COLOR.g, BEACH_SAND_COLOR.b);
@@ -298,7 +293,7 @@ function createTerrainShaderSquareTSL(uniforms) {
      * Helper function to get terrain color for a given terrain type value
      * This is used for neighbor terrain blending
      */
-    function getTerrainColorForType(tType, coord, coordT) {
+    function getTerrainColorForType(tType, coord) {
         // Start with black (unknown terrain)
         let color = vec4(0, 0, 0, 1);
         
@@ -363,10 +358,10 @@ function createTerrainShaderSquareTSL(uniforms) {
     // TERRAIN EDGE BLENDING (blend terrain textures at tile borders)
     // =========================================================================
     // Get terrain colors for neighboring tiles
-    const colorE = getTerrainColorForType(terrainE, texCoord, texCoordT);
-    const colorW = getTerrainColorForType(terrainW, texCoord, texCoordT);
-    const colorN = getTerrainColorForType(terrainN, texCoord, texCoordT);
-    const colorS = getTerrainColorForType(terrainS, texCoord, texCoordT);
+    const colorE = getTerrainColorForType(terrainE, texCoord);
+    const colorW = getTerrainColorForType(terrainW, texCoord);
+    const colorN = getTerrainColorForType(terrainN, texCoord);
+    const colorS = getTerrainColorForType(terrainS, texCoord);
     
     // Calculate edge proximity factors (1.0 at edge, 0.0 at center)
     // East edge: localX close to 1.0
