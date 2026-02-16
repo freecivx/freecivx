@@ -309,20 +309,29 @@ function highlight_map_tile_mouse(x, y)
 function highlight_map_tile_selected(x, y)
 {
   if (terrain_material != null) {
+    // Convert Y coordinate from game space to shader UV space.
+    // The terrain mesh uses inverted UV.y: (1 - row/gridY), so shader's tileY
+    // is computed as floor(map_y_size * UV.y), which gives inverted coordinates.
+    // To match: shader_y = (map.ysize - 1) - game_y
+    // When y is -1 (no selection), keep it as -1.
+    var shader_y = (y >= 0 && typeof map !== 'undefined' && map.ysize) 
+                   ? (map.ysize - 1 - y) 
+                   : y;
+    
     if (terrain_material.uniforms) {
       // WebGL material
       terrain_material.uniforms.selected_x.value = x;
       terrain_material.uniforms.selected_x.needsUpdate = true;
-      terrain_material.uniforms.selected_y.value = y;
+      terrain_material.uniforms.selected_y.value = shader_y;
       terrain_material.uniforms.selected_y.needsUpdate = true;
     } else if (window.terrain_selected_x_uniform && window.terrain_selected_y_uniform) {
       // WebGPU material - update TSL uniform nodes directly
       window.terrain_selected_x_uniform.value = x;
-      window.terrain_selected_y_uniform.value = y;
+      window.terrain_selected_y_uniform.value = shader_y;
     } else if (typeof freeciv_uniforms !== 'undefined') {
       // Fallback: update freeciv_uniforms (won't have dynamic effect, but keeps data consistent)
       freeciv_uniforms.selected_x.value = x;
-      freeciv_uniforms.selected_y.value = y;
+      freeciv_uniforms.selected_y.value = shader_y;
     }
   }
 }
