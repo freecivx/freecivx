@@ -249,14 +249,18 @@ function createTerrainShaderSquareTSL(uniforms) {
     const TERRAIN_BLEND_STRENGTH = 0.5;
 
     /**
-     * Helper function to create terrain selection and blending logic
+     * Helper function to apply smooth step interpolation: t * t * (3 - 2*t)
+     * This creates a smoother transition than linear interpolation
      */
-    function createTerrainLayer(terrainValue, textureNode, coord, blendWithBeach = true) {
-        const step1 = step(terrainValue - 0.5, terrainHere);
-        const step2 = step(terrainHere, terrainValue + 0.5);
-        const isTerrain = mul(step1, step2);
-        
-        let terrainColor;
+    function smoothStep(t) {
+        return mul(mul(t, t), sub(3.0, mul(2.0, t)));
+    }
+    
+    /**
+     * Helper function to compute terrain color with optional beach blending
+     * Used by both createTerrainLayer and getTerrainColorForType to share logic
+     */
+    function computeTerrainColor(textureNode, coord, blendWithBeach) {
         if (blendWithBeach) {
             const baseTerrainColor = texture(textureNode, coord);
             const aboveWater = step(WATER_LEVEL, posY);
@@ -270,11 +274,20 @@ function createTerrainShaderSquareTSL(uniforms) {
             );
             const coastTex = texture(terrainTextures.coast, coord);
             const lowerBlend = mix(coastTex, vec4(beachSandColor, 1.0), lowerBeachT);
-            terrainColor = mix(lowerBlend, baseTerrainColor, upperBeachT);
+            return mix(lowerBlend, baseTerrainColor, upperBeachT);
         } else {
-            terrainColor = texture(textureNode, coord);
+            return texture(textureNode, coord);
         }
-        
+    }
+
+    /**
+     * Helper function to create terrain selection and blending logic
+     */
+    function createTerrainLayer(terrainValue, textureNode, coord, blendWithBeach = true) {
+        const step1 = step(terrainValue - 0.5, terrainHere);
+        const step2 = step(terrainHere, terrainValue + 0.5);
+        const isTerrain = mul(step1, step2);
+        const terrainColor = computeTerrainColor(textureNode, coord, blendWithBeach);
         return { mask: isTerrain, color: terrainColor };
     }
     
@@ -291,26 +304,7 @@ function createTerrainShaderSquareTSL(uniforms) {
             const step1 = step(terrainValue - 0.5, tType);
             const step2 = step(tType, terrainValue + 0.5);
             const isTerrain = mul(step1, step2);
-            
-            let terrainColor;
-            if (blendWithBeach) {
-                const baseTerrainColor = texture(textureNode, useCoord);
-                const aboveWater = step(WATER_LEVEL, posY);
-                const lowerBeachT = mul(
-                    clamp(div(sub(posY, BEACH_BLEND_HIGH), BEACH_LOWER_RANGE), 0.0, 1.0),
-                    aboveWater
-                );
-                const upperBeachT = clamp(
-                    div(sub(posY, BEACH_MID), BEACH_UPPER_RANGE),
-                    0.0, 1.0
-                );
-                const coastTex = texture(terrainTextures.coast, useCoord);
-                const lowerBlend = mix(coastTex, vec4(beachSandColor, 1.0), lowerBeachT);
-                terrainColor = mix(lowerBlend, baseTerrainColor, upperBeachT);
-            } else {
-                terrainColor = texture(textureNode, useCoord);
-            }
-            
+            const terrainColor = computeTerrainColor(textureNode, useCoord, blendWithBeach);
             return { mask: isTerrain, color: terrainColor };
         }
         
@@ -382,10 +376,10 @@ function createTerrainShaderSquareTSL(uniforms) {
     const southEdgeProximity = clamp(div(sub(TERRAIN_BLEND_WIDTH, localY), TERRAIN_BLEND_WIDTH), 0.0, 1.0);
     
     // Apply smooth step for more natural blending transition
-    const eastBlend = mul(mul(eastEdgeProximity, eastEdgeProximity), sub(3.0, mul(2.0, eastEdgeProximity)));
-    const westBlend = mul(mul(westEdgeProximity, westEdgeProximity), sub(3.0, mul(2.0, westEdgeProximity)));
-    const northBlend = mul(mul(northEdgeProximity, northEdgeProximity), sub(3.0, mul(2.0, northEdgeProximity)));
-    const southBlend = mul(mul(southEdgeProximity, southEdgeProximity), sub(3.0, mul(2.0, southEdgeProximity)));
+    const eastBlend = smoothStep(eastEdgeProximity);
+    const westBlend = smoothStep(westEdgeProximity);
+    const northBlend = smoothStep(northEdgeProximity);
+    const southBlend = smoothStep(southEdgeProximity);
     
     // Scale by blend strength
     const eastFactor = mul(eastBlend, TERRAIN_BLEND_STRENGTH);
@@ -538,7 +532,7 @@ function createTerrainShaderSquareTSL(uniforms) {
     const softVisibilityScaled = mul(softVisibility, VISIBILITY_VISIBLE);
     
     const visNormalized = clamp(div(softVisibilityScaled, VISIBILITY_VISIBLE), 0.0, 1.0);
-    const visSmooth = mul(mul(visNormalized, visNormalized), sub(3.0, mul(2.0, visNormalized)));
+    const visSmooth = smoothStep(visNormalized);
     const smoothVisibility = mul(visSmooth, VISIBILITY_VISIBLE);
     
     // Active city highlighting
