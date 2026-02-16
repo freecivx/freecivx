@@ -391,6 +391,7 @@ function createTerrainUniforms() {
     selected_y: { type: "i", value: -1 },
     roadsmap: { type: "t", value: roads_texture },
     roadsprites: { type: "t", value: webgl_textures["roads"] },
+    railroadsprites: { type: "t", value: webgl_textures["railroads"] },
     borders_visible: { type: "bool", value: server_settings['borders']['is_visible'] }
   };
 
