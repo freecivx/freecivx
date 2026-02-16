@@ -18,10 +18,10 @@
 ***********************************************************************/
 
 /**
- * Water Module for WebGPU (Hexagonal Map Tiles)
+ * Water Module for WebGPU (Square Map Tiles)
  * 
  * Handles animated water rendering using TSL (Three.js Shading Language).
- * This version is designed for hexagonal map tile topology.
+ * This version is designed for square map tile topology.
  * 
  * Design goals (Stylized Game Water - Civ-style):
  * - Calm: Gentle, subtle movement instead of big ocean waves
@@ -29,7 +29,7 @@
  * - Fast: Efficient shader without heavy wave calculations
  * - Game-appropriate: Works well at top-down/isometric strategy game camera angles
  * - Fog of War: Respects map tile visibility (unknown tiles render black)
- * - Hex-aware: Uses hex tile coordinate system for visibility sampling
+ * - Square-aware: Uses square tile coordinate system (no row staggering)
  * 
  * This stylized water shader uses:
  * - UV-scrolling patterns for gentle surface animation
@@ -40,39 +40,40 @@
  */
 
 /****************************************************************************
- Add animated water mesh for WebGPU renderer using TSL shaders (hex topology).
+ Add animated water mesh for WebGPU renderer using TSL shaders (square topology).
 ****************************************************************************/
-function add_quality_dependent_objects_webgpu() {
-  // Get hex height factor from HexConfig (centralized configuration)
-  const hexHeightFactor = (typeof window !== 'undefined' && window.HexConfig) 
-    ? window.HexConfig.HEIGHT_FACTOR 
-    : HEX_HEIGHT_FACTOR;
+function add_quality_dependent_objects_webgpu_square() {
+  // Get square height factor from SquareConfig (centralized configuration)
+  // Square tiles have 1:1 aspect ratio (height factor = 1.0)
+  const squareHeightFactor = (typeof window !== 'undefined' && window.SquareConfig) 
+    ? window.SquareConfig.HEIGHT_FACTOR 
+    : 1.0;
   
   // Create water plane geometry matching land mesh dimensions
   // Lower segment count (64x64) - stylized water doesn't need high tessellation
   const waterGeometry = new THREE.PlaneGeometry(
     mapview_model_width,
-    mapview_model_height * hexHeightFactor,
+    mapview_model_height * squareHeightFactor,
     64,
     64
   );
   
-  const waterMaterial = createWaterMaterialTSL();
+  const waterMaterial = createWaterMaterialSquareTSL();
   
   water_hq = new THREE.Mesh(waterGeometry, waterMaterial);
   water_hq.rotation.x = -Math.PI * 0.5;
   water_hq.translateOnAxis(new THREE.Vector3(0, 0, 1).normalize(), 50);
   water_hq.translateOnAxis(new THREE.Vector3(1, 0, 0).normalize(), Math.floor(mapview_model_width / 2) - 500);
-  water_hq.translateOnAxis(new THREE.Vector3(0, 1, 0).normalize(), -Math.floor(mapview_model_height * hexHeightFactor / 2));
+  water_hq.translateOnAxis(new THREE.Vector3(0, 1, 0).normalize(), -Math.floor(mapview_model_height * squareHeightFactor / 2));
   water_hq.renderOrder = -1;
   water_hq.castShadow = false;
   water_hq.name = "water_surface";
   scene.add(water_hq);
-  console.log("Added stylized game water surface (hex topology).");
+  console.log("Added stylized game water surface (square topology).");
 }
 
 /****************************************************************************
- Create stylized water material using TSL (Three.js Shading Language).
+ Create stylized water material using TSL for square map tiles.
  
  Stylized approach inspired by strategy games (Civilization, Age of Empires):
  - No big animated waves - instead uses subtle UV-scrolling patterns
@@ -80,9 +81,9 @@ function add_quality_dependent_objects_webgpu() {
  - Smooth color gradients from deep ocean to shallow coastal waters
  - Gentle specular highlights that don't dominate the scene
  - Works well at various camera distances and angles
- - Hex-aware: Uses hexagonal tile coordinate system for visibility sampling
+ - Square-aware: Uses simple grid coordinate system (no hex staggering)
 ****************************************************************************/
-function createWaterMaterialTSL() {
+function createWaterMaterialSquareTSL() {
   const { uniform, uv, vec3, vec4, sin, cos, mix, fract, clamp, pow, sqrt, mul, add, sub, abs, floor, texture, mod, max, div, step } = THREE;
   
   // Time uniform for animation
@@ -98,37 +99,19 @@ function createWaterMaterialTSL() {
   const map_x_size = uniform(map['xsize']);
   const map_y_size = uniform(map['ysize']);
   
-  // Hexagonal tile constants from HexConfig (centralized configuration)
-  const hexConfig = window.HexConfig || {
-    SQRT3_OVER_2: 0.866025,
-    HEIGHT_FACTOR: Math.sqrt(3) / 2
-  };
-  const HEX_SQRT3_OVER_2 = hexConfig.SQRT3_OVER_2; // sqrt(3)/2
-  const HEX_MESH_HEIGHT_FACTOR = HEX_SQRT3_OVER_2;
-  const HEX_ASPECT = 1.0 / HEX_MESH_HEIGHT_FACTOR; // ~1.1547
-  
-  // Calculate which tile row we're in (used for stagger offset)
+  // ==== SQUARE TILE COORDINATE SYSTEM ====
+  // Square tiles use simple direct mapping - no row staggering needed
+  // Calculate which tile we're in
   const tileYRaw = mul(map_y_size, uvNode.y);
   const tileY = floor(tileYRaw);
   
-  // Hex stagger: odd rows offset by 0.5 tile width
-  // Mesh row parity: (map_y_size - 1 - tileY) % 2 determines odd row offset
-  const isOddRow = mod(sub(sub(map_y_size, 1.0), tileY), 2.0);
-  
-  // Calculate hex-adjusted UV coordinates
-  const hexOffsetX = mul(isOddRow, div(0.5, map_x_size));
-  const hexUvX = sub(uvNode.x, hexOffsetX);
-  
-  // Calculate tile coordinates
-  const tileXRaw = mul(map_x_size, hexUvX);
+  const tileXRaw = mul(map_x_size, uvNode.x);
   const tileX = floor(tileXRaw);
   
-  // Calculate tile center UV for visibility sampling
+  // Calculate tile center UV for visibility sampling (direct mapping)
   const tileCenterX = div(add(tileX, 0.5), map_x_size);
   const tileCenterY = div(add(tileY, 0.5), map_y_size);
-  // Re-apply stagger offset for correct texture sampling
-  const tileCenterXWithStagger = add(tileCenterX, hexOffsetX);
-  const tileCenterUV = THREE.vec2(tileCenterXWithStagger, tileCenterY);
+  const tileCenterUV = THREE.vec2(tileCenterX, tileCenterY);
   
   // Sample visibility from maptiles texture alpha channel
   const tileVisibility = texture(maptilesTex, tileCenterUV).a;
@@ -137,7 +120,8 @@ function createWaterMaterialTSL() {
   const VISIBILITY_VISIBLE = 1.06;
   const visibility = mul(tileVisibility, VISIBILITY_VISIBLE);
   
-  // ==== COLOR PALETTE (Stylized Game Colors from WaterConfig) ====
+  // ==== COLOR PALETTE (Stylized Game Colors) ====
+  // Using WaterConfig if available for centralized configuration
   const waterConfig = window.WaterConfig || null;
   const deepOcean = waterConfig 
     ? vec3(waterConfig.COLORS.DEEP_OCEAN.r, waterConfig.COLORS.DEEP_OCEAN.g, waterConfig.COLORS.DEEP_OCEAN.b)
@@ -207,10 +191,10 @@ function createWaterMaterialTSL() {
   // Very subtle ripple movement (not waves, just surface shimmer)
   const rippleScale = waterConfig ? waterConfig.RIPPLES.SCALE : 25.0;
   const rippleSpeed = waterConfig ? waterConfig.RIPPLES.SPEED : 0.15;
-  const rippleAmplitude = waterConfig ? waterConfig.RIPPLES.AMPLITUDE : 0.1;
   
   const ripple1 = sin(add(mul(add(mul(uvNode.x, 1.0), mul(uvNode.y, 0.5)), rippleScale), mul(timeUniform, rippleSpeed)));
   const ripple2 = sin(add(mul(add(mul(uvNode.x, 0.7), mul(uvNode.y, 1.0)), mul(rippleScale, 0.8)), mul(timeUniform, mul(rippleSpeed, 1.3))));
+  const rippleAmplitude = waterConfig ? waterConfig.RIPPLES.AMPLITUDE : 0.1;
   const rippleValue = mul(add(ripple1, ripple2), rippleAmplitude);
   
   // ==== BASE COLOR GRADIENT ====
@@ -278,8 +262,9 @@ function createWaterMaterialTSL() {
 
 /****************************************************************************
  Update water animation time uniform. Called from render loop.
+ This function is shared between hex and square water implementations.
 ****************************************************************************/
-function updateWaterAnimation(deltaTime) {
+function updateWaterAnimationSquare(deltaTime) {
   if (window.waterTimeUniform && window.waterTimeUniform.value !== undefined) {
     window.waterTimeUniform.value += deltaTime;
   }

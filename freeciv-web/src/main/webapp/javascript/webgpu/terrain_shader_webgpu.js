@@ -99,14 +99,23 @@ function createTerrainShaderTSL(uniforms) {
     const BEACH_UPPER_RANGE = BEACH_HIGH - BEACH_MID;        // ≈ 1.0
 
     // =========================================================================
-    // HEXAGONAL TILE CONSTANTS
+    // HEXAGONAL TILE CONSTANTS (from HexConfig in config.js)
     // =========================================================================
+    // Using centralized configuration for consistency and maintainability
     // Pointy-top hexagons (Civ 6 style): flat sides on left/right, points on top/bottom
     // For a pointy-top hex with radius R (center to corner):
     // - width = R * sqrt(3) = R * 1.732
     // - height = R * 2
     // We normalize so that one tile maps to roughly 1.0 in UV space per tile
-    const HEX_SQRT3_OVER_2 = 0.866025; // sqrt(3)/2 ≈ 0.866 - used for hex edge normals
+    const hexConfig = window.HexConfig || {
+        SQRT3_OVER_2: 0.866025,
+        EDGE_WIDTH: 0.045,
+        EDGE_SOFTNESS: 0.025,
+        EDGE_BLEND_STRENGTH: 0.32,
+        EDGE_COLOR: { r: 0.15, g: 0.12, b: 0.08 }
+    };
+    
+    const HEX_SQRT3_OVER_2 = hexConfig.SQRT3_OVER_2; // sqrt(3)/2 ≈ 0.866 - used for hex edge normals
     // HEX_MESH_HEIGHT_FACTOR matches the mesh geometry compression factor (sqrt(3)/2)
     // The mesh compresses Y by this factor, so tiles appear wider than tall in world space
     const HEX_MESH_HEIGHT_FACTOR = HEX_SQRT3_OVER_2;
@@ -114,12 +123,12 @@ function createTerrainShaderTSL(uniforms) {
     // we need to stretch the hex in UV space by the inverse of the compression factor
     // This counteracts the mesh compression so the final rendered hex has correct proportions
     const HEX_ASPECT = 1.0 / HEX_MESH_HEIGHT_FACTOR; // ≈ 1.1547 - Y-coordinate scale factor for hex geometry
-    const HEX_EDGE_WIDTH = 0.045; // Width of hex edge highlight (as fraction of tile) - increased for better horizontal visibility
-    const HEX_EDGE_SOFTNESS = 0.025; // Edge anti-aliasing softness
-    const HEX_EDGE_BLEND_STRENGTH = 0.32; // How strongly hex edges darken the terrain (0-1) - slightly reduced for balance
-    const HEX_EDGE_COLOR_R = 0.15; // Red component of edge darkening color
-    const HEX_EDGE_COLOR_G = 0.12; // Green component of edge darkening color  
-    const HEX_EDGE_COLOR_B = 0.08; // Blue component of edge darkening color
+    const HEX_EDGE_WIDTH = hexConfig.EDGE_WIDTH; // Width of hex edge highlight (as fraction of tile)
+    const HEX_EDGE_SOFTNESS = hexConfig.EDGE_SOFTNESS; // Edge anti-aliasing softness
+    const HEX_EDGE_BLEND_STRENGTH = hexConfig.EDGE_BLEND_STRENGTH; // How strongly hex edges darken the terrain (0-1)
+    const HEX_EDGE_COLOR_R = hexConfig.EDGE_COLOR.r; // Red component of edge darkening color
+    const HEX_EDGE_COLOR_G = hexConfig.EDGE_COLOR.g; // Green component of edge darkening color  
+    const HEX_EDGE_COLOR_B = hexConfig.EDGE_COLOR.b; // Blue component of edge darkening color
     const TEXTURE_RANDOM_SCALE = 16.0; // Divisor for random texture offset - larger = less variation
 
     // Visibility constants (matching vertex color values from tile_visibility_handler.js)
