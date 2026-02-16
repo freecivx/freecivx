@@ -442,6 +442,11 @@ function pregame_settings()
       "     <li><a href='#pregame_settings_tabs-3'>AI Chat, LLM, Other</a></li>" +
       "   </ul>" +
       "<div id='pregame_settings_tabs-1'><br><table id='settings_table'> " +
+      "<tr title='Map tile topology: Square or Hexagonal tiles. Hex tiles provide 6-way movement.'><td>Map Topology (Hex vs Square):</td>" +
+            "<td><select name='topology' id='topology'>" +
+            "<option value='0'>Square map tiles (Classic)</option>" +
+            "<option value='1' selected>Hexagonal map tiles</option>" +
+      "</select></td></tr>" +
       "<tr title='Ruleset version'><td>Ruleset:</td>" +
       "<td><select name='ruleset' id='ruleset'>" +
       "<option value='classic'>Classic</option>" +
@@ -490,12 +495,8 @@ function pregame_settings()
           "<option value='FAIR'>Fair islands</option>" +
           //"<option value='FRACTURE'>Fracture map</option>" + FIXME: this one doesnt work.
     "</select></td></tr>" +
-    "<tr title='Map tile topology: Square or Hexagonal tiles. Hex tiles provide 6-way movement.'><td>Map Topology:</td>" +
-          "<td><select name='topology' id='topology'>" +
-          "<option value='0'>Square map tiles (Classic)</option>" +
-          "<option value='1' selected>Hexagonal map tiles</option>" +
-    "</select></td></tr>"
-    + "</table><br>"+
+
+     "</table><br>"+
 	  "<span id='settings_info'><i>Freeciv-web can be customized using the command line in many " +
           "other ways also. Type /help in the command line for more information.</i></span></div>" +
 
