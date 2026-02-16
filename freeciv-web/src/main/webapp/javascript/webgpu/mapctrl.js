@@ -315,8 +315,12 @@ function highlight_map_tile_selected(x, y)
       terrain_material.uniforms.selected_x.needsUpdate = true;
       terrain_material.uniforms.selected_y.value = y;
       terrain_material.uniforms.selected_y.needsUpdate = true;
+    } else if (window.terrain_selected_x_uniform && window.terrain_selected_y_uniform) {
+      // WebGPU material - update TSL uniform nodes directly
+      window.terrain_selected_x_uniform.value = x;
+      window.terrain_selected_y_uniform.value = y;
     } else if (typeof freeciv_uniforms !== 'undefined') {
-      // WebGPU material - update freeciv_uniforms directly
+      // Fallback: update freeciv_uniforms (won't have dynamic effect, but keeps data consistent)
       freeciv_uniforms.selected_x.value = x;
       freeciv_uniforms.selected_y.value = y;
     }

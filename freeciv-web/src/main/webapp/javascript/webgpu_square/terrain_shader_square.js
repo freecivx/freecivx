@@ -141,6 +141,13 @@ function createTerrainShaderSquareTSL(uniforms) {
     const map_x_size = uniform(uniforms.map_x_size.value);
     const map_y_size = uniform(uniforms.map_y_size.value);
     const borders_visible = uniform(uniforms.borders_visible.value);
+    
+    // Selected tile uniforms for highlighting (exported globally for dynamic updates)
+    const selected_x = uniform(uniforms.selected_x.value);
+    const selected_y = uniform(uniforms.selected_y.value);
+    // Export uniform nodes globally so they can be updated from mapctrl.js
+    window.terrain_selected_x_uniform = selected_x;
+    window.terrain_selected_y_uniform = selected_y;
 
     // Get UV coordinates and position
     const uvNode = uv();
@@ -474,6 +481,50 @@ function createTerrainShaderSquareTSL(uniforms) {
     const borderFillFactor = mul(shouldShowBorderFill, 0.05);
     finalColor = vec4(
         mix(finalColor.rgb, currentBorder.rgb, borderFillFactor),
+        finalColor.a
+    );
+
+    // =========================================================================
+    // SELECTED TILE HIGHLIGHTING
+    // =========================================================================
+    // Highlight the currently selected tile based on selected_x and selected_y uniforms
+    // A value of -1 indicates no selection, otherwise the tile at (selected_x, selected_y) is highlighted
+    const hasSelection = selected_x.greaterThanEqual(0.0).and(selected_y.greaterThanEqual(0.0));
+    const isSelectedTile = tileX.equal(selected_x).and(tileY.equal(selected_y));
+    const shouldHighlightTile = hasSelection.and(isSelectedTile);
+    
+    // Selection highlight color (golden/yellow tint for visibility)
+    const SELECTION_HIGHLIGHT_COLOR = vec3(1.0, 0.9, 0.5);
+    const SELECTION_EDGE_INTENSITY = 0.8;  // Strong edge highlight
+    const SELECTION_FILL_INTENSITY = 0.15; // Subtle fill highlight
+    const SELECTION_EDGE_WIDTH = 0.06;     // Width of the selection edge highlight
+    
+    // Calculate selection indicator (1.0 if selected, 0.0 if not)
+    const selectionActive = shouldHighlightTile.select(1.0, 0.0);
+    
+    // Create square edge mask for selection highlighting (all four edges)
+    // Each edge detection returns 1.0 when within SELECTION_EDGE_WIDTH of that edge
+    const nearLeftEdgeSel = step(localX, SELECTION_EDGE_WIDTH);
+    const nearRightEdgeSel = step(sub(1.0, localX), SELECTION_EDGE_WIDTH);
+    const nearBottomEdgeSel = step(localY, SELECTION_EDGE_WIDTH);
+    const nearTopEdgeSel = step(sub(1.0, localY), SELECTION_EDGE_WIDTH);
+    // Combine all four edge masks: 1.0 if near any edge, 0.0 otherwise
+    const horizontalEdges = max(nearLeftEdgeSel, nearRightEdgeSel);
+    const verticalEdges = max(nearBottomEdgeSel, nearTopEdgeSel);
+    const squareEdgeMask = max(horizontalEdges, verticalEdges);
+    
+    // Apply edge highlighting on selected tile
+    const scaledEdgeMask = mul(squareEdgeMask, SELECTION_EDGE_INTENSITY);
+    const selectionEdgeFactor = mul(selectionActive, scaledEdgeMask);
+    finalColor = vec4(
+        mix(finalColor.rgb, SELECTION_HIGHLIGHT_COLOR, selectionEdgeFactor),
+        finalColor.a
+    );
+    
+    // Apply subtle fill highlighting to the entire selected tile
+    const selectionFillFactor = mul(selectionActive, SELECTION_FILL_INTENSITY);
+    finalColor = vec4(
+        mix(finalColor.rgb, SELECTION_HIGHLIGHT_COLOR, selectionFillFactor),
         finalColor.a
     );
 
