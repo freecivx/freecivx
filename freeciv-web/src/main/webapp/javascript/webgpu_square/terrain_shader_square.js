@@ -490,7 +490,11 @@ function createTerrainShaderSquareTSL(uniforms) {
     // Highlight the currently selected tile based on selected_x and selected_y uniforms
     // A value of -1 indicates no selection, otherwise the tile at (selected_x, selected_y) is highlighted
     const hasSelection = selected_x.greaterThanEqual(0.0).and(selected_y.greaterThanEqual(0.0));
-    const isSelectedTile = tileX.equal(selected_x).and(tileY.equal(selected_y));
+    // Use epsilon-based comparison (0.5) for float precision tolerance
+    // tileX/tileY are floored floats (e.g., 5.0), selected_x/selected_y are uniform integers (e.g., 5)
+    const xMatch = abs(sub(tileX, selected_x)).lessThan(0.5);
+    const yMatch = abs(sub(tileY, selected_y)).lessThan(0.5);
+    const isSelectedTile = xMatch.and(yMatch);
     const shouldHighlightTile = hasSelection.and(isSelectedTile);
     
     // Selection highlight color (golden/yellow tint for visibility)
