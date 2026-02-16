@@ -87,6 +87,28 @@ function webgl_preload()
     })()
   );
 
+  /* Preload arctic/tundra/farmland/irrigation textures as DataArrayTexture (texture_2d_array).
+   * These 4 textures are loaded as separate layers in a single texture array to avoid
+   * exceeding the 16 texture binding limit.
+   * Layer indices: 0 = arctic, 1 = tundra, 2 = farmland, 3 = irrigation
+   */
+  const terrainLayerTextures = ['arctic', 'tundra', 'farmland', 'irrigation'];
+  const loadedTerrainImages = [];
+  let loadedCount = 0;
+  
+  terrainLayerTextures.forEach((textureName, index) => {
+    textureLoader.load("/textures/large/" + textureName + ".png", function(image) {
+      loadedTerrainImages[index] = image;
+      loadedCount++;
+      $("#download_progress").html(" terrain layer textures " + Math.floor(25 + (loadedCount / terrainLayerTextures.length) * 10) + "%");
+      
+      // When all 4 textures are loaded, combine them into a DataArrayTexture
+      if (loadedCount === terrainLayerTextures.length) {
+        webgl_textures["terrain_layers"] = createTerrainLayerArrayTexture(loadedTerrainImages);
+      }
+    });
+  });
+
   var city_light = new THREE.Texture();
   webgl_textures["city_light"] = city_light;
   textureLoader.load( '/textures/city_light.png', function ( image ) {
@@ -252,6 +274,58 @@ function createSpriteArrayTexture(image, cols, rows) {
   
   // Create the DataArrayTexture
   const textureArray = new THREE.DataArrayTexture(data, spriteWidth, spriteHeight, depth);
+  textureArray.format = THREE.RGBAFormat;
+  textureArray.type = THREE.UnsignedByteType;
+  textureArray.wrapS = THREE.RepeatWrapping;
+  textureArray.wrapT = THREE.RepeatWrapping;
+  textureArray.magFilter = THREE.LinearFilter;
+  textureArray.minFilter = THREE.LinearFilter;
+  textureArray.needsUpdate = true;
+  
+  return textureArray;
+}
+
+/****************************************************************************
+ Creates a DataArrayTexture (texture_2d_array) from an array of individual
+ texture images. Each image becomes a separate layer in the texture array.
+ 
+ @param {HTMLImageElement[]} images - Array of images (all same dimensions)
+ @returns {THREE.DataArrayTexture} A texture array with images.length layers
+****************************************************************************/
+function createTerrainLayerArrayTexture(images) {
+  if (images.length === 0) {
+    console.error('createTerrainLayerArrayTexture: No images provided');
+    return null;
+  }
+  
+  // All images should have same dimensions - use first image as reference
+  const width = images[0].width;
+  const height = images[0].height;
+  const depth = images.length;
+  
+  // Create a canvas to extract pixel data from each image
+  const canvas = document.createElement('canvas');
+  canvas.width = width;
+  canvas.height = height;
+  const ctx = canvas.getContext('2d');
+  
+  // Allocate typed array for all image data (RGBA, 4 bytes per pixel)
+  const data = new Uint8Array(width * height * depth * 4);
+  
+  // Extract each image and store in the data array
+  for (let i = 0; i < images.length; i++) {
+    // Clear canvas and draw the image
+    ctx.clearRect(0, 0, width, height);
+    ctx.drawImage(images[i], 0, 0, width, height);
+    
+    // Get pixel data and copy to the appropriate layer offset
+    const imageData = ctx.getImageData(0, 0, width, height);
+    const layerOffset = i * width * height * 4;
+    data.set(imageData.data, layerOffset);
+  }
+  
+  // Create the DataArrayTexture
+  const textureArray = new THREE.DataArrayTexture(data, width, height, depth);
   textureArray.format = THREE.RGBAFormat;
   textureArray.type = THREE.UnsignedByteType;
   textureArray.wrapS = THREE.RepeatWrapping;
