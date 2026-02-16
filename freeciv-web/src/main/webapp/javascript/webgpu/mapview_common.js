@@ -38,7 +38,7 @@ var timer;
 
 var controls;
 
-var tiletype_terrains = ["coast","ocean","desert","grassland","hills","mountains","plains","swamp", "arctic", "tundra", "farmland", "irrigation"];
+var tiletype_terrains = ["coast","ocean","desert","grassland","hills","mountains","plains","swamp", "arctic_farmland_irrigation_tundra"];
 
 var landGeometry;
 var landMesh; // the terrain land geometry

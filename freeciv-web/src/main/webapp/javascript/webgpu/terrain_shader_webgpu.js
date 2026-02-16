@@ -146,10 +146,7 @@ function createTerrainShaderTSL(uniforms) {
     
     // Terrain texture references - organized by terrain type
     const terrainTextures = {
-        arctic: uniforms.arctic.value,
-        tundra: uniforms.tundra.value,
-        farmland: uniforms.farmland.value,
-        irrigation: uniforms.irrigation.value,
+        arctic: uniforms.arctic_farmland_irrigation_tundra.value,
         grassland: uniforms.grassland.value,
         coast: uniforms.coast.value,
         desert: uniforms.desert.value,
@@ -328,13 +325,23 @@ function createTerrainShaderTSL(uniforms) {
     // Used for standard terrain texture sampling
     const dx = localX;
     const dy = localY;
+    
+    // tdx/tdy: Diagonal texture coordinates for tundra/arctic terrain types
+    // These create a 2x2 tile pattern by mapping each tile to a quadrant of the texture atlas
+    // The formula calculates: (tile_position / 2) - (floor(tile_position) * 0.5)
+    // This gives values in [0, 0.5] range that repeat every 2 tiles
+    const tdx = sub(div(mul(map_x_size, hexUV.x), 2.0), mul(0.5, floor(mul(map_x_size, hexUV.x))));
+    const tdy = sub(div(mul(map_y_size, hexUV.y), 2.0), mul(0.5, floor(mul(map_y_size, hexUV.y))));
 
     // Extract terrain type value from texture (stored in red channel as 0-255 value)
     const terrainHere = floor(mul(terrainType.r, 256.0));
     const posY = posNode.y;
 
     // Texture coordinate nodes for hexagonal tiles
+    // texCoord: Standard coordinates for most terrain types
+    // texCoordT: Offset coordinates for arctic/tundra (uses 2x2 texture atlas pattern)
     const texCoord = vec2(dx, dy);
+    const texCoordT = vec2(tdx, add(tdy, 0.5));
 
     // Precompute beach sand colour as vec3 for reuse in terrain layers
     const beachSandColor = vec3(BEACH_SAND_COLOR.r, BEACH_SAND_COLOR.g, BEACH_SAND_COLOR.b);
@@ -416,8 +423,8 @@ function createTerrainShaderTSL(uniforms) {
         createTerrainLayer(TERRAIN_COAST, terrainTextures.coast, texCoord, false),
         createTerrainLayer(TERRAIN_FLOOR, terrainTextures.ocean, texCoord, false),
         createTerrainLayer(TERRAIN_LAKE, terrainTextures.coast, texCoord, false), // Lake uses coast texture
-        createTerrainLayer(TERRAIN_ARCTIC, terrainTextures.arctic, texCoord, false),
-        createTerrainLayer(TERRAIN_TUNDRA, terrainTextures.tundra, texCoord, false) // Tundra uses its own texture
+        createTerrainLayer(TERRAIN_ARCTIC, terrainTextures.arctic, texCoordT, false),
+        createTerrainLayer(TERRAIN_TUNDRA, terrainTextures.arctic, vec2(add(tdx, 0.5), tdy), false) // Tundra uses arctic with offset
     ];
 
     // Combine all terrain layers
@@ -434,22 +441,22 @@ function createTerrainShaderTSL(uniforms) {
     // - 0 = none
     // - 1 = irrigation
     // - 2 = farmland
-    // We render actual textures overlaid on the terrain
+    // We render a subtle tint overlay to indicate these improvements
     const irrigationFlag = floor(mul(terrainType.b, 256.0));
     
-    // Irrigation: sample irrigation texture and blend it over the terrain
+    // Irrigation: subtle blue-green tint (water channels)
     const hasIrrigation = mul(step(0.5, irrigationFlag), step(irrigationFlag, 1.5));
-    const irrigationTexColor = texture(terrainTextures.irrigation, texCoord);
+    const irrigationColor = vec3(0.6, 0.85, 0.75);  // Blue-green tint
     finalColor = vec4(
-        mix(finalColor.rgb, irrigationTexColor.rgb, mul(hasIrrigation, irrigationTexColor.a)),
+        mix(finalColor.rgb, irrigationColor, mul(hasIrrigation, 0.15)),
         finalColor.a
     );
     
-    // Farmland: sample farmland texture and blend it over the terrain
+    // Farmland: golden/wheat colored tint (cultivated fields)
     const hasFarmland = step(1.5, irrigationFlag);
-    const farmlandTexColor = texture(terrainTextures.farmland, texCoord);
+    const farmlandColor = vec3(0.85, 0.78, 0.45);  // Golden wheat color
     finalColor = vec4(
-        mix(finalColor.rgb, farmlandTexColor.rgb, mul(hasFarmland, farmlandTexColor.a)),
+        mix(finalColor.rgb, farmlandColor, mul(hasFarmland, 0.18)),
         finalColor.a
     );
 
