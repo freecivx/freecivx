@@ -1086,25 +1086,37 @@ function map_to_scene_coords(x, y)
 {
   var result = {};
   
+  // Check if we're using square topology
+  var useHexTopology = typeof is_hex === 'function' && is_hex();
+  
   // Calculate base position
   const tileWidth = mapview_model_width / map['xsize'];
-  const tileHeight = (mapview_model_height / map['ysize']) * HEX_HEIGHT_FACTOR;
   
-  // Apply hex row offset for odd rows (odd-r offset coordinate system)
-  // In Freeciv hex: row 0 is normal, row 1 is staggered 0.5 tiles right, etc.
-  const rowOffset = (y % 2 === 1) ? tileWidth * HEX_STAGGER : 0;
-  
-  // Use full precision for accurate coordinate conversion (avoid flooring which causes drift)
-  result['x'] = MAP_X_OFFSET + x * tileWidth + rowOffset;
-  result['y'] = MAP_Y_OFFSET + y * tileHeight;
+  if (useHexTopology) {
+    // Hex topology - use height factor and row staggering
+    const tileHeight = (mapview_model_height / map['ysize']) * HEX_HEIGHT_FACTOR;
+    
+    // Apply hex row offset for odd rows (odd-r offset coordinate system)
+    const rowOffset = (y % 2 === 1) ? tileWidth * HEX_STAGGER : 0;
+    
+    result['x'] = MAP_X_OFFSET + x * tileWidth + rowOffset;
+    result['y'] = MAP_Y_OFFSET + y * tileHeight;
+  } else {
+    // Square topology - simple grid coordinates
+    const tileHeight = mapview_model_height / map['ysize'];
+    
+    result['x'] = MAP_X_OFFSET + x * tileWidth;
+    result['y'] = MAP_Y_OFFSET + y * tileHeight;
+  }
 
   return result;
 }
 
 /****************************************************************************
-  Converts from scene to map coordinates for hexagonal tiles.
+  Converts from scene to map coordinates.
   
-  Inverse of map_to_scene_coords(). Uses offset hex coordinates (odd-r).
+  Inverse of map_to_scene_coords(). Uses offset hex coordinates (odd-r) for
+  hex maps, or simple grid coordinates for square maps.
   Reference: https://www.redblobgames.com/grids/hexagons/#coordinates-offset
   
   For hex tiles, we first determine the rough tile position, then check
@@ -1119,7 +1131,31 @@ function scene_to_map_coords(x, y)
 {
   var result = {};
   
+  // Check if we're using square topology
+  var useHexTopology = typeof is_hex === 'function' && is_hex();
+  
   const tileWidth = mapview_model_width / map['xsize'];
+  
+  if (!useHexTopology) {
+    // Square topology - simple grid coordinates
+    const tileHeight = mapview_model_height / map['ysize'];
+    
+    // Account for offsets
+    const adjustedX = x - MAP_X_OFFSET;
+    const adjustedY = y - MAP_Y_OFFSET;
+    
+    // Calculate tile coordinates
+    const tileX = Math.floor(adjustedX / tileWidth);
+    const tileY = Math.floor(adjustedY / tileHeight);
+    
+    // Clamp to valid range
+    result['x'] = Math.max(0, Math.min(map['xsize'] - 1, tileX));
+    result['y'] = Math.max(0, Math.min(map['ysize'] - 1, tileY));
+    
+    return result;
+  }
+  
+  // Hex topology implementation
   const tileHeight = (mapview_model_height / map['ysize']) * HEX_HEIGHT_FACTOR;
   
   // Account for the MAP_Y_OFFSET in map_to_scene_coords

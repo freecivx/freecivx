@@ -286,18 +286,42 @@ async function init_webgpu_mapview() {
   
   lofiGeometry = new THREE.BufferGeometry();
   lofiGeometry.name = "lofi_terrain_geometry";
-  init_land_geometry(lofiGeometry, 2);
-  update_land_geometry(lofiGeometry, 2);
+  
+  // Use appropriate geometry initialization based on map topology
+  var useHexTopology = typeof is_hex === 'function' && is_hex();
+  
+  if (useHexTopology) {
+    init_land_geometry(lofiGeometry, 2);
+    update_land_geometry(lofiGeometry, 2);
+  } else if (typeof init_land_geometry_square === 'function') {
+    init_land_geometry_square(lofiGeometry, 2);
+    update_land_geometry_square(lofiGeometry, 2);
+  } else {
+    // Fallback to hex if square functions not available
+    init_land_geometry(lofiGeometry, 2);
+    update_land_geometry(lofiGeometry, 2);
+  }
+  
   lofiMesh = new THREE.Mesh(lofiGeometry, lofiMaterial);
   lofiMesh.layers.set(6);
   lofiMesh.name = "raycaster_mesh";
   scene.add(lofiMesh);
 
   // Create node-based material for WebGPU using TSL shader
-  console.log("Creating WebGPU terrain shader with TSL...");
+  // Use appropriate shader based on map topology (hex vs square)
+  var terrainColorNode;
   
-  // Create the TSL shader node
-  const terrainColorNode = createTerrainShaderTSL(freeciv_uniforms);
+  if (useHexTopology) {
+    console.log("Creating WebGPU terrain shader with TSL (Hex topology)...");
+    terrainColorNode = createTerrainShaderTSL(freeciv_uniforms);
+  } else if (typeof createTerrainShaderSquareTSL === 'function') {
+    console.log("Creating WebGPU terrain shader with TSL (Square topology)...");
+    terrainColorNode = createTerrainShaderSquareTSL(freeciv_uniforms);
+  } else {
+    // Fallback to hex shader if square shader not available
+    console.log("Creating WebGPU terrain shader with TSL (Fallback to Hex)...");
+    terrainColorNode = createTerrainShaderTSL(freeciv_uniforms);
+  }
   
   // Create MeshStandardNodeMaterial with the shader - supports shadow receiving
   // The terrain shader provides the color, while the material handles shadow reception
@@ -312,8 +336,19 @@ async function init_webgpu_mapview() {
   // Create the terrain land mesh
   landGeometry = new THREE.BufferGeometry();
   landGeometry.name = "land_terrain_geometry";
-  init_land_geometry(landGeometry, terrain_quality);
-  update_land_geometry(landGeometry, terrain_quality);
+  
+  if (useHexTopology) {
+    init_land_geometry(landGeometry, terrain_quality);
+    update_land_geometry(landGeometry, terrain_quality);
+  } else if (typeof init_land_geometry_square === 'function') {
+    init_land_geometry_square(landGeometry, terrain_quality);
+    update_land_geometry_square(landGeometry, terrain_quality);
+  } else {
+    // Fallback to hex
+    init_land_geometry(landGeometry, terrain_quality);
+    update_land_geometry(landGeometry, terrain_quality);
+  }
+  
   landMesh = new THREE.Mesh(landGeometry, terrain_material);
   // Enable shadow receiving for units and cities to cast shadows on terrain
   landMesh.receiveShadow = (graphics_quality >= QUALITY_MEDIUM);
