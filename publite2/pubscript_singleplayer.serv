@@ -22,7 +22,6 @@ set aifill 12
 set victories spacerace
 
 set wetness 25
-set topology HEX
 set wrap=
 set steepness 12
 
