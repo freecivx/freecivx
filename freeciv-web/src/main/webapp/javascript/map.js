@@ -64,6 +64,15 @@ function topo_has_flag(flag)
 }
 
 /****************************************************************************
+  Returns true if the map uses hexagonal tile topology.
+  This is a convenience function to check the TF_HEX flag.
+****************************************************************************/
+function is_hex()
+{
+  return topo_has_flag(TF_HEX);
+}
+
+/****************************************************************************
   ...
 ****************************************************************************/
 function wrap_has_flag(flag)

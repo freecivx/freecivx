@@ -219,8 +219,21 @@ function update_map_terrain_geometry()
     var hash = generate_heightmap_hash();
     if (hash != heightmap_hash) {
       update_heightmap(terrain_quality);
-      update_land_geometry(lofiGeometry, 2);
-      update_land_geometry(landGeometry, terrain_quality);
+      
+      // Use appropriate geometry update based on map topology
+      var useHexTopology = typeof is_hex === 'function' && is_hex();
+      
+      if (useHexTopology) {
+        update_land_geometry(lofiGeometry, 2);
+        update_land_geometry(landGeometry, terrain_quality);
+      } else if (typeof update_land_geometry_square === 'function') {
+        update_land_geometry_square(lofiGeometry, 2);
+        update_land_geometry_square(landGeometry, terrain_quality);
+      } else {
+        // Fallback to hex
+        update_land_geometry(lofiGeometry, 2);
+        update_land_geometry(landGeometry, terrain_quality);
+      }
 
       lofiGeometry.rotateX( - Math.PI / 2 );
       lofiGeometry.translate(Math.floor(mapview_model_width / 2) - 500, 0, Math.floor(mapview_model_height / 2));

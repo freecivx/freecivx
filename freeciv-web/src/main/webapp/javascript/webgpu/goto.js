@@ -86,11 +86,21 @@ function get_tile_center_position(tile) {
 
 /****************************************************************************
  Renders goto path as a straight arrow line from start tile to destination.
+ Routes to appropriate implementation based on map topology (hex vs square).
  
  @param {Object} start_tile - The starting tile of the path (unit position)
  @param {Object} dest_tile - The destination tile of the path
  ****************************************************************************/
 function webgl_render_goto_line(start_tile, dest_tile) {
+    // Route to square implementation if not hex topology
+    if (typeof is_hex === 'function' && !is_hex()) {
+        if (typeof webgl_render_goto_line_square === 'function') {
+            webgl_render_goto_line_square(start_tile, dest_tile);
+            return;
+        }
+    }
+    
+    // Hex map implementation
     // Clear any existing goto visualization
     clear_goto_tiles();
     
@@ -203,8 +213,16 @@ function create_goto_arrow(startPos, destPos) {
 
 /**************************************************************************
  Removes goto path visualization by hiding the arrow.
+ Also clears square map goto tiles if using square topology.
 **************************************************************************/
 function clear_goto_tiles() {
+    // Clear square map goto tiles if in square mode
+    if (typeof is_hex === 'function' && !is_hex() && typeof clear_goto_tiles_square === 'function') {
+        clear_goto_tiles_square();
+        return;
+    }
+    
+    // Hex map cleanup
     if (goto_arrow_group != null) {
         goto_arrow_group.visible = false;
         

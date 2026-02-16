@@ -145,14 +145,26 @@ function generator_create_map(width, height, options) {
     FractureGenerator.initialize(width, height, seed);
     FractureGenerator.generateFracture();
 
-    // Map info setup - use hexagonal topology (TF_HEX = 2, TF_ISO = 1, combined = 3)
-    // TF_HEX | TF_ISO = 3 for isometric hex grid
+    // Map info setup - topology depends on STANDALONE_MAP_TYPE setting
+    // TF_ISO = 1, TF_HEX = 2
+    // Square map tiles: topology_id = 0 (no flags)
+    // Hex map tiles: topology_id = 3 (TF_HEX | TF_ISO)
+    var topology_id = 0;  // Default to square map tiles
+    var num_valid_dirs = 8;  // Square has 8 valid directions
+    
+    if (typeof STANDALONE_MAP_TYPE !== 'undefined' && STANDALONE_MAP_TYPE === "hex") {
+        topology_id = 3;  // TF_HEX | TF_ISO = hexagonal isometric topology
+        num_valid_dirs = 6;  // Hex has 6 valid directions
+    }
+    
+    console.log("[Fracture] Using topology: " + (topology_id === 0 ? "Square" : "Hex") + " (topology_id=" + topology_id + ")");
+    
     handle_map_info({
         xsize: width,
         ysize: height,
-        topology_id: 3,  // TF_HEX | TF_ISO = hexagonal isometric topology
+        topology_id: topology_id,
         wrap_id: 1, // X-Wrap
-        num_valid_dirs: 6  // Hex has 6 valid directions
+        num_valid_dirs: num_valid_dirs
     });
 
     // Register terrain types

@@ -27,7 +27,8 @@ var standalone_config = {
   nation_id: 0, // Default to Roman nation (id: 0)
   map_xsize: 60,
   map_ysize: 60,
-  ai_players: 12
+  ai_players: 12,
+  map_type: "square"  // "square" or "hex" - default to square map tiles
 };
 
 /****************************************************************************
@@ -65,6 +66,11 @@ function show_standalone_pregame_dialog()
   dialog_html += "<div style='margin-bottom: 20px;'>";
   dialog_html += "<h3>Map Settings</h3>";
   dialog_html += "<table>";
+  dialog_html += "<tr><td><label for='standalone_map_type'>Map Type:</label></td>";
+  dialog_html += "<td><select id='standalone_map_type'>";
+  dialog_html += "<option value='square' selected>Square map tiles</option>";
+  dialog_html += "<option value='hex'>Hex map tiles</option>";
+  dialog_html += "</select></td></tr>";
   dialog_html += "<tr><td><label for='standalone_map_xsize'>Map Width:</label></td>";
   dialog_html += "<td><input type='number' id='standalone_map_xsize' value='40' min='20' max='200' /></td></tr>";
   dialog_html += "<tr><td><label for='standalone_map_ysize'>Map Height:</label></td>";
@@ -121,6 +127,7 @@ function show_standalone_pregame_dialog()
   });
 
   // Initialize the form values from config
+  $("#standalone_map_type").val(standalone_config.map_type);
   $("#standalone_map_xsize").val(standalone_config.map_xsize);
   $("#standalone_map_ysize").val(standalone_config.map_ysize);
   $("#standalone_ai_players").val(standalone_config.ai_players);
@@ -243,6 +250,7 @@ function start_standalone_game_with_config()
   }
 
   // Get settings from form
+  standalone_config.map_type = $("#standalone_map_type").val();
   standalone_config.map_xsize = parseInt($("#standalone_map_xsize").val());
   standalone_config.map_ysize = parseInt($("#standalone_map_ysize").val());
   standalone_config.ai_players = parseInt($("#standalone_ai_players").val());
@@ -268,6 +276,7 @@ function start_standalone_game_with_config()
   STANDALONE_MAP_WIDTH = standalone_config.map_xsize;
   STANDALONE_MAP_HEIGHT = standalone_config.map_ysize;
   STANDALONE_AI_PLAYERS = standalone_config.ai_players;
+  STANDALONE_MAP_TYPE = standalone_config.map_type;
 
   // Set standalone mode flag
   standalone_mode = true;

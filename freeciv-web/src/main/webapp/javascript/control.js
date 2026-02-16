@@ -2056,50 +2056,99 @@ map_handle_key(keyboard_key, key_code, ctrl, alt, shift, the_event)
 
   }
 
-  // Numpad directions are rotated 45 degrees counterclockwise to match
-  // the 3D camera perspective, which views the map from the SE direction.
-  // This makes visual directions on screen match numpad expectations.
+  // Numpad directions handling depends on map topology:
+  // - For hex maps: directions are rotated 45 degrees counterclockwise to match
+  //   the 3D camera perspective, which views the map from the SE direction.
+  // - For square maps: directions are direct (no rotation needed).
+  if (is_hex()) {
+    // Hex map: rotated numpad directions
+    switch (key_code) {
+      case 35: // Numpad 1 (End) - visual down-left
+      case 97:
+        key_unit_move(DIR8_SOUTH);
+        break;
+
+      case 40: // Numpad 2 (Down arrow) - visual down
+      case 98:
+        key_unit_move(DIR8_SOUTHEAST);
+        break;
+
+      case 34: // Numpad 3 (Page Down) - visual down-right
+      case 99:
+        key_unit_move(DIR8_EAST);
+        break;
+
+      case 37: // Numpad 4 (Left arrow) - visual left
+      case 100:
+        key_unit_move(DIR8_SOUTHWEST);
+        break;
+
+      case 39: // Numpad 6 (Right arrow) - visual right
+      case 102:
+        key_unit_move(DIR8_NORTHEAST);
+        break;
+
+      case 36: // Numpad 7 (Home) - visual up-left
+      case 103:
+        key_unit_move(DIR8_WEST);
+        break;
+
+      case 38: // Numpad 8 (Up arrow) - visual up
+      case 104:
+        key_unit_move(DIR8_NORTHWEST);
+        break;
+
+      case 33: // Numpad 9 (Page Up) - visual up-right
+      case 105:
+        key_unit_move(DIR8_NORTH);
+        break;
+    }
+  } else {
+    // Square map: direct numpad directions (no rotation)
+    switch (key_code) {
+      case 35: // Numpad 1 (End) - down-left
+      case 97:
+        key_unit_move(DIR8_SOUTHWEST);
+        break;
+
+      case 40: // Numpad 2 (Down arrow) - down
+      case 98:
+        key_unit_move(DIR8_SOUTH);
+        break;
+
+      case 34: // Numpad 3 (Page Down) - down-right
+      case 99:
+        key_unit_move(DIR8_SOUTHEAST);
+        break;
+
+      case 37: // Numpad 4 (Left arrow) - left
+      case 100:
+        key_unit_move(DIR8_WEST);
+        break;
+
+      case 39: // Numpad 6 (Right arrow) - right
+      case 102:
+        key_unit_move(DIR8_EAST);
+        break;
+
+      case 36: // Numpad 7 (Home) - up-left
+      case 103:
+        key_unit_move(DIR8_NORTHWEST);
+        break;
+
+      case 38: // Numpad 8 (Up arrow) - up
+      case 104:
+        key_unit_move(DIR8_NORTH);
+        break;
+
+      case 33: // Numpad 9 (Page Up) - up-right
+      case 105:
+        key_unit_move(DIR8_NORTHEAST);
+        break;
+    }
+  }
+
   switch (key_code) {
-    case 35: // Numpad 1 (End) - visual down-left
-    case 97:
-      key_unit_move(DIR8_SOUTH);
-      break;
-
-    case 40: // Numpad 2 (Down arrow) - visual down
-    case 98:
-      key_unit_move(DIR8_SOUTHEAST);
-      break;
-
-    case 34: // Numpad 3 (Page Down) - visual down-right
-    case 99:
-      key_unit_move(DIR8_EAST);
-      break;
-
-    case 37: // Numpad 4 (Left arrow) - visual left
-    case 100:
-      key_unit_move(DIR8_SOUTHWEST);
-      break;
-
-    case 39: // Numpad 6 (Right arrow) - visual right
-    case 102:
-      key_unit_move(DIR8_NORTHEAST);
-      break;
-
-    case 36: // Numpad 7 (Home) - visual up-left
-    case 103:
-      key_unit_move(DIR8_WEST);
-      break;
-
-    case 38: // Numpad 8 (Up arrow) - visual up
-    case 104:
-      key_unit_move(DIR8_NORTHWEST);
-      break;
-
-    case 33: // Numpad 9 (Page Up) - visual up-right
-    case 105:
-      key_unit_move(DIR8_NORTH);
-      break;
-
     case 27:
       //Esc
 

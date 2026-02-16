@@ -30,6 +30,7 @@ var STANDALONE_STARTUP_DELAY_MS = 1000;  // Increased delay to allow textures to
 var STANDALONE_MAP_WIDTH = 40;          // Map width in tiles
 var STANDALONE_MAP_HEIGHT = 30;         // Map height in tiles
 var STANDALONE_AI_PLAYERS = 3;          // Number of AI players (total players = AI + 1 human)
+var STANDALONE_MAP_TYPE = "square";     // Map type: "square" or "hex"
 
 
 /**************************************************************************
