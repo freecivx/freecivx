@@ -156,7 +156,7 @@ function update_heightmap(heightmap_quality)
   let heightmap_resolution_y = map.ysize * heightmap_quality + 1;
   
   // Check map topology once for river rendering
-  let isHex = typeof topo_has_flag !== 'undefined' && topo_has_flag(TF_HEX);
+  let isHex = is_hex();
 
   console.log("Updating heightmap...");
 
