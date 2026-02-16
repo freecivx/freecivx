@@ -146,7 +146,10 @@ function createTerrainShaderTSL(uniforms) {
     
     // Terrain texture references - organized by terrain type
     const terrainTextures = {
-        arctic: uniforms.arctic_farmland_irrigation_tundra.value,
+        arctic: uniforms.arctic.value,
+        tundra: uniforms.tundra.value,
+        farmland: uniforms.farmland.value,
+        irrigation: uniforms.irrigation.value,
         grassland: uniforms.grassland.value,
         coast: uniforms.coast.value,
         desert: uniforms.desert.value,
@@ -423,8 +426,8 @@ function createTerrainShaderTSL(uniforms) {
         createTerrainLayer(TERRAIN_COAST, terrainTextures.coast, texCoord, false),
         createTerrainLayer(TERRAIN_FLOOR, terrainTextures.ocean, texCoord, false),
         createTerrainLayer(TERRAIN_LAKE, terrainTextures.coast, texCoord, false), // Lake uses coast texture
-        createTerrainLayer(TERRAIN_ARCTIC, terrainTextures.arctic, texCoordT, false),
-        createTerrainLayer(TERRAIN_TUNDRA, terrainTextures.arctic, vec2(add(tdx, 0.5), tdy), false) // Tundra uses arctic with offset
+        createTerrainLayer(TERRAIN_ARCTIC, terrainTextures.arctic, texCoord, false),
+        createTerrainLayer(TERRAIN_TUNDRA, terrainTextures.tundra, texCoord, false) // Tundra uses its own texture
     ];
 
     // Combine all terrain layers
@@ -441,22 +444,22 @@ function createTerrainShaderTSL(uniforms) {
     // - 0 = none
     // - 1 = irrigation
     // - 2 = farmland
-    // We render a subtle tint overlay to indicate these improvements
+    // We render actual textures overlaid on the terrain
     const irrigationFlag = floor(mul(terrainType.b, 256.0));
     
-    // Irrigation: subtle blue-green tint (water channels)
+    // Irrigation: sample irrigation texture and blend it over the terrain
     const hasIrrigation = mul(step(0.5, irrigationFlag), step(irrigationFlag, 1.5));
-    const irrigationColor = vec3(0.6, 0.85, 0.75);  // Blue-green tint
+    const irrigationTexColor = texture(terrainTextures.irrigation, texCoord);
     finalColor = vec4(
-        mix(finalColor.rgb, irrigationColor, mul(hasIrrigation, 0.15)),
+        mix(finalColor.rgb, irrigationTexColor.rgb, mul(hasIrrigation, irrigationTexColor.a)),
         finalColor.a
     );
     
-    // Farmland: golden/wheat colored tint (cultivated fields)
+    // Farmland: sample farmland texture and blend it over the terrain
     const hasFarmland = step(1.5, irrigationFlag);
-    const farmlandColor = vec3(0.85, 0.78, 0.45);  // Golden wheat color
+    const farmlandTexColor = texture(terrainTextures.farmland, texCoord);
     finalColor = vec4(
-        mix(finalColor.rgb, farmlandColor, mul(hasFarmland, 0.18)),
+        mix(finalColor.rgb, farmlandTexColor.rgb, mul(hasFarmland, farmlandTexColor.a)),
         finalColor.a
     );
 
