@@ -19,7 +19,7 @@
 
 var camera;
 
-var camera_dx = 50;
+var camera_dx = 150;
 var camera_dy = 450;
 var camera_dz = 320;
 var camera_current_x = 0;
