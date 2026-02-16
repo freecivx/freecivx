@@ -301,17 +301,18 @@ function createTerrainShaderSquareTSL(uniforms) {
     const railLayerIndex = int(sub(roadIndex, 10.0));  // Convert 10-based to 0-based layer (0-9), as integer
     
     // Sample road sprite using texture array with vec2 UV and integer layer index
+    // For texture_2d_array (DataArrayTexture), use .depth() to specify the array layer
     const roadSpriteUV = vec2(localX, localY);
-    const roadSprite = texture(roadspritesTex, roadSpriteUV, roadLayerIndex);
+    const roadSprite = texture(roadspritesTex, roadSpriteUV).depth(roadLayerIndex);
     
     // Sample railroad sprite using texture array
     const railSpriteUV = vec2(localX, localY);
-    const railSprite = texture(railroadspritesTex, railSpriteUV, railLayerIndex);
+    const railSprite = texture(railroadspritesTex, railSpriteUV).depth(railLayerIndex);
     
     // Junction sprites - 4-way junctions use layer 0 (top-left sprite in original grid)
     const junctionUV = vec2(localX, localY);
-    const roadJunctionSprite = texture(roadspritesTex, junctionUV, int(0));
-    const railJunctionSprite = texture(railroadspritesTex, junctionUV, int(0));
+    const roadJunctionSprite = texture(roadspritesTex, junctionUV).depth(int(0));
+    const railJunctionSprite = texture(railroadspritesTex, junctionUV).depth(int(0));
     
     // Blend roads onto terrain
     const roadAlpha = mul(hasRoad, roadSprite.a);
