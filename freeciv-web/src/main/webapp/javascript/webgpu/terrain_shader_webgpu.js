@@ -160,9 +160,9 @@ function createTerrainShaderTSL(uniforms) {
     // =========================================================================
     // INFRASTRUCTURE CONSTANTS
     // =========================================================================
-    // Road sprite sheet layout: 4x4 grid, sprite indices 1-9 for roads, 10-19 for railroads
-    const ROAD_SPRITE_COLS = 4.0;
-    const ROAD_SPRITE_ROWS = 4.0;
+    // Road/railroad sprites are stored in DataArrayTexture (texture_2d_array) with 16 layers
+    // Each layer is a separate sprite from the original 4x4 grid
+    // Sprite indices: 1-9 for roads, 10-19 for railroads, 42/43 for junctions
     // Irrigation/Farmland flags from maptiles blue channel
     const IRRIGATION_FLAG = 1.0;
     const FARMLAND_FLAG = 2.0;
@@ -454,7 +454,7 @@ function createTerrainShaderTSL(uniforms) {
     );
 
     // =========================================================================
-    // ROADS AND RAILROADS RENDERING
+    // ROADS AND RAILROADS RENDERING (using texture_2d_array)
     // =========================================================================
     // Sample road/railroad data from roadsmap texture at tile center
     // The roadsmap stores sprite indices in RGB channels:
@@ -470,47 +470,32 @@ function createTerrainShaderTSL(uniforms) {
     const hasRailroad = mul(step(9.5, roadIndex), step(roadIndex, 19.5));
     const hasRailJunction = mul(step(42.5, roadIndex), step(roadIndex, 43.5));
     
-    // Map sprite index to sprite sheet coordinates
-    // The sprite sheet is a 4x4 grid (16 sprites total)
-    // Roads: indices 1-9 map to different directional sprites
-    // Railroads: indices 10-19 map to different directional sprites
-    // Junction special cases: 42 = road 4-way, 43 = rail 4-way (both use row 0, col 0)
+    // Calculate layer indices for texture array sampling
+    // Roads and railroads are now stored in DataArrayTexture with 16 layers (4x4 grid)
+    // Layer index = row * 4 + col, where sprite index determines row and col
+    // Roads: indices 1-9 -> layer index = (index-1) since they map to layers 0-8
+    // Railroads: indices 10-19 -> layer index = (index-10) since they map to layers 0-9
+    // Junctions: index 42/43 use layer 0 (top-left sprite)
     
-    // Calculate sprite UV coordinates within tile
-    // Each sprite is 1/4 of the texture in both dimensions (4x4 grid)
-    const spriteU = div(1.0, ROAD_SPRITE_COLS);
-    const spriteV = div(1.0, ROAD_SPRITE_ROWS);
+    // Road sprite layer selection (indices 1-9 for regular roads)
+    const roadLayerIndex = sub(roadIndex, 1.0);  // Convert 1-based to 0-based layer (0-8)
     
-    // Road sprite selection (indices 1-9 for regular roads)
-    // For junctions (index 42), we handle separately with junctionUV
-    const roadSpriteIndex = sub(roadIndex, 1.0);  // Convert 1-based to 0-based (0-8)
-    const roadCol = mod(roadSpriteIndex, ROAD_SPRITE_COLS);
-    const roadRow = floor(div(roadSpriteIndex, ROAD_SPRITE_COLS));
+    // Railroad sprite layer selection (indices 10-19 for regular railroads)
+    const railLayerIndex = sub(roadIndex, 10.0);  // Convert 10-based to 0-based layer (0-9)
     
-    // Railroad sprite selection (indices 10-19 for regular railroads)
-    // For junctions (index 43), we handle separately with junctionUV
-    const railSpriteIndex = sub(roadIndex, 10.0);  // Convert 10-based to 0-based (0-9)
-    const railCol = mod(railSpriteIndex, ROAD_SPRITE_COLS);
-    const railRow = floor(div(railSpriteIndex, ROAD_SPRITE_COLS));
+    // Sample road sprite using texture array with vec3(uv, layer)
+    // localX, localY are the UV coordinates within the tile (0-1 range)
+    const roadSpriteCoord = vec3(localX, localY, roadLayerIndex);
+    const roadSprite = texture(roadspritesTex, roadSpriteCoord);
     
-    // Sample road sprite for regular roads (scale local coords to sprite sheet)
-    const roadSpriteUV = vec2(
-        add(mul(localX, spriteU), mul(roadCol, spriteU)),
-        add(mul(localY, spriteV), mul(roadRow, spriteV))
-    );
-    const roadSprite = texture(roadspritesTex, roadSpriteUV);
+    // Sample railroad sprite using texture array
+    const railSpriteCoord = vec3(localX, localY, railLayerIndex);
+    const railSprite = texture(railroadspritesTex, railSpriteCoord);
     
-    // Sample railroad sprite for regular railroads
-    const railSpriteUV = vec2(
-        add(mul(localX, spriteU), mul(railCol, spriteU)),
-        add(mul(localY, spriteV), mul(railRow, spriteV))
-    );
-    const railSprite = texture(railroadspritesTex, railSpriteUV);
-    
-    // Junction sprites - 4-way junctions use position 0,0 in sprite sheet (top-left)
-    const junctionUV = vec2(mul(localX, spriteU), mul(localY, spriteV));
-    const roadJunctionSprite = texture(roadspritesTex, junctionUV);
-    const railJunctionSprite = texture(railroadspritesTex, junctionUV);
+    // Junction sprites - 4-way junctions use layer 0 (top-left sprite in original grid)
+    const junctionCoord = vec3(localX, localY, 0.0);
+    const roadJunctionSprite = texture(roadspritesTex, junctionCoord);
+    const railJunctionSprite = texture(railroadspritesTex, junctionCoord);
     
     // Blend regular roads onto terrain (only where sprite alpha > 0)
     // hasRoad is 1 for indices 1-9, hasRoadJunction is separate
