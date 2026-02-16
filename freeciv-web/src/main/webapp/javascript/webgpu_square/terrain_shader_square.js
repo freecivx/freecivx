@@ -488,7 +488,7 @@ function createTerrainShaderSquareTSL(uniforms) {
     const diffuseStrength = 0.55;
     const lightingFactor = add(ambientLight, mul(NdotL, diffuseStrength));
     
-    const brightnessBoost = 1.08;
+    const brightnessBoost = 1.35;
     finalColor = vec4(mul(mul(finalColor.rgb, lightingFactor), brightnessBoost), finalColor.a);
 
     // =========================================================================

@@ -74,34 +74,34 @@ const CameraConfig = Object.freeze({
 const LightingConfig = Object.freeze({
     /** Ambient light color (hex) - slightly warm for natural daylight feel */
     AMBIENT_COLOR: 0x707065,
-    /** Ambient light intensity - reduced for better shadow contrast */
-    AMBIENT_INTENSITY: 0.9 * Math.PI,
+    /** Ambient light intensity - increased for brighter overall appearance */
+    AMBIENT_INTENSITY: 1.15 * Math.PI,
     
     /** Directional light color (hex) - warm sunlight tint */
     DIRECTIONAL_COLOR: 0xfffaf0,
-    /** Directional light intensity - main sun light, moderate strength */
-    DIRECTIONAL_INTENSITY: 1.6 * Math.PI,
+    /** Directional light intensity - main sun light, increased strength */
+    DIRECTIONAL_INTENSITY: 2.0 * Math.PI,
     /** Directional light position */
     DIRECTIONAL_POSITION: Object.freeze({ x: 500, y: 800, z: 500 }),
     
     /** Key light color (hex) */
     KEY_LIGHT_COLOR: 0xffffff,
-    /** Key light intensity - reduced to avoid over-brightening */
-    KEY_LIGHT_INTENSITY: 0.6 * Math.PI,
+    /** Key light intensity - increased for brighter models */
+    KEY_LIGHT_INTENSITY: 0.75 * Math.PI,
     /** Key light position */
     KEY_LIGHT_POSITION: Object.freeze({ x: 150, y: 280, z: 150 }),
     
     /** Fill light color (hex) - cool tint for shadow areas */
     FILL_LIGHT_COLOR: 0xe8e8ff,
-    /** Fill light intensity - subtle fill for shadow detail */
-    FILL_LIGHT_INTENSITY: 0.35 * Math.PI,
+    /** Fill light intensity - increased for shadow detail */
+    FILL_LIGHT_INTENSITY: 0.45 * Math.PI,
     /** Fill light position */
     FILL_LIGHT_POSITION: Object.freeze({ x: -200, y: 180, z: -120 }),
     
     /** Spotlight color (hex) */
     SPOTLIGHT_COLOR: 0xffffff,
-    /** Spotlight intensity - reduced for less harsh highlights */
-    SPOTLIGHT_INTENSITY: 2.0 * Math.PI,
+    /** Spotlight intensity - increased for brighter highlights */
+    SPOTLIGHT_INTENSITY: 2.5 * Math.PI,
     /** Spotlight angle in radians */
     SPOTLIGHT_ANGLE: Math.PI / 3,
     /** Spotlight penumbra */
