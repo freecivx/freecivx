@@ -40,7 +40,7 @@ function createTerrainShaderSquareTSL(uniforms) {
     // Import TSL functions and nodes from THREE
     const { 
         texture, uniform, positionLocal, attribute, uv, normalLocal,
-        vec2, vec3, vec4,
+        vec2, vec3, vec4, int,
         mix, step, floor, fract, mod, dot, sin, cos, normalize, max, min, pow, clamp, abs,
         mul, add, sub, div
     } = THREE;
@@ -48,7 +48,7 @@ function createTerrainShaderSquareTSL(uniforms) {
     // Verify all required TSL functions and nodes are available
     const requiredTSLNames = [
         'texture', 'uniform', 'positionLocal', 'attribute', 'uv', 'normalLocal',
-        'vec2', 'vec3', 'vec4',
+        'vec2', 'vec3', 'vec4', 'int',
         'mix', 'step', 'floor', 'fract', 'mod', 'dot', 'sin', 'cos', 'normalize', 'max', 'min', 'pow', 'clamp', 'abs',
         'mul', 'add', 'sub', 'div'
     ];
@@ -295,23 +295,23 @@ function createTerrainShaderSquareTSL(uniforms) {
     
     // Calculate layer indices for texture array sampling
     // Road sprite layer selection (indices 1-9 for regular roads)
-    const roadLayerIndex = sub(roadIndex, 1.0);  // Convert 1-based to 0-based layer (0-8)
+    const roadLayerIndex = int(sub(roadIndex, 1.0));  // Convert 1-based to 0-based layer (0-8), as integer
     
     // Railroad sprite layer selection (indices 10-19 for regular railroads)
-    const railLayerIndex = sub(roadIndex, 10.0);  // Convert 10-based to 0-based layer (0-9)
+    const railLayerIndex = int(sub(roadIndex, 10.0));  // Convert 10-based to 0-based layer (0-9), as integer
     
-    // Sample road sprite using texture array with vec3(uv, layer)
-    const roadSpriteCoord = vec3(localX, localY, roadLayerIndex);
-    const roadSprite = texture(roadspritesTex, roadSpriteCoord);
+    // Sample road sprite using texture array with vec2 UV and integer layer index
+    const roadSpriteUV = vec2(localX, localY);
+    const roadSprite = texture(roadspritesTex, roadSpriteUV, roadLayerIndex);
     
     // Sample railroad sprite using texture array
-    const railSpriteCoord = vec3(localX, localY, railLayerIndex);
-    const railSprite = texture(railroadspritesTex, railSpriteCoord);
+    const railSpriteUV = vec2(localX, localY);
+    const railSprite = texture(railroadspritesTex, railSpriteUV, railLayerIndex);
     
     // Junction sprites - 4-way junctions use layer 0 (top-left sprite in original grid)
-    const junctionCoord = vec3(localX, localY, 0.0);
-    const roadJunctionSprite = texture(roadspritesTex, junctionCoord);
-    const railJunctionSprite = texture(railroadspritesTex, junctionCoord);
+    const junctionUV = vec2(localX, localY);
+    const roadJunctionSprite = texture(roadspritesTex, junctionUV, int(0));
+    const railJunctionSprite = texture(railroadspritesTex, junctionUV, int(0));
     
     // Blend roads onto terrain
     const roadAlpha = mul(hasRoad, roadSprite.a);
