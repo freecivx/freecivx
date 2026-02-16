@@ -161,6 +161,28 @@ const HexConfig = Object.freeze({
 });
 
 /**
+ * Square tile configuration
+ * Centralized constants for square map tile rendering
+ * Mirrors HexConfig for consistent architecture between topologies
+ * @readonly
+ * @type {Object}
+ */
+const SquareConfig = Object.freeze({
+    /** Width factor for square tiles (1:1 aspect ratio) */
+    WIDTH_FACTOR: 1.0,
+    /** Height factor for square tiles (1:1 aspect ratio) */
+    HEIGHT_FACTOR: 1.0,
+    /** Edge width for tile grid lines */
+    EDGE_WIDTH: 0.018,
+    /** Edge blend strength - how strongly grid lines darken terrain (0-1) */
+    EDGE_BLEND_STRENGTH: 0.12,
+    /** Edge color RGB components (matching hex edge color for visual consistency) */
+    EDGE_COLOR: Object.freeze({ r: 0.15, g: 0.12, b: 0.08 }),
+    /** Texture randomization scale - larger = less variation */
+    TEXTURE_RANDOM_SCALE: 16.0
+});
+
+/**
  * Water shader configuration (Stylized Game Water)
  * 
  * This configuration is for a calm, stylized water appearance suitable for
@@ -308,6 +330,7 @@ window.CameraConfig = CameraConfig;
 window.LightingConfig = LightingConfig;
 window.ShadowConfig = ShadowConfig;
 window.HexConfig = HexConfig;
+window.SquareConfig = SquareConfig;
 window.WaterConfig = WaterConfig;
 window.TerrainType = TerrainType;
 window.BeachConfig = BeachConfig;

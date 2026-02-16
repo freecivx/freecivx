@@ -59,9 +59,10 @@ var MAPVIEW_ASPECT_FACTOR = 35.71;
 
 // Hexagonal tile constants for offset coordinate system (odd-r: odd rows shifted right)
 // Reference: https://www.redblobgames.com/grids/hexagons/#coordinates-offset
-var HEX_WIDTH_FACTOR = 1.0;  // Width multiplier for hex tiles
-var HEX_HEIGHT_FACTOR = Math.sqrt(3) / 2; // sqrt(3)/2 ≈ 0.8660 - hex row spacing for proper aspect ratio
-var HEX_STAGGER = 0.5;  // Horizontal offset for odd rows (half tile width)
+// Using centralized HexConfig when available for consistency across the codebase
+var HEX_WIDTH_FACTOR = (typeof window !== 'undefined' && window.HexConfig) ? window.HexConfig.WIDTH_FACTOR : 1.0;
+var HEX_HEIGHT_FACTOR = (typeof window !== 'undefined' && window.HexConfig) ? window.HexConfig.HEIGHT_FACTOR : Math.sqrt(3) / 2;
+var HEX_STAGGER = (typeof window !== 'undefined' && window.HexConfig) ? window.HexConfig.STAGGER : 0.5;
 
 
 /****************************************************************************

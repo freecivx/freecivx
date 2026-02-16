@@ -88,14 +88,22 @@ function createTerrainShaderSquareTSL(uniforms) {
     const BEACH_UPPER_RANGE = BEACH_HIGH - BEACH_MID;
 
     // =========================================================================
-    // SQUARE TILE CONSTANTS
+    // SQUARE TILE CONSTANTS (from SquareConfig in config.js)
     // =========================================================================
-    const TILE_EDGE_WIDTH = 0.018;        // Width of tile grid lines
-    const TILE_EDGE_BLEND_STRENGTH = 0.12; // How strongly grid lines darken the terrain
-    const TILE_EDGE_COLOR_R = 0.15;
-    const TILE_EDGE_COLOR_G = 0.12;
-    const TILE_EDGE_COLOR_B = 0.08;
-    const TEXTURE_RANDOM_SCALE = 16.0;
+    // Using centralized configuration for consistency and maintainability
+    const squareConfig = window.SquareConfig || {
+        EDGE_WIDTH: 0.018,
+        EDGE_BLEND_STRENGTH: 0.12,
+        EDGE_COLOR: { r: 0.15, g: 0.12, b: 0.08 },
+        TEXTURE_RANDOM_SCALE: 16.0
+    };
+    
+    const TILE_EDGE_WIDTH = squareConfig.EDGE_WIDTH;
+    const TILE_EDGE_BLEND_STRENGTH = squareConfig.EDGE_BLEND_STRENGTH;
+    const TILE_EDGE_COLOR_R = squareConfig.EDGE_COLOR.r;
+    const TILE_EDGE_COLOR_G = squareConfig.EDGE_COLOR.g;
+    const TILE_EDGE_COLOR_B = squareConfig.EDGE_COLOR.b;
+    const TEXTURE_RANDOM_SCALE = squareConfig.TEXTURE_RANDOM_SCALE;
 
     // Visibility constants
     const VISIBILITY_UNKNOWN = 0.0;
