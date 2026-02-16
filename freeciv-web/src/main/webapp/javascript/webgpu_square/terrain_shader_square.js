@@ -26,6 +26,7 @@
  * Features:
  * - Square tile rendering (classic Civ style) - each map tile is a square
  * - Multi-terrain type support with automatic blending
+ * - Terrain edge blending at tile borders (smooth transitions between different terrain types)
  * - Beach/coast transitions based on elevation
  * - Roads and railroads rendering from sprite sheets
  * - Irrigation and farmland visual indicators
@@ -217,15 +218,49 @@ function createTerrainShaderSquareTSL(uniforms) {
     // Beach sand colour as vec3
     const beachSandColor = vec3(BEACH_SAND_COLOR.r, BEACH_SAND_COLOR.g, BEACH_SAND_COLOR.b);
 
+    // =========================================================================
+    // NEIGHBOR TERRAIN SAMPLING FOR EDGE BLENDING
+    // =========================================================================
+    // Sample terrain types from 4 neighboring tiles (N, E, S, W)
+    const terrainOffsetX = div(1.0, map_x_size);
+    const terrainOffsetY = div(1.0, map_y_size);
+    
+    const neighborTerrainUV_E = vec2(add(tileCenterUV.x, terrainOffsetX), tileCenterUV.y);
+    const neighborTerrainUV_W = vec2(sub(tileCenterUV.x, terrainOffsetX), tileCenterUV.y);
+    const neighborTerrainUV_N = vec2(tileCenterUV.x, add(tileCenterUV.y, terrainOffsetY));
+    const neighborTerrainUV_S = vec2(tileCenterUV.x, sub(tileCenterUV.y, terrainOffsetY));
+    
+    const terrainTypeE = texture(maptilesTex, neighborTerrainUV_E);
+    const terrainTypeW = texture(maptilesTex, neighborTerrainUV_W);
+    const terrainTypeN = texture(maptilesTex, neighborTerrainUV_N);
+    const terrainTypeS = texture(maptilesTex, neighborTerrainUV_S);
+    
+    const terrainE = floor(mul(terrainTypeE.r, 256.0));
+    const terrainW = floor(mul(terrainTypeW.r, 256.0));
+    const terrainN = floor(mul(terrainTypeN.r, 256.0));
+    const terrainS = floor(mul(terrainTypeS.r, 256.0));
+
+    // =========================================================================
+    // TERRAIN EDGE BLENDING PARAMETERS
+    // =========================================================================
+    // Edge blend zone: how far from tile edge the blending starts (0-0.5 range)
+    const TERRAIN_BLEND_WIDTH = 0.35;
+    // Blend strength: how much to blend neighbor terrain (0-1)
+    const TERRAIN_BLEND_STRENGTH = 0.5;
+
     /**
-     * Helper function to create terrain selection and blending logic
+     * Helper function to apply smooth step interpolation: t * t * (3 - 2*t)
+     * This creates a smoother transition than linear interpolation
      */
-    function createTerrainLayer(terrainValue, textureNode, coord, blendWithBeach = true) {
-        const step1 = step(terrainValue - 0.5, terrainHere);
-        const step2 = step(terrainHere, terrainValue + 0.5);
-        const isTerrain = mul(step1, step2);
-        
-        let terrainColor;
+    function smoothStep(t) {
+        return mul(mul(t, t), sub(3.0, mul(2.0, t)));
+    }
+    
+    /**
+     * Helper function to compute terrain color with optional beach blending
+     * Used by both createTerrainLayer and getTerrainColorForType to share logic
+     */
+    function computeTerrainColor(textureNode, coord, blendWithBeach) {
         if (blendWithBeach) {
             const baseTerrainColor = texture(textureNode, coord);
             const aboveWater = step(WATER_LEVEL, posY);
@@ -239,15 +274,66 @@ function createTerrainShaderSquareTSL(uniforms) {
             );
             const coastTex = texture(terrainTextures.coast, coord);
             const lowerBlend = mix(coastTex, vec4(beachSandColor, 1.0), lowerBeachT);
-            terrainColor = mix(lowerBlend, baseTerrainColor, upperBeachT);
+            return mix(lowerBlend, baseTerrainColor, upperBeachT);
         } else {
-            terrainColor = texture(textureNode, coord);
+            return texture(textureNode, coord);
         }
-        
-        return { mask: isTerrain, color: terrainColor };
     }
 
-    // Build terrain layers
+    /**
+     * Helper function to create terrain selection and blending logic
+     */
+    function createTerrainLayer(terrainValue, textureNode, coord, blendWithBeach = true) {
+        const step1 = step(terrainValue - 0.5, terrainHere);
+        const step2 = step(terrainHere, terrainValue + 0.5);
+        const isTerrain = mul(step1, step2);
+        const terrainColor = computeTerrainColor(textureNode, coord, blendWithBeach);
+        return { mask: isTerrain, color: terrainColor };
+    }
+    
+    /**
+     * Helper function to get terrain color for a given terrain type value
+     * This is used for neighbor terrain blending
+     */
+    function getTerrainColorForType(tType, coord, coordT) {
+        // Start with black (unknown terrain)
+        let color = vec4(0, 0, 0, 1);
+        
+        // Helper to check if terrain matches and return color
+        function matchTerrain(terrainValue, textureNode, useCoord, blendWithBeach) {
+            const step1 = step(terrainValue - 0.5, tType);
+            const step2 = step(tType, terrainValue + 0.5);
+            const isTerrain = mul(step1, step2);
+            const terrainColor = computeTerrainColor(textureNode, useCoord, blendWithBeach);
+            return { mask: isTerrain, color: terrainColor };
+        }
+        
+        // Match each terrain type
+        const layersList = [
+            matchTerrain(TERRAIN_GRASSLAND, terrainTextures.grassland, coord, true),
+            matchTerrain(TERRAIN_PLAINS, terrainTextures.plains, coord, true),
+            matchTerrain(TERRAIN_DESERT, terrainTextures.desert, coord, true),
+            matchTerrain(TERRAIN_HILLS, terrainTextures.hills, coord, true),
+            matchTerrain(TERRAIN_MOUNTAINS, terrainTextures.mountains, coord, true),
+            matchTerrain(TERRAIN_SWAMP, terrainTextures.swamp, coord, true),
+            matchTerrain(TERRAIN_FOREST, terrainTextures.grassland, coord, true),
+            matchTerrain(TERRAIN_JUNGLE, terrainTextures.plains, coord, true),
+            matchTerrain(TERRAIN_COAST, terrainTextures.coast, coord, false),
+            matchTerrain(TERRAIN_FLOOR, terrainTextures.ocean, coord, false),
+            matchTerrain(TERRAIN_LAKE, terrainTextures.coast, coord, false),
+            matchTerrain(TERRAIN_ARCTIC, terrainTextures.arctic, coordT, false),
+            matchTerrain(TERRAIN_TUNDRA, terrainTextures.arctic, vec2(add(tdx, 0.5), tdy), false)
+        ];
+        
+        // Combine all terrain layers
+        for (const layer of layersList) {
+            color = mix(color, layer.color, layer.mask);
+        }
+        
+        return color;
+    }
+
+    // Build terrain layers for current tile
     const layers = [
         createTerrainLayer(TERRAIN_GRASSLAND, terrainTextures.grassland, texCoord, true),
         createTerrainLayer(TERRAIN_PLAINS, terrainTextures.plains, texCoord, true),
@@ -264,11 +350,54 @@ function createTerrainShaderSquareTSL(uniforms) {
         createTerrainLayer(TERRAIN_TUNDRA, terrainTextures.arctic, vec2(add(tdx, 0.5), tdy), false)
     ];
 
-    // Combine all terrain layers
+    // Combine all terrain layers for current tile
     let finalColor = vec4(0, 0, 0, 1);
     for (const layer of layers) {
         finalColor = mix(finalColor, layer.color, layer.mask);
     }
+    
+    // =========================================================================
+    // TERRAIN EDGE BLENDING (blend terrain textures at tile borders)
+    // =========================================================================
+    // Get terrain colors for neighboring tiles
+    const colorE = getTerrainColorForType(terrainE, texCoord, texCoordT);
+    const colorW = getTerrainColorForType(terrainW, texCoord, texCoordT);
+    const colorN = getTerrainColorForType(terrainN, texCoord, texCoordT);
+    const colorS = getTerrainColorForType(terrainS, texCoord, texCoordT);
+    
+    // Calculate edge proximity factors (1.0 at edge, 0.0 at center)
+    // East edge: localX close to 1.0
+    const eastEdgeProximity = clamp(div(sub(localX, sub(1.0, TERRAIN_BLEND_WIDTH)), TERRAIN_BLEND_WIDTH), 0.0, 1.0);
+    // West edge: localX close to 0.0
+    const westEdgeProximity = clamp(div(sub(TERRAIN_BLEND_WIDTH, localX), TERRAIN_BLEND_WIDTH), 0.0, 1.0);
+    // North edge: localY close to 1.0
+    const northEdgeProximity = clamp(div(sub(localY, sub(1.0, TERRAIN_BLEND_WIDTH)), TERRAIN_BLEND_WIDTH), 0.0, 1.0);
+    // South edge: localY close to 0.0
+    const southEdgeProximity = clamp(div(sub(TERRAIN_BLEND_WIDTH, localY), TERRAIN_BLEND_WIDTH), 0.0, 1.0);
+    
+    // Apply smooth step for more natural blending transition
+    const eastBlend = smoothStep(eastEdgeProximity);
+    const westBlend = smoothStep(westEdgeProximity);
+    const northBlend = smoothStep(northEdgeProximity);
+    const southBlend = smoothStep(southEdgeProximity);
+    
+    // Scale by blend strength
+    const eastFactor = mul(eastBlend, TERRAIN_BLEND_STRENGTH);
+    const westFactor = mul(westBlend, TERRAIN_BLEND_STRENGTH);
+    const northFactor = mul(northBlend, TERRAIN_BLEND_STRENGTH);
+    const southFactor = mul(southBlend, TERRAIN_BLEND_STRENGTH);
+    
+    // Blend neighbor terrain colors into final color
+    // Only blend if neighbor terrain is different (non-zero terrain type)
+    const hasTerrainE = step(0.5, terrainE);
+    const hasTerrainW = step(0.5, terrainW);
+    const hasTerrainN = step(0.5, terrainN);
+    const hasTerrainS = step(0.5, terrainS);
+    
+    finalColor = mix(finalColor, colorE, mul(eastFactor, hasTerrainE));
+    finalColor = mix(finalColor, colorW, mul(westFactor, hasTerrainW));
+    finalColor = mix(finalColor, colorN, mul(northFactor, hasTerrainN));
+    finalColor = mix(finalColor, colorS, mul(southFactor, hasTerrainS));
 
     // =========================================================================
     // IRRIGATION AND FARMLAND RENDERING
@@ -359,7 +488,7 @@ function createTerrainShaderSquareTSL(uniforms) {
     const diffuseStrength = 0.55;
     const lightingFactor = add(ambientLight, mul(NdotL, diffuseStrength));
     
-    const brightnessBoost = 1.08;
+    const brightnessBoost = 1.35;
     finalColor = vec4(mul(mul(finalColor.rgb, lightingFactor), brightnessBoost), finalColor.a);
 
     // =========================================================================
@@ -403,7 +532,7 @@ function createTerrainShaderSquareTSL(uniforms) {
     const softVisibilityScaled = mul(softVisibility, VISIBILITY_VISIBLE);
     
     const visNormalized = clamp(div(softVisibilityScaled, VISIBILITY_VISIBLE), 0.0, 1.0);
-    const visSmooth = mul(mul(visNormalized, visNormalized), sub(3.0, mul(2.0, visNormalized)));
+    const visSmooth = smoothStep(visNormalized);
     const smoothVisibility = mul(visSmooth, VISIBILITY_VISIBLE);
     
     // Active city highlighting
@@ -490,7 +619,11 @@ function createTerrainShaderSquareTSL(uniforms) {
     // Highlight the currently selected tile based on selected_x and selected_y uniforms
     // A value of -1 indicates no selection, otherwise the tile at (selected_x, selected_y) is highlighted
     const hasSelection = selected_x.greaterThanEqual(0.0).and(selected_y.greaterThanEqual(0.0));
-    const isSelectedTile = tileX.equal(selected_x).and(tileY.equal(selected_y));
+    // Use epsilon-based comparison (0.5) for float precision tolerance
+    // tileX/tileY are floored floats (e.g., 5.0), selected_x/selected_y are uniform integers (e.g., 5)
+    const xMatch = abs(sub(tileX, selected_x)).lessThan(0.5);
+    const yMatch = abs(sub(tileY, selected_y)).lessThan(0.5);
+    const isSelectedTile = xMatch.and(yMatch);
     const shouldHighlightTile = hasSelection.and(isSelectedTile);
     
     // Selection highlight color (golden/yellow tint for visibility)

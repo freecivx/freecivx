@@ -293,7 +293,7 @@ function load_model(filename)
         node.material.side = THREE.DoubleSide;
         node.material.needsUpdate = true;
         node.geometry.computeVertexNormals();
-        node.material.emissiveIntensity *= 1.2;
+        node.material.emissiveIntensity *= 1.5;
 
         if (filename == "Oasis" && node['name'] == "Groundlow") {
           node.material.opacity = 0.7;
