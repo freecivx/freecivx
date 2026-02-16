@@ -171,6 +171,10 @@ function createTerrainShaderTSL(uniforms) {
     const map_x_size = uniform(uniforms.map_x_size.value);
     const map_y_size = uniform(uniforms.map_y_size.value);
     const borders_visible = uniform(uniforms.borders_visible.value);
+    
+    // Selected tile uniforms for highlighting
+    const selected_x = uniform(uniforms.selected_x.value);
+    const selected_y = uniform(uniforms.selected_y.value);
 
     // Get UV coordinates and position
     const uvNode = uv();
@@ -805,6 +809,38 @@ function createTerrainShaderTSL(uniforms) {
     const borderFillFactor = mul(shouldShowBorderFill, 0.05);  // Very subtle territory tint
     finalColor = vec4(
         mix(finalColor.rgb, currentBorder.rgb, borderFillFactor),
+        finalColor.a
+    );
+
+    // =========================================================================
+    // SELECTED TILE HIGHLIGHTING
+    // =========================================================================
+    // Highlight the currently selected tile based on selected_x and selected_y uniforms
+    // A value of -1 indicates no selection, otherwise the tile at (selected_x, selected_y) is highlighted
+    const hasSelection = selected_x.greaterThanEqual(0.0).and(selected_y.greaterThanEqual(0.0));
+    const isSelectedTile = tileX.equal(selected_x).and(tileY.equal(selected_y));
+    const shouldHighlightTile = hasSelection.and(isSelectedTile);
+    
+    // Selection highlight color (golden/yellow tint for visibility)
+    const SELECTION_HIGHLIGHT_COLOR = vec3(1.0, 0.9, 0.5);
+    const SELECTION_EDGE_INTENSITY = 0.8;  // Strong edge highlight
+    const SELECTION_FILL_INTENSITY = 0.15; // Subtle fill highlight
+    
+    // Calculate selection visibility factor (1.0 if selected, 0.0 if not)
+    const selectionActive = shouldHighlightTile.select(1.0, 0.0);
+    
+    // Apply edge highlighting on selected tile (using hexEdgeMask for edge detection)
+    const scaledEdgeMask = mul(hexEdgeMask, SELECTION_EDGE_INTENSITY);
+    const selectionEdgeFactor = mul(selectionActive, scaledEdgeMask);
+    finalColor = vec4(
+        mix(finalColor.rgb, SELECTION_HIGHLIGHT_COLOR, selectionEdgeFactor),
+        finalColor.a
+    );
+    
+    // Apply subtle fill highlighting to the entire selected tile
+    const selectionFillFactor = mul(selectionActive, SELECTION_FILL_INTENSITY);
+    finalColor = vec4(
+        mix(finalColor.rgb, SELECTION_HIGHLIGHT_COLOR, selectionFillFactor),
         finalColor.a
     );
 
