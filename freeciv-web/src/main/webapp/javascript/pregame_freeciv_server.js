@@ -492,8 +492,8 @@ function pregame_settings()
     "</select></td></tr>" +
     "<tr title='Map tile topology: Square or Hexagonal tiles. Hex tiles provide 6-way movement.'><td>Map Topology:</td>" +
           "<td><select name='topology' id='topology'>" +
-          "<option value='0'>Square tiles (Classic)</option>" +
-          "<option value='1' selected>Hexagonal tiles (Recommended)</option>" +
+          "<option value='0'>Square map tiles (Classic)</option>" +
+          "<option value='1' selected>Hexagonal map tiles</option>" +
     "</select></td></tr>"
     + "</table><br>"+
 	  "<span id='settings_info'><i>Freeciv-web can be customized using the command line in many " +
@@ -730,9 +730,9 @@ function pregame_settings()
 
   $('#topology').change(function() {
     if ($('#topology').val() == 0) {
-      send_message("/set topology="); // Square tiles (no hex)
+      send_message("/set topology=\"\""); // Square tiles (no hex)
     } else {
-      send_message("/set topology HEX|ISO"); // Hexagonal tiles with ISO view
+      send_message("/set topology HEX"); // Hexagonal tiles with ISO view
     }
   });
 
