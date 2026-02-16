@@ -154,6 +154,9 @@ function update_heightmap(heightmap_quality)
 {
   let heightmap_resolution_x = map.xsize * heightmap_quality + 1;
   let heightmap_resolution_y = map.ysize * heightmap_quality + 1;
+  
+  // Check map topology once for river rendering
+  let isHex = is_hex();
 
   console.log("Updating heightmap...");
 
@@ -208,7 +211,8 @@ function update_heightmap(heightmap_quality)
         let ptile = map_pos_to_tile(gx, gy);
         heightmap[index] = ptile['height'];
         if (tile_has_extra(ptile, EXTRA_RIVER)) {
-          heightmap[index] = ptile['height'] * 0.98;
+          // For square tiles, use deeper rivers; for hex, keep existing depth
+          heightmap[index] = ptile['height'] * (isHex ? 0.98 : 0.95);
         }
         if (tile_terrain(ptile)['name'] == "Mountains") {
           heightmap[index] = ptile['height'] * 1.02;
@@ -252,7 +256,10 @@ function update_heightmap(heightmap_quality)
             height = ptile['height'];
           }
           if (tile_has_extra(ptile, EXTRA_RIVER)) {
-            height = ptile['height'] * 1.045  - ((num_river_neighbours / 4) * 0.02);
+            // For square tiles, use steeper river banks (narrower rivers);
+            // for hex tiles, keep existing behavior
+            let riverBankFactor = isHex ? 1.045 : 1.08;
+            height = ptile['height'] * riverBankFactor - ((num_river_neighbours / 4) * 0.02);
           }
 
           sum += height / distance / distance;
