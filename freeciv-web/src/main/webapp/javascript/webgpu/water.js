@@ -50,14 +50,14 @@ function add_quality_dependent_objects_webgpu() {
   
   // Create water plane geometry matching land mesh dimensions
   // Lower segment count (64x64) - stylized water doesn't need high tessellation
-  var waterGeometry = new THREE.PlaneGeometry(
+  const waterGeometry = new THREE.PlaneGeometry(
     mapview_model_width,
     mapview_model_height * hexHeightFactor,
     64,
     64
   );
   
-  var waterMaterial = createWaterMaterialTSL();
+  const waterMaterial = createWaterMaterialTSL();
   
   water_hq = new THREE.Mesh(waterGeometry, waterMaterial);
   water_hq.rotation.x = -Math.PI * 0.5;
