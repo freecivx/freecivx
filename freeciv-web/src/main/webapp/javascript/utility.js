@@ -258,9 +258,10 @@ function submit_game_of_the_day() {
 ...
 **************************************************************************/
 function submit_game_of_the_day2() {
- html2canvas(document.body).then(function(canvas) {
-    var screenshot = canvas.toDataURL("image/png");
+ modernScreenshot.domToPng(document.body).then(function(screenshot) {
     $.post( "/save_game_of_the_day", screenshot);
+  }).catch(function(error) {
+    console.error("Failed to capture screenshot:", error);
   });
   show_fps();
 }
