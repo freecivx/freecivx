@@ -499,15 +499,19 @@ function createTerrainShaderSquareTSL(uniforms) {
     const SELECTION_FILL_INTENSITY = 0.15; // Subtle fill highlight
     const SELECTION_EDGE_WIDTH = 0.06;     // Width of the selection edge highlight
     
-    // Calculate selection visibility factor (1.0 if selected, 0.0 if not)
+    // Calculate selection indicator (1.0 if selected, 0.0 if not)
     const selectionActive = shouldHighlightTile.select(1.0, 0.0);
     
     // Create square edge mask for selection highlighting (all four edges)
+    // Each edge detection returns 1.0 when within SELECTION_EDGE_WIDTH of that edge
     const nearLeftEdgeSel = step(localX, SELECTION_EDGE_WIDTH);
     const nearRightEdgeSel = step(sub(1.0, localX), SELECTION_EDGE_WIDTH);
     const nearBottomEdgeSel = step(localY, SELECTION_EDGE_WIDTH);
     const nearTopEdgeSel = step(sub(1.0, localY), SELECTION_EDGE_WIDTH);
-    const squareEdgeMask = max(max(max(nearLeftEdgeSel, nearRightEdgeSel), nearBottomEdgeSel), nearTopEdgeSel);
+    // Combine all four edge masks: 1.0 if near any edge, 0.0 otherwise
+    const horizontalEdges = max(nearLeftEdgeSel, nearRightEdgeSel);
+    const verticalEdges = max(nearBottomEdgeSel, nearTopEdgeSel);
+    const squareEdgeMask = max(horizontalEdges, verticalEdges);
     
     // Apply edge highlighting on selected tile
     const scaledEdgeMask = mul(squareEdgeMask, SELECTION_EDGE_INTENSITY);
