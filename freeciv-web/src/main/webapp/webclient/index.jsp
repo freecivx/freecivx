@@ -32,7 +32,7 @@ try {
 <!DOCTYPE html>
 <html>
 <head>
-<title>FreecivWorld.net - 3D version of Freeciv.</title>
+<title>FreecivWorld.net Freeciv3D the 3D version of Freeciv</title>
 
 <link href="/static/css/bootstrap.min.css" rel="stylesheet">
 
