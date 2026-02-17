@@ -85,7 +85,7 @@ $.extend({
 
 
 
-var benchmark_start = 0;
+// benchmark_start is defined in benchmark.js
 
 /****************************************************************************
  Benchmark the Freeciv.net webclient.

@@ -63,7 +63,7 @@ public class NewUser extends HttpServlet {
 				return;
 			}
 
-			String randomNumber = "1" + RandomStringUtils.randomNumeric(20);
+			String randomNumber = "1" + RandomStringUtils.secure().nextNumeric(20);
 			createUser(conn, username, email, password, ipAddress, randomNumber);
 			sendEmailVerify(email, randomNumber);
 			response.getWriter().print("OK");
