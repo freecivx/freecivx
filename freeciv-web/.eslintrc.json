@@ -37,7 +37,7 @@
     "no-inner-declarations": "warn",
     "no-irregular-whitespace": "error",
     "no-sparse-arrays": "warn",
-    "no-mixed-spaces-and-tabs": "error",
+    "no-mixed-spaces-and-tabs": "off",
     "use-isnan": "error",
     "valid-typeof": "error",
     "no-fallthrough": "warn",
