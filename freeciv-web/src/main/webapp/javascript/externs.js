@@ -13,9 +13,6 @@
 /** @type {function(*=): !jQuery} */
 var $;
 
-/** @typedef {Object} */
-var jQuery;
-
 /** @constructor */
 function jQuery() {}
 
@@ -56,16 +53,20 @@ jQuery.prototype.show = function() {};
 jQuery.prototype.hide = function() {};
 
 /**
+ * @param {(number|string|function())=} duration
+ * @param {(string|function())=} easing
  * @param {function()=} callback
  * @return {!jQuery}
  */
-jQuery.prototype.fadeIn = function(callback) {};
+jQuery.prototype.fadeIn = function(duration, easing, callback) {};
 
 /**
+ * @param {(number|string|function())=} duration
+ * @param {(string|function())=} easing
  * @param {function()=} callback
  * @return {!jQuery}
  */
-jQuery.prototype.fadeOut = function(callback) {};
+jQuery.prototype.fadeOut = function(duration, easing, callback) {};
 
 /**
  * @param {string} className
@@ -217,8 +218,11 @@ jQuery.prototype.prop = function(prop, value) {};
  */
 jQuery.prototype.data = function(key, value) {};
 
-/** @return {Element} */
-jQuery.prototype.get = function() {};
+/**
+ * @param {number=} index
+ * @return {Element|Array<Element>}
+ */
+jQuery.prototype.get = function(index) {};
 
 /** @type {number} */
 jQuery.prototype.length;
@@ -242,7 +246,7 @@ jQuery.prototype.closest = function(selector) {};
 jQuery.prototype.is = function(selector) {};
 
 /**
- * @param {function()} handler
+ * @param {function(number, Element)} handler
  * @return {!jQuery}
  */
 jQuery.prototype.each = function(handler) {};
