@@ -263,16 +263,11 @@ function MAP_TO_NATURAL_POS(map_x, map_y)
 function map_vector_to_sq_distance(dx, dy)
 {
   if (topo_has_flag(TF_HEX)) {
-    map_vector_to_sq_distance = function (dx, dy) {
-      var d = map_vector_to_distance(dx, dy);
-      return d * d;
-    };
+    var d = map_vector_to_distance(dx, dy);
+    return d * d;
   } else {
-    map_vector_to_sq_distance = function (dx, dy) {
-      return dx*dx + dy*dy;
-    };
+    return dx*dx + dy*dy;
   }
-  return map_vector_to_sq_distance(dx, dy);
 }
 
 /****************************************************************************
@@ -282,28 +277,21 @@ function map_vector_to_distance(dx, dy)
 {
   if (topo_has_flag(TF_HEX)) {
     if (topo_has_flag(TF_ISO)) {
-      map_vector_to_distance = function (dx, dy) {
-        if ((dx < 0 && dy > 0) || (dx > 0 && dy < 0)) {
-          return Math.abs(dx) + Math.abs(dy);
-        } else {
-          return Math.max(Math.abs(dx), Math.abs(dy));
-        }
-      };
+      if ((dx < 0 && dy > 0) || (dx > 0 && dy < 0)) {
+        return Math.abs(dx) + Math.abs(dy);
+      } else {
+        return Math.max(Math.abs(dx), Math.abs(dy));
+      }
     } else {
-      map_vector_to_distance = function (dx, dy) {
-        if ((dx > 0 && dy > 0) || (dx < 0 && dy < 0)) {
-          return Math.abs(dx) + Math.abs(dy);
-        } else {
-          return Math.max(Math.abs(dx), Math.abs(dy));
-        }
+      if ((dx > 0 && dy > 0) || (dx < 0 && dy < 0)) {
+        return Math.abs(dx) + Math.abs(dy);
+      } else {
+        return Math.max(Math.abs(dx), Math.abs(dy));
       }
     }
   } else {
-    map_vector_to_distance = function (dx, dy) {
-      return Math.max(Math.abs(dx), Math.abs(dy));
-    };
+    return Math.max(Math.abs(dx), Math.abs(dy));
   }
-  return map_vector_to_distance(dx, dy);
 }
 
 /****************************************************************************

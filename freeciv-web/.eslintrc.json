@@ -17,10 +17,10 @@
     "THREE": "readonly",
     "webgl_preload": "readonly",
     "mapview": "readonly",
-    "scene": "readonly",
-    "camera": "readonly",
+    "scene": "writable",
+    "camera": "writable",
     "renderer": "readonly",
-    "controls": "readonly",
+    "controls": "writable",
     "webgl_width": "readonly",
     "webgl_height": "readonly"
   },
