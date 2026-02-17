@@ -244,7 +244,7 @@ function createSpriteArrayTexture(image, cols, rows) {
   const canvas = document.createElement('canvas');
   canvas.width = spriteWidth;
   canvas.height = spriteHeight;
-  const ctx = canvas.getContext('2d');
+  const ctx = canvas.getContext('2d', { willReadFrequently: true });
   
   // Allocate typed array for all sprite data (RGBA, 4 bytes per pixel)
   const data = new Uint8Array(spriteWidth * spriteHeight * depth * 4);
@@ -307,7 +307,7 @@ function createTerrainLayerArrayTexture(images) {
   const canvas = document.createElement('canvas');
   canvas.width = width;
   canvas.height = height;
-  const ctx = canvas.getContext('2d');
+  const ctx = canvas.getContext('2d', { willReadFrequently: true });
   
   // Allocate typed array for all image data (RGBA, 4 bytes per pixel)
   const data = new Uint8Array(width * height * depth * 4);
