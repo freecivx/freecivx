@@ -22,10 +22,11 @@ var $;
 function jQuery() {}
 
 /**
- * @param {(string|Object)=} options
+ * @param {(string|Object)=} optionsOrMethod
+ * @param {...*} args
  * @return {!jQuery}
  */
-jQuery.prototype.dialog = function(options) {};
+jQuery.prototype.dialog = function(optionsOrMethod, args) {};
 
 /**
  * @param {(string|Object)=} options
@@ -40,13 +41,14 @@ jQuery.prototype.dialogExtend = function(options) {};
 jQuery.prototype.tablesorter = function(options) {};
 
 /**
- * @param {(string|Object)=} options
+ * @param {(string|Object)=} optionsOrMethod
+ * @param {...*} args
  * @return {!jQuery}
  */
-jQuery.prototype.mCustomScrollbar = function(options) {};
+jQuery.prototype.mCustomScrollbar = function(optionsOrMethod, args) {};
 
 /**
- * @param {Object} options
+ * @param {(Object|string)=} options
  * @return {!jQuery}
  */
 jQuery.prototype.contextMenu = function(options) {};
@@ -92,7 +94,7 @@ jQuery.prototype.removeClass = function(className) {};
 jQuery.prototype.toggleClass = function(className) {};
 
 /**
- * @param {string=} value
+ * @param {*=} value
  * @return {!jQuery|string}
  */
 jQuery.prototype.html = function(value) {};
@@ -104,20 +106,20 @@ jQuery.prototype.html = function(value) {};
 jQuery.prototype.text = function(value) {};
 
 /**
- * @param {string=} value
+ * @param {*=} value
  * @return {!jQuery|string}
  */
 jQuery.prototype.val = function(value) {};
 
 /**
- * @param {string} name
- * @param {string=} value
+ * @param {string|Object} name
+ * @param {*=} value
  * @return {!jQuery|string}
  */
 jQuery.prototype.attr = function(name, value) {};
 
 /**
- * @param {string} name
+ * @param {string|Object} name
  * @param {*=} value
  * @return {!jQuery|*}
  */
@@ -148,11 +150,12 @@ jQuery.prototype.empty = function() {};
 jQuery.prototype.find = function(selector) {};
 
 /**
- * @param {string} events
- * @param {function(Object)} handler
+ * @param {string|function(Object)=} eventsOrHandler
+ * @param {(string|function(Object)|Object)=} selectorOrHandler
+ * @param {function(Object)=} handler
  * @return {!jQuery}
  */
-jQuery.prototype.on = function(events, handler) {};
+jQuery.prototype.on = function(eventsOrHandler, selectorOrHandler, handler) {};
 
 /**
  * @param {string=} events
@@ -162,7 +165,7 @@ jQuery.prototype.on = function(events, handler) {};
 jQuery.prototype.off = function(events, handler) {};
 
 /**
- * @param {function(Object)} handler
+ * @param {function(Object)=} handler
  * @return {!jQuery}
  */
 jQuery.prototype.click = function(handler) {};
@@ -185,20 +188,26 @@ jQuery.prototype.keypress = function(handler) {};
  */
 jQuery.prototype.keyup = function(handler) {};
 
-/** @return {!jQuery} */
-jQuery.prototype.focus = function() {};
-
-/** @return {!jQuery} */
-jQuery.prototype.blur = function() {};
+/**
+ * @param {function(Object)=} handler
+ * @return {!jQuery}
+ */
+jQuery.prototype.focus = function(handler) {};
 
 /**
- * @param {string=} value
+ * @param {function(Object)=} handler
+ * @return {!jQuery}
+ */
+jQuery.prototype.blur = function(handler) {};
+
+/**
+ * @param {*=} value
  * @return {!jQuery|number}
  */
 jQuery.prototype.width = function(value) {};
 
 /**
- * @param {string=} value
+ * @param {*=} value
  * @return {!jQuery|number}
  */
 jQuery.prototype.height = function(value) {};
@@ -262,15 +271,364 @@ jQuery.prototype.offset = function() {};
 /** @return {Object} */
 jQuery.prototype.position = function() {};
 
+/**
+ * @param {string|function(number, Element): boolean} selector
+ * @return {!jQuery}
+ */
+jQuery.prototype.filter = function(selector) {};
+
+/** @return {!jQuery} */
+jQuery.prototype.first = function() {};
+
+/** @return {!jQuery} */
+jQuery.prototype.next = function() {};
+
+/** @return {!jQuery} */
+jQuery.prototype.prev = function() {};
+
+/**
+ * @param {number} index
+ * @return {!jQuery}
+ */
+jQuery.prototype.eq = function(index) {};
+
+/**
+ * @param {string|Element|jQuery} selector
+ * @return {!jQuery}
+ */
+jQuery.prototype.not = function(selector) {};
+
+/** @return {!jQuery} */
+jQuery.prototype.siblings = function() {};
+
+/**
+ * @param {string} name
+ * @return {!jQuery}
+ */
+jQuery.prototype.removeAttr = function(name) {};
+
+/**
+ * @param {boolean=} withMargin
+ * @return {number}
+ */
+jQuery.prototype.outerHeight = function(withMargin) {};
+
+/**
+ * @param {string|function(Object)} eventsOrHandler
+ * @param {function(Object)=} handler
+ * @return {!jQuery}
+ */
+jQuery.prototype.bind = function(eventsOrHandler, handler) {};
+
+/**
+ * @param {string=} events
+ * @param {function(Object)=} handler
+ * @return {!jQuery}
+ */
+jQuery.prototype.unbind = function(events, handler) {};
+
+/**
+ * @param {function(Object)} handler
+ * @return {!jQuery}
+ */
+jQuery.prototype.mousedown = function(handler) {};
+
+/**
+ * @param {function(Object)} handler
+ * @return {!jQuery}
+ */
+jQuery.prototype.mouseup = function(handler) {};
+
+/**
+ * @param {function(Object)} handler
+ * @return {!jQuery}
+ */
+jQuery.prototype.mousemove = function(handler) {};
+
+/**
+ * @param {function(Object)} handler
+ * @return {!jQuery}
+ */
+jQuery.prototype.resize = function(handler) {};
+
+/**
+ * @param {function(Object)} handler
+ * @return {!jQuery}
+ */
+jQuery.prototype.change = function(handler) {};
+
+/**
+ * @param {function(Object)} handler
+ * @return {!jQuery}
+ */
+jQuery.prototype.contextmenu = function(handler) {};
+
+/**
+ * @param {function()} handler
+ * @return {!jQuery}
+ */
+jQuery.prototype.error = function(handler) {};
+
+/**
+ * @param {function()} handler
+ * @return {!jQuery}
+ */
+jQuery.prototype.load = function(handler) {};
+
+/**
+ * @param {Object=} options
+ * @return {!jQuery}
+ */
+jQuery.prototype.autocomplete = function(options) {};
+
+/**
+ * @param {Object=} options
+ * @return {!jQuery}
+ */
+jQuery.prototype.selectable = function(options) {};
+
+/**
+ * @param {Object=} options
+ * @return {!jQuery}
+ */
+jQuery.prototype.tooltip = function(options) {};
+
+/**
+ * @param {boolean=} withDataAndEvents
+ * @return {!jQuery}
+ */
+jQuery.prototype.clone = function(withDataAndEvents) {};
+
+/** @type {*} */
+jQuery.prototype.style;
+
+/**
+ * @param {...*} var_args
+ * @return {*}
+ */
+jQuery.prototype.extend = function(var_args) {};
+
 /** 
- * @param {Object} target
- * @param {...Object} sources
- * @return {Object}
+ * @param {*} target
+ * @param {...*} sources
+ * @return {*}
  */
 $.extend = function(target, sources) {};
 
+/**
+ * @param {...*} var_args
+ * @return {*}
+ */
+jQuery.extend = function(var_args) {};
+
 /** @type {Object} */
 $.fn;
+
+/** @type {Object} */
+jQuery.fn;
+
+/** @type {string} */
+jQuery.jquery;
+
+/** @type {Object} */
+jQuery.event;
+
+/**
+ * @param {Element} elem
+ * @param {string} types
+ * @param {function(Object)} handler
+ * @param {*=} data
+ * @param {*=} selector
+ */
+jQuery.event.add = function(elem, types, handler, data, selector) {};
+
+/**
+ * @param {Element} elem
+ * @param {string=} types
+ * @param {function(Object)=} handler
+ * @param {*=} selector
+ * @param {boolean=} mappedTypes
+ */
+jQuery.event.remove = function(elem, types, handler, selector, mappedTypes) {};
+
+/**
+ * @param {Element} elem
+ * @param {string} type
+ * @return {*}
+ */
+jQuery._queueHooks = function(elem, type) {};
+
+/**
+ * @param {Element} elem
+ * @param {string=} type
+ */
+jQuery.dequeue = function(elem, type) {};
+
+/**
+ * @param {*} obj
+ * @param {function(*, *)} callback
+ * @return {*}
+ */
+jQuery.each = function(obj, callback) {};
+
+/**
+ * @param {*} obj
+ * @param {function(*, number): *} callback
+ * @return {Array}
+ */
+jQuery.map = function(obj, callback) {};
+
+/**
+ * @param {*} arr
+ * @param {function(*, number): boolean} callback
+ * @param {boolean=} invert
+ * @return {Array}
+ */
+jQuery.grep = function(arr, callback, invert) {};
+
+/**
+ * @param {*} elem
+ * @param {*} arr
+ * @param {number=} i
+ * @return {number}
+ */
+jQuery.inArray = function(elem, arr, i) {};
+
+/**
+ * @param {*} arr
+ * @return {Array}
+ */
+jQuery.makeArray = function(arr) {};
+
+/**
+ * @param {Array} first
+ * @param {Array} second
+ * @return {Array}
+ */
+jQuery.merge = function(first, second) {};
+
+/**
+ * @param {Element} elem
+ * @return {boolean}
+ */
+jQuery.isXMLDoc = function(elem) {};
+
+/**
+ * @param {*} obj
+ * @return {boolean}
+ */
+jQuery.isPlainObject = function(obj) {};
+
+/**
+ * @param {string} code
+ * @return {*}
+ */
+jQuery.globalEval = function(code) {};
+
+/**
+ * @param {Element} context
+ * @param {string} selector
+ * @param {*=} results
+ * @param {*=} seed
+ * @return {Array}
+ */
+jQuery.find = function(context, selector, results, seed) {};
+
+/**
+ * @param {string} expr
+ * @param {Array} elements
+ * @param {boolean=} not
+ * @return {Array}
+ */
+jQuery.filter = function(expr, elements, not) {};
+
+/**
+ * @param {Element} a
+ * @param {Element} b
+ * @return {boolean}
+ */
+jQuery.contains = function(a, b) {};
+
+/**
+ * @param {Element} elem
+ * @param {string} name
+ * @param {*=} value
+ * @return {*}
+ */
+jQuery.attr = function(elem, name, value) {};
+
+/** @type {Object} */
+jQuery.attrHooks;
+
+/** @type {Object} */
+jQuery.propHooks;
+
+/** @type {Object} */
+jQuery.propFix;
+
+/** @type {Object} */
+jQuery.cssHooks;
+
+/** @type {Object} */
+jQuery.valHooks;
+
+/**
+ * @param {Object=} obj
+ * @return {string}
+ */
+jQuery.param = function(obj) {};
+
+/**
+ * @param {string} data
+ * @param {*=} context
+ * @param {boolean=} keepScripts
+ * @return {Array}
+ */
+jQuery.parseHTML = function(data, context, keepScripts) {};
+
+/**
+ * @param {string} html
+ * @return {string}
+ */
+jQuery.htmlPrefilter = function(html) {};
+
+/** @type {Object} */
+jQuery.ajax;
+
+/** @type {Object} */
+jQuery.ajaxSettings;
+
+/** @type {Object} */
+jQuery.lastModified;
+
+/** @type {Object} */
+jQuery.etag;
+
+/**
+ * @param {Object} options
+ */
+jQuery.ajaxSetup = function(options) {};
+
+/**
+ * @param {string} dataType
+ * @param {function(Object, Object)} callback
+ */
+jQuery.ajaxPrefilter = function(dataType, callback) {};
+
+/**
+ * @param {string} dataType
+ * @param {function(Object, Object)} callback
+ */
+jQuery.ajaxTransport = function(dataType, callback) {};
+
+/**
+ * @param {*=} obj
+ * @return {*}
+ */
+jQuery.Deferred = function(obj) {};
+
+/** @type {number} */
+jQuery.readyWait;
 
 /** @return {Object} */
 $.getUrlVars = function() {};
@@ -554,11 +912,41 @@ platform.product;
 /** @type {Object} */
 var THREE;
 
-/** @constructor */
+/**
+ * @constructor
+ */
 THREE.Scene = function() {};
 
+/**
+ * @param {!THREE.Object3D} object
+ */
+THREE.Scene.prototype.add = function(object) {};
+
+/**
+ * @param {!THREE.Object3D} object
+ */
+THREE.Scene.prototype.remove = function(object) {};
+
 /** @constructor */
-THREE.PerspectiveCamera = function() {};
+THREE.Camera = function() {};
+
+/**
+ * @constructor
+ * @param {number=} fov
+ * @param {number=} aspect
+ * @param {number=} near
+ * @param {number=} far
+ */
+THREE.PerspectiveCamera = function(fov, aspect, near, far) {};
+
+/**
+ * @param {!THREE.Vector3} vector
+ */
+THREE.PerspectiveCamera.prototype.lookAt = function(vector) {};
+
+THREE.PerspectiveCamera.prototype.updateProjectionMatrix = function() {};
+
+THREE.PerspectiveCamera.prototype.updateMatrixWorld = function() {};
 
 /** @constructor */
 THREE.WebGLRenderer = function() {};
@@ -566,8 +954,54 @@ THREE.WebGLRenderer = function() {};
 /** @constructor */
 THREE.Vector2 = function() {};
 
-/** @constructor */
-THREE.Vector3 = function() {};
+/**
+ * @constructor
+ * @param {number=} x
+ * @param {number=} y
+ * @param {number=} z
+ */
+THREE.Vector3 = function(x, y, z) {};
+
+/**
+ * @return {!THREE.Vector3}
+ */
+THREE.Vector3.prototype.normalize = function() {};
+
+/**
+ * @return {!THREE.Vector3}
+ */
+THREE.Vector3.prototype.clone = function() {};
+
+/**
+ * @param {*} v
+ * @return {!THREE.Vector3}
+ */
+THREE.Vector3.prototype.copy = function(v) {};
+
+/**
+ * @param {*} a
+ * @param {*} b
+ * @return {!THREE.Vector3}
+ */
+THREE.Vector3.prototype.subVectors = function(a, b) {};
+
+/**
+ * @param {*} v
+ * @return {!THREE.Vector3}
+ */
+THREE.Vector3.prototype.add = function(v) {};
+
+/**
+ * @param {*} v
+ * @return {!THREE.Vector3}
+ */
+THREE.Vector3.prototype.sub = function(v) {};
+
+/**
+ * @param {number} scalar
+ * @return {!THREE.Vector3}
+ */
+THREE.Vector3.prototype.multiplyScalar = function(scalar) {};
 
 /** @constructor */
 THREE.Vector4 = function() {};
@@ -578,23 +1012,120 @@ THREE.Matrix3 = function() {};
 /** @constructor */
 THREE.Matrix4 = function() {};
 
+/**
+ * @param {!THREE.Vector3} position
+ * @param {!THREE.Quaternion} quaternion
+ * @param {!THREE.Vector3} scale
+ * @return {!THREE.Matrix4}
+ */
+THREE.Matrix4.prototype.compose = function(position, quaternion, scale) {};
+
 /** @constructor */
 THREE.Quaternion = function() {};
 
-/** @constructor */
-THREE.Euler = function() {};
+/**
+ * @param {*} q
+ * @return {!THREE.Quaternion}
+ */
+THREE.Quaternion.prototype.copy = function(q) {};
+
+/**
+ * @param {!THREE.Vector3} axis
+ * @param {number} angle
+ * @return {!THREE.Quaternion}
+ */
+THREE.Quaternion.prototype.setFromAxisAngle = function(axis, angle) {};
+
+/**
+ * @param {!THREE.Euler} euler
+ * @return {!THREE.Quaternion}
+ */
+THREE.Quaternion.prototype.setFromEuler = function(euler) {};
+
+/**
+ * @param {*} vFrom
+ * @param {*} vTo
+ * @return {!THREE.Quaternion}
+ */
+THREE.Quaternion.prototype.setFromUnitVectors = function(vFrom, vTo) {};
+
+/**
+ * @constructor
+ * @param {number=} x
+ * @param {number=} y
+ * @param {number=} z
+ * @param {string=} order
+ */
+THREE.Euler = function(x, y, z, order) {};
 
 /** @constructor */
 THREE.Color = function() {};
 
-/** @constructor */
-THREE.Mesh = function() {};
+/**
+ * @constructor
+ * @param {*=} geometry
+ * @param {*=} material
+ */
+THREE.Mesh = function(geometry, material) {};
+
+/** @type {*} */
+THREE.Mesh.prototype.geometry;
+
+/** @type {THREE.Euler} */
+THREE.Mesh.prototype.rotation;
+
+/** @type {THREE.Quaternion} */
+THREE.Mesh.prototype.quaternion;
+
+/** @type {*} */
+THREE.Mesh.prototype.layers;
+
+/**
+ * @param {!THREE.Vector3} axis
+ * @param {number} distance
+ */
+THREE.Mesh.prototype.translateOnAxis = function(axis, distance) {};
 
 /** @constructor */
 THREE.Object3D = function() {};
 
+/** @type {!THREE.Vector3} */
+THREE.Object3D.prototype.scale;
+
+/**
+ * @param {!THREE.Vector3} axis
+ * @param {number} angle
+ */
+THREE.Object3D.prototype.rotateOnAxis = function(axis, angle) {};
+
+/**
+ * @param {!THREE.Vector3} axis
+ * @param {number} distance
+ */
+THREE.Object3D.prototype.translateOnAxis = function(axis, distance) {};
+
+/**
+ * @param {function(!THREE.Object3D)} callback
+ */
+THREE.Object3D.prototype.traverse = function(callback) {};
+
+THREE.Object3D.prototype.updateMatrix = function() {};
+
 /** @constructor */
 THREE.Group = function() {};
+
+/**
+ * @param {*} object
+ */
+THREE.Group.prototype.add = function(object) {};
+
+/**
+ * @param {!THREE.Object3D} object
+ */
+THREE.Group.prototype.remove = function(object) {};
+
+/** @type {Array<!THREE.Object3D>} */
+THREE.Group.prototype.children;
 
 /** @constructor */
 THREE.Geometry = function() {};
@@ -602,11 +1133,51 @@ THREE.Geometry = function() {};
 /** @constructor */
 THREE.BufferGeometry = function() {};
 
+/**
+ * @param {string} name
+ * @param {*} attribute
+ */
+THREE.BufferGeometry.prototype.setAttribute = function(name, attribute) {};
+
+/**
+ * @param {*} index
+ */
+THREE.BufferGeometry.prototype.setIndex = function(index) {};
+
+THREE.BufferGeometry.prototype.computeVertexNormals = function() {};
+
+/**
+ * @param {number} angle
+ */
+THREE.BufferGeometry.prototype.rotateX = function(angle) {};
+
+/**
+ * @param {number} x
+ * @param {number} y
+ * @param {number} z
+ */
+THREE.BufferGeometry.prototype.translate = function(x, y, z) {};
+
+/**
+ * @param {Array<!THREE.Vector3>} points
+ * @return {!THREE.BufferGeometry}
+ */
+THREE.BufferGeometry.prototype.setFromPoints = function(points) {};
+
 /** @constructor */
 THREE.Material = function() {};
 
-/** @constructor */
-THREE.MeshBasicMaterial = function() {};
+/** @type {number} */
+THREE.Material.prototype.metalness;
+
+/** @type {number} */
+THREE.Material.prototype.roughness;
+
+/**
+ * @constructor
+ * @param {Object=} parameters
+ */
+THREE.MeshBasicMaterial = function(parameters) {};
 
 /** @constructor */
 THREE.MeshStandardMaterial = function() {};
@@ -617,29 +1188,121 @@ THREE.MeshPhongMaterial = function() {};
 /** @constructor */
 THREE.ShaderMaterial = function() {};
 
+/**
+ * @constructor
+ * @param {Object=} parameters
+ */
+THREE.LineBasicMaterial = function(parameters) {};
+
+/**
+ * @constructor
+ * @param {Object=} parameters
+ */
+THREE.LineDashedMaterial = function(parameters) {};
+
+/**
+ * @constructor
+ * @param {Object=} parameters
+ */
+THREE.SpriteMaterial = function(parameters) {};
+
 /** @constructor */
-THREE.Texture = function() {};
+THREE.ShadowMaterial = function() {};
+
+/** @constructor */
+THREE.MeshBasicNodeMaterial = function() {};
+
+/** @type {*} */
+THREE.MeshBasicNodeMaterial.prototype.uniforms;
+
+/** @constructor */
+THREE.MeshStandardNodeMaterial = function() {};
+
+/** @type {*} */
+THREE.MeshStandardNodeMaterial.prototype.color;
+
+/** @type {*} */
+THREE.MeshStandardNodeMaterial.prototype.emissive;
+
+/**
+ * @constructor
+ * @param {*=} image
+ */
+THREE.Texture = function(image) {};
 
 /** @constructor */
 THREE.TextureLoader = function() {};
 
+/**
+ * @constructor
+ * @param {*=} data
+ * @param {number=} width
+ * @param {number=} height
+ * @param {number=} depth
+ */
+THREE.DataArrayTexture = function(data, width, height, depth) {};
+
 /** @constructor */
 THREE.Light = function() {};
 
-/** @constructor */
-THREE.AmbientLight = function() {};
+/**
+ * @constructor
+ * @param {number=} color
+ * @param {number=} intensity
+ */
+THREE.AmbientLight = function(color, intensity) {};
 
-/** @constructor */
-THREE.DirectionalLight = function() {};
+/**
+ * @constructor
+ * @param {number=} color
+ * @param {number=} intensity
+ */
+THREE.DirectionalLight = function(color, intensity) {};
 
-/** @constructor */
-THREE.PointLight = function() {};
+/** @type {*} */
+THREE.DirectionalLight.prototype.shadow;
 
-/** @constructor */
-THREE.SpotLight = function() {};
+/**
+ * @constructor
+ * @param {number=} color
+ * @param {number=} intensity
+ * @param {number=} distance
+ * @param {number=} decay
+ */
+THREE.PointLight = function(color, intensity, distance, decay) {};
+
+/**
+ * @constructor
+ * @param {number=} color
+ * @param {number=} intensity
+ * @param {number=} distance
+ * @param {number=} angle
+ * @param {number=} penumbra
+ * @param {number=} decay
+ */
+THREE.SpotLight = function(color, intensity, distance, angle, penumbra, decay) {};
+
+/** @type {*} */
+THREE.SpotLight.prototype.shadow;
 
 /** @constructor */
 THREE.Raycaster = function() {};
+
+/**
+ * @param {!THREE.Vector2} coords
+ * @param {!THREE.Camera} camera
+ */
+THREE.Raycaster.prototype.setFromCamera = function(coords, camera) {};
+
+/**
+ * @param {!THREE.Object3D} object
+ * @param {boolean=} recursive
+ * @return {Array}
+ */
+THREE.Raycaster.prototype.intersectObject = function(object, recursive) {};
+
+/** @type {*} */
+THREE.Raycaster.prototype.layers;
 
 /** @constructor */
 THREE.Box3 = function() {};
@@ -656,8 +1319,13 @@ THREE.Clock = function() {};
 /** @constructor */
 THREE.AnimationMixer = function() {};
 
-/** @constructor */
-THREE.InstancedMesh = function() {};
+/**
+ * @constructor
+ * @param {*=} geometry
+ * @param {*=} material
+ * @param {number=} count
+ */
+THREE.InstancedMesh = function(geometry, material, count) {};
 
 /** @constructor */
 THREE.InstancedBufferGeometry = function() {};
@@ -665,17 +1333,31 @@ THREE.InstancedBufferGeometry = function() {};
 /** @constructor */
 THREE.InstancedBufferAttribute = function() {};
 
-/** @constructor */
-THREE.BufferAttribute = function() {};
+/**
+ * @constructor
+ * @param {*=} array
+ * @param {number=} itemSize
+ */
+THREE.BufferAttribute = function(array, itemSize) {};
 
-/** @constructor */
-THREE.Float32BufferAttribute = function() {};
+/**
+ * @constructor
+ * @param {*=} array
+ * @param {number=} itemSize
+ */
+THREE.Float32BufferAttribute = function(array, itemSize) {};
 
 /** @constructor */
 THREE.Int32BufferAttribute = function() {};
 
-/** @constructor */
-THREE.PlaneGeometry = function() {};
+/**
+ * @constructor
+ * @param {number=} width
+ * @param {number=} height
+ * @param {number=} widthSegments
+ * @param {number=} heightSegments
+ */
+THREE.PlaneGeometry = function(width, height, widthSegments, heightSegments) {};
 
 /** @constructor */
 THREE.BoxGeometry = function() {};
