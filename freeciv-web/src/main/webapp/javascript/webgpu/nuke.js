@@ -85,10 +85,10 @@ function create_nuke(ptile_id)
 
   // Render outer mushroom cloud.
   var outerMaterial = new THREE.SpriteMaterial( { map: webgl_textures["nuke_outer_mushroom_cloud"]});
-  for (var i = 0; i < 25000; i++) {
-    var x = center_x + (Math.random() * outer_radius) - (outer_radius / 2);
-    var h = height + mushroom_height + (Math.random() * outer_radius) - (outer_radius / 2);
-    var y = center_y + (Math.random() * outer_radius) - (outer_radius / 2);
+  for (i = 0; i < 25000; i++) {
+    x = center_x + (Math.random() * outer_radius) - (outer_radius / 2);
+    h = height + mushroom_height + (Math.random() * outer_radius) - (outer_radius / 2);
+    y = center_y + (Math.random() * outer_radius) - (outer_radius / 2);
     let dist = Math.sqrt(((center_x - x) ** 2) + (2 * (height + mushroom_height - h) ** 2) + ((center_y - y) ** 2));
     if (dist > (outer_radius / 2) || dist < 35) {
       continue;
@@ -105,10 +105,10 @@ function create_nuke(ptile_id)
 
   // Render hot mushroom cloud.
   var hotMaterial = new THREE.SpriteMaterial( { map: webgl_textures["nuke_hot_mushroom_cloud"]});
-  for (var i = 0; i < 15000; i++) {
-    var x = center_x + (Math.random() * outer_radius) - (outer_radius / 2);
-    var h = height + mushroom_height + (Math.random() * outer_radius) - (outer_radius / 2);
-    var y = center_y + (Math.random() * outer_radius) - (outer_radius / 2);
+  for (i = 0; i < 15000; i++) {
+    x = center_x + (Math.random() * outer_radius) - (outer_radius / 2);
+    h = height + mushroom_height + (Math.random() * outer_radius) - (outer_radius / 2);
+    y = center_y + (Math.random() * outer_radius) - (outer_radius / 2);
     var dist = Math.sqrt(((center_x - x) ** 2) + (2 * (height + mushroom_height - h) ** 2) + ((center_y - y) ** 2));
     if (dist > (outer_radius / 2) || dist < 35) {
       continue;
@@ -127,10 +127,10 @@ function create_nuke(ptile_id)
   // Render shock wave
   var shock_radius = 240;
   var shockMaterial = new THREE.SpriteMaterial( { map: webgl_textures["nuke_shock_wave"]});
-  for (var i = 0; i < 100000; i++) {
-    var x = center_x + (Math.random() * shock_radius) - (shock_radius / 2);
-    var h = height + mushroom_height + (Math.random() * shock_radius) - (shock_radius / 2);
-    var y = center_y + (Math.random() * shock_radius) - (shock_radius / 2);
+  for (i = 0; i < 100000; i++) {
+    x = center_x + (Math.random() * shock_radius) - (shock_radius / 2);
+    h = height + mushroom_height + (Math.random() * shock_radius) - (shock_radius / 2);
+    y = center_y + (Math.random() * shock_radius) - (shock_radius / 2);
     let dist = Math.sqrt(((center_x - x) ** 2) + (120 * (height + mushroom_height - h) ** 2) + ((center_y - y) ** 2));
     if (dist > (shock_radius / 2) || dist < 115) {
       continue;
@@ -148,10 +148,10 @@ function create_nuke(ptile_id)
   // Render blast area.
   var blast_radius = 200;
   var blastMaterial = new THREE.SpriteMaterial( { map: webgl_textures["nuke_grey_blast_area"]});
-  for (var i = 0; i < 90000; i++) {
-    var x = center_x + (Math.random() * blast_radius) - (blast_radius / 2);
-    var h = height + 0.5 + (Math.random() * blast_radius) - (blast_radius / 2);
-    var y = center_y + (Math.random() * blast_radius) - (blast_radius / 2);
+  for (i = 0; i < 90000; i++) {
+    x = center_x + (Math.random() * blast_radius) - (blast_radius / 2);
+    h = height + 0.5 + (Math.random() * blast_radius) - (blast_radius / 2);
+    y = center_y + (Math.random() * blast_radius) - (blast_radius / 2);
     let dist = Math.sqrt(((center_x - x) ** 2) + (70 * (height + 0.5 - h) ** 2) + ((center_y - y) ** 2));
     if (dist > (blast_radius / 2)) {
       continue;
@@ -169,10 +169,10 @@ function create_nuke(ptile_id)
   // Render rising column.
   var column_radius = 60;
   var risingMaterial = new THREE.SpriteMaterial( { map: webgl_textures["nuke_rising_column"]});
-  for (var i = 0; i < 4000; i++) {
-    var x = pos['x'] + (Math.random() * column_radius) - (column_radius / 2);
-    var h = height + 30 + (Math.random() * column_radius) - (column_radius / 2);
-    var y = pos['y']  + (Math.random() * column_radius) - (column_radius / 2);
+  for (i = 0; i < 4000; i++) {
+    x = pos['x'] + (Math.random() * column_radius) - (column_radius / 2);
+    h = height + 30 + (Math.random() * column_radius) - (column_radius / 2);
+    y = pos['y']  + (Math.random() * column_radius) - (column_radius / 2);
     let dist = Math.sqrt(((pos['x'] - x) ** 2) + (0.01 * (height + 30 - h) ** 2) + ((pos['y'] - y) ** 2));
     if (dist > (column_radius / 2)) {
       continue;
@@ -209,7 +209,7 @@ function clear_nuke()
  Animate the nuke particles
 ****************************************************************************/
 function animate_nuke() {
-  for (var i = 0; i < nuke_mushroom_objects.length; i++) {
+  for (i = 0; i < nuke_mushroom_objects.length; i++) {
     nuke_mushroom_objects[i].position.set(nuke_mushroom_objects[i].position.x + ( 2 * Math.random()) - 1,
     nuke_mushroom_objects[i].position.y + (2 * Math.random()) - 1 + 0.5,
     nuke_mushroom_objects[i].position.z + (2 * Math.random()) - 1

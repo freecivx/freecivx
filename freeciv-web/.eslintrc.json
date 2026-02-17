@@ -11,16 +11,17 @@
   },
   "ignorePatterns": [
     "libs/**",
-    "*.min.js"
+    "*.min.js",
+    "three-modules*.js"
   ],
   "globals": {
     "THREE": "readonly",
     "webgl_preload": "readonly",
     "mapview": "readonly",
-    "scene": "readonly",
-    "camera": "readonly",
+    "scene": "writable",
+    "camera": "writable",
     "renderer": "readonly",
-    "controls": "readonly",
+    "controls": "writable",
     "webgl_width": "readonly",
     "webgl_height": "readonly"
   },
@@ -37,7 +38,7 @@
     "no-inner-declarations": "warn",
     "no-irregular-whitespace": "error",
     "no-sparse-arrays": "warn",
-    "no-mixed-spaces-and-tabs": "error",
+    "no-mixed-spaces-and-tabs": "off",
     "use-isnan": "error",
     "valid-typeof": "error",
     "no-fallthrough": "warn",

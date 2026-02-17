@@ -141,7 +141,7 @@ function update_player_info_pregame()
 
     /* show player ready state in pregame dialog */
     for (id in players) {
-      var player = players[id];
+      player = players[id];
       var nation_text = "";
       if (player['nation'] in nations) {
         nation_text = " - " + nations[player['nation']]['adjective'];
@@ -284,8 +284,8 @@ function pick_nation(player_id)
   nation_select_id = setTimeout (update_nation_selection, 150);
   $("#pick_nation_dialog").dialog('open');
 
-  for (var nation_id in nations) {
-    var pnation = nations[nation_id];
+  for (nation_id in nations) {
+    pnation = nations[nation_id];
     if (pnation['is_playable']) {
       var flag_canvas = document.getElementById('pick_flag_' + nation_id);
       var flag_canvas_ctx = flag_canvas.getContext("2d");
@@ -679,7 +679,7 @@ function pregame_settings()
   });
 
   $('#metamessage').bind('keyup blur',function(){
-    var cleaned_text = $(this).val().replace(/[^a-zA-Z\s\-]/g,'');
+    var cleaned_text = $(this).val().replace(/[^a-zA-Z\s-]/g,'');
     if ($(this).val() != cleaned_text) {
       $(this).val( cleaned_text ); }
     }

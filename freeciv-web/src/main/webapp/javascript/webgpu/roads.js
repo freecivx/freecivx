@@ -139,7 +139,7 @@ function road_image_color(map_x, map_y)
     let result = [1, 0, 0]; // single road tile.
 
     // 1. iterate over adjacent tiles, see if they have road.
-    var adj_road_count = 0;
+    adj_road_count = 0;
     for (var dir = 0; dir < 8; dir++) {
       if (dir != 1 && dir != 3 && dir != 4 && dir != 6) continue;
       let checktile = mapstep(ptile, dir);
@@ -156,7 +156,7 @@ function road_image_color(map_x, map_y)
         }
       }
     }
-    for (var dir = 0; dir < 8; dir++) {
+    for (dir = 0; dir < 8; dir++) {
       if (dir != 0 && dir != 2 && dir != 5 && dir != 7) continue;
       let checktile = mapstep(ptile, dir);
       if (checktile != null && tile_has_extra(checktile, EXTRA_ROAD)) {

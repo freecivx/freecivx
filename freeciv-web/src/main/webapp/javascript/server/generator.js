@@ -80,8 +80,8 @@ var FractureGenerator = {
             }
 
             // Square step
-            for (var y = 0; y <= pow2; y += half) {
-                for (var x = (y + half) % side; x <= pow2; x += side) {
+            for (y = 0; y <= pow2; y += half) {
+                for (x = (y + half) % side; x <= pow2; x += side) {
                     var sum = 0, count = 0;
                     if (y >= half) { sum += tempMap[y - half][x]; count++; }
                     if (y + half <= pow2) { sum += tempMap[y + half][x]; count++; }
@@ -93,8 +93,8 @@ var FractureGenerator = {
         }
 
         // Copy and normalize into the final heightMap
-        for (var y = 0; y < this.height; y++) {
-            for (var x = 0; x < this.width; x++) {
+        for (y = 0; y < this.height; y++) {
+            for (x = 0; x < this.width; x++) {
                 this.heightMap[y][x] = Math.max(0, Math.min(1, tempMap[y][x]));
             }
         }

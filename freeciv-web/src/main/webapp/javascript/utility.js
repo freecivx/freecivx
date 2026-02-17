@@ -199,6 +199,7 @@ function html_safe(text)
 {
   text = text.replace(/'/g, "&#39;");
   text = text.replace(/"/g, "&#34;");
+  // eslint-disable-next-line no-control-regex
   text = text.replace(/[\x03]/g,"\n");
   return text;
 }

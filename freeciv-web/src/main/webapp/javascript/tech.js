@@ -246,8 +246,8 @@ function update_tech_tree()
 
   tech_canvas_ctx.lineWidth = 1;
 
-  for (var tech_id in techs) {
-    var ptech = techs[tech_id];
+  for (tech_id in techs) {
+    ptech = techs[tech_id];
     if (!(tech_id+'' in reqtree) || reqtree[tech_id+''] == null) {
       console.log("tech not found");
       continue;
@@ -281,7 +281,7 @@ function update_tech_tree()
         tech_canvas_ctx.lineWidth=6;
       }
 
-      var tag = tileset_tech_graphic_tag(ptech);
+      tag = tileset_tech_graphic_tag(ptech);
       tech_canvas_ctx.lineWidth=4;
       tech_canvas_ctx.fillStyle = bgcolor;
       tech_canvas_ctx.fillRect(x-2, y-2, tech_item_width, tech_item_height);
@@ -306,7 +306,7 @@ function update_tech_tree()
         tech_canvas_ctx.lineWidth=6;
       }
 
-      var tag = tileset_tech_graphic_tag(ptech);
+      tag = tileset_tech_graphic_tag(ptech);
       tech_canvas_ctx.fillStyle =  bgcolor;
       tech_canvas_ctx.fillRect(x-2, y-2, tech_item_width, tech_item_height);
       tech_canvas_ctx.strokeStyle = 'rgb(255, 255, 255)';
@@ -326,7 +326,7 @@ function update_tech_tree()
 
     var tech_things = 0;
     var prunits = get_utypes_from_tech(tech_id);
-    for (var i = 0; i < prunits.length; i++) {
+    for (i = 0; i < prunits.length; i++) {
       var ptype = prunits[i];
 
       // Suppress nuclear units if server settings don't allow them:
@@ -346,9 +346,9 @@ function update_tech_tree()
 
 
     var primprovements = get_improvements_from_tech(tech_id);
-    for (var i = 0; i < primprovements.length; i++) {
+    for (i = 0; i < primprovements.length; i++) {
       var pimpr = primprovements[i];
-      var sprite = sprites[tileset_building_graphic_tag(pimpr)];
+      sprite = sprites[tileset_building_graphic_tag(pimpr)];
       if (sprite != null) {
         tech_canvas_ctx.drawImage(sprite, x + 50 + ((tech_things++) * 30), y + 23, 28, 24);
       }

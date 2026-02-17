@@ -77,7 +77,7 @@ function server_tile_is_in_vision(center_x, center_y, target_x, target_y, vision
   
   // Handle map wrapping for Y coordinate
   if (wrap_has_flag(WRAP_Y)) {
-    var half_world = Math.floor(map.ysize / 2);
+    half_world = Math.floor(map.ysize / 2);
     dy = FC_WRAP(dy + half_world, map.ysize) - half_world;
   }
   

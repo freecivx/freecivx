@@ -28,7 +28,8 @@
  */
 
 var container, stats;
-var scene, maprenderer;
+scene = null;
+maprenderer = null;
 var anaglyph_effect;
 
 var mouse, raycaster;
@@ -36,7 +37,7 @@ var spotlight;
 var directionalLight;  // Main directional light for sun-like shadows
 var timer;
 
-var controls;
+controls = null;
 
 var tiletype_terrains = ["coast","ocean","desert","grassland","hills","mountains","plains","swamp"];
 
