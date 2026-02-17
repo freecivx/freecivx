@@ -342,8 +342,8 @@ Rerun the sync-js-hand.js script.
 									</closureExternDeclaration>
 								</closureExternDeclarations>
 								<includes>
-									<!-- First, include already-minified jquery library -->
-									<include>libs/jquery.min.js</include>
+									<!-- First, include jquery library -->
+									<include>libs/jquery.js</include>
 									
 									<!-- Then include application code in proper order -->
 									<!-- order is important: these must be before sources below -->
