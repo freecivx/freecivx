@@ -319,6 +319,7 @@ Rerun the sync-js-hand.js script.
 					<artifactId>closure-compiler-maven-plugin</artifactId>
 					<version>3.0.1</version>
 					<configuration>
+						<closureCompilationLevel>ADVANCED_OPTIMIZATIONS</closureCompilationLevel>
 						<closureLanguageIn>ECMASCRIPT_2021</closureLanguageIn>
 						<closureLanguageOut>ECMASCRIPT_2021</closureLanguageOut>
 						<closureCreateSourceMap>true</closureCreateSourceMap>
