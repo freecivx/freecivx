@@ -11,7 +11,8 @@
   },
   "ignorePatterns": [
     "libs/**",
-    "*.min.js"
+    "*.min.js",
+    "three-modules*.js"
   ],
   "globals": {
     "THREE": "readonly",
