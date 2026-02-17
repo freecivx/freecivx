@@ -334,6 +334,13 @@ Rerun the sync-js-hand.js script.
 								<sourceDir>javascript</sourceDir>
 								<targetDir>javascript</targetDir>
 								<outputFilename>webclient.min.js</outputFilename>
+								<closureExternDeclarations>
+									<closureExternDeclaration>
+										<includes>
+											<include>javascript/externs.js</include>
+										</includes>
+									</closureExternDeclaration>
+								</closureExternDeclarations>
 								<includes>
 									<!-- First, include already-minified jquery library -->
 									<include>libs/jquery.min.js</include>
@@ -365,6 +372,7 @@ Rerun the sync-js-hand.js script.
 									<exclude>webgpu/effects/*js</exclude>
 									<exclude>three-modules.js</exclude>
 									<exclude>three-modules-webgpu.js</exclude>
+									<exclude>externs.js</exclude>
 								</excludes>
 							</configuration>
 							<goals>
