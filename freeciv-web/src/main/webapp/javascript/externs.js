@@ -15,11 +15,21 @@
 // jQuery and jQuery UI
 // =============================================================================
 
-/** @type {function(*=): !jQuery} */
-var $;
+/**
+ * @constructor
+ * @param {(string|Element|Object|function())=} selector
+ * @param {(Element|Object)=} context
+ * @return {!jQuery}
+ */
+function jQuery(selector, context) {}
 
-/** @constructor */
-function jQuery() {}
+// Also define as a callable function
+/**
+ * @param {(string|Element|Object|function())=} selector
+ * @param {(Element|Object)=} context
+ * @return {!jQuery}
+ */
+var $ = function(selector, context) {};
 
 /**
  * @param {(string|Object)=} optionsOrMethod
@@ -630,6 +640,15 @@ jQuery.Deferred = function(obj) {};
 /** @type {number} */
 jQuery.readyWait;
 
+/** @type {Object} */
+jQuery.cssHooks;
+
+/** @type {*} */
+jQuery.css;
+
+/** @type {*} */
+jQuery.style;
+
 /** @return {Object} */
 $.getUrlVars = function() {};
 
@@ -691,6 +710,13 @@ $.isEmptyObject = function(obj) {};
  * @return {boolean}
  */
 $.isArray = function(obj) {};
+
+/**
+ * @param {string} name
+ * @param {Object=} base
+ * @param {Object=} prototype
+ */
+$.widget = function(name, base, prototype) {};
 
 // =============================================================================
 // jQuery UI
@@ -762,10 +788,10 @@ var simpleStorage;
 simpleStorage.set = function(key, value, options) {};
 
 /**
- * @param {string} key
+ * @param {*=} defaultValue
  * @return {*}
  */
-simpleStorage.get = function(key) {};
+simpleStorage.get = function(key, defaultValue) {};
 
 /**
  * @param {string} key
