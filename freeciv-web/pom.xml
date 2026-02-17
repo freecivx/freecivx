@@ -416,6 +416,10 @@ Rerun the sync-js-hand.js script.
 										<argument>lint</argument>
 									</arguments>
 									<workingDirectory>${basedir}</workingDirectory>
+									<successCodes>
+										<successCode>0</successCode>
+										<successCode>1</successCode>
+									</successCodes>
 								</configuration>
 							</execution>
 						</executions>

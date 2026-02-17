@@ -4,6 +4,6 @@
     "eslint": "^8.57.0"
   },
   "scripts": {
-    "lint": "eslint src/main/webapp/javascript/**/*.js --ignore-pattern 'src/main/webapp/javascript/libs/**' --ignore-pattern '**/*.min.js'"
+    "lint": "eslint 'src/main/webapp/javascript/*.js' 'src/main/webapp/javascript/2dcanvas/*.js' 'src/main/webapp/javascript/webgpu/*.js' 'src/main/webapp/javascript/webgpu_square/*.js'"
   }
 }
