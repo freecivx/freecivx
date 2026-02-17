@@ -323,6 +323,7 @@ Rerun the sync-js-hand.js script.
 						<closureLanguageOut>ECMASCRIPT_2021</closureLanguageOut>
 						<closureCreateSourceMap>true</closureCreateSourceMap>
 						<closureEmitUseStrict>false</closureEmitUseStrict>
+						<closureWarningLevel>QUIET</closureWarningLevel>
 						<skipMinify>${skip-minify-js}</skipMinify>
 					</configuration>
 					<executions>
