@@ -1,4 +1,4 @@
-FreecivWorld.net 3D web application 
+Freeciv 3D web application 
 =======================
 
 This is the FreecivWorld.net 3D web application, which consists of the Java servlets 
@@ -61,7 +61,7 @@ https://github.com/freecivx/freecivx/blob/main/freeciv-web/src/main/webapp/gltf/
 See LICENSE-AGPL.txt and LICENSE-CC-BY-SA.txt for the license of these models.
 
 
-Copyright (C) 2007-2024 Andreas Røsdal. 
+Copyright (C) 2007-2026 Andreas Røsdal. 
 Released under the GNU AFFERO GENERAL PUBLIC LICENSE.
 
 Source code, 3D models and all files part of Freeciv 3D / FreecivWorld.net are covered by the GNU AFFERO GENERAL PUBLIC LICENSE.
