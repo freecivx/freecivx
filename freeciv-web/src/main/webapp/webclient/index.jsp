@@ -68,7 +68,11 @@ var renderer_type_override="<%= rendererParam %>";
 <script type="module" src="/javascript/three-modules-webgpu.js?ts=${initParam.buildTimeStamp}"></script>
 
 
-<!-- Main application bundle - includes jQuery, Stacktrace, Audio, and all application code -->
+<!-- jQuery and jQuery UI libraries (must load before application code) -->
+<script src="/javascript/libs/jquery.min.js?ts=${initParam.buildTimeStamp}"></script>
+<script src="/javascript/libs/jquery-ui.min.js?ts=${initParam.buildTimeStamp}"></script>
+
+<!-- Main application bundle - includes Stacktrace, Audio, and all application code -->
 <script src="/javascript/webclient.min.js?ts=${initParam.buildTimeStamp}" defer></script>
 
 <link rel="shortcut icon" href="/images/freeciv-shortcut-icon.png" />
