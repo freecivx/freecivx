@@ -1210,9 +1210,9 @@ function update_unit_order_commands()
 
     // Load unit on transport
     if (pcity != null) {
-      let units_on_tile = tile_units(ptile);
-      for (var r = 0; r < units_on_tile.length; r++) {
-        var tunit = units_on_tile[r];
+      let loadUnitsOnTile = tile_units(ptile);
+      for (let r = 0; r < loadUnitsOnTile.length; r++) {
+        var tunit = loadUnitsOnTile[r];
         if (tunit['id'] == punit['id']) continue;
         var ntype = unit_type(tunit);
         if (ntype['transport_capacity'] > 0) unit_actions["unit_load"] = {name: "Load on transport (L)"};
@@ -1220,10 +1220,10 @@ function update_unit_order_commands()
     }
 
     // Unload unit from transport
-    let units_on_tile = tile_units(ptile);
-    if (ptype['transport_capacity'] > 0 && units_on_tile.length >= 2) {
-      for (var r = 0; r < units_on_tile.length; r++) {
-        var tunit = units_on_tile[r];
+    let unloadUnitsOnTile = tile_units(ptile);
+    if (ptype['transport_capacity'] > 0 && unloadUnitsOnTile.length >= 2) {
+      for (let r = 0; r < unloadUnitsOnTile.length; r++) {
+        var tunit = unloadUnitsOnTile[r];
         if (tunit['transported']) {
           unit_actions["unit_show_cargo"] = {name: "Activate cargo units"};
           if (pcity != null) unit_actions["unit_unload"] = {name: "Unload units from transport (T)"};

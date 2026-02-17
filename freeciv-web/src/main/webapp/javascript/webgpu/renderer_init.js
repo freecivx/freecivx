@@ -26,7 +26,7 @@ var terrain_quality = 8; // 8 is slow, 7 has problems with rivers.
 
 var anaglyph_3d_enabled = false;
 
-var stats = null;
+// stats is defined in webgpu/mapview_common.js
 
 /****************************************************************************
   Init the Freeciv-web WebGPU renderer

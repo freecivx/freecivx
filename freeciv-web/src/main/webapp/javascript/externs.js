@@ -745,3 +745,278 @@ THREE.NormalBlending;
 
 /** @type {string} */
 THREE.REVISION;
+
+// =============================================================================
+// Three.js Loaders and Controls
+// =============================================================================
+
+/** @constructor */
+function GLTFLoader() {}
+
+/**
+ * @param {Object} dracoLoader
+ */
+GLTFLoader.prototype.setDRACOLoader = function(dracoLoader) {};
+
+/**
+ * @param {string} url
+ * @param {function(Object)} onLoad
+ * @param {function(Object)=} onProgress
+ * @param {function(Error)=} onError
+ */
+GLTFLoader.prototype.load = function(url, onLoad, onProgress, onError) {};
+
+/** @constructor */
+function DRACOLoader() {}
+
+/**
+ * @param {string} path
+ */
+DRACOLoader.prototype.setDecoderPath = function(path) {};
+
+/** @constructor */
+function OrbitControls(camera, element) {}
+
+/** @type {boolean} */
+OrbitControls.prototype.enableDamping;
+
+/** @type {number} */
+OrbitControls.prototype.dampingFactor;
+
+/** @type {boolean} */
+OrbitControls.prototype.enablePan;
+
+/** @type {boolean} */
+OrbitControls.prototype.enableZoom;
+
+/** @return {undefined} */
+OrbitControls.prototype.update = function() {};
+
+// =============================================================================
+// Morris.js (Charts)
+// =============================================================================
+
+/** @type {Object} */
+var Morris;
+
+/**
+ * @param {Object} options
+ */
+Morris.Line = function(options) {};
+
+/**
+ * @param {Object} options
+ */
+Morris.Area = function(options) {};
+
+/**
+ * @param {Object} options
+ */
+Morris.Bar = function(options) {};
+
+// =============================================================================
+// modern-screenshot library
+// =============================================================================
+
+/** @type {Object} */
+var modernScreenshot;
+
+/**
+ * @param {Element} element
+ * @param {Object=} options
+ * @return {Promise}
+ */
+modernScreenshot.domToBlob = function(element, options) {};
+
+/**
+ * @param {Element} element
+ * @param {Object=} options
+ * @return {Promise}
+ */
+modernScreenshot.domToPng = function(element, options) {};
+
+// =============================================================================
+// Globalize (jQuery UI internationalization)
+// =============================================================================
+
+/** @type {Object} */
+var Globalize;
+
+// =============================================================================
+// localStorage (Browser API)
+// =============================================================================
+
+/** @type {Storage} */
+var localStorage;
+
+// =============================================================================
+// TrackJS (Error Tracking)
+// =============================================================================
+
+/** @type {Object} */
+var trackJs;
+
+/**
+ * @param {Error} error
+ */
+trackJs.track = function(error) {};
+
+// =============================================================================
+// DocumentTouch (Touch detection - deprecated API)
+// =============================================================================
+
+/** @constructor */
+function DocumentTouch() {}
+
+// =============================================================================
+// Node.js style require (CommonJS - used by some libs)
+// =============================================================================
+
+/**
+ * @param {string} module
+ * @return {*}
+ */
+function require(module) {}
+
+// =============================================================================
+// frameElement (Browser API)
+// =============================================================================
+
+/** @type {Element|null} */
+var frameElement;
+
+// =============================================================================
+// Runtime-defined game constants (populated by ruleset.js)
+// =============================================================================
+
+/** @type {number} */
+var EXTRA_ROAD;
+
+/** @type {number} */
+var EXTRA_RAIL;
+
+/** @type {number} */
+var EXTRA_RIVER;
+
+/** @type {number} */
+var EXTRA_MINE;
+
+/** @type {number} */
+var EXTRA_IRRIGATION;
+
+/** @type {number} */
+var EXTRA_OIL_WELL;
+
+/** @type {number} */
+var EXTRA_HUT;
+
+/** @type {number} */
+var EXTRA_RUINS;
+
+/** @type {number} */
+var EXTRA_FORTRESS;
+
+/** @type {number} */
+var EXTRA_AIRBASE;
+
+/** @type {number} */
+var EXTRA_FALLOUT;
+
+/** @type {number} */
+var EXTRA_POLLUTION;
+
+/** @type {number} */
+var EXTRA_BUOY;
+
+/** @type {number} */
+var EXTRA_FARMLAND;
+
+// =============================================================================
+// Runtime-defined game variables (various sources)
+// =============================================================================
+
+/** @type {number} */
+var touch_start_x;
+
+/** @type {number} */
+var touch_start_y;
+
+/** @type {boolean} */
+var goto_preview_active;
+
+/** @type {*} */
+var road_positions;
+
+/** @type {*} */
+var rail_positions;
+
+/** @type {*} */
+var texture;
+
+/** @type {*} */
+var pos;
+
+/** @type {number} */
+var ts;
+
+/** @type {*} */
+var closed_dialog_already;
+
+/** @type {*} */
+var timeoutTimerId;
+
+/** @type {*} */
+var statusTimerId;
+
+/** @type {*} */
+var loaded_game_type;
+
+/** @type {boolean} */
+var hotseat_enabled;
+
+/** @type {*} */
+var research_goal_text;
+
+/** @type {*} */
+var openai_setting;
+
+/** @type {*} */
+var NULL;
+
+/** @type {number} */
+var VUT_BASEFLAG;
+
+// =============================================================================
+// 2D Canvas Tileset variables
+// =============================================================================
+
+/** @type {function(...)} */
+var fill_terrain_sprite_array;
+
+/** @type {number} */
+var city_flag_offset_x;
+
+/** @type {number} */
+var city_flag_offset_y;
+
+/** @type {number} */
+var citybar_offset_x;
+
+/** @type {number} */
+var citybar_offset_y;
+
+/** @type {number} */
+var tilelabel_offset_x;
+
+/** @type {number} */
+var tilelabel_offset_y;
+
+// =============================================================================
+// Third-party library internals
+// =============================================================================
+
+/** @type {*} */
+var dx;
+
+/** @type {string} */
+var logStr;

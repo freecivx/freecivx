@@ -18,8 +18,8 @@
 ***********************************************************************/
 
 
-
-function Range() {
+// Named SliderRange to avoid conflict with browser's Range API
+function SliderRange() {
 	this._value = 0;
 	this._minimum = 0;
 	this._maximum = 100;
@@ -28,7 +28,7 @@ function Range() {
 	this._isChanging = false;
 }
 
-Range.prototype.setValue = function (value) {
+SliderRange.prototype.setValue = function (value) {
 	value = Math.round(parseFloat(value));
 	if (isNaN(value)) return;
 	if (this._value != value) {
@@ -43,11 +43,11 @@ Range.prototype.setValue = function (value) {
 	}
 };
 
-Range.prototype.getValue = function () {
+SliderRange.prototype.getValue = function () {
 	return this._value;
 };
 
-Range.prototype.setExtent = function (extent) {
+SliderRange.prototype.setExtent = function (extent) {
 	if (this._extent != extent) {
 		if (extent < 0)
 			this._extent = 0;
@@ -60,11 +60,11 @@ Range.prototype.setExtent = function (extent) {
 	}
 };
 
-Range.prototype.getExtent = function () {
+SliderRange.prototype.getExtent = function () {
 	return this._extent;
 };
 
-Range.prototype.setMinimum = function (minimum) {
+SliderRange.prototype.setMinimum = function (minimum) {
 	if (this._minimum != minimum) {
 		var oldIsChanging = this._isChanging;
 		this._isChanging = true;
@@ -87,11 +87,11 @@ Range.prototype.setMinimum = function (minimum) {
 	}
 };
 
-Range.prototype.getMinimum = function () {
+SliderRange.prototype.getMinimum = function () {
 	return this._minimum;
 };
 
-Range.prototype.setMaximum = function (maximum) {
+SliderRange.prototype.setMaximum = function (maximum) {
 	if (this._maximum != maximum) {
 		var oldIsChanging = this._isChanging;
 		this._isChanging = true;
@@ -116,6 +116,6 @@ Range.prototype.setMaximum = function (maximum) {
 	}
 };
 
-Range.prototype.getMaximum = function () {
+SliderRange.prototype.getMaximum = function () {
 	return this._maximum;
 };
