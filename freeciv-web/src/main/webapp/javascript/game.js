@@ -24,7 +24,7 @@ var ruleset_control = null;
 var ruleset_summary = null;
 var ruleset_description = null;
 
-var IDENTITY_NUMBER_ZERO = 0;
+// IDENTITY_NUMBER_ZERO is defined in fc_types.js
 
 function game_init()
 {

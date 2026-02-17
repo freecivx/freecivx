@@ -21,7 +21,7 @@ var TERRAIN_TUNDRA = 7;
 var TERRAIN_SWAMP = 8;
 var TERRAIN_ARCTIC = 9;
 
-var terrains = {};
+// terrains is defined in terrain.js
 
 var FractureGenerator = {
     seed: 0,

@@ -20,7 +20,7 @@ Slider.isSupported = typeof document.createElement != "undefined" &&
 function Slider(oElement, oInput, sOrientation) {
 	if (!oElement) return;
 	this._orientation = sOrientation || "horizontal";
-	this._range = new Range();
+	this._range = new SliderRange();
 	this._range.setExtent(0);
 	this._blockIncrement = 10;
 	this._unitIncrement = 1;

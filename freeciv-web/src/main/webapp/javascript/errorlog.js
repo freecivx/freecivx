@@ -20,8 +20,9 @@
 
 /**************************************************************************
  Logs JavaScript error in FreecivWorld.net DB.
+ Named logErrorToServer to avoid conflict with browser's window.reportError.
 **************************************************************************/
-function reportError(error, msg) {
+function logErrorToServer(error, msg) {
     // Use native Error.stack for strict mode compatibility
     var stackTrace = '';
     
@@ -45,7 +46,7 @@ function reportError(error, msg) {
 
 window.onerror = function(msg, file, line, col, error) {
     // Use native error handling - strict mode compatible
-    reportError(error, msg + " at " + file + ":" + line + ":" + col);
+    logErrorToServer(error, msg + " at " + file + ":" + line + ":" + col);
 };
 
 function utf8_to_b64(str) {
