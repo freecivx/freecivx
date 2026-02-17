@@ -124,7 +124,11 @@ standalone_mode = true;
   })();
 </script>
 
-<!-- Main application bundle - includes jQuery, Stacktrace, Audio, and all application code -->
+<!-- jQuery and jQuery UI libraries (must load before application code) -->
+<script src="/javascript/libs/jquery.min.js"></script>
+<script src="/javascript/libs/jquery-ui.min.js"></script>
+
+<!-- Main application bundle - includes Stacktrace, Audio, and all application code -->
 <!-- Note: standalone.js is bundled inside webclient.min.js -->
 <script src="/javascript/webclient.min.js" ></script>
 
