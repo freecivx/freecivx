@@ -1229,6 +1229,7 @@ function build_city_tile_map_with_limits(dx_min, dx_max, dy_min, dy_max)
 /**************************************************************************
   Returns the mapping of position from city center to index in city_info.
 **************************************************************************/
+/* eslint-disable no-func-assign */
 function get_city_tile_map_for_pos(x, y)
 {
   if (wrap_has_flag(WRAP_X)) {
@@ -1287,6 +1288,7 @@ function get_city_tile_map_for_pos(x, y)
 
   return get_city_tile_map_for_pos(x, y);
 }
+/* eslint-enable no-func-assign */
 
 /**************************************************************************
 ...
