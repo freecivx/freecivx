@@ -325,6 +325,9 @@ Rerun the sync-js-hand.js script.
 						<closureCreateSourceMap>true</closureCreateSourceMap>
 						<closureEmitUseStrict>false</closureEmitUseStrict>
 						<skipMinify>${skip-minify-js}</skipMinify>
+						<closureExterns>
+							<closureExtern>${basedir}/src/main/webapp/javascript/externs.js</closureExtern>
+						</closureExterns>
 					</configuration>
 					<executions>
 						<execution>
@@ -365,6 +368,7 @@ Rerun the sync-js-hand.js script.
 									<exclude>webgpu/effects/*js</exclude>
 									<exclude>three-modules.js</exclude>
 									<exclude>three-modules-webgpu.js</exclude>
+									<exclude>externs.js</exclude>
 								</excludes>
 							</configuration>
 							<goals>
