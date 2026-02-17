@@ -235,7 +235,7 @@ function server_create_players(numPlayers, humanNation) {
   }
   
   var playerNames = [];
-  for (var i = 0; i < numPlayers; i++) {
+  for (i = 0; i < numPlayers; i++) {
     if (players[i]) {
       playerNames.push(players[i].name);
     }

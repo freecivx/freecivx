@@ -107,7 +107,7 @@ function get_openai_game_context()
   context += ".\n";
 
   context += "All technologies not known the current player: "
-  for (var tech_id in techs) {
+  for (tech_id in techs) {
      let ptech = techs[tech_id];
      if (player_invention_state(client.conn.playing, ptech['id']) != TECH_KNOWN) {
        context += ptech['name'] + ",";

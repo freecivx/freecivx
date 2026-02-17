@@ -108,13 +108,13 @@ function handle_scorelog(scorelog) {
         var player = scoredata[3];
         var value = scoredata[4];
         if (resultdata[tag] == null) {
-          var s = {};
+          s = {};
           s["turn"] = turn;
           s[player] = parseInt(value);
           resultdata[tag] = [];
           resultdata[tag][turn - start_turn] = s;
         } else if (resultdata[tag] != null && resultdata[tag][turn - start_turn] == null) {
-          var s = {};
+          s = {};
           s["turn"] = turn;
           s[player] = parseInt(value);
           resultdata[tag][turn - start_turn] = s;
@@ -135,7 +135,7 @@ function handle_scorelog(scorelog) {
   var ps = 4;
   if (scoreitems.length >1000) ps = 0;
 
-  for (var key in scoretags) {
+  for (key in scoretags) {
     try {
       Morris.Line({
         element: 'scoreschart-' + key,

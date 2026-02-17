@@ -60,7 +60,7 @@ function server_ai_process_player(player_id) {
   
   // Process each unit
   for (var i = 0; i < player_units.length; i++) {
-    var punit = player_units[i];
+    punit = player_units[i];
     server_ai_process_unit(punit);
   }
 }

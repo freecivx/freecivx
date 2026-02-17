@@ -236,7 +236,7 @@ function hexLogNeighbors(tileX, tileY) {
     neighbors = neighborDeltas;
   } else if (isHex && isIso) {
     // Iso-hex: N, S, E, W, NW, SE  
-    var neighborDeltas = [
+    neighborDeltas = [
       { name: 'N', dx: 0, dy: -1 },
       { name: 'S', dx: 0, dy: 1 },
       { name: 'E', dx: 1, dy: 0 },
@@ -247,7 +247,7 @@ function hexLogNeighbors(tileX, tileY) {
     neighbors = neighborDeltas;
   } else {
     // Square: All 8 directions
-    var neighborDeltas = [
+    neighborDeltas = [
       { name: 'N', dx: 0, dy: -1 },
       { name: 'S', dx: 0, dy: 1 },
       { name: 'E', dx: 1, dy: 0 },
@@ -613,7 +613,7 @@ function generateAsciiMap() {
     var line = indent;
     
     for (var x = startX; x < startX + width && x < map.xsize; x++) {
-      var ptile = map_pos_to_tile(x, y);
+      ptile = map_pos_to_tile(x, y);
       var char = '?';
       
       if (ptile) {

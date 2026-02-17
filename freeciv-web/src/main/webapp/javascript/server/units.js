@@ -175,8 +175,8 @@ function server_create_units() {
     }
     
     // Create 2 explorers for each player
-    for (var i = 0; i < 1; i++) {
-      var offset = explorer_offsets[i];
+    for (i = 0; i < 1; i++) {
+      offset = explorer_offsets[i];
       var explorer_x = start_pos.x + offset[0];
       var explorer_y = start_pos.y + offset[1];
       
@@ -203,8 +203,8 @@ function server_create_units() {
     }
     
     // Create 3 settlers for each player
-    for (var i = 0; i < 1; i++) {
-      var offset = settler_offsets[i];
+    for (i = 0; i < 1; i++) {
+      offset = settler_offsets[i];
       var settler_x = start_pos.x + offset[0];
       var settler_y = start_pos.y + offset[1];
       

@@ -194,8 +194,8 @@ function show_standalone_nation_picker()
   });
 
   // Draw nation flags
-  for (var nation_id in nations) {
-    var pnation = nations[nation_id];
+  for (nation_id in nations) {
+    pnation = nations[nation_id];
     if (pnation['is_playable']) {
       var flag_canvas = document.getElementById('standalone_flag_' + nation_id);
       if (flag_canvas != null) {

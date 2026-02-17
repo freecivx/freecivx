@@ -524,17 +524,17 @@ function show_city_dialog(pcity)
   specialist_html += "<div style='clear: both;'></div>";
   $("#specialist_panel").html(specialist_html);
 
-  for (var s = 0; s < citizen_types.length; s++) {
+  for (s = 0; s < citizen_types.length; s++) {
     if (pcity['ppl_' + citizen_types[s]] == null) continue;
-    for (var i = 0; i < pcity['ppl_' + citizen_types[s]][FEELING_FINAL]; i ++) {
+    for (i = 0; i < pcity['ppl_' + citizen_types[s]][FEELING_FINAL]; i ++) {
       var citizen_canvas = $("#citizen_"  + s + "_" + i)[0].getContext("2d");
       citizen_canvas.drawImage(sprites["citizen." + citizen_types[s] + "_" + (i % 2)], 0, 0, 15, 20, 0, 0, 30, 38);
     }
   }
-  for (var u = 0; u < pcity['specialists_size']; u++) {
-    var spec_type_name = specialists[u]['plural_name'];
-    var spec_gfx_key = "specialist." + specialists[u]['rule_name'] + "_0";
-    for (var j = 0; j < pcity['specialists'][u]; j++) {
+  for (u = 0; u < pcity['specialists_size']; u++) {
+    spec_type_name = specialists[u]['plural_name'];
+    spec_gfx_key = "specialist." + specialists[u]['rule_name'] + "_0";
+    for (j = 0; j < pcity['specialists'][u]; j++) {
       var specialist_canvas = $("#specialist_" + u + "_" + j)[0].getContext("2d");
       specialist_canvas.drawImage(sprites[spec_gfx_key],  0, 0, 15, 20, 0, 0, 30, 38);
     }
@@ -1099,7 +1099,7 @@ function city_sell_improvement(improvement_id)
       send_request(JSON.stringify(packet));
     }
   } else {
-    var packet = {"pid" : packet_city_sell, "city_id" : active_city['id'],
+    packet = {"pid" : packet_city_sell, "city_id" : active_city['id'],
                 "build_id": improvement_id};
     send_request(JSON.stringify(packet));
   }

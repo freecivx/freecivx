@@ -379,7 +379,7 @@ function map_select_units(mouse_x, mouse_y)
   }
 
   for (var tile_id in selected_map_tiles) {
-    var ptile = selected_map_tiles[tile_id];
+    ptile = selected_map_tiles[tile_id];
     let cunits = tile_units(ptile);
     if (cunits == null) continue;
     for (var i = 0; i < cunits.length; i++) {

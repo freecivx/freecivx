@@ -32,6 +32,7 @@ var loader;
 /****************************************************************************
   Preload textures and models
 ****************************************************************************/
+// eslint-disable-next-line no-redeclare
 function webgl_preload()
 {
   console.log("Preloading WebGPU textures and models...");

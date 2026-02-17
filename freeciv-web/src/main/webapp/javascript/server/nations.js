@@ -650,7 +650,7 @@ function generate_random_nation(id) {
     adjective = prefix + " " + root + "ian";
   } else if (name_type === 1) {
     // Root + suffix (e.g., "Alvaria")
-    var root = RANDOM_NATION_ROOTS[Math.floor(seeded_random() * RANDOM_NATION_ROOTS.length)];
+    root = RANDOM_NATION_ROOTS[Math.floor(seeded_random() * RANDOM_NATION_ROOTS.length)];
     var suffix = RANDOM_NAME_BASES[Math.floor(seeded_random() * RANDOM_NAME_BASES.length)];
     name = root + suffix;
     adjective = root + "ian";
@@ -713,9 +713,9 @@ function server_create_nations() {
   }
   
   // Generate random nations for the remaining slots (564-999)
-  for (var i = predefined_count; i < MAX_NATIONS; i++) {
+  for (i = predefined_count; i < MAX_NATIONS; i++) {
     var random_nation = generate_random_nation(i);
-    var color = NATION_COLORS[i % NATION_COLORS.length];
+    color = NATION_COLORS[i % NATION_COLORS.length];
     
     handle_ruleset_nation({
       id: i,

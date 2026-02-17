@@ -204,7 +204,7 @@ function update_chatbox(messages)
       // It seems this might happen in pregame while handling a join request.
       // If so, enqueue the messages again, but we'll be emptying-requeueing
       // every second until the state changes.
-      for (var i = 0; i < messages.length; i++) {
+      for (i = 0; i < messages.length; i++) {
         message_log.update(messages[i]);
       }
   }

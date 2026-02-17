@@ -125,7 +125,7 @@ function request_new_cma(city_id)
                 "cm_parameter" : cm_parameter };
     send_request(JSON.stringify(packet));
   } else {
-    var packet = {"pid" : packet_web_cma_clear,
+    packet = {"pid" : packet_web_cma_clear,
                 "id" : city_id};
     send_request(JSON.stringify(packet));
   }
