@@ -410,10 +410,10 @@ Rerun the sync-js-hand.js script.
 									<goal>exec</goal>
 								</goals>
 								<configuration>
-									<executable>npx</executable>
+									<executable>npm</executable>
 									<arguments>
-										<argument>eslint</argument>
-										<argument>src/main/webapp/javascript/**/*.js</argument>
+										<argument>run</argument>
+										<argument>lint</argument>
 									</arguments>
 									<workingDirectory>${basedir}</workingDirectory>
 								</configuration>

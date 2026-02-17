@@ -57,7 +57,7 @@ function init_chatbox()
                        "restore" : "ui-icon-newwin"
                      }});
   $("#game_chatbox_panel").dialog('open');
-  $("#game_chatbox_panel").parent().addClass("chatbox_dialog");;
+  $("#game_chatbox_panel").parent().addClass("chatbox_dialog");
 
   $(".chatbox_dialog").css("top", "52px");
   $(".chatbox_dialog").css("left", "3px");
