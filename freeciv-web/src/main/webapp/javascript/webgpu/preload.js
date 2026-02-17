@@ -289,8 +289,8 @@ function createSpriteArrayTexture(image, cols, rows) {
  Creates a DataArrayTexture (texture_2d_array) from an array of individual
  texture images. Each image becomes a separate layer in the texture array.
  
- @param {HTMLImageElement[]} images - Array of images (all same dimensions)
- @returns {THREE.DataArrayTexture} A texture array with images.length layers
+ @param {Array<HTMLImageElement>} images Array of images (all same dimensions)
+ @return {Object} A texture array with images.length layers
 ****************************************************************************/
 function createTerrainLayerArrayTexture(images) {
   if (images.length === 0) {

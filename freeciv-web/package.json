@@ -1,5 +1,9 @@
 {
   "devDependencies": {
-    "@playwright/test": "^1.58.0"
+    "@playwright/test": "^1.58.0",
+    "eslint": "^8.57.0"
+  },
+  "scripts": {
+    "lint": "eslint 'src/main/webapp/javascript/*.js' 'src/main/webapp/javascript/2dcanvas/*.js' 'src/main/webapp/javascript/webgpu/*.js' 'src/main/webapp/javascript/webgpu_square/*.js' 'src/main/webapp/javascript/server/*.js'"
   }
 }

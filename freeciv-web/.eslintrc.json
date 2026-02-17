@@ -1,0 +1,50 @@
+{
+  "env": {
+    "browser": true,
+    "es2021": true,
+    "jquery": true
+  },
+  "extends": "eslint:recommended",
+  "parserOptions": {
+    "ecmaVersion": 2021,
+    "sourceType": "script"
+  },
+  "ignorePatterns": [
+    "libs/**",
+    "*.min.js"
+  ],
+  "globals": {
+    "THREE": "readonly",
+    "webgl_preload": "readonly",
+    "mapview": "readonly",
+    "scene": "readonly",
+    "camera": "readonly",
+    "renderer": "readonly",
+    "controls": "readonly",
+    "webgl_width": "readonly",
+    "webgl_height": "readonly"
+  },
+  "rules": {
+    "no-unused-vars": "warn",
+    "no-undef": "off",
+    "no-redeclare": "error",
+    "no-dupe-keys": "error",
+    "no-unreachable": "warn",
+    "no-empty": "warn",
+    "no-constant-condition": "warn",
+    "no-cond-assign": ["error", "except-parens"],
+    "no-func-assign": "error",
+    "no-inner-declarations": "warn",
+    "no-irregular-whitespace": "error",
+    "no-sparse-arrays": "warn",
+    "no-mixed-spaces-and-tabs": "error",
+    "use-isnan": "error",
+    "valid-typeof": "error",
+    "no-fallthrough": "warn",
+    "no-case-declarations": "warn",
+    "no-global-assign": "error",
+    "no-prototype-builtins": "warn",
+    "no-with": "error",
+    "no-useless-escape": "error"
+  }
+}

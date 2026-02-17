@@ -751,10 +751,10 @@ function assign_nation_color(nation_id)
   var max = -1;
   var max_color = null;
 
-  for (var current_color in color_counts) {
-    if (color_counts[current_color] > max) {
-      max = color_counts[current_color];
-      max_color = current_color;
+  for (var color_key in color_counts) {
+    if (color_counts[color_key] > max) {
+      max = color_counts[color_key];
+      max_color = color_key;
     }
   }
 

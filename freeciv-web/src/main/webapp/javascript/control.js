@@ -1210,9 +1210,9 @@ function update_unit_order_commands()
 
     // Load unit on transport
     if (pcity != null) {
-      let units_on_tile = tile_units(ptile);
-      for (var r = 0; r < units_on_tile.length; r++) {
-        var tunit = units_on_tile[r];
+      let loadUnitsOnTile = tile_units(ptile);
+      for (let r = 0; r < loadUnitsOnTile.length; r++) {
+        var tunit = loadUnitsOnTile[r];
         if (tunit['id'] == punit['id']) continue;
         var ntype = unit_type(tunit);
         if (ntype['transport_capacity'] > 0) unit_actions["unit_load"] = {name: "Load on transport (L)"};
@@ -1220,11 +1220,11 @@ function update_unit_order_commands()
     }
 
     // Unload unit from transport
-    let units_on_tile = tile_units(ptile);
-    if (ptype['transport_capacity'] > 0 && units_on_tile.length >= 2) {
-      for (var r = 0; r < units_on_tile.length; r++) {
-        var tunit = units_on_tile[r];
-        if (tunit['transported']) {
+    let unloadUnitsOnTile = tile_units(ptile);
+    if (ptype['transport_capacity'] > 0 && unloadUnitsOnTile.length >= 2) {
+      for (let r = 0; r < unloadUnitsOnTile.length; r++) {
+        var uunit = unloadUnitsOnTile[r];
+        if (uunit['transported']) {
           unit_actions["unit_show_cargo"] = {name: "Activate cargo units"};
           if (pcity != null) unit_actions["unit_unload"] = {name: "Unload units from transport (T)"};
         }
@@ -2508,18 +2508,18 @@ function key_unit_unload()
     units_on_tile = tile_units(ptile);
   }
 
-  for (var i = 0; i < units_on_tile.length; i++) {
-    var punit = units_on_tile[i];
-    if (punit['transported'] && punit['transported_by'] > 0
-        && punit['owner'] == client.conn.playing.playerno) {
-      request_new_unit_activity(punit, ACTIVITY_IDLE, EXTRA_NONE);
-      request_unit_do_action(ACTION_TRANSPORT_DEBOARD, punit['id'],
-                             punit['transported_by']);
+  for (var j = 0; j < units_on_tile.length; j++) {
+    var uunit = units_on_tile[j];
+    if (uunit['transported'] && uunit['transported_by'] > 0
+        && uunit['owner'] == client.conn.playing.playerno) {
+      request_new_unit_activity(uunit, ACTIVITY_IDLE, EXTRA_NONE);
+      request_unit_do_action(ACTION_TRANSPORT_DEBOARD, uunit['id'],
+                             uunit['transported_by']);
     } else {
-      request_new_unit_activity(punit, ACTIVITY_IDLE, EXTRA_NONE);
+      request_new_unit_activity(uunit, ACTIVITY_IDLE, EXTRA_NONE);
       request_unit_do_action(ACTION_TRANSPORT_UNLOAD,
-                             punit['transported_by'],
-                             punit['id']);
+                             uunit['transported_by'],
+                             uunit['id']);
     }
   }
   setTimeout(advance_unit_focus, 700);
@@ -2539,10 +2539,10 @@ function key_unit_show_cargo()
   }
 
   current_focus = [];
-  for (var i = 0; i < units_on_tile.length; i++) {
-    var punit = units_on_tile[i];
-    if (punit['transported'] && punit['transported_by'] > 0 ) {
-      current_focus.push(punit);
+  for (var j = 0; j < units_on_tile.length; j++) {
+    var uunit = units_on_tile[j];
+    if (uunit['transported'] && uunit['transported_by'] > 0 ) {
+      current_focus.push(uunit);
     }
   }
   update_active_units_dialog();
@@ -3358,8 +3358,8 @@ function update_active_units_dialog()
     unit_info_html += "<div id='active_unit_info'>" + current_focus.length + " units selected.</div> ";
   }
 
-  for (var i = 0; i < punits.length; i++) {
-    var punit = punits[i];
+  for (var k = 0; k < punits.length; k++) {
+    var punit = punits[k];
     var sprite = get_unit_image_sprite(punit);
     var active = (current_focus.length > 1 || current_focus[0]['id'] == punit['id']);
 
