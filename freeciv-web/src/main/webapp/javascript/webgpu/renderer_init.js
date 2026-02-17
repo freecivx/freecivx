@@ -35,9 +35,7 @@ function init_webgl_renderer()
 {
   // WebGPU is required - no WebGL fallback
   if (!navigator.gpu) {
-    swal("WebGPU is not supported by your browser. Please use a modern browser with WebGPU support (Chrome 113+, Edge 113+, Firefox 122+).");
-    console.log("WebGPU not supported by browser");
-    return;
+    console.log("WebGPU not supported by browser. maybe WebGL fallback will work, but WebGPU is required for the best experience.");
   }
 
   renderer_type = "webgpu";
@@ -77,9 +75,7 @@ async function renderer_init() {
   
   // WebGPU is required - no fallback
   if (!navigator.gpu) {
-    swal("WebGPU is not supported by your browser. Please use a modern browser with WebGPU support (Chrome 113+, Edge 113+, Firefox 122+).");
     console.log("WebGPU not supported by browser");
-    return;
   }
 
   renderer_type = "webgpu";
