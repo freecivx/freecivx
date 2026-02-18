@@ -1274,6 +1274,7 @@ li.tech-both::before {
 .overview_dialog {
   background-color: rgba(40, 40, 40, 0.85) !important;
   border: 2px solid #555 !important;
+  bottom: 100px !important;
 }
 
 .overview_dialog .ui-dialog-titlebar {

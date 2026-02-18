@@ -81,7 +81,7 @@ function init_overview()
 			dialogClass: 'overview_dialog no-close',
 			autoResize:true,
 			width: "auto",
-			position: {my: 'left bottom', at: 'left bottom', of: window},
+			position: {my: 'left bottom', at: 'left bottom-100', of: window},
 			close: function(event, ui) { overview_active = false;}
 		}).dialogExtend({
                   "minimizable" : true,
@@ -109,7 +109,7 @@ function init_overview()
 
                       $('#overview_map').width(new_width);
                       $('#overview_map').height(new_height);
-                      $(".overview_dialog").position({my: 'left bottom', at: 'left bottom', of: window, within: $("#tabs-map")});
+                      $(".overview_dialog").position({my: 'left bottom', at: 'left bottom-100', of: window, within: $("#tabs-map")});
                     },
                   "icons" : {
                     "minimize" : "ui-icon-circle-minus",
@@ -131,7 +131,7 @@ function init_overview()
   if (new_height > max_overview_height) new_height = max_overview_height;
   $('#overview_map').width(new_width);
   $('#overview_map').height(new_height);
-  $(".overview_dialog").position({my: 'left bottom', at: 'left bottom', of: window, within: $("#tabs-map")});
+  $(".overview_dialog").position({my: 'left bottom', at: 'left bottom-100', of: window, within: $("#tabs-map")});
 
   $('#overview_map').on('dragstart', function(event) { event.preventDefault(); });
   
