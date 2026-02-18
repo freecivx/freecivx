@@ -45,6 +45,20 @@ var COLOR_OVERVIEW_GENERIC = 8;  /* dull terrain, to show diplrelations better *
 var overview_hash = -1;
 var overview_current_state = null;
 
+/****************************************************************************
+  Helper function to prevent minimized dialog container from blocking clicks.
+****************************************************************************/
+function unobstruct_minimized_dialog_container() {
+  // Ensure minimized dialogs don't block user interaction
+  $(".ui-dialog-minimized").css({
+    "width": "auto",
+    "pointer-events": "none"
+  });
+  $(".ui-dialog-minimized > *").css({
+    "pointer-events": "auto"
+  });
+}
+
 
 /****************************************************************************
   Initilaize the overview map.
