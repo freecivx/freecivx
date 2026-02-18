@@ -52,6 +52,11 @@ function set_client_state(newstate)
 
       renderer_init();
 
+      /* Initialize the overview/minimap window */
+      if (typeof init_overview === 'function') {
+        init_overview();
+      }
+
       /* remove context menu from pregame. */
       $(".context-menu-root").remove();
 

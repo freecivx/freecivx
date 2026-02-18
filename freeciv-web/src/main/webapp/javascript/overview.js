@@ -45,6 +45,20 @@ var COLOR_OVERVIEW_GENERIC = 8;  /* dull terrain, to show diplrelations better *
 var overview_hash = -1;
 var overview_current_state = null;
 
+/****************************************************************************
+  Helper function to prevent minimized dialog container from blocking clicks.
+****************************************************************************/
+function unobstruct_minimized_dialog_container() {
+  // Ensure minimized dialogs don't block user interaction
+  $(".ui-dialog-minimized").css({
+    "width": "auto",
+    "pointer-events": "none"
+  });
+  $(".ui-dialog-minimized > *").css({
+    "pointer-events": "auto"
+  });
+}
+
 
 /****************************************************************************
   Initilaize the overview map.
@@ -67,6 +81,7 @@ function init_overview()
 			dialogClass: 'overview_dialog no-close',
 			autoResize:true,
 			width: "auto",
+			position: {my: 'left bottom', at: 'left bottom', of: window},
 			close: function(event, ui) { overview_active = false;}
 		}).dialogExtend({
                   "minimizable" : true,
@@ -119,6 +134,15 @@ function init_overview()
   $(".overview_dialog").position({my: 'left bottom', at: 'left bottom-10', of: window, within: $("#tabs-map")});
 
   $('#overview_map').on('dragstart', function(event) { event.preventDefault(); });
+  
+  // Add click handler to overview canvas
+  $('#overview_img').off('click').on('click', function(event) {
+    var offset = $(this).offset();
+    var x = event.pageX - offset.left;
+    var y = event.pageY - offset.top;
+    overview_clicked(x, y);
+  });
+  
   // globe icon symbol
   /* old fa-icon, deprecated
   $("#game_overview_panel").parent().children().not("#game_overview_panel").children().get(0).innerHTML 
@@ -148,9 +172,7 @@ function redraw_overview()
   var hash = generate_overview_hash(map['xsize'], map['ysize'])
 
   if (hash != overview_hash) {
-    bmp_lib.render('overview_img',
-                    generate_overview_grid(map['xsize'], map['ysize']),
-                    palette);
+    render_overview_to_canvas();
     overview_hash = hash;
     render_viewrect();
   }
@@ -162,8 +184,7 @@ function redraw_overview()
 function force_redraw_overview() 
 {
   var hash = generate_overview_hash(map['xsize'], map['ysize'])
-  bmp_lib.render('overview_img', generate_overview_grid(map['xsize'], map['ysize']),
-                  palette);
+  render_overview_to_canvas();
   overview_hash = hash;
   render_viewrect();
 }
@@ -193,6 +214,78 @@ function generate_overview_grid(cols, rows) {
   }
 
   return grid;
+}
+
+/****************************************************************************
+  Renders the overview map directly to canvas using Canvas 2D API.
+  This is more efficient and modern than using bmp_lib.
+****************************************************************************/
+function render_overview_to_canvas() {
+  var canvas = document.getElementById('overview_img');
+  if (!canvas) return;
+
+  var cols = map['xsize'];
+  var rows = map['ysize'];
+
+  if (cols & 1) cols -= 1;  // Bugfix: overview doesn't support odd map sizes
+  if (rows & 1) rows -= 1;
+
+  // Set canvas size to match the overview dimensions
+  var width = cols * OVERVIEW_TILE_SIZE;
+  var height = rows * OVERVIEW_TILE_SIZE;
+  canvas.width = width;
+  canvas.height = height;
+
+  var ctx = canvas.getContext('2d');
+  var imageData = ctx.createImageData(width, height);
+  var data = imageData.data;
+
+  // Render each tile
+  for (var map_y = 0; map_y < rows; map_y++) {
+    for (var map_x = 0; map_x < cols; map_x++) {
+      var color_index = overview_tile_color(map_x, map_y);
+      var rgb = palette[color_index];
+      
+      if (rgb) {
+        // Render OVERVIEW_TILE_SIZE x OVERVIEW_TILE_SIZE pixel block
+        for (var py = 0; py < OVERVIEW_TILE_SIZE; py++) {
+          for (var px = 0; px < OVERVIEW_TILE_SIZE; px++) {
+            var pixel_x = map_x * OVERVIEW_TILE_SIZE + px;
+            var pixel_y = map_y * OVERVIEW_TILE_SIZE + py;
+            var index = (pixel_y * width + pixel_x) * 4;
+            
+            data[index] = rgb[0];     // Red
+            data[index + 1] = rgb[1]; // Green
+            data[index + 2] = rgb[2]; // Blue
+            data[index + 3] = 255;    // Alpha
+          }
+        }
+      }
+    }
+  }
+
+  ctx.putImageData(imageData, 0, 0);
+}
+
+/****************************************************************************
+  Converts canvas coordinates to map tile coordinates.
+  This is a wrapper around webgl_canvas_pos_to_tile that returns map coordinates.
+****************************************************************************/
+function base_canvas_to_map_pos(canvas_x, canvas_y) {
+  // Check if the WebGL function exists (it should be loaded before overview.js)
+  if (typeof webgl_canvas_pos_to_tile === 'undefined') {
+    return null;
+  }
+  
+  var ptile = webgl_canvas_pos_to_tile(canvas_x, canvas_y);
+  if (ptile == null) {
+    return null;
+  }
+  
+  return {
+    'map_x': ptile['x'],
+    'map_y': ptile['y']
+  };
 }
 
 /****************************************************************************
@@ -227,12 +320,16 @@ function render_viewrect()
   var path = [];
 
     var point = base_canvas_to_map_pos(0, 0);
+    if (point == null) return;
     path.push([point.map_x, point.map_y]);
     point = base_canvas_to_map_pos(mapview['width'], 0);
+    if (point == null) return;
     path.push([point.map_x, point.map_y]);
     point = base_canvas_to_map_pos(mapview['width'], mapview['height']);
+    if (point == null) return;
     path.push([point.map_x, point.map_y]);
     point = base_canvas_to_map_pos(0, mapview['height']);
+    if (point == null) return;
     path.push([point.map_x, point.map_y]);
 
   var viewrect_canvas = document.getElementById('overview_viewrect');
@@ -286,6 +383,26 @@ function render_multipixel(grid, x, y, ocolor)
       }
     }
   }
+}
+
+/****************************************************************************
+  Converts a color from "rgb(r, g, b)" string format to [r, g, b] array.
+  If the color is already an array, it is returned as-is.
+****************************************************************************/
+function color_rgb_to_list(color) {
+  // If it's already an array, return it
+  if (Array.isArray(color)) {
+    return color;
+  }
+  
+  // If it's a string in "rgb(r, g, b)" format, parse it
+  if (typeof color === 'string' && color.startsWith('rgb(')) {
+    var rgb = color.replace("rgb(", "").replace(")", "").split(",");
+    return [parseInt(rgb[0]), parseInt(rgb[1]), parseInt(rgb[2])];
+  }
+  
+  // Default fallback to black
+  return [0, 0, 0];
 }
 
 /****************************************************************************
