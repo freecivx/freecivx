@@ -28,25 +28,25 @@
  */
 
 var container, stats;
-scene = null;
-maprenderer = null;
+var scene = null;
+var maprenderer = null;
 var anaglyph_effect;
 
 var mouse, raycaster;
 var spotlight;
-var directionalLight;  // Main directional light for sun-like shadows
+var directionalLight;
 var timer;
 
-controls = null;
+var controls = null;
 
 var tiletype_terrains = ["coast","ocean","desert","grassland","hills","mountains","plains","swamp"];
 
 var landGeometry;
-var landMesh; // the terrain land geometry
+var landMesh;
 var water_hq;
 
 var lofiGeometry;
-var lofiMesh;  // low resolution mesh used for raycasting.
+var lofiMesh;
 var freeciv_uniforms;
 var terrain_material;
 
@@ -220,29 +220,20 @@ function update_map_terrain_geometry()
   if (map_geometry_dirty) {
     var hash = generate_heightmap_hash();
     if (hash != heightmap_hash) {
-      // Use appropriate heightmap update based on map topology
-      var useHexTopology = typeof is_hex === 'function' && is_hex();
-      
-      if (useHexTopology) {
+
+      if (is_hex()) {
         update_heightmap(terrain_quality);
-      } else if (typeof update_heightmap_square === 'function') {
-        update_heightmap_square(terrain_quality);
       } else {
-        // Fallback to hex
-        update_heightmap(terrain_quality);
+        update_heightmap_square(terrain_quality);
       }
       
       // Use appropriate geometry update based on map topology
-      if (useHexTopology) {
+      if (is_hex()) {
         update_land_geometry(lofiGeometry, 2);
         update_land_geometry(landGeometry, terrain_quality);
-      } else if (typeof update_land_geometry_square === 'function') {
+      } else  {
         update_land_geometry_square(lofiGeometry, 2);
         update_land_geometry_square(landGeometry, terrain_quality);
-      } else {
-        // Fallback to hex
-        update_land_geometry(lofiGeometry, 2);
-        update_land_geometry(landGeometry, terrain_quality);
       }
 
       lofiGeometry.rotateX( - Math.PI / 2 );
