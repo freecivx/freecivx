@@ -577,8 +577,8 @@ function createTerrainShaderTSL(uniforms) {
     
     // Apply lighting to terrain color with moderate brightness
     // Brightness boost provides vibrancy without washing out colors
-    // This gives final range of ~0.47 (shadow) to ~1.22 (lit) - vibrant looking
-    const brightnessBoost = 1.35;
+    // This gives final range of ~0.52 (shadow) to ~1.34 (lit) - vibrant looking
+    const brightnessBoost = 1.485;
     finalColor = vec4(mul(mul(finalColor.rgb, lightingFactor), brightnessBoost), finalColor.a);
 
     // =========================================================================
