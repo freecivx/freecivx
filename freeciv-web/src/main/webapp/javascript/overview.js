@@ -24,7 +24,7 @@ var max_overview_width = 300;
 var max_overview_height = 300;
 var overview_map_height = 140;
 
-var OVERVIEW_REFRESH;
+var OVERVIEW_REFRESH = 30000; // Update overview every 30 seconds
 
 var palette = [];
 var palette_color_offset = 0;
@@ -151,6 +151,16 @@ function init_overview()
   // on lower corners but not top corners which are applied to its parent.  This removes annoying
   // illusion that stone panel under the overviewmap is overwriting or invading the titlebar.
   $(".overview_dialog").children().css("border-radius", "0px");
+
+  // Setup periodic overview map updates
+  if (overviewTimerId != -1) {
+    clearInterval(overviewTimerId);
+  }
+  overviewTimerId = setInterval(function() {
+    if (overview_active) {
+      redraw_overview();
+    }
+  }, OVERVIEW_REFRESH);
 }
 
 /****************************************************************************
