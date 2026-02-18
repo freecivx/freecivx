@@ -64,8 +64,8 @@ $(document).ready(function() {
 function civclient_init()
 {
   if (!navigator.gpu) {
-    swal("WebGPU is not supported by your browser. Please use a modern browser with WebGPU support (Chrome 113+, Edge 113+, Firefox 122+).");
-    return;
+    swal("WebGPU is not supported by your browser.");
+    
   }
 
   $("#introtxtja").hide();
