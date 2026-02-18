@@ -1194,6 +1194,11 @@ function handle_begin_turn(packet)
 
   if (is_tech_tree_init && tech_dialog_active) update_tech_screen();
 
+  // Update overview map at the start of each turn
+  if (overview_active) {
+    redraw_overview();
+  }
+
 }
 
 function handle_end_turn(packet)
