@@ -41,31 +41,35 @@ function create_unit_label_sprite(punit, ptile)
     fcanvas.height = 32;
     var ctx = fcanvas.getContext("2d");
 
-    ctx.drawImage(sprites[pflag['key']], 0, 0,
-                sprites[pflag['key']].width, sprites[pflag['key']].height,
-                0,6,40,20);
-    width += 45;
+    if (sprites[pflag['key']]) {
+      ctx.drawImage(sprites[pflag['key']], 0, 0,
+                  sprites[pflag['key']].width, sprites[pflag['key']].height,
+                  0,6,40,20);
+      width += 45;
+    }
 
     if (show_unit_in_label && punit.owner != null) {
       let unit_sprite = sprites[unit_type['graphic_str'] + "_Idle"];
-      var owner_id = punit.owner;
-      var owner = players[owner_id];
-      var background_color = nations[owner.nation].color;
-      let rectWidth = unit_sprite.width * 0.5;
-      let rectHeight = unit_sprite.height * 0.5;
+      if (unit_sprite) {
+        var owner_id = punit.owner;
+        var owner = players[owner_id];
+        var background_color = nations[owner.nation].color;
+        let rectWidth = unit_sprite.width * 0.5;
+        let rectHeight = unit_sprite.height * 0.5;
 
-      ctx.fillStyle = background_color;
-      ctx.fillRect(width + 3, 2, rectWidth - 5, rectHeight - 4);
+        ctx.fillStyle = background_color;
+        ctx.fillRect(width + 3, 2, rectWidth - 5, rectHeight - 4);
 
-      ctx.drawImage(unit_sprite, 0, 0,
-          unit_sprite.width, unit_sprite.height,
-          width, 0, unit_sprite.width * 0.5, unit_sprite.height * 0.5);
-      width += 33;
+        ctx.drawImage(unit_sprite, 0, 0,
+            unit_sprite.width, unit_sprite.height,
+            width, 0, unit_sprite.width * 0.5, unit_sprite.height * 0.5);
+        width += 33;
+      }
     }
 
     ctx.font = 'bold 18px serif';
 
-    if (activities != null) {
+    if (activities != null && sprites[activities.key]) {
       ctx.drawImage(sprites[activities.key],
           0, 0,
           28, 28,
@@ -93,16 +97,18 @@ function create_unit_label_sprite(punit, ptile)
       width += 30;
     }
 
-    if (punit['veteran'] > 0) {
+    if (punit['veteran'] > 0 && sprites["unit.vet_" + punit['veteran']]) {
       ctx.drawImage(sprites["unit.vet_" + punit['veteran']],
           24, 24,
           24, 24,
           width - 10, -10, 36, 36);
     }
 
-    ctx.drawImage(sprites["unit.hp_" + healthpercent], 25, 10,
-        22, 7,
-        0,0,40,6);
+    if (sprites["unit.hp_" + healthpercent]) {
+      ctx.drawImage(sprites["unit.hp_" + healthpercent], 25, 10,
+          22, 7,
+          0,0,40,6);
+    }
 
 
     texture = new THREE.Texture(fcanvas);
