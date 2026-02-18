@@ -109,7 +109,7 @@ function init_overview()
 
                       $('#overview_map').width(new_width);
                       $('#overview_map').height(new_height);
-                      $(".overview_dialog").position({my: 'left bottom', at: 'left bottom-10', of: window, within: $("#tabs-map")});
+                      $(".overview_dialog").position({my: 'left bottom', at: 'left bottom', of: window, within: $("#tabs-map")});
                     },
                   "icons" : {
                     "minimize" : "ui-icon-circle-minus",
@@ -131,7 +131,7 @@ function init_overview()
   if (new_height > max_overview_height) new_height = max_overview_height;
   $('#overview_map').width(new_width);
   $('#overview_map').height(new_height);
-  $(".overview_dialog").position({my: 'left bottom', at: 'left bottom-10', of: window, within: $("#tabs-map")});
+  $(".overview_dialog").position({my: 'left bottom', at: 'left bottom', of: window, within: $("#tabs-map")});
 
   $('#overview_map').on('dragstart', function(event) { event.preventDefault(); });
   
@@ -142,14 +142,7 @@ function init_overview()
     var y = event.pageY - offset.top;
     overview_clicked(x, y);
   });
-  
-  // globe icon symbol
-  /* old fa-icon, deprecated
-  $("#game_overview_panel").parent().children().not("#game_overview_panel").children().get(0).innerHTML 
-    = "<div style='font-size:97%; vertical-align:top; font-family:Arial; margin-bottom: 1px;'><i style='color #5df !important' class='fa fa-globe' aria-hidden='true'></i></div>";
-  */
-  $("#game_overview_panel").parent().children().not("#game_overview_panel").children().get(0).innerHTML 
-  = "<div margin-bottom: 1px;'><img src='/images/e/earth.png' height='16px'></div>";
+ 
 
   // adjust minimize/maximize icons
   $("#game_overview_panel").siblings().children().next().css("margin-top", "-7px");
