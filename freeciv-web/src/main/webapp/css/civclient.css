@@ -1241,3 +1241,48 @@ li.tech-both::before {
 .lowered_gov {
   height: 27px;
 }
+
+/* Overview/Minimap Panel Styles */
+#game_overview_panel {
+  display: none; /* Hidden by default, shown by jQuery dialog */
+}
+
+#overview_map {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+#overview_img {
+  position: absolute;
+  top: 0;
+  left: 0;
+  image-rendering: pixelated;
+  image-rendering: -moz-crisp-edges;
+  image-rendering: crisp-edges;
+  cursor: pointer;
+}
+
+#overview_viewrect {
+  position: absolute;
+  top: 0;
+  left: 0;
+  pointer-events: none;
+}
+
+.overview_dialog {
+  background-color: rgba(40, 40, 40, 0.85) !important;
+  border: 2px solid #555 !important;
+}
+
+.overview_dialog .ui-dialog-titlebar {
+  background: linear-gradient(to bottom, #444, #222) !important;
+  border: none !important;
+  padding: 3px 5px !important;
+  font-size: 11px !important;
+}
+
+.overview_dialog.no-close .ui-dialog-titlebar-close {
+  display: none;
+}

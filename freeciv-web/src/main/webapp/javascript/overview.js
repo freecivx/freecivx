@@ -119,6 +119,15 @@ function init_overview()
   $(".overview_dialog").position({my: 'left bottom', at: 'left bottom', of: window, within: $("#tabs-map")});
 
   $('#overview_map').on('dragstart', function(event) { event.preventDefault(); });
+  
+  // Add click handler to overview canvas
+  $('#overview_img').off('click').on('click', function(event) {
+    var offset = $(this).offset();
+    var x = event.pageX - offset.left;
+    var y = event.pageY - offset.top;
+    overview_clicked(x, y);
+  });
+  
   // globe icon symbol
   /* old fa-icon, deprecated
   $("#game_overview_panel").parent().children().not("#game_overview_panel").children().get(0).innerHTML 
@@ -148,9 +157,7 @@ function redraw_overview()
   var hash = generate_overview_hash(map['xsize'], map['ysize'])
 
   if (hash != overview_hash) {
-    bmp_lib.render('overview_img',
-                    generate_overview_grid(map['xsize'], map['ysize']),
-                    palette);
+    render_overview_to_canvas();
     overview_hash = hash;
     render_viewrect();
   }
@@ -162,8 +169,7 @@ function redraw_overview()
 function force_redraw_overview() 
 {
   var hash = generate_overview_hash(map['xsize'], map['ysize'])
-  bmp_lib.render('overview_img', generate_overview_grid(map['xsize'], map['ysize']),
-                  palette);
+  render_overview_to_canvas();
   overview_hash = hash;
   render_viewrect();
 }
@@ -193,6 +199,57 @@ function generate_overview_grid(cols, rows) {
   }
 
   return grid;
+}
+
+/****************************************************************************
+  Renders the overview map directly to canvas using Canvas 2D API.
+  This is more efficient and modern than using bmp_lib.
+****************************************************************************/
+function render_overview_to_canvas() {
+  var canvas = document.getElementById('overview_img');
+  if (!canvas) return;
+
+  var cols = map['xsize'];
+  var rows = map['ysize'];
+
+  if (cols & 1) cols -= 1;  // Bugfix: overview doesn't support odd map sizes
+  if (rows & 1) rows -= 1;
+
+  // Set canvas size to match the overview dimensions
+  var width = cols * OVERVIEW_TILE_SIZE;
+  var height = rows * OVERVIEW_TILE_SIZE;
+  canvas.width = width;
+  canvas.height = height;
+
+  var ctx = canvas.getContext('2d');
+  var imageData = ctx.createImageData(width, height);
+  var data = imageData.data;
+
+  // Render each tile
+  for (var map_y = 0; map_y < rows; map_y++) {
+    for (var map_x = 0; map_x < cols; map_x++) {
+      var color_index = overview_tile_color(map_x, map_y);
+      var rgb = palette[color_index];
+      
+      if (rgb) {
+        // Render OVERVIEW_TILE_SIZE x OVERVIEW_TILE_SIZE pixel block
+        for (var py = 0; py < OVERVIEW_TILE_SIZE; py++) {
+          for (var px = 0; px < OVERVIEW_TILE_SIZE; px++) {
+            var pixel_x = map_x * OVERVIEW_TILE_SIZE + px;
+            var pixel_y = map_y * OVERVIEW_TILE_SIZE + py;
+            var index = (pixel_y * width + pixel_x) * 4;
+            
+            data[index] = rgb[0];     // Red
+            data[index + 1] = rgb[1]; // Green
+            data[index + 2] = rgb[2]; // Blue
+            data[index + 3] = 255;    // Alpha
+          }
+        }
+      }
+    }
+  }
+
+  ctx.putImageData(imageData, 0, 0);
 }
 
 /****************************************************************************
