@@ -44,8 +44,10 @@ function server_create_ruleset() {
   server_create_nations();
   server_create_governments();
   server_create_technologies();
+  server_create_unit_classes();
   server_create_unit_types();
   server_create_improvements();
+  server_create_specialists();
   server_create_city_styles();
   
   console.log("[Server Ruleset] Ruleset created successfully");
@@ -61,13 +63,13 @@ function server_create_ruleset_control() {
   // Call handle_ruleset_control to initialize the ruleset_control object
   // This contains counts and metadata about the ruleset
   handle_ruleset_control({
-    num_unit_types: 4,      // We're creating 4 unit types
-    num_impr_types: 3,      // We're creating 3 improvement types
-    num_tech_types: 4,      // We're creating 4 tech types
+    num_unit_types: 15,     // Enhanced unit types
+    num_impr_types: 15,     // Enhanced improvement types
+    num_tech_types: 31,     // Enhanced tech tree (31 technologies)
     num_base_types: 0,      // No bases for now
     num_road_types: 2,      // Roads and railroads
     num_styles: 3,          // 3 city styles
-    government_count: 3,    // 3 government types
+    government_count: 5,    // Enhanced government types
     nation_count: 10,       // 10 nations
     styles_count: 3,        // 3 styles
     terrain_count: 10,      // Terrain types
@@ -82,14 +84,20 @@ function server_create_ruleset_control() {
 
 /**************************************************************************
  * Create government types
+ * 
+ * Creates government types that players can adopt throughout the game.
+ * Each government has different characteristics affecting production,
+ * corruption, and available actions.
  **************************************************************************/
 function server_create_governments() {
   governments = {};
   
   // Use handle_ruleset_government to create governments
-  handle_ruleset_government({ id: 0, name: "Despotism" });
-  handle_ruleset_government({ id: 1, name: "Monarchy" });
-  handle_ruleset_government({ id: 2, name: "Republic" });
+  handle_ruleset_government({ id: 0, name: "Anarchy" });
+  handle_ruleset_government({ id: 1, name: "Despotism" });
+  handle_ruleset_government({ id: 2, name: "Monarchy" });
+  handle_ruleset_government({ id: 3, name: "Republic" });
+  handle_ruleset_government({ id: 4, name: "Democracy" });
   
   console.log("[Server Ruleset] Created " + Object.keys(governments).length + " governments");
 }
@@ -97,46 +105,233 @@ function server_create_governments() {
 
 
 /**************************************************************************
+ * Create unit class definitions
+ * 
+ * Unit classes define movement and combat characteristics shared by
+ * multiple unit types (e.g., Land, Sea, Air units).
+ **************************************************************************/
+function server_create_unit_classes() {
+  unit_classes = {};
+  
+  // Land unit class
+  handle_ruleset_unit_class({ 
+    id: 0, 
+    name: "Land",
+    move_type: 0,
+    flags: 0
+  });
+  
+  // Sea unit class
+  handle_ruleset_unit_class({ 
+    id: 1, 
+    name: "Sea",
+    move_type: 1,
+    flags: 0
+  });
+  
+  // Air unit class
+  handle_ruleset_unit_class({ 
+    id: 2, 
+    name: "Air",
+    move_type: 2,
+    flags: 0
+  });
+  
+  console.log("[Server Ruleset] Created " + Object.keys(unit_classes).length + " unit classes");
+}
+
+/**************************************************************************
  * Create unit type definitions
+ * 
+ * Creates a comprehensive set of unit types spanning different eras
+ * and roles (settlers, workers, military, naval, air).
  **************************************************************************/
 function server_create_unit_types() {
   unit_types = {};
   
-  // Use handle_ruleset_unit to create unit types
+  // Civilian Units
   handle_ruleset_unit({ 
     id: 0, 
     name: "Settlers",
     graphic_str: "u.settlers",
     move_rate: 1,
     move_bonus: [0],
-    hp: 10
+    hp: 20,
+    attack_strength: 0,
+    defense_strength: 1,
+    firepower: 1
   });
   
   handle_ruleset_unit({ 
     id: 1, 
-    name: "Warriors",
-    graphic_str: "u.warriors",
+    name: "Workers",
+    graphic_str: "u.workers",
     move_rate: 1,
     move_bonus: [0],
-    hp: 10
+    hp: 10,
+    attack_strength: 0,
+    defense_strength: 1,
+    firepower: 1
   });
   
   handle_ruleset_unit({ 
     id: 2, 
-    name: "Phalanx",
-    graphic_str: "u.phalanx",
-    move_rate: 1,
-    move_bonus: [0],
-    hp: 10
-  });
-  
-  handle_ruleset_unit({ 
-    id: 3, 
     name: "Explorer",
     graphic_str: "u.explorer",
     move_rate: 2,
     move_bonus: [0],
-    hp: 10
+    hp: 10,
+    attack_strength: 1,
+    defense_strength: 1,
+    firepower: 1
+  });
+  
+  // Ancient Era Military
+  handle_ruleset_unit({ 
+    id: 3, 
+    name: "Warriors",
+    graphic_str: "u.warriors",
+    move_rate: 1,
+    move_bonus: [0],
+    hp: 10,
+    attack_strength: 1,
+    defense_strength: 1,
+    firepower: 1
+  });
+  
+  handle_ruleset_unit({ 
+    id: 4, 
+    name: "Phalanx",
+    graphic_str: "u.phalanx",
+    move_rate: 1,
+    move_bonus: [0],
+    hp: 10,
+    attack_strength: 1,
+    defense_strength: 2,
+    firepower: 1
+  });
+  
+  handle_ruleset_unit({ 
+    id: 5, 
+    name: "Archers",
+    graphic_str: "u.archers",
+    move_rate: 1,
+    move_bonus: [0],
+    hp: 10,
+    attack_strength: 3,
+    defense_strength: 2,
+    firepower: 1
+  });
+  
+  handle_ruleset_unit({ 
+    id: 6, 
+    name: "Legion",
+    graphic_str: "u.legion",
+    move_rate: 1,
+    move_bonus: [0],
+    hp: 20,
+    attack_strength: 4,
+    defense_strength: 2,
+    firepower: 1
+  });
+  
+  handle_ruleset_unit({ 
+    id: 7, 
+    name: "Horsemen",
+    graphic_str: "u.horsemen",
+    move_rate: 2,
+    move_bonus: [0],
+    hp: 10,
+    attack_strength: 2,
+    defense_strength: 1,
+    firepower: 1
+  });
+  
+  // Medieval Era
+  handle_ruleset_unit({ 
+    id: 8, 
+    name: "Knights",
+    graphic_str: "u.knights",
+    move_rate: 2,
+    move_bonus: [0],
+    hp: 10,
+    attack_strength: 4,
+    defense_strength: 2,
+    firepower: 1
+  });
+  
+  handle_ruleset_unit({ 
+    id: 9, 
+    name: "Pikemen",
+    graphic_str: "u.pikemen",
+    move_rate: 1,
+    move_bonus: [0],
+    hp: 10,
+    attack_strength: 1,
+    defense_strength: 4,
+    firepower: 1
+  });
+  
+  handle_ruleset_unit({ 
+    id: 10, 
+    name: "Musketeers",
+    graphic_str: "u.musketeers",
+    move_rate: 1,
+    move_bonus: [0],
+    hp: 20,
+    attack_strength: 3,
+    defense_strength: 3,
+    firepower: 1
+  });
+  
+  // Naval Units
+  handle_ruleset_unit({ 
+    id: 11, 
+    name: "Trireme",
+    graphic_str: "u.trireme",
+    move_rate: 3,
+    move_bonus: [0],
+    hp: 10,
+    attack_strength: 1,
+    defense_strength: 1,
+    firepower: 1
+  });
+  
+  handle_ruleset_unit({ 
+    id: 12, 
+    name: "Caravel",
+    graphic_str: "u.caravel",
+    move_rate: 3,
+    move_bonus: [0],
+    hp: 10,
+    attack_strength: 2,
+    defense_strength: 1,
+    firepower: 1
+  });
+  
+  handle_ruleset_unit({ 
+    id: 13, 
+    name: "Frigate",
+    graphic_str: "u.frigate",
+    move_rate: 4,
+    move_bonus: [0],
+    hp: 20,
+    attack_strength: 4,
+    defense_strength: 2,
+    firepower: 1
+  });
+  
+  // Modern Era
+  handle_ruleset_unit({ 
+    id: 14, 
+    name: "Riflemen",
+    graphic_str: "u.riflemen",
+    move_rate: 1,
+    move_bonus: [0],
+    hp: 20,
+    attack_strength: 5,
+    defense_strength: 4,
+    firepower: 1
   });
   
   console.log("[Server Ruleset] Created " + Object.keys(unit_types).length + " unit types");
@@ -144,15 +339,53 @@ function server_create_unit_types() {
 
 /**************************************************************************
  * Create building/improvement definitions
+ * 
+ * Creates city improvements and wonders that players can build.
+ * Improvements provide various bonuses to cities.
  **************************************************************************/
 function server_create_improvements() {
   
   // Use handle_ruleset_building to create improvements
-  handle_ruleset_building({ id: 0, name: "Palace" });
-  handle_ruleset_building({ id: 1, name: "Barracks" });
-  handle_ruleset_building({ id: 2, name: "Granary" });
+  
+  // Infrastructure
+  handle_ruleset_building({ id: 0, name: "Palace", build_cost: 100 });
+  handle_ruleset_building({ id: 1, name: "Barracks", build_cost: 40 });
+  handle_ruleset_building({ id: 2, name: "Granary", build_cost: 60 });
+  handle_ruleset_building({ id: 3, name: "Library", build_cost: 80 });
+  handle_ruleset_building({ id: 4, name: "Marketplace", build_cost: 80 });
+  handle_ruleset_building({ id: 5, name: "Temple", build_cost: 40 });
+  
+  // Advanced buildings
+  handle_ruleset_building({ id: 6, name: "Courthouse", build_cost: 80 });
+  handle_ruleset_building({ id: 7, name: "City Walls", build_cost: 120 });
+  handle_ruleset_building({ id: 8, name: "Aqueduct", build_cost: 80 });
+  handle_ruleset_building({ id: 9, name: "Bank", build_cost: 120 });
+  handle_ruleset_building({ id: 10, name: "University", build_cost: 160 });
+  handle_ruleset_building({ id: 11, name: "Cathedral", build_cost: 160 });
+  
+  // Wonders
+  handle_ruleset_building({ id: 12, name: "Great Library", build_cost: 300 });
+  handle_ruleset_building({ id: 13, name: "Pyramids", build_cost: 300 });
+  handle_ruleset_building({ id: 14, name: "Colossus", build_cost: 200 });
   
   console.log("[Server Ruleset] Created " + Object.keys(improvements).length + " improvements");
+}
+
+/**************************************************************************
+ * Create specialist definitions
+ * 
+ * Specialists are citizens that can be assigned to specific roles in cities
+ * to provide various bonuses (science, taxes, entertainment, etc.).
+ **************************************************************************/
+function server_create_specialists() {
+  specialists = {};
+  
+  // Use handle_ruleset_specialist to create specialists
+  handle_ruleset_specialist({ id: 0, name: "Elvis", plural_name: "Elvises" });
+  handle_ruleset_specialist({ id: 1, name: "Scientist", plural_name: "Scientists" });
+  handle_ruleset_specialist({ id: 2, name: "Taxman", plural_name: "Taxmen" });
+  
+  console.log("[Server Ruleset] Created " + Object.keys(specialists).length + " specialists");
 }
 
 /**************************************************************************
