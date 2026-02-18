@@ -360,6 +360,26 @@ function render_multipixel(grid, x, y, ocolor)
 }
 
 /****************************************************************************
+  Converts a color from "rgb(r, g, b)" string format to [r, g, b] array.
+  If the color is already an array, it is returned as-is.
+****************************************************************************/
+function color_rgb_to_list(color) {
+  // If it's already an array, return it
+  if (Array.isArray(color)) {
+    return color;
+  }
+  
+  // If it's a string in "rgb(r, g, b)" format, parse it
+  if (typeof color === 'string' && color.startsWith('rgb(')) {
+    var rgb = color.replace("rgb(", "").replace(")", "").split(",");
+    return [parseInt(rgb[0]), parseInt(rgb[1]), parseInt(rgb[2])];
+  }
+  
+  // Default fallback to black
+  return [0, 0, 0];
+}
+
+/****************************************************************************
   Creates the palette for the overview map.
 ****************************************************************************/
 function generate_palette() {
