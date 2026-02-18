@@ -36,6 +36,7 @@ function init_webgl_renderer()
   // WebGPU is required - no WebGL fallback
   if (!navigator.gpu) {
     console.log("WebGPU not supported by browser. maybe WebGL fallback will work, but WebGPU is required for the best experience.");
+    $("#intro_extra_txt").text("WebGPU is not supported by your browser.");
   }
 
   renderer_type = "webgpu";
@@ -73,9 +74,9 @@ function webgl_preload_complete()
 async function renderer_init() {
   console.log("renderer_init()");
   
-  // WebGPU is required - no fallback
   if (!navigator.gpu) {
     console.log("WebGPU not supported by browser");
+    $("#intro_extra_txt").text("WebGPU is not supported by your browser.");
   }
 
   renderer_type = "webgpu";
