@@ -353,15 +353,6 @@ function render_viewrect()
   viewrect_ctx.beginPath();
   add_closed_path(viewrect_ctx, path);
 
-  if (topo_has_flag(TF_WRAPX)) {
-    viewrect_ctx.save();
-    viewrect_ctx.translate(map.xsize, 0);
-    add_closed_path(viewrect_ctx, path);
-    viewrect_ctx.translate(-2 * map.xsize, 0);
-    add_closed_path(viewrect_ctx, path);
-    viewrect_ctx.restore();
-  }
-
   viewrect_ctx.stroke();
 }
 
