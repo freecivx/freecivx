@@ -41,6 +41,7 @@ function server_create_ruleset() {
   server_create_ruleset_control();
   
   server_create_extras();
+  server_create_resources();
   server_create_nations();
   server_create_governments();
   server_create_technologies();
@@ -73,7 +74,7 @@ function server_create_ruleset_control() {
     nation_count: 10,       // 10 nations
     styles_count: 3,        // 3 styles
     terrain_count: 10,      // Terrain types
-    resource_count: 0       // No special resources for now
+    resource_count: 10      // 10 terrain resources
   });
   
   console.log("[Server Ruleset] Ruleset control initialized");
@@ -470,4 +471,87 @@ function server_create_extras() {
   window.EXTRA_FARMLAND = extraId++;
   
   console.log("[Server Ruleset] Created " + Object.keys(extras).length + " extras");
+}
+
+/**************************************************************************
+ * Create terrain resources
+ * 
+ * Resources are special bonuses that appear on terrain tiles and provide
+ * additional production, food, or trade bonuses.
+ **************************************************************************/
+function server_create_resources() {
+  resources = {};
+  
+  // Use handle_ruleset_resource to create resources
+  handle_ruleset_resource({ 
+    id: 0, 
+    name: "Gold",
+    graphic_str: "ts.gold",
+    graphic_alt: "-"
+  });
+  
+  handle_ruleset_resource({ 
+    id: 1, 
+    name: "Iron",
+    graphic_str: "ts.iron",
+    graphic_alt: "-"
+  });
+  
+  handle_ruleset_resource({ 
+    id: 2, 
+    name: "Wheat",
+    graphic_str: "ts.wheat",
+    graphic_alt: "-"
+  });
+  
+  handle_ruleset_resource({ 
+    id: 3, 
+    name: "Fish",
+    graphic_str: "ts.fish",
+    graphic_alt: "-"
+  });
+  
+  handle_ruleset_resource({ 
+    id: 4, 
+    name: "Game",
+    graphic_str: "ts.game",
+    graphic_alt: "-"
+  });
+  
+  handle_ruleset_resource({ 
+    id: 5, 
+    name: "Pheasant",
+    graphic_str: "ts.pheasant",
+    graphic_alt: "-"
+  });
+  
+  handle_ruleset_resource({ 
+    id: 6, 
+    name: "Coal",
+    graphic_str: "ts.coal",
+    graphic_alt: "-"
+  });
+  
+  handle_ruleset_resource({ 
+    id: 7, 
+    name: "Oasis",
+    graphic_str: "ts.oasis",
+    graphic_alt: "-"
+  });
+  
+  handle_ruleset_resource({ 
+    id: 8, 
+    name: "Peat",
+    graphic_str: "ts.peat",
+    graphic_alt: "-"
+  });
+  
+  handle_ruleset_resource({ 
+    id: 9, 
+    name: "Gems",
+    graphic_str: "ts.gems",
+    graphic_alt: "-"
+  });
+  
+  console.log("[Server Ruleset] Created " + Object.keys(resources).length + " resources");
 }
