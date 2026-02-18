@@ -42,7 +42,6 @@ function update_heightmap_square(heightmap_quality)
 
   console.log("Updating heightmap (square topology)...");
 
-  // First pass: adjust tile heights for coastlines and unknown tiles
   for (let x = 0; x < map.xsize ; x++) {
     for (let y = 0; y < map.ysize; y++) {
       let ptile = map_pos_to_tile(x, y);
@@ -57,7 +56,6 @@ function update_heightmap_square(heightmap_quality)
 
       if (tile_get_known(ptile) == TILE_UNKNOWN) {
         ptile['height'] = 0.51;
-        // Use 8-connected neighbors for square topology
         let neighbours = [
           { "x": x - 1 , "y": y - 1},
           { "x": x - 1, "y": y },
@@ -84,26 +82,21 @@ function update_heightmap_square(heightmap_quality)
     }
   }
 
-  // Second pass: generate heightmap with interpolation
   for (let x = 0; x < heightmap_resolution_x; x++) {
     for (let y = 0; y < heightmap_resolution_y; y++) {
       let index = y * heightmap_resolution_x + x;
       let gx = x / heightmap_quality - 0.5;
       let gy = y / heightmap_quality - 0.5;
        if (Math.round(gx) == gx && Math.round(gy) == gy) {
-        // Exact tile position
         let ptile = map_pos_to_tile(gx, gy);
         heightmap[index] = ptile['height'];
         if (tile_has_extra(ptile, EXTRA_RIVER)) {
-          // Deeper rivers for square tiles (0.95 factor)
-          heightmap[index] = ptile['height'] * 0.95;
+          heightmap[index] = ptile['height'] * 0.98;
         }
         if (tile_terrain(ptile)['name'] == "Mountains") {
           heightmap[index] = ptile['height'] * 1.02;
         }
       } else {
-        // Interpolated position between tiles
-        // Use bilinear interpolation with the 4 nearest grid points
         let neighbours = [
           { "x": Math.floor(gx), "y": Math.floor(gy) },
           { "x": Math.floor(gx), "y": Math.ceil(gy) },
@@ -141,8 +134,7 @@ function update_heightmap_square(heightmap_quality)
             height = ptile['height'];
           }
           if (tile_has_extra(ptile, EXTRA_RIVER)) {
-            // Steeper river banks for narrower rivers (1.08 factor for square tiles)
-            height = ptile['height'] * 1.08 - ((num_river_neighbours / 4) * 0.02);
+            height = ptile['height'] * 1.045  - ((num_river_neighbours / 4) * 0.02);
           }
 
           sum += height / distance / distance;
