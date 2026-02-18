@@ -368,7 +368,7 @@ function load_model(filename)
         node.material.side = THREE.DoubleSide;
         node.material.needsUpdate = true;
         node.geometry.computeVertexNormals();
-        node.material.emissiveIntensity *= 1.5;
+        node.material.emissiveIntensity *= 1.65;
 
         if (filename == "Oasis" && node['name'] == "Groundlow") {
           node.material.opacity = 0.7;
@@ -377,23 +377,23 @@ function load_model(filename)
         if (filename == "Wheat" ) {
           // Brighter, smaller, and more transparent wheat
           node.material.emissive.set(0xE8D080);  // Brighter golden wheat color
-          node.material.emissiveIntensity = 0.85;  // Increased brightness
+          node.material.emissiveIntensity = 0.935;  // Increased brightness
           node.material.opacity = 0.85;  // More transparent
           node.material.transparent = true;
           node.castShadow = false;
         }
         if (filename == "city_european_0" || filename == "city_european_1" || filename == "city_european_2" || filename == "city_european_3" || filename == "city_european_4") {
           node.material.emissive.set(0x999999);
-          node.material.emissiveIntensity = 0.3;
+          node.material.emissiveIntensity = 0.33;
         }
         if (filename == "Oasis") {
           node.castShadow = false;
           node.material.emissive.set(0xFFFFFF);
-          node.material.emissiveIntensity = 0.15;
+          node.material.emissiveIntensity = 0.165;
         }
         if (filename == "Hut" ) {
           node.material.emissive.set(0xFFFFFF);
-          node.material.emissiveIntensity = 0.15;
+          node.material.emissiveIntensity = 0.165;
         }
         
         if (filename != "Wheat" ) {
