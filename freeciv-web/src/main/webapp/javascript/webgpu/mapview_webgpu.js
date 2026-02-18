@@ -67,9 +67,11 @@ function webgpu_start_renderer()
   }
 
   // Create WebGPU Renderer with shadow map support
+  // Note: preserveDrawingBuffer is set to false for better performance
+  // Screenshots are handled specially by capturing canvas immediately after render
   maprenderer = new THREE.WebGPURenderer({ 
     antialias: enable_antialiasing, 
-    preserveDrawingBuffer: true 
+    preserveDrawingBuffer: false 
   });
   maprenderer.outputColorSpace = THREE.LinearSRGBColorSpace;
   maprenderer.frustumCulled = true;
