@@ -374,7 +374,15 @@ async function init_webgpu_mapview() {
   setInterval(update_map_known_tiles, 15);
 
   // Add water and other quality-dependent objects
-  add_quality_dependent_objects_webgpu();
+  // Use appropriate water function based on map topology
+  if (useHexTopology) {
+    add_quality_dependent_objects_webgpu();
+  } else if (typeof add_quality_dependent_objects_webgpu_square === 'function') {
+    add_quality_dependent_objects_webgpu_square();
+  } else {
+    // Fallback to hex if square function not available
+    add_quality_dependent_objects_webgpu();
+  }
   add_all_objects_to_scene();
 
   benchmark_start = new Date().getTime();
