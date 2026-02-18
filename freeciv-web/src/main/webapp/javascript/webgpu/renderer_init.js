@@ -73,7 +73,7 @@ function webgl_preload_complete()
  ****************************************************************************/
 async function renderer_init() {
   console.log("renderer_init()");
-  
+
   if (!navigator.gpu) {
     console.log("WebGPU not supported by browser");
     $("#intro_extra_txt").text("WebGPU is not supported by your browser.");
