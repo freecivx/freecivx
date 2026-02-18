@@ -81,6 +81,7 @@ function init_overview()
 			dialogClass: 'overview_dialog no-close',
 			autoResize:true,
 			width: "auto",
+			position: {my: 'left bottom', at: 'left bottom', of: window},
 			close: function(event, ui) { overview_active = false;}
 		}).dialogExtend({
                   "minimizable" : true,
