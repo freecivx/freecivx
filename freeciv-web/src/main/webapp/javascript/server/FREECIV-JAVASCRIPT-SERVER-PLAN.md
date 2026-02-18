@@ -47,14 +47,17 @@ The JavaScript server is organized into several modules, each responsible for a 
    - `server_create_units()` - Creates units for all players
    - Manages unit placement and properties
 
+### Enhanced Modules (COMPLETED)
+
+- **tech.js** - Technology tree with 31 technologies spanning Ancient to Renaissance era
+- **diplomacy.js** - Diplomatic relations (war, peace, alliances)
+- **tile.js** - Tile-specific operations (improvements, ownership)
+- **goto.js** - Pathfinding and movement algorithms
+
 ### Future Modules (Planned)
 
-- **ai.js** - AI player logic
-- **diplomacy.js** - Diplomatic relations
-- **tech.js** - Technology research mechanics
-- **tile.js** - Tile-specific operations
-- **goto.js** - Pathfinding and movement
-- **generator.js** - Advanced map generation algorithms
+- **ai.js** - Enhanced AI player logic (basic version exists)
+- **generator.js** - Advanced map generation algorithms (basic version exists)
 
 ## Implementation Progress
 
@@ -75,27 +78,126 @@ The JavaScript server is organized into several modules, each responsible for a 
 - [x] Add welcome message on game start
 - [x] Verify server modules are bundled in webclient.min.js build
 
-### Phase 3: Integration and Testing (IN PROGRESS)
+### Phase 3: Enhanced Game Features (COMPLETED)
+- [x] Expand technology tree (31 technologies with prerequisites)
+- [x] Add unit classes (Land, Sea, Air)
+- [x] Expand unit types (15 total with combat stats)
+- [x] Add governments (5 total: Anarchy, Despotism, Monarchy, Republic, Democracy)
+- [x] Expand improvements (15 total including wonders)
+- [x] Add specialists (Elvis, Scientist, Taxman)
+- [x] Add terrain resources (10 resources)
+- [x] Implement tile operations module
+- [x] Implement pathfinding/goto module
+- [x] Implement diplomacy module
+
+### Phase 4: Integration and Testing (IN PROGRESS)
+- [x] Validate game state creation with enhanced features
 - [ ] Test standalone mode with new server architecture
-- [ ] Validate game state creation
 - [ ] Debug unit rendering in standalone mode
 - [ ] Fix any compatibility issues
 
-### Phase 4: Enhancement (PLANNED)
+### Phase 5: Enhancement (PLANNED)
 - [ ] Implement advanced map generation algorithms
-- [ ] Add AI player decision-making
+- [ ] Add enhanced AI player decision-making
 - [ ] Implement turn processing
-- [ ] Add diplomatic interactions
+- [ ] Add advanced diplomatic interactions
 - [ ] Implement technology research mechanics
 - [ ] Add unit movement and combat logic
 - [ ] Implement city production and growth
 
-### Phase 5: Server API Extension (PLANNED)
+### Phase 6: Server API Extension (PLANNED)
 - [ ] Extend server API for more packet types
 - [ ] Implement game state update notifications
 - [ ] Add event system for game state changes
 - [ ] Create server command interface
 - [ ] Implement game save/load functionality
+
+## Enhanced Ruleset Features
+
+The JavaScript server now supports a comprehensive ruleset including:
+
+### Technologies (31 total)
+- Ancient Era: Alphabet, Bronze Working, Pottery, The Wheel, Ceremonial Burial, Masonry
+- Classical Era: Literacy, Mathematics, Currency, Construction, Monarchy, Philosophy, The Republic
+- Medieval Era: Engineering, Feudalism, Invention, Chivalry, Gunpowder, Banking
+- Renaissance Era: University, Physics, Navigation, Chemistry, Medicine, Democracy
+
+Technologies include proper prerequisites (req1, req2) forming a dependency tree.
+
+### Unit Types (15 total)
+**Civilian Units:** Settlers, Workers, Explorer
+
+**Ancient Era Military:** Warriors, Phalanx, Archers, Legion, Horsemen
+
+**Medieval Era:** Knights, Pikemen, Musketeers
+
+**Naval Units:** Trireme, Caravel, Frigate
+
+**Modern Era:** Riflemen
+
+All units include combat stats (attack_strength, defense_strength, firepower, hp, move_rate).
+
+### Unit Classes (3 total)
+- Land
+- Sea
+- Air
+
+### Governments (5 total)
+- Anarchy
+- Despotism
+- Monarchy
+- Republic
+- Democracy
+
+### City Improvements (15 total)
+**Infrastructure:** Palace, Barracks, Granary, Library, Marketplace, Temple
+
+**Advanced Buildings:** Courthouse, City Walls, Aqueduct, Bank, University, Cathedral
+
+**Wonders:** Great Library, Pyramids, Colossus
+
+All improvements include build costs.
+
+### Specialists (3 total)
+- Elvis (Entertainment)
+- Scientist (Research)
+- Taxman (Gold)
+
+### Terrain Resources (10 total)
+Gold, Iron, Wheat, Fish, Game, Pheasant, Coal, Oasis, Peat, Gems
+
+## New Server Modules
+
+### Tile Operations (tile.js)
+
+Functions for managing individual tiles:
+- `server_tile_add_extra(tileId, extraId)` - Add improvement to tile
+- `server_tile_remove_extra(tileId, extraId)` - Remove improvement from tile
+- `server_tile_set_owner(tileId, playerId)` - Set tile ownership
+- `server_tile_get_info(tileId)` - Get tile information
+
+### Pathfinding (goto.js)
+
+Functions for unit movement and pathfinding:
+- `server_goto_manhattan_distance(x1, y1, x2, y2)` - Calculate distance
+- `server_goto_is_adjacent(x1, y1, x2, y2)` - Check adjacency
+- `server_goto_get_adjacent_tiles(x, y, mapWidth, mapHeight)` - Get neighboring tiles
+- `server_goto_find_path(startX, startY, endX, endY, mapWidth, mapHeight)` - Find path
+- `server_goto_get_movement_cost(unit, tile)` - Calculate movement cost
+
+### Diplomacy (diplomacy.js)
+
+Functions for managing diplomatic relations:
+- `server_init_diplomacy()` - Initialize diplomacy system
+- `server_get_diplomatic_state(playerId1, playerId2)` - Get current state
+- `server_set_diplomatic_state(playerId1, playerId2, state)` - Set state
+- `server_declare_war(playerId1, playerId2)` - Declare war
+- `server_make_peace(playerId1, playerId2)` - Make peace
+- `server_form_alliance(playerId1, playerId2)` - Form alliance
+- `server_is_at_war(playerId1, playerId2)` - Check war status
+- `server_is_allied(playerId1, playerId2)` - Check alliance status
+
+Diplomatic states: No Contact, War, Ceasefire, Peace, Alliance
 
 ## Server-to-Client Communication
 
