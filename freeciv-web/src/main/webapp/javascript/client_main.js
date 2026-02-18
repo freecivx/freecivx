@@ -388,8 +388,8 @@ function show_tile_info(message)
     bgiframe: true,
     modal: false,
     position: {
-      my: "left bottom",
-      at: "left bottom",
+      my: "right top",
+      at: "right top",
       of: window
     },
     create: function(event, ui) {
