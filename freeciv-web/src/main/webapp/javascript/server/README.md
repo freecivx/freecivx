@@ -27,15 +27,44 @@ The JavaScript server is organized into modular components:
 | `game.js` | Game state | `server_create_players()`, `server_setup_client_connection()` |
 | `cities.js` | City management | `server_create_cities()` |
 | `units.js` | Unit management | `server_create_units()` |
+| `vision.js` | Fog of war | `server_initialize_all_vision()` |
+| `ai.js` | AI behavior | `server_ai_process_turn()` |
+| `nations.js` | Nation definitions | 563+ predefined nations |
 
-### Future Modules
+### Enhanced Modules
 
-Additional modules planned for implementation:
-- `ai.js` - AI player behavior
-- `diplomacy.js` - Diplomatic relations
-- `tech.js` - Technology research
-- `tile.js` - Tile operations
-- `goto.js` - Pathfinding
+Newly implemented modules with game features:
+
+| Module | Purpose | Key Functions |
+|--------|---------|---------------|
+| `tech.js` | Technology tree | `server_create_technologies()` - 31 techs with prerequisites |
+| `diplomacy.js` | Diplomatic relations | `server_declare_war()`, `server_make_peace()`, `server_form_alliance()` |
+| `tile.js` | Tile operations | `server_tile_add_extra()`, `server_tile_remove_extra()`, `server_tile_set_owner()` |
+| `goto.js` | Pathfinding | `server_goto_find_path()`, `server_goto_get_movement_cost()` |
+
+## Game Features
+
+The JavaScript server now supports:
+
+**31 Technologies** spanning Ancient to Renaissance eras with proper prerequisite chains
+
+**15 Unit Types** including Settlers, Workers, military units (Warriors, Phalanx, Archers, Legion, Knights, etc.), and naval units (Trireme, Caravel, Frigate)
+
+**3 Unit Classes** - Land, Sea, Air
+
+**5 Governments** - Anarchy, Despotism, Monarchy, Republic, Democracy
+
+**15 City Improvements** including infrastructure (Palace, Barracks, Granary) and wonders (Great Library, Pyramids, Colossus)
+
+**3 Specialists** - Elvis, Scientist, Taxman
+
+**10 Terrain Resources** - Gold, Iron, Wheat, Fish, Game, Pheasant, Coal, Oasis, Peat, Gems
+
+**Diplomacy System** with 5 states: No Contact, War, Ceasefire, Peace, Alliance
+
+**Pathfinding** with distance calculation and simple path algorithms
+
+**Tile Operations** for managing improvements and ownership
 
 ## Usage
 
@@ -136,7 +165,17 @@ Currently tested through standalone mode:
 - Basic game state creation working
 - Integrated with standalone mode
 
-**Phase 2: Integration** - 🔄 IN PROGRESS
+**Phase 2: Enhanced Game Features** - ✅ COMPLETED
+- Expanded technology tree (31 technologies)
+- Enhanced unit types (15 units, 3 classes)
+- Expanded governments (5 types)
+- Expanded improvements (15 buildings including wonders)
+- Added specialists and terrain resources
+- Implemented tile operations module
+- Implemented pathfinding/goto module
+- Implemented diplomacy module
+
+**Phase 3: Integration and Testing** - 🔄 IN PROGRESS
 - Testing and validation
 - HTML file updates
 - Bug fixes
