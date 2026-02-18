@@ -315,13 +315,13 @@ function render_viewrect()
     var point = base_canvas_to_map_pos(0, 0);
     if (point == null) return;
     path.push([point.map_x, point.map_y]);
-    point = base_canvas_to_map_pos(mapview['width'], 0);
+    point = base_canvas_to_map_pos( $(window).width(), 0);
     if (point == null) return;
     path.push([point.map_x, point.map_y]);
-    point = base_canvas_to_map_pos(mapview['width'], mapview['height']);
+    point = base_canvas_to_map_pos( $(window).width(),  $(window).height());
     if (point == null) return;
     path.push([point.map_x, point.map_y]);
-    point = base_canvas_to_map_pos(0, mapview['height']);
+    point = base_canvas_to_map_pos(0,  $(window).height());
     if (point == null) return;
     path.push([point.map_x, point.map_y]);
 
