@@ -106,7 +106,7 @@ function setupSceneLighting() {
   // These values should match config.js LightingConfig for consistency
   const lightConfig = window.LightingConfig || {
     AMBIENT_COLOR: 0x707065,
-    AMBIENT_INTENSITY: 0.9 * Math.PI,
+    AMBIENT_INTENSITY: 1.0 * Math.PI,
     DIRECTIONAL_COLOR: 0xfffaf0,
     DIRECTIONAL_INTENSITY: 1.6 * Math.PI,
     DIRECTIONAL_POSITION: { x: 500, y: 800, z: 500 },
