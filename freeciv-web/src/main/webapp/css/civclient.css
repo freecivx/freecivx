@@ -1282,8 +1282,9 @@ li.tech-both::before {
   border-color: #432;
 }
 .overview_dialog {
-  padding: 4px 2px;
-  border-radius: 7px 7px 3px 3px;
+  background-color: rgba(40, 40, 40, 0.85) !important;
+  border: 2px solid #555 !important;
+  bottom: 100px !important;
 }
 #game_overview_panel {
   padding: 0px;
