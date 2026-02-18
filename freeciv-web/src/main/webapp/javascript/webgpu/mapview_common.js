@@ -220,11 +220,19 @@ function update_map_terrain_geometry()
   if (map_geometry_dirty) {
     var hash = generate_heightmap_hash();
     if (hash != heightmap_hash) {
-      update_heightmap(terrain_quality);
-      
-      // Use appropriate geometry update based on map topology
+      // Use appropriate heightmap update based on map topology
       var useHexTopology = typeof is_hex === 'function' && is_hex();
       
+      if (useHexTopology) {
+        update_heightmap(terrain_quality);
+      } else if (typeof update_heightmap_square === 'function') {
+        update_heightmap_square(terrain_quality);
+      } else {
+        // Fallback to hex
+        update_heightmap(terrain_quality);
+      }
+      
+      // Use appropriate geometry update based on map topology
       if (useHexTopology) {
         update_land_geometry(lofiGeometry, 2);
         update_land_geometry(landGeometry, terrain_quality);

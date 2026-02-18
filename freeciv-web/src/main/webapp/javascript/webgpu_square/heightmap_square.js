@@ -17,146 +17,32 @@
 
 ***********************************************************************/
 
-
-var heightmap = null;
-var heightmap_hash = -1;
-
-/****************************************************************************
-  Returns height offset for units. This will make units higher above cities.
-****************************************************************************/
-function get_unit_height_offset(punit)
-{
-  if (punit == null) return 0;
-  let ptile = index_to_tile(punit['tile']);
-  if (ptile == null) return 0;
-  let ptype = unit_type(punit);
-
-  if (ptype['name'] == "Caravel") {
-    return 7;
-  }
-
-  if (ptype['name'] == "Galleon") {
-    return 5.4;
-  }
-
-  if (ptype['name'] == "Frigate") {
-    return 7.2;
-  }
-
-  if (ptype['name'] == "Destroyer") {
-    return 4.0;
-  }
-  if (ptype['name'] == "Battleship") {
-    return 4.0;
-  }
-  if (ptype['name'] == "Transport") {
-    return 4.0;
-  }
-  if (ptype['name'] == "Fighter") {
-    return 18.0;
-  }
-  if (ptype['name'] == "Bomber") {
-    return 18.0;
-  }
-  if (ptype['name'] == "Helicopter") {
-    return 12.0;
-  }
-  if (ptype['name'] == "Cruiser") {
-    return 4.0;
-  }
-  if (ptype['name'] == "Ironclad") {
-    return 4.2;
-  }
-
-  if (ptype['name'] == "Zeppelin") {
-    return 28;
-  }
-
-  if (tile_has_extra(ptile, EXTRA_RIVER)) {
-    return 1;
-  }
-
-  if (!is_ocean_tile(ptile) && is_ocean_tile_near(ptile)) {
-    return -4;
-  }
-
-  if (tile_terrain(ptile)['name'] == "Hills" || tile_terrain(ptile)['name'] == "Mountains") {
-    return -5;
-  }
-
-
-  let pcity = tile_city(ptile);
-  if (pcity != null) return 4;
-
-  return -2;
-
-}
+/**
+ * Heightmap Generation for Square Map Tiles
+ * 
+ * This module provides heightmap generation specifically optimized for
+ * square map tile topology. Unlike hexagonal maps, square maps:
+ * - Use direct 8-neighbor connectivity (N, NE, E, SE, S, SW, W, NW)
+ * - Have 1:1 aspect ratio tiles
+ * - Use bilinear interpolation for sub-tile positions
+ * 
+ * Key differences from hex topology:
+ * - Deeper rivers for better visual definition (0.95 vs 0.98 factor)
+ * - Steeper river banks for narrower river appearance (1.08 vs 1.045 factor)
+ * - Direct coordinate mapping without row staggering
+ */
 
 /****************************************************************************
-...
+  Create heightmap based on tile.height for square topology.
 ****************************************************************************/
-function get_forest_offset(ptile)
-{
-    if (!is_ocean_tile(ptile) && is_ocean_tile_near(ptile)) {
-      if (tile_terrain(ptile)['name'] == "Hills") {
-        return  -8;
-      } else if (tile_terrain(ptile)['name'] == "Mountains") {
-        return -12;
-      } else {
-        return  -7;
-      }
-    }
-
-    return -6;
-
-}
-
-/****************************************************************************
-  Returns height offset for cities.
-****************************************************************************/
-function get_city_height_offset(pcity)
-{
-  if (pcity == null) return 0;
-  let ptile = index_to_tile(pcity['tile']);
-  if (ptile == null) return 0;
-
-  if (!is_ocean_tile(ptile) && is_ocean_tile_near(ptile)) {
-    if (tile_terrain(ptile)['name'] == "Hills") return -6;
-    if (tile_terrain(ptile)['name'] == "Mountains") return -10;
-    return -2.2;
-  }
-
-  if (tile_terrain(ptile) != null) {
-    if (tile_terrain(ptile)['name'] == "Hills") return -6;
-    if (tile_terrain(ptile)['name'] == "Mountains") return -10;
-  }
-
-  return 1.8;
-
-}
-
-/****************************************************************************
-  Create heightmap based on tile.height.
-****************************************************************************/
-function init_heightmap(heightmap_quality)
+function update_heightmap_square(heightmap_quality)
 {
   let heightmap_resolution_x = map.xsize * heightmap_quality + 1;
   let heightmap_resolution_y = map.ysize * heightmap_quality + 1;
 
-  heightmap = new Float32Array(heightmap_resolution_x * heightmap_resolution_y);
+  console.log("Updating heightmap (square topology)...");
 
-}
-
-/****************************************************************************
-  Create heightmap based on tile.height for hexagonal topology.
-****************************************************************************/
-function update_heightmap(heightmap_quality)
-{
-  let heightmap_resolution_x = map.xsize * heightmap_quality + 1;
-  let heightmap_resolution_y = map.ysize * heightmap_quality + 1;
-
-  console.log("Updating heightmap (hex topology)...");
-
+  // First pass: adjust tile heights for coastlines and unknown tiles
   for (let x = 0; x < map.xsize ; x++) {
     for (let y = 0; y < map.ysize; y++) {
       let ptile = map_pos_to_tile(x, y);
@@ -171,8 +57,7 @@ function update_heightmap(heightmap_quality)
 
       if (tile_get_known(ptile) == TILE_UNKNOWN) {
         ptile['height'] = 0.51;
-        // Use standard 8-connected neighbors for height propagation
-        // The hex visualization is separate from the tile coordinate system
+        // Use 8-connected neighbors for square topology
         let neighbours = [
           { "x": x - 1 , "y": y - 1},
           { "x": x - 1, "y": y },
@@ -199,23 +84,26 @@ function update_heightmap(heightmap_quality)
     }
   }
 
+  // Second pass: generate heightmap with interpolation
   for (let x = 0; x < heightmap_resolution_x; x++) {
     for (let y = 0; y < heightmap_resolution_y; y++) {
       let index = y * heightmap_resolution_x + x;
       let gx = x / heightmap_quality - 0.5;
       let gy = y / heightmap_quality - 0.5;
        if (Math.round(gx) == gx && Math.round(gy) == gy) {
+        // Exact tile position
         let ptile = map_pos_to_tile(gx, gy);
         heightmap[index] = ptile['height'];
         if (tile_has_extra(ptile, EXTRA_RIVER)) {
-          // For hex tiles, use existing river depth
-          heightmap[index] = ptile['height'] * 0.98;
+          // Deeper rivers for square tiles (0.95 factor)
+          heightmap[index] = ptile['height'] * 0.95;
         }
         if (tile_terrain(ptile)['name'] == "Mountains") {
           heightmap[index] = ptile['height'] * 1.02;
         }
       } else {
-        // For hex interpolation, use the 4 nearest grid points
+        // Interpolated position between tiles
+        // Use bilinear interpolation with the 4 nearest grid points
         let neighbours = [
           { "x": Math.floor(gx), "y": Math.floor(gy) },
           { "x": Math.floor(gx), "y": Math.ceil(gy) },
@@ -253,8 +141,8 @@ function update_heightmap(heightmap_quality)
             height = ptile['height'];
           }
           if (tile_has_extra(ptile, EXTRA_RIVER)) {
-            // For hex tiles, keep existing behavior
-            height = ptile['height'] * 1.045 - ((num_river_neighbours / 4) * 0.02);
+            // Steeper river banks for narrower rivers (1.08 factor for square tiles)
+            height = ptile['height'] * 1.08 - ((num_river_neighbours / 4) * 0.02);
           }
 
           sum += height / distance / distance;
@@ -266,22 +154,5 @@ function update_heightmap(heightmap_quality)
     }
   }
 
-  console.log("Heightmap updated (hex topology).");
+  console.log("Heightmap updated (square topology).");
 }
-
-
-/****************************************************************************
- Creates a hash of the map heightmap.
-****************************************************************************/
-function generate_heightmap_hash() {
-  let hash = 0;
-
-  for (let x = 0; x < map.xsize ; x++) {
-    for (let y = 0; y < map.ysize; y++) {
-      let ptile = map_pos_to_tile(x, y);
-      hash += ptile['height']
-    }
-  }
-  return hash;
-}
-
