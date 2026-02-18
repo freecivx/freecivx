@@ -43,17 +43,14 @@
  Add animated water mesh for WebGPU renderer using TSL shaders (square topology).
 ****************************************************************************/
 function add_quality_dependent_objects_webgpu_square() {
-  // Get square height factor from SquareConfig (centralized configuration)
-  // Square tiles have 1:1 aspect ratio (height factor = 1.0)
-  const squareHeightFactor = (typeof window !== 'undefined' && window.SquareConfig) 
-    ? window.SquareConfig.HEIGHT_FACTOR 
-    : 1.0;
+  // Square tiles have 1:1 aspect ratio - no height factor needed
+  // Unlike hex tiles, square terrain uses mapview_model_height directly
   
   // Create water plane geometry matching land mesh dimensions
   // Lower segment count (64x64) - stylized water doesn't need high tessellation
   const waterGeometry = new THREE.PlaneGeometry(
     mapview_model_width,
-    mapview_model_height * squareHeightFactor,
+    mapview_model_height,
     64,
     64
   );
@@ -64,7 +61,7 @@ function add_quality_dependent_objects_webgpu_square() {
   water_hq.rotation.x = -Math.PI * 0.5;
   water_hq.translateOnAxis(new THREE.Vector3(0, 0, 1).normalize(), 50);
   water_hq.translateOnAxis(new THREE.Vector3(1, 0, 0).normalize(), Math.floor(mapview_model_width / 2) - 500);
-  water_hq.translateOnAxis(new THREE.Vector3(0, 1, 0).normalize(), -Math.floor(mapview_model_height * squareHeightFactor / 2));
+  water_hq.translateOnAxis(new THREE.Vector3(0, 1, 0).normalize(), -Math.floor(mapview_model_height / 2));
   water_hq.renderOrder = -1;
   water_hq.castShadow = false;
   water_hq.name = "water_surface";
