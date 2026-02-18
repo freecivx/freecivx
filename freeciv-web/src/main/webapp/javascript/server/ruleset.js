@@ -166,7 +166,7 @@ function server_create_unit_types() {
   handle_ruleset_unit({ 
     id: 1, 
     name: "Workers",
-    graphic_str: "u.workers",
+    graphic_str: "u.worker",
     move_rate: 1,
     move_bonus: [0],
     hp: 10,
@@ -514,7 +514,7 @@ function server_create_resources() {
   handle_ruleset_resource({ 
     id: 4, 
     name: "Game",
-    graphic_str: "ts.game",
+    graphic_str: "ts.tundra_game",
     graphic_alt: "-"
   });
   
