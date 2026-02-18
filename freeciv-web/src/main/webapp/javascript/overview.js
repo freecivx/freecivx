@@ -267,6 +267,27 @@ function render_overview_to_canvas() {
 }
 
 /****************************************************************************
+  Converts canvas coordinates to map tile coordinates.
+  This is a wrapper around webgl_canvas_pos_to_tile that returns map coordinates.
+****************************************************************************/
+function base_canvas_to_map_pos(canvas_x, canvas_y) {
+  // Check if the WebGL function exists (it should be loaded before overview.js)
+  if (typeof webgl_canvas_pos_to_tile === 'undefined') {
+    return null;
+  }
+  
+  var ptile = webgl_canvas_pos_to_tile(canvas_x, canvas_y);
+  if (ptile == null) {
+    return null;
+  }
+  
+  return {
+    'map_x': ptile['x'],
+    'map_y': ptile['y']
+  };
+}
+
+/****************************************************************************
   Creates a hash of the current overview map.
 ****************************************************************************/
 function generate_overview_hash(cols, rows) {
@@ -298,12 +319,16 @@ function render_viewrect()
   var path = [];
 
     var point = base_canvas_to_map_pos(0, 0);
+    if (point == null) return;
     path.push([point.map_x, point.map_y]);
     point = base_canvas_to_map_pos(mapview['width'], 0);
+    if (point == null) return;
     path.push([point.map_x, point.map_y]);
     point = base_canvas_to_map_pos(mapview['width'], mapview['height']);
+    if (point == null) return;
     path.push([point.map_x, point.map_y]);
     point = base_canvas_to_map_pos(0, mapview['height']);
+    if (point == null) return;
     path.push([point.map_x, point.map_y]);
 
   var viewrect_canvas = document.getElementById('overview_viewrect');
