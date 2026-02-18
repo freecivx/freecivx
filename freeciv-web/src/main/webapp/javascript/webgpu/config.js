@@ -199,8 +199,8 @@ const WaterConfig = Object.freeze({
         SCALE: 12.0,
         /** Speed of caustic animation (very slow for calm water) */
         SPEED: 0.08,
-        /** Intensity of caustic highlights on the water surface */
-        INTENSITY: 0.15
+        /** Intensity of caustic highlights on the water surface - increased for more contrast */
+        INTENSITY: 0.22
     }),
     /** Ripple settings - very subtle surface movement */
     RIPPLES: Object.freeze({
@@ -241,16 +241,16 @@ const WaterConfig = Object.freeze({
     }),
     /** Water color palette (stylized game colors) */
     COLORS: Object.freeze({
-        /** Deep ocean color - rich blue */
-        DEEP_OCEAN: Object.freeze({ r: 0.04, g: 0.12, b: 0.28 }),
-        /** Mid ocean color - medium blue */
-        MID_OCEAN: Object.freeze({ r: 0.08, g: 0.25, b: 0.45 }),
-        /** Shallow water color - teal/turquoise */
-        SHALLOW: Object.freeze({ r: 0.15, g: 0.45, b: 0.55 }),
-        /** Surface highlight color - light tint */
-        SURFACE: Object.freeze({ r: 0.35, g: 0.60, b: 0.72 }),
-        /** Caustic highlight color */
-        CAUSTIC: Object.freeze({ r: 0.50, g: 0.75, b: 0.85 })
+        /** Deep ocean color - darker rich blue with more contrast */
+        DEEP_OCEAN: Object.freeze({ r: 0.02, g: 0.08, b: 0.22 }),
+        /** Mid ocean color - darker medium blue with more contrast */
+        MID_OCEAN: Object.freeze({ r: 0.05, g: 0.18, b: 0.38 }),
+        /** Shallow water color - darker teal/turquoise with more contrast */
+        SHALLOW: Object.freeze({ r: 0.10, g: 0.35, b: 0.48 }),
+        /** Surface highlight color - brighter light tint for better contrast */
+        SURFACE: Object.freeze({ r: 0.42, g: 0.68, b: 0.80 }),
+        /** Caustic highlight color - brighter for more contrast */
+        CAUSTIC: Object.freeze({ r: 0.58, g: 0.82, b: 0.92 })
     })
 });
 

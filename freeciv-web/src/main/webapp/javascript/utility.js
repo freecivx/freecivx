@@ -256,13 +256,31 @@ function submit_game_of_the_day() {
 }
 
 /**************************************************************************
-...
+ Takes a screenshot for game of the day.
+ For WebGPU, capture canvas immediately in the next animation frame.
 **************************************************************************/
 function submit_game_of_the_day2() {
- modernScreenshot.domToPng(document.body).then(function(screenshot) {
-    $.post( "/save_game_of_the_day", screenshot);
-  }).catch(function(error) {
-    console.error("Failed to capture screenshot:", error);
+  // Use requestAnimationFrame to capture during the next render frame
+  requestAnimationFrame(function() {
+    if (typeof maprenderer !== 'undefined' && maprenderer && maprenderer.domElement) {
+      // Capture WebGPU canvas immediately after frame render
+      maprenderer.domElement.toBlob(function(blob) {
+        if (blob) {
+          var reader = new FileReader();
+          reader.onloadend = function() {
+            $.post("/save_game_of_the_day", reader.result);
+          };
+          reader.readAsDataURL(blob);
+        }
+      }, 'image/png');
+    } else {
+      // Fallback to full page screenshot
+      modernScreenshot.domToPng(document.body).then(function(screenshot) {
+        $.post("/save_game_of_the_day", screenshot);
+      }).catch(function(error) {
+        console.error("Failed to capture screenshot:", error);
+      });
+    }
   });
   show_fps();
 }
