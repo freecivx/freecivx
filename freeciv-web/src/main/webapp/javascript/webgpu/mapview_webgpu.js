@@ -277,7 +277,18 @@ async function init_webgpu_mapview() {
   }
 
   init_heightmap(terrain_quality);
-  update_heightmap(terrain_quality);
+  
+  // Use appropriate heightmap update based on map topology
+  var useHexTopology = typeof is_hex === 'function' && is_hex();
+  
+  if (useHexTopology) {
+    update_heightmap(terrain_quality);
+  } else if (typeof update_heightmap_square === 'function') {
+    update_heightmap_square(terrain_quality);
+  } else {
+    // Fallback to hex
+    update_heightmap(terrain_quality);
+  }
 
   // Create low-resolution mesh for raycasting (invisible, used for picking)
   const lofiMaterial = typeof createBasicMaterial === 'function'
@@ -288,8 +299,6 @@ async function init_webgpu_mapview() {
   lofiGeometry.name = "lofi_terrain_geometry";
   
   // Use appropriate geometry initialization based on map topology
-  var useHexTopology = typeof is_hex === 'function' && is_hex();
-  
   if (useHexTopology) {
     init_land_geometry(lofiGeometry, 2);
     update_land_geometry(lofiGeometry, 2);
