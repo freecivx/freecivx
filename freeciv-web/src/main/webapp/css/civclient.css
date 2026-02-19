@@ -91,7 +91,7 @@ body
 
 #freeciv_logo {
   float:left; 
-  background: linear-gradient(135deg, #2c2c2c, #1a1a1a) url(/images/freeciv-web-logo.png) no-repeat center;
+  background: url(/images/freeciv-web-logo.png) no-repeat center;
   background-size: contain;
   width: 169px;
   height: 35px; 
