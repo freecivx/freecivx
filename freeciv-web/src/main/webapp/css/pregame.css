@@ -42,6 +42,7 @@ body {
   display: flex;
   flex-direction: column;
   flex: 1;
+  min-height: 0; /* Important for flex children scrolling */
   overflow: hidden;
 }
 
@@ -123,7 +124,9 @@ body {
 #pregame_custom_scrollbar_div {
   background: linear-gradient(135deg, #0a0a0a, #1a1a1a);
   flex: 1;
-  overflow: auto;
+  min-height: 0; /* Important for flex children scrolling */
+  overflow-y: auto;
+  overflow-x: hidden;
   margin-bottom: 10px;
   border-radius: 6px;
   border: 1px solid #222;
@@ -148,6 +151,7 @@ body {
 #pregame_chat_box {
   width: 100%;
   min-height: 45px;
+  flex-shrink: 0; /* Prevent shrinking when content grows */
   display: flex;
   align-items: center;
   padding: 5px 0;
@@ -177,23 +181,38 @@ body {
 
 #nation_list {
   float: left; 
-  height:580px;
-  overflow: auto; 
+  height: 580px;
+  overflow-y: auto;
+  overflow-x: hidden;
   width: 29%;
+  background: #f4f0ec url("images/ui-bg_inset-soft_100_f4f0ec_1x100.png") 50% bottom repeat-x;
+  border: 1px solid #e0cfc2;
+  border-radius: 6px;
+  padding: 5px;
 }
 
 #nation_legend {
   float: left; 
-  height: 500px; 
-  overflow: auto; 
+  height: 580px; 
+  overflow-y: auto;
+  overflow-x: hidden;
   padding: 10px; 
   width: 45%;
   font-size: 120%;
   margin-left: 10px;
+  background: #f4f0ec url("images/ui-bg_inset-soft_100_f4f0ec_1x100.png") 50% bottom repeat-x;
+  border: 1px solid #e0cfc2;
+  border-radius: 6px;
+  color: #1e1b1d;
 }
 
 #select_nation_flag {
   float: right;
+  background: #f4f0ec;
+  border: 1px solid #e0cfc2;
+  border-radius: 6px;
+  padding: 10px;
+  min-height: 100px;
 }
 
 #nation_flag_choice {
@@ -208,20 +227,56 @@ body {
   font-weight: bold;
   font-size: 1.1em; 
   min-height: 33px;
+  padding: 8px;
+  border: 1px solid #cdc3b7;
+  background: #ede4d4 url("images/ui-bg_glass_70_ede4d4_1x400.png") 50% 50% repeat-x;
+  color: #3f3731;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+}
+
+.nation_choice:hover {
+  border: 1px solid #f5ad66;
+  background: #f5f0e5 url("images/ui-bg_glass_100_f5f0e5_1x400.png") 50% 50% repeat-x;
+  color: #a46313;
+}
+
+.nation_selected {
+  border: 1px solid #e0cfc2;
+  background: #f4f0ec url("images/ui-bg_highlight-hard_100_f4f0ec_1x100.png") 50% 50% repeat-x;
+  color: #b85700;
+  font-weight: bold;
 }
 
 #nation_autocomplete_box {
   width: 210px; 
-  background:  #111111 url(/images/bg-dark.jpg); 
-  border:1px solid #000000; 
-  color: white;
+  background: #ffffff;
+  border: 1px solid #cdc3b7; 
+  color: #1e1b1d;
+  padding: 8px;
+  font-size: 1em;
+  border-radius: 4px;
+  font-family: Helvetica, Arial, sans-serif;
+}
 
+#nation_autocomplete_box:focus {
+  outline: none;
+  border-color: #f5ad66;
+  box-shadow: 0 0 5px rgba(245, 173, 102, 0.5);
 }
 
 #nation_heading {
-  padding: 3px; 
-  padding-bottom: 10px; 
+  padding: 10px; 
+  padding-bottom: 15px; 
   width: 100%;
+  background: #cb842e url("images/ui-bg_glass_25_cb842e_1x400.png") 50% 50% repeat-x;
+  color: #fff;
+  font-weight: bold;
+  border-radius: 6px;
+  margin-bottom: 10px;
+  border: 1px solid #d49768;
 }
 
 #nation_choice {
@@ -334,10 +389,13 @@ body {
 .nation_pickme_line {
   float: left;
   padding: 2px;
+  width: 100%;
+  margin-bottom: 2px;
 }
 
 #pick_nation_dialog {
   overflow: auto;
+  background: #f4f0ec;
 }
 
 #pregame_settings {
