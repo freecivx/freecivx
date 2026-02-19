@@ -200,14 +200,42 @@ body
 #zoom_map_image {
   padding-left: 4px;
   padding-right: 4px;
-  cursor:pointer;
+  cursor: pointer;
   height: 30px;
   margin-top: -4px;
+  transition: transform 0.2s ease, opacity 0.2s ease;
+  opacity: 0.9;
+}
+
+#zoom_map_image:hover {
+  transform: scale(1.05);
+  opacity: 1;
 }
 
 
 #turn_done_button {
+  background: linear-gradient(to bottom, #5a8a3e 0%, #4a7a2e 50%, #3a6a1e 100%);
+  border: 1px solid #2a5a1e;
+  color: #ffffff;
+  padding: 6px 12px;
+  border-radius: 4px;
+  font-weight: 600;
+  cursor: pointer;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+  transition: all 0.2s ease;
+}
 
+#turn_done_button:hover {
+  background: linear-gradient(to bottom, #6a9a4e 0%, #5a8a3e 50%, #4a7a2e 100%);
+  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.4);
+  transform: translateY(-1px);
+}
+
+#turn_done_button:active {
+  background: linear-gradient(to bottom, #3a6a1e 0%, #4a7a2e 50%, #5a8a3e 100%);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+  transform: translateY(0);
 }
 
 .main_menu_buttons {
@@ -287,9 +315,11 @@ body
 }
 
 .ui-dialog {
-  border: 1px #444444 solid;
+  border: 1px solid #555;
   max-height: 100%;
   // overflow: auto;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.6);
+  border-radius: 4px;
 }
 
 #dialog {
@@ -1457,6 +1487,7 @@ li.tech-both::before {
   padding-bottom: 2px;
   margin-bottom: -5px;
   overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 /* Mobile-responsive styles */
