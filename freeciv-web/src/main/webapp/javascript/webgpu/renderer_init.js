@@ -109,7 +109,8 @@ async function renderer_init() {
     // This addresses timing issues where the camera position might not be set
     // correctly if units aren't available yet
     setTimeout(function() {
-      camera.position.y = 450;
+      // On mobile, zoom out more (50% scale) to fit more on screen
+      camera.position.y = is_small_screen() ? 900 : 450;
       advance_unit_focus();
       $("#game_text_input").blur();
     }, 100);
