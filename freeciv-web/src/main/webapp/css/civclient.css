@@ -91,10 +91,20 @@ body
 
 #freeciv_logo {
   float:left; 
-  background: #444444 url(/images/freeciv-web-logo.png);
+  background: linear-gradient(135deg, #2c2c2c, #1a1a1a) url(/images/freeciv-web-logo.png) no-repeat center;
+  background-size: contain;
   width: 169px;
   height: 35px; 
   margin-right: 10px;
+  margin-bottom: 10px;
+  border-radius: 6px;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+}
+
+#freeciv_logo:hover {
+  transform: scale(1.05);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
 }
 
 #game_logo {
@@ -1159,19 +1169,167 @@ li.tech-both::before {
 
 #fciv-intro {
     position: absolute;
-    bottom: 20px;
+    bottom: 30px;
     left: 50%;
-    min-width: 300px;
+    transform: translateX(-50%);
+    min-width: 320px;
+    max-width: 900px;
+    width: 90%;
     z-index: 1000;
-    max-width: 70%;
     color: white;
-    font-size: 14px;
-    font-weight: bold;
-
+    font-size: 16px;
 }
 
 #fciv-intro-txt {
-    background-color: rgba(1.0, 1.0, 1.0, 0.5);
+    background: linear-gradient(135deg, rgba(20, 30, 48, 0.95), rgba(36, 59, 85, 0.95));
+    border-radius: 12px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.intro-content {
+    padding: 25px 30px;
+}
+
+.intro-title {
+    font-size: 32px;
+    font-weight: 700;
+    margin: 0 0 20px 0;
+    color: #ffffff;
+    text-align: center;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+}
+
+.intro-main {
+    font-size: 16px;
+    line-height: 1.6;
+    margin: 0 0 20px 0;
+    color: #f0f0f0;
+    text-align: center;
+}
+
+.intro-features {
+    display: flex;
+    justify-content: center;
+    gap: 25px;
+    margin: 20px 0;
+    flex-wrap: wrap;
+}
+
+.feature-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 20px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    transition: all 0.3s ease;
+    min-width: 120px;
+}
+
+.feature-item:hover {
+    background: rgba(255, 255, 255, 0.2);
+    transform: translateY(-2px);
+}
+
+.feature-item i {
+    font-size: 28px;
+    color: #4fc3f7;
+}
+
+.feature-item span {
+    font-size: 13px;
+    font-weight: 600;
+    color: #ffffff;
+    text-align: center;
+}
+
+.intro-license {
+    font-size: 13px;
+    text-align: center;
+    margin: 15px 0 0 0;
+    color: #b0b0b0;
+}
+
+.intro-license a {
+    color: #4fc3f7;
+    text-decoration: none;
+    font-weight: 600;
+}
+
+.intro-license a:hover {
+    color: #81d4fa;
+    text-decoration: underline;
+}
+
+/* Responsive adjustments for intro */
+@media (max-width: 768px) {
+    #fciv-intro {
+        bottom: 15px;
+        width: 95%;
+        font-size: 14px;
+    }
+    
+    .intro-content {
+        padding: 20px 18px;
+    }
+    
+    .intro-title {
+        font-size: 24px;
+        margin-bottom: 15px;
+    }
+    
+    .intro-main {
+        font-size: 14px;
+        line-height: 1.5;
+    }
+    
+    .intro-features {
+        gap: 12px;
+    }
+    
+    .feature-item {
+        min-width: 90px;
+        padding: 10px 15px;
+    }
+    
+    .feature-item i {
+        font-size: 22px;
+    }
+    
+    .feature-item span {
+        font-size: 11px;
+    }
+}
+
+@media (max-width: 480px) {
+    #fciv-intro {
+        bottom: 10px;
+        width: 98%;
+    }
+    
+    .intro-content {
+        padding: 15px 12px;
+    }
+    
+    .intro-title {
+        font-size: 20px;
+    }
+    
+    .intro-main {
+        font-size: 13px;
+    }
+    
+    .intro-features {
+        gap: 8px;
+    }
+    
+    .feature-item {
+        min-width: 80px;
+        padding: 8px 10px;
+    }
 }
 
 .prod_choice_name {

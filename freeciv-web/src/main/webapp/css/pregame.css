@@ -1,5 +1,5 @@
 body { 
-    font-family: "lucida grande", tahoma, verdana, arial, sans-serif;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
 	font-size: 14px;
 	margin: 0px; 
 	background-color: #000000;
@@ -47,34 +47,47 @@ body {
 
 
 #pregame_options {
-  background: #000000 url("/images/ui-widget-header.png") 50% 100% repeat-x;
+  background: linear-gradient(180deg, #1a1a1a 0%, #0a0a0a 100%);
+  border-radius: 8px;
   width: 100%;
   min-height: 30px;
-  padding: 0px;
-  margin-bottom: 10px;
+  padding: 15px;
+  margin-bottom: 15px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
 }
 
 #pregame_player_list {
-  width: 200px;
+  width: 220px;
   overflow: auto;
   flex-shrink: 0;
   margin-right: 10px;
+  background: rgba(17, 17, 17, 0.8);
+  border-radius: 8px;
+  padding: 8px;
 }
 
 .pregame_player_name {
-  padding: 3px;
-  margin: 3px;
-  background: #111111 url(/images/black-bg.png);
+  padding: 10px;
+  margin: 5px 0;
+  background: linear-gradient(135deg, #1a1a1a, #222222);
   color: #ffffff;
-  min-height: 32px;
-  width: calc(100% - 6px);
-  border: 1px solid black;
+  min-height: 40px;
+  width: 100%;
+  border: 1px solid #333;
+  border-radius: 6px;
   display: flex;
   align-items: center;
+  transition: all 0.2s ease;
+}
+
+.pregame_player_name:hover {
+  background: linear-gradient(135deg, #252525, #2a2a2a);
+  border-color: #444;
 }
 
 .pregame_player_ready {
-  color: green;
+  color: #4caf50;
+  font-weight: 600;
 }
 
 #pregame_game_info:empty {
@@ -84,30 +97,36 @@ body {
 }
 
 #pregame_game_info:not(:empty) {
-  background: #111111 url(/images/bg.jpg); 
+  background: linear-gradient(135deg, #f5f5dc, #e8e8d0);
   color: #000000;
   max-height: 15%;
   flex: 1;
   overflow: auto;
-  padding: 5px;
-  border: 1px solid black;
+  padding: 12px;
+  border: 1px solid #999;
+  border-radius: 6px;
   margin-bottom: 10px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
 
 #pregame_message_area {
   color: #ffffff;
-  padding: 5px;
-  border: 1px solid black;
+  padding: 10px;
+  border: 1px solid #333;
+  border-radius: 6px;
   list-style-type: none;
   margin: 0px;
-  font-size: 16px;
+  font-size: 15px;
+  line-height: 1.5;
 }
 
 #pregame_custom_scrollbar_div {
-  background: #0c0c0c;
+  background: linear-gradient(135deg, #0a0a0a, #1a1a1a);
   flex: 1;
   overflow: auto;
   margin-bottom: 10px;
+  border-radius: 6px;
+  border: 1px solid #222;
 }
 
 #pregame_player_icon {
@@ -128,18 +147,27 @@ body {
 
 #pregame_chat_box {
   width: 100%;
-  min-height: 40px;
+  min-height: 45px;
   display: flex;
   align-items: center;
+  padding: 5px 0;
 }
 
 #pregame_text_input {
-  padding: 8px 10px;
-  font-size: 16px;
-  background-color: #dddddd;
+  padding: 12px 15px;
+  font-size: 15px;
+  background-color: #f5f5f5;
   flex: 1;
-  border: 1px solid #999;
-  border-radius: 3px;
+  border: 2px solid #666;
+  border-radius: 6px;
+  transition: all 0.2s ease;
+}
+
+#pregame_text_input:focus {
+  outline: none;
+  border-color: #4fc3f7;
+  background-color: #ffffff;
+  box-shadow: 0 0 0 3px rgba(79, 195, 247, 0.1);
 }
 
 #pregame_metamessage {
@@ -205,24 +233,48 @@ body {
 #pregame_buttons {
   display: flex;
   flex-wrap: wrap;
-  gap: 10px;
-  margin-bottom: 10px;
+  gap: 12px;
+  margin-bottom: 0;
 }
 
 #pregame_buttons button {
   flex: 1 1 auto;
-  min-width: 180px;
-  padding: 10px 15px;
-  font-size: 14px;
-  min-height: 50px;
+  min-width: 200px;
+  padding: 14px 20px;
+  font-size: 15px;
+  font-weight: 600;
+  min-height: 56px;
   cursor: pointer;
-  border-radius: 4px;
-  transition: all 0.2s ease;
+  border-radius: 8px;
+  border: 2px solid transparent;
+  background: linear-gradient(135deg, #2196F3, #1976D2);
+  color: white;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
 }
 
 #pregame_buttons button:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(33, 150, 243, 0.4);
+  background: linear-gradient(135deg, #42A5F5, #2196F3);
+}
+
+#pregame_buttons button:active {
+  transform: translateY(0);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+}
+
+#pregame_buttons button i {
+  margin-right: 8px;
+}
+
+#start_game_button {
+  background: linear-gradient(135deg, #4CAF50, #388E3C);
+}
+
+#start_game_button:hover {
+  background: linear-gradient(135deg, #66BB6A, #4CAF50);
+  box-shadow: 0 4px 12px rgba(76, 175, 80, 0.4);
 }
 
 #share_icons {
@@ -306,13 +358,18 @@ body {
     padding: 8px;
   }
   
+  #pregame_options {
+    padding: 12px;
+  }
+  
   #pregame_buttons button {
-    min-width: 150px;
-    font-size: 13px;
+    min-width: 160px;
+    font-size: 14px;
+    padding: 12px 16px;
   }
   
   #pregame_player_list {
-    width: 180px;
+    width: 200px;
   }
 }
 
@@ -320,33 +377,45 @@ body {
 @media (max-width: 767px) {
   #pregame_page {
     width: 100%;
-    padding: 5px;
+    padding: 8px;
+  }
+  
+  #pregame_options {
+    padding: 10px;
+    margin-bottom: 12px;
   }
   
   #pregame_content_wrapper {
     flex-direction: column;
+    gap: 12px;
   }
   
   #pregame_buttons {
     flex-direction: column;
-    gap: 8px;
+    gap: 10px;
   }
   
   #pregame_buttons button {
     width: 100%;
     min-width: unset;
     height: auto;
-    min-height: 48px;
-    font-size: 14px;
-    padding: 12px 15px;
+    min-height: 52px;
+    font-size: 15px;
+    padding: 14px 20px;
     margin: 0;
   }
   
   #pregame_player_list {
     width: 100%;
     margin-right: 0;
-    margin-bottom: 10px;
-    max-height: 200px;
+    margin-bottom: 12px;
+    max-height: 250px;
+    padding: 10px;
+  }
+  
+  .pregame_player_name {
+    padding: 12px;
+    margin: 6px 0;
   }
   
   #pregame_custom_scrollbar_div {
@@ -357,16 +426,44 @@ body {
   #pregame_text_input {
     width: 100% !important;
     font-size: 16px;
-  }
-  
-  #fciv-intro {
-    max-width: 95%;
-    font-size: 13px;
-    padding: 10px;
+    padding: 14px 16px;
   }
   
   #pregame_game_info:not(:empty) {
     width: 100%;
+    padding: 10px;
+  }
+  
+  #pregame_message_area {
+    font-size: 14px;
+    padding: 8px;
+  }
+}
+
+/* Extra small mobile (below 480px) */
+@media (max-width: 480px) {
+  #pregame_page {
+    padding: 6px;
+  }
+  
+  #pregame_options {
+    padding: 8px;
+  }
+  
+  #pregame_buttons button {
+    min-height: 50px;
+    font-size: 14px;
+    padding: 12px 16px;
+  }
+  
+  #pregame_player_list {
+    max-height: 200px;
+    padding: 8px;
+  }
+  
+  .pregame_player_name {
+    padding: 10px;
+    min-height: 38px;
   }
 }
 
