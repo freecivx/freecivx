@@ -22,6 +22,26 @@ body {
   border: 0;
 }
 
+/* Logo styling - visible on desktop only */
+#freeciv_logo {
+  display: block;
+  float: left; 
+  background: linear-gradient(135deg, #2c2c2c, #1a1a1a) url(/images/freeciv-web-logo.png) no-repeat center;
+  background-size: contain;
+  width: 169px;
+  height: 35px; 
+  margin-right: 10px;
+  margin-bottom: 10px;
+  border-radius: 6px;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+}
+
+#freeciv_logo:hover {
+  transform: scale(1.05);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+}
+
 #pregame_page {
   padding: 10px;
   display: flex;
@@ -29,6 +49,8 @@ body {
   width: 100%;
   max-width: 1400px;
   margin: 0 auto;
+  height: 100vh; /* Fixed height for viewport */
+  box-sizing: border-box; /* Include padding in height calculation */
 }
 
 #pregame_content_wrapper {
@@ -54,7 +76,8 @@ body {
   min-height: 30px;
   padding: 15px;
   margin-bottom: 15px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3); /* Enhanced shadow for depth */
+  border: 1px solid #333; /* Add subtle border */
 }
 
 #pregame_player_list {
@@ -65,6 +88,8 @@ body {
   background: rgba(17, 17, 17, 0.8);
   border-radius: 8px;
   padding: 8px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3); /* Add shadow for depth */
+  border: 1px solid #333; /* Add subtle border */
 }
 
 .pregame_player_name {
@@ -125,11 +150,13 @@ body {
   background: linear-gradient(135deg, #0a0a0a, #1a1a1a);
   flex: 1;
   min-height: 0; /* Important for flex children scrolling */
+  max-height: 500px; /* Prevent message area from becoming too tall */
   overflow-y: auto;
   overflow-x: hidden;
-  margin-bottom: 10px;
+  margin-bottom: 0; /* Remove bottom margin to keep chat input visible */
   border-radius: 6px;
   border: 1px solid #222;
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.3); /* Inset shadow for depth */
 }
 
 #pregame_player_icon {
@@ -155,6 +182,7 @@ body {
   display: flex;
   align-items: center;
   padding: 5px 0;
+  margin-top: 10px; /* Add space above chat box */
 }
 
 #pregame_text_input {
@@ -189,6 +217,7 @@ body {
   border: 1px solid #e0cfc2;
   border-radius: 6px;
   padding: 5px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); /* Add subtle shadow */
 }
 
 #nation_legend {
@@ -204,6 +233,7 @@ body {
   border: 1px solid #e0cfc2;
   border-radius: 6px;
   color: #1e1b1d;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); /* Add subtle shadow */
 }
 
 #select_nation_flag {
@@ -213,6 +243,7 @@ body {
   border-radius: 6px;
   padding: 10px;
   min-height: 100px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); /* Add subtle shadow */
 }
 
 #nation_flag_choice {
@@ -292,31 +323,36 @@ body {
   margin-bottom: 0;
 }
 
+/* jQuery UI style buttons for pregame */
 #pregame_buttons button {
   flex: 1 1 auto;
   min-width: 200px;
-  padding: 14px 20px;
-  font-size: 15px;
-  font-weight: 600;
-  min-height: 56px;
+  padding: 10px 16px;
+  font-size: 14px;
+  font-weight: normal;
+  min-height: 48px;
   cursor: pointer;
-  border-radius: 8px;
-  border: 2px solid transparent;
-  background: linear-gradient(135deg, #2196F3, #1976D2);
-  color: white;
-  transition: all 0.3s ease;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+  border-radius: 4px;
+  border: 1px solid #cdc3b7;
+  background: #ede4d4 url("images/ui-bg_glass_70_ede4d4_1x400.png") 50% 50% repeat-x;
+  color: #3f3731;
+  transition: all 0.2s ease;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
 }
 
 #pregame_buttons button:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(33, 150, 243, 0.4);
-  background: linear-gradient(135deg, #42A5F5, #2196F3);
+  border: 1px solid #f5ad66;
+  background: #f5f0e5 url("images/ui-bg_glass_100_f5f0e5_1x400.png") 50% 50% repeat-x;
+  color: #a46313;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
 }
 
 #pregame_buttons button:active {
-  transform: translateY(0);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+  border: 1px solid #e0cfc2;
+  background: #f4f0ec url("images/ui-bg_highlight-hard_100_f4f0ec_1x100.png") 50% 50% repeat-x;
+  color: #b85700;
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.2);
 }
 
 #pregame_buttons button i {
@@ -324,12 +360,22 @@ body {
 }
 
 #start_game_button {
-  background: linear-gradient(135deg, #4CAF50, #388E3C);
+  background: #cb842e url("images/ui-bg_glass_25_cb842e_1x400.png") 50% 50% repeat-x;
+  color: #fff;
+  border: 1px solid #d49768;
+  font-weight: bold;
 }
 
 #start_game_button:hover {
-  background: linear-gradient(135deg, #66BB6A, #4CAF50);
-  box-shadow: 0 4px 12px rgba(76, 175, 80, 0.4);
+  background: #e69850 url("images/ui-bg_glass_35_e69850_1x400.png") 50% 50% repeat-x;
+  border: 1px solid #f5ad66;
+  color: #fff;
+  box-shadow: 0 2px 6px rgba(203, 132, 46, 0.4);
+}
+
+#start_game_button:active {
+  background: #b85700 url("images/ui-bg_highlight-hard_100_b85700_1x100.png") 50% 50% repeat-x;
+  border: 1px solid #a04800;
 }
 
 #share_icons {
@@ -396,6 +442,8 @@ body {
 #pick_nation_dialog {
   overflow: auto;
   background: #f4f0ec;
+  border-radius: 8px; /* More rounded corners */
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15); /* Enhanced shadow for depth */
 }
 
 #pregame_settings {
@@ -428,6 +476,11 @@ body {
   
   #pregame_player_list {
     width: 200px;
+  }
+  
+  /* Hide logo on tablet and below */
+  #freeciv_logo {
+    display: none;
   }
 }
 
