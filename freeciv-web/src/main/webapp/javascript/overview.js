@@ -105,6 +105,13 @@ function init_overview()
                       if (new_width > max_overview_width) new_width = max_overview_width;
                       var new_height = OVERVIEW_TILE_SIZE * map['ysize'];
                       if (new_height > max_overview_height) new_height = max_overview_height;
+                      
+                      // Scale to 50% on mobile devices
+                      if (is_small_screen()) {
+                        new_width = Math.floor(new_width * 0.5);
+                        new_height = Math.floor(new_height * 0.5);
+                      }
+                      
                       $(".overview_dialog").css({"height":(new_height),"width":(new_width)});
 
                       $('#overview_map').width(new_width);
@@ -129,6 +136,13 @@ function init_overview()
   if (new_width > max_overview_width) new_width = max_overview_width;
   var new_height = OVERVIEW_TILE_SIZE * map['ysize'];
   if (new_height > max_overview_height) new_height = max_overview_height;
+  
+  // Scale to 50% on mobile devices
+  if (is_small_screen()) {
+    new_width = Math.floor(new_width * 0.5);
+    new_height = Math.floor(new_height * 0.5);
+  }
+  
   $('#overview_map').width(new_width);
   $('#overview_map').height(new_height);
   $(".overview_dialog").position({my: 'left bottom', at: 'left bottom-100', of: window, within: $("#tabs-map")});

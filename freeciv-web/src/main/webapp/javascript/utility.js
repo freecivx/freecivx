@@ -306,3 +306,11 @@ function trim(str) {
 function isArray(value) {
   return Array.isArray(value);
 }
+
+/**************************************************************************
+ Detects if the current device is a small screen (mobile device).
+ Returns true for screens narrower than 768px (typical mobile breakpoint).
+**************************************************************************/
+function is_small_screen() {
+  return $(window).width() < 768;
+}
