@@ -1292,3 +1292,31 @@ li.tech-both::before {
   margin-bottom: -5px;
   overflow: hidden;
 }
+
+/* Mobile-responsive styles */
+@media (max-width: 767px) {
+  /* Chat window at 100% width on mobile */
+  .chatbox_dialog {
+    width: 100% !important;
+    left: 0 !important;
+    right: 0 !important;
+  }
+  
+  #game_chatbox_panel {
+    width: 100% !important;
+  }
+  
+  /* Hide text in tabs, show only icons */
+  #tabs_menu li a {
+    font-size: 0;
+  }
+  
+  #tabs_menu li a i {
+    font-size: 18px;
+  }
+  
+  /* Adjust tab padding for icons only */
+  .ui-tabs .ui-tabs-nav .ui-tabs-anchor {
+    padding: 0.4em 0.6em;
+  }
+}
