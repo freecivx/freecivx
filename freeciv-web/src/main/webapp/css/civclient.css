@@ -1194,7 +1194,7 @@ li.tech-both::before {
     font-size: 16px;
     font-weight: bold;
     margin: 0 0 8px 0;
-    color: #000000;
+    color: white;
     text-align: center;
     background: #cb842e url("/images/ui-widget-header.png") 50% 50% repeat-x;
     padding: 4px 8px;
