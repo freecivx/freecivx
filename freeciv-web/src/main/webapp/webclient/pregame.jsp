@@ -3,24 +3,8 @@
     <div class="intro-content">
       <h1 class="intro-title">Welcome to FreecivWorld</h1>
       <p class="intro-main">
-        A <strong>free and open-source</strong> empire-building strategy game where you shape the
-        history of human civilization. Begin in the <strong>Stone Age</strong> and guide your tribe through
-        centuries of progress to the wonders of the <strong>Space Age</strong>.
+        A free and open-source empire-building strategy game. Begin in the Stone Age and guide your civilization through centuries of progress.
       </p>
-      <div class="intro-features">
-        <div class="feature-item">
-          <i class="fa fa-globe" aria-hidden="true"></i>
-          <span>Explore & Expand</span>
-        </div>
-        <div class="feature-item">
-          <i class="fa fa-users" aria-hidden="true"></i>
-          <span>Multiplayer & Solo</span>
-        </div>
-        <div class="feature-item">
-          <i class="fa fa-gamepad" aria-hidden="true"></i>
-          <span>Play in 3D</span>
-        </div>
-      </div>
       <p class="intro-license">
         Open source under the <a href="https://www.gnu.org/licenses/agpl-3.0.en.html" target="_blank" rel="noopener">AGPL license</a>
       </p>
