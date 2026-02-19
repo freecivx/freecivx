@@ -6,7 +6,7 @@ FreecivWorld.net - Freeciv in 3D for the web!
 [![Codacy Badge](https://app.codacy.com/project/badge/Grade/70b76d922923473d8793e0019f157992)](https://app.codacy.com/gh/freecivworld/freecivworld/dashboard?utm_source=gh&utm_medium=referral&utm_content=&utm_campaign=Badge_grade)
 
 
-[FreecivWorld.net](https://www.FreecivWorld.net) is an open-source turn-based strategy game. It can be played in a web-browser which supports HTML5 and WebGL 2 or WebGPU. The game features in-depth game-play and a wide variety of game modes and options. Your goal is to build cities, collect resources, organize your government, and build an army, with the ultimate goal of creating the best civilization. You can play online against other players (multiplayer) or play by yourself against the computer.
+[FreecivWorld.net](https://www.FreecivWorld.net) is an open-source turn-based strategy game. It can be played in a web-browser which supports HTML5 and WebGPU. The game features in-depth game-play and a wide variety of game modes and options. Your goal is to build cities, collect resources, organize your government, and build an army, with the ultimate goal of creating the best civilization. You can play online against other players (multiplayer) or play by yourself against the computer.
 
 FreecivWorld.net is free and open source software. The Freeciv C server is released under the GNU General Public License, while the Freeciv-web client is released
 under the GNU Affero General Public License. The 3D models are also "open source" and must be made free and open source. See [License](LICENSE.md) for the full license document.
@@ -42,7 +42,7 @@ FreecivWorld.net consists of these components:
 
 Freeciv 3D
 -------------
-Freeciv 3D is the 3D version using the Three.js 3D engine, which requires WebGl 2 or WebGPU support.
+Freeciv 3D is the 3D version using the Three.js 3D engine, which requires WebGPU support.
 
 Freeciv JavaScript Server
 -----------------
@@ -90,5 +90,5 @@ Developers interested in freecivworld
 
 If you want to contibute to freecivworld, see the [issues](https://github.com/freecivworld/freecivworld/issues) on GibHub for some tasks you can work on. Pull requests and suggestions/issues on Github are welcome! 
 
-Freecivworld is the best Freeciv.
+Freecivworld is the best Freeciv 3D. 
 -----------------------------
