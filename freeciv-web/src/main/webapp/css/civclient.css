@@ -122,11 +122,10 @@ body
   padding-top: 12px;
   padding-left: 0px;
   box-sizing: border-box;
-  border: 1px solid #2a2a2a;
+  border: 1px solid #111111;
   color: white;
   list-style-type: none;
   margin: 0px;
-  background: rgba(10, 10, 10, 0.5);
 }
 
 #game_chat_box {
@@ -145,21 +144,11 @@ body
   height: 18px;
   min-width: 0;
   margin: 0 0.3em;
-  border: 1px solid #666;
+  border: 1px solid #555555;
   color: #ffffff;
-  background-color: rgba(30, 30, 30, 0.9);
+  background-color: rgba(0.1, 0.1, 0.1, 1.0);
   margin-top: -5px;
   font-size: 16px;
-  padding: 2px 6px;
-  border-radius: 3px;
-  transition: border-color 0.2s ease, background-color 0.2s ease;
-}
-
-#game_text_input:focus {
-  outline: none;
-  border-color: #cb842e;
-  background-color: rgba(40, 40, 40, 0.95);
-  box-shadow: 0 0 5px rgba(203, 132, 46, 0.3);
 }
 
 
@@ -200,42 +189,14 @@ body
 #zoom_map_image {
   padding-left: 4px;
   padding-right: 4px;
-  cursor: pointer;
+  cursor:pointer;
   height: 30px;
   margin-top: -4px;
-  transition: transform 0.2s ease, opacity 0.2s ease;
-  opacity: 0.9;
-}
-
-#zoom_map_image:hover {
-  transform: scale(1.05);
-  opacity: 1;
 }
 
 
 #turn_done_button {
-  background: linear-gradient(to bottom, #5a8a3e 0%, #4a7a2e 50%, #3a6a1e 100%);
-  border: 1px solid #2a5a1e;
-  color: #ffffff;
-  padding: 6px 12px;
-  border-radius: 4px;
-  font-weight: 600;
-  cursor: pointer;
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
-  transition: all 0.2s ease;
-}
 
-#turn_done_button:hover {
-  background: linear-gradient(to bottom, #6a9a4e 0%, #5a8a3e 50%, #4a7a2e 100%);
-  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.4);
-  transform: translateY(-1px);
-}
-
-#turn_done_button:active {
-  background: linear-gradient(to bottom, #3a6a1e 0%, #4a7a2e 50%, #5a8a3e 100%);
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
-  transform: translateY(0);
 }
 
 .main_menu_buttons {
@@ -315,11 +276,9 @@ body
 }
 
 .ui-dialog {
-  border: 1px solid #555;
+  border: 1px #444444 solid;
   max-height: 100%;
   // overflow: auto;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.6);
-  border-radius: 4px;
 }
 
 #dialog {
@@ -419,10 +378,8 @@ body
   text-align: center;
   top: 50px;
   overflow: hidden;
-  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8), -1px 0 black, 0 1px black, 1px 0 black, 0 -1px black;
+  text-shadow: -1px 0 black, 0 1px black, 1px 0 black, 0 -1px black;
   font-size: 70%;
-  background: linear-gradient(to bottom, rgba(0, 0, 0, 0.3) 0%, rgba(0, 0, 0, 0.5) 100%);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 #game_status_panel_top {
@@ -517,18 +474,13 @@ body
 #tabs_menu {
   font-size: 0.98em;
   overflow: hidden;
-  background: linear-gradient(to bottom, #1a1a1a 0%, #0a0a0a 100%);
-  border-bottom: 2px solid #333;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+  background: black;
 }
 
 .chatbox_dialog {
-  background: rgba(0,0,0,0.85);
-  background-color: rgba(0,0,0, 0.85);
+  background: rgba(0,0,0,0.75);
+  background-color: rgba(0,0,0, 0.75);
   z-index: 2000;
-  border: 2px solid #4a4a4a !important;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.7), inset 0 1px 0 rgba(255, 255, 255, 0.1) !important;
-  border-radius: 4px !important;
 }
 
 #ui-dialog-title-game_chatbox_panel {
@@ -734,8 +686,6 @@ body
 
 #game_chatbox_panel {
   overflow: hidden;
-  background: rgba(20, 20, 20, 0.85);
-  border-radius: 0 0 4px 4px;
 }
 
 #city_current_worklist {
@@ -841,9 +791,7 @@ body
 }
 
 .ui-widget-header {
-  background: linear-gradient(to bottom, #e09540 0%, #cb842e 50%, #b67328 100%);
-  border-bottom: 1px solid #8a5a1e;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+  background: #cb842e url("/images/ui-widget-header.png") 50% 50% repeat-x;
 }
 
 .ui-dialog .ui-dialog-title {
@@ -860,9 +808,7 @@ body
 }
 
 .chatbox_dialog .ui-dialog-titlebar {
-  background: linear-gradient(to bottom, #e09540 0%, #cb842e 50%, #b67328 100%);
-  border-bottom: 1px solid #8a5a1e;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+  background: #cb842e url("/images/ui-widget-header.png") 100% 50% repeat-x;
 }
 
 .ui-widget-content a {
@@ -1013,9 +959,6 @@ body
 
 #game_unit_panel {
   margin-left: -8px;
-  background: rgba(20, 20, 20, 0.85);
-  border-radius: 0 0 4px 4px;
-  padding: 4px;
 }
 
 #city_table {
@@ -1393,32 +1336,6 @@ li.tech-both::before {
   padding:.4em 0.4em
 }
 
-/* Improved tab styling for better visibility and consistency */
-#tabs_menu li {
-  margin: 0 2px;
-}
-
-#tabs_menu li a {
-  border-radius: 4px 4px 0 0;
-  background: linear-gradient(to bottom, #2a2a2a 0%, #1a1a1a 100%);
-  border: 1px solid #333;
-  border-bottom: none;
-  transition: all 0.2s ease;
-}
-
-#tabs_menu li a:hover {
-  background: linear-gradient(to bottom, #3a3a3a 0%, #2a2a2a 100%);
-  border-color: #444;
-}
-
-#tabs_menu li.ui-state-active a,
-#tabs_menu li.ui-tabs-active a {
-  background: linear-gradient(to bottom, #3a3a3a 0%, #2a2a2a 100%);
-  border-color: #555;
-  border-bottom: 2px solid #cb842e;
-  box-shadow: inset 0 2px 4px rgba(203, 132, 46, 0.3);
-}
-
 .lowered_gov {
   height: 27px;
 }
@@ -1464,30 +1381,18 @@ li.tech-both::before {
   margin-top: -5px;
   height: 15px;
   overflow: hidden;
-  border-color: #6a5a3a;
-  font-weight: 600;
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+  border-color: #432;
 }
 .overview_dialog {
-  background-color: rgba(40, 40, 40, 0.9) !important;
-  border: 2px solid #666 !important;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.7), inset 0 1px 0 rgba(255, 255, 255, 0.1) !important;
-  border-radius: 4px !important;
+  background-color: rgba(40, 40, 40, 0.85) !important;
+  border: 2px solid #555 !important;
   bottom: 100px !important;
-}
-
-.unit_dialog {
-  background-color: rgba(40, 40, 40, 0.9) !important;
-  border: 2px solid #666 !important;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.7), inset 0 1px 0 rgba(255, 255, 255, 0.1) !important;
-  border-radius: 4px !important;
 }
 #game_overview_panel {
   padding: 0px;
   padding-bottom: 2px;
   margin-bottom: -5px;
   overflow: hidden;
-  border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 /* Mobile-responsive styles */
