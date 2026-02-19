@@ -1,15 +1,30 @@
 <div id="fciv-intro">
-  <div id="fciv-intro-txt" style="position: relative; left: -50%; ">
-    <p>
-      <strong>FreecivWorld.net</strong> is a free and open-source empire-building strategy game that lets you shape the
-      history of human civilization. Begin your journey in the Stone Age and guide your tribe through
-      centuries of progress, from humble beginnings to the wonders of the Space Age.
-    </p>
-    <p>
-      FreecivWorld.net is open source and licensed under the
-      <a href="https://www.gnu.org/licenses/agpl-3.0.en.html">AGPL license</a>.
-    </p>
-
+  <div id="fciv-intro-txt">
+    <div class="intro-content">
+      <h1 class="intro-title">Welcome to FreecivWorld</h1>
+      <p class="intro-main">
+        A <strong>free and open-source</strong> empire-building strategy game where you shape the
+        history of human civilization. Begin in the <strong>Stone Age</strong> and guide your tribe through
+        centuries of progress to the wonders of the <strong>Space Age</strong>.
+      </p>
+      <div class="intro-features">
+        <div class="feature-item">
+          <i class="fa fa-globe" aria-hidden="true"></i>
+          <span>Explore & Expand</span>
+        </div>
+        <div class="feature-item">
+          <i class="fa fa-users" aria-hidden="true"></i>
+          <span>Multiplayer & Solo</span>
+        </div>
+        <div class="feature-item">
+          <i class="fa fa-gamepad" aria-hidden="true"></i>
+          <span>Play in 3D</span>
+        </div>
+      </div>
+      <p class="intro-license">
+        Open source under the <a href="https://www.gnu.org/licenses/agpl-3.0.en.html" target="_blank" rel="noopener">AGPL license</a>
+      </p>
+    </div>
   </div>
 </div>
 
