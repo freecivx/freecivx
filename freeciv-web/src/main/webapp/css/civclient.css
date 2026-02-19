@@ -122,10 +122,11 @@ body
   padding-top: 12px;
   padding-left: 0px;
   box-sizing: border-box;
-  border: 1px solid #111111;
+  border: 1px solid #2a2a2a;
   color: white;
   list-style-type: none;
   margin: 0px;
+  background: rgba(10, 10, 10, 0.5);
 }
 
 #game_chat_box {
@@ -144,11 +145,21 @@ body
   height: 18px;
   min-width: 0;
   margin: 0 0.3em;
-  border: 1px solid #555555;
+  border: 1px solid #666;
   color: #ffffff;
-  background-color: rgba(0.1, 0.1, 0.1, 1.0);
+  background-color: rgba(30, 30, 30, 0.9);
   margin-top: -5px;
   font-size: 16px;
+  padding: 2px 6px;
+  border-radius: 3px;
+  transition: border-color 0.2s ease, background-color 0.2s ease;
+}
+
+#game_text_input:focus {
+  outline: none;
+  border-color: #cb842e;
+  background-color: rgba(40, 40, 40, 0.95);
+  box-shadow: 0 0 5px rgba(203, 132, 46, 0.3);
 }
 
 
@@ -378,8 +389,10 @@ body
   text-align: center;
   top: 50px;
   overflow: hidden;
-  text-shadow: -1px 0 black, 0 1px black, 1px 0 black, 0 -1px black;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8), -1px 0 black, 0 1px black, 1px 0 black, 0 -1px black;
   font-size: 70%;
+  background: linear-gradient(to bottom, rgba(0, 0, 0, 0.3) 0%, rgba(0, 0, 0, 0.5) 100%);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 #game_status_panel_top {
@@ -474,13 +487,18 @@ body
 #tabs_menu {
   font-size: 0.98em;
   overflow: hidden;
-  background: black;
+  background: linear-gradient(to bottom, #1a1a1a 0%, #0a0a0a 100%);
+  border-bottom: 2px solid #333;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
 }
 
 .chatbox_dialog {
-  background: rgba(0,0,0,0.75);
-  background-color: rgba(0,0,0, 0.75);
+  background: rgba(0,0,0,0.85);
+  background-color: rgba(0,0,0, 0.85);
   z-index: 2000;
+  border: 2px solid #4a4a4a !important;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.7), inset 0 1px 0 rgba(255, 255, 255, 0.1) !important;
+  border-radius: 4px !important;
 }
 
 #ui-dialog-title-game_chatbox_panel {
@@ -686,6 +704,8 @@ body
 
 #game_chatbox_panel {
   overflow: hidden;
+  background: rgba(20, 20, 20, 0.85);
+  border-radius: 0 0 4px 4px;
 }
 
 #city_current_worklist {
@@ -791,7 +811,9 @@ body
 }
 
 .ui-widget-header {
-  background: #cb842e url("/images/ui-widget-header.png") 50% 50% repeat-x;
+  background: linear-gradient(to bottom, #e09540 0%, #cb842e 50%, #b67328 100%);
+  border-bottom: 1px solid #8a5a1e;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
 }
 
 .ui-dialog .ui-dialog-title {
@@ -808,7 +830,9 @@ body
 }
 
 .chatbox_dialog .ui-dialog-titlebar {
-  background: #cb842e url("/images/ui-widget-header.png") 100% 50% repeat-x;
+  background: linear-gradient(to bottom, #e09540 0%, #cb842e 50%, #b67328 100%);
+  border-bottom: 1px solid #8a5a1e;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
 }
 
 .ui-widget-content a {
@@ -959,6 +983,9 @@ body
 
 #game_unit_panel {
   margin-left: -8px;
+  background: rgba(20, 20, 20, 0.85);
+  border-radius: 0 0 4px 4px;
+  padding: 4px;
 }
 
 #city_table {
@@ -1336,6 +1363,32 @@ li.tech-both::before {
   padding:.4em 0.4em
 }
 
+/* Improved tab styling for better visibility and consistency */
+#tabs_menu li {
+  margin: 0 2px;
+}
+
+#tabs_menu li a {
+  border-radius: 4px 4px 0 0;
+  background: linear-gradient(to bottom, #2a2a2a 0%, #1a1a1a 100%);
+  border: 1px solid #333;
+  border-bottom: none;
+  transition: all 0.2s ease;
+}
+
+#tabs_menu li a:hover {
+  background: linear-gradient(to bottom, #3a3a3a 0%, #2a2a2a 100%);
+  border-color: #444;
+}
+
+#tabs_menu li.ui-state-active a,
+#tabs_menu li.ui-tabs-active a {
+  background: linear-gradient(to bottom, #3a3a3a 0%, #2a2a2a 100%);
+  border-color: #555;
+  border-bottom: 2px solid #cb842e;
+  box-shadow: inset 0 2px 4px rgba(203, 132, 46, 0.3);
+}
+
 .lowered_gov {
   height: 27px;
 }
@@ -1381,12 +1434,23 @@ li.tech-both::before {
   margin-top: -5px;
   height: 15px;
   overflow: hidden;
-  border-color: #432;
+  border-color: #6a5a3a;
+  font-weight: 600;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
 }
 .overview_dialog {
-  background-color: rgba(40, 40, 40, 0.85) !important;
-  border: 2px solid #555 !important;
+  background-color: rgba(40, 40, 40, 0.9) !important;
+  border: 2px solid #666 !important;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.7), inset 0 1px 0 rgba(255, 255, 255, 0.1) !important;
+  border-radius: 4px !important;
   bottom: 100px !important;
+}
+
+.unit_dialog {
+  background-color: rgba(40, 40, 40, 0.9) !important;
+  border: 2px solid #666 !important;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.7), inset 0 1px 0 rgba(255, 255, 255, 0.1) !important;
+  border-radius: 4px !important;
 }
 #game_overview_panel {
   padding: 0px;
