@@ -39,6 +39,9 @@ var GOVT_TAB_REVOLUTION = 1;
 var GOVT_TAB_TAXRATES = 2;
 var GOVT_TAB_REPORTS = 3;
 
+// Tab switching delay for rendering (in milliseconds)
+var TAB_SWITCH_DELAY_MS = 100;
+
 
 
 
@@ -112,7 +115,8 @@ function start_revolution_from_tab()
 **************************************************************************/
 function get_govt_tab_index()
 {
-  var index = $("#civ_tab").parent().children().index($("#civ_tab"));
+  var civTab = $("#civ_tab");
+  var index = civTab.parent().children().index(civTab);
   return index >= 0 ? index : 1; // Default to 1 if not found
 }
 
@@ -129,7 +133,7 @@ function switch_to_govt_subtab(subtab_index)
     if ($("#govt_tabs").length > 0) {
       $("#govt_tabs").tabs("option", "active", subtab_index);
     }
-  }, 100);
+  }, TAB_SWITCH_DELAY_MS);
 }
 
 /**************************************************************************
@@ -142,7 +146,7 @@ function show_revolution_dialog()
   // Update content after switching
   setTimeout(function() {
     update_revolution_tab_content();
-  }, 150);
+  }, TAB_SWITCH_DELAY_MS * 1.5);
 }
 
 /**************************************************************************

@@ -68,10 +68,10 @@ function show_tax_rates_dialog()
   if (typeof switch_to_govt_subtab === 'function') {
     switch_to_govt_subtab(GOVT_TAB_TAXRATES);
     
-    // Update content after switching
+    // Update content after switching (use same delay as government.js)
     setTimeout(function() {
       update_taxrates_tab_content();
-    }, 150);
+    }, TAB_SWITCH_DELAY_MS * 1.5);
   } else {
     // Fallback to old dialog if the new tab system is not available
     show_tax_rates_dialog_old();
