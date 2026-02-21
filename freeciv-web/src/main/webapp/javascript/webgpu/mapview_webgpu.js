@@ -90,13 +90,10 @@ function webgpu_start_renderer()
     anaglyph_3d_enabled = false;
   }
 
-  // Adjust camera distance for smaller screens
   if ($(window).width() <= 800) {
-    camera_dy = camera_dy * 1.6;
+    camera_dy = camera_dy * 1.5;
   } else {
-    // On desktop, adjust camera for more angled view (like Civ 6)
-    camera_dx = 200;
-    camera_dz = 400;
+     camera.position.z += 300;
   }
 
   $("#pregame_page").hide();
