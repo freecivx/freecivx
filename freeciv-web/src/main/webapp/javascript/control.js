@@ -3390,6 +3390,8 @@ function update_active_units_dialog()
     $("#game_unit_panel").parent().css("border", "1px solid rgba(255, 255, 255, 0.2)");
     $("#game_unit_panel").parent().css("border-radius", "8px");
     $("#game_unit_panel").parent().css("box-shadow", "0 4px 16px rgba(0, 0, 0, 0.5)");
+    $("#game_unit_panel").parent().css("backdrop-filter", "blur(10px)");
+    $("#game_unit_panel").parent().css("-webkit-backdrop-filter", "blur(10px)");
     if (game_unit_panel_state == "minimized") $("#game_unit_panel").dialogExtend("minimize");
   } else {
     $("#game_unit_panel").parent().hide();
