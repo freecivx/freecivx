@@ -34,10 +34,11 @@ var GOVT_DIALOG_MOBILE_MARGIN = 20;
 var GOVT_DIALOG_MOBILE_MAX_WIDTH = 400;
 
 // Government tab indices
-var GOVT_TAB_OVERVIEW = 0;
-var GOVT_TAB_REVOLUTION = 1;
-var GOVT_TAB_TAXRATES = 2;
-var GOVT_TAB_REPORTS = 3;
+var GOVT_TAB_NATION = 0;
+var GOVT_TAB_OVERVIEW = 1;
+var GOVT_TAB_REVOLUTION = 2;
+var GOVT_TAB_TAXRATES = 3;
+var GOVT_TAB_REPORTS = 4;
 
 // Tab switching delay for rendering (in milliseconds)
 var TAB_SWITCH_DELAY_MS = 100;
@@ -168,8 +169,9 @@ function init_civ_dialog()
         $("#civ_dialog_flag").html("<img src='/images/flags/" + tag + ".svg' width='220'>");
     }
   } else {
-    $("#civ_dialog_text").html("Observing.");
-
+    $("#nation_title").html("Observing");
+    $("#civ_dialog_text").html("");
+    $("#civ_dialog_flag").html("");
   }
 
   // Initialize the government tabs

@@ -354,7 +354,7 @@ body
 #civ_dialog {
   padding: 20px;
   margin: 20px;
-  height: 550px;
+  height: auto;
   text-align: center;
 }
 
@@ -916,12 +916,12 @@ body
 
 /* Government tabs styling */
 #govt_tabs {
-  margin-top: 20px;
+  margin-top: 0;
 }
 
 .govt_tabs_content {
   padding: 15px;
-  min-height: 300px;
+  min-height: 350px;
 }
 
 .govt-overview {
