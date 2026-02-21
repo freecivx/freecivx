@@ -1117,11 +1117,14 @@ li.tech-both::before {
     max-width: 400px;
   }
   
+  /* Tablet-optimized wiki image size */
   #wiki_image {
     max-width: 500px;
     max-height: 400px;
   }
 }
+
+/* Desktop (>1024px) uses default wiki image sizing from base styles (600px max) */
 
 /* Diplomacy dialog. */
 

@@ -27,6 +27,7 @@ var tech_dialog_active = false;
 
 var tech_xscale = 1.2;
 var tech_canvas_scale = 1.0;  // Responsive scale for tech tree canvas
+var DEFAULT_TECH_OFFSET_TOP = 100; // Default offset if tech container hasn't been rendered yet
 var wikipedia_url = "http://en.wikipedia.org/wiki/";
 
 /* TECH_KNOWN is self-explanatory, TECH_PREREQS_KNOWN are those for which all
@@ -150,7 +151,7 @@ function init_tech_screen()
   }
   
   // Better responsive sizing for the tech tree container
-  var offsetTop = $("#technologies").offset() ? $("#technologies").offset().top : 100;
+  var offsetTop = $("#technologies").offset() ? $("#technologies").offset().top : DEFAULT_TECH_OFFSET_TOP;
   $("#technologies").width(windowWidth - (isMobile ? 10 : 20));
   $("#technologies").height(windowHeight - offsetTop - (isMobile ? 10 : 15));
 
