@@ -40,6 +40,9 @@ var RatesManager = (function() {
     getScience: function() { return state.science; },
     getMaxRate: function() { return state.maxrate; },
     setMaxRate: function(rate) { state.maxrate = rate; },
+    setTax: function(value) { state.tax = value; },
+    setLuxury: function(value) { state.luxury = value; },
+    setScience: function(value) { state.science = value; },
     isLocked: function(rateType) {
       return $('input[name="lock"]').eq(rateType).is(':checked');
     },
@@ -49,8 +52,8 @@ var RatesManager = (function() {
   };
 })();
 
-// Legacy global variables for backward compatibility
-var tax, sci, lux, maxrate, freeze;
+// Legacy global variables for backward compatibility - synced from RatesManager
+var tax = 0, sci = 0, lux = 0, maxrate = 80, freeze = false;
 
 
 
@@ -152,10 +155,8 @@ function update_rates_dialog()
 **************************************************************************/
 function update_net_income()
 {
-  let net_income = client.conn.playing['expected_income'];
-  if (net_income > 0) {
-    net_income = "+" + net_income;
-  }
+  const income = client.conn.playing['expected_income'];
+  const net_income = income > 0 ? '+' + income : income;
   $("#income_info").html(net_income);
 }
 
@@ -179,8 +180,7 @@ function update_net_bulbs(bulbs)
 **************************************************************************/
 function create_rates_sliders(tax_val, lux_val, sci_val, max)
 {
-  const state = RatesManager.getState();
-  state.maxrate = max;
+  RatesManager.setMaxRate(max);
 
   // Create Tax slider
   $("#slider-tax-jquery").slider({
@@ -225,10 +225,9 @@ function create_rates_sliders(tax_val, lux_val, sci_val, max)
 **************************************************************************/
 function update_rate_slider(rateType, newValue)
 {
-  const state = RatesManager.getState();
-  if (state.freeze) return;
+  if (RatesManager.isFrozen()) return;
   
-  state.freeze = true;
+  RatesManager.freeze();
 
   // Determine which rates are locked
   const locks = {
@@ -262,7 +261,7 @@ function update_rate_slider(rateType, newValue)
       const perRate = Math.floor(deficit / unlocked.length / 10) * 10;
       
       unlocked.forEach((r, index) => {
-        rates[r] = Math.min(Math.max(rates[r] + perRate, 0), state.maxrate);
+        rates[r] = Math.min(Math.max(rates[r] + perRate, 0), RatesManager.getMaxRate());
         rates[r] = Math.floor(rates[r] / 10) * 10;
       });
     }
@@ -291,15 +290,17 @@ function update_rate_slider(rateType, newValue)
   // Update labels
   update_rates_labels();
 
-  // Sync state and submit
-  state.tax = rates.tax;
-  state.luxury = rates.luxury;
-  state.science = rates.science;
+  // Sync state using setters
+  RatesManager.setTax(rates.tax);
+  RatesManager.setLuxury(rates.luxury);
+  RatesManager.setScience(rates.science);
+  
+  // Update legacy globals for backward compatibility
   tax = rates.tax;
   lux = rates.luxury;
   sci = rates.science;
   
-  state.freeze = false;
+  RatesManager.unfreeze();
   submit_player_rates();
 }
 
@@ -308,19 +309,18 @@ function update_rate_slider(rateType, newValue)
 **************************************************************************/
 function update_rates_labels()
 {
-  const state = RatesManager.getState();
-  state.tax = $("#slider-tax-jquery").slider("value");
-  state.luxury = $("#slider-lux-jquery").slider("value");
-  state.science = $("#slider-sci-jquery").slider("value");
+  RatesManager.setTax($("#slider-tax-jquery").slider("value"));
+  RatesManager.setLuxury($("#slider-lux-jquery").slider("value"));
+  RatesManager.setScience($("#slider-sci-jquery").slider("value"));
 
   // Sync with legacy globals
-  tax = state.tax;
-  lux = state.luxury;
-  sci = state.science;
+  tax = RatesManager.getTax();
+  lux = RatesManager.getLuxury();
+  sci = RatesManager.getScience();
 
-  $("#tax_result").html(state.tax + "%");
-  $("#lux_result").html(state.luxury + "%");
-  $("#sci_result").html(state.science + "%");
+  $("#tax_result").html(tax + "%");
+  $("#lux_result").html(lux + "%");
+  $("#sci_result").html(sci + "%");
 }
 
 /**************************************************************************
@@ -328,17 +328,15 @@ function update_rates_labels()
 **************************************************************************/
 function submit_player_rates()
 {
-  const state = RatesManager.getState();
-  
   // Validate that rates are within bounds and sum to 100
-  if (state.tax < 0 || state.tax > 100 || 
-      state.luxury < 0 || state.luxury > 100 || 
-      state.science < 0 || state.science > 100) {
+  if (RatesManager.getTax() < 0 || RatesManager.getTax() > 100 || 
+      RatesManager.getLuxury() < 0 || RatesManager.getLuxury() > 100 || 
+      RatesManager.getScience() < 0 || RatesManager.getScience() > 100) {
     swal("Invalid tax rate values - must be between 0% and 100%");
     return;
   }
   
-  const total = state.tax + state.luxury + state.science;
+  const total = RatesManager.getTax() + RatesManager.getLuxury() + RatesManager.getScience();
   if (total !== 100) {
     swal(`Invalid tax rates - total must equal 100% (currently ${total}%)`);
     return;
@@ -346,9 +344,9 @@ function submit_player_rates()
   
   const packet = {
     "pid": packet_player_rates,
-    "tax": state.tax,
-    "luxury": state.luxury,
-    "science": state.science
+    "tax": RatesManager.getTax(),
+    "luxury": RatesManager.getLuxury(),
+    "science": RatesManager.getScience()
   };
   send_request(JSON.stringify(packet));
 }

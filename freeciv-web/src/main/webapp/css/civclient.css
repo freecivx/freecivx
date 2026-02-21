@@ -1001,10 +1001,6 @@ body
   cursor: pointer;
 }
 
-.rate-lock input {
-  cursor: pointer;
-}
-
 .rate-info {
   text-align: center;
   margin: 20px 10px 10px;
