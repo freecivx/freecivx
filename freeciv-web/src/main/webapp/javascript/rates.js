@@ -18,7 +18,7 @@
 ***********************************************************************/
 
 // Rates Manager - encapsulates all rate-related state and behavior
-var RatesManager = (function() {
+const RatesManager = (function() {
   // Private state
   var state = {
     tax: 0,
@@ -51,7 +51,7 @@ var RatesManager = (function() {
   };
 })();
 
-// Legacy global variables for backward compatibility
+// Legacy global variables for backward compatibility - using var for function hoisting
 // These are synced whenever rates change via update_rates_labels()
 var tax = 0, sci = 0, lux = 0, maxrate = 80, freeze = false;
 
