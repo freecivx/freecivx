@@ -34,7 +34,6 @@ var RatesManager = (function() {
   var RATE_SCIENCE = 2;
 
   return {
-    getState: function() { return state; },
     getTax: function() { return state.tax; },
     getLuxury: function() { return state.luxury; },
     getScience: function() { return state.science; },
@@ -52,7 +51,8 @@ var RatesManager = (function() {
   };
 })();
 
-// Legacy global variables for backward compatibility - synced from RatesManager
+// Legacy global variables for backward compatibility
+// These are synced whenever rates change via update_rates_labels()
 var tax = 0, sci = 0, lux = 0, maxrate = 80, freeze = false;
 
 
