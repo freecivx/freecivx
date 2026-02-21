@@ -69,38 +69,40 @@ function update_govt_tab_content()
 }
 
 /**************************************************************************
-   Updates the nation info tab with government information
+  Updates the nation info tab with government information
 **************************************************************************/
 function update_nation_govt_info()
 {
   if (client_is_observer() || client.conn.playing == null) return;
   
-  var govt = governments[client.conn.playing['government']];
-  var govt_html = "<div class='govt-overview govt-overview-nation'>";
-  govt_html += "<p><strong>Current Government:</strong> " + govt['name'] + "</p>";
-  govt_html += "<p>" + govt['helptext'] + "</p>";
-  govt_html += "</div>";
+  const govt = governments[client.conn.playing['government']];
+  const govt_html = `
+    <div class='govt-overview govt-overview-nation'>
+      <p><strong>Current Government:</strong> ${govt['name']}</p>
+      <p>${govt['helptext']}</p>
+    </div>`;
   
   $("#nation_govt_info").html(govt_html);
 }
 
 /**************************************************************************
-   Updates the revolution tab content inline
+  Updates the revolution tab content inline
 **************************************************************************/
 function update_revolution_tab_content()
 {
   if (client_is_observer() || client.conn.playing == null) return;
 
-  var dhtml = "<div class='govt-dialog-current'>"
-      + "<strong>Current government:</strong> " + governments[client.conn.playing['government']]['name']
-	  + "</div>"
-      + "<div class='govt-dialog-instructions'>Select a new form of government to start the revolution:</div>"
-  + "<div id='governments'>"
-  + "<div id='governments_list'>"
-  + "</div></div>"
-  + "<div style='margin-top: 20px;'>"
-  + "<button id='start_revolution_button' class='button' onclick='start_revolution_from_tab();'>Start Revolution!</button>"
-  + "</div>";
+  const dhtml = `
+    <div class='govt-dialog-current'>
+      <strong>Current government:</strong> ${governments[client.conn.playing['government']]['name']}
+    </div>
+    <div class='govt-dialog-instructions'>Select a new form of government to start the revolution:</div>
+    <div id='governments'>
+      <div id='governments_list'></div>
+    </div>
+    <div style='margin-top: 20px;'>
+      <button id='start_revolution_button' class='button' onclick='start_revolution_from_tab();'>Start Revolution!</button>
+    </div>`;
 
   $("#revolution_content").html(dhtml);
   update_govt_dialog();
@@ -143,7 +145,7 @@ function switch_to_govt_subtab(subtab_index)
 }
 
 /**************************************************************************
-   ...
+  Shows the revolution dialog by switching to the revolution tab
 **************************************************************************/
 function show_revolution_dialog()
 {
@@ -156,22 +158,23 @@ function show_revolution_dialog()
 }
 
 /**************************************************************************
-   ...
+  Initializes the civilization dialog with nation info and government tabs
 **************************************************************************/
 function init_civ_dialog()
 {
   if (!client_is_observer() && client.conn.playing != null) {
 
-    var pplayer = client.conn.playing;
-    var pnation = nations[pplayer['nation']];
-    var tag = pnation['graphic_str'];
+    const pplayer = client.conn.playing;
+    const pnation = nations[pplayer['nation']];
+    const tag = pnation['graphic_str'];
 
-    var civ_description = "<div>" + nations[pplayer['nation']]['legend']  +"</div><br>";
-    $("#nation_title").html(pplayer['name'] + " rules the " + nations[pplayer['nation']]['adjective']
-                            	    + " with government form " + governments[client.conn.playing['government']]['name']);
+    const civ_description = `<div>${nations[pplayer['nation']]['legend']}</div><br>`;
+    const nation_title = `${pplayer['name']} rules the ${nations[pplayer['nation']]['adjective']} with government form ${governments[client.conn.playing['government']]['name']}`;
+    
+    $("#nation_title").html(nation_title);
     $("#civ_dialog_text").html(civ_description);
     if (!pnation['customized']) {
-        $("#civ_dialog_flag").html("<img src='/images/flags/" + tag + ".svg' width='220'>");
+        $("#civ_dialog_flag").html(`<img src='/images/flags/${tag}.svg' width='220'>`);
     }
   } else {
     $("#nation_title").html("Observing");
@@ -193,35 +196,31 @@ function init_civ_dialog()
 
 
 /**************************************************************************
-   ...
+  Updates the government dialog with available governments
 **************************************************************************/
 function update_govt_dialog()
 {
-  var govt;
-  var govt_id;
   if (client_is_observer()) return;
 
-  var governments_list_html = "";
-
-  for (govt_id in governments) {
-    govt = governments[govt_id];
-    governments_list_html += "<button class='govt_button' id='govt_id_" + govt['id'] + "' "
-	                  + "onclick='set_req_government(" + govt['id'] + ");' "
-			  + "title='" + govt['helptext'] + "'>" +  govt['name'] + "</button>";
-  }
+  const governments_list_html = Object.keys(governments).map(govt_id => {
+    const govt = governments[govt_id];
+    return `<button class='govt_button' id='govt_id_${govt['id']}' 
+                onclick='set_req_government(${govt['id']});' 
+                title='${govt['helptext']}'>${govt['name']}</button>`;
+  }).join('');
 
   $("#governments_list").html(governments_list_html);
 
-  for (govt_id in governments) {
-    govt = governments[govt_id];
+  for (const govt_id in governments) {
+    const govt = governments[govt_id];
     if (!can_player_get_gov(govt_id)) {
-      $("#govt_id_" + govt['id'] ).button({ disabled: true, label: govt['name'], icon: govt['rule_name'], iconPosition: "beginning"});
+      $(`#govt_id_${govt['id']}`).button({ disabled: true, label: govt['name'], icon: govt['rule_name'], iconPosition: "beginning"});
     } else if (requested_gov == govt_id) {
-    $("#govt_id_" + govt['id'] ).button({label: govt['name'], icon: govt['rule_name'], iconPosition: "beginning"}).css("background", "green");
+      $(`#govt_id_${govt['id']}`).button({label: govt['name'], icon: govt['rule_name'], iconPosition: "beginning"}).css("background", "green");
     } else if (client.conn.playing['government'] == govt_id) {
-      $("#govt_id_" + govt['id'] ).button({label: govt['name'], icon: govt['rule_name'], iconPosition: "beginning"}).css("background", "#BBBBFF").css("font-weight", "bolder");
+      $(`#govt_id_${govt['id']}`).button({label: govt['name'], icon: govt['rule_name'], iconPosition: "beginning"}).css("background", "#BBBBFF").css("font-weight", "bolder");
     } else {
-      $("#govt_id_" + govt['id'] ).button({label: govt['name'], icon: govt['rule_name'], iconPosition: "beginning"});
+      $(`#govt_id_${govt['id']}`).button({label: govt['name'], icon: govt['rule_name'], iconPosition: "beginning"});
     }
   }
   $(".govt_button").tooltip();
@@ -230,7 +229,7 @@ function update_govt_dialog()
 
 
 /**************************************************************************
-   ...
+  Starts a revolution with the selected government
 **************************************************************************/
 function start_revolution()
 {
@@ -241,7 +240,7 @@ function start_revolution()
 }
 
 /**************************************************************************
-   ...
+  Sets the requested government
 **************************************************************************/
 function set_req_government(gov_id)
 {
@@ -250,12 +249,14 @@ function set_req_government(gov_id)
 }
 
 /**************************************************************************
- ...
+  Sends a request to change the player's government
 **************************************************************************/
 function send_player_change_government(govt_id)
 {
-  var packet = {"pid" : packet_player_change_government,
-                "government" : govt_id };
+  const packet = {
+    "pid": packet_player_change_government,
+    "government": govt_id
+  };
   send_request(JSON.stringify(packet));
 }
 
@@ -443,11 +444,13 @@ function show_report_in_tab(headline, message)
 
 
 /**************************************************************************
- ...
+  Requests a report from the server
 **************************************************************************/
 function request_report(rtype)
 {
-  var packet = {"pid"  : packet_report_req,
-                "type" : rtype};
+  const packet = {
+    "pid": packet_report_req,
+    "type": rtype
+  };
   send_request(JSON.stringify(packet));
 }
