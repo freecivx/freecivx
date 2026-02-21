@@ -712,13 +712,11 @@ function show_tech_gained_dialog(tech_gained_id)
   // Responsive dialog width based on screen size
   var windowWidth = $(window).width();
   var dialogWidth = windowWidth < 768 ? "95%" : (windowWidth < 1024 ? "85%" : "75%");
-  var dialogMaxWidth = windowWidth < 768 ? windowWidth - 20 : 800;
   
   $("#tech_dialog").dialog({
 			bgiframe: true,
 			modal: false,
 			width: dialogWidth,
-			maxWidth: dialogMaxWidth,
 			buttons: [
 			 {
                 text : "Close",

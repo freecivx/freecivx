@@ -1079,7 +1079,6 @@ li.tech-both::before {
   
   #tech_progress_box {
     padding-left: 10px;
-    width: 100%;
     max-width: 300px;
   }
   
@@ -1114,8 +1113,8 @@ li.tech-both::before {
 
 @media (min-width: 768px) and (max-width: 1023px) {
   #tech_progress_box {
-    padding-left: 40px;
-    width: 400px;
+    padding-left: 8px;
+    max-width: 400px;
   }
   
   #wiki_image {
