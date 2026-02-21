@@ -30,6 +30,18 @@ var tech_canvas_scale = 1.0;  // Responsive scale for tech tree canvas
 var DEFAULT_TECH_OFFSET_TOP = 100; // Default offset if tech container hasn't been rendered yet
 var wikipedia_url = "http://en.wikipedia.org/wiki/";
 
+/**************************************************************************
+ Utility functions for HTML escaping
+**************************************************************************/
+function escapeHtml(str) {
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
 /* TECH_KNOWN is self-explanatory, TECH_PREREQS_KNOWN are those for which all
  * requirements are fulfilled; all others (including those which can never
  * be reached) are TECH_UNKNOWN */
@@ -636,26 +648,42 @@ function tech_mapview_mouse_click(e)
 **************************************************************************/
 function get_tech_infobox_html(tech_id)
 {
-  var infobox_html = "";
-  var ptech = techs[tech_id];
-  var tag = tileset_tech_graphic_tag(ptech);
-
-  if (tag == null) return null;
-  var tileset_x = tileset[tag][0];
-  var tileset_y = tileset[tag][1];
-  var width = tileset[tag][2];
-  var height = tileset[tag][3];
-  var i = tileset[tag][4];
-  var image_src = "/tileset/freeciv-web-tileset-" + tileset_name + "-" + i + get_tileset_file_extention() + "?ts=" + ts;
-  infobox_html += "<div class='specific_tech' onclick='send_player_research(" + tech_id + ");' title='"
-     + get_advances_text(tech_id).replace(/(<([^>]+)>)/ig,"") + "'>"
-         + "<div class='tech_infobox_image' style='background: transparent url("
-         + image_src
-     + ");background-position:-" + tileset_x + "px -" + tileset_y
-         + "px;  width: " + width + "px;height: " + height + "px;'"
-         + "'></div>"
-     +  ptech['name']
-     + "</div>";
+  const ptech = techs[tech_id];
+  if (!ptech) return null;
+  
+  const tag = tileset_tech_graphic_tag(ptech);
+  if (!tag) return null;
+  
+  const tileset_x = tileset[tag][0];
+  const tileset_y = tileset[tag][1];
+  const width = tileset[tag][2];
+  const height = tileset[tag][3];
+  const i = tileset[tag][4];
+  const image_src = `/tileset/freeciv-web-tileset-${tileset_name}-${i}${get_tileset_file_extention()}?ts=${ts}`;
+  const tech_description = get_advances_text(tech_id).replace(/(<([^>]+)>)/ig, "");
+  
+  // Escape for use in attributes and content
+  const tech_name_escaped = escapeHtml(ptech['name']);
+  const description_escaped = escapeHtml(tech_description);
+  
+  // Use template literals and data attributes instead of inline onclick
+  const infobox_html = `
+    <div class='specific_tech' 
+         data-tech-id='${tech_id}' 
+         role='button' 
+         tabindex='0'
+         aria-label="Research ${tech_name_escaped}: ${description_escaped}"
+         title="${description_escaped}">
+      <div class='tech_infobox_image' 
+           style='background: transparent url(${image_src});
+                  background-position: -${tileset_x}px -${tileset_y}px;
+                  width: ${width}px;
+                  height: ${height}px;'
+           role='img'
+           aria-label="${tech_name_escaped} icon">
+      </div>
+      ${tech_name_escaped}
+    </div>`;
 
   return infobox_html;
 }
@@ -673,53 +701,54 @@ function queue_tech_gained_dialog(tech_gained_id)
 }
 
 /**************************************************************************
- ...
+ Show the tech gained dialog when a new technology is discovered
 **************************************************************************/
 function show_tech_gained_dialog(tech_gained_id)
 {
   if (client_is_observer() || C_S_RUNNING != client_state()) return;
 
   $("#tech_tab_item").css("color", "#aa0000");
-  var pplayer = client.conn.playing;
-  var tech = techs[tech_gained_id];
-  if (tech == null) return;
+  const pplayer = client.conn.playing;
+  const tech = techs[tech_gained_id];
+  if (!tech) return;
 
-  var title = tech['name'] + " discovered!";
-  var message = "The " + nations[pplayer['nation']]['adjective'] + " have discovered " + tech['name'] + ".<br>";
-  message += "<span id='tech_advance_helptext'>" + get_advances_text(tech_gained_id) + "</span>";
+  const title = `${tech['name']} discovered!`;
+  let message = `The ${nations[pplayer['nation']]['adjective']} have discovered ${tech['name']}.<br>`;
+  message += `<span id='tech_advance_helptext'>${get_advances_text(tech_gained_id)}</span>`;
 
-  var tech_choices = [];
-  for (var next_tech_id in techs) {
-    var ntech = techs[next_tech_id];
+  // Gather available tech choices
+  const tech_choices = [];
+  for (const next_tech_id in techs) {
+    const ntech = techs[next_tech_id];
     if (!(next_tech_id+'' in reqtree)) continue;
     if (player_invention_state(client.conn.playing, ntech['id']) == TECH_PREREQS_KNOWN) {
       tech_choices.push(ntech);
     }
   }
 
-  message += "<br>You can now research:<br><div id='tech_gained_choice'>";
-  for (var i = 0; i < tech_choices.length; i++) {
+  message += "<br>You can now research:<br><div id='tech_gained_choice' role='group' aria-label='Available technologies to research'>";
+  for (let i = 0; i < tech_choices.length; i++) {
     message += get_tech_infobox_html(tech_choices[i]['id']);
   }
   message += "</div>";
 
   // reset dialog page.
   $("#tech_dialog").remove();
-  $("<div id='tech_dialog'></div>").appendTo("div#game_page");
+  $("<div id='tech_dialog' role='dialog' aria-labelledby='tech_dialog_title'></div>").appendTo("div#game_page");
 
   $("#tech_dialog").html(message);
   $("#tech_dialog").attr("title", title);
   
   // Responsive dialog width based on screen size
-  var windowWidth = $(window).width();
-  var dialogWidth = windowWidth < 768 ? "95%" : (windowWidth < 1024 ? "85%" : "75%");
+  const windowWidth = $(window).width();
+  const dialogWidth = windowWidth < 768 ? "95%" : (windowWidth < 1024 ? "85%" : "75%");
   
   $("#tech_dialog").dialog({
-			bgiframe: true,
-			modal: false,
-			width: dialogWidth,
-			buttons: [
-			 {
+		modal: false,
+		width: dialogWidth,
+		closeOnEscape: true,
+		buttons: [
+		 {
                 text : "Close",
                 click : function() {
                   $("#tech_dialog").dialog('close');
@@ -745,8 +774,19 @@ function show_tech_gained_dialog(tech_gained_id)
 
   $("#tech_dialog").dialog('open');
   $("#game_text_input").blur();
-  $("#tech_advance_helptext").tooltip({ disabled: false });
-  $(".specific_tech").tooltip({ disabled: false });
+  $("#tech_advance_helptext").tooltip();
+  $(".specific_tech").tooltip();
+  
+  // Add event delegation for tech selection with keyboard support
+  $("#tech_gained_choice").off('click keypress').on('click keypress', '.specific_tech', function(e) {
+    if (e.type === 'click' || (e.type === 'keypress' && (e.which === 13 || e.which === 32))) {
+      e.preventDefault();
+      const tech_id = $(this).data('tech-id');
+      if (tech_id !== undefined) {
+        send_player_research(tech_id);
+      }
+    }
+  });
 
   if (dialogs_minimized_setting) {
     $("#tech_dialog").dialogExtend("minimize");
@@ -760,34 +800,40 @@ function show_tech_gained_dialog(tech_gained_id)
 function show_wikipedia_dialog(tech_name)
 {
   $("#tech_tab_item").css("color", "#aa0000");
-  if (freeciv_wiki_docs == null || freeciv_wiki_docs[tech_name] == null) return;
+  if (!freeciv_wiki_docs || !freeciv_wiki_docs[tech_name]) return;
 
-  var message = "<b>Wikipedia on <a href='" + wikipedia_url
-	  + freeciv_wiki_docs[tech_name]['title']
-	  + "' target='_new'>" + freeciv_wiki_docs[tech_name]['title']
-	  + "</a></b><br>";
+  const wiki_title = freeciv_wiki_docs[tech_name]['title'];
+  const wiki_title_escaped = escapeHtml(wiki_title);
+  const tech_name_escaped = escapeHtml(tech_name);
+  
+  let message = `<b>Wikipedia on <a href='${wikipedia_url}${encodeURIComponent(wiki_title)}' target='_blank' rel='noopener noreferrer'>${wiki_title_escaped}</a></b><br>`;
+  
   if (freeciv_wiki_docs[tech_name]['image'] != null) {
-    message += "<img id='wiki_image' src='/images/wiki/" + freeciv_wiki_docs[tech_name]['image'] + "'><br>";
+    const wiki_image = freeciv_wiki_docs[tech_name]['image'];
+    // Validate image filename - only allow safe characters
+    if (/^[a-zA-Z0-9_\-\.]+\.(jpg|jpeg|png|gif|svg)$/i.test(wiki_image)) {
+      message += `<img id='wiki_image' src='/images/wiki/${encodeURIComponent(wiki_image)}' alt="${tech_name_escaped}"><br>`;
+    }
   }
 
   message += freeciv_wiki_docs[tech_name]['summary'];
 
   // reset dialog page.
   $("#wiki_dialog").remove();
-  $("<div id='wiki_dialog'></div>").appendTo("div#game_page");
+  $("<div id='wiki_dialog' role='dialog' aria-labelledby='wiki_dialog_title'></div>").appendTo("div#game_page");
 
   $("#wiki_dialog").html(message);
   $("#wiki_dialog").attr("title", tech_name);
   
   // Responsive dialog width
-  var windowWidth = $(window).width();
-  var windowHeight = $(window).height();
-  var dialogWidth = windowWidth < 768 ? "95%" : (windowWidth < 1024 ? "85%" : "75%");
+  const windowWidth = $(window).width();
+  const windowHeight = $(window).height();
+  const dialogWidth = windowWidth < 768 ? "95%" : (windowWidth < 1024 ? "85%" : "75%");
   
   $("#wiki_dialog").dialog({
-			bgiframe: true,
 			modal: true,
 			width: dialogWidth,
+			closeOnEscape: true,
 			buttons: {
 				Ok: function() {
 					$("#wiki_dialog").dialog('close');
@@ -807,31 +853,37 @@ function show_tech_info_dialog(tech_name, unit_type_id, improvement_id)
 {
   $("#tech_tab_item").css("color", "#aa0000");
 
-  var message = "";
+  let message = "";
 
   if (unit_type_id != null) {
-     var punit_type = unit_types[unit_type_id];
-     message += "<b>Unit info</b>: " + punit_type['helptext'] + "<br><br>"
-     + "Cost: " + punit_type['build_cost']
-     + "<br>Attack: " + punit_type['attack_strength']
-     + "<br>Defense: " + punit_type['defense_strength']
-     + "<br>Firepower: " + punit_type['firepower']
-     + "<br>Hitpoints: " + punit_type['hp']
-     + "<br>Moves: " + move_points_text(punit_type['move_rate'])
-     + "<br>Vision: " + punit_type['vision_radius_sq']
-     + "<br><br>";
+     const punit_type = unit_types[unit_type_id];
+     message += `<b>Unit info</b>: ${punit_type['helptext']}<br><br>
+     Cost: ${punit_type['build_cost']}<br>
+     Attack: ${punit_type['attack_strength']}<br>
+     Defense: ${punit_type['defense_strength']}<br>
+     Firepower: ${punit_type['firepower']}<br>
+     Hitpoints: ${punit_type['hp']}<br>
+     Moves: ${move_points_text(punit_type['move_rate'])}<br>
+     Vision: ${punit_type['vision_radius_sq']}<br><br>`;
   }
 
-  if (improvement_id != null) message += "<b>Improvement info</b>: " + improvements[improvement_id]['helptext'] + "<br><br>";
+  if (improvement_id != null) {
+    message += `<b>Improvement info</b>: ${improvements[improvement_id]['helptext']}<br><br>`;
+  }
 
   if (freeciv_wiki_docs[tech_name] != null) {
-    message += "<b>Wikipedia on <a href='" + wikipedia_url
-	  + freeciv_wiki_docs[tech_name]['title']
-	  + "' target='_new' style='color: black;'>" + freeciv_wiki_docs[tech_name]['title']
-	  + "</a>:</b><br>";
+    const wiki_title = freeciv_wiki_docs[tech_name]['title'];
+    const wiki_title_escaped = escapeHtml(wiki_title);
+    const tech_name_escaped = escapeHtml(tech_name);
+    
+    message += `<b>Wikipedia on <a href='${wikipedia_url}${encodeURIComponent(wiki_title)}' target='_blank' rel='noopener noreferrer' style='color: black;'>${wiki_title_escaped}</a>:</b><br>`;
 
     if (freeciv_wiki_docs[tech_name]['image'] != null) {
-      message += "<img id='wiki_image' src='/images/wiki/" + freeciv_wiki_docs[tech_name]['image'] + "'><br>";
+      const wiki_image = freeciv_wiki_docs[tech_name]['image'];
+      // Validate image filename - only allow safe characters
+      if (/^[a-zA-Z0-9_\-\.]+\.(jpg|jpeg|png|gif|svg)$/i.test(wiki_image)) {
+        message += `<img id='wiki_image' src='/images/wiki/${encodeURIComponent(wiki_image)}' alt="${tech_name_escaped}"><br>`;
+      }
     }
 
     message += freeciv_wiki_docs[tech_name]['summary'];
@@ -839,22 +891,22 @@ function show_tech_info_dialog(tech_name, unit_type_id, improvement_id)
 
   // reset dialog page.
   $("#wiki_dialog").remove();
-  $("<div id='wiki_dialog'></div>").appendTo("div#game_page");
+  $("<div id='wiki_dialog' role='dialog' aria-labelledby='wiki_dialog_title'></div>").appendTo("div#game_page");
 
   $("#wiki_dialog").html(message);
   $("#wiki_dialog").attr("title", tech_name);
   
   // Responsive dialog dimensions
-  var windowWidth = $(window).width();
-  var windowHeight = $(window).height();
-  var dialogWidth = windowWidth < 768 ? "95%" : (windowWidth < 1024 ? "90%" : "82%");
-  var dialogHeight = windowHeight < 600 ? windowHeight - 40 : windowHeight - 60;
+  const windowWidth = $(window).width();
+  const windowHeight = $(window).height();
+  const dialogWidth = windowWidth < 768 ? "95%" : (windowWidth < 1024 ? "90%" : "82%");
+  const dialogHeight = windowHeight < 600 ? windowHeight - 40 : windowHeight - 60;
   
   $("#wiki_dialog").dialog({
-			bgiframe: true,
 			modal: true,
 			width: dialogWidth,
 			height: dialogHeight,
+			closeOnEscape: true,
 			buttons: {
 				Ok: function() {
 					$("#wiki_dialog").dialog('close');
