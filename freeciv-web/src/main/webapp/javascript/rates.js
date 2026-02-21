@@ -31,9 +31,55 @@ var freeze = false;
 
 
 /**************************************************************************
-  ...
+  Updates the tax rates tab content inline
+**************************************************************************/
+function update_taxrates_tab_content()
+{
+  if (client_is_observer()) return;
+
+  var dhtml = "<h2>Select tax, luxury and science rates</h2>"
+    + "<form name='rates'><table border='0'>"
+    + "<tr> <td><span>Tax:</td> <td> <div class='slider' id='slider-tax' tabIndex='1'></div>"
+    + "</td><td>"
+    + "<div id='tax_result' style='float:left;'></div></td>"
+    + "<td> <INPUT TYPE='CHECKBOX' NAME='lock'>Lock</td></tr>"
+    + "<tr><td>Luxury:</td><td><div class='slider' id='slider-lux' tabIndex='1'></div>"
+    + "</td><td> <div id='lux_result' style='float:left;'></div>"
+    + "</td><td><INPUT TYPE='CHECKBOX' NAME='lock'>Lock</td></tr>"
+    + "<tr><td>Science:</td><td><div class='slider' id='slider-sci' tabIndex='1'></div>"
+    + "</td><td><div id='sci_result' style='float:left;'></div>"
+    + "</td><td><INPUT TYPE='CHECKBOX' NAME='lock'>Lock</td></tr>"
+    + "</table></form>"
+    + "<div id='max_tax_rate' style='margin:10px;'>"
+    + "</div><div style='margin:10px;'>"
+    + "Net income: <span id='income_info'></span><br>"
+    + "Research: <span id='bulbs_info'></span></div>";
+
+  $("#taxrates_content").html(dhtml);
+  update_rates_dialog();
+}
+
+/**************************************************************************
+  Shows tax rates dialog (redirects to the tab)
 **************************************************************************/
 function show_tax_rates_dialog()
+{
+  // Switch to the government tab and then to the tax rates sub-tab
+  $("#tabs").tabs("option", "active", 1); // Switch to Government tab (index 1)
+  
+  // Wait a moment for the tab to render, then switch to tax rates sub-tab
+  setTimeout(function() {
+    if ($("#govt_tabs").length > 0) {
+      $("#govt_tabs").tabs("option", "active", 2); // Switch to Tax Rates sub-tab
+      update_taxrates_tab_content();
+    }
+  }, 100);
+}
+
+/**************************************************************************
+  Legacy function - now shows tax rates in tab
+**************************************************************************/
+function show_tax_rates_dialog_old()
 {
   var id = "#rates_dialog";
   $(id).remove();
