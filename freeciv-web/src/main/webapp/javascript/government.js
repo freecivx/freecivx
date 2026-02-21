@@ -33,6 +33,12 @@ var GOVT_DIALOG_MOBILE_BREAKPOINT = 520;
 var GOVT_DIALOG_MOBILE_MARGIN = 20;
 var GOVT_DIALOG_MOBILE_MAX_WIDTH = 400;
 
+// Government tab indices
+var GOVT_TAB_OVERVIEW = 0;
+var GOVT_TAB_REVOLUTION = 1;
+var GOVT_TAB_TAXRATES = 2;
+var GOVT_TAB_REPORTS = 3;
+
 
 
 
@@ -98,8 +104,31 @@ function start_revolution_from_tab()
 {
   start_revolution();
   // Refresh the content after revolution
+  update_revolution_tab_content();
+}
+
+/**************************************************************************
+   Gets the index of the government tab in the main tabs
+**************************************************************************/
+function get_govt_tab_index()
+{
+  var index = $("#civ_tab").parent().children().index($("#civ_tab"));
+  return index >= 0 ? index : 1; // Default to 1 if not found
+}
+
+/**************************************************************************
+   Switches to the government tab and a specific sub-tab
+**************************************************************************/
+function switch_to_govt_subtab(subtab_index)
+{
+  var govt_tab_index = get_govt_tab_index();
+  $("#tabs").tabs("option", "active", govt_tab_index);
+  
+  // Wait for the tab to render, then switch to the sub-tab
   setTimeout(function() {
-    update_revolution_tab_content();
+    if ($("#govt_tabs").length > 0) {
+      $("#govt_tabs").tabs("option", "active", subtab_index);
+    }
   }, 100);
 }
 
@@ -108,16 +137,12 @@ function start_revolution_from_tab()
 **************************************************************************/
 function show_revolution_dialog()
 {
-  // Switch to the government tab and then to the revolution sub-tab
-  $("#tabs").tabs("option", "active", 1); // Switch to Government tab (index 1)
+  switch_to_govt_subtab(GOVT_TAB_REVOLUTION);
   
-  // Wait a moment for the tab to render, then switch to revolution sub-tab
+  // Update content after switching
   setTimeout(function() {
-    if ($("#govt_tabs").length > 0) {
-      $("#govt_tabs").tabs("option", "active", 1); // Switch to Revolution sub-tab
-      update_revolution_tab_content();
-    }
-  }, 100);
+    update_revolution_tab_content();
+  }, 150);
 }
 
 /**************************************************************************

@@ -64,16 +64,18 @@ function update_taxrates_tab_content()
 **************************************************************************/
 function show_tax_rates_dialog()
 {
-  // Switch to the government tab and then to the tax rates sub-tab
-  $("#tabs").tabs("option", "active", 1); // Switch to Government tab (index 1)
-  
-  // Wait a moment for the tab to render, then switch to tax rates sub-tab
-  setTimeout(function() {
-    if ($("#govt_tabs").length > 0) {
-      $("#govt_tabs").tabs("option", "active", 2); // Switch to Tax Rates sub-tab
+  // Use the helper function from government.js to switch tabs
+  if (typeof switch_to_govt_subtab === 'function') {
+    switch_to_govt_subtab(GOVT_TAB_TAXRATES);
+    
+    // Update content after switching
+    setTimeout(function() {
       update_taxrates_tab_content();
-    }
-  }, 100);
+    }, 150);
+  } else {
+    // Fallback to old dialog if the new tab system is not available
+    show_tax_rates_dialog_old();
+  }
 }
 
 /**************************************************************************
