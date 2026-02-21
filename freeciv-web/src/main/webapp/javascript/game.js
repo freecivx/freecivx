@@ -122,7 +122,7 @@ function update_game_status_panel() {
       status_html += "<b class='negative_net_income' title='Gold (net income)'>";
     }
     status_html += pplayer['gold'] + " (" + net_income + ")</b>  &nbsp;&nbsp;";
-    status_html += "<span style='cursor:pointer;' onclick='show_tax_rates_dialog();'><img src='/images/gold.png' title='Tax rate'>: <b>" + tax + "</b>% ";
+    status_html += "<span><img src='/images/gold.png' title='Tax rate'>: <b>" + tax + "</b>% ";
     status_html += "<img src='/images/quavers.png' title='Luxury rate'>: <b>" + lux + "</b>% ";
     status_html += "<img src='/images/science.png' title='Science rate'>: <b>" + sci + "</b>%</span> ";
   } else if (server_settings != null && server_settings['metamessage'] != null) {
