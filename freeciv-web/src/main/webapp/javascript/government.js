@@ -26,6 +26,13 @@ var REPORT_TOP_CITIES = 2;
 var REPORT_DEMOGRAPHIC = 3;
 var REPORT_ACHIEVEMENTS = 4;
 
+// Government dialog responsive width constants
+var GOVT_DIALOG_MAX_WIDTH = 650;
+var GOVT_DIALOG_DESKTOP_MARGIN = 40;
+var GOVT_DIALOG_MOBILE_BREAKPOINT = 520;
+var GOVT_DIALOG_MOBILE_MARGIN = 20;
+var GOVT_DIALOG_MOBILE_MAX_WIDTH = 400;
+
 
 
 
@@ -54,9 +61,9 @@ function show_revolution_dialog()
   
   // Responsive width: wider on desktop, full width on mobile
   var windowWidth = $(window).width();
-  var dialogWidth = Math.min(650, windowWidth - 40);
-  if (windowWidth <= 520) {
-    dialogWidth = Math.min(windowWidth - 20, 400);
+  var dialogWidth = Math.min(GOVT_DIALOG_MAX_WIDTH, windowWidth - GOVT_DIALOG_DESKTOP_MARGIN);
+  if (windowWidth <= GOVT_DIALOG_MOBILE_BREAKPOINT) {
+    dialogWidth = Math.min(windowWidth - GOVT_DIALOG_MOBILE_MARGIN, GOVT_DIALOG_MOBILE_MAX_WIDTH);
   }
   
   $(id).dialog({

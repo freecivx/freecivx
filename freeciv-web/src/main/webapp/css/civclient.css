@@ -837,7 +837,7 @@ body
   display: grid;
   grid-template-columns: repeat(2, 1fr);
   gap: 12px;
-  max-width: 600px;
+  max-width: 650px; /* Matches GOVT_DIALOG_MAX_WIDTH in JavaScript */
   margin: 0 auto;
   padding: 10px;
 }
@@ -887,13 +887,6 @@ body
   .govt_button {
     min-height: 48px;
     font-size: 14px;
-  }
-}
-
-/* Tablet: keep 2 columns but adjust spacing */
-@media (min-width: 521px) and (max-width: 768px) {
-  #governments_list {
-    gap: 10px;
   }
 }
 
