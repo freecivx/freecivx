@@ -784,33 +784,33 @@ function show_tech_gained_dialog(tech_gained_id)
 function show_wikipedia_dialog(tech_name)
 {
   $("#tech_tab_item").css("color", "#aa0000");
-  if (freeciv_wiki_docs == null || freeciv_wiki_docs[tech_name] == null) return;
+  if (!freeciv_wiki_docs || !freeciv_wiki_docs[tech_name]) return;
 
-  var message = "<b>Wikipedia on <a href='" + wikipedia_url
-	  + freeciv_wiki_docs[tech_name]['title']
-	  + "' target='_new'>" + freeciv_wiki_docs[tech_name]['title']
-	  + "</a></b><br>";
+  const wiki_title = freeciv_wiki_docs[tech_name]['title'];
+  let message = `<b>Wikipedia on <a href='${wikipedia_url}${wiki_title}' target='_blank' rel='noopener noreferrer'>${wiki_title}</a></b><br>`;
+  
   if (freeciv_wiki_docs[tech_name]['image'] != null) {
-    message += "<img id='wiki_image' src='/images/wiki/" + freeciv_wiki_docs[tech_name]['image'] + "'><br>";
+    message += `<img id='wiki_image' src='/images/wiki/${freeciv_wiki_docs[tech_name]['image']}' alt='${tech_name}'><br>`;
   }
 
   message += freeciv_wiki_docs[tech_name]['summary'];
 
   // reset dialog page.
   $("#wiki_dialog").remove();
-  $("<div id='wiki_dialog'></div>").appendTo("div#game_page");
+  $("<div id='wiki_dialog' role='dialog' aria-labelledby='wiki_dialog_title'></div>").appendTo("div#game_page");
 
   $("#wiki_dialog").html(message);
   $("#wiki_dialog").attr("title", tech_name);
   
   // Responsive dialog width
-  var windowWidth = $(window).width();
-  var windowHeight = $(window).height();
-  var dialogWidth = windowWidth < 768 ? "95%" : (windowWidth < 1024 ? "85%" : "75%");
+  const windowWidth = $(window).width();
+  const windowHeight = $(window).height();
+  const dialogWidth = windowWidth < 768 ? "95%" : (windowWidth < 1024 ? "85%" : "75%");
   
   $("#wiki_dialog").dialog({
 			modal: true,
 			width: dialogWidth,
+			closeOnEscape: true,
 			buttons: {
 				Ok: function() {
 					$("#wiki_dialog").dialog('close');
@@ -830,31 +830,30 @@ function show_tech_info_dialog(tech_name, unit_type_id, improvement_id)
 {
   $("#tech_tab_item").css("color", "#aa0000");
 
-  var message = "";
+  let message = "";
 
   if (unit_type_id != null) {
-     var punit_type = unit_types[unit_type_id];
-     message += "<b>Unit info</b>: " + punit_type['helptext'] + "<br><br>"
-     + "Cost: " + punit_type['build_cost']
-     + "<br>Attack: " + punit_type['attack_strength']
-     + "<br>Defense: " + punit_type['defense_strength']
-     + "<br>Firepower: " + punit_type['firepower']
-     + "<br>Hitpoints: " + punit_type['hp']
-     + "<br>Moves: " + move_points_text(punit_type['move_rate'])
-     + "<br>Vision: " + punit_type['vision_radius_sq']
-     + "<br><br>";
+     const punit_type = unit_types[unit_type_id];
+     message += `<b>Unit info</b>: ${punit_type['helptext']}<br><br>
+     Cost: ${punit_type['build_cost']}<br>
+     Attack: ${punit_type['attack_strength']}<br>
+     Defense: ${punit_type['defense_strength']}<br>
+     Firepower: ${punit_type['firepower']}<br>
+     Hitpoints: ${punit_type['hp']}<br>
+     Moves: ${move_points_text(punit_type['move_rate'])}<br>
+     Vision: ${punit_type['vision_radius_sq']}<br><br>`;
   }
 
-  if (improvement_id != null) message += "<b>Improvement info</b>: " + improvements[improvement_id]['helptext'] + "<br><br>";
+  if (improvement_id != null) {
+    message += `<b>Improvement info</b>: ${improvements[improvement_id]['helptext']}<br><br>`;
+  }
 
   if (freeciv_wiki_docs[tech_name] != null) {
-    message += "<b>Wikipedia on <a href='" + wikipedia_url
-	  + freeciv_wiki_docs[tech_name]['title']
-	  + "' target='_new' style='color: black;'>" + freeciv_wiki_docs[tech_name]['title']
-	  + "</a>:</b><br>";
+    const wiki_title = freeciv_wiki_docs[tech_name]['title'];
+    message += `<b>Wikipedia on <a href='${wikipedia_url}${wiki_title}' target='_blank' rel='noopener noreferrer' style='color: black;'>${wiki_title}</a>:</b><br>`;
 
     if (freeciv_wiki_docs[tech_name]['image'] != null) {
-      message += "<img id='wiki_image' src='/images/wiki/" + freeciv_wiki_docs[tech_name]['image'] + "'><br>";
+      message += `<img id='wiki_image' src='/images/wiki/${freeciv_wiki_docs[tech_name]['image']}' alt='${tech_name}'><br>`;
     }
 
     message += freeciv_wiki_docs[tech_name]['summary'];
@@ -862,21 +861,22 @@ function show_tech_info_dialog(tech_name, unit_type_id, improvement_id)
 
   // reset dialog page.
   $("#wiki_dialog").remove();
-  $("<div id='wiki_dialog'></div>").appendTo("div#game_page");
+  $("<div id='wiki_dialog' role='dialog' aria-labelledby='wiki_dialog_title'></div>").appendTo("div#game_page");
 
   $("#wiki_dialog").html(message);
   $("#wiki_dialog").attr("title", tech_name);
   
   // Responsive dialog dimensions
-  var windowWidth = $(window).width();
-  var windowHeight = $(window).height();
-  var dialogWidth = windowWidth < 768 ? "95%" : (windowWidth < 1024 ? "90%" : "82%");
-  var dialogHeight = windowHeight < 600 ? windowHeight - 40 : windowHeight - 60;
+  const windowWidth = $(window).width();
+  const windowHeight = $(window).height();
+  const dialogWidth = windowWidth < 768 ? "95%" : (windowWidth < 1024 ? "90%" : "82%");
+  const dialogHeight = windowHeight < 600 ? windowHeight - 40 : windowHeight - 60;
   
   $("#wiki_dialog").dialog({
 			modal: true,
 			width: dialogWidth,
 			height: dialogHeight,
+			closeOnEscape: true,
 			buttons: {
 				Ok: function() {
 					$("#wiki_dialog").dialog('close');
