@@ -815,13 +815,72 @@ body
   color: #f8ff8a;
 }
 
-.govt_button {
-  width: 60%;
-  margin: 6px;
-}
-
+/* Government dialog container */
 #governments {
   text-align: center;
+  padding: 10px 5px;
+}
+
+/* Government buttons list - responsive grid layout */
+#governments_list {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+  max-width: 600px;
+  margin: 0 auto;
+  padding: 10px;
+}
+
+/* Individual government button styling */
+.govt_button {
+  width: 100%;
+  min-height: 50px;
+  padding: 12px 16px;
+  margin: 0;
+  font-size: 15px;
+  font-weight: 500;
+  border-radius: 6px;
+  border: 2px solid #666;
+  background: linear-gradient(to bottom, #f5f5f5 0%, #e0e0e0 100%);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-align: left;
+  background-size: 32px 32px;
+  background-position: 8px center;
+  background-repeat: no-repeat;
+  padding-left: 48px;
+}
+
+.govt_button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+  border-color: #4a90e2;
+}
+
+.govt_button:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+/* Mobile responsive: single column on small screens */
+@media (max-width: 520px) {
+  #governments_list {
+    grid-template-columns: 1fr;
+    gap: 10px;
+    padding: 5px;
+  }
+  
+  .govt_button {
+    min-height: 48px;
+    font-size: 14px;
+  }
+}
+
+/* Tablet: keep 2 columns but adjust spacing */
+@media (min-width: 521px) and (max-width: 768px) {
+  #governments_list {
+    gap: 10px;
+  }
 }
 
 .Democracy {
