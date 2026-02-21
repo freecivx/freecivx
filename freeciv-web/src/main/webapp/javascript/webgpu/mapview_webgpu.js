@@ -93,7 +93,8 @@ function webgpu_start_renderer()
   if ($(window).width() <= 800) {
     camera_dy = camera_dy * 1.5;
   } else {
-     camera.position.z += 300;
+    camera.position.y -= 50;
+    camera.position.z += 250;
   }
 
   $("#pregame_page").hide();
