@@ -30,6 +30,18 @@ var tech_canvas_scale = 1.0;  // Responsive scale for tech tree canvas
 var DEFAULT_TECH_OFFSET_TOP = 100; // Default offset if tech container hasn't been rendered yet
 var wikipedia_url = "http://en.wikipedia.org/wiki/";
 
+/**************************************************************************
+ Utility functions for HTML escaping
+**************************************************************************/
+function escapeHtml(str) {
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
 /* TECH_KNOWN is self-explanatory, TECH_PREREQS_KNOWN are those for which all
  * requirements are fulfilled; all others (including those which can never
  * be reached) are TECH_UNKNOWN */
@@ -650,10 +662,9 @@ function get_tech_infobox_html(tech_id)
   const image_src = `/tileset/freeciv-web-tileset-${tileset_name}-${i}${get_tileset_file_extention()}?ts=${ts}`;
   const tech_description = get_advances_text(tech_id).replace(/(<([^>]+)>)/ig, "");
   
-  // Escape attribute values to prevent injection
-  const escapeAttr = (str) => String(str).replace(/"/g, '&quot;').replace(/'/g, '&#39;');
-  const tech_name = escapeAttr(ptech['name']);
-  const escaped_description = escapeAttr(tech_description);
+  // Escape for use in attributes and content
+  const tech_name_escaped = escapeHtml(ptech['name']);
+  const description_escaped = escapeHtml(tech_description);
   
   // Use template literals and data attributes instead of inline onclick
   const infobox_html = `
@@ -661,17 +672,17 @@ function get_tech_infobox_html(tech_id)
          data-tech-id='${tech_id}' 
          role='button' 
          tabindex='0'
-         aria-label="Research ${tech_name}: ${escaped_description}"
-         title="${escaped_description}">
+         aria-label="Research ${tech_name_escaped}: ${description_escaped}"
+         title="${description_escaped}">
       <div class='tech_infobox_image' 
            style='background: transparent url(${image_src});
                   background-position: -${tileset_x}px -${tileset_y}px;
                   width: ${width}px;
                   height: ${height}px;'
            role='img'
-           aria-label="${tech_name} icon">
+           aria-label="${tech_name_escaped} icon">
       </div>
-      ${ptech['name']}
+      ${tech_name_escaped}
     </div>`;
 
   return infobox_html;
@@ -791,18 +802,17 @@ function show_wikipedia_dialog(tech_name)
   $("#tech_tab_item").css("color", "#aa0000");
   if (!freeciv_wiki_docs || !freeciv_wiki_docs[tech_name]) return;
 
-  // Escape attribute values to prevent injection
-  const escapeAttr = (str) => String(str).replace(/"/g, '&quot;').replace(/'/g, '&#39;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-  
   const wiki_title = freeciv_wiki_docs[tech_name]['title'];
-  const escaped_tech_name = escapeAttr(tech_name);
-  let message = `<b>Wikipedia on <a href='${wikipedia_url}${encodeURIComponent(wiki_title)}' target='_blank' rel='noopener noreferrer'>${wiki_title}</a></b><br>`;
+  const wiki_title_escaped = escapeHtml(wiki_title);
+  const tech_name_escaped = escapeHtml(tech_name);
+  
+  let message = `<b>Wikipedia on <a href='${wikipedia_url}${encodeURIComponent(wiki_title)}' target='_blank' rel='noopener noreferrer'>${wiki_title_escaped}</a></b><br>`;
   
   if (freeciv_wiki_docs[tech_name]['image'] != null) {
     const wiki_image = freeciv_wiki_docs[tech_name]['image'];
-    // Basic validation to prevent path traversal
-    if (!wiki_image.includes('..') && !wiki_image.includes('<') && !wiki_image.includes('>')) {
-      message += `<img id='wiki_image' src='/images/wiki/${wiki_image}' alt="${escaped_tech_name}"><br>`;
+    // Validate image filename - only allow safe characters
+    if (/^[a-zA-Z0-9_\-\.]+\.(jpg|jpeg|png|gif|svg)$/i.test(wiki_image)) {
+      message += `<img id='wiki_image' src='/images/wiki/${encodeURIComponent(wiki_image)}' alt="${tech_name_escaped}"><br>`;
     }
   }
 
@@ -862,18 +872,17 @@ function show_tech_info_dialog(tech_name, unit_type_id, improvement_id)
   }
 
   if (freeciv_wiki_docs[tech_name] != null) {
-    // Escape attribute values to prevent injection
-    const escapeAttr = (str) => String(str).replace(/"/g, '&quot;').replace(/'/g, '&#39;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-    const escaped_tech_name = escapeAttr(tech_name);
-    
     const wiki_title = freeciv_wiki_docs[tech_name]['title'];
-    message += `<b>Wikipedia on <a href='${wikipedia_url}${encodeURIComponent(wiki_title)}' target='_blank' rel='noopener noreferrer' style='color: black;'>${wiki_title}</a>:</b><br>`;
+    const wiki_title_escaped = escapeHtml(wiki_title);
+    const tech_name_escaped = escapeHtml(tech_name);
+    
+    message += `<b>Wikipedia on <a href='${wikipedia_url}${encodeURIComponent(wiki_title)}' target='_blank' rel='noopener noreferrer' style='color: black;'>${wiki_title_escaped}</a>:</b><br>`;
 
     if (freeciv_wiki_docs[tech_name]['image'] != null) {
       const wiki_image = freeciv_wiki_docs[tech_name]['image'];
-      // Basic validation to prevent path traversal
-      if (!wiki_image.includes('..') && !wiki_image.includes('<') && !wiki_image.includes('>')) {
-        message += `<img id='wiki_image' src='/images/wiki/${wiki_image}' alt="${escaped_tech_name}"><br>`;
+      // Validate image filename - only allow safe characters
+      if (/^[a-zA-Z0-9_\-\.]+\.(jpg|jpeg|png|gif|svg)$/i.test(wiki_image)) {
+        message += `<img id='wiki_image' src='/images/wiki/${encodeURIComponent(wiki_image)}' alt="${tech_name_escaped}"><br>`;
       }
     }
 
