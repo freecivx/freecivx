@@ -19,19 +19,14 @@
 
 // Rates Manager - encapsulates all rate-related state and behavior
 const RatesManager = (function() {
-  // Private state
-  var state = {
+  // Private state - using const since the object reference never changes
+  const state = {
     tax: 0,
     luxury: 0,
     science: 0,
     maxrate: 80,
     freeze: false
   };
-
-  // Rate types for array indexing
-  var RATE_TAX = 0;
-  var RATE_LUXURY = 1;
-  var RATE_SCIENCE = 2;
 
   return {
     getTax: function() { return state.tax; },
@@ -260,7 +255,7 @@ function update_rate_slider(rateType, newValue)
       const deficit = 100 - total;
       const perRate = Math.floor(deficit / unlocked.length / 10) * 10;
       
-      unlocked.forEach((r, index) => {
+      unlocked.forEach((r) => {
         rates[r] = Math.min(Math.max(rates[r] + perRate, 0), RatesManager.getMaxRate());
         rates[r] = Math.floor(rates[r] / 10) * 10;
       });
