@@ -202,14 +202,12 @@ function update_govt_dialog()
 {
   if (client_is_observer()) return;
 
-  let governments_list_html = "";
-
-  for (const govt_id in governments) {
+  const governments_list_html = Object.keys(governments).map(govt_id => {
     const govt = governments[govt_id];
-    governments_list_html += `<button class='govt_button' id='govt_id_${govt['id']}' 
-                  onclick='set_req_government(${govt['id']});' 
-                  title='${govt['helptext']}'>${govt['name']}</button>`;
-  }
+    return `<button class='govt_button' id='govt_id_${govt['id']}' 
+                onclick='set_req_government(${govt['id']});' 
+                title='${govt['helptext']}'>${govt['name']}</button>`;
+  }).join('');
 
   $("#governments_list").html(governments_list_html);
 

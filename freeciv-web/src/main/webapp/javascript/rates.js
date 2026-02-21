@@ -323,7 +323,7 @@ function update_rates_labels()
 **************************************************************************/
 function submit_player_rates()
 {
-  // Validate that rates are within bounds and sum to 100
+  // Validate that rates are within bounds
   if (RatesManager.getTax() < 0 || RatesManager.getTax() > 100 || 
       RatesManager.getLuxury() < 0 || RatesManager.getLuxury() > 100 || 
       RatesManager.getScience() < 0 || RatesManager.getScience() > 100) {
@@ -331,9 +331,11 @@ function submit_player_rates()
     return;
   }
   
+  // Double-check sum (should always be 100% due to UI logic, but validate anyway)
   const total = RatesManager.getTax() + RatesManager.getLuxury() + RatesManager.getScience();
   if (total !== 100) {
-    swal(`Invalid tax rates - total must equal 100% (currently ${total}%)`);
+    console.error(`Unexpected error: rates sum to ${total}% instead of 100%`);
+    swal(`An unexpected error occurred with tax rates. Please refresh and try again. (Total: ${total}%)`);
     return;
   }
   
