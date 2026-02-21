@@ -3338,15 +3338,15 @@ function update_active_units_dialog()
       unit_info_html += "<div style='margin-bottom: 4px;'><span title='Movement points'>" + get_unit_moves_left(aunit) + "</span></div>";
     }
     unit_info_html += "<div style='display: flex; flex-wrap: wrap; gap: 2px;'>"
-    + "<span title='Attack strength' aria-label='Attack strength'>⚔️ " + ptype['attack_strength'] + "</span> "
-    + "<span title='Defense strength' aria-label='Defense strength'>🛡️ " + ptype['defense_strength'] + "</span> "
-    + "<span title='Firepower' aria-label='Firepower'>🔥 " + ptype['firepower'] + "</span> "
-    + "<span title='Health points' aria-label='Health points'>❤️ " + aunit['hp'] + "/" + ptype['hp'] + "</span>";
+    + "<span title='Attack strength' aria-label='Attack strength " + ptype['attack_strength'] + "'>⚔️ " + ptype['attack_strength'] + "</span> "
+    + "<span title='Defense strength' aria-label='Defense strength " + ptype['defense_strength'] + "'>🛡️ " + ptype['defense_strength'] + "</span> "
+    + "<span title='Firepower' aria-label='Firepower " + ptype['firepower'] + "'>🔥 " + ptype['firepower'] + "</span> "
+    + "<span title='Health points' aria-label='Health points " + aunit['hp'] + " of " + ptype['hp'] + "'>❤️ " + aunit['hp'] + "/" + ptype['hp'] + "</span>";
     if (aunit['veteran'] > 0) {
-      unit_info_html += " <span title='Veteran level' aria-label='Veteran level'>⭐ " + aunit['veteran'] + "</span>";
+      unit_info_html += " <span title='Veteran level' aria-label='Veteran level " + aunit['veteran'] + "'>⭐ " + aunit['veteran'] + "</span>";
     }
     if (ptype['transport_capacity'] > 0) {
-      unit_info_html += " <span title='Transport capacity' aria-label='Transport capacity'>🚢 " + ptype['transport_capacity'] + "</span>";
+      unit_info_html += " <span title='Transport capacity' aria-label='Transport capacity " + ptype['transport_capacity'] + "'>🚢 " + ptype['transport_capacity'] + "</span>";
     }
     unit_info_html += "</div>";
 
