@@ -650,21 +650,26 @@ function get_tech_infobox_html(tech_id)
   const image_src = `/tileset/freeciv-web-tileset-${tileset_name}-${i}${get_tileset_file_extention()}?ts=${ts}`;
   const tech_description = get_advances_text(tech_id).replace(/(<([^>]+)>)/ig, "");
   
+  // Escape attribute values to prevent injection
+  const escapeAttr = (str) => String(str).replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+  const tech_name = escapeAttr(ptech['name']);
+  const escaped_description = escapeAttr(tech_description);
+  
   // Use template literals and data attributes instead of inline onclick
   const infobox_html = `
     <div class='specific_tech' 
          data-tech-id='${tech_id}' 
          role='button' 
          tabindex='0'
-         aria-label='Research ${ptech['name']}: ${tech_description}'
-         title='${tech_description}'>
+         aria-label="Research ${tech_name}: ${escaped_description}"
+         title="${escaped_description}">
       <div class='tech_infobox_image' 
            style='background: transparent url(${image_src});
                   background-position: -${tileset_x}px -${tileset_y}px;
                   width: ${width}px;
                   height: ${height}px;'
            role='img'
-           aria-label='${ptech['name']} icon'>
+           aria-label="${tech_name} icon">
       </div>
       ${ptech['name']}
     </div>`;
@@ -786,11 +791,19 @@ function show_wikipedia_dialog(tech_name)
   $("#tech_tab_item").css("color", "#aa0000");
   if (!freeciv_wiki_docs || !freeciv_wiki_docs[tech_name]) return;
 
+  // Escape attribute values to prevent injection
+  const escapeAttr = (str) => String(str).replace(/"/g, '&quot;').replace(/'/g, '&#39;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  
   const wiki_title = freeciv_wiki_docs[tech_name]['title'];
-  let message = `<b>Wikipedia on <a href='${wikipedia_url}${wiki_title}' target='_blank' rel='noopener noreferrer'>${wiki_title}</a></b><br>`;
+  const escaped_tech_name = escapeAttr(tech_name);
+  let message = `<b>Wikipedia on <a href='${wikipedia_url}${encodeURIComponent(wiki_title)}' target='_blank' rel='noopener noreferrer'>${wiki_title}</a></b><br>`;
   
   if (freeciv_wiki_docs[tech_name]['image'] != null) {
-    message += `<img id='wiki_image' src='/images/wiki/${freeciv_wiki_docs[tech_name]['image']}' alt='${tech_name}'><br>`;
+    const wiki_image = freeciv_wiki_docs[tech_name]['image'];
+    // Basic validation to prevent path traversal
+    if (!wiki_image.includes('..') && !wiki_image.includes('<') && !wiki_image.includes('>')) {
+      message += `<img id='wiki_image' src='/images/wiki/${wiki_image}' alt="${escaped_tech_name}"><br>`;
+    }
   }
 
   message += freeciv_wiki_docs[tech_name]['summary'];
@@ -849,11 +862,19 @@ function show_tech_info_dialog(tech_name, unit_type_id, improvement_id)
   }
 
   if (freeciv_wiki_docs[tech_name] != null) {
+    // Escape attribute values to prevent injection
+    const escapeAttr = (str) => String(str).replace(/"/g, '&quot;').replace(/'/g, '&#39;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    const escaped_tech_name = escapeAttr(tech_name);
+    
     const wiki_title = freeciv_wiki_docs[tech_name]['title'];
-    message += `<b>Wikipedia on <a href='${wikipedia_url}${wiki_title}' target='_blank' rel='noopener noreferrer' style='color: black;'>${wiki_title}</a>:</b><br>`;
+    message += `<b>Wikipedia on <a href='${wikipedia_url}${encodeURIComponent(wiki_title)}' target='_blank' rel='noopener noreferrer' style='color: black;'>${wiki_title}</a>:</b><br>`;
 
     if (freeciv_wiki_docs[tech_name]['image'] != null) {
-      message += `<img id='wiki_image' src='/images/wiki/${freeciv_wiki_docs[tech_name]['image']}' alt='${tech_name}'><br>`;
+      const wiki_image = freeciv_wiki_docs[tech_name]['image'];
+      // Basic validation to prevent path traversal
+      if (!wiki_image.includes('..') && !wiki_image.includes('<') && !wiki_image.includes('>')) {
+        message += `<img id='wiki_image' src='/images/wiki/${wiki_image}' alt="${escaped_tech_name}"><br>`;
+      }
     }
 
     message += freeciv_wiki_docs[tech_name]['summary'];
