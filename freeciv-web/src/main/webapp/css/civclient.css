@@ -821,6 +821,17 @@ body
   padding: 10px 5px;
 }
 
+/* Government dialog text styling */
+.govt-dialog-current {
+  margin-bottom: 15px;
+  font-size: 14px;
+}
+
+.govt-dialog-instructions {
+  margin-bottom: 10px;
+  color: #555;
+}
+
 /* Government buttons list - responsive grid layout */
 #governments_list {
   display: grid;
@@ -831,7 +842,10 @@ body
   padding: 10px;
 }
 
-/* Individual government button styling */
+/* Individual government button styling 
+ * Note: Government icons are applied via classes (.Democracy, .Anarchy, etc.)
+ * which are added by jQuery UI button() and set background-image from /images/gov.*.png
+ */
 .govt_button {
   width: 100%;
   min-height: 50px;

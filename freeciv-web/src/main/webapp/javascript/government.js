@@ -40,10 +40,10 @@ function show_revolution_dialog()
 
   if (client.conn.playing == null) return;
 
-  var dhtml = "<div style='margin-bottom: 15px; font-size: 14px;'>"
+  var dhtml = "<div class='govt-dialog-current'>"
       + "<strong>Current government:</strong> " + governments[client.conn.playing['government']]['name']
 	  + "</div>"
-      + "<div style='margin-bottom: 10px; color: #555;'>Select a new form of government to start the revolution:</div>"
+      + "<div class='govt-dialog-instructions'>Select a new form of government to start the revolution:</div>"
   + "<div id='governments'>"
   + "<div id='governments_list'>"
   + "</div></div>";
@@ -53,9 +53,10 @@ function show_revolution_dialog()
   $(id).attr("title", "Start a Revolution!");
   
   // Responsive width: wider on desktop, full width on mobile
-  var dialogWidth = Math.min(650, $(window).width() - 40);
-  if ($(window).width() <= 520) {
-    dialogWidth = Math.min($(window).width() - 20, 400);
+  var windowWidth = $(window).width();
+  var dialogWidth = Math.min(650, windowWidth - 40);
+  if (windowWidth <= 520) {
+    dialogWidth = Math.min(windowWidth - 20, 400);
   }
   
   $(id).dialog({
