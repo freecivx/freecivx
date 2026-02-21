@@ -27,6 +27,7 @@ var tech_dialog_active = false;
 
 var tech_xscale = 1.2;
 var tech_canvas_scale = 1.0;  // Responsive scale for tech tree canvas
+var DEFAULT_TECH_OFFSET_TOP = 100; // Default offset if tech container hasn't been rendered yet
 var wikipedia_url = "http://en.wikipedia.org/wiki/";
 
 /* TECH_KNOWN is self-explanatory, TECH_PREREQS_KNOWN are those for which all
@@ -115,21 +116,44 @@ function player_invention_state(pplayer, tech_id)
 }
 
 /**************************************************************************
- ...
+ Initialize the technology screen with improved responsive design
 **************************************************************************/
 function init_tech_screen()
 {
-  // Calculate responsive scale based on window width (0.6 for small screens, 1.0 for large)
-  tech_canvas_scale = Math.min(1.0, Math.max(0.6, $(window).width() / 1000));
-  if (tech_canvas_scale < 0.8) {
-    tech_canvas_text_font = "20px Arial";
-    $("#tech_result_text").css("font-size", "85%");
-    $("#tech_color_help").css("font-size", "65%");
+  var windowWidth = $(window).width();
+  var windowHeight = $(window).height();
+  var isMobile = windowWidth < 768; // Mobile breakpoint
+  var isTablet = windowWidth >= 768 && windowWidth < 1024;
+  
+  // Improved responsive scale based on window width
+  // Mobile: 0.5-0.7, Tablet: 0.7-0.9, Desktop: 0.9-1.0
+  if (isMobile) {
+    tech_canvas_scale = Math.min(0.7, Math.max(0.5, windowWidth / 1000));
+    tech_canvas_text_font = "16px Arial";
+    $("#tech_result_text").css("font-size", "80%");
+    $("#tech_color_help").css("font-size", "60%");
+    $("#tech_progress_box").css("padding-left", "5px");
+    $("#tech_info_box").css("padding", "5px");
+  } else if (isTablet) {
+    tech_canvas_scale = Math.min(0.9, Math.max(0.7, windowWidth / 1200));
+    tech_canvas_text_font = "18px Arial";
+    $("#tech_result_text").css("font-size", "90%");
+    $("#tech_color_help").css("font-size", "70%");
+    $("#tech_progress_box").css("padding-left", "8px");
+    $("#tech_info_box").css("padding", "8px");
+  } else {
+    tech_canvas_scale = Math.min(1.0, Math.max(0.9, windowWidth / 1400));
+    tech_canvas_text_font = "18px Arial";
+    $("#tech_result_text").css("font-size", "100%");
+    $("#tech_color_help").css("font-size", "75%");
     $("#tech_progress_box").css("padding-left", "10px");
+    $("#tech_info_box").css("padding", "10px");
   }
   
-  $("#technologies").width($(window).width() - 20);
-  $("#technologies").height($(window).height() - $("#technologies").offset().top - 15);
+  // Better responsive sizing for the tech tree container
+  var offsetTop = $("#technologies").offset() ? $("#technologies").offset().top : DEFAULT_TECH_OFFSET_TOP;
+  $("#technologies").width(windowWidth - (isMobile ? 10 : 20));
+  $("#technologies").height(windowHeight - offsetTop - (isMobile ? 10 : 15));
 
   if (is_tech_tree_init) return;
 
@@ -548,7 +572,8 @@ function send_player_tech_goal(tech_id)
 }
 
 /****************************************************************************
-  This function is triggered when the mouse is clicked on the tech canvas.
+  This function is triggered when the mouse/touch is clicked on the tech canvas.
+  Improved for better touch support on mobile devices.
 ****************************************************************************/
 function tech_mapview_mouse_click(e)
 {
@@ -574,6 +599,10 @@ function tech_mapview_mouse_click(e)
     var tech_mouse_x = mouse_x - $("#technologies").offset().left + $("#technologies").scrollLeft();
     var tech_mouse_y = mouse_y - $("#technologies").offset().top + $("#technologies").scrollTop();
 
+    // Adjust hit area for touch devices - make it slightly larger for better touch accuracy
+    var isTouchDevice = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
+    var hitAreaPadding = isTouchDevice ? 5 : 0;
+
     for (var tech_id in techs) {
       var ptech = techs[tech_id];
       if (!(tech_id+'' in reqtree)) continue;
@@ -586,8 +615,8 @@ function tech_mapview_mouse_click(e)
         y = y * tech_canvas_scale;
       }
 
-      if (tech_mouse_x > x && tech_mouse_x < x + tech_item_width
-          && tech_mouse_y > y && tech_mouse_y < y + tech_item_height) {
+      if (tech_mouse_x > x - hitAreaPadding && tech_mouse_x < x + tech_item_width + hitAreaPadding
+          && tech_mouse_y > y - hitAreaPadding && tech_mouse_y < y + tech_item_height + hitAreaPadding) {
         if (player_invention_state(client.conn.playing, ptech['id']) == TECH_PREREQS_KNOWN) {
           send_player_research(ptech['id']);
         } else if (player_invention_state(client.conn.playing, ptech['id']) == TECH_UNKNOWN) {
@@ -680,10 +709,15 @@ function show_tech_gained_dialog(tech_gained_id)
 
   $("#tech_dialog").html(message);
   $("#tech_dialog").attr("title", title);
+  
+  // Responsive dialog width based on screen size
+  var windowWidth = $(window).width();
+  var dialogWidth = windowWidth < 768 ? "95%" : (windowWidth < 1024 ? "85%" : "75%");
+  
   $("#tech_dialog").dialog({
 			bgiframe: true,
 			modal: false,
-			width: "75%",
+			width: dialogWidth,
 			buttons: [
 			 {
                 text : "Close",
@@ -744,10 +778,16 @@ function show_wikipedia_dialog(tech_name)
 
   $("#wiki_dialog").html(message);
   $("#wiki_dialog").attr("title", tech_name);
+  
+  // Responsive dialog width
+  var windowWidth = $(window).width();
+  var windowHeight = $(window).height();
+  var dialogWidth = windowWidth < 768 ? "95%" : (windowWidth < 1024 ? "85%" : "75%");
+  
   $("#wiki_dialog").dialog({
 			bgiframe: true,
 			modal: true,
-			width: "75%",
+			width: dialogWidth,
 			buttons: {
 				Ok: function() {
 					$("#wiki_dialog").dialog('close');
@@ -756,7 +796,7 @@ function show_wikipedia_dialog(tech_name)
 		});
 
   $("#wiki_dialog").dialog('open');
-  $("#wiki_dialog").css("max-height", $(window).height() - 100);
+  $("#wiki_dialog").css("max-height", windowHeight - (windowWidth < 768 ? 80 : 100));
   $("#game_text_input").blur();
 }
 
@@ -803,11 +843,18 @@ function show_tech_info_dialog(tech_name, unit_type_id, improvement_id)
 
   $("#wiki_dialog").html(message);
   $("#wiki_dialog").attr("title", tech_name);
+  
+  // Responsive dialog dimensions
+  var windowWidth = $(window).width();
+  var windowHeight = $(window).height();
+  var dialogWidth = windowWidth < 768 ? "95%" : (windowWidth < 1024 ? "90%" : "82%");
+  var dialogHeight = windowHeight < 600 ? windowHeight - 40 : windowHeight - 60;
+  
   $("#wiki_dialog").dialog({
 			bgiframe: true,
 			modal: true,
-			width: "82%",
-			height: $(window).height() - 60,
+			width: dialogWidth,
+			height: dialogHeight,
 			buttons: {
 				Ok: function() {
 					$("#wiki_dialog").dialog('close');
