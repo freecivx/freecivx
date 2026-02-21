@@ -26,6 +26,13 @@ var REPORT_TOP_CITIES = 2;
 var REPORT_DEMOGRAPHIC = 3;
 var REPORT_ACHIEVEMENTS = 4;
 
+// Government dialog responsive width constants
+var GOVT_DIALOG_MAX_WIDTH = 650;
+var GOVT_DIALOG_DESKTOP_MARGIN = 40;
+var GOVT_DIALOG_MOBILE_BREAKPOINT = 520;
+var GOVT_DIALOG_MOBILE_MARGIN = 20;
+var GOVT_DIALOG_MOBILE_MAX_WIDTH = 400;
+
 
 
 
@@ -40,19 +47,29 @@ function show_revolution_dialog()
 
   if (client.conn.playing == null) return;
 
-  var dhtml = "Current form of government: " + governments[client.conn.playing['government']]['name']
-	  + "<br>To start a revolution, select the new form of government:"
-  + "<p><div id='governments' >"
+  var dhtml = "<div class='govt-dialog-current'>"
+      + "<strong>Current government:</strong> " + governments[client.conn.playing['government']]['name']
+	  + "</div>"
+      + "<div class='govt-dialog-instructions'>Select a new form of government to start the revolution:</div>"
+  + "<div id='governments'>"
   + "<div id='governments_list'>"
-  + "</div></div><br> ";
+  + "</div></div>";
 
   $(id).html(dhtml);
 
   $(id).attr("title", "Start a Revolution!");
+  
+  // Responsive width: wider on desktop, full width on mobile
+  var windowWidth = $(window).width();
+  var dialogWidth = Math.min(GOVT_DIALOG_MAX_WIDTH, windowWidth - GOVT_DIALOG_DESKTOP_MARGIN);
+  if (windowWidth <= GOVT_DIALOG_MOBILE_BREAKPOINT) {
+    dialogWidth = Math.min(windowWidth - GOVT_DIALOG_MOBILE_MARGIN, GOVT_DIALOG_MOBILE_MAX_WIDTH);
+  }
+  
   $(id).dialog({
 			bgiframe: true,
 			modal: true,
-			width: "450",
+			width: dialogWidth,
 			height: Math.min(600, $(window).height() - 40),
 			  buttons: {
 				"Start revolution!" : function() {
