@@ -33,19 +33,57 @@ var GOVT_DIALOG_MOBILE_BREAKPOINT = 520;
 var GOVT_DIALOG_MOBILE_MARGIN = 20;
 var GOVT_DIALOG_MOBILE_MAX_WIDTH = 400;
 
+// Government tab indices
+var GOVT_TAB_OVERVIEW = 0;
+var GOVT_TAB_REVOLUTION = 1;
+var GOVT_TAB_TAXRATES = 2;
+var GOVT_TAB_REPORTS = 3;
+
+// Tab switching delay for rendering (in milliseconds)
+var TAB_SWITCH_DELAY_MS = 100;
+
 
 
 
 /**************************************************************************
-   ...
+   Updates the content of the government tabs
 **************************************************************************/
-function show_revolution_dialog()
+function update_govt_tab_content()
 {
-  var id = "#revolution_dialog";
-  $(id).remove();
-  $("<div id='revolution_dialog'></div>").appendTo("div#game_page");
+  if (client_is_observer()) return;
 
-  if (client.conn.playing == null) return;
+  // Update revolution tab content
+  update_revolution_tab_content();
+  
+  // Update tax rates tab content
+  update_taxrates_tab_content();
+  
+  // Update overview tab
+  update_govt_overview_tab_content();
+}
+
+/**************************************************************************
+   Updates the overview tab content
+**************************************************************************/
+function update_govt_overview_tab_content()
+{
+  if (client_is_observer() || client.conn.playing == null) return;
+  
+  var govt = governments[client.conn.playing['government']];
+  var overview_html = "<div class='govt-overview'>";
+  overview_html += "<p><strong>Current Government:</strong> " + govt['name'] + "</p>";
+  overview_html += "<p>" + govt['helptext'] + "</p>";
+  overview_html += "</div>";
+  
+  $("#govt_tabs-overview").html(overview_html);
+}
+
+/**************************************************************************
+   Updates the revolution tab content inline
+**************************************************************************/
+function update_revolution_tab_content()
+{
+  if (client_is_observer() || client.conn.playing == null) return;
 
   var dhtml = "<div class='govt-dialog-current'>"
       + "<strong>Current government:</strong> " + governments[client.conn.playing['government']]['name']
@@ -53,36 +91,62 @@ function show_revolution_dialog()
       + "<div class='govt-dialog-instructions'>Select a new form of government to start the revolution:</div>"
   + "<div id='governments'>"
   + "<div id='governments_list'>"
-  + "</div></div>";
+  + "</div></div>"
+  + "<div style='margin-top: 20px;'>"
+  + "<button id='start_revolution_button' class='button' onclick='start_revolution_from_tab();'>Start Revolution!</button>"
+  + "</div>";
 
-  $(id).html(dhtml);
-
-  $(id).attr("title", "Start a Revolution!");
-  
-  // Responsive width: wider on desktop, full width on mobile
-  var windowWidth = $(window).width();
-  var dialogWidth = Math.min(GOVT_DIALOG_MAX_WIDTH, windowWidth - GOVT_DIALOG_DESKTOP_MARGIN);
-  if (windowWidth <= GOVT_DIALOG_MOBILE_BREAKPOINT) {
-    dialogWidth = Math.min(windowWidth - GOVT_DIALOG_MOBILE_MARGIN, GOVT_DIALOG_MOBILE_MAX_WIDTH);
-  }
-  
-  $(id).dialog({
-			bgiframe: true,
-			modal: true,
-			width: dialogWidth,
-			height: Math.min(600, $(window).height() - 40),
-			  buttons: {
-				"Start revolution!" : function() {
-					start_revolution();
-					$("#revolution_dialog").dialog('close');
-				}
-			  }
-
-  });
-
-
+  $("#revolution_content").html(dhtml);
   update_govt_dialog();
+}
 
+/**************************************************************************
+   Starts a revolution from the inline tab
+**************************************************************************/
+function start_revolution_from_tab()
+{
+  start_revolution();
+  // Refresh the content after revolution
+  update_revolution_tab_content();
+}
+
+/**************************************************************************
+   Gets the index of the government tab in the main tabs
+**************************************************************************/
+function get_govt_tab_index()
+{
+  var civTab = $("#civ_tab");
+  var index = civTab.parent().children().index(civTab);
+  return index >= 0 ? index : 1; // Default to 1 if not found
+}
+
+/**************************************************************************
+   Switches to the government tab and a specific sub-tab
+**************************************************************************/
+function switch_to_govt_subtab(subtab_index)
+{
+  var govt_tab_index = get_govt_tab_index();
+  $("#tabs").tabs("option", "active", govt_tab_index);
+  
+  // Wait for the tab to render, then switch to the sub-tab
+  setTimeout(function() {
+    if ($("#govt_tabs").length > 0) {
+      $("#govt_tabs").tabs("option", "active", subtab_index);
+    }
+  }, TAB_SWITCH_DELAY_MS);
+}
+
+/**************************************************************************
+   ...
+**************************************************************************/
+function show_revolution_dialog()
+{
+  switch_to_govt_subtab(GOVT_TAB_REVOLUTION);
+  
+  // Update content after switching
+  setTimeout(function() {
+    update_revolution_tab_content();
+  }, TAB_SWITCH_DELAY_MS * 1.5);
 }
 
 /**************************************************************************
@@ -106,6 +170,12 @@ function init_civ_dialog()
   } else {
     $("#civ_dialog_text").html("Observing.");
 
+  }
+
+  // Initialize the government tabs
+  if ($("#govt_tabs").length > 0) {
+    $("#govt_tabs").tabs();
+    update_govt_tab_content();
   }
 
 }

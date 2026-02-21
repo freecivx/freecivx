@@ -914,6 +914,25 @@ body
   background-image: url(/images/gov.monarchy.png) !important; 
 }
 
+/* Government tabs styling */
+#govt_tabs {
+  margin-top: 20px;
+}
+
+.govt_tabs_content {
+  padding: 15px;
+  min-height: 300px;
+}
+
+.govt-overview {
+  padding: 10px;
+}
+
+.govt-overview p {
+  margin: 10px 0;
+  line-height: 1.6;
+}
+
 .flag_self {
   float: left;
   width: 140px;
