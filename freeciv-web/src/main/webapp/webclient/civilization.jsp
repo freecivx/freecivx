@@ -1,18 +1,21 @@
 <div id="civ_dialog">
 
-<h3 id="nation_title"></h3>
-<center>
-  <div id="civ_dialog_text"></div>
-  <div id="civ_dialog_flag"></div>
-</center>
-
 <div id="govt_tabs">
   <ul>
+    <li><a href="#govt_tabs-nation">Nation Info</a></li>
     <li><a href="#govt_tabs-overview">Overview</a></li>
     <li><a href="#govt_tabs-revolution">Revolution</a></li>
     <li><a href="#govt_tabs-taxrates">Tax Rates</a></li>
     <li><a href="#govt_tabs-reports">Reports</a></li>
   </ul>
+  
+  <div id="govt_tabs-nation" class="govt_tabs_content">
+    <h3 id="nation_title"></h3>
+    <center>
+      <div id="civ_dialog_text"></div>
+      <div id="civ_dialog_flag"></div>
+    </center>
+  </div>
   
   <div id="govt_tabs-overview" class="govt_tabs_content">
     <p>Overview of your civilization and current government.</p>
