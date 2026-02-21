@@ -37,6 +37,7 @@ function generate_req_tree() {
     ptech['subreqs'] = [];
     ptech['xlevel'] = -1;  // Not yet assigned
     ptech['ylevel'] = -1;
+    ptech['in_progress'] = false;  // For cycle detection
   }
 
   for (let x = 0; x < Object.keys(techs).length; x++) {
@@ -86,12 +87,21 @@ function generate_req_tree() {
 /**************************************************************************
  Assign horizontal level (xlevel) based on maximum prerequisite level
  Civ 6-style: Places tech at max(prerequisite levels) + 1
+ Includes cycle detection to prevent infinite recursion
 **************************************************************************/
 function reqtree_assign_xlevel(ptech) {
   if (ptech['xlevel'] != -1) {
     // Already assigned
     return ptech['xlevel'];
   }
+
+  // Mark as in-progress to detect cycles
+  if (ptech['in_progress']) {
+    console.error('Cycle detected in tech tree prerequisites for tech:', ptech['name']);
+    ptech['xlevel'] = 0;
+    return 0;
+  }
+  ptech['in_progress'] = true;
 
   let max_prereq_level = -1;
 
@@ -110,13 +120,14 @@ function reqtree_assign_xlevel(ptech) {
   // Assign level: max of prerequisites + 1, or 0 if no prerequisites
   ptech['xlevel'] = max_prereq_level + 1;
 
-  // Handle overflow to next column if level is too crowded
-  if (level_counts[ptech['xlevel']] >= max_techs_per_level) {
+  // Handle overflow - find first available level that's not too crowded
+  while (level_counts[ptech['xlevel']] >= max_techs_per_level) {
     ptech['xlevel'] += 1;
   }
 
   level_counts[ptech['xlevel']] = (level_counts[ptech['xlevel']] || 0) + 1;
 
+  ptech['in_progress'] = false;
   return ptech['xlevel'];
 }
 
@@ -140,11 +151,15 @@ function reqtree_assign_ylevels() {
   for (let xlevel in techs_by_level) {
     let level_techs = techs_by_level[xlevel];
     
+    // Pre-calculate average Y positions for better performance
+    let avg_y_map = new Map();
+    for (let ptech of level_techs) {
+      avg_y_map.set(ptech, get_prereq_avg_y(ptech));
+    }
+    
     // Sort by average Y position of prerequisites (for better visual flow)
     level_techs.sort((a, b) => {
-      let a_avg_y = get_prereq_avg_y(a);
-      let b_avg_y = get_prereq_avg_y(b);
-      return a_avg_y - b_avg_y;
+      return avg_y_map.get(a) - avg_y_map.get(b);
     });
 
     // Assign Y positions
@@ -179,5 +194,5 @@ function get_prereq_avg_y(ptech) {
   }
 
   // Return average, or a large number if no prerequisites (push to bottom)
-  return count > 0 ? total_y / count : 999;
+  return count > 0 ? total_y / count : Number.MAX_SAFE_INTEGER;
 }

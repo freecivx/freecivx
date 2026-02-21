@@ -111,3 +111,21 @@ test('Tech tree algorithm sorts techs vertically by prerequisite position', () =
     expect(global.techs[1].ylevel).not.toBe(global.techs[2].ylevel);
   }
 });
+
+test('Tech tree algorithm handles circular dependencies gracefully', () => {
+  // This shouldn't happen in practice, but we should handle it gracefully
+  // Setup: Tech1 -> Tech2 -> Tech1 (circular)
+  global.techs = {
+    1: { id: 1, name: 'Tech1', req: [2, 0] },
+    2: { id: 2, name: 'Tech2', req: [1, 0] }
+  };
+
+  // Should not throw or hang
+  generate_req_tree();
+
+  // Both techs should have positions assigned (not -1)
+  expect(global.techs[1].xlevel).toBeGreaterThanOrEqual(0);
+  expect(global.techs[2].xlevel).toBeGreaterThanOrEqual(0);
+  expect(global.techs[1].ylevel).toBeGreaterThanOrEqual(0);
+  expect(global.techs[2].ylevel).toBeGreaterThanOrEqual(0);
+});
