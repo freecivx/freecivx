@@ -35,13 +35,18 @@ var GOVT_DIALOG_MOBILE_MAX_WIDTH = 400;
 
 // Government tab indices
 var GOVT_TAB_NATION = 0;
-var GOVT_TAB_OVERVIEW = 1;
-var GOVT_TAB_REVOLUTION = 2;
-var GOVT_TAB_TAXRATES = 3;
-var GOVT_TAB_REPORTS = 4;
+var GOVT_TAB_REVOLUTION = 1;
+var GOVT_TAB_TAXRATES = 2;
+var GOVT_TAB_WONDERS = 3;
+var GOVT_TAB_CITIES = 4;
+var GOVT_TAB_DEMOGRAPHICS = 5;
+var GOVT_TAB_SPACESHIP = 6;
 
 // Tab switching delay for rendering (in milliseconds)
 var TAB_SWITCH_DELAY_MS = 100;
+
+// Track which report tab is active for content updates
+var current_report_tab = null;
 
 
 
@@ -59,24 +64,24 @@ function update_govt_tab_content()
   // Update tax rates tab content
   update_taxrates_tab_content();
   
-  // Update overview tab
-  update_govt_overview_tab_content();
+  // Update nation info with government info
+  update_nation_govt_info();
 }
 
 /**************************************************************************
-   Updates the overview tab content
+   Updates the nation info tab with government information
 **************************************************************************/
-function update_govt_overview_tab_content()
+function update_nation_govt_info()
 {
   if (client_is_observer() || client.conn.playing == null) return;
   
   var govt = governments[client.conn.playing['government']];
-  var overview_html = "<div class='govt-overview'>";
-  overview_html += "<p><strong>Current Government:</strong> " + govt['name'] + "</p>";
-  overview_html += "<p>" + govt['helptext'] + "</p>";
-  overview_html += "</div>";
+  var govt_html = "<div class='govt-overview govt-overview-nation'>";
+  govt_html += "<p><strong>Current Government:</strong> " + govt['name'] + "</p>";
+  govt_html += "<p>" + govt['helptext'] + "</p>";
+  govt_html += "</div>";
   
-  $("#govt_tabs-overview").html(overview_html);
+  $("#nation_govt_info").html(govt_html);
 }
 
 /**************************************************************************
@@ -176,7 +181,11 @@ function init_civ_dialog()
 
   // Initialize the government tabs
   if ($("#govt_tabs").length > 0) {
-    $("#govt_tabs").tabs();
+    $("#govt_tabs").tabs({
+      activate: function(event, ui) {
+        handle_govt_tab_activation(ui.newPanel.attr('id'));
+      }
+    });
     update_govt_tab_content();
   }
 
@@ -300,6 +309,138 @@ function can_player_get_gov(govt_id)
                       governments[govt_id]["reqs"],
                       RPT_CERTAIN));
 }
+
+/**************************************************************************
+  Handles tab activation to load content on demand
+**************************************************************************/
+function handle_govt_tab_activation(tab_id)
+{
+  if (client_is_observer()) return;
+  
+  switch(tab_id) {
+    case 'govt_tabs-wonders':
+      load_wonders_tab();
+      break;
+    case 'govt_tabs-cities':
+      load_cities_tab();
+      break;
+    case 'govt_tabs-demographics':
+      load_demographics_tab();
+      break;
+    case 'govt_tabs-spaceship':
+      load_spaceship_tab();
+      break;
+  }
+}
+
+/**************************************************************************
+  Loads wonders report into tab
+**************************************************************************/
+function load_wonders_tab()
+{
+  $("#wonders_content").html("<p>Loading Wonders report...</p>");
+  request_report(REPORT_WONDERS_OF_THE_WORLD_LONG);
+  
+  // Store which tab we're loading for
+  current_report_tab = 'wonders';
+}
+
+/**************************************************************************
+  Loads top cities report into tab
+**************************************************************************/
+function load_cities_tab()
+{
+  $("#cities_content").html("<p>Loading Top Cities report...</p>");
+  request_report(REPORT_TOP_CITIES);
+  
+  // Store which tab we're loading for
+  current_report_tab = 'cities';
+}
+
+/**************************************************************************
+  Loads demographics report into tab
+**************************************************************************/
+function load_demographics_tab()
+{
+  $("#demographics_content").html("<p>Loading Demographics report...</p>");
+  request_report(REPORT_DEMOGRAPHIC);
+  
+  // Store which tab we're loading for
+  current_report_tab = 'demographics';
+}
+
+/**************************************************************************
+  Loads spaceship info into tab
+**************************************************************************/
+function load_spaceship_tab()
+{
+  if (client_is_observer()) return;
+
+  var spaceship = spaceship_info[client.conn.playing['playerno']];
+  var message = "";
+
+  message += "<div class='spaceship-info'>";
+  message += "<h3>Spaceship</h3>";
+  message += "<p><strong>Progress:</strong> " + get_spaceship_state_text(spaceship['sship_state']) + "</p>";
+  message += "<p><strong>Success probability:</strong> " + Math.floor(spaceship['success_rate'] * 100) + "%</p>";
+  message += "<p><strong>Travel time:</strong> " + Math.floor(spaceship['travel_time']) + " years</p>";
+  message += "<p><strong>Components:</strong> " + spaceship['components'] + "</p>";
+  message += "<p><strong>Energy Rate:</strong> " + Math.floor(spaceship['energy_rate'] * 100) + "%</p>";
+  message += "<p><strong>Support Rate:</strong> " + Math.floor(spaceship['support_rate'] * 100) + "%</p>";
+  message += "<p><strong>Habitation:</strong> " + spaceship['habitation'] + "</p>";
+  message += "<p><strong>Life Support:</strong> " + spaceship['life_support'] + "</p>";
+  message += "<p><strong>Mass:</strong> " + spaceship['mass'] + " tons</p>";
+  message += "<p><strong>Modules:</strong> " + spaceship['modules'] + "</p>";
+  message += "<p><strong>Population:</strong> " + spaceship['population'] + "</p>";
+  message += "<p><strong>Propulsion:</strong> " + spaceship['propulsion'] + "</p>";
+  message += "<p><strong>Solar Panels:</strong> " + spaceship['solar_panels'] + "</p>";
+  message += "<p><strong>Structurals:</strong> " + spaceship['structurals'] + "</p>";
+  if (spaceship['launch_year'] != 9999) message += "<p><strong>Launch year:</strong> " + spaceship['launch_year'] + "</p>";
+
+  if (game_info['victory_conditions'] == 0) {
+    message = "<div class='spaceship-info'><p>Spaceship victory disabled.</p>";
+  }
+
+  message += "<p style='margin-top: 15px;'><em>Launch a spaceship to Alpha Centauri! To build a spaceship build the Apollo program wonder, Factory, then lots of Space Components, Space Modules and Space Structurals (10+ each) in a city. "
+   + "For help, see the Space Race page in the manual.</em></p>";
+
+  if (spaceship['sship_state'] == SSHIP_STARTED && spaceship['success_rate'] > 0) {
+    message += "<div style='margin-top: 20px;'>";
+    message += "<button id='launch_spaceship_button' class='button' onclick='launch_spaceship_from_tab();'>Launch Spaceship!</button>";
+    message += "</div>";
+  }
+  message += "</div>";
+
+  $("#spaceship_content").html(message);
+}
+
+/**************************************************************************
+  Launches spaceship from the tab
+**************************************************************************/
+function launch_spaceship_from_tab()
+{
+  launch_spaceship();
+  // Refresh the content after launch
+  setTimeout(function() {
+    load_spaceship_tab();
+  }, 1000);
+}
+
+/**************************************************************************
+  Displays report content in the appropriate tab
+**************************************************************************/
+function show_report_in_tab(headline, message)
+{
+  if (current_report_tab == 'wonders') {
+    $("#wonders_content").html("<div class='report-content'><h3>" + headline + "</h3>" + message + "</div>");
+  } else if (current_report_tab == 'cities') {
+    $("#cities_content").html("<div class='report-content'><h3>" + headline + "</h3>" + message + "</div>");
+  } else if (current_report_tab == 'demographics') {
+    $("#demographics_content").html("<div class='report-content'><h3>" + headline + "</h3>" + message + "</div>");
+  }
+  current_report_tab = null;
+}
+
 
 /**************************************************************************
  ...

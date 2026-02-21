@@ -37,23 +37,40 @@ function update_taxrates_tab_content()
 {
   if (client_is_observer()) return;
 
-  var dhtml = "<h2>Select tax, luxury and science rates</h2>"
-    + "<form name='rates'><table border='0'>"
-    + "<tr> <td><span>Tax:</td> <td> <div class='slider' id='slider-tax' tabIndex='1'></div>"
-    + "</td><td>"
-    + "<div id='tax_result' style='float:left;'></div></td>"
-    + "<td> <INPUT TYPE='CHECKBOX' NAME='lock'>Lock</td></tr>"
-    + "<tr><td>Luxury:</td><td><div class='slider' id='slider-lux' tabIndex='1'></div>"
-    + "</td><td> <div id='lux_result' style='float:left;'></div>"
-    + "</td><td><INPUT TYPE='CHECKBOX' NAME='lock'>Lock</td></tr>"
-    + "<tr><td>Science:</td><td><div class='slider' id='slider-sci' tabIndex='1'></div>"
-    + "</td><td><div id='sci_result' style='float:left;'></div>"
-    + "</td><td><INPUT TYPE='CHECKBOX' NAME='lock'>Lock</td></tr>"
-    + "</table></form>"
-    + "<div id='max_tax_rate' style='margin:10px;'>"
-    + "</div><div style='margin:10px;'>"
+  var dhtml = "<div class='rates-container'>"
+    + "<h2>Select tax, luxury and science rates</h2>"
+    + "<form name='rates'>"
+    + "<div class='rate-row'>"
+    + "<label class='rate-label'>Tax:</label>"
+    + "<div class='rate-slider-wrapper'>"
+    + "<div class='slider-jquery' id='slider-tax-jquery'></div>"
+    + "</div>"
+    + "<div class='rate-value' id='tax_result'></div>"
+    + "<label class='rate-lock'><input type='checkbox' name='lock'> Lock</label>"
+    + "</div>"
+    + "<div class='rate-row'>"
+    + "<label class='rate-label'>Luxury:</label>"
+    + "<div class='rate-slider-wrapper'>"
+    + "<div class='slider-jquery' id='slider-lux-jquery'></div>"
+    + "</div>"
+    + "<div class='rate-value' id='lux_result'></div>"
+    + "<label class='rate-lock'><input type='checkbox' name='lock'> Lock</label>"
+    + "</div>"
+    + "<div class='rate-row'>"
+    + "<label class='rate-label'>Science:</label>"
+    + "<div class='rate-slider-wrapper'>"
+    + "<div class='slider-jquery' id='slider-sci-jquery'></div>"
+    + "</div>"
+    + "<div class='rate-value' id='sci_result'></div>"
+    + "<label class='rate-lock'><input type='checkbox' name='lock'> Lock</label>"
+    + "</div>"
+    + "</form>"
+    + "<div id='max_tax_rate' class='rate-info'></div>"
+    + "<div class='rate-stats'>"
     + "Net income: <span id='income_info'></span><br>"
-    + "Research: <span id='bulbs_info'></span></div>";
+    + "Research: <span id='bulbs_info'></span>"
+    + "</div>"
+    + "</div>";
 
   $("#taxrates_content").html(dhtml);
   update_rates_dialog();
@@ -132,17 +149,13 @@ function update_rates_dialog()
 
   maxrate = government_max_rate(client.conn.playing['government']);
 
-  $("#slider-tax").html("<input class='slider-input' id='slider-tax-input' name='slider-tax-input'/>");
-  $("#slider-lux").html("<input class='slider-input' id='slider-lux-input' name='slider-lux-input'/>");
-  $("#slider-sci").html("<input class='slider-input' id='slider-sci-input' name='slider-sci-input'/>");
-
-  create_rates_dialog(client.conn.playing['tax'],
+  create_rates_dialog_jquery(client.conn.playing['tax'],
                       client.conn.playing['luxury'],
                       client.conn.playing['science'], maxrate);
 
   var govt = governments[client.conn.playing['government']];
 
-  $("#max_tax_rate").html("<i>" + govt['name'] + " max rate: " + maxrate + "</i>");
+  $("#max_tax_rate").html("<i>" + govt['name'] + " max rate: " + maxrate + "%</i>");
   update_net_income();
   update_net_bulbs();
 }
@@ -210,6 +223,177 @@ function create_rates_dialog(tax, lux, sci, max)
   maxrate = max ;
 
   update_rates_labels();
+}
+
+/**************************************************************************
+  Creates jQuery UI sliders for rates
+**************************************************************************/
+function create_rates_dialog_jquery(tax_val, lux_val, sci_val, max)
+{
+  maxrate = max;
+
+  // Create Tax slider
+  $("#slider-tax-jquery").slider({
+    min: 0,
+    max: maxrate,
+    step: 10,
+    value: tax_val,
+    slide: function(event, ui) {
+      update_tax_rates_jquery(ui.value);
+    }
+  });
+
+  // Create Luxury slider
+  $("#slider-lux-jquery").slider({
+    min: 0,
+    max: maxrate,
+    step: 10,
+    value: lux_val,
+    slide: function(event, ui) {
+      update_lux_rates_jquery(ui.value);
+    }
+  });
+
+  // Create Science slider
+  $("#slider-sci-jquery").slider({
+    min: 0,
+    max: maxrate,
+    step: 10,
+    value: sci_val,
+    slide: function(event, ui) {
+      update_sci_rates_jquery(ui.value);
+    }
+  });
+
+  update_rates_labels_jquery();
+}
+
+/**************************************************************************
+  Updates tax rate with jQuery UI slider
+**************************************************************************/
+function update_tax_rates_jquery(new_tax)
+{
+  if (freeze) return;
+  freeze = true;
+
+  var lock_lux = document.rates.lock[1].checked;
+  var lock_sci = document.rates.lock[2].checked;
+
+  tax = new_tax;
+  lux = $("#slider-lux-jquery").slider("value");
+  sci = $("#slider-sci-jquery").slider("value");
+
+  if (tax + lux + sci != 100 && lock_lux == false) {
+    lux = Math.min(Math.max(100 - tax - sci, 0), maxrate);
+    lux = Math.floor(lux / 10) * 10;
+  }
+  if (tax + lux + sci != 100 && lock_sci == false) {
+    sci = Math.min(Math.max(100 - lux - tax, 0), maxrate);
+    sci = Math.floor(sci / 10) * 10;
+  }
+
+  if (tax + lux + sci != 100) {
+    tax = 100 - lux - sci;
+  }
+
+  $("#slider-tax-jquery").slider("value", tax);
+  $("#slider-lux-jquery").slider("value", lux);
+  $("#slider-sci-jquery").slider("value", sci);
+
+  update_rates_labels_jquery();
+
+  freeze = false;
+  submit_player_rates();
+}
+
+/**************************************************************************
+  Updates luxury rate with jQuery UI slider
+**************************************************************************/
+function update_lux_rates_jquery(new_lux)
+{
+  if (freeze) return;
+  freeze = true;
+
+  var lock_tax = document.rates.lock[0].checked;
+  var lock_sci = document.rates.lock[2].checked;
+
+  tax = $("#slider-tax-jquery").slider("value");
+  lux = new_lux;
+  sci = $("#slider-sci-jquery").slider("value");
+
+  if (tax + lux + sci != 100 && lock_tax == false) {
+    tax = Math.min(Math.max(100 - lux - sci, 0), maxrate);
+    tax = Math.floor(tax / 10) * 10;
+  }
+  if (tax + lux + sci != 100 && lock_sci == false) {
+    sci = Math.min(Math.max(100 - lux - tax, 0), maxrate);
+    sci = Math.floor(sci / 10) * 10;
+  }
+
+  if (tax + lux + sci != 100) {
+    lux = 100 - tax - sci;
+  }
+
+  $("#slider-tax-jquery").slider("value", tax);
+  $("#slider-lux-jquery").slider("value", lux);
+  $("#slider-sci-jquery").slider("value", sci);
+
+  update_rates_labels_jquery();
+
+  freeze = false;
+  submit_player_rates();
+}
+
+/**************************************************************************
+  Updates science rate with jQuery UI slider
+**************************************************************************/
+function update_sci_rates_jquery(new_sci)
+{
+  if (freeze) return;
+  freeze = true;
+
+  var lock_tax = document.rates.lock[0].checked;
+  var lock_lux = document.rates.lock[1].checked;
+
+  tax = $("#slider-tax-jquery").slider("value");
+  lux = $("#slider-lux-jquery").slider("value");
+  sci = new_sci;
+
+  if (tax + lux + sci != 100 && lock_lux == false) {
+    lux = Math.min(Math.max(100 - tax - sci, 0), maxrate);
+    lux = Math.floor(lux / 10) * 10;
+  }
+  if (tax + lux + sci != 100 && lock_tax == false) {
+    tax = Math.min(Math.max(100 - sci - lux, 0), maxrate);
+    tax = Math.floor(tax / 10) * 10;
+  }
+
+  if (tax + lux + sci != 100) {
+    sci = 100 - lux - tax;
+  }
+
+  $("#slider-tax-jquery").slider("value", tax);
+  $("#slider-lux-jquery").slider("value", lux);
+  $("#slider-sci-jquery").slider("value", sci);
+
+  update_rates_labels_jquery();
+
+  freeze = false;
+  submit_player_rates();
+}
+
+/**************************************************************************
+  Updates rate labels for jQuery UI sliders
+**************************************************************************/
+function update_rates_labels_jquery()
+{
+  tax = $("#slider-tax-jquery").slider("value");
+  lux = $("#slider-lux-jquery").slider("value");
+  sci = $("#slider-sci-jquery").slider("value");
+
+  $("#tax_result").html(tax + "%");
+  $("#lux_result").html(lux + "%");
+  $("#sci_result").html(sci + "%");
 }
 
 /**************************************************************************

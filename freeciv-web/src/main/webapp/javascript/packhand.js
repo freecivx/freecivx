@@ -1140,7 +1140,13 @@ function handle_page_msg_part(packet)
     var regxp = /\n/gi;
 
     page_msg['message'] = page_msg['message'].replace(regxp, "<br>\n");
-    show_dialog_message(page_msg['headline'], page_msg['message']);
+    
+    // Check if we should display in a government tab instead of a dialog
+    if (typeof show_report_in_tab === 'function' && current_report_tab != null) {
+      show_report_in_tab(page_msg['headline'], page_msg['message']);
+    } else {
+      show_dialog_message(page_msg['headline'], page_msg['message']);
+    }
 
     /* Clear the message. */
     page_msg = {};

@@ -933,6 +933,100 @@ body
   line-height: 1.6;
 }
 
+.govt-overview-nation {
+  margin-top: 20px;
+}
+
+/* Rates tab styling */
+.rates-container {
+  max-width: 600px;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+.rates-container h2 {
+  text-align: center;
+  margin-bottom: 30px;
+  color: #333;
+}
+
+.rate-row {
+  display: flex;
+  align-items: center;
+  margin-bottom: 25px;
+  gap: 15px;
+}
+
+.rate-label {
+  width: 80px;
+  font-weight: bold;
+  text-align: right;
+}
+
+.rate-slider-wrapper {
+  flex: 1;
+  max-width: 300px;
+}
+
+.slider-jquery {
+  margin: 5px 0;
+}
+
+.rate-value {
+  width: 50px;
+  text-align: center;
+  font-weight: bold;
+  font-size: 16px;
+}
+
+.rate-lock {
+  width: 80px;
+  font-size: 13px;
+}
+
+.rate-lock input {
+  margin-right: 5px;
+}
+
+.rate-info {
+  text-align: center;
+  margin: 20px 10px 10px;
+  font-style: italic;
+}
+
+.rate-stats {
+  text-align: center;
+  margin: 20px 10px;
+  font-size: 15px;
+  font-weight: 500;
+}
+
+/* Report content styling */
+.report-content {
+  padding: 10px;
+  line-height: 1.6;
+}
+
+.report-content h3 {
+  margin-bottom: 15px;
+  color: #333;
+}
+
+/* Spaceship info styling */
+.spaceship-info {
+  padding: 10px;
+}
+
+.spaceship-info h3 {
+  margin-bottom: 15px;
+  color: #333;
+}
+
+.spaceship-info p {
+  margin: 8px 0;
+  line-height: 1.5;
+}
+
 .flag_self {
   float: left;
   width: 140px;

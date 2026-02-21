@@ -3,10 +3,12 @@
 <div id="govt_tabs">
   <ul>
     <li><a href="#govt_tabs-nation">Nation Info</a></li>
-    <li><a href="#govt_tabs-overview">Overview</a></li>
     <li><a href="#govt_tabs-revolution">Revolution</a></li>
     <li><a href="#govt_tabs-taxrates">Tax Rates</a></li>
-    <li><a href="#govt_tabs-reports">Reports</a></li>
+    <li><a href="#govt_tabs-wonders">Wonders</a></li>
+    <li><a href="#govt_tabs-cities">Top 5 Cities</a></li>
+    <li><a href="#govt_tabs-demographics">Demographics</a></li>
+    <li><a href="#govt_tabs-spaceship">Spaceship</a></li>
   </ul>
   
   <div id="govt_tabs-nation" class="govt_tabs_content">
@@ -14,11 +16,8 @@
     <center>
       <div id="civ_dialog_text"></div>
       <div id="civ_dialog_flag"></div>
+      <div id="nation_govt_info"></div>
     </center>
-  </div>
-  
-  <div id="govt_tabs-overview" class="govt_tabs_content">
-    <p>Overview of your civilization and current government.</p>
   </div>
   
   <div id="govt_tabs-revolution" class="govt_tabs_content">
@@ -29,11 +28,20 @@
     <div id="taxrates_content"></div>
   </div>
   
-  <div id="govt_tabs-reports" class="govt_tabs_content">
-    <button id="wonders_report" class="button govbutton" type="button" onclick="request_report(REPORT_WONDERS_OF_THE_WORLD_LONG);">Wonders of the World</button><br>
-    <button id="top_cities_report" class="button govbutton" type="button" onclick="request_report(REPORT_TOP_CITIES);">Top 5 Cities</button><br>
-    <button id="demography_report" class="button govbutton" type="button" onclick="request_report(REPORT_DEMOGRAPHIC);">Demographics</button><br>
-    <button id="spaceship_report" class="button govbutton" type="button" onclick="show_spaceship_dialog();">Spaceship</button><br>
+  <div id="govt_tabs-wonders" class="govt_tabs_content">
+    <div id="wonders_content">Loading...</div>
+  </div>
+  
+  <div id="govt_tabs-cities" class="govt_tabs_content">
+    <div id="cities_content">Loading...</div>
+  </div>
+  
+  <div id="govt_tabs-demographics" class="govt_tabs_content">
+    <div id="demographics_content">Loading...</div>
+  </div>
+  
+  <div id="govt_tabs-spaceship" class="govt_tabs_content">
+    <div id="spaceship_content">Loading...</div>
   </div>
 </div>
 
