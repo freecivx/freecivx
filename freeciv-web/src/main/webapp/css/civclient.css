@@ -933,6 +933,10 @@ body
   line-height: 1.6;
 }
 
+.govt-overview-nation {
+  margin-top: 20px;
+}
+
 /* Rates tab styling */
 .rates-container {
   max-width: 600px;

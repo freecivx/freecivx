@@ -76,7 +76,7 @@ function update_nation_govt_info()
   if (client_is_observer() || client.conn.playing == null) return;
   
   var govt = governments[client.conn.playing['government']];
-  var govt_html = "<div class='govt-overview' style='margin-top: 20px;'>";
+  var govt_html = "<div class='govt-overview govt-overview-nation'>";
   govt_html += "<p><strong>Current Government:</strong> " + govt['name'] + "</p>";
   govt_html += "<p>" + govt['helptext'] + "</p>";
   govt_html += "</div>";

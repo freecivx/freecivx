@@ -231,9 +231,6 @@ function create_rates_dialog(tax, lux, sci, max)
 function create_rates_dialog_jquery(tax_val, lux_val, sci_val, max)
 {
   maxrate = max;
-  tax = tax_val;
-  lux = lux_val;
-  sci = sci_val;
 
   // Create Tax slider
   $("#slider-tax-jquery").slider({
