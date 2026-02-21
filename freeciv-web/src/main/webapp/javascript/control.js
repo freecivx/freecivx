@@ -3327,35 +3327,36 @@ function update_active_units_dialog()
     unit_info_html += "<div id='active_unit_info' title='" + ptype['helptext'] + "'>";
 
     if (client.conn.playing != null && current_focus[0]['owner'] != client.conn.playing.playerno) {
-      unit_info_html += "<b>" + nations[players[current_focus[0]['owner']]['nation']]['adjective'] + "</b> ";
+      unit_info_html += "<div style='font-weight: bold; margin-bottom: 4px;'>" + nations[players[current_focus[0]['owner']]['nation']]['adjective'] + "</div>";
     }
 
-    unit_info_html += "<b>" + ptype['name'] + "</b>:</br> ";
+    unit_info_html += "<div style='font-weight: bold; font-size: 105%; margin-bottom: 4px;'>" + ptype['name'] + "</div>";
     if (get_unit_homecity_name(aunit) != null) {
-      unit_info_html += " " + get_unit_homecity_name(aunit) + " ";
+      unit_info_html += "<div style='font-size: 90%; opacity: 0.9; margin-bottom: 4px;'>" + get_unit_homecity_name(aunit) + "</div>";
     }
     if (current_focus[0]['owner'] == client.conn.playing.playerno) {
-      unit_info_html += "<span>" + get_unit_moves_left(aunit) + "</span> ";
+      unit_info_html += "<div style='margin-bottom: 4px;'><span title='Movement points'>" + get_unit_moves_left(aunit) + "</span></div>";
     }
-    unit_info_html += "<span title='Attack strength'>A:" + ptype['attack_strength']
-    + "</span> <span title='Defense strength'>D:" + ptype['defense_strength']
-    + "</span> <span title='Firepower'>F:" + ptype['firepower']
-    + "</span> <span title='Health points'>H:"
-    + aunit['hp'] + "/" + ptype['hp'] + "</span>";
+    unit_info_html += "<div style='display: flex; flex-wrap: wrap; gap: 2px;'>"
+    + "<span title='Attack strength'>⚔️ " + ptype['attack_strength'] + "</span> "
+    + "<span title='Defense strength'>🛡️ " + ptype['defense_strength'] + "</span> "
+    + "<span title='Firepower'>🔥 " + ptype['firepower'] + "</span> "
+    + "<span title='Health points'>❤️ " + aunit['hp'] + "/" + ptype['hp'] + "</span>";
     if (aunit['veteran'] > 0) {
-      unit_info_html += " <span>Veteran: " + aunit['veteran'] + "</span>";
+      unit_info_html += " <span title='Veteran level'>⭐ " + aunit['veteran'] + "</span>";
     }
     if (ptype['transport_capacity'] > 0) {
-      unit_info_html += " <span>Transport: " + ptype['transport_capacity'] + "</span>";
+      unit_info_html += " <span title='Transport capacity'>🚢 " + ptype['transport_capacity'] + "</span>";
     }
+    unit_info_html += "</div>";
 
     unit_info_html += "</div>";
   } else if (current_focus.length >= 1 && client.conn.playing != null && current_focus[0]['owner'] != client.conn.playing.playerno) {
-    unit_info_html += "<div id='active_unit_info'>" + current_focus.length + " foreign units  (" +
+    unit_info_html += "<div id='active_unit_info'><div style='font-weight: bold;'>" + current_focus.length + " foreign units</div><div style='font-size: 90%; opacity: 0.9;'>" +
      nations[players[current_focus[0]['owner']]['nation']]['adjective']
-     +")</div> ";
+     +"</div></div> ";
   } else if (current_focus.length > 1) {
-    unit_info_html += "<div id='active_unit_info'>" + current_focus.length + " units selected.</div> ";
+    unit_info_html += "<div id='active_unit_info'><div style='font-weight: bold;'>" + current_focus.length + " units selected</div></div> ";
   }
 
   for (var k = 0; k < punits.length; k++) {
@@ -3385,7 +3386,10 @@ function update_active_units_dialog()
     $("#game_unit_panel").parent().height(newheight);
     $("#game_unit_panel").parent().css("left", ($( window ).width() - newwidth) + "px");
     $("#game_unit_panel").parent().css("top", ($( window ).height() - newheight - 15) + "px");
-    $("#game_unit_panel").parent().css("background", "rgba(0,0,0,0.9)");
+    $("#game_unit_panel").parent().css("background", "linear-gradient(135deg, rgba(30, 30, 40, 0.95), rgba(20, 20, 30, 0.95))");
+    $("#game_unit_panel").parent().css("border", "1px solid rgba(255, 255, 255, 0.2)");
+    $("#game_unit_panel").parent().css("border-radius", "8px");
+    $("#game_unit_panel").parent().css("box-shadow", "0 4px 16px rgba(0, 0, 0, 0.5)");
     if (game_unit_panel_state == "minimized") $("#game_unit_panel").dialogExtend("minimize");
   } else {
     $("#game_unit_panel").parent().hide();

@@ -156,6 +156,10 @@ body
   float: left;
   width: 100%;
   overflow: hidden;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  padding: 4px;
 }
 
 #unit_text_details {
@@ -454,13 +458,25 @@ body
 }
 
 #unit_info_div {
-  float:left; 
+  float:left;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+#unit_info_div:hover {
+  transform: translateY(-2px);
 }
 
 #unit_info_image {
   cursor:pointer; 
   float: left;
   margin-left: -2px;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+}
+
+#unit_info_image:hover {
+  box-shadow: 0 2px 8px rgba(255, 255, 255, 0.3);
+  transform: scale(1.05);
 }
 
 #city_production_overview {
@@ -1192,26 +1208,58 @@ body
 }
 
 .current_focus_unit {
-  border: 2px solid white;
-  background-color: rgba(240,240,240,0.5);
- 
+  border: 2px solid #4a9eff;
+  background: linear-gradient(135deg, rgba(74, 158, 255, 0.2), rgba(100, 180, 255, 0.15));
+  border-radius: 6px;
+  box-shadow: 0 0 12px rgba(74, 158, 255, 0.4);
+  animation: pulse-glow 2s ease-in-out infinite;
+}
+
+@keyframes pulse-glow {
+  0%, 100% {
+    box-shadow: 0 0 12px rgba(74, 158, 255, 0.4);
+  }
+  50% {
+    box-shadow: 0 0 20px rgba(74, 158, 255, 0.6);
+  }
 }
 
 #active_unit_info {
   float: left;
-  color: white;
-  background-color: rgba(0,0,0,0.6);
+  color: #ffffff;
+  background: linear-gradient(135deg, rgba(40, 40, 50, 0.95), rgba(20, 20, 30, 0.95));
   font-size: 96%;
-  padding-top: 2px;
-  max-width: 120px;
+  padding: 8px 10px;
+  max-width: 160px;
+  border-radius: 6px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  margin: 4px;
+  line-height: 1.4;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  transition: all 0.2s ease;
+}
+
+#active_unit_info:hover {
+  background: linear-gradient(135deg, rgba(50, 50, 60, 0.95), rgba(30, 30, 40, 0.95));
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
 }
 
 #active_unit_info span {
-  font-size: 75%;
+  font-size: 85%;
+  color: #d4d4d4;
+  padding: 2px 4px;
+  margin: 0 2px;
+  background-color: rgba(255, 255, 255, 0.08);
+  border-radius: 3px;
+  display: inline-block;
 }
 
 #game_unit_panel {
   margin-left: -8px;
+  background: linear-gradient(135deg, rgba(30, 30, 40, 0.95), rgba(20, 20, 30, 0.95));
+  border-radius: 8px;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
 }
 
 #city_table {
