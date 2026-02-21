@@ -45,6 +45,9 @@ var GOVT_TAB_SPACESHIP = 6;
 // Tab switching delay for rendering (in milliseconds)
 var TAB_SWITCH_DELAY_MS = 100;
 
+// Track which report tab is active for content updates
+var current_report_tab = null;
+
 
 
 
@@ -422,11 +425,6 @@ function launch_spaceship_from_tab()
     load_spaceship_tab();
   }, 1000);
 }
-
-/**************************************************************************
- Track which report tab is active for content updates
-**************************************************************************/
-var current_report_tab = null;
 
 /**************************************************************************
   Displays report content in the appropriate tab

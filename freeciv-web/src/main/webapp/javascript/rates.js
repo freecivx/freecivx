@@ -297,7 +297,6 @@ function update_tax_rates_jquery(new_tax)
 
   if (tax + lux + sci != 100) {
     tax = 100 - lux - sci;
-    $("#slider-tax-jquery").slider("value", tax);
   }
 
   $("#slider-tax-jquery").slider("value", tax);
@@ -336,7 +335,6 @@ function update_lux_rates_jquery(new_lux)
 
   if (tax + lux + sci != 100) {
     lux = 100 - tax - sci;
-    $("#slider-lux-jquery").slider("value", lux);
   }
 
   $("#slider-tax-jquery").slider("value", tax);
@@ -375,7 +373,6 @@ function update_sci_rates_jquery(new_sci)
 
   if (tax + lux + sci != 100) {
     sci = 100 - lux - tax;
-    $("#slider-sci-jquery").slider("value", sci);
   }
 
   $("#slider-tax-jquery").slider("value", tax);
