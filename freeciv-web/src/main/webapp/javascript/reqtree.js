@@ -22,6 +22,7 @@ var reqtree = {};
 var reqtree_xwidth = 330;
 var reqtree_ywidth = 80;
 var level_counts = {};
+var max_techs_per_level = 12; // Increased from hardcoded 10 to allow more techs per level
 
 /**************************************************************************
  Technology tree algorithm, assigning the position of each technology in the tree.
@@ -66,10 +67,12 @@ function generate_req_tree() {
 
 /**************************************************************************
  Recursive function to assign levels to technologies
+ Improved algorithm to better distribute techs across levels
 **************************************************************************/
 function reqtree_assign_level(ptech, xlevel) {
   if (ptech['traversed'] == false) {
-    if (level_counts[xlevel] >= 10) {
+    // Dynamic level overflow - move to next column if current level is too crowded
+    if (level_counts[xlevel] >= max_techs_per_level) {
       xlevel += 1;
     }
     ptech['xlevel'] = xlevel;
@@ -78,7 +81,7 @@ function reqtree_assign_level(ptech, xlevel) {
     ptech['traversed'] = true;
   }
 
-
+  // Process child technologies (those that depend on this tech)
   if (ptech['subreqs'] != null) {
     for (let n = 0; n < ptech['subreqs'].length; n++) {
       reqtree_assign_level(ptech['subreqs'][n], xlevel + 1);
