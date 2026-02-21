@@ -1001,6 +1001,57 @@ body
   font-weight: 500;
 }
 
+/* Mobile responsive styles for rates */
+@media (max-width: 520px) {
+  .rates-container {
+    padding: 10px;
+  }
+  
+  .rates-container h2 {
+    font-size: 18px;
+    margin-bottom: 20px;
+  }
+  
+  .rate-row {
+    flex-direction: column;
+    align-items: stretch;
+    margin-bottom: 20px;
+    gap: 8px;
+  }
+  
+  .rate-label {
+    width: 100%;
+    text-align: left;
+    font-size: 14px;
+  }
+  
+  .rate-slider-wrapper {
+    max-width: 100%;
+    width: 100%;
+  }
+  
+  .rate-value {
+    text-align: left;
+    width: auto;
+    font-size: 14px;
+  }
+  
+  .rate-lock {
+    width: auto;
+    font-size: 12px;
+  }
+  
+  .rate-info {
+    font-size: 13px;
+    margin: 15px 5px 5px;
+  }
+  
+  .rate-stats {
+    font-size: 14px;
+    margin: 15px 5px;
+  }
+}
+
 /* Report content styling */
 .report-content {
   padding: 10px;
