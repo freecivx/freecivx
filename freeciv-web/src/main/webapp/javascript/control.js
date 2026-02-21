@@ -3337,7 +3337,7 @@ function update_active_units_dialog()
     if (current_focus[0]['owner'] == client.conn.playing.playerno) {
       unit_info_html += "<div style='margin-bottom: 4px;'><span title='Movement points'>" + get_unit_moves_left(aunit) + "</span></div>";
     }
-    unit_info_html += "<div style='display: flex; flex-wrap: wrap; gap: 2px;'>"
+    unit_info_html += "<div style='display: flex; flex-wrap: wrap; gap: 2px;'>"  /* Smaller gap for stat badges within panel */
     + "<span title='Attack strength' aria-label='Attack strength " + ptype['attack_strength'] + "'>⚔️ " + ptype['attack_strength'] + "</span> "
     + "<span title='Defense strength' aria-label='Defense strength " + ptype['defense_strength'] + "'>🛡️ " + ptype['defense_strength'] + "</span> "
     + "<span title='Firepower' aria-label='Firepower " + ptype['firepower'] + "'>🔥 " + ptype['firepower'] + "</span> "
