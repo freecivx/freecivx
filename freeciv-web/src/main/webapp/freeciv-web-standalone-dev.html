@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>FreecivWorld.net - 3D version of Freeciv (Standalone DEV)</title>
+
+<!--
+  =========================================================================
+  FREECIV-WEB STANDALONE CLIENT (DEVELOPMENT VERSION)
+  =========================================================================
+  
+  This is a development version that loads individual JavaScript files
+  instead of the minified bundle. Use this for development and debugging
+  when the Java 21 build environment is not available.
+  
+  To run this file:
+  1. Build with: mvn compile (this will copy resources to target/)
+  2. Start server from target: cd target/freeciv-web && python3 -m http.server 8080
+  3. Open: http://localhost:8080/freeciv-web-standalone-dev.html
+  
+  Note: This file requires all individual JavaScript files to be present.
+  For production, use freeciv-web-standalone.html which uses the minified bundle.
+  
+  =========================================================================
+-->
+
+<link href="/static/css/bootstrap.min.css" rel="stylesheet">
+
+<link rel="stylesheet" href="/css/fontawesome.min.css">
+<link rel="stylesheet" href="/css/solid.min.css">
+<link rel="stylesheet" type="text/css" href="/css/webclient.min.css" />
+<meta name="description" content="FreecivWorld.net play Freeciv in 3D online for free, open source strategy game">
+<meta property="og:image" content="/images/freecivx-icon-web2.jpg" />
+
+<!-- Global configuration variables -->
+<script>
+var ts="standalone";
+var fcwDebug=false;
+
+// Check for renderer URL parameter
+(function() {
+  var urlParams = new URLSearchParams(window.location.search);
+  var rendererParam = urlParams.get('renderer');
+  if (rendererParam) {
+    window.renderer_type_override = rendererParam;
+    console.log("Renderer type set from URL parameter: " + rendererParam);
+  }
+})();
+</script>
+
+<!-- Standalone initialization - this ensures standalone.js only runs in standalone mode -->
+<script>
+// Set global flags for standalone mode
+standalone_mode = true;
+
+</script>
+
+<!-- Three.js ES Module System  -->
+<script type="importmap">
+  {
+    "imports": {
+      "three": "/javascript/webgpu/libs/threejs/three.module.min.js",
+      "three/webgpu": "/javascript/webgpu/libs/threejs/three.webgpu.min.js",
+      "three/tsl": "/javascript/webgpu/libs/threejs/three.tsl.min.js"
+    }
+  }
+</script>
+<!-- Three.js module loader - exports to window for backward compatibility -->
+<script type="module" src="/javascript/three-modules.js"></script>
+<script>
+  // Preload WebGPU module
+  (function() {
+    var script = document.createElement('script');
+    script.type = 'module';
+    script.src = '/javascript/three-modules-webgpu.js';
+    document.head.appendChild(script);
+  })();
+</script>
+
+<!-- Load individual JavaScript files instead of minified bundle -->
+<!-- jQuery and core libraries -->
+<script src="/javascript/libs/jquery.min.js"></script>
+<script>
+// Polyfill for jQuery.isFunction removed in jQuery 3.3+
+// Required for jquery.blockUI.js compatibility
+if (typeof jQuery !== 'undefined' && !jQuery.isFunction) {
+  jQuery.isFunction = function(obj) {
+    return typeof obj === 'function';
+  };
+}
+// Also add it to window scope for jquery.blockUI.js
+if (typeof isFunction === 'undefined') {
+  window.isFunction = function(obj) {
+    return typeof obj === 'function';
+  };
+}
+</script>
+<script src="/javascript/libs/debounce.js"></script>
+
+<!-- Load tileset config first -->
+<script src="/javascript/2dcanvas/tileset_config_amplio2.js"></script>
+<script src="/javascript/2dcanvas/tileset_spec_amplio2.js"></script>
+
+<!-- Load other libraries -->
+<script src="/javascript/libs/jquery-ui.min.js"></script>
+<script src="/javascript/libs/jquery.blockUI.js"></script>
+<script src="/javascript/libs/jquery.contextMenu.min.js"></script>
+<script src="/javascript/libs/jquery.dialogextend.js"></script>
+<script src="/javascript/libs/jquery.mCustomScrollbar.js"></script>
+<script src="/javascript/libs/jquery.tablesorter.js"></script>
+<script src="/javascript/libs/modern-screenshot.js"></script>
+<script src="/javascript/libs/platform.js"></script>
+<script src="/javascript/libs/seedrandom.min.js"></script>
+<script src="/javascript/libs/sha512.js"></script>
+<script src="/javascript/libs/simpleStorage.min.js"></script>
+<script src="/javascript/libs/stats.min.js"></script>
+<script src="/javascript/libs/sweetalert.min.js"></script>
+<script src="/javascript/libs/timer.js"></script>
+
+<!-- Load main application files -->
+<script src="/javascript/action_dialog.js"></script>
+<script src="/javascript/actions.js"></script>
+<script src="/javascript/banlist.js"></script>
+<script src="/javascript/benchmark.js"></script>
+<script src="/javascript/bitvector.js"></script>
+<script src="/javascript/cities.js"></script>
+<script src="/javascript/city.js"></script>
+<script src="/javascript/civclient.js"></script>
+<script src="/javascript/client_main.js"></script>
+<script src="/javascript/clinet.js"></script>
+<script src="/javascript/cma.js"></script>
+<script src="/javascript/connection.js"></script>
+<script src="/javascript/control.js"></script>
+<script src="/javascript/diplomacy.js"></script>
+<script src="/javascript/effects.js"></script>
+<script src="/javascript/errorlog.js"></script>
+<script src="/javascript/extra.js"></script>
+<script src="/javascript/fc_events.js"></script>
+<script src="/javascript/fc_types.js"></script>
+<script src="/javascript/freeciv-helpdata.js"></script>
+<script src="/javascript/freeciv-wiki-doc.js"></script>
+<script src="/javascript/game.js"></script>
+<script src="/javascript/government.js"></script>
+<script src="/javascript/hall_of_fame.js"></script>
+<script src="/javascript/helpdata.js"></script>
+<script src="/javascript/improvement.js"></script>
+<script src="/javascript/intel_dialog.js"></script>
+<script src="/javascript/invites.js"></script>
+<script src="/javascript/log.js"></script>
+<script src="/javascript/map.js"></script>
+<script src="/javascript/messages.js"></script>
+<script src="/javascript/mobile.js"></script>
+<script src="/javascript/nation.js"></script>
+<script src="/javascript/openai.js"></script>
+<script src="/javascript/options.js"></script>
+<script src="/javascript/overview.js"></script>
+<script src="/javascript/packets.js"></script>
+<script src="/javascript/packhand.js"></script>
+<script src="/javascript/packhand_gen.js"></script>
+<script src="/javascript/pages.js"></script>
+<script src="/javascript/pillage_dialog.js"></script>
+<script src="/javascript/player.js"></script>
+<script src="/javascript/pregame_freeciv_server.js"></script>
+<script src="/javascript/pregame_standalone_dialog.js"></script>
+<script src="/javascript/rates.js"></script>
+<script src="/javascript/reqtree.js"></script>
+<script src="/javascript/requirements.js"></script>
+<script src="/javascript/savegame.js"></script>
+<script src="/javascript/scorelog.js"></script>
+<script src="/javascript/sounds.js"></script>
+<script src="/javascript/soundset_spec.js"></script>
+<script src="/javascript/spacerace.js"></script>
+<script src="/javascript/specialist.js"></script>
+<script src="/javascript/speech.js"></script>
+<script src="/javascript/standalone.js"></script>
+<script src="/javascript/tech.js"></script>
+<script src="/javascript/terrain.js"></script>
+<script src="/javascript/tile.js"></script>
+<script src="/javascript/unit.js"></script>
+<script src="/javascript/unittype.js"></script>
+<script src="/javascript/utility.js"></script>
+
+<!-- Load server files -->
+<script src="/javascript/server/ai.js"></script>
+<script src="/javascript/server/cities.js"></script>
+<script src="/javascript/server/city.js"></script>
+<script src="/javascript/server/diplomacy.js"></script>
+<script src="/javascript/server/game.js"></script>
+<script src="/javascript/server/generator.js"></script>
+<script src="/javascript/server/goto.js"></script>
+<script src="/javascript/server/map.js"></script>
+<script src="/javascript/server/nations.js"></script>
+<script src="/javascript/server/ruleset.js"></script>
+<script src="/javascript/server/server.js"></script>
+<script src="/javascript/server/tech.js"></script>
+<script src="/javascript/server/tile.js"></script>
+<script src="/javascript/server/units.js"></script>
+<script src="/javascript/server/vision.js"></script>
+
+<!-- Load 2dcanvas files -->
+<script src="/javascript/2dcanvas/mapview.js"></script>
+<script src="/javascript/2dcanvas/tilespec.js"></script>
+
+<!-- Load webgpu files -->
+<script src="/javascript/webgpu/animation.js"></script>
+<script src="/javascript/webgpu/borders.js"></script>
+<script src="/javascript/webgpu/camera.js"></script>
+<script src="/javascript/webgpu/city.js"></script>
+<script src="/javascript/webgpu/config.js"></script>
+<script src="/javascript/webgpu/goto.js"></script>
+<script src="/javascript/webgpu/heightmap.js"></script>
+<script src="/javascript/webgpu/instances.js"></script>
+<script src="/javascript/webgpu/map_tiletype.js"></script>
+<script src="/javascript/webgpu/mapctrl.js"></script>
+<script src="/javascript/webgpu/maputil.js"></script>
+<script src="/javascript/webgpu/mapview_common.js"></script>
+<script src="/javascript/webgpu/mapview_webgpu.js"></script>
+<script src="/javascript/webgpu/material_factory.js"></script>
+<script src="/javascript/webgpu/nuke.js"></script>
+<script src="/javascript/webgpu/object_position_handler.js"></script>
+<script src="/javascript/webgpu/preload.js"></script>
+<script src="/javascript/webgpu/renderer_init.js"></script>
+<script src="/javascript/webgpu/roads.js"></script>
+<script src="/javascript/webgpu/sprites.js"></script>
+<script src="/javascript/webgpu/terrain_shader_webgpu.js"></script>
+<script src="/javascript/webgpu/text.js"></script>
+<script src="/javascript/webgpu/tile_visibility_handler.js"></script>
+<script src="/javascript/webgpu/water.js"></script>
+
+<!-- Load webgpu_square files -->
+<script src="/javascript/webgpu_square/goto_square.js"></script>
+<script src="/javascript/webgpu_square/heightmap_square.js"></script>
+<script src="/javascript/webgpu_square/maputil_square.js"></script>
+<script src="/javascript/webgpu_square/mapview_common_square.js"></script>
+<script src="/javascript/webgpu_square/terrain_shader_square.js"></script>
+<script src="/javascript/webgpu_square/water_square.js"></script>
+
+<script>
+  $(document).ready(function() {
+    console.log("First init started from html page.");
+    // Initialize standalone mode
+    init_standalone();
+  });
+</script>
+
+
+<link rel="shortcut icon" href="/images/freeciv-shortcut-icon.png" />
+<link rel="apple-touch-icon" href="/images/freeciv-splash4.png" />
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0, minimal-ui" />
+<meta name="mobile-web-app-capable" content="yes">
+
+</head>
+
+<body>
+
+  <div id="introtxtja">FreecivWorld.net is the 3D version of the strategy game Freeciv. Because Civilization should be free, in 3D!</div>
+
+
+
+    <!-- Pregame Page -->
+    <div id="fciv-intro">
+      <div id="fciv-intro-txt" style="position: relative; left: -50%; ">
+        <p>
+          <strong>FreecivWorld.net</strong> is a free and open-source empire-building strategy game that lets you shape the
+          history of human civilization. Begin your journey in the Stone Age and guide your tribe through
+          centuries of progress, from humble beginnings to the wonders of the Space Age.
+        </p>
+        <p>
+          Play directly in your web browser for free! For an immersive experience, press <strong>F11</strong>
+          to enter fullscreen mode.
+        </p>
+        <p>
+          We value your privacy; learn more in our <a href="/privacy-policy.jsp">Privacy Policy</a>.<br>
+          FreecivWorld.net is proudly open source and licensed under the
+          <a href="https://www.gnu.org/licenses/agpl-3.0.en.html">AGPL license</a>.
+        </p>
+      </div>
+    </div>
+
+    <div id="pregame_page" style="display:none;">
+      <div id="pregame_options">
+        <div id="pregame_buttons">
+            <div id="freeciv_logo" style="cursor:pointer;cursor:hand" onclick="window.open('/', '_new');"></div>
+            <button id="start_game_button" type="button" class="button"><i class="fa fa-play" aria-hidden="true"></i> <b>Start Game</b></button>
+            <button id="load_game_button" type="button" class="button"><i class="fa fa-folder-open" aria-hidden="true"></i> Load Game / Scenario</button>
+            <button id="pick_nation_button" type="button" class="button"><i class="fa fa-flag" aria-hidden="true"></i> Pick Nation</button>
+            <button id="pregame_settings_button" type="button" class="button"><i class="fa fa-cogs" aria-hidden="true"></i> Game Settings</button>
+            <button id='multiplayer_invite_player'  type="button" class="button"><i class="fa fa-user-plus" aria-hidden="true"></i>Invite player</button>
+        </div>
+      </div>
+
+      <div id="pregame_player_list"></div> 
+      <div id="pregame_game_info"></div>
+      <div id="pregame_custom_scrollbar_div">
+        <ol id="pregame_message_area"></ol>
+      </div>
+      <div id="pregame_chat_box">
+        <input id="pregame_text_input" type="text" name="text_input" value=">" />
+      </div>
+    </div>
+
+    <div id="pick_nation_dialog" ></div>
+
+    <!-- Game Page -->
+    <div id="game_page" style="display: none;">
+    
+        <div id="tabs">
+            
+            <ul id="tabs_menu">
+                <div id="freeciv_logo" ></div>
+                <li id="map_tab"><a href="#tabs-map"><i class="fa fa-map" aria-hidden="true"></i> Map</a></li>
+                <li id="civ_tab"><a href="#tabs-civ"><i class="fa fa-university" aria-hidden="true"></i> Government</a></li>
+                <li id="tech_tab"><a id="tech_tab_item" href="#tabs-tec"><i class="fa fa-flask" aria-hidden="true"></i> Research</a></li>
+                <li id="players_tab"><a href="#tabs-nat"><i class="fa fa-flag" aria-hidden="true"></i> Nations</a></li>
+                <li id="cities_tab"><a href="#tabs-cities"><i class="fa fa-city" aria-hidden="true"></i> Cities</a></li>
+                <li id="opt_tab"><a href="#tabs-opt"><i class="fa fa-cogs" aria-hidden="true"></i> Options</a></li>
+                <li id="hel_tab"><a href="#tabs-hel"><i class="fa fa-circle-info" aria-hidden="true"></i> Manual</a></li>
+
+                <div id="game_status_panel_top"></div>
+
+                <div id="turn_done_button_div">
+                     <img id="zoom_map_image" src="/images/map-zoom.png" title="Zoom map out/in">
+                     <button id="turn_done_button" type="button"
+                             class="button" title="Ends your turn. (Shift+Enter)">Turn Done</button>
+                </div>
+            </ul>
+            
+            <div id="tabs-map" tabindex="-1">
+              <!-- Canvas Map View -->
+              <div id="mapview_canvas_div">
+                <!-- The main mapview canvas -->  
+                <div id="mapcanvas"></div>
+                
+                <!-- Overview/Minimap Panel -->
+                <div id="game_overview_panel" title="">
+                  <div id="overview_map">
+                    <canvas id="overview_img"></canvas>
+                    <canvas id="overview_viewrect"></canvas>
+                  </div>
+                </div>
+                
+                <!-- Message chatbox -->
+                <div id="game_chatbox_panel">
+                  <div id="freeciv_custom_scrollbar_div">
+                    <ol id="game_message_area"></ol>
+                  </div>
+                  <div id="game_chat_box">
+                    <canvas id="chat_direction" width="29" height="20" role="button"></canvas>
+                    <input id="game_text_input" type="text" name="text_input" />
+                  </div>
+                </div>
+
+                <!-- Game status panel -->
+                <div id="game_status_panel_bar"></div>
+
+                <!-- Unit orders and info panel -->
+                <div id="game_unit_panel">
+                    <div id="game_unit_info">&nbsp;</div>
+                </div>
+              </div>
+            </div>
+
+            <div id="tabs-civ">
+                <!-- Civilization Tab -->
+                <div id="civ_dialog">
+                    
+                    <div id="govt_tabs">
+                      <ul>
+                        <li><a href="#govt_tabs-nation"><i class="fa fa-flag" aria-hidden="true"></i> Nation Info</a></li>
+                        <li><a href="#govt_tabs-revolution"><i class="fa fa-rotate" aria-hidden="true"></i> Revolution</a></li>
+                        <li><a href="#govt_tabs-taxrates"><i class="fa fa-coins" aria-hidden="true"></i> Tax Rates</a></li>
+                        <li><a href="#govt_tabs-wonders"><i class="fa fa-star" aria-hidden="true"></i> Wonders</a></li>
+                        <li><a href="#govt_tabs-cities"><i class="fa fa-building" aria-hidden="true"></i> Top 5 Cities</a></li>
+                        <li><a href="#govt_tabs-demographics"><i class="fa fa-chart-bar" aria-hidden="true"></i> Demographics</a></li>
+                        <li><a href="#govt_tabs-spaceship"><i class="fa fa-rocket" aria-hidden="true"></i> Spaceship</a></li>
+                      </ul>
+                      
+                      <div id="govt_tabs-nation" class="govt_tabs_content">
+                        <h3 id="nation_title"></h3>
+                        <center>
+                          <div id="civ_dialog_text"></div>
+                          <div id="civ_dialog_flag"></div>
+                          <div id="nation_govt_info"></div>
+                        </center>
+                      </div>
+                      
+                      <div id="govt_tabs-revolution" class="govt_tabs_content">
+                        <div id="revolution_content"></div>
+                      </div>
+                      
+                      <div id="govt_tabs-taxrates" class="govt_tabs_content">
+                        <div id="taxrates_content"></div>
+                      </div>
+                      
+                      <div id="govt_tabs-wonders" class="govt_tabs_content">
+                        <div id="wonders_content">Loading...</div>
+                      </div>
+                      
+                      <div id="govt_tabs-cities" class="govt_tabs_content">
+                        <div id="cities_content">Loading...</div>
+                      </div>
+                      
+                      <div id="govt_tabs-demographics" class="govt_tabs_content">
+                        <div id="demographics_content">Loading...</div>
+                      </div>
+                      
+                      <div id="govt_tabs-spaceship" class="govt_tabs_content">
+                        <div id="spaceship_content">Loading...</div>
+                      </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="tabs-tec">
+                <!-- Technologies Tab - Content loaded dynamically -->
+            </div>
+
+            <div id="tabs-nat">
+                <!-- Nations Tab - Content loaded dynamically -->
+            </div>
+
+            <div id="tabs-cities">
+                <!-- Cities Tab - Content loaded dynamically -->
+            </div>
+
+            <div id="tabs-hel" class="manual_doc">
+                <!-- Help/Manual Tab - Content loaded dynamically -->
+            </div>
+
+            <div id="tabs-opt">
+                <!-- Options Tab - Content loaded dynamically -->
+            </div>
+            
+        </div>
+    </div>
+      
+    <div id="dialog" ></div>
+    <div id="city_name_dialog" ></div>
+
+</body>
+</html>

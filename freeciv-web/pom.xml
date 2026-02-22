@@ -253,6 +253,7 @@ Rerun the sync-js-hand.js script.
 										<directory>${basedir}/src/main/webapp</directory>
 										<includes>
 											<include>freeciv-web-standalone.html</include>
+											<include>freeciv-web-standalone-dev.html</include>
 										</includes>
 									</resource>
 								</resources>
