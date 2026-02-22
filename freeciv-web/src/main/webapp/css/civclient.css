@@ -155,11 +155,11 @@ body
 #game_unit_info {
   float: left;
   width: 100%;
-  overflow: hidden;
+  overflow: visible;  /* Changed from hidden to allow tooltips to show */
   display: flex;
   flex-wrap: wrap;
   gap: 4px;  /* Gap between all flex children (info panel, unit icons, etc.) */
-  padding: 4px;
+  padding: 2px;  /* Reduced from 4px to save space */
 }
 
 #unit_text_details {
@@ -854,17 +854,21 @@ body
 #governments {
   text-align: center;
   padding: 10px 5px;
+  max-width: 650px;
+  margin: 0 auto;
 }
 
 /* Government dialog text styling */
 .govt-dialog-current {
   margin-bottom: 15px;
   font-size: 14px;
+  color: #e8e8e8;
+  font-weight: bold;
 }
 
 .govt-dialog-instructions {
   margin-bottom: 10px;
-  color: #555;
+  color: #ccc;
 }
 
 /* Government buttons list - responsive grid layout */
@@ -974,17 +978,18 @@ body
 
 /* Rates tab styling */
 .rates-container {
-  max-width: 600px;
+  max-width: 650px;
   margin: 0 auto;
   padding: 20px;
-  background: rgba(255, 255, 255, 0.95);
+  background: url("/images/bg.jpg") repeat scroll 0 0;
   border-radius: 8px;
+  border: 1px solid #666;
 }
 
 .rates-container h2 {
   text-align: center;
   margin-bottom: 30px;
-  color: #333;
+  color: #e8e8e8;
   font-size: 20px;
 }
 
@@ -994,20 +999,20 @@ body
   margin-bottom: 25px;
   gap: 15px;
   padding: 10px;
-  background: rgba(240, 240, 240, 0.5);
+  background: rgba(0, 0, 0, 0.3);
   border-radius: 6px;
   transition: background 0.2s ease;
 }
 
 .rate-row:hover {
-  background: rgba(230, 230, 230, 0.7);
+  background: rgba(0, 0, 0, 0.4);
 }
 
 .rate-label {
   width: 80px;
   font-weight: bold;
   text-align: right;
-  color: #555;
+  color: #ddd;
 }
 
 .rate-slider-wrapper {
@@ -1024,7 +1029,7 @@ body
   text-align: center;
   font-weight: bold;
   font-size: 16px;
-  color: #2c5aa0;
+  color: #4a90e2;
 }
 
 .rate-lock {
@@ -1033,13 +1038,14 @@ body
   display: flex;
   align-items: center;
   gap: 5px;
+  color: #ddd;
 }
 
 .rate-info {
   text-align: center;
   margin: 20px 10px 10px;
   font-style: italic;
-  color: #666;
+  color: #ccc;
   font-size: 14px;
 }
 
@@ -1049,13 +1055,14 @@ body
   font-size: 15px;
   font-weight: 500;
   padding: 15px;
-  background: rgba(220, 235, 255, 0.3);
+  background: rgba(0, 0, 0, 0.4);
   border-radius: 6px;
-  border: 1px solid rgba(74, 144, 226, 0.2);
+  border: 1px solid #666;
+  color: #e8e8e8;
 }
 
 .rate-stats span {
-  color: #2c5aa0;
+  color: #4a90e2;
   font-weight: 600;
 }
 
@@ -1248,11 +1255,11 @@ body
   color: #ffffff;
   background: linear-gradient(135deg, rgba(40, 40, 50, 0.95), rgba(20, 20, 30, 0.95));
   font-size: 96%;
-  padding: 8px 10px;
-  max-width: 180px;
+  padding: 6px 8px;  /* Reduced from 8px 10px to save space */
+  max-width: 240px;  /* Increased from 180px to prevent health wrapping */
   border-radius: 6px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
-  margin: 4px;
+  margin: 2px;  /* Reduced from 4px to save space */
   line-height: 1.4;
   border: 1px solid rgba(255, 255, 255, 0.1);
   transition: all 0.2s ease;
@@ -1273,7 +1280,8 @@ body
 }
 
 #game_unit_panel {
-  margin-left: -8px;
+  margin-left: -4px;  /* Reduced from -8px to save space */
+  margin-top: -4px;   /* Added to reduce top space */
   background: linear-gradient(135deg, rgba(30, 30, 40, 0.95), rgba(20, 20, 30, 0.95));
   border-radius: 8px;
 }
