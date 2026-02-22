@@ -949,7 +949,11 @@ function show_intro_dialog(title, message) {
 				  text : "Start Game",
 				  click : function() {
                      if (is_touch_device()) {
-                       BigScreen.toggle();
+                       if (document.fullscreenEnabled && !document.fullscreenElement) {
+                         document.documentElement.requestFullscreen().catch(function(err) {
+                           console.error('Error entering fullscreen:', err);
+                         });
+                       }
                      }
 					dialog_close_trigger = "button";
 					autostart = true;
@@ -962,7 +966,11 @@ function show_intro_dialog(title, message) {
 				  text : join_game_customize_text,
 				  click : function() {
                     if (is_touch_device()) {
-                      BigScreen.toggle();
+                      if (document.fullscreenEnabled && !document.fullscreenElement) {
+                        document.documentElement.requestFullscreen().catch(function(err) {
+                          console.error('Error entering fullscreen:', err);
+                        });
+                      }
                     }
 					dialog_close_trigger = "button";
 					pregame_handle_user(false);
