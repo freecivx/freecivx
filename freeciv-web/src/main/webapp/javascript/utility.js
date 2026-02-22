@@ -292,6 +292,12 @@ function isFunction(obj) {
   return typeof obj === 'function';
 }
 
+if (typeof jQuery !== 'undefined' && !jQuery.isFunction) {
+    jQuery.isFunction = function(obj) {
+        return typeof obj === "function";
+    };
+}
+
 /**************************************************************************
  JQuery trim replacement since they deprecated it.
 **************************************************************************/
