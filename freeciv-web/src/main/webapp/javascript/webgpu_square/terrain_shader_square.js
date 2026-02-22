@@ -128,7 +128,9 @@ function createTerrainShaderSquareTSL(uniforms) {
         plains: uniforms.plains.value,
         hills: uniforms.hills.value,
         mountains: uniforms.mountains.value,
-        swamp: uniforms.swamp.value
+        swamp: uniforms.swamp.value,
+        forest: uniforms.forest.value,
+        jungle: uniforms.jungle.value
     };
     
     // Terrain layer indices for terrain_layers DataArrayTexture
@@ -338,8 +340,8 @@ function createTerrainShaderSquareTSL(uniforms) {
             matchTerrain(TERRAIN_HILLS, terrainTextures.hills, coord, true),
             matchTerrain(TERRAIN_MOUNTAINS, terrainTextures.mountains, coord, true),
             matchTerrain(TERRAIN_SWAMP, terrainTextures.swamp, coord, true),
-            matchTerrain(TERRAIN_FOREST, terrainTextures.grassland, coord, true),
-            matchTerrain(TERRAIN_JUNGLE, terrainTextures.plains, coord, true),
+            matchTerrain(TERRAIN_FOREST, terrainTextures.forest, coord, true),
+            matchTerrain(TERRAIN_JUNGLE, terrainTextures.jungle, coord, true),
             matchTerrain(TERRAIN_COAST, terrainTextures.coast, coord, false),
             matchTerrain(TERRAIN_FLOOR, terrainTextures.ocean, coord, false),
             matchTerrain(TERRAIN_LAKE, terrainTextures.coast, coord, false),
@@ -363,8 +365,8 @@ function createTerrainShaderSquareTSL(uniforms) {
         createTerrainLayer(TERRAIN_HILLS, terrainTextures.hills, texCoord, true),
         createTerrainLayer(TERRAIN_MOUNTAINS, terrainTextures.mountains, texCoord, true),
         createTerrainLayer(TERRAIN_SWAMP, terrainTextures.swamp, texCoord, true),
-        createTerrainLayer(TERRAIN_FOREST, terrainTextures.grassland, texCoord, true),
-        createTerrainLayer(TERRAIN_JUNGLE, terrainTextures.plains, texCoord, true),
+        createTerrainLayer(TERRAIN_FOREST, terrainTextures.forest, texCoord, true),
+        createTerrainLayer(TERRAIN_JUNGLE, terrainTextures.jungle, texCoord, true),
         createTerrainLayer(TERRAIN_COAST, terrainTextures.coast, texCoord, false),
         createTerrainLayer(TERRAIN_FLOOR, terrainTextures.ocean, texCoord, false),
         createTerrainLayer(TERRAIN_LAKE, terrainTextures.coast, texCoord, false),
