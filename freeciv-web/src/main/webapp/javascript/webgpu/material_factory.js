@@ -62,7 +62,9 @@ function convertToNodeMaterial(originalMaterial, options = {}) {
     const nodeMaterial = new THREE.MeshStandardNodeMaterial();
     
     // Copy common properties from original material
-    if (originalMaterial.map) {
+    // Skip DataArrayTexture - it's not supported in MeshStandardNodeMaterial.map
+    // DataArrayTexture causes WGSL errors when Three.js auto-generates shader code
+    if (originalMaterial.map && !originalMaterial.map.isDataArrayTexture) {
         nodeMaterial.map = originalMaterial.map;
     }
     
