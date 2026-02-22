@@ -39,14 +39,14 @@
 
 function createTerrainShaderSquareTSL(uniforms) {
     // Import TSL functions and nodes from THREE
-    const { 
-        texture, uniform, positionLocal, attribute, uv, normalLocal,
-        vec2, vec3, vec4, int,
-        mix, step, floor, fract, mod, dot, sin, cos, normalize, max, min, pow, clamp, abs,
-        mul, add, sub, div
-    } = THREE;
     
-    // Verify all required TSL functions and nodes are available
+    // First, verify THREE object exists
+    if (typeof THREE === 'undefined') {
+        console.error('THREE object is not defined. Ensure three.js has loaded before calling this function.');
+        throw new Error('THREE object not available. Ensure three.js has loaded successfully.');
+    }
+    
+    // Verify all required TSL functions and nodes are available before destructuring
     const requiredTSLNames = [
         'texture', 'uniform', 'positionLocal', 'attribute', 'uv', 'normalLocal',
         'vec2', 'vec3', 'vec4', 'int',
@@ -58,6 +58,14 @@ function createTerrainShaderSquareTSL(uniforms) {
         console.error('Missing TSL functions/nodes:', missing);
         throw new Error(`Required TSL functions/nodes not available: ${missing.join(', ')}. Ensure three-modules-webgpu.js has loaded successfully.`);
     }
+    
+    // Now it's safe to destructure from THREE
+    const { 
+        texture, uniform, positionLocal, attribute, uv, normalLocal,
+        vec2, vec3, vec4, int,
+        mix, step, floor, fract, mod, dot, sin, cos, normalize, max, min, pow, clamp, abs,
+        mul, add, sub, div
+    } = THREE;
 
     // Define terrain type constants (matching game logic)
     const TERRAIN_INACCESSIBLE = 0.0;
