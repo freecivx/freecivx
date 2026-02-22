@@ -297,7 +297,7 @@ function set_default_mapview_active()
   allow_right_click = false;
   keyboard_input = true;
 
-  $("#freeciv_custom_scrollbar_div").mCustomScrollbar("scrollTo", "bottom",{scrollInertia:0});
+  scrollbar_scroll_to_bottom("#freeciv_custom_scrollbar_div");
 
   $(".chatbox_dialog").css("top", "52px");
   $(".chatbox_dialog").css("left", "5px");

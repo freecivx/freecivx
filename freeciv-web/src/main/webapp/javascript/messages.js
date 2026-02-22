@@ -70,7 +70,7 @@ function init_chatbox()
     this.style.setProperty( 'border-color', '#4328', 'important' );
   });
 
-  $("#freeciv_custom_scrollbar_div").mCustomScrollbar({theme:"3d"});
+  init_custom_scrollbar("#freeciv_custom_scrollbar_div");
   if (current_message_dialog_state == "minimized") $("#game_chatbox_panel").dialogExtend("minimize");
 
 }
@@ -208,9 +208,9 @@ function update_chatbox(messages)
       }
   }
   if (civclient_state <= C_S_PREPARING) {
-    setTimeout(() => $('#pregame_custom_scrollbar_div').mCustomScrollbar('scrollTo', 'bottom'), 100);
+    setTimeout(() => scrollbar_scroll_to_bottom('#pregame_custom_scrollbar_div'), 100);
   } else {
-    setTimeout(() => $('#freeciv_custom_scrollbar_div').mCustomScrollbar('scrollTo', 'bottom'), 100);
+    setTimeout(() => scrollbar_scroll_to_bottom('#freeciv_custom_scrollbar_div'), 100);
   }
 
 }
