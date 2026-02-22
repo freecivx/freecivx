@@ -1078,7 +1078,7 @@ function update_unit_order_commands()
     pcity = tile_city(ptile);
 
     if (pcity != null) {
-      unit_actions["show_city"] = {name: "Show city"};
+      unit_actions["show_city"] = {name: "Show city", icon: "fas fa-city"};
     }
   }
 
@@ -1091,22 +1091,22 @@ function update_unit_order_commands()
 
     if (utype_can_do_action(ptype, ACTION_FOUND_CITY)
         && pcity == null && punit['movesleft'] > 0) {
-      unit_actions["build"] = {name: "Build city (B)"};
+      unit_actions["build"] = {name: "Build city (B)", icon: "fas fa-city"};
     } else if (utype_can_do_action(ptype, ACTION_JOIN_CITY)
                && pcity != null) {
-      unit_actions["build"] = {name: "Join city (B)"};
+      unit_actions["build"] = {name: "Join city (B)", icon: "fas fa-city"};
 
     }
 
     if (ptype['name'] == "Explorer") {
-      unit_actions["explore"] = {name: "Auto explore (X)"};
+      unit_actions["explore"] = {name: "Auto explore (X)", icon: "fas fa-compass"};
     }
 
   }
 
   unit_actions = $.extend(unit_actions, {
-                   "goto": {name: "Unit goto (G)"},
-	               "tile_info": {name: "Tile info"}
+                   "goto": {name: "Unit goto (G)", icon: "fas fa-location-arrow"},
+	               "tile_info": {name: "Tile info", icon: "fas fa-info-circle"}
                  });
 
   for (i = 0; i < funits.length; i++) {
@@ -1119,93 +1119,93 @@ function update_unit_order_commands()
     if (ptype['name'] == "Settlers" || ptype['name'] == "Workers"
         || ptype['name'] == "Engineers") {
 
-      if (ptype['name'] == "Settlers") unit_actions["autosettlers"] = {name: "Auto settler (A)"};
-      if (ptype['name'] == "Workers") unit_actions["autosettlers"] = {name: "Auto workers (A)"};
-      if (ptype['name'] == "Engineers") unit_actions["autosettlers"] = {name: "Auto engineers (A)"};
+      if (ptype['name'] == "Settlers") unit_actions["autosettlers"] = {name: "Auto settler (A)", icon: "fas fa-person-digging"};
+      if (ptype['name'] == "Workers") unit_actions["autosettlers"] = {name: "Auto workers (A)", icon: "fas fa-person-digging"};
+      if (ptype['name'] == "Engineers") unit_actions["autosettlers"] = {name: "Auto engineers (A)", icon: "fas fa-person-digging"};
 
       if (!tile_has_extra(ptile, EXTRA_ROAD)) {
         if (!(tile_has_extra(ptile, EXTRA_RIVER) && player_invention_state(client.conn.playing, tech_id_by_name('Bridge Building')) == TECH_UNKNOWN)) {
-	      unit_actions["road"] = {name: "Build road (R)"};
+	      unit_actions["road"] = {name: "Build road (R)", icon: "fas fa-road"};
 	    }
       } else if (player_invention_state(client.conn.playing, tech_id_by_name('Railroad')) == TECH_KNOWN
                  && tile_has_extra(ptile, EXTRA_ROAD)
                && !tile_has_extra(ptile, EXTRA_RAIL)) {
-	    unit_actions['railroad'] = {name: "Build railroad (R)"};
+	    unit_actions['railroad'] = {name: "Build railroad (R)", icon: "fas fa-train"};
       }
 
       if (!tile_has_extra(ptile, EXTRA_MINE) && tile_terrain(ptile)['mining_time'] > 0) {
-        unit_actions["mine"] =  {name: "Mine (M)"};
+        unit_actions["mine"] =  {name: "Mine (M)", icon: "fas fa-hammer"};
       }
 
       if (ptype['name'] == "Engineers") {
-        unit_actions["mine"] =  {name: "Oil well"};
+        unit_actions["mine"] =  {name: "Oil well", icon: "fas fa-oil-well"};
       }
 
       if (tile_has_extra(ptile, EXTRA_FALLOUT) || tile_has_extra(ptile, EXTRA_POLLUTION)) {
-        unit_actions["clean"] = {name: "Remove pollution (P)"};
+        unit_actions["clean"] = {name: "Remove pollution (P)", icon: "fas fa-broom"};
       }
 
       if (tile_terrain(ptile)['cultivate_time'] > 0) {
-        unit_actions["cultivate"] = {name: "Cultivate (I)"};
+        unit_actions["cultivate"] = {name: "Cultivate (I)", icon: "fas fa-seedling"};
       }
       if (tile_terrain(ptile)['irrigation_time'] > 0) {
         if (!tile_has_extra(ptile, EXTRA_IRRIGATION)) {
-          unit_actions["irrigation"] = {name: "Irrigation (I)"};
+          unit_actions["irrigation"] = {name: "Irrigation (I)", icon: "fas fa-droplet"};
         } else if (!tile_has_extra(ptile, EXTRA_FARMLAND) && player_invention_state(client.conn.playing, tech_id_by_name('Refrigeration')) == TECH_KNOWN) {
-          unit_actions["irrigation"] = {name: "Build farmland (I)"};
+          unit_actions["irrigation"] = {name: "Build farmland (I)", icon: "fas fa-wheat-awn"};
         }
       }
       if (tile_terrain(ptile)['plant_time'] > 0) {
-        unit_actions["plant"] = {name: "Plant (M)"};
+        unit_actions["plant"] = {name: "Plant (M)", icon: "fas fa-tree"};
 
       }
       if (player_invention_state(client.conn.playing, tech_id_by_name('Construction')) == TECH_KNOWN) {
-        unit_actions["fortress"] = {name: string_unqualify(terrain_control['gui_type_base0']) + " (Shift-F)"};
+        unit_actions["fortress"] = {name: string_unqualify(terrain_control['gui_type_base0']) + " (Shift-F)", icon: "fas fa-fort-awesome"};
       }
 
       if (player_invention_state(client.conn.playing, tech_id_by_name('Radio')) == TECH_KNOWN) {
-        unit_actions["airbase"] = {name: string_unqualify(terrain_control['gui_type_base1']) + " (E)"};
+        unit_actions["airbase"] = {name: string_unqualify(terrain_control['gui_type_base1']) + " (E)", icon: "fas fa-plane"};
       }
 
     } else {
-      unit_actions["fortify"] = {name: "Fortify (F)"};
+      unit_actions["fortify"] = {name: "Fortify (F)", icon: "fas fa-shield-halved"};
     }
 
     /* Practically all unit types can currently perform some action. */
-    unit_actions["action_selection"] = {name: "Do... (D)"};
+    unit_actions["action_selection"] = {name: "Do... (D)", icon: "fas fa-ellipsis"};
 
     if (utype_can_do_action(ptype, ACTION_TRANSFORM_TERRAIN)) {
-      unit_actions["transform"] = {name: "Transform terrain (O)"};
+      unit_actions["transform"] = {name: "Transform terrain (O)", icon: "fas fa-shuffle"};
     }
 
     if (utype_can_do_action(ptype, ACTION_NUKE)) {
-      unit_actions["nuke"] = {name: "Detonate Nuke At (Shift-N)"};
+      unit_actions["nuke"] = {name: "Detonate Nuke At (Shift-N)", icon: "fas fa-radiation"};
     }
 
     if (utype_can_do_action_result(ptype, ACTRES_PARADROP)
         || utype_can_do_action_result(ptype, ACTRES_PARADROP_CONQUER)) {
-      unit_actions["paradrop"] = {name: "Paradrop"};
+      unit_actions["paradrop"] = {name: "Paradrop", icon: "fas fa-parachute-box"};
     }
 
     if (!client_is_observer() && client.conn.playing != null
         && get_what_can_unit_pillage_from(punit, ptile).length > 0
         && (pcity == null || city_owner_player_id(pcity) !== client.conn.playing.playerno)) {
-      unit_actions["pillage"] = {name: "Pillage (Shift-P)"};
+      unit_actions["pillage"] = {name: "Pillage (Shift-P)", icon: "fas fa-skull-crossbones"};
     }
 
     if (pcity != null && punit['homecity'] > 0 && punit['homecity'] != pcity['id']) {
-      unit_actions["homecity"] = {name: "Change homecity of unit (H)"};
+      unit_actions["homecity"] = {name: "Change homecity of unit (H)", icon: "fas fa-house"};
     }
 
     if (pcity != null && city_has_building(pcity, improvement_id_by_name(B_AIRPORT_NAME))) {
-      unit_actions["airlift"] = {name: "Airlift (Shift-L)"};
+      unit_actions["airlift"] = {name: "Airlift (Shift-L)", icon: "fas fa-plane-departure"};
     }
 
     if (pcity != null && unit_types[ptype['obsoleted_by']] != null && can_player_build_unit_direct(client.conn.playing, unit_types[ptype['obsoleted_by']])) {
-      unit_actions["upgrade"] =  {name: "Upgrade unit (U)"};
+      unit_actions["upgrade"] =  {name: "Upgrade unit (U)", icon: "fas fa-arrow-up"};
     }
     if (ptype['name'] != "Explorer") {
-      unit_actions["explore"] = {name: "Auto explore (X)"};
+      unit_actions["explore"] = {name: "Auto explore (X)", icon: "fas fa-compass"};
     }
 
     // Load unit on transport
@@ -1215,7 +1215,7 @@ function update_unit_order_commands()
         var tunit = loadUnitsOnTile[r];
         if (tunit['id'] == punit['id']) continue;
         var ntype = unit_type(tunit);
-        if (ntype['transport_capacity'] > 0) unit_actions["unit_load"] = {name: "Load on transport (L)"};
+        if (ntype['transport_capacity'] > 0) unit_actions["unit_load"] = {name: "Load on transport (L)", icon: "fas fa-arrow-down-to-line"};
       }
     }
 
@@ -1225,8 +1225,8 @@ function update_unit_order_commands()
       for (let r = 0; r < unloadUnitsOnTile.length; r++) {
         var uunit = unloadUnitsOnTile[r];
         if (uunit['transported']) {
-          unit_actions["unit_show_cargo"] = {name: "Activate cargo units"};
-          if (pcity != null) unit_actions["unit_unload"] = {name: "Unload units from transport (T)"};
+          unit_actions["unit_show_cargo"] = {name: "Activate cargo units", icon: "fas fa-boxes-stacked"};
+          if (pcity != null) unit_actions["unit_unload"] = {name: "Unload units from transport (T)", icon: "fas fa-arrow-up-from-line"};
         }
       }
     }
@@ -1234,16 +1234,16 @@ function update_unit_order_commands()
     if (punit.activity != ACTIVITY_IDLE
         || punit.ssa_controller != SSA_NONE
         || punit.has_orders) {
-      unit_actions["idle"] = {name: "Cancel orders (Shift-J)"};
+      unit_actions["idle"] = {name: "Cancel orders (Shift-J)", icon: "fas fa-ban"};
     } else {
-      unit_actions["noorders"] = {name: "No orders (J)"};
+      unit_actions["noorders"] = {name: "No orders (J)", icon: "fas fa-circle-stop"};
     }
   }
 
   unit_actions = $.extend(unit_actions, {
-            "sentry": {name: "Sentry (S)"},
-            "wait": {name: "Wait (W)"},
-            "disband": {name: "Disband (Shift-D)"}
+            "sentry": {name: "Sentry (S)", icon: "fas fa-eye"},
+            "wait": {name: "Wait (W)", icon: "fas fa-clock"},
+            "disband": {name: "Disband (Shift-D)", icon: "fas fa-trash"}
             });
 
   if (is_touch_device()) {
