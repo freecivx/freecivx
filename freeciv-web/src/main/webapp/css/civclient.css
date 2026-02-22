@@ -155,11 +155,11 @@ body
 #game_unit_info {
   float: left;
   width: 100%;
-  overflow: hidden;
+  overflow: visible;  /* Changed from hidden to allow tooltips to show */
   display: flex;
   flex-wrap: wrap;
   gap: 4px;  /* Gap between all flex children (info panel, unit icons, etc.) */
-  padding: 4px;
+  padding: 2px;  /* Reduced from 4px to save space */
 }
 
 #unit_text_details {
@@ -1248,11 +1248,11 @@ body
   color: #ffffff;
   background: linear-gradient(135deg, rgba(40, 40, 50, 0.95), rgba(20, 20, 30, 0.95));
   font-size: 96%;
-  padding: 8px 10px;
-  max-width: 180px;
+  padding: 6px 8px;  /* Reduced from 8px 10px to save space */
+  max-width: 240px;  /* Increased from 180px to prevent health wrapping */
   border-radius: 6px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
-  margin: 4px;
+  margin: 2px;  /* Reduced from 4px to save space */
   line-height: 1.4;
   border: 1px solid rgba(255, 255, 255, 0.1);
   transition: all 0.2s ease;
@@ -1273,7 +1273,8 @@ body
 }
 
 #game_unit_panel {
-  margin-left: -8px;
+  margin-left: -4px;  /* Reduced from -8px to save space */
+  margin-top: -4px;   /* Added to reduce top space */
   background: linear-gradient(135deg, rgba(30, 30, 40, 0.95), rgba(20, 20, 30, 0.95));
   border-radius: 8px;
 }

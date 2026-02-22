@@ -3337,7 +3337,7 @@ function update_active_units_dialog()
     if (current_focus[0]['owner'] == client.conn.playing.playerno) {
       unit_info_html += "<div style='margin-bottom: 4px;'><span title='Movement points'>" + get_unit_moves_left(aunit) + "</span></div>";
     }
-    unit_info_html += "<div style='display: flex; flex-wrap: wrap; gap: 2px;'>"  /* Smaller gap for stat badges within panel */
+    unit_info_html += "<div style='display: flex; flex-wrap: nowrap; gap: 2px;'>"  /* Keep stats on one line */
     + "<span title='Attack strength' aria-label='Attack strength " + ptype['attack_strength'] + "'>⚔️ " + ptype['attack_strength'] + "</span> "
     + "<span title='Defense strength' aria-label='Defense strength " + ptype['defense_strength'] + "'>🛡️ " + ptype['defense_strength'] + "</span> "
     + "<span title='Firepower' aria-label='Firepower " + ptype['firepower'] + "'>🔥 " + ptype['firepower'] + "</span> "
@@ -3364,14 +3364,16 @@ function update_active_units_dialog()
     var sprite = get_unit_image_sprite(punit);
     var active = (current_focus.length > 1 || current_focus[0]['id'] == punit['id']);
 
-    unit_info_html += "<div id='unit_info_div' class='" + (active ? "current_focus_unit" : "")
-        + "'><div id='unit_info_image' onclick='set_unit_focus_and_redraw(units[" + punit['id'] + "])' "
-        + " style='background: transparent url("
-        + sprite['image-src'] +
-        ");background-position:-" + sprite['tileset-x'] + "px -" + sprite['tileset-y']
-        + "px;  width: " + sprite['width'] + "px;height: " + sprite['height'] + "px;'"
-        + "'></div></div>";
-    width = sprite['width'];
+    if (sprite != null) {  /* Only show unit icon if sprite is available */
+      unit_info_html += "<div id='unit_info_div' class='" + (active ? "current_focus_unit" : "")
+          + "'><div id='unit_info_image' onclick='set_unit_focus_and_redraw(units[" + punit['id'] + "])' "
+          + " style='background: transparent url("
+          + sprite['image-src'] +
+          ");background-position:-" + sprite['tileset-x'] + "px -" + sprite['tileset-y']
+          + "px;  width: " + sprite['width'] + "px;height: " + sprite['height'] + "px;'"
+          + "'></div></div>";
+      width = sprite['width'];
+    }
   }
 
   $("#game_unit_info").html(unit_info_html);
@@ -3379,7 +3381,7 @@ function update_active_units_dialog()
   if (current_focus.length > 0) {
     /* reposition and resize unit dialog. */
     var newwidth = 80 + punits.length * (width * 1.3);
-    if (newwidth < 280) newwidth = 280;
+    if (newwidth < 300) newwidth = 300;  /* Increased from 280 to accommodate wider unit info */
     var newheight = 60 + normal_tile_height;
     $("#game_unit_panel").parent().show();
     $("#game_unit_panel").parent().width(newwidth);
