@@ -64,6 +64,8 @@ var renderer_type_override="<%= rendererParam %>";
 </script>
 <!-- Three.js module loader - exports to window for backward compatibility -->
 <script type="module" src="/javascript/three-modules.js?ts=${initParam.buildTimeStamp}"></script>
+<!-- OverlayScrollbars module loader - exports to window for backward compatibility -->
+<script type="module" src="/javascript/libs/overlayscrollbars-global.js?ts=${initParam.buildTimeStamp}"></script>
 <!-- WebGPU module loader - always loaded as WebGPU is required -->
 <script type="module" src="/javascript/three-modules-webgpu.js?ts=${initParam.buildTimeStamp}"></script>
 
