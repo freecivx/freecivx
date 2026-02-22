@@ -363,8 +363,12 @@ function send_surrender_game()
 **************************************************************************/
 function show_fullscreen_window()
 {
-  if (BigScreen.enabled) {
-    BigScreen.toggle();
+  if (document.fullscreenEnabled) {
+    if (document.fullscreenElement) {
+      document.exitFullscreen();
+    } else {
+      document.documentElement.requestFullscreen();
+    }
   } else {
    show_dialog_message('Fullscreen', 'Press F11 for fullscreen mode.');
   }
