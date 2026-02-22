@@ -61,7 +61,11 @@ function getInstancedMeshFromModel(modelName, gltfMesh, capacity = 30) {
             const originalMat = material;
             const nodeMaterial = new THREE.MeshStandardNodeMaterial();
             
-            if (originalMat.map) nodeMaterial.map = originalMat.map;
+            // Skip DataArrayTexture - it's not supported in MeshStandardNodeMaterial.map
+            // DataArrayTexture causes WGSL errors when Three.js auto-generates shader code
+            if (originalMat.map && !originalMat.map.isDataArrayTexture) {
+                nodeMaterial.map = originalMat.map;
+            }
             if (originalMat.color) nodeMaterial.color.copy(originalMat.color);
             if (originalMat.emissive) nodeMaterial.emissive.copy(originalMat.emissive);
             if (originalMat.emissiveIntensity !== undefined) {
