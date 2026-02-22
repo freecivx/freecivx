@@ -21,6 +21,9 @@
 
 		var noOp = $.noop || function() {};
 
+		// Helper function for checking if something is a function (jQuery.isFunction removed in 3.3+)
+		var isFunction = $.isFunction || function(obj) { return typeof obj === 'function'; };
+
 		// this bit is to ensure we don't call setExpression when we shouldn't (with extra muscle to handle
 		// confusing userAgent strings on Vista)
 		var msie = /MSIE/.test(navigator.userAgent);
