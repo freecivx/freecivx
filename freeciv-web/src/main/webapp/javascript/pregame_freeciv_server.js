@@ -1037,7 +1037,7 @@ function show_intro_dialog(title, message) {
   });
 
   $("#pregame_custom_scrollbar_div").mCustomScrollbar({theme:"3d"});
-  add_chatbox_text({message: 'Welcome to FreecivWorld. You can enter game commands, chat with players. Try the /help command. FreecivWorld is a free open source strategy game forked from Freeciv.', event : E_CHAT_MSG});
+  add_chatbox_text({message: 'Welcome to FreecivWorld - Freeciv 3D. Enter game commands, chat with players, change game settings, and start the game. Try the /help command. <br>', event : E_CHAT_MSG});
   $("#pregame_page").show();
 }
 
