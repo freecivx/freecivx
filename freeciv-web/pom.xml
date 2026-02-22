@@ -360,7 +360,6 @@ Rerun the sync-js-hand.js script.
 									<exclude>webclient.js</exclude>
 									<exclude>webclient.min.js</exclude>
 									<exclude>webclient-app.min.js</exclude>
-									<exclude>scrollbar-utils.js</exclude>
 									<exclude>libs/es-module-shims.js</exclude>
 									<exclude>libs/gif.worker.js</exclude>
 									<exclude>libs/stacktrace.min.js</exclude>
