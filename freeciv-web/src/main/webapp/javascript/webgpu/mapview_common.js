@@ -39,7 +39,7 @@ var timer;
 
 var controls = null;
 
-var tiletype_terrains = ["coast","ocean","desert","grassland","hills","mountains","plains","swamp"];
+var tiletype_terrains = ["coast","ocean","desert","grassland","hills","mountains","plains","swamp","forest","jungle"];
 
 var landGeometry;
 var landMesh;

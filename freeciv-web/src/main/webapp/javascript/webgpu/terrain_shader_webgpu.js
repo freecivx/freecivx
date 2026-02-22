@@ -154,7 +154,9 @@ function createTerrainShaderTSL(uniforms) {
         plains: uniforms.plains.value,
         hills: uniforms.hills.value,
         mountains: uniforms.mountains.value,
-        swamp: uniforms.swamp.value
+        swamp: uniforms.swamp.value,
+        forest: uniforms.forest.value,
+        jungle: uniforms.jungle.value
     };
     
     // Terrain layer indices for terrain_layers DataArrayTexture
@@ -434,8 +436,8 @@ function createTerrainShaderTSL(uniforms) {
         createTerrainLayer(TERRAIN_HILLS, terrainTextures.hills, texCoord, true),
         createTerrainLayer(TERRAIN_MOUNTAINS, terrainTextures.mountains, texCoord, true),
         createTerrainLayer(TERRAIN_SWAMP, terrainTextures.swamp, texCoord, true),
-        createTerrainLayer(TERRAIN_FOREST, terrainTextures.grassland, texCoord, true), // Forest uses grassland texture
-        createTerrainLayer(TERRAIN_JUNGLE, terrainTextures.plains, texCoord, true), // Jungle uses plains texture
+        createTerrainLayer(TERRAIN_FOREST, terrainTextures.forest, texCoord, true),
+        createTerrainLayer(TERRAIN_JUNGLE, terrainTextures.jungle, texCoord, true),
         createTerrainLayer(TERRAIN_COAST, terrainTextures.coast, texCoord, false),
         createTerrainLayer(TERRAIN_FLOOR, terrainTextures.ocean, texCoord, false),
         createTerrainLayer(TERRAIN_LAKE, terrainTextures.coast, texCoord, false), // Lake uses coast texture
