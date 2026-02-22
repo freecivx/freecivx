@@ -503,16 +503,16 @@ body {
   
   #pregame_buttons {
     flex-direction: column;
-    gap: 10px;
+    gap: 8px;
   }
   
   #pregame_buttons button {
     width: 100%;
     min-width: unset;
     height: auto;
-    min-height: 52px;
-    font-size: 15px;
-    padding: 14px 20px;
+    min-height: 44px;
+    font-size: 14px;
+    padding: 10px 16px;
     margin: 0;
   }
   
@@ -562,9 +562,9 @@ body {
   }
   
   #pregame_buttons button {
-    min-height: 50px;
-    font-size: 14px;
-    padding: 12px 16px;
+    min-height: 42px;
+    font-size: 13px;
+    padding: 9px 14px;
   }
   
   #pregame_player_list {
