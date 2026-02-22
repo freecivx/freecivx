@@ -297,7 +297,7 @@ Rerun the sync-js-hand.js script.
 									<cssSourceFile>bluecurve.css</cssSourceFile>
 									<cssSourceFile>fg.menu.css</cssSourceFile>
 									<cssSourceFile>theme.dark.css</cssSourceFile>
-									<cssSourceFile>jquery.mCustomScrollbar.css</cssSourceFile>
+									<cssSourceFile>overlayscrollbars.css</cssSourceFile>
 									<cssSourceFile>jquery.contextMenu.min.css</cssSourceFile>
 									<cssSourceFile>morris.css</cssSourceFile>
 									<cssSourceFile>spectrum.css</cssSourceFile>
@@ -340,6 +340,8 @@ Rerun the sync-js-hand.js script.
 									<!-- Then include application code in proper order -->
 									<!-- order is important: these must be before sources below -->
 									<include>libs/debounce.js</include>
+									<include>libs/overlayscrollbars.js</include>
+									<include>scrollbar-utils.js</include>
 									<include>utility.js</include>
 									<include>map-constants.js</include>
 									<include>2dcanvas/tilespec-constants.js</include>
@@ -358,9 +360,11 @@ Rerun the sync-js-hand.js script.
 									<exclude>webclient.js</exclude>
 									<exclude>webclient.min.js</exclude>
 									<exclude>webclient-app.min.js</exclude>
+									<exclude>scrollbar-utils.js</exclude>
 									<exclude>libs/es-module-shims.js</exclude>
 									<exclude>libs/gif.worker.js</exclude>
 									<exclude>libs/stacktrace.min.js</exclude>
+									<exclude>libs/overlayscrollbars.js</exclude>
 									<exclude>webgpu/libs/*js</exclude>
 									<exclude>webgpu/effects/*js</exclude>
 									<exclude>three-modules.js</exclude>

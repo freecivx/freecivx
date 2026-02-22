@@ -1044,7 +1044,7 @@ function show_intro_dialog(title, message) {
     $("#dialog").dialog("option", "position", { my: "center", at: "center", of: window });
   });
 
-  $("#pregame_custom_scrollbar_div").mCustomScrollbar({theme:"3d"});
+  init_custom_scrollbar("#pregame_custom_scrollbar_div");
   add_chatbox_text({message: 'Welcome to FreecivWorld - Freeciv 3D. Enter game commands, chat with players, change game settings, and start the game. Try the /help command. <br>', event : E_CHAT_MSG});
   $("#pregame_page").show();
 }
