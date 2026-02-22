@@ -365,9 +365,14 @@ function show_fullscreen_window()
 {
   if (document.fullscreenEnabled) {
     if (document.fullscreenElement) {
-      document.exitFullscreen();
+      document.exitFullscreen().catch(function(err) {
+        console.error('Error exiting fullscreen:', err);
+      });
     } else {
-      document.documentElement.requestFullscreen();
+      document.documentElement.requestFullscreen().catch(function(err) {
+        console.error('Error entering fullscreen:', err);
+        show_dialog_message('Fullscreen', 'Unable to enter fullscreen mode. Press F11 to try manually.');
+      });
     }
   } else {
    show_dialog_message('Fullscreen', 'Press F11 for fullscreen mode.');

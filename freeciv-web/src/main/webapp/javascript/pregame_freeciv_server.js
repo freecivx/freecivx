@@ -950,7 +950,9 @@ function show_intro_dialog(title, message) {
 				  click : function() {
                      if (is_touch_device()) {
                        if (document.fullscreenEnabled && !document.fullscreenElement) {
-                         document.documentElement.requestFullscreen();
+                         document.documentElement.requestFullscreen().catch(function(err) {
+                           console.error('Error entering fullscreen:', err);
+                         });
                        }
                      }
 					dialog_close_trigger = "button";
@@ -965,7 +967,9 @@ function show_intro_dialog(title, message) {
 				  click : function() {
                     if (is_touch_device()) {
                       if (document.fullscreenEnabled && !document.fullscreenElement) {
-                        document.documentElement.requestFullscreen();
+                        document.documentElement.requestFullscreen().catch(function(err) {
+                          console.error('Error entering fullscreen:', err);
+                        });
                       }
                     }
 					dialog_close_trigger = "button";
