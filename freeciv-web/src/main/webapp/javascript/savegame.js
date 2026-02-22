@@ -65,20 +65,24 @@ function save_game()
   $("#save_dialog").html(dhtml);
   $("#save_dialog").attr("title", "Save game");
   $("#save_dialog").dialog({
-			bgiframe: true,
-			modal: true,
-			width: "65%",
-			close : function(){
-			  keyboard_input = true;
+		bgiframe: true,
+		modal: true,
+		width: "65%",
+		close : function(){
+		  keyboard_input = true;
                         },
-			buttons: {
-				"Save Game": function() {
+		buttons: [
+			{
+				text: "Save Game",
+				click: function() {
 					$("#save_dialog").dialog('close');
 					send_message("/save");
 					swal("Game saved.");
-					}
-				}
-			});
+				},
+				icon: "ui-icon-disk"
+			}
+		]
+		});
 
   $("#save_dialog").dialog('open');
   saved_this_turn = true;
@@ -151,26 +155,31 @@ function show_load_game_dialog_cb(savegames_data)
   saveHtml = "<ul id='selectable' style='height: 95%;'>" + saveHtml.join('')
            + "</ul><br>";
 
-  var dialog_buttons = {};
+
+  var dialog_buttons = [];
 
   if (C_S_RUNNING != client_state()) {
-    dialog_buttons = $.extend(dialog_buttons,
-     {"Load Savegame": function() {
-		  var load_game_id = $('#selectable .ui-selected').index();
-		  if (load_game_id == -1) {
-		    swal("Unable to load savegame: no game selected.");
-		  } else if ($('#selectable .ui-selected').text() != null){
+    dialog_buttons.push({
+      text: "Load Savegame",
+      click: function() {
+  var load_game_id = $('#selectable .ui-selected').index();
+  if (load_game_id == -1) {
+    swal("Unable to load savegame: no game selected.");
+  } else if ($('#selectable .ui-selected').text() != null){
             send_message("/load " + $('#selectable .ui-selected').text());
             game_loaded = true;
 
-		    $("#dialog").dialog('close');
-		    $("#game_text_input").blur();
-		  }
-    }});
+    $("#dialog").dialog('close');
+    $("#game_text_input").blur();
+  }
+      },
+      icon: "ui-icon-folder-open"
+    });
     var stored_password = simpleStorage.get("password", "");
     if (stored_password != null && stored_password != false) {
-      dialog_buttons = $.extend(dialog_buttons, {
-    "Delete ALL" : function() {
+      dialog_buttons.push({
+        text: "Delete ALL",
+        click: function() {
             var r;
             if ('confirm' in window) {
              r = confirm("Do you really want to delete all your savegames?");
@@ -179,33 +188,41 @@ function show_load_game_dialog_cb(savegames_data)
             }
             if (r == true) {
               delete_all_savegames();
-		      $("#dialog").dialog('close');
-		      setTimeout(show_scenario_dialog, 1000);
-		    }
-    },
-
-    "Delete" : function() {
-      var load_game_id = $('#selectable .ui-selected').index();
-      if (load_game_id != -1) {
-      $('#selectable .ui-selected').each(function () {
-         var $this = $(this);
-         if ($this.length) {
-          delete_savegame($this.text());
-         }
+      $("#dialog").dialog('close');
+      setTimeout(show_scenario_dialog, 1000);
+    }
+        },
+        icon: "ui-icon-trash"
       });
-      }
-      $('#selectable .ui-selected').remove();
+      
+      dialog_buttons.push({
+        text: "Delete",
+        click: function() {
+          var load_game_id = $('#selectable .ui-selected').index();
+          if (load_game_id != -1) {
+          $('#selectable .ui-selected').each(function () {
+             var $this = $(this);
+             if ($this.length) {
+              delete_savegame($this.text());
+             }
+          });
+          }
+          $('#selectable .ui-selected').remove();
+        },
+        icon: "ui-icon-trash"
+      });
     }
-    });
-    }
-    dialog_buttons = $.extend(dialog_buttons, {
-     "Load Scenarios...": function() {
-		  $("#dialog").dialog('close');
-		  $("#game_text_input").blur();
-		  show_scenario_dialog();
-    }
+    dialog_buttons.push({
+      text: "Load Scenarios...",
+      click: function() {
+  $("#dialog").dialog('close');
+  $("#game_text_input").blur();
+  show_scenario_dialog();
+      },
+      icon: "ui-icon-script"
     });
   }
+
 
 
   // reset dialog page.
@@ -405,21 +422,44 @@ function show_scenario_dialog()
             modal: true,
             width: "65%",
             position: {my: 'center bottom', at: 'center bottom', of: window},
-            buttons: {
-                "Cancel" : function() {
-                    $("#dialog").dialog('close');
-                },
-                "Select scenario": function() {
-                    if ($('#selectable .ui-selected').index() == -1) {
-                        swal("Please select a scenario first.");
-                    } else {
-                        scenario_activated = true;
-                        load_game_check();
+            buttons: [
+                {
+                    text: "Cancel",
+                    click: function() {
                         $("#dialog").dialog('close');
-                        $("#game_text_input").blur();
-                    }
+                    },
+                    icon: "ui-icon-close"
+                },
+                {
+                    text: "Select scenario",
+                    click: function() {
+                        if ($('#selectable .ui-selected').index() == -1) {
+                            swal("Please select a scenario first.");
+                        } else {
+                            scenario_activated = true;
+                            load_game_check();
+                            $("#dialog").dialog('close');
+                            $("#game_text_input").blur();
+                        }
+                    },
+                    icon: "ui-icon-check"
                 }
-            }
+            ]
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
         });
   $("#selectable").selectable();
   $("#dialog").dialog('open');
