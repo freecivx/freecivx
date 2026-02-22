@@ -424,7 +424,8 @@ function createTerrainUniforms() {
   
   // Log details about array textures
   if (webgl_textures["terrain_atlas"] && webgl_textures["terrain_atlas"].image) {
-    console.log(`  terrain_atlas: ${webgl_textures["terrain_atlas"].image.depth} layers (${tiletype_terrains.join(', ')})`);
+    const terrainNames = typeof tiletype_terrains !== 'undefined' ? tiletype_terrains.join(', ') : 'not loaded';
+    console.log(`  terrain_atlas: ${webgl_textures["terrain_atlas"].image.depth} layers (${terrainNames})`);
   }
   if (webgl_textures["terrain_layers"] && webgl_textures["terrain_layers"].image) {
     console.log(`  terrain_layers: ${webgl_textures["terrain_layers"].image.depth} layers (arctic, tundra, farmland, irrigation)`);
