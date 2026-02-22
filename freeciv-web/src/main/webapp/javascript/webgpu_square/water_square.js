@@ -122,13 +122,13 @@ function createWaterMaterialSquareTSL() {
   const waterConfig = window.WaterConfig || null;
   const deepOcean = waterConfig 
     ? vec3(waterConfig.COLORS.DEEP_OCEAN.r, waterConfig.COLORS.DEEP_OCEAN.g, waterConfig.COLORS.DEEP_OCEAN.b)
-    : vec3(0.04, 0.12, 0.28);
+    : vec3(0.05, 0.14, 0.32);
   const midOcean = waterConfig
     ? vec3(waterConfig.COLORS.MID_OCEAN.r, waterConfig.COLORS.MID_OCEAN.g, waterConfig.COLORS.MID_OCEAN.b)
-    : vec3(0.08, 0.25, 0.45);
+    : vec3(0.10, 0.28, 0.50);
   const shallowWater = waterConfig
     ? vec3(waterConfig.COLORS.SHALLOW.r, waterConfig.COLORS.SHALLOW.g, waterConfig.COLORS.SHALLOW.b)
-    : vec3(0.15, 0.45, 0.55);
+    : vec3(0.18, 0.50, 0.60);
   const surfaceHighlight = waterConfig
     ? vec3(waterConfig.COLORS.SURFACE.r, waterConfig.COLORS.SURFACE.g, waterConfig.COLORS.SURFACE.b)
     : vec3(0.35, 0.60, 0.72);
