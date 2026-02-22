@@ -11,8 +11,10 @@ test('OverlayScrollbars are initialized correctly', async ({ page }) => {
     timeout: 30000 
   });
 
-  // Wait a bit for JavaScript to execute
-  await page.waitForTimeout(3000);
+  // Wait for OverlayScrollbarsGlobal to be defined
+  await page.waitForFunction(() => typeof window.OverlayScrollbarsGlobal !== 'undefined', {
+    timeout: 10000
+  });
 
   // Check if OverlayScrollbarsGlobal is defined
   const overlayScrollbarsGlobalDefined = await page.evaluate(() => {
