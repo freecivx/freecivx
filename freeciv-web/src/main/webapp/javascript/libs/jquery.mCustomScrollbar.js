@@ -1553,7 +1553,12 @@ and dependencies (minified).
 		/* disables mouse-wheel when hovering specific elements like select, datalist etc. */
 		_disableMousewheel=function(el,target){
 			var tag=target.nodeName.toLowerCase(),
-				tags=el.data(pluginPfx).opt.mouseWheel.disableOver,
+				data=el.data(pluginPfx);
+			// Guard against undefined data (can happen on Android/mobile browsers)
+			if(!data || !data.opt || !data.opt.mouseWheel){
+				return false;
+			}
+			var tags=data.opt.mouseWheel.disableOver,
 				/* elements that require focus */
 				focusTags=["select","textarea"];
 			return $.inArray(tag,tags) > -1 && !($.inArray(tag,focusTags) > -1 && !$(target).is(":focus"));
@@ -1849,7 +1854,12 @@ and dependencies (minified).
 		
 		/* returns a yx array from value */
 		_arr=function(val){
-			var o=$(this).data(pluginPfx).opt,vals=[];
+			var data=$(this).data(pluginPfx);
+			// Guard against undefined data (can happen on Android/mobile browsers)
+			if(!data || !data.opt){
+				return [null, null];
+			}
+			var o=data.opt,vals=[];
 			if(typeof val==="function"){val=val();} /* check if the value is a single anonymous function */
 			/* check if value is object or array, its length and create an array with yx values */
 			if(!(val instanceof Array)){ /* object value (e.g. {y:"100",x:"100"}, 100 etc.) */
@@ -2020,8 +2030,12 @@ and dependencies (minified).
 		
 		/* stops content and scrollbar animations */
 		_stop=function(el){
-			var d=el.data(pluginPfx),
-				sel=$("#mCSB_"+d.idx+"_container,#mCSB_"+d.idx+"_container_wrapper,#mCSB_"+d.idx+"_dragger_vertical,#mCSB_"+d.idx+"_dragger_horizontal");
+			var d=el.data(pluginPfx);
+			// Guard against undefined data (can happen on Android/mobile browsers)
+			if(!d){
+				return;
+			}
+			var sel=$("#mCSB_"+d.idx+"_container,#mCSB_"+d.idx+"_container_wrapper,#mCSB_"+d.idx+"_dragger_vertical,#mCSB_"+d.idx+"_dragger_horizontal");
 			sel.each(function(){
 				_stopTween.call(this);
 			});
@@ -2034,7 +2048,12 @@ and dependencies (minified).
 		This is where the actual scrolling happens
 		*/
 		_scrollTo=function(el,to,options){
-			var d=el.data(pluginPfx),o=d.opt,
+			var d=el.data(pluginPfx);
+			// Guard against undefined data (can happen on Android/mobile browsers)
+			if(!d){
+				return;
+			}
+			var o=d.opt,
 				defaults={
 					trigger:"internal",
 					dir:"y",
