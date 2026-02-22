@@ -57,9 +57,31 @@ function webgl_preload()
       disorder_sprite.needsUpdate = true;
   } );
 
+  /* Preload terrain textures as DataArrayTexture (texture_2d_array).
+   * All terrain type textures are loaded as separate layers in a single texture array
+   * to avoid exceeding the WebGPU texture binding limit.
+   * Layer indices match the order in tiletype_terrains array:
+   * 0=coast, 1=ocean, 2=desert, 3=grassland, 4=hills, 5=mountains, 6=plains, 7=swamp, 8=forest, 9=jungle
+   */
+  const TERRAIN_PROGRESS_START = 5;  // Starting percentage for terrain texture loading
+  const TERRAIN_PROGRESS_RANGE = 10; // Percentage range allocated to terrain textures (5% to 15%)
+  const loadedTerrainTextures = [];
+  let loadedTerrainCount = 0;
+  
   for (var i = 0; i < tiletype_terrains.length ; i++) {
     var terrain_name = tiletype_terrains[i];
-    textureLoader.load("/textures/large/" + terrain_name + ".png", handle_new_texture("/textures/large/" + terrain_name + ".png", terrain_name));
+    textureLoader.load("/textures/large/" + terrain_name + ".png", (function(index) {
+      return function(image) {
+        loadedTerrainTextures[index] = image;
+        loadedTerrainCount++;
+        $("#download_progress").html(" terrain textures " + Math.floor(TERRAIN_PROGRESS_START + (loadedTerrainCount / tiletype_terrains.length) * TERRAIN_PROGRESS_RANGE) + "%");
+        
+        // When all terrain textures are loaded, combine them into a DataArrayTexture
+        if (loadedTerrainCount === tiletype_terrains.length) {
+          webgl_textures["terrain_atlas"] = createTerrainLayerArrayTexture(loadedTerrainTextures);
+        }
+      };
+    })(i));
   }
 
 

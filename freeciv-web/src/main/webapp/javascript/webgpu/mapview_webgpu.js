@@ -410,14 +410,9 @@ function createTerrainUniforms() {
     roadsprites: { type: "t", value: webgl_textures["roads"] },
     railroadsprites: { type: "t", value: webgl_textures["railroads"] },
     terrain_layers: { type: "t", value: webgl_textures["terrain_layers"] },
+    terrain_atlas: { type: "t", value: webgl_textures["terrain_atlas"] },
     borders_visible: { type: "bool", value: server_settings['borders']['is_visible'] }
   };
-
-  // Add terrain textures
-  for (let i = 0; i < tiletype_terrains.length; i++) {
-    const terrain_name = tiletype_terrains[i];
-    uniforms[terrain_name] = { type: "t", value: webgl_textures[terrain_name] };
-  }
 
   return uniforms;
 }

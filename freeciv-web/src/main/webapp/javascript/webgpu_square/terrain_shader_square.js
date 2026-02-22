@@ -118,20 +118,20 @@ function createTerrainShaderSquareTSL(uniforms) {
     const roadspritesTex = uniforms.roadsprites.value;
     const railroadspritesTex = uniforms.railroadsprites.value;
     const terrainLayersTex = uniforms.terrain_layers.value;
+    const terrainAtlasTex = uniforms.terrain_atlas.value;
     
-    // Terrain texture references
-    const terrainTextures = {
-        grassland: uniforms.grassland.value,
-        coast: uniforms.coast.value,
-        desert: uniforms.desert.value,
-        ocean: uniforms.ocean.value,
-        plains: uniforms.plains.value,
-        hills: uniforms.hills.value,
-        mountains: uniforms.mountains.value,
-        swamp: uniforms.swamp.value,
-        forest: uniforms.forest.value,
-        jungle: uniforms.jungle.value
-    };
+    // Terrain atlas layer indices (matching tiletype_terrains order)
+    // Layer indices: 0=coast, 1=ocean, 2=desert, 3=grassland, 4=hills, 5=mountains, 6=plains, 7=swamp, 8=forest, 9=jungle
+    const TERRAIN_ATLAS_COAST = 0;
+    const TERRAIN_ATLAS_OCEAN = 1;
+    const TERRAIN_ATLAS_DESERT = 2;
+    const TERRAIN_ATLAS_GRASSLAND = 3;
+    const TERRAIN_ATLAS_HILLS = 4;
+    const TERRAIN_ATLAS_MOUNTAINS = 5;
+    const TERRAIN_ATLAS_PLAINS = 6;
+    const TERRAIN_ATLAS_SWAMP = 7;
+    const TERRAIN_ATLAS_FOREST = 8;
+    const TERRAIN_ATLAS_JUNGLE = 9;
     
     // Terrain layer indices for terrain_layers DataArrayTexture
     // Layer indices: 0 = arctic, 1 = tundra, 2 = farmland, 3 = irrigation
@@ -264,9 +264,9 @@ function createTerrainShaderSquareTSL(uniforms) {
      * Helper function to compute terrain color with optional beach blending
      * Used by both createTerrainLayer and getTerrainColorForType to share logic
      */
-    function computeTerrainColor(textureNode, coord, blendWithBeach) {
+    function computeTerrainColor(layerIndex, coord, blendWithBeach) {
         if (blendWithBeach) {
-            const baseTerrainColor = texture(textureNode, coord);
+            const baseTerrainColor = texture(terrainAtlasTex, coord).depth(int(layerIndex));
             const aboveWater = step(WATER_LEVEL, posY);
             const lowerBeachT = mul(
                 clamp(div(sub(posY, BEACH_BLEND_HIGH), BEACH_LOWER_RANGE), 0.0, 1.0),
@@ -276,22 +276,22 @@ function createTerrainShaderSquareTSL(uniforms) {
                 div(sub(posY, BEACH_MID), BEACH_UPPER_RANGE),
                 0.0, 1.0
             );
-            const coastTex = texture(terrainTextures.coast, coord);
+            const coastTex = texture(terrainAtlasTex, coord).depth(int(TERRAIN_ATLAS_COAST));
             const lowerBlend = mix(coastTex, vec4(beachSandColor, 1.0), lowerBeachT);
             return mix(lowerBlend, baseTerrainColor, upperBeachT);
         } else {
-            return texture(textureNode, coord);
+            return texture(terrainAtlasTex, coord).depth(int(layerIndex));
         }
     }
 
     /**
      * Helper function to create terrain selection and blending logic
      */
-    function createTerrainLayer(terrainValue, textureNode, coord, blendWithBeach = true) {
+    function createTerrainLayer(terrainValue, layerIndex, coord, blendWithBeach = true) {
         const step1 = step(terrainValue - 0.5, terrainHere);
         const step2 = step(terrainHere, terrainValue + 0.5);
         const isTerrain = mul(step1, step2);
-        const terrainColor = computeTerrainColor(textureNode, coord, blendWithBeach);
+        const terrainColor = computeTerrainColor(layerIndex, coord, blendWithBeach);
         return { mask: isTerrain, color: terrainColor };
     }
     
@@ -315,11 +315,11 @@ function createTerrainShaderSquareTSL(uniforms) {
         let color = vec4(0, 0, 0, 1);
         
         // Helper to check if terrain matches and return color
-        function matchTerrain(terrainValue, textureNode, useCoord, blendWithBeach) {
+        function matchTerrain(terrainValue, layerIndex, useCoord, blendWithBeach) {
             const step1 = step(terrainValue - 0.5, tType);
             const step2 = step(tType, terrainValue + 0.5);
             const isTerrain = mul(step1, step2);
-            const terrainColor = computeTerrainColor(textureNode, useCoord, blendWithBeach);
+            const terrainColor = computeTerrainColor(layerIndex, useCoord, blendWithBeach);
             return { mask: isTerrain, color: terrainColor };
         }
         
@@ -334,17 +334,17 @@ function createTerrainShaderSquareTSL(uniforms) {
         
         // Match each terrain type
         const layersList = [
-            matchTerrain(TERRAIN_GRASSLAND, terrainTextures.grassland, coord, true),
-            matchTerrain(TERRAIN_PLAINS, terrainTextures.plains, coord, true),
-            matchTerrain(TERRAIN_DESERT, terrainTextures.desert, coord, true),
-            matchTerrain(TERRAIN_HILLS, terrainTextures.hills, coord, true),
-            matchTerrain(TERRAIN_MOUNTAINS, terrainTextures.mountains, coord, true),
-            matchTerrain(TERRAIN_SWAMP, terrainTextures.swamp, coord, true),
-            matchTerrain(TERRAIN_FOREST, terrainTextures.forest, coord, true),
-            matchTerrain(TERRAIN_JUNGLE, terrainTextures.jungle, coord, true),
-            matchTerrain(TERRAIN_COAST, terrainTextures.coast, coord, false),
-            matchTerrain(TERRAIN_FLOOR, terrainTextures.ocean, coord, false),
-            matchTerrain(TERRAIN_LAKE, terrainTextures.coast, coord, false),
+            matchTerrain(TERRAIN_GRASSLAND, TERRAIN_ATLAS_GRASSLAND, coord, true),
+            matchTerrain(TERRAIN_PLAINS, TERRAIN_ATLAS_PLAINS, coord, true),
+            matchTerrain(TERRAIN_DESERT, TERRAIN_ATLAS_DESERT, coord, true),
+            matchTerrain(TERRAIN_HILLS, TERRAIN_ATLAS_HILLS, coord, true),
+            matchTerrain(TERRAIN_MOUNTAINS, TERRAIN_ATLAS_MOUNTAINS, coord, true),
+            matchTerrain(TERRAIN_SWAMP, TERRAIN_ATLAS_SWAMP, coord, true),
+            matchTerrain(TERRAIN_FOREST, TERRAIN_ATLAS_FOREST, coord, true),
+            matchTerrain(TERRAIN_JUNGLE, TERRAIN_ATLAS_JUNGLE, coord, true),
+            matchTerrain(TERRAIN_COAST, TERRAIN_ATLAS_COAST, coord, false),
+            matchTerrain(TERRAIN_FLOOR, TERRAIN_ATLAS_OCEAN, coord, false),
+            matchTerrain(TERRAIN_LAKE, TERRAIN_ATLAS_COAST, coord, false),
             matchTerrainFromArray(TERRAIN_ARCTIC, TERRAIN_LAYER_ARCTIC, coord),
             matchTerrainFromArray(TERRAIN_TUNDRA, TERRAIN_LAYER_TUNDRA, coord)
         ];
@@ -359,17 +359,17 @@ function createTerrainShaderSquareTSL(uniforms) {
 
     // Build terrain layers for current tile
     const layers = [
-        createTerrainLayer(TERRAIN_GRASSLAND, terrainTextures.grassland, texCoord, true),
-        createTerrainLayer(TERRAIN_PLAINS, terrainTextures.plains, texCoord, true),
-        createTerrainLayer(TERRAIN_DESERT, terrainTextures.desert, texCoord, true),
-        createTerrainLayer(TERRAIN_HILLS, terrainTextures.hills, texCoord, true),
-        createTerrainLayer(TERRAIN_MOUNTAINS, terrainTextures.mountains, texCoord, true),
-        createTerrainLayer(TERRAIN_SWAMP, terrainTextures.swamp, texCoord, true),
-        createTerrainLayer(TERRAIN_FOREST, terrainTextures.forest, texCoord, true),
-        createTerrainLayer(TERRAIN_JUNGLE, terrainTextures.jungle, texCoord, true),
-        createTerrainLayer(TERRAIN_COAST, terrainTextures.coast, texCoord, false),
-        createTerrainLayer(TERRAIN_FLOOR, terrainTextures.ocean, texCoord, false),
-        createTerrainLayer(TERRAIN_LAKE, terrainTextures.coast, texCoord, false),
+        createTerrainLayer(TERRAIN_GRASSLAND, TERRAIN_ATLAS_GRASSLAND, texCoord, true),
+        createTerrainLayer(TERRAIN_PLAINS, TERRAIN_ATLAS_PLAINS, texCoord, true),
+        createTerrainLayer(TERRAIN_DESERT, TERRAIN_ATLAS_DESERT, texCoord, true),
+        createTerrainLayer(TERRAIN_HILLS, TERRAIN_ATLAS_HILLS, texCoord, true),
+        createTerrainLayer(TERRAIN_MOUNTAINS, TERRAIN_ATLAS_MOUNTAINS, texCoord, true),
+        createTerrainLayer(TERRAIN_SWAMP, TERRAIN_ATLAS_SWAMP, texCoord, true),
+        createTerrainLayer(TERRAIN_FOREST, TERRAIN_ATLAS_FOREST, texCoord, true),
+        createTerrainLayer(TERRAIN_JUNGLE, TERRAIN_ATLAS_JUNGLE, texCoord, true),
+        createTerrainLayer(TERRAIN_COAST, TERRAIN_ATLAS_COAST, texCoord, false),
+        createTerrainLayer(TERRAIN_FLOOR, TERRAIN_ATLAS_OCEAN, texCoord, false),
+        createTerrainLayer(TERRAIN_LAKE, TERRAIN_ATLAS_COAST, texCoord, false),
         createTerrainLayerFromArray(TERRAIN_ARCTIC, TERRAIN_LAYER_ARCTIC, texCoord),
         createTerrainLayerFromArray(TERRAIN_TUNDRA, TERRAIN_LAYER_TUNDRA, texCoord)
     ];
