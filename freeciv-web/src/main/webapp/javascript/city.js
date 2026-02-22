@@ -49,9 +49,7 @@ var INCITE_IMPOSSIBLE_COST = (1000 * 1000 * 1000);
 var city_tab_index = 0;
 var city_prod_clicks = 0;
 
-var city_screen_updater = new EventAggregator(update_city_screen, 250,
-                                              EventAggregator.DP_NONE,
-                                              250, 3, 250);
+var city_screen_updater = createDebounce(update_city_screen, 250);
 
 /* Information for mapping workable tiles of a city to local index */
 var city_tile_map = null;
@@ -1051,7 +1049,7 @@ function next_city()
 {
   if (!client.conn.playing) return;
 
-  city_screen_updater.fireNow();
+  city_screen_updater.execute();
 
   var next_row = $('#cities_list_' + active_city['id']).next();
   if (next_row.length === 0) {
@@ -1072,7 +1070,7 @@ function previous_city()
 {
   if (!client.conn.playing) return;
 
-  city_screen_updater.fireNow();
+  city_screen_updater.execute();
 
   var prev_row = $('#cities_list_' + active_city['id']).prev();
   if (prev_row.length === 0) {

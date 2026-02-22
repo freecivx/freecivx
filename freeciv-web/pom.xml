@@ -339,7 +339,7 @@ Rerun the sync-js-hand.js script.
 									
 									<!-- Then include application code in proper order -->
 									<!-- order is important: these must be before sources below -->
-									<include>libs/EventAggregator.js</include>
+									<include>libs/debounce.js</include>
 									<include>map-constants.js</include>
 									<include>2dcanvas/tilespec-constants.js</include>
 									<!-- end of order dependent includes -->

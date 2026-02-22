@@ -17,8 +17,7 @@
 ***********************************************************************/
 
 var chatbox_active = false;
-var message_log = new EventAggregator(update_chatbox, 125,
-                                      EventAggregator.DP_ALL, 1000, 0);
+var message_log = createMessageBatcher(update_chatbox, 125);
 var previous_scroll = 0;
 var current_message_dialog_state = null;
 var max_chat_message_length = 350;
@@ -226,7 +225,7 @@ function chatbox_clip_messages(lines)
   }
 
   // Flush the buffered messages
-  message_log.fireNow();
+  message_log.execute();
 
   var msglist = get_chatbox_msg_list();
   var remove = msglist.children.length - lines;

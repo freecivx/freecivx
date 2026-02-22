@@ -93,9 +93,7 @@ var tech_item_height = 52;
 var maxleft = 0;
 var clicked_tech_id = null;
 
-var bulbs_output_updater = new EventAggregator(update_bulbs_output_info, 250,
-                                               EventAggregator.DP_NONE,
-                                               250, 3, 250);
+var bulbs_output_updater = createDebounce(update_bulbs_output_info, 250);
 
 /**************************************************************************
   Returns state of the tech for current pplayer.
