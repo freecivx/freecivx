@@ -336,11 +336,10 @@ async function init_webgpu_mapview() {
     terrainColorNode = createTerrainShaderTSL(freeciv_uniforms);
   }
   
-  // Create MeshBasicNodeMaterial with the shader
-  // Using BasicNodeMaterial instead of StandardNodeMaterial to reduce texture binding count
-  // (StandardNodeMaterial adds shadow maps and other textures that exceed WebGPU's 16 texture limit)
-  // The terrain shader already provides its own slope-based lighting
-  terrain_material = new THREE.MeshBasicNodeMaterial();
+  // Create MeshStandardNodeMaterial with the shader
+  // StandardNodeMaterial is required to enable shadow receiving on terrain
+  // The terrain shader provides custom slope-based lighting, while StandardNodeMaterial handles shadows
+  terrain_material = new THREE.MeshStandardNodeMaterial();
   terrain_material.colorNode = terrainColorNode;
   terrain_material.side = THREE.FrontSide;
   terrain_material.transparent = false;
@@ -363,7 +362,7 @@ async function init_webgpu_mapview() {
   
   landMesh = new THREE.Mesh(landGeometry, terrain_material);
   // Enable shadow receiving on terrain to display shadows cast by units, buildings, and other objects
-  // MeshBasicNodeMaterial with the node system supports shadow receiving in Three.js
+  // MeshStandardNodeMaterial with the node system supports shadow receiving in Three.js
   landMesh.receiveShadow = true;
   landMesh.castShadow = false;
   landMesh.name = "land_terrain_mesh";
