@@ -135,7 +135,7 @@ function createTerrainShaderTSL(uniforms) {
     // These values are set in get_vertex_color_from_tile() and interpolated across vertices
     const VISIBILITY_UNKNOWN = 0.0;   // Tile is unknown (black)
     const VISIBILITY_FOGGED = 0.54;   // Tile was seen but currently not visible (fogged)
-    const VISIBILITY_VISIBLE = 1.06;  // Tile is fully visible (slightly > 1.0 for brightness boost)
+    const VISIBILITY_VISIBLE = 1.0;   // Tile is fully visible
 
     // Create texture references for reuse (don't call texture() yet)
     const maptilesTex = uniforms.maptiles.value;
@@ -571,17 +571,16 @@ function createTerrainShaderTSL(uniforms) {
     const NdotL = max(dot(normal, sunDir), 0.0);
     
     // Apply ambient + diffuse lighting model for natural terrain appearance
-    // ambient: base brightness lowered for darker shadows and better contrast (0.30 for natural look)
-    // diffuse: sun-facing surfaces get more brightness (0.65 for vibrant highlights)
-    // Total range: 0.30 (in shadow) to 0.95 (fully lit) before boost - higher contrast
+    // ambient: base brightness for surfaces not directly facing sun
+    // diffuse: sun-facing surfaces get additional brightness
+    // Total range: 0.30 (in shadow) to 0.95 (fully lit)
     const ambientLight = 0.30;
     const diffuseStrength = 0.65;
     const lightingFactor = add(ambientLight, mul(NdotL, diffuseStrength));
     
-    // Apply lighting to terrain color with increased brightness for vibrancy
-    // Higher brightness boost makes colors more vibrant and natural
-    // This gives final range of ~0.51 (shadow) to ~1.62 (lit) - vibrant and natural
-    const brightnessBoost = 1.7;
+    // Apply lighting to terrain color for natural appearance
+    // Brightness boost of 1.0 provides natural lighting without over-brightening
+    const brightnessBoost = 1.0;
     finalColor = vec4(mul(mul(finalColor.rgb, lightingFactor), brightnessBoost), finalColor.a);
 
     // =========================================================================

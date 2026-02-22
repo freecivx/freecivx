@@ -302,7 +302,8 @@ function createSpriteArrayTexture(image, cols, rows) {
   textureArray.wrapS = THREE.RepeatWrapping;
   textureArray.wrapT = THREE.RepeatWrapping;
   textureArray.magFilter = THREE.LinearFilter;
-  textureArray.minFilter = THREE.LinearFilter;
+  textureArray.minFilter = THREE.LinearMipmapLinearFilter;  // Use mipmaps for better quality
+  textureArray.generateMipmaps = true;  // Enable mipmap generation
   textureArray.needsUpdate = true;
   
   return textureArray;
@@ -354,7 +355,8 @@ function createTerrainLayerArrayTexture(images) {
   textureArray.wrapS = THREE.RepeatWrapping;
   textureArray.wrapT = THREE.RepeatWrapping;
   textureArray.magFilter = THREE.LinearFilter;
-  textureArray.minFilter = THREE.LinearFilter;
+  textureArray.minFilter = THREE.LinearMipmapLinearFilter;  // Use mipmaps for better quality
+  textureArray.generateMipmaps = true;  // Enable mipmap generation
   textureArray.needsUpdate = true;
   
   return textureArray;
