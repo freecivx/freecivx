@@ -392,9 +392,10 @@ function createTerrainShaderTSL(uniforms) {
             );
             // Upper beach zone (sand to terrain) - smooth transition
             // Uses precomputed BEACH_UPPER_RANGE for efficiency
-            const upperBeachT = clamp(
-                div(sub(posY, BEACH_MID), BEACH_UPPER_RANGE),
-                0.0, 1.0
+            // Only apply beach blending when above water
+            const upperBeachT = mul(
+                clamp(div(sub(posY, BEACH_MID), BEACH_UPPER_RANGE), 0.0, 1.0),
+                aboveWater  // Zero out beach blending when underwater
             );
             
             // Blend: coast texture -> sand -> terrain texture

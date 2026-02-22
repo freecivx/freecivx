@@ -272,9 +272,9 @@ function createTerrainShaderSquareTSL(uniforms) {
                 clamp(div(sub(posY, BEACH_BLEND_HIGH), BEACH_LOWER_RANGE), 0.0, 1.0),
                 aboveWater
             );
-            const upperBeachT = clamp(
-                div(sub(posY, BEACH_MID), BEACH_UPPER_RANGE),
-                0.0, 1.0
+            const upperBeachT = mul(
+                clamp(div(sub(posY, BEACH_MID), BEACH_UPPER_RANGE), 0.0, 1.0),
+                aboveWater
             );
             const coastTex = texture(terrainAtlasTex, coord, int(TERRAIN_ATLAS_COAST));
             const lowerBlend = mix(coastTex, vec4(beachSandColor, 1.0), lowerBeachT);
