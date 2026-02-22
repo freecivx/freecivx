@@ -29,6 +29,15 @@ function init_custom_scrollbar(selector, options) {
   var element = $(selector)[0];
   if (!element) return;
   
+  // Check if OverlayScrollbarsGlobal is available
+  if (typeof OverlayScrollbarsGlobal === 'undefined' || !OverlayScrollbarsGlobal) {
+    console.warn('OverlayScrollbarsGlobal not available yet, retrying in 100ms');
+    setTimeout(function() {
+      init_custom_scrollbar(selector, options);
+    }, 100);
+    return;
+  }
+  
   // Destroy existing instance if any
   if (scrollbar_instances[selector]) {
     scrollbar_instances[selector].destroy();
