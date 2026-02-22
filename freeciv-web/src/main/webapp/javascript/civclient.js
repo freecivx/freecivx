@@ -365,10 +365,12 @@ function show_fullscreen_window()
 {
   if (document.fullscreenEnabled) {
     if (document.fullscreenElement) {
+      // Exit fullscreen - failures are logged but not shown to user since ESC key also exits
       document.exitFullscreen().catch(function(err) {
         console.error('Error exiting fullscreen:', err);
       });
     } else {
+      // Enter fullscreen - show error to user if it fails
       document.documentElement.requestFullscreen().catch(function(err) {
         console.error('Error entering fullscreen:', err);
         show_dialog_message('Fullscreen', 'Unable to enter fullscreen mode. Press F11 to try manually.');
