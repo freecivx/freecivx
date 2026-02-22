@@ -415,12 +415,12 @@ function createTerrainUniforms() {
   };
 
   // Count and log texture usage
-  const textureUniforms = Object.entries(uniforms).filter(([key, value]) => value.type === "t");
-  const textureCount = textureUniforms.length;
+  const textureBindings = Object.entries(uniforms).filter(([key, value]) => value.type === "t");
+  const textureCount = textureBindings.length;
   const maxTextures = 16; // WebGPU/WebGL texture binding limit
   
   console.log(`Terrain mesh textures: ${textureCount} / ${maxTextures} max`);
-  console.log(`  Texture bindings: ${textureUniforms.map(([key]) => key).join(', ')}`);
+  console.log(`  Texture bindings: ${textureBindings.map(([key]) => key).join(', ')}`);
   
   // Log details about array textures
   if (webgl_textures["terrain_atlas"] && webgl_textures["terrain_atlas"].image) {
