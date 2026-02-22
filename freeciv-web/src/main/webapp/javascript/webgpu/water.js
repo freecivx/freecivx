@@ -83,7 +83,7 @@ function add_quality_dependent_objects_webgpu() {
  - Hex-aware: Uses hexagonal tile coordinate system for visibility sampling
 ****************************************************************************/
 function createWaterMaterialTSL() {
-  const { uniform, uv, vec3, vec4, sin, cos, mix, fract, clamp, pow, sqrt, mul, add, sub, abs, floor, texture, mod, max, div, step } = THREE;
+  const { uniform, uv, vec2, vec3, vec4, sin, cos, mix, fract, clamp, pow, sqrt, mul, add, sub, abs, floor, texture, mod, max, div, step } = THREE;
   
   // Time uniform for animation
   const timeUniform = uniform(0.0);
@@ -128,7 +128,7 @@ function createWaterMaterialTSL() {
   const tileCenterY = div(add(tileY, 0.5), map_y_size);
   // Re-apply stagger offset for correct texture sampling
   const tileCenterXWithStagger = add(tileCenterX, hexOffsetX);
-  const tileCenterUV = THREE.vec2(tileCenterXWithStagger, tileCenterY);
+  const tileCenterUV = vec2(tileCenterXWithStagger, tileCenterY);
   
   // Sample visibility from maptiles texture alpha channel
   const tileVisibility = texture(maptilesTex, tileCenterUV).a;
