@@ -862,13 +862,13 @@ body
 .govt-dialog-current {
   margin-bottom: 15px;
   font-size: 14px;
-  color: #e8e8e8;
+  color: #000000;
   font-weight: bold;
 }
 
 .govt-dialog-instructions {
   margin-bottom: 10px;
-  color: #ccc;
+  color: #000000;
 }
 
 /* Government buttons list - responsive grid layout */
@@ -989,7 +989,7 @@ body
 .rates-container h2 {
   text-align: center;
   margin-bottom: 30px;
-  color: #e8e8e8;
+  color: #000000;
   font-size: 20px;
 }
 
@@ -999,20 +999,20 @@ body
   margin-bottom: 25px;
   gap: 15px;
   padding: 10px;
-  background: rgba(0, 0, 0, 0.3);
+  background: rgba(255, 255, 255, 0.8);
   border-radius: 6px;
   transition: background 0.2s ease;
 }
 
 .rate-row:hover {
-  background: rgba(0, 0, 0, 0.4);
+  background: rgba(255, 255, 255, 0.9);
 }
 
 .rate-label {
   width: 80px;
   font-weight: bold;
   text-align: right;
-  color: #ddd;
+  color: #000000;
 }
 
 .rate-slider-wrapper {
@@ -1029,7 +1029,7 @@ body
   text-align: center;
   font-weight: bold;
   font-size: 16px;
-  color: #4a90e2;
+  color: #000000;
 }
 
 .rate-lock {
@@ -1038,14 +1038,14 @@ body
   display: flex;
   align-items: center;
   gap: 5px;
-  color: #ddd;
+  color: #000000;
 }
 
 .rate-info {
   text-align: center;
   margin: 20px 10px 10px;
   font-style: italic;
-  color: #ccc;
+  color: #000000;
   font-size: 14px;
 }
 
@@ -1055,14 +1055,14 @@ body
   font-size: 15px;
   font-weight: 500;
   padding: 15px;
-  background: rgba(0, 0, 0, 0.4);
+  background: rgba(255, 255, 255, 0.8);
   border-radius: 6px;
   border: 1px solid #666;
-  color: #e8e8e8;
+  color: #000000;
 }
 
 .rate-stats span {
-  color: #4a90e2;
+  color: #000000;
   font-weight: 600;
 }
 
