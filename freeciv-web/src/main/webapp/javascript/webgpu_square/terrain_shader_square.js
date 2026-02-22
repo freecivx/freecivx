@@ -266,7 +266,7 @@ function createTerrainShaderSquareTSL(uniforms) {
      */
     function computeTerrainColor(layerIndex, coord, blendWithBeach) {
         if (blendWithBeach) {
-            const baseTerrainColor = texture(terrainAtlasTex, coord, int(layerIndex));
+            const baseTerrainColor = texture(terrainAtlasTex, coord, int(layerIndex), 0);
             const aboveWater = step(WATER_LEVEL, posY);
             const lowerBeachT = mul(
                 clamp(div(sub(posY, BEACH_BLEND_HIGH), BEACH_LOWER_RANGE), 0.0, 1.0),
@@ -276,11 +276,11 @@ function createTerrainShaderSquareTSL(uniforms) {
                 div(sub(posY, BEACH_MID), BEACH_UPPER_RANGE),
                 0.0, 1.0
             );
-            const coastTex = texture(terrainAtlasTex, coord, int(TERRAIN_ATLAS_COAST));
+            const coastTex = texture(terrainAtlasTex, coord, int(TERRAIN_ATLAS_COAST), 0);
             const lowerBlend = mix(coastTex, vec4(beachSandColor, 1.0), lowerBeachT);
             return mix(lowerBlend, baseTerrainColor, upperBeachT);
         } else {
-            return texture(terrainAtlasTex, coord, int(layerIndex));
+            return texture(terrainAtlasTex, coord, int(layerIndex), 0);
         }
     }
 
@@ -302,7 +302,7 @@ function createTerrainShaderSquareTSL(uniforms) {
         const step1 = step(terrainValue - 0.5, terrainHere);
         const step2 = step(terrainHere, terrainValue + 0.5);
         const isTerrain = mul(step1, step2);
-        const terrainColor = texture(terrainLayersTex, coord, int(layerIndex));
+        const terrainColor = texture(terrainLayersTex, coord, int(layerIndex), 0);
         return { mask: isTerrain, color: terrainColor };
     }
     
@@ -328,7 +328,7 @@ function createTerrainShaderSquareTSL(uniforms) {
             const step1 = step(terrainValue - 0.5, tType);
             const step2 = step(tType, terrainValue + 0.5);
             const isTerrain = mul(step1, step2);
-            const terrainColor = texture(terrainLayersTex, useCoord, int(layerIndex));
+            const terrainColor = texture(terrainLayersTex, useCoord, int(layerIndex), 0);
             return { mask: isTerrain, color: terrainColor };
         }
         
@@ -435,7 +435,7 @@ function createTerrainShaderSquareTSL(uniforms) {
     
     // Irrigation: sample irrigation texture from terrain_layers and blend over terrain
     const hasIrrigation = mul(step(0.5, irrigationFlag), step(irrigationFlag, 1.5));
-    const irrigationTexColor = texture(terrainLayersTex, texCoord, int(TERRAIN_LAYER_IRRIGATION));
+    const irrigationTexColor = texture(terrainLayersTex, texCoord, int(TERRAIN_LAYER_IRRIGATION), 0);
     finalColor = vec4(
         mix(finalColor.rgb, irrigationTexColor.rgb, mul(hasIrrigation, irrigationTexColor.a)),
         finalColor.a
@@ -443,7 +443,7 @@ function createTerrainShaderSquareTSL(uniforms) {
     
     // Farmland: sample farmland texture from terrain_layers and blend over terrain
     const hasFarmland = step(1.5, irrigationFlag);
-    const farmlandTexColor = texture(terrainLayersTex, texCoord, int(TERRAIN_LAYER_FARMLAND));
+    const farmlandTexColor = texture(terrainLayersTex, texCoord, int(TERRAIN_LAYER_FARMLAND), 0);
     finalColor = vec4(
         mix(finalColor.rgb, farmlandTexColor.rgb, mul(hasFarmland, farmlandTexColor.a)),
         finalColor.a
@@ -470,16 +470,16 @@ function createTerrainShaderSquareTSL(uniforms) {
     // Sample road sprite using texture array with vec2 UV and integer layer index
     // For texture_2d_array (DataArrayTexture), pass layer index as third parameter
     const roadSpriteUV = vec2(localX, localY);
-    const roadSprite = texture(roadspritesTex, roadSpriteUV, roadLayerIndex);
+    const roadSprite = texture(roadspritesTex, roadSpriteUV, roadLayerIndex, 0);
     
     // Sample railroad sprite using texture array
     const railSpriteUV = vec2(localX, localY);
-    const railSprite = texture(railroadspritesTex, railSpriteUV, railLayerIndex);
+    const railSprite = texture(railroadspritesTex, railSpriteUV, railLayerIndex, 0);
     
     // Junction sprites - 4-way junctions use layer 0 (top-left sprite in original grid)
     const junctionUV = vec2(localX, localY);
-    const roadJunctionSprite = texture(roadspritesTex, junctionUV, int(0));
-    const railJunctionSprite = texture(railroadspritesTex, junctionUV, int(0));
+    const roadJunctionSprite = texture(roadspritesTex, junctionUV, int(0), 0);
+    const railJunctionSprite = texture(railroadspritesTex, junctionUV, int(0), 0);
     
     // Blend roads onto terrain
     const roadAlpha = mul(hasRoad, roadSprite.a);
