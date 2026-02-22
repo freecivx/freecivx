@@ -102,20 +102,32 @@ function show_standalone_pregame_dialog()
     modal: true,
     width: "70%",
     height: "auto",
-    buttons: {
-      "Cancel": function() {
-        $("#standalone_pregame_dialog").dialog('close');
+    buttons: [
+      {
+        text: "Cancel",
+        click: function() {
+          $("#standalone_pregame_dialog").dialog('close');
+        },
+        icon: "ui-icon-close"
       },
-      "Benchmark": function() {
-        setup_standalone_environment();
-        start_standalone_game_with_config();
-        webgl_benchmark_run();
+      {
+        text: "Benchmark",
+        click: function() {
+          setup_standalone_environment();
+          start_standalone_game_with_config();
+          webgl_benchmark_run();
+        },
+        icon: "ui-icon-clock"
       },
-      "Start Game": function() {
-        setup_standalone_environment();
-        start_standalone_game_with_config();
+      {
+        text: "Start Game",
+        click: function() {
+          setup_standalone_environment();
+          start_standalone_game_with_config();
+        },
+        icon: "ui-icon-play"
       }
-    },
+    ],
     close: function() {
       $("#standalone_pregame_dialog").remove();
     }
@@ -174,20 +186,24 @@ function show_standalone_nation_picker()
     modal: true,
     width: "85%",
     height: $(window).height() - 150,
-    buttons: {
-      "Select Nation": function() {
-        if (standalone_config.nation_id != -1) {
-          $("#standalone_nation_picker_dialog").dialog('close');
-          // Update the main dialog to show selected nation
-          var pnation = nations[standalone_config.nation_id];
-          if (pnation) {
-            $("#standalone_selected_nation").html("Nation: <span style='color: green;'>" + pnation['adjective'] + "</span>");
+    buttons: [
+      {
+        text: "Select Nation",
+        click: function() {
+          if (standalone_config.nation_id != -1) {
+            $("#standalone_nation_picker_dialog").dialog('close');
+            // Update the main dialog to show selected nation
+            var pnation = nations[standalone_config.nation_id];
+            if (pnation) {
+              $("#standalone_selected_nation").html("Nation: <span style='color: green;'>" + pnation['adjective'] + "</span>");
+            }
+          } else {
+            swal("No nation selected", "Please select a nation first.", "warning");
           }
-        } else {
-          swal("No nation selected", "Please select a nation first.", "warning");
-        }
+        },
+        icon: "ui-icon-check"
       }
-    },
+    ],
     close: function() {
       $("#standalone_nation_picker_dialog").remove();
     }
