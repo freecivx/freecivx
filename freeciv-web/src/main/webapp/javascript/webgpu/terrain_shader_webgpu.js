@@ -350,7 +350,7 @@ function createTerrainShaderTSL(uniforms) {
      * Uses terrain_atlas DataArrayTexture for efficient texture sampling.
      * 
      * @param {number} terrainValue - The terrain type ID to match (e.g., TERRAIN_GRASSLAND)
-     * @param {number} layerIndex - The layer index in terrain_atlas texture (0-9)
+     * @param {number} layerIndex - The layer index in terrain_atlas texture (0-9, see TERRAIN_ATLAS_* constants above)
      * @param {object} coord - TSL vec2 coordinate node for texture sampling
      * @param {boolean} blendWithBeach - If true, blends with beach sand colour at shore elevations
      * @returns {object} Object with mask (selection boolean) and color (sampled texture) nodes

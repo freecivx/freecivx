@@ -63,6 +63,8 @@ function webgl_preload()
    * Layer indices match the order in tiletype_terrains array:
    * 0=coast, 1=ocean, 2=desert, 3=grassland, 4=hills, 5=mountains, 6=plains, 7=swamp, 8=forest, 9=jungle
    */
+  const TERRAIN_PROGRESS_START = 5;  // Starting percentage for terrain texture loading
+  const TERRAIN_PROGRESS_RANGE = 10; // Percentage range allocated to terrain textures (5% to 15%)
   const loadedTerrainTextures = [];
   let loadedTerrainCount = 0;
   
@@ -72,7 +74,7 @@ function webgl_preload()
       return function(image) {
         loadedTerrainTextures[index] = image;
         loadedTerrainCount++;
-        $("#download_progress").html(" terrain textures " + Math.floor(5 + (loadedTerrainCount / tiletype_terrains.length) * 10) + "%");
+        $("#download_progress").html(" terrain textures " + Math.floor(TERRAIN_PROGRESS_START + (loadedTerrainCount / tiletype_terrains.length) * TERRAIN_PROGRESS_RANGE) + "%");
         
         // When all terrain textures are loaded, combine them into a DataArrayTexture
         if (loadedTerrainCount === tiletype_terrains.length) {
