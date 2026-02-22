@@ -240,9 +240,13 @@ function createWaterMaterialSquareTSL() {
   const colorWithShimmer = add(colorWithSpecular, vec3(shimmer, shimmer, shimmer));
   const colorBeforeVisibility = sub(colorWithShimmer, vec3(edgeDarken, edgeDarken, edgeDarken));
   
+  // Apply 15% brightness boost to water for better visibility and more natural appearance
+  const waterBrightnessBoost = 1.15;
+  const brightenedWaterColor = mul(colorBeforeVisibility, waterBrightnessBoost);
+  
   // Apply tile visibility - unknown tiles render as black
   // visibility ranges from 0 (unknown/black) to 1.10 (fully visible with brightness boost)
-  const finalColor = mul(colorBeforeVisibility, visibility);
+  const finalColor = mul(brightenedWaterColor, visibility);
   
   // Constant opacity for clean, game-like appearance
   const opacity = waterConfig ? waterConfig.OPACITY.BASE : 0.72;
