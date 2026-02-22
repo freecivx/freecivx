@@ -70,10 +70,6 @@ it's not needed in most cases. If you have special requirements, have a look
 at [config.dist](config/config.dist),
 copy it without the `.dist` extension and edit to your liking.
 
-
-
-All software components in Freeciv-web will log to the /logs sub-directory of the Freeciv-web installation.
-
 Start and stop Freeciv-web with the following commands:  
   start-freeciv-web.sh  
   stop-freeciv-web.sh  
