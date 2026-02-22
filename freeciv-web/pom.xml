@@ -363,6 +363,8 @@ Rerun the sync-js-hand.js script.
 									<exclude>libs/es-module-shims.js</exclude>
 									<exclude>libs/gif.worker.js</exclude>
 									<exclude>libs/stacktrace.min.js</exclude>
+									<exclude>libs/overlayscrollbars-global.js</exclude>
+									<exclude>libs/overlayscrollbars.esm.js</exclude>
 									<exclude>webgpu/libs/*js</exclude>
 									<exclude>webgpu/effects/*js</exclude>
 									<exclude>three-modules.js</exclude>

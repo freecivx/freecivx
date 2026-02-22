@@ -93,7 +93,7 @@ function civclient_init()
   }
 
   //initialize a seeded random number generator
-  fc_seedrandom = new Math.seedrandom('freeciv-web');
+  fc_seedrandom = Math.seedrandom('freeciv-web');
 
   init_webgl_renderer();
 
