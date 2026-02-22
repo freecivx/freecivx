@@ -24,10 +24,28 @@ var scrollbar_instances = {};
  * Initialize OverlayScrollbars on an element
  * @param {string} selector - jQuery selector for the element
  * @param {object} options - Optional configuration (theme, etc.)
+ * @param {number} retryCount - Internal parameter for retry tracking (default: 0)
  */
-function init_custom_scrollbar(selector, options) {
+function init_custom_scrollbar(selector, options, retryCount) {
   var element = $(selector)[0];
   if (!element) return;
+  
+  // Initialize retry counter
+  retryCount = retryCount || 0;
+  
+  // Check if OverlayScrollbarsGlobal is available
+  if (typeof OverlayScrollbarsGlobal === 'undefined' || !OverlayScrollbarsGlobal) {
+    // Max 50 retries (5 seconds total)
+    if (retryCount >= 50) {
+      console.error('OverlayScrollbarsGlobal failed to load after 5 seconds');
+      return;
+    }
+    console.warn('OverlayScrollbarsGlobal not available yet, retrying in 100ms (attempt ' + (retryCount + 1) + '/50)');
+    setTimeout(function() {
+      init_custom_scrollbar(selector, options, retryCount + 1);
+    }, 100);
+    return;
+  }
   
   // Destroy existing instance if any
   if (scrollbar_instances[selector]) {
