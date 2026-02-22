@@ -261,8 +261,8 @@ function remove_city(pcity_id)
   delete cities[pcity_id];
   update_city_position(ptile);
   if (update) {
-    city_screen_updater.update();
-    bulbs_output_updater.update();
+    city_screen_updater();
+    bulbs_output_updater();
   }
 }
 
