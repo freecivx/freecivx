@@ -1822,3 +1822,10 @@ li.tech-both::before {
     padding: 4px 8px !important;
   }
 }
+
+/* Custom OverlayScrollbars styling - light grey theme */
+.os-scrollbar {
+  --os-handle-bg: rgba(211, 211, 211, 0.6);
+  --os-handle-bg-hover: rgba(211, 211, 211, 0.75);
+  --os-handle-bg-active: rgba(211, 211, 211, 0.9);
+}
