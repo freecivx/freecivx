@@ -113,8 +113,8 @@ function createWaterMaterialSquareTSL() {
   // Sample visibility from maptiles texture alpha channel
   const tileVisibility = texture(maptilesTex, tileCenterUV).a;
   
-  // Visibility scale factor (matches terrain shader VISIBILITY_VISIBLE = 1.06)
-  const VISIBILITY_VISIBLE = 1.06;
+  // Visibility scale factor (matches terrain shader VISIBILITY_VISIBLE = 1.10)
+  const VISIBILITY_VISIBLE = 1.10;
   const visibility = mul(tileVisibility, VISIBILITY_VISIBLE);
   
   // ==== COLOR PALETTE (Stylized Game Colors) ====
@@ -241,7 +241,7 @@ function createWaterMaterialSquareTSL() {
   const colorBeforeVisibility = sub(colorWithShimmer, vec3(edgeDarken, edgeDarken, edgeDarken));
   
   // Apply tile visibility - unknown tiles render as black
-  // visibility ranges from 0 (unknown/black) to 1.06 (fully visible with brightness boost)
+  // visibility ranges from 0 (unknown/black) to 1.10 (fully visible with brightness boost)
   const finalColor = mul(colorBeforeVisibility, visibility);
   
   // Constant opacity for clean, game-like appearance
