@@ -515,7 +515,8 @@ function createTerrainShaderSquareTSL(uniforms) {
     const normal = normalLocal;
     const NdotL = max(dot(normal, sunDir), 0.0);
     
-    const ambientLight = 0.22;
+    // Ambient light increased by 10%: 0.22 * 1.10 = 0.242
+    const ambientLight = 0.242;
     const diffuseStrength = 0.53;
     const lightingFactor = add(ambientLight, mul(NdotL, diffuseStrength));
     

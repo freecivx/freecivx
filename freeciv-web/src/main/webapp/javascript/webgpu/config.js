@@ -74,8 +74,8 @@ const CameraConfig = Object.freeze({
 const LightingConfig = Object.freeze({
     /** Ambient light color (hex) - slightly warm for natural daylight feel */
     AMBIENT_COLOR: 0x707065,
-    /** Ambient light intensity - increased for brighter overall appearance */
-    AMBIENT_INTENSITY: 1.15 * Math.PI,
+    /** Ambient light intensity - increased by 10% for brighter overall appearance (1.15 * 1.10 = 1.265) */
+    AMBIENT_INTENSITY: 1.265 * Math.PI,
     
     /** Directional light color (hex) - warm sunlight tint */
     DIRECTIONAL_COLOR: 0xfffaf0,
