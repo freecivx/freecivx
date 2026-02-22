@@ -47,7 +47,7 @@ function init_custom_scrollbar(selector, options) {
   var finalOptions = Object.assign({}, defaultOptions, options || {});
   
   // Initialize OverlayScrollbars
-  var { OverlayScrollbars } = OverlayScrollbarsGlobal;
+  var OverlayScrollbars = OverlayScrollbarsGlobal.OverlayScrollbars;
   scrollbar_instances[selector] = OverlayScrollbars(element, finalOptions);
 }
 
