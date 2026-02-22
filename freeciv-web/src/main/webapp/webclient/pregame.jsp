@@ -18,8 +18,8 @@
 	<div id="pregame_buttons">
 		<div id="freeciv_logo" style="cursor:pointer;" onclick="window.open('/', '_new');" role="button" tabindex="0" aria-label="Open FreecivWorld homepage in new window">
 		</div>
-		<button id="start_game_button" type="button" class="button" aria-label="Start the game"><i class="fa fa-check-circle-o" aria-hidden="true"></i> <b>Start Game</b></button>
-		<button id="load_game_button" type="button" class="button" aria-label="Load a saved game or scenario"><i class="fa fa-file-o" aria-hidden="true"></i> Load Game / Scenario</button>
+		<button id="start_game_button" type="button" class="button" aria-label="Start the game"><i class="fa fa-play" aria-hidden="true"></i> <b>Start Game</b></button>
+		<button id="load_game_button" type="button" class="button" aria-label="Load a saved game or scenario"><i class="fa fa-folder-open" aria-hidden="true"></i> Load Game / Scenario</button>
 		<button id="pick_nation_button" type="button" class="button" aria-label="Choose your nation"><i class="fa fa-flag" aria-hidden="true"></i> Pick Nation</button>
 		<button id="pregame_settings_button" type="button" class="button" aria-label="Configure game settings"><i class="fa fa-cogs" aria-hidden="true"></i> Game Settings</button>
 		<button id='multiplayer_invite_player' type="button" class="button" aria-label="Invite another player to join"><i class="fa fa-user-plus" aria-hidden="true"></i> Invite player</button>
