@@ -49,9 +49,12 @@ public class NewUser extends HttpServlet {
 		String username = java.net.URLDecoder.decode(request.getParameter("username"), StandardCharsets.UTF_8);
 		String password = java.net.URLDecoder.decode(request.getParameter("password"), StandardCharsets.UTF_8);
 		String email = java.net.URLDecoder.decode(request.getParameter("email").replace("+", "%2B"), StandardCharsets.UTF_8);
+		String dateOfBirth = request.getParameter("dateofbirth") != null 
+				? java.net.URLDecoder.decode(request.getParameter("dateofbirth"), StandardCharsets.UTF_8) 
+				: null;
 
 		// Validate inputs
-		if (!isValidInput(username, password, email, response)) {
+		if (!isValidInput(username, password, email, dateOfBirth, response)) {
 			return;
 		}
 
@@ -64,7 +67,7 @@ public class NewUser extends HttpServlet {
 			}
 
 			String randomNumber = "1" + RandomStringUtils.secure().nextNumeric(20);
-			createUser(conn, username, email, password, ipAddress, randomNumber);
+			createUser(conn, username, email, password, ipAddress, randomNumber, dateOfBirth);
 			sendEmailVerify(email, randomNumber);
 			response.getWriter().print("OK");
 		} catch (Exception e) {
@@ -80,7 +83,7 @@ public class NewUser extends HttpServlet {
 	}
 
 
-	private boolean isValidInput(String username, String password, String email, HttpServletResponse response)
+	private boolean isValidInput(String username, String password, String email, String dateOfBirth, HttpServletResponse response)
 			throws IOException {
 		if (password == null || password.length() <= 2) {
 			response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Invalid password.");
@@ -92,6 +95,10 @@ public class NewUser extends HttpServlet {
 		}
 		if (email == null || email.length() <= 4) {
 			response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Invalid email address.");
+			return false;
+		}
+		if (dateOfBirth == null || dateOfBirth.isEmpty()) {
+			response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Date of birth is required.");
 			return false;
 		}
 		return true;
@@ -121,10 +128,10 @@ public class NewUser extends HttpServlet {
 		return false;
 	}
 
-	private void createUser(Connection conn, String username, String email, String password, String ip, String verifyKey)
+	private void createUser(Connection conn, String username, String email, String password, String ip, String verifyKey, String dateOfBirth)
 			throws SQLException {
-		String insertQuery = "INSERT INTO auth (username, email, secure_hashed_password, ip, verifykey, elo_rating, last_login, verified) "
-				+ "VALUES (?, ?, ?, ?, ?, 1000, NOW(), 0)";
+		String insertQuery = "INSERT INTO auth (username, email, secure_hashed_password, ip, verifykey, elo_rating, last_login, verified, dateofbirth) "
+				+ "VALUES (?, ?, ?, ?, ?, 1000, NOW(), 0, ?)";
 
 		try (PreparedStatement ps = conn.prepareStatement(insertQuery)) {
 			ps.setString(1, username.toLowerCase());
@@ -132,6 +139,7 @@ public class NewUser extends HttpServlet {
 			ps.setString(3, DigestUtils.sha256Hex(password));
 			ps.setString(4, ip);
 			ps.setString(5, verifyKey);
+			ps.setString(6, dateOfBirth);
 			ps.executeUpdate();
 		}
 	}

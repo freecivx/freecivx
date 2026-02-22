@@ -1150,8 +1150,10 @@ function show_new_user_account_dialog(gametype)
                 + "<table><tr><td>Username:</td><td><input id='username' type='text' size='25' maxlength='30'></td></tr>"
                 + "<tr><td>Email:</td><td><input id='email' type='email' size='25' maxlength='64' ></td></tr>"
                 + "<tr><td>Password:</td><td><input id='password' type='password' size='25'></td></tr>"
-                + "<tr><td>Confim password:</td><td><input id='confirm_password' type='password' size='25'></td></tr></table><br>"
+                + "<tr><td>Confim password:</td><td><input id='confirm_password' type='password' size='25'></td></tr>"
+                + "<tr><td>Date of Birth:</td><td><input id='dob_day' type='text' size='2' maxlength='2' placeholder='DD' style='width:50px;'> / <input id='dob_month' type='text' size='2' maxlength='2' placeholder='MM' style='width:50px;'> / <input id='dob_year' type='text' size='4' maxlength='4' placeholder='YYYY' style='width:70px;'></td></tr></table><br>"
                 + "<div id='username_validation_result' style='display:none;'></div>"
+                + "<div id='age_validation_result' style='display:none;'></div>"
                 + "Please verify your e-mail by clicking in the link in the e-mail you will get from us. Remember your username and password, since you will need this to log in later."
                 + "<br>"
                 + "<div id='new_user_extra_info'><small><ul><li>It is free and safe to create a new account on FreecivWorld.net.</li>"
@@ -1232,8 +1234,13 @@ function create_new_freeciv_user_account_request(action_type)
   var password = $("#password").val().trim();
   var confirm_password = $("#confirm_password").val().trim();
   var email = $("#email").val().trim();
+  var dob_day = $("#dob_day").val().trim();
+  var dob_month = $("#dob_month").val().trim();
+  var dob_year = $("#dob_year").val().trim();
 
   $("#username_validation_result").show();
+  $("#age_validation_result").hide();
+  
   if (!is_username_valid_show(username)) {
     return false;
   }
@@ -1247,6 +1254,53 @@ function create_new_freeciv_user_account_request(action_type)
     $("#username_validation_result").html("The passwords do not match.");
     return false;
   }
+  
+  // Validate date of birth
+  if (!dob_day || !dob_month || !dob_year) {
+    $("#username_validation_result").html("Please enter your date of birth.");
+    return false;
+  }
+  
+  var day = parseInt(dob_day);
+  var month = parseInt(dob_month);
+  var year = parseInt(dob_year);
+  
+  if (isNaN(day) || day < 1 || day > 31) {
+    $("#username_validation_result").html("Invalid day. Please enter a value between 1 and 31.");
+    return false;
+  }
+  if (isNaN(month) || month < 1 || month > 12) {
+    $("#username_validation_result").html("Invalid month. Please enter a value between 1 and 12.");
+    return false;
+  }
+  if (isNaN(year) || year < 1900 || year > new Date().getFullYear()) {
+    $("#username_validation_result").html("Invalid year.");
+    return false;
+  }
+  
+  // Calculate age
+  var dob = new Date(year, month - 1, day);
+  var today = new Date();
+  var age = today.getFullYear() - dob.getFullYear();
+  var monthDiff = today.getMonth() - dob.getMonth();
+  if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < dob.getDate())) {
+    age--;
+  }
+  
+  // Check minimum age requirement
+  if (age < 16) {
+    $("#username_validation_result").hide();
+    $("#age_validation_result").html("<span style='color:red;font-weight:bold;'>You must be at least 16 years old to use this service.</span>");
+    $("#age_validation_result").show();
+    return false;
+  }
+  
+  // Show warning for ages 16-17
+  if (age >= 16 && age < 18) {
+    $("#username_validation_result").hide();
+    $("#age_validation_result").html("<span style='color:orange;font-weight:bold;'>Warning: This service is recommended for users 18 years or older.</span>");
+    $("#age_validation_result").show();
+  }
 
   $("#username_validation_result").html("");
   $("#username_validation_result").hide();
@@ -1256,11 +1310,14 @@ function create_new_freeciv_user_account_request(action_type)
   var shaObj = new jsSHA("SHA-512", "TEXT");
   shaObj.update(password);
   var sha_password = encodeURIComponent(shaObj.getHash("HEX"));
+  
+  // Format date as YYYY-MM-DD for database
+  var dateOfBirth = year + "-" + String(month).padStart(2, '0') + "-" + String(day).padStart(2, '0');
 
   $.ajax({
    type: 'POST',
    url: "/create_user?username=" + encodeURIComponent(username) + "&email=" + encodeURIComponent(email)
-            + "&password=" + sha_password,
+            + "&password=" + sha_password + "&dateofbirth=" + encodeURIComponent(dateOfBirth),
    success: function(data, textStatus, request){
        simpleStorage.set("username", username);
        simpleStorage.set("password", password);
