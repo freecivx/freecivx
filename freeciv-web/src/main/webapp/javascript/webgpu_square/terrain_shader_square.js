@@ -695,8 +695,8 @@ function createTerrainShaderSquareTSL(uniforms) {
     // =========================================================================
     // OUT-OF-BOUNDS CHECK
     // =========================================================================
-    const isOutOfBoundsX = step(map_x_size, tileX).greaterThan(0.5).or(tileX.lessThan(0.0));
-    const isOutOfBoundsY = step(map_y_size, tileY).greaterThan(0.5).or(tileY.lessThan(0.0));
+    const isOutOfBoundsX = tileX.greaterThanEqual(map_x_size).or(tileX.lessThan(0.0));
+    const isOutOfBoundsY = tileY.greaterThanEqual(map_y_size).or(tileY.lessThan(0.0));
     const isOutOfBounds = isOutOfBoundsX.or(isOutOfBoundsY);
     
     finalColor = isOutOfBounds.select(vec4(0.0, 0.0, 0.0, 1.0), finalColor);
