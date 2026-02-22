@@ -3380,7 +3380,7 @@ function update_active_units_dialog()
 
   if (current_focus.length > 0) {
     /* reposition and resize unit dialog. */
-    var newwidth = 80 + punits.length * (width * 1.3);
+    var newwidth = 80 + punits.length * (width * 1.5);
     if (newwidth < 300) newwidth = 300;  /* Increased from 280 to accommodate wider unit info */
     var newheight = 60 + normal_tile_height;
     $("#game_unit_panel").parent().show();

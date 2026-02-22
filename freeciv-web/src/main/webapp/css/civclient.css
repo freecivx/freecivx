@@ -157,7 +157,7 @@ body
   width: 100%;
   overflow: visible;  /* Changed from hidden to allow tooltips to show */
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   gap: 4px;  /* Gap between all flex children (info panel, unit icons, etc.) */
   padding: 2px;  /* Reduced from 4px to save space */
 }
