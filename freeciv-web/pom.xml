@@ -340,7 +340,7 @@ Rerun the sync-js-hand.js script.
 									<!-- Then include application code in proper order -->
 									<!-- order is important: these must be before sources below -->
 									<include>libs/debounce.js</include>
-									<include>libs/overlayscrollbars.js</include>
+									<!-- overlayscrollbars is now loaded as ESM module via overlayscrollbars-global.js -->
 									<include>scrollbar-utils.js</include>
 									<include>utility.js</include>
 									<include>map-constants.js</include>
