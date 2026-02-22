@@ -362,9 +362,9 @@ async function init_webgpu_mapview() {
   }
   
   landMesh = new THREE.Mesh(landGeometry, terrain_material);
-  // Note: Shadow receiving disabled with MeshBasicNodeMaterial (which doesn't support shadows)
-  // The terrain shader provides its own slope-based lighting for visual depth
-  landMesh.receiveShadow = false;
+  // Enable shadow receiving on terrain to display shadows cast by units, buildings, and other objects
+  // MeshBasicNodeMaterial with the node system supports shadow receiving in Three.js
+  landMesh.receiveShadow = true;
   landMesh.castShadow = false;
   landMesh.name = "land_terrain_mesh";
   scene.add(landMesh);
