@@ -46,6 +46,7 @@ function isWebGPURenderer() {
  * @param {Object} options - Optional configuration
  * @param {boolean} [options.doubleSided=true] - Whether to render both sides
  * @param {boolean} [options.flatShading=false] - Whether to use flat shading
+ * @param {number} [options.brightnessMultiplier=1.1] - Brightness multiplier for all models (default 1.1 = 10% brighter)
  * @returns {THREE.MeshStandardNodeMaterial} WebGPU-compatible node material
  * 
  * @example
@@ -55,7 +56,8 @@ function isWebGPURenderer() {
 function convertToNodeMaterial(originalMaterial, options = {}) {
     const {
         doubleSided = true,
-        flatShading = false
+        flatShading = false,
+        brightnessMultiplier = 1.1
     } = options;
     
     // Create a new MeshStandardNodeMaterial with lighting support
@@ -68,10 +70,14 @@ function convertToNodeMaterial(originalMaterial, options = {}) {
     
     if (originalMaterial.color) {
         nodeMaterial.color.copy(originalMaterial.color);
+        // Apply brightness multiplier to base color (generic way to brighten all models)
+        nodeMaterial.color.multiplyScalar(brightnessMultiplier);
     }
     
     if (originalMaterial.emissive) {
         nodeMaterial.emissive.copy(originalMaterial.emissive);
+        // Apply brightness multiplier to emissive color as well
+        nodeMaterial.emissive.multiplyScalar(brightnessMultiplier);
     }
     
     if (originalMaterial.emissiveIntensity !== undefined) {
