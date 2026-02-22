@@ -50,7 +50,7 @@ function createTerrainShaderTSL(uniforms) {
         texture, uniform, positionLocal, attribute, uv, normalLocal,
         vec2, vec3, vec4, int,
         mix, step, floor, fract, mod, dot, sin, cos, normalize, max, min, pow, clamp, abs,
-        mul, add, sub, div, select
+        mul, add, sub, div
     } = THREE;
     
     // Verify all required TSL functions and nodes are available
@@ -58,7 +58,7 @@ function createTerrainShaderTSL(uniforms) {
         'texture', 'uniform', 'positionLocal', 'attribute', 'uv', 'normalLocal',
         'vec2', 'vec3', 'vec4', 'int',
         'mix', 'step', 'floor', 'fract', 'mod', 'dot', 'sin', 'cos', 'normalize', 'max', 'min', 'pow', 'clamp', 'abs',
-        'mul', 'add', 'sub', 'div', 'select'
+        'mul', 'add', 'sub', 'div'
     ];
     const missing = requiredTSLNames.filter(name => THREE[name] === undefined);
     if (missing.length > 0) {
@@ -820,14 +820,14 @@ function createTerrainShaderTSL(uniforms) {
     );
     
     // Apply border line only where borders are visible and at nation edges
-    const shouldShowBorderLine = mul(select(0.0, 1.0, borders_visible), mul(hasBorder, borderLineFactor));
+    const shouldShowBorderLine = mul(borders_visible.select(1.0, 0.0), mul(hasBorder, borderLineFactor));
     finalColor = vec4(
         mix(finalColor.rgb, brightenedBorderColor, mul(shouldShowBorderLine, borderLineIntensity)),
         finalColor.a
     );
     
     // Also apply subtle area fill for border territories (more transparent)
-    const shouldShowBorderFill = mul(select(0.0, 1.0, borders_visible), hasBorder);
+    const shouldShowBorderFill = mul(borders_visible.select(1.0, 0.0), hasBorder);
     const borderFillFactor = mul(shouldShowBorderFill, 0.05);  // Very subtle territory tint
     finalColor = vec4(
         mix(finalColor.rgb, currentBorder.rgb, borderFillFactor),
@@ -853,7 +853,7 @@ function createTerrainShaderTSL(uniforms) {
     const SELECTION_FILL_INTENSITY = 0.15; // Subtle fill highlight
     
     // Calculate selection visibility factor (1.0 if selected, 0.0 if not)
-    const selectionActive = select(0.0, 1.0, shouldHighlightTile);
+    const selectionActive = shouldHighlightTile.select(1.0, 0.0);
     
     // Apply edge highlighting on selected tile (using hexEdgeMask for edge detection)
     const scaledEdgeMask = mul(hexEdgeMask, SELECTION_EDGE_INTENSITY);
@@ -881,7 +881,7 @@ function createTerrainShaderTSL(uniforms) {
     const isOutOfBounds = isOutOfBoundsX.or(isOutOfBoundsY);
     
     // If out of bounds, return black; otherwise return the computed color
-    finalColor = select(finalColor, vec4(0.0, 0.0, 0.0, 1.0), isOutOfBounds);
+    finalColor = isOutOfBounds.select(vec4(0.0, 0.0, 0.0, 1.0), finalColor);
 
     return finalColor;
 }

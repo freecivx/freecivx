@@ -43,7 +43,7 @@ function createTerrainShaderSquareTSL(uniforms) {
         texture, uniform, positionLocal, attribute, uv, normalLocal,
         vec2, vec3, vec4, int,
         mix, step, floor, fract, mod, dot, sin, cos, normalize, max, min, pow, clamp, abs,
-        mul, add, sub, div, select
+        mul, add, sub, div
     } = THREE;
     
     // Verify all required TSL functions and nodes are available
@@ -51,7 +51,7 @@ function createTerrainShaderSquareTSL(uniforms) {
         'texture', 'uniform', 'positionLocal', 'attribute', 'uv', 'normalLocal',
         'vec2', 'vec3', 'vec4', 'int',
         'mix', 'step', 'floor', 'fract', 'mod', 'dot', 'sin', 'cos', 'normalize', 'max', 'min', 'pow', 'clamp', 'abs',
-        'mul', 'add', 'sub', 'div', 'select'
+        'mul', 'add', 'sub', 'div'
     ];
     const missing = requiredTSLNames.filter(name => THREE[name] === undefined);
     if (missing.length > 0) {
@@ -631,13 +631,13 @@ function createTerrainShaderSquareTSL(uniforms) {
         min(add(currentBorder.b, 0.3), 1.0)
     );
     
-    const shouldShowBorderLine = mul(select(0.0, 1.0, borders_visible), mul(hasBorder, dashedTotalEdgeFactor));
+    const shouldShowBorderLine = mul(borders_visible.select(1.0, 0.0), mul(hasBorder, dashedTotalEdgeFactor));
     finalColor = vec4(
         mix(finalColor.rgb, brightenedBorderColor, mul(shouldShowBorderLine, borderLineIntensity)),
         finalColor.a
     );
     
-    const shouldShowBorderFill = mul(select(0.0, 1.0, borders_visible), hasBorder);
+    const shouldShowBorderFill = mul(borders_visible.select(1.0, 0.0), hasBorder);
     const borderFillFactor = mul(shouldShowBorderFill, 0.05);
     finalColor = vec4(
         mix(finalColor.rgb, currentBorder.rgb, borderFillFactor),
@@ -664,7 +664,7 @@ function createTerrainShaderSquareTSL(uniforms) {
     const SELECTION_EDGE_WIDTH = 0.06;     // Width of the selection edge highlight
     
     // Calculate selection indicator (1.0 if selected, 0.0 if not)
-    const selectionActive = select(0.0, 1.0, shouldHighlightTile);
+    const selectionActive = shouldHighlightTile.select(1.0, 0.0);
     
     // Create square edge mask for selection highlighting (all four edges)
     // Each edge detection returns 1.0 when within SELECTION_EDGE_WIDTH of that edge
@@ -699,7 +699,7 @@ function createTerrainShaderSquareTSL(uniforms) {
     const isOutOfBoundsY = step(map_y_size, tileY).greaterThan(0.5).or(tileY.lessThan(0.0));
     const isOutOfBounds = isOutOfBoundsX.or(isOutOfBoundsY);
     
-    finalColor = select(finalColor, vec4(0.0, 0.0, 0.0, 1.0), isOutOfBounds);
+    finalColor = isOutOfBounds.select(vec4(0.0, 0.0, 0.0, 1.0), finalColor);
 
     return finalColor;
 }
