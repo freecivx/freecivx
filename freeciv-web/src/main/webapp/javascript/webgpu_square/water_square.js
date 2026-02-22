@@ -81,7 +81,7 @@ function add_quality_dependent_objects_webgpu_square() {
  - Square-aware: Uses simple grid coordinate system (no hex staggering)
 ****************************************************************************/
 function createWaterMaterialSquareTSL() {
-  const { uniform, uv, vec3, vec4, sin, cos, mix, fract, clamp, pow, sqrt, mul, add, sub, abs, floor, texture, mod, max, div, step } = THREE;
+  const { uniform, uv, vec2, vec3, vec4, sin, cos, mix, fract, clamp, pow, sqrt, mul, add, sub, abs, floor, texture, mod, max, div, step } = THREE;
   
   // Time uniform for animation
   const timeUniform = uniform(0.0);
@@ -108,7 +108,7 @@ function createWaterMaterialSquareTSL() {
   // Calculate tile center UV for visibility sampling (direct mapping)
   const tileCenterX = div(add(tileX, 0.5), map_x_size);
   const tileCenterY = div(add(tileY, 0.5), map_y_size);
-  const tileCenterUV = THREE.vec2(tileCenterX, tileCenterY);
+  const tileCenterUV = vec2(tileCenterX, tileCenterY);
   
   // Sample visibility from maptiles texture alpha channel
   const tileVisibility = texture(maptilesTex, tileCenterUV).a;
