@@ -895,6 +895,7 @@ body
   border-radius: 6px;
   border: 2px solid #666;
   background: linear-gradient(to bottom, #f5f5f5 0%, #e0e0e0 100%);
+  color: #222;
   cursor: pointer;
   transition: all 0.2s ease;
   text-align: left;
