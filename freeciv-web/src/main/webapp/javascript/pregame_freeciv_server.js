@@ -181,7 +181,10 @@ function update_player_info_pregame()
             "hard": {name: "Hard"},
             "cheating": {name: "Cheating"},
             "deity": {name: "Deity"},
-            "sep2": "---------"
+            "sep2": "---------",
+            "ai_classic": {name: "AI Type: Classic"},
+            "ai_rust": {name: "AI Type: Rust"},
+            "sep3": "---------"
        };
 
       $("#pregame_player_list").contextMenu({
@@ -210,6 +213,12 @@ function update_player_info_pregame()
               send_message("/cheating " + name);
             } else if (key == "deity") {
               send_message("/deity " + name);
+            } else if (key == "ai_classic") {
+              send_message("/remove " + name);
+              send_message("/create " + name + " classic");
+            } else if (key == "ai_rust") {
+              send_message("/remove " + name);
+              send_message("/create " + name + " rust");
             }
         },
         items: pregame_context_items
