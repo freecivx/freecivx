@@ -1,0 +1,58 @@
+/***********************************************************************
+ Freeciv - Copyright (C) 1996 - A Kjeldberg, L Gregersen, P Unold
+   This program is free software; you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation; either version 2, or (at your option)
+   any later version.
+
+   This program is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
+***********************************************************************/
+
+/*
+ * This is the Rust AI module for Freeciv. Currently it's a minimal
+ * C stub implementation that will be extended with actual Rust code
+ * by porting the C AI logic from ai/classic to Rust.
+ */
+
+#ifdef HAVE_CONFIG_H
+#include <fc_config.h>
+#endif
+
+/* common */
+#include "ai.h"
+#include "player.h"
+
+const char *fc_ai_rust_capstr(void);
+bool fc_ai_rust_setup(struct ai_type *ai);
+
+/**********************************************************************//**
+  Return module capability string
+**************************************************************************/
+const char *fc_ai_rust_capstr(void)
+{
+  return FC_AI_MOD_CAPSTR;
+}
+
+/**********************************************************************//**
+  Set phase done
+**************************************************************************/
+static void rust_end_turn(struct player *pplayer)
+{
+  pplayer->ai_phase_done = TRUE;
+}
+
+/**********************************************************************//**
+  Setup player ai_funcs function pointers.
+**************************************************************************/
+bool fc_ai_rust_setup(struct ai_type *ai)
+{
+  strncpy(ai->name, "rust", sizeof(ai->name));
+
+  ai->funcs.first_activities = rust_end_turn;
+  ai->funcs.restart_phase    = rust_end_turn;
+
+  return TRUE;
+}

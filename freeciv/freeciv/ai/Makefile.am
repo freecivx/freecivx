@@ -18,6 +18,10 @@ if AI_MOD_STATIC_STUB
 module_dirs += stub
 endif
 
+if AI_MOD_STATIC_RUST
+module_dirs += rust
+endif
+
 AM_CPPFLAGS = -I$(top_srcdir)/utility -I$(top_srcdir)/common \
  -I$(top_srcdir)/common/aicore \
  -I$(top_srcdir)/common/networking \
@@ -33,6 +37,9 @@ module_dirs += tex
 endif
 if !AI_MOD_STATIC_STUB
 module_dirs += stub
+endif
+if !AI_MOD_STATIC_RUST
+module_dirs += rust
 endif
 else
 # AI module loading supported, but experimental modules not built

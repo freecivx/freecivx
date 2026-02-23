@@ -44,6 +44,10 @@ bool fc_ai_tex_setup(struct ai_type *ai);
 bool fc_ai_stub_setup(struct ai_type *ai);
 #endif
 
+#ifdef AI_MOD_STATIC_RUST
+bool fc_ai_rust_setup(struct ai_type *ai);
+#endif
+
 static struct ai_type *default_ai = NULL;
 
 #ifdef AI_MODULES
@@ -205,6 +209,17 @@ void ai_init(void)
     }
   }
 #endif /* AI_MOD_STATIC_STUB */
+
+#ifdef AI_MOD_STATIC_RUST
+  ai = ai_type_alloc();
+  if (ai != NULL) {
+    init_ai(ai);
+    if (!fc_ai_rust_setup(ai)) {
+      log_error(_("Failed to setup \"%s\" AI module"), "rust");
+      ai_type_dealloc();
+    }
+  }
+#endif /* AI_MOD_STATIC_RUST */
 
   set_default_ai_type_name(AI_MOD_DEFAULT);
 #ifdef AI_MODULES

@@ -507,17 +507,19 @@ const char *ai_level_name_update_cb(const char *old);
 #define SPECENUM_VALUE4NAME N_("Hard")
 #define SPECENUM_VALUE5 AI_LEVEL_CHEATING
 #define SPECENUM_VALUE5NAME N_("Cheating")
+#define SPECENUM_VALUE6 AI_LEVEL_DEITY
+#define SPECENUM_VALUE6NAME N_("Deity")
 
 #ifdef FREECIV_DEBUG
-#define SPECENUM_VALUE6 AI_LEVEL_EXPERIMENTAL
-#define SPECENUM_VALUE6NAME N_("Experimental")
+#define SPECENUM_VALUE7 AI_LEVEL_EXPERIMENTAL
+#define SPECENUM_VALUE7NAME N_("Experimental")
 /* Away must be the last, so ailevel_name() can terminate list
  * of level names before it. */
+#define SPECENUM_VALUE8 AI_LEVEL_AWAY
+#define SPECENUM_VALUE8NAME N_("Away")
+#else  /* FREECIV_DEBUG */
 #define SPECENUM_VALUE7 AI_LEVEL_AWAY
 #define SPECENUM_VALUE7NAME N_("Away")
-#else  /* FREECIV_DEBUG */
-#define SPECENUM_VALUE6 AI_LEVEL_AWAY
-#define SPECENUM_VALUE6NAME N_("Away")
 #endif /* FREECIV_DEBUG */
 
 #define SPECENUM_COUNT AI_LEVEL_COUNT

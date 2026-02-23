@@ -1984,6 +1984,7 @@ static enum command_id cmd_of_level(enum ai_level level)
     case AI_LEVEL_NORMAL       : return CMD_NORMAL;
     case AI_LEVEL_HARD         : return CMD_HARD;
     case AI_LEVEL_CHEATING     : return CMD_CHEATING;
+    case AI_LEVEL_DEITY        : return CMD_DEITY;
 #ifdef FREECIV_DEBUG
     case AI_LEVEL_EXPERIMENTAL : return CMD_EXPERIMENTAL;
 #endif /* FREECIV_DEBUG */

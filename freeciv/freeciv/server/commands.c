@@ -400,6 +400,14 @@ static struct command commands[] = {
    N_("Set one or all AI players to 'Cheating'."), NULL, ai_level_help,
    CMD_ECHO_ALL, VCF_NONE, 50
   },
+  {"deity",  ALLOW_CTRL,
+   /* TRANS: translate text between <> only */
+   N_("deity\n"
+      "deity <player-name>"),
+   /* TRANS: translate 'Deity' as AI skill level */
+   N_("Set one or all AI players to 'Deity'."), NULL, ai_level_help,
+   CMD_ECHO_ALL, VCF_NONE, 50
+  },
 #ifdef FREECIV_DEBUG
   {"experimental",	ALLOW_CTRL,
    /* TRANS: translate text between <> only */
