@@ -442,12 +442,12 @@ static void rai_auto_settler_cont(struct player *pplayer,
 /**********************************************************************//**
   Call default ai with rust ai type as parameter.
 **************************************************************************/
-static bool rai_switch_to_explore(struct unit *punit, struct tile *target,
+static void rai_switch_to_explore(struct unit *punit, struct tile *target,
                                   enum override_bool *allow)
 {
   struct ai_type *rait = rust_ai_get_self();
 
-  return dai_do_explorer_goto(rait, punit, target, allow);
+  dai_switch_to_explore(rait, punit, target, allow);
 }
 
 /**********************************************************************//**
@@ -561,25 +561,25 @@ static void rai_unit_log(char *buffer, int buflength,
 /**********************************************************************//**
   Call default ai with rust ai type as parameter.
 **************************************************************************/
-static bool rai_consider_plr_dangerous(struct player *plr1,
+static void rai_consider_plr_dangerous(struct player *plr1,
                                        struct player *plr2,
                                        enum override_bool *result)
 {
   struct ai_type *rait = rust_ai_get_self();
 
-  return dai_consider_plr_dangerous(rait, plr1, plr2, result);
+  dai_consider_plr_dangerous(rait, plr1, plr2, result);
 }
 
 /**********************************************************************//**
   Call default ai with rust ai type as parameter.
 **************************************************************************/
-static bool rai_consider_tile_dangerous(struct tile *ptile,
+static void rai_consider_tile_dangerous(struct tile *ptile,
                                         struct unit *punit,
                                         enum override_bool *result)
 {
   struct ai_type *rait = rust_ai_get_self();
 
-  return dai_consider_tile_dangerous(rait, ptile, punit, result);
+  dai_consider_tile_dangerous(rait, ptile, punit, result);
 }
 
 /**********************************************************************//**
