@@ -2,41 +2,38 @@
 
 # Set up the working directory
 DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" >/dev/null && pwd)"
-cd "${DIR}"
+cd "${DIR}/freeciv" || exit
 
 # Source version information
-. ./version.txt
+. ../version.txt
 
-# Set up build directory
-BUILD_DIR="build"
+# Set up install directory
 INSTALL_DIR="${HOME}/freeciv"
 NUM_CORES=$(nproc)
 
-# Create build directory if it doesn't exist
-mkdir -p "${BUILD_DIR}"
+# Generate configure script if it doesn't exist
+if [ ! -f configure ]; then
+  echo "Generating configure script..."
+  ./autogen.sh --no-configure-run
+fi
 
-# Build process
-(
-  cd "${BUILD_DIR}" || exit
+# Configure with Rust AI enabled by default
+echo "Configuring Freeciv with Rust AI..."
+./configure \
+  --enable-server=freeciv-web \
+  --disable-client \
+  --enable-fcmp=cli \
+  --enable-json-protocol \
+  --disable-nls \
+  --enable-ai-static=rust \
+  --prefix="${INSTALL_DIR}" \
+  CFLAGS="-O3" \
+  CXXFLAGS="-O3"
 
-  # Optimize build settings
-  meson setup ../freeciv \
-    -Dserver='freeciv-web' \
-    -Dclients=[] \
-    -Dfcmp=cli \
-    -Djson-protocol=true \
-    -Dnls=false \
-    -Daudio=false \
-    -Druledit=false \
-    -Ddefault_library=static \
-    -Dprefix="${INSTALL_DIR}" \
-    -Doptimization=3 \
-    -Db_lto=true 
-
-  # Build using all available CPU cores
-  ninja -j "${NUM_CORES}"
-)
+# Build using all available CPU cores
+echo "Building Freeciv..."
+make -j "${NUM_CORES}"
 
 # Finish up
-echo "Build complete. Output located in: ${BUILD_DIR}"
+echo "Build complete."
 echo "Installed to: ${INSTALL_DIR}"
