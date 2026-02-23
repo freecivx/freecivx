@@ -126,7 +126,7 @@ static struct ai_type *rust_ai_get_self(void)
 #define RUST_AI_GET_SELF_OR_RETURN(varname) \
   struct ai_type *varname = rust_ai_get_self(); \
   if (varname == NULL) { \
-    rust_ai_log("ERROR: Rust AI not initialized or invalid in " __func__); \
+    rust_ai_log("ERROR: Rust AI not initialized or invalid"); \
     return; \
   }
 
