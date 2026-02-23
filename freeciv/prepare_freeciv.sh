@@ -17,13 +17,17 @@ if [ ! -f configure ]; then
   ./autogen.sh --disable-nls --no-configure-run
 fi
 
+# Create and enter build directory
+BUILD_DIR="${DIR}/build"
+mkdir -p "${BUILD_DIR}"
+cd "${BUILD_DIR}" || exit
+
 # Configure with Rust AI enabled by default
 echo "Configuring Freeciv with Rust AI..."
-./configure \
-  --enable-server=freeciv-web \
+../freeciv/configure \
+  --enable-fcweb \
   --disable-client \
   --enable-fcmp=cli \
-  --enable-json-protocol \
   --disable-nls \
   --enable-ai-static=rust \
   --prefix="${INSTALL_DIR}" \
