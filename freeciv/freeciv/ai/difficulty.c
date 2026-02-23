@@ -18,9 +18,11 @@
 /* utility */
 #include "astring.h"
 #include "bitvector.h"
+#include "log.h"
 #include "rand.h"
 
 /* common */
+#include "ai.h"
 #include "player.h"
 
 /* server */
@@ -47,11 +49,18 @@ void set_ai_level_directer(struct player *pplayer, enum ai_level level)
   pplayer->ai_common.science_cost = science_cost_of_skill_level(level);
   pplayer->ai_common.skill_level = level;
   
-  /* Send notification when Freeciv Rust Deity AI is enabled */
-  if (level == AI_LEVEL_DEITY) {
-    notify_conn(NULL, NULL, E_SETTING, ftc_server,
-                _("Freeciv Rust Deity AI enabled for player '%s'."),
+  /* Switch to Rust AI for deity level */
+  if (level == AI_LEVEL_DEITY && is_ai(pplayer)) {
+    struct ai_type *rust_ai = ai_type_by_name("rust");
+    if (rust_ai != NULL) {
+      pplayer->ai = rust_ai;
+      notify_conn(NULL, NULL, E_SETTING, ftc_server,
+                  _("Freeciv Rust Deity AI enabled for player '%s'."),
+                  player_name(pplayer));
+    } else {
+      log_error("Rust AI not available for deity level player '%s'",
                 player_name(pplayer));
+    }
   }
 }
 
