@@ -296,6 +296,7 @@ The plan is to incrementally replace C AI logic from `ai/default/` with pure Rus
 - [ ] Parallel processing - Leverage Rust's concurrency
 - [ ] Advanced algorithms - New AI strategies
 - [ ] Optimization - Performance improvements with Rust
+- [ ] Should copy "AI" logic and principles from Freeciv C AI, because that AI is quite good.
 
 - [ ] ### Phase 4: Use llm to generate AI chat messages using https://github.com/ggml-org/llama.cpp or something better. Concurrency for LLM. The LLM must generate messages in a separete thread or similar.
 
