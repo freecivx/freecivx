@@ -4696,6 +4696,7 @@ static bool handle_stdin_input_real(struct connection *caller, char *str,
   case CMD_NORMAL:
   case CMD_HARD:
   case CMD_CHEATING:
+  case CMD_DEITY:
 #ifdef FREECIV_DEBUG
   case CMD_EXPERIMENTAL:
 #endif
