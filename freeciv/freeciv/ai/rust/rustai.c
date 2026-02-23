@@ -146,6 +146,7 @@ static void rai_split_by_civil_war(struct player *original,
 {
   struct ai_type *rait = rust_ai_get_self();
 
+  /* Only assess danger for the original player, which is what Classic AI does */
   dai_assess_danger_player(rait, original, &(wld.map));
 }
 
@@ -388,8 +389,7 @@ static void rai_unit_save(struct section_file *file,
 {
   struct ai_type *rait = rust_ai_get_self();
 
-  /* Not in dai_unit, but aiunit.c */
-  /* dai_unit_save(rait, "ai", file, punit, unitstr); */
+  dai_unit_save(rait, "", file, punit, unitstr);
 }
 
 /**********************************************************************//**
@@ -401,8 +401,7 @@ static void rai_unit_load(const struct section_file *file,
 {
   struct ai_type *rait = rust_ai_get_self();
 
-  /* Not in dai_unit, but aiunit.c */
-  /* dai_unit_load(rait, "ai", file, punit, unitstr); */
+  dai_unit_load(rait, "", file, punit, unitstr);
 }
 
 /**********************************************************************//**
@@ -461,13 +460,12 @@ static void rai_do_first_activities(struct player *pplayer)
 }
 
 /**********************************************************************//**
-  Call default ai with rust ai type as parameter.
+  Restart phase - set phase done flag.
+  Unlike first_activities, this just marks the phase as done.
 **************************************************************************/
 static void rai_restart_phase(struct player *pplayer)
 {
-  struct ai_type *rait = rust_ai_get_self();
-
-  dai_do_first_activities(rait, pplayer);
+  pplayer->ai_phase_done = TRUE;
 }
 
 /**********************************************************************//**
