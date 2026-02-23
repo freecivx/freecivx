@@ -20,6 +20,11 @@ AM_CPPFLAGS = \
 RUST_TARGET = target/release/librustai.a
 
 $(RUST_TARGET):
+	@echo "============================================"
+	@echo "Compiling Freeciv Rust Deity AI"
+	@rustc --version || echo "Rust not found"
+	@cargo --version || echo "Cargo not found"
+	@echo "============================================"
 	cd $(srcdir) && cargo build --release
 
 if AI_MOD_STATIC_RUST
