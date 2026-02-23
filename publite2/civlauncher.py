@@ -80,21 +80,10 @@ class Civlauncher(Thread):
             # Start Freeciv-web process - keep file handle open for process lifetime
             freeciv_log = logs_dir / f"freeciv-web-stderr-{self.new_port}.log"
             freeciv_log_file = open(freeciv_log, "w")
-            
-            # Set LD_LIBRARY_PATH to include freeciv lib directory
-            env = os.environ.copy()
-            home_dir = Path(pwd.getpwuid(os.getuid()).pw_dir)
-            freeciv_lib_dir = home_dir / "freeciv" / "lib"
-            if 'LD_LIBRARY_PATH' in env:
-                env['LD_LIBRARY_PATH'] = f"{freeciv_lib_dir}:{env['LD_LIBRARY_PATH']}"
-            else:
-                env['LD_LIBRARY_PATH'] = str(freeciv_lib_dir)
-            
             freeciv_process = subprocess.Popen(
                 args,
                 stdout=subprocess.DEVNULL,
                 stderr=freeciv_log_file,
-                env=env,
             )
             freeciv_process.wait()
             logger.info("Freeciv-web process exited with code %s.", freeciv_process.returncode)
