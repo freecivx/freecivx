@@ -37,35 +37,81 @@ These are **independent, orthogonal features**:
 
 ### Rust AI Module Changes
 
-6. **freeciv/freeciv/ai/rust/rustai.c** (new file)
-   - Minimal C stub implementation of Rust AI module
+6. **freeciv/freeciv/ai/rust/rustai.c** (modified)
+   - Updated C stub implementation with Rust FFI declarations
+   - Added calls to Rust functions for initialization and logging
    - Implements `fc_ai_rust_capstr()` - returns capability string
    - Implements `fc_ai_rust_setup()` - initializes AI with name "rust"
    - Implements `rust_end_turn()` - basic callback to mark turns complete
 
-7. **freeciv/freeciv/ai/rust/Makefile.am** (new file)
+7. **freeciv/freeciv/ai/rust/Cargo.toml** (new file)
+   - Rust package configuration
+   - Defines staticlib crate type for C FFI
+   - Specifies dependencies (libc)
+
+8. **freeciv/freeciv/ai/rust/src/lib.rs** (new file)
+   - Actual Rust implementation code
+   - FFI exports for player management, tile evaluation, logging
+   - Safe Rust data structures with comprehensive tests
+   - Player aggression tracking and tile scoring algorithms
+
+9. **freeciv/freeciv/ai/rust/Makefile.am** (modified)
    - Build configuration for Rust AI module
+   - Integrates cargo build into autotools
    - Supports both static and dynamic linking
+   - Links Rust static library with C wrapper
 
-8. **freeciv/freeciv/ai/rust/README.md** (new file)
-   - Documentation for the Rust AI module
-   - Explains current status and future plans
+10. **freeciv/freeciv/meson.build** (modified)
+    - Added custom target for Rust library compilation
+    - Added 'ai/rust/rustai.c' to AI sources
+    - Links Rust static library (librustai.a) into fc_ai library
 
-9. **freeciv/freeciv/ai/Makefile.am**
-   - Added rust subdirectory to module_dirs for both static and dynamic builds
+11. **freeciv/freeciv/ai/rust/README.md** (modified)
+    - Documentation for the Rust AI module
+    - Explains current hybrid C/Rust implementation
+    - Documents FFI exports and testing procedures
 
-10. **freeciv/freeciv/configure.ac**
+12. **scripts/install/deb.sh** (modified)
+    - Added cargo and rustc to dependency list
+    - Ensures Rust toolchain is installed on Debian-based systems
+
+13. **freeciv/freeciv/ai/Makefile.am**
+    - Added rust subdirectory to module_dirs for both static and dynamic builds
+
+14. **freeciv/freeciv/configure.ac**
     - Added `AI_MOD_STATIC_RUST` configuration option
     - Added support for `--enable-ai-static=rust` configure flag
     - Added ai/rust/Makefile to AC_CONFIG_FILES
 
-11. **freeciv/freeciv/server/aiiface.c**
+15. **freeciv/freeciv/server/aiiface.c**
     - Added extern declaration for `fc_ai_rust_setup()`
     - Added initialization code for static Rust AI module in `ai_init()`
 
 ## How to Use
 
 ### Building with Rust AI
+
+The Rust AI is now integrated into the standard build process. The project uses Meson for building:
+
+```bash
+cd freeciv
+mkdir build
+cd build
+meson setup ..
+ninja
+ninja install
+```
+
+The Rust code will be automatically compiled during the build process via the custom Meson target.
+
+Alternatively, you can use the prepare script:
+
+```bash
+cd freeciv
+./prepare_freeciv.sh
+```
+
+For manual autotools build (legacy):
 
 ```bash
 cd freeciv/freeciv
@@ -91,24 +137,24 @@ In the Freeciv server console or client chat:
 
 ## Future Work
 
-The current Rust AI is a minimal stub. Future work includes:
+The Rust AI now has actual Rust implementation alongside the C wrapper. Current progress:
 
-1. **Create actual Rust implementation**
-   - Add Cargo.toml for Rust crate
-   - Implement Rust AI logic (port from ai/classic)
-   - Create FFI bindings between C and Rust
+1. **✅ Create Rust implementation foundation** 
+   - ✅ Added Cargo.toml for Rust crate
+   - ✅ Implemented Rust AI logic with FFI exports
+   - ✅ Created FFI bindings between C and Rust
+   - ✅ Integrated Rust build into Meson and Makefile.am
 
-2. **Implement full AI callbacks**
-   - City management
-   - Unit movement and combat
-   - Diplomacy
-   - Research and technology
-   - Economy management
+2. **⏳ Implement full AI callbacks in Rust**
+   - Current: Most callbacks delegate to Default AI (C)
+   - Next: Incrementally port callbacks to Rust
+   - Goals: City management, unit movement, diplomacy, research
 
-3. **Testing and optimization**
-   - Ensure memory safety across FFI boundary
-   - Performance benchmarking
-   - Integration tests
+3. **🔄 Testing and optimization**
+   - ✅ Memory safety across FFI boundary (Rust ownership)
+   - ✅ Unit tests for Rust code
+   - ⏳ Performance benchmarking vs C implementation
+   - ⏳ Integration tests with actual gameplay
 
 ## Technical Notes
 

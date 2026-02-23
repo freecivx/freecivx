@@ -16,9 +16,24 @@ AM_CPPFLAGS = \
 	-I$(top_srcdir)/ai/default \
 	-I$(top_srcdir)/dependencies/tinycthread
 
+# Build Rust library before C code
+RUST_TARGET = target/release/librustai.a
+
+$(RUST_TARGET):
+	cd $(srcdir) && cargo build --release
+
 if AI_MOD_STATIC_RUST
 librustai_la_SOURCES = rustai.c
+librustai_la_LIBADD = $(RUST_TARGET)
+librustai_la_DEPENDENCIES = $(RUST_TARGET)
 else
 fc_ai_rust_la_SOURCES = rustai.c
 fc_ai_rust_la_LDFLAGS = -module
+fc_ai_rust_la_LIBADD = $(RUST_TARGET)
+fc_ai_rust_la_DEPENDENCIES = $(RUST_TARGET)
 endif
+
+# Clean Rust build artifacts
+clean-local:
+	cd $(srcdir) && cargo clean || true
+
