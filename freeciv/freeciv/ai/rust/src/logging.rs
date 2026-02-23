@@ -6,7 +6,7 @@
 use std::ffi::CStr;
 use std::os::raw::c_char;
 
-/// Log a message from Rust AI
+/// Log a message from Rust AI (from C string pointer)
 /// This is a utility function for debugging
 #[no_mangle]
 pub unsafe extern "C" fn rust_ai_log(message: *const c_char) {
@@ -20,9 +20,15 @@ pub unsafe extern "C" fn rust_ai_log(message: *const c_char) {
     }
 }
 
+/// Log a message from Rust AI (from Rust string slice)
+/// Internal helper function for use within Rust code
+pub(crate) fn log_message(message: &str) {
+    eprintln!("[Rust AI] {}", message);
+}
+
 /// Get version information for the Rust AI module
 #[no_mangle]
 pub unsafe extern "C" fn rust_ai_get_version() -> *const c_char {
-    static VERSION: &[u8] = b"Rust AI v0.4.0 - Phase 2: Core Logic with Game State Bindings\0";
+    static VERSION: &[u8] = b"Rust AI v0.5.0 - Robust with Panic Catching\0";
     VERSION.as_ptr() as *const c_char
 }

@@ -57,6 +57,7 @@ extern void rust_ai_set_expansion_focus(void *data, int level);
 extern int rust_ai_get_science_focus(void *data);
 extern void rust_ai_set_science_focus(void *data, int level);
 extern void rust_ai_log(const char *message);
+extern void rust_ai_handle_message(void *data, const char *message, int from_player_id);
 extern int rust_ai_evaluate_tile(int x, int y, int terrain_type);
 extern int rust_ai_evaluate_city_placement(int x, int y, int terrain_type, int adjacent_water, int adjacent_land);
 extern int rust_ai_evaluate_unit_strength(int attack_strength, int defense_strength, int movement_points, int hitpoints, int max_hitpoints);
@@ -192,6 +193,7 @@ static void rai_data_phase_begin(struct player *pplayer, bool is_new_phase)
 {
   struct ai_type *rait = rust_ai_get_self();
 
+  rust_ai_log("Rust AI: data_phase_begin called");
   dai_data_phase_begin(rait, pplayer, is_new_phase);
 }
 
@@ -202,7 +204,9 @@ static void rai_data_phase_finished(struct player *pplayer)
 {
   struct ai_type *rait = rust_ai_get_self();
 
+  rust_ai_log("Rust AI: data_phase_finished called");
   dai_data_phase_finished(rait, pplayer);
+  rust_ai_log("Rust AI: data_phase_finished completed");
 }
 
 /**********************************************************************//**
@@ -480,9 +484,11 @@ static void rai_do_first_activities(struct player *pplayer)
 {
   struct ai_type *rait = rust_ai_get_self();
 
+  rust_ai_log("Rust AI: do_first_activities called");
   dai_do_first_activities(rait, pplayer);
 
   pplayer->ai_phase_done = TRUE;
+  rust_ai_log("Rust AI: do_first_activities completed");
 }
 
 /**********************************************************************//**
@@ -491,6 +497,7 @@ static void rai_do_first_activities(struct player *pplayer)
 **************************************************************************/
 static void rai_restart_phase(struct player *pplayer)
 {
+  rust_ai_log("Rust AI: restart_phase called");
   pplayer->ai_phase_done = TRUE;
 }
 
@@ -501,6 +508,7 @@ static void rai_diplomacy_actions(struct player *pplayer)
 {
   struct ai_type *rait = rust_ai_get_self();
 
+  rust_ai_log("Rust AI: diplomacy_actions called");
   dai_diplomacy_actions(rait, pplayer);
 }
 
@@ -511,7 +519,9 @@ static void rai_do_last_activities(struct player *pplayer)
 {
   struct ai_type *rait = rust_ai_get_self();
 
+  rust_ai_log("Rust AI: do_last_activities called");
   dai_do_last_activities(rait, pplayer);
+  rust_ai_log("Rust AI: do_last_activities completed");
 }
 
 /**********************************************************************//**
@@ -620,6 +630,33 @@ static void rai_consider_wonder_city(struct city *pcity, bool *result)
 }
 
 /**********************************************************************//**
+  Handle console commands sent to the AI player.
+  This is where we handle the ping/pong functionality.
+**************************************************************************/
+static void rai_player_console(struct player *pplayer, const char *cmd)
+{
+  struct ai_type *rait = rust_ai_get_self();
+
+  rust_ai_log("Rust AI: player_console called");
+  
+  if (cmd != NULL) {
+    /* Get player's AI data */
+    void *data = def_ai_player_data(pplayer, rait);
+    
+    /* Pass message to Rust AI for logging */
+    rust_ai_handle_message(data, cmd, 0);
+    
+    /* Check if the message is "ping" */
+    if (fc_strcasecmp(cmd, "ping") == 0) {
+      /* Send "pong" as a private message back to the sender */
+      notify_player(pplayer, NULL, E_CONNECTION, ftc_server,
+                    _("pong"));
+      rust_ai_log("Rust AI: Responded with 'pong'");
+    }
+  }
+}
+
+/**********************************************************************//**
   Setup player ai_funcs function pointers.
 **************************************************************************/
 bool fc_ai_rust_setup(struct ai_type *ai)
@@ -643,6 +680,7 @@ bool fc_ai_rust_setup(struct ai_type *ai)
   ai->funcs.player_free = rai_player_free;
   ai->funcs.player_save_relations = rai_player_save_relations;
   ai->funcs.player_load_relations = rai_player_load_relations;
+  ai->funcs.player_console = rai_player_console;
   ai->funcs.gained_control = rai_gained_control;
   ai->funcs.split_by_civil_war = rai_split_by_civil_war;
   ai->funcs.created_by_civil_war = rai_created_by_civil_war;
