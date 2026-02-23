@@ -354,6 +354,17 @@ Benefits of porting to Rust:
 - The module maintains an `ai_type` pointer via `rust_ai_get_self()`
 - Rust code uses `extern "C"` and `#[no_mangle]` for FFI compatibility
 
+### Critical: Turn Phase Completion
+
+**IMPORTANT**: The Rust AI must never block the Freeciv C server. To prevent server hangs:
+
+- The `first_activities` callback **MUST** set `pplayer->ai_phase_done = TRUE` after completing AI activities
+- The `restart_phase` callback **MUST** set `pplayer->ai_phase_done = TRUE` to signal phase completion
+- The server waits for all AI players to set this flag before advancing the turn
+- Failure to set this flag will cause the game to hang indefinitely
+
+See `rai_do_first_activities()` and `rai_restart_phase()` in `rustai.c` for the correct implementation pattern.
+
 ## Testing
 
 Test the Rust AI by:
