@@ -481,6 +481,8 @@ static void rai_do_first_activities(struct player *pplayer)
   struct ai_type *rait = rust_ai_get_self();
 
   dai_do_first_activities(rait, pplayer);
+
+  pplayer->ai_phase_done = TRUE;
 }
 
 /**********************************************************************//**
