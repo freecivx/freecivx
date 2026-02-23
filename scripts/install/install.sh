@@ -225,6 +225,14 @@ fi
 . "${basedir}/scripts/install/${FCW_INSTALL_SCRIPT}"
 echo "System specific install complete (${basedir}/scripts/install/${FCW_INSTALL_SCRIPT})"
 
+echo "==== Updating Rust to latest stable version ===="
+if ! command -v rustup &> /dev/null; then
+  echo "Installing rustup..."
+  curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --default-toolchain stable
+  source "${HOME}/.cargo/env"
+fi
+rustup update stable
+
 
 if which service > /dev/null; then
   svcman=default
