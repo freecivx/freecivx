@@ -277,7 +277,7 @@ static void rai_gov_value(struct player *pplayer, struct government *gov,
 /**********************************************************************//**
   Call default ai with rust ai type as parameter.
 **************************************************************************/
-static void rai_units_ruleset_init(struct ai_type *ait)
+static void rai_units_ruleset_init(void)
 {
   struct ai_type *rait = rust_ai_get_self();
 
@@ -287,7 +287,7 @@ static void rai_units_ruleset_init(struct ai_type *ait)
 /**********************************************************************//**
   Call default ai with rust ai type as parameter.
 **************************************************************************/
-static void rai_units_ruleset_close(struct ai_type *ait)
+static void rai_units_ruleset_close(void)
 {
   struct ai_type *rait = rust_ai_get_self();
 
