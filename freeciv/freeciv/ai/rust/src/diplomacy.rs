@@ -209,7 +209,7 @@ pub extern "C" fn rust_ai_first_contact_stance(
 /// Returns: 0=keep treaty, 1=consider breaking, 2=break now
 #[no_mangle]
 pub extern "C" fn rust_ai_should_break_treaty(
-    treaty_type: c_int,
+    _treaty_type: c_int,
     our_military_advantage: c_int,
     opportunity_value: c_int, // Value of what we could gain
     reputation_cost: c_int,

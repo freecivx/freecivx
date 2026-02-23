@@ -4,12 +4,16 @@
 //! This module implements the hard mode AI strategy with aggressive military planning.
 
 use std::os::raw::c_int;
-use crate::data_structures::{RustCity, RustUnit};
+use crate::data_structures::RustCity;
 
 // Constants from daimilitary.h
 const FINISH_HIM_CITY_COUNT: c_int = 5;
 const ASSESS_DANGER_MAX_DISTANCE: c_int = 40;
+
+// Military emergency thresholds (not currently used in FFI but part of C AI logic)
+#[allow(dead_code)]
 const DAI_WANT_BELOW_MIL_EMERGENCY: f64 = 1000.0;
+#[allow(dead_code)]
 const DAI_WANT_MILITARY_EMERGENCY: f64 = 1000.1;
 
 /// Assess danger level for a city (based on dai_assess_danger_player)
@@ -174,7 +178,7 @@ pub extern "C" fn rust_ai_should_attack(
     our_military_strength: c_int,
     enemy_military_strength: c_int,
     enemy_cities_count: c_int,
-    our_cities_count: c_int,
+    _our_cities_count: c_int,
 ) -> c_int {
     // Hard mode: aggressive when we have advantage
     let strength_ratio = if enemy_military_strength > 0 {

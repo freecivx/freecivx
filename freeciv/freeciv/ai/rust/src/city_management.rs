@@ -5,7 +5,7 @@
 
 use std::os::raw::c_int;
 use crate::data_structures::RustCity;
-use crate::wants::{WantScore, rust_ai_want_unit, rust_ai_want_building, rust_ai_want_settler, rust_ai_want_wonder};
+use crate::wants::{rust_ai_want_unit, rust_ai_want_building, rust_ai_want_settler, rust_ai_want_wonder};
 
 /// Invasion tracking structure (from ai_invasion in daicity.h)
 #[repr(C)]
@@ -123,13 +123,13 @@ pub extern "C" fn rust_ai_city_choose_production(
 /// Returns specialist assignment: 0=workers, 1=scientists, 2=taxmen, 3=entertainers
 #[no_mangle]
 pub extern "C" fn rust_ai_city_manage_citizens(
-    city: &RustCity,
+    _city: &RustCity,
     science_priority: c_int,
     gold_priority: c_int,
     happiness_need: c_int,
 ) -> c_int {
     // If city has good tile yields, use workers
-    if city.food_surplus >= 2 && city.shield_surplus >= 5 {
+    if _city.food_surplus >= 2 && _city.shield_surplus >= 5 {
         return 0; // Workers on tiles
     }
     
@@ -156,7 +156,7 @@ pub extern "C" fn rust_ai_city_manage_citizens(
 /// Returns: 0=don't buy, 1=consider buying, 2=buy immediately
 #[no_mangle]
 pub extern "C" fn rust_ai_city_should_buy(
-    city: &RustCity,
+    _city: &RustCity,
     production_cost: c_int,
     gold_available: c_int,
     danger: c_int,
