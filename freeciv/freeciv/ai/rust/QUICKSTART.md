@@ -64,12 +64,31 @@ Currently, the Rust AI provides:
 3. **Unit Combat Assessment** (Rust)
    - Calculates unit strength based on stats
    - Factors in health, mobility, attack/defense
+   - **NEW:** Predicts battle outcomes with probability (v0.3.0)
 
 4. **Threat Assessment** (Rust)
    - Evaluates danger from enemy forces
    - Considers distance and relative strength
 
-5. **Full Game AI** (Default AI delegation)
+5. **Technology Management** (Rust) - **NEW in v0.3.0**
+   - Evaluates research priorities
+   - Considers military and economic value
+   - Factors in enabled units, buildings, and wonders
+   - Optimizes cost vs. benefit
+
+6. **Diplomacy System** (Rust) - **NEW in v0.3.0**
+   - Assesses diplomatic stances (-100 to 100)
+   - Considers military strength, borders, history
+   - Evaluates trade benefits and tech advancement
+   - Balances aggression vs. cooperation
+
+7. **Economic Planning** (Rust) - **NEW in v0.3.0**
+   - Evaluates trade route potential
+   - Optimizes city production decisions
+   - Recommends specialist allocation
+   - Plans city build orders
+
+8. **Full Game AI** (Default AI delegation)
    - City management
    - Unit movement and combat
    - Diplomacy
@@ -108,7 +127,7 @@ cd freeciv/freeciv/ai/rust
 cargo test
 ```
 
-All tests pass ✓
+All tests pass ✓ (14 tests covering all features)
 
 ## Future Development
 
