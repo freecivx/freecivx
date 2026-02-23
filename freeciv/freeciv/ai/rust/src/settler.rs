@@ -237,6 +237,8 @@ mod tests {
     
     #[test]
     fn test_founding_site_quality() {
+        const DIFFERENT_OWNER: c_int = 5; // A different player ID for testing
+        
         let good_tile = RustTile {
             x: 20,
             y: 20,
@@ -251,13 +253,13 @@ mod tests {
         let score = rust_ai_evaluate_founding_site(&good_tile, 10, 8, 5, 0, 15);
         assert!(score > 60);
         
-        // Already owned: should be much worse
+        // Already owned by another player: should return 0 (see line 95-97)
         let mut owned_tile = good_tile.clone();
-        owned_tile.owner_id = 5; // Different owner
+        owned_tile.owner_id = DIFFERENT_OWNER;
         let bad_score = rust_ai_evaluate_founding_site(&owned_tile, 10, 8, 5, 0, 15);
         
-        // The penalty for owned tile should make it much lower
-        assert!(bad_score == 0 || bad_score < score / 2);
+        // Implementation returns 0 for owned tiles
+        assert_eq!(bad_score, 0, "Owned tiles should be disqualified (score=0)");
     }
     
     #[test]

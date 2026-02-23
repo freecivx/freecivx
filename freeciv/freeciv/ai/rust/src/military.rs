@@ -10,11 +10,8 @@ use crate::data_structures::RustCity;
 const FINISH_HIM_CITY_COUNT: c_int = 5;
 const ASSESS_DANGER_MAX_DISTANCE: c_int = 40;
 
-// Military emergency thresholds (not currently used in FFI but part of C AI logic)
-#[allow(dead_code)]
-const DAI_WANT_BELOW_MIL_EMERGENCY: f64 = 1000.0;
-#[allow(dead_code)]
-const DAI_WANT_MILITARY_EMERGENCY: f64 = 1000.1;
+// Emergency thresholds - used for want comparison (integer representation of C AI floats)
+const WANT_EMERGENCY_THRESHOLD: c_int = 1000;
 
 /// Assess danger level for a city (based on dai_assess_danger_player)
 /// Returns danger score (higher means more dangerous)
@@ -135,8 +132,8 @@ pub extern "C" fn rust_ai_military_want(
     }
     
     // Emergency threshold (from DAI_WANT_MILITARY_EMERGENCY)
-    if want > 1000 {
-        want = 1000 + (want - 1000) / 10; // Diminishing returns after emergency level
+    if want > WANT_EMERGENCY_THRESHOLD {
+        want = WANT_EMERGENCY_THRESHOLD + (want - WANT_EMERGENCY_THRESHOLD) / 10; // Diminishing returns after emergency level
     }
     
     want
