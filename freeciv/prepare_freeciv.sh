@@ -30,6 +30,7 @@ meson setup \
   -Dserver=freeciv-web \
   -Daudio=false \
   -Druledit=false \
+  -Dc_link_args="-Wl,-rpath,${INSTALL_DIR}/lib" \
   ../freeciv
 
 # Build using all available CPU cores
