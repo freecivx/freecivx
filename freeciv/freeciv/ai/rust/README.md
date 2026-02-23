@@ -10,7 +10,9 @@ The Rust AI module is a **hybrid implementation** combining C wrappers with actu
 
 ### Features
 
-**Recent Fix (2024):** The Rust AI module is now properly registered at runtime. The `AI_MOD_STATIC_RUST` preprocessor macro has been added to `meson_fc_config.h.in`, enabling the Rust AI to initialize when the Freeciv server starts. This means the Rust AI is now minimally working and can be selected in games!
+**Recent Enhancement (v0.3.0):** Added advanced AI features including technology evaluation, diplomacy assessment, trade route optimization, production planning, battle prediction, specialist allocation, and city build order planning.
+
+**Previous Fix (2024):** The Rust AI module is now properly registered at runtime. The `AI_MOD_STATIC_RUST` preprocessor macro has been added to `meson_fc_config.h.in`, enabling the Rust AI to initialize when the Freeciv server starts. This means the Rust AI is now minimally working and can be selected in games!
 
 Core features:
 
@@ -18,8 +20,18 @@ Core features:
 - ✅ **Actual Rust code** - Contains real Rust implementation with FFI bindings
 - ✅ **Player management** - Rust-based player data structures and aggression tracking
 - ✅ **Tile evaluation** - Rust-implemented tile scoring algorithm
+- ✅ **City placement** - Advanced city location evaluation
+- ✅ **Unit strength** - Combat value calculation with health modifiers
+- ✅ **Threat assessment** - Enemy force danger evaluation
+- ✅ **Technology evaluation** - Research priority calculation (NEW in v0.3.0)
+- ✅ **Diplomacy assessment** - Diplomatic stance evaluation (NEW in v0.3.0)
+- ✅ **Trade route optimization** - Trade route value calculation (NEW in v0.3.0)
+- ✅ **Production planning** - Optimal city production decisions (NEW in v0.3.0)
+- ✅ **Battle prediction** - Combat outcome probability (NEW in v0.3.0)
+- ✅ **Specialist allocation** - City specialist recommendations (NEW in v0.3.0)
+- ✅ **Build order planning** - City building priority system (NEW in v0.3.0)
 - ✅ **Logging** - Rust-based logging for debugging
-- ✅ **Unit tests** - Comprehensive Rust test suite
+- ✅ **Unit tests** - Comprehensive Rust test suite (14 tests)
 - ✅ **Memory safety** - Rust's ownership system ensures safe FFI interactions
 - ✅ **Player management** - Allocation, lifecycle, and control (via Default AI)
 - ✅ **City management** - City AI decisions, building choices, and optimization (via Default AI)
@@ -96,6 +108,13 @@ The module includes actual Rust code in `src/lib.rs` that provides:
 - `rust_ai_evaluate_city_placement(x, y, terrain, water, land)` - Score city placement quality
 - `rust_ai_evaluate_unit_strength(attack, defense, move, hp, max_hp)` - Calculate unit combat value
 - `rust_ai_assess_threat(enemies, strength, distance, our_defense)` - Assess threat level (0-100)
+- `rust_ai_evaluate_tech(cost, military, economic, units, buildings, wonders)` - **NEW** Technology research priority
+- `rust_ai_evaluate_diplomacy(our_str, their_str, borders, wars, trade, tech)` - **NEW** Diplomatic stance (-100 to 100)
+- `rust_ai_evaluate_trade_route(our_size, their_size, dist, our_bonus, their_bonus, connection)` - **NEW** Trade route value
+- `rust_ai_optimize_production(food, prod, science, pop, military, growth, infra)` - **NEW** Production recommendation
+- `rust_ai_predict_battle(att_str, att_hp, att_fp, def_str, def_hp, def_fp, terrain)` - **NEW** Battle win probability (0-100)
+- `rust_ai_evaluate_specialist(food, shields, science_pri, tax_pri, citizens)` - **NEW** Specialist type recommendation
+- `rust_ai_city_build_order(is_first, turn, enemies, coastal)` - **NEW** City building priority
 - `rust_ai_get_version()` - Get Rust AI version string
 
 ### Data Structures
@@ -125,8 +144,17 @@ Tests cover:
 - Unit strength calculation with health modifiers
 - Threat assessment from enemy forces
 - Player data management (aggression, expansion, science focus)
+- Technology evaluation and research prioritization (NEW)
+- Diplomatic stance assessment (NEW)
+- Trade route value calculation (NEW)
+- Production optimization decisions (NEW)
+- Battle outcome prediction (NEW)
+- Specialist allocation recommendations (NEW)
+- City build order planning (NEW)
 - Parameter clamping and edge cases
 - Memory safety (allocation/deallocation)
+
+**Test Results:** All 14 tests passing ✓
 
 ## Usage
 
