@@ -23,5 +23,6 @@ pub unsafe extern "C" fn rust_ai_log(message: *const c_char) {
 /// Get version information for the Rust AI module
 #[no_mangle]
 pub unsafe extern "C" fn rust_ai_get_version() -> *const c_char {
-    "Rust AI v0.4.0 - Phase 2: Core Logic with Game State Bindings\0".as_ptr() as *const c_char
+    static VERSION: &[u8] = b"Rust AI v0.4.0 - Phase 2: Core Logic with Game State Bindings\0";
+    VERSION.as_ptr() as *const c_char
 }
