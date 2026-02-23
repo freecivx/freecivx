@@ -6,6 +6,7 @@ cd ${SCRIPT_DIR}
 
 export FREECIV_WEB_DIR="${SCRIPT_DIR}/.."
 export FREECIV_DATA_PATH="${HOME}/freeciv/share/freeciv/"
+export LD_LIBRARY_PATH="${HOME}/freeciv/lib:${LD_LIBRARY_PATH}"
 export LC_ALL=en_US.UTF-8
 export LANG=en_US.UTF-8
 export LANGUAGE=en_US.UTF-8

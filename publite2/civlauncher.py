@@ -62,6 +62,12 @@ class Civlauncher(Thread):
         logs_dir = script_dir.parent / "logs"
         logs_dir.mkdir(parents=True, exist_ok=True)
 
+        # Set up environment with library path
+        home_dir = Path(pwd.getpwuid(os.getuid()).pw_dir)
+        env = os.environ.copy()
+        lib_path = str(home_dir / "freeciv" / "lib")
+        env['LD_LIBRARY_PATH'] = f"{lib_path}:{env.get('LD_LIBRARY_PATH', '')}"
+
         proxy_process = None
         proxy_log_file = None
         freeciv_log_file = None
@@ -82,6 +88,7 @@ class Civlauncher(Thread):
             freeciv_log_file = open(freeciv_log, "w")
             freeciv_process = subprocess.Popen(
                 args,
+                env=env,
                 stdout=subprocess.DEVNULL,
                 stderr=freeciv_log_file,
             )
