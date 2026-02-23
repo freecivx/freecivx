@@ -23,6 +23,7 @@ echo "Configuring Freeciv with Rust AI using Meson..."
 meson setup \
   --prefix="${INSTALL_DIR}" \
   --buildtype=release \
+  --libdir=lib \
   -Dclients=[] \
   -Dfcmp=cli \
   -Djson-protocol=true \

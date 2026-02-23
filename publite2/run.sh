@@ -1,6 +1,8 @@
 #!/bin/bash
 
 export FREECIV_SAVE_PATH=/var/lib/tomcat11/webapps/data/savegames/;
+# Set library path for Freeciv shared libraries
+export LD_LIBRARY_PATH="${HOME}/freeciv/lib${LD_LIBRARY_PATH:+:${LD_LIBRARY_PATH}}"
 
 # Variables
 SCRIPT="publite2.py"
