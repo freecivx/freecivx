@@ -17,6 +17,65 @@ pub struct RustAIPlayerData {
     science_focus: c_int,     // 0-100: 0=military, 100=science
 }
 
+// ============================================================================
+// Phase 2: Game State Bindings - Rust structs for cities, units, tiles
+// ============================================================================
+
+/// Tile game state representation
+/// Represents a map tile with terrain and resource information
+#[repr(C)]
+#[derive(Debug, Clone, Copy)]
+pub struct RustTile {
+    pub x: c_int,
+    pub y: c_int,
+    pub terrain_type: c_int,
+    pub has_river: c_int,
+    pub has_road: c_int,
+    pub has_railroad: c_int,
+    pub owner_id: c_int,  // -1 if unowned
+    pub worked_by_city_id: c_int,  // -1 if not worked
+}
+
+/// Unit game state representation
+/// Represents a military or civilian unit
+#[repr(C)]
+#[derive(Debug, Clone, Copy)]
+pub struct RustUnit {
+    pub unit_id: c_int,
+    pub owner_id: c_int,
+    pub x: c_int,
+    pub y: c_int,
+    pub attack_strength: c_int,
+    pub defense_strength: c_int,
+    pub movement_points: c_int,
+    pub moves_left: c_int,
+    pub hitpoints: c_int,
+    pub max_hitpoints: c_int,
+    pub firepower: c_int,
+    pub veteran_level: c_int,
+    pub is_military: c_int,  // 0=civilian, 1=military
+}
+
+/// City game state representation
+/// Represents a city with production and population
+#[repr(C)]
+#[derive(Debug, Clone, Copy)]
+pub struct RustCity {
+    pub city_id: c_int,
+    pub owner_id: c_int,
+    pub x: c_int,
+    pub y: c_int,
+    pub population: c_int,
+    pub food_surplus: c_int,
+    pub shield_surplus: c_int,
+    pub trade_production: c_int,
+    pub science_output: c_int,
+    pub gold_output: c_int,
+    pub luxury_output: c_int,
+    pub is_coastal: c_int,  // 0=no, 1=yes
+    pub turn_founded: c_int,
+}
+
 /// Initialize Rust AI for a player
 /// This function is called when a player starts using the Rust AI
 #[no_mangle]
@@ -281,7 +340,7 @@ pub extern "C" fn rust_ai_assess_threat(
 /// Get version information for the Rust AI module
 #[no_mangle]
 pub unsafe extern "C" fn rust_ai_get_version() -> *const c_char {
-    "Rust AI v0.3.0 - Enhanced with Advanced Features\0".as_ptr() as *const c_char
+    "Rust AI v0.4.0 - Phase 2: Core Logic with Game State Bindings\0".as_ptr() as *const c_char
 }
 
 /// Evaluate a technology for research priority
@@ -647,6 +706,313 @@ pub extern "C" fn rust_ai_city_build_order(
     2 // Marketplace for economy
 }
 
+// ============================================================================
+// Phase 2: Decision Algorithms - AI decision-making in Rust
+// ============================================================================
+
+/// Evaluate whether a city should build a unit or building
+/// Uses city and game state to make intelligent production decisions
+/// 
+/// # Arguments
+/// * `city` - City state information
+/// * `nearby_enemies` - Number of enemy units near the city
+/// * `our_military_count` - Total number of our military units
+/// * `turn` - Current game turn
+/// 
+/// # Returns
+/// Production decision: 0=settler, 1=military_unit, 2=building, 3=wonder
+#[no_mangle]
+pub extern "C" fn rust_ai_decide_city_production(
+    city: &RustCity,
+    nearby_enemies: c_int,
+    our_military_count: c_int,
+    turn: c_int,
+) -> c_int {
+    // Immediate military need
+    if nearby_enemies > 2 {
+        return 1; // Build military units for defense
+    }
+    
+    // Early game: focus on expansion and growth
+    if turn < 50 {
+        if city.population >= 3 && city.food_surplus >= 2 {
+            return 0; // Build settler for expansion
+        }
+        return 2; // Build infrastructure (granary, etc.)
+    }
+    
+    // Check if we need more military
+    let military_ratio = if city.population > 0 {
+        our_military_count / city.population.max(1)
+    } else {
+        0
+    };
+    
+    if military_ratio < 1 && nearby_enemies > 0 {
+        return 1; // Need more military units
+    }
+    
+    // High production cities can build wonders
+    if city.shield_surplus > 15 && city.population >= 8 {
+        return 3; // Build wonder
+    }
+    
+    // Mid game: balance between military and buildings
+    if turn < 150 {
+        if city.science_output < 5 {
+            return 2; // Need science buildings
+        }
+        if our_military_count < 5 {
+            return 1; // Need some military
+        }
+        return 2; // Focus on buildings
+    }
+    
+    // Late game: economy and military balance
+    if city.gold_output < 10 {
+        2 // Economic buildings
+    } else if our_military_count < 10 {
+        1 // Military units
+    } else {
+        2 // Default to buildings
+    }
+}
+
+/// Evaluate the best target tile for a unit to move to
+/// Considers terrain, strategic value, and unit capabilities
+/// 
+/// # Arguments
+/// * `unit` - Unit state information
+/// * `target_tile` - Potential target tile
+/// * `has_enemies` - Are there enemies on or near the target? (0=no, 1=yes)
+/// * `strategic_value` - Strategic importance of the tile (0-100)
+/// 
+/// # Returns
+/// Movement score (higher is better, 0 means don't move here)
+#[no_mangle]
+pub extern "C" fn rust_ai_evaluate_unit_move(
+    unit: &RustUnit,
+    target_tile: &RustTile,
+    has_enemies: c_int,
+    strategic_value: c_int,
+) -> c_int {
+    // Can't move if no movement points left
+    if unit.moves_left <= 0 {
+        return 0;
+    }
+    
+    // Calculate distance (Manhattan distance approximation)
+    let dx = (unit.x - target_tile.x).abs();
+    let dy = (unit.y - target_tile.y).abs();
+    let distance = dx + dy;
+    
+    // Check if we can reach the tile with remaining movement
+    if distance > unit.moves_left {
+        return 0; // Too far to reach
+    }
+    
+    let mut score = strategic_value;
+    
+    // Military units: evaluate combat potential
+    if unit.is_military > 0 {
+        if has_enemies > 0 {
+            // Factor in unit health and strength
+            let combat_readiness = (unit.hitpoints * 100) / unit.max_hitpoints.max(1);
+            if combat_readiness > 70 {
+                score += 50; // Healthy unit, engage enemies
+            } else if combat_readiness < 40 {
+                score -= 100; // Wounded, avoid combat
+            }
+        }
+        
+        // Prefer tiles with roads for faster movement
+        if target_tile.has_railroad > 0 {
+            score += 20;
+        } else if target_tile.has_road > 0 {
+            score += 10;
+        }
+    } else {
+        // Civilian units: avoid enemies
+        if has_enemies > 0 {
+            score -= 200; // Strongly avoid enemies
+        }
+        
+        // Prefer safe, owned territory
+        if target_tile.owner_id == unit.owner_id {
+            score += 30;
+        }
+    }
+    
+    // Movement efficiency: prefer closer tiles
+    score += (10 - distance) * 5;
+    
+    score.max(0)
+}
+
+/// Evaluate whether a unit should attack an enemy
+/// Considers unit strengths, health, and tactical situation
+/// 
+/// # Arguments
+/// * `attacker` - Our unit considering the attack
+/// * `defender` - Enemy unit to potentially attack
+/// * `terrain_bonus` - Terrain defense bonus for defender (0-100)
+/// * `support_nearby` - Number of our units nearby for support
+/// 
+/// # Returns
+/// Attack recommendation: 0=don't attack, 1=attack if safe, 2=priority attack
+#[no_mangle]
+pub extern "C" fn rust_ai_evaluate_attack(
+    attacker: &RustUnit,
+    defender: &RustUnit,
+    terrain_bonus: c_int,
+    support_nearby: c_int,
+) -> c_int {
+    // Don't attack if we're badly wounded
+    let our_health = (attacker.hitpoints * 100) / attacker.max_hitpoints.max(1);
+    if our_health < 30 {
+        return 0; // Too weak to attack
+    }
+    
+    // Calculate win probability using our battle prediction
+    let win_chance = rust_ai_predict_battle(
+        attacker.attack_strength,
+        attacker.hitpoints,
+        attacker.firepower,
+        defender.defense_strength,
+        defender.hitpoints,
+        defender.firepower,
+        terrain_bonus,
+    );
+    
+    // Factor in veteran level (experienced units are more effective)
+    let adjusted_chance = win_chance + (attacker.veteran_level * 5);
+    
+    // Consider nearby support
+    let support_bonus = support_nearby * 10;
+    let final_chance = (adjusted_chance + support_bonus).min(100);
+    
+    // Decision logic
+    if final_chance >= 80 {
+        2 // High confidence attack
+    } else if final_chance >= 60 && our_health > 70 {
+        1 // Reasonable attack if healthy
+    } else if final_chance >= 50 && support_nearby >= 2 {
+        1 // Attack with support
+    } else {
+        0 // Don't attack, odds not favorable
+    }
+}
+
+/// Evaluate the best location for a new city (settler decision)
+/// 
+/// # Arguments
+/// * `settler` - Settler unit information
+/// * `candidate_tile` - Potential city location
+/// * `nearby_cities` - Number of our cities within 4 tiles
+/// * `resources_nearby` - Quality of nearby resources (0-100)
+/// 
+/// # Returns
+/// City placement score (higher is better, 0 means don't settle here)
+#[no_mangle]
+pub extern "C" fn rust_ai_evaluate_settle_location(
+    settler: &RustUnit,
+    candidate_tile: &RustTile,
+    nearby_cities: c_int,
+    resources_nearby: c_int,
+) -> c_int {
+    // Don't settle too close to existing cities
+    if nearby_cities > 1 {
+        return 0;
+    }
+    
+    // Basic tile evaluation
+    let mut score = rust_ai_evaluate_tile(
+        candidate_tile.x,
+        candidate_tile.y,
+        candidate_tile.terrain_type,
+    );
+    
+    // Resource quality is very important
+    score += resources_nearby;
+    
+    // Slight penalty for one nearby city (prefer some distance)
+    if nearby_cities == 1 {
+        score -= 20;
+    }
+    
+    // Bonus for rivers (food and trade)
+    if candidate_tile.has_river > 0 {
+        score += 40;
+    }
+    
+    // Consider if tile is already owned
+    if candidate_tile.owner_id >= 0 && candidate_tile.owner_id != settler.owner_id {
+        score -= 100; // Don't settle in enemy territory
+    }
+    
+    // Bonus for unclaimed territory
+    if candidate_tile.owner_id < 0 {
+        score += 30;
+    }
+    
+    score.max(0)
+}
+
+/// Evaluate city growth strategy
+/// Determines if a city should focus on growth, production, or wealth
+/// 
+/// # Arguments
+/// * `city` - City state information
+/// * `population_limit` - Aqueduct/sewer limit (0 if no limit)
+/// * `starvation_risk` - Is city at risk of starvation? (0=no, 1=yes)
+/// 
+/// # Returns
+/// Strategy: 0=maximize_growth, 1=maximize_production, 2=maximize_wealth
+#[no_mangle]
+pub extern "C" fn rust_ai_city_growth_strategy(
+    city: &RustCity,
+    population_limit: c_int,
+    starvation_risk: c_int,
+) -> c_int {
+    // Emergency: prevent starvation
+    if starvation_risk > 0 {
+        return 0; // Focus on food/growth
+    }
+    
+    // If we're at population cap, don't focus on growth
+    if population_limit > 0 && city.population >= population_limit {
+        // Mature city: focus on production or wealth
+        if city.shield_surplus < 10 {
+            return 1; // Need more production
+        } else {
+            return 2; // Focus on wealth
+        }
+    }
+    
+    // Small cities should grow
+    if city.population < 6 {
+        return 0; // Maximize growth
+    }
+    
+    // Medium cities: balance based on output
+    if city.population < 12 {
+        if city.food_surplus < 2 {
+            return 0; // Need food for growth
+        } else if city.shield_surplus < 10 {
+            return 1; // Need production
+        } else {
+            return 0; // Continue growing
+        }
+    }
+    
+    // Large cities: production or wealth
+    if city.shield_surplus < 15 {
+        1 // Maximize production
+    } else {
+        2 // Maximize wealth
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -956,7 +1322,283 @@ mod tests {
             let c_str = CStr::from_ptr(version);
             let version_str = c_str.to_str().unwrap();
             // Should contain the new version number
-            assert!(version_str.contains("0.3.0"));
+            assert!(version_str.contains("0.4.0"));
         }
+    }
+    
+    // ============================================================================
+    // Phase 2 Tests: Game State Bindings and Decision Algorithms
+    // ============================================================================
+    
+    #[test]
+    fn test_city_production_decision() {
+        let city = RustCity {
+            city_id: 1,
+            owner_id: 1,
+            x: 10,
+            y: 10,
+            population: 5,
+            food_surplus: 3,
+            shield_surplus: 8,
+            trade_production: 5,
+            science_output: 3,
+            gold_output: 2,
+            luxury_output: 1,
+            is_coastal: 0,
+            turn_founded: 1,
+        };
+        
+        // Under attack - should build military
+        let under_attack = rust_ai_decide_city_production(&city, 3, 2, 30);
+        assert_eq!(under_attack, 1);
+        
+        // Early game with good food - should build settler
+        let early_expansion = rust_ai_decide_city_production(&city, 0, 5, 40);
+        assert_eq!(early_expansion, 0);
+        
+        // Large city with high production - could build wonder
+        let mut wonder_city = city;
+        wonder_city.shield_surplus = 20;
+        wonder_city.population = 10;
+        let wonder_build = rust_ai_decide_city_production(&wonder_city, 0, 8, 100);
+        assert_eq!(wonder_build, 3);
+    }
+    
+    #[test]
+    fn test_unit_move_evaluation() {
+        let unit = RustUnit {
+            unit_id: 1,
+            owner_id: 1,
+            x: 10,
+            y: 10,
+            attack_strength: 5,
+            defense_strength: 3,
+            movement_points: 3,
+            moves_left: 2,
+            hitpoints: 80,
+            max_hitpoints: 100,
+            firepower: 1,
+            veteran_level: 1,
+            is_military: 1,
+        };
+        
+        let target_tile = RustTile {
+            x: 11,
+            y: 11,
+            terrain_type: 2, // Plains
+            has_river: 0,
+            has_road: 1,
+            has_railroad: 0,
+            owner_id: 1,
+            worked_by_city_id: -1,
+        };
+        
+        // Military unit moving to strategic location with enemies
+        let combat_move = rust_ai_evaluate_unit_move(&unit, &target_tile, 1, 50);
+        assert!(combat_move > 0);
+        
+        // Civilian unit should avoid enemies
+        let mut civilian = unit;
+        civilian.is_military = 0;
+        let civilian_move = rust_ai_evaluate_unit_move(&civilian, &target_tile, 1, 50);
+        assert!(civilian_move < combat_move); // Should score lower due to enemies
+        
+        // No movement points left
+        let mut tired_unit = unit;
+        tired_unit.moves_left = 0;
+        let no_move = rust_ai_evaluate_unit_move(&tired_unit, &target_tile, 0, 50);
+        assert_eq!(no_move, 0);
+    }
+    
+    #[test]
+    fn test_attack_evaluation() {
+        let attacker = RustUnit {
+            unit_id: 1,
+            owner_id: 1,
+            x: 10,
+            y: 10,
+            attack_strength: 10,
+            defense_strength: 5,
+            movement_points: 3,
+            moves_left: 2,
+            hitpoints: 90,
+            max_hitpoints: 100,
+            firepower: 1,
+            veteran_level: 2,
+            is_military: 1,
+        };
+        
+        let weak_defender = RustUnit {
+            unit_id: 2,
+            owner_id: 2,
+            x: 11,
+            y: 11,
+            attack_strength: 3,
+            defense_strength: 5,
+            movement_points: 1,
+            moves_left: 1,
+            hitpoints: 50,
+            max_hitpoints: 100,
+            firepower: 1,
+            veteran_level: 0,
+            is_military: 1,
+        };
+        
+        // Strong attacker vs weak defender - should recommend attack
+        let favorable = rust_ai_evaluate_attack(&attacker, &weak_defender, 0, 1);
+        assert!(favorable > 0);
+        
+        // Wounded attacker shouldn't attack
+        let mut wounded = attacker;
+        wounded.hitpoints = 25;
+        let wounded_attack = rust_ai_evaluate_attack(&wounded, &weak_defender, 0, 0);
+        assert_eq!(wounded_attack, 0);
+        
+        // Strong defender with terrain bonus
+        let mut strong_defender = weak_defender;
+        strong_defender.defense_strength = 15;
+        strong_defender.hitpoints = 100;
+        let unfavorable = rust_ai_evaluate_attack(&attacker, &strong_defender, 50, 0);
+        // Should be cautious or refuse
+        assert!(unfavorable <= 1);
+    }
+    
+    #[test]
+    fn test_settle_location_evaluation() {
+        let settler = RustUnit {
+            unit_id: 1,
+            owner_id: 1,
+            x: 10,
+            y: 10,
+            attack_strength: 0,
+            defense_strength: 1,
+            movement_points: 1,
+            moves_left: 1,
+            hitpoints: 20,
+            max_hitpoints: 20,
+            firepower: 0,
+            veteran_level: 0,
+            is_military: 0,
+        };
+        
+        let good_tile = RustTile {
+            x: 15,
+            y: 15,
+            terrain_type: 1, // Grassland
+            has_river: 1,
+            has_road: 0,
+            has_railroad: 0,
+            owner_id: -1, // Unclaimed
+            worked_by_city_id: -1,
+        };
+        
+        // Good location with resources, no nearby cities
+        let excellent = rust_ai_evaluate_settle_location(&settler, &good_tile, 0, 80);
+        assert!(excellent > 100);
+        
+        // Too close to existing city
+        let too_close = rust_ai_evaluate_settle_location(&settler, &good_tile, 2, 80);
+        assert_eq!(too_close, 0);
+        
+        // Enemy territory
+        let mut enemy_tile = good_tile;
+        enemy_tile.owner_id = 2;
+        let enemy_land = rust_ai_evaluate_settle_location(&settler, &enemy_tile, 0, 80);
+        assert!(enemy_land < excellent);
+    }
+    
+    #[test]
+    fn test_city_growth_strategy() {
+        let small_city = RustCity {
+            city_id: 1,
+            owner_id: 1,
+            x: 10,
+            y: 10,
+            population: 3,
+            food_surplus: 2,
+            shield_surplus: 3,
+            trade_production: 2,
+            science_output: 1,
+            gold_output: 1,
+            luxury_output: 0,
+            is_coastal: 0,
+            turn_founded: 1,
+        };
+        
+        // Small city should focus on growth
+        let grow = rust_ai_city_growth_strategy(&small_city, 0, 0);
+        assert_eq!(grow, 0);
+        
+        // City at starvation risk
+        let starving = rust_ai_city_growth_strategy(&small_city, 0, 1);
+        assert_eq!(starving, 0);
+        
+        // Large city at population cap
+        let mut large_city = small_city;
+        large_city.population = 12;
+        large_city.shield_surplus = 15;
+        let capped = rust_ai_city_growth_strategy(&large_city, 12, 0);
+        assert!(capped == 1 || capped == 2); // Production or wealth
+        
+        // Large city with low production
+        let mut low_prod = large_city;
+        low_prod.shield_surplus = 5;
+        let need_prod = rust_ai_city_growth_strategy(&low_prod, 20, 0);
+        assert_eq!(need_prod, 1);
+    }
+    
+    #[test]
+    fn test_game_state_structs() {
+        // Test that structs can be created and accessed
+        let tile = RustTile {
+            x: 5,
+            y: 10,
+            terrain_type: 1,
+            has_river: 1,
+            has_road: 0,
+            has_railroad: 0,
+            owner_id: 1,
+            worked_by_city_id: 2,
+        };
+        assert_eq!(tile.x, 5);
+        assert_eq!(tile.y, 10);
+        assert_eq!(tile.has_river, 1);
+        
+        let unit = RustUnit {
+            unit_id: 10,
+            owner_id: 1,
+            x: 20,
+            y: 30,
+            attack_strength: 8,
+            defense_strength: 6,
+            movement_points: 3,
+            moves_left: 2,
+            hitpoints: 75,
+            max_hitpoints: 100,
+            firepower: 1,
+            veteran_level: 1,
+            is_military: 1,
+        };
+        assert_eq!(unit.unit_id, 10);
+        assert_eq!(unit.attack_strength, 8);
+        
+        let city = RustCity {
+            city_id: 5,
+            owner_id: 1,
+            x: 15,
+            y: 20,
+            population: 7,
+            food_surplus: 3,
+            shield_surplus: 10,
+            trade_production: 8,
+            science_output: 5,
+            gold_output: 6,
+            luxury_output: 2,
+            is_coastal: 1,
+            turn_founded: 10,
+        };
+        assert_eq!(city.city_id, 5);
+        assert_eq!(city.population, 7);
+        assert_eq!(city.is_coastal, 1);
     }
 }

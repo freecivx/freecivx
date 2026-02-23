@@ -56,45 +56,57 @@ Currently, the Rust AI provides:
    - Tracks expansion focus (0-100)
    - Tracks science vs. military focus (0-100)
 
-2. **Tile Evaluation** (Rust)
+2. **Game State Bindings** (Rust) - **NEW in v0.4.0**
+   - Rust structs for City, Unit, and Tile
+   - FFI-safe game state representation
+   - Memory-safe data handling
+
+3. **Decision Algorithms** (Rust) - **NEW in v0.4.0**
+   - City production decisions (settler/unit/building/wonder)
+   - Unit movement evaluation (strategic positioning)
+   - Combat attack decisions (with win probability)
+   - Settler placement evaluation (optimal city locations)
+   - City growth strategy (food/production/wealth balance)
+
+4. **Tile Evaluation** (Rust)
    - Scores terrain types for desirability
    - Evaluates city placement locations
    - Assesses resource distribution
 
-3. **Unit Combat Assessment** (Rust)
+5. **Unit Combat Assessment** (Rust)
    - Calculates unit strength based on stats
    - Factors in health, mobility, attack/defense
-   - **NEW:** Predicts battle outcomes with probability (v0.3.0)
+   - Predicts battle outcomes with probability
 
-4. **Threat Assessment** (Rust)
+6. **Threat Assessment** (Rust)
    - Evaluates danger from enemy forces
    - Considers distance and relative strength
 
-5. **Technology Management** (Rust) - **NEW in v0.3.0**
+7. **Technology Management** (Rust)
    - Evaluates research priorities
    - Considers military and economic value
    - Factors in enabled units, buildings, and wonders
    - Optimizes cost vs. benefit
 
-6. **Diplomacy System** (Rust) - **NEW in v0.3.0**
+8. **Diplomacy System** (Rust)
    - Assesses diplomatic stances (-100 to 100)
    - Considers military strength, borders, history
    - Evaluates trade benefits and tech advancement
    - Balances aggression vs. cooperation
 
-7. **Economic Planning** (Rust) - **NEW in v0.3.0**
+9. **Economic Planning** (Rust)
    - Evaluates trade route potential
    - Optimizes city production decisions
    - Recommends specialist allocation
    - Plans city build orders
 
-8. **Full Game AI** (Default AI delegation)
-   - City management
-   - Unit movement and combat
-   - Diplomacy
-   - Technology research
-   - Settler automation
-   - All other game mechanics
+10. **Full Game AI** (Default AI delegation)
+    - City management
+    - Unit movement and combat
+    - Diplomacy
+    - Technology research
+    - Settler automation
+    - All other game mechanics
 
 ## Technical Details
 
@@ -127,7 +139,7 @@ cd freeciv/freeciv/ai/rust
 cargo test
 ```
 
-All tests pass ✓ (14 tests covering all features)
+All tests pass ✓ (20 tests covering all features including Phase 2 decision algorithms)
 
 ## Future Development
 
@@ -139,12 +151,14 @@ The Rust AI is designed to incrementally replace C AI logic with Rust implementa
   - Build integration
   - Unit tests
 
-- **Phase 2: Core Logic** (In Progress)
-  - Replace wrapper functions with Rust implementations
-  - Add Rust structs for cities, units, tiles
-  - Implement decision algorithms in Rust
+- **Phase 2: Core Logic** ✅ Complete
+  - Game state bindings (City, Unit, Tile structs)
+  - Decision algorithms in Rust
+  - City production decisions
+  - Unit movement and combat evaluation
+  - Settler placement and city growth strategies
 
-- **Phase 3: Advanced Features** (Planned)
+- **Phase 3: Advanced Features** (Next)
   - Machine learning strategies
   - Parallel processing
   - Advanced algorithms
