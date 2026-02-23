@@ -4,9 +4,15 @@ This directory contains the Rust AI module for Freeciv C server.
 
 ## Current Status
 
+✅ **WORKING** - The Rust AI module is now properly registered and functional!
+
 The Rust AI module is a **hybrid implementation** combining C wrappers with actual Rust code. It provides all core AI functionality by delegating to the Default AI implementation while also containing genuine Rust code for enhanced features and future development.
 
 ### Features
+
+**Recent Fix (2024):** The Rust AI module is now properly registered at runtime. The `AI_MOD_STATIC_RUST` preprocessor macro has been added to `meson_fc_config.h.in`, enabling the Rust AI to initialize when the Freeciv server starts. This means the Rust AI is now minimally working and can be selected in games!
+
+Core features:
 
 - ✅ **Complete AI functionality** - Implements all major AI callbacks via Default AI delegation
 - ✅ **Actual Rust code** - Contains real Rust implementation with FFI bindings
