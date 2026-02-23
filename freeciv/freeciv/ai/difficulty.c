@@ -123,6 +123,7 @@ static bv_handicap handicap_of_skill_level(enum ai_level level)
      fc__fallthrough; /* Falling through to hard */
 #endif /* FREECIV_DEBUG */
 
+   case AI_LEVEL_DEITY:
    case AI_LEVEL_CHEATING:
    case AI_LEVEL_HARD:
      /* No actual handicaps */
@@ -155,6 +156,7 @@ static int fuzzy_of_skill_level(enum ai_level level)
   case AI_LEVEL_NORMAL:
   case AI_LEVEL_HARD:
   case AI_LEVEL_CHEATING:
+  case AI_LEVEL_DEITY:
 #ifdef FREECIV_DEBUG
   case AI_LEVEL_EXPERIMENTAL:
 #endif /* FREECIV_DEBUG */
@@ -188,6 +190,7 @@ static int science_cost_of_skill_level(enum ai_level level)
   case AI_LEVEL_NORMAL:
   case AI_LEVEL_HARD:
   case AI_LEVEL_CHEATING:
+  case AI_LEVEL_DEITY:
 #ifdef FREECIV_DEBUG
   case AI_LEVEL_EXPERIMENTAL:
 #endif /* FREECIV_DEBUG */
@@ -219,6 +222,7 @@ static int expansionism_of_skill_level(enum ai_level level)
   case AI_LEVEL_NORMAL:
   case AI_LEVEL_HARD:
   case AI_LEVEL_CHEATING:
+  case AI_LEVEL_DEITY:
 #ifdef FREECIV_DEBUG
   case AI_LEVEL_EXPERIMENTAL:
 #endif /* FREECIV_DEBUG */
