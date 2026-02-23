@@ -423,12 +423,12 @@ pub extern "C" fn rust_ai_evaluate_trade_route(
     };
     
     // Trade bonuses from city improvements
-    let bonus_multiplier = (100 + our_trade_bonus + their_trade_bonus) / 100;
+    let bonus_multiplier = 100 + our_trade_bonus + their_trade_bonus;
     
     // Calculate final value
     let raw_value = base_trade + connection_bonus;
     let value_with_distance = raw_value - (raw_value * distance_penalty / 100);
-    value_with_distance * bonus_multiplier
+    (value_with_distance * bonus_multiplier) / 100
 }
 
 /// Optimize city production based on needs
@@ -530,13 +530,13 @@ pub extern "C" fn rust_ai_predict_battle(
     let attacker_effective = if attacker_hp > 0 {
         attacker_strength * attacker_hp / 100
     } else {
-        attacker_strength
+        0 // Dead unit has no combat power
     };
     
     let defender_effective_hp = if defender_hp > 0 {
         defender_effective * defender_hp / 100
     } else {
-        defender_effective
+        0 // Dead unit has no combat power
     };
     
     // Factor in firepower
@@ -883,6 +883,18 @@ mod tests {
         let firepower = rust_ai_predict_battle(10, 100, 3, 10, 100, 1, 0);
         assert!(firepower > 60);
         
+        // Dead attacker (0 HP) - should have 0% win chance
+        let dead_attacker = rust_ai_predict_battle(10, 0, 1, 10, 100, 1, 0);
+        assert_eq!(dead_attacker, 0);
+        
+        // Dead defender (0 HP) - should have 100% win chance
+        let dead_defender = rust_ai_predict_battle(10, 100, 1, 10, 0, 1, 0);
+        assert_eq!(dead_defender, 100);
+        
+        // Both dead - should be 50% (edge case)
+        let both_dead = rust_ai_predict_battle(10, 0, 1, 10, 0, 1, 0);
+        assert_eq!(both_dead, 50);
+        
         // Win probability should be 0-100
         assert!(strong_attacker >= 0 && strong_attacker <= 100);
     }
@@ -905,9 +917,10 @@ mod tests {
         let no_citizens = rust_ai_evaluate_specialist(1, 1, 80, 20, 0);
         assert_eq!(no_citizens, 0);
         
-        // Balanced priorities - should choose one type
+        // Balanced priorities - entertainer should win (score 30 vs 40 each for science/tax)
+        // But since science_priority and tax_priority are both 40, one of them will win
         let balanced = rust_ai_evaluate_specialist(2, 3, 40, 40, 1);
-        assert!(balanced >= 0 && balanced <= 3);
+        assert!(balanced == 1 || balanced == 2); // Should be scientist or taxman
     }
     
     #[test]
