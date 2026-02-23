@@ -51,6 +51,8 @@ dependencies="\
   zlib1g-dev \
   rsync \
   websockify \
+  cargo \
+  rustc \
 "
 
 # TODO: Add back python wikipedia package.

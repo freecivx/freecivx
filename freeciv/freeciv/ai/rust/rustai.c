@@ -43,6 +43,15 @@
 #include "daisettler.h"
 #include "daiunit.h"
 
+/* Rust FFI declarations */
+extern void *rust_ai_player_init(int player_id);
+extern void rust_ai_player_free(void *data);
+extern int rust_ai_get_aggression(void *data);
+extern void rust_ai_set_aggression(void *data, int level);
+extern void rust_ai_log(const char *message);
+extern int rust_ai_evaluate_tile(int x, int y, int terrain_type);
+extern const char *rust_ai_get_version(void);
+
 const char *fc_ai_rust_capstr(void);
 bool fc_ai_rust_setup(struct ai_type *ai);
 
@@ -595,9 +604,18 @@ static void rai_consider_wonder_city(struct city *pcity, bool *result)
 **************************************************************************/
 bool fc_ai_rust_setup(struct ai_type *ai)
 {
+  const char *version;
+  
   strncpy(ai->name, "rust", sizeof(ai->name));
 
   rust_ai_set_self(ai);
+
+  /* Log Rust AI initialization */
+  version = rust_ai_get_version();
+  rust_ai_log("Initializing Rust AI module");
+  if (version) {
+    rust_ai_log(version);
+  }
 
   ai->funcs.module_close = rai_module_close;
 
