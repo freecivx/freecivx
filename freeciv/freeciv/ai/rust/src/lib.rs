@@ -281,7 +281,370 @@ pub extern "C" fn rust_ai_assess_threat(
 /// Get version information for the Rust AI module
 #[no_mangle]
 pub unsafe extern "C" fn rust_ai_get_version() -> *const c_char {
-    "Rust AI v0.2.0 - Enhanced\0".as_ptr() as *const c_char
+    "Rust AI v0.3.0 - Enhanced with Advanced Features\0".as_ptr() as *const c_char
+}
+
+/// Evaluate a technology for research priority
+/// 
+/// # Arguments
+/// * `tech_cost` - Science points required to research
+/// * `military_value` - Military benefit (0-100)
+/// * `economic_value` - Economic benefit (0-100)
+/// * `enables_units` - Number of new units enabled
+/// * `enables_buildings` - Number of new buildings enabled
+/// * `enables_wonders` - Number of wonders enabled
+/// 
+/// # Returns
+/// Priority score for researching this technology (higher is better)
+#[no_mangle]
+pub extern "C" fn rust_ai_evaluate_tech(
+    tech_cost: c_int,
+    military_value: c_int,
+    economic_value: c_int,
+    enables_units: c_int,
+    enables_buildings: c_int,
+    enables_wonders: c_int,
+) -> c_int {
+    // Base value from military and economic benefits
+    let base_value = military_value + economic_value;
+    
+    // Bonus for technologies that enable new capabilities
+    let capability_bonus = enables_units * 15 + enables_buildings * 10 + enables_wonders * 25;
+    
+    // Total value
+    let total_value = base_value + capability_bonus;
+    
+    // Normalize by cost - prefer cheaper techs with good value
+    // Use a logarithmic scale to avoid division issues
+    if tech_cost > 0 {
+        // Return value per cost (scaled up by 10 for better granularity)
+        (total_value * 1000) / (tech_cost + 50)
+    } else {
+        total_value * 10 // Free tech, very high priority
+    }
+}
+
+/// Evaluate diplomatic stance towards another player
+/// 
+/// # Arguments
+/// * `our_strength` - Our military strength
+/// * `their_strength` - Their military strength
+/// * `shared_borders` - Do we share borders? (0=no, 1=yes)
+/// * `past_wars` - Number of past wars with this player
+/// * `trade_benefit` - Economic benefit from trade (0-100)
+/// * `tech_advancement` - Their tech level relative to ours (-100 to 100)
+/// 
+/// # Returns
+/// Diplomatic stance score (-100=hostile, 0=neutral, 100=friendly)
+#[no_mangle]
+pub extern "C" fn rust_ai_evaluate_diplomacy(
+    our_strength: c_int,
+    their_strength: c_int,
+    shared_borders: c_int,
+    past_wars: c_int,
+    trade_benefit: c_int,
+    tech_advancement: c_int,
+) -> c_int {
+    // Start neutral
+    let mut stance = 0;
+    
+    // Negative factors
+    if shared_borders > 0 {
+        stance -= 20; // Border tension
+    }
+    stance -= past_wars * 15; // Historical conflicts matter
+    
+    // Positive factors
+    stance += trade_benefit / 2; // Trade encourages friendship
+    
+    // Strength comparison affects stance
+    let strength_ratio = if their_strength > 0 {
+        (our_strength * 100) / their_strength
+    } else {
+        200 // They're very weak
+    };
+    
+    if strength_ratio > 150 {
+        // We're much stronger - can afford to be aggressive
+        stance -= 10;
+    } else if strength_ratio < 70 {
+        // They're stronger - be cautious/friendly
+        stance += 20;
+    }
+    
+    // Tech leaders are valuable allies
+    if tech_advancement > 20 {
+        stance += 15; // They're advanced, good to befriend
+    } else if tech_advancement < -30 {
+        stance -= 10; // They're backwards, less valuable
+    }
+    
+    stance.clamp(-100, 100)
+}
+
+/// Evaluate a trade route potential
+/// 
+/// # Arguments
+/// * `our_city_size` - Population of our city
+/// * `their_city_size` - Population of their city
+/// * `distance` - Distance between cities
+/// * `our_trade_bonus` - Our city's trade bonus (0-100)
+/// * `their_trade_bonus` - Their city's trade bonus (0-100)
+/// * `connection_type` - 0=none, 1=road, 2=railroad, 3=river, 4=sea
+/// 
+/// # Returns
+/// Expected trade route value
+#[no_mangle]
+pub extern "C" fn rust_ai_evaluate_trade_route(
+    our_city_size: c_int,
+    their_city_size: c_int,
+    distance: c_int,
+    our_trade_bonus: c_int,
+    their_trade_bonus: c_int,
+    connection_type: c_int,
+) -> c_int {
+    // Base trade value from city sizes
+    let base_trade = (our_city_size + their_city_size) * 5;
+    
+    // Distance penalty (longer routes are less efficient)
+    let distance_penalty = if distance > 0 {
+        (distance * 2).min(50) // Cap at 50% penalty
+    } else {
+        0
+    };
+    
+    // Connection bonus
+    let connection_bonus = match connection_type {
+        4 => 30, // Sea routes are very valuable
+        3 => 20, // River routes are good
+        2 => 25, // Railroad is excellent
+        1 => 10, // Road is basic
+        _ => 0,  // No connection
+    };
+    
+    // Trade bonuses from city improvements
+    let bonus_multiplier = (100 + our_trade_bonus + their_trade_bonus) / 100;
+    
+    // Calculate final value
+    let raw_value = base_trade + connection_bonus;
+    let value_with_distance = raw_value - (raw_value * distance_penalty / 100);
+    value_with_distance * bonus_multiplier
+}
+
+/// Optimize city production based on needs
+/// 
+/// # Arguments
+/// * `food_surplus` - Current food surplus per turn
+/// * `production_rate` - Current shields per turn
+/// * `science_output` - Current science per turn
+/// * `population` - Current city population
+/// * `military_need` - Military urgency (0-100)
+/// * `growth_priority` - Growth importance (0-100)
+/// * `infrastructure_need` - Infrastructure urgency (0-100)
+/// 
+/// # Returns
+/// Production recommendation: 0=unit, 1=building, 2=settler, 3=wonder
+#[no_mangle]
+pub extern "C" fn rust_ai_optimize_production(
+    food_surplus: c_int,
+    production_rate: c_int,
+    science_output: c_int,
+    population: c_int,
+    military_need: c_int,
+    growth_priority: c_int,
+    infrastructure_need: c_int,
+) -> c_int {
+    // Score each production category
+    let mut unit_score = military_need;
+    let mut building_score = infrastructure_need;
+    let mut settler_score = 0;
+    let mut wonder_score = 0;
+    
+    // Food surplus affects settler production
+    if food_surplus >= 3 && population >= 4 {
+        settler_score = growth_priority / 2;
+    }
+    
+    // Low population cities need growth buildings
+    if population < 6 {
+        building_score += 30;
+        settler_score = 0; // Don't build settlers from small cities
+    }
+    
+    // High production enables wonder building
+    if production_rate > 15 && population >= 8 {
+        wonder_score = 40;
+    }
+    
+    // Science output affects building priority
+    if science_output < 10 {
+        building_score += 20; // Need science buildings
+    }
+    
+    // High military need overrides other priorities
+    if military_need > 70 {
+        unit_score += 30;
+    }
+    
+    // Find the highest priority
+    let max_score = unit_score.max(building_score).max(settler_score).max(wonder_score);
+    
+    if max_score == unit_score {
+        0 // Build unit
+    } else if max_score == building_score {
+        1 // Build building
+    } else if max_score == settler_score {
+        2 // Build settler
+    } else {
+        3 // Build wonder
+    }
+}
+
+/// Predict battle outcome between two units
+/// 
+/// # Arguments
+/// * `attacker_strength` - Attacking unit's strength
+/// * `attacker_hp` - Attacking unit's current HP
+/// * `attacker_firepower` - Attacking unit's firepower
+/// * `defender_strength` - Defending unit's strength
+/// * `defender_hp` - Defending unit's current HP
+/// * `defender_firepower` - Defending unit's firepower
+/// * `terrain_defense_bonus` - Terrain defense bonus (0-100)
+/// 
+/// # Returns
+/// Win probability for attacker (0-100)
+#[no_mangle]
+pub extern "C" fn rust_ai_predict_battle(
+    attacker_strength: c_int,
+    attacker_hp: c_int,
+    attacker_firepower: c_int,
+    defender_strength: c_int,
+    defender_hp: c_int,
+    defender_firepower: c_int,
+    terrain_defense_bonus: c_int,
+) -> c_int {
+    // Apply terrain bonus to defender
+    let defender_effective = defender_strength * (100 + terrain_defense_bonus) / 100;
+    
+    // Calculate effective strength based on HP
+    let attacker_effective = if attacker_hp > 0 {
+        attacker_strength * attacker_hp / 100
+    } else {
+        attacker_strength
+    };
+    
+    let defender_effective_hp = if defender_hp > 0 {
+        defender_effective * defender_hp / 100
+    } else {
+        defender_effective
+    };
+    
+    // Factor in firepower
+    let attacker_power = attacker_effective * attacker_firepower;
+    let defender_power = defender_effective_hp * defender_firepower;
+    
+    // Calculate win probability using a simple ratio
+    let total_power = attacker_power + defender_power;
+    if total_power > 0 {
+        ((attacker_power * 100) / total_power).clamp(0, 100)
+    } else {
+        50 // Equal chance if both have zero power
+    }
+}
+
+/// Evaluate specialist allocation for a city
+/// 
+/// # Arguments
+/// * `food_needed` - Food needed for growth
+/// * `shields_needed` - Shields needed for current production
+/// * `science_priority` - Science importance (0-100)
+/// * `tax_priority` - Tax/gold importance (0-100)
+/// * `available_citizens` - Number of citizens that can be specialists
+/// 
+/// # Returns
+/// Specialist type recommendation: 0=none, 1=scientist, 2=taxman, 3=entertainer
+#[no_mangle]
+pub extern "C" fn rust_ai_evaluate_specialist(
+    food_needed: c_int,
+    shields_needed: c_int,
+    science_priority: c_int,
+    tax_priority: c_int,
+    available_citizens: c_int,
+) -> c_int {
+    // Can't assign specialists if we don't have available citizens
+    if available_citizens <= 0 {
+        return 0; // No specialists
+    }
+    
+    // If we critically need food or shields, don't use specialists
+    if food_needed > 5 || shields_needed > 10 {
+        return 0;
+    }
+    
+    // Score each specialist type
+    let scientist_score = science_priority;
+    let taxman_score = tax_priority;
+    let entertainer_score = 30; // Base value for happiness
+    
+    // Find the best choice
+    let max_score = scientist_score.max(taxman_score).max(entertainer_score);
+    
+    if max_score == scientist_score {
+        1 // Scientist
+    } else if max_score == taxman_score {
+        2 // Taxman
+    } else {
+        3 // Entertainer
+    }
+}
+
+/// Calculate optimal city build order
+/// 
+/// # Arguments
+/// * `is_first_city` - Is this the capital/first city? (0=no, 1=yes)
+/// * `turn_number` - Current game turn
+/// * `nearby_enemies` - Number of enemy units nearby
+/// * `coastal` - Is the city coastal? (0=no, 1=yes)
+/// 
+/// # Returns
+/// Build priority: 0=granary, 1=barracks, 2=marketplace, 3=library, 4=walls
+#[no_mangle]
+pub extern "C" fn rust_ai_city_build_order(
+    is_first_city: c_int,
+    turn_number: c_int,
+    nearby_enemies: c_int,
+    coastal: c_int,
+) -> c_int {
+    // Early game priorities for capital
+    if is_first_city > 0 && turn_number < 20 {
+        return 0; // Granary for growth
+    }
+    
+    // Immediate military threat
+    if nearby_enemies > 0 {
+        if nearby_enemies >= 3 {
+            return 4; // Walls for defense
+        } else {
+            return 1; // Barracks for military
+        }
+    }
+    
+    // Early game (turns 1-50)
+    if turn_number < 50 {
+        if coastal > 0 {
+            return 2; // Marketplace for coastal trade
+        } else {
+            return 0; // Granary for growth
+        }
+    }
+    
+    // Mid game (turns 50-150)
+    if turn_number < 150 {
+        return 3; // Library for science
+    }
+    
+    // Late game
+    2 // Marketplace for economy
 }
 
 #[cfg(test)]
@@ -410,5 +773,177 @@ mod tests {
         assert!(river > desert);
         assert!(hills > desert);
         assert!(forest > ocean);
+    }
+    
+    #[test]
+    fn test_tech_evaluation() {
+        // Expensive tech with low value
+        let expensive_tech = rust_ai_evaluate_tech(200, 10, 10, 0, 0, 0);
+        
+        // Cheap tech with medium value
+        let cheap_tech = rust_ai_evaluate_tech(50, 20, 20, 1, 2, 0);
+        
+        // Tech that enables wonder (high value)
+        let wonder_tech = rust_ai_evaluate_tech(100, 30, 30, 0, 1, 1);
+        
+        // Free tech
+        let free_tech = rust_ai_evaluate_tech(0, 50, 50, 0, 0, 0);
+        
+        // Cheap tech should have better value per cost
+        assert!(cheap_tech > expensive_tech);
+        
+        // Wonder-enabling tech should be high priority
+        assert!(wonder_tech > expensive_tech);
+        
+        // Free tech should be highest priority
+        assert!(free_tech > wonder_tech);
+        assert!(free_tech > cheap_tech);
+    }
+    
+    #[test]
+    fn test_diplomacy_evaluation() {
+        // Friendly scenario: trade partner, no wars, similar strength
+        let friendly = rust_ai_evaluate_diplomacy(100, 100, 0, 0, 80, 0);
+        assert!(friendly > 0);
+        
+        // Hostile scenario: shared borders, past wars, no trade
+        let hostile = rust_ai_evaluate_diplomacy(100, 100, 1, 3, 0, 0);
+        assert!(hostile < 0);
+        
+        // Cautious scenario: they're much stronger
+        let cautious = rust_ai_evaluate_diplomacy(50, 150, 1, 0, 20, 0);
+        assert!(cautious > 0); // Should be friendly due to their strength
+        
+        // Tech leader is valuable ally
+        let tech_leader = rust_ai_evaluate_diplomacy(100, 100, 0, 0, 40, 50);
+        assert!(tech_leader > 0);
+        
+        // All scores should be clamped to -100 to 100
+        let extreme = rust_ai_evaluate_diplomacy(200, 10, 1, 10, 0, -50);
+        assert!(extreme >= -100 && extreme <= 100);
+    }
+    
+    #[test]
+    fn test_trade_route_evaluation() {
+        // Good trade route: large cities, short distance, railroad
+        let good_route = rust_ai_evaluate_trade_route(10, 12, 5, 20, 30, 2);
+        
+        // Poor route: small cities, long distance, no connection
+        let poor_route = rust_ai_evaluate_trade_route(3, 4, 30, 0, 0, 0);
+        
+        // Sea route: medium cities, good distance, sea connection
+        let sea_route = rust_ai_evaluate_trade_route(8, 8, 15, 10, 10, 4);
+        
+        assert!(good_route > poor_route);
+        assert!(sea_route > poor_route);
+        
+        // Verify trade value is positive
+        assert!(good_route > 0);
+    }
+    
+    #[test]
+    fn test_production_optimization() {
+        // High military need - should recommend unit (0)
+        let military = rust_ai_optimize_production(2, 10, 15, 8, 80, 30, 40);
+        assert_eq!(military, 0);
+        
+        // Small city with low infrastructure - should recommend building (1)
+        let small_city = rust_ai_optimize_production(1, 5, 5, 3, 20, 40, 70);
+        assert_eq!(small_city, 1);
+        
+        // Large city with good food - should allow settler (2)
+        let settler_city = rust_ai_optimize_production(5, 8, 20, 8, 10, 90, 20);
+        assert_eq!(settler_city, 2);
+        
+        // High production large city - should allow wonder (3)
+        let wonder_city = rust_ai_optimize_production(3, 20, 25, 10, 20, 30, 35);
+        assert_eq!(wonder_city, 3);
+    }
+    
+    #[test]
+    fn test_battle_prediction() {
+        // Equal strength units - should be close to 50%
+        let equal = rust_ai_predict_battle(10, 100, 1, 10, 100, 1, 0);
+        assert!(equal >= 45 && equal <= 55);
+        
+        // Attacker much stronger - high win chance
+        let strong_attacker = rust_ai_predict_battle(20, 100, 1, 10, 100, 1, 0);
+        assert!(strong_attacker > 60);
+        
+        // Defender has terrain bonus - defender advantage
+        let terrain_bonus = rust_ai_predict_battle(10, 100, 1, 10, 100, 1, 50);
+        assert!(terrain_bonus < 50);
+        
+        // Wounded attacker - lower win chance
+        let wounded = rust_ai_predict_battle(15, 50, 1, 10, 100, 1, 0);
+        let healthy = rust_ai_predict_battle(15, 100, 1, 10, 100, 1, 0);
+        assert!(wounded < healthy);
+        
+        // High firepower attacker
+        let firepower = rust_ai_predict_battle(10, 100, 3, 10, 100, 1, 0);
+        assert!(firepower > 60);
+        
+        // Win probability should be 0-100
+        assert!(strong_attacker >= 0 && strong_attacker <= 100);
+    }
+    
+    #[test]
+    fn test_specialist_evaluation() {
+        // High science priority - should recommend scientist (1)
+        let science_focus = rust_ai_evaluate_specialist(1, 2, 80, 20, 2);
+        assert_eq!(science_focus, 1);
+        
+        // High tax priority - should recommend taxman (2)
+        let tax_focus = rust_ai_evaluate_specialist(1, 2, 20, 90, 3);
+        assert_eq!(tax_focus, 2);
+        
+        // Critical food need - no specialists (0)
+        let food_critical = rust_ai_evaluate_specialist(8, 2, 50, 50, 2);
+        assert_eq!(food_critical, 0);
+        
+        // No available citizens - no specialists (0)
+        let no_citizens = rust_ai_evaluate_specialist(1, 1, 80, 20, 0);
+        assert_eq!(no_citizens, 0);
+        
+        // Balanced priorities - should choose one type
+        let balanced = rust_ai_evaluate_specialist(2, 3, 40, 40, 1);
+        assert!(balanced >= 0 && balanced <= 3);
+    }
+    
+    #[test]
+    fn test_city_build_order() {
+        // First city, early game - should build granary (0)
+        let capital_early = rust_ai_city_build_order(1, 10, 0, 0);
+        assert_eq!(capital_early, 0);
+        
+        // Enemy threat - should build defensive structures
+        let under_threat = rust_ai_city_build_order(0, 30, 4, 0);
+        assert_eq!(under_threat, 4); // Walls
+        
+        let minor_threat = rust_ai_city_build_order(0, 30, 1, 0);
+        assert_eq!(minor_threat, 1); // Barracks
+        
+        // Coastal city early game - marketplace (2)
+        let coastal_early = rust_ai_city_build_order(0, 40, 0, 1);
+        assert_eq!(coastal_early, 2);
+        
+        // Mid game - library for science (3)
+        let mid_game = rust_ai_city_build_order(0, 80, 0, 0);
+        assert_eq!(mid_game, 3);
+        
+        // Late game - marketplace (2)
+        let late_game = rust_ai_city_build_order(0, 200, 0, 0);
+        assert_eq!(late_game, 2);
+    }
+    
+    #[test]
+    fn test_version_update() {
+        unsafe {
+            let version = rust_ai_get_version();
+            let c_str = CStr::from_ptr(version);
+            let version_str = c_str.to_str().unwrap();
+            // Should contain the new version number
+            assert!(version_str.contains("0.3.0"));
+        }
     }
 }
