@@ -10,8 +10,14 @@ server, but does not yet contain the full AI logic.
 
 ## DEITY Difficulty Level
 
-The Rust AI is associated with the DEITY difficulty level, which is the highest 
-difficulty setting with no AI handicaps.
+This PR also adds the DEITY difficulty level, which is the highest difficulty 
+setting with no AI handicaps. The DEITY level is independent of which AI module 
+is used (classic, stub, rust, etc.) and can be applied to any AI player.
+
+To use DEITY difficulty with the Rust AI:
+1. Build the server with the Rust AI enabled (see Building section)
+2. Set a player to use the Rust AI type
+3. Set the difficulty level to DEITY
 
 ## Building
 

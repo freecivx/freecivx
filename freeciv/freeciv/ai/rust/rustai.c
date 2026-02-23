@@ -15,8 +15,6 @@
  * This is the Rust AI module for Freeciv. Currently it's a minimal
  * C stub implementation that will be extended with actual Rust code
  * by porting the C AI logic from ai/classic to Rust.
- * 
- * The Rust AI is enabled with the DEITY difficulty level.
  */
 
 #ifdef HAVE_CONFIG_H
