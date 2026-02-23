@@ -1092,7 +1092,7 @@ rust_ai_lib = custom_target('rustai',
   output: 'librustai.a',
   command: [
     'sh', '-c',
-    'cd @SOURCE_ROOT@/ai/rust && cargo build --release && cp target/release/librustai.a @OUTPUT@'
+    'cargo build --manifest-path @SOURCE_ROOT@/ai/rust/Cargo.toml --release && cp @SOURCE_ROOT@/ai/rust/target/release/librustai.a @OUTPUT@'
   ],
   build_by_default: true,
   build_always_stale: true

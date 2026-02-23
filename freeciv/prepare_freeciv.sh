@@ -11,28 +11,30 @@ cd "${DIR}/freeciv" || exit
 INSTALL_DIR="${HOME}/freeciv"
 NUM_CORES=$(nproc)
 
-# Generate configure script if it doesn't exist
-if [ ! -f configure ]; then
-  echo "Generating configure script..."
-  ./autogen.sh --no-configure-run
+# Create build directory
+if [ ! -d "${DIR}/build" ]; then
+  mkdir -p "${DIR}/build"
 fi
 
-# Configure with Rust AI enabled by default
-echo "Configuring Freeciv with Rust AI..."
-./configure \
-  --enable-server=freeciv-web \
-  --disable-client \
-  --enable-fcmp=cli \
-  --enable-json-protocol \
-  --disable-nls \
-  --enable-ai-static=rust \
+cd "${DIR}/build" || exit
+
+# Configure with Meson with Rust AI enabled by default
+echo "Configuring Freeciv with Rust AI using Meson..."
+meson setup \
   --prefix="${INSTALL_DIR}" \
-  CFLAGS="-O3" \
-  CXXFLAGS="-O3"
+  --buildtype=release \
+  -Dclients=[] \
+  -Dfcmp=cli \
+  -Djson-protocol=true \
+  -Dnls=false \
+  -Dserver=freeciv-web \
+  -Daudio=false \
+  -Druledit=false \
+  ../freeciv
 
 # Build using all available CPU cores
 echo "Building Freeciv..."
-make -j "${NUM_CORES}"
+ninja -j "${NUM_CORES}"
 
 # Finish up
 echo "Build complete."

@@ -542,12 +542,15 @@ static void rai_diplomacy_first_contact(struct player *pplayer,
 /**********************************************************************//**
   Call default ai with rust ai type as parameter.
 **************************************************************************/
-static void rai_incident(enum incident_type type, struct player *violator,
-                         struct player *victim)
+static void rai_incident(enum incident_type type,
+                         enum casus_belli_range scope,
+                         const struct action *paction,
+                         struct player *receiver,
+                         struct player *violator, struct player *victim)
 {
   struct ai_type *rait = rust_ai_get_self();
 
-  dai_incident(rait, type, violator, victim);
+  dai_incident(rait, type, scope, paction, receiver, violator, victim);
 }
 
 /**********************************************************************//**
