@@ -1087,6 +1087,22 @@ common_lib = library('freeciv',
   install : true
   )
 
+# Build Rust AI library
+rust_ai_lib = custom_target('rustai',
+  output: 'librustai.a',
+  command: [
+    'sh', '-c',
+    'cd @SOURCE_ROOT@/ai/rust && cargo build --release && cp target/release/librustai.a @OUTPUT@'
+  ],
+  build_by_default: true,
+  build_always_stale: true
+)
+
+# Declare the Rust library as a dependency
+rust_ai_dep = declare_dependency(
+  link_with: rust_ai_lib
+)
+
 ais = static_library('fc_ai',
   'ai/classic/classicai.c',
   'ai/tex/texai.c',
@@ -1094,6 +1110,7 @@ ais = static_library('fc_ai',
   'ai/tex/texaimsg.c',
   'ai/tex/texaiplayer.c',
   'ai/tex/texaiworld.c',
+  'ai/rust/rustai.c',
   'ai/default/aiair.c',
   'ai/default/aidiplomat.c',
   'ai/default/aiferry.c',
@@ -1115,7 +1132,8 @@ ais = static_library('fc_ai',
   'ai/default/daisettler.c',
   'ai/default/daiunit.c',
   sources: [verhdr],
-  include_directories: [server_inc, include_directories('ai/default')]
+  include_directories: [server_inc, include_directories('ai/default')],
+  link_with: rust_ai_lib
   )
 
 server_lib = static_library('fc_server',
