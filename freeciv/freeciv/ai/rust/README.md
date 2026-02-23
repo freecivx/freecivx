@@ -297,7 +297,7 @@ The plan is to incrementally replace C AI logic from `ai/default/` with pure Rus
 - [ ] Advanced algorithms - New AI strategies
 - [ ] Optimization - Performance improvements with Rust
 
-- [ ] ### Phase 4: Use llm to generate AI chat messages using https://github.com/ggml-org/llama.cpp or something better
+- [ ] ### Phase 4: Use llm to generate AI chat messages using https://github.com/ggml-org/llama.cpp or something better. Concurrency for LLM. The LLM must generate messages in a separete thread or similar.
 
 Benefits of porting to Rust:
 - **Memory safety** through Rust's ownership system
