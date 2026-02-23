@@ -180,6 +180,7 @@ function update_player_info_pregame()
             "normal": {name: "Normal"},
             "hard": {name: "Hard"},
             "cheating": {name: "Cheating"},
+            "deity": {name: "Deity"},
             "sep2": "---------"
        };
 
@@ -207,6 +208,8 @@ function update_player_info_pregame()
               send_message("/hard " + name);
             } else if (key == "cheating") {
               send_message("/cheating " + name);
+            } else if (key == "deity") {
+              send_message("/deity " + name);
             }
         },
         items: pregame_context_items
@@ -472,6 +475,7 @@ function pregame_settings()
           "<option value='4'>Normal</option>" +
           "<option value='5'>Hard</option>" +
           "<option value='6'>Cheating</option>" +
+          "<option value='7'>Deity</option>" +
 	  "</select></td></tr>"+
 	  "<tr title='Number of initial techs per player'><td>Tech level:</td>" +
 	  "<td><input type='number' name='techlevel' id='techlevel' size='3' length='3' min='0' max='100' step='10'></td></tr>" +
@@ -783,6 +787,8 @@ function pregame_settings()
       send_message("/hard");
     } else if (ai_skill_level == 6) {
       send_message("/cheating");
+    } else if (ai_skill_level == 7) {
+      send_message("/deity");
     }
   });
 

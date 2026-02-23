@@ -206,8 +206,10 @@ function get_ai_level_text(player)
   } else if (ai_level == 5) {
     return "Cheating";
   } else if (ai_level == 6) {
-    return "Experimental";
+    return "Deity";
   } else if (ai_level == 7) {
+    return "Experimental";
+  } else if (ai_level == 8) {
        return "Away";
   }
 
