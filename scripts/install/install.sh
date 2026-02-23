@@ -306,8 +306,7 @@ echo "Please be patient"
 echo "If you get an error: Clock skew detected, on Windows, then try setting the clock exactly correct on your computer using ntp or some clock software."
 
 cd "${basedir}"/freeciv && \
-  bash ./prepare_freeciv.sh  && \
-  cd build && ninja install || \
+  bash ./prepare_freeciv.sh || \
   handle_error 5 "Failed to install freeciv"
 
 

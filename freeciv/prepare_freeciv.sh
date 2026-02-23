@@ -14,7 +14,7 @@ NUM_CORES=$(nproc)
 # Generate configure script if it doesn't exist
 if [ ! -f configure ]; then
   echo "Generating configure script..."
-  ./autogen.sh --no-configure-run
+  ./autogen.sh --disable-nls --no-configure-run
 fi
 
 # Configure with Rust AI enabled by default
@@ -33,6 +33,10 @@ echo "Configuring Freeciv with Rust AI..."
 # Build using all available CPU cores
 echo "Building Freeciv..."
 make -j "${NUM_CORES}"
+
+# Install to the specified directory
+echo "Installing Freeciv..."
+make install
 
 # Finish up
 echo "Build complete."
