@@ -6783,6 +6783,9 @@ static bool show_ignore(struct connection *caller)
 **************************************************************************/
 void show_players(struct connection *caller)
 {
+  int rust_ai_count = 0;
+  int classic_ai_count = 0;
+
   cmd_reply(CMD_LIST, caller, C_COMMENT, _("List of players:"));
   cmd_reply(CMD_LIST, caller, C_COMMENT, horiz_line);
 
@@ -6841,6 +6844,12 @@ void show_players(struct connection *caller)
         sz_strlcat(buf, _("Barbarian"));
       } else if (is_ai(pplayer)) {
         sz_strlcat(buf, _("AI"));
+        /* Count AI types for summary */
+        if (fc_strcasecmp(ai_name(pplayer->ai), "rust") == 0) {
+          rust_ai_count++;
+        } else {
+          classic_ai_count++;
+        }
       } else {
         sz_strlcat(buf, _("Human"));
       }
@@ -6870,6 +6879,16 @@ void show_players(struct connection *caller)
         cmd_reply(CMD_LIST, caller, C_COMMENT, "    %s", buf);
       } conn_list_iterate_end;
     } players_iterate_end;
+
+    /* Display AI summary */
+    if (rust_ai_count > 0 || classic_ai_count > 0) {
+      if (rust_ai_count > 0) {
+        cmd_reply(CMD_LIST, caller, C_COMMENT, _("Rust AIs: %d"), rust_ai_count);
+      }
+      if (classic_ai_count > 0) {
+        cmd_reply(CMD_LIST, caller, C_COMMENT, _("Number of classic AIs: %d"), classic_ai_count);
+      }
+    }
   }
   cmd_reply(CMD_LIST, caller, C_COMMENT, horiz_line);
 }

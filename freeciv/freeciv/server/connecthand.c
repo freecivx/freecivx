@@ -302,6 +302,25 @@ void establish_new_connection(struct connection *pconn)
                 player_name(pconn->playing));
   }
 
+  /* Check if server has Rust AI with Deity difficulty enabled */
+  {
+    bool has_rust_deity_ai = FALSE;
+    
+    players_iterate(pplayer) {
+      if (is_ai(pplayer) 
+          && fc_strcasecmp(ai_name(pplayer->ai), "rust") == 0
+          && pplayer->ai_common.skill_level == AI_LEVEL_DEITY) {
+        has_rust_deity_ai = TRUE;
+        break;
+      }
+    } players_iterate_end;
+    
+    if (has_rust_deity_ai) {
+      notify_conn(dest, NULL, E_CONNECTION, ftc_server,
+                  _("Freeciv-web C server with Rust Deity AI enabled"));
+    }
+  }
+
   /* Send information about delegation(s). */
   send_delegation_info(pconn);
 
