@@ -65,27 +65,9 @@ class Civlauncher(Thread):
         # Set up environment with library path
         home_dir = Path(pwd.getpwuid(os.getuid()).pw_dir)
         env = os.environ.copy()
-        lib_dir = home_dir / "freeciv" / "lib"
-        
-        # Build library path list including architecture-specific directories
-        lib_paths = []
-        
-        # Try to detect architecture-specific lib directory (Debian/Ubuntu multiarch)
-        if lib_dir.exists():
-            # Add all subdirectories that might contain libraries
-            for subdir in lib_dir.iterdir():
-                if subdir.is_dir() and '-linux-gnu' in subdir.name:
-                    lib_paths.append(str(subdir))
-        
-        # Always include the main lib directory as fallback
-        lib_paths.append(str(lib_dir))
-        
-        # Preserve existing LD_LIBRARY_PATH
-        existing_path = env.get('LD_LIBRARY_PATH', '')
-        if existing_path:
-            lib_paths.append(existing_path)
-        
-        env['LD_LIBRARY_PATH'] = ':'.join(lib_paths)
+        lib_path = str(home_dir / "freeciv" / "lib")
+        existing = env.get('LD_LIBRARY_PATH', '')
+        env['LD_LIBRARY_PATH'] = f"{lib_path}:{existing}" if existing else lib_path
 
         proxy_process = None
         proxy_log_file = None
