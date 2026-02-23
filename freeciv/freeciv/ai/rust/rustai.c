@@ -23,8 +23,12 @@
 /* common */
 #include "ai.h"
 #include "city.h"
+#include "events.h"
 #include "map.h"
 #include "player.h"
+
+/* server */
+#include "notify.h"
 
 /* server/advisors */
 #include "advdata.h"
@@ -150,6 +154,10 @@ static void rai_player_load_relations(struct player *pplayer,
 static void rai_gained_control(struct player *pplayer)
 {
   struct ai_type *rait = rust_ai_get_self();
+
+  /* Notify player that Freeciv Deity Rust AI is available */
+  notify_player(pplayer, NULL, E_CONNECTION, ftc_server,
+                _("Freeciv Deity Rust AI is available."));
 
   dai_gained_control(rait, pplayer);
 }

@@ -2,3 +2,4 @@ Makefile
 Makefile.in
 Cargo.lock
 target/
+*.backup
