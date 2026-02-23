@@ -64,10 +64,41 @@ extern int rust_ai_evaluate_unit_strength(int attack_strength, int defense_stren
 extern int rust_ai_assess_threat(int num_enemy_units, int enemy_avg_strength, int distance_to_enemy, int our_defense_strength);
 extern const char *rust_ai_get_version(void);
 
+/* Forward declarations for AI system functions */
+struct ai_type *get_ai_type(int id);
+int ai_type_get_count(void);
+
 const char *fc_ai_rust_capstr(void);
 bool fc_ai_rust_setup(struct ai_type *ai);
 
 static struct ai_type *self = NULL;
+
+/**********************************************************************//**
+  Validate that the AI type pointer is valid and safe to use.
+  Returns TRUE if valid, FALSE otherwise.
+**************************************************************************/
+static bool rust_ai_validate_self(void)
+{
+  int i;
+  
+  if (self == NULL) {
+    return FALSE;
+  }
+  
+  /* Check if the pointer points to a valid AI type by verifying
+     it's within the ai_types array bounds. This prevents use of
+     freed or invalid pointers. */
+  for (i = 0; i < ai_type_get_count(); i++) {
+    if (self == get_ai_type(i)) {
+      return TRUE;
+    }
+  }
+  
+  /* Pointer doesn't match any valid AI type - it's stale/invalid */
+  rust_ai_log("ERROR: Rust AI self pointer is invalid or stale!");
+  self = NULL;
+  return FALSE;
+}
 
 /**********************************************************************//**
   Set pointer to ai type of the rust ai.
@@ -82,17 +113,20 @@ static void rust_ai_set_self(struct ai_type *ai)
 **************************************************************************/
 static struct ai_type *rust_ai_get_self(void)
 {
+  if (!rust_ai_validate_self()) {
+    return NULL;
+  }
   return self;
 }
 
 /**********************************************************************//**
   Safely get the rust AI type pointer.
-  If NULL, log error and return from the calling function.
+  If NULL or invalid, log error and return from the calling function.
 **************************************************************************/
 #define RUST_AI_GET_SELF_OR_RETURN(varname) \
   struct ai_type *varname = rust_ai_get_self(); \
   if (varname == NULL) { \
-    rust_ai_log("ERROR: Rust AI not initialized in " __func__); \
+    rust_ai_log("ERROR: Rust AI not initialized or invalid in " __func__); \
     return; \
   }
 
@@ -109,11 +143,17 @@ const char *fc_ai_rust_capstr(void)
 **************************************************************************/
 static void rai_module_close(void)
 {
-  RUST_AI_GET_SELF_OR_RETURN(rait);
+  struct ai_type *rait = rust_ai_get_self();
 
+  rust_ai_log("Rust AI: module_close called");
+  
   if (rait != NULL) {
     FC_FREE(rait->private);
   }
+  
+  /* Clear self pointer to prevent use-after-free */
+  self = NULL;
+  rust_ai_log("Rust AI: module closed and self pointer cleared");
 }
 
 /**********************************************************************//**
@@ -653,11 +693,14 @@ static void rai_player_console(struct player *pplayer, const char *cmd)
   rust_ai_log("Rust AI: player_console called");
   
   if (cmd != NULL) {
-    /* Get player's AI data */
+    /* Get player's AI data - may be NULL if not yet allocated */
     void *data = def_ai_player_data(pplayer, rait);
     
-    /* Pass message to Rust AI for logging */
-    rust_ai_handle_message(data, cmd, 0);
+    /* Only pass to Rust if data is valid */
+    if (data != NULL) {
+      /* Pass message to Rust AI for logging */
+      rust_ai_handle_message(data, cmd, 0);
+    }
     
     /* Check if the message is "ping" */
     if (fc_strcasecmp(cmd, "ping") == 0) {
@@ -676,9 +719,12 @@ bool fc_ai_rust_setup(struct ai_type *ai)
 {
   const char *version;
   
+  if (ai == NULL) {
+    log_error("fc_ai_rust_setup called with NULL ai parameter");
+    return FALSE;
+  }
+  
   strncpy(ai->name, "rust", sizeof(ai->name));
-
-  rust_ai_set_self(ai);
 
   /* Log Rust AI initialization */
   version = rust_ai_get_version();
@@ -749,6 +795,11 @@ bool fc_ai_rust_setup(struct ai_type *ai)
   ai->funcs.consider_plr_dangerous = rai_consider_plr_dangerous;
   ai->funcs.consider_tile_dangerous = rai_consider_tile_dangerous;
   ai->funcs.consider_wonder_city = rai_consider_wonder_city;
+
+  /* Only set self pointer after everything is successfully configured */
+  rust_ai_set_self(ai);
+  
+  rust_ai_log("Rust AI module setup complete");
 
   return TRUE;
 }
