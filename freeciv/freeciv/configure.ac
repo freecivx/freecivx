@@ -1410,6 +1410,11 @@ for module in $(echo $static_modules | $SED 's/,/ /g') ; do
     ai_mod_static_stub=yes
     AC_DEFINE([AI_MOD_STATIC_STUB], [1],
               [stub ai module statically linked])
+  elif test "x$module" = "xrust" ; then
+    ai_mod_static_rust=yes
+    ai_mod_default_needed=yes
+    AC_DEFINE([AI_MOD_STATIC_RUST], [1],
+              [rust ai module statically linked])
   else
     AC_MSG_ERROR([bad value ${module} for --enable-ai-static])
   fi
@@ -1424,6 +1429,8 @@ AM_CONDITIONAL([AI_MOD_STATIC_TEX],
 [test "x$ai_mod_static_tex" = "xyes"])
 AM_CONDITIONAL([AI_MOD_STATIC_STUB],
 [test "x$ai_mod_static_stub" = "xyes"])
+AM_CONDITIONAL([AI_MOD_STATIC_RUST],
+[test "x$ai_mod_static_rust" = "xyes"])
 
 AC_ARG_WITH([default-ai],
   AS_HELP_STRING([--with-default-ai], [default ai type [first static]]),
@@ -1967,6 +1974,7 @@ AC_CONFIG_FILES([Makefile
           ai/default/Makefile
           ai/classic/Makefile
           ai/stub/Makefile
+          ai/rust/Makefile
           ai/tex/Makefile
 	  tests/Makefile
   	  windows/Makefile
