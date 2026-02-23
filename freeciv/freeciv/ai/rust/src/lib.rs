@@ -2,8 +2,27 @@
 //! 
 //! This module provides AI functionality for Freeciv using Rust.
 //! It is organized into multiple logical modules for better maintainability.
+//! 
+//! Architecture mirrors the C Default AI (ai/default/):
+//! - military.rs (daimilitary.c) - Danger assessment, defense, military production
+//! - city_management.rs (daicity.c) - City AI decisions and management
+//! - settler.rs (daisettler.c) - Expansion and settler logic
+//! - wants.rs (adv_want system) - Desire-based decision scoring
+//! - diplomacy.rs (daidiplomacy.c) - Diplomatic AI decisions
+//! - evaluation.rs - Tile and unit evaluation functions
+//! - planning.rs - Production and battle planning
+//! - decision.rs - High-level decision algorithms
+//! - player_management.rs - Player data structures
+//! - data_structures.rs - Game state structures
 
-// Module declarations
+// Core modules (new Phase 3: C AI alignment)
+pub mod military;
+pub mod city_management;
+pub mod settler;
+pub mod wants;
+pub mod diplomacy;
+
+// Existing modules (Phase 1 & 2)
 pub mod data_structures;
 pub mod player_management;
 pub mod evaluation;
@@ -18,6 +37,13 @@ pub use evaluation::*;
 pub use planning::*;
 pub use decision::*;
 pub use logging::*;
+
+// Re-export new C AI-aligned modules
+pub use military::*;
+pub use city_management::*;
+pub use settler::*;
+pub use wants::*;
+pub use diplomacy::*;
 
 #[cfg(test)]
 mod tests {
