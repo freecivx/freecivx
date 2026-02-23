@@ -81,8 +81,15 @@ The module includes actual Rust code in `src/lib.rs` that provides:
 - `rust_ai_player_free(data)` - Free Rust player data
 - `rust_ai_get_aggression(data)` - Get AI aggression level (0-100)
 - `rust_ai_set_aggression(data, level)` - Set AI aggression level
+- `rust_ai_get_expansion_focus(data)` - Get AI expansion priority (0-100)
+- `rust_ai_set_expansion_focus(data, level)` - Set expansion focus (0=defensive, 100=expansionist)
+- `rust_ai_get_science_focus(data)` - Get AI science vs military balance (0-100)
+- `rust_ai_set_science_focus(data, level)` - Set science focus (0=military, 100=science)
 - `rust_ai_log(message)` - Log messages from Rust
 - `rust_ai_evaluate_tile(x, y, terrain)` - Evaluate tile desirability
+- `rust_ai_evaluate_city_placement(x, y, terrain, water, land)` - Score city placement quality
+- `rust_ai_evaluate_unit_strength(attack, defense, move, hp, max_hp)` - Calculate unit combat value
+- `rust_ai_assess_threat(enemies, strength, distance, our_defense)` - Assess threat level (0-100)
 - `rust_ai_get_version()` - Get Rust AI version string
 
 ### Data Structures
@@ -91,7 +98,9 @@ The module includes actual Rust code in `src/lib.rs` that provides:
 pub struct RustAIPlayerData {
     player_id: c_int,
     turn_initialized: c_int,
-    aggression_level: c_int,
+    aggression_level: c_int,     // 0-100: AI aggression
+    expansion_focus: c_int,       // 0-100: 0=defensive, 100=expansionist
+    science_focus: c_int,         // 0-100: 0=military, 100=science
 }
 ```
 
@@ -105,9 +114,12 @@ cargo test
 ```
 
 Tests cover:
-- Tile evaluation logic
-- Player data management
-- Aggression level clamping
+- Tile evaluation logic with diverse terrain types
+- City placement scoring algorithm
+- Unit strength calculation with health modifiers
+- Threat assessment from enemy forces
+- Player data management (aggression, expansion, science focus)
+- Parameter clamping and edge cases
 - Memory safety (allocation/deallocation)
 
 ## Usage

@@ -48,8 +48,15 @@ extern void *rust_ai_player_init(int player_id);
 extern void rust_ai_player_free(void *data);
 extern int rust_ai_get_aggression(void *data);
 extern void rust_ai_set_aggression(void *data, int level);
+extern int rust_ai_get_expansion_focus(void *data);
+extern void rust_ai_set_expansion_focus(void *data, int level);
+extern int rust_ai_get_science_focus(void *data);
+extern void rust_ai_set_science_focus(void *data, int level);
 extern void rust_ai_log(const char *message);
 extern int rust_ai_evaluate_tile(int x, int y, int terrain_type);
+extern int rust_ai_evaluate_city_placement(int x, int y, int terrain_type, int adjacent_water, int adjacent_land);
+extern int rust_ai_evaluate_unit_strength(int attack_strength, int defense_strength, int movement_points, int hitpoints, int max_hitpoints);
+extern int rust_ai_assess_threat(int num_enemy_units, int enemy_avg_strength, int distance_to_enemy, int our_defense_strength);
 extern const char *rust_ai_get_version(void);
 
 const char *fc_ai_rust_capstr(void);
