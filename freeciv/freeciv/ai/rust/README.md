@@ -10,23 +10,49 @@ The Rust AI module is a **hybrid implementation** combining C wrappers with actu
 
 ### Features
 
-**Latest Enhancement (v0.4.0 - Phase 2):** Completed Phase 2: Core Logic implementation with comprehensive game state bindings and decision algorithms. Added Rust structs for cities, units, and tiles, plus advanced decision-making functions for city production, unit movement, combat evaluation, settler placement, and city growth strategies.
+**Latest Enhancement (v0.5.0 - Phase 3):** C AI Alignment - Restructured Rust AI to mirror the C Default AI (ai/default) architecture. Added new modules following C AI patterns: military.rs (daimilitary.c), city_management.rs (daicity.c), settler.rs (daisettler.c), wants.rs (adv_want system), and diplomacy.rs (daidiplomacy.c). Implemented hard mode characteristics: aggressive expansion (100% expansion focus), full map awareness, danger assessment, wants-based decision making, and strategic diplomacy.
 
-**Previous Enhancement (v0.3.0):** Added advanced AI features including technology evaluation, diplomacy assessment, trade route optimization, production planning, battle prediction, specialist allocation, and city build order planning.
+**Previous Enhancement (v0.4.0 - Phase 2):** Completed Phase 2: Core Logic implementation with comprehensive game state bindings and decision algorithms. Added Rust structs for cities, units, and tiles, plus advanced decision-making functions for city production, unit movement, combat evaluation, settler placement, and city growth strategies.
 
 **Foundation (2024):** The Rust AI module is now properly registered at runtime. The `AI_MOD_STATIC_RUST` preprocessor macro has been added to `meson_fc_config.h.in`, enabling the Rust AI to initialize when the Freeciv server starts. This means the Rust AI is now minimally working and can be selected in games!
 
+## Architecture - C AI Alignment
+
+The Rust AI now follows the structure and logic of the C Default AI (ai/default/):
+
+### Module Structure (mirrors C AI files)
+
+| Rust Module | C AI Equivalent | Purpose |
+|-------------|----------------|---------|
+| **military.rs** | daimilitary.c/h | Danger assessment, defense evaluation, military production |
+| **city_management.rs** | daicity.c/h | City AI decisions, production choices, citizen management |
+| **settler.rs** | daisettler.c/h | Expansion logic, settler automation, city founding |
+| **wants.rs** | adv_want system | Desire-based scoring for units, buildings, settlers, wonders |
+| **diplomacy.rs** | daidiplomacy.c/h | Treaty evaluation, war desire, diplomatic stance |
+| **evaluation.rs** | aitools.c | Tile/unit evaluation, threat assessment |
+| **planning.rs** | Production planning | Battle prediction, specialist allocation |
+| **decision.rs** | High-level decisions | Production, movement, combat, growth strategies |
+| **player_management.rs** | daiplayer.c/h | Player data structures |
+| **data_structures.rs** | Game state | City, Unit, Tile structures |
+
 Core features:
 
+- ✅ **C AI Architecture** - Mirrors ai/default structure and logic (NEW in v0.5.0)
+- ✅ **Hard Mode AI** - Aggressive expansion, full awareness, strategic decisions (NEW in v0.5.0)
+- ✅ **Military AI** - Danger assessment, defense evaluation, attack decisions (NEW in v0.5.0)
+- ✅ **City Management** - Production choices, citizen allocation, buying (NEW in v0.5.0)
+- ✅ **Settler AI** - Expansion desire, site evaluation, settler automation (NEW in v0.5.0)
+- ✅ **Wants System** - Desire-based scoring for all production choices (NEW in v0.5.0)
+- ✅ **Diplomacy AI** - Treaty evaluation, war desire, diplomatic stance (NEW in v0.5.0)
 - ✅ **Complete AI functionality** - Implements all major AI callbacks via Default AI delegation
 - ✅ **Actual Rust code** - Contains real Rust implementation with FFI bindings
-- ✅ **Game state bindings** - Rust structs for City, Unit, and Tile (NEW in v0.4.0)
-- ✅ **Decision algorithms** - AI decision-making in Rust (NEW in v0.4.0)
-- ✅ **City production AI** - Intelligent build decisions based on game state (NEW in v0.4.0)
-- ✅ **Unit movement AI** - Strategic movement evaluation (NEW in v0.4.0)
-- ✅ **Combat AI** - Attack decision-making with win probability (NEW in v0.4.0)
-- ✅ **Settler AI** - Optimal city placement evaluation (NEW in v0.4.0)
-- ✅ **Growth strategy** - Dynamic city growth management (NEW in v0.4.0)
+- ✅ **Game state bindings** - Rust structs for City, Unit, and Tile
+- ✅ **Decision algorithms** - AI decision-making in Rust
+- ✅ **City production AI** - Intelligent build decisions based on game state
+- ✅ **Unit movement AI** - Strategic movement evaluation
+- ✅ **Combat AI** - Attack decision-making with win probability
+- ✅ **Settler AI** - Optimal city placement evaluation
+- ✅ **Growth strategy** - Dynamic city growth management
 - ✅ **Player management** - Rust-based player data structures and aggression tracking
 - ✅ **Tile evaluation** - Rust-implemented tile scoring algorithm
 - ✅ **City placement** - Advanced city location evaluation
@@ -40,7 +66,7 @@ Core features:
 - ✅ **Specialist allocation** - City specialist recommendations
 - ✅ **Build order planning** - City building priority system
 - ✅ **Logging** - Rust-based logging for debugging
-- ✅ **Unit tests** - Comprehensive Rust test suite (20 tests)
+- ✅ **Unit tests** - Comprehensive Rust test suite (39 tests)
 - ✅ **Memory safety** - Rust's ownership system ensures safe FFI interactions
 - ✅ **Player management** - Allocation, lifecycle, and control (via Default AI)
 - ✅ **City management** - City AI decisions, building choices, and optimization (via Default AI)
@@ -291,12 +317,24 @@ The plan is to incrementally replace C AI logic from `ai/default/` with pure Rus
 - ✅ Decision algorithms - AI decision-making in Rust
 - ✅ Performance testing - Comprehensive test suite with 20 tests
 
-### Phase 3: Advanced Features (Next)
+### Phase 3: C AI Alignment (✅ Complete - v0.5.0)
+- ✅ Module restructuring - Match ai/default architecture
+- ✅ Military AI - Danger assessment, defense evaluation (military.rs)
+- ✅ City management - Production choices, citizen management (city_management.rs)
+- ✅ Settler AI - Expansion logic, site evaluation (settler.rs)
+- ✅ Wants system - Desire-based scoring (wants.rs)
+- ✅ Diplomacy AI - Treaty evaluation, war desire (diplomacy.rs)
+- ✅ Hard mode characteristics - 100% expansion, full awareness
+- ✅ Test coverage - 39 comprehensive tests, all passing
+
+### Phase 4: Advanced Features (Next)
 - [ ] Machine learning - Experimental ML-based strategies
 - [ ] Parallel processing - Leverage Rust's concurrency
 - [ ] Advanced algorithms - New AI strategies
 - [ ] Optimization - Performance improvements with Rust
-- [ ] Should copy "AI" logic and principles from Freeciv C AI, because that AI is quite good.
+- [ ] Deeper C AI integration - More sophisticated algorithms from daimilitary.c, daicity.c
+- [ ] Tech tree analysis - Advanced research planning
+- [ ] Coordinated attacks - Multi-unit invasion planning
 
 - [ ] ### Phase 4: Use llm to generate AI chat messages using https://github.com/ggml-org/llama.cpp or something better. Concurrency for LLM. The LLM must generate messages in a separete thread or similar.
 
