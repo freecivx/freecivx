@@ -6,7 +6,7 @@
 use std::os::raw::{c_int, c_void};
 use std::panic;
 use crate::data_structures::RustAIPlayerData;
-use crate::logging::rust_ai_log;
+use crate::logging::log_message;
 
 /// Initialize Rust AI for a player
 /// This function is called when a player starts using the Rust AI
@@ -16,7 +16,7 @@ use crate::logging::rust_ai_log;
 pub unsafe extern "C" fn rust_ai_player_init(player_id: c_int) -> *mut c_void {
     let result = panic::catch_unwind(|| {
         let msg = format!("Rust AI: Initializing player {}", player_id);
-        rust_ai_log(msg.as_str());
+        log_message(&msg);
         
         let data = Box::new(RustAIPlayerData {
             player_id,
@@ -31,7 +31,7 @@ pub unsafe extern "C" fn rust_ai_player_init(player_id: c_int) -> *mut c_void {
     match result {
         Ok(ptr) => ptr,
         Err(_) => {
-            rust_ai_log("ERROR: Rust AI player_init panicked! Returning null.");
+            log_message("ERROR: Rust AI player_init panicked! Returning null.");
             std::ptr::null_mut()
         }
     }
@@ -47,7 +47,7 @@ pub unsafe extern "C" fn rust_ai_player_free(data: *mut c_void) {
         if !data.is_null() {
             let player_data = &*(data as *mut RustAIPlayerData);
             let msg = format!("Rust AI: Freeing player {}", player_data.player_id);
-            rust_ai_log(msg.as_str());
+            log_message(&msg);
             let _ = Box::from_raw(data as *mut RustAIPlayerData);
         }
     });
@@ -86,7 +86,7 @@ pub unsafe extern "C" fn rust_ai_set_aggression(data: *mut c_void, level: c_int)
         player_data.aggression_level = level.clamp(0, 100);
         let msg = format!("Rust AI: Player {} aggression changed {} -> {}", 
                          player_data.player_id, old_level, player_data.aggression_level);
-        rust_ai_log(msg.as_str());
+        log_message(&msg);
     });
 }
 
@@ -122,7 +122,7 @@ pub unsafe extern "C" fn rust_ai_set_expansion_focus(data: *mut c_void, level: c
         player_data.expansion_focus = level.clamp(0, 100);
         let msg = format!("Rust AI: Player {} expansion focus changed {} -> {}", 
                          player_data.player_id, old_level, player_data.expansion_focus);
-        rust_ai_log(msg.as_str());
+        log_message(&msg);
     });
 }
 
@@ -158,7 +158,7 @@ pub unsafe extern "C" fn rust_ai_set_science_focus(data: *mut c_void, level: c_i
         player_data.science_focus = level.clamp(0, 100);
         let msg = format!("Rust AI: Player {} science focus changed {} -> {}", 
                          player_data.player_id, old_level, player_data.science_focus);
-        rust_ai_log(msg.as_str());
+        log_message(&msg);
     });
 }
 
@@ -185,11 +185,11 @@ pub unsafe extern "C" fn rust_ai_handle_message(
         if let Ok(msg_str) = c_str.to_str() {
             let log_msg = format!("Rust AI: Player {} received message from player {}: '{}'",
                                  player_data.player_id, from_player_id, msg_str);
-            rust_ai_log(log_msg.as_str());
+            log_message(&log_msg);
             
             // Handle "ping" command
             if msg_str.trim().eq_ignore_ascii_case("ping") {
-                rust_ai_log("Rust AI: Received ping, preparing pong response");
+                log_message("Rust AI: Received ping, preparing pong response");
                 // Note: The actual response is sent by the C code that calls this function
             }
         }

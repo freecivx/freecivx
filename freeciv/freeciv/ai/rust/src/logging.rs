@@ -3,7 +3,7 @@
 //! This module provides logging functionality and version information
 //! for the Rust AI module.
 
-use std::ffi::{CStr, CString};
+use std::ffi::CStr;
 use std::os::raw::c_char;
 
 /// Log a message from Rust AI (from C string pointer)
@@ -22,7 +22,7 @@ pub unsafe extern "C" fn rust_ai_log(message: *const c_char) {
 
 /// Log a message from Rust AI (from Rust string slice)
 /// Internal helper function for use within Rust code
-pub fn rust_ai_log(message: &str) {
+pub(crate) fn log_message(message: &str) {
     eprintln!("[Rust AI] {}", message);
 }
 
