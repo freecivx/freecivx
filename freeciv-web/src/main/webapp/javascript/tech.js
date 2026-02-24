@@ -549,7 +549,7 @@ function get_advances_text(tech_id)
           .filter(is_valid_and_required)
           .map(tid => techs[tid])
           .map(tech => tech_span(tech.name, null, null, tech.rule_name+" ("+Math.trunc(tech.cost)+") "
-          + uncapitalize(html_safe(cleaned_text(strvec_to_str(tech.helptext))))))))
+          + uncapitalize(html_safe(cleaned_text(strvec_to_str(tech.helptext)))))))
       ]) + '.';
 }
 
