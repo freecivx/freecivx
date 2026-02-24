@@ -4,6 +4,90 @@ This document summarizes the improvements made to the Deity Rust AI to make it m
 
 ## Latest Improvements (2026-02-24)
 
+### C AI Algorithm Integration - Phase 1
+
+**Files Changed**: `freeciv-rust-ai/src/ai/aitools.rs`, `freeciv-rust-ai/src/ai/aiunit.rs`, `freeciv-rust-ai/src/ai/aicity.rs`, `freeciv-rust-ai/src/ai/aitech.rs`
+
+**Overview**: Ported key decision-making algorithms from the Freeciv Classic C AI to improve the Rust AI's gameplay.
+
+#### AI Tools Enhancements (`aitools.rs`)
+
+- ✅ **Amortization Function**: Ported from C AI's `military_amortize()`
+  - Discounts future value by time to achieve
+  - Formula: `(value * turns) / (turns + delay)`
+  - Used for settler placement, tech selection, production choices
+
+- ✅ **Advanced Danger Assessment**: Based on C AI's `dai_assess_danger()`
+  - Returns 0-100 danger level for cities
+  - Accounts for distance (closer enemies = more dangerous)
+  - Considers defensive strength vs. enemy units within 5 tiles
+  - Returns 100 if city is undefended
+
+- ✅ **City Tile Evaluation**: Simplified version of C AI's `city_desirability()`
+  - Evaluates tile quality for city placement
+  - Enforces minimum city distance (citymindist)
+  - Penalizes crowding near existing cities
+  - Bonus for good expansion distance (3-10 tiles)
+
+#### Settler Logic Improvements (`aiunit.rs`)
+
+- ✅ **Smart City Placement**: Based on C AI's `daisettler.c`
+  - Evaluates current tile before founding
+  - Threshold system (value >= 80 = good location)
+  - Distance-based decision making
+  - First city special handling
+
+#### Combat & Military Tactics (`aiunit.rs`)
+
+- ✅ **HP-Based Recovery**: Ported from C AI's unit management
+  - Units <50% HP go to recover mode
+  - Units 50-80% HP prefer defensive positions
+  
+- ✅ **City Defense Priority**: Based on C AI's `dai_manage_military()`
+  - Defend threatened cities (danger > 30) within 3 tiles
+  - Defense takes priority over offense
+  
+- ✅ **Attack Priority Calculation**: Simplified from C AI combat system
+  - Targets prioritized by: (distance * 10) + HP
+  - Prefers weak, nearby enemies
+  - Requires 1.5x strength advantage to attack
+
+#### Production Selection (`aicity.rs`)
+
+- ✅ **Priority-Based System**: Based on C AI's `dai_manage_city()`
+  1. Emergency defenders (danger > 50)
+  2. Basic defenders (no garrison)
+  3. Settlers (early expansion, cities < 5)
+  4. Workers (maintain 1.5 workers per city)
+  5. Infrastructure (peaceful times, danger < 30)
+  6. Military units (default)
+
+- ✅ **Settler Production Rules**: From C AI
+  - Only if < 5 cities (expansion phase)
+  - City must be size 4+ (avoid starvation)
+  - Limit to 2 settlers in production simultaneously
+
+#### Technology Selection (`aitech.rs`)
+
+- ✅ **Phase-Based Priorities**: Based on C AI's `dai_select_tech()`
+  - **Early game** (< 3 cities): Expansion techs (Pottery, Bronze Working)
+  - **Mid-game** (3-6 cities): Infrastructure (Writing, Monarchy)
+  - **Late game** (6+ cities): Advanced techs (Philosophy, Republic)
+
+- ✅ **Danger-Driven Military Techs**: From C AI pattern
+  - If avg city danger > 40, prioritize military techs
+  - Horseback Riding, Iron Working, Construction
+
+- ✅ **Average Danger Calculation**
+  - Calculates average danger across all cities
+  - Used to adjust tech priorities
+
+**Documentation**: See `doc/RUST_AI_C_AI_INTEGRATION.md` for detailed algorithm descriptions and C AI references.
+
+**Testing**: All 13 unit tests pass. Code compiles successfully.
+
+---
+
 ### PACKET_PLAYER_READY Implementation
 
 **Files Changed**: `freeciv-rust-ai/src/packets.rs`, `freeciv-rust-ai/src/main.rs`
