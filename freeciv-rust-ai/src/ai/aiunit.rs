@@ -127,8 +127,22 @@ fn is_military_unit(_unit_type: u16) -> bool {
 }
 
 /// Manage settler unit
+/// Based on C AI's settler management in daisettler.c
 fn manage_settler(state: &GameState, ai_data: &mut AIData, unit: &Unit) {
     println!("[AI Settler] Unit #{} - evaluating city founding", unit.id);
+    
+    // Evaluate current tile for city placement
+    let current_value = crate::ai::aitools::evaluate_city_tile(state, unit.tile);
+    println!("[AI Settler] Current tile value: {}", current_value);
+    
+    // Check if current location is good enough to found city
+    // C AI uses RESULT_IS_ENOUGH threshold (250 in settler code)
+    if current_value >= 80 {
+        println!("[AI Settler] Unit #{} - good location found, should build city", unit.id);
+        // TODO: Send build city command
+        ai_data.set_unit_task(unit.id, AIUnitTask::BuildCity, Some(unit.tile));
+        return;
+    }
     
     // Calculate distance to nearest city
     let distance_to_city = find_nearest_city_distance(state, unit.tile);
@@ -136,19 +150,25 @@ fn manage_settler(state: &GameState, ai_data: &mut AIData, unit: &Unit) {
     if let Some(dist) = distance_to_city {
         println!("[AI Settler] Unit #{} is {:.0} tiles from nearest city", unit.id, dist);
         
-        if dist > 3.0 {
-            println!("[AI Settler] Unit #{} should consider founding a city here", unit.id);
-            // TODO: Evaluate tile quality and send build city command
+        // C AI settlers look for optimal location within reasonable distance
+        // If far enough from cities but location isn't great, keep searching
+        if dist > 4.0 && current_value > 40 {
+            println!("[AI Settler] Unit #{} - acceptable location, considering building", unit.id);
+            ai_data.set_unit_task(unit.id, AIUnitTask::BuildCity, Some(unit.tile));
+        } else if dist < 3.0 {
+            println!("[AI Settler] Unit #{} - too close to city, must move away", unit.id);
+            // TODO: Move to a better location away from cities
+            ai_data.set_unit_task(unit.id, AIUnitTask::BuildCity, None);
         } else {
-            println!("[AI Settler] Unit #{} should move to better location", unit.id);
-            // TODO: Move to a better location
+            println!("[AI Settler] Unit #{} - searching for better location", unit.id);
+            // TODO: Use pathfinding to find better location
+            ai_data.set_unit_task(unit.id, AIUnitTask::BuildCity, None);
         }
     } else {
-        println!("[AI Settler] Unit #{} should found first city!", unit.id);
-        // TODO: Found the first city
+        // No cities yet - found first city at current location
+        println!("[AI Settler] Unit #{} - founding first city!", unit.id);
+        ai_data.set_unit_task(unit.id, AIUnitTask::BuildCity, Some(unit.tile));
     }
-    
-    ai_data.set_unit_task(unit.id, AIUnitTask::BuildCity, Some(unit.tile));
 }
 
 /// Manage worker unit  
@@ -164,35 +184,99 @@ fn manage_defender(_state: &GameState, _ai_data: &mut AIData, unit: &Unit) {
 }
 
 /// Manage attacking military unit
-fn manage_attacker(state: &GameState, _ai_data: &mut AIData, unit: &Unit) {
+/// Based on C AI's military unit management in daimilitary.c and daiunit.c
+fn manage_attacker(state: &GameState, ai_data: &mut AIData, unit: &Unit) {
     println!("[AI Attacker] Unit #{} - managing military unit", unit.id);
     
-    // Check if unit needs healing
-    if unit.hp < 80 {
-        println!("[AI Attacker] Unit #{} needs healing (HP: {})", unit.id, unit.hp);
+    // Priority 1: Check if unit needs healing (from C AI)
+    // Units below 50% HP should recover before engaging
+    let max_hp = 100; // Assumed max HP
+    let hp_percent = (unit.hp * 100) / max_hp;
+    
+    if hp_percent < 50 {
+        println!("[AI Attacker] Unit #{} critically damaged (HP: {}%), recovering", 
+            unit.id, hp_percent);
+        ai_data.set_unit_task(unit.id, AIUnitTask::Recover, None);
         // TODO: Move to safe location to heal
         return;
+    } else if hp_percent < 80 {
+        println!("[AI Attacker] Unit #{} slightly damaged (HP: {}%), prefer defense", 
+            unit.id, hp_percent);
     }
     
-    // Check if we need to defend our cities
+    // Priority 2: Check if we need to defend our cities
+    // C AI prioritizes city defense over offensive operations
     if let Some(player_id) = state.our_player_id {
         for city in state.cities.values() {
             if city.owner == player_id {
                 let dist = state.map.distance(city.tile, unit.tile);
-                if dist < 3 {
-                    println!("[AI Attacker] Unit #{} defending city {} at distance {}", 
-                        unit.id, city.name, dist);
-                    // TODO: Stay near city to defend
+                let danger = crate::ai::aitools::assess_city_danger(state, city);
+                
+                // If city is in danger and unit is nearby, defend it
+                if danger > 30 && dist <= 3 {
+                    println!("[AI Attacker] Unit #{} defending threatened city {} (danger: {}, dist: {})", 
+                        unit.id, city.name, danger, dist);
+                    ai_data.set_unit_task(unit.id, AIUnitTask::DefendHome, Some(city.tile));
+                    // TODO: Move to city tile or fortify nearby
                     return;
                 }
             }
         }
     }
     
-    // Look for enemy units to attack
+    // Priority 3: Look for enemy units to attack
+    // C AI uses complex attack value calculations
     println!("[AI Attacker] Unit #{} looking for enemies", unit.id);
-    // TODO: Find and attack nearby enemy units
-    // TODO: Move toward enemy territory if no nearby threats
+    let enemies = find_nearby_enemies(state, unit.tile);
+    
+    if !enemies.is_empty() {
+        // Find weakest enemy within range
+        if let Some(target) = enemies.iter()
+            .min_by_key(|e| calculate_attack_priority(unit, e, state)) 
+        {
+            let dist = state.map.distance(unit.tile, target.tile);
+            println!("[AI Attacker] Unit #{} found target unit #{} at distance {}", 
+                unit.id, target.id, dist);
+            
+            // C AI checks if attack is favorable before committing
+            if should_attack(unit, target, state) {
+                println!("[AI Attacker] Unit #{} engaging target #{}", unit.id, target.id);
+                ai_data.set_unit_task(unit.id, AIUnitTask::Attack, Some(target.tile));
+                // TODO: Move toward and attack enemy
+            } else {
+                println!("[AI Attacker] Unit #{} attack unfavorable, holding position", unit.id);
+            }
+            return;
+        }
+    }
+    
+    // Priority 4: No immediate threats or targets - patrol or explore
+    println!("[AI Attacker] Unit #{} no enemies nearby, patrolling", unit.id);
+    // TODO: Move toward enemy territory or patrol borders
+    // C AI uses strategic map analysis to find good attack positions
+}
+
+/// Calculate attack priority (lower = better target)
+/// Based on C AI's attack value calculation
+fn calculate_attack_priority(attacker: &Unit, defender: &Unit, state: &GameState) -> i32 {
+    let dist = state.map.distance(attacker.tile, defender.tile);
+    let defender_hp = defender.hp;
+    
+    // Prefer weaker, closer targets
+    // Formula: distance * 10 + hp
+    // Lower values are better targets
+    (dist * 10) + defender_hp as i32
+}
+
+/// Determine if attack is favorable
+/// Based on C AI's combat odds calculation
+fn should_attack(attacker: &Unit, defender: &Unit, _state: &GameState) -> bool {
+    let attacker_strength = crate::ai::aitools::calculate_unit_strength(attacker);
+    let defender_strength = crate::ai::aitools::calculate_unit_strength(defender);
+    
+    // Simple rule: attack if we have 1.5x strength advantage
+    // C AI uses detailed combat calculations with terrain modifiers
+    attacker_strength >= (defender_strength * 3) / 2
 }
 
 /// Find distance to nearest friendly city

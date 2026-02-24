@@ -56,11 +56,26 @@ fn manage_city(state: &GameState, city: &City) {
 }
 
 /// Choose what the city should produce
+/// Based on C AI's production choice from daicity.c
 fn choose_production(state: &GameState, city: &City) {
     println!("[AI Production] Choosing production for '{}'", city.name);
     
-    // Evaluate priorities:
-    // 1. Check if city needs defender
+    // C AI uses sophisticated priority system with urgency levels
+    // We implement a simplified version with key priorities
+    
+    // Priority 1: Emergency defender if city is in danger
+    let danger = crate::ai::aitools::assess_city_danger(state, city);
+    if danger > 50 {
+        if check_if_needs_defender(state, city) {
+            println!("[AI Production] '{}' in DANGER ({}), needs emergency defender", 
+                city.name, danger);
+            // TODO: Send command to produce defender unit (highest priority)
+            return;
+        }
+    }
+    
+    // Priority 2: Basic defender if city has no garrison
+    // C AI ensures every city has at least one defender
     let needs_defender = check_if_needs_defender(state, city);
     if needs_defender {
         println!("[AI Production] '{}' needs a defender unit", city.name);
@@ -68,32 +83,93 @@ fn choose_production(state: &GameState, city: &City) {
         return;
     }
     
-    // 2. Check if we need settlers for expansion
+    // Priority 3: Settlers for expansion (early game)
+    // C AI dynamically determines settler needs based on available land
     let total_cities = state.get_our_cities().len();
-    if total_cities < 3 && city.size >= 4 {
+    if should_build_settler(state, city, total_cities) {
         println!("[AI Production] '{}' should produce a settler for expansion", city.name);
         // TODO: Send command to produce settler
         return;
     }
     
-    // 3. Check if we need workers
+    // Priority 4: Workers for terrain improvement
+    // C AI maintains worker/city ratio based on available improvements
     let worker_count = count_workers(state);
-    if worker_count < total_cities * 2 && city.size >= 3 {
-        println!("[AI Production] '{}' should produce a worker", city.name);
+    let worker_ratio = worker_count as f32 / total_cities.max(1) as f32;
+    if worker_ratio < 1.5 && city.size >= 3 {
+        println!("[AI Production] '{}' should produce worker (ratio: {:.1})", 
+            city.name, worker_ratio);
         // TODO: Send command to produce worker
         return;
     }
     
-    // 4. Produce infrastructure buildings
-    if city.size >= 3 {
-        println!("[AI Production] '{}' should build infrastructure", city.name);
-        // TODO: Choose best building
+    // Priority 5: Buildings for city improvement
+    // C AI evaluates building want based on effects and needs
+    if city.size >= 3 && should_build_infrastructure(state, city) {
+        println!("[AI Production] '{}' should build infrastructure (size {})", 
+            city.name, city.size);
+        // TODO: Choose and build best building
+        // C AI considers: Granary, Library, Marketplace, Temple, etc.
         return;
     }
     
-    // Default: produce military
+    // Priority 6: Military units for defense/offense
+    // Default production if no other priorities
     println!("[AI Production] '{}' will produce military unit (default)", city.name);
-    // TODO: Send command to produce military unit
+    // TODO: Send command to produce appropriate military unit
+    // C AI chooses based on current military needs and tech level
+}
+
+/// Determine if city should build a settler
+/// Based on C AI's settler want calculation
+fn should_build_settler(state: &GameState, city: &City, total_cities: usize) -> bool {
+    // C AI uses complex calculation based on:
+    // - Available land for expansion
+    // - City infrastructure development
+    // - Current settler count
+    // - City size and growth
+    
+    // Simplified rules:
+    // 1. Need more cities in early game (< 5 cities)
+    // 2. City must be size 4+ to avoid starvation
+    // 3. Don't build too many settlers at once
+    
+    if total_cities >= 5 {
+        return false; // Enough cities for now
+    }
+    
+    if city.size < 4 {
+        return false; // City too small
+    }
+    
+    // Check how many settlers we already have
+    let settler_count = state.get_our_units()
+        .iter()
+        .filter(|u| is_settler_unit(u.unit_type))
+        .count();
+    
+    // Don't build more settlers if we already have enough in production
+    settler_count < 2
+}
+
+/// Check if unit type is a settler
+fn is_settler_unit(_unit_type: u16) -> bool {
+    // TODO: Check unit flags for settler capability
+    // For now, assume unit_type 1 is settler (common in Freeciv)
+    false // Placeholder
+}
+
+/// Determine if city should build infrastructure
+/// Based on C AI's building want calculation
+fn should_build_infrastructure(state: &GameState, city: &City) -> bool {
+    // C AI evaluates each building's effect on the city
+    // and chooses the one with highest want
+    
+    // Simplified: build if city is developed and not in danger
+    let danger = crate::ai::aitools::assess_city_danger(state, city);
+    
+    // Build infrastructure in peaceful times with developed cities
+    danger < 30 && city.size >= 4
 }
 
 /// Check if a city needs a defender
