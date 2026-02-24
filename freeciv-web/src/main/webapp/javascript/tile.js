@@ -63,7 +63,7 @@ function tile_resource(tile)
   if (is_standalone_mode()) {
     return null; // FIXME
   }
-  if (tile != null && tile.resource != null) {
+  if (tile != null && tile.resource != null && tile.resource < MAX_EXTRA_TYPES) {
     return tile.resource;
   }
   return null;

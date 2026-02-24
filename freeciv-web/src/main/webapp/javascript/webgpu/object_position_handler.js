@@ -420,11 +420,11 @@ function update_tile_extras(ptile) {
   update_tile_forest_jungle(ptile);
   update_tile_cactus(ptile);
 
-  const resource_id = tile_resource(ptile);
-  let tile_resource_obj = (resource_id === null) ? null : resources[resource_id];
-  if (tile_resource_obj != null && scene != null && tile_extra_positions_list[tile_resource_obj['id'] + "." + ptile['index']] == null) {
-    if (special_resources.includes(tile_resource_obj['identifier'])) {
-      update_tile_extra_update_model(tile_resource_obj['id'], tile_resource_obj['identifier'], ptile);
+  const extra_id = tile_resource(ptile);
+  let extra_resource = (extra_id === null) ? null : extras[extra_id];
+  if (extra_resource != null && scene != null && tile_extra_positions_list[extra_resource['id'] + "." + ptile['index']] == null) {
+    if (special_resources.includes(extra_resource['rule_name'])) {
+      update_tile_extra_update_model(extra_resource['id'], extra_resource['rule_name'], ptile);
     }
   }
 
