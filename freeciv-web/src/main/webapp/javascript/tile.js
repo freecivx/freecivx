@@ -63,13 +63,8 @@ function tile_resource(tile)
   if (is_standalone_mode()) {
     return null; // FIXME
   }
-  if (tile != null && tile.extras != null) {
-    const tile_extras = tile.extras.toBitSet();
-    for (var extra in tile_extras) {
-      if (is_extra_caused_by(extras[tile_extras[extra]], EC_RESOURCE)) {
-        return tile_extras[extra];
-      }
-    }
+  if (tile != null && tile.resource != null) {
+    return tile.resource;
   }
   return null;
 }
