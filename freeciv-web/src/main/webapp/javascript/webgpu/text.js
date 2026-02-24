@@ -35,7 +35,6 @@ function get_unit_activity_text(punit)
 
   switch (activity) {
     case ACTIVITY_CLEAN:
-    case ACTIVITY_POLLUTION:
       return "c";
 
     case ACTIVITY_MINE:
