@@ -179,6 +179,11 @@ impl DeityAI {
                 if info.username == self.username {
                     println!("[Player Info] This is our player! ID: {}", info.playerno);
                     self.ai.state.our_player_id = Some(info.playerno);
+                    
+                    // Send player ready packet so game can start
+                    let ready_packet = PlayerReady::new(info.playerno, true);
+                    self.send_packet(&ready_packet).await?;
+                    println!("[Player Ready] Sent ready packet for player {}", info.playerno);
                 }
 
                 let player = Player {
