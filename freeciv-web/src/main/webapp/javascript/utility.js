@@ -197,6 +197,11 @@ function get_tileset_file_extention()
 **************************************************************************/
 function html_safe(text)
 {
+  // Handle STRVEC (array of strings) from packet data
+  if (Array.isArray(text)) {
+    text = text.join("\n");
+  }
+  if (typeof text !== 'string') return "";
   text = text.replace(/'/g, "&#39;");
   text = text.replace(/"/g, "&#34;");
   // eslint-disable-next-line no-control-regex
@@ -217,6 +222,11 @@ function uncapitalize(s) {
 **************************************************************************/
 function cleaned_text(str)
 {
+  // Handle STRVEC (array of strings) from packet data
+  if (Array.isArray(str)) {
+    str = str.join("\n");
+  }
+  if (typeof str !== 'string') return "";
   // Remove each type of ugly spurious character or escape code.
   for (var i = 0; i < STRIPCHAR_LAST; i++) {
     str = str.replace(stripChar[i],"");
