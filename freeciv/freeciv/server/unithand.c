@@ -7038,39 +7038,103 @@ void handle_worker_task(struct player *pplayer,
 
 /**********************************************************************//**
   Handle request for goto path calculation for web client.
-  This is called when the web client requests pathfinding from a unit
-  to a destination tile. The response should be sent back using
-  PACKET_WEB_GOTO_PATH.
 **************************************************************************/
-void handle_web_goto_path_req(struct player *pplayer, int unit_id,
-                               int goal)
+void handle_web_goto_path_req(struct player *pplayer, int unit_id, int goal)
 {
-#ifdef FREECIV_WEB
   struct unit *punit = player_unit_by_number(pplayer, unit_id);
-  
-  if (punit == nullptr) {
+  struct tile *ptile = index_to_tile(&(wld.map), goal);
+  struct pf_parameter parameter;
+  struct pf_map *pfm;
+  struct pf_path *path;
+  struct tile *old_tile;
+  int i = 0;
+  struct packet_web_goto_path p;
+
+  if (NULL == punit) {
+    /* Shouldn't happen */
+    log_error("handle_unit_move(): invalid unit %d",
+              unit_id);
     return;
   }
-  
-  /* TODO: Calculate path from unit position to goal tile
-   * and send result back to client using send_packet_web_goto_path() */
-#endif /* FREECIV_WEB */
+
+  if (NULL == ptile) {
+    /* Shouldn't happen */
+    log_error("handle_unit_move(): invalid %s (%d) tile (%d, %d)",
+              unit_rule_name(punit),
+              unit_id,
+              TILE_XY(ptile));
+    return;
+  }
+
+  if (!is_player_phase(unit_owner(punit), game.info.phase)) {
+    /* Client is out of sync, ignore */
+    log_verbose("handle_unit_move(): invalid %s (%d) %s != phase %d",
+                unit_rule_name(punit),
+                unit_id,
+                nation_rule_name(nation_of_unit(punit)),
+                game.info.phase);
+    return;
+  }
+
+  p.unit_id = punit->id;
+  p.dest = tile_index(ptile);
+
+  /* Use path-finding to find a goto path. */
+  pft_fill_unit_parameter(&parameter, punit);
+  pfm = pf_map_new(&parameter);
+  path = pf_map_path(pfm, ptile);
+  pf_map_destroy(pfm);
+
+  if (path) {
+    int total_mc = 0;
+
+    p.length = path->length - 1;
+
+    old_tile = path->positions[0].tile;
+
+    for (i = 0; i < path->length - 1; i++) {
+      struct tile *new_tile = path->positions[i + 1].tile;
+      int dir;
+
+      total_mc += path->positions[1].total_MC;
+      if (same_pos(new_tile, old_tile)) {
+        dir = -1;
+      } else {
+        dir = get_direction_for_step(&(wld.map), old_tile, new_tile);
+      }
+      old_tile = new_tile;
+      p.dir[i] = dir;
+
+    }
+    pf_path_destroy(path);
+    p.turns = total_mc / unit_move_rate(punit);
+    send_packet_web_goto_path(pplayer->current_conn, &p);
+
+  } else {
+    return;
+  }
 }
 
 /**********************************************************************//**
   Handle request for info text for web client.
-  This is called when the web client requests information about a tile
-  location and potentially visible units. The response should be sent
-  back using PACKET_WEB_INFO_TEXT_MESSAGE.
+  Simplified implementation - sends basic tile information.
 **************************************************************************/
 void handle_web_info_text_req(struct player *pplayer, int loc,
-                               int visible_unit, int focus_unit)
+                               int visible_unit_id, int focus_unit_id)
 {
-#ifdef FREECIV_WEB
-  /* TODO: Generate and send tile/unit information text message
-   * to client using send_packet_web_info_text_message() */
-  (void) loc;
-  (void) visible_unit;
-  (void) focus_unit;
-#endif /* FREECIV_WEB */
+  struct tile *ptile = index_to_tile(&(wld.map), loc);
+  char info_text[MAX_LEN_MSG];
+
+  if (ptile == nullptr || !map_is_known(ptile, pplayer)) {
+    return;
+  }
+
+  /* Send basic tile information.
+   * TODO: Implement full popup info text with terrain, city, unit details */
+  fc_snprintf(info_text, sizeof(info_text), 
+              "Tile at (%d, %d)", TILE_XY(ptile));
+  
+  conn_list_iterate(pplayer->connections, pconn) {
+    dsend_packet_web_info_text_message(pconn, info_text);
+  } conn_list_iterate_end;
 }
