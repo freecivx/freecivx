@@ -80,6 +80,16 @@ impl DeityAI {
 
         let len = u16::from_be_bytes(len_buf) as usize;
 
+        // Validate packet length to prevent excessive memory allocation
+        const MAX_PACKET_SIZE: usize = 1024 * 1024; // 1MB max packet size
+        if len > MAX_PACKET_SIZE {
+            return Err(anyhow::anyhow!(
+                "Packet length {} exceeds maximum allowed size of {} bytes",
+                len,
+                MAX_PACKET_SIZE
+            ));
+        }
+
         // Read JSON packet
         let mut buf = vec![0u8; len];
         self.stream.read_exact(&mut buf).await?;
@@ -95,12 +105,9 @@ impl DeityAI {
         println!("Handling packet ID: {}", packet.pid);
 
         // TODO: Implement proper packet handling based on packets.def
-        // For now, just log the packet
-        match packet.pid {
-            _ => {
-                println!("Unhandled packet type: {}", packet.pid);
-            }
-        }
+        // Match structure prepared for future packet type implementations
+        // See freeciv/freeciv/common/networking/packets.def for packet IDs
+        println!("Unhandled packet type: {}", packet.pid);
 
         Ok(())
     }
