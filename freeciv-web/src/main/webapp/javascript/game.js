@@ -85,7 +85,7 @@ function update_game_status_panel() {
     var sci = client.conn.playing['science'];
 
     var net_income = pplayer['expected_income'];
-    if (net_income == null) {
+    if (net_income === null || net_income === undefined) {
       net_income = 0;  // Default to 0 if not yet available
     } else if (net_income > 0) {
       net_income = "+" + net_income;
@@ -119,7 +119,7 @@ function update_game_status_panel() {
 
     status_html += "<img src='/images/coinage.png'>: ";
     var expected_income_val = pplayer['expected_income'];
-    if (expected_income_val == null) expected_income_val = 0;
+    if (expected_income_val === null || expected_income_val === undefined) expected_income_val = 0;
     if (expected_income_val >= 0) {
       status_html += "<b title='Gold (net income)'>";
     } else {
