@@ -76,6 +76,7 @@ Each packet consists of:
 
 ### Completed Features
 
+**Core Infrastructure**
 - ✅ TCP connection to Freeciv server
 - ✅ JSON packet protocol with length headers
 - ✅ Packet serialization/deserialization
@@ -90,22 +91,34 @@ Each packet consists of:
 - ✅ Turn-based processing with PACKET_PLAYER_PHASE_DONE
 - ✅ AI coordinator for orchestrating AI activities
 
+**AI Decision-Making (NEW - 2026-02-24)**
+- ✅ **Amortization** - Time-discounted value calculations (from C AI)
+- ✅ **Danger Assessment** - 0-100 city danger levels based on enemy proximity
+- ✅ **City Placement** - Tile evaluation for settler decisions
+- ✅ **Combat Tactics** - HP-based recovery, 1.5x attack rule, target prioritization
+- ✅ **Unit Management** - Settler, worker, explorer, military with C AI logic
+- ✅ **Production System** - Priority-based (defenders > settlers > workers > infrastructure)
+- ✅ **Government Evaluation** - City count and danger-based government selection
+- ✅ **Tax Management** - Treasury-based tax/science/luxury rate calculation
+- ✅ **Technology Selection** - Phase-based tech priorities (expansion, infrastructure, military)
+
+See [IMPROVEMENTS.md](IMPROVEMENTS.md) for detailed changelog.
+
 ### In Progress
 
-- 🚧 Classic AI behavior implementation
-- 🚧 Unit movement and orders
-- 🚧 City management and production
-- 🚧 Technology research selection
-- 🚧 Diplomatic decisions
+- 🚧 Actual packet sending (commands currently logged but not sent)
+- 🚧 Pathfinding for unit movement
+- 🚧 Tile output calculations (food/shield/trade)
+- 🚧 Detailed combat odds calculation
+- 🚧 Building effect evaluation
 
 ### Planned Features
 
 - ⏳ Full game state synchronization
-- ⏳ AI decision-making (based on Freeciv Classic AI)
-- ⏳ Turn-based gameplay
-- ⏳ Military strategy
-- ⏳ Economic management
+- ⏳ Complete unit movement implementation
+- ⏳ Advanced military strategy
 - ⏳ Diplomatic interactions
+- ⏳ Ferry and transport management
 - ⏳ **AI-generated chat messages using llama.cpp** (see [FUTURE_LLAMACPP_INTEGRATION.md](FUTURE_LLAMACPP_INTEGRATION.md))
 
 ## Future Enhancements
