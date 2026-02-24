@@ -92,3 +92,7 @@ tomcat.8080
 # Node.js dependencies
 node_modules/
 package-lock.json
+
+# Rust build artifacts
+freeciv-rust-ai/target/
+freeciv-rust-ai/Cargo.lock
