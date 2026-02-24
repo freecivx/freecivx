@@ -332,6 +332,18 @@ cd "${basedir}"/freeciv-web && \
   bash ./build.sh -B || \
   handle_error 7 "Failed to build freeciv-web server"
 
+echo "==== Building Rust AI ===="
+if command -v cargo > /dev/null 2>&1; then
+  echo "Rust toolchain found, building Deity Rust AI..."
+  cd "${basedir}"/freeciv-rust-ai && \
+    cargo build --release || \
+    echo "Warning: Rust AI build failed (non-fatal)"
+  echo "Rust AI build complete (binary at freeciv-rust-ai/target/release/deity-rust-ai)"
+else
+  echo "Warning: Rust toolchain not found, skipping Rust AI build"
+  echo "Install Rust from https://rustup.rs/ to build the Rust AI"
+fi
+
 echo "==== Running ESLint checks ===="
 cd "${basedir}"/scripts && \
   bash ./build-eslint.sh || \

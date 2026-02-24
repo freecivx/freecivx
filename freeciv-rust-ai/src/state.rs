@@ -1,10 +1,12 @@
 use std::collections::HashMap;
+use crate::map::Map;
 
 #[derive(Debug, Default)]
 pub struct GameState {
     pub players: HashMap<u16, Player>,
     pub cities: HashMap<u16, City>,
     pub units: HashMap<u16, Unit>,
+    pub map: Map,
     pub current_turn: i16,
     pub current_year: i32,
     pub our_player_id: Option<u16>,
@@ -53,19 +55,31 @@ impl GameState {
     }
 
     pub fn update_city(&mut self, city: City) {
+        // Update map with city location
+        self.map.set_city_on_tile(city.tile, city.id);
         self.cities.insert(city.id, city);
     }
 
     pub fn update_unit(&mut self, unit: Unit) {
+        // Remove unit from old tile if it exists
+        if let Some(old_unit) = self.units.get(&unit.id) {
+            self.map.remove_unit_from_tile(old_unit.tile, unit.id);
+        }
+        // Add unit to new tile
+        self.map.add_unit_to_tile(unit.tile, unit.id);
         self.units.insert(unit.id, unit);
     }
 
     pub fn remove_unit(&mut self, unit_id: u16) {
-        self.units.remove(&unit_id);
+        if let Some(unit) = self.units.remove(&unit_id) {
+            self.map.remove_unit_from_tile(unit.tile, unit_id);
+        }
     }
 
     pub fn remove_city(&mut self, city_id: u16) {
-        self.cities.remove(&city_id);
+        if let Some(city) = self.cities.remove(&city_id) {
+            self.map.remove_city_from_tile(city.tile);
+        }
     }
 
     pub fn get_our_cities(&self) -> Vec<&City> {
@@ -88,6 +102,11 @@ impl GameState {
         } else {
             Vec::new()
         }
+    }
+
+    /// Get city at a specific tile
+    pub fn get_city_at_tile(&self, tile: i32) -> Option<&City> {
+        self.cities.values().find(|c| c.tile == tile)
     }
 
     pub fn start_turn(&mut self) {
