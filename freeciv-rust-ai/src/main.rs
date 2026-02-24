@@ -1,6 +1,8 @@
+mod ai;
 mod packets;
 mod state;
 
+use ai::DeityAI as AICoordinator;
 use anyhow::{Context, Result};
 use clap::Parser;
 use packets::*;
@@ -29,7 +31,7 @@ struct Args {
 struct DeityAI {
     stream: TcpStream,
     username: String,
-    state: GameState,
+    ai: AICoordinator,
     connected: bool,
     authenticated: bool,
 }
@@ -50,7 +52,7 @@ impl DeityAI {
         Ok(DeityAI {
             stream,
             username,
-            state: GameState::new(),
+            ai: AICoordinator::new(),
             connected: true,
             authenticated: false,
         })
@@ -113,6 +115,21 @@ impl DeityAI {
             }
             PACKET_PROCESSING_FINISHED => {
                 println!("[Processing Finished]");
+                
+                // After processing finished, check if we should act
+                if self.ai.should_process_turn() {
+                    self.process_ai_turn().await?;
+                }
+            }
+            PACKET_BEGIN_TURN => {
+                println!("[Begin Turn]");
+                self.ai.state.start_turn();
+            }
+            PACKET_START_PHASE => {
+                println!("[Start Phase]");
+            }
+            PACKET_END_TURN => {
+                println!("[End Turn]");
             }
             PACKET_SERVER_JOIN_REPLY => {
                 let reply: ServerJoinReply = serde_json::from_value(packet.data.clone())?;
@@ -149,8 +166,8 @@ impl DeityAI {
             }
             PACKET_GAME_INFO => {
                 let info: GameInfo = serde_json::from_value(packet.data.clone())?;
-                self.state.current_turn = info.turn;
-                self.state.current_year = info.year;
+                self.ai.state.current_turn = info.turn;
+                self.ai.state.current_year = info.year;
                 println!("[Game Info] Turn: {}, Year: {}", info.turn, info.year);
             }
             PACKET_PLAYER_INFO => {
@@ -160,7 +177,7 @@ impl DeityAI {
                 // Check if this is us
                 if info.username == self.username {
                     println!("[Player Info] This is our player! ID: {}", info.playerno);
-                    self.state.our_player_id = Some(info.playerno);
+                    self.ai.state.our_player_id = Some(info.playerno);
                 }
 
                 let player = Player {
@@ -170,7 +187,7 @@ impl DeityAI {
                     is_alive: info.is_alive,
                     gold: info.gold,
                 };
-                self.state.update_player(player);
+                self.ai.state.update_player(player);
             }
             PACKET_CITY_INFO => {
                 let info: CityInfo = serde_json::from_value(packet.data.clone())?;
@@ -183,21 +200,26 @@ impl DeityAI {
                     name: info.name,
                     tile: info.tile,
                     size: info.size,
+                    production_kind: info.production_kind,
+                    production_value: info.production_value,
                 };
-                self.state.update_city(city);
+                self.ai.state.update_city(city);
             }
             PACKET_UNIT_INFO => {
                 let info: UnitInfo = serde_json::from_value(packet.data.clone())?;
-                println!("[Unit Info] #{} (owner: {}, tile: {})", 
-                    info.id, info.owner, info.tile);
+                println!("[Unit Info] #{} (owner: {}, type: {}, tile: {})", 
+                    info.id, info.owner, info.unit_type, info.tile);
 
                 let unit = Unit {
                     id: info.id,
                     owner: info.owner,
                     tile: info.tile,
                     homecity: info.homecity,
+                    unit_type: info.unit_type,
+                    moves_left: info.moves_left,
+                    hp: info.hp,
                 };
-                self.state.update_unit(unit);
+                self.ai.state.update_unit(unit);
             }
             PACKET_SERVER_SHUTDOWN => {
                 println!("[Server Shutdown]");
@@ -209,6 +231,22 @@ impl DeityAI {
             }
         }
 
+        Ok(())
+    }
+
+    async fn process_ai_turn(&mut self) -> Result<()> {
+        println!("\n>>> AI Processing Turn <<<");
+        
+        // Process the AI turn
+        self.ai.process_turn().await?;
+        
+        // Send end turn packet
+        if let Some(player_id) = self.ai.state.our_player_id {
+            let end_turn = PlayerPhaseDone::new(player_id);
+            self.send_packet(&end_turn).await?;
+            println!(">>> AI Turn Complete - Sent PLAYER_PHASE_DONE <<<\n");
+        }
+        
         Ok(())
     }
 
@@ -240,13 +278,13 @@ impl DeityAI {
 
         // Print final state summary
         println!("\n=== Game Session Summary ===");
-        println!("Players: {}", self.state.players.len());
-        println!("Cities: {}", self.state.cities.len());
-        println!("Units: {}", self.state.units.len());
-        if let Some(player_id) = self.state.our_player_id {
+        println!("Players: {}", self.ai.state.players.len());
+        println!("Cities: {}", self.ai.state.cities.len());
+        println!("Units: {}", self.ai.state.units.len());
+        if let Some(player_id) = self.ai.state.our_player_id {
             println!("Our Player ID: {}", player_id);
-            println!("Our Cities: {}", self.state.get_our_cities().len());
-            println!("Our Units: {}", self.state.get_our_units().len());
+            println!("Our Cities: {}", self.ai.state.get_our_cities().len());
+            println!("Our Units: {}", self.ai.state.get_our_units().len());
         }
 
         Ok(())
