@@ -1,6 +1,7 @@
 mod ai;
 mod packets;
 mod state;
+mod map;
 
 use ai::DeityAI as AICoordinator;
 use anyhow::{Context, Result};

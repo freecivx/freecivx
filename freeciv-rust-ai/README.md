@@ -106,6 +106,20 @@ Each packet consists of:
 - ⏳ Military strategy
 - ⏳ Economic management
 - ⏳ Diplomatic interactions
+- ⏳ **AI-generated chat messages using llama.cpp** (see [FUTURE_LLAMACPP_INTEGRATION.md](FUTURE_LLAMACPP_INTEGRATION.md))
+
+## Future Enhancements
+
+### AI Chat with LlamaCPP
+
+The Rust AI is planned to integrate with [llama.cpp](https://github.com/ggerganov/llama.cpp) to generate natural language diplomatic messages and game commentary. This will allow the AI to:
+
+- Send context-aware diplomatic messages to players
+- Respond to player communications with personality
+- Provide commentary on significant game events
+- Express strategic intentions in natural language
+
+For detailed technical design and implementation plan, see [FUTURE_LLAMACPP_INTEGRATION.md](FUTURE_LLAMACPP_INTEGRATION.md).
 
 ## License
 
