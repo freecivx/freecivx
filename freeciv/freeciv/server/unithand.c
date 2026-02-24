@@ -7035,3 +7035,33 @@ void handle_worker_task(struct player *pplayer,
 
   lsend_packet_worker_task(pplayer->connections, packet);
 }
+
+/**********************************************************************//**
+  Handle request for goto path calculation for web client.
+**************************************************************************/
+void handle_web_goto_path_req(struct player *pplayer, int unit_id,
+                               int goal)
+{
+#ifdef FREECIV_WEB
+  /* TODO: Implement path calculation and send back to client */
+  struct unit *punit = player_unit_by_number(pplayer, unit_id);
+  
+  if (punit == nullptr) {
+    return;
+  }
+  
+  /* Path calculation would go here */
+#endif /* FREECIV_WEB */
+}
+
+/**********************************************************************//**
+  Handle request for info text for web client.
+**************************************************************************/
+void handle_web_info_text_req(struct player *pplayer, int loc,
+                               int visible_unit, int focus_unit)
+{
+#ifdef FREECIV_WEB
+  /* TODO: Implement info text generation and send back to client */
+  /* This would generate tile/unit information text */
+#endif /* FREECIV_WEB */
+}
