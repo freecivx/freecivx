@@ -48,19 +48,21 @@ function create_unit_label_sprite(punit, ptile)
 
     if (show_unit_in_label && punit.owner != null) {
       let unit_sprite = sprites[unit_type['graphic_str'] + "_Idle"];
-      var owner_id = punit.owner;
-      var owner = players[owner_id];
-      var background_color = nations[owner.nation].color;
-      let rectWidth = unit_sprite.width * 0.5;
-      let rectHeight = unit_sprite.height * 0.5;
+      if (unit_sprite != null) {
+        var owner_id = punit.owner;
+        var owner = players[owner_id];
+        var background_color = nations[owner.nation].color;
+        let rectWidth = unit_sprite.width * 0.5;
+        let rectHeight = unit_sprite.height * 0.5;
 
-      ctx.fillStyle = background_color;
-      ctx.fillRect(width + 3, 2, rectWidth - 5, rectHeight - 4);
+        ctx.fillStyle = background_color;
+        ctx.fillRect(width + 3, 2, rectWidth - 5, rectHeight - 4);
 
-      ctx.drawImage(unit_sprite, 0, 0,
-          unit_sprite.width, unit_sprite.height,
-          width, 0, unit_sprite.width * 0.5, unit_sprite.height * 0.5);
-      width += 33;
+        ctx.drawImage(unit_sprite, 0, 0,
+            unit_sprite.width, unit_sprite.height,
+            width, 0, unit_sprite.width * 0.5, unit_sprite.height * 0.5);
+        width += 33;
+      }
     }
 
     ctx.font = 'bold 18px serif';
