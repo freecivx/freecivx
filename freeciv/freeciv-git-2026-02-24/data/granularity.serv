@@ -1,5 +1,0 @@
-# Server commands for Freeciv granularity ruleset
-#
-
-set barbarians DISABLED
-rulesetdir granularity
