@@ -66,7 +66,35 @@ Each packet consists of:
 
 ## Development Status
 
-This is a basic implementation that establishes connection to the server and receives packets. The AI logic for playing the game is still under development.
+### Completed Features
+
+- ✅ TCP connection to Freeciv server
+- ✅ JSON packet protocol with length headers
+- ✅ Packet serialization/deserialization
+- ✅ Server join request/reply handling
+- ✅ Authentication packet handling
+- ✅ Game state tracking (players, cities, units)
+- ✅ Player identification (recognizes own player ID)
+- ✅ Packet type constants from packets.def
+- ✅ Structured packet types for common packets
+- ✅ Connection state management
+
+### In Progress
+
+- 🚧 Classic AI behavior implementation
+- 🚧 Unit movement and orders
+- 🚧 City management and production
+- 🚧 Technology research selection
+- 🚧 Diplomatic decisions
+
+### Planned Features
+
+- ⏳ Full game state synchronization
+- ⏳ AI decision-making (based on Freeciv Classic AI)
+- ⏳ Turn-based gameplay
+- ⏳ Military strategy
+- ⏳ Economic management
+- ⏳ Diplomatic interactions
 
 ## License
 
