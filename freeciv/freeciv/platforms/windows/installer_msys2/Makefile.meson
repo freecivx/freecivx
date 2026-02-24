@@ -18,15 +18,7 @@ SRC_ROOT=../../..
 
 7ZDIR=$(OUT_DIR)/portable
 
-ifeq ($(MSYSTEM),MINGW64)
-WINARCH=win64
-ARCHDIR=mingw64
-LIBGCCDLL=libgcc_s_seh-1.dll
-CPPLIBS=libstdc++-6.dll libgomp-1.dll
-CRYPTOLIB_SUFFIX=-x64
-PREF_WIN_VER=0x0603
-
-else ifeq ($(MSYSTEM),UCRT64)
+ifeq ($(MSYSTEM),UCRT64)
 WINARCH=win64-10
 ARCHDIR=ucrt64
 LIBGCCDLL=libgcc_s_seh-1.dll
@@ -46,7 +38,8 @@ else
 error "Unsupported MSYSTEM environment"
 endif
 
-IMSYS2_DIR = $(shell pwd)
+IMSYS2_DIR != pwd
+FREECIV_VERSION != $(SRC_ROOT)/fc_version
 
 ifeq ($(MIN_WIN_VER),)
 MIN_WIN_VER=$(PREF_WIN_VER)
@@ -60,9 +53,9 @@ CRYPTOVERSUF=3${CRYPTOLIB_SUFFIX}
 DLLPATH_PREFIX=/$(ARCHDIR)/bin/
 
 ifeq ($(CI),yes)
-ICUVER=75
+ICUVER=78
 else
-ICUVER=75
+ICUVER=78
 endif
 
 #
@@ -71,11 +64,12 @@ endif
 
 all: all-$(WINARCH)
 
-all-win64: gtk3.22-installer sdl2-installer gtk4-installer qt5-installer ruledit-installer-qt5
+all-win64-10: gtk3.22-installer sdl2-installer sdl3-installer gtk4-installer qt6-installer ruledit-installer-qt6 qt6x-installer gtk4x-installer
 
-all-win64-10: gtk3.22-installer sdl2-installer gtk4-installer qt6-installer ruledit-installer-qt6 qt6x-installer gtk4x-installer
+all-win64+: gtk3.22-installer sdl2-installer sdl3-installer gtk4-installer qt6-installer ruledit-installer-qt6 qt6x-installer gtk4x-installer
 
-all-win64+: gtk3.22-installer sdl2-installer gtk4-installer qt6-installer ruledit-installer-qt6 qt6x-installer gtk4x-installer
+release:
+	make -f $(MAKEFILE_NAME) EXTRA_CONFIG="-Dbuildtype=release -Doptimization=3 $(EXTRA_CONFIG)" all
 
 snapshot:
 	cd $(SRC_ROOT) ; ./scripts/refresh_changelog.sh
@@ -94,19 +88,16 @@ gtk4x-installer:
 	make -f $(MAKEFILE_NAME) GUI=gtk4x CLIENT=gtk4x FCMP=gtk4x installer-common
 
 sdl2-installer:
-	make -f $(MAKEFILE_NAME) GUI=sdl2 CLIENT=sdl2 FCMP=gtk4 installer-common
+	make -f $(MAKEFILE_NAME) EXTRA_CONFIG="-Daudio=sdl2 $(EXTRA_CONFIG)" GUI=sdl2 CLIENT=sdl2 FCMP=gtk4 installer-common
 
-qt5-installer:
-	make -f $(MAKEFILE_NAME) EXTRA_CONFIG="-Dqtver=qt5 $(EXTRA_CONFIG)" GUI=qt5 CLIENT=qt FCMP=qt installer-common
+sdl3-installer:
+	make -f $(MAKEFILE_NAME) EXTRA_CONFIG="-Daudio=none $(EXTRA_CONFIG)" GUI=sdl3 CLIENT=sdl3 FCMP=gtk4 installer-common
 
 qt6-installer:
-	make -f $(MAKEFILE_NAME) EXTRA_CONFIG="-Ddebug=false -Dqtver=qt6 -Dsvgflags=true $(EXTRA_CONFIG)" GUI=qt6 CLIENT=qt FCMP=qt installer-common
+	make -f $(MAKEFILE_NAME) EXTRA_CONFIG="-Ddebug=false -Dqtver=qt6 -Dsvgflags=true -Dtools=manual,ruleup,ruledit $(EXTRA_CONFIG)" GUI=qt6 CLIENT=qt FCMP=qt installer-common
 
 qt6x-installer:
-	make -f $(MAKEFILE_NAME) EXTRA_CONFIG="-Ddebug=false -Dqtver=qt6x -Dsvgflags=true $(EXTRA_CONFIG)" GUI=qt6x CLIENT=qt FCMP=qt installer-common
-
-ruledit-installer-qt5:
-	make -f $(MAKEFILE_NAME) EXTRA_CONFIG="-Ddebug=false -Dqtver=qt5 $(EXTRA_CONFIG)" GUI=qt5 installer-ruledit-common
+	make -f $(MAKEFILE_NAME) EXTRA_CONFIG="-Ddebug=false -Dqtver=qt6x -Dsvgflags=true -Dtools=manual,ruleup,ruledit $(EXTRA_CONFIG)" GUI=qt6x CLIENT=qt FCMP=qt installer-common
 
 ruledit-installer-qt6:
 	make -f $(MAKEFILE_NAME) EXTRA_CONFIG="-Ddebug=false -Dqtver=qt6 $(EXTRA_CONFIG)" GUI=qt6 installer-ruledit-common
@@ -126,17 +117,14 @@ gtk4x-install:
 sdl2-install:
 	make -f $(MAKEFILE_NAME) GUI=sdl2 CLIENT=sdl2 FCMP=gtk4 install-freeciv-sdl2
 
-qt5-install:
-	make -f $(MAKEFILE_NAME) GUI=qt5 CLIENT=qt FCMP=qt EXTRA_CONFIG="-Dqtver=qt5 $(EXTRA_CONFIG)" install-freeciv-qt5
+sdl3-install:
+	make -f $(MAKEFILE_NAME) GUI=sdl3 CLIENT=sdl3 FCMP=gtk4 install-freeciv-sdl3
 
 qt6-install:
 	make -f $(MAKEFILE_NAME) GUI=qt6 CLIENT=qt FCMP=qt EXTRA_CONFIG="-Dqtver=qt6 -Dsvgflags=true $(EXTRA_CONFIG)" install-freeciv-qt6
 
 qt6x-install:
 	make -f $(MAKEFILE_NAME) GUI=qt6x CLIENT=qt FCMP=qt EXTRA_CONFIG="-Dqtver=qt6x -Dsvgflags=true $(EXTRA_CONFIG)" install-freeciv-qt6x
-
-ruledit-install-qt5:
-	make -f $(MAKEFILE_NAME) GUI=qt5 EXTRA_CONFIG="-Dqtver=qt5 $(EXTRA_CONFIG)" install-ruledit-qt5
 
 ruledit-install-qt6:
 	make -f $(MAKEFILE_NAME) GUI=qt6 EXTRA_CONFIG="-Dqtver=qt6 $(EXTRA_CONFIG)" install-ruledit-qt6
@@ -145,8 +133,6 @@ ruledit-install-qt6x:
 	make -f $(MAKEFILE_NAME) GUI=qt6x EXTRA_CONFIG="-Dqtver=qt6x $(EXTRA_CONFIG)" install-ruledit-qt6x
 
 installer-common: install-freeciv-$(GUI) install-env-$(GUI)
-	# Extract Freeciv version
-	$(eval FREECIV_VERSION := $(shell $(SRC_ROOT)/fc_version))
 	# Create portable .7z
 	mkdir -p $(7ZDIR)
 	7z a -r $(7ZDIR)/Freeciv-$(FREECIV_VERSION)-client-$(WINARCH)-$(GUI).7z ./$(INST_DIR)/$(WINARCH)-client-$(GUI)/*
@@ -160,7 +146,7 @@ installer-common: install-freeciv-$(GUI) install-env-$(GUI)
 install-freeciv-common: clean-install-client-arch
 	# Create build directory
 	mkdir -p $(BUILD_DIR)/$(WINARCH)-client-$(GUI)
-	cd $(BUILD_DIR)/$(WINARCH)-client-$(GUI); meson setup $(IMSYS2_DIR)/../../.. -Dprefix=$(IMSYS2_DIR)/$(INST_DIR)/$(WINARCH)-client-$(GUI) -Dfollowtag='windows-S3_3' -Dclients=$(CLIENT) -Dfcmp=$(FCMP) -Dtools=manual,ruleup -Dreadline=false -Dcacert-path='./ssl/certs/ca-bundle.crt' -Dmin-win-ver=$(MIN_WIN_VER) -Dsyslua=false $(EXTRA_CONFIG)
+	cd $(BUILD_DIR)/$(WINARCH)-client-$(GUI); meson setup $(IMSYS2_DIR)/../../.. -Dprefix=$(IMSYS2_DIR)/$(INST_DIR)/$(WINARCH)-client-$(GUI) -Dfollowtag='windows-S3_4' -Dclients=$(CLIENT) -Dfcmp=$(FCMP) -Dtools=manual,ruleup -Dreadline=false -Dcacert-path='./ssl/certs/ca-bundle.crt' -Dmin-win-ver=$(MIN_WIN_VER) -Dsyslua=false $(EXTRA_CONFIG)
 	cd $(BUILD_DIR)/$(WINARCH)-client-$(GUI); ninja
 	cd $(BUILD_DIR)/$(WINARCH)-client-$(GUI); ninja install
 	cd $(BUILD_DIR)/$(WINARCH)-client-$(GUI); ninja langstat_core.txt
@@ -171,12 +157,13 @@ install-freeciv-common: clean-install-client-arch
 	mv $(INST_DIR)/$(WINARCH)-client-$(GUI)/share/doc $(INST_DIR)/$(WINARCH)-client-$(GUI)/
 	mkdir -p $(INST_DIR)/$(WINARCH)-client-$(GUI)/doc/freeciv/installer
 	cat licenses/header.txt $(SRC_ROOT)/COPYING > $(INST_DIR)/$(WINARCH)-client-$(GUI)/doc/freeciv/installer/COPYING.installer
+	cp $(BUILD_DIR)/$(WINARCH)-client-$(GUI)/langstat_*.txt $(INST_DIR)/$(WINARCH)-client-$(GUI)/doc/freeciv/installer/
 	cp freeciv-server.cmd freeciv-mp-$(FCMP).cmd freeciv-$(CLIENT).cmd Freeciv.url $(INST_DIR)/$(WINARCH)-client-$(GUI)/
 
 install-ruledit-common: clean-ruledit-install-arch
 	# Create build directory
 	mkdir -p $(BUILD_DIR)/$(WINARCH)-ruledit-$(GUI)
-	cd $(BUILD_DIR)/$(WINARCH)-ruledit-$(GUI); meson setup $(IMSYS2_DIR)/../../.. -Dprefix=$(IMSYS2_DIR)/$(INST_DIR)/$(WINARCH)-ruledit-$(GUI) -Dfollowtag='windows-S3_3' -Dclients=[] -Dfcmp=[] -Dserver=disabled -Dtools=ruledit -Dreadline=false -Dcacert-path='./ssl/certs/ca-bundle.crt' -Dmin-win-ver=$(MIN_WIN_VER) -Dsyslua=false $(EXTRA_CONFIG)
+	cd $(BUILD_DIR)/$(WINARCH)-ruledit-$(GUI); meson setup $(IMSYS2_DIR)/../../.. -Dprefix=$(IMSYS2_DIR)/$(INST_DIR)/$(WINARCH)-ruledit-$(GUI) -Dfollowtag='windows-S3_4' -Dclients=[] -Dfcmp=[] -Dserver=disabled -Dtools=ruledit -Dreadline=false -Dcacert-path='./ssl/certs/ca-bundle.crt' -Dmin-win-ver=$(MIN_WIN_VER) -Dsyslua=false $(EXTRA_CONFIG)
 	cd $(BUILD_DIR)/$(WINARCH)-ruledit-$(GUI); ninja
 	cd $(BUILD_DIR)/$(WINARCH)-ruledit-$(GUI); ninja install
 	cd $(BUILD_DIR)/$(WINARCH)-ruledit-$(GUI); ninja langstat_core.txt langstat_ruledit.txt
@@ -187,9 +174,10 @@ install-ruledit-common: clean-ruledit-install-arch
 	mv $(INST_DIR)/$(WINARCH)-ruledit-$(GUI)/share/doc $(INST_DIR)/$(WINARCH)-ruledit-$(GUI)/
 	mkdir -p $(INST_DIR)/$(WINARCH)-ruledit-$(GUI)/doc/freeciv/installer
 	cat licenses/header.txt $(SRC_ROOT)/COPYING > $(INST_DIR)/$(WINARCH)-ruledit-$(GUI)/doc/freeciv/installer/COPYING.installer
+	cp $(BUILD_DIR)/$(WINARCH)-ruledit-$(GUI)/langstat_*.txt $(INST_DIR)/$(WINARCH)-ruledit-$(GUI)/doc/freeciv/installer/
 	cp freeciv-ruledit.cmd Freeciv.url $(INST_DIR)/$(WINARCH)-ruledit-$(GUI)/
 
-SOUND_DLLS := \
+SOUND_DLLS_SDL2 := \
 	SDL2.dll \
 	SDL2_mixer.dll \
 	libFLAC.dll \
@@ -198,7 +186,12 @@ SOUND_DLLS := \
 	libmpg123-0.dll \
 	libvorbisfile-3.dll \
 	libvorbis-0.dll \
-	libogg-0.dll
+	libogg-0.dll \
+	libwavpack-1.dll \
+	libxmp.dll
+
+SOUND_DLLS_SDL3 := \
+	SDL3.dll
 
 COMMON_DLLS := \
 	libcairo-2.dll \
@@ -252,19 +245,18 @@ COMMON_DLLS := \
 	liblcms2-2.dll \
 	liblqr-1-0.dll \
 	libltdl-7.dll \
-	libxml2-2.dll \
+	libxml2-16.dll \
 	libraqm-0.dll \
 	libunistring-5.dll \
 	exchndl.dll \
-	mgwhelp.dll
-
-CLIENT_COMMON_DLLS := \
-	$(SOUND_DLLS)
+	mgwhelp.dll \
+	libngtcp2-16.dll \
+	libngtcp2_crypto_ossl.dll \
+	libngtcp2_crypto_ossl-0.dll
 
 install-env-common:
 	# Add DLLs
 	cp -R $(addprefix $(DLLPATH_PREFIX), $(COMMON_DLLS)) $(INST_DIR)/$(WINARCH)-client-$(GUI)/
-	cp -R $(addprefix $(DLLPATH_PREFIX), $(CLIENT_COMMON_DLLS)) $(INST_DIR)/$(WINARCH)-client-$(GUI)/
 	mkdir -p $(INST_DIR)/$(WINARCH)-client-$(GUI)/ssl/certs
 	cp -R /$(ARCHDIR)/etc/ssl/certs/ca-bundle.crt $(INST_DIR)/$(WINARCH)-client-$(GUI)/ssl/certs/
 
@@ -275,7 +267,14 @@ FCMP_GTK3_DLLS := \
 	libpangoft2-1.0-0.dll \
 	libthai-0.dll \
 	libdatrie-1.dll \
-	librsvg-2-2.dll
+	librsvg-2-2.dll \
+	libtiff-6.dll \
+	libjpeg-8.dll \
+	libjbig-0.dll \
+	libwebp-7.dll \
+	libdeflate.dll \
+	libLerc.dll \
+	libsharpyuv-0.dll
 
 install-env-gtk3-fcmp: install-env-common
 	cp -R $(addprefix $(DLLPATH_PREFIX), $(FCMP_GTK3_DLLS)) $(INST_DIR)/$(WINARCH)-client-$(GUI)/
@@ -309,7 +308,20 @@ FCMP_GTK4_DLLS := \
 	libdeflate.dll \
 	libLerc.dll \
 	libsharpyuv-0.dll \
-	libharfbuzz-subset-0.dll
+	libharfbuzz-subset-0.dll \
+	libgstbase-1.0-0.dll \
+	libgstgl-1.0-0.dll \
+	libgstallocators-1.0-0.dll \
+	libgstd3d12-1.0-0.dll \
+	libgstplay-1.0-0.dll \
+	libgstreamer-1.0-0.dll \
+	libgstvideo-1.0-0.dll \
+	libgstaudio-1.0-0.dll \
+	libgstd3dshader-1.0-0.dll \
+	libgstpbutils-1.0-0.dll \
+	libgsttag-1.0-0.dll \
+	librsvg-2-2.dll \
+	liborc-0.4-0.dll
 
 install-env-gtk4-fcmp: install-env-common
 	cp -R $(addprefix $(DLLPATH_PREFIX), $(FCMP_GTK4_DLLS)) $(INST_DIR)/$(WINARCH)-client-$(GUI)/
@@ -328,17 +340,22 @@ install-freeciv-gtk4x: install-freeciv-common
 
 install-freeciv-sdl2: install-freeciv-common
 
-install-freeciv-qt5: install-freeciv-common
+install-freeciv-sdl3: install-freeciv-common
 
 install-freeciv-qt6: install-freeciv-common
+	cp freeciv-ruledit.cmd $(INST_DIR)/$(WINARCH)-client-$(GUI)/
 
 install-freeciv-qt6x: install-freeciv-common
+	cp freeciv-ruledit.cmd $(INST_DIR)/$(WINARCH)-client-$(GUI)/
 
 install-env-gtk3.22: install-env-gtk3-fcmp
+	cp -R $(addprefix $(DLLPATH_PREFIX), $(SOUND_DLLS_SDL2)) $(INST_DIR)/$(WINARCH)-client-$(GUI)/
 
 install-env-gtk4: install-env-gtk4-fcmp
+	cp -R $(addprefix $(DLLPATH_PREFIX), $(SOUND_DLLS_SDL2)) $(INST_DIR)/$(WINARCH)-client-$(GUI)/
 
 install-env-gtk4x: install-env-gtk4-fcmp
+	cp -R $(addprefix $(DLLPATH_PREFIX), $(SOUND_DLLS_SDL2)) $(INST_DIR)/$(WINARCH)-client-$(GUI)/
 
 SDL2_DLLS := \
 	SDL2_ttf.dll \
@@ -347,37 +364,28 @@ SDL2_DLLS := \
 	libjxl.dll \
 	libbrotlienc.dll \
 	libhwy.dll \
-        libavif-16.dll \
-        libwebpdemux-2.dll \
-        libjxl_cms.dll \
-        libaom.dll \
-        libdav1d-7.dll \
-        rav1e.dll \
-        libSvtAv1Enc-2.dll \
-        libyuv.dll
+	libavif-16.dll \
+	libwebpdemux-2.dll \
+	libjxl_cms.dll \
+	libaom.dll \
+	libdav1d-7.dll \
+	librav1e.dll \
+	libSvtAv1Enc-3.dll \
+	libyuv.dll
+
+SDL3_DLLS := \
+	SDL3_ttf.dll \
+	SDL3_image.dll
 
 install-env-sdl2: install-env-gtk4-fcmp
 	# Add DLLs
 	cp -R $(addprefix $(DLLPATH_PREFIX), $(SDL2_DLLS)) $(INST_DIR)/$(WINARCH)-client-$(GUI)/
+	cp -R $(addprefix $(DLLPATH_PREFIX), $(SOUND_DLLS_SDL2)) $(INST_DIR)/$(WINARCH)-client-$(GUI)/
 
-FCMP_QT5_DLLS := \
-	Qt5Core.dll \
-	Qt5Gui.dll \
-	Qt5Widgets.dll \
-	libdouble-conversion.dll \
-	libicuin${ICUVER}.dll \
-	libpcre2-16-0.dll \
-	libmd4c.dll
-
-install-env-qt5-fcmp: install-env-common
+install-env-sdl3: install-env-gtk4-fcmp
 	# Add DLLs
-	cp -R $(addprefix $(DLLPATH_PREFIX), $(FCMP_QT5_DLLS)) $(INST_DIR)/$(WINARCH)-client-$(GUI)/
-	# Add additional Qt5 files
-	cp -R /$(ARCHDIR)/share/qt5/plugins $(INST_DIR)/$(WINARCH)-client-$(GUI)/
-	cp -R /$(ARCHDIR)/share/locale $(INST_DIR)/$(WINARCH)-client-$(GUI)/share/
-	find $(INST_DIR)/$(WINARCH)-client-$(GUI)/share/locale -type f -not -name "freeciv-*.mo" -delete
-
-install-env-qt5: install-env-qt5-fcmp
+	cp -R $(addprefix $(DLLPATH_PREFIX), $(SDL3_DLLS)) $(INST_DIR)/$(WINARCH)-client-$(GUI)/
+	cp -R $(addprefix $(DLLPATH_PREFIX), $(SOUND_DLLS_SDL3)) $(INST_DIR)/$(WINARCH)-client-$(GUI)/
 
 FCMP_QT6_DLLS := \
 	Qt6Core.dll \
@@ -403,14 +411,13 @@ CLIENT_QT6_DLLS := \
 install-env-qt6: install-env-qt6-fcmp
 	# Add DLLs
 	cp -R $(addprefix $(DLLPATH_PREFIX), $(CLIENT_QT6_DLLS)) $(INST_DIR)/$(WINARCH)-client-$(GUI)/
+	cp -R $(addprefix $(DLLPATH_PREFIX), $(SOUND_DLLS_SDL2)) $(INST_DIR)/$(WINARCH)-client-$(GUI)/
 
 install-env-qt6x: install-env-qt6
 
 installer-ruledit-common: install-ruledit-$(GUI)
 	# Add DLLs
 	cp -R $(addprefix $(DLLPATH_PREFIX), $(COMMON_DLLS)) $(INST_DIR)/$(WINARCH)-ruledit-$(GUI)/
-	# Extract Freeciv version
-	$(eval FREECIV_VERSION := $(shell $(SRC_ROOT)/fc_version))
 	# Create portable .7z
 	mkdir -p $(7ZDIR)
 	7z a -r $(7ZDIR)/Freeciv-$(FREECIV_VERSION)-ruledit-$(WINARCH)-$(GUI).7z ./$(INST_DIR)/$(WINARCH)-ruledit-$(GUI)/*
@@ -420,23 +427,6 @@ installer-ruledit-common: install-ruledit-$(GUI)
 	# Create installer executable
 	mkdir -p $(OUT_DIR)
 	makensis -NOCD $(NSI_DIR)/$(WINARCH)-$(FREECIV_VERSION)-ruledit-$(GUI).nsi
-
-RULEDIT_QT5_DLLS := \
-	libmd4c.dll \
-	libdouble-conversion.dll \
-	libicuin${ICUVER}.dll \
-	libpcre2-16-0.dll \
-	Qt5Core.dll \
-	Qt5Gui.dll \
-	Qt5Widgets.dll
-
-install-ruledit-qt5: install-ruledit-common
-	# Add DLLs
-	cp -R $(addprefix $(DLLPATH_PREFIX), $(RULEDIT_QT5_DLLS)) $(INST_DIR)/$(WINARCH)-ruledit-$(GUI)/
-	# Add additional Qt5 files
-	cp -R /$(ARCHDIR)/share/qt5/plugins $(INST_DIR)/$(WINARCH)-ruledit-$(GUI)/
-	cp -R /usr/share/locale $(INST_DIR)/$(WINARCH)-ruledit-$(GUI)/share/
-	find $(INST_DIR)/$(WINARCH)-ruledit-$(GUI)/share/locale -type f -not -name "freeciv-*.mo" -delete
 
 RULEDIT_QT6_DLLS := \
 	libmd4c.dll \
@@ -493,9 +483,8 @@ clean:
 	make -f $(MAKEFILE_NAME) GUI=gtk4 clean-build-client clean-install-client clean-installer-common
 	make -f $(MAKEFILE_NAME) GUI=gtk4x clean-build-client clean-install-client clean-installer-common
 	make -f $(MAKEFILE_NAME) GUI=sdl2 clean-build-client clean-install-client clean-installer-common
-	make -f $(MAKEFILE_NAME) GUI=qt5 clean-build-client clean-install-client clean-installer-common
+	make -f $(MAKEFILE_NAME) GUI=sdl3 clean-build-client clean-install-client clean-installer-common
 	make -f $(MAKEFILE_NAME) GUI=qt6 clean-build-client clean-install-client clean-installer-common
 	make -f $(MAKEFILE_NAME) GUI=qt6x clean-build-client clean-install-client clean-installer-common
-	make -f $(MAKEFILE_NAME) GUI=qt5 clean-build-ruledit clean-ruledit-install clean-ruledit-common
 	make -f $(MAKEFILE_NAME) GUI=qt6 clean-build-ruledit clean-ruledit-install clean-ruledit-common
 	make -f $(MAKEFILE_NAME) GUI=qt6x clean-build-ruledit clean-ruledit-install clean-ruledit-common

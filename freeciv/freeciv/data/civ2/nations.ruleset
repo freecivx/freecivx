@@ -1,8 +1,8 @@
 ; Modifying this file:
 ; You should not modify this file except to make bugfixes or
-; for other "maintenance".  If you want to make custom changes
+; for other "maintenance". If you want to make custom changes
 ; you should create a new datadir subdirectory and copy this file
-; into that directory, and then modify that copy.  Then use the
+; into that directory, and then modify that copy. Then use the
 ; command "rulesetdir <mysubdir>" in the server to have freeciv
 ; use your new customized file.
 
@@ -13,8 +13,8 @@
 
 [datafile]
 description = "Civ2-equivalent nations data for Freeciv"
-options = "+Freeciv-ruleset-3.3-Devel-2023.Feb.24"
-format_version = 40
+options = "+Freeciv-ruleset-3.4-Devel-2025.Jan.17"
+format_version = 50
 
 ; This section contains meta information for freeciv-ruledit and freeciv-ruleup
 ; to recreate the ruleset file in a form wanted.
@@ -91,7 +91,7 @@ rule_name = "all"
 
 ; Descriptions of nation groups
 ; These are more cosmetic than sets; they affect the "pick nation" dialog,
-; random nation selection, and possibly ruleset behaviour.
+; random nation selection, and possibly ruleset behavior.
 ; It`s OK to not define any nation groups at all.
 ; name          =  name of the group (used adjectivally)
 ; hidden        = TRUE to not include this group in the "pick nation" dialog
@@ -120,7 +120,7 @@ translation_domain = "freeciv-core"
 name   = _("American")
 plural = _("?plural:Americans")
 groups = "Modern"
-legend = _("Formally named the United States of America.  Independent from\
+legend = _("Formally named the United States of America. Independent from\
  Great Britain after a revolution in 1776-1783 AD.")
 
 leaders = {
@@ -680,7 +680,7 @@ translation_domain = "freeciv-core"
 name   = _("Egyptian")
 plural = _("?plural:Egyptians")
 groups = "Ancient"
-legend = _("Egypt was the second-oldest of the world's civilizations.  Since\
+legend = _("Egypt was the second-oldest of the world's civilizations. Since\
  ancient times it has been unusually urbanized, supporting a large\
  population on silt deposited by the annual floodings of the Nile.")
 

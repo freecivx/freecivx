@@ -26,7 +26,7 @@ extern "C" {
 #include "server_settings.h"
 
 struct sset_val_name {
-  const char *support;          /* Untranslated long support name, used 
+  const char *support;          /* Untranslated long support name, used
                                  * for saving. */
   const char *pretty;           /* Translated, used to display to the
                                  * users. */
@@ -49,7 +49,7 @@ struct sset_val_name {
 #define SPECENUM_VALUE5NAME N_("Internal")
 #define SPECENUM_VALUE6     SSET_NETWORK
 #define SPECENUM_VALUE6NAME N_("Networking")
-/* keep this last */
+/* Keep this last */
 #define SPECENUM_COUNT      SSET_NUM_CATEGORIES
 #include "specenum_gen.h"
 
@@ -69,7 +69,7 @@ struct sset_val_name {
 #define SPECENUM_VALUE5NAME N_("Changed")
 #define SPECENUM_VALUE6     SSET_LOCKED
 #define SPECENUM_VALUE6NAME N_("Locked")
-/* keep this last */
+/* Keep this last */
 #define SPECENUM_COUNT      OLEVELS_NUM
 #include "specenum_gen.h"
 
@@ -173,7 +173,7 @@ void setting_admin_lock_set(struct setting *pset);
 void setting_ruleset_lock_clear(struct setting *pset);
 void setting_admin_lock_clear(struct setting *pset);
 
-/* get 'struct setting_list' and related functions: */
+/* Get 'struct setting_list' and related functions: */
 #define SPECLIST_TAG setting
 #define SPECLIST_TYPE struct setting
 #include "speclist.h"
@@ -188,7 +188,7 @@ void setting_admin_lock_clear(struct setting *pset);
 #define settings_iterate(_level, _pset)                                      \
 {                                                                            \
   struct setting_list *_setting_list = settings_list_get(_level);            \
-  if (_setting_list != NULL) {                                               \
+  if (_setting_list != nullptr) {                                            \
     setting_list_iterate(_setting_list, _pset) {
 
 #define settings_iterate_end                                                 \
@@ -203,7 +203,6 @@ bool settings_game_reset(void);
 
 void settings_init(bool act);
 void settings_reset(void);
-void settings_turn(void);
 void settings_free(void);
 int settings_number(void);
 
@@ -227,4 +226,4 @@ enum setting_default_level setting_get_setdef(const struct setting *pset);
 }
 #endif /* __cplusplus */
 
-#endif				/* FC__SETTINGS_H */
+#endif /* FC__SETTINGS_H */

@@ -5,23 +5,23 @@
 # Tomasz Węgrzanowski <maniek@beer.com> 2000
 # Zbigniew Baniewski <zb@ispid.com.pl> 2002
 # Mateusz Stefek <matusik_s@o2.pl> 2002
-# Hubert Kowalewski <hubkow@users.sourceforge.net> 2010 - 2019
+# Hubert Kowalewski <hubkow@users.sourceforge.net> 2010 - 2024
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: Freeciv S3_0 (nations)\n"
-"Report-Msgid-Bugs-To: https://osdn.net/projects/freeciv/ticket/\n"
-"POT-Creation-Date: 2023-02-23 06:15+0200\n"
-"PO-Revision-Date: 2023-02-17 22:12+0100\n"
-"Last-Translator: Hubert Kowalewski <hubkow@users.sourceforge.net>\n"
-"Language-Team: polski <hubkow@users.sourceforge.net>\n"
+"Project-Id-Version: Freeciv S3_2 (nations)\n"
+"Report-Msgid-Bugs-To: https://redmine.freeciv.org/projects/freeciv\n"
+"POT-Creation-Date: 2026-02-18 23:38+0200\n"
+"PO-Revision-Date: 2026-02-20 09:34+0100\n"
+"Last-Translator: Hubert Kowalewski <hubkow@gmail.com>\n"
+"Language-Team: hubkow@gmail.com\n"
 "Language: pl\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=3; plural=n==1 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 "
 "|| n%100>=20) ? 1 : 2;\n"
-"X-Generator: Poedit 3.0.1\n"
+"X-Generator: Poedit 3.4.2\n"
 "X-Language: pl-PL\n"
 
 #: data/nation/abkhaz.ruleset:3
@@ -46,20 +46,22 @@ msgstr ""
 
 #: data/nation/abkhaz.ruleset:24 data/nation/acehnese.ruleset:29
 #: data/nation/bashkir.ruleset:27 data/nation/chechen.ruleset:31
-#: data/nation/emirati.ruleset:25 data/nation/kuwaiti.ruleset:29
-#: data/nation/mauritanian.ruleset:22 data/nation/omani.ruleset:29
-#: data/nation/riffian.ruleset:20 data/nation/southyemeni.ruleset:22
-#: data/nation/yemeni.ruleset:23 data/nation/zanzibari.ruleset:29
+#: data/nation/dagestan.ruleset:34 data/nation/emirati.ruleset:25
+#: data/nation/kuwaiti.ruleset:29 data/nation/mauritanian.ruleset:22
+#: data/nation/omani.ruleset:29 data/nation/riffian.ruleset:20
+#: data/nation/southyemeni.ruleset:22 data/nation/yemeni.ruleset:23
+#: data/nation/zanzibari.ruleset:29
 #, c-format
 msgid "Imam %s"
 msgstr "Imam %s"
 
 #: data/nation/abkhaz.ruleset:24 data/nation/acehnese.ruleset:29
 #: data/nation/bashkir.ruleset:27 data/nation/chechen.ruleset:31
-#: data/nation/emirati.ruleset:25 data/nation/kuwaiti.ruleset:29
-#: data/nation/mauritanian.ruleset:22 data/nation/omani.ruleset:29
-#: data/nation/riffian.ruleset:20 data/nation/southyemeni.ruleset:22
-#: data/nation/yemeni.ruleset:23 data/nation/zanzibari.ruleset:29
+#: data/nation/dagestan.ruleset:34 data/nation/emirati.ruleset:25
+#: data/nation/kuwaiti.ruleset:29 data/nation/mauritanian.ruleset:22
+#: data/nation/omani.ruleset:29 data/nation/riffian.ruleset:20
+#: data/nation/southyemeni.ruleset:22 data/nation/yemeni.ruleset:23
+#: data/nation/zanzibari.ruleset:29
 #, c-format
 msgid "Imama %s"
 msgstr "Imama %s"
@@ -184,8 +186,9 @@ msgstr ""
 #: data/nation/belarusian.ruleset:34 data/nation/bulgarian.ruleset:31
 #: data/nation/chuvash.ruleset:31 data/nation/cossack.ruleset:32
 #: data/nation/cretan.ruleset:28 data/nation/crusader.ruleset:36
-#: data/nation/friulian.ruleset:29 data/nation/georgian.ruleset:23
-#: data/nation/hellenic.ruleset:21 data/nation/karabakhi.ruleset:27
+#: data/nation/donetsk.ruleset:43 data/nation/friulian.ruleset:29
+#: data/nation/georgian.ruleset:23 data/nation/hellenic.ruleset:21
+#: data/nation/karabakhi.ruleset:27 data/nation/luhansk.ruleset:40
 #: data/nation/macedonian.ruleset:25 data/nation/moldovan.ruleset:24
 #: data/nation/muscovite.ruleset:25 data/nation/nestorian.ruleset:29
 #: data/nation/novgorodian.ruleset:45 data/nation/ossetian.ruleset:25
@@ -201,9 +204,10 @@ msgstr "Patriarcha %s"
 #: data/nation/belarusian.ruleset:34 data/nation/bulgarian.ruleset:31
 #: data/nation/chuvash.ruleset:31 data/nation/cossack.ruleset:32
 #: data/nation/cretan.ruleset:28 data/nation/crusader.ruleset:36
-#: data/nation/cypriot.ruleset:24 data/nation/friulian.ruleset:29
-#: data/nation/georgian.ruleset:23 data/nation/hellenic.ruleset:21
-#: data/nation/karabakhi.ruleset:27 data/nation/macedonian.ruleset:25
+#: data/nation/cypriot.ruleset:24 data/nation/donetsk.ruleset:43
+#: data/nation/friulian.ruleset:29 data/nation/georgian.ruleset:23
+#: data/nation/hellenic.ruleset:21 data/nation/karabakhi.ruleset:27
+#: data/nation/luhansk.ruleset:40 data/nation/macedonian.ruleset:25
 #: data/nation/moldovan.ruleset:24 data/nation/muscovite.ruleset:25
 #: data/nation/nestorian.ruleset:29 data/nation/novgorodian.ruleset:45
 #: data/nation/ossetian.ruleset:25 data/nation/rusyn.ruleset:32
@@ -291,7 +295,7 @@ msgstr "Przeor %s"
 #: data/nation/centrallithuanian.ruleset:43 data/nation/chiapanec.ruleset:34
 #: data/nation/chilean.ruleset:31 data/nation/colombian.ruleset:29
 #: data/nation/congolesebrazzaville.ruleset:28
-#: data/nation/costarican.ruleset:26 data/nation/croatian.ruleset:34
+#: data/nation/costarican.ruleset:26 data/nation/croatian.ruleset:42
 #: data/nation/cuban.ruleset:24 data/nation/curonian.ruleset:30
 #: data/nation/cuyavian.ruleset:29 data/nation/dominicano.ruleset:27
 #: data/nation/dominican.ruleset:22 data/nation/easttimorese.ruleset:22
@@ -305,17 +309,17 @@ msgstr "Przeor %s"
 #: data/nation/liege.ruleset:30 data/nation/luxembourgish.ruleset:29
 #: data/nation/maltese.ruleset:26 data/nation/mazovian.ruleset:24
 #: data/nation/milanese.ruleset:27 data/nation/monegasque.ruleset:30
-#: data/nation/norman.ruleset:25 data/nation/northumbrian.ruleset:39
-#: data/nation/palatinate.ruleset:30 data/nation/panamanian.ruleset:30
-#: data/nation/paraguayan.ruleset:38 data/nation/peruvian.ruleset:27
-#: data/nation/piedmontese.ruleset:33 data/nation/quebecois.ruleset:21
-#: data/nation/riograndense.ruleset:21 data/nation/romansh.ruleset:29
-#: data/nation/saintlucian.ruleset:24 data/nation/salvadoran.ruleset:35
-#: data/nation/sammarinese.ruleset:25 data/nation/sardinian.ruleset:34
-#: data/nation/savoyard.ruleset:32 data/nation/silesian.ruleset:23
-#: data/nation/slovenian.ruleset:20 data/nation/teutonic.ruleset:29
-#: data/nation/uruguayan.ruleset:24 data/nation/venezuelan.ruleset:31
-#: data/nation/yucatecan.ruleset:29
+#: data/nation/norman.ruleset:25 data/nation/northirish.ruleset:38
+#: data/nation/northumbrian.ruleset:39 data/nation/palatinate.ruleset:30
+#: data/nation/panamanian.ruleset:30 data/nation/paraguayan.ruleset:38
+#: data/nation/peruvian.ruleset:27 data/nation/piedmontese.ruleset:33
+#: data/nation/quebecois.ruleset:21 data/nation/riograndense.ruleset:21
+#: data/nation/romansh.ruleset:29 data/nation/saintlucian.ruleset:24
+#: data/nation/salvadoran.ruleset:35 data/nation/sammarinese.ruleset:25
+#: data/nation/sardinian.ruleset:34 data/nation/savoyard.ruleset:32
+#: data/nation/silesian.ruleset:23 data/nation/slovenian.ruleset:20
+#: data/nation/teutonic.ruleset:29 data/nation/uruguayan.ruleset:24
+#: data/nation/venezuelan.ruleset:31 data/nation/yucatecan.ruleset:29
 #, c-format
 msgid "Mother Superior %s"
 msgstr "Najwyższa Matka %s"
@@ -367,8 +371,9 @@ msgid "Sultana %s"
 msgstr "Sułtan %s"
 
 #: data/nation/acehnese.ruleset:28 data/nation/alander.ruleset:31
-#: data/nation/californian.ruleset:37 data/nation/chiapanec.ruleset:35
-#: data/nation/filipino.ruleset:22 data/nation/greenlander.ruleset:27
+#: data/nation/alaskan.ruleset:30 data/nation/californian.ruleset:37
+#: data/nation/chiapanec.ruleset:35 data/nation/filipino.ruleset:22
+#: data/nation/florida.ruleset:33 data/nation/greenlander.ruleset:27
 #: data/nation/kuna.ruleset:25 data/nation/miskito.ruleset:35
 #: data/nation/puertorican.ruleset:30 data/nation/quebecois.ruleset:22
 #: data/nation/siberian.ruleset:24 data/nation/vermont.ruleset:26
@@ -378,8 +383,9 @@ msgid "Governor %s"
 msgstr "Gubernator %s"
 
 #: data/nation/acehnese.ruleset:28 data/nation/alander.ruleset:31
-#: data/nation/californian.ruleset:37 data/nation/chiapanec.ruleset:35
-#: data/nation/filipino.ruleset:22 data/nation/greenlander.ruleset:27
+#: data/nation/alaskan.ruleset:30 data/nation/californian.ruleset:37
+#: data/nation/chiapanec.ruleset:35 data/nation/filipino.ruleset:22
+#: data/nation/florida.ruleset:33 data/nation/greenlander.ruleset:27
 #: data/nation/kuna.ruleset:25 data/nation/miskito.ruleset:35
 #: data/nation/puertorican.ruleset:30 data/nation/quebecois.ruleset:22
 #: data/nation/siberian.ruleset:24 data/nation/vermont.ruleset:26
@@ -464,14 +470,14 @@ msgstr ""
 #: data/nation/afghani.ruleset:23 data/nation/alandalus.ruleset:33
 #: data/nation/bahraini.ruleset:27 data/nation/bashkir.ruleset:25
 #: data/nation/chechen.ruleset:30 data/nation/circassian.ruleset:37
-#: data/nation/cyrenaican.ruleset:28 data/nation/emirati.ruleset:26
-#: data/nation/ghaznavid.ruleset:33 data/nation/kurd.ruleset:29
-#: data/nation/kuwaiti.ruleset:30 data/nation/lebanese.ruleset:29
-#: data/nation/mauritanian.ruleset:21 data/nation/pashtun.ruleset:23
-#: data/nation/qatari.ruleset:22 data/nation/riffian.ruleset:21
-#: data/nation/syrian.ruleset:22 data/nation/tajik.ruleset:21
-#: data/nation/timurid.ruleset:26 data/nation/tuareg.ruleset:39
-#: data/nation/uzbek.ruleset:24
+#: data/nation/cyrenaican.ruleset:28 data/nation/dagestan.ruleset:33
+#: data/nation/emirati.ruleset:26 data/nation/ghaznavid.ruleset:33
+#: data/nation/kurd.ruleset:29 data/nation/kuwaiti.ruleset:30
+#: data/nation/lebanese.ruleset:29 data/nation/mauritanian.ruleset:21
+#: data/nation/pashtun.ruleset:23 data/nation/qatari.ruleset:22
+#: data/nation/riffian.ruleset:21 data/nation/syrian.ruleset:22
+#: data/nation/tajik.ruleset:21 data/nation/timurid.ruleset:26
+#: data/nation/tuareg.ruleset:39 data/nation/uzbek.ruleset:24
 #, c-format
 msgid "Emir %s"
 msgstr "Emir %s"
@@ -479,14 +485,14 @@ msgstr "Emir %s"
 #: data/nation/afghani.ruleset:23 data/nation/alandalus.ruleset:33
 #: data/nation/bahraini.ruleset:27 data/nation/bashkir.ruleset:25
 #: data/nation/chechen.ruleset:30 data/nation/circassian.ruleset:37
-#: data/nation/cyrenaican.ruleset:28 data/nation/emirati.ruleset:26
-#: data/nation/ghaznavid.ruleset:33 data/nation/kurd.ruleset:29
-#: data/nation/kuwaiti.ruleset:30 data/nation/lebanese.ruleset:29
-#: data/nation/mauritanian.ruleset:21 data/nation/pashtun.ruleset:23
-#: data/nation/qatari.ruleset:22 data/nation/riffian.ruleset:21
-#: data/nation/syrian.ruleset:22 data/nation/tajik.ruleset:21
-#: data/nation/timurid.ruleset:26 data/nation/tuareg.ruleset:39
-#: data/nation/uzbek.ruleset:24
+#: data/nation/cyrenaican.ruleset:28 data/nation/dagestan.ruleset:33
+#: data/nation/emirati.ruleset:26 data/nation/ghaznavid.ruleset:33
+#: data/nation/kurd.ruleset:29 data/nation/kuwaiti.ruleset:30
+#: data/nation/lebanese.ruleset:29 data/nation/mauritanian.ruleset:21
+#: data/nation/pashtun.ruleset:23 data/nation/qatari.ruleset:22
+#: data/nation/riffian.ruleset:21 data/nation/syrian.ruleset:22
+#: data/nation/tajik.ruleset:21 data/nation/timurid.ruleset:26
+#: data/nation/tuareg.ruleset:39 data/nation/uzbek.ruleset:24
 #, c-format
 msgid "Emira %s"
 msgstr "Emira %s"
@@ -723,6 +729,64 @@ msgstr "Wikariusz %s"
 msgid "?female:Vicar %s"
 msgstr "?female:Wikariusz %s"
 
+#: data/nation/alaskan.ruleset:3
+msgid "Alaska"
+msgstr "Alaska"
+
+#: data/nation/alaskan.ruleset:4
+msgid "?plural:Alaskans"
+msgstr "plural:Alaskańczycy"
+
+#: data/nation/alaskan.ruleset:6
+msgid ""
+"Alaska is a state in the United States of America that was purchased from "
+"the Russian Empire in 1867, it became an organized territory on May 11th, "
+"1912 and eventually gained statehood as the 49th state on January 3rd, 1959. "
+"The question of Alaskan independence became more relevant with the election "
+"of Wally Hickel in 1990."
+msgstr ""
+"Alaska to stan w Stanach Zjednoczonych Ameryki, który został zakupiony od "
+"Imperium Rosyjskiego w 1867 roku, stał się zorganizowanym terytorium 11 maja "
+"1912 roku i ostatecznie uzyskał państwowość jako 49 stan 3 stycznia 1959 "
+"roku. Kwestia niepodległości Alaski stała się bardziej istotna w kontekście "
+"wyboru Waltera Hickela w 1990 r."
+
+#: data/nation/alaskan.ruleset:29 data/nation/californian.ruleset:34
+#: data/nation/florida.ruleset:31 data/nation/texan.ruleset:31
+#: data/nation/vermont.ruleset:25
+#, c-format
+msgid "Sheriff %s"
+msgstr "Szeryf %s"
+
+#: data/nation/alaskan.ruleset:29 data/nation/californian.ruleset:34
+#: data/nation/florida.ruleset:31 data/nation/texan.ruleset:31
+#: data/nation/vermont.ruleset:25
+#, c-format
+msgid "?female:Sheriff %s"
+msgstr "?female:Szeryf %s"
+
+#: data/nation/alaskan.ruleset:31 data/nation/boer.ruleset:29
+#: data/nation/confederate.ruleset:36 data/nation/florida.ruleset:32
+#: data/nation/guatemalan.ruleset:33 data/nation/guyanese.ruleset:26
+#: data/nation/liberian.ruleset:31 data/nation/louisianian.ruleset:48
+#: data/nation/minnesotan.ruleset:30 data/nation/miskito.ruleset:34
+#: data/nation/moluccan.ruleset:31 data/nation/surinamese.ruleset:29
+#: data/nation/texan.ruleset:32 data/nation/vermont.ruleset:27
+#, c-format
+msgid "Reverend %s"
+msgstr "Wielebny %s"
+
+#: data/nation/alaskan.ruleset:31 data/nation/boer.ruleset:29
+#: data/nation/confederate.ruleset:36 data/nation/florida.ruleset:32
+#: data/nation/guatemalan.ruleset:33 data/nation/guyanese.ruleset:26
+#: data/nation/liberian.ruleset:31 data/nation/louisianian.ruleset:48
+#: data/nation/minnesotan.ruleset:30 data/nation/miskito.ruleset:34
+#: data/nation/moluccan.ruleset:31 data/nation/surinamese.ruleset:29
+#: data/nation/texan.ruleset:32 data/nation/vermont.ruleset:27
+#, c-format
+msgid "?female:Reverend %s"
+msgstr "?female:Wielebna %s"
+
 #: data/nation/albanian.ruleset:3
 msgid "Albanian"
 msgstr "Albański"
@@ -894,7 +958,7 @@ msgstr "%s Dej"
 #: data/nation/algerian.ruleset:22 data/nation/libyan.ruleset:23
 #, c-format
 msgid "?female:%s Dey"
-msgstr "?female:%s Dej"
+msgstr "?female:%s Deja"
 
 #: data/nation/alsatian.ruleset:3
 msgid "Alsatian"
@@ -968,7 +1032,7 @@ msgstr "?female:Baliw %s"
 #: data/nation/belizean.ruleset:26 data/nation/british.ruleset:25
 #: data/nation/burgundian.ruleset:30 data/nation/canadian.ruleset:25
 #: data/nation/chiapanec.ruleset:34 data/nation/congolesebrazzaville.ruleset:28
-#: data/nation/costarican.ruleset:26 data/nation/croatian.ruleset:34
+#: data/nation/costarican.ruleset:26 data/nation/croatian.ruleset:42
 #: data/nation/curonian.ruleset:30 data/nation/cuyavian.ruleset:29
 #: data/nation/dominican.ruleset:22 data/nation/easttimorese.ruleset:22
 #: data/nation/ecuadorian.ruleset:34 data/nation/flemish.ruleset:31
@@ -1719,7 +1783,7 @@ msgstr "%s Khagan"
 #: data/nation/volgabulgar.ruleset:26 data/nation/xiongnu.ruleset:38
 #, c-format
 msgid "?female:%s Khagan"
-msgstr "?female:%s Khagan"
+msgstr "?female:%s Khagana"
 
 #: data/nation/aymara.ruleset:3
 msgid "Aymara"
@@ -2238,7 +2302,8 @@ msgstr "Rzeczniczka %s"
 #: data/nation/belgic.ruleset:35 data/nation/confederate.ruleset:34
 #: data/nation/epirote.ruleset:32 data/nation/faroese.ruleset:30
 #: data/nation/gepid.ruleset:46 data/nation/italiangreek.ruleset:49
-#: data/nation/liberian.ruleset:30 data/nation/marshallese.ruleset:23
+#: data/nation/liberian.ruleset:30 data/nation/louisianian.ruleset:47
+#: data/nation/marshallese.ruleset:23 data/nation/minnesotan.ruleset:29
 #: data/nation/nauruan.ruleset:32 data/nation/toltec.ruleset:33
 #: data/nation/urartian.ruleset:37
 #, c-format
@@ -2248,7 +2313,8 @@ msgstr "Mówca %s"
 #: data/nation/belgic.ruleset:35 data/nation/confederate.ruleset:34
 #: data/nation/epirote.ruleset:32 data/nation/faroese.ruleset:30
 #: data/nation/gepid.ruleset:46 data/nation/italiangreek.ruleset:49
-#: data/nation/liberian.ruleset:30 data/nation/marshallese.ruleset:23
+#: data/nation/liberian.ruleset:30 data/nation/louisianian.ruleset:47
+#: data/nation/marshallese.ruleset:23 data/nation/minnesotan.ruleset:29
 #: data/nation/nauruan.ruleset:32 data/nation/toltec.ruleset:33
 #: data/nation/urartian.ruleset:37
 #, c-format
@@ -2484,53 +2550,36 @@ msgstr ""
 "Brytyjczyków podczas wojny w latach 1899-1902."
 
 #: data/nation/boer.ruleset:28 data/nation/bolivian.ruleset:37
-#: data/nation/centralamerican.ruleset:27 data/nation/chadian.ruleset:19
+#: data/nation/centralamerican.ruleset:27 data/nation/chadian.ruleset:20
 #: data/nation/colombian.ruleset:28 data/nation/confederate.ruleset:35
 #: data/nation/costarican.ruleset:25 data/nation/dominicano.ruleset:26
 #: data/nation/ecuadorian.ruleset:33 data/nation/guatemalan.ruleset:31
 #: data/nation/guinean.ruleset:19 data/nation/honduran.ruleset:29
 #: data/nation/israeli.ruleset:24 data/nation/lebanese.ruleset:28
 #: data/nation/mexican.ruleset:51 data/nation/nicaraguan.ruleset:32
-#: data/nation/panamanian.ruleset:29 data/nation/salvadoran.ruleset:33
-#: data/nation/siberian.ruleset:22 data/nation/southvietnamese.ruleset:23
-#: data/nation/uruguayan.ruleset:23 data/nation/venezuelan.ruleset:30
-#: data/nation/westernroman.ruleset:30
+#: data/nation/panamanian.ruleset:29 data/nation/poyaisian.ruleset:28
+#: data/nation/salvadoran.ruleset:33 data/nation/siberian.ruleset:22
+#: data/nation/southvietnamese.ruleset:23 data/nation/uruguayan.ruleset:23
+#: data/nation/venezuelan.ruleset:30 data/nation/westernroman.ruleset:30
 #, c-format
 msgid "General %s"
 msgstr "Generał %s"
 
 #: data/nation/boer.ruleset:28 data/nation/bolivian.ruleset:37
-#: data/nation/centralamerican.ruleset:27 data/nation/chadian.ruleset:19
+#: data/nation/centralamerican.ruleset:27 data/nation/chadian.ruleset:20
 #: data/nation/colombian.ruleset:28 data/nation/confederate.ruleset:35
 #: data/nation/costarican.ruleset:25 data/nation/dominicano.ruleset:26
 #: data/nation/ecuadorian.ruleset:33 data/nation/guatemalan.ruleset:31
 #: data/nation/guinean.ruleset:19 data/nation/honduran.ruleset:29
 #: data/nation/israeli.ruleset:24 data/nation/lebanese.ruleset:28
 #: data/nation/mexican.ruleset:51 data/nation/nicaraguan.ruleset:32
-#: data/nation/panamanian.ruleset:29 data/nation/salvadoran.ruleset:33
-#: data/nation/siberian.ruleset:22 data/nation/uruguayan.ruleset:23
-#: data/nation/venezuelan.ruleset:30 data/nation/westernroman.ruleset:30
+#: data/nation/panamanian.ruleset:29 data/nation/poyaisian.ruleset:28
+#: data/nation/salvadoran.ruleset:33 data/nation/siberian.ruleset:22
+#: data/nation/uruguayan.ruleset:23 data/nation/venezuelan.ruleset:30
+#: data/nation/westernroman.ruleset:30
 #, c-format
 msgid "?female:General %s"
 msgstr "?female:Generał %s"
-
-#: data/nation/boer.ruleset:29 data/nation/confederate.ruleset:36
-#: data/nation/guatemalan.ruleset:33 data/nation/guyanese.ruleset:26
-#: data/nation/liberian.ruleset:31 data/nation/miskito.ruleset:34
-#: data/nation/moluccan.ruleset:31 data/nation/surinamese.ruleset:29
-#: data/nation/texan.ruleset:32 data/nation/vermont.ruleset:27
-#, c-format
-msgid "Reverend %s"
-msgstr "Wielebny %s"
-
-#: data/nation/boer.ruleset:29 data/nation/confederate.ruleset:36
-#: data/nation/guatemalan.ruleset:33 data/nation/guyanese.ruleset:26
-#: data/nation/liberian.ruleset:31 data/nation/miskito.ruleset:34
-#: data/nation/moluccan.ruleset:31 data/nation/surinamese.ruleset:29
-#: data/nation/texan.ruleset:32 data/nation/vermont.ruleset:27
-#, c-format
-msgid "?female:Reverend %s"
-msgstr "?female:Wielebna %s"
 
 #: data/nation/boer.ruleset:30
 #, c-format
@@ -2598,12 +2647,12 @@ msgstr ""
 #: data/nation/finnish.ruleset:28 data/nation/genoese.ruleset:50
 #: data/nation/greaterpolish.ruleset:21 data/nation/irish.ruleset:42
 #: data/nation/kashubian.ruleset:29 data/nation/latin.ruleset:46
-#: data/nation/mazovian.ruleset:24 data/nation/northumbrian.ruleset:39
-#: data/nation/peruvian.ruleset:27 data/nation/prussian.ruleset:29
-#: data/nation/quebecois.ruleset:21 data/nation/salvadoran.ruleset:35
-#: data/nation/southafrican.ruleset:25 data/nation/southamerican.ruleset:21
-#: data/nation/southvietnamese.ruleset:24 data/nation/teutonic.ruleset:29
-#: data/nation/westernpomeranian.ruleset:30
+#: data/nation/mazovian.ruleset:24 data/nation/northirish.ruleset:38
+#: data/nation/northumbrian.ruleset:39 data/nation/peruvian.ruleset:27
+#: data/nation/prussian.ruleset:29 data/nation/quebecois.ruleset:21
+#: data/nation/salvadoran.ruleset:35 data/nation/southafrican.ruleset:25
+#: data/nation/southamerican.ruleset:21 data/nation/southvietnamese.ruleset:24
+#: data/nation/teutonic.ruleset:29 data/nation/westernpomeranian.ruleset:30
 #, c-format
 msgid "Archbishop %s"
 msgstr "Arcybiskup %s"
@@ -2625,13 +2674,13 @@ msgstr ""
 "przez trzy grupy etniczne: Bośniaków, Sebów i Chorwatów."
 
 #. TRANS: Ban = Duke
-#: data/nation/bosnia.ruleset:25 data/nation/croatian.ruleset:33
+#: data/nation/bosnia.ruleset:25 data/nation/croatian.ruleset:41
 #: data/nation/slovenian.ruleset:19
 #, c-format
 msgid "Ban %s"
 msgstr "Ban  %s"
 
-#: data/nation/bosnia.ruleset:25 data/nation/croatian.ruleset:33
+#: data/nation/bosnia.ruleset:25 data/nation/croatian.ruleset:41
 #: data/nation/slovenian.ruleset:19
 #, c-format
 msgid "?female:Ban %s"
@@ -2804,8 +2853,8 @@ msgstr "?female:Samozwańczyni %s"
 #: data/nation/british.ruleset:24 data/nation/chimu.ruleset:26
 #: data/nation/frisian.ruleset:36 data/nation/galician.ruleset:21
 #: data/nation/hansa.ruleset:27 data/nation/manx.ruleset:36
-#: data/nation/mixtec.ruleset:31 data/nation/toltec.ruleset:32
-#: data/nation/zapotec.ruleset:24
+#: data/nation/mixtec.ruleset:31 data/nation/northirish.ruleset:37
+#: data/nation/toltec.ruleset:32 data/nation/zapotec.ruleset:24
 #, c-format
 msgid "Lord %s"
 msgstr "Lord %s"
@@ -2813,8 +2862,8 @@ msgstr "Lord %s"
 #: data/nation/british.ruleset:24 data/nation/chimu.ruleset:26
 #: data/nation/frisian.ruleset:36 data/nation/galician.ruleset:21
 #: data/nation/hansa.ruleset:27 data/nation/manx.ruleset:36
-#: data/nation/mixtec.ruleset:31 data/nation/toltec.ruleset:32
-#: data/nation/zapotec.ruleset:24
+#: data/nation/mixtec.ruleset:31 data/nation/northirish.ruleset:37
+#: data/nation/toltec.ruleset:32 data/nation/zapotec.ruleset:24
 #, c-format
 msgid "Lady %s"
 msgstr "Lady %s"
@@ -2850,8 +2899,8 @@ msgstr ""
 #: data/nation/briton.ruleset:21 data/nation/cornish.ruleset:20
 #: data/nation/frankish.ruleset:41 data/nation/gallic.ruleset:29
 #: data/nation/helvetian.ruleset:30 data/nation/irish.ruleset:40
-#: data/nation/scottish.ruleset:24 data/nation/vistulan.ruleset:25
-#: data/nation/welsh.ruleset:20
+#: data/nation/northirish.ruleset:36 data/nation/scottish.ruleset:24
+#: data/nation/vistulan.ruleset:25 data/nation/welsh.ruleset:20
 #, c-format
 msgid "Chieftain %s"
 msgstr "Wódz %s"
@@ -2859,8 +2908,8 @@ msgstr "Wódz %s"
 #: data/nation/briton.ruleset:21 data/nation/cornish.ruleset:20
 #: data/nation/frankish.ruleset:41 data/nation/gallic.ruleset:29
 #: data/nation/helvetian.ruleset:30 data/nation/irish.ruleset:40
-#: data/nation/scottish.ruleset:24 data/nation/vistulan.ruleset:25
-#: data/nation/welsh.ruleset:20
+#: data/nation/northirish.ruleset:36 data/nation/scottish.ruleset:24
+#: data/nation/vistulan.ruleset:25 data/nation/welsh.ruleset:20
 #, c-format
 msgid "?female:Chieftain %s"
 msgstr "?female:Wódz %s"
@@ -3132,18 +3181,6 @@ msgstr ""
 "1848 przygnała do Kalifornii wielu imigrantów, a w XX wieku stan zmieniła "
 "się w globalną stolicę rozrywki i technologii (znajdują się tu Hollywood i "
 "Dolina Krzemowa)."
-
-#: data/nation/californian.ruleset:34 data/nation/texan.ruleset:31
-#: data/nation/vermont.ruleset:25
-#, c-format
-msgid "Sheriff %s"
-msgstr "Szeryf %s"
-
-#: data/nation/californian.ruleset:34 data/nation/texan.ruleset:31
-#: data/nation/vermont.ruleset:25
-#, c-format
-msgid "?female:Sheriff %s"
-msgstr "?female:Szeryf %s"
 
 #: data/nation/cambodian.ruleset:3
 msgid "Cambodian"
@@ -3842,9 +3879,10 @@ msgid "Priestess %s"
 msgstr "Kapłanka %s"
 
 #: data/nation/chrobatian.ruleset:33 data/nation/cossack.ruleset:30
-#: data/nation/cuyavian.ruleset:28 data/nation/finnish.ruleset:27
-#: data/nation/greaterpolish.ruleset:22 data/nation/kashubian.ruleset:30
-#: data/nation/liechtensteiner.ruleset:31 data/nation/mazovian.ruleset:25
+#: data/nation/cuyavian.ruleset:28 data/nation/donetsk.ruleset:41
+#: data/nation/finnish.ruleset:27 data/nation/greaterpolish.ruleset:22
+#: data/nation/kashubian.ruleset:30 data/nation/liechtensteiner.ruleset:31
+#: data/nation/luhansk.ruleset:38 data/nation/mazovian.ruleset:25
 #: data/nation/montenegrin.ruleset:29 data/nation/novgorodian.ruleset:44
 #: data/nation/ruthenian.ruleset:30 data/nation/slavic.ruleset:32
 #: data/nation/transylvanian.ruleset:29 data/nation/ukrainian.ruleset:38
@@ -3855,9 +3893,10 @@ msgid "Grand Prince %s"
 msgstr "Wielki Książę %s"
 
 #: data/nation/chrobatian.ruleset:33 data/nation/cossack.ruleset:30
-#: data/nation/cuyavian.ruleset:28 data/nation/finnish.ruleset:27
-#: data/nation/greaterpolish.ruleset:22 data/nation/kashubian.ruleset:30
-#: data/nation/liechtensteiner.ruleset:31 data/nation/mazovian.ruleset:25
+#: data/nation/cuyavian.ruleset:28 data/nation/donetsk.ruleset:41
+#: data/nation/finnish.ruleset:27 data/nation/greaterpolish.ruleset:22
+#: data/nation/kashubian.ruleset:30 data/nation/liechtensteiner.ruleset:31
+#: data/nation/luhansk.ruleset:38 data/nation/mazovian.ruleset:25
 #: data/nation/montenegrin.ruleset:29 data/nation/novgorodian.ruleset:44
 #: data/nation/ruthenian.ruleset:30 data/nation/slavic.ruleset:32
 #: data/nation/transylvanian.ruleset:29 data/nation/ukrainian.ruleset:38
@@ -3960,7 +3999,7 @@ msgstr "%s Bej"
 #: data/nation/tunisian.ruleset:28
 #, c-format
 msgid "?female:%s Bey"
-msgstr "?female:%s Bej"
+msgstr "?female:%s Beja"
 
 #: data/nation/colombian.ruleset:3
 msgid "Colombian"
@@ -4047,6 +4086,39 @@ msgstr "Przewodniczący %s"
 #, c-format
 msgid "Chairwoman %s"
 msgstr "Przewodnicząca %s"
+
+#: data/nation/conch.ruleset:3
+msgid "Conch"
+msgstr "Republika Konchy"
+
+#: data/nation/conch.ruleset:4
+msgid "?plural:Conch"
+msgstr "plural:Konczanie"
+
+#: data/nation/conch.ruleset:6
+msgid ""
+"In 1982, as part of a protest to a US Border Patrol station near Monroe "
+"County, Florida, the city of Key West declared that they were seceding from "
+"the US as the Conch Republic. They then declared war against the US, by "
+"breaking a loaf of stale Cuban bread over the head of a man dressed as a "
+"sailor. They surrendered after one minute, and then requested one billion "
+"dollars of foreign aid. The faux-secession of the Conch Republic helped "
+"bring awareness to issues of the Florida Keys, and the border patrol station "
+"was quietly removed. To this day, Key West sells Conch Republic memorabilia "
+"to tourists, and the Conch Republic has been involved in other protests by "
+"Key West and the Florida Keys."
+msgstr ""
+"W 1982 roku, w ramach protestu przeciwko stacji amerykańskiej straży "
+"granicznej w pobliżu hrabstwa Monroe na Florydzie, miasto Key West "
+"oświadczyło, że odłącza się od Stanów Zjednoczonych jako Republika Konchy. "
+"Następnie wypowiedzieli wojnę Stanom Zjednoczonym, łamiąc bochenek "
+"czerstwego kubańskiego chleba na głowie mężczyzny przebranego za marynarza. "
+"Poddali się po minucie, a następnie zażądali miliarda dolarów pomocy "
+"zagranicznej. Fałszywa secesja Republiki Konchy pomogła zwrócić uwagę na "
+"problemy Florida Keys, a posterunek straży granicznej został po cichu "
+"usunięty. Do dziś Key West sprzedaje turystom pamiątki po Republice Konchy, "
+"a ona brała udział w innych protestach organizowanych przez Key West i "
+"Florida Keys."
 
 #: data/nation/confederate.ruleset:3
 msgid "Confederate"
@@ -4210,13 +4282,15 @@ msgstr ""
 "Byli oni społecznością wieloetniczną (w której większość stanowili "
 "Rusini)zorganizowaną na modłę wojskową."
 
-#: data/nation/cossack.ruleset:31 data/nation/lipkatatar.ruleset:29
+#: data/nation/cossack.ruleset:31 data/nation/donetsk.ruleset:42
+#: data/nation/lipkatatar.ruleset:29 data/nation/luhansk.ruleset:39
 #: data/nation/ukrainian.ruleset:39
 #, c-format
 msgid "Hetman %s"
 msgstr "Hetman %s"
 
-#: data/nation/cossack.ruleset:31 data/nation/lipkatatar.ruleset:29
+#: data/nation/cossack.ruleset:31 data/nation/donetsk.ruleset:42
+#: data/nation/lipkatatar.ruleset:29 data/nation/luhansk.ruleset:39
 #: data/nation/ukrainian.ruleset:39
 #, c-format
 msgid "?female:Hetman %s"
@@ -4313,15 +4387,29 @@ msgstr "?plural:Chorwaci"
 
 #: data/nation/croatian.ruleset:6
 msgid ""
-"Croatia is the region of the Southern Slavs that was held by the Austro-"
-"Hungarian Empire, rather than coming under Ottoman rule after the collapse "
-"of Byzantium. During most of the 20th century it was part of the Yugoslav "
-"Federation."
+"Croatia is a country in Southeast Europe. In the 7th century they migrated "
+"into the region and established a duchy which evolved to a kingdom in the "
+"10th century under Tomislav. After the Trpimirović dynasty followed a period "
+"of symbiotic regimes with varying foreign powers, mostly notably with "
+"Austria-Hungary and the Ottoman Empire. In 1918, Croatia proclaimed "
+"independence from Austria-Hungary alongside other Southeast European "
+"nations. In World War II, the Axis installed a fascist puppet government "
+"that was later dismantled by resistance. Croatia was a member state of the "
+"newfound Yugoslav Federation until 1991 when they proclaimed independence "
+"leading to four years long conflict resulting in Croatia securing its "
+"autonomy."
 msgstr ""
-"Chorwacja to rejon położony na Bałkanach, który znalazł się pod rządami "
-"Cesarstwa Austriacko-Węgierskiego (w przeciwieństwie do innych regionów, "
-"które po upadku Bizancjum zostały wcielone do Imperium Osmańskiego). Przez "
-"większość XX wieku Chorwacja była częścią Jugosławii."
+"Chorwacja to kraj w południowo-wschodniej Europie. W VII wieku protoplaści "
+"przyyemigrowali do regionu i założyli księstwo, które przekształciło się w "
+"królestwo w X wieku pod rządami Tomisława. Po dynastii Trpimirovićów "
+"nastąpił okres wspólnych rządów z różnymi obcymi mocarstwami, głównie z "
+"Austro-Węgrami i Imperium Osmańskim. W 1918 roku Chorwacja ogłosiła "
+"niepodległość od Austro-Węgier wraz z innymi krajami Europy Południowo-"
+"Wschodniej. Podczas II Wojny Światowej państwa Osi wprowadziły faszystowski "
+"rząd marionetkowy, który został później usunięty przez ruch oporu. Chorwacja "
+"była członkiem nowo powstałej Federacji Jugosłowiańskiej do 1991 roku, kiedy "
+"to ogłosiła niepodległość, co doprowadziło do czteroletniego konfliktu, w "
+"wyniku którego Chorwacja uzyskała autonomię."
 
 #: data/nation/crusader.ruleset:3
 msgid "Crusader"
@@ -4523,10 +4611,42 @@ msgstr ""
 "Dakowie to starożytne plemiona mieszkające na lewym brzegu dolnego Dunaju, "
 "na terenach obecnej Rumunii. Prawdopodobnie byli spokrewnieni z Trakami i "
 "innymi plemionami paleo-bałkańskimi. Plemiona dackie zjednoczyły się pod "
-"rządami króla Burebisty. Po wojnach z Rzymem zostali pokonani w roku 106 p.n."
-"e. Dacja stała się prowincją rzymską i uległa rzymskiej kolonizacji. "
+"rządami króla Burebisty. Po wojnach z Rzymem zostali pokonani w roku 106 "
+"p.n.e. Dacja stała się prowincją rzymską i uległa rzymskiej kolonizacji. "
 "Pozostali Dakowie zmieszali się z plemionami wschodniogermańskimi, a później "
 "ze Słowianami."
+
+#: data/nation/dagestan.ruleset:3
+msgid "Dagestan"
+msgstr "Dagestan"
+
+#: data/nation/dagestan.ruleset:4
+msgid "?plural:Dagestani"
+msgstr "plural:Dagestańczycy"
+
+#: data/nation/dagestan.ruleset:7
+msgid ""
+"Dagestan is a republic of Russia situated in North Caucausus along the "
+"Caspian sea, it is one of the most ethnically diverse of Russia's republics, "
+"it was one of the first people within the modern borders of Russia to become "
+"Muslims after the Arab conquest of the region in 643. Dagestan was later "
+"raided by the Mongols in 1221. Dagestan eventually came under the control of "
+"Russia in 1813 and was firmly in the control of Imperial Russia as of 1828. "
+"Due to high taxation and general dissatisfaction with the Russian "
+"government, it rose up multiple times against Russia, once in 1828, and "
+"again in 1917, it eventually became an autonomous republic under the Soviet "
+"Union in 1921."
+msgstr ""
+"Dagestan to republika Rosji położona na Kaukazie Północnym nad Morzem "
+"Kaspijskim, jest jedną z najbardziej zróżnicowanych etnicznie republik "
+"Rosji, była jedną z pierwszych społeczności we współczesnych granicach "
+"Rosji, która została muzułmanami po podboju regionu przez Arabów w 643 roku. "
+"Dagestan został później najechany przez Mongołów w 1221 roku. Dagestan "
+"ostatecznie znalazł się pod kontrolą Rosji w 1813 roku i mocno kontrolował "
+"Rosję Cesarską od 1828. Z powodu wysokich podatków i ogólnego niezadowolenia "
+"z rządu rosyjskiego wielokrotnie powstawał przeciwko Rosji, raz w 1828 r. i "
+"ponownie w 1917 r., a ostatecznie w 1921 r. stał się republiką autonomiczną "
+"pod Związkiem Radzieckim."
 
 #: data/nation/dahomean.ruleset:3
 msgid "Dahomean"
@@ -4640,6 +4760,70 @@ msgstr ""
 "swą nazwę faktowi, że dostrzeżono ją w niedzielę (hiszp. \"domingo\"). "
 "Oficjalna nazwa kraju to \"Wspólnota Dominiki\"; nie należy mylić jej z inną "
 "karaibską wyspą Dominikaną."
+
+#: data/nation/donetsk.ruleset:3
+msgid "Donetsk"
+msgstr "Doniecki"
+
+#: data/nation/donetsk.ruleset:4
+msgid "?plural:Donchyani"
+msgstr "plural:Donechyani"
+
+#: data/nation/donetsk.ruleset:6
+msgid ""
+"The Donetsk People's Republic is an unrecognised republic of Russia in the "
+"occupied parts of eastern Ukraine's Donetsk Oblast, with its capital in "
+"Donetsk. The DPR was created by Russian-backed aramilitaries in 2014, and it "
+"initially operated as a breakaway state Until it was annexed by Russia in "
+"2022. Following Ukraine's Revolution of Dignity in 2014, pro-Russian, "
+"counter-revolutionary unrest erupted in the eastern part of the country. "
+"Russia annexed Crimea from Ukraine, while the armed separatists seized "
+"government buildings and proclaimed the Donetsk People's Republic and "
+"Luhansk People's Republic as independent states. This sparked the war in "
+"Donbas, part of the wider Russo-Ukrainian War. The DPR and LPR are sometimes "
+"described as puppet states of Russia during this conflict. They received no "
+"international recognition from United Nations member states before 2022. On "
+"21 February 2022, Russia recognised the DPR and LPR as sovereign states. "
+"Three days later, Russia launched a full-scale invasion of Ukraine, "
+"partially under the pretext of protecting the republics. Russian forces "
+"captured more of Donetsk Oblast, which became part of the DPR. In September "
+"2022, Russia proclaimed the annexation of the DPR and other occupied "
+"territories, following illegitimate referendums. The United Nations General "
+"Assembly passed a resolution calling on countries not to recognise what it "
+"called the \"attempted illegal annexation\" and demanded that Russia "
+"\"immediately, completely and unconditionally withdraw.\""
+msgstr ""
+"Doniecka Republika Ludowa to nieuznawana republika Rosji w okupowanych "
+"częściach obwodu donieckiego wschodniej Ukrainy, ze stolicą w Doniecku. DRL "
+"została utworzona przez wspierane przez Rosję siły zbrojne w 2014 roku i "
+"początkowo działała jako separatystyczne państwo, dopóki nie została "
+"zaanektowana przez Rosję w 2022 roku. Po ukraińskiej Rewolucji Godności w "
+"2014 r. we wschodniej części kraju wybuchły prorosyjskie, kontrrewolucyjne "
+"zamieszki. Rosja odebrała Krym Ukrainie, podczas gdy uzbrojeni separatyści "
+"zajęli budynki rządowe i proklamowali Doniecką Republikę Ludową i Ługańską "
+"Republikę Ludową jako niepodległe państwa. Wywołało to wojnę w Donbasie, "
+"będącą częścią szerszej wojny rosyjsko-ukraińskiej. DRL i ŁRL są czasami "
+"opisywane jako marionetkowe państwa Rosji podczas tego konfliktu. Nie "
+"otrzymały one międzynarodowego uznania od państw członkowskich ONZ przed "
+"2022 rokiem. W dniu 21 lutego 2022 r. Rosja uznała DRL i ŁRL za suwerenne "
+"państwa. Trzy dni później Rosja rozpoczęła pełnoskalową inwazję na Ukrainę, "
+"częściowo pod pretekstem ochrony republik. Siły rosyjskie zajęły większą "
+"część obwodu donieckiego, który stał się częścią DRL. We wrześniu 2022 r. "
+"Rosja ogłosiła aneksję DRL i innych okupowanych terytoriów w następstwie "
+"nielegalnych referendów. Zgromadzenie Ogólne Narodów Zjednoczonych przyjęło "
+"rezolucję wzywającą kraje do nieuznawania tego, co nazwało „próbą "
+"nielegalnej aneksji” i zażądało od Rosji „natychmiastowego, całkowitego i "
+"bezwarunkowego wypowiedzenia”."
+
+#: data/nation/donetsk.ruleset:40 data/nation/luhansk.ruleset:37
+#, c-format
+msgid "Kremlin %s"
+msgstr "Kreml %s"
+
+#: data/nation/donetsk.ruleset:40 data/nation/luhansk.ruleset:37
+#, c-format
+msgid "?female:Kremlin %s"
+msgstr "Kremlinka %s"
 
 #: data/nation/dryad.ruleset:3
 msgid "Dryad"
@@ -4950,9 +5134,9 @@ msgstr ""
 "dwunastu miast. W VI w. p.n.e. ich cywilizacja zaczęła podupadać na skutek "
 "najazdów Rzymian i Galów. Rzym był najprawdopodobniej państwem-miastem, "
 "które wyzwoliło się spod etruskiej dominacji, co mogło spowodować, że w "
-"podaniach rzymskich Etruskowie są często pokazywani w negatywny sposób (m."
-"in. jako ludzie wyuzdani). Nadmienić jednak trzeba, że rzymska kultura wiele "
-"zawdzięcza swoim etruskim przodkom."
+"podaniach rzymskich Etruskowie są często pokazywani w negatywny sposób "
+"(m.in. jako ludzie wyuzdani). Nadmienić jednak trzeba, że rzymska kultura "
+"wiele zawdzięcza swoim etruskim przodkom."
 
 #: data/nation/european.ruleset:3
 msgid "European"
@@ -5201,16 +5385,46 @@ msgid "Fra %s"
 msgstr "Emira %s"
 
 #: data/nation/florentine.ruleset:42 data/nation/italiangreek.ruleset:51
-#: data/nation/milanese.ruleset:29
+#: data/nation/milanese.ruleset:29 data/nation/poyaisian.ruleset:29
 #, c-format
 msgid "Captain %s"
 msgstr "Kapitan %s"
 
 #: data/nation/florentine.ruleset:42 data/nation/italiangreek.ruleset:51
-#: data/nation/milanese.ruleset:29
+#: data/nation/milanese.ruleset:29 data/nation/poyaisian.ruleset:29
 #, c-format
 msgid "?female:Captain %s"
 msgstr "?female:Kapitan %s"
+
+#: data/nation/florida.ruleset:3
+msgid "Floridian"
+msgstr "Florydzki"
+
+#: data/nation/florida.ruleset:4
+msgid "?plural:Floridians"
+msgstr "?plural:Florydczycy"
+
+#: data/nation/florida.ruleset:6
+msgid ""
+"Florida is the third most populous state of the USA and is well known for "
+"its tourism. It was repeatedly colonized by Spain and Great Britain before "
+"the \"Florida Patriots\" proclaimed the Republic of East Florida in 1812. "
+"Despite being suppressed by Spain the first time, in 1817 adventurers "
+"establied the Republic of the Floridas on Amelia Island which was "
+"incorporated by the USA with the rest of modern Florida in 1822. It joined "
+"the Confederacy in 1861 but rejoined the USA in 1868 and has since been the "
+"site of the Apollo 11 Space Launch, which let humans land on the moon for "
+"the first time in history."
+msgstr ""
+"Floryda jest trzecim najbardziej ludnym stanem USA i słynie z turystyki. "
+"Była wielokrotnie kolonizowana przez Hiszpanię i Wielką Brytanię, zanim "
+"„Patrioci Florydy” proklamowali Republikę Wschodniej Florydy w 1812 roku. "
+"Pomimo tego, że Hiszpania stłumiła pierwsze powstanie, poszukiwacze przygód "
+"ustanowili Republikę Floryd na Amelia Island, którą Stany Zjednoczone "
+"włączyły w swój skład wraz z resztą współczesnej Florydy w 1822 r. Stan "
+"wstąpił do Konfederacji w 1861 r., ale ponownie dołączył do USA w 1868 r. "
+"Wystartowała stąd misja kosmiczna Apollo 11, która po raz pierwszy w "
+"historii umożliwiła ludziom postawienie stopy na Księżycu."
 
 #: data/nation/formosan.ruleset:3
 msgid "Formosan"
@@ -5694,8 +5908,8 @@ msgstr ""
 "indoeuropejskich. Niewiele wiemy o pochodzeniu starożytnych Germanów. Ich "
 "języki zawierają dużo elementów niespotyanych w innych językach "
 "indoeuropejskich. Pierwsze ślady Germanów znaleziono na Nizinie "
-"Północnoniemieckiej i w południowej Skandynawii. Od drugiej połowy II w. p.n."
-"e. ścierali się z Rzymianami, a we wczesnych wiekach średnich germańskie "
+"Północnoniemieckiej i w południowej Skandynawii. Od drugiej połowy II w. "
+"p.n.e. ścierali się z Rzymianami, a we wczesnych wiekach średnich germańskie "
 "królestwa powstały na terenach niegdysiejszego cesarstwa "
 "zachodniorzymskiego. Do tego czasu większość ludów germańskich porzuciło "
 "dawne religie politeistyczne na rzecz chrześcijaństwa."
@@ -5872,7 +6086,7 @@ msgid ""
 "(Qaanaaq) on the west coast of Greenland in the 10th century. Around the "
 "same time, Scandinavian settlers arrived at the fjords on the southwestern "
 "tip of the island. Today, Greenland is a self-governing country within the "
-"Kingdom of Denmark with mixed Inuit and Scaninavian population."
+"Kingdom of Denmark with mixed Inuit and Scandinavian population."
 msgstr ""
 "Legenda głosi, że w X w. wielki szaman Qitdlarssuaq poprowadził swój lud do "
 "Thule (Qaanaaq) na zachodnim wybrzeżu Grenlandii. Mniej więcej w tym samym "
@@ -6966,8 +7180,8 @@ msgid ""
 "Burmese kingdoms throughout recorded history. Their own oral history "
 "suggests that they at some point migrated southwards through the Gobi Desert "
 "to reach their current homeland. With the independence of Burma from the "
-"United Kingdom in 1948, a heterogenous Karen armed independence movement was "
-"initiated that continues to this day."
+"United Kingdom in 1948, a heterogeneous Karen armed independence movement "
+"was initiated that continues to this day."
 msgstr ""
 "Karenowie to lud twardych górali mieszkającym na zachodnich obrzeżach "
 "dawnych królestw birmańskich. Według kareńskich przekazów ustnych, lud ten "
@@ -7732,14 +7946,14 @@ msgid ""
 "liberties for which liegean struggled strongly for. It lasted until 1792, "
 "when the recently formed Republic of Liege voted the union with "
 "revolutionary France. Liege played later a major role in the Belgian "
-"independance."
+"independence."
 msgstr ""
-"Liege stało się w 985 r. księstwem biskupim, gdy biskup Notger dostał władzę "
-"nad kilkoma miastami w obecnej Belgii. Jako państwo sfederowane ze Świętym "
-"Cesarstwem Rzymskim cieszyło sie wieloma wolnościami obywatelskimi, o które "
-"Ligeńczycy zaciekle walczyli. Państwo przetrwało do 1792 r., gdy Republika "
-"Liege zagłosowała za unią z rewolucyjną Francją. Liege odegrało później dużą "
-"rolę w uzyskaniu niepodległości przez Belgię."
+"Liege stało się w 985 roku księstwem biskupim, gdy biskup Notger dostał "
+"władzę nad kilkoma miastami w obecnej Belgii. Jako państwo sfederowane ze "
+"Świętym Cesarstwem Rzymskim cieszyło się wieloma wolnościami obywatelskimi, "
+"o które Ligeńczycy zaciekle walczyli. Państwo przetrwało do 1792 roku, gdy "
+"Republika Liege zagłosowała za unią z rewolucyjną Francją. Kraj odegrał "
+"później dużą rolę w uzyskaniu niepodległości przez Belgię."
 
 #: data/nation/liege.ruleset:28
 #, c-format
@@ -7883,6 +8097,97 @@ msgstr ""
 "frankijskich dynastii. To co pozostało z Lotaryngii przekształciło się w "
 "hrabstwo, na które łakomie spoglądały zarówno Francja, jak i Niemcy. W 1766 "
 "Lotaryngia stała się prowincją Francji."
+
+#: data/nation/louisianian.ruleset:3
+msgid "Louisianian"
+msgstr "Luizjańczyk"
+
+#: data/nation/louisianian.ruleset:4
+msgid "?plural:Louisianians"
+msgstr "plural:Luizjańczycy"
+
+#: data/nation/louisianian.ruleset:6
+msgid ""
+"Louisiana is a state in the Deep South of the United States of America known "
+"for its distinct French culture, on January 26, 1861, the state voted to "
+"secede from the United States, existing independently for a short time until "
+"February 26, 1861 when it finally joined the Confederate States of America. "
+"The state was formally admitted back into the union on July 9, 1868."
+msgstr ""
+"Luizjana to stan na głębokim południu Stanów Zjednoczonych, znany ze swojej "
+"odrębnej kultury francuskiej. 26 stycznia 1861 roku stan głosował za "
+"odłączeniem się od Stanów Zjednoczonych, istniejąc niezależnie przez krótki "
+"czas do 26 lutego 1861 roku, kiedy ostatecznie dołączył do Skonfederowanych "
+"Stanów Ameryki. Stan został formalnie przyjęty z powrotem do unii 9 lipca "
+"1868 roku."
+
+#: data/nation/louisianian.ruleset:45
+#, c-format
+msgid "Kingfish %s"
+msgstr "Wielki Król %s"
+
+#: data/nation/louisianian.ruleset:45
+#, c-format
+msgid "Queenfish %s"
+msgstr "Wielka Królowa %s"
+
+#: data/nation/louisianian.ruleset:46 data/nation/minnesotan.ruleset:28
+#, c-format
+msgid "Governeror %s"
+msgstr "Gubernator %s"
+
+#: data/nation/louisianian.ruleset:46 data/nation/minnesotan.ruleset:28
+#, c-format
+msgid "?female:Governeror %s"
+msgstr "female:Gubernatorka %s"
+
+#: data/nation/luhansk.ruleset:3
+msgid "Luhansk"
+msgstr "Ługański"
+
+#: data/nation/luhansk.ruleset:4
+msgid "?plural:Luhansk"
+msgstr "?plural:Ługańczycy"
+
+#: data/nation/luhansk.ruleset:6
+msgid ""
+"The Luhansk People's Republic, abbreviated as LPR is an unrecognised "
+"republic of Russia in the occupied parts of eastern Ukraine's Luhansk "
+"Oblast, with its capital in Luhansk. The LPR was created by Russian-backed "
+"paramilitaries in 2014, and it initially operated as a breakaway state until "
+"it was annexed by Russia in 2022. Following Ukraine's Revolution of Dignity "
+"in 2014, pro-Russian, counter-revolutionary unrest erupted in the eastern "
+"part of the country. Russia annexed Crimea from Ukraine, while the armed "
+"separatists seized government buildings and proclaimed the Luhansk People's "
+"Republic (LPR) and Donetsk People's Republic (DPR) as independent states. "
+"This sparked the war in Donbas, part of the wider Russo-Ukrainian War. The "
+"LPR and DPR are sometimes described as puppet states of Russia during this "
+"conflict They received no international recognition from United Nations "
+"member states before 2022. On 21 February 2022, Russia recognised the LPR "
+"and DPR as sovereign states. Three days later, Russia launched a full-scale "
+"invasion of Ukraine, partially under the pretext of protecting the "
+"republics. In September 2022, Russia proclaimed the annexation of the LPR "
+"and other occupied territories, following illegitimate referendums which "
+"were illegal under international law."
+msgstr ""
+"Ługańska Republika Ludowa, w skrócie LPR, to nieuznawana republika Rosji w "
+"okupowanych częściach obwodu ługańskiego we wschodniej Ukrainie, ze stolicą "
+"w Ługańsku. LPR została utworzona przez wspieranych przez Rosję bojówki w "
+"2014 roku i początkowo działała jako separatystyczne państwo, dopóki nie "
+"została zaanektowana przez Rosję w 2022 roku. Po ukraińskiej Rewolucji "
+"Godności w 2014 r. we wschodniej części kraju wybuchły prorosyjskie, "
+"kontrrewolucyjne zamieszki. Rosja odebrała Krym Ukrainie, podczas gdy "
+"uzbrojeni separatyści zajęli budynki rządowe i proklamowali Ługańską "
+"Republikę Ludową (ŁRL) i Doniecką Republikę Ludową (DRL) jako niepodległe "
+"państwa. Wywołało to wojnę w Donbasie, będącą częścią szerszej wojny "
+"rosyjsko-ukraińskiej. LPR i DRL są czasami opisywane jako marionetkowe "
+"państwa Rosji podczas tego konfliktu Nie otrzymały międzynarodowego uznania "
+"od państw członkowskich ONZ przed 2022 rokiem. W dniu 21 lutego 2022 r. "
+"Rosja uznała ŁRL i DRL za suwerenne państwa. Trzy dni później Rosja "
+"rozpoczęła inwazję na Ukrainę na pełną skalę, częściowo pod pretekstem "
+"ochrony republik. We wrześniu 2022 r. Rosja ogłosiła aneksję LPR i innych "
+"okupowanych terytoriów w następstwie nielegalnych referendów, które były "
+"niezgodne z prawem międzynarodowym."
 
 #: data/nation/luwian.ruleset:3
 msgid "Luwian"
@@ -8638,6 +8943,24 @@ msgstr ""
 "1395-1797 była stolicą księstwa Mediolanu. Po wojnach napoleońskich miasto "
 "znalazło się pod rządami Austrii, a w 1859 zostało przyłączone do Włoch."
 
+#: data/nation/minnesotan.ruleset:3
+msgid "Minnesotan"
+msgstr "Minnesotczyk"
+
+#: data/nation/minnesotan.ruleset:4
+msgid "?plural:Minnesotans"
+msgstr "plural:Minnesotczycy"
+
+#: data/nation/minnesotan.ruleset:6
+msgid ""
+"Minnesota is a state located in the American Midwest notable for its cold "
+"environment and many lakes present. It was admitted into the union as a "
+"state on May 11th, 1858."
+msgstr ""
+"Minnesota to stan położony na Środkowym Zachodzie Ameryki, charakteryzujący "
+"się zimnym otoczeniem i dużą liczbą jezior. Została przyjęta do unii jako "
+"stan 11 maja 1858 roku."
+
 #: data/nation/miskito.ruleset:3
 msgid "Miskito"
 msgstr "Moskityjski"
@@ -9330,6 +9653,47 @@ msgstr ""
 "obejmujące ten obszar. Z czasem lenno przekształciło się w Księstwo "
 "Normandii, z którego Wilhelm II Zdobywca najechał Anglię w roku 1066."
 
+#: data/nation/northirish.ruleset:3
+msgid "Northern Irish"
+msgstr "Północnoirlandczyk %s"
+
+#: data/nation/northirish.ruleset:4
+msgid "?plural:Northern Irish"
+msgstr "plural:Północnoirlandczycy"
+
+#: data/nation/northirish.ruleset:6
+msgid ""
+"Northern Ireland is a part of the United Kingdom that occupiesthe "
+"northeastern part of the island of Ireland. Northern Ireland has acomplex "
+"history of conflict and cooperation between the British unionists,who want "
+"to remain in the U.K., and the Irish nationalists, who seek torejoin the "
+"Republic of Ireland. The 1998 Good Friday Agreement ended theviolent period "
+"known as 'The Troubles' and established a power-sharinggovernment that gives "
+"both sides a say in the affairs of the region.Northern Ireland is known for "
+"its scenic landscapes and cultural heritage."
+msgstr ""
+"Irlandia Północna jest częścią Wielkiej Brytanii zajmującą północno-"
+"wschodnią część wyspy Irlandia. Irlandia Północna ma złożoną historię "
+"konfliktów i współpracy pomiędzy brytyjskimi związkowcami, którzy chcą "
+"pozostać w Wielkiej Brytanii, a irlandzkimi nacjonalistami, którzy pragną "
+"ponownie dołączyć do Republiki Irlandii. Porozumienie Wielkopiątkowe z 1998 "
+"r. zakończyło pełen przemocy okres znany jako „Kłopoty” i ustanowiło rząd "
+"oparty na podziale władzy, który daje obu stronom głos w sprawach regionu. "
+"Irlandia Północna znana jest z malowniczych krajobrazów i dziedzictwa "
+"kulturowego."
+
+#: data/nation/northirish.ruleset:39 data/nation/scottishgaelic.ruleset:37
+#: data/nation/scottish.ruleset:26
+#, c-format
+msgid "First Minister %s"
+msgstr "Premier %s"
+
+#: data/nation/northirish.ruleset:39 data/nation/scottishgaelic.ruleset:37
+#: data/nation/scottish.ruleset:26
+#, c-format
+msgid "?female:First Minister %s"
+msgstr "?female:Premier %s"
+
 #: data/nation/northkorean.ruleset:3
 msgid "North Korean"
 msgstr "Północnokoreański"
@@ -9908,7 +10272,7 @@ msgstr "?plural:Paluanie"
 
 #: data/nation/palauan.ruleset:6
 msgid ""
-"Palaos is a very little country, with only 20000 inhabitants aproximately. "
+"Palaos is a very little country, with only 20000 inhabitants approximately. "
 "It is composed of more than 300 islands of volcanic origin."
 msgstr ""
 "Palau to bardzo małe państwo z ok. 20000 mieszkańcami. Składa się z ponad "
@@ -10067,7 +10431,7 @@ msgid ""
 "turned it into a military and economic powerhouse. The War of the Triple "
 "Alliance of 1864-1870 led to the near annihilation of Paraguay, which lost "
 "half of its territory and eighty per cent of its male population. Paraguay's "
-"history remains marked by instability and authoritarianism, alhough it "
+"history remains marked by instability and authoritarianism, although it "
 "managed to defeat Bolivia in the Chaco War of 1932-1936. For much of the "
 "20th century the country was ruled by General Stroessner, who provided a "
 "safe haven for Nazi war criminals. Around the turn of the millennium however "
@@ -10085,9 +10449,9 @@ msgstr ""
 "okresami niestabilności i autorytarnych rządów, choć zdołał też pokonać "
 "Boliwię w tzw. wojnie o Chaco w latach 1932-1936. Przez dużą część XX w. "
 "państwo rządzone było przez generała Stroessnera, który po II Wojnie "
-"Światowej dawał schronienie nazistowskim zbrodniarzom. Na przełomie "
-"tysiąclecia Paragwaj wprowadził jednak rządy demokratyczne i poszczycić się "
-"może dużym wzrostem gospodarczym."
+"Światowej dawał schronienie nazistowskim zbrodniarzom. Na przełomie XX i XXI "
+"wiekw Paragwaj wprowadził jednak rządy demokratyczne i poszczycić się może "
+"dużym wzrostem gospodarczym."
 
 #: data/nation/parthian.ruleset:3
 msgid "Parthian"
@@ -10306,6 +10670,35 @@ msgstr ""
 "bastionem Cesarstwa Rzymskiego, zanim ostatecznie uległo Osmanom w 1461 "
 "roku. Po I Wojnie Światowej rdzenni Pontyjczycy zostali przesiedleni i dziś "
 "mieszkańcy Pontu są pochodzenia tureckiego."
+
+#: data/nation/poyaisian.ruleset:3
+msgid "Poyais"
+msgstr "Poyais"
+
+#: data/nation/poyaisian.ruleset:4
+msgid "Poyaisians"
+msgstr "Pojajczycy"
+
+#: data/nation/poyaisian.ruleset:6
+msgid ""
+"Poyais is a totally real nation founded by Gregor MacGregor that lasted from "
+"1821 to 1837 located in Central America, totally not a scam devised by "
+"MacGregor to sell people fake government bonds for land ill fit for farming."
+msgstr ""
+"Poyais to całkowicie prawdziwy naród założony przez Gregora MacGregora, "
+"który istniał od 1821 do 1837 roku w Ameryce Środkowej, i wcale nie jest to "
+"oszustwo wymyślone przez MacGregora w celu sprzedaży ludziom fałszywych "
+"obligacji rządowych za ziemię nienadającą się do uprawy."
+
+#: data/nation/poyaisian.ruleset:30
+#, c-format
+msgid "Cazique %s"
+msgstr "Kacyk %s"
+
+#: data/nation/poyaisian.ruleset:30
+#, c-format
+msgid "Cazica %s"
+msgstr "Kacyka  %s"
 
 #: data/nation/prussian.ruleset:3
 msgid "Prussian"
@@ -11174,16 +11567,6 @@ msgstr "Wódz klanu %s"
 msgid "?female:Clan Chief %s"
 msgstr "?female:Przywódczyni klanu %s"
 
-#: data/nation/scottishgaelic.ruleset:37 data/nation/scottish.ruleset:26
-#, c-format
-msgid "First Minister %s"
-msgstr "Premier %s"
-
-#: data/nation/scottishgaelic.ruleset:37 data/nation/scottish.ruleset:26
-#, c-format
-msgid "?female:First Minister %s"
-msgstr "?female:Premier %s"
-
 #: data/nation/scottish.ruleset:3
 msgid "Scottish"
 msgstr "Szkocki"
@@ -11894,7 +12277,8 @@ msgid ""
 msgstr ""
 "Obszar wokół miasta Aden został skolonizowany przez Brytyjczyków w 1839 "
 "roku. Południowy Jemen ogłosił niepodległość w 1967 roku i przystąpił do "
-"bloku państw komunistycznych. Kraj zjednoczył się z Jemenem w roku 1990."
+"bloku państw komunistycznych. Kraj zjednoczył się z Północnym Jemenem w roku "
+"1990."
 
 #: data/nation/soviet.ruleset:3
 msgid "Soviet"
@@ -12518,6 +12902,24 @@ msgstr ""
 "zdominowana była przez generała Gnassingbe Eyadema. W 2005 zastąpił go jego "
 "syn Faure."
 
+#: data/nation/tokiponan.ruleset:3
+msgid "Toki Ponan"
+msgstr "Toki Ponan"
+
+#: data/nation/tokiponan.ruleset:4
+msgid "?plural:Toki Ponans"
+msgstr "plural: użytkownicy Toki Ponana"
+
+#: data/nation/tokiponan.ruleset:6
+msgid ""
+"Toki Pona is a conlang created by Sonja lang in 2001 which is notable for "
+"its extremely small size, consisting of 14 letters and anywhere from 120 "
+"words to 137 words."
+msgstr ""
+"Toki Pona to język skonstruowany stworzony przez Sonję Lang w 2001 roku, "
+"który wyróżnia się wyjątkowo małym rozmiarem, składającym się z 14 liter i "
+"od 120 do 137 słów."
+
 #: data/nation/toltec.ruleset:3
 msgid "Toltec"
 msgstr "Toltecki"
@@ -12715,8 +13117,8 @@ msgid ""
 "protectorate. The country became independent in 1956."
 msgstr ""
 "Fenicjanie zbudowali Kartaginę na obszarze obecnej Tunezji. Kartagina "
-"wyrosła na mocarstwo basenu Morza Śródziemnego, aż do czasu, gdy w 146 r. p."
-"n.e. pobili ją Rzymianie. Nieco później podboje muzułmańskich Arabów w VII "
+"wyrosła na mocarstwo basenu Morza Śródziemnego, aż do czasu, gdy w 146 r. "
+"p.n.e. pobili ją Rzymianie. Nieco później podboje muzułmańskich Arabów w VII "
 "wieku doprowadziły do migracji ludności do krajów arabskich i osmańskich. W "
 "XVI w. na te tereny wprowadzali się Żydzi i hiszpańscy Maurowie. Tunezja "
 "zyskała dużą niezależność od Imperium Osmańskiego w 1861 roku, lecz w 1881 "
@@ -12778,6 +13180,31 @@ msgstr "Turkmenbashi %s"
 #, c-format
 msgid "?female:Turkmenbashi %s"
 msgstr "?female:Turkmenbashi %s"
+
+#: data/nation/tuvaluan.ruleset:3
+msgid "Tuvaluan"
+msgstr "Tuwalski"
+
+#: data/nation/tuvaluan.ruleset:4
+msgid "?plural:I-Tuvaluan"
+msgstr "?plural:Tuvalczycy"
+
+#: data/nation/tuvaluan.ruleset:6
+msgid ""
+"The Ellice Islands are an island chain in the Pacific Ocean. Inhabited by "
+"Micronesians since prehistoric times, they were united under a common "
+"chiefdom in the late 19th century. Together with the Gilbert Islands they "
+"were annexed by the British in 1892 who established the colony of Gilbert "
+"and Ellice Islands. The islands became independent in 1978, under the name "
+"Tuvalu, which means 'Eight standing together', referencing the eight "
+"inhabited islands."
+msgstr ""
+"Wyspy Ellice to łańcuch wysp na Oceanie Spokojnym. Zamieszkane przez "
+"Mikronezyjczyków od czasów prehistorycznych, pod koniec XIX wieku zostały "
+"zjednoczone pod wspólnym wodzem. Wraz z Wyspami Gilberta zostały "
+"zaanektowane przez Brytyjczyków w 1892 roku, którzy założyli kolonię Wysp "
+"Gilberta i Ellice. Wyspy uzyskały niepodległość w 1978 r. pod nazwą Tuvalu, "
+"co oznacza „osiem stojących razem” i odnosi się do ośmiu zamieszkałych wysp."
 
 #: data/nation/tuvan.ruleset:3
 msgid "Tuvan"
@@ -13835,6 +14262,17 @@ msgstr ""
 "zmusiła Smitha to zakończenia rządów mniejszości w 1979. Od 1980 roku "
 "Zimbabwe rządzone jest przez Roberta Mugabe, który wśród wspólnoty "
 "międzynarodowej ma równie niskie notowania jak poprzedni reżim."
+
+#~ msgid ""
+#~ "Croatia is the region of the Southern Slavs that was held by the Austro-"
+#~ "Hungarian Empire, rather than coming under Ottoman rule after the "
+#~ "collapse of Byzantium. During most of the 20th century it was part of the "
+#~ "Yugoslav Federation."
+#~ msgstr ""
+#~ "Chorwacja to rejon położony na Bałkanach, który znalazł się pod rządami "
+#~ "Cesarstwa Austriacko-Węgierskiego (w przeciwieństwie do innych regionów, "
+#~ "które po upadku Bizancjum zostały wcielone do Imperium Osmańskiego). "
+#~ "Przez większość XX wieku Chorwacja była częścią Jugosławii."
 
 #~ msgid "\\303\\205lander"
 #~ msgstr "Alandzki"
@@ -14931,10 +15369,10 @@ msgstr ""
 #~ "Nazi Germany in the Anschluss in 1938. This lasted until the end of World "
 #~ "War II in 1945, after which Austria was occupied by the Allies."
 #~ msgstr ""
-#~ "Początki Austrii sięgają czasów Imperium Rzymskiego, gdy około 15 r. p.n."
-#~ "e. celtyckie królestwo zostało podbite przez Rzymian. W połowie I w. n.e. "
-#~ "stało się ono prowincją rzymską o nazwie Noricum, które obejmowało tereny "
-#~ "dzisiejszej Austrii. W 788 r. obszar został podbity przez Karola "
+#~ "Początki Austrii sięgają czasów Imperium Rzymskiego, gdy około 15 r. "
+#~ "p.n.e. celtyckie królestwo zostało podbite przez Rzymian. W połowie I w. "
+#~ "n.e. stało się ono prowincją rzymską o nazwie Noricum, które obejmowało "
+#~ "tereny dzisiejszej Austrii. W 788 r. obszar został podbity przez Karola "
 #~ "Wielkiego, który wprowadził tam chrześcijaństwo. Pod rządami lokalnej "
 #~ "dynastii Habsburgów, Austria stała się jednym w największych mocarstw "
 #~ "Europy. W 1867 państwo przekształciło się w Austro-Węgry. Imperium upadło "
@@ -14951,9 +15389,6 @@ msgstr ""
 
 #~ msgid "Kaiser %s"
 #~ msgstr "Cesarz %s"
-
-#~ msgid "Kaiserin %s"
-#~ msgstr "Cesarzowa %s"
 
 #~ msgid ""
 #~ "Babylon was the dominant city of Mesopotamia from the 18th to 7th "
@@ -15369,9 +15804,6 @@ msgstr ""
 #~ "Państwo polskie zostało założone ponad tysiąc lat temu. Swój złoty wiek "
 #~ "osiągnęło w XVI wieku."
 
-#~ msgid "Polynesian"
-#~ msgstr "Polinezyjski"
-
 #~ msgid "?plural:Polynesian"
 #~ msgstr "?plural:Polinezyjczycy"
 
@@ -15449,9 +15881,6 @@ msgstr ""
 
 #~ msgid "Songhai"
 #~ msgstr "Songhajski"
-
-#~ msgid "?plural:Songhai"
-#~ msgstr "?plural:Songhajowie"
 
 #~ msgid ""
 #~ "The Songhai people established a state in the 11th century CE centered on "
@@ -15687,9 +16116,6 @@ msgstr ""
 
 #~ msgid "Father %s"
 #~ msgstr "Ojciec %s"
-
-#~ msgid "Mother %s"
-#~ msgstr "Matka %s"
 
 #~ msgid ""
 #~ "The Confederate States of America was a splinter nation of the United "

@@ -21,12 +21,16 @@
 // Qt
 #include <QDialog>
 
+// ruledit
+#include "values_dlg.h"
+
+class QGridLayout;
 class QLineEdit;
 class QSpinBox;
 
 class ruledit_gui;
 
-class edit_extra : public QDialog
+class edit_extra : public values_dlg
 {
   Q_OBJECT
 
@@ -44,6 +48,10 @@ class edit_extra : public QDialog
     QLineEdit *act_gfx_alt2;
     QLineEdit *rmact_gfx;
     QLineEdit *rmact_gfx_alt;
+    QLineEdit *rmact_gfx_alt2;
+
+    QGridLayout *natives_layout;
+    QGridLayout *flag_layout;
 
   protected:
     void closeEvent(QCloseEvent *cevent);
@@ -56,6 +64,8 @@ class edit_extra : public QDialog
     void act_gfx_alt2_given();
     void rmact_gfx_given();
     void rmact_gfx_alt_given();
+    void rmact_gfx_alt2_given();
+    void helptext();
 };
 
 #endif // FC__EDIT_EXTRA_H

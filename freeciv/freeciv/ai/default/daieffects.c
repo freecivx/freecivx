@@ -48,8 +48,8 @@
   specialists who provide at least HAPPY_COST luxury, being the number of
   luxuries needed to make one citizen content or happy.
 
-  The AI assumes that for any specialist that provides HAPPY_COST luxury, 
-  if we can get that luxury from some other source it allows the specialist 
+  The AI assumes that for any specialist that provides HAPPY_COST luxury,
+  if we can get that luxury from some other source it allows the specialist
   to become a worker.  The benefits from an extra worker are weighed against
   the losses from acquiring the two extra luxury.
 
@@ -61,11 +61,11 @@ static int get_entertainers(const struct city *pcity)
 {
   int providers = 0;
 
-  specialist_type_iterate(i) {
+  normal_specialist_type_iterate(i) {
     if (get_specialist_output(pcity, i, O_LUXURY) >= game.info.happy_cost) {
       providers += pcity->specialists[i];
     }
-  } specialist_type_iterate_end;
+  } normal_specialist_type_iterate_end;
 
   return providers;
 }
@@ -98,12 +98,12 @@ adv_want dai_content_effect_value(const struct player *pplayer,
     int factor = 2;
 
     /* Try to build wonders to offset empire size unhappiness */
-    if (city_list_size(pplayer->cities) 
+    if (city_list_size(pplayer->cities)
         > get_player_bonus(pplayer, EFT_EMPIRE_SIZE_BASE)) {
       if (get_player_bonus(pplayer, EFT_EMPIRE_SIZE_BASE) > 0) {
         int step_bonus = get_player_bonus(pplayer, EFT_EMPIRE_SIZE_STEP);
 
-        factor += city_list_size(pplayer->cities) 
+        factor += city_list_size(pplayer->cities)
           / MAX(step_bonus, 1);
       }
       factor += 2;
@@ -176,6 +176,7 @@ adv_want dai_effect_value(struct player *pplayer,
   case EFT_CAPITAL_CITY:
   case EFT_GOV_CENTER:
   case EFT_UPKEEP_FREE:
+  case EFT_IMPR_UPKEEP_REDUCTION:
   case EFT_TECH_UPKEEP_FREE:
   case EFT_POLLU_POP_PCT:
   case EFT_POLLU_POP_PCT_2:
@@ -190,6 +191,8 @@ adv_want dai_effect_value(struct player *pplayer,
   case EFT_OUTPUT_WASTE_BY_DISTANCE:
   case EFT_OUTPUT_WASTE_BY_REL_DISTANCE:
   case EFT_OUTPUT_WASTE_PCT:
+  case EFT_SURPLUS_WASTE_PCT:
+  case EFT_SURPLUS_WASTE_PCT_BY_REL_DISTANCE:
   case EFT_SPECIALIST_OUTPUT:
   case EFT_ENEMY_CITIZEN_UNHAPPY_PCT:
   case EFT_IRRIGATION_PCT:
@@ -199,8 +202,8 @@ adv_want dai_effect_value(struct player *pplayer,
 
   case EFT_CITY_VISION_RADIUS_SQ:
   case EFT_UNIT_VISION_RADIUS_SQ:
-    /* Wild guess.  "Amount" is the number of tiles (on average) that
-     * will be revealed by the effect.  Note that with an omniscient
+    /* Wild guess. "Amount" is the number of tiles (on average) that
+     * will be revealed by the effect. Note that with an omniscient
      * AI this effect is actually not useful at all. */
     v += c * amount;
     break;
@@ -219,7 +222,7 @@ adv_want dai_effect_value(struct player *pplayer,
     v += (get_entertainers(pcity) + pcity->feel[CITIZEN_UNHAPPY][FEELING_FINAL]) * 5 * amount;
     if (city_list_size(pplayer->cities)
 	> get_player_bonus(pplayer, EFT_EMPIRE_SIZE_BASE)) {
-      v += c * amount; /* offset large empire size */
+      v += c * amount; /* Offset large empire size */
     }
     v += c * amount;
     break;
@@ -309,7 +312,7 @@ adv_want dai_effect_value(struct player *pplayer,
     }
     break;
   case EFT_AIRLIFT:
-    /* FIXME: We need some smart algorithm here. The below is 
+    /* FIXME: We need some smart algorithm here. The below is
      * totally braindead. */
     v += c + MIN(adv->stats.units.airliftable, 13);
     break;
@@ -344,7 +347,7 @@ adv_want dai_effect_value(struct player *pplayer,
   case EFT_HAVE_CONTACTS:
     {
       int new_contacts = 0;
-      
+
       players_iterate_alive(theother) {
         if (player_diplstate_get(pplayer, theother)->contact_turns_left <= 0) {
           new_contacts++;
@@ -396,7 +399,7 @@ adv_want dai_effect_value(struct player *pplayer,
         /* The idea being that if we have a full granary, we have an
          * automatic surplus of our granary excess in addition to anything
          * collected by city workers. */
-        extra_food += pcity->food_stock - 
+        extra_food += pcity->food_stock -
                       city_granary_size(city_size_get(pcity) - 1);
       }
 
@@ -418,7 +421,24 @@ adv_want dai_effect_value(struct player *pplayer,
         && (adv->dipl.spacerace_leader
             || adv->dipl.production_leader == pplayer
             || adv->dipl.tech_leader == pplayer)) {
-      v += 140;
+      int space_want;
+
+      if (pcity->id == adv->wonder_city) {
+        /* adjust_improvement_wants_by_effects() lowers want for any non-wonder
+         * target on wonder city. We want space part want reduced even more than
+         * regular buildings, as buildings are at least helping the specific city
+         * when finished. */
+        space_want = 120;
+      } else {
+        space_want = 210;
+      }
+
+      if (pplayer->spaceship.state == SSHIP_STARTED) {
+        /* We are already running. Let's not make it a half-hearted attempt. */
+        space_want *= 3;
+      }
+
+      v += space_want;
     }
     break;
   case EFT_SPY_RESISTANT:
@@ -450,7 +470,11 @@ adv_want dai_effect_value(struct player *pplayer,
     break;
   case EFT_VETERAN_COMBAT:
     num = num_affected_units(peffect, adv);
-    v += (2 * c + num);
+    v += amount * (2 * c + num) / 50;
+    break;
+  case EFT_VETERAN_WORK:
+    num = num_affected_units(peffect, adv);
+    v += amount * (2 * c + num) / 70;
     break;
   case EFT_VETERAN_BUILD:
     /* FIXME: check other reqs (e.g., unitflag) */
@@ -520,7 +544,7 @@ adv_want dai_effect_value(struct player *pplayer,
               /* FIXME: This ignores riverboats on some rulesets.
                         We should analyze rulesets when game starts
                         and have relevant checks here. */
-              && is_terrain_class_near_tile(pcity->tile, TC_OCEAN))) {
+              && is_terrain_class_near_tile(&(wld.map), pcity->tile, TC_OCEAN))) {
         if (place > 0 && adv->continents[place].threat) {
           v += amount * 4 / 5;
         } else {
@@ -554,17 +578,22 @@ adv_want dai_effect_value(struct player *pplayer,
   case EFT_BORDER_STRENGTH_PCT:
     v += amount / 4;
     break;
+  case EFT_CIVIL_WAR_CITY_BONUS:
+    /* Relatively low, since we don't expect ever to lose our capital,
+     * and otherwise this doesn't matter. */
+    v += amount / 10;
+    break;
 
   /* Currently not supported for building AI - wait for modpack users */
   case EFT_CITY_UNHAPPY_SIZE:
   case EFT_UNHAPPY_FACTOR:
-  case EFT_UPKEEP_FACTOR:
+  case EFT_UPKEEP_PCT:
   case EFT_UNIT_UPKEEP_FREE_PER_CITY:
   case EFT_CIVIL_WAR_CHANCE:
   case EFT_EMPIRE_SIZE_BASE:
   case EFT_EMPIRE_SIZE_STEP:
   case EFT_MAX_RATES:
-  case EFT_MARTIAL_LAW_EACH:
+  case EFT_MARTIAL_LAW_BY_UNIT:
   case EFT_MARTIAL_LAW_MAX:
   case EFT_RAPTURE_GROW:
   case EFT_REVOLUTION_UNHAPPINESS:
@@ -592,11 +621,12 @@ adv_want dai_effect_value(struct player *pplayer,
   case EFT_UNIT_SHIELD_VALUE_PCT:
   case EFT_NUKE_BLAST_RADIUS_1_SQ:
   case EFT_HEAL_UNIT_PCT:
+  case EFT_TILE_CLAIMABLE:
     break;
     /* This has no effect for AI */
   case EFT_VISIBLE_WALLS:
   case EFT_CITY_IMAGE:
-  case EFT_SHIELD2GOLD_FACTOR:
+  case EFT_SHIELD2GOLD_PCT:
     break;
   case EFT_PERFORMANCE:
   case EFT_NATION_PERFORMANCE:
@@ -608,8 +638,37 @@ adv_want dai_effect_value(struct player *pplayer,
     /* ...and history effect to accumulate those points for 50 turns. */
     v += amount * 5;
     break;
+  case EFT_CULTURE_PCT:
+    /* Assume that this multiplies accumulation of 5 history points / turn */
+    v += amount * 5 * 5 / 100;
+    break;
   case EFT_TECH_COST_FACTOR:
     v -= amount * 50;
+    break;
+  case EFT_TECH_LEAKAGE:
+    {
+      int leak_val = 0;
+
+      switch (game.info.tech_leakage) {
+      case TECH_LEAKAGE_NONE:
+        break;
+      case TECH_LEAKAGE_EMBASSIES:
+        leak_val = (normal_player_count() - 1) * 2;
+        break;
+      case TECH_LEAKAGE_PLAYERS:
+        leak_val = (normal_player_count() - 1) * 5;
+        break;
+      case TECH_LEAKAGE_NO_BARBS:
+        leak_val = (normal_player_count() - 1) * 5 + 2 * 3;
+        break;
+      }
+
+      if (amount > 0 && get_player_bonus(pplayer, EFT_TECH_LEAKAGE) <= 0) {
+        v += leak_val;
+      } else if (amount < 0) {
+        v -= leak_val;
+      }
+    }
     break;
   case EFT_IMPR_BUILD_COST_PCT:
   case EFT_UNIT_BUILD_COST_PCT:
@@ -678,7 +737,7 @@ adv_want dai_effect_value(struct player *pplayer,
       }
     }
     break;
-  case EFT_TRADEROUTE_PCT:
+  case EFT_TRADE_ROUTE_PCT:
     {
       int trade = 0;
 
@@ -768,15 +827,23 @@ bool dai_can_requirement_be_met_in_city(const struct requirement *preq,
     /* We can't meet a government requirement if we have a better one. */
     return !have_better_government(pplayer, preq->source.value.govern);
 
-  case VUT_IMPROVEMENT: {
+  case VUT_GOVFLAG:
+    break;
+
+  case VUT_IMPROVEMENT:
+  case VUT_SITE:
+  {
     const struct impr_type *pimprove = preq->source.value.building;
 
-    if (preq->present && improvement_obsolete(pplayer, pimprove, pcity)) {
+    if (preq->present
+        && preq->source.kind == VUT_IMPROVEMENT
+        && improvement_obsolete(pplayer, pimprove, pcity)) {
       /* Would need to unobsolete a building, which is too hard. */
       return FALSE;
     } else if (!preq->present && pcity != NULL
                && I_NEVER < pcity->built[improvement_index(pimprove)].turn
-               && !can_improvement_go_obsolete(pimprove)) {
+               && (preq->source.kind != VUT_IMPROVEMENT
+                   || !can_improvement_go_obsolete(pimprove))) {
       /* Would need to unbuild an unobsoleteable building, which is too hard. */
       return FALSE;
     } else if (preq->present) {
@@ -791,14 +858,19 @@ bool dai_can_requirement_be_met_in_city(const struct requirement *preq,
 
   case VUT_SPECIALIST:
     if (preq->present) {
+      if (is_super_specialist(preq->source.value.specialist)
+          && pcity->specialists[specialist_index(preq->source.value.specialist)] > 0) {
+        /* The superspecialist won't leave */
+        break;
+      }
       requirement_vector_iterate(&(preq->source.value.specialist)->reqs,
                                  sreq) {
         if (!dai_can_requirement_be_met_in_city(sreq, pplayer, pcity)) {
           return FALSE;
         }
       } requirement_vector_iterate_end;
-    } /* It is always possible to remove a specialist. */
-  break;
+    } /* Almost always there can be a specialist other than given one */
+    break;
 
   case VUT_NATIONALITY:
     /* Crude, but the right answer needs to consider civil wars. */
@@ -816,6 +888,12 @@ bool dai_can_requirement_be_met_in_city(const struct requirement *preq,
         } else {
           return city_owner(pcity) != pcity->original;
         }
+      } else if (preq->source.value.citystatus == CITYS_TRANSFERRED) {
+        if ((preq->present && pcity->acquire_t == CACQ_FOUNDED)
+            || (!preq->present && pcity->acquire_t != CACQ_FOUNDED)) {
+          /* Would change only when the AI loses the city */
+          return FALSE;
+        }
       }
     }
     break;
@@ -826,6 +904,8 @@ bool dai_can_requirement_be_met_in_city(const struct requirement *preq,
   case VUT_ROADFLAG:
   case VUT_EXTRAFLAG:
   case VUT_EXTRA:
+  case VUT_TILEDEF:
+  case VUT_TILEDEF_CONNECTED:
     /* TODO: These could be determined by building a map of all
      *       possible futures (e.g. terrain transformations, etc.),
      *       and traversing it for all tiles in largest possible range
@@ -842,7 +922,12 @@ bool dai_can_requirement_be_met_in_city(const struct requirement *preq,
   case VUT_ACHIEVEMENT:
   case VUT_MINCULTURE:
   case VUT_MINTECHS:
+  case VUT_FUTURETECHS:
     /* No way to remove once present. */
+    return preq->present;
+
+  case VUT_FORM_AGE:
+    /* FIXME: Sometimes it would be possible to convert back and forth */
     return preq->present;
 
   case VUT_MINFOREIGNPCT:
@@ -855,6 +940,8 @@ bool dai_can_requirement_be_met_in_city(const struct requirement *preq,
   case VUT_SERVERSETTING:
   case VUT_MINLATITUDE:
   case VUT_MAXLATITUDE:
+  case VUT_PLAYER_FLAG:
+  case VUT_PLAYER_STATE:
     /* Beyond player control. */
     return FALSE;
 
@@ -862,6 +949,10 @@ bool dai_can_requirement_be_met_in_city(const struct requirement *preq,
   case VUT_IMPR_GENUS:
     /* Can always be achieved. */
     return TRUE;
+
+  case VUT_MINCITIES:
+    /* We don't WANT to lose cities */
+    return preq->present;
 
   case VUT_IMPR_FLAG:
     /* TODO: Have at least some checks for this. */
@@ -878,7 +969,8 @@ bool dai_can_requirement_be_met_in_city(const struct requirement *preq,
   case VUT_DIPLREL_TILE_O:
   case VUT_DIPLREL_UNITANY:
   case VUT_DIPLREL_UNITANY_O:
-  case VUT_MAXTILEUNITS:
+  case VUT_MAXTILETOTALUNITS:
+  case VUT_MAXTILETOPUNITS:
   case VUT_STYLE:
   case VUT_UNITSTATE:
   case VUT_ACTIVITY:
@@ -889,6 +981,9 @@ bool dai_can_requirement_be_met_in_city(const struct requirement *preq,
   case VUT_ACTION:
   case VUT_GOOD:
   case VUT_MINCALFRAG:
+  case VUT_MAX_DISTANCE_SQ:
+  case VUT_MAX_REGION_TILES:
+  case VUT_TILE_REL:
   case VUT_COUNT:
     /* No sensible implementation possible with data available. */
     break;

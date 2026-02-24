@@ -40,6 +40,7 @@ struct functions {
   void (*create_extra)(struct tile *ptile, struct extra_type *pextra,
                        struct player *pplayer);
   void (*destroy_extra)(struct tile *ptile, struct extra_type *pextra);
+  void (*destroy_city)(struct city *pcity);
   /* Returns iff the player 'pplayer' has the vision in the layer
      'vision' at tile given by 'ptile'. */
   bool (*player_tile_vision_get)(const struct tile *ptile,
@@ -58,6 +59,28 @@ extern const struct functions *fc_funcs;
 struct functions *fc_interface_funcs(void);
 void libfreeciv_init(bool check_fc_interface);
 void libfreeciv_free(void);
+
+extern bool am_i_server;
+
+
+/**********************************************************************//**
+  Is the program type server?
+**************************************************************************/
+static inline bool is_server(void)
+{
+  return am_i_server;
+}
+
+void i_am_server(void);
+void i_am_client(void);
+
+/**********************************************************************//**
+  Set program type to tool.
+**************************************************************************/
+static inline void i_am_tool(void)
+{
+  i_am_server(); /* No difference between a tool and server at the moment */
+}
 
 #ifdef __cplusplus
 }

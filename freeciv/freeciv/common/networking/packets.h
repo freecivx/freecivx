@@ -48,7 +48,7 @@ do {                                                    \
 #define web_lsend_packet(packetname, pconn, pack, ...)  \
 do {                                                    \
   const struct packet_web_ ##packetname *_pptr_ = pack; \
-  if (_pptr_ != NULL) {                                 \
+  if (_pptr_ != nullptr) {                              \
     lsend_packet_web_ ##packetname(pconn, _pptr_, ##__VA_ARGS__ );  \
   }                                                     \
 } while (FALSE);
@@ -103,6 +103,7 @@ void packet_handlers_fill_capability(struct packet_handlers *phandlers,
                                      const char *capability);
 const char *packet_name(enum packet_type type);
 bool packet_has_game_info_flag(enum packet_type type);
+void packet_destroy(void *packet, enum packet_type type);
 
 void packet_header_init(struct packet_header *packet_header);
 void post_send_packet_server_join_reply(struct connection *pconn,
@@ -143,10 +144,14 @@ void packets_deinit(void);
     return send_packet_data(pc, buffer, size, packet_type); \
   }
 
+#define SEND_PACKET_DISCARD() \
+  return 0
+
 #define RECEIVE_PACKET_START(packet_type, result) \
   struct data_in din; \
   struct packet_type packet_buf, *result = &packet_buf; \
   \
+  init_ ##packet_type (&packet_buf); \
   dio_input_init(&din, pc->buffer->data, \
                  data_type_size(pc->packet_header.length)); \
   { \
@@ -160,7 +165,8 @@ void packets_deinit(void);
 
 #define RECEIVE_PACKET_END(result) \
   if (!packet_check(&din, pc)) { \
-    return NULL; \
+    FREE_PACKET_STRUCT(&packet_buf); \
+    return nullptr; \
   } \
   remove_packet_from_buffer(pc->buffer); \
   result = fc_malloc(sizeof(*result)); \
@@ -169,7 +175,8 @@ void packets_deinit(void);
 
 #define RECEIVE_PACKET_FIELD_ERROR(field, ...) \
   log_packet("Error on field '" #field "'" __VA_ARGS__); \
-  return NULL
+  FREE_PACKET_STRUCT(&packet_buf); \
+  return nullptr;
 
 #endif /* FREECIV_JSON_PROTOCOL */
 
@@ -177,20 +184,15 @@ int send_packet_data(struct connection *pc, unsigned char *data, int len,
                      enum packet_type packet_type);
 bool packet_check(struct data_in *din, struct connection *pc);
 
-/* Utilities to exchange strings and string vectors. */
-#define PACKET_STRVEC_SEPARATOR '\3'
-#define PACKET_STRVEC_COMPUTE(str, strvec)                                  \
-  if (NULL != strvec) {                                                     \
-    strvec_to_str(strvec, PACKET_STRVEC_SEPARATOR, str, sizeof(str));       \
-  } else {                                                                  \
-    str[0] = '\0';                                                          \
-  }
-#define PACKET_STRVEC_EXTRACT(strvec, str)                                  \
-  if ('\0' != str[0]) {                                                     \
-    strvec = strvec_new();                                                  \
-    strvec_from_str(strvec, PACKET_STRVEC_SEPARATOR, str);                  \
-  } else {                                                                  \
-    strvec = NULL;                                                          \
+/* Utilities to move string vectors in and out of packets. */
+#define PACKET_STRVEC_INSERT(dest, src) \
+  dest = src
+#define PACKET_STRVEC_EXTRACT(dest, src)        \
+  if (src != nullptr && strvec_size(src) > 0) { \
+    dest = strvec_new();                        \
+    strvec_copy(dest, src);                     \
+  } else {                                      \
+    dest = nullptr;                             \
   }
 
 #ifdef __cplusplus

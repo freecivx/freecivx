@@ -3,8 +3,8 @@
 
 [datafile]
 description = "<modpack> nations data for Freeciv"
-options = "+Freeciv-ruleset-3.3-Devel-2023.Feb.24"
-format_version = 40
+options = "+Freeciv-ruleset-3.4-Devel-2025.Jan.17"
+format_version = 50
 
 ; This section contains meta information for freeciv-ruledit and freeciv-ruleup
 ; to recreate the ruleset file in a form wanted.
@@ -57,7 +57,7 @@ format_version = 40
 ; The first set defined is the one that is used by default. It is mandatory
 ; to have at least one, but if there is only one, it will be kept out of
 ; the user`s way.
-; name 		= Translatable name of the set presented in the UI.
+; name          = Translatable name of the set presented in the UI.
 ; rule_name     = Unique persistent name; this is also visible to users as
 ;                 the value of the "nationset" server option, and presented
 ;                 in "/list nationsets". It should thus be short, in lower
@@ -76,13 +76,13 @@ rule_name = "all"
 
 ; Descriptions of nation groups
 ; These are more cosmetic than sets; they affect the "pick nation" dialog,
-; random nation selection, and possibly ruleset behaviour.
+; random nation selection, and possibly ruleset behavior.
 ; It`s OK to not define any nation groups at all.
-; name 		= name of the group (used adjectivally)
+; name          = name of the group (used adjectivally)
 ; hidden        = TRUE to not include this group in the "pick nation" dialog
 ;                 (for instance if it's for use in a NationGroup requirement).
 ;                 Default FALSE.
-; match		= How much the AI will try to select a nation in the same
+; match         = How much the AI will try to select a nation in the same
 ;                 group
 
 [ngroup_generic]

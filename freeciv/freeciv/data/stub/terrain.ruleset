@@ -3,8 +3,8 @@
 
 [datafile]
 description = "<modpack> tile_type data for Freeciv"
-options = "+Freeciv-ruleset-3.3-Devel-2023.Feb.24"
-format_version = 40
+options = "+Freeciv-ruleset-3.4-Devel-2025.Jan.17"
+format_version = 50
 
 [control]
 ; Names for custom terrain flags. There can be up to 10 of these.
@@ -87,6 +87,8 @@ ocean_resources = FALSE
 ; graphic_alt          = alternate graphic. When no tilespec 'tag' matching
 ;                        preferred graphic is not found, this will be used.
 ;                        Otherwise may be "-"
+; graphic_alt2         = second alternate graphic, to be used when neither
+;                        main tag nor first alternate tag is not found.
 ; identifier           = single-character identifier used in savegames. This
 ;                        must be unique for each terrain.
 ; class                = Terrain class terrain belongs to: "Land" or "Oceanic"
@@ -140,7 +142,7 @@ ocean_resources = FALSE
 ;   - "extra"            - Name of the extra
 ;   - "removal_time"     - Time for cleaning activities (0 = impossible)
 ;                          Nonzero values only affect extras with removal_time 0.
-; animal               = unit type that can appear as animal on the terrain
+; animals              = list of unit types that can appear as animal on the terrain
 ; warmer_wetter_result = result of global warming for wet terrains; one of:
 ;                        "no"  -- no change; doesn''t count for warming
 ;                        "yes" -- no change; counts for warming
@@ -196,14 +198,15 @@ ocean_resources = FALSE
 ; color.r              = color of the terrain (red value)
 ; color.g              = color of the terrain (green value)
 ; color.b              = color of the terrain (blue value)
-; helptext	       = optional help text string; should escape all raw
-;		         newlines so that xgettext parsing works
+; helptext             = optional help text string; should escape all raw
+;                        newlines so that xgettext parsing works
 
 [terrain_generic]
 name                 = _("Generic")
 graphic              = "generic"
-graphic_alt	     = "grassland"
-identifier	     = "g"
+graphic_alt          = "grassland"
+graphic_alt2         = "-"
+identifier           = "g"
 class                = "Land"
 movement_cost        = 1
 defense_bonus        = 0
@@ -231,7 +234,6 @@ pillage_time         = 1
 extra_settings       =
     { "extra", "removal_time"
     }
-animal               = "None"
 warmer_wetter_result = "no"
 warmer_drier_result  = "no"
 cooler_wetter_result = "no"
@@ -243,15 +245,16 @@ property_green       = 50
 color.r              = 200
 color.g              = 200
 color.b              = 200
-helptext	     = _("\
+helptext             = _("\
 This is only possible land terrain.\
 ")
 
 [terrain_ocean]
 name                 = _("Ocean")
 graphic              = "coast"
-graphic_alt	     = "-"
-identifier	     = " "
+graphic_alt          = "-"
+graphic_alt2         = "-"
+identifier           = " "
 class                = "Oceanic"
 movement_cost        = 1
 defense_bonus        = 0
@@ -279,7 +282,6 @@ pillage_time         = 1
 extra_settings       =
     { "extra", "removal_time"
     }
-animal               = "None"
 warmer_wetter_result = "no"
 warmer_drier_result  = "no"
 cooler_wetter_result = "no"
@@ -290,7 +292,7 @@ property_ocean_depth = 10
 color.r              = 50
 color.g              = 50
 color.b              = 230
-helptext	     = _("\
+helptext             = _("\
 This is only possible oceanic terrain.\
 ")
 
@@ -338,7 +340,7 @@ ui_name_base_airbase = _("?gui_type:Build Type B Base")
 ; Bases, roads, and resources have additional sections for their specific features.
 ;
 ;
-; Extra types:
+; Extra types, there can be up to 250:
 ;
 ; name                    = translatable name as seen by user
 ; rule_name               = (optional) internal name for savegames, rulesets
@@ -357,7 +359,6 @@ ui_name_base_airbase = _("?gui_type:Build Type B Base")
 ;                           [resource_*] / [base_*] / [road_*] section)
 ; rmcauses                = events that can remove extra type.
 ;                           "Clean", "Pillage", "Disappear", or "Enter"
-;                           For now also "CleanPollution", "CleanFallout"
 ; infracost               = Number of infrapoints it costs to place this
 ;                           extra. 0, the default, means extra cannot be placed.
 ; graphic                 = tag specifying preferred graphic
@@ -373,6 +374,7 @@ ui_name_base_airbase = _("?gui_type:Build Type B Base")
 ;                           This can be "None" to indicate that graphic sprite
 ;                           is not needed.
 ; rmact_gfx_alt           = tag for alternative graphic for unit removing extra
+; rmact_gfx_alt2          = tag for second alternative graphic for unit removing extra
 ; reqs                    = requirements to build the extra (see effects.ruleset
 ;                           and README.effects for help on requirements)
 ; rmreqs                  = requirements to remove the extra
@@ -469,6 +471,7 @@ ui_name_base_airbase = _("?gui_type:Build Type B Base")
 ;act_gfx_alt2   = "-"
 ;rmact_gfx      = "None"
 ;rmact_gfx_alt  = "-"
+;rmact_gfx_alt2 = "-"
 ;build_time     = 0
 ;removal_time   = 0
 ;helptext       = _("")
@@ -485,6 +488,7 @@ ui_name_base_airbase = _("?gui_type:Build Type B Base")
 ;act_gfx_alt2   = "-"
 ;rmact_gfx      = "None"
 ;rmact_gfx_alt  = "-"
+;rmact_gfx_alt2 = "-"
 ;buildable      = FALSE
 ;reqs           =
 ;    { "type", "name", "range"
@@ -506,6 +510,7 @@ ui_name_base_airbase = _("?gui_type:Build Type B Base")
 ;act_gfx_alt2   = "-"
 ;rmact_gfx      = "None"
 ;rmact_gfx_alt  = "-"
+;rmact_gfx_alt2 = "-"
 ;buildable      = FALSE
 ;reqs           =
 ;    { "type", "name", "range"
@@ -527,6 +532,7 @@ act_gfx_alt    = "-"
 act_gfx_alt2   = "-"
 rmact_gfx      = "None"
 rmact_gfx_alt  = "-"
+rmact_gfx_alt2 = "-"
 
 ; /* <-- avoid gettext warnings
 ;
@@ -629,3 +635,24 @@ rmact_gfx_alt  = "-"
 ; compat_special = "None"
 ; gui_type       = "Other"
 ; flags          = ""
+
+
+; /* <-- avoid gettext warnings
+;
+; Tiledef types, there can be up to 8:
+;
+; The actual tag used (the * in [tiledef_*]) must be unique for each tiledef,
+; and may be used in debug output when reading this file.
+;
+;
+; name                 = translatable name as seen by user
+; rule_name            = (optional) internal name for savegames, rulesets
+;                        etc; if not present, "name" is used for this
+;                        purpose too. Since the name used in savegames must
+;                        not change, if you want to rename an item after a
+;                        ruleset has been released, you should set
+;                        "rule_name" to the original value of "name".
+; extras               = List of extras that the tile must have
+;                        to satisfy tiledef requirements.
+;
+; */ <-- avoid gettext warnings

@@ -131,6 +131,11 @@ void edithand_send_initial_packets(struct conn_list *dest)
         send_packet_edit_startpos(pconn, &startpos);
         send_packet_edit_startpos_full(pconn, &startpos_full);
       }
+
+      if (pconn->playing != NULL) {
+        dsend_packet_edit_fogofwar_state(pconn,
+                                         !unfogged_players[player_number(pconn->playing)]);
+      }
     } conn_list_iterate_end;
   } map_startpos_iterate_end;
 }
@@ -241,6 +246,8 @@ static bool edit_tile_terrain_handling(struct tile *ptile,
     update_tile_knowledge(ptile);
   }
 
+  tile_change_side_effects(ptile, TRUE);
+
   return TRUE;
 }
 
@@ -281,6 +288,8 @@ static bool edit_tile_extra_handling(struct tile *ptile,
   if (send_info) {
     update_tile_knowledge(ptile);
   }
+
+  tile_change_side_effects(ptile, TRUE);
 
   return TRUE;
 }
@@ -418,6 +427,8 @@ void handle_edit_tile(struct connection *pc,
     update_tile_knowledge(ptile);
     send_tile_info(NULL, ptile, FALSE);
   }
+
+  tile_change_side_effects(ptile, TRUE);
 }
 
 /************************************************************************//**
@@ -432,6 +443,7 @@ void handle_edit_unit_create(struct connection *pc, int owner, int tile,
   struct player *pplayer;
   struct city *homecity;
   struct unit *punit;
+  struct city *pcity;
   int id, i;
 
   ptile = index_to_tile(&(wld.map), tile);
@@ -479,9 +491,11 @@ void handle_edit_unit_create(struct connection *pc, int owner, int tile,
     }
   }
 
-  if (is_non_allied_unit_tile(ptile, pplayer)
-      || (tile_city(ptile)
-          && !pplayers_allied(pplayer, city_owner(tile_city(ptile))))) {
+  pcity = tile_city(ptile);
+  if (is_non_allied_unit_tile(ptile, pplayer,
+                              utype_has_flag(punittype, UTYF_FLAGLESS))
+      || (pcity != NULL
+          && !pplayers_allied(pplayer, city_owner(pcity)))) {
     notify_conn(pc->self, ptile, E_BAD_COMMAND, ftc_editor,
                 /* TRANS: ..." type <unit-type> on enemy tile
                  * <tile-coordinates>"... */
@@ -647,7 +661,8 @@ void handle_edit_unit(struct connection *pc,
 
   if (packet->veteran != punit->veteran) {
     int v = packet->veteran;
-    if (!utype_veteran_level(putype, v)) {
+
+    if (utype_veteran_level(putype, v) == NULL) {
       notify_conn(pc->self, NULL, E_BAD_COMMAND, ftc_editor,
                   _("Invalid veteran level %d for unit %d (%s)."),
                   v, id, unit_link(punit));
@@ -695,7 +710,7 @@ void handle_edit_city_create(struct connection *pc, int owner, int tile,
     notify_conn(pc->self, ptile, E_BAD_COMMAND, ftc_editor,
                 /* TRANS: ..." at <tile-coordinates> because"... */
                 _("Cannot create a city at %s because the "
-                  "given owner's player id %d is invalid"), 
+                  "given owner's player id %d is invalid"),
                 tile_link(ptile), owner);
     return;
 
@@ -703,7 +718,7 @@ void handle_edit_city_create(struct connection *pc, int owner, int tile,
 
   conn_list_do_buffer(game.est_connections);
 
-  if (!create_city_for_player(pplayer, ptile, NULL)) {
+  if (!create_city_for_player(pplayer, ptile, nullptr, nullptr)) {
     notify_conn(pc->self, ptile, E_BAD_COMMAND, ftc_editor,
                 /* TRANS: ..." at <tile-coordinates>." */
                 _("A city may not be built at %s."), tile_link(ptile));
@@ -716,7 +731,8 @@ void handle_edit_city_create(struct connection *pc, int owner, int tile,
 
   if (size > 1) {
     /* FIXME: Slow and inefficient for large size changes. */
-    city_change_size(pcity, CLIP(1, size, MAX_CITY_SIZE), pplayer, NULL);
+    city_change_size(pcity, CLIP(1, size, MAX_CITY_SIZE), pplayer,
+                     -1, nullptr);
     send_city_info(NULL, pcity);
   }
 
@@ -774,7 +790,7 @@ void handle_edit_city(struct connection *pc,
                   packet->size, city_link(pcity));
     } else {
       /* FIXME: Slow and inefficient for large size changes. */
-      city_change_size(pcity, packet->size, NULL, NULL);
+      city_change_size(pcity, packet->size, nullptr, -1, nullptr);
       changed = TRUE;
     }
   }
@@ -828,7 +844,7 @@ void handle_edit_city(struct connection *pc,
       changed = TRUE;
     }
   } improvement_iterate_end;
- 
+
   /* Handle food stock change. */
   if (packet->food_stock != pcity->food_stock) {
     int max = city_granary_size(city_size_get(pcity));
@@ -869,7 +885,7 @@ void handle_edit_city(struct connection *pc,
     city_refresh_queue_processing();
 
     /* FIXME: city_refresh_queue_processing only sends to city owner? */
-    send_city_info(NULL, pcity);  
+    send_city_info(NULL, pcity);
 
     conn_list_do_unbuffer(game.est_connections);
   }
@@ -948,9 +964,10 @@ void handle_edit_player_create(struct connection *pc, int tag)
   pplayer->unassigned_user = TRUE;
   pplayer->is_connected = FALSE;
   pplayer->government = init_government_of_nation(pnation);
-  pplayer->server.got_first_city = FALSE;
+  BV_CLR(pplayer->flags, PLRF_FIRST_CITY);
 
   pplayer->economic.gold = 0;
+  pplayer->economic.infra_points = 0;
   player_limit_to_max_rates(pplayer);
 
   presearch = research_get(pplayer);
@@ -993,7 +1010,7 @@ void handle_edit_player_remove(struct connection *pc, int id)
 /************************************************************************//**
   Handle editing of any or all player properties.
 ****************************************************************************/
-void handle_edit_player(struct connection *pc, 
+void handle_edit_player(struct connection *pc,
                         const struct packet_edit_player *packet)
 {
   struct player *pplayer;
@@ -1104,6 +1121,20 @@ void handle_edit_player(struct connection *pc,
                   packet->gold);
     } else {
       pplayer->economic.gold = packet->gold;
+      changed = TRUE;
+    }
+  }
+
+  /* Handle a change in the player's infrapoints. */
+  if (packet->infrapoints != pplayer->economic.infra_points) {
+    if (!(0 <= packet->infrapoints && packet->infrapoints <= 1000000)) {
+      notify_conn(pc->self, NULL, E_BAD_COMMAND, ftc_editor,
+                  _("Cannot set infrapoints for player %d (%s) because "
+                    "the value %d is outside the allowed range."),
+                  player_number(pplayer), player_name(pplayer),
+                  packet->infrapoints);
+    } else {
+      pplayer->economic.infra_points = packet->infrapoints;
       changed = TRUE;
     }
   }
@@ -1322,12 +1353,12 @@ void handle_edit_toggle_fogofwar(struct connection *pc, int plr_no)
   }
 
   conn_list_do_buffer(game.est_connections);
-  if (unfogged_players[player_number(pplayer)]) {
+  if (unfogged_players[plr_no]) {
     enable_fog_of_war_player(pplayer);
-    unfogged_players[player_number(pplayer)] = FALSE;
+    unfogged_players[plr_no] = FALSE;
   } else {
     disable_fog_of_war_player(pplayer);
-    unfogged_players[player_number(pplayer)] = TRUE;
+    unfogged_players[plr_no] = TRUE;
   }
   conn_list_do_unbuffer(game.est_connections);
 }
@@ -1421,7 +1452,7 @@ void handle_edit_game(struct connection *pc,
     changed = TRUE;
   }
 
-  if (0 != strncmp(packet->scenario_name, game.scenario.name, 256)) {
+  if (fc_strncmp(packet->scenario_name, game.scenario.name, 256)) {
     sz_strlcpy(game.scenario.name, packet->scenario_name);
     changed = TRUE;
   }
@@ -1429,8 +1460,8 @@ void handle_edit_game(struct connection *pc,
   FC_STATIC_ASSERT(sizeof(packet->scenario_authors) == sizeof(game.scenario.authors),
                    scen_authors_field_size_mismatch);
 
-  if (0 != strncmp(packet->scenario_authors, game.scenario.authors,
-                   sizeof(game.scenario.authors))) {
+  if (fc_strncmp(packet->scenario_authors, game.scenario.authors,
+                 sizeof(game.scenario.authors))) {
     sz_strlcpy(game.scenario.authors, packet->scenario_authors);
     changed = TRUE;
   }
@@ -1476,8 +1507,8 @@ void handle_edit_game(struct connection *pc,
 ****************************************************************************/
 void handle_edit_scenario_desc(struct connection *pc, const char *scenario_desc)
 {
-  if (0 != strncmp(scenario_desc, game.scenario_desc.description,
-                   MAX_LEN_PACKET)) {
+  if (fc_strncmp(scenario_desc, game.scenario_desc.description,
+                 MAX_LEN_PACKET)) {
     sz_strlcpy(game.scenario_desc.description, scenario_desc);
     send_scenario_description(NULL);
   }

@@ -16,6 +16,7 @@
 #endif
 
 /* utility */
+#include "fcintl.h"
 #include "mem.h"
 #include "registry.h"
 #include "section_file.h"
@@ -37,6 +38,7 @@ static struct {
   char *extras;
   char *bases;
   char *roads;
+  char *tiledefs;
   char *styles;
   char *citystyles;
   char *musicstyles;
@@ -50,8 +52,10 @@ static struct {
   char *uflags_extra;
   char *uflags_tech;
   char *uflags_building;
+  char *uflags_government;
   char *trade_settings;
   char *goods;
+  char *actions;
   char *enablers;
   char *specialists;
   char *nations;
@@ -68,7 +72,6 @@ static struct {
   char *civstyle_ransom_gold;
   char *civstyle_gameloss_style;
   char *civstyle_gold_upkeep_style;
-  char *civstyle_homeless_gold_upkeep;
   char *civstyle_airlift_always;
   char *wonder_visibility_small_wonders;
   char *incite_cost;
@@ -78,13 +81,12 @@ static struct {
   char *combat_rules_scaled_veterancy;
   char *combat_rules_damage_reduces_bombard_rate;
   char *combat_rules_low_fp_badwallattacker;
-  char *combat_rules_low_fp_pearl_harbour;
+  char *combat_rules_low_fp_pearl_harbor;
   char *combat_rules_low_fp_combat_bonus;
   char *combat_rules_low_fp_nonnat_bombard;
   char *combat_rules_nuke_pop_loss;
   char *combat_rules_nuke_defender_survival;
   char *auto_attack;
-  char *actions_ui_names;
   char *actions_dc_initial_odds;
   char *actions_quiet_actions;
   char *borders_radius_permanent;
@@ -96,7 +98,10 @@ static struct {
   char *research_free_tech_method;
   char *culture_history_interest;
   char *culture_migration_pml;
+  char *world_peace_turns;
   char *calendar_fragments;
+
+  char *std_tileset_compat;
 } comments_storage;
 
 /**********************************************************************//**
@@ -110,13 +115,13 @@ bool comments_load(void)
   fullpath = fileinfoname(get_data_dirs(), "ruledit/" COMMENTS_FILE_NAME);
 
   if (fullpath == NULL) {
-    log_normal("Can't find the comments file");
+    log_error(_("Can't find the comments file"));
     return FALSE;
   }
 
   comment_file = secfile_load(fullpath, FALSE);
   if (comment_file == NULL) {
-    log_normal("Can't parse the comments file");
+    log_error(_("Can't parse the comments file"));
     return FALSE;
   }
 
@@ -127,7 +132,7 @@ bool comments_load(void)
   if ((comment = secfile_lookup_str(comment_file, comment_path))) {       \
     target = fc_strdup(comment);                                          \
   } else {                                                                \
-    log_normal("Can't read %s from comments file", comment_path);         \
+    log_error(_("Can't read %s from comments file"), comment_path);     \
     return FALSE;                                                         \
   }                                                                       \
 }
@@ -148,6 +153,7 @@ bool comments_load(void)
   comment_load(comments_storage.extras, comment_file, "typedoc.extras");
   comment_load(comments_storage.bases, comment_file, "typedoc.bases");
   comment_load(comments_storage.roads, comment_file, "typedoc.roads");
+  comment_load(comments_storage.tiledefs, comment_file, "typedoc.tiledefs");
   comment_load(comments_storage.styles, comment_file, "typedoc.styles");
   comment_load(comments_storage.citystyles,
                comment_file, "typedoc.citystyles");
@@ -171,9 +177,12 @@ bool comments_load(void)
                comment_file, "uflag_types.tech");
   comment_load(comments_storage.uflags_building,
                comment_file, "uflag_types.building");
+  comment_load(comments_storage.uflags_government,
+               comment_file, "uflag_types.government");
   comment_load(comments_storage.trade_settings,
                comment_file, "typedoc.trade_settings");
   comment_load(comments_storage.goods, comment_file, "typedoc.goods");
+  comment_load(comments_storage.actions, comment_file, "typedoc.actions");
   comment_load(comments_storage.enablers, comment_file, "typedoc.enablers");
   comment_load(comments_storage.specialists,
                comment_file, "typedoc.specialists");
@@ -197,8 +206,6 @@ bool comments_load(void)
                "entrydoc.gameloss_style");
   comment_load(comments_storage.civstyle_gold_upkeep_style, comment_file,
                "entrydoc.gold_upkeep_style");
-  comment_load(comments_storage.civstyle_homeless_gold_upkeep, comment_file,
-               "entrydoc.homeless_gold_upkeep");
   comment_load(comments_storage.civstyle_airlift_always, comment_file,
                "entrydoc.airlift_always_enabled");
   comment_load(comments_storage.wonder_visibility_small_wonders, comment_file,
@@ -217,8 +224,8 @@ bool comments_load(void)
                "entrydoc.damage_reduces_bombard_rate");
   comment_load(comments_storage.combat_rules_low_fp_badwallattacker, comment_file,
                "entrydoc.low_firepower_badwallattacker");
-  comment_load(comments_storage.combat_rules_low_fp_pearl_harbour, comment_file,
-               "entrydoc.low_firepower_pearl_harbour");
+  comment_load(comments_storage.combat_rules_low_fp_pearl_harbor, comment_file,
+               "entrydoc.low_firepower_pearl_harbor");
   comment_load(comments_storage.combat_rules_low_fp_combat_bonus, comment_file,
                "entrydoc.low_firepower_combat_bonus");
   comment_load(comments_storage.combat_rules_low_fp_nonnat_bombard, comment_file,
@@ -230,8 +237,6 @@ bool comments_load(void)
                "entrydoc.nuke_defender_survival_chance_pct");
   comment_load(comments_storage.auto_attack, comment_file,
                "entrydoc.auto_attack");
-  comment_load(comments_storage.actions_ui_names, comment_file,
-               "entrydoc.ui_names");
   comment_load(comments_storage.actions_dc_initial_odds, comment_file,
                "entrydoc.dc_initial_odds");
   comment_load(comments_storage.actions_quiet_actions, comment_file,
@@ -254,8 +259,12 @@ bool comments_load(void)
                "entrydoc.history_interest_pml");
   comment_load(comments_storage.culture_migration_pml, comment_file,
                "entrydoc.migration_pml");
+  comment_load(comments_storage.world_peace_turns, comment_file,
+               "entrydoc.world_peace_turns");
   comment_load(comments_storage.calendar_fragments, comment_file,
                "entrydoc.calendar_fragments");
+  comment_load(comments_storage.std_tileset_compat, comment_file,
+               "entrydoc.std_tileset_compat");
 
   secfile_check_unused(comment_file);
   secfile_destroy(comment_file);
@@ -278,7 +287,7 @@ static void comment_write(struct section_file *sfile, const char *comment,
                           const char *name)
 {
   if (comment == NULL) {
-    log_error("Comment for %s missing.", name);
+    log_error(_("Comment for %s missing."), name);
     return;
   }
 
@@ -292,7 +301,7 @@ static void comment_entry_write(struct section_file *sfile,
                                 const char *comment, const char *section)
 {
   if (comment == NULL) {
-    log_error("Comment to section %s missing.", section);
+    log_error(_("Comment to section %s missing."), section);
     return;
   }
 
@@ -316,7 +325,7 @@ void comment_buildings(struct section_file *sfile)
 }
 
 /**********************************************************************//**
-  Write tech classess header.
+  Write tech classes' header.
 **************************************************************************/
 void comment_tech_classes(struct section_file *sfile)
 {
@@ -401,6 +410,14 @@ void comment_bases(struct section_file *sfile)
 void comment_roads(struct section_file *sfile)
 {
   comment_write(sfile, comments_storage.roads, "Roads");
+}
+
+/**********************************************************************//**
+  Write tiledefs header.
+**************************************************************************/
+void comment_tiledefs(struct section_file *sfile)
+{
+  comment_write(sfile, comments_storage.tiledefs, "Tiledefs");
 }
 
 /**********************************************************************//**
@@ -508,6 +525,14 @@ void comment_uflags_building(struct section_file *sfile)
 }
 
 /**********************************************************************//**
+  Write header for government user flags.
+**************************************************************************/
+void comment_uflags_government(struct section_file *sfile)
+{
+  comment_entry_write(sfile, comments_storage.uflags_government, "control");
+}
+
+/**********************************************************************//**
   Write trade settings header.
 **************************************************************************/
 void comment_trade_settings(struct section_file *sfile)
@@ -521,6 +546,14 @@ void comment_trade_settings(struct section_file *sfile)
 void comment_goods(struct section_file *sfile)
 {
   comment_write(sfile, comments_storage.goods, "Goods");
+}
+
+/**********************************************************************//**
+  Write actions header.
+**************************************************************************/
+void comment_actions(struct section_file *sfile)
+{
+  comment_write(sfile, comments_storage.actions, "Actions");
 }
 
 /**********************************************************************//**
@@ -625,15 +658,6 @@ void comment_civstyle_gold_upkeep_style(struct section_file *sfile)
 }
 
 /**********************************************************************//**
-  Write civstyle homeless_gold_upkeep settings header.
-**************************************************************************/
-void comment_civstyle_homeless_gold_upkeep(struct section_file *sfile)
-{
-  comment_entry_write(sfile, comments_storage.civstyle_homeless_gold_upkeep,
-                      "civstyle");
-}
-
-/**********************************************************************//**
   Write civstyle airlift always enabled settings header.
 **************************************************************************/
 void comment_civstyle_airlift_always(struct section_file *sfile)
@@ -720,12 +744,12 @@ void comment_combat_rules_low_fp_badwallattacker(struct section_file *sfile)
 }
 
 /**********************************************************************//**
-  Write combat_rules low_firepower_pearl_harbour settings header.
+  Write combat_rules low_firepower_pearl_harbor settings header.
 **************************************************************************/
-void comment_combat_rules_low_fp_pearl_harbour(struct section_file *sfile)
+void comment_combat_rules_low_fp_pearl_harbor(struct section_file *sfile)
 {
   comment_entry_write(sfile,
-                      comments_storage.combat_rules_low_fp_pearl_harbour,
+                      comments_storage.combat_rules_low_fp_pearl_harbor,
                       "combat_rules");
 }
 
@@ -774,14 +798,6 @@ void comment_combat_rules_nuke_defender_survival(struct section_file *sfile)
 void comment_auto_attack(struct section_file *sfile)
 {
   comment_entry_write(sfile, comments_storage.auto_attack, "auto_attack");
-}
-
-/**********************************************************************//**
-  Write actions ui_name settings header.
-**************************************************************************/
-void comment_actions_ui_names(struct section_file *sfile)
-{
-  comment_entry_write(sfile, comments_storage.actions_ui_names, "actions");
 }
 
 /**********************************************************************//**
@@ -873,6 +889,7 @@ void comment_culture_history_interest(struct section_file *sfile)
   comment_entry_write(sfile, comments_storage.culture_history_interest,
                       "culture");
 }
+
 /**********************************************************************//**
   Write culture migration_pml settings header.
 **************************************************************************/
@@ -883,10 +900,29 @@ void comment_culture_migration_pml(struct section_file *sfile)
 }
 
 /**********************************************************************//**
+  Write world peace turns settings header.
+**************************************************************************/
+void comment_world_peace_turns(struct section_file *sfile)
+{
+  comment_entry_write(sfile, comments_storage.world_peace_turns,
+                      "world_peace");
+}
+
+/**********************************************************************//**
   Write calendar fragments settings header.
 **************************************************************************/
 void comment_calendar_fragments(struct section_file *sfile)
 {
   comment_entry_write(sfile, comments_storage.calendar_fragments,
                       "calendar");
+}
+
+
+/**********************************************************************//**
+  Write std_tileset_compat settings header.
+**************************************************************************/
+void comment_std_tileset_compat(struct section_file *sfile)
+{
+  comment_entry_write(sfile, comments_storage.std_tileset_compat,
+                      "std_tileset_compat");
 }

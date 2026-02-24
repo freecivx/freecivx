@@ -42,7 +42,7 @@
   the penalty for reduced hitpoints, the active effects, and any veteran
   bonuses.
 
-  'utype' and 'pplayer' must be set. 'ptile' can be NULL.
+  'utype' must be set. 'pplayer' and 'ptile' can be nullptrs.
 ****************************************************************************/
 int utype_move_rate(const struct unit_type *utype, const struct tile *ptile,
                     const struct player *pplayer, int veteran_level,
@@ -53,10 +53,9 @@ int utype_move_rate(const struct unit_type *utype, const struct tile *ptile,
   int base_move_rate, move_rate;
   int min_speed;
 
-  fc_assert_ret_val(NULL != utype, 0);
-  fc_assert_ret_val(NULL != pplayer, 0);
+  fc_assert_ret_val(utype != nullptr, 0);
   vlevel = utype_veteran_level(utype, veteran_level);
-  fc_assert_ret_val(NULL != vlevel, 0);
+  fc_assert_ret_val(vlevel != nullptr, 0);
   uclass = utype_class(utype);
 
   base_move_rate = utype->move_rate + vlevel->move_bonus;
@@ -69,7 +68,7 @@ int utype_move_rate(const struct unit_type *utype, const struct tile *ptile,
 
   /* Add on effects bonus (Magellan's Expedition, Lighthouse,
    * Nuclear Power). */
-  move_rate += (get_unittype_bonus(pplayer, ptile, utype, NULL,
+  move_rate += (get_unittype_bonus(pplayer, ptile, utype, nullptr,
                                    EFT_MOVE_BONUS)
                 * SINGLE_MOVE);
 
@@ -130,14 +129,14 @@ int utype_unknown_move_cost(const struct unit_type *utype)
 
   /* Move cost from effects. */
   worst_effect_mc = 0;
-  action_by_result_iterate(paction, act_id, ACTRES_UNIT_MOVE) {
+  action_by_result_iterate(paction, ACTRES_UNIT_MOVE) {
     struct universal req_pattern[] = {
       { .kind = VUT_ACTION, .value.action = paction },
       { .kind = VUT_UTYPE,  .value.utype = utype },
     };
     int max_effect_mc;
 
-    if (!utype_can_do_action(utype, paction->id)) {
+    if (!utype_can_do_action(utype, action_id(paction))) {
       /* Not relevant. */
       continue;
     }
@@ -166,10 +165,9 @@ int utype_unknown_move_cost(const struct unit_type *utype)
   return move_cost;
 }
 
-
 /************************************************************************//**
-  Return TRUE iff the unit can be a defender at its current location.  This
-  should be checked when looking for a defender - not all units on the
+  Return TRUE iff the unit can be a defender at its current location.
+  This should be checked when looking for a defender - not all units on the
   tile are valid defenders.
 ****************************************************************************/
 bool unit_can_defend_here(const struct civ_map *nmap, const struct unit *punit)
@@ -187,7 +185,9 @@ bool unit_can_defend_here(const struct civ_map *nmap, const struct unit *punit)
     return FALSE;
   case TDT_ALIGHT:
     return can_unit_exist_at_tile(nmap, punit, unit_tile(punit))
-      && can_unit_deboard_or_be_unloaded(punit, ptrans);
+      && can_unit_deboard_or_be_unloaded(nmap, punit, ptrans);
+  case TDT_ALWAYS:
+    return TRUE;
   }
 
   fc_assert(FALSE);
@@ -221,7 +221,7 @@ bool can_attack_non_native(const struct unit_type *utype)
 
 /************************************************************************//**
   This unit can attack from non-native tiles (Marines can attack from
-  transport, ships from harbour cities)
+  transport, ships from harbor cities)
 ****************************************************************************/
 bool can_attack_from_non_native(const struct unit_type *utype)
 {
@@ -244,41 +244,30 @@ bool is_city_channel_tile(const struct civ_map *nmap,
                           const struct tile *ptile,
                           const struct tile *pexclude)
 {
-  struct dbv tile_processed;
-  struct tile_list *process_queue = tile_list_new();
-  bool found = FALSE;
+  MAP_TILE_CONN_TO_BY(nmap, ptile, piter,
+                      piter != pexclude
+                      && is_native_to_class(punitclass, tile_terrain(piter),
+                                            tile_extras(piter)),
+                      piter != pexclude && nullptr != tile_city(piter));
 
-  dbv_init(&tile_processed, map_num_tiles());
-  for (;;) {
-    dbv_set(&tile_processed, tile_index(ptile));
-    adjc_iterate(nmap, ptile, piter) {
-      if (dbv_isset(&tile_processed, tile_index(piter))) {
-        continue;
-      } else if (piter != pexclude
-                 && is_native_to_class(punitclass, tile_terrain(piter),
-                                       tile_extras(piter))) {
-        found = TRUE;
-        break;
-      } else if (piter != pexclude
-                 && NULL != tile_city(piter)) {
-        tile_list_append(process_queue, piter);
-      } else {
-        dbv_set(&tile_processed, tile_index(piter));
-      }
-    } adjc_iterate_end;
+  return nullptr != ptile;
+}
 
-    if (found || 0 == tile_list_size(process_queue)) {
-      break; /* No more tile to process. */
-    } else {
-      ptile = tile_list_front(process_queue);
-      tile_list_pop_front(process_queue);
-    }
-  }
+/************************************************************************//**
+  Check for a city channel with restriction to pov_player current knowledge
+****************************************************************************/
+bool may_be_city_channel_tile(const struct civ_map *nmap,
+                              const struct unit_class *punitclass,
+                              const struct tile *ptile,
+                              const struct player *pov_player)
+{
+  MAP_TILE_CONN_TO_BY(nmap, ptile, piter,
+                      !tile_is_seen(piter, pov_player)
+                      || is_native_to_class(punitclass, tile_terrain(piter),
+                                            tile_extras(piter)),
+                      nullptr != tile_city(piter));
 
-  dbv_free(&tile_processed);
-  tile_list_destroy(process_queue);
-
-  return found;
+  return nullptr != ptile;
 }
 
 /************************************************************************//**
@@ -308,6 +297,49 @@ bool can_exist_at_tile(const struct civ_map *nmap,
   }
 
   return is_native_tile(utype, ptile);
+}
+
+/************************************************************************//**
+  Return if a unit of utype could possibly "exist" at the city tile of pcity
+  given the information known to pov_player. pcity is presumed to exist.
+  nmap is supposed to be client map.
+  This means it can physically be present on the tile (without the use of a
+  transporter). See can_exist_at_tile() for the omniscient check.
+****************************************************************************/
+bool could_exist_in_city(const struct civ_map *nmap,
+                         const struct player *pov_player,
+                         const struct unit_type *utype,
+                         const struct city *pcity)
+{
+  struct unit_class *uclass;
+  struct tile *ctile;
+
+  fc_assert_ret_val(nullptr != pcity && nullptr != utype, FALSE);
+
+  ctile = city_tile(pcity);
+  uclass = utype_class(utype);
+
+  if (uclass_has_flag(uclass, UCF_BUILD_ANYWHERE)) {
+    /* If the city stands, it can exist there */
+    return TRUE;
+  }
+  adjc_iterate(nmap, ctile, ptile) {
+    if (!tile_is_seen(ptile, pov_player)
+        || is_native_tile_to_class(uclass, ptile)) {
+      /* Could be native. This ignores a rare case when we don't see
+       * only the city center and any native terrain is NoCities */
+      return TRUE;
+    }
+  } adjc_iterate_end;
+
+  if (1 == game.info.citymindist
+      && may_be_city_channel_tile(nmap, uclass, ctile, pov_player)) {
+    /* Channeled. */
+    return TRUE;
+  }
+
+  /* It definitely can't exist there */
+  return FALSE;
 }
 
 /************************************************************************//**
@@ -664,16 +696,26 @@ unit_move_to_tile_test(const struct civ_map *nmap,
   }
 
   /* 5) */
-  if (is_non_allied_unit_tile(dst_tile, puowner)) {
+  if (is_non_allied_unit_tile(dst_tile, puowner,
+                              utype_has_flag(punittype, UTYF_FLAGLESS))) {
     /* You can't move onto a tile with non-allied units on it (try
      * attacking instead). */
     return MR_DESTINATION_OCCUPIED_BY_NON_ALLIED_UNIT;
   }
 
   /* 6) */
-  if (puowner->ai_common.barbarian_type == ANIMAL_BARBARIAN
-      && dst_tile->terrain->animal != punittype) {
-    return MR_ANIMAL_DISALLOWED;
+  if (puowner->ai_common.barbarian_type == ANIMAL_BARBARIAN) {
+    bool ok = FALSE;
+
+    terrain_animals_iterate(dst_tile->terrain, panimal) {
+      if (panimal == punittype) {
+        ok = TRUE;
+        break;
+      }
+    } terrain_animals_iterate_end;
+    if (!ok) {
+      return MR_ANIMAL_DISALLOWED;
+    }
   }
 
   /* 7) */
@@ -692,7 +734,7 @@ unit_move_to_tile_test(const struct civ_map *nmap,
     /* You can't move into a non-allied tile.
      *
      * FIXME: this should never happen since it should be caught by check
-     * #4. */
+     * #5. */
     return MR_NO_WAR;
   }
 
@@ -783,16 +825,26 @@ unit_teleport_to_tile_test(const struct civ_map *nmap,
   const struct player *puowner = unit_owner(punit);
 
   /* 1) */
-  if (is_non_allied_unit_tile(dst_tile, puowner)) {
+  if (is_non_allied_unit_tile(dst_tile, puowner,
+                              utype_has_flag(punittype, UTYF_FLAGLESS))) {
     /* You can't move onto a tile with non-allied units on it (try
      * attacking instead). */
     return MR_DESTINATION_OCCUPIED_BY_NON_ALLIED_UNIT;
   }
 
   /* 2) */
-  if (puowner->ai_common.barbarian_type == ANIMAL_BARBARIAN
-      && dst_tile->terrain->animal != punittype) {
-    return MR_ANIMAL_DISALLOWED;
+  if (puowner->ai_common.barbarian_type == ANIMAL_BARBARIAN) {
+    bool ok = FALSE;
+
+    terrain_animals_iterate(dst_tile->terrain, panimal) {
+      if (panimal == punittype) {
+        ok = TRUE;
+        break;
+      }
+    } terrain_animals_iterate_end;
+    if (!ok) {
+      return MR_ANIMAL_DISALLOWED;
+    }
   }
 
   /* 3) */

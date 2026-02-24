@@ -1,6 +1,6 @@
 #!/bin/sh
 
-# ./create-freeciv-gtk-qt-nsi.sh <freeciv files dir> <output dir> <version> <gtk3.22|qt5|qt6> <GTK+3|Qt5|Qt6> <win32|win64|win> [mp gui] [exe id]
+# ./create-freeciv-gtk-qt-nsi.sh <freeciv files dir> <output dir> <version> <gtk3.22|qt6> <GTK+3|Qt6> <win32|win64|win> [mp gui] [exe id]
 
 if test "x$8" != "x" ; then
   EXE_ID="$8"
@@ -171,7 +171,7 @@ cat <<EOF
   CreateShortCut "\$SMPROGRAMS\\\$STARTMENU_FOLDER\Freeciv Modpack Installer.lnk" "\$INSTDIR\freeciv-mp-\${MPEXE_ID}.cmd" "\$DefaultLanguageCode" "\$INSTDIR\freeciv-mp-\${MPEXE_ID}.exe" 0 SW_SHOWMINIMIZED
 EOF
 
-if test "$4" = "qt5" || test "$4" = "qt6" || test "$4" = "qt6x" ; then
+if test "$4" = "qt6" || test "$4" = "qt6x" ; then
   echo "CreateShortCut \"\$SMPROGRAMS\\\$STARTMENU_FOLDER\Freeciv Ruleset Editor.lnk\" \"\$INSTDIR\freeciv-ruledit.cmd\" \"\$DefaultLanguageCode\" \"\$INSTDIR\freeciv-ruledit.exe\" 0 SW_SHOWMINIMIZED"
 fi
 
@@ -230,7 +230,7 @@ SectionGroup "Additional languages (translation %)"
 
 EOF
 
-cat ../../../bootstrap/langstat_core.txt |
+cat $1/doc/freeciv/installer/langstat_core.txt |
 sort -k 1 |
 iconv -f UTF-8 -t ISO-8859-1 |
 while read -r code prct name
@@ -291,7 +291,7 @@ Start Menu shortcut properties."
   \${NSD_CB_AddString} \$DefaultLanguageDropList "US English (en_US)"
 EOF
 
-  cat ../../../bootstrap/langstat_core.txt |
+  cat $1/doc/freeciv/installer/langstat_core.txt |
   sort -k 1 |
   iconv -f UTF-8 -t ISO-8859-1 |
   while read -r code prct name
@@ -316,7 +316,7 @@ EOF
   echo "    StrCpy \$DefaultLanguageCode \"en_US\""
   echo "  \${EndIf}"
 
-  cat ../../../bootstrap/langstat_core.txt |
+  cat $1/doc/freeciv/installer/langstat_core.txt |
   iconv -f UTF-8 -t ISO-8859-1 |
   while read -r code prct name
   do

@@ -10,9 +10,12 @@ AM_CPPFLAGS = \
 	-I$(srcdir)/networking \
 	-I$(srcdir)/scriptcore \
 	-I$(top_srcdir)/dependencies/tinycthread \
+	-I$(top_srcdir)/gen_headers/enums \
 	$(MAPIMG_WAND_CFLAGS) $(JANSSON_CFLAGS)
 
 libfreeciv_la_SOURCES = \
+		accessarea.c	\
+		accessarea.h	\
 		achievements.c	\
 		achievements.h	\
 		actions.c	\
@@ -82,6 +85,8 @@ libfreeciv_la_SOURCES = \
 		name_translation.h \
 		nation.c        \
 		nation.h        \
+		oblig_reqs.c	\
+		oblig_reqs.h	\
 		packets_gen.c	\
 		packets_gen.h	\
 		player.c	\
@@ -115,6 +120,8 @@ libfreeciv_la_SOURCES = \
 		terrain.h	\
 		tile.c		\
 		tile.h		\
+		tiledef.c	\
+		tiledef.h	\
 		traderoutes.c	\
 		traderoutes.h	\
 		traits.h	\
@@ -182,6 +189,9 @@ packets_generate: networking/packets.def generate_packets.py
 MAINTAINERCLEANFILES = \
 	$(srcdir)/packets_gen.h \
 	$(srcdir)/packets_gen.c
+
+DISTCLEANFILES = \
+	fc_gitrev_gen.h
 
 if GITREV
 BUILT_SOURCES += fc_gitrev_gen.h

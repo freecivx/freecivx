@@ -1,6 +1,18 @@
 [musicspec]
 ; Format and options of this spec file:
-options = "+Freeciv-2.6-musicset"
+options = "+Freeciv-3.2-musicspec"
+
+; A simple name for the musicset specified by this file:
+name = "Stdmusic"
+
+; There`s no separate versioning in musicsets part of main freeciv distribution
+;version = ""
+
+; Summary of the musicset
+summary = _("Minimal musicset with just menu music.")
+
+; Detailed description, typically loaded from separate file (asterisks syntax)
+;description = *filename.txt*
 
 [info]
 artists = "\

@@ -69,7 +69,7 @@ static void set_sizes(double size, int Xratio, int Yratio)
   const int even = 2;
 
   /* In iso-maps we need to double the map.ysize factor, since xsize is
-   * in native coordinates which are compressed 2x in the X direction. */ 
+   * in native coordinates which are compressed 2x in the X direction. */
   const int iso = MAP_IS_ISOMETRIC ? 2 : 1;
 
   /* We have:
@@ -85,7 +85,7 @@ static void set_sizes(double size, int Xratio, int Yratio)
    *
    *   1000 * size = i_size * i_size * xratio * yratio * even * even * iso
    *   i_size = sqrt(1000 * size / (xratio * yratio * even * even * iso))
-   * 
+   *
    * Make sure to round off i_size to preserve exact wanted ratios,
    * that may be importante for some topologies.
    */
@@ -111,7 +111,7 @@ static void set_sizes(double size, int Xratio, int Yratio)
   /* If the ratio is too big for some topology the simplest way to avoid
    * this error is to set the maximum size smaller for all topologies! */
   if (wld.map.server.size * 1000 > size + 900.0) {
-    /* Warning when size is set uselessly big */ 
+    /* Warning when size is set uselessly big */
     log_error("Requested size of %d is too big for this topology.",
               wld.map.server.size);
   }
@@ -226,20 +226,20 @@ void generator_init_topology(bool autosize)
 
   sqsize = get_sqsize();
 
-  /* initialize the ICE_BASE_LEVEL */
+  /* Initialize the ICE_BASE_LEVEL */
 
-  /* if maps has strip like poles we get smaller poles
+  /* If maps has strip like poles we get smaller poles
    * (less playables than island poles)
    *   5% for little maps
    *   2% for big ones, if map.server.temperature == 50
    * except if separate poles is set */
   if (wld.map.server.separatepoles) {
-    /* with separatepoles option strip poles are useless */
+    /* With separatepoles option strip poles are useless */
     ice_base_colatitude =
         (MAX(0, 100 * COLD_LEVEL / 3 - 1 *  MAX_COLATITUDE)
          + 1 *  MAX_COLATITUDE * sqsize) / (100 * sqsize);
   } else {
-    /* any way strip poles are not so playable as isle poles */
+    /* Any way strip poles are not so playable as isle poles */
     ice_base_colatitude =
         (MAX(0, 100 * COLD_LEVEL / 3 - 2 * MAX_COLATITUDE)
          + 2 * MAX_COLATITUDE * sqsize) / (100 * sqsize);
@@ -262,7 +262,7 @@ void generator_init_topology(bool autosize)
     wld.map.server.huts_absolute = -1;
   }
 
-  map_init_topology();
+  map_init_topology(&(wld.map));
 }
 
 /************************************************************************//**

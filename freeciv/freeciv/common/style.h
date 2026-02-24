@@ -36,8 +36,10 @@ struct music_style
 void styles_alloc(int count);
 void styles_free(void);
 int style_count(void);
-int style_number(const struct nation_style *pstyle);
-int style_index(const struct nation_style *pstyle);
+int style_number(const struct nation_style *pstyle)
+  fc__attribute((nonnull(1)));
+int style_index(const struct nation_style *pstyle)
+  fc__attribute((nonnull(1)));
 struct nation_style *style_by_number(int id);
 const char *style_name_translation(const struct nation_style *pstyle);
 const char *style_rule_name(const struct nation_style *pstyle);
@@ -64,7 +66,8 @@ struct nation_style *style_by_rule_name(const char *name);
 void music_styles_alloc(int count);
 void music_styles_free(void);
 
-int music_style_number(const struct music_style *pms);
+int music_style_number(const struct music_style *pms)
+  fc__attribute((nonnull(1)));
 struct music_style *music_style_by_number(int id);
 
 struct music_style *player_music_style(struct player *plr);
@@ -74,12 +77,19 @@ struct music_style *player_music_style(struct player *plr);
   int _i_;                                                     \
   for (_i_ = 0; _i_ < game.control.num_music_styles; _i_++) {  \
     struct music_style *_p = music_style_by_number(_i_);       \
-    if (_p != NULL) {
+    if (_p != nullptr) {
 
 #define music_styles_iterate_end                               \
     }                                                          \
   }                                                            \
 }
+
+/* Deletion of music styles not supported */
+#define music_styles_re_active_iterate(_p)                     \
+  music_styles_iterate(_p)
+
+#define music_styles_re_active_iterate_end                     \
+  music_styles_iterate_end;
 
 int style_of_city(const struct city *pcity);
 

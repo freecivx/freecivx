@@ -43,6 +43,9 @@ Leonidas [#ff0000]: Team 0, user Unassigned
 3. Building freeciv with AI-modules support
 -------------------------------------------
 
+This build time configurability for AI modules is currently
+available only with the old autotools build system.
+
 There's three configure options controlling AI-modules support to be
 built in to freeciv.
 
@@ -115,6 +118,16 @@ it in for custom ai types to use by passing configure option --with-ai-lib
 
 6. Callback interface ChangeLog
 -------------------------------
+
+New in Freeciv 3.4:
+-------------------
+- Added 'check_sanity', called once a turn when sanity checking enabled
+
+
+New in Freeciv 3.2:
+-------------------
+- Added 'revolution_start', called when player's revolution gets activated
+
 
 New in Freeciv 3.1:
 -------------------

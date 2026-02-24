@@ -25,7 +25,9 @@
 #include "aitraits.h" /* ai_trait_get_value() */
 
 /* server */
+#include "hand_gen.h"
 #include "plrhand.h"
+#include "report.h"
 
 /* server/scripting */
 #include "script_server.h"
@@ -221,4 +223,53 @@ int api_methods_player_free_bulbs(lua_State *L, Player *pplayer)
   LUASCRIPT_CHECK(L, presearch, "player's research not set", 0);
 
   return presearch->free_bulbs;
+}
+
+/**********************************************************************//**
+  Return score of the type associated to the tag.
+**************************************************************************/
+int api_methods_tag_score(lua_State *L, Player *pplayer, const char *tag)
+{
+  LUASCRIPT_CHECK_STATE(L, -1);
+  LUASCRIPT_CHECK_SELF(L, pplayer, -1);
+
+  return get_tag_score(tag, pplayer);
+}
+
+/**********************************************************************//**
+  Return player's love towards another.
+**************************************************************************/
+int api_methods_love(lua_State *L, Player *pplayer, Player *towards)
+{
+  LUASCRIPT_CHECK_STATE(L, 0);
+  LUASCRIPT_CHECK_SELF(L, pplayer, 0);
+  LUASCRIPT_CHECK_ARG_NIL(L, towards, 3, Player, 0);
+
+  return pplayer->ai_common.love[player_number(towards)] * 1000 / MAX_AI_LOVE;
+}
+
+/**********************************************************************//**
+  Add player love towards another.
+**************************************************************************/
+void api_methods_add_love(lua_State *L, Player *pplayer, Player *towards,
+                          int amount)
+{
+  LUASCRIPT_CHECK_STATE(L);
+  LUASCRIPT_CHECK_SELF(L, pplayer);
+  LUASCRIPT_CHECK_ARG_NIL(L, towards, 3, Player);
+
+  pplayer->ai_common.love[player_number(towards)]
+    += amount * MAX_AI_LOVE / 1000;
+}
+
+/**********************************************************************//**
+  Try to cancel a pact between players.
+**************************************************************************/
+void api_methods_cancel_pact(lua_State *L, Player *pplayer, Player *towards)
+{
+  LUASCRIPT_CHECK_STATE(L);
+  LUASCRIPT_CHECK_SELF(L, pplayer);
+  LUASCRIPT_CHECK_ARG_NIL(L, towards, 3, Player);
+
+  handle_diplomacy_cancel_pact(pplayer, player_number(towards), CLAUSE_LAST);
 }

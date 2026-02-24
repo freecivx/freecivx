@@ -115,14 +115,12 @@ void tab_good::refresh()
 {
   good_list->clear();
 
-  goods_type_iterate(pgood) {
-    if (!pgood->ruledit_disabled) {
-      QListWidgetItem *item =
-        new QListWidgetItem(QString::fromUtf8(goods_rule_name(pgood)));
+  goods_type_re_active_iterate(pgood) {
+    QListWidgetItem *item
+      = new QListWidgetItem(QString::fromUtf8(goods_rule_name(pgood)));
 
-      good_list->insertItem(goods_index(pgood), item);
-    }
-  } goods_type_iterate_end;
+    good_list->insertItem(goods_index(pgood), item);
+  } goods_type_re_active_iterate_end;
 }
 
 /**********************************************************************//**
@@ -201,7 +199,7 @@ void tab_good::name_given()
 }
 
 /**********************************************************************//**
-  User requested good deletion 
+  User requested good deletion
 **************************************************************************/
 void tab_good::delete_now()
 {
@@ -230,6 +228,10 @@ bool tab_good::initialize_new_good(struct goods_type *pgood)
   }
 
   name_set(&(pgood->name), 0, "New Good");
+  BV_CLR_ALL(pgood->flags);
+  if (pgood->helptext != nullptr) {
+    strvec_clear(pgood->helptext);
+  }
 
   return true;
 }
@@ -288,10 +290,8 @@ void tab_good::same_name_toggle(bool checked)
 void tab_good::edit_reqs()
 {
   if (selected != nullptr) {
-    req_edit *redit = new req_edit(ui, QString::fromUtf8(goods_rule_name(selected)),
-                                   &selected->reqs);
-
-    redit->show();
+    ui->open_req_edit(QString::fromUtf8(goods_rule_name(selected)),
+                      &selected->reqs);
   }
 }
 

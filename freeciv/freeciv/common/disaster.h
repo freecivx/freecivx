@@ -37,6 +37,8 @@ extern "C" {
 #define SPECENUM_VALUE5NAME "Fallout"
 #define SPECENUM_VALUE6 DE_REDUCE_DESTROY
 #define SPECENUM_VALUE6NAME "ReducePopDestroy"
+#define SPECENUM_VALUE7 DE_ROBBERY
+#define SPECENUM_VALUE7NAME "Robbery"
 #define SPECENUM_COUNT DE_COUNT
 #define SPECENUM_BITVECTOR bv_disaster_effects
 #include "specenum_gen.h"
@@ -84,10 +86,18 @@ bool can_disaster_happen(const struct disaster_type *pdis,
     struct disaster_type *_p = disaster_by_number(_i_);
 
 #define disaster_type_iterate_end                       \
-  }}
+  }                                                     \
+}
+
+/* Deletion of disasters not supported */
+#define disaster_type_re_active_iterate(_p) \
+  disaster_type_iterate(_p)
+
+#define disaster_type_re_active_iterate_end \
+  disaster_type_iterate_end;
 
 #ifdef __cplusplus
 }
 #endif /* __cplusplus */
 
-#endif  /* FC__DISASTER_H */
+#endif /* FC__DISASTER_H */

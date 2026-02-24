@@ -17,264 +17,40 @@
 /* common */
 #include "actres.h"
 #include "fc_types.h"
+#include "map_types.h"
 #include "requirements.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif /* __cplusplus */
 
+/* If 'enum gen_action' has currently unused values that should
+ * not be used in 'switch - cases', put those cases here. E.g.:
+ *
+ *#define ASSERT_UNUSED_ACTION_CASES              \
+ *   case ACTION_UNUSED_1:                        \
+ *     fc_assert_msg(FALSE, "ACTION_UNUSED_1");   \
+ *     break;                                     \
+  *   case ACTION_UNUSED_2:                       \
+ *     fc_assert_msg(FALSE, "ACTION_UNUSED_2");   \
+ *     break;
+ */
+#define ASSERT_UNUSED_ACTION_CASES            \
+
+/* Used in the network protocol. */
 #define SPECENUM_NAME action_actor_kind
 #define SPECENUM_VALUE0 AAK_UNIT
 #define SPECENUM_VALUE0NAME N_("a unit")
+#define SPECENUM_VALUE1 AAK_CITY
+#define SPECENUM_VALUE1NAME N_("a city")
+#define SPECENUM_VALUE2 AAK_PLAYER
+#define SPECENUM_VALUE2NAME N_("a player")
 #define SPECENUM_COUNT AAK_COUNT
 #include "specenum_gen.h"
 
 const char *gen_action_name_update_cb(const char *old_name);
 
-/* Values used in the network protocol. */
-/* Names used in file formats but not normally shown to users. */
-#define SPECENUM_NAME gen_action
-#define SPECENUM_VALUE0 ACTION_ESTABLISH_EMBASSY
-#define SPECENUM_VALUE0NAME "Establish Embassy"
-#define SPECENUM_VALUE1 ACTION_ESTABLISH_EMBASSY_STAY
-#define SPECENUM_VALUE1NAME "Establish Embassy Stay"
-#define SPECENUM_VALUE2 ACTION_SPY_INVESTIGATE_CITY
-#define SPECENUM_VALUE2NAME "Investigate City"
-#define SPECENUM_VALUE3 ACTION_INV_CITY_SPEND
-#define SPECENUM_VALUE3NAME "Investigate City Spend Unit"
-#define SPECENUM_VALUE4 ACTION_SPY_POISON
-#define SPECENUM_VALUE4NAME "Poison City"
-#define SPECENUM_VALUE5 ACTION_SPY_POISON_ESC
-#define SPECENUM_VALUE5NAME "Poison City Escape"
-#define SPECENUM_VALUE6 ACTION_SPY_STEAL_GOLD
-#define SPECENUM_VALUE6NAME "Steal Gold"
-#define SPECENUM_VALUE7 ACTION_SPY_STEAL_GOLD_ESC
-#define SPECENUM_VALUE7NAME "Steal Gold Escape"
-#define SPECENUM_VALUE8 ACTION_SPY_SABOTAGE_CITY
-#define SPECENUM_VALUE8NAME "Sabotage City"
-#define SPECENUM_VALUE9 ACTION_SPY_SABOTAGE_CITY_ESC
-#define SPECENUM_VALUE9NAME "Sabotage City Escape"
-#define SPECENUM_VALUE10 ACTION_SPY_TARGETED_SABOTAGE_CITY
-#define SPECENUM_VALUE10NAME "Targeted Sabotage City"
-#define SPECENUM_VALUE11 ACTION_SPY_TARGETED_SABOTAGE_CITY_ESC
-#define SPECENUM_VALUE11NAME "Targeted Sabotage City Escape"
-#define SPECENUM_VALUE12 ACTION_SPY_SABOTAGE_CITY_PRODUCTION
-#define SPECENUM_VALUE12NAME "Sabotage City Production"
-#define SPECENUM_VALUE13 ACTION_SPY_SABOTAGE_CITY_PRODUCTION_ESC
-#define SPECENUM_VALUE13NAME "Sabotage City Production Escape"
-#define SPECENUM_VALUE14 ACTION_SPY_STEAL_TECH
-#define SPECENUM_VALUE14NAME "Steal Tech"
-#define SPECENUM_VALUE15 ACTION_SPY_STEAL_TECH_ESC
-#define SPECENUM_VALUE15NAME "Steal Tech Escape Expected"
-#define SPECENUM_VALUE16 ACTION_SPY_TARGETED_STEAL_TECH
-#define SPECENUM_VALUE16NAME "Targeted Steal Tech"
-#define SPECENUM_VALUE17 ACTION_SPY_TARGETED_STEAL_TECH_ESC
-#define SPECENUM_VALUE17NAME "Targeted Steal Tech Escape Expected"
-#define SPECENUM_VALUE18 ACTION_SPY_INCITE_CITY
-#define SPECENUM_VALUE18NAME "Incite City"
-#define SPECENUM_VALUE19 ACTION_SPY_INCITE_CITY_ESC
-#define SPECENUM_VALUE19NAME "Incite City Escape"
-#define SPECENUM_VALUE20 ACTION_TRADE_ROUTE
-#define SPECENUM_VALUE20NAME "Establish Trade Route"
-#define SPECENUM_VALUE21 ACTION_MARKETPLACE
-#define SPECENUM_VALUE21NAME "Enter Marketplace"
-#define SPECENUM_VALUE22 ACTION_HELP_WONDER
-#define SPECENUM_VALUE22NAME "Help Wonder"
-#define SPECENUM_VALUE23 ACTION_SPY_BRIBE_UNIT
-#define SPECENUM_VALUE23NAME "Bribe Unit"
-#define SPECENUM_VALUE24 ACTION_CAPTURE_UNITS
-#define SPECENUM_VALUE24NAME "Capture Units"
-#define SPECENUM_VALUE25 ACTION_SPY_SABOTAGE_UNIT
-#define SPECENUM_VALUE25NAME "Sabotage Unit"
-#define SPECENUM_VALUE26 ACTION_SPY_SABOTAGE_UNIT_ESC
-#define SPECENUM_VALUE26NAME "Sabotage Unit Escape"
-#define SPECENUM_VALUE27 ACTION_FOUND_CITY
-#define SPECENUM_VALUE27NAME "Found City"
-#define SPECENUM_VALUE28 ACTION_JOIN_CITY
-#define SPECENUM_VALUE28NAME "Join City"
-#define SPECENUM_VALUE29 ACTION_STEAL_MAPS
-#define SPECENUM_VALUE29NAME "Steal Maps"
-#define SPECENUM_VALUE30 ACTION_STEAL_MAPS_ESC
-#define SPECENUM_VALUE30NAME "Steal Maps Escape"
-#define SPECENUM_VALUE31 ACTION_SPY_NUKE
-#define SPECENUM_VALUE31NAME "Suitcase Nuke"
-#define SPECENUM_VALUE32 ACTION_SPY_NUKE_ESC
-#define SPECENUM_VALUE32NAME "Suitcase Nuke Escape"
-#define SPECENUM_VALUE33 ACTION_NUKE
-#define SPECENUM_VALUE33NAME "Explode Nuclear"
-#define SPECENUM_VALUE34 ACTION_NUKE_CITY
-#define SPECENUM_VALUE34NAME "Nuke City"
-#define SPECENUM_VALUE35 ACTION_NUKE_UNITS
-#define SPECENUM_VALUE35NAME "Nuke Units"
-#define SPECENUM_VALUE36 ACTION_DESTROY_CITY
-#define SPECENUM_VALUE36NAME "Destroy City"
-#define SPECENUM_VALUE37 ACTION_EXPEL_UNIT
-#define SPECENUM_VALUE37NAME "Expel Unit"
-#define SPECENUM_VALUE38 ACTION_DISBAND_UNIT_RECOVER
-#define SPECENUM_VALUE38NAME "Disband Unit Recover"
-#define SPECENUM_VALUE39 ACTION_DISBAND_UNIT
-#define SPECENUM_VALUE39NAME "Disband Unit"
-#define SPECENUM_VALUE40 ACTION_HOME_CITY
-#define SPECENUM_VALUE40NAME "Home City"
-#define SPECENUM_VALUE41 ACTION_HOMELESS
-#define SPECENUM_VALUE41NAME "Unit Make Homeless"
-#define SPECENUM_VALUE42 ACTION_UPGRADE_UNIT
-#define SPECENUM_VALUE42NAME "Upgrade Unit"
-#define SPECENUM_VALUE43 ACTION_CONVERT
-#define SPECENUM_VALUE43NAME "Convert Unit"
-#define SPECENUM_VALUE44 ACTION_AIRLIFT
-#define SPECENUM_VALUE44NAME "Airlift Unit"
-#define SPECENUM_VALUE45 ACTION_ATTACK
-#define SPECENUM_VALUE45NAME "Attack"
-#define SPECENUM_VALUE46 ACTION_SUICIDE_ATTACK
-#define SPECENUM_VALUE46NAME "Suicide Attack"
-#define SPECENUM_VALUE47 ACTION_STRIKE_BUILDING
-#define SPECENUM_VALUE47NAME "Surgical Strike Building"
-#define SPECENUM_VALUE48 ACTION_STRIKE_PRODUCTION
-#define SPECENUM_VALUE48NAME "Surgical Strike Production"
-#define SPECENUM_VALUE49 ACTION_CONQUER_CITY
-#define SPECENUM_VALUE49NAME "Conquer City"
-#define SPECENUM_VALUE50 ACTION_CONQUER_CITY2
-#define SPECENUM_VALUE50NAME "Conquer City 2"
-#define SPECENUM_VALUE51 ACTION_CONQUER_CITY3
-#define SPECENUM_VALUE51NAME "Conquer City 3"
-#define SPECENUM_VALUE52 ACTION_CONQUER_CITY4
-#define SPECENUM_VALUE52NAME "Conquer City 4"
-#define SPECENUM_VALUE53 ACTION_BOMBARD
-#define SPECENUM_VALUE53NAME "Bombard"
-#define SPECENUM_VALUE54 ACTION_BOMBARD2
-#define SPECENUM_VALUE54NAME "Bombard 2"
-#define SPECENUM_VALUE55 ACTION_BOMBARD3
-#define SPECENUM_VALUE55NAME "Bombard 3"
-#define SPECENUM_VALUE56 ACTION_BOMBARD_LETHAL
-#define SPECENUM_VALUE56NAME "Bombard Lethal"
-#define SPECENUM_VALUE57 ACTION_FORTIFY
-#define SPECENUM_VALUE57NAME "Fortify"
-#define SPECENUM_VALUE58 ACTION_CULTIVATE
-#define SPECENUM_VALUE58NAME "Cultivate"
-#define SPECENUM_VALUE59 ACTION_PLANT
-#define SPECENUM_VALUE59NAME "Plant"
-#define SPECENUM_VALUE60 ACTION_TRANSFORM_TERRAIN
-#define SPECENUM_VALUE60NAME "Transform Terrain"
-#define SPECENUM_VALUE61 ACTION_ROAD
-#define SPECENUM_VALUE61NAME "Build Road"
-#define SPECENUM_VALUE62 ACTION_IRRIGATE
-#define SPECENUM_VALUE62NAME "Build Irrigation"
-#define SPECENUM_VALUE63 ACTION_MINE
-#define SPECENUM_VALUE63NAME "Build Mine"
-#define SPECENUM_VALUE64 ACTION_BASE
-#define SPECENUM_VALUE64NAME "Build Base"
-#define SPECENUM_VALUE65 ACTION_PILLAGE
-#define SPECENUM_VALUE65NAME "Pillage"
-#define SPECENUM_VALUE66 ACTION_CLEAN_POLLUTION
-#define SPECENUM_VALUE66NAME "Clean Pollution"
-#define SPECENUM_VALUE67 ACTION_CLEAN_FALLOUT
-#define SPECENUM_VALUE67NAME "Clean Fallout"
-#define SPECENUM_VALUE68 ACTION_TRANSPORT_BOARD
-#define SPECENUM_VALUE68NAME "Transport Board"
-#define SPECENUM_VALUE69 ACTION_TRANSPORT_BOARD2
-#define SPECENUM_VALUE69NAME "Transport Board 2"
-#define SPECENUM_VALUE70 ACTION_TRANSPORT_BOARD3
-#define SPECENUM_VALUE70NAME "Transport Board_3"
-#define SPECENUM_VALUE71 ACTION_TRANSPORT_DEBOARD
-#define SPECENUM_VALUE71NAME "Transport Deboard"
-#define SPECENUM_VALUE72 ACTION_TRANSPORT_EMBARK
-#define SPECENUM_VALUE72NAME "Transport Embark"
-#define SPECENUM_VALUE73 ACTION_TRANSPORT_EMBARK2
-#define SPECENUM_VALUE73NAME "Transport Embark 2"
-#define SPECENUM_VALUE74 ACTION_TRANSPORT_EMBARK3
-#define SPECENUM_VALUE74NAME "Transport Embark 3"
-#define SPECENUM_VALUE75 ACTION_TRANSPORT_EMBARK4
-#define SPECENUM_VALUE75NAME "Transport Embark 4"
-#define SPECENUM_VALUE76 ACTION_TRANSPORT_DISEMBARK1
-#define SPECENUM_VALUE76NAME "Transport Disembark"
-#define SPECENUM_VALUE77 ACTION_TRANSPORT_DISEMBARK2
-#define SPECENUM_VALUE77NAME "Transport Disembark 2"
-#define SPECENUM_VALUE78 ACTION_TRANSPORT_DISEMBARK3
-#define SPECENUM_VALUE78NAME "Transport Disembark 3"
-#define SPECENUM_VALUE79 ACTION_TRANSPORT_DISEMBARK4
-#define SPECENUM_VALUE79NAME "Transport Disembark 4"
-#define SPECENUM_VALUE80 ACTION_TRANSPORT_LOAD
-#define SPECENUM_VALUE80NAME "Transport Load"
-#define SPECENUM_VALUE81 ACTION_TRANSPORT_LOAD2
-#define SPECENUM_VALUE81NAME "Transport Load 2"
-#define SPECENUM_VALUE82 ACTION_TRANSPORT_LOAD3
-#define SPECENUM_VALUE82NAME "Transport Load 3"
-#define SPECENUM_VALUE83 ACTION_TRANSPORT_UNLOAD
-#define SPECENUM_VALUE83NAME "Transport Unload"
-#define SPECENUM_VALUE84 ACTION_SPY_SPREAD_PLAGUE
-#define SPECENUM_VALUE84NAME "Spread Plague"
-#define SPECENUM_VALUE85 ACTION_SPY_ATTACK
-#define SPECENUM_VALUE85NAME "Spy Attack"
-#define SPECENUM_VALUE86 ACTION_CONQUER_EXTRAS
-#define SPECENUM_VALUE86NAME "Conquer Extras"
-#define SPECENUM_VALUE87 ACTION_CONQUER_EXTRAS2
-#define SPECENUM_VALUE87NAME "Conquer Extras 2"
-#define SPECENUM_VALUE88 ACTION_CONQUER_EXTRAS3
-#define SPECENUM_VALUE88NAME "Conquer Extras 3"
-#define SPECENUM_VALUE89 ACTION_CONQUER_EXTRAS4
-#define SPECENUM_VALUE89NAME "Conquer Extras 4"
-#define SPECENUM_VALUE90 ACTION_HUT_ENTER
-#define SPECENUM_VALUE90NAME "Enter Hut"
-#define SPECENUM_VALUE91 ACTION_HUT_ENTER2
-#define SPECENUM_VALUE91NAME "Enter Hut 2"
-#define SPECENUM_VALUE92 ACTION_HUT_ENTER3
-#define SPECENUM_VALUE92NAME "Enter Hut 3"
-#define SPECENUM_VALUE93 ACTION_HUT_ENTER4
-#define SPECENUM_VALUE93NAME "Enter Hut 4"
-#define SPECENUM_VALUE94 ACTION_HUT_FRIGHTEN
-#define SPECENUM_VALUE94NAME "Frighten Hut"
-#define SPECENUM_VALUE95 ACTION_HUT_FRIGHTEN2
-#define SPECENUM_VALUE95NAME "Frighten Hut 2"
-#define SPECENUM_VALUE96 ACTION_HUT_FRIGHTEN3
-#define SPECENUM_VALUE96NAME "Frighten Hut 3"
-#define SPECENUM_VALUE97 ACTION_HUT_FRIGHTEN4
-#define SPECENUM_VALUE97NAME "Frighten Hut 4"
-#define SPECENUM_VALUE98 ACTION_HEAL_UNIT
-#define SPECENUM_VALUE98NAME "Heal Unit"
-#define SPECENUM_VALUE99 ACTION_HEAL_UNIT2
-#define SPECENUM_VALUE99NAME "Heal Unit 2"
-#define SPECENUM_VALUE100 ACTION_PARADROP
-#define SPECENUM_VALUE100NAME "Paradrop Unit"
-#define SPECENUM_VALUE101 ACTION_PARADROP_CONQUER
-#define SPECENUM_VALUE101NAME "Paradrop Unit Conquer"
-#define SPECENUM_VALUE102 ACTION_PARADROP_FRIGHTEN
-#define SPECENUM_VALUE102NAME "Paradrop Unit Frighten"
-#define SPECENUM_VALUE103 ACTION_PARADROP_FRIGHTEN_CONQUER
-#define SPECENUM_VALUE103NAME "Paradrop Unit Frighten Conquer"
-#define SPECENUM_VALUE104 ACTION_PARADROP_ENTER
-#define SPECENUM_VALUE104NAME "Paradrop Unit Enter"
-#define SPECENUM_VALUE105 ACTION_PARADROP_ENTER_CONQUER
-#define SPECENUM_VALUE105NAME "Paradrop Unit Enter Conquer"
-#define SPECENUM_VALUE106 ACTION_WIPE_UNITS
-#define SPECENUM_VALUE106NAME "Wipe Units"
-#define SPECENUM_VALUE107 ACTION_SPY_ESCAPE
-#define SPECENUM_VALUE107NAME "Spy Escape"
-#define SPECENUM_VALUE108 ACTION_UNIT_MOVE
-#define SPECENUM_VALUE108NAME "Unit Move"
-#define SPECENUM_VALUE109 ACTION_UNIT_MOVE2
-#define SPECENUM_VALUE109NAME "Unit Move 2"
-#define SPECENUM_VALUE110 ACTION_UNIT_MOVE3
-#define SPECENUM_VALUE110NAME "Unit Move 3"
-#define SPECENUM_VALUE111 ACTION_CLEAN
-#define SPECENUM_VALUE111NAME "Clean"
-/* TODO: Move next to "Move" */
-#define SPECENUM_VALUE112 ACTION_TELEPORT
-#define SPECENUM_VALUE112NAME "Teleport"
-
-/* User actions */
-#define SPECENUM_VALUE113 ACTION_USER_ACTION1
-#define SPECENUM_VALUE113NAME "User Action 1"
-#define SPECENUM_VALUE114 ACTION_USER_ACTION2
-#define SPECENUM_VALUE114NAME "User Action 2"
-#define SPECENUM_VALUE115 ACTION_USER_ACTION3
-#define SPECENUM_VALUE115NAME "User Action 3"
-#define SPECENUM_VALUE116 ACTION_USER_ACTION4
-#define SPECENUM_VALUE116NAME "User Action 4"
-#define SPECENUM_BITVECTOR bv_actions
-#define SPECENUM_COUNT ACTION_COUNT
-#define SPECENUM_NAME_UPDATER
-#include "specenum_gen.h"
+#include "actions_enums_gen.h"
 
 /* Fake action id used in searches to signal "any action at all". */
 #define ACTION_ANY ACTION_COUNT
@@ -333,6 +109,7 @@ const char *gen_action_name_update_cb(const char *old_name);
 struct action
 {
   action_id id;
+  bool configured;
 
   enum action_result result;
   bv_action_sub_results sub_results;
@@ -395,9 +172,13 @@ struct action_enabler
   struct requirement_vector actor_reqs;
   struct requirement_vector target_reqs;
 
-  /* Only relevant for ruledit and other rulesave users. Indicates that
-   * this action enabler is deleted and shouldn't be saved. */
-  bool ruledit_disabled;
+  struct {
+    /* Only relevant for ruledit and other rulesave users. Indicates that
+     * this action enabler is deleted and shouldn't be saved. */
+    bool ruledit_disabled;
+
+    char *comment;
+  } rulesave;
 };
 
 #define action_has_result(_act_, _res_) ((_act_)->result == (_res_))
@@ -414,43 +195,67 @@ struct action_enabler
 
 #define action_enabler_list_re_iterate(action_enabler_list, aenabler) \
   action_enabler_list_iterate(action_enabler_list, aenabler) {        \
-    if (!aenabler->ruledit_disabled) {
+    if (!aenabler->rulesave.ruledit_disabled) {
 
 #define action_enabler_list_re_iterate_end                            \
     }                                                                 \
   } action_enabler_list_iterate_end
 
-#define action_iterate(_act_)                                             \
+#define action_iterate_all(_act_)                                         \
 {                                                                         \
   action_id _act_;                                                        \
   for (_act_ = 0; _act_ < NUM_ACTIONS; _act_++) {
 
-#define action_iterate_end                             \
-  }                                                    \
+#define action_iterate_all_end                                            \
+  }                                                                       \
 }
 
-#define action_by_result_iterate(_paction_, _act_id_, _result_)           \
+/* Filter out unused action slots, in versions where those exist */
+#define action_iterate(_act_)                                             \
 {                                                                         \
-  action_iterate(_act_id_) {                                              \
-    struct action *_paction_ = action_by_number(_act_id_);                \
-    if (!action_has_result(_paction_, _result_)) {                        \
-      continue;                                                           \
-    }
+  action_iterate_all(_act_) {
+
+#define action_iterate_end                                                \
+  } action_iterate_all_end;                                               \
+}
+
+/* Get 'struct action_id_list' and related functions: */
+#define SPECLIST_TAG action
+#define SPECLIST_TYPE struct action
+#include "speclist.h"
+
+#define action_list_iterate(_list_, _act_) \
+  TYPED_LIST_ITERATE(struct action, _list_, _act_)
+#define action_list_iterate_end LIST_ITERATE_END
+
+struct action_list *action_list_by_result(enum action_result result);
+struct action_list *action_list_by_activity(enum unit_activity activity);
+
+/* TODO: Turn this to an iteration over precalculated list */
+#define action_noninternal_iterate(_act_)              \
+{                                                      \
+  action_iterate(_act_) {                              \
+    if (!action_id_is_internal(_act_)) {
+
+#define action_noninternal_iterate_end                 \
+    }                                                  \
+  } action_iterate_end;                                \
+}
+
+#define action_by_result_iterate(_paction_, _result_)                     \
+{                                                                         \
+  action_list_iterate(action_list_by_result(_result_), _paction_) {       \
 
 #define action_by_result_iterate_end                                      \
-  } action_iterate_end;                                                   \
+  } action_list_iterate_end;                                              \
 }
 
-#define action_by_activity_iterate(_paction_, _act_id_, _activity_)       \
+#define action_by_activity_iterate(_paction_, _activity_)                 \
 {                                                                         \
-  action_iterate(_act_id_) {                                              \
-    struct action *_paction_ = action_by_number(_act_id_);                \
-    if (action_get_activity(_paction_) != _activity_) {                   \
-      continue;                                                           \
-    }
+  action_list_iterate(action_list_by_activity(_activity_), _paction_) {
 
 #define action_by_activity_iterate_end                                    \
-  } action_iterate_end;                                                   \
+  } action_list_iterate_end;                                              \
 }
 
 #define action_array_iterate(_act_array_, _act_id_)                         \
@@ -562,16 +367,20 @@ action_auto_perf_iterate(_act_perf_) {                                    \
   action_array_iterate_end
 
 /* Hard coded location of action auto performers. Used for conversion while
- * action auto performers aren't directly exposed to the ruleset. */
-#define ACTION_AUTO_UPKEEP_FOOD     0
-#define ACTION_AUTO_UPKEEP_GOLD     1
-#define ACTION_AUTO_UPKEEP_SHIELD   2
-#define ACTION_AUTO_MOVED_ADJ       3
-#define ACTION_AUTO_POST_BRIBE      4
-#define ACTION_AUTO_POST_ATTACK     5
-#define ACTION_AUTO_ESCAPE_CITY     6
-#define ACTION_AUTO_ESCAPE_STACK    7
-#define ACTION_AUTO_POST_WIPE_UNITS 8
+ * action auto performers aren't directly exposed to the ruleset.
+ * Remember to update also MAX_NUM_ACTION_AUTO_PERFORMERS when changing these. */
+#define ACTION_AUTO_UPKEEP_FOOD          0
+#define ACTION_AUTO_UPKEEP_GOLD          1
+#define ACTION_AUTO_UPKEEP_SHIELD        2
+#define ACTION_AUTO_MOVED_ADJ            3
+#define ACTION_AUTO_POST_BRIBE_UNIT      4
+#define ACTION_AUTO_POST_BRIBE_STACK     5
+#define ACTION_AUTO_POST_ATTACK          6
+#define ACTION_AUTO_POST_ATTACK2         7
+#define ACTION_AUTO_POST_COLLECT_RANSOM  8
+#define ACTION_AUTO_ESCAPE_CITY          9
+#define ACTION_AUTO_ESCAPE_STACK        10
+#define ACTION_AUTO_POST_WIPE_UNITS     11
 
 /* Initialization */
 void actions_init(void);
@@ -586,15 +395,15 @@ extern struct action **_actions;
 /**********************************************************************//**
   Return the action with the given id.
 
-  Returns NULL if no action with the given id exists.
+  Returns nullptr if no action with the given id exists.
 **************************************************************************/
 static inline struct action *action_by_number(action_id act_id)
 {
   if (!gen_action_is_valid((enum gen_action)act_id)) {
-    return NULL;
+    return nullptr;
   }
 
-  /* We return NULL if there's NULL there, no need to special case it */
+  /* We return nullptr if there's nullptr there, no need to special case it */
   return _actions[act_id];
 }
 
@@ -629,18 +438,9 @@ bool action_requires_details(const struct action *paction);
 #define action_id_requires_details(act_id)                                \
   action_requires_details(action_by_number(act_id))
 
-int action_get_act_time(const struct action *paction,
-                        const struct unit *actor_unit,
-                        const struct tile *tgt_tile,
-                        const struct extra_type *tgt_extra);
-#define action_id_get_act_time(act_id, actor_unit, tgt_tile, tgt_extra)    \
-  action_get_act_time(action_by_number(act_id),                            \
+#define action_id_get_act_time(act_id, actor_unit, tgt_tile, tgt_extra)   \
+  actres_get_act_time(action_by_number(act_id)->result,                   \
                       actor_unit, tgt_tile, tgt_extra)
-
-bool action_creates_extra(const struct action *paction,
-                          const struct extra_type *pextra);
-bool action_removes_extra(const struct action *paction,
-                          const struct extra_type *pextra);
 
 bool action_id_is_rare_pop_up(action_id act_id);
 
@@ -661,7 +461,8 @@ int action_get_role(const struct action *paction);
 #define action_id_get_role(act_id)                                        \
   action_get_role(action_by_number(act_id))
 
-enum unit_activity action_get_activity(const struct action *paction);
+#define action_get_activity(_pact_)                                       \
+  actres_activity_result(_pact_->result)
 #define action_id_get_activity(act_id)                                    \
   action_get_activity(action_by_number(act_id))
 
@@ -675,20 +476,12 @@ const char *action_get_ui_name_mnemonic(action_id act_id,
 const char *action_prepare_ui_name(action_id act_id, const char *mnemonic,
                                    const struct act_prob prob,
                                    const char *custom);
-
-const char *action_ui_name_ruleset_var_name(int act);
 const char *action_ui_name_default(int act);
 
 const char *action_min_range_ruleset_var_name(int act);
-int action_min_range_default(enum action_result result);
 const char *action_max_range_ruleset_var_name(int act);
-int action_max_range_default(enum action_result result);
 
 const char *action_target_kind_ruleset_var_name(int act);
-enum action_target_kind
-action_target_kind_default(enum action_result result);
-bool action_result_legal_target_kind(enum action_result result,
-                                     enum action_target_kind tgt_kind);
 const char *action_target_kind_help(enum action_target_kind kind);
 
 const char *action_actor_consuming_always_ruleset_var_name(action_id act);
@@ -729,63 +522,109 @@ bool action_enabler_utype_possible_actor(const struct action_enabler *ae,
                                          const struct unit_type *act_utype);
 bool action_enabler_possible_actor(const struct action_enabler *ae);
 
-struct action *action_is_blocked_by(const struct action *act,
+struct action *action_is_blocked_by(const struct civ_map *nmap,
+                                    const struct action *act,
                                     const struct unit *actor_unit,
                                     const struct tile *target_tile,
                                     const struct city *target_city,
                                     const struct unit *target_unit);
 
-bool is_action_enabled_unit_on_city(const action_id wanted_action,
+bool is_action_enabled_unit_on_city(const struct civ_map *nmap,
+                                    const action_id wanted_action,
                                     const struct unit *actor_unit,
                                     const struct city *target_city);
 
-bool is_action_enabled_unit_on_unit(const action_id wanted_action,
+bool is_action_enabled_unit_on_unit(const struct civ_map *nmap,
+                                    const action_id wanted_action,
                                     const struct unit *actor_unit,
                                     const struct unit *target_unit);
 
-bool is_action_enabled_unit_on_units(const action_id wanted_action,
+bool is_action_enabled_unit_on_stack(const struct civ_map *nmap,
+                                     const action_id wanted_action,
                                      const struct unit *actor_unit,
                                      const struct tile *target_tile);
 
-bool is_action_enabled_unit_on_tile(const action_id wanted_action,
+bool is_action_enabled_unit_on_tile(const struct civ_map *nmap,
+                                    const action_id wanted_action,
                                     const struct unit *actor_unit,
                                     const struct tile *target_tile,
                                     const struct extra_type *target_extra);
 
-bool is_action_enabled_unit_on_extras(const action_id wanted_action,
+bool is_action_enabled_unit_on_extras(const struct civ_map *nmap,
+                                      const action_id wanted_action,
                                       const struct unit *actor_unit,
                                       const struct tile *target,
                                       const struct extra_type *tgt_extra);
 
-bool is_action_enabled_unit_on_self(const action_id wanted_action,
+bool is_action_enabled_unit_on_self(const struct civ_map *nmap,
+                                    const action_id wanted_action,
                                     const struct unit *actor_unit);
 
-struct act_prob action_prob_vs_city(const struct unit* actor,
-                                    const action_id act_id,
-                                    const struct city* victim);
+bool is_action_enabled_player_on_self(const struct civ_map *nmap,
+                                      const action_id wanted_action,
+                                      const struct player *actor_plr);
+bool is_action_enabled_player_on_city(const struct civ_map *nmap,
+                                      const action_id wanted_action,
+                                      const struct player *actor_plr,
+                                      const struct city *target_city);
+bool
+is_action_enabled_player_on_extras(const struct civ_map *nmap,
+                                   const action_id wanted_action,
+                                   const struct player *actor_plr,
+                                   const struct tile *target_tile,
+                                   const struct extra_type *target_extra);
+bool is_action_enabled_player_on_stack(const struct civ_map *nmap,
+                                       const action_id wanted_action,
+                                       const struct player *actor_plr,
+                                       const struct tile *target_tile,
+                                       const struct extra_type *target_extra);
+bool is_action_enabled_player_on_tile(const struct civ_map *nmap,
+                                      const action_id wanted_action,
+                                      const struct player *actor_plr,
+                                      const struct tile *target_tile,
+                                      const struct extra_type *target_extra);
+bool is_action_enabled_player_on_unit(const struct civ_map *nmap,
+                                      const action_id wanted_action,
+                                      const struct player *actor_plr,
+                                      const struct unit *target_unit);
 
-struct act_prob action_prob_vs_unit(const struct unit* actor,
-                                    const action_id act_id,
-                                    const struct unit* victim);
+bool is_action_enabled_city(const struct civ_map *nmap,
+                            const action_id wanted_action,
+                            const struct city *actor_city);
 
-struct act_prob action_prob_vs_units(const struct unit* actor,
+struct act_prob action_prob_vs_city(const struct civ_map *nmap,
+                                    const struct unit *actor,
+                                    const action_id act_id,
+                                    const struct city *victim);
+
+struct act_prob action_prob_vs_unit(const struct civ_map *nmap,
+                                    const struct unit *actor,
+                                    const action_id act_id,
+                                    const struct unit *victim);
+
+struct act_prob action_prob_vs_stack(const struct civ_map *nmap,
+                                     const struct unit* actor,
                                      const action_id act_id,
                                      const struct tile* victims);
 
-struct act_prob action_prob_vs_tile(const struct unit *actor,
+struct act_prob action_prob_vs_tile(const struct civ_map *nmap,
+                                    const struct unit *actor,
                                     const action_id act_id,
                                     const struct tile *victims,
                                     const struct extra_type *target_extra);
 
-struct act_prob action_prob_vs_extras(const struct unit *actor,
+struct act_prob action_prob_vs_extras(const struct civ_map *nmap,
+                                      const struct unit *actor,
                                       const action_id act_id,
                                       const struct tile *target,
                                       const struct extra_type *tgt_extra);
 
-struct act_prob action_prob_self(const struct unit *actor,
+struct act_prob action_prob_self(const struct civ_map *nmap,
+                                 const struct unit *actor,
                                  const action_id act_id);
 
-struct act_prob action_prob_unit_vs_tgt(const struct action *paction,
+struct act_prob action_prob_unit_vs_tgt(const struct civ_map *nmap,
+                                        const struct action *paction,
                                         const struct unit *act_unit,
                                         const struct city *tgt_city,
                                         const struct unit *tgt_unit,
@@ -793,7 +632,8 @@ struct act_prob action_prob_unit_vs_tgt(const struct action *paction,
                                         const struct extra_type *sub_tgt);
 
 struct act_prob
-action_speculate_unit_on_city(action_id act_id,
+action_speculate_unit_on_city(const struct civ_map *nmap,
+                              action_id act_id,
                               const struct unit *actor,
                               const struct city *actor_home,
                               const struct tile *actor_tile,
@@ -801,7 +641,8 @@ action_speculate_unit_on_city(action_id act_id,
                               const struct city* target);
 
 struct act_prob
-action_speculate_unit_on_unit(action_id act_id,
+action_speculate_unit_on_unit(const struct civ_map *nmap,
+                              action_id act_id,
                               const struct unit *actor,
                               const struct city *actor_home,
                               const struct tile *actor_tile,
@@ -809,7 +650,8 @@ action_speculate_unit_on_unit(action_id act_id,
                               const struct unit *target);
 
 struct act_prob
-action_speculate_unit_on_units(action_id act_id,
+action_speculate_unit_on_stack(const struct civ_map *nmap,
+                               action_id act_id,
                                const struct unit *actor,
                                const struct city *actor_home,
                                const struct tile *actor_tile,
@@ -817,7 +659,8 @@ action_speculate_unit_on_units(action_id act_id,
                                const struct tile *target);
 
 struct act_prob
-action_speculate_unit_on_tile(action_id act_id,
+action_speculate_unit_on_tile(const struct civ_map *nmap,
+                              action_id act_id,
                               const struct unit *actor,
                               const struct city *actor_home,
                               const struct tile *actor_tile,
@@ -826,7 +669,8 @@ action_speculate_unit_on_tile(action_id act_id,
                               const struct extra_type *target_extra);
 
 struct act_prob
-action_speculate_unit_on_extras(action_id act_id,
+action_speculate_unit_on_extras(const struct civ_map *nmap,
+                                action_id act_id,
                                 const struct unit *actor,
                                 const struct city *actor_home,
                                 const struct tile *actor_tile,
@@ -835,7 +679,8 @@ action_speculate_unit_on_extras(action_id act_id,
                                 const struct extra_type *target_extra);
 
 struct act_prob
-action_speculate_unit_on_self(action_id act_id,
+action_speculate_unit_on_self(const struct civ_map *nmap,
+                              action_id act_id,
                               const struct unit *actor,
                               const struct city *actor_home,
                               const struct tile *actor_tile,
@@ -897,11 +742,15 @@ bool action_univs_not_blocking(const struct action *paction,
 
 bool action_immune_government(struct government *gov, action_id act);
 
+bool action_enablers_allow(const action_id wanted_action,
+                           const struct req_context *actor,
+                           const struct req_context *target);
 bool is_action_possible_on_city(action_id act_id,
                                 const struct player *actor_player,
                                 const struct city *target_city);
 
-bool action_maybe_possible_actor_unit(const action_id wanted_action,
+bool action_maybe_possible_actor_unit(const struct civ_map *nmap,
+                                      const action_id wanted_action,
                                       const struct unit *actor_unit);
 
 bool action_mp_full_makes_legal(const struct unit *actor,
@@ -921,6 +770,11 @@ void action_array_add_all_by_result(action_id *act_array,
 /* Action auto performers */
 const struct action_auto_perf *action_auto_perf_by_number(const int num);
 struct action_auto_perf *action_auto_perf_slot_number(const int num);
+
+enum gen_action select_actres_action_unit_on_stack(struct civ_map *nmap,
+                                                   enum action_result actres,
+                                                   struct unit *punit,
+                                                   struct tile *ptile);
 
 #ifdef __cplusplus
 }

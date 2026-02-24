@@ -17,6 +17,9 @@
 
 #include <math.h>
 
+/* dependencies/cvercmp */
+#include "cvercmp.h"
+
 /* utilities */
 #include "deprecations.h"
 #include "log.h"
@@ -46,11 +49,78 @@ int api_utilities_random(lua_State *L, int min, int max)
 }
 
 /********************************************************************//**
-  Return the version of freeciv lua script
+  Name and version of freeciv.
+  Deprecated because of the confusing function name.
 ************************************************************************/
 const char *api_utilities_fc_version(lua_State *L)
 {
+  LUASCRIPT_CHECK_STATE(L, 0);
+
+  log_deprecation("Deprecated: lua construct \"fc_version\", "
+                  "deprecated since \"3.2\", used. "
+                  "Use \"name_version\" instead.");
+
   return freeciv_name_version();
+}
+
+/********************************************************************//**
+  Return the name and version of freeciv
+************************************************************************/
+const char *api_utilities_name_version(lua_State *L)
+{
+  LUASCRIPT_CHECK_STATE(L, 0);
+
+  return freeciv_name_version();
+}
+
+/********************************************************************//**
+  Comparable freeciv version
+************************************************************************/
+const char *api_utilities_comparable_version(lua_State *L)
+{
+  LUASCRIPT_CHECK_STATE(L, 0);
+
+  return fc_comparable_version();
+}
+
+/********************************************************************//**
+  Version string with no name
+************************************************************************/
+const char *api_utilities_version_string(lua_State *L)
+{
+  LUASCRIPT_CHECK_STATE(L, 0);
+
+  return freeciv_datafile_version();
+}
+
+/********************************************************************//**
+  Compare two version strings. Return which one is bigger, or zero
+  if they are equal.
+************************************************************************/
+int api_utilities_versions_compare(lua_State *L,
+                                   const char *ver1, const char *ver2)
+{
+  enum cvercmp_type result;
+
+  LUASCRIPT_CHECK_STATE(L, 0);
+  LUASCRIPT_CHECK_ARG_NIL(L, ver1, 2, string, 0);
+  LUASCRIPT_CHECK_ARG_NIL(L, ver2, 3, string, 0);
+
+  result = cvercmp_cmp(ver1, ver2);
+
+  switch (result) {
+  case CVERCMP_EQUAL:
+    return 0;
+  case CVERCMP_GREATER:
+    return 1;
+  case CVERCMP_LESSER:
+    return -1;
+  default:
+    fc_assert(result == CVERCMP_EQUAL
+              || result == CVERCMP_GREATER
+              || result == CVERCMP_LESSER);
+    return 0;
+  }
 }
 
 /********************************************************************//**
@@ -65,7 +135,7 @@ void api_utilities_log_base(lua_State *L, int level, const char *message)
 
   fcl = luascript_get_fcl(L);
 
-  LUASCRIPT_CHECK(L, fcl != NULL, "Undefined Freeciv lua state!");
+  LUASCRIPT_CHECK(L, fcl != nullptr, "Undefined Freeciv lua state!");
 
   luascript_log(fcl, level, "%s", message);
 }
@@ -85,8 +155,9 @@ int api_utilities_direction_id(lua_State *L, Direction dir)
 ***************************************************************************/
 const char *api_utilities_dir2str(lua_State *L, Direction dir)
 {
-  LUASCRIPT_CHECK_STATE(L, NULL);
-  LUASCRIPT_CHECK(L, is_valid_dir(dir), "Direction is invalid", NULL);
+  LUASCRIPT_CHECK_STATE(L, nullptr);
+  LUASCRIPT_CHECK(L, is_valid_dir(dir), "Direction is invalid",
+                  nullptr);
 
   return direction8_name(dir);
 }
@@ -96,8 +167,8 @@ const char *api_utilities_dir2str(lua_State *L, Direction dir)
 ************************************************************************/
 const Direction *api_utilities_str2dir(lua_State *L, const char *dir)
 {
-  LUASCRIPT_CHECK_STATE(L, NULL);
-  LUASCRIPT_CHECK_ARG_NIL(L, dir, 2, string, NULL);
+  LUASCRIPT_CHECK_STATE(L, nullptr);
+  LUASCRIPT_CHECK_ARG_NIL(L, dir, 2, string, nullptr);
 
   return luascript_dir(direction8_by_name(dir, fc_strcasecmp));
 }
@@ -109,7 +180,7 @@ const Direction *api_utilities_dir_ccw(lua_State *L, Direction dir)
 {
   Direction new_dir = dir;
 
-  LUASCRIPT_CHECK_STATE(L, NULL);
+  LUASCRIPT_CHECK_STATE(L, nullptr);
 
   do {
     new_dir = dir_ccw(new_dir);
@@ -125,7 +196,7 @@ const Direction *api_utilities_dir_cw(lua_State *L, Direction dir)
 {
   Direction new_dir = dir;
 
-  LUASCRIPT_CHECK_STATE(L, NULL);
+  LUASCRIPT_CHECK_STATE(L, nullptr);
 
   do {
     new_dir = dir_cw(new_dir);
@@ -140,7 +211,7 @@ const Direction *api_utilities_dir_cw(lua_State *L, Direction dir)
 ************************************************************************/
 const Direction *api_utilities_opposite_dir(lua_State *L, Direction dir)
 {
-  LUASCRIPT_CHECK_STATE(L, NULL);
+  LUASCRIPT_CHECK_STATE(L, nullptr);
 
   return luascript_dir(opposite_direction(dir));
 }
@@ -163,12 +234,14 @@ void api_utilities_deprecation_warning(lua_State *L, char *method,
                                        char *deprecated_since)
 {
   if (are_deprecation_warnings_enabled()) {
-    /* TODO: Keep track which deprecations we have already warned about, and do not keep spamming
-     * about them. */
-    if (deprecated_since != NULL && replacement != NULL) {
-      log_deprecation_always("Deprecated: lua construct \"%s\", deprecated since \"%s\", used. "
-                             "Use \"%s\" instead", method, deprecated_since, replacement);
-    } else if (replacement != NULL) {
+    /* TODO: Keep track which deprecations we have already warned about,
+     *       and do not keep spamming about them. */
+    if (deprecated_since != nullptr && replacement != nullptr) {
+      log_deprecation_always("Deprecated: lua construct \"%s\", "
+                             "deprecated since \"%s\", used. "
+                             "Use \"%s\" instead", method,
+                             deprecated_since, replacement);
+    } else if (replacement != nullptr) {
       log_deprecation_always("Deprecated: lua construct \"%s\" used. "
                              "Use \"%s\" instead", method, replacement);
     } else {

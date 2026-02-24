@@ -1,5 +1,5 @@
 /***********************************************************************
- Freeciv - Copyright (C) 1996 - 2004 The Freeciv Project Team 
+ Freeciv - Copyright (C) 1996 - 2004 The Freeciv Project Team
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 2, or (at your option)
@@ -14,6 +14,9 @@
 #ifdef HAVE_CONFIG_H
 #include <fc_config.h>
 #endif
+
+/* utility */
+#include "rand.h" /* fc_rand() */
 
 /* common */
 #include "ai.h"
@@ -41,11 +44,15 @@
 #include "animals.h"
 
 /************************************************************************//**
-  Return suitable animal type for the terrain
+  Return a randon suitable animal type for the terrain
 ****************************************************************************/
 static const struct unit_type *animal_for_terrain(struct terrain *pterr)
 {
-  return pterr->animal;
+  if (pterr->num_animals == 0) {
+    return nullptr;
+  } else {
+    return pterr->animals[fc_rand(pterr->num_animals)];
+  }
 }
 
 /************************************************************************//**
@@ -71,7 +78,8 @@ static void place_animal(struct player *plr, int sqrdist)
   }
 
   circle_iterate(&(wld.map), ptile, sqrdist, check) {
-    if (tile_city(check) || is_non_allied_unit_tile(check, plr)) {
+    if (tile_city(check) != NULL
+        || is_non_allied_unit_tile(check, plr, TRUE)) {
       return;
     }
   } circle_iterate_end;
@@ -150,7 +158,7 @@ void create_animals(void)
   send_research_info(presearch, NULL);
 
   for (i = 0;
-       i < wld.map.xsize * wld.map.ysize * wld.map.server.animals / 1000;
+       i < MAP_NATIVE_WIDTH * MAP_NATIVE_HEIGHT * wld.map.server.animals / 1000;
        i++) {
     place_animal(plr, 2 * 2 + 1 * 1);
   }

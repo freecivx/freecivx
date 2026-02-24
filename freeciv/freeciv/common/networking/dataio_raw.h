@@ -75,7 +75,7 @@ struct plocation {
 
   /* If the full address is to a location inside this this field should
    * point to it. If this location is the final location this field should
-   * be NULL. */
+   * be nullptr. */
   struct plocation *sub_location;
 };
 
@@ -161,6 +161,10 @@ bool dio_get_uint16_vec8_raw(struct data_in *din, int **values, int stop_value)
 /* There is currently no need to escape strings in the binary protocol. */
 #define dio_get_estring_raw dio_get_string_raw
 #define dio_put_estring_raw dio_put_string_raw
+
+/* In the binary protocol, just encode the array lengths. */
+#define dio_get_arraylen_raw dio_get_uint16_raw
+#define dio_put_arraylen_raw dio_put_uint16_raw
 
 #ifndef FREECIV_JSON_CONNECTION
 

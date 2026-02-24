@@ -2,9 +2,9 @@
 
 ; Modifying this file:
 ; You should not modify this file except to make bugfixes or
-; for other "maintenance".  If you want to make custom changes,
+; for other "maintenance". If you want to make custom changes,
 ; you should create a new datadir subdirectory and copy this file
-; into that directory, and then modify that copy.  Then use the
+; into that directory, and then modify that copy. Then use the
 ; command "rulesetdir <mysubdir>" in the server to have freeciv
 ; use your new customized file.
 
@@ -13,11 +13,11 @@
 
 [datafile]
 description = "Alien World technology data for Freeciv"
-options = "+Freeciv-ruleset-3.3-Devel-2023.Feb.24"
-format_version = 40
+options = "+Freeciv-ruleset-3.4-Devel-2025.Jan.17"
+format_version = 50
 
 [control]
-; Names for custom tech flags. There can be up to 8 of these.
+; Names for custom tech flags. There can be up to 10 of these.
 ; name          = rule name; In some circumstances user may see this
 ;                 as part of some sentences, so try to make it descriptive
 ;                 and sensible.
@@ -28,7 +28,7 @@ format_version = 40
 
 ; /* <-- avoid gettext warnings
 ;
-; Tech classes:
+; Tech classes, there can be up to 16:
 ;
 ; First one is the default one.
 ; If there is none, tech classes feature is disabled
@@ -51,7 +51,7 @@ format_version = 40
 ; /* <-- avoid gettext warnings
 ;
 ; Below: The individual advances, one per section.
-; The number can be variable, up to 250.
+; The number can be variable, up to 400.
 ;
 ; The actual tag used (the * in [advance_*]) does not matter, except
 ; it must be unique within this file, and it may be used in debug
@@ -99,7 +99,7 @@ format_version = 40
 ;                 costs.
 ;
 ; Special values for req1 and req2 are "None" (first section below)
-; and "Never" (never available).  If only one tech is required,
+; and "Never" (never available). If only one tech is required,
 ; it should be listed as req1.
 ;
 ; As well as custom flags defined above, the following flag strings are
@@ -111,10 +111,6 @@ format_version = 40
 ;                         extra. See "bridged_over" extra property in
 ;                         terrain.ruleset.
 ; "Build_Airborne"      = from now on can build air units (for use by AI)
-; "Claim_Ocean"         = Player claims ocean tiles even if they are not
-;                         adjacent to border source
-; "Claim_Ocean_Limited" = Oceanic border sources claim ocean tiles even if
-;                         they are not adjacent to border source
 ;
 ; */ <-- avoid gettext warnings
 
@@ -428,7 +424,7 @@ flags       = ""
 graphic     = "a.low_level_orbit"
 graphic_alt = "-"
 helptext    = _("With further advances in antigravitics we are able to enter \
-orbit even if we still are prisoners of the force field surronding Deneb 7.\n\n\
+orbit even if we still are prisoners of the force field surrounding Deneb 7.\n\n\
 Makes Antigrav Ports more efficient. They can airlift three units instead of \
 just one.")
 
@@ -530,7 +526,7 @@ Increases max tax/science/lux rate by 10%.")
 name        = _("Ocean Cities")
 req1        = "Deneb Radar"
 req2        = "Thermal Module"
-flags       = "Claim_Ocean"
+flags       = ""
 graphic     = "a.ocean_cities"
 graphic_alt = "-"
 helptext    = _("Cities on ocean. Why not?")
@@ -762,7 +758,7 @@ flags       = ""
 graphic     = "a.unified_theory"
 graphic_alt = "-"
 helptext    = _("We now understand that radiation and antigravity are two \
-sides of the same phenomenom.")
+sides of the same phenomenon.")
 
 [advance_virtual_reality]
 name        = _("Virtual Entertainment")

@@ -36,7 +36,7 @@
 #include "version.h"
 
 // server
-#include "ruleset.h"
+#include "ruleload.h"
 
 // ruledit
 #include "conversion_log.h"
@@ -45,6 +45,7 @@
 #include "req_edit.h"
 #include "req_vec_fix.h"
 #include "ruledit.h"
+#include "tab_achievement.h"
 #include "tab_building.h"
 #include "tab_counters.h"
 #include "tab_enablers.h"
@@ -115,20 +116,20 @@ void ruledit_gui::setup(QWidget *central_in)
   const char *rev_ver;
   const char *mode;
 
-  data.nationlist = NULL;
-  data.nationlist_saved = NULL;
+  data.nationlist = nullptr;
+  data.nationlist_saved = nullptr;
 
   central = central_in;
 
   rev_ver = fc_git_revision();
 
-#ifndef FC_QT5_MODE
+#if defined(FC_QT6X_MODE)
+  mode = R__("built in Qt6x mode.");
+#else  // FC_QT6X_MODE
   mode = R__("built in Qt6 mode.");
-#else  // FC_QT5_MODE
-  mode = R__("built in Qt5 mode.");
-#endif // FC_QT5_MODE
+#endif // FC_QT6X_MODE
 
-  if (rev_ver == NULL) {
+  if (rev_ver == nullptr) {
     fc_snprintf(verbuf, sizeof(verbuf), "%s%s\n%s", word_version(),
                 VERSION_STRING, mode);
   } else {
@@ -173,6 +174,8 @@ void ruledit_gui::setup(QWidget *central_in)
   stack->addTab(bldg, QString::fromUtf8(R__("Buildings")));
   unit = new tab_unit(this);
   stack->addTab(unit, QString::fromUtf8(R__("Units")));
+  ach = new tab_achievement(this);
+  stack->addTab(ach, QString::fromUtf8(R__("Achievements")));
   good = new tab_good(this);
   stack->addTab(good, QString::fromUtf8(R__("Goods")));
   gov = new tab_gov(this);
@@ -246,16 +249,17 @@ void ruledit_gui::launch_now()
 {
   convlog = new conversion_log(QString::fromUtf8(R__("Old ruleset to a new format")));
 
-  if (load_rulesets(NULL, NULL, TRUE, conversion_log_cb, FALSE, TRUE, TRUE)) {
+  if (load_rulesets(nullptr, nullptr, TRUE, conversion_log_cb, FALSE, TRUE, TRUE)) {
     display_msg(R__("Ruleset loaded"));
 
     // Make freeable copy
-    if (game.server.ruledit.nationlist != NULL) {
+    if (game.server.ruledit.nationlist != nullptr) {
       data.nationlist = fc_strdup(game.server.ruledit.nationlist);
     } else {
-      data.nationlist = NULL;
+      data.nationlist = nullptr;
     }
 
+    ach->refresh();
     bldg->refresh();
     misc->ruleset_loaded();
     nation->refresh();
@@ -351,7 +355,7 @@ void ruledit_gui::open_req_edit(QString target, struct requirement_vector *preqs
 }
 
 /**********************************************************************//**
-  Unregisted closed req_edit dialog
+  Unregister closed req_edit dialog
 **************************************************************************/
 void ruledit_gui::unregister_req_edit(class req_edit *redit)
 {
@@ -424,7 +428,7 @@ void ruledit_gui::open_effect_edit(QString target, struct universal *uni,
 }
 
 /**********************************************************************//**
-  Unregisted closed effect_edit dialog
+  Unregister closed effect_edit dialog
 **************************************************************************/
 void ruledit_gui::unregister_effect_edit(class effect_edit *e_edit)
 {

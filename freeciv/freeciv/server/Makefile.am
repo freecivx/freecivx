@@ -1,16 +1,8 @@
 ## Process this file with automake to produce Makefile.in
 
-SUBDIRS = advisors generator savegame scripting
+SUBDIRS = advisors generator savegame scripting ruleset
 
-if FREECIV_WEB
-srvbin = freeciv-web
-else
-srvbin = freeciv-server
-endif
-
-if SERVER
-bin_PROGRAMS = $(srvbin)
-endif
+bin_PROGRAMS = freeciv-server
 
 lib_LTLIBRARIES = libfreeciv-srv.la
 AM_CPPFLAGS = \
@@ -23,18 +15,20 @@ AM_CPPFLAGS = \
 	-I$(top_srcdir)/utility \
 	-I$(srcdir)/advisors \
 	-I$(srcdir)/generator \
+	-I$(srcdir)/ruleset \
 	-I$(srcdir)/savegame \
 	-I$(srcdir)/scripting \
 	-I$(top_srcdir)/dependencies/tinycthread \
+	-I$(top_srcdir)/gen_headers/enums \
 	$(LUA_CFLAGS) \
 	$(FCDB_MYSQL_CFLAGS) $(FCDB_POSTGRES_CFLAGS) $(FCDB_SQLITE3_CFLAGS)
 
 if MINGW
-SERVERICON=../windows/servericon.o
+SERVERICON = $(top_builddir)/platforms/windows/icons/servericon.o
 endif
 
 exe_sources = \
-		civserver.c
+		srv_entrypoint.c
 
 libfreeciv_srv_la_SOURCES = \
 		actiontools.c	\
@@ -88,12 +82,6 @@ libfreeciv_srv_la_SOURCES = \
 		plrhand.h	\
 		report.c	\
 		report.h	\
-		rscompat.c	\
-		rscompat.h	\
-		rssanity.c	\
-		rssanity.h	\
-		ruleset.c	\
-		ruleset.h	\
 		sanitycheck.c	\
 		sanitycheck.h	\
 		score.c		\
@@ -143,7 +131,7 @@ if AI_MOD_STATIC_STUB
 da_libs += $(top_builddir)/ai/stub/libstubai.la
 endif
 
-# These files are not generated to builddir, but to srcdir */
+# These files are not generated to builddir, but to srcdir
 MAINTAINERCLEANFILES = \
 	$(srcdir)/hand_gen.c \
 	$(srcdir)/hand_gen.h
@@ -153,6 +141,7 @@ srvlibs = \
  $(top_builddir)/ai/libaicommon.la \
  $(top_builddir)/server/advisors/libadvisors.la \
  $(top_builddir)/server/generator/libgenerator.la \
+ $(top_builddir)/server/ruleset/libruleload.la \
  $(top_builddir)/server/savegame/libsavegame.la \
  $(top_builddir)/server/scripting/libscripting_fcdb.la \
  $(top_builddir)/server/scripting/libscripting_server.la
@@ -166,17 +155,12 @@ exe_ldflags =
 exe_ldadd = \
  ./libfreeciv-srv.la \
  $(top_builddir)/common/libfreeciv.la \
+ $(top_builddir)/dependencies/cvercmp/libcvercmp.la \
  $(INTLLIBS) \
  $(MAPIMG_WAND_LIBS) \
  $(TINYCTHR_LIBS) \
  $(SERVER_LIBS) $(SERVERICON)
 
-if FREECIV_WEB
-freeciv_web_SOURCES = $(exe_sources)
-freeciv_web_LDFLAGS = $(exe_ldflags)
-freeciv_web_LDADD = $(exe_ldadd)
-else
 freeciv_server_SOURCES = $(exe_sources)
 freeciv_server_LDFLAGS = $(exe_ldflags)
 freeciv_server_LDADD = $(exe_ldadd)
-endif

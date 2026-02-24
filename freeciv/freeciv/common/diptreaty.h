@@ -48,6 +48,8 @@ extern "C" {
 #define SPECENUM_COUNT CLAUSE_COUNT
 #include "specenum_gen.h"
 
+#define CLAUSE_LAST CLAUSE_COUNT
+
 #define is_pact_clause(x)                                                   \
   ((x == CLAUSE_CEASEFIRE) || (x == CLAUSE_PEACE) || (x == CLAUSE_ALLIANCE))
 
@@ -57,6 +59,7 @@ struct clause_info
   bool enabled;
   struct requirement_vector giver_reqs;
   struct requirement_vector receiver_reqs;
+  struct requirement_vector either_reqs;
 };
 
 /* For when we need to iterate over treaties */
@@ -75,7 +78,7 @@ struct Clause {
   int value;
 };
 
-struct Treaty {
+struct treaty {
   struct player *plr0, *plr1;
   bool accept0, accept1;
   struct clause_list *clauses;
@@ -88,13 +91,14 @@ bool could_meet_with_player(const struct player *pplayer,
 bool could_intel_with_player(const struct player *pplayer,
                              const struct player *aplayer);
 
-void init_treaty(struct Treaty *ptreaty, 
+void init_treaty(struct treaty *ptreaty,
                  struct player *plr0, struct player *plr1);
-bool add_clause(struct Treaty *ptreaty, struct player *pfrom, 
-                enum clause_type type, int val);
-bool remove_clause(struct Treaty *ptreaty, struct player *pfrom, 
+bool add_clause(struct treaty *ptreaty, struct player *pfrom,
+                enum clause_type type, int val,
+                struct player *client_player);
+bool remove_clause(struct treaty *ptreaty, struct player *pfrom,
                    enum clause_type type, int val);
-void clear_treaty(struct Treaty *ptreaty);
+void clear_treaty(struct treaty *ptreaty);
 
 void clause_infos_init(void);
 void clause_infos_free(void);
@@ -103,23 +107,23 @@ struct clause_info *clause_info_get(enum clause_type type);
 bool clause_enabled(enum clause_type type);
 
 #define SPECLIST_TAG treaty
-#define SPECLIST_TYPE struct Treaty
+#define SPECLIST_TYPE struct treaty
 #include "speclist.h"
 
 #define treaty_list_iterate(list, p) \
-    TYPED_LIST_ITERATE(struct Treaty, list, p)
+    TYPED_LIST_ITERATE(struct treaty, list, p)
 #define treaty_list_iterate_end  LIST_ITERATE_END
 
 void treaties_init(void);
 void treaties_free(void);
 void free_treaties(void);
 
-struct Treaty *find_treaty(struct player *plr0, struct player *plr1);
+struct treaty *find_treaty(struct player *plr0, struct player *plr1);
 
-void treaty_add(struct Treaty *ptreaty);
-void treaty_remove(struct Treaty *ptreaty);
+void treaty_add(struct treaty *ptreaty);
+void treaty_remove(struct treaty *ptreaty);
 
-typedef void (*treaty_cb)(struct Treaty *, void *data);
+typedef void (*treaty_cb)(struct treaty *, void *data);
 void treaties_iterate(treaty_cb cb, void *data);
 
 #ifdef __cplusplus

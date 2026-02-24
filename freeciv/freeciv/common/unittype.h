@@ -30,6 +30,7 @@ struct astring;         /* Actually defined in "utility/astring.h". */
 struct strvec;          /* Actually defined in "utility/string_vector.h". */
 
 struct ai_type;
+struct civ_map;
 
 /* U_LAST is a value which is guaranteed to be larger than all
  * actual Unit_type_id values. It is used as a flag value;
@@ -173,6 +174,8 @@ struct unit_class {
   } cache;
 };
 
+const char *unit_type_flag_id_name_update_cb(const char *old_name);
+
 /* Unit "special effects" flags:
  * Note this is now an enumerated type, and not power-of-two integers
  * for bits, though unit_type.flags is still a bitfield, and code
@@ -204,8 +207,8 @@ struct unit_class {
 #define SPECENUM_VALUE6 UTYF_NEVER_PROTECTS
 #define SPECENUM_VALUE6NAME N_("?unitflag:NeverProtects")
 /* Does not include ability to found cities */
-#define SPECENUM_VALUE7 UTYF_SETTLERS
-#define SPECENUM_VALUE7NAME N_("?unitflag:Settlers")
+#define SPECENUM_VALUE7 UTYF_WORKERS
+#define SPECENUM_VALUE7NAME N_("?unitflag:Workers")
 #define SPECENUM_VALUE8 UTYF_DIPLOMAT
 #define SPECENUM_VALUE8NAME N_("?unitflag:Diplomat")
 /* Can't leave the coast */
@@ -214,66 +217,65 @@ struct unit_class {
 /* Can 'refuel' at coast - meaningless if fuel value not set */
 #define SPECENUM_VALUE10 UTYF_COAST
 #define SPECENUM_VALUE10NAME N_("?unitflag:Coast")
-/* upkeep can switch from shield to gold */
-#define SPECENUM_VALUE11 UTYF_SHIELD2GOLD
-#define SPECENUM_VALUE11NAME N_("?unitflag:Shield2Gold")
 /* Strong in diplomatic battles. */
-#define SPECENUM_VALUE12 UTYF_SPY
-#define SPECENUM_VALUE12NAME N_("?unitflag:Spy")
+#define SPECENUM_VALUE11 UTYF_SPY
+#define SPECENUM_VALUE11NAME N_("?unitflag:Spy")
 /* Cannot attack vs non-native tiles even if class can */
-#define SPECENUM_VALUE13 UTYF_ONLY_NATIVE_ATTACK
-#define SPECENUM_VALUE13NAME N_("?unitflag:Only_Native_Attack")
+#define SPECENUM_VALUE12 UTYF_ONLY_NATIVE_ATTACK
+#define SPECENUM_VALUE12NAME N_("?unitflag:Only_Native_Attack")
 /* Only Fundamentalist government can build these units */
-#define SPECENUM_VALUE14 UTYF_FANATIC
-#define SPECENUM_VALUE14NAME N_("?unitflag:Fanatic")
+#define SPECENUM_VALUE13 UTYF_FANATIC
+#define SPECENUM_VALUE13NAME N_("?unitflag:Fanatic")
 /* Losing this unit means losing the game */
-#define SPECENUM_VALUE15 UTYF_GAMELOSS
-#define SPECENUM_VALUE15NAME N_("?unitflag:GameLoss")
+#define SPECENUM_VALUE14 UTYF_GAMELOSS
+#define SPECENUM_VALUE14NAME N_("?unitflag:GameLoss")
 /* A player can only have one unit of this type */
-#define SPECENUM_VALUE16 UTYF_UNIQUE
-#define SPECENUM_VALUE16NAME N_("?unitflag:Unique")
+#define SPECENUM_VALUE15 UTYF_UNIQUE
+#define SPECENUM_VALUE15NAME N_("?unitflag:Unique")
 /* When a transport containing this unit disappears the game will try to
  * rescue units with this flag before it tries to rescue units without
  * it. */
-#define SPECENUM_VALUE17 UTYF_EVAC_FIRST
-#define SPECENUM_VALUE17NAME N_("?unitflag:EvacuateFirst")
+#define SPECENUM_VALUE16 UTYF_EVAC_FIRST
+#define SPECENUM_VALUE16NAME N_("?unitflag:EvacuateFirst")
 /* Always wins diplomatic contests */
-#define SPECENUM_VALUE18 UTYF_SUPERSPY
-#define SPECENUM_VALUE18NAME N_("?unitflag:SuperSpy")
+#define SPECENUM_VALUE17 UTYF_SUPERSPY
+#define SPECENUM_VALUE17NAME N_("?unitflag:SuperSpy")
 /* Has no homecity */
-#define SPECENUM_VALUE19 UTYF_NOHOME
-#define SPECENUM_VALUE19NAME N_("?unitflag:NoHome")
-/* Cannot increase veteran level */
-#define SPECENUM_VALUE20 UTYF_NO_VETERAN
-#define SPECENUM_VALUE20NAME N_("?unitflag:NoVeteran")
+#define SPECENUM_VALUE18 UTYF_NOHOME
+#define SPECENUM_VALUE18NAME N_("?unitflag:NoHome")
+/* Unreserved - clean out */
+#define SPECENUM_VALUE19 UTYF_UNRESERVED
+#define SPECENUM_VALUE19NAME "Unreserved"
 /* Gets double firepower against cities */
-#define SPECENUM_VALUE21 UTYF_CITYBUSTER
-#define SPECENUM_VALUE21NAME N_("?unitflag:CityBuster")
+#define SPECENUM_VALUE20 UTYF_CITYBUSTER
+#define SPECENUM_VALUE20NAME N_("?unitflag:CityBuster")
 /* Unit cannot be built (barb leader etc) */
-#define SPECENUM_VALUE22 UTYF_NOBUILD
-#define SPECENUM_VALUE22NAME N_("?unitflag:NoBuild")
+#define SPECENUM_VALUE21 UTYF_NOBUILD
+#define SPECENUM_VALUE21NAME N_("?unitflag:NoBuild")
 /* Firepower set to 1 when EFT_DEFEND_BONUS applies
  * (for example, land unit attacking city with walls) */
-#define SPECENUM_VALUE23 UTYF_BADWALLATTACKER
-#define SPECENUM_VALUE23NAME N_("?unitflag:BadWallAttacker")
+#define SPECENUM_VALUE22 UTYF_BADWALLATTACKER
+#define SPECENUM_VALUE22NAME N_("?unitflag:BadWallAttacker")
 /* Firepower set to 1 and attackers x2 when in city */
-#define SPECENUM_VALUE24 UTYF_BADCITYDEFENDER
-#define SPECENUM_VALUE24NAME N_("?unitflag:BadCityDefender")
+#define SPECENUM_VALUE23 UTYF_BADCITYDEFENDER
+#define SPECENUM_VALUE23NAME N_("?unitflag:BadCityDefender")
 /* Only barbarians can build this unit */
-#define SPECENUM_VALUE25 UTYF_BARBARIAN_ONLY
-#define SPECENUM_VALUE25NAME N_("?unitflag:BarbarianOnly")
+#define SPECENUM_VALUE24 UTYF_BARBARIAN_ONLY
+#define SPECENUM_VALUE24NAME N_("?unitflag:BarbarianOnly")
 /* Unit can't be built in scenarios where founding new cities is prevented. */
-#define SPECENUM_VALUE26 UTYF_NEWCITY_GAMES_ONLY
-#define SPECENUM_VALUE26NAME N_("?unitflag:NewCityGamesOnly")
-/* Can escape when killstack occours */
-#define SPECENUM_VALUE27 UTYF_CANESCAPE
-#define SPECENUM_VALUE27NAME N_("?unitflag:CanEscape")
+#define SPECENUM_VALUE25 UTYF_NEWCITY_GAMES_ONLY
+#define SPECENUM_VALUE25NAME N_("?unitflag:NewCityGamesOnly")
 /* Can kill escaping units */
-#define SPECENUM_VALUE28 UTYF_CANKILLESCAPING
-#define SPECENUM_VALUE28NAME N_("?unitflag:CanKillEscaping")
+#define SPECENUM_VALUE26 UTYF_CANKILLESCAPING
+#define SPECENUM_VALUE26NAME N_("?unitflag:CanKillEscaping")
 /* Makes random movement, not under player control */
-#define SPECENUM_VALUE29 UTYF_RANDOM_MOVEMENT
-#define SPECENUM_VALUE29NAME N_("?unitflag:RandomMovement")
+#define SPECENUM_VALUE27 UTYF_RANDOM_MOVEMENT
+#define SPECENUM_VALUE27NAME N_("?unitflag:RandomMovement")
+/* Do not show flag for the unit */
+#define SPECENUM_VALUE28 UTYF_FLAGLESS
+#define SPECENUM_VALUE28NAME N_("?unitflag:Flagless")
+#define SPECENUM_VALUE29 UTYF_PROVIDES_RANSOM
+#define SPECENUM_VALUE29NAME N_("?unitflag:ProvidesRansom")
 
 #define SPECENUM_VALUE30 UTYF_USER_FLAG_1
 #define SPECENUM_VALUE31 UTYF_USER_FLAG_2
@@ -325,11 +327,15 @@ struct unit_class {
 #define SPECENUM_VALUE77 UTYF_USER_FLAG_48
 #define SPECENUM_VALUE78 UTYF_USER_FLAG_49
 #define SPECENUM_VALUE79 UTYF_USER_FLAG_50
+#define SPECENUM_VALUE80 UTYF_USER_FLAG_51
+#define SPECENUM_VALUE81 UTYF_USER_FLAG_52
+#define SPECENUM_VALUE82 UTYF_USER_FLAG_53
 /* Note that first role must have value next to last flag */
 
-#define UTYF_LAST_USER_FLAG UTYF_USER_FLAG_50
+#define UTYF_LAST_USER_FLAG UTYF_USER_FLAG_53
 #define MAX_NUM_USER_UNIT_FLAGS (UTYF_LAST_USER_FLAG - UTYF_USER_FLAG_1 + 1)
 #define SPECENUM_NAMEOVERRIDE
+#define SPECENUM_NAME_UPDATER
 #define SPECENUM_BITVECTOR bv_unit_type_flags
 #include "specenum_gen.h"
 
@@ -339,102 +345,102 @@ struct unit_class {
    but determine which units are used (mainly by the server or AI)
    in various circumstances, or "roles".
    Note that in some cases flags can act as roles, eg, we don't need
-   a role for "settlers", because we can just use UTYF_SETTLERS.
+   a role for "workers", because we can just use UTYF_WORKERS.
    (Now have to consider ACTION_FOUND_CITY too)
    So we make sure flag values and role values are distinct,
-   so some functions can use them interchangably.
+   so some functions can use them interchangeably.
    See data/classic/units.ruleset for documentation of their effects.
 */
 #define L_FIRST (UTYF_LAST_USER_FLAG + 1)
 
 #define SPECENUM_NAME unit_role_id
 /* Built first when city established */
-#define SPECENUM_VALUE80 L_FIRSTBUILD
-#define SPECENUM_VALUE80NAME N_("?unitflag:FirstBuild")
+#define SPECENUM_VALUE83 L_FIRSTBUILD
+#define SPECENUM_VALUE83NAME N_("?unitflag:FirstBuild")
 /* Explorer unit */
-#define SPECENUM_VALUE81 L_EXPLORER
-#define SPECENUM_VALUE81NAME N_("?unitflag:Explorer")
+#define SPECENUM_VALUE84 L_EXPLORER
+#define SPECENUM_VALUE84NAME N_("?unitflag:Explorer")
 /* Can be found in hut */
-#define SPECENUM_VALUE82 L_HUT
-#define SPECENUM_VALUE82NAME N_("?unitflag:Hut")
+#define SPECENUM_VALUE85 L_HUT
+#define SPECENUM_VALUE85NAME N_("?unitflag:Hut")
 /* Can be found in hut, tech required */
-#define SPECENUM_VALUE83 L_HUT_TECH
-#define SPECENUM_VALUE83NAME N_("?unitflag:HutTech")
+#define SPECENUM_VALUE86 L_HUT_TECH
+#define SPECENUM_VALUE86NAME N_("?unitflag:HutTech")
 /* Created in Partisan circumstances */
-#define SPECENUM_VALUE84 L_PARTISAN
-#define SPECENUM_VALUE84NAME N_("?unitflag:Partisan")
+#define SPECENUM_VALUE87 L_PARTISAN
+#define SPECENUM_VALUE87NAME N_("?unitflag:Partisan")
 /* Ok on defense (AI) */
-#define SPECENUM_VALUE85 L_DEFEND_OK
-#define SPECENUM_VALUE85NAME N_("?unitflag:DefendOk")
+#define SPECENUM_VALUE88 L_DEFEND_OK
+#define SPECENUM_VALUE88NAME N_("?unitflag:DefendOk")
 /* Primary purpose is defense (AI) */
-#define SPECENUM_VALUE86 L_DEFEND_GOOD
-#define SPECENUM_VALUE86NAME N_("?unitflag:DefendGood")
+#define SPECENUM_VALUE89 L_DEFEND_GOOD
+#define SPECENUM_VALUE89NAME N_("?unitflag:DefendGood")
 /* Useful for ferrying (AI) */
-#define SPECENUM_VALUE87 L_FERRYBOAT
-#define SPECENUM_VALUE87NAME N_("?unitflag:FerryBoat")
+#define SPECENUM_VALUE90 L_FERRYBOAT
+#define SPECENUM_VALUE90NAME N_("?unitflag:FerryBoat")
 /* Barbarians unit, land only */
-#define SPECENUM_VALUE88 L_BARBARIAN
-#define SPECENUM_VALUE88NAME N_("?unitflag:Barbarian")
+#define SPECENUM_VALUE91 L_BARBARIAN
+#define SPECENUM_VALUE91NAME N_("?unitflag:Barbarian")
 /* Barbarians unit, global tech required */
-#define SPECENUM_VALUE89 L_BARBARIAN_TECH
-#define SPECENUM_VALUE89NAME N_("?unitflag:BarbarianTech")
+#define SPECENUM_VALUE92 L_BARBARIAN_TECH
+#define SPECENUM_VALUE92NAME N_("?unitflag:BarbarianTech")
 /* Barbarian boat */
-#define SPECENUM_VALUE90 L_BARBARIAN_BOAT
-#define SPECENUM_VALUE90NAME N_("?unitflag:BarbarianBoat")
+#define SPECENUM_VALUE93 L_BARBARIAN_BOAT
+#define SPECENUM_VALUE93NAME N_("?unitflag:BarbarianBoat")
 /* Barbarians boat, global tech required */
-#define SPECENUM_VALUE91 L_BARBARIAN_BOAT_TECH
-#define SPECENUM_VALUE91NAME N_("?unitflag:BarbarianBoatTech")
+#define SPECENUM_VALUE94 L_BARBARIAN_BOAT_TECH
+#define SPECENUM_VALUE94NAME N_("?unitflag:BarbarianBoatTech")
 /* What barbarians should build */
-#define SPECENUM_VALUE92 L_BARBARIAN_BUILD
-#define SPECENUM_VALUE92NAME N_("?unitflag:BarbarianBuild")
+#define SPECENUM_VALUE95 L_BARBARIAN_BUILD
+#define SPECENUM_VALUE95NAME N_("?unitflag:BarbarianBuild")
 /* Barbarians build when global tech */
-#define SPECENUM_VALUE93 L_BARBARIAN_BUILD_TECH
-#define SPECENUM_VALUE93NAME N_("?unitflag:BarbarianBuildTech")
+#define SPECENUM_VALUE96 L_BARBARIAN_BUILD_TECH
+#define SPECENUM_VALUE96NAME N_("?unitflag:BarbarianBuildTech")
 /* Barbarian leader */
-#define SPECENUM_VALUE94 L_BARBARIAN_LEADER
-#define SPECENUM_VALUE94NAME N_("?unitflag:BarbarianLeader")
+#define SPECENUM_VALUE97 L_BARBARIAN_LEADER
+#define SPECENUM_VALUE97NAME N_("?unitflag:BarbarianLeader")
 /* Sea raider unit */
-#define SPECENUM_VALUE95 L_BARBARIAN_SEA
-#define SPECENUM_VALUE95NAME N_("?unitflag:BarbarianSea")
+#define SPECENUM_VALUE98 L_BARBARIAN_SEA
+#define SPECENUM_VALUE98NAME N_("?unitflag:BarbarianSea")
 /* Sea raider unit, global tech required */
-#define SPECENUM_VALUE96 L_BARBARIAN_SEA_TECH
-#define SPECENUM_VALUE96NAME N_("?unitflag:BarbarianSeaTech")
+#define SPECENUM_VALUE99 L_BARBARIAN_SEA_TECH
+#define SPECENUM_VALUE99NAME N_("?unitflag:BarbarianSeaTech")
 /* StartUnit: Cities */
-#define SPECENUM_VALUE97 L_START_CITIES
-#define SPECENUM_VALUE97NAME N_("?unitflag:CitiesStartUnit")
+#define SPECENUM_VALUE100 L_START_CITIES
+#define SPECENUM_VALUE100NAME N_("?unitflag:CitiesStartUnit")
 /* StartUnit: Worker */
-#define SPECENUM_VALUE98 L_START_WORKER
-#define SPECENUM_VALUE98NAME N_("?unitflag:WorkerStartUnit")
+#define SPECENUM_VALUE101 L_START_WORKER
+#define SPECENUM_VALUE101NAME N_("?unitflag:WorkerStartUnit")
 /* StartUnit: Explorer */
-#define SPECENUM_VALUE99 L_START_EXPLORER
-#define SPECENUM_VALUE99NAME N_("?unitflag:ExplorerStartUnit")
+#define SPECENUM_VALUE102 L_START_EXPLORER
+#define SPECENUM_VALUE102NAME N_("?unitflag:ExplorerStartUnit")
 /* StartUnit: King */
-#define SPECENUM_VALUE100 L_START_KING
-#define SPECENUM_VALUE100NAME N_("?unitflag:KingStartUnit")
+#define SPECENUM_VALUE103 L_START_KING
+#define SPECENUM_VALUE103NAME N_("?unitflag:KingStartUnit")
 /* StartUnit: Diplomat */
-#define SPECENUM_VALUE101 L_START_DIPLOMAT
-#define SPECENUM_VALUE101NAME N_("?unitflag:DiplomatStartUnit")
+#define SPECENUM_VALUE104 L_START_DIPLOMAT
+#define SPECENUM_VALUE104NAME N_("?unitflag:DiplomatStartUnit")
 /* StartUnit: Ferryboat */
-#define SPECENUM_VALUE102 L_START_FERRY
-#define SPECENUM_VALUE102NAME N_("?unitflag:FerryStartUnit")
+#define SPECENUM_VALUE105 L_START_FERRY
+#define SPECENUM_VALUE105NAME N_("?unitflag:FerryStartUnit")
 /* StartUnit: DefendOk */
-#define SPECENUM_VALUE103 L_START_DEFEND_OK
-#define SPECENUM_VALUE103NAME N_("?unitflag:DefendOkStartUnit")
+#define SPECENUM_VALUE106 L_START_DEFEND_OK
+#define SPECENUM_VALUE106NAME N_("?unitflag:DefendOkStartUnit")
 /* StartUnit: DefendGood */
-#define SPECENUM_VALUE104 L_START_DEFEND_GOOD
-#define SPECENUM_VALUE104NAME N_("?unitflag:DefendGoodStartUnit")
+#define SPECENUM_VALUE107 L_START_DEFEND_GOOD
+#define SPECENUM_VALUE107NAME N_("?unitflag:DefendGoodStartUnit")
 /* StartUnit: AttackFast */
-#define SPECENUM_VALUE105 L_START_ATTACK_FAST
-#define SPECENUM_VALUE105NAME N_("?unitflag:AttackFastStartUnit")
+#define SPECENUM_VALUE108 L_START_ATTACK_FAST
+#define SPECENUM_VALUE108NAME N_("?unitflag:AttackFastStartUnit")
 /* StartUnit: AttackStrong */
-#define SPECENUM_VALUE106 L_START_ATTACK_STRONG
-#define SPECENUM_VALUE106NAME N_("?unitflag:AttackStrongStartUnit")
+#define SPECENUM_VALUE109 L_START_ATTACK_STRONG
+#define SPECENUM_VALUE109NAME N_("?unitflag:AttackStrongStartUnit")
 /* AI hunter type unit */
-#define SPECENUM_VALUE107 L_HUNTER
-#define SPECENUM_VALUE107NAME N_("?unitflag:Hunter")
+#define SPECENUM_VALUE110 L_HUNTER
+#define SPECENUM_VALUE110NAME N_("?unitflag:Hunter")
 /* Can improve terrain */
-#define SPECENUM_VALUE108 L_SETTLERS
-#define SPECENUM_VALUE108NAME N_("?unitflag:Settlers")
+#define SPECENUM_VALUE111 L_SETTLERS
+#define SPECENUM_VALUE111NAME N_("?unitflag:Settlers")
 #define L_LAST (L_SETTLERS + 1)
 
 #include "specenum_gen.h"
@@ -499,7 +505,7 @@ struct veteran_system {
 struct unit_type {
   Unit_type_id item_number;
   struct name_translation name;
-  bool ruledit_disabled;              /* Does not really exist - hole in units array */
+  bool ruledit_disabled;                /* Does not really exist - hole in units array */
   void *ruledit_dlg;
   char graphic_str[MAX_LEN_NAME];
   char graphic_alt[MAX_LEN_NAME];
@@ -508,12 +514,15 @@ struct unit_type {
   char sound_move_alt[MAX_LEN_NAME];
   char sound_fight[MAX_LEN_NAME];
   char sound_fight_alt[MAX_LEN_NAME];
-  int build_cost;			/* Use wrappers to access this. */
-  int pop_cost;  /* number of workers the unit contains (e.g., settlers, engineers)*/
+  int build_cost;                       /* Use wrappers to access this. */
+  int pop_cost;                         /* Number of workers the unit contains
+                                         * (e.g., settlers, engineers) */
+  struct specialist *spec_type; /* affects only founding and adding to cities */
+
   int attack_strength;
   int defense_strength;
   int move_rate;
-  int unknown_move_cost; /* See utype_unknown_move_cost(). */
+  int unknown_move_cost;                /* See utype_unknown_move_cost(). */
 
   struct requirement_vector build_reqs;
 
@@ -523,7 +532,7 @@ struct unit_type {
   int firepower;
   struct combat_bonus_list *bonuses;
 
-#define U_NOT_OBSOLETED (NULL)
+#define U_NOT_OBSOLETED (nullptr)
   const struct unit_type *obsoleted_by;
   const struct unit_type *converted_to;
   int convert_time;
@@ -709,7 +718,8 @@ bool utype_pays_for_regular_move_to_tgt(const struct action *paction,
 int utype_pays_mp_for_action_base(const struct action *paction,
                                   const struct unit_type *putype);
 
-int utype_pays_mp_for_action_estimate(const struct action *paction,
+int utype_pays_mp_for_action_estimate(const struct civ_map *nmap,
+                                      const struct action *paction,
                                       const struct unit_type *putype,
                                       const struct player *act_player,
                                       const struct tile *act_tile,
@@ -726,9 +736,9 @@ struct unit_type *role_units_iterate_backwards(int role, role_unit_callback cb, 
 struct unit_type *get_role_unit(int role, int role_index);
 struct unit_type *best_role_unit(const struct city *pcity, int role);
 struct unit_type *best_role_unit_for_player(const struct player *pplayer,
-					    int role);
+                                            int role);
 struct unit_type *first_role_unit_for_player(const struct player *pplayer,
-					     int role);
+                                             int role);
 bool role_units_translations(struct astring *astr, int flag, bool alts);
 
 /* General unit class routines */
@@ -788,6 +798,9 @@ const struct veteran_system *
   utype_veteran_system(const struct unit_type *punittype);
 int utype_veteran_levels(const struct unit_type *punittype);
 const struct veteran_level *
+  vsystem_veteran_level(const struct veteran_system *vsystem, int level)
+  fc__attribute((nonnull (1)));
+const struct veteran_level *
   utype_veteran_level(const struct unit_type *punittype, int level);
 const char *utype_veteran_name_translation(const struct unit_type *punittype,
                                            int level);
@@ -806,16 +819,17 @@ int utype_pop_value(const struct unit_type *punittype, const struct city *pcity)
 enum unit_move_type utype_move_type(const struct unit_type *punittype);
 void set_unit_move_type(struct unit_class *puclass);
 
-/* player related unit functions */
-int utype_upkeep_cost(const struct unit_type *ut, struct player *pplayer,
+/* Player related unit functions */
+int utype_upkeep_cost(const struct unit_type *ut, const struct unit *punit,
+                      struct player *pplayer,
                       Output_type_id otype);
 int utype_happy_cost(const struct unit_type *ut, const struct player *pplayer);
 
 const struct unit_type *can_upgrade_unittype(const struct player *pplayer,
                                              const struct unit_type *punittype);
 int unit_upgrade_price(const struct player *pplayer,
-		       const struct unit_type *from,
-		       const struct unit_type *to);
+                       const struct unit_type *from,
+                       const struct unit_type *to);
 
 bool utype_player_already_has_this(const struct player *pplayer,
                                    const struct unit_type *putype);
@@ -823,12 +837,12 @@ bool utype_player_already_has_this_unique(const struct player *pplayer,
                                           const struct unit_type *putype);
 
 bool can_player_build_unit_direct(const struct player *p,
-				  const struct unit_type *punittype,
+                                  const struct unit_type *punittype,
                                   bool consider_reg_impr_req);
 bool can_player_build_unit_later(const struct player *p,
-				 const struct unit_type *punittype);
+                                 const struct unit_type *punittype);
 bool can_player_build_unit_now(const struct player *p,
-			       const struct unit_type *punittype);
+                               const struct unit_type *punittype);
 
 #define utype_fuel(ptype) (ptype)->fuel
 
@@ -846,15 +860,16 @@ void unit_class_flags_free(void);
 struct unit_type *unit_type_array_first(void);
 const struct unit_type *unit_type_array_last(void);
 
-#define unit_type_iterate(_p)						\
-{									\
-  struct unit_type *_p = unit_type_array_first();			\
-  if (NULL != _p) {							\
-    for (; _p <= unit_type_array_last(); _p++) {
+#define unit_type_iterate(_p)                                           \
+{                                                                       \
+  struct unit_type *_p = unit_type_array_first();                       \
+  if (_p != nullptr) {                                                  \
+    const struct unit_type *_end_##_p = unit_type_array_last();         \
+    for (; _p <= _end_##_p; _p++) {
 
-#define unit_type_iterate_end						\
-    }									\
-  }									\
+#define unit_type_iterate_end                                           \
+    }                                                                   \
+  }                                                                     \
 }
 
 #define unit_type_re_active_iterate(_p)                                 \
@@ -898,15 +913,16 @@ void set_unit_type_caches(struct unit_type *ptype);
 struct unit_class *unit_class_array_first(void);
 const struct unit_class *unit_class_array_last(void);
 
-#define unit_class_iterate(_p)						\
-{									\
-  struct unit_class *_p = unit_class_array_first();			\
-  if (NULL != _p) {							\
-    for (; _p <= unit_class_array_last(); _p++) {
+#define unit_class_iterate(_p)                                          \
+{                                                                       \
+  struct unit_class *_p = unit_class_array_first();                     \
+  if (_p != nullptr) {                                                  \
+    const struct unit_class *_end_##_p = unit_class_array_last();       \
+    for (; _p <= _end_##_p; _p++) {
 
-#define unit_class_iterate_end						\
-    }									\
-  }									\
+#define unit_class_iterate_end                                          \
+    }                                                                   \
+  }                                                                     \
 }
 
 #define unit_class_re_active_iterate(_p)                                 \
@@ -937,4 +953,4 @@ const struct unit_class *unit_class_array_last(void);
 }
 #endif /* __cplusplus */
 
-#endif  /* FC__UNITTYPE_H */
+#endif /* FC__UNITTYPE_H */

@@ -86,14 +86,14 @@ bool auth_user(struct connection *pconn, char *username)
   }
 #endif /* FREECIV_WEB */
 
-  /* assign the client a unique guest name/reject if guests aren't allowed */
+  /* Assign the client a unique guest name/Reject if guests aren't allowed */
   if (is_guest_name(username)) {
     if (srvarg.auth_allow_guests) {
 
       sz_strlcpy(tmpname, username);
       get_unique_guest_name(username);
 
-      if (strncmp(tmpname, username, MAX_LEN_NAME) != 0) {
+      if (fc_strncmp(tmpname, username, MAX_LEN_NAME)) {
         notify_conn_early(pconn->self, NULL, E_CONNECTION, ftc_warning,
                           _("Warning: the guest name '%s' has been "
                             "taken, renaming to user '%s'."), tmpname, username);
@@ -107,7 +107,7 @@ bool auth_user(struct connection *pconn, char *username)
       return FALSE;
     }
   } else {
-    /* we are not a guest, we need an extra check as to whether a 
+    /* We are not a guest, we need an extra check as to whether a
      * connection can be established: the client must authenticate itself */
     char buffer[MAX_LEN_MSG];
     bool exists = FALSE;
@@ -351,7 +351,7 @@ static bool is_good_password(const char *password, char *msg)
   fc_snprintf(msg, MAX_LEN_MSG,
               _("The password must have at least %d capital letters, %d "
                 "numbers, and be at minimum %d [printable] characters long. "
-                "Try again."), 
+                "Try again."),
               MIN_PASSWORD_CAPS, MIN_PASSWORD_NUMS, MIN_PASSWORD_LEN);
 
   for (i = 0; i < strlen(password); i++) {

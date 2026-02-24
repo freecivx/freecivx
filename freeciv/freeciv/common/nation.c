@@ -43,7 +43,7 @@ struct nation_set {
   char description[MAX_LEN_MSG];
 };
 
-static struct nation_type *nations = NULL;
+static struct nation_type *nations = nullptr;
 
 static int num_nation_sets;
 static struct nation_set nation_sets[MAX_NUM_NATION_SETS];
@@ -75,10 +75,10 @@ static inline bool nation_check(const struct nation_type *pnation,
     }
     return FALSE;
   }
-  if (NULL == pnation) {
+  if (pnation == nullptr) {
     if (do_output) {
       do_log(file, function, line, TRUE, LOG_ERROR,
-             "This function has NULL nation argument.");
+             "This function has nullptr nation argument.");
     }
     return FALSE;
   }
@@ -143,7 +143,7 @@ const char *nation_rule_name(const struct nation_type *pnation)
 }
 
 /************************************************************************//**
-  Return the (translated) adjective for the given nation. 
+  Return the (translated) adjective for the given nation.
   You don't have to free the return pointer.
 ****************************************************************************/
 const char *nation_adjective_translation(const struct nation_type *pnation)
@@ -153,7 +153,7 @@ const char *nation_adjective_translation(const struct nation_type *pnation)
 }
 
 /************************************************************************//**
-  Return the (translated) plural noun of the given nation. 
+  Return the (translated) plural noun of the given nation.
   You don't have to free the return pointer.
 ****************************************************************************/
 const char *nation_plural_translation(const struct nation_type *pnation)
@@ -163,7 +163,7 @@ const char *nation_plural_translation(const struct nation_type *pnation)
 }
 
 /************************************************************************//**
-  Return the (translated) adjective for the given nation of a player. 
+  Return the (translated) adjective for the given nation of a player.
   You don't have to free the return pointer.
 ****************************************************************************/
 const char *nation_adjective_for_player(const struct player *pplayer)
@@ -172,7 +172,7 @@ const char *nation_adjective_for_player(const struct player *pplayer)
 }
 
 /************************************************************************//**
-  Return the (translated) plural noun of the given nation of a player. 
+  Return the (translated) plural noun of the given nation of a player.
   You don't have to free the return pointer.
 ****************************************************************************/
 const char *nation_plural_for_player(const struct player *pplayer)
@@ -188,6 +188,7 @@ const char *nation_plural_for_player(const struct player *pplayer)
 bool is_nation_pickable(const struct nation_type *nation)
 {
   fc_assert_ret_val(!is_server(), FALSE);
+
   return nation->client.is_pickable;
 }
 
@@ -229,7 +230,8 @@ struct nation_leader {
 const struct nation_leader_list *
 nation_leaders(const struct nation_type *pnation)
 {
-  NATION_CHECK(pnation, return NULL);
+  NATION_CHECK(pnation, return nullptr);
+
   return pnation->leaders;
 }
 
@@ -241,12 +243,14 @@ struct nation_leader *nation_leader_new(struct nation_type *pnation,
 {
   struct nation_leader *pleader;
 
-  NATION_CHECK(pnation, return NULL);
+  NATION_CHECK(pnation, return nullptr);
+
   pleader = fc_malloc(sizeof(*pleader));
   pleader->name = fc_strdup(name);
   pleader->is_male = is_male;
 
   nation_leader_list_append(pnation->leaders, pleader);
+
   return pleader;
 }
 
@@ -260,19 +264,21 @@ static void nation_leader_destroy(struct nation_leader *pleader)
 }
 
 /************************************************************************//**
-  Returns the nation leader structure which match 'name' or NULL if not
+  Returns the nation leader structure which match 'name' or nullptr if not
   found.
 ****************************************************************************/
 struct nation_leader *
 nation_leader_by_name(const struct nation_type *pnation, const char *name)
 {
-  NATION_CHECK(pnation, return NULL);
+  NATION_CHECK(pnation, return nullptr);
+
   nation_leader_list_iterate(pnation->leaders, pleader) {
-    if (0 == fc_strcasecmp(name, pleader->name)) {
+    if (!fc_strcasecmp(name, pleader->name)) {
       return pleader;
     }
   } nation_leader_list_iterate_end;
-  return NULL;
+
+  return nullptr;
 }
 
 /************************************************************************//**
@@ -280,7 +286,6 @@ nation_leader_by_name(const struct nation_type *pnation, const char *name)
 ****************************************************************************/
 const char *nation_leader_name(const struct nation_leader *pleader)
 {
-  fc_assert_ret_val(NULL != pleader, NULL);
   return pleader->name;
 }
 
@@ -289,7 +294,6 @@ const char *nation_leader_name(const struct nation_leader *pleader)
 ****************************************************************************/
 bool nation_leader_is_male(const struct nation_leader *pleader)
 {
-  fc_assert_ret_val(NULL != pleader, TRUE);
   return pleader->is_male;
 }
 
@@ -299,7 +303,7 @@ bool nation_leader_is_male(const struct nation_leader *pleader)
 const char *nation_legend_translation(const struct nation_type *pnation,
                                       const char *legend)
 {
-  if (pnation->translation_domain == NULL) {
+  if (pnation->translation_domain == nullptr) {
     return _(legend);
   }
 
@@ -330,8 +334,9 @@ struct nation_city {
 const struct nation_city_list *
 nation_cities(const struct nation_type *pnation)
 {
-  NATION_CHECK(pnation, return NULL);
-  fc_assert_ret_val(is_server(), NULL);
+  NATION_CHECK(pnation, return nullptr);
+
+  fc_assert_ret_val(is_server(), nullptr);
 
   return pnation->server.default_cities;
 }
@@ -344,14 +349,16 @@ struct nation_city *nation_city_new(struct nation_type *pnation,
 {
   struct nation_city *pncity;
 
-  NATION_CHECK(pnation, return NULL);
-  fc_assert_ret_val(is_server(), NULL);
+  NATION_CHECK(pnation, return nullptr);
 
-  fc_assert(0 == NCP_NONE);
+  fc_assert_ret_val(is_server(), nullptr);
+  fc_assert(NCP_NONE == 0);
+
   pncity = fc_calloc(1, sizeof(*pncity));       /* Set NCP_NONE. */
   pncity->name = fc_strdup(name);
 
   nation_city_list_append(pnation->server.default_cities, pncity);
+
   return pncity;
 }
 
@@ -391,8 +398,6 @@ void nation_city_set_terrain_preference(struct nation_city *pncity,
                                         const struct terrain *pterrain,
                                         enum nation_city_preference prefer)
 {
-  fc_assert_ret(NULL != pncity);
-  fc_assert_ret(NULL != pterrain);
   pncity->terrain[terrain_index(pterrain)] = prefer;
 }
 
@@ -402,7 +407,6 @@ void nation_city_set_terrain_preference(struct nation_city *pncity,
 void nation_city_set_river_preference(struct nation_city *pncity,
                                       enum nation_city_preference prefer)
 {
-  fc_assert_ret(NULL != pncity);
   pncity->river = prefer;
 }
 
@@ -411,7 +415,6 @@ void nation_city_set_river_preference(struct nation_city *pncity,
 ****************************************************************************/
 const char *nation_city_name(const struct nation_city *pncity)
 {
-  fc_assert_ret_val(NULL != pncity, NULL);
   return pncity->name;
 }
 
@@ -422,8 +425,6 @@ enum nation_city_preference
 nation_city_terrain_preference(const struct nation_city *pncity,
                                const struct terrain *pterrain)
 {
-  fc_assert_ret_val(NULL != pncity, NCP_DISLIKE);
-  fc_assert_ret_val(NULL != pterrain, NCP_DISLIKE);
   return pncity->terrain[terrain_index(pterrain)];
 }
 
@@ -433,18 +434,16 @@ nation_city_terrain_preference(const struct nation_city *pncity,
 enum nation_city_preference
 nation_city_river_preference(const struct nation_city *pncity)
 {
-  fc_assert_ret_val(NULL != pncity, NCP_DISLIKE);
   return pncity->river;
 }
-
 
 /************************************************************************//**
   Return the nation of a player.
 ****************************************************************************/
 struct nation_type *nation_of_player(const struct player *pplayer)
 {
-  fc_assert_ret_val(NULL != pplayer, NULL);
-  NATION_CHECK(pplayer->nation, return NULL);
+  NATION_CHECK(pplayer->nation, return nullptr);
+
   return pplayer->nation;
 }
 
@@ -453,7 +452,6 @@ struct nation_type *nation_of_player(const struct player *pplayer)
 ****************************************************************************/
 struct nation_type *nation_of_city(const struct city *pcity)
 {
-  fc_assert_ret_val(pcity != NULL, NULL);
   return nation_of_player(city_owner(pcity));
 }
 
@@ -462,21 +460,21 @@ struct nation_type *nation_of_city(const struct city *pcity)
 ****************************************************************************/
 struct nation_type *nation_of_unit(const struct unit *punit)
 {
-  fc_assert_ret_val(punit != NULL, NULL);
   return nation_of_player(unit_owner(punit));
 }
 
 /************************************************************************//**
   Return the nation with the given index.
 
-  This function returns NULL for an out-of-range index (some callers
+  This function returns nullptr for an out-of-range index (some callers
   rely on this).
 ****************************************************************************/
 struct nation_type *nation_by_number(const Nation_type_id nation)
 {
   if (nation < 0 || nation >= game.control.nation_count) {
-    return NULL;
+    return nullptr;
   }
+
   return nations + nation;
 }
 
@@ -485,7 +483,6 @@ struct nation_type *nation_by_number(const Nation_type_id nation)
 ****************************************************************************/
 Nation_type_id nation_number(const struct nation_type *pnation)
 {
-  fc_assert_ret_val(NULL != pnation, -1);
   return pnation->item_number;
 }
 
@@ -497,7 +494,6 @@ Nation_type_id nation_number(const struct nation_type *pnation)
 ****************************************************************************/
 Nation_type_id nation_index(const struct nation_type *pnation)
 {
-  fc_assert_ret_val(NULL != pnation, -1);
   return pnation - nations;
 }
 
@@ -560,7 +556,13 @@ struct iterator *nation_iter_init(struct nation_iter *it)
   it->vtable.get = nation_iter_get;
   it->vtable.valid = nation_iter_valid;
   it->p = nations;
-  it->end = nations + nation_count();
+
+  if (nations == nullptr) {
+    it->end = nullptr;
+  } else {
+    it->end = nations + nation_count();
+  }
+
   return ITERATOR(it);
 }
 
@@ -572,7 +574,7 @@ static void nation_init(struct nation_type *pnation)
   memset(pnation, 0, sizeof(*pnation));
 
   pnation->item_number = pnation - nations;
-  pnation->translation_domain = NULL;
+  pnation->translation_domain = nullptr;
   pnation->leaders = nation_leader_list_new_full(nation_leader_destroy);
   pnation->sets = nation_set_list_new();
   pnation->groups = nation_group_list_new();
@@ -583,7 +585,7 @@ static void nation_init(struct nation_type *pnation)
     pnation->server.civilwar_nations = nation_list_new();
     pnation->server.parent_nations = nation_list_new();
     pnation->server.conflicts_with = nation_list_new();
-    /* server.rgb starts out NULL */
+    /* server.rgb starts out nullptr */
     pnation->server.traits = fc_calloc(TRAIT_COUNT,
                                        sizeof(*pnation->server.traits));
   }
@@ -634,7 +636,7 @@ void nations_free(void)
 {
   int i;
 
-  if (NULL == nations) {
+  if (nations == nullptr) {
     return;
   }
 
@@ -643,13 +645,13 @@ void nations_free(void)
   }
 
   free(nations);
-  nations = NULL;
+  nations = nullptr;
   game.control.nation_count = 0;
 }
 
 /************************************************************************//**
   Returns initial government type for this nation.
-  Always returns non-NULL -- nation-specific government or failing that
+  Always returns non-nullptr -- nation-specific government or failing that
   ruleset default government.
 ****************************************************************************/
 struct government *init_government_of_nation(const struct nation_type *pnation)
@@ -672,12 +674,13 @@ struct nation_style *style_of_nation(const struct nation_type *pnation)
 }
 
 /************************************************************************//**
-  Returns nation's player color preference, or NULL if none.
+  Returns nation's player color preference, or nullptr if none.
   Server only function.
 ****************************************************************************/
 const struct rgbcolor *nation_color(const struct nation_type *pnation)
 {
-  NATION_CHECK(pnation, return NULL);
+  NATION_CHECK(pnation, return nullptr);
+
   return pnation->server.rgb;
 }
 
@@ -694,7 +697,6 @@ int nation_set_count(void)
 ****************************************************************************/
 int nation_set_index(const struct nation_set *pset)
 {
-  fc_assert_ret_val(NULL != pset, -1);
   return pset - nation_sets;
 }
 
@@ -718,30 +720,32 @@ struct nation_set *nation_set_new(const char *set_name,
   if (game.control.num_nation_sets <= num_nation_sets) {
     log_error("More nation sets than reported (%d).",
               game.control.num_nation_sets);
-    return NULL;
+    return nullptr;
   }
 
   if (MAX_NUM_NATION_SETS <= num_nation_sets) {
     log_error("Too many nation sets (%d is the maximum).",
               MAX_NUM_NATION_SETS);
-    return NULL;
+    return nullptr;
   }
 
   /* Print the name and truncate if needed. */
   pset = nation_sets + num_nation_sets;
-  names_set(&pset->name, NULL, set_name, set_rule_name);
+  names_set(&pset->name, nullptr, set_name, set_rule_name);
   (void) sz_loud_strlcpy(pset->description, set_description,
                          "Nation set description \"%s\" too long; truncating.");
 
-  if (NULL != nation_set_by_rule_name(rule_name_get(&pset->name))) {
+  if (nation_set_by_rule_name(rule_name_get(&pset->name)) != nullptr) {
     log_error("Duplicate nation set name %s.", rule_name_get(&pset->name));
-    return NULL;
+
+    return nullptr;
   }
 
-  if (NULL != nation_group_by_rule_name(rule_name_get(&pset->name))) {
+  if (nation_group_by_rule_name(rule_name_get(&pset->name)) != nullptr) {
     log_error("Nation set name %s is already used for a group.",
               rule_name_get(&pset->name));
-    return NULL;
+
+    return nullptr;
   }
 
   num_nation_sets++;
@@ -752,7 +756,7 @@ struct nation_set *nation_set_new(const char *set_name,
 /************************************************************************//**
   Return the nation set with the given index.
 
-  This function returns NULL for an out-of-range index (some callers
+  This function returns nullptr for an out-of-range index (some callers
   rely on this).
 ****************************************************************************/
 struct nation_set *nation_set_by_number(int id)
@@ -762,7 +766,7 @@ struct nation_set *nation_set_by_number(int id)
    * of sets (game.control.num_nation_sets) and not
    * what we have already set up (num_nation_sets) */
   if (id < 0 || id >= game.control.num_nation_sets) {
-    return NULL;
+    return nullptr;
   }
 
   return nation_sets + id;
@@ -770,7 +774,7 @@ struct nation_set *nation_set_by_number(int id)
 
 /************************************************************************//**
   Return the nation set that has the given (untranslated) rule name.
-  Returns NULL if no set is found.
+  Returns nullptr if no set is found.
 ****************************************************************************/
 struct nation_set *nation_set_by_rule_name(const char *name)
 {
@@ -782,7 +786,7 @@ struct nation_set *nation_set_by_rule_name(const char *name)
     }
   } nation_sets_iterate_end;
 
-  return NULL;
+  return nullptr;
 }
 
 /************************************************************************//**
@@ -792,7 +796,6 @@ struct nation_set *nation_set_by_rule_name(const char *name)
 ****************************************************************************/
 const char *nation_set_untranslated_name(const struct nation_set *pset)
 {
-  fc_assert_ret_val(NULL != pset, NULL);
   return untranslated_name(&pset->name);
 }
 
@@ -802,8 +805,6 @@ const char *nation_set_untranslated_name(const struct nation_set *pset)
 ****************************************************************************/
 const char *nation_set_rule_name(const struct nation_set *pset)
 {
-  fc_assert_ret_val(NULL != pset, NULL);
-
   return rule_name_get(&pset->name);
 }
 
@@ -813,7 +814,6 @@ const char *nation_set_rule_name(const struct nation_set *pset)
 ****************************************************************************/
 const char *nation_set_name_translation(const struct nation_set *pset)
 {
-  fc_assert_ret_val(NULL != pset, NULL);
   return name_translation_get(&pset->name);
 }
 
@@ -823,7 +823,6 @@ const char *nation_set_name_translation(const struct nation_set *pset)
 ****************************************************************************/
 const char *nation_set_description(const struct nation_set *pset)
 {
-  fc_assert_ret_val(NULL != pset, NULL);
   return pset->description;
 }
 
@@ -833,13 +832,12 @@ const char *nation_set_description(const struct nation_set *pset)
 bool nation_is_in_set(const struct nation_type *pnation,
                       const struct nation_set *pset)
 {
-  fc_assert_ret_val(NULL != pnation, FALSE);
-
   nation_set_list_iterate(pnation->sets, aset) {
     if (aset == pset) {
       return TRUE;
     }
   } nation_set_list_iterate_end;
+
   return FALSE;
 }
 
@@ -854,18 +852,18 @@ bool nation_is_in_set(const struct nation_type *pnation,
 ****************************************************************************/
 struct nation_set *nation_set_by_setting_value(const char *setting)
 {
-  struct nation_set *pset = NULL;
+  struct nation_set *pset = nullptr;
 
   if (strlen(setting) > 0) {
     pset = nation_set_by_rule_name(setting);
   }
-  if (pset == NULL) {
+  if (pset == nullptr) {
     /* Either no nation set specified, or the specified one isn't in the
      * current ruleset. Default to the first nation set specified by
      * the ruleset. */
     pset = nation_set_by_number(0);
   }
-  fc_assert(pset != NULL);
+  fc_assert(pset != nullptr);
 
   return pset;
 }
@@ -938,7 +936,6 @@ int nation_group_count(void)
 ****************************************************************************/
 int nation_group_index(const struct nation_group *pgroup)
 {
-  fc_assert_ret_val(NULL != pgroup, -1);
   return pgroup - nation_groups;
 }
 
@@ -960,27 +957,29 @@ struct nation_group *nation_group_new(const char *name)
   if (game.control.num_nation_groups <= num_nation_groups) {
     log_error("More nation groups than reported (%d).",
               game.control.num_nation_groups);
-    return NULL;
+    return nullptr;
   }
 
    if (MAX_NUM_NATION_GROUPS <= num_nation_groups) {
     log_error("Too many nation groups (%d is the maximum).",
               MAX_NUM_NATION_GROUPS);
-    return NULL;
+    return nullptr;
   }
 
   /* Print the name and truncate if needed. */
   pgroup = nation_groups + num_nation_groups;
-  name_set(&pgroup->name, NULL, name);
-  if (NULL != nation_group_by_rule_name(rule_name_get(&pgroup->name))) {
+  name_set(&pgroup->name, nullptr, name);
+  if (nation_group_by_rule_name(rule_name_get(&pgroup->name)) != nullptr) {
     log_error("Duplicate nation group name %s.", rule_name_get(&pgroup->name));
-    return NULL;
+
+    return nullptr;
   }
 
-  if (NULL != nation_set_by_rule_name(rule_name_get(&pgroup->name))) {
+  if (nation_set_by_rule_name(rule_name_get(&pgroup->name)) != nullptr) {
     log_error("Nation group name %s is already used for a set.",
               rule_name_get(&pgroup->name));
-    return NULL;
+
+    return nullptr;
   }
 
   if (is_server()) {
@@ -994,7 +993,7 @@ struct nation_group *nation_group_new(const char *name)
 /************************************************************************//**
   Return the nation group with the given index.
 
-  This function returns NULL for an out-of-range index (some callers
+  This function returns nullptr for an out-of-range index (some callers
   rely on this).
 ****************************************************************************/
 struct nation_group *nation_group_by_number(int id)
@@ -1004,7 +1003,7 @@ struct nation_group *nation_group_by_number(int id)
    * of groups (game.control.num_nation_groups) and not
    * what we have already set up (num_nation_groups) */
   if (id < 0 || id >= game.control.num_nation_groups) {
-    return NULL;
+    return nullptr;
   }
 
   return nation_groups + id;
@@ -1012,7 +1011,7 @@ struct nation_group *nation_group_by_number(int id)
 
 /************************************************************************//**
   Return the nation group that has the given (untranslated) rule name.
-  Returns NULL if no group is found.
+  Returns nullptr if no group is found.
 ****************************************************************************/
 struct nation_group *nation_group_by_rule_name(const char *name)
 {
@@ -1024,7 +1023,7 @@ struct nation_group *nation_group_by_rule_name(const char *name)
     }
   } nation_groups_iterate_end;
 
-  return NULL;
+  return nullptr;
 }
 
 /************************************************************************//**
@@ -1032,7 +1031,6 @@ struct nation_group *nation_group_by_rule_name(const char *name)
 ****************************************************************************/
 void nation_group_set_hidden(struct nation_group *pgroup, bool hidden)
 {
-  fc_assert_ret(NULL != pgroup);
   pgroup->hidden = hidden;
 }
 
@@ -1043,7 +1041,7 @@ void nation_group_set_hidden(struct nation_group *pgroup, bool hidden)
 void nation_group_set_match(struct nation_group *pgroup, int match)
 {
   fc_assert_ret(is_server());
-  fc_assert_ret(NULL != pgroup);
+
   pgroup->server.match = match;
 }
 
@@ -1052,7 +1050,6 @@ void nation_group_set_match(struct nation_group *pgroup, int match)
 ****************************************************************************/
 bool is_nation_group_hidden(struct nation_group *pgroup)
 {
-  fc_assert_ret_val(NULL != pgroup, TRUE);
   return pgroup->hidden;
 }
 
@@ -1064,7 +1061,6 @@ bool is_nation_group_hidden(struct nation_group *pgroup)
 ****************************************************************************/
 const char *nation_group_untranslated_name(const struct nation_group *pgroup)
 {
-  fc_assert_ret_val(NULL != pgroup, NULL);
   return untranslated_name(&pgroup->name);
 }
 
@@ -1074,8 +1070,6 @@ const char *nation_group_untranslated_name(const struct nation_group *pgroup)
 ****************************************************************************/
 const char *nation_group_rule_name(const struct nation_group *pgroup)
 {
-  fc_assert_ret_val(NULL != pgroup, NULL);
-
   return rule_name_get(&pgroup->name);
 }
 
@@ -1085,7 +1079,6 @@ const char *nation_group_rule_name(const struct nation_group *pgroup)
 ****************************************************************************/
 const char *nation_group_name_translation(const struct nation_group *pgroup)
 {
-  fc_assert_ret_val(NULL != pgroup, NULL);
   return name_translation_get(&pgroup->name);
 }
 
@@ -1095,8 +1088,6 @@ const char *nation_group_name_translation(const struct nation_group *pgroup)
 bool nation_is_in_group(const struct nation_type *pnation,
                         const struct nation_group *pgroup)
 {
-  fc_assert_ret_val(NULL != pnation, FALSE);
-
   nation_group_list_iterate(pnation->groups, agroup) {
     if (agroup == pgroup) {
       return TRUE;
@@ -1181,12 +1172,12 @@ void nation_sets_groups_free(void)
   pregame.
 ****************************************************************************/
 bool can_conn_edit_players_nation(const struct connection *pconn,
-				  const struct player *pplayer)
+                                  const struct player *pplayer)
 {
   return (can_conn_edit(pconn)
           || (game.info.is_new_game
-	      && ((!pconn->observer && pconn->playing == pplayer)
-	           || pconn->access_level >= ALLOW_CTRL)));
+              && ((!pconn->observer && pconn->playing == pplayer)
+                  || pconn->access_level >= ALLOW_CTRL)));
 }
 
 /************************************************************************//**

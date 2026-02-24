@@ -26,7 +26,7 @@ but wars are fought over the silliest things ...
   1) You are using C99 dynamic arrays and you need to check the size
      of the array before you declare it.
   2) Variable in question is declared only conditionally to some preprocessor
-     macro, and there's separate code block similary conditional to the same
+     macro, and there's separate code block similarly conditional to the same
      macro that would use it. In that case it's ok to declare the variable
      inside the macro guarded block that is using it.
 
@@ -185,6 +185,8 @@ but wars are fought over the silliest things ...
   the example below, indented by two spaces. It should be above the
   function's implementation, not the prototype. Note "*//**" in the end
   of the beginning line for the doxygen.
+  Doxygen "@param" and "@return" documentation is recommended
+  to be added for new functions, or when existing header is being touched.
 
 /************************************************************************//**
   The description of the function should be here. Also describe what is
@@ -192,10 +194,13 @@ but wars are fought over the silliest things ...
   non-trivial assumptions that the function makes.
 
   Do _not_ introduce a new function without some sort of comment.
+
+  @param  base value to add to
+  @return final value
 ****************************************************************************/
-int the_function_starts_here(int value)
+int the_function_starts_here(int base)
 {
-  return value + 2;
+  return base + 2;
 }
 
 - One line comments should be indented correctly and placed above the code
@@ -442,7 +447,7 @@ int the_function_starts_here(int value)
   directory, the order should be:
 
     /* ai */
-    #include "aitools.h"
+    #include "daitools.h"
 
     /* server */
     #include "srv_main.h"
@@ -453,7 +458,7 @@ int the_function_starts_here(int value)
     #include "srv_main.h"
 
     /* ai */
-    #include "aitools.h"
+    #include "daitools.h"
 
 - Do not include headers in other headers if at all possible. Use forward
   declarations for pointers to structs:
@@ -534,6 +539,9 @@ functions available natively.
 
 - Instead of fopen(), use fc_fopen()
 - Instead of localtime(), use fc_localtime()
+- Instead of strncmp(), use fc_strncmp()
+- Instead of strcasecmp(), use fc_strcasecmp()
+- Instead of strlcat() or strncat(), use fc_strlcat()
 
 ============================================================================
   Miscellaneous
@@ -619,15 +627,17 @@ functions available natively.
   -Wpointer-arith -Wcast-align -Wmissing-prototypes -Wmissing-declarations
   -Wstrict-prototypes -Wnested-externs -Wl,--no-add-needed" if you use gcc.
 
-- Always check compilation with the configure option --enable-debug set.
+- Always check compilation with the configure options
+  -Ddebug=true -Dwerror=true -Doptimization=2
 
 - Header files should be compatible with C++ but code (.c) files need not
   be. This means some C++ keywords (like "this" or "class") may not be used
   in header files. It also means casts on void pointers (which should be
   avoided in C files) must be used in headers.
 
-- To assign null pointer, or to compare against one, use 'NULL' in C code,
-  and 'nullptr' in C++ code.
+- To assign null pointer, or to compare against one, use 'nullptr' in C++ code
+  In C code that's going to get backported to freeciv-3.2 or even older,
+  'NULL' must be used. In freeciv-3.3, and later, 'nullptr' can be used.
 
 - If you send patches, use "diff -u" (or "diff -r -u"). "git diff" works
   correctly without extra parameters.

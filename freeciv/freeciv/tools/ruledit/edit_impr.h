@@ -21,13 +21,17 @@
 // Qt
 #include <QDialog>
 
+// ruledit
+#include "values_dlg.h"
+
+class QGridLayout;
 class QLineEdit;
 class QSpinBox;
 class QToolButton;
 
 class ruledit_gui;
 
-class edit_impr : public QDialog
+class edit_impr : public values_dlg
 {
   Q_OBJECT
 
@@ -43,6 +47,12 @@ class edit_impr : public QDialog
     QToolButton *genus_button;
     QLineEdit *gfx_tag;
     QLineEdit *gfx_tag_alt;
+    QLineEdit *gfx_tag_alt2;
+    QLineEdit *sound_tag;
+    QLineEdit *sound_tag_alt;
+    QLineEdit *sound_tag_alt2;
+
+    QGridLayout *flag_layout;
 
   protected:
     void closeEvent(QCloseEvent *cevent);
@@ -53,6 +63,11 @@ class edit_impr : public QDialog
     void genus_menu(QAction *action);
     void gfx_tag_given();
     void gfx_tag_alt_given();
+    void gfx_tag_alt2_given();
+    void sound_tag_given();
+    void sound_tag_alt_given();
+    void sound_tag_alt2_given();
+    void helptext();
 };
 
 

@@ -28,28 +28,28 @@
 #define LUASQL_CURSOR_MYSQL "MySQL cursor"
 
 /* For compat with old version 4.0 */
-#if (MYSQL_VERSION_ID < 40100) 
-#define MYSQL_TYPE_VAR_STRING   FIELD_TYPE_VAR_STRING 
-#define MYSQL_TYPE_STRING       FIELD_TYPE_STRING 
-#define MYSQL_TYPE_DECIMAL      FIELD_TYPE_DECIMAL 
-#define MYSQL_TYPE_SHORT        FIELD_TYPE_SHORT 
-#define MYSQL_TYPE_LONG         FIELD_TYPE_LONG 
-#define MYSQL_TYPE_FLOAT        FIELD_TYPE_FLOAT 
-#define MYSQL_TYPE_DOUBLE       FIELD_TYPE_DOUBLE 
-#define MYSQL_TYPE_LONGLONG     FIELD_TYPE_LONGLONG 
-#define MYSQL_TYPE_INT24        FIELD_TYPE_INT24 
-#define MYSQL_TYPE_YEAR         FIELD_TYPE_YEAR 
-#define MYSQL_TYPE_TINY         FIELD_TYPE_TINY 
-#define MYSQL_TYPE_TINY_BLOB    FIELD_TYPE_TINY_BLOB 
-#define MYSQL_TYPE_MEDIUM_BLOB  FIELD_TYPE_MEDIUM_BLOB 
-#define MYSQL_TYPE_LONG_BLOB    FIELD_TYPE_LONG_BLOB 
-#define MYSQL_TYPE_BLOB         FIELD_TYPE_BLOB 
-#define MYSQL_TYPE_DATE         FIELD_TYPE_DATE 
-#define MYSQL_TYPE_NEWDATE      FIELD_TYPE_NEWDATE 
-#define MYSQL_TYPE_DATETIME     FIELD_TYPE_DATETIME 
-#define MYSQL_TYPE_TIME         FIELD_TYPE_TIME 
-#define MYSQL_TYPE_TIMESTAMP    FIELD_TYPE_TIMESTAMP 
-#define MYSQL_TYPE_ENUM         FIELD_TYPE_ENUM 
+#if (MYSQL_VERSION_ID < 40100)
+#define MYSQL_TYPE_VAR_STRING   FIELD_TYPE_VAR_STRING
+#define MYSQL_TYPE_STRING       FIELD_TYPE_STRING
+#define MYSQL_TYPE_DECIMAL      FIELD_TYPE_DECIMAL
+#define MYSQL_TYPE_SHORT        FIELD_TYPE_SHORT
+#define MYSQL_TYPE_LONG         FIELD_TYPE_LONG
+#define MYSQL_TYPE_FLOAT        FIELD_TYPE_FLOAT
+#define MYSQL_TYPE_DOUBLE       FIELD_TYPE_DOUBLE
+#define MYSQL_TYPE_LONGLONG     FIELD_TYPE_LONGLONG
+#define MYSQL_TYPE_INT24        FIELD_TYPE_INT24
+#define MYSQL_TYPE_YEAR         FIELD_TYPE_YEAR
+#define MYSQL_TYPE_TINY         FIELD_TYPE_TINY
+#define MYSQL_TYPE_TINY_BLOB    FIELD_TYPE_TINY_BLOB
+#define MYSQL_TYPE_MEDIUM_BLOB  FIELD_TYPE_MEDIUM_BLOB
+#define MYSQL_TYPE_LONG_BLOB    FIELD_TYPE_LONG_BLOB
+#define MYSQL_TYPE_BLOB         FIELD_TYPE_BLOB
+#define MYSQL_TYPE_DATE         FIELD_TYPE_DATE
+#define MYSQL_TYPE_NEWDATE      FIELD_TYPE_NEWDATE
+#define MYSQL_TYPE_DATETIME     FIELD_TYPE_DATETIME
+#define MYSQL_TYPE_TIME         FIELD_TYPE_TIME
+#define MYSQL_TYPE_TIMESTAMP    FIELD_TYPE_TIMESTAMP
+#define MYSQL_TYPE_ENUM         FIELD_TYPE_ENUM
 #define MYSQL_TYPE_SET          FIELD_TYPE_SET
 #define MYSQL_TYPE_NULL         FIELD_TYPE_NULL
 
@@ -133,7 +133,7 @@ static char *getcolumntype (enum enum_field_types type) {
 			return "string";
 		case MYSQL_TYPE_DECIMAL: case MYSQL_TYPE_SHORT: case MYSQL_TYPE_LONG:
 		case MYSQL_TYPE_FLOAT: case MYSQL_TYPE_DOUBLE: case MYSQL_TYPE_LONGLONG:
-		case MYSQL_TYPE_INT24: case MYSQL_TYPE_YEAR: case MYSQL_TYPE_TINY: 
+		case MYSQL_TYPE_INT24: case MYSQL_TYPE_YEAR: case MYSQL_TYPE_TINY:
 			return "number";
 		case MYSQL_TYPE_TINY_BLOB: case MYSQL_TYPE_MEDIUM_BLOB:
 		case MYSQL_TYPE_LONG_BLOB: case MYSQL_TYPE_BLOB:
@@ -180,7 +180,7 @@ static void create_colinfo (lua_State *L, cur_data *cur) {
 
 
 /*
-** Closes the cursos and nullify all structure fields.
+** Closes the cursor and nullify all structure fields.
 */
 static void cur_nullify (lua_State *L, cur_data *cur) {
 	/* Nullify structure fields. */
@@ -191,7 +191,7 @@ static void cur_nullify (lua_State *L, cur_data *cur) {
 	luaL_unref (L, LUA_REGISTRYINDEX, cur->coltypes);
 }
 
-	
+
 /*
 ** Get another row of the given cursor.
 */
@@ -325,7 +325,8 @@ static int cur_close (lua_State *L) {
 	luaL_argcheck (L, cur != NULL, 1, LUASQL_PREFIX"cursor expected");
 	if (cur->closed) {
 		lua_pushboolean (L, 0);
-		return 1;
+		lua_pushstring (L, "Cursor is already closed");
+		return 2;
 	}
 	cur_nullify (L, cur);
 	lua_pushboolean (L, 1);
@@ -393,7 +394,7 @@ static int cur_seek (lua_State *L) {
 ** Create a new Cursor object and push it on top of the stack.
 */
 static int create_cursor (lua_State *L, MYSQL *my_conn, int conn, MYSQL_RES *result, int cols) {
-	cur_data *cur = (cur_data *)lua_newuserdata(L, sizeof(cur_data));
+	cur_data *cur = (cur_data *)LUASQL_NEWUD(L, sizeof(cur_data));
 	luasql_setmeta (L, LUASQL_CURSOR_MYSQL);
 
 	/* fill in structure */
@@ -431,9 +432,13 @@ static int conn_close (lua_State *L) {
 	luaL_argcheck (L, conn != NULL, 1, LUASQL_PREFIX"connection expected");
 	if (conn->closed) {
 		lua_pushboolean (L, 0);
-		return 1;
+		lua_pushstring (L, "Connection is already closed");
+		return 2;
 	}
-	conn_gc (L);
+	/* Nullify structure fields. */
+	conn->closed = 1;
+	luaL_unref (L, LUA_REGISTRYINDEX, conn->env);
+	mysql_close (conn->my_conn);
 	lua_pushboolean (L, 1);
 	return 1;
 }
@@ -485,7 +490,7 @@ static int conn_execute (lua_State *L) {
 	conn_data *conn = getconnection (L);
 	size_t st_len;
 	const char *statement = luaL_checklstring (L, 2, &st_len);
-	if (mysql_real_query(conn->my_conn, statement, st_len)) 
+	if (mysql_real_query(conn->my_conn, statement, st_len))
 		/* error executing query */
 		return luasql_failmsg(L, "error executing query. MySQL: ", mysql_error(conn->my_conn));
 	else
@@ -559,7 +564,7 @@ static int conn_getlastautoid (lua_State *L) {
 ** Create a new Connection object and push it on top of the stack.
 */
 static int create_connection (lua_State *L, int env, MYSQL *const my_conn) {
-	conn_data *conn = (conn_data *)lua_newuserdata(L, sizeof(conn_data));
+	conn_data *conn = (conn_data *)LUASQL_NEWUD(L, sizeof(conn_data));
 	luasql_setmeta (L, LUASQL_CONNECTION_MYSQL);
 
 	/* fill in structure */
@@ -586,14 +591,14 @@ static int env_connect (lua_State *L) {
 	const char *unix_socket = luaL_optstring(L, 7, NULL);
 	const long client_flag = (long)luaL_optinteger(L, 8, 0);
 	MYSQL *conn;
-	getenvironment(L); /* validade environment */
+	getenvironment(L); /* validate environment */
 
 	/* Try to init the connection object. */
 	conn = mysql_init(NULL);
 	if (conn == NULL)
 		return luasql_faildirect(L, "error connecting: Out of memory.");
 
-	if (!mysql_real_connect(conn, host, username, password, 
+	if (!mysql_real_connect(conn, host, username, password,
 		sourcename, port, unix_socket, client_flag))
 	{
 		char error_msg[100];
@@ -609,8 +614,11 @@ static int env_connect (lua_State *L) {
 **
 */
 static int env_gc (lua_State *L) {
-	env_data *env= (env_data *)luaL_checkudata (L, 1, LUASQL_ENVIRONMENT_MYSQL);	if (env != NULL && !(env->closed))
+	env_data *env= (env_data *)luaL_checkudata (L, 1, LUASQL_ENVIRONMENT_MYSQL);
+	if (env != NULL && !(env->closed)) {
 		env->closed = 1;
+		mysql_library_end();
+	}
 	return 0;
 }
 
@@ -623,10 +631,11 @@ static int env_close (lua_State *L) {
 	luaL_argcheck (L, env != NULL, 1, LUASQL_PREFIX"environment expected");
 	if (env->closed) {
 		lua_pushboolean (L, 0);
-		return 1;
+		lua_pushstring(L, "Environment is already closed");
+		return 2;
 	}
-	mysql_library_end();
 	env->closed = 1;
+	mysql_library_end();
 	lua_pushboolean (L, 1);
 	return 1;
 }
@@ -637,25 +646,28 @@ static int env_close (lua_State *L) {
 */
 static void create_metatables (lua_State *L) {
     struct luaL_Reg environment_methods[] = {
-        {"__gc", env_gc},
-        {"close", env_close},
-        {"connect", env_connect},
+		{"__gc", env_gc},
+		{"__close", env_gc},
+		{"close", env_close},
+		{"connect", env_connect},
 		{NULL, NULL},
 	};
     struct luaL_Reg connection_methods[] = {
-        {"__gc", conn_gc},
-        {"close", conn_close},
-        {"ping", conn_ping},
-        {"escape", escape_string},
-        {"execute", conn_execute},
-        {"commit", conn_commit},
-        {"rollback", conn_rollback},
-        {"setautocommit", conn_setautocommit},
+		{"__gc", conn_gc},
+		{"__close", conn_gc},
+		{"close", conn_close},
+		{"ping", conn_ping},
+		{"escape", escape_string},
+		{"execute", conn_execute},
+		{"commit", conn_commit},
+		{"rollback", conn_rollback},
+		{"setautocommit", conn_setautocommit},
 		{"getlastautoid", conn_getlastautoid},
 		{NULL, NULL},
     };
     struct luaL_Reg cursor_methods[] = {
         {"__gc", cur_gc},
+		{"__close", cur_gc},
         {"close", cur_close},
         {"getcolnames", cur_getcolnames},
         {"getcoltypes", cur_getcoltypes},
@@ -677,7 +689,7 @@ static void create_metatables (lua_State *L) {
 ** Creates an Environment and returns it.
 */
 static int create_environment (lua_State *L) {
-	env_data *env = (env_data *)lua_newuserdata(L, sizeof(env_data));
+	env_data *env = (env_data *)LUASQL_NEWUD(L, sizeof(env_data));
 	luasql_setmeta (L, LUASQL_ENVIRONMENT_MYSQL);
 
 	/* fill in structure */
@@ -690,7 +702,7 @@ static int create_environment (lua_State *L) {
 ** Creates the metatables for the objects and registers the
 ** driver open method.
 */
-LUASQL_API int luaopen_luasql_mysql (lua_State *L) { 
+LUASQL_API int luaopen_luasql_mysql (lua_State *L) {
 	struct luaL_Reg driver[] = {
 		{"mysql", create_environment},
 		{NULL, NULL},

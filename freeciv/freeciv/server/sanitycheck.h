@@ -1,4 +1,4 @@
-/********************************************************************** 
+/***********************************************************************
  Freeciv - Copyright (C) 1996 - A Kjeldberg, L Gregersen, P Unold
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -13,6 +13,7 @@
 #ifndef FC__SANITYCHECK_H
 #define FC__SANITYCHECK_H
 
+/* common */
 #include "fc_types.h"
 
 #if ((IS_BETA_VERSION || IS_DEVEL_VERSION) && !defined(FREECIV_NDEBUG)) \
@@ -45,4 +46,4 @@ void real_sanity_check( const char *file, const char *function, int line);
 #endif /* SANITY_CHECKING */
 
 
-#endif  /* FC__SANITYCHECK_H */
+#endif /* FC__SANITYCHECK_H */

@@ -24,6 +24,7 @@
 #include "fc_types.h"
 #include "game.h"  /* FIXME it's extra_type_iterate that needs this really */
 #include "tile.h"
+#include "world_object.h"
 
 #include "clientutils.h"
 
@@ -73,13 +74,19 @@ static void calc_activity(struct actcalc *calc, const struct tile *ptile,
       continue;
     }
 
-    if (is_build_activity(act)) {
+    /* Client needs check for activity_target even when the
+     * activity is a build activity, and SHOULD have target.
+     * Server may still be sending more information about tile or
+     * unit activity changes, and client data is not yet consistent. */
+    if (is_build_activity(act)
+        && punit->activity_target != NULL) {
       int eidx = extra_index(punit->activity_target);
 
       t->extra_total[eidx][act] += punit->activity_count;
       t->extra_total[eidx][act] += get_activity_rate_this_turn(punit);
       t->extra_units[eidx][act] += get_activity_rate(punit);
-    } else if (is_clean_activity(act)) {
+    } else if (is_clean_activity(act)
+               && punit->activity_target != NULL) {
       int eidx = extra_index(punit->activity_target);
 
       t->rmextra_total[eidx][act] += punit->activity_count;
@@ -259,13 +266,7 @@ const char *concat_tile_activity_text(struct tile *ptile)
         rmcause = ERM_PILLAGE;
         break;
       case ACTIVITY_CLEAN:
-        rmcause = ERM_CLEAN; /* Also ERM_CLEANPOLLUTION and ERM_CLEANFALLOUT */
-        break;
-      case ACTIVITY_POLLUTION:
-        rmcause = ERM_CLEANPOLLUTION;
-        break;
-      case ACTIVITY_FALLOUT:
-        rmcause = ERM_CLEANFALLOUT;
+        rmcause = ERM_CLEAN;
         break;
       default:
         fc_assert(rmcause != ERM_NONE);
@@ -285,40 +286,6 @@ const char *concat_tile_activity_text(struct tile *ptile)
                                             : _("Clean %s(%d)"),
                      extra_name_translation(ep), calc->rmextra_turns[ei][i]);
             num_activities++;
-          }
-        } extra_type_by_rmcause_iterate_end;
-      }
-
-      if (i == ACTIVITY_CLEAN) {
-        extra_type_by_rmcause_iterate(ERM_CLEANPOLLUTION, ep) {
-          /* Make sure it's not handled by earlier iteration already */
-          if (!is_extra_caused_by(ep, ERM_CLEAN)) {
-            int ei = extra_index(ep);
-
-            if (calc->rmextra_turns[ei][i] > 0) {
-              if (num_activities > 0) {
-                astr_add(&str, "/");
-              }
-              astr_add(&str, _("Clean %s(%d)"),
-                       extra_name_translation(ep), calc->rmextra_turns[ei][i]);
-              num_activities++;
-            }
-          }
-        } extra_type_by_rmcause_iterate_end;
-        extra_type_by_rmcause_iterate(ERM_CLEANFALLOUT, ep) {
-          /* Make sure it's not handled by earlier iterations already */
-          if (!is_extra_caused_by(ep, ERM_CLEAN)
-              && !is_extra_caused_by(ep, ERM_CLEANPOLLUTION)) {
-            int ei = extra_index(ep);
-
-            if (calc->rmextra_turns[ei][i] > 0) {
-              if (num_activities > 0) {
-                astr_add(&str, "/");
-              }
-              astr_add(&str, _("Clean %s(%d)"),
-                       extra_name_translation(ep), calc->rmextra_turns[ei][i]);
-              num_activities++;
-            }
           }
         } extra_type_by_rmcause_iterate_end;
       }
@@ -347,6 +314,7 @@ void combat_odds_to_astr(struct astring *str, struct unit_list *punits,
                          const char *pct_str)
 {
   const struct unit_type *ptype = unit_type_get(punit);
+  struct civ_map *nmap = &(wld.map);
 
   unit_list_iterate(punits, pfocus) {
     int att_chance = FC_INFINITY, def_chance = FC_INFINITY;
@@ -354,8 +322,8 @@ void combat_odds_to_astr(struct astring *str, struct unit_list *punits,
 
     unit_list_iterate(ptile->units, tile_unit) {
       if (unit_owner(tile_unit) != unit_owner(pfocus)) {
-        int att = unit_win_chance(pfocus, tile_unit, NULL) * 100;
-        int def = (1.0 - unit_win_chance(tile_unit, pfocus,
+        int att = unit_win_chance(nmap, pfocus, tile_unit, NULL) * 100;
+        int def = (1.0 - unit_win_chance(nmap, tile_unit, pfocus,
                                          NULL)) * 100;
 
         found = TRUE;

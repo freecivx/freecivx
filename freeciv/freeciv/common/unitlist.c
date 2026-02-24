@@ -24,7 +24,7 @@
 #include "unitlist.h"
 
 /************************************************************************//**
-  Look for a unit with the given ID in the unit list.  Returns NULL if none
+  Look for a unit with the given ID in the unit list. Returns nullptr if none
   is found.
 ****************************************************************************/
 struct unit *unit_list_find(const struct unit_list *punitlist, int unit_id)
@@ -35,7 +35,7 @@ struct unit *unit_list_find(const struct unit_list *punitlist, int unit_id)
     }
   } unit_list_iterate_end;
 
-  return NULL;
+  return nullptr;
 }
 
 /************************************************************************//**
@@ -105,13 +105,33 @@ bool can_units_do(const struct unit_list *punits,
 }
 
 /************************************************************************//**
-  Returns TRUE if any of the units can do the activity.
+  Return TRUE if the function returns true for any of the units,
+  on specific map.
 ****************************************************************************/
-bool can_units_do_activity(const struct unit_list *punits,
-                           enum unit_activity activity)
+bool can_units_do_on_map(const struct civ_map *nmap,
+                         const struct unit_list *punits,
+                         bool (can_fn)(const struct civ_map *nmap,
+                                       const struct unit *punit))
 {
   unit_list_iterate(punits, punit) {
-    if (can_unit_do_activity(punit, activity)) {
+    if (can_fn(nmap, punit)) {
+      return TRUE;
+    }
+  } unit_list_iterate_end;
+
+  return FALSE;
+}
+
+/************************************************************************//**
+  Returns TRUE if any of the units can do the activity.
+****************************************************************************/
+bool can_units_do_activity(const struct civ_map *nmap,
+                           const struct unit_list *punits,
+                           enum unit_activity activity,
+                           enum gen_action action)
+{
+  unit_list_iterate(punits, punit) {
+    if (can_unit_do_activity(nmap, punit, activity, action)) {
       return TRUE;
     }
   } unit_list_iterate_end;
@@ -122,12 +142,14 @@ bool can_units_do_activity(const struct unit_list *punits,
 /************************************************************************//**
   Returns TRUE if any of the units can do the targeted activity.
 ****************************************************************************/
-bool can_units_do_activity_targeted(const struct unit_list *punits,
+bool can_units_do_activity_targeted(const struct civ_map *nmap,
+                                    const struct unit_list *punits,
                                     enum unit_activity activity,
+                                    enum gen_action action,
                                     struct extra_type *pextra)
 {
   unit_list_iterate(punits, punit) {
-    if (can_unit_do_activity_targeted(punit, activity, pextra)) {
+    if (can_unit_do_activity_targeted(nmap, punit, activity, action, pextra)) {
       return TRUE;
     }
   } unit_list_iterate_end;
@@ -138,13 +160,14 @@ bool can_units_do_activity_targeted(const struct unit_list *punits,
 /************************************************************************//**
   Returns TRUE if any of the units can build any road.
 ****************************************************************************/
-bool can_units_do_any_road(const struct unit_list *punits)
+bool can_units_do_any_road(const struct civ_map *nmap,
+                           const struct unit_list *punits)
 {
   unit_list_iterate(punits, punit) {
     extra_type_by_cause_iterate(EC_ROAD, pextra) {
       struct road_type *proad = extra_road_get(pextra);
 
-      if (can_build_road(proad, punit, unit_tile(punit))) {
+      if (can_build_road(nmap, proad, punit, unit_tile(punit))) {
         return TRUE;
       }
     } extra_type_by_cause_iterate_end;
@@ -277,12 +300,13 @@ bool units_can_load(const struct unit_list *punits)
 /************************************************************************//**
   Return TRUE iff any of these units can unload.
 ****************************************************************************/
-bool units_can_unload(const struct unit_list *punits)
+bool units_can_unload(const struct civ_map *nmap,
+                      const struct unit_list *punits)
 {
   unit_list_iterate(punits, punit) {
     if (unit_transported(punit)
         && can_unit_unload(punit, unit_transport_get(punit))
-        && can_unit_exist_at_tile(&(wld.map), punit, unit_tile(punit))) {
+        && can_unit_exist_at_tile(nmap, punit, unit_tile(punit))) {
       return TRUE;
     }
   } unit_list_iterate_end;
@@ -310,10 +334,11 @@ bool units_have_activity_on_tile(const struct unit_list *punits,
   Return TRUE iff any of the units can be upgraded to another unit type
   (for money)
 ****************************************************************************/
-bool units_can_upgrade(const struct unit_list *punits)
+bool units_can_upgrade(const struct civ_map *nmap,
+                       const struct unit_list *punits)
 {
   unit_list_iterate(punits, punit) {
-    if (UU_OK == unit_upgrade_test(punit, FALSE)) {
+    if (UU_OK == unit_upgrade_test(nmap, punit, FALSE)) {
       return TRUE;
     }
   } unit_list_iterate_end;
@@ -324,11 +349,12 @@ bool units_can_upgrade(const struct unit_list *punits)
 /************************************************************************//**
   Return TRUE iff any of the units can convert to another unit type
 ****************************************************************************/
-bool units_can_convert(const struct unit_list *punits)
+bool units_can_convert(const struct civ_map *nmap,
+                       const struct unit_list *punits)
 {
   unit_list_iterate(punits, punit) {
     if (utype_can_do_action(unit_type_get(punit), ACTION_CONVERT)
-        && unit_can_convert(punit)) {
+        && unit_can_convert(nmap, punit)) {
       return TRUE;
     }
   } unit_list_iterate_end;

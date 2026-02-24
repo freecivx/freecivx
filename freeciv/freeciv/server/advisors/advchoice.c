@@ -117,6 +117,28 @@ bool is_unit_choice_type(enum choice_type type)
    return type == CT_CIVILIAN || type == CT_ATTACKER || type == CT_DEFENDER;
 }
 
+/**********************************************************************//**
+  Return the (untranslated) rule name of the adv_choice.
+  You don't have to free the return pointer.
+**************************************************************************/
+const char *adv_choice_rule_name(const struct adv_choice *choice)
+{
+  switch (choice->type) {
+  case CT_BUILDING:
+    return improvement_rule_name(choice->value.building);
+  case CT_NONE:
+    return "None";
+  case CT_CIVILIAN:
+  case CT_ATTACKER:
+  case CT_DEFENDER:
+    return utype_rule_name(choice->value.utype);
+  case CT_LAST:
+    break;
+  }
+
+  return "(unknown)";
+}
+
 #ifdef ADV_CHOICE_TRACK
 /**********************************************************************//**
   Copy contents of one choice structure to the other
@@ -154,8 +176,8 @@ void adv_choice_set_use(struct adv_choice *choice, const char *use)
 /**********************************************************************//**
   Log the choice information.
 **************************************************************************/
-void adv_choice_log_info(struct adv_choice *choice, const char *loc1,
-                         const char *loc2)
+void adv_choice_log_info(struct adv_choice *choice,
+                         const char *loc1, const char *loc2)
 {
   const char *use;
   const char *name;
@@ -166,13 +188,7 @@ void adv_choice_log_info(struct adv_choice *choice, const char *loc1,
     use = "<unknown>";
   }
 
-  if (choice->type == CT_BUILDING) {
-    name = improvement_rule_name(choice->value.building);
-  } else if (choice->type == CT_NONE) {
-    name = "None";
-  } else {
-    name = utype_rule_name(choice->value.utype);
-  }
+  name = adv_choice_rule_name(choice);
 
   if (loc2 != NULL) {
     log_base(ADV_CHOICE_LOG_LEVEL, "Choice at \"%s:%s\": %s, "
@@ -183,6 +199,18 @@ void adv_choice_log_info(struct adv_choice *choice, const char *loc1,
                                    "want " ADV_WANT_PRINTF " as %s (%d)",
              loc1, name, choice->want, use, choice->type);
   }
+}
+
+/**********************************************************************//**
+  Log the choice information. Location part 2 is an int.
+**************************************************************************/
+void adv_choice_log_int(struct adv_choice *choice,
+                        const char *loc1, int loc2)
+{
+  char buf[20];
+
+  fc_snprintf(buf, sizeof(buf), "%d", loc2);
+  adv_choice_log_info(choice, loc1, buf);
 }
 
 /**********************************************************************//**

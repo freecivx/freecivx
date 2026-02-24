@@ -15,11 +15,14 @@ reqs  =
     }
 
 The text in the brackets is the entry name, which just has to be unique, but
-is otherwise not used. The type field tells Freeciv which effect you are
-defining. The value is the effect's value, which depends on which effect it
-is. The reqs table contain a list of requirements for this effect being in
-effect. You need to satisfy all requirements listed here for this effect to
-take effect in the game. Requirements with present = TRUE must be present,
+is otherwise not used. The 'type' tells Freeciv which effect type
+is being added. If effect is active, 'value' gets added to the total of
+the effect type's current value (i.e. values of individual effect entries
+are cumulataive.) What that (total) value is actually used for depends
+on effect type. The 'reqs' table contain a list of requirements for
+this effect being in active. You need to satisfy all requirements
+listed here for this effect to take effect in the game.
+Requirements with present = TRUE must be present,
 those with present = FALSE must not be present.
 
 Value is integral amount parameter for many effects (must be in the range
@@ -46,71 +49,89 @@ can be used if the help system's text is unclear or misleading, or if
 you want to describe the requirement in your own words. The 'quiet'
 field has no effect on the game rules.
 
-Single requirement vector can have up to 40 requirements.
+A requirement vector may have any number of requirements (in theory;
+in practice whatever it's part of won't fit in a network packet anymore
+beyond a few hundred requirements).
 
 
 Requirement types and supported ranges
 ======================================
 
-Tech:            World, Alliance, Team, Player
-TechFlag:        World, Alliance, Team, Player
-MinTechs:        World, Player
-Achievement:     World, Alliance, Team, Player
-Counter:         City
-Gov:             Player
-Building:        World, Alliance, Team, Player, Continent, Traderoute, City,
-                 Tile, Local
-BuildingFlag:    Local, Tile, City
-BuildingGenus:   Local
-Extra:           Local, Tile, Adjacent, CAdjacent, Traderoute, City
-RoadFlag:        Local, Tile, Adjacent, CAdjacent, Traderoute, City
-ExtraFlag:       Local, Tile, Adjacent, CAdjacent, Traderoute, City
-Terrain:         Tile, Adjacent, CAdjacent, Traderoute, City
-Good:            City
-UnitType:        Local
-UnitFlag:        Local
-UnitClass:       Local
-UnitClassFlag:   Local
-Nation:          World, Alliance, Team, Player
-NationGroup:     World, Alliance, Team, Player
-Nationality:     Traderoute, City
-OriginalOwner:   City
-DiplRel:         World, Alliance, Team, Player, Local
-DiplRelTile:     Alliance, Team, Player, Local
-DiplRelTileOther:Local
-DiplRelUnitAny:  Alliance, Team, Player, Local
+Tech:              World, Alliance, Team, Player, Local
+TechFlag:          World, Alliance, Team, Player, Local
+MinTechs:          World, Player
+FutureTechs:       World, Player
+MinCities:         Player
+Achievement:       World, Alliance, Team, Player
+Counter:           City
+Gov:               Player
+GovFlag:           Player
+Building:          World, Alliance, Team, Player, Continent, Traderoute,
+                   City, Tile, Local
+BuildingFlag:      Local, Tile, City
+BuildingGenus:     Local
+Site:              World, Alliance, Team, Player, Continent, Traderoute,
+                   City, Tile, Local
+Extra:             Local, Tile, Adjacent, CAdjacent, Traderoute, City
+Tiledef:           Tile, Adjacent, CAdjacent, Traderoute, City
+TiledefConnected:  City
+RoadFlag:          Local, Tile, Adjacent, CAdjacent, Traderoute, City
+ExtraFlag:         Local, Tile, Adjacent, CAdjacent, Traderoute, City
+Terrain:           Tile, Adjacent, CAdjacent, Traderoute, City
+Good:              City
+UnitType:          Local, Tile, CAdjacent, Adjacent
+UnitTypeFlag:      Local, Tile, CAdjacent, Adjacent
+UnitClass:         Local, Tile, CAdjacent, Adjacent
+UnitClassFlag:     Local, Tile, CAdjacent, Adjacent
+Nation:            World, Alliance, Team, Player
+NationGroup:       World, Alliance, Team, Player
+Nationality:       Traderoute, City
+PlayerFlag:        Player
+PlayerState:       Player
+OriginalOwner:     City
+DiplRel:           World, Alliance, Team, Player, Local
+DiplRelTile:       Alliance, Team, Player, Local
+DiplRelTileOther:  Local
+DiplRelUnitAny:    Alliance, Team, Player, Local
 DiplRelUnitAnyOther: Local
-Action:          Local
-OutputType:      Local
-Specialist:      Local
-MinYear:         World
-MinCalFrag:      World
-Topology:        World
-Wrap:            World
-ServerSetting:   World
-Age (of unit):   Local
-Age (of city):   City
-Age (of player): Player
-MinSize:         Traderoute, City
-MinCulture:      World, Alliance, Team, Player, Traderoute, City
-MinForeignPct:   Traderoute, City
-AI:              Player
-MaxUnitsOnTile:  Tile, Adjacent, CAdjacent
-TerrainClass:    Tile, Adjacent, CAdjacent, Traderoute, City
-TerrainFlag:     Tile, Adjacent, CAdjacent, Traderoute, City
-TerrainAlter:    Tile
-MinLatitude:     Tile, Adjacent, CAdjacent, World
-MaxLatitude:     Tile, Adjacent, CAdjacent, World
-CityTile:        Tile, Adjacent, CAdjacent
-CityStatus:      Traderoute, City
-Style:           Player
-UnitState:       Local
-Activity:        Local
-MinMoveFrags:    Local
-MinVeteran:      Local
-MinHitPoints:    Local
+Action:            Local
+OutputType:        Local
+Specialist:        Local
+MinYear:           World
+MinCalFrag:        World
+Topology:          World
+Wrap:              World
+ServerSetting:     World
+Age (of unit):     Local
+Age (of city):     City
+Age (of player):   Player
+FormAge:           Local
+MinSize:           Traderoute, City
+MinCulture:        World, Alliance, Team, Player, Traderoute, City
+MinForeignPct:     Traderoute, City
+AI:                Player
+MaxUnitsOnTile:    Tile, Adjacent, CAdjacent
+MaxTopUnitsOnTile: Tile, Adjacent, CAdjacent
+TerrainClass:      Tile, Adjacent, CAdjacent, Traderoute, City
+TerrainFlag:       Tile, Adjacent, CAdjacent, Traderoute, City
+TerrainAlter:      Tile
+MinLatitude:       Tile, Adjacent, CAdjacent, World
+MaxLatitude:       Tile, Adjacent, CAdjacent, World
+CityTile:          Tile, Adjacent, CAdjacent
+CityStatus:        Traderoute, City
+Style:             Player
+UnitState:         Local
+Activity:          Local
+MinMoveFrags:      Local
+MinVeteran:        Local
+MinHitPoints:      Local
+TileRel:           Tile, Adjacent, CAdjacent
+MaxDistanceSq:     Tile
+MaxRegionTiles:    Continent, Adjacent, CAdjacent
 
 
+Site is like Building, except that the requirement is fulfilled even after
+ the building is obsoleted.
 MinSize is the minimum size of a city required.
 AI is ai player difficulty level.
 TerrainClass is either "Land" or "Oceanic".
@@ -121,7 +142,24 @@ CityTile is "Center" (city center), "Claimed" (tile owned by any player),
  is a port, it's a tile of the nearby ocean but not of its continent).
 MinLatitude and MaxLatitude are numbers from -1000 (south pole) to 1000
  (north pole).
-CityStatus is "OwnedByOriginal", "Starved", "Disorder", or "Celebration"
+TileRel is about the relation to a specific other tile; currently only available
+ for action enablers (see also README.actions) and a select few effects. It is
+ one of "Same Terrain Class" (on or adjacent to the same terrain class as the
+ other tile, depending on range), "Same Region" (on or adjacent to the same
+ continent/ocean as the other tile), "Only Other Region" (only adjacent to tiles
+ of its own or the other tile's continent/ocean, not a third one; not available
+ at Tile range), or "Region Surrounded" (on or adjacent to a lake/island
+ touching only the other tile's continent/ocean).
+MaxDistanceSq is about the (squared) distance between two tiles; currently
+ only available for action enablers (see also README.actions) and a select
+ few effects.
+MaxRegionTiles is about the number of tiles of the same continent or ocean as
+ the target tile in the given range (including the tile itself). At "Continent"
+ range this is just the full continent/ocean size.
+CityStatus is "OwnedByOriginal", "Transferred", "Starved",
+ "Disorder", "Celebration", or "CapitalConnected"
+ The difference between "OwnedByOriginal" and "Transferred" is that
+ former is fulfilled also for liberated cities.
 DiplRel is a diplomatic relationship.
 MaxUnitsOnTile is about the number of units present on a tile.
 UnitState is "Transported", "Transporting", "OnNativeTile", "OnLivableTile",
@@ -137,6 +175,14 @@ Nationality is fulfilled by any citizens of the given nationality
 OriginalOwner is the city founding nation
 ServerSetting is if a Boolean server setting is enabled. The setting must be
  visible to all players and affect the game rules.
+FormAge is time since latest unit upgrade or conversion.
+PlayerState is one of "Barbarian",
+ or "HasCapital" (true if player had capital at the beginning of the turn)
+PlayerFlag is one of
+ "AI"               - Player is AI controlled
+ "ScenarioReserved" - Player is not meant for human players
+ "FirstCity"        - Player has had their first city built or otherwise acquired
+
 
 Effect types
 ============
@@ -160,7 +206,7 @@ Action_Odds_Pct
     "Poison City Escape".
 
 Action_Resist_Pct
-    Reduces the odds of action against the player to be succesfull.
+    Reduces the odds of action against the player to be successful.
     The difference to negative Action_Odds_Pct effect is that when evaluating
     requirements for this effect, player is the target player of the action.
     Supported for the same actions as Action_Odds_Pct (applied at the same time)
@@ -300,6 +346,9 @@ Civil_War_Chance
     increased by 5 for each city in civil disorder and reduced by 5 for
     each one celebrating.
 
+Civil_War_City_Bonus
+    Reduction of player's civil war chance percentage by each city.
+
 Combat_Rounds
     Maximum number of rounds combat lasts. Unit is the attacker. Zero and
     negative values mean that combat continues until either side dies.
@@ -308,10 +357,16 @@ Conquest_Tech_Pct
     Percent chance that a player conquering a city learns a tech from the
     former owner.
 
+Culture_Pct
+    Percent change to culture, both to current performance and to
+    the accumulating history.
+
 Defend_Bonus
     Increases defensive bonuses of units. Any unit requirements on this effect
-    will be applied to the _attacking_ unit. Attackers with "BadWallAttacker" flag
-    will have their firepower set to 1.
+    will be applied to the _attacking_ unit type. Requirements about
+    properties of a specific unit are ignored.
+    Attackers with "BadWallAttacker" flag will have their firepower set to
+    "combat_rules.low_firepower_badwallattacker" from game.ruleset.
 
 Empire_Size_Base
     Once your civilization has more cities than the value of this effect,
@@ -408,6 +463,10 @@ Illegal_Action_Move_Cost
     that turns out to be illegal. Only applied when the player wasn't aware that
     the action was illegal and its illegality therefore reveals new information.
 
+Impr_Upkeep_Reduction
+    Reduce city's total improvement upkeep by the value. The upkeep cannot
+    go negative, though.
+
 Incite_Cost_Pct
     Increases revolt cost by amount percent.
 
@@ -444,11 +503,11 @@ Maps_Stolen_Pct
     Requirements evaluated against tile or city not supported.
     Default value: 100%
 
-Martial_Law_Each
+Martial_Law_By_Unit
     The amount of citizens pacified by each military unit giving martial law.
 
 Martial_Law_Max
-    The maximum amount of units that will give martial law in city.
+    The maximum amount of units that will give martial law in the city.
 
 Max_Rates
     The maximum setting for each tax rate is amount.
@@ -527,14 +586,15 @@ Output_Bonus_2
     multiplicative with it.
 
 Output_Inc_Tile
-    Add amount to each worked tile that already has at least 1 output.
+    Add amount to each worked tile that already has at least
+    output_granularity (from game.ruleset) output.
 
 Output_Inc_Tile_Celebrate
-    Tiles get amount extra output when city working them is celebrating.
+    Like Output_Inc_Tile, but only applies if city is also celebrating.
 
 Output_Penalty_Tile
-    When a tile yields more output than amount, it gets a penalty of -1,
-    unless the city working it is celebrating.
+    When a tile yields more output than amount, it gets a penalty of
+    -1 x output_granularity (from game.ruleset).
 
 Output_Per_Tile
     Increase tile output by amount percent.
@@ -597,11 +657,9 @@ Revolution_Unhappiness
     will tolerate city disorder before government falls. If value is
     zero, government never falls.
 
-Shield2Gold_Factor
+Shield2Gold_Pct
     Factor in percent for the conversion of unit shield upkeep to gold upkeep.
-    A value of 200 would transfer 1 shield upkeep to 2 gold upkeep. The range
-    of this effect must be player or world. Note that only units with the
-    "Shield2Gold" flag will be affected by this.
+    A value of 200 would transfer 1 shield upkeep to 2 gold upkeep.
 
 Shrink_Food
     Food left after cities shrink is amount percent of the capacity of
@@ -641,8 +699,21 @@ Stealings_Ignore
     diplomats to steal tech multiple times from the same city, or make it easier
     for spies.
 
+Surplus_Waste_Pct
+   Base waste from what otherwise would be the surplus.
+
+Surplus_Waste_Pct_By_Rel_Distance
+    City gets extra waste based on distance to nearest Government Center, relative
+    to world size. This is a percentage calculated from what otherwise would
+    be the surplus. Percentage is (distance * amount / 100 / max_distance)
+
 Tech_Cost_Factor
     Factor for research costs.
+
+Tech_Leakage
+    If value is positive, tech leakage towards the player is enabled.
+    The amount of leakage is controlled by the game.ruleset setting "tech_leakage",
+    and can be even zero.
 
 Tech_Parasite
     Gain any advance known already by amount number of other teams,
@@ -666,6 +737,11 @@ Thiefs_Share_Pm
     "Steal Gold Escape" actions that is lost before it reaches the player
     ordering it. Evaluated against the actor unit.
 
+Tile_Claimable
+    A positive value means national borders can expand to this tile from a
+    border source (city or base). The border source's tile is used as the
+    other tile for requirements that depend on two tiles.
+
 Tile_Workable
     If value > 0, city can work target tile.
 
@@ -674,9 +750,9 @@ Trade_Revenue_Bonus
     The amount value is taken from the caravan's home city.
 
 Traderoute_Pct
-    Percentage bonus for trade from traderoutes. This bonus applies after
-    the value of the traderoute is already calculated. It affects one end
-    of the traderoute only.
+    Percentage bonus for trade from trade routes. This bonus applies after
+    the value of the trade route is already calculated. It affects one end
+    of the trade route only.
 
 Turn_Fragments
     Year fragments advance by AMOUNT each turn.
@@ -742,9 +818,8 @@ Upgrade_Price_Pct
 Upgrade_Unit
     Upgrade amount obsolete units per turn.
 
-Upkeep_Factor
-    Multiply unit upkeep by amount. This is checked at unit type level,
-    requirements related to individual units do not work.
+Upkeep_Pct
+    Unit upkeep is amount percents.
 
 Upkeep_Free
     Improvements with amount or less upkeep cost become free to upkeep (others
@@ -758,6 +833,10 @@ Veteran_Build
 Veteran_Combat
     Increases the chance of units of this type becoming veteran after combat
     by amount percent.
+
+Veteran_Work
+    Increases the chance of units of this type becoming veteran after finishing
+    work by amount percent.
 
 Victory
     Positive value means that player wins the game.

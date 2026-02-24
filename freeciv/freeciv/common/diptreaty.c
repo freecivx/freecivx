@@ -70,7 +70,7 @@ bool could_meet_with_player(const struct player *pplayer,
           && diplomacy_possible(pplayer,aplayer)
           && get_player_bonus(pplayer, EFT_NO_DIPLOMACY) <= 0
           && get_player_bonus(aplayer, EFT_NO_DIPLOMACY) <= 0
-          && (player_has_embassy(aplayer, pplayer) 
+          && (player_has_embassy(aplayer, pplayer)
               || player_has_embassy(pplayer, aplayer)
               || player_diplstate_get(pplayer, aplayer)->contact_turns_left
                  > 0
@@ -96,11 +96,11 @@ bool could_intel_with_player(const struct player *pplayer,
 /**********************************************************************//**
   Initialize treaty structure between two players.
 **************************************************************************/
-void init_treaty(struct Treaty *ptreaty, 
+void init_treaty(struct treaty *ptreaty,
                  struct player *plr0, struct player *plr1)
 {
-  ptreaty->plr0=plr0;
-  ptreaty->plr1=plr1;
+  ptreaty->plr0 = plr0;
+  ptreaty->plr1 = plr1;
   ptreaty->accept0 = FALSE;
   ptreaty->accept1 = FALSE;
   ptreaty->clauses = clause_list_new();
@@ -109,7 +109,7 @@ void init_treaty(struct Treaty *ptreaty,
 /**********************************************************************//**
   Free the clauses of a treaty.
 **************************************************************************/
-void clear_treaty(struct Treaty *ptreaty)
+void clear_treaty(struct treaty *ptreaty)
 {
   clause_list_iterate(ptreaty->clauses, pclause) {
     free(pclause);
@@ -120,7 +120,7 @@ void clear_treaty(struct Treaty *ptreaty)
 /**********************************************************************//**
   Remove clause from treaty
 **************************************************************************/
-bool remove_clause(struct Treaty *ptreaty, struct player *pfrom, 
+bool remove_clause(struct treaty *ptreaty, struct player *pfrom,
                    enum clause_type type, int val)
 {
   clause_list_iterate(ptreaty->clauses, pclause) {
@@ -142,8 +142,9 @@ bool remove_clause(struct Treaty *ptreaty, struct player *pfrom,
 /**********************************************************************//**
   Add clause to treaty.
 **************************************************************************/
-bool add_clause(struct Treaty *ptreaty, struct player *pfrom, 
-                enum clause_type type, int val)
+bool add_clause(struct treaty *ptreaty, struct player *pfrom,
+                enum clause_type type, int val,
+                struct player *client_player)
 {
   struct player *pto = (pfrom == ptreaty->plr0
                         ? ptreaty->plr1 : ptreaty->plr0);
@@ -160,7 +161,7 @@ bool add_clause(struct Treaty *ptreaty, struct player *pfrom,
     log_error("Illegal tech value %i in clause.", val);
     return FALSE;
   }
-  
+
   if (is_pact_clause(type)
       && ((ds == DS_PEACE && type == CLAUSE_PEACE)
           || (ds == DS_ARMISTICE && type == CLAUSE_PEACE)
@@ -169,13 +170,13 @@ bool add_clause(struct Treaty *ptreaty, struct player *pfrom,
     /* we already have this diplomatic state */
     log_error("Illegal treaty suggested between %s and %s - they "
               "already have this treaty level.",
-              nation_rule_name(nation_of_player(ptreaty->plr0)), 
+              nation_rule_name(nation_of_player(ptreaty->plr0)),
               nation_rule_name(nation_of_player(ptreaty->plr1)));
     return FALSE;
   }
 
   if (type == CLAUSE_EMBASSY && player_has_real_embassy(pto, pfrom)) {
-    /* we already have embassy */
+    /* We already have embassy */
     log_error("Illegal embassy clause: %s already have embassy with %s.",
               nation_rule_name(nation_of_player(pto)),
               nation_rule_name(nation_of_player(pfrom)));
@@ -186,12 +187,34 @@ bool add_clause(struct Treaty *ptreaty, struct player *pfrom,
     return FALSE;
   }
 
-  if (!are_reqs_active(&(const struct req_context) { .player = pfrom },
-                       pto, &clause_infos[type].giver_reqs, RPT_POSSIBLE)
-      || !are_reqs_active(&(const struct req_context) { .player = pto },
-                          pfrom, &clause_infos[type].receiver_reqs,
-                          RPT_POSSIBLE)) {
-    return FALSE;
+  /* Leave it to the server to decide if the other party can meet
+   * the requirements. */
+  if (client_player == NULL || client_player == pfrom) {
+    if (!are_reqs_active(&(const struct req_context) { .player = pfrom },
+                         &(const struct req_context) { .player = pto },
+                         &clause_infos[type].giver_reqs, RPT_POSSIBLE)) {
+      return FALSE;
+    }
+  }
+  if (client_player == NULL || client_player == pto) {
+    if (!are_reqs_active(&(const struct req_context) { .player = pto },
+                         &(const struct req_context) { .player = pfrom },
+                         &clause_infos[type].receiver_reqs,
+                         RPT_POSSIBLE)) {
+      return FALSE;
+    }
+  }
+  if (client_player == NULL) {
+    if (!are_reqs_active(&(const struct req_context) { .player = pfrom },
+                         &(const struct req_context) { .player = pto },
+                         &clause_infos[type].either_reqs,
+                         RPT_POSSIBLE)
+        && !are_reqs_active(&(const struct req_context) { .player = pto },
+                            &(const struct req_context) { .player = pfrom },
+                            &clause_infos[type].either_reqs,
+                            RPT_POSSIBLE)) {
+      return FALSE;
+    }
   }
 
   clause_list_iterate(ptreaty->clauses, old_clause) {
@@ -224,7 +247,7 @@ bool add_clause(struct Treaty *ptreaty, struct player *pfrom,
   pclause->type  = type;
   pclause->from  = pfrom;
   pclause->value = val;
-  
+
   clause_list_append(ptreaty->clauses, pclause);
 
   ptreaty->accept0 = FALSE;
@@ -245,6 +268,7 @@ void clause_infos_init(void)
     clause_infos[i].enabled = FALSE;
     requirement_vector_init(&(clause_infos[i].giver_reqs));
     requirement_vector_init(&(clause_infos[i].receiver_reqs));
+    requirement_vector_init(&(clause_infos[i].either_reqs));
   }
 }
 
@@ -258,6 +282,7 @@ void clause_infos_free(void)
   for (i = 0; i < CLAUSE_COUNT; i++) {
     requirement_vector_free(&(clause_infos[i].giver_reqs));
     requirement_vector_free(&(clause_infos[i].receiver_reqs));
+    requirement_vector_free(&(clause_infos[i].either_reqs));
   }
 }
 
@@ -334,7 +359,7 @@ void free_treaties(void)
 /**********************************************************************//**
   Find currently active treaty between two players.
 **************************************************************************/
-struct Treaty *find_treaty(struct player *plr0, struct player *plr1)
+struct treaty *find_treaty(struct player *plr0, struct player *plr1)
 {
   treaty_list_iterate(treaties, ptreaty) {
     if ((ptreaty->plr0 == plr0 && ptreaty->plr1 == plr1)
@@ -349,7 +374,7 @@ struct Treaty *find_treaty(struct player *plr0, struct player *plr1)
 /**********************************************************************//**
   Add treaty to the global list.
 **************************************************************************/
-void treaty_add(struct Treaty *ptreaty)
+void treaty_add(struct treaty *ptreaty)
 {
   treaty_list_prepend(treaties, ptreaty);
 }
@@ -357,7 +382,7 @@ void treaty_add(struct Treaty *ptreaty)
 /**********************************************************************//**
   Remove treaty from the global list.
 **************************************************************************/
-void treaty_remove(struct Treaty *ptreaty)
+void treaty_remove(struct treaty *ptreaty)
 {
   treaty_list_remove(treaties, ptreaty);
 

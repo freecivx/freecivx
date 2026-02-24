@@ -2,6 +2,8 @@
 
 AM_DIST_FORMATS = gzip xz zip
 
+AM_DISTCHECK_CONFIGURE_FLAGS = --enable-ack-legacy
+
 if SRV_LIB
 SSUBDIRS = ai server
 else
@@ -14,7 +16,20 @@ else
 DSUBDIRS =
 endif
 
-SUBDIRS = gen_headers $(DSUBDIRS) dependencies utility common tests windows $(SSUBDIRS) translations doc tools lua bootstrap
+SUBDIRS =		\
+	gen_headers	\
+	$(DSUBDIRS)	\
+	dependencies	\
+	utility		\
+	common		\
+	tests		\
+	platforms	\
+	$(SSUBDIRS)	\
+	translations	\
+	doc		\
+	tools		\
+	lua		\
+	bootstrap
 
 docs =			\
 	ABOUT-NLS	\
@@ -29,6 +44,7 @@ docs =			\
 EXTRA_DIST =	autogen.sh 			\
 		configure.ac			\
 		m4/ax_cxx_compile_stdcxx.m4	\
+		m4/build-to-host.m4		\
 		m4/c99.m4			\
 		m4/c11.m4			\
 		m4/c23.m4			\
@@ -37,7 +53,6 @@ EXTRA_DIST =	autogen.sh 			\
 		m4/codeset.m4			\
 		m4/compiler.m4			\
 		m4/debug.m4			\
-		m4/emscripten.m4		\
 		m4/expanddir.m4			\
 		m4/fc-sdl2.m4			\
 		m4/fcdb-mysql.m4		\
@@ -49,6 +64,7 @@ EXTRA_DIST =	autogen.sh 			\
 		m4/gettimeofday.m4		\
 		m4/gtk3.22-client.m4		\
 		m4/gtk4-client.m4		\
+		m4/gtk5-client.m4		\
 		m4/host-cpu-c-abi.m4		\
 		m4/iconv.m4			\
 		m4/intl.m4			\
@@ -68,9 +84,7 @@ EXTRA_DIST =	autogen.sh 			\
 		m4/postgres.m4			\
 		m4/progtest.m4			\
 		m4/qt.m4			\
-		m4/qt5.m4			\
 		m4/qt6.m4			\
-		m4/qt5-darwin.m4		\
 		m4/qt6-darwin.m4		\
 		m4/qt-client.m4			\
 		m4/readline.m4			\
@@ -79,21 +93,11 @@ EXTRA_DIST =	autogen.sh 			\
 		m4/sound.m4			\
                 m4/tcc.m4			\
 		m4/vsnprintf.m4			\
-		m4/web-client.m4		\
 		m4/winsock2.m4			\
 		m4/testmatic.m4			\
 		meson.build			\
 		meson_options.txt		\
-		platforms/emscripten/emsbuild.sh		\
-		platforms/emscripten/setups/cross-ems.tmpl	\
-		platforms/flatpak/build_flatpak.sh	\
-		platforms/flatpak/org.freeciv.gtk322.yml	\
-		platforms/flatpak/org.freeciv.gtk4.yml	\
-		platforms/flatpak/org.freeciv.mp.gtk3.yml	\
-		platforms/flatpak/org.freeciv.mp.gtk4.yml	\
-		platforms/flatpak/org.freeciv.qt.yml	\
-		platforms/flatpak/org.freeciv.sdl2.yml	\
-		platforms/macos/homebrew-appbundle.sh \
+		scripts/generate_doc.sh		\
 		scripts/mapimg2anim		\
 		scripts/setup_auth_server.sh	\
 		scripts/replace			\
@@ -108,7 +112,4 @@ doc_DATA = $(docs)
 src-check:
 	cd tests && $(MAKE) $(AM_MAKEFLAGS) src-check
 
-doc:
-	doxy_srcdir="$(top_srcdir)/" doxy_version="-$(MAIN_VERSION)" doxygen $(top_srcdir)/doc/freeciv.doxygen
-
-.PHONY: src-check doc
+.PHONY: src-check

@@ -1,6 +1,6 @@
                   Freeciv Frequently Asked Questions (FAQ)
 
-                 (from https://www.freeciv.org/wiki/FAQ_3.1)
+                 (from https://www.freeciv.org/wiki/FAQ_3.2)
 
    Contents
 
@@ -36,7 +36,7 @@
              1.21 How do I play on a rectangular grid?
              1.22 How do I create teams of AI or human players?
              1.23 I want more action.
-             1.24 I can't see trade routes in the city dialog (GTK+)
+             1.24 I can't see trade routes in the city dialog (GTK)
         2 Community
              2.1 Does Freeciv violate any rights of the makers of
                Civilization I or II?
@@ -96,8 +96,8 @@
 1.2 OK, so I installed Freeciv. How do I play?
 
    Start the client. Depending on your system, you might choose it from a
-   menu, double-click on the freeciv-gtk3.22 executable program, or type
-   freeciv-gtk3.22 in a terminal (to start the default "gtk3.22" client).
+   menu, double-click on the freeciv-gtk4 executable program, or type
+   freeciv-gtk4 in a terminal (to start the default "gtk4" client).
 
    As your very first game, you may want to try the '''Tutorial''' scenario
    under Start Scenario Game.
@@ -266,14 +266,23 @@
 
 1.10 My irrigated grassland produces only 2 food. Is this a bug?
 
-   No, it isn't. It's a feature. Your government is probably despotism,
-   which has a -1 output whenever a tile produces more than 2 units of
-   food/production/trade. You should change your government (see
-   Government) to get rid of this penalty.
+   No, it isn't. It's a feature. Your government is probably Despotism
+   or Tribal, which have a -1 output whenever a tile produces more
+   than 2 units of food/production/trade. You should change your government
+   (see Government) or build a relevant Wonder to get rid of this penalty.
 
 -------
 
-1.11 How do I play against computer players?
+1.11 I'm playing with civ2civ3 ruleset and my Engineers are unable
+to do terrain transformations
+
+   Unlike in classic ruleset, in civ2civ3 ruleset Engineers can do most
+   terrain transformations only once Fusion Power is known.
+   See help for unit Engineers for details.
+
+-------
+
+1.12 How do I play against computer players?
 
    See also the How do I create teams of AI or human players? section
    below.
@@ -305,7 +314,7 @@
 
 -------
 
-1.12 Can I build up the palace or throne room as in the commercial Civilization
+1.13 Can I build up the palace or throne room as in the commercial Civilization
 games?
 
    No. This feature is not present in Freeciv, and will not be until
@@ -313,7 +322,7 @@ games?
 
 -------
 
-1.13 Can I build land over sea/transform ocean to land?
+1.14 Can I build land over sea/transform ocean to land?
 
    Yes. You can do that by placing engineer units on a transport and going
    to the ocean tile you want to build land on (this must be in a land
@@ -325,7 +334,7 @@ games?
 
 -------
 
-1.14 Can I change settings or rules to get different types of games?
+1.15 Can I change settings or rules to get different types of games?
 
    Of course.
 
@@ -367,7 +376,7 @@ games?
 
 -------
 
-1.15 How compatible is Freeciv with the commercial Civilization games?
+1.16 How compatible is Freeciv with the commercial Civilization games?
 
    Freeciv was created as a multiplayer version of Civilization™ with
    players moving simultaneously. Rules and elements of Civilization II,
@@ -389,7 +398,7 @@ games?
    So the goal of compatibility is mainly used as a limiting factor in
    development: when a new feature is added to Freeciv that makes gameplay
    different, it is generally implemented in such a way that the
-   "traditional" behaviour remains available as an option. However, we're
+   "traditional" behavior remains available as an option. However, we're
    not aiming for absolute 100% compatibility; in particular, we're not
    aiming for bug-compatibility.
 
@@ -397,7 +406,7 @@ games?
 
 -------
 
-1.16 My opponents seem to be able to play two moves at once!
+1.17 My opponents seem to be able to play two moves at once!
 
    Freeciv's multiplayer facilities are asynchronous: during a turn, moves
    from connected clients are processed in the order they are received.
@@ -415,7 +424,7 @@ games?
 
 -------
 
-1.17 I am far superior to my opponent but their last city is on a 1x1 island so
+1.18 I am far superior to my opponent but their last city is on a 1x1 island so
 I cannot conquer it, and they won't give up. What can I do?
 
    Research 'amphibious warfare', build a marine, and get them.
@@ -428,7 +437,7 @@ I cannot conquer it, and they won't give up. What can I do?
 
 -------
 
-1.18 Why are the AI players so hard on 'novice' or 'easy'?
+1.19 Why are the AI players so hard on 'novice' or 'easy'?
 
    You are not expanding fast enough. Read the How to Play article for
    some general tips how to get a head start in the game.
@@ -439,7 +448,7 @@ I cannot conquer it, and they won't give up. What can I do?
 
 -------
 
-1.19 Why are the AI players so easy on 'hard'?
+1.20 Why are the AI players so easy on 'hard'?
 
    Several reasons. For example, the AI is heavily playtested under and
    customized to the default ruleset and server settings. Although there
@@ -459,7 +468,7 @@ I cannot conquer it, and they won't give up. What can I do?
 
 -------
 
-1.20 What distinguishes AI players from humans? What do the skill levels mean?
+1.21 What distinguishes AI players from humans? What do the skill levels mean?
 
    AI players in Freeciv operate in the server, partly before all clients
    move, partly afterwards. Unlike the clients, they can in principle
@@ -479,12 +488,12 @@ I cannot conquer it, and they won't give up. What can I do?
 
 -------
 
-1.21 How do I play on a rectangular grid?
+1.22 How do I play on a rectangular grid?
 
    It is possible to play with rectangular instead of hexagonal tiles. To
    do this you need to set your topology before the game starts; set this
    with Map topology index from the game settings, or in the chatline:
-/set topology iso|wrapx
+/set topology iso
 
    This will cause the client to use an isometric rectangular tileset when
    the game starts (go to Game > Options >Local options to choose a
@@ -492,12 +501,12 @@ I cannot conquer it, and they won't give up. What can I do?
    are included with the game).
 
    You may also play with overhead rectangular, in which case you want to
-   set the topology setting to 'hex|wrapx'; the trident tileset is supplied
+   set the topology setting to "" (empty); the trident tileset is supplied
    for this mode.
 
 -------
 
-1.22 How do I create teams of AI or human players?
+1.23 How do I create teams of AI or human players?
 
    The GTK and Qt clients have a GUI for setting up teams - just right
    click on any player and assign them to any team.
@@ -523,7 +532,7 @@ I cannot conquer it, and they won't give up. What can I do?
 
 -------
 
-1.23 I want more action.
+1.24 I want more action.
 
    In Freeciv, expansion is everything, even more so than in the
    single-player commercial Civilization games. Some players find it very
@@ -543,7 +552,7 @@ I cannot conquer it, and they won't give up. What can I do?
 
 -------
 
-1.24 I can't see trade routes in the city dialog (GTK+)
+1.25 I can't see trade routes in the city dialog (GTK)
 
    In the GTK client, you can see the effect of trade routes by left
    clicking and holding on the trade value in the Info panel of the city
@@ -592,7 +601,7 @@ I cannot conquer it, and they won't give up. What can I do?
    this site at the Freeciv Forums.
 
    Patches and bug reports are best reported to the Freeciv bug tracking
-   system at https://osdn.net/projects/freeciv/ticket.
+   system at https://redmine.freeciv.org/projects/freeciv.
 
 -------
 
@@ -653,15 +662,23 @@ Starting game.
    wrong with your setup.
 
    First, check your Freeciv version. Freeciv clients can only talk to
-   servers of the same major version (3.1.x can only talk to 3.1.y), and
+   servers of the same major version (3.2.x can only talk to 3.2.y), and
    there may simply be no public servers for the version you're running.
-   Check out the web interface (which shows servers for all versions) and
-   look at the "version" column.
+   Check out the https://meta.freeciv.org/ web interface
+   (which shows servers for all versions) and look at the "version" column.
 
    If you can view the metaserver page with your web browser, and servers
    are listed, but the client's Metaserver tab still fails to list them,
    you may be behind a non-transparent proxy. See article on proxy
    settings for a detailed explanation.
+
+   Another possibility is that your freeciv build lacks access
+   to certificates needed to access https -sites. You can test if that's
+   the case by trying to use "http://meta.freeciv.org/metaserver.php"
+   as the metaserver URL instead of the default one. You can either give
+   the alternative URL by command line parameter
+   "-M http://meta.freeciv.org/metaserver.php" for single run,
+   or permanently in the client settings.
 
 -------
 
@@ -675,8 +692,8 @@ Starting game.
 
 3.5 Am I using the latest version? Do I need to upgrade?
 
-   The current stable Freeciv version is 3.0.7. For an overview of
-   changes that went into this release, see the NEWS-3.0.7 article.
+   The current stable Freeciv version is 3.2.2. For an overview of
+   changes that went into this release, see the NEWS-3.2.2 article.
 
    The NEWS-#.#.# article is only updated for a new release; updates to
    Git can be reviewed in the online source code browser.
@@ -685,17 +702,17 @@ Starting game.
    contributed binaries. If you have a working client, and you don't know
    its version, start it, load a game or scenario, or just start a new
    game, click on Help for the help menu, and on About Freeciv to see the
-   version and the client type (GTK3.22, GTK4, QT, SDL2, …).
+   version and the client type (GTK3.22, GTK4, QT, SDL2, SDL3, …).
 
    It's possible that not all precompiled binaries and ports have been
-   updated to 3.0.7 yet. If you can contribute, please do! Prepare a
+   updated to 3.2.2 yet. If you can contribute, please do! Prepare a
    package and announce it to freeciv-dev@freelists.org.
 
    Clients and servers of different major versions are generally
    incompatible due to changes in the client/server protocol. You will see
    incompatibilities as a 'mismatched capabilities' error. Different minor
-   versions should be compatible, however. For example, 3.1.2 and 3.1.0
-   are compatible; 3.0.7 and 3.1.0 are not.
+   versions should be compatible, however. For example, 3.2.2 and 3.2.0
+   are compatible; 3.1.5 and 3.2.0 are not.
 
 -------
 
@@ -714,11 +731,11 @@ Starting game.
 3.7 HOME directory not set?
 
    The Freeciv client wants to write a configuration file named
-   freeciv-client-rc-3.1 (for Freeciv 3.1.x) in a directory called
+   freeciv-client-rc-3.2 (for Freeciv 3.2.x) in a directory called
    .freeciv in your $HOME directory. On Windows that's %APPDATA%.
-   So for instance for Freeciv 3.1 the Windows clients might put
+   So for instance for Freeciv 3.2 the Windows clients might put
    their common configuration file in
-   C:\Users\username\AppData\Roaming\.freeciv\freeciv-client-rc-3.1.
+   C:\Users\username\AppData\Roaming\.freeciv\freeciv-client-rc-3.2.
 
 -------
 
@@ -727,8 +744,8 @@ Starting game.
    If for some reason you can't use the start-screen interface for loading
    a game, you can load one directly through the client or server command
    line (see Command-line options). You can start a client such as
-   freeciv-gtk3.22, or freeciv-server, with the -f option, for example:
-freeciv-server -f freeciv-T0175-Y01250-auto.sav.xz
+   freeciv-gtk4, or freeciv-server, with the -f option, for example:
+freeciv-server -f freeciv-T0175-Y01250-auto.sav.zst
 
    Or you can use the /load command inside the server before starting the
    game.
@@ -803,21 +820,19 @@ types, and technologies?
 
    The recommended client is the Gtk client. There are a range of
    different Gtk clients for different versions of the Gtk
-   library—Gtk3/3.22/4/etc—but they all support more or less the same feature
-   set. If in doubt, pick the Gtk3.22 client.
+   library—Gtk3.22/4/etc—but they all support more or less the same feature
+   set. If in doubt, pick the Gtk4 client.
 
    The Qt client is a newer client using the Qt toolkit. It has a more
    immersive interface. It supports most features, with the notable
    exception of the map editor.
 
-   The SDL2 client provide a more immersive experience, but lags behind
+   The SDL2- and SDL3-clients provide a more immersive experience, but lag behind
    somewhat in features.
 
    All of these clients should compile and run on any Unix variant we are
    aware of, not just the ones for which our download section provides
    native installation support.
-
-   For Windows, the Gtk and Qt clients are recommended.
 
    Some details of the GUI can be configured from the running client.
 
@@ -842,7 +857,7 @@ types, and technologies?
    Further instructions are in ./doc/README.sound in the source tarball.
 
    If sound does not work, try:
-freeciv-gtk3.22 -d verbose -P <plugin> -S stdsounds
+freeciv-gtk4 -d verbose -P <plugin> -S stdsounds
 
    This will help you get some debug information, which might give a clue
    why the sound does not work.
@@ -935,7 +950,7 @@ freeciv-gtk3.22 -d verbose -P <plugin> -S stdsounds
 
         City Governor (CMA)
                 This is a really useful client side agent which helps you
-                to organize our citizens. However, it consumes many CPU
+                to organize your citizens. However, it consumes many CPU
                 cycles.
 
         Maps and compression
@@ -980,8 +995,8 @@ freeciv-gtk3.22 -d verbose -P <plugin> -S stdsounds
 
    If you used one of the self installer versions then there's a program
    group with the name chosen at installation time (for example,
-   Freeciv 3.1.0 (GTK+3.22 client).) Just go to click on
-   Start→Programs→Freeciv 3.1.0 (GTK+3.22 client)→Freeciv
+   Freeciv 3.2.2 (GTK4 client).) Just go to click on
+   Start→Programs→Freeciv 3.2.2 (GTK4 client)→Freeciv
 
    That's it! You should be up and running.
 
@@ -1025,13 +1040,13 @@ freeciv-gtk3.22 -d verbose -P <plugin> -S stdsounds
 
    Then you have to unpack the tileset into the appropriate place. It's
    best to install it in your user directory. Locate the existing client
-   settings file freeciv-client-rc-3.1; see the question HOME directory
+   settings file freeciv-client-rc-3.2; see the question HOME directory
    not set? to see where that might be. You want to put the tileset in a
-   subdirectory named after the current version (e.g., 3.1\) in the same
+   subdirectory named after the current version (e.g., 3.2\) in the same
    place as the client settings file. Usually, the main tilespec file
-   foo.tilespec goes directly under 3.1\, and the rest of the tileset
+   foo.tilespec goes directly under 3.2\, and the rest of the tileset
    files will go in a subdirectory named after the tileset (e.g.,
-   3.1\foo).
+   3.2\foo).
 
    You can alternatively unpack the tileset into the same data directory
    as the rest of your Freeciv installation, alongside the supplied
@@ -1047,9 +1062,9 @@ freeciv-gtk3.22 -d verbose -P <plugin> -S stdsounds
    you start it to force use of a specific tileset. This also requires
    that the tileset has been installed in a correct place. Open a Command
    Prompt, find the client executable, and start the client with the
-   --tiles tilesetname option. For example for the gtk3.22 client, you might
+   --tiles tilesetname option. For example for the gtk4 client, you might
    start
-freeciv-gtk3.22 --tiles hexemplio
+freeciv-gtk4 --tiles hexemplio
 
 -------
 
@@ -1062,11 +1077,11 @@ freeciv-gtk3.22 --tiles hexemplio
    and extracting it in the same place as you would a tileset (see
    previous question). Generally, the .ruleset and .lua files go in a
    subdirectory named after the ruleset (for instance ancients\*.ruleset;
-   if there is a .serv file it generally goes directly in the 3.1\
-   directory.
+   if there is a .serv or .modpack file it generally goes directly
+   in the 3.2\ directory.
 
    Then you need to tell Freeciv to use it. For single-player games, if
-   there is a .serv file, the ruleset should be available to select from
+   there is a .modpack file, the ruleset should be available to select from
    the drop-down in the client. Otherwise, you can load a ruleset which
    has a foo.serv file with
 /read foo
@@ -1087,10 +1102,6 @@ freeciv-gtk3.22 --tiles hexemplio
 
 5 Mac OS X
 
-   As of 3.1, a zip file with a real Mac application "freeciv.app" is
-   available on the https://www.freeciv.org/download.html page.
-   Requires MacOS 11.x or later (Big Sur or Monterey).
-
-   For earlier versions of MacOS, there are unofficial installer
+   For some earlier versions of MacOS, there are unofficial installer
    packages available, see the Install-MacOSX page on the Freeciv wiki
    for links and more information.

@@ -36,7 +36,8 @@ local function get_option(name, is_sensitive)
   local defaults = {
     backend    = "sqlite",
     table_user = "fcdb_auth",
-    table_log  = "fcdb_log"
+    table_log  = "fcdb_log",
+    table_meta = "fcdb_meta"
   }
   local val = fcdb.option(name)
   if val then
@@ -82,10 +83,23 @@ local function sqlite_connect()
 
   local sql = ls_sqlite3.sqlite3()
 
-  -- Load the database parameters.
   local database = get_option("database")
 
-  dbh = assert(sql:connect(database))
+  -- Check database existence
+  local dfile = io.open(database, "r")
+  if (dfile) then
+    -- Close the file
+    dfile:close()
+
+    -- Load the database parameters.
+    dbh = assert(sql:connect(database))
+  else
+    -- Open the connection before trying to create db through it.
+    dbh = assert(sql:connect(database))
+
+    -- Create a fresh database
+    sqlite_createdb()
+  end
 end
 
 -- Set up tables for an SQLite database.
@@ -101,10 +115,18 @@ function sqlite_createdb()
 
   local table_user = get_option("table_user")
   local table_log  = get_option("table_log")
+  local table_meta = get_option("table_meta")
 
   if not dbh then
     error("Missing database connection")
   end
+
+  query = string.format([[
+CREATE TABLE %s (
+  capstr VARCHAR(256) default NULL,
+  gamecount INTEGER default '0'
+);]], table_meta)
+  assert(dbh:execute(query))
 
   query = string.format([[
 CREATE TABLE %s (
@@ -130,11 +152,20 @@ CREATE TABLE %s (
   succeed TEXT default 'S'
 );]], table_log)
   assert(dbh:execute(query))
+
+  query = string.format([[
+INSERT INTO %s VALUES ('+fcdb', 0);]], table_meta)
+  assert(dbh:execute(query))
 end
 
 -- **************************************************************************
 -- For MySQL, the following shapes of tables are expected
 -- (scripts/setup_auth_server.sh automates this):
+--
+-- CREATE TABLE fcdb_meta (
+--   capstr varchar(256) default NULL,
+--   gamecount int(11) default '0'
+-- );
 --
 -- CREATE TABLE fcdb_auth (
 --   id int(11) NOT NULL auto_increment,
@@ -280,6 +311,40 @@ function user_log(conn, success)
                           VALUES ('%s', %s, '%s', '%s')]],
                         table_log, username, os.time(), ipaddr, success_str)
   assert(dbh:execute(query))
+end
+
+function database_capstr()
+  local table_meta = get_option("table_meta")
+
+  query = string.format([[SELECT capstr FROM %s]], table_meta)
+  local res = assert(dbh:execute(query))
+
+  local caps = res:fetch({}, "a")
+
+  res:close()
+
+  return string.format('%s', caps.capstr)
+end
+
+function game_start(oldid)
+  local table_meta = get_option("table_meta")
+
+  if oldid >= 0 then
+    return oldid
+  end
+
+  query = string.format([[SELECT gamecount FROM %s]], table_meta)
+  local res = assert(dbh:execute(query))
+
+  local count_row = res:fetch({}, "a")
+  count = count_row.gamecount + 1
+
+  res:close()
+
+  query = string.format([[UPDATE %s set gamecount = %d]], table_meta, count)
+  assert(dbh:execute(query))
+
+  return count
 end
 
 -- **************************************************************************

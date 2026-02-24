@@ -1,7 +1,7 @@
 [tilespec]
 
 ; Format and options of this tilespec file:
-options = "+Freeciv-tilespec-3.2-Devel-2022-Jun-21"
+options = "+Freeciv-tilespec-3.4-Devel-2026-Jan-11"
 
 ; A simple name for the tileset specified by this file:
 name = "Trident"
@@ -25,6 +25,9 @@ normal_tile_width  = 30
 normal_tile_height = 30
 small_tile_width   = 15
 small_tile_height  = 20
+
+; The height svg flags should be drawn to, if they are used
+svg_height = 44
 
 ; Basic tile style.
 type = "overhead"
@@ -97,6 +100,10 @@ unit_upkeep_small_offset_y = 20
 ; valid direction for the tileset.
 ;unit_default_orientation = "s"
 
+; How long (number of refreshes) it takes to move from an animation
+; frame to the next.
+time_per_frame = 3
+
 ; The map is rendered in "layers", just like any decent image editor
 ; supports. The setting below allows to change the layer drawing order. The
 ; first layer in the list will be drawn below the others; the second on top
@@ -156,6 +163,7 @@ files =
   "misc/cursors.spec",
   "trident/grid.spec",
   "trident/roads.spec",
+  "trident/highways.spec",
   "misc/buildings.spec",
   "misc/space.spec",
   "misc/techs.spec",
@@ -332,6 +340,7 @@ styles =
     { "name",          "style"
       "road.road",     "RoadParityCombined"
       "road.rail",     "RoadParityCombined"
+      "road.highway",  "RoadParityCombined"
       "road.maglev",   "RoadParityCombined"
       "road.river",    "River"
       "tx.irrigation", "Cardinals"
@@ -339,6 +348,7 @@ styles =
       "tx.mine",       "Single1"
       "tx.oil_mine",   "Single1"
       "tx.oil_rig",    "Single1"
+      "tx.nets",       "Single1"
       "tx.pollution",  "Single2"
       "tx.fallout",    "Single2"
       "tx.village",    "Single1"

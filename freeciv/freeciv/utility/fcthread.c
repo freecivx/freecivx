@@ -22,6 +22,37 @@
 
 #include "fcthread.h"
 
+static at_thread_exit_cb *ate_cb = nullptr;
+
+/*******************************************************************//**
+  Register callback to be called whenever a thread finishes.
+  This can be called only once. Latter calls will cause an error message
+  and return FALSE.
+***********************************************************************/
+bool register_at_thread_exit_callback(at_thread_exit_cb *cb)
+{
+  if (ate_cb != nullptr) {
+    log_error("Trying to register multiple at_thread_exit callbacks.");
+    log_error("That's not supported yet.");
+
+    return FALSE;
+  }
+
+  ate_cb = cb;
+
+  return TRUE;
+}
+
+/*******************************************************************//**
+  Called at thread exit by all the thread implementations.
+***********************************************************************/
+static void at_thread_exit(void)
+{
+  if (ate_cb != nullptr) {
+    ate_cb();
+  }
+}
+
 #ifdef FREECIV_C11_THR
 
 struct fc_thread_wrap_data {
@@ -40,6 +71,8 @@ static int fc_thread_wrapper(void *arg)
   data->func(data->arg);
 
   free(data);
+
+  at_thread_exit();
 
   return EXIT_SUCCESS;
 }
@@ -68,9 +101,25 @@ int fc_thread_start(fc_thread *thread, void (*function) (void *arg),
 ***********************************************************************/
 void fc_thread_wait(fc_thread *thread)
 {
-  int *return_value = NULL;
+  int *return_value = nullptr;
 
   thrd_join(*thread, return_value);
+}
+
+/*******************************************************************//**
+  Get thread id
+***********************************************************************/
+fc_thread_id fc_thread_self(void)
+{
+  return thrd_current();
+}
+
+/*******************************************************************//**
+  Tell if two threads are the same
+***********************************************************************/
+bool fc_threads_equal(fc_thread_id thr1, fc_thread_id thr2)
+{
+  return thrd_equal(thr1, thr2);
 }
 
 /*******************************************************************//**
@@ -156,7 +205,9 @@ static void *fc_thread_wrapper(void *arg)
 
   free(data);
 
-  return NULL;
+  at_thread_exit();
+
+  return nullptr;
 }
 
 /*******************************************************************//**
@@ -191,9 +242,25 @@ int fc_thread_start(fc_thread *thread, void (*function) (void *arg),
 ***********************************************************************/
 void fc_thread_wait(fc_thread *thread)
 {
-  void **return_value = NULL;
+  void **return_value = nullptr;
 
   pthread_join(*thread, return_value);
+}
+
+/*******************************************************************//**
+  Get thread id
+***********************************************************************/
+fc_thread_id fc_thread_self(void)
+{
+  return pthread_self();
+}
+
+/*******************************************************************//**
+  Tell if two threads are the same
+***********************************************************************/
+bool fc_threads_equal(fc_thread_id thr1, fc_thread_id thr2)
+{
+  return pthread_equal(thr1, thr2);
 }
 
 /*******************************************************************//**
@@ -240,7 +307,7 @@ void fc_mutex_release(fc_mutex *mutex)
 ***********************************************************************/
 void fc_thread_cond_init(fc_thread_cond *cond)
 {
-  pthread_cond_init(cond, NULL);
+  pthread_cond_init(cond, nullptr);
 }
 
 /*******************************************************************//**
@@ -286,6 +353,8 @@ static DWORD WINAPI fc_thread_wrapper(LPVOID arg)
 
   free(data);
 
+  at_thread_exit();
+
   return 0;
 }
 
@@ -300,9 +369,9 @@ int fc_thread_start(fc_thread *thread, void (*function) (void *arg), void *arg)
   data->arg = arg;
   data->func = function;
 
-  *thread = CreateThread(NULL, 0, &fc_thread_wrapper, data, 0, NULL);
+  *thread = CreateThread(nullptr, 0, &fc_thread_wrapper, data, 0, nullptr);
 
-  if (*thread == NULL) {
+  if (*thread == nullptr) {
     return 1;
   }
 
@@ -327,11 +396,27 @@ void fc_thread_wait(fc_thread *thread)
 }
 
 /*******************************************************************//**
+  Get thread id
+***********************************************************************/
+fc_thread_id fc_thread_self(void)
+{
+  return GetCurrentThreadId();
+}
+
+/*******************************************************************//**
+  Tell if two threads are the same
+***********************************************************************/
+bool fc_threads_equal(fc_thread_id thr1, fc_thread_id thr2)
+{
+  return thr1 == thr2;
+}
+
+/*******************************************************************//**
   Initialize mutex
 ***********************************************************************/
 void fc_mutex_init(fc_mutex *mutex)
 {
-  *mutex = CreateMutex(NULL, FALSE, NULL);
+  *mutex = CreateMutex(nullptr, FALSE, nullptr);
 }
 
 /*******************************************************************//**

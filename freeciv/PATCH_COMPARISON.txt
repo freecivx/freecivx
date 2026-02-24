@@ -1,0 +1,54 @@
+FREECIV WEB PATCH COMPARISON
+=============================
+
+OLD PATCH (freeciv_web.patch.old):
+- Total lines: 2781
+- File size: 98K
+- Files modified: ~60+
+
+NEW PATCH (freeciv_web.patch):
+- Total lines: 361
+- File size: 15K
+- Files modified: 13
+
+REDUCTION: 87% smaller
+
+FILES NO LONGER NEEDED IN PATCH (already in upstream):
+- common/actions.c
+- common/unit.c
+- common/mapimg.c
+- server/generator/mapgen.c
+- server/cityturn.c
+- server/connecthand.c
+- server/handchat.c
+- server/maphand.c
+- server/maphand.h
+- server/report.c
+- server/savegame/savegame3.c (most changes)
+- server/savegame/savemain.c
+- server/sernet.c
+- server/settings.c
+- server/srv_main.c
+- server/srv_main.h
+- server/unithand.c
+- server/advisors/autoworkers.c
+- data/*/game.ruleset
+- data/*/buildings.ruleset
+- data/*/effects.ruleset
+- data/*/terrain.ruleset
+- data/*/units.ruleset
+- data/*/nationlist.ruleset
+- data/misc/flags-large.spec
+- data/misc/flags.spec
+- data/misc/shields-large.spec
+- data/misc/shields.spec
+- doc/INSTALL.meson
+- scripts/potfiles
+- And many more...
+
+KEY BENEFITS:
+1. Much easier to maintain
+2. Less divergence from upstream
+3. Faster to apply
+4. Lower risk of conflicts in future updates
+5. Many improvements already incorporated upstream

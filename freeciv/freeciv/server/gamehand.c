@@ -15,7 +15,7 @@
 #include <fc_config.h>
 #endif
 
-#include <stdio.h> /* for remove() */ 
+#include <stdio.h> /* for remove() */
 
 /* utility */
 #include "capability.h"
@@ -107,7 +107,7 @@ enum unit_role_id crole_to_role_id(char crole)
     return L_START_ATTACK_FAST;
   case 'A':
     return L_START_ATTACK_STRONG;
-  default: 
+  default:
     return 0;
   }
 }
@@ -171,8 +171,9 @@ static struct tile *place_starting_unit(struct tile *starttile,
 
   if (utype != NULL) {
     iterate_outward(&(wld.map), starttile,
-                    wld.map.xsize + wld.map.ysize, itertile) {
-      if (!is_non_allied_unit_tile(itertile, pplayer)
+                    MAP_NATIVE_WIDTH + MAP_NATIVE_HEIGHT, itertile) {
+      if (!is_non_allied_unit_tile(itertile, pplayer,
+                                   utype_has_flag(utype, UTYF_FLAGLESS))
           && is_native_tile(utype, itertile)) {
         ptile = itertile;
         break;
@@ -185,13 +186,15 @@ static struct tile *place_starting_unit(struct tile *starttile,
     return NULL;
   }
 
-  fc_assert_ret_val(!is_non_allied_unit_tile(ptile, pplayer), NULL);
+  fc_assert_ret_val(!is_non_allied_unit_tile(ptile, pplayer,
+                                             utype_has_flag(utype, UTYF_FLAGLESS)),
+                    NULL);
 
-  /* For scenarios or dispersion, huts may coincide with player starts (in 
+  /* For scenarios or dispersion, huts may coincide with player starts (in
    * other cases, huts are avoided as start positions). Remove any such hut,
    * and make sure to tell the client, since we may have already sent this
    * tile (with the hut) earlier: */
-  /* FIXME: don't remove under a unit that can't enter or frighten hut */
+  /* FIXME: Don't remove under a unit that can't enter or frighten hut */
   extra_type_by_rmcause_iterate(ERM_ENTER, pextra) {
     if (tile_has_extra(ptile, pextra)) {
       tile_extra_rm_apply(ptile, pextra);
@@ -246,7 +249,7 @@ static struct tile *find_dispersed_position(struct player *pplayer,
              && !is_ocean_tile(ptile)
              && real_map_distance(pcenter, ptile) < game.server.dispersion
                 + 1
-             && !is_non_allied_unit_tile(ptile, pplayer)));
+             && !is_non_allied_unit_tile(ptile, pplayer, TRUE)));
 
   return ptile;
 }
@@ -469,7 +472,7 @@ void init_new_game(void)
 
   /* Convert the startposition hash table in a linked lists, as we mostly
    * need now to iterate it now. And then, we will be able to remove the
-   * assigned start postions one by one. */
+   * assigned start positions one by one. */
   impossible_list = startpos_list_new();
   targeted_list = startpos_list_new();
   flexible_list = startpos_list_new();
@@ -725,6 +728,7 @@ void init_new_game(void)
         fc_assert(i == config.usable_startpos_num);
       }
 
+      free(state.startpos);
       free(config.startpos);
     }
   }
@@ -899,7 +903,7 @@ void send_year_to_clients(void)
   Send game_info packet; some server options and various stuff...
   dest == NULL means game.est_connections
 
-  It may be sent at any time. It MUST be sent before any player info, 
+  It may be sent at any time. It MUST be sent before any player info,
   as it contains the number of players.  To avoid inconsistency, it
   SHOULD be sent after rulesets and any other server settings.
 ****************************************************************************/
@@ -1036,12 +1040,12 @@ void increase_timeout_because_unit_moved(void)
 {
   if (current_turn_timeout() > 0 && game.server.timeoutaddenemymove > 0) {
     double maxsec = (timer_read_seconds(game.server.phase_timer)
-		     + (double) game.server.timeoutaddenemymove);
+                     + (double) game.server.timeoutaddenemymove);
 
     if (maxsec > game.tinfo.seconds_to_phasedone) {
       game.tinfo.seconds_to_phasedone = maxsec;
       send_game_info(NULL);
-    }	
+    }
   }
 }
 
@@ -1098,7 +1102,7 @@ const char *new_challenge_filename(struct connection *pc)
   return get_challenge_filename(pc);
 }
 
-struct mrc_data {
+struct mrc_sendclient_data {
   int count;
   struct packet_ruleset_choices *packet;
 };
@@ -1106,10 +1110,10 @@ struct mrc_data {
 /************************************************************************//**
   Callback called from modpack ruleset cache iteration.
 ****************************************************************************/
-static void ruleset_cache_cb(const char *mp_name, const char *filename,
-                             void *data_in)
+static void ruleset_cache_sendclient_cb(const char *mp_name,
+                                        const char *filename, void *data_in)
 {
-  struct mrc_data *data = (struct mrc_data *)data_in;
+  struct mrc_sendclient_data *data = (struct mrc_sendclient_data *)data_in;
   const int maxlen = sizeof(data->packet->rulesets[data->count]);
 
   if (data->count >= MAX_NUM_RULESETS) {
@@ -1127,15 +1131,11 @@ static void ruleset_cache_cb(const char *mp_name, const char *filename,
 }
 
 /************************************************************************//**
-  Call this on a connection with HACK access to send it a set of ruleset
-  choices.  Probably this should be called immediately when granting
-  HACK access to a connection.
+  Create cache of available rulesets.
 ****************************************************************************/
-static void send_ruleset_choices(struct connection *pc)
+void cache_rulesets(void)
 {
-  struct packet_ruleset_choices packet;
   static bool rulesets_cached = FALSE;
-  struct mrc_data data;
 
   if (!rulesets_cached) {
     struct fileinfo_list *ruleset_choices;
@@ -1157,10 +1157,23 @@ static void send_ruleset_choices(struct connection *pc)
 
     rulesets_cached = TRUE;
   }
+}
+
+/************************************************************************//**
+  Call this on a connection with HACK access to send it a set of ruleset
+  choices. Probably this should be called immediately when granting
+  HACK access to a connection.
+****************************************************************************/
+static void send_ruleset_choices(struct connection *pc)
+{
+  struct packet_ruleset_choices packet;
+  struct mrc_sendclient_data data;
+
+  cache_rulesets();
 
   data.count = 0;
   data.packet = &packet;
-  modpack_ruleset_cache_iterate(ruleset_cache_cb, &data);
+  modpack_ruleset_cache_iterate(ruleset_cache_sendclient_cb, &data);
 
   packet.ruleset_count = data.count;
 

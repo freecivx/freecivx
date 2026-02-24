@@ -1,8 +1,8 @@
 ; Modifying this file:
 ; You should not modify this file except to make bugfixes or
-; for other "maintenance".  If you want to make custom changes,
+; for other "maintenance". If you want to make custom changes,
 ; you should create a new datadir subdirectory and copy this file
-; into that directory, and then modify that copy.  Then use the
+; into that directory, and then modify that copy. Then use the
 ; command "rulesetdir <mysubdir>" in the server to have freeciv
 ; use your new customized file.
 ;
@@ -16,11 +16,11 @@
 
 [datafile]
 description = "Classic unit_type data for Freeciv"
-options = "+Freeciv-ruleset-3.3-Devel-2023.Feb.24 web-compatible"
-format_version = 40
+options = "+Freeciv-ruleset-3.4-Devel-2025.Jan.17 web-compatible"
+format_version = 50
 
 [control]
-; Names for custom unit type flags. There can be up to 50 of these.
+; Names for custom unit type flags. There can be up to 53 of these.
 ; name          = rule name; In some circumstances user may see this
 ;                 as part of some sentences, so try to make it descriptive
 ;                 and sensible.
@@ -106,9 +106,9 @@ veteran_move_bonus = 0, 0, 0, 0
 ; min_speed           = Minimum speed after damage and effects (whole movement points)
 ; hp_loss_pct         = Hitpoints lost each turn if unit not in city or native base
 ; non_native_def_pct  = Defense power percentage applying when defending on
-;                       non-native terrain (such as ship in harbour)
-; flags               = List of unit class flags (from the following list; you
-;                       cannot add custom unit class flags)
+;                       non-native terrain (such as ship in harbor)
+; flags               = List of unit class flags; list of built-in flags
+;                       described below and/or user flags defined above
 ; helptext            = optional help text string; should escape all raw newlines
 ;                       so that xgettext parsing works
 ;
@@ -124,7 +124,7 @@ veteran_move_bonus = 0, 0, 0, 0
 ;                       For class members which are transports, cargo cannot load/
 ;                       unload except in a city or native base, unless that unit
 ;                       explicitly lists this class in its 'embarks'/'disembarks'.
-; "CollectRansom"     = Unit can collect ransom when killing lone barbarian leader
+; "CollectRansom"     = Unit can collect ransom when killing undefended barbarian leader
 ; "ZOC"               = Unit is subject to ZOC rules. Unit type flag "IgZOC" can
 ;                       override this
 ; "DoesntOccupyTile"  = Even if this kind of enemy unit is on tile, cities can
@@ -191,7 +191,7 @@ flags         = "Unreachable", "DoesntOccupyTile", "HutFrighten"
 ;
 ; Below: The individual unit types, one per section.
 ;
-; The number can be variable, up to 200.
+; The number can be variable, up to 300.
 ; However for the "official" rulesets, units should not be removed
 ; because that would break backward compatibility with savegames.
 ;
@@ -222,6 +222,8 @@ flags         = "Unreachable", "DoesntOccupyTile", "HutFrighten"
 ; build_cost    = production shields required to build
 ; pop_cost      = population removed from city when built; for 'Join City'
 ;                 units this is also the population added to the destination
+; specialist    = optional: add a superspecialist of this type when joining to
+;                 or creating a city (if normal specialist: join as this type)
 ; attack        = base attack strength (0 = cannot attack)
 ; defense       = base defense strength (0 = cannot defend)
 ; hitpoints     = how much damage unit can withstand
@@ -233,7 +235,7 @@ flags         = "Unreachable", "DoesntOccupyTile", "HutFrighten"
 ; convert_time  = number of movement points it takes to convert to
 ;                 another unit type
 ; class         = One of the classes listed above
-; transport_cap = Number of units (ground, or air/missiles, depending on flags)
+; transport_cap = Max number of units that can be transported.
 ; fuel          = Number of turns unit can spend outside refuel points.
 ;                 If more time passes without unit refueling over turn change,
 ;                 they are lost. If this is zero, unit has no need to refuel
@@ -248,6 +250,7 @@ flags         = "Unreachable", "DoesntOccupyTile", "HutFrighten"
 ;                 transported.
 ;                   "Blocked" - Can't defend when transported
 ;                   "Alight"  - Can defend if can alight or unload (current default)
+;                   "Always"  - Can defend even when transported
 ; targets       = list of unit classes this unit can attack against even
 ;                 if they have Unreachable unit class flag
 ; embarks       = list of unit classes this unit may load into while not in
@@ -273,6 +276,7 @@ flags         = "Unreachable", "DoesntOccupyTile", "HutFrighten"
 ; veteran_names = Special veteran level for this unit. See the definitions in
 ;                 game.ruleset. All of the veteran_* entries have to have the
 ;                 same length!
+;                 There can be up to 20 levels.
 ; veteran_base_raise_chance =
 ; veteran_work_raise_chance =
 ; veteran_power_fact =
@@ -284,7 +288,7 @@ flags         = "Unreachable", "DoesntOccupyTile", "HutFrighten"
 ;                   supported in client
 ; sound_fight     = optional sound effect when the unit fights
 ; sound_fight_alt = optional alternative sound effect if above not
-;	            supported in client
+;                   supported in client
 ; helptext        = optional help text string; should escape all raw newlines
 ;                   so that xgettext parsing works
 ;
@@ -321,16 +325,16 @@ flags         = "Unreachable", "DoesntOccupyTile", "HutFrighten"
 ;
 ; "IgZOC"       = ignore Zones of Control (ZOC) even if unit class has
 ;                 "ZOC" flag
-; "HasNoZOC"	= unit has no Zone of Control (ZOC), thus any unit can move
-;		  around it freely
-; "NonMil"	= a non-military unit: no attacks; no martial law; can enter
+; "HasNoZOC"    = unit has no Zone of Control (ZOC), thus any unit can move
+;                 around it freely
+; "NonMil"      = a non-military unit: no attacks; no martial law; can enter
 ;                 peaceful borders; DoesntOccupyTile
 ; "IgTer"       = use constant move cost defined in igter_cost (terrain.ruleset)
 ;                 rather than terrain/road etc cost, unless terrain cost is
 ;                 less
-; "FieldUnit"	= cause unhappiness even when not being aggressive
-; "Settlers"	= can irrigate and build roads
-; "Diplomat"	= can defend against diplomat actions (see diplchance
+; "FieldUnit"   = cause unhappiness even when not being aggressive
+; "Workers"     = can irrigate and build roads
+; "Diplomat"    = can defend against diplomat actions (see diplchance
 ;                 server option)
 ; "Spy"         = strong in diplomatic battles. _Must_ be "Diplomat" also
 ; "CoastStrict" = (sea only) cannot leave coast
@@ -338,49 +342,37 @@ flags         = "Unreachable", "DoesntOccupyTile", "HutFrighten"
 ;                 to regularly end turn on coast
 ; "Only_Native_Attack" = cannot attack targets on non-native tiles even if
 ;                 unit class can
-; "Fanatic"	= can only be built by governments that allow them
-;		  (see civ2/governments.ruleset, Fundamentalism government)
-; "Unique"	= a player can only have one of these units in the game at
-;		  the same time; barbarians cannot use this at present
-; "GameLoss"	= losing one of these units means you lose the game, but it
-;		  is produced without homecity and upkeep
+; "Fanatic"     = can only be built by governments that allow them
+;                 (see civ2/governments.ruleset, Fundamentalism government)
+; "Unique"      = a player can only have one of these units in the game at
+;                 the same time; barbarians cannot use this at present
+; "GameLoss"    = losing one of these units means you lose the game, but it
+;                 is produced without homecity and upkeep
 ; "EvacuateFirst" = the game will try to rescue units with this flag before
 ;                 it tries to rescue units without it when their transport
 ;                 is destroyed. Think of the Birkenhead drill ("women and
 ;                 children first"). Replace "women and children" with
 ;                 "units with the EvacuateFirst unit type flag".
-; "SuperSpy"	= this unit always wins diplomatic contests, that is, unless
-;		  it encounters another SuperSpy, in which case defender wins;
-;		  can also be used on non-diplomat units, in which case it can
-;		  protect cities from diplomats; also 100% spy survival chance
-; "NoHome"	= this unit is built with no homecity, free of all upkeep, and
-;		  therefore will not revolt along with its city of origin should
-;		  it be incited
-; "NoVeteran"   = this unit cannot gain veteran levels through experience
-;                 (as if both base_raise_chance and work_raise_chance were zero);
-;                 it can still gain veterancy through Veteran_Build, etc
+; "SuperSpy"    = this unit always wins diplomatic contests, that is, unless
+;                 it encounters another SuperSpy, in which case defender wins;
+;                 can also be used on non-diplomat units, in which case it can
+;                 protect cities from diplomats; also 100% spy survival chance
+; "NoHome"      = this unit is built with no homecity, free of all upkeep, and
+;                 therefore will not revolt along with its city of origin should
+;                 it be incited
 ; "CityBuster"  = this unit has double firepower against cities
 ; "NoBuild"     = this unit cannot be built
-; "BadWallAttacker"	= the firepower of this unit is set to 1 if
+; "BadWallAttacker" = the firepower of this unit is set to 1 if
 ;                 attacking a city
-;		  defended by a city wall (or other city building defense)
-; "BadCityDefender"	= if attacked while in a city, firepower is set to 1
-;		  and firepower of attacker is doubled (the Pearl Harbour
+;                 defended by a city wall (or other city building defense)
+; "BadCityDefender" = if attacked while in a city, firepower is set to 1
+;                 and firepower of attacker is doubled (the Pearl Harbor
 ;                 rule)
 ; "BarbarianOnly" = only barbarians can build this unit
-; "Shield2Gold" = Switch from shield upkeep to gold upkeep possible
 ; "NewCityGamesOnly" = unit can't be built on scenarios where founding new cities
 ;                 is not allowed. Give this flag to units that would make no sense
 ;                 to have in a game with such a scenario
-; "CanEscape"   = this unit has, given that certain conditions are
-;                 fulfilled, a 50% chance to escape rather than being
-;                 killed when killstack is enabled and the defender of its
-;                 tile is defeated. The conditions are that it has more move
-;                 points than required to move to an adjacent tile plus the
-;                 attackers move points and that the attacker doesn't have
-;                 the "CanKillEscaping" unit type flag.
-; "CanKillEscaping" = an attack from this unit ignores the "CanEscape" unit
-;                 type flag.
+; "CanKillEscaping" = an attack from this unit prevents the "Escape" action.
 ; "Provoking" =   a unit considering to auto attack this unit will choose to
 ;                 do so even if has better odds when defending against it
 ;                 then when attacking it. Applies when the autoattack server
@@ -390,6 +382,13 @@ flags         = "Unreachable", "DoesntOccupyTile", "HutFrighten"
 ;                 is enabled and the unit class is unreachable
 ; "RandomMovement" = Unit makes random movements in the beginning of the turn,
 ;                 player has no control over its movement
+; "Flagless"      = Unit national flag is not shown on client, except for
+;                 the owner. Unit can attack, and it can be attacked,
+;                 regardless of diplomatic pacts between actual unit owners.
+; "ProvidesRansom" = Enemies can collect ransom from the unit. This only happens
+;                 if all the units on tile have this flag - any other kind of
+;                 unit protects them.
+;
 ;
 ; Following actions require extra fields:
 ;  "Attack" and "Suicide Attack"
@@ -426,7 +425,7 @@ flags         = "Unreachable", "DoesntOccupyTile", "HutFrighten"
 ;                           researched its tech requirements
 ; "BarbarianBuild"        = can be built by barbarians
 ; "BarbarianBuildTech"    = can be built by barbarians if someone has
-;                        researched its tech requirements
+;                           researched its tech requirements
 ; "BarbarianLeader"       = this unit is the barbarian leader (only one)
 ; "BarbarianSea"          = can be created as a barbarian that disembarks from a barbarian boat
 ; "BarbarianSeaTech"      = can be created as a barbarian that disembarks from a barbarian boat
@@ -472,7 +471,7 @@ uk_shield     = 1
 uk_food       = 1
 uk_gold       = 0
 tp_defense    = "Alight"
-flags         = "Settlers", "Cant_Fortify", "NonMil", "HasNoZOC", "AddToCity", "Cities"
+flags         = "Workers", "Cant_Fortify", "NonMil", "HasNoZOC", "AddToCity", "Cities"
 ; No veteran levels (level name is never displayed)
 veteran_names = _("green")
 veteran_base_raise_chance = 0
@@ -521,7 +520,7 @@ uk_shield     = 1
 uk_food       = 0
 uk_gold       = 0
 tp_defense    = "Alight"
-flags         = "Settlers", "Cant_Fortify", "NonMil", "HasNoZOC", "Airbase"
+flags         = "Workers", "Cant_Fortify", "NonMil", "HasNoZOC", "Airbase"
 ; No veteran levels (level name is never displayed)
 veteran_names = _("green")
 veteran_base_raise_chance = 0
@@ -566,7 +565,7 @@ uk_shield     = 1
 uk_food       = 0
 uk_gold       = 0
 tp_defense    = "Alight"
-flags         = "Settlers", "Cant_Fortify", "NonMil", "HasNoZOC", "Transform", "Airbase"
+flags         = "Workers", "Cant_Fortify", "NonMil", "HasNoZOC", "Transform", "Airbase"
 ; No veteran levels (level name is never displayed)
 veteran_names = _("green")
 veteran_base_raise_chance = 0
@@ -1484,40 +1483,6 @@ Bombers are specialized airborne units that may\
  units.\
 ")
 
-[unit_zeppelin]
-name          = _("Zeppelin")
-class         = "Air"
-reqs          =
-  { "type", "name", "range"
-    "Tech", "Flight", "Player"
-  }
-obsolete_by   = "Stealth Bomber"
-graphic       = "u.zeppelin"
-graphic_alt   = "-"
-sound_move    = "m_bomber"
-sound_move_alt = "m_generic"
-sound_fight   = "f_bomber"
-sound_fight_alt = "f_generic"
-build_cost    = 45
-pop_cost      = 0
-attack        = 2
-defense       = 1
-hitpoints     = 20
-firepower     = 2
-move_rate     = 6
-vision_radius_sq = 24
-transport_cap = 0
-fuel          = 6
-uk_happy      = 0
-uk_shield     = 0
-uk_food       = 0
-uk_gold       = 0
-tp_defense    = "Alight"
-flags         = "FieldUnit", "OneAttack", "AirAttacker", "HasNoZOC", "Bomber"
-roles         = ""
-helptext      = _("A Zeppelin is a type of rigid airship named after the German inventor Count Ferdinand von Zeppelin who pioneered rigid airship development at the beginning of the 20th century.")
-
-
 [unit_helicopter]
 ; /* TRANS: unit type */
 name          = _("Helicopter")
@@ -1709,11 +1674,11 @@ uk_food       = 0
 uk_gold       = 0
 tp_defense    = "Alight"
 cargo         = "Land"
-flags         = "TradeRoute", "BadCityDefender", "Provoking"
+flags         = "BadCityDefender", "Provoking"
 roles         = "Ferryboat", "FerryStartUnit", "BarbarianBoat"
 helptext      = _("\
 The Caravel replaces the Trireme and can enter\
- any ocean tile. Can establish a trade route.\
+ any ocean tile.\
 ")
 
 [unit_galleon]
@@ -1746,12 +1711,12 @@ uk_food       = 0
 uk_gold       = 0
 tp_defense    = "Alight"
 cargo         = "Land"
-flags         = "TradeRoute", "BadCityDefender", "Provoking"
+flags         = "BadCityDefender", "Provoking"
 roles         = "Ferryboat", "FerryStartUnit", "BarbarianBoat"
 helptext      = _("\
 The Galleon is a pure transport ship and cannot\
  attack other ships, though it may still defend\
- itself when attacked. Can establish a trade route.\
+ itself when attacked.\
 ")
 
 [unit_frigate]
@@ -2010,7 +1975,7 @@ tp_defense    = "Alight"
 cargo         = "Missile"
 vision_layer  = "Subsurface"
 flags         = "BadCityDefender", "Provoking",
-	        "Only_Native_Attack"
+                "Only_Native_Attack"
 roles         = "Hunter"
 helptext      = _("\
 Traveling under the surface of the ocean, Submarines have\
@@ -2088,11 +2053,11 @@ uk_food       = 0
 uk_gold       = 0
 tp_defense    = "Alight"
 cargo         = "Land"
-flags         = "TradeRoute", "BadCityDefender", "Provoking"
+flags         = "BadCityDefender", "Provoking"
 roles         = "Ferryboat", "FerryStartUnit"
 helptext      = _("\
 The Transport cannot attack on its own but\
- may defend itself when under attack. Can establish trade routes.\
+ may defend itself when under attack.\
 ")
 
 [unit_cruise_missile]
@@ -2576,7 +2541,8 @@ uk_food       = 0
 uk_gold       = 0
 tp_defense    = "Alight"
 flags         = "IgZOC", "NonMil", "HasNoZOC", "Unbribable",
-                "EvacuateFirst", "SuperSpy", "NoHome", "NoBuild"
+                "EvacuateFirst", "SuperSpy", "NoHome", "NoBuild",
+                "ProvidesRansom"
 ; No veteran levels (level name is never displayed)
 veteran_names = _("green")
 veteran_base_raise_chance = 0

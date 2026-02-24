@@ -1,13 +1,13 @@
 option('clients',
        type: 'array',
-       choices: ['gtk3.22','sdl2', 'qt', 'gtk4', 'stub', 'gtk4x'],
-       value: ['gtk3.22'],
+       choices: ['gtk3.22','sdl2', 'qt', 'gtk4', 'stub', 'sdl3', 'gtk4x'],
+       value: ['gtk4'],
        description: 'Clients to build')
 
 option('fcmp',
        type: 'array',
-       choices: ['gtk3','qt','cli','gtk4'],
-       value: ['gtk3'],
+       choices: ['gtk3','qt','cli','gtk4', 'gtk4x'],
+       value: ['gtk4'],
        description: 'Modpack installer UIs to build')
 
 option('cacert-path',
@@ -46,14 +46,16 @@ option('readline',
        description: 'Enable readline functionality')
 
 option('audio',
-       type: 'boolean',
-       value: true,
-       description: 'Build in sound support')
+       type: 'combo',
+       choices: ['none', 'sdl2', 'sdl3'],
+       value: 'sdl2',
+       description: 'Sound support type to build')
 
-option('ruledit',
-       type: 'boolean',
-       value: true,
-       description: 'Build ruleset editor')
+option('tools',
+       type: 'array',
+       choices: ['ruledit', 'manual', 'ruleup'],
+       value: ['ruledit', 'manual', 'ruleup'],
+       description: 'Extra tools to build')
 
 option('nls',
        type: 'boolean',
@@ -71,6 +73,22 @@ option('server',
        value: 'enabled',
        description: 'What kind of server should be build, if any')
 
+option('aimodules',
+       type: 'array',
+       choices: ['classic', 'tex', 'stub'],
+       value: ['classic', 'tex'],
+       description: 'AI modules to include to the server')
+
+option('dynaimod',
+       type: 'boolean',
+       value: false,
+       description: 'Support dynamically loadable AI modules')
+
+option('appimage',
+       type: 'boolean',
+       value: false,
+       description: 'Make a build suitable for AppImage packaging')
+
 option('gen-packets-args',
        type: 'array',
        value: [],
@@ -78,16 +96,37 @@ option('gen-packets-args',
 
 option('qtver',
        type: 'combo',
-       choices: ['qt5', 'qt6', 'qt6x'],
+       choices: ['qt6', 'qt6x'],
        value: 'qt6',
-       description: 'Whether to build Qt5, Qt6, or experimental Qt6 versions of the binaries')
+       description: 'Whether to build Qt6, or experimental Qt6 versions of the binaries')
 
 option('project-definition',
        type: 'string',
        value: '',
-       description: 'File with project defition')
+       description: 'File with project definition')
 
 option('min-win-ver',
        type: 'string',
        value: '',
        description: 'Minimum Windows version to support')
+
+option('svgflags',
+       type: 'boolean',
+       value: true,
+       description: 'svg flags features enabled on build level')
+
+option('localeprefix',
+       type: 'string',
+       value: '',
+       description: 'Localedir prefix to use instead of regular prefix')
+
+option('python',
+       type: 'string',
+       value: 'python3',
+       description: 'Python interpreter to use')
+
+option('fcdb',
+       type: 'array',
+       choices: ['sqlite3','mariadb','odbc'],
+       value: ['sqlite3'],
+       description: 'fcdb (player authentication) backends to build')

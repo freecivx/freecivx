@@ -24,10 +24,14 @@
 #include "ai.h"
 #include "capability.h"
 #include "game.h"
+#include "research.h"
 
 /* server */
 #include "console.h"
 #include "notify.h"
+
+/* server/ruleset */
+#include "ruleload.h"
 
 /* server/savegame */
 #include "savegame2.h"
@@ -35,7 +39,7 @@
 
 #include "savemain.h"
 
-static fc_thread *save_thread = NULL;
+static fc_thread *save_thread = nullptr;
 
 /************************************************************************//**
   Main entry point for loading a game.
@@ -44,30 +48,32 @@ void savegame_load(struct section_file *sfile)
 {
   const char *savefile_options;
 
-  fc_assert_ret(sfile != NULL);
+  fc_assert_ret(sfile != nullptr);
 
 #ifdef DEBUG_TIMERS
   struct timer *loadtimer = timer_new(TIMER_CPU, TIMER_DEBUG, "load");
   timer_start(loadtimer);
-#endif /* DEBUG_TIMERS */
+#endif // DEBUG_TIMERS
 
   savefile_options = secfile_lookup_str(sfile, "savefile.options");
 
-  if (!savefile_options) {
+  if (savefile_options == nullptr) {
     log_error("Missing savefile options. Can not load the savegame.");
+    save_restore_sane_state();
     return;
   }
 
   if (has_capabilities("+version3", savefile_options)) {
-    /* load new format (freeciv 3.0.x and newer) */
+    /* Load new format (freeciv 3.0.x and newer) */
     log_verbose("loading savefile in 3.0+ format ...");
     savegame3_load(sfile);
   } else if (has_capabilities("+version2", savefile_options)) {
-    /* load old format (freeciv 2.3 - 2.6) */
+    /* Load old format (freeciv 2.3 - 2.6) */
     log_verbose("loading savefile in 2.3 - 2.6 format ...");
     savegame2_load(sfile);
   } else {
-    log_error("Too old savegame format not supported any more.");
+    log_error("Too old savegame. Format not supported any more.");
+    save_restore_sane_state();
     return;
   }
 
@@ -87,7 +93,7 @@ void savegame_load(struct section_file *sfile)
   timer_stop(loadtimer);
   log_debug("Loading secfile in %.3f seconds.", timer_read_seconds(loadtimer));
   timer_destroy(loadtimer);
-#endif /* DEBUG_TIMERS */
+#endif // DEBUG_TIMERS
 }
 
 /************************************************************************//**
@@ -122,12 +128,13 @@ static void save_thread_data_free(struct save_thread_data *stdata)
 static void save_thread_run(void *arg)
 {
   struct save_thread_data *stdata = (struct save_thread_data *)arg;
-  
+
   if (!secfile_save(stdata->sfile, stdata->filepath, stdata->save_compress_level,
                     stdata->save_compress_type)) {
     con_write(C_FAIL, _("Failed saving game as %s"), stdata->filepath);
     log_error("Game saving failed: %s", secfile_error());
-    notify_conn(NULL, NULL, E_LOG_ERROR, ftc_warning, _("Failed saving game."));
+    notify_conn(nullptr, nullptr, E_LOG_ERROR, ftc_warning,
+                _("Failed saving game."));
   } else {
     con_write(C_OK, _("Game saved as %s"), stdata->filepath);
   }
@@ -151,9 +158,9 @@ void save_game(const char *orig_filename, const char *save_reason,
   stdata->save_compress_type = game.server.save_compress_type;
   stdata->save_compress_level = game.server.save_compress_level;
 
-  if (!orig_filename) {
-    con_write(C_FAIL, _("Failed saving game. Missing filename."));
-    return;
+  if (orig_filename == nullptr) {
+    stdata->filepath[0] = '\0';
+    filename = stdata->filepath;
   } else {
     sz_strlcpy(stdata->filepath, orig_filename);
     if ((filename = strrchr(stdata->filepath, '/'))) {
@@ -172,15 +179,15 @@ void save_game(const char *orig_filename, const char *save_reason,
     } else {
       char *end_dot;
       char *strip_extensions[] = {
-        ".sav", ".gz", ".bz2", ".xz", ".zst", NULL };
+        ".sav", ".gz", ".bz2", ".xz", ".zst", nullptr };
       bool stripped = TRUE;
 
       while ((end_dot = strrchr(dot, '.')) && stripped) {
-	int i;
+        int i;
 
         stripped = FALSE;
 
-	for (i = 0; strip_extensions[i] != NULL && !stripped; i++) {
+        for (i = 0; strip_extensions[i] != nullptr && !stripped; i++) {
           if (!strcmp(end_dot, strip_extensions[i])) {
             *end_dot = '\0';
             stripped = TRUE;
@@ -188,6 +195,13 @@ void save_game(const char *orig_filename, const char *save_reason,
         }
       }
     }
+  }
+
+  /* If orig_filename is nullptr or empty, use a generated default name. */
+  if (filename[0] == '\0') {
+    /* Manual save */
+    generate_save_name(game.server.save_name, filename,
+                       sizeof(stdata->filepath) + stdata->filepath - filename, "manual");
   }
 
   timer_cpu = timer_new(TIMER_CPU, TIMER_ACTIVE, "save cpu");
@@ -233,7 +247,7 @@ void save_game(const char *orig_filename, const char *save_reason,
     default:
       log_error(_("Unsupported compression type %d."),
                 stdata->save_compress_type);
-      notify_conn(NULL, NULL, E_SETTING, ftc_warning,
+      notify_conn(nullptr, nullptr, E_SETTING, ftc_warning,
                   _("Unsupported compression type %d."),
                   stdata->save_compress_type);
       break;
@@ -250,7 +264,7 @@ void save_game(const char *orig_filename, const char *save_reason,
         log_error(_("Can't create saves directory %s!"),
                   srvarg.saves_pathname);
         /* Don't tell server paths to clients */
-        notify_conn(NULL, NULL, E_SETTING, ftc_warning,
+        notify_conn(nullptr, nullptr, E_SETTING, ftc_warning,
                     _("Can't create saves directory!"));
 
         save_thread_data_free(stdata);
@@ -268,7 +282,7 @@ void save_game(const char *orig_filename, const char *save_reason,
         log_error(_("Can't create scenario saves directory %s!"),
                   srvarg.scenarios_pathname);
         /* Don't tell server paths to clients */
-        notify_conn(NULL, NULL, E_SETTING, ftc_warning,
+        notify_conn(nullptr, nullptr, E_SETTING, ftc_warning,
                     _("Can't create scenario saves directory!"));
 
         save_thread_data_free(stdata);
@@ -288,19 +302,19 @@ void save_game(const char *orig_filename, const char *save_reason,
     sz_strlcpy(stdata->filepath, tmpname);
   }
 
-  if (save_thread != NULL) {
+  if (save_thread != nullptr) {
     /* Previously started thread */
     fc_thread_wait(save_thread);
     if (!game.server.threaded_save) {
       /* Setting has changed since the last save */
       free(save_thread);
-      save_thread = NULL;
+      save_thread = nullptr;
     }
   } else if (game.server.threaded_save) {
     save_thread = fc_malloc(sizeof(save_thread));
   }
 
-  if (save_thread != NULL) {
+  if (save_thread != nullptr) {
     fc_thread_start(save_thread, &save_thread_run, stdata);
   } else {
     save_thread_run(stdata);
@@ -309,7 +323,7 @@ void save_game(const char *orig_filename, const char *save_reason,
 #ifdef LOG_TIMERS
   log_verbose("Save time: %g seconds (%g apparent)",
               timer_read_seconds(timer_cpu), timer_read_seconds(timer_user));
-#endif
+#endif // LOG_TIMERS
 
   timer_destroy(timer_cpu);
   timer_destroy(timer_user);
@@ -320,10 +334,24 @@ void save_game(const char *orig_filename, const char *save_reason,
 ****************************************************************************/
 void save_system_close(void)
 {
-  if (save_thread != NULL) {
+  if (save_thread != nullptr) {
     fc_thread_wait(save_thread);
     free(save_thread);
-    save_thread = NULL;
+    save_thread = nullptr;
   }
 }
 
+/************************************************************************//**
+  Restore the server to sane state after savegame loading failure.
+****************************************************************************/
+void save_restore_sane_state(void)
+{
+  /* Try to get the server back to a vaguely sane state */
+  server_game_free();
+  server_game_init(FALSE);
+  load_rulesets(NULL, NULL, FALSE, NULL, TRUE, FALSE, TRUE);
+
+  researches_iterate(presearch) {
+    presearch->techs_researched = recalculate_techs_researched(presearch);
+  } researches_iterate_end;
+}

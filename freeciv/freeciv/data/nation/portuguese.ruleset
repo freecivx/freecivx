@@ -5,10 +5,10 @@ translation_domain = "freeciv-core"
 name   = _("Portuguese")
 plural = _("?plural:Portuguese")
 groups = "Medieval", "Early Modern", "Modern", "European", "Core"
-legend = _("Portugal was originally a Leonese county that achieved\
+legend = _("Portugal was originally a Castillian county that achieved\
  independence. After finishing it's reconquista in 1249, Portugal\
- founded the first of the great mercantile empires in the early 1400s\
- on the shipbuilding advances funded by Prince Henry the Navigator.")
+ founded the first of the great mercantile empires in the 1400s on the\
+ shipbuilding advances funded by Prince Henry the Navigator.")
 
 leaders = {
  "name",                        "sex"
@@ -17,10 +17,9 @@ leaders = {
  "Dinis",                       "Male"
  "José",                        "Male"
  "Pedro IV",                    "Male"
- "Luís IV",                     "Male"
+ "Afonso IV",                   "Male"
  "João I",                      "Male"
  "João II",                     "Male"
- "Pedro II",                    "Male"
  "Manuel I",                    "Male"
  "João IV",                     "Male"
  "Maria II",                    "Female"

@@ -60,7 +60,7 @@ static inline bool conn_is_ignored(const struct connection *sender,
 }
 
 /**********************************************************************//**
-  Formulate a name for this connection, prefering the player name when
+  Formulate a name for this connection, preferring the player name when
   available and unambiguous (since this is the "standard" case), else
   use the username.
 **************************************************************************/
@@ -347,7 +347,8 @@ void handle_chat_msg_req(struct connection *pconn, const char *message)
   */
   if (real_message[0] == SERVER_COMMAND_PREFIX) {
     /* Pass it to the command parser, which will chop the prefix off */
-    (void) handle_stdin_input(pconn, real_message);
+    handle_stdin_input(pconn, real_message);
+
     return;
   }
 

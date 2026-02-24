@@ -4,8 +4,8 @@
 
 [datafile]
 description = "<modpack> actions data for Freeciv"
-options = "+Freeciv-ruleset-3.3-Devel-2023.Feb.24"
-format_version = 40
+options = "+Freeciv-ruleset-3.4-Devel-2025.Jan.17"
+format_version = 50
 
 [auto_attack]
 ; An auto attack may be triggered when another unit moves to an adjacent
@@ -20,7 +20,8 @@ format_version = 40
 ;    { "type",         "name",    "range", "present"
 ;    }
 
-;attack_actions = "Capture Units", "Bombard", "Attack", "Suicide Attack"
+;attack_actions = "Capture Units", "Bombard",
+;                 "Collect Ransom", "Attack", "Suicide Attack"
 
 [actions]
 ; Forbid regular unit move if one of the actions below is legal.
@@ -37,13 +38,19 @@ format_version = 40
 ;attack_post_success_forced_actions = "Conquer City", "Conquer City 2",
 ;                                     "Unit Move"
 
+; Actor units will - under certain circumstances - be forced to try
+; performing the following actions in the specified order after successfully
+; performing "Collect Ransom".
+;collect_ransom_post_success_forced_actions = "Conquer City", "Conquer City 2",
+;                                             "Unit Move"
+
 ; The city that made the unit`s current tile native is gone. This is a Hail
 ; Mary attempt at survival by performing an action. Evaluated against an
 ; adjacent tile. Currently only able to target native tiles.
 ; escape_city = "Enter Hut", "Frighten Hut", "Unit Move"
 
 ; The unit`s stack has been defeated and is scheduled for execution but the
-; unit has the CanEscape unit type flag. Evaluated against an adjacent tile.
+; unit can do Escape action. Evaluated against an adjacent tile.
 ;unit_stack_death = "Transport Embark", "Unit Move"
 
 ; If poison_empties_food_stock is set to TRUE a successful "Poison City"
@@ -138,18 +145,9 @@ nuke_units_consuming_always = TRUE
 ; Will performing this action always consume the actor unit?
 found_city_consuming_always = TRUE
 
-; What each action should be called when showing them to the player.
-; The first %s should be before the mnemonic of the action. A Freeciv client
-; that supports mnemonics will replace it with the in-band signal that marks
-; the following character as a mnemonic in its graphical toolkit.
-; The second %s marks where extra details should be inserted.
-
-; ui_name_xxx = _("%s%s")
-
 ; Blank ruleset defined user actions.
 ; See the section "Ruleset defined actions" in doc/README.actions
 ; Example: set up "User Action 1"
-;ui_name_user_action_1                = _("%sDisrupt Supply Lines%s")
 ;user_action_1_target_kind            = "Unit"
 ;user_action_1_min_range              = 1
 ;user_action_1_max_range              = 3
@@ -170,27 +168,47 @@ found_city_consuming_always = TRUE
 
 ; /* <-- avoid gettext warnings
 ;
-; Action enablers:
+; Actions:
+;
+; action               = the action to configure.
+; ui_name              = What each action should be called when showing them to the player.
+;                        The first %s should be before the mnemonic of the action.
+;                        A Freeciv client that supports mnemonics will replace it with
+;                        the in-band signal that marks the following character as a mnemonic
+;                        in its graphical toolkit.
+;                        The second %s marks where extra details should be inserted.
+;
+; README.actions lists the possible actions
+;
+; */ <-- avoid gettext warnings
+
+;[action_example]
+;action  = "User Action 1"
+;ui_name = _("%sDisrupt Supply Lines%s")
+
+; /* <-- avoid gettext warnings
+;
+; Enablers:
 ;
 ; action               = the action to enable.
 ; actor_reqs           = requirements that apply to the actor.
 ; target_reqs          = requirements that apply to the target.
+; comment              = Comment for the benefit to someone examining the ruleset
+;                        Not used by freeciv any other way.
 ;
 ; README.actions lists the possible actions and their hard coded
 ; requirements.
 ;
-; An action enabler is active when its actor_reqs AND its target_reqs are
+; An enabler is active when its actor_reqs AND its target_reqs are
 ; satisfied.
 ;
 ; */ <-- avoid gettext warnings
 
 ; No enabled actions
-; [actionenabler_embassy]
-; action = "Establish Embassy"
 
-;[actionenabler_regular_move]
-;action     = "Unit Move"
-;actor_reqs =
+;[enabler_regular_move]
+;action        = "Unit Move"
+;actor_reqs    =
 ;    { "type",         "name",        "range", "present"
 ;      "MinMoveFrags", "1",           "Local", TRUE
 ;      "UnitState",    "Transported", "Local", FALSE

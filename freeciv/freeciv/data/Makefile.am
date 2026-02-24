@@ -2,14 +2,23 @@
 
 if CLIENT
 CLIENT_FILES =				\
+	amplio2.modpack			\
 	amplio2.tilespec		\
+	cimpletoon.modpack		\
 	cimpletoon.tilespec		\
+	hex2t.modpack			\
 	hex2t.tilespec			\
+	hexemplio.modpack		\
 	hexemplio.tilespec		\
+	isophex.modpack			\
 	isophex.tilespec		\
+	isotrident.modpack		\
 	isotrident.tilespec		\
+	toonhex.modpack			\
 	toonhex.tilespec		\
+	alio.modpack			\
 	alio.tilespec			\
+	trident.modpack			\
 	trident.tilespec		\
 	stdmusic.musicspec		\
 	stdsounds.soundspec		\
@@ -32,7 +41,8 @@ SRV_RE_FILES = \
 	multiplayer.modpack \
 	alien.modpack \
 	civ2civ3.modpack \
-	sandbox.modpack
+	sandbox.modpack \
+	granularity.modpack
 
 if SERVER
 SERVER_FILES = $(SRV_RE_FILES)
@@ -60,24 +70,13 @@ pkgdata_DATA = $(SERVER_FILES) $(CLIENT_FILES) $(DATAPATH_ICONS)
 
 EXTRA_DIST = \
 	$(SRV_RE_FILES) \
+	$(CLIENT_FILES) \
 	freeciv-client.png \
 	freeciv-ruledit.png \
 	freeciv-modpack.png \
 	freeciv-client.icns \
 	freeciv-server.icns \
-	gtk3.22_menus.xml	\
-	amplio2.tilespec \
-	cimpletoon.tilespec \
-	hex2t.tilespec	\
-	hexemplio.tilespec	\
-	isophex.tilespec	\
-	isotrident.tilespec \
-	toonhex.tilespec	\
-	alio.tilespec	\
-	trident.tilespec	\
-	stdmusic.musicspec	\
-	stdsounds.soundspec	\
-	helpdata.txt
+	gtk3.22_menus.xml
 
 if CLIENT
 CLIENTDATADIRS = amplio2 misc flags buildings cimpletoon isotrident trident\
@@ -87,7 +86,7 @@ CLIENTDATADIRS =
 endif
 
 SRV_RE_DATADIRS = default classic civ1 civ2 sandbox multiplayer \
-                  alien civ2civ3 stub nation
+                  alien civ2civ3 granularity stub nation
 if SERVER
 SERVERDATADIRS = $(SRV_RE_DATADIRS) scenarios
 else

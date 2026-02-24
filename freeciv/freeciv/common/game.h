@@ -75,8 +75,8 @@ struct user_flag
   char *helptxt;
 };
 
-/* The number of turns that the first user needs to be attached to a 
- * player for that user to be ranked as that player */
+/* The number of turns that the first user needs to be attached to
+ * a player for that user to be ranked as that player */
 #define TURNS_NEEDED_TO_RANK 10
 
 struct civ_game {
@@ -90,17 +90,19 @@ struct civ_game {
   struct packet_calendar_info calendar;
   struct packet_timeout_info tinfo;
 
-  struct government *default_government; /* may be overridden by nation */
+  struct government *default_government; /* May be overridden by nation */
   struct government *government_during_revolution;
 
-  struct conn_list *all_connections;   /* including not yet established */
-  struct conn_list *est_connections;   /* all established client conns */
-  struct conn_list *glob_observers;    /* global observers */
+  struct conn_list *all_connections;   /* Including not yet established */
+  struct conn_list *est_connections;   /* All established client conns */
+  struct conn_list *glob_observers;    /* Global observers */
   struct conn_list *web_client_connections; /* Connections from web client */
 
-  struct veteran_system *veteran; /* veteran system */
+  struct veteran_system *veteran; /* Veteran system */
 
   struct rgbcolor *plr_bg_color;
+
+  int lua_timeout;
 
   struct {
     /* Items given to all players at game start.
@@ -115,6 +117,8 @@ struct civ_game {
 
       bool ruleset_init;
       bool ruleset_ready;
+
+      bool fog_of_war;
     } client;
 
     struct {
@@ -123,6 +127,9 @@ struct civ_game {
       /* Defined in the ruleset. */
 
       /* Game settings & other data. */
+      struct {
+        bool homeless_gold_upkeep;
+      } deprecated;
 
       enum city_names_mode allowed_city_names;
       enum plrcolor_mode plrcolormode;
@@ -235,6 +242,7 @@ struct civ_game {
                           * the server we need to remember the old setting */
       bool last_updated_year; /* last_updated is still counted as year in this
                                * game. */
+      int world_peace_start;
       char rulesetdir[MAX_LEN_NAME];
       char demography[MAX_LEN_DEMOGRAPHY];
       char allow_take[MAX_LEN_ALLOW_TAKE];
@@ -244,6 +252,7 @@ struct civ_game {
       struct rgbcolor_list *plr_colors;
 
       struct section_file *luadata;
+      int dbid;
 
       struct {
         int turns;
@@ -290,6 +299,7 @@ struct civ_game {
         char **nc_astyles;
         size_t as_count;
         int named_teams;
+        bool std_tileset_compat;
       } ruledit;
     } server;
   };
@@ -300,28 +310,7 @@ struct civ_game {
   } callbacks;
 };
 
-extern bool am_i_server;
-
 extern struct civ_game game;
-
-/**********************************************************************//**
-  Is the program type server?
-**************************************************************************/
-static inline bool is_server(void)
-{
-  return am_i_server;
-}
-
-void i_am_server(void);
-void i_am_client(void);
-
-/**********************************************************************//**
-  Set program type to tool.
-**************************************************************************/
-static inline void i_am_tool(void)
-{
-  i_am_server(); /* No difference between a tool and server at the moment */
-}
 
 #ifdef FREECIV_WEB
 /**********************************************************************//**
@@ -541,7 +530,7 @@ static inline bool is_ruleset_compat_mode(void)
 
 #define GAME_DEFAULT_MGR_FOODNEEDED   TRUE
 
-/* definition of the migration distance in relation to the current city
+/* Definition of the migration distance in relation to the current city
  * radius; 0 means that migration is possible if the second city is within
  * the city radius */
 #define GAME_DEFAULT_MGR_DISTANCE     0
@@ -761,19 +750,23 @@ static inline bool is_ruleset_compat_mode(void)
 #define GAME_DEFAULT_AIRLIFTINGSTYLE AIRLIFTING_CLASSICAL
 #define GAME_DEFAULT_PERSISTENTREADY PERSISTENTR_DISABLED
 
-#define GAME_MAX_READ_RECURSION 10 /* max recursion for the read command */
+#define GAME_MAX_READ_RECURSION 10 /* Max recursion for the read command */
 
 #define GAME_DEFAULT_KICK_TIME 1800     /* 1800 seconds = 30 minutes. */
 #define GAME_MIN_KICK_TIME 0            /* 0 = disabling. */
 #define GAME_MAX_KICK_TIME 86400        /* 86400 seconds = 24 hours. */
 
-/* Max distance from the capital used to calculat the bribe cost. */
+#define GAME_DEFAULT_LUA_TIMEOUT 5
+#define GAME_MIN_LUA_TIMEOUT     5
+#define GAME_MAX_LUA_TIMEOUT     30
+
+/* Max distance from the capital used to calculate the bribe cost. */
 #define GAME_UNIT_BRIBE_DIST_MAX 32
 
 /* Max number of recursive transports. */
 #define GAME_TRANSPORT_MAX_RECURSIVE 5
 
-/* ruleset settings */
+/* Ruleset settings */
 
 #define RS_MAX_VALUE                             1000000
 
@@ -866,9 +859,6 @@ static inline bool is_ruleset_compat_mode(void)
 #define RS_MIN_FOOD_COST                         0
 #define RS_MAX_FOOD_COST                         10000
 
-#define RS_DEFAULT_CIVIL_WAR_CELEB               -5
-#define RS_DEFAULT_CIVIL_WAR_UNHAPPY             5
-
 #define RS_DEFAULT_TIRED_ATTACK                  FALSE
 #define RS_DEFAULT_NUKE_POP_LOSS_PCT             49
 #define RS_MIN_NUKE_POP_LOSS_PCT                 0
@@ -891,9 +881,13 @@ static inline bool is_ruleset_compat_mode(void)
 #define RS_MIN_UPGRADE_VETERAN_LOSS              0
 #define RS_MAX_UPGRADE_VETERAN_LOSS              MAX_VET_LEVELS
 
-#define RS_DEFAULT_TECH_UPKEEP_DIVIDER   100
-#define RS_MIN_TECH_UPKEEP_DIVIDER       1
-#define RS_MAX_TECH_UPKEEP_DIVIDER       100000
+#define RS_DEFAULT_TECH_UPKEEP_DIVIDER           100
+#define RS_MIN_TECH_UPKEEP_DIVIDER               1
+#define RS_MAX_TECH_UPKEEP_DIVIDER               100000
+
+#define RS_DEFAULT_HP                            10
+#define RS_MIN_HP                                1
+#define RS_MAX_HP                                10000
 
 #define RS_DEFAULT_POISON_EMPTIES_FOOD_STOCK     FALSE
 #define RS_DEFAULT_STEAL_MAP_REVEALS_CITIES      TRUE

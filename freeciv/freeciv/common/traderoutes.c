@@ -34,7 +34,7 @@ const char *trade_route_type_names[] = {
   "Enemy", "EnemyIC", "Team", "TeamIC"
 };
 
-const char *traderoute_cancelling_type_names[] = {
+const char *trade_route_cancelling_type_names[] = {
   "Active", "Inactive", "Cancel"
 };
 
@@ -53,7 +53,7 @@ unsigned max_trade_routes(const struct city *pcity)
 }
 
 /*********************************************************************//**
-  What is type of the traderoute between two cities.
+  What is type of the trade route between two cities.
 *************************************************************************/
 enum trade_route_type cities_trade_route_type(const struct city *pcity1,
                                               const struct city *pcity2)
@@ -169,24 +169,24 @@ enum trade_route_type trade_route_type_by_name(const char *name)
 }
 
 /*********************************************************************//**
-  Return human readable name of traderoute cancelling type
+  Return human readable name of trade route cancelling type
 *************************************************************************/
-const char *traderoute_cancelling_type_name(enum traderoute_illegal_cancelling type)
+const char *trade_route_cancelling_type_name(enum trade_route_illegal_cancelling type)
 {
   fc_assert_ret_val(type >= TRI_ACTIVE && type < TRI_LAST, NULL);
 
-  return traderoute_cancelling_type_names[type];
+  return trade_route_cancelling_type_names[type];
 }
 
 /*********************************************************************//**
-  Get traderoute cancelling type by name.
+  Get trade route cancelling type by name.
 *************************************************************************/
-enum traderoute_illegal_cancelling traderoute_cancelling_type_by_name(const char *name)
+enum trade_route_illegal_cancelling trade_route_cancelling_type_by_name(const char *name)
 {
-  enum traderoute_illegal_cancelling type;
+  enum trade_route_illegal_cancelling type;
 
   for (type = TRI_ACTIVE; type < TRI_LAST; type++) {
-    if (!fc_strcasecmp(traderoute_cancelling_type_names[type], name)) {
+    if (!fc_strcasecmp(trade_route_cancelling_type_names[type], name)) {
       return type;
     }
   }
@@ -228,7 +228,7 @@ bool can_cities_trade(const struct city *pc1, const struct city *pc2)
   replaced by a new one. The target routes to be removed
   will be put into 'would_remove', if set.
 *************************************************************************/
-int city_trade_removable(const struct city *pcity,
+int city_trade_removable(const struct city *pcity, int priority,
                          struct trade_route_list *would_remove)
 {
   struct trade_route *sorted[MAX_TRADE_ROUTES];
@@ -237,21 +237,31 @@ int city_trade_removable(const struct city *pcity,
   /* Sort trade route values. */
   num = 0;
   trade_routes_iterate(pcity, proute) {
-    for (j = num; j > 0 && (proute->value < sorted[j - 1]->value) ; j--) {
-      sorted[j] = sorted[j - 1];
+    if (proute->goods->replace_priority <= priority) {
+      for (j = num;
+           j > 0 && proute->goods->replace_priority > sorted[j - 1]->goods->replace_priority;
+           j--) ;
+
+      /* Search place among same priority ones. */
+      for (; j > 0
+             && (proute->value < sorted[j - 1]->value)
+             && (proute->goods->replace_priority == sorted[j - 1]->goods->replace_priority) ;
+           j--) {
+        sorted[j] = sorted[j - 1];
+      }
+      sorted[j] = proute;
+      num++;
     }
-    sorted[j] = proute;
-    num++;
   } trade_routes_iterate_end;
 
   /* No trade routes at all. */
-  if (0 == num) {
+  if (num == 0) {
     return 0;
   }
 
   /* Adjust number of concerned trade routes. */
   num += 1 - max_trade_routes(pcity);
-  if (0 >= num) {
+  if (num < 0) {
     num = 1;
   }
 
@@ -267,12 +277,12 @@ int city_trade_removable(const struct city *pcity,
 }
 
 /*********************************************************************//**
-  Returns TRUE iff the two cities can establish a trade route.  We look
+  Returns TRUE iff the two cities can establish a trade route. We look
   at the distance and ownership of the cities as well as their existing
-  trade routes.  Should only be called if you already know that
-  can_cities_trade().
+  trade routes.
 *************************************************************************/
-bool can_establish_trade_route(const struct city *pc1, const struct city *pc2)
+bool can_establish_trade_route(const struct city *pc1, const struct city *pc2,
+                               int priority)
 {
   int trade = -1;
   int maxpc1;
@@ -293,24 +303,24 @@ bool can_establish_trade_route(const struct city *pc1, const struct city *pc2)
   if (maxpc2 <= 0) {
     return FALSE;
   }
-    
+
   if (city_num_trade_routes(pc1) >= maxpc1) {
     trade = trade_base_between_cities(pc1, pc2);
-    /* can we replace trade route? */
-    if (city_trade_removable(pc1, NULL) >= trade) {
+    /* Can we replace trade route? */
+    if (city_trade_removable(pc1, priority, NULL) >= trade) {
       return FALSE;
     }
   }
-  
+
   if (city_num_trade_routes(pc2) >= maxpc2) {
     if (trade == -1) {
       trade = trade_base_between_cities(pc1, pc2);
     }
-    /* can we replace trade route? */
-    if (city_trade_removable(pc2, NULL) >= trade) {
+    /* Can we replace trade route? */
+    if (city_trade_removable(pc2, priority, NULL) >= trade) {
       return FALSE;
     }
-  }  
+  }
 
   return TRUE;
 }
@@ -333,7 +343,7 @@ int trade_base_between_cities(const struct city *pc1, const struct city *pc2)
     int weighted_distance
       = ((100 - game.info.trade_world_rel_pct) * real_dist
          + game.info.trade_world_rel_pct
-         * (real_dist * 40 / MAX(wld.map.xsize, wld.map.ysize))) / 100;
+         * (real_dist * 40 / MAX(MAP_NATIVE_WIDTH, MAP_NATIVE_HEIGHT))) / 100;
 
     bonus = weighted_distance
             + city_size_get(pc1) + city_size_get(pc2);
@@ -403,13 +413,14 @@ static int max_tile_trade(const struct city *pcity)
   int tile_trade[city_map_tiles(radius_sq)];
   size_t size = 0;
   bool is_celebrating = base_city_celebrating(pcity);
+  const struct civ_map *nmap = &(wld.map);
 
   if (pcity->tile == NULL) {
     return 0;
   }
 
   city_map_iterate(radius_sq, cindex, cx, cy) {
-    struct tile *ptile = city_map_to_tile(pcity->tile, radius_sq, cx, cy);
+    struct tile *ptile = city_map_to_tile(nmap, pcity->tile, radius_sq, cx, cy);
 
     if (ptile == NULL) {
       continue;
@@ -463,7 +474,7 @@ int max_trade_prod(const struct city *pcity)
 
   pgood can be NULL for ignoring good's onetime_pct.
 *************************************************************************/
-int get_caravan_enter_city_trade_bonus(const struct city *pc1, 
+int get_caravan_enter_city_trade_bonus(const struct city *pc1,
                                        const struct city *pc2,
                                        const struct unit_type *ut,
                                        struct goods_type *pgood,
@@ -479,18 +490,20 @@ int get_caravan_enter_city_trade_bonus(const struct city *pc1,
   if (game.info.caravan_bonus_style == CBS_CLASSIC) {
     /* Should this be real_map_distance? */
     int distance = map_distance(pc1->tile, pc2->tile);
-    int weighted_distance = ((100 - game.info.trade_world_rel_pct) * distance
-                             + game.info.trade_world_rel_pct
-                             * (distance * 40 / MAX(wld.map.xsize, wld.map.ysize))) / 100;
+    int weighted_distance
+      = ((100 - game.info.trade_world_rel_pct) * distance
+         + game.info.trade_world_rel_pct
+         * (distance * 40 / MAX(MAP_NATIVE_WIDTH, MAP_NATIVE_HEIGHT))) / 100;
 
     tb = weighted_distance + 10;
     tb = (tb * (pc1->surplus[O_TRADE] + pc2->surplus[O_TRADE])) / 24;
   } else if (game.info.caravan_bonus_style == CBS_LOGARITHMIC) {
     /* Logarithmic bonus */
     int distance = real_map_distance(pc1->tile, pc2->tile);
-    int weighted_distance = ((100 - game.info.trade_world_rel_pct) * distance
-                             + game.info.trade_world_rel_pct
-                             * (distance * 40 / MAX(wld.map.xsize, wld.map.ysize))) / 100;
+    int weighted_distance
+      = ((100 - game.info.trade_world_rel_pct) * distance
+         + game.info.trade_world_rel_pct
+         * (distance * 40 / MAX(MAP_NATIVE_WIDTH, MAP_NATIVE_HEIGHT))) / 100;
 
     tb = pow(log(weighted_distance + 20
                  + max_trade_prod(pc1) + max_trade_prod(pc2)) * 2, 2);
@@ -518,7 +531,12 @@ int get_caravan_enter_city_trade_bonus(const struct city *pc1,
                                                  ? ACTION_TRADE_ROUTE
                                                  : ACTION_MARKETPLACE
                                                ),
-                                   }, city_owner(pc2),
+                                   },
+                                   &(const struct req_context) {
+                                     .player = city_owner(pc2),
+                                     .city = pc2,
+                                     .tile = city_tile(pc2),
+                                   },
                                    EFT_TRADE_REVENUE_BONUS);
 
   /* Be mercy full to players with small amounts. Round up. */
@@ -674,7 +692,7 @@ bool goods_has_flag(const struct goods_type *pgood, enum goods_flag_id flag)
 *************************************************************************/
 bool goods_can_be_provided(const struct city *pcity,
                            const struct goods_type *pgood,
-                           struct unit *punit)
+                           const struct unit *punit)
 {
   return are_reqs_active(&(const struct req_context) {
                            .player = city_owner(pcity),
@@ -717,16 +735,30 @@ bool city_receives_goods(const struct city *pcity,
 }
 
 /*********************************************************************//**
-  Return goods type for the new traderoute between given cities.
+  Fond out goods type for the new trade route
+
+  @param src   City to start traderoute from
+  @param punit Unit to carry the goods
+  @return      Goods to carry
 *************************************************************************/
-struct goods_type *goods_from_city_to_unit(struct city *src, struct unit *punit)
+struct goods_type *goods_from_city_to_unit(const struct city *src,
+                                           const struct unit *punit)
 {
   int i = 0;
+  int prio = -1;
   struct goods_type *potential[MAX_GOODS_TYPES];
 
   goods_type_iterate(pgood) {
     if (goods_can_be_provided(src, pgood, punit)) {
-      potential[i++] = pgood;
+      if (pgood->select_priority >= prio) {
+        if (pgood->select_priority > prio) {
+          /* New highest priority */
+          i = 0;
+          prio = pgood->select_priority;
+        }
+
+        potential[i++] = pgood;
+      }
     }
   } goods_type_iterate_end;
 
@@ -735,4 +767,21 @@ struct goods_type *goods_from_city_to_unit(struct city *src, struct unit *punit)
   }
 
   return potential[fc_rand(i)];
+}
+
+/*********************************************************************//**
+  What goods unit would provide if it established trade route now?
+
+  @param punit    Unit to establish the trade route
+  @param homecity Homecity of the unit. Can be used speculatively.
+  @return         What good unit would provide
+*************************************************************************/
+struct goods_type *unit_current_goods(const struct unit *punit,
+                                      const struct city *homecity)
+{
+  if (game.info.goods_selection == GSM_ARRIVAL) {
+    return goods_from_city_to_unit(homecity, punit);
+  }
+
+  return punit->carrying;
 }

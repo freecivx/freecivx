@@ -41,6 +41,7 @@
 #endif
 
 /* utility */
+#include "capability.h"
 #include "log.h"
 #include "md5.h"
 #include "registry.h"
@@ -55,6 +56,7 @@
 
 /* server */
 #include "console.h"
+#include "srv_main.h"
 #include "stdinhand.h"
 
 /* server/scripting */
@@ -69,6 +71,8 @@
 #ifdef HAVE_FCDB
 
 #define SCRIPT_FCDB_LUA_FILE "database.lua"
+
+#define FCDB_CAPS "+fcdb"
 
 static void script_fcdb_functions_define(void);
 static bool script_fcdb_functions_check(const char *fcdb_luafile);
@@ -88,6 +92,8 @@ static struct fc_lua *fcl = NULL;
 
   database_init():
     - test and initialise the database.
+  database_capstr():
+    - get database capstr
   database_free():
     - free the database.
 
@@ -107,6 +113,8 @@ static struct fc_lua *fcl = NULL;
 
   conn_established(Connection pconn)
     - called when connection has been fully established
+  game_start(int oldid)
+    - called when game starts. Should return game db id to use now on.
 
   If an error occurred, the functions return a non-NULL string error
   message as the last return value.
@@ -114,6 +122,7 @@ static struct fc_lua *fcl = NULL;
 static void script_fcdb_functions_define(void)
 {
   luascript_func_add(fcl, "database_init", TRUE, 0, 0);
+  luascript_func_add(fcl, "database_capstr", TRUE, 0, 1, API_TYPE_STRING);
   luascript_func_add(fcl, "database_free", TRUE, 0, 0);
 
   luascript_func_add(fcl, "user_exists", TRUE, 1, 1, API_TYPE_CONNECTION,
@@ -131,6 +140,8 @@ static void script_fcdb_functions_define(void)
                      API_TYPE_CONNECTION, API_TYPE_PLAYER, API_TYPE_BOOL,
                      API_TYPE_BOOL);
   luascript_func_add(fcl, "conn_established", FALSE, 1, 0, API_TYPE_CONNECTION);
+  luascript_func_add(fcl, "game_start", FALSE, 1, 1,
+                     API_TYPE_INT, API_TYPE_INT);
 }
 
 /**********************************************************************//**
@@ -289,11 +300,51 @@ bool script_fcdb_init(const char *fcdb_luafile)
     return FALSE;
   }
 
-  if (!script_fcdb_call("database_init")) {
-    log_error("Error connecting to the database");
-    script_fcdb_free();
+  if (srvarg.fcdb_enabled) {
+    if (!script_fcdb_call("database_init")) {
+      log_error("Error connecting to the database");
+      script_fcdb_free();
+      return FALSE;
+    }
+
+    if (!script_fcdb_capstr()) {
+      log_error(_("Database capabilities not compatible with server"));
+      return FALSE;
+    }
+  }
+
+#endif /* HAVE_FCDB */
+
+  return TRUE;
+}
+
+/**********************************************************************//**
+  Check database capabilities for compatibility
+**************************************************************************/
+bool script_fcdb_capstr(void)
+{
+#ifdef HAVE_FCDB
+  static int checked = 0;
+  const char *fcdb_caps;
+
+  if (checked) {
+    return checked > 0;
+  }
+
+  script_fcdb_call("database_capstr", &fcdb_caps);
+
+  log_verbose("Server caps: %s", FCDB_CAPS);
+  log_verbose("DB caps: %s", fcdb_caps);
+
+  if (!has_capabilities(FCDB_CAPS, fcdb_caps)
+      || !has_capabilities(fcdb_caps, FCDB_CAPS)) {
+    log_error(_("Database not compatible. Freeciv caps: %s, DB caps: %s"),
+              FCDB_CAPS, fcdb_caps);
+    checked = -1; /* Negative */
     return FALSE;
   }
+
+  checked = 1;    /* Positive */
 #endif /* HAVE_FCDB */
 
   return TRUE;

@@ -231,7 +231,7 @@ and a pact with one nation can affect your relations with others.  \
 Under authoritarian governments such as Monarchy you can break a \
 pact at any time, but the representative governments (Republic and \
 Democracy) have a senate which will block the unprovoked \
-cancelation of a treaty; unless a foreign Diplomat or Spy sparks \
+cancellation of a treaty; unless a foreign Diplomat or Spy sparks \
 a diplomatic incident, the only way to dissolve a pact in this \
 situation is to dissolve your government.  The details of pacts are \
 described in the Diplomacy section.\
@@ -725,7 +725,7 @@ which support it, right-clicking on a city map tile gives a menu of \
 changes which can be made to that tile, such as irrigation and \
 building roads (see the section on Terrain Alterations); you can \
 select one improvement per tile at a time. These 'worker tasks' will \
-be carried out by any units capable of them that are in 'auto settler' \
+be carried out by any units capable of them that are in 'auto worker' \
 mode.\
 "), _("\
 Citizens have a nationality distinct from that of the state they \
@@ -850,7 +850,7 @@ where no citizens are naturally content, angry citizens will appear; \
 these must all be made merely unhappy before any unhappy citizens can \
 be made content, but in all other respects behave as unhappy citizens.\
 "),
-; Behaviour of angry citizens is actually a bit more complicated than
+; Behavior of angry citizens is actually a bit more complicated than
 ; this. See city_refresh_from_main_map() in common/city.c.
 _("\
 Luxury makes citizens happy. For every two luxury points a city \
@@ -1344,6 +1344,15 @@ expect to lose about 60% of its hit points during the fight, and should \
 expect to have no movement points left.\
 ")
 
+[help_counters]
+name = "Counters"
+text = _("Once a counter for a specific thing, such as turns since \
+the city was conquered, reach its trigger value, ruleset specified \
+effects are enabled.")
+
+[help_gen_counters]
+generate = " Counters"
+
 [help_zones_of_control]
 name = _("Zones of Control")
 text = _("\
@@ -1583,6 +1592,9 @@ generate = "Ruleset"
 [help_gen_tileset]
 generate = "Tileset"
 
+[help_gen_musicset]
+generate = "Musicset"
+
 [help_nations]
 name = _("About Nations")
 text = _("\
@@ -1632,7 +1644,7 @@ name = _("Controls")
 text = _("\
 Unit Orders:\n\
 ============\n\
-  a:      (a)uto-settler  (settler/worker units)\n\
+  a:      (a)uto-worker  (settler/worker units)\n\
   b:      (b)uild city  (settler units)\n\
   b:      help (b)uild wonder  (caravan units)\n\
   B:      go to and (B)uild city on target tile  (settler units)\n\
@@ -1690,19 +1702,20 @@ space: done giving orders  (unit stays put)\n\
 "), _("\
 Unit Movement:\n\
 ==============\n\
-  1: move south-west\n\
-  2: move south\n\
-  3: move south-east\n\
-  4: move west\n\
-  6: move east\n\
-  7: move north-west\n\
-  8: move north\n\
-  9: move north-east\n\
+  (Some do not apply in some map topologies)\n\n\
+  1,End:       move down and left\n\
+  2,Down:      move down\n\
+  3,Page Down: move down and right\n\
+  4,Left:      move left\n\
+  6,Right:     move right\n\
+  7,Home:      move up and left\n\
+  8,Up:        move up\n\
+  9,Page Up:   move up and right\n\
 "), _("\
 Main Map (Keys):\n\
 ================\n\
   Some clients support zooming/scaling the map graphics with the + and - keys.\n\
-  Some clients support audio volume control with Shift-+ and Shift-- keys.\n\
+  Some clients support audio volume control with '<' and '>' keys.\n\
   c:            (c)enter view on active unit\n\
   Shift-home:   center view on capital\n\
   Shift-arrows: scroll map\n\
@@ -1804,7 +1817,7 @@ Editing Mode (GTK):\n\
     Ctrl-E:       toggle editing mode\n\
     Ctrl-Shift-W: toggle fog of war in editing mode\n\
 "), _("\
-Battle Groups (GTK):\n\
+Battle Groups (GTK & Qt):\n\
 ====================\n\
     Four Battle Groups are supported, controlled by F1, F2, F3, and F4.\n\
     Ctrl-F?:       Assign selected units as a Battle Group\n\
@@ -2348,7 +2361,7 @@ _("\
 If you find any bugs, then please send us a bug report.  This is \
 best done by visiting the Freeciv Bug Tracking System, at:\
 "), "\
-  https://osdn.net/projects/freeciv/ticket/\
+  https://redmine.freeciv.org/projects/freeciv\
 ", _("\
 Please quote the above version information. \
 For more information about submitting bug reports see the file BUGS \
@@ -2373,7 +2386,6 @@ project's mailing lists:\
   Present administrators: \
 "), "\
     Marko Lindqvist       - cazfi74_at_gmail.com\n\
-    Jacob Nevins          - 0jacobnk.fca_at_chiark.greenend.org.uk\n\
     Sveinung Kvilhaugsvik - sveinung84_at_users.sourceforge.net\n\
     Alina Lenk            - alina.v.lenk_at_gmail.com\n\
     Dean Brown            - ddeanbrown_at_comcast.net\

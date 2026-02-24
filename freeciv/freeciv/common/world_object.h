@@ -42,6 +42,30 @@ struct world
 
 extern struct world wld; /* In game.c */
 
+
+#define MAP_IS_ISOMETRIC (CURRENT_TOPOLOGY & (TF_ISO + TF_HEX))
+
+#define CURRENT_TOPOLOGY (wld.map.topology_id)
+#define CURRENT_WRAP (wld.map.wrap_id)
+
+/* Number of index coordinates (for sanity checks and allocations) */
+#define MAP_INDEX_SIZE (wld.map.xsize * wld.map.ysize)
+
+/* Width and height of the map, in native coordinates. */
+#define MAP_NATIVE_WIDTH wld.map.xsize
+#define MAP_NATIVE_HEIGHT wld.map.ysize
+
+/* Width and height of the map, in natural coordinates. */
+#define MAP_NATURAL_WIDTH (MAP_IS_ISOMETRIC ? 2 * wld.map.xsize : wld.map.xsize)
+#define MAP_NATURAL_HEIGHT wld.map.ysize
+
+#define MAP_CARDINAL_DIRS wld.map.cardinal_dirs
+#define MAP_NUM_CARDINAL_DIRS wld.map.num_cardinal_dirs
+#define MAP_VALID_DIRS wld.map.valid_dirs
+#define MAP_NUM_VALID_DIRS wld.map.num_valid_dirs
+#define MAP_ITERATE_OUTWARDS_INDICES wld.map.iterate_outwards_indices
+#define MAP_NUM_ITERATE_OUTWARDS_INDICES wld.map.num_iterate_outwards_indices
+
 #ifdef __cplusplus
 }
 #endif /* __cplusplus */

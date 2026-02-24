@@ -30,6 +30,7 @@
 #include <QVBoxLayout>
 
 // utility
+#include "executable.h"
 #include "fc_cmdline.h"
 #include "fciconv.h"
 #include "fcintl.h"
@@ -47,7 +48,7 @@
 
 #include "mpgui_qt.h"
 
-struct fcmp_params fcmp = { MODPACK_LIST_URL, NULL, NULL };
+struct fcmp_params fcmp = { MODPACK_LIST_URL, nullptr, nullptr };
 
 static mpgui *gui;
 
@@ -83,6 +84,8 @@ static void gui_download_modpack(QString URL);
 int main(int argc, char **argv)
 {
   int ui_options;
+
+  executable_init();
 
   fcmp_init();
 
@@ -203,11 +206,11 @@ void mpgui::setup(QWidget *central, struct fcmp_params *params)
 
   rev_ver = fc_git_revision();
 
-#ifndef FC_QT5_MODE
+#if defined(FC_QT6X_MODE)
+  mode = R__("built in Qt6x mode.");
+#else  // FC_QT6X_MODE
   mode = R__("built in Qt6 mode.");
-#else  // FC_QT5_MODE
-  mode = R__("built in Qt5 mode.");
-#endif // FC_QT5_MODE
+#endif // FC_QT6X_MODE
 
   if (rev_ver == nullptr) {
     fc_snprintf(verbuf, sizeof(verbuf), "%s%s\n%s", word_version(),
@@ -274,7 +277,7 @@ void mpgui::setup(QWidget *central, struct fcmp_params *params)
 
   msg_dspl->setAlignment(Qt::AlignHCenter);
 
-  central->setLayout(main_layout); 
+  central->setLayout(main_layout);
 }
 
 /**********************************************************************//**

@@ -85,8 +85,9 @@ static struct command commands[] = {
   },
 
   {"list",	ALLOW_INFO,
-   /* no translatable parameters */
+   /* No translatable parameters */
    SYN_ORIG_("list\n"
+             "list ais\n"
              "list colors\n"
              "list connections\n"
              "list delegations\n"
@@ -99,8 +100,9 @@ static struct command commands[] = {
              "list teams\n"
              "list votes\n"),
    N_("Show a list of various things."),
-   /* TRANS: don't translate text in '' */
+   /* TRANS: Don't translate text in '' */
    N_("Show a list of:\n"
+      " - AI types,\n"
       " - the player colors,\n"
       " - connections to the server,\n"
       " - all player delegations,\n"
@@ -247,17 +249,6 @@ static struct command commands[] = {
    N_("Choose new ruleset directory or modpack."),
    NULL, NULL,
    CMD_ECHO_ALL, VCF_NONE, 50
-  },
-  {"metamessage", ALLOW_CTRL,
-   /* TRANS: translate text between <> only */
-   N_("metamessage <meta-line>"),
-   N_("Set metaserver info line."),
-   N_("This command is deprecated. Set metamessage setting directly instead. "
-      "Command sets user defined metaserver info line. If parameter is omitted, "
-      "previously set metamessage will be removed. For most of the time "
-      "user defined metamessage will be used instead of automatically "
-      "generated messages, if it is available."), NULL,
-   CMD_ECHO_ADMINS, VCF_NONE, 50
   },
   {"metapatches", ALLOW_HACK,
    /* TRANS: translate text between <> only */
@@ -448,9 +439,9 @@ static struct command commands[] = {
    NULL, NULL,
    CMD_ECHO_ADMINS, VCF_NONE, 50
   },
-  {"timeoutincrease", ALLOW_CTRL, 
+  {"timeoutincrease", ALLOW_CTRL,
    /* TRANS: translate text between <> only */
-   N_("timeoutincrease <turn> <turninc> <value> <valuemult>"), 
+   N_("timeoutincrease <turn> <turninc> <value> <valuemult>"),
    N_("See \"/help timeoutincrease\"."),
    N_("Every <turn> turns, add <value> to timeout timer, then add <turninc> "
       "to <turn> and multiply <value> by <valuemult>. Use this command in "
@@ -629,11 +620,12 @@ static struct command commands[] = {
       "lua <script line> (deprecated)"),
    N_("Evaluate a line of Freeciv script or a Freeciv script file in the "
       "current game."),
-   N_("The unsafe prefix runs the script in an instance separate from the "
-      "ruleset. This instance doesn't restrict access to Lua functions "
-      "that can be used to hack the computer running the Freeciv server. "
-      "Access to it is therefore limited to the console and connections "
-      "with cmdlevel 'hack'"), NULL,
+   /* TRANS: Do not translate 'unsafe' or 'hack' */
+   N_("Subcommands with the 'unsafe' prefix run the script in an instance "
+      "separate from the ruleset. This instance doesn't restrict access "
+      "to Lua functions that can be used to hack the computer running "
+      "the Freeciv server. Access to it is therefore limited to the console "
+      "and connections with cmdlevel 'hack'"), NULL,
    CMD_ECHO_ADMINS, VCF_NONE, 0
   },
   {"kick", ALLOW_CTRL,

@@ -27,7 +27,7 @@ extern "C" {
 
 struct rgbcolor;
 
-#define NO_NATION_SELECTED (NULL)
+#define NO_NATION_SELECTED (nullptr)
 
 /* Changing this value will break network compatibility. */
 #define NATION_NONE -1
@@ -115,13 +115,15 @@ struct nation_type {
   /* Groups which this nation is assigned to */
   struct nation_group_list *groups;
 
-  struct player *player; /* Who's using the nation, or NULL. */
+  struct player *player; /* Who's using the nation, or nullptr. */
 
   /* Items given to this nation at game start. */
   /* (Only used in the client for documentation purposes.) */
   int init_techs[MAX_NUM_TECH_LIST];
   int init_buildings[MAX_NUM_BUILDING_LIST];
-  struct government *init_government; /* use game default_government if NULL */
+
+  /* Use game default_government if nullptr */
+  struct government *init_government;
   struct unit_type *init_units[MAX_NUM_UNIT_LIST];
 
   union {
@@ -139,7 +141,7 @@ struct nation_type {
        * British and English. */
       struct nation_list *conflicts_with;
 
-      /* Nation's associated player color (NULL if none). */
+      /* Nation's associated player color (nullptr if none). */
       struct rgbcolor *rgb;
 
       struct trait_limits *traits;
@@ -182,13 +184,18 @@ struct nation_group {
 
 /* General nation accessor functions. */
 Nation_type_id nation_count(void);
-Nation_type_id nation_index(const struct nation_type *pnation);
-Nation_type_id nation_number(const struct nation_type *pnation);
+Nation_type_id nation_index(const struct nation_type *pnation)
+  fc__attribute((nonnull(1)));
+Nation_type_id nation_number(const struct nation_type *pnation)
+  fc__attribute((nonnull(1)));
 
 struct nation_type *nation_by_number(const Nation_type_id nation);
-struct nation_type *nation_of_player(const struct player *pplayer);
-struct nation_type *nation_of_city(const struct city *pcity);
-struct nation_type *nation_of_unit(const struct unit *punit);
+struct nation_type *nation_of_player(const struct player *pplayer)
+  fc__attribute((nonnull(1)));
+struct nation_type *nation_of_city(const struct city *pcity)
+  fc__attribute((nonnull(1)));
+struct nation_type *nation_of_unit(const struct unit *punit)
+  fc__attribute((nonnull(1)));
 
 struct nation_type *nation_by_rule_name(const char *name);
 struct nation_type *nation_by_translated_plural(const char *name);
@@ -211,7 +218,7 @@ bool is_nation_pickable(const struct nation_type *nation);
 bool is_nation_playable(const struct nation_type *nation);
 enum barbarian_type nation_barbarian_type(const struct nation_type *nation);
 bool can_conn_edit_players_nation(const struct connection *pconn,
-				  const struct player *pplayer);
+                                  const struct player *pplayer);
 
 /* General nation leader accessor functions. */
 const struct nation_leader_list *
@@ -220,8 +227,10 @@ struct nation_leader *nation_leader_new(struct nation_type *pnation,
                                         const char *name, bool is_male);
 struct nation_leader *
 nation_leader_by_name(const struct nation_type *pnation, const char *name);
-const char *nation_leader_name(const struct nation_leader *pleader);
-bool nation_leader_is_male(const struct nation_leader *pleader);
+const char *nation_leader_name(const struct nation_leader *pleader)
+  fc__attribute((nonnull(1)));
+bool nation_leader_is_male(const struct nation_leader *pleader)
+  fc__attribute((nonnull(1)));
 
 const char *nation_legend_translation(const struct nation_type *pnation,
                                       const char *legend);
@@ -234,24 +243,30 @@ nation_cities(const struct nation_type *pnation);
 struct nation_city *nation_city_new(struct nation_type *pnation,
                                     const char *name);
 
-const char *nation_city_name(const struct nation_city *pncity);
+const char *nation_city_name(const struct nation_city *pncity)
+  fc__attribute((nonnull(1)));
 
 enum nation_city_preference
 nation_city_preference_revert(enum nation_city_preference prefer);
 void nation_city_set_terrain_preference(struct nation_city *pncity,
                                         const struct terrain *pterrain,
-                                        enum nation_city_preference prefer);
+                                        enum nation_city_preference prefer)
+  fc__attribute((nonnull(1, 2)));
 void nation_city_set_river_preference(struct nation_city *pncity,
-                                      enum nation_city_preference prefer);
+                                      enum nation_city_preference prefer)
+  fc__attribute((nonnull(1)));
 enum nation_city_preference
 nation_city_terrain_preference(const struct nation_city *pncity,
-                               const struct terrain *pterrain);
+                               const struct terrain *pterrain)
+  fc__attribute((nonnull(1, 2)));
 enum nation_city_preference
-nation_city_river_preference(const struct nation_city *pncity);
+nation_city_river_preference(const struct nation_city *pncity)
+  fc__attribute((nonnull(1)));
 
 /* General nation set accessor routines */
 int nation_set_count(void);
-int nation_set_index(const struct nation_set *pset);
+int nation_set_index(const struct nation_set *pset)
+  fc__attribute((nonnull(1)));
 int nation_set_number(const struct nation_set *pset);
 
 struct nation_set *nation_set_new(const char *set_name,
@@ -260,35 +275,48 @@ struct nation_set *nation_set_new(const char *set_name,
 struct nation_set *nation_set_by_number(int id);
 struct nation_set *nation_set_by_rule_name(const char *name);
 
-const char *nation_set_untranslated_name(const struct nation_set *pset);
-const char *nation_set_rule_name(const struct nation_set *pset);
-const char *nation_set_name_translation(const struct nation_set *pset);
-const char *nation_set_description(const struct nation_set *pset);
+const char *nation_set_untranslated_name(const struct nation_set *pset)
+  fc__attribute((nonnull(1)));
+const char *nation_set_rule_name(const struct nation_set *pset)
+  fc__attribute((nonnull(1)));
+const char *nation_set_name_translation(const struct nation_set *pset)
+  fc__attribute((nonnull(1)));
+const char *nation_set_description(const struct nation_set *pset)
+  fc__attribute((nonnull(1)));
 
 bool nation_is_in_set(const struct nation_type *pnation,
-                      const struct nation_set *pset);
+                      const struct nation_set *pset)
+  fc__attribute((nonnull(1)));
 
 struct nation_set *nation_set_by_setting_value(const char *setting);
 
 /* General nation group accessor routines */
 int nation_group_count(void);
-int nation_group_index(const struct nation_group *pgroup);
+int nation_group_index(const struct nation_group *pgroup)
+  fc__attribute((nonnull(1)));
 int nation_group_number(const struct nation_group *pgroup);
 
 struct nation_group *nation_group_new(const char *name);
 struct nation_group *nation_group_by_number(int id);
 struct nation_group *nation_group_by_rule_name(const char *name);
 
-void nation_group_set_hidden(struct nation_group *pgroup, bool hidden);
-void nation_group_set_match(struct nation_group *pgroup, int match);
-bool is_nation_group_hidden(struct nation_group *pgroup);
+void nation_group_set_hidden(struct nation_group *pgroup, bool hidden)
+  fc__attribute((nonnull(1)));
+void nation_group_set_match(struct nation_group *pgroup, int match)
+  fc__attribute((nonnull(1)));
+bool is_nation_group_hidden(struct nation_group *pgroup)
+  fc__attribute((nonnull(1)));
 
-const char *nation_group_untranslated_name(const struct nation_group *pgroup);
-const char *nation_group_rule_name(const struct nation_group *pgroup);
-const char *nation_group_name_translation(const struct nation_group *pgroup);
+const char *nation_group_untranslated_name(const struct nation_group *pgroup)
+  fc__attribute((nonnull(1)));
+const char *nation_group_rule_name(const struct nation_group *pgroup)
+  fc__attribute((nonnull(1)));
+const char *nation_group_name_translation(const struct nation_group *pgroup)
+  fc__attribute((nonnull(1)));
 
 bool nation_is_in_group(const struct nation_type *pnation,
-                        const struct nation_group *pgroup);
+                        const struct nation_group *pgroup)
+  fc__attribute((nonnull(1)));
 
 /* Initialization and iteration */
 void nation_sets_groups_init(void);
@@ -326,7 +354,7 @@ struct nation_iter;
 size_t nation_iter_sizeof(void);
 struct iterator *nation_iter_init(struct nation_iter *it);
 
-/* Iterate over nations.  This iterates over _all_ nations, including
+/* Iterate over nations. This iterates over _all_ nations, including
  * unplayable ones (use is_nation_playable to filter if necessary).
  * This does not take account of the current nationset! -- on the
  * server, use allowed_nations_iterate() for that. */
@@ -335,8 +363,15 @@ struct iterator *nation_iter_init(struct nation_iter *it);
                   NAME_pnation, nation_iter_sizeof, nation_iter_init)
 #define nations_iterate_end generic_iterate_end
 
+/* Deletion of nations not supported */
+#define nations_re_active_iterate(_pnat_) \
+  nations_iterate(_pnat_)
+
+#define nations_re_active_iterate_end \
+  nations_iterate_end;
+
 #ifdef __cplusplus
 }
 #endif /* __cplusplus */
 
-#endif  /* FC__NATION_H */
+#endif /* FC__NATION_H */

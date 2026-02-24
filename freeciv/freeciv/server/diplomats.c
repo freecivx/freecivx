@@ -331,7 +331,7 @@ bool diplomat_investigate(struct player *pplayer, struct unit *pdiplomat,
   struct packet_city_nationalities nat_packet;
   struct packet_city_rally_point rally_packet;
   struct packet_web_city_info_addition web_packet;
-  struct traderoute_packet_list *routes;
+  struct trade_route_packet_list *routes;
   const struct unit_type *act_utype;
   struct packet_web_city_info_addition *webp_ptr;
 
@@ -353,6 +353,8 @@ bool diplomat_investigate(struct player *pplayer, struct unit *pdiplomat,
   }
 
   log_debug("investigate: unit: %d", pdiplomat->id);
+
+  dlsend_packet_investigate_started(pplayer->connections, pcity->id);
 
   /* Do It... */
   update_dumb_city(pplayer, pcity);
@@ -376,7 +378,7 @@ bool diplomat_investigate(struct player *pplayer, struct unit *pdiplomat,
     lsend_packet_unit_short_info(pplayer->connections, &unit_packet, TRUE);
   } unit_list_iterate_end;
   /* Send city info to investigator's player.
-     As this is a special case we bypass send_city_info. */
+     As this is a special case we bypass send_city_info(). */
 
   if (any_web_conns()) {
     webp_ptr = &web_packet;
@@ -384,7 +386,7 @@ bool diplomat_investigate(struct player *pplayer, struct unit *pdiplomat,
     webp_ptr = NULL;
   }
 
-  routes = traderoute_packet_list_new();
+  routes = trade_route_packet_list_new();
   package_city(pcity, &city_packet, &nat_packet, &rally_packet,
                webp_ptr, routes, TRUE);
   /* We need to force to send the packet to ensure the client will receive
@@ -394,13 +396,13 @@ bool diplomat_investigate(struct player *pplayer, struct unit *pdiplomat,
   lsend_packet_city_nationalities(pplayer->connections, &nat_packet, TRUE);
   lsend_packet_city_rally_point(pplayer->connections, &rally_packet, TRUE);
   web_lsend_packet(city_info_addition, pplayer->connections, webp_ptr, TRUE);
-  traderoute_packet_list_iterate(routes, route_packet) {
-    lsend_packet_traderoute_info(pplayer->connections, route_packet);
+  trade_route_packet_list_iterate(routes, route_packet) {
+    lsend_packet_trade_route_info(pplayer->connections, route_packet);
     FC_FREE(route_packet);
-  } traderoute_packet_list_iterate_end;
-  traderoute_packet_list_destroy(routes);
+  } trade_route_packet_list_iterate_end;
+  trade_route_packet_list_destroy(routes);
 
-  /* this may cause a diplomatic incident */
+  /* This may cause a diplomatic incident */
   action_consequence_success(paction, pplayer, act_utype, cplayer,
                              city_tile(pcity), city_link(pcity));
 
@@ -411,6 +413,8 @@ bool diplomat_investigate(struct player *pplayer, struct unit *pdiplomat,
      * to the clients. */
     send_unit_info(NULL, pdiplomat);
   }
+
+  dlsend_packet_investigate_finished(pplayer->connections, pcity->id);
 
   return TRUE;
 }
@@ -445,13 +449,14 @@ void spy_send_sabotage_list(struct connection *pc, struct unit *pdiplomat,
 
     plrcity = map_get_player_city(city_tile(pcity), unit_owner(pdiplomat));
 
-    if (!plrcity) {
+    if (plrcity == nullptr) {
       /* Must know city to remember visible buildings. */
       return;
     }
 
     improvement_iterate(ptarget) {
-      if (BV_ISSET(plrcity->improvements, improvement_index(ptarget))) {
+      if (BV_ISSET(plrcity->improvements, improvement_index(ptarget))
+          && !improvement_has_flag(ptarget, IF_INDESTRUCTIBLE)) {
         BV_SET(packet.improvements, improvement_index(ptarget));
       }
     } improvement_iterate_end;
@@ -626,7 +631,7 @@ bool spy_sabotage_unit(struct player *pplayer, struct unit *pdiplomat,
 
 /************************************************************************//**
   Bribe an enemy unit.
-  
+
   - Can't bribe a unit if:
     - Player doesn't have enough gold.
   - Otherwise, the unit will be bribed.
@@ -636,8 +641,8 @@ bool spy_sabotage_unit(struct player *pplayer, struct unit *pdiplomat,
   Returns TRUE iff action could be done, FALSE if it couldn't. Even if
   this returns TRUE, unit may have died during the action.
 ****************************************************************************/
-bool diplomat_bribe(struct player *pplayer, struct unit *pdiplomat,
-                    struct unit *pvictim, const struct action *paction)
+bool diplomat_bribe_unit(struct player *pplayer, struct unit *pdiplomat,
+                         struct unit *pvictim, const struct action *paction)
 {
   char victim_link[MAX_LEN_LINK];
   struct player *uplayer;
@@ -677,7 +682,7 @@ bool diplomat_bribe(struct player *pplayer, struct unit *pdiplomat,
   log_debug("bribe-unit: unit: %d", pdiplomat->id);
 
   /* Get bribe cost, ignoring any previously saved value. */
-  bribe_cost = unit_bribe_cost(pvictim, pplayer);
+  bribe_cost = unit_bribe_cost(pvictim, pplayer, pdiplomat);
 
   /* If player doesn't have enough gold, can't bribe. */
   if (pplayer->economic.gold < bribe_cost) {
@@ -778,6 +783,125 @@ bool diplomat_bribe(struct player *pplayer, struct unit *pdiplomat,
                                            uplayer, NULL, paction,
                                            victim_tile, tile_city(victim_tile),
                                            pvictim, NULL))
+      /* May have died while trying to do forced actions. */
+      && unit_is_alive(diplomat_id)) {
+    pdiplomat->moves_left = 0;
+  }
+  if (NULL != player_unit_by_number(pplayer, diplomat_id)) {
+    send_unit_info(NULL, pdiplomat);
+  }
+
+  /* Update clients. */
+  send_player_all_c(pplayer, NULL);
+
+  return TRUE;
+}
+
+/************************************************************************//**
+  Bribe an enemy unit stack.
+
+  - Can't bribe a unit if:
+    - Player doesn't have enough gold.
+  - Otherwise, the unit will be bribed.
+
+  - A successful briber will try to move onto the victim's square.
+
+  Returns TRUE iff action could be done, FALSE if it couldn't. Even if
+  this returns TRUE, unit may have died during the action.
+****************************************************************************/
+bool diplomat_bribe_stack(struct player *pplayer, struct unit *pdiplomat,
+                          struct tile *pvictim, const struct action *paction)
+{
+  int bribe_cost = 0;
+  int bribe_count = 0;
+  struct city *pcity;
+  bool bounce = FALSE;
+  int diplomat_id = pdiplomat->id;
+  const struct unit_type *act_utype;
+
+  unit_list_iterate(pvictim->units, pbribed) {
+    struct player *owner = unit_owner(pbribed);
+
+    if (!pplayers_at_war(pplayer, owner)) {
+      notify_player(pplayer, unit_tile(pdiplomat),
+                    E_MY_DIPLOMAT_FAILED, ftc_server,
+                    _("You are not in war with all the units in the stack."));
+      return FALSE;
+    }
+  } unit_list_iterate_end;
+
+  bribe_cost = stack_bribe_cost(pvictim, pplayer, pdiplomat);
+
+  /* If player doesn't have enough gold, can't bribe. */
+  if (pplayer->economic.gold < bribe_cost) {
+    notify_player(pplayer, unit_tile(pdiplomat),
+                  E_MY_DIPLOMAT_FAILED, ftc_server,
+                  _("You don't have enough gold to bribe the unit stack."));
+    log_debug("bribe-stack: not enough gold");
+    return FALSE;
+  }
+
+  pcity = tile_city(pvictim);
+  if (pcity != NULL && !pplayers_allied(city_owner(pcity), pplayer)) {
+    bounce = TRUE;
+  }
+
+  unit_list_iterate_safe(pvictim->units, pbribed) {
+    struct player *owner = unit_owner(pbribed);
+    struct unit *nunit = unit_change_owner(pbribed, pplayer,
+                                           pdiplomat->homecity, ULR_BRIBED);
+
+    notify_player(owner, pvictim, E_ENEMY_DIPLOMAT_BRIBE, ftc_server,
+                  /* TRANS: <unit> ... <Poles> */
+                  _("Your %s was bribed by the %s."),
+                  unit_link(nunit), nation_plural_for_player(pplayer));
+    bribe_count++;
+
+    if (bounce) {
+      bounce_unit(pbribed, TRUE);
+    }
+  } unit_list_iterate_safe_end;
+
+  if (!unit_is_alive(diplomat_id)) {
+    /* Destroyed by a script */
+    pdiplomat = NULL;
+  }
+
+  act_utype = unit_type_get(pdiplomat);
+
+  /* Notify everybody involved. */
+  notify_player(pplayer, pvictim, E_MY_DIPLOMAT_BRIBE, ftc_server,
+                /* TRANS: <diplomat> ... */
+                _("Your %s succeeded in bribing %d units."),
+                pdiplomat ? unit_link(pdiplomat)
+                : utype_name_translation(act_utype), bribe_count);
+  if (pdiplomat && maybe_make_veteran(pdiplomat, 100)) {
+    notify_unit_experience(pdiplomat);
+  }
+
+  /* This costs! */
+  pplayer->economic.gold -= bribe_cost;
+  if (pplayer->economic.gold < 0) {
+    /* Scripts have deprived us of too much gold before we paid */
+    log_normal("%s has bribed %d units but has not %d gold at payment time, "
+               "%d is the discount", player_name(pplayer),
+               bribe_count, bribe_cost,
+               -pplayer->economic.gold);
+    pplayer->economic.gold = 0;
+  }
+
+  if (!pdiplomat || !unit_is_alive(diplomat_id)) {
+    return TRUE;
+  }
+
+  /* Try to move the briber onto the victim's square unless the victim has
+   * been bounced because it couldn't share tile with a unit or city. */
+  if (!bounce
+      /* Try to perform post move forced actions. */
+      && (NULL == action_auto_perf_unit_do(AAPC_POST_ACTION, pdiplomat,
+                                           NULL, NULL, paction,
+                                           pvictim, pcity,
+                                           NULL, NULL))
       /* May have died while trying to do forced actions. */
       && unit_is_alive(diplomat_id)) {
     pdiplomat->moves_left = 0;
@@ -1070,7 +1194,7 @@ bool diplomat_get_tech(struct player *pplayer, struct unit *pdiplomat,
   - If the provocateur is captured and executed, there is probability
     that they were carrying bag with some gold, which will be lost.
   - There is chance, that this gold will be transferred to nation
-    which succesfully defended against inciting revolt.
+    which successfully defended against inciting revolt.
 
   Returns TRUE if money is lost, FALSE if not.
 ****************************************************************************/
@@ -1785,7 +1909,9 @@ bool spy_steal_some_maps(struct player *act_player, struct unit *act_unit,
                                    .unittype = unit_type_get(act_unit),
                                    .action = paction,
                                  },
-                                 tgt_player,
+                                 &(const struct req_context) {
+                                   .player = tgt_player,
+                                 },
                                  EFT_MAPS_STOLEN_PCT);
   give_distorted_map(tgt_player, act_player,
                      normal_tile_prob,
@@ -1982,7 +2108,9 @@ static bool diplomat_success_vs_defender(struct unit *pattacker,
       *vatt = utype_veteran_level(unit_type_get(pattacker), pattacker->veteran);
     const struct veteran_level
       *vdef = utype_veteran_level(unit_type_get(pdefender), pdefender->veteran);
+
     fc_assert_ret_val(vatt != NULL && vdef != NULL, FALSE);
+
     chance += vatt->power_fact - vdef->power_fact;
   }
 
@@ -2187,7 +2315,7 @@ static bool diplomat_infiltrate_tile(struct player *pplayer,
         victim_link = city_link(pcity);
         break;
       case ATK_UNIT:
-      case ATK_UNITS:
+      case ATK_STACK:
         victim_link = pvictim ? unit_tile_link(pvictim)
                               : tile_link(ptile);
         break;
@@ -2248,7 +2376,7 @@ void diplomat_escape(struct player *pplayer, struct unit *pdiplomat,
 /************************************************************************//**
   This determines if a diplomat/spy survives and escapes.
 
-  Spies have a game.server.diplchance specified chance of survival (better 
+  Spies have a game.server.diplchance specified chance of survival (better
   if veteran):
     - Diplomats always die.
     - Escapes to home city.
@@ -2263,6 +2391,7 @@ static void diplomat_escape_full(struct player *pplayer,
 {
   int escapechance;
   struct city *spyhome;
+  const struct unit_type *dipltype = unit_type_get(pdiplomat);
 
   fc_assert(paction->actor.is_unit.moves_actor == MAK_ESCAPE);
 
@@ -2270,9 +2399,9 @@ static void diplomat_escape_full(struct player *pplayer,
    * unpromoted unit's power factor */
   {
     const struct veteran_level
-      *vunit = utype_veteran_level(unit_type_get(pdiplomat), pdiplomat->veteran);
+      *vunit = utype_veteran_level(dipltype, pdiplomat->veteran);
     const struct veteran_level
-      *vbase = utype_veteran_level(unit_type_get(pdiplomat), 0);
+      *vbase = utype_veteran_level(dipltype, 0);
 
     escapechance = game.server.diplchance
       + (vunit->power_fact - vbase->power_fact);
@@ -2283,7 +2412,7 @@ static void diplomat_escape_full(struct player *pplayer,
                               FALSE, FALSE, TRUE, FALSE, NULL);
 
   if (spyhome
-      && !utype_is_consumed_by_action(paction, unit_type_get(pdiplomat))
+      && !utype_is_consumed_by_action(paction, dipltype)
       && (unit_has_type_flag(pdiplomat, UTYF_SUPERSPY)
           || fc_rand (100) < escapechance)) {
     /* Attacking Spy/Diplomat survives. */
@@ -2321,7 +2450,7 @@ static void diplomat_escape_full(struct player *pplayer,
     }
   }
 
-  if (!utype_is_consumed_by_action(paction, unit_type_get(pdiplomat))) {
+  if (!utype_is_consumed_by_action(paction, dipltype)) {
     /* The unit was caught, not spent. It must therefore be deleted by
      * hand. */
     wipe_unit(pdiplomat, ULR_CAUGHT, NULL);

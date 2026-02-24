@@ -24,20 +24,20 @@ extern "C" {
  * structure below. When changing mandatory capability part, check that
  * there's enough reserved_xx pointers in the end of the structure for
  * taking to use without need to bump mandatory capability again. */
-#define FC_AI_MOD_CAPSTR "+Freeciv-3.2-ai-module-2021.Mar.01"
+#define FC_AI_MOD_CAPSTR "+Freeciv-3.4-ai-module-2025.Dec.24"
 
 /* Timers for all AI activities. Define it to get statistics about the AI. */
 #ifdef FREECIV_DEBUG
 #  undef DEBUG_AITIMERS
 #endif /* FREECIV_DEBUG */
 
-struct Treaty;
+struct treaty;
 struct player;
 struct adv_choice;
 struct city;
 struct unit;
 struct tile;
-struct settlermap;
+struct workermap;
 struct pf_path;
 struct section_file;
 struct adv_data;
@@ -226,17 +226,17 @@ struct ai_type
     void (*unit_load)(const struct section_file *file, struct unit *punit,
                       const char *unitstr);
 
-    /* Called for player AI type when autosettlers have been handled for the turn. */
+    /* Called for player AI type when autoworkers have been handled for the turn. */
     void (*settler_reset)(struct player *pplayer);
 
-    /* Called for player AI type when autosettlers should find new work. */
+    /* Called for player AI type when autoworkers should find new work. */
     void (*settler_run)(struct player *pplayer, struct unit *punit,
-                        struct settlermap *state);
+                        struct workermap *state);
 
-    /* Called for player AI type for each autosettler still working.
+    /* Called for player AI type for each autoworker still working.
        Cancelling current work there will result in settler_run() call. */
     void (*settler_cont)(struct player *pplayer, struct unit *punit,
-                         struct settlermap *state);
+                         struct workermap *state);
 
     /* Called for player AI type when unit wants to autoexplore towards a tile. */
     void (*want_to_explore)(struct unit *punit, struct tile *target,
@@ -258,12 +258,12 @@ struct ai_type
 
     /* Called for player AI type when diplomatic treaty requires evaluation. */
     void (*treaty_evaluate)(struct player *pplayer, struct player *aplayer,
-                            struct Treaty *ptreaty);
+                            struct treaty *ptreaty);
 
     /* Called for player AI type when diplomatic treaty has been accepted
      * by both parties. */
     void (*treaty_accepted)(struct player *pplayer, struct player *aplayer,
-                            struct Treaty *ptreaty);
+                            struct treaty *ptreaty);
 
     /* Called for player AI type when first contact with another player has been
      * established. Note that when contact is between two AI players, callback
@@ -315,6 +315,12 @@ struct ai_type
      *  - unit updates & conversions
      */
     void (*unit_info)(struct unit *punit);
+
+    /* Called for player AI when revolution starts. */
+    void (*revolution_start)(struct player *pplayer);
+
+    /* Called for player AI once a turn, in sanitychecking phase */
+    void (*check_sanity)(struct player *pplayer);
 
     /* These are here reserving space for future optional callbacks.
      * This way we don't need to change the mandatory capability of the AI module
@@ -396,4 +402,4 @@ void ai_timer_player_stop(const struct player *pplayer);
 }
 #endif /* __cplusplus */
 
-#endif  /* FC__AI_H */
+#endif /* FC__AI_H */

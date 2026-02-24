@@ -73,13 +73,13 @@ enabler_problem_level(struct action_enabler *enabler)
 {
   struct req_vec_problem *problem = action_enabler_suggest_repair(enabler);
 
-  if (problem != NULL) {
+  if (problem != nullptr) {
     req_vec_problem_free(problem);
     return RVPS_REPAIR;
   }
 
   problem = action_enabler_suggest_improvement(enabler);
-  if (problem != NULL) {
+  if (problem != nullptr) {
     req_vec_problem_free(problem);
     return RVPS_IMPROVE;
   }
@@ -96,6 +96,8 @@ tab_enabler::tab_enabler(ruledit_gui *ui_in) : QWidget()
   QGridLayout *enabler_layout = new QGridLayout();
   QLabel *label;
   QPushButton *add_button;
+  QLabel *lbl;
+  int row = 0;
 
   ui = ui_in;
   connect(ui, SIGNAL(req_vec_may_have_changed(const requirement_vector *)),
@@ -112,7 +114,7 @@ tab_enabler::tab_enabler(ruledit_gui *ui_in) : QWidget()
 
   label = new QLabel(QString::fromUtf8(R__("Type")));
   label->setParent(this);
-  enabler_layout->addWidget(label, 0, 0);
+  enabler_layout->addWidget(label, row, 0);
 
   type_button = new QToolButton();
   type_menu = new QMenu();
@@ -131,14 +133,14 @@ tab_enabler::tab_enabler(ruledit_gui *ui_in) : QWidget()
   type_button->setText(R__("None"));
 
   type_button->setEnabled(false);
-  enabler_layout->addWidget(type_button, 0, 2);
+  enabler_layout->addWidget(type_button, row++, 1);
 
   act_reqs_button
       = new QPushButton(QString::fromUtf8(R__("Actor Requirements")), this);
   connect(act_reqs_button, SIGNAL(pressed()),
           this, SLOT(edit_actor_reqs()));
   act_reqs_button->setEnabled(false);
-  enabler_layout->addWidget(act_reqs_button, 1, 2);
+  enabler_layout->addWidget(act_reqs_button, row++, 1);
 
   tgt_reqs_button
       = new QPushButton(QString::fromUtf8(R__("Target Requirements")),
@@ -146,24 +148,28 @@ tab_enabler::tab_enabler(ruledit_gui *ui_in) : QWidget()
   connect(tgt_reqs_button, SIGNAL(pressed()),
           this, SLOT(edit_target_reqs()));
   tgt_reqs_button->setEnabled(false);
-  enabler_layout->addWidget(tgt_reqs_button, 2, 2);
+  enabler_layout->addWidget(tgt_reqs_button, row++, 1);
+
+  lbl = new QLabel(QString::fromUtf8(R__("Comment")));
+  enabler_layout->addWidget(lbl, row, 0);
+  comment = new QLineEdit(this);
+  connect(comment, SIGNAL(returnPressed()), this, SLOT(comment_given()));
+  enabler_layout->addWidget(comment, row++, 1);
 
   add_button = new QPushButton(QString::fromUtf8(R__("Add Enabler")), this);
   connect(add_button, SIGNAL(pressed()), this, SLOT(add_now()));
-  enabler_layout->addWidget(add_button, 3, 0);
-  show_experimental(add_button);
+  enabler_layout->addWidget(add_button, row, 0);
 
   delete_button = new QPushButton(QString::fromUtf8(R__("Remove this Enabler")), this);
   connect(delete_button, SIGNAL(pressed()), this, SLOT(delete_now()));
   delete_button->setEnabled(false);
-  enabler_layout->addWidget(delete_button, 3, 2);
-  show_experimental(delete_button);
+  enabler_layout->addWidget(delete_button, row++, 1);
 
   repair_button = new QPushButton(this);
   connect(repair_button, SIGNAL(pressed()), this, SLOT(repair_now()));
   repair_button->setEnabled(false);
   repair_button->setText(QString::fromUtf8(R__("Enabler Issues")));
-  enabler_layout->addWidget(repair_button, 3, 1);
+  enabler_layout->addWidget(repair_button, row++, 1);
 
   refresh();
 
@@ -182,7 +188,7 @@ void tab_enabler::refresh()
   enabler_list->clear();
 
   action_enablers_iterate(enabler) {
-    if (!enabler->ruledit_disabled) {
+    if (!enabler->rulesave.ruledit_disabled) {
       char buffer[512];
       QListWidgetItem *item;
 
@@ -218,6 +224,12 @@ void tab_enabler::update_enabler_info(struct action_enabler *enabler)
     act_reqs_button->setEnabled(true);
     tgt_reqs_button->setEnabled(true);
 
+    if (selected->rulesave.comment != nullptr) {
+      comment->setText(selected->rulesave.comment);
+    } else {
+      comment->setText("");
+    }
+
     delete_button->setEnabled(true);
 
     switch (enabler_problem_level(selected)) {
@@ -247,6 +259,8 @@ void tab_enabler::update_enabler_info(struct action_enabler *enabler)
     repair_button->setEnabled(false);
     repair_button->setText(QString::fromUtf8(R__("Enabler Issues")));
 
+    comment->setText("");
+
     delete_button->setEnabled(false);
   }
 
@@ -269,6 +283,9 @@ void tab_enabler::select_enabler()
 {
   int i = 0;
 
+  // Save previously selected one's comment.
+  comment_given();
+
   action_enablers_iterate(enabler) {
     QListWidgetItem *item = enabler_list->item(i++);
 
@@ -279,12 +296,13 @@ void tab_enabler::select_enabler()
 }
 
 /**********************************************************************//**
-  User requested enabler deletion 
+  User requested enabler deletion
 **************************************************************************/
 void tab_enabler::delete_now()
 {
   if (selected != nullptr) {
-    selected->ruledit_disabled = true;
+    action_enabler_remove(selected);
+    action_enabler_free(selected);
 
     refresh();
     update_enabler_info(nullptr);
@@ -296,6 +314,13 @@ void tab_enabler::delete_now()
 **************************************************************************/
 bool tab_enabler::initialize_new_enabler(struct action_enabler *enabler)
 {
+  if (enabler->rulesave.comment != nullptr) {
+    free(enabler->rulesave.comment);
+    enabler->rulesave.comment = nullptr;
+  }
+
+  enabler->rulesave.ruledit_disabled = false;
+
   return true;
 }
 
@@ -308,9 +333,8 @@ void tab_enabler::add_now()
 
   // Try to reuse freed enabler slot
   action_enablers_iterate(enabler) {
-    if (enabler->ruledit_disabled) {
+    if (enabler->rulesave.ruledit_disabled) {
       if (initialize_new_enabler(enabler)) {
-        enabler->ruledit_disabled = false;
         update_enabler_info(enabler);
         refresh();
       }
@@ -403,6 +427,24 @@ void tab_enabler::edit_actor_reqs()
 }
 
 /**********************************************************************//**
+  User entered comment for the enabler
+**************************************************************************/
+void tab_enabler::comment_given()
+{
+  if (selected != nullptr) {
+    if (selected->rulesave.comment != nullptr) {
+      free(selected->rulesave.comment);
+    }
+
+    if (!comment->text().isEmpty()) {
+      selected->rulesave.comment = fc_strdup(comment->text().toUtf8());
+    } else {
+      selected->rulesave.comment = nullptr;
+    }
+  }
+}
+
+/**********************************************************************//**
   Construct fix_enabler_item to help req_vec_fix with the action enabler
   unique stuff.
 **************************************************************************/
@@ -411,7 +453,7 @@ fix_enabler_item::fix_enabler_item(struct action_enabler *enabler)
   char buf[MAX_LEN_NAME * 2];
   struct action *paction = enabler_get_action(enabler);
 
-  fc_assert_ret(paction != NULL);
+  fc_assert_ret(paction != nullptr);
 
   /* Can't use QString::asprintf() as msys libintl.h defines asprintf()
    * as a macro */
@@ -481,7 +523,7 @@ struct req_vec_problem *fix_enabler_item::find_next_problem(void)
 {
   struct req_vec_problem *out = action_enabler_suggest_repair(local_copy);
 
-  if (out != NULL) {
+  if (out != nullptr) {
     return out;
   }
 

@@ -12,7 +12,7 @@
 *****************************************************************************/
 
 /*****************************************************************************
-  ADVERTISEMENT: do not attempt to change the name of the API functions.
+  ADVERTISEMENT: Do not attempt to change the name of the API functions.
   They may be in use in Lua scripts in savefiles, so once released, the
   name and signature cannot change shape even in new major versions of
   Freeciv, until the relevant save format version can no longer be loaded.
@@ -47,6 +47,10 @@ struct City {
   const int id;
 };
 
+struct Counter
+{
+};
+
 struct Connection {
   const int id;
 };
@@ -54,6 +58,7 @@ struct Connection {
 struct Unit {
   Unit_Type *utype;
   Player *owner;
+  Player *nationality;
 
   /* This used to be @ homecity_id, but it does not work with toluaxx. */
   int homecity;
@@ -111,6 +116,10 @@ struct Action {
   const int id;
 };
 
+struct Specialist {
+  const int item_number @ id;
+};
+
 struct Direction {
   /* nothing here, it's enum */
 };
@@ -132,8 +141,6 @@ struct Game_Info {
   const bool tech_parasite_allow_holes;
   const bool tech_loss_allow_holes;
   const int sciencebox;
-  const char tech_cost_style @ tech_cost_style_id;
-  const char tech_leakage @ tech_leakage_style_id;
 };
 
 /* Module Game */
@@ -162,6 +169,18 @@ module game {
 
   const char *api_methods_game_ruleset_name
     @ ruleset_name (lua_State *L);
+
+  const char *api_methods_tech_cost_style
+    @ tech_cost_style (lua_State *L);
+
+  const char *api_methods_tech_leakage_style
+    @ tech_leakage_style (lua_State *L);
+}
+
+module Counter {
+  const char *api_methods_counter_rule_name @ rule_name (lua_State *L, Counter *c);
+  const char *api_methods_counter_name_translation @ name_translation (lua_State *L, Counter *c);
+  int api_methods_counter_city_get @ get (lua_State *L, Counter *c, City *city);
 }
 
 /* Module Player. */
@@ -212,9 +231,21 @@ module Player {
   Unit_Type *api_methods_player_can_upgrade
     @ can_upgrade(lua_State *L, Player *pplayer, Unit_Type *utype);
   bool api_methods_player_can_build_impr_direct
-    @ can_build_direct (lua_State *L, Player *pplayer, Building_Type *itype);
+    @ can_build_direct(lua_State *L, Player *pplayer, Building_Type *itype);
   bool api_methods_player_can_build_unit_direct
-    @ can_build_direct (lua_State *L, Player *pplayer, Unit_Type *utype);
+    @ can_build_direct(lua_State *L, Player *pplayer, Unit_Type *utype);
+  bool api_methods_player_can_employ
+    @ can_employ(lua_State *L, Player *pplayer, Specialist *s);
+
+  City *api_methods_player_primary_capital
+    @ primary_capital(lua_State *L, Player *pplayer);
+
+  const char *api_methods_get_diplstate
+    @ diplstate(lua_State *L, Player *pplayer1, Player *pplayer2);
+  bool api_methods_player_has_embassy
+    @ has_embassy(lua_State *L, Player *pplayer, Player *target);
+  bool api_methods_player_team_has_embassy
+    @ team_has_embassy(lua_State *L, Player *pplayer, Player *target);
 }
 
 module methods_private {
@@ -277,6 +308,13 @@ module City {
     @ link_text(lua_State *L, City *self);
   const char *api_methods_city_tile_link
     @ tile_link_text(lua_State *L, City *self);
+
+  int api_methods_city_nationality_citizens
+    @ nationality_citizens(lua_State *L, City *self, Player *nationality);
+  bool api_methods_city_can_employ
+    @ can_employ(lua_State *L, City *pcity, Specialist *s);
+  int api_methods_city_num_specialists
+    @ num_specialists (lua_State *L, City *pcity, Specialist *s);
 }
 
 $[
@@ -310,6 +348,9 @@ module Unit {
     @ link_text(lua_State *L, Unit *self);
   const char *api_methods_unit_tile_link
     @ tile_link_text(lua_State *L, Unit *self);
+
+  bool api_methods_unit_seen
+    @ seen(lua_State *L, Unit *self, Player *watcher);
 }
 
 module methods_private {
@@ -342,9 +383,6 @@ module Tile {
       @ x (lua_State *L, Tile *self);
     int api_methods_tile_map_y
       @ y (lua_State *L, Tile *self);
-
-    const char *api_methods_tile_link
-      @ link_text(lua_State *L, Tile *self);
   }
 
   City *api_methods_tile_city
@@ -365,6 +403,13 @@ module Tile {
     @ num_units (lua_State *L, Tile *self);
   int api_methods_tile_sq_distance
     @ sq_distance (lua_State *L, Tile *self, Tile *other);
+  const char *api_methods_tile_link
+    @ link_text(lua_State *L, Tile *self);
+
+  bool api_methods_tile_known
+    @ known(lua_State *L, Tile *self, Player *watcher);
+  bool api_methods_tile_seen
+    @ seen(lua_State *L, Tile *self, Player *watcher);
 }
 
 $[
@@ -510,6 +555,18 @@ module Action {
     @ target_kind (lua_State *L, Action *self);
 }
 
+/* Module Specialist */
+module Specialist {
+  module properties {
+    bool api_methods_specialist_is_super
+      @ is_super (lua_State *L, Specialist *s);
+  }
+  const char *api_methods_specialist_rule_name
+    @ rule_name (lua_State *L, Specialist *self);
+  const char *api_methods_specialist_name_translation
+    @ name_translation (lua_State *L, Specialist *self);
+}
+
 /* Module Unit_List_Link. */
 module Unit_List_Link {
   Unit *api_methods_unit_list_link_data
@@ -528,6 +585,10 @@ module City_List_Link {
 
 /* Module find. */
 module find {
+  Counter *api_find_counter_by_name
+    @ counter (lua_State *L, const char *name);
+  Counter *api_find_counter
+    @ counter (lua_State *L, int counter_id);
   Player *api_find_player_by_name
     @ player (lua_State *L, const char *name);
   Player *api_find_player
@@ -554,10 +615,6 @@ module find {
     @ nation_type (lua_State *L, const char *name_orig);
   Nation_Type *api_find_nation_type
     @ nation_type (lua_State *L, int nation_type_id);
-  Action *api_find_action_by_name
-    @ action (lua_State *L, const char *name_orig);
-  Action *api_find_action
-    @ action (lua_State *L, int action_type_id);
   Building_Type *api_find_building_type_by_name
     @ building_type (lua_State *L, const char *name_orig);
   Building_Type *api_find_building_type
@@ -580,8 +637,12 @@ module find {
     @ achievement (lua_State *L, const char *name_orig);
   Achievement *api_find_achievement
     @ achievement (lua_State *L, int achievement_id);
+  Specialist *api_find_specialist_by_name
+    @ specialist (lua_State *L, const char *name_orig);
+  Specialist *api_find_specialist
+    @ specialist (lua_State *L, int spec_id);
   Disaster *api_find_disaster_by_name
-    @ achievement (lua_State *L, const char *name_orig);
+    @ disaster (lua_State *L, const char *name_orig);
   Disaster *api_find_disaster
     @ disaster (lua_State *L, int disaster_id);
   Direction *api_utilities_str2dir
@@ -618,6 +679,12 @@ module effects {
   int api_effects_unit_bonus
     @ unit_bonus(lua_State *L, Unit *punit, Player *other_player,
                  const char *effect_type);
+  int api_effects_tile_bonus
+    @ tile_bonus(lua_State *L, Tile *ptile, City *pcity,
+                 const char *output_id, const char *effect_type);
+  int api_effects_specialist_bonus
+    @ specialist_bonus (lua_State *L, Specialist *s, lua_Object d,
+                        const char *output_id, const char *effect_type);
   int api_effects_unit_vs_tile_bonus
     @ unit_vs_tile_bonus(lua_State *L, Unit *punit, Tile *ptile,
                          const char *effect_type);
@@ -665,19 +732,6 @@ module Game_Info {
 }
 
 $[
--- Getting enums from game.info as rule names
--- The tables are defined and filled in api_game_specenum.c
-local tcs, tls = TECH_COST, TECH_LEAKAGE
--- Remove the tables from _G, likely no more use for them
-TECH_COST, TECH_LEAKAGE = nil, nil
-Game_Info.properties = {
-  tech_cost_style = function(self)
-    return tcs[self.tech_cost_style_id];
-  end,
-  tech_leakage_style = function(self)
-    return tls[self.tech_leakage_style_id];
-  end
-}
 
 -- ***************************************************************************
 -- Player and Tile: cities_iterate and units_iterate methods

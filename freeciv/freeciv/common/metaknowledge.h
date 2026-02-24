@@ -1,4 +1,4 @@
-/**********************************************************************
+/***********************************************************************
  Freeciv - Copyright (C) 1996-2013 - Freeciv Development Team
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -24,14 +24,14 @@ extern "C" {
 enum fc_tristate
 mke_eval_req(const struct player *pov_player,
              const struct req_context *context,
-             const struct player *other_player,
+             const struct req_context *other_context,
              const struct requirement *req,
              const enum   req_problem_type prob_type);
 
 enum fc_tristate
 mke_eval_reqs(const struct player *pov_player,
               const struct req_context *context,
-              const struct player *other_player,
+              const struct req_context *other_context,
               const struct requirement_vector *reqs,
               const enum   req_problem_type prob_type);
 

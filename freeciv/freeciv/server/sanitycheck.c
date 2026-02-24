@@ -20,6 +20,7 @@
 #include "log.h"
 
 /* common */
+#include "ai.h"
 #include "city.h"
 #include "game.h"
 #include "government.h"
@@ -103,7 +104,7 @@ static void check_specials(const char *file, const char *function, int line)
       }
     } extra_type_by_cause_iterate_end;
 
-    SANITY_TILE(ptile, terrain_index(pterrain) >= T_FIRST 
+    SANITY_TILE(ptile, terrain_index(pterrain) >= T_FIRST
                        && terrain_index(pterrain) < terrain_count());
   } whole_map_iterate_end;
 }
@@ -209,11 +210,11 @@ static void check_map(const char *file, const char *function, int line)
 
       /* Check diplomatic status of stacked units. */
       unit_list_iterate(ptile->units, punit2) {
-	SANITY_TILE(ptile, pplayers_allied(unit_owner(punit), 
+	SANITY_TILE(ptile, pplayers_allied(unit_owner(punit),
                                            unit_owner(punit2)));
       } unit_list_iterate_end;
       if (pcity) {
-	SANITY_TILE(ptile, pplayers_allied(unit_owner(punit), 
+	SANITY_TILE(ptile, pplayers_allied(unit_owner(punit),
                                            city_owner(pcity)));
       }
     } unit_list_iterate_end;
@@ -328,11 +329,12 @@ static void check_city_size(struct city *pcity, const char *file,
   int delta;
   int citizen_count = 0;
   struct tile *pcenter = city_tile(pcity);
+  const struct civ_map *nmap = &(wld.map);
 
   SANITY_CITY(pcity, city_size_get(pcity) >= 1);
 
-  city_tile_iterate_skip_free_worked(city_map_radius_sq_get(pcity), pcenter,
-                                  ptile, _index, _x, _y) {
+  city_tile_iterate_skip_free_worked(nmap, city_map_radius_sq_get(pcity), pcenter,
+                                     ptile, _index, _x, _y) {
     if (tile_worked(ptile) == pcity) {
       citizen_count++;
     }
@@ -350,7 +352,7 @@ static void check_city_size(struct city *pcity, const char *file,
               city_specialists(pcity));
 
     city_repair_size(pcity, delta);
-    city_refresh_from_main_map(pcity, NULL);
+    city_refresh_from_main_map(nmap, pcity, NULL);
   }
 }
 
@@ -434,7 +436,7 @@ static void check_units(const char *file, const char *function, int line)
       SANITY_CHECK(player_unit_by_number(unit_owner(punit),
                                          punit->id) != NULL);
 
-      if (!can_unit_continue_current_activity(punit)) {
+      if (!can_unit_continue_current_activity(&(wld.map), punit)) {
         SANITY_FAIL("(%4d,%4d) %s has activity %s, "
                     "but it can't continue at %s",
                     TILE_XY(ptile), unit_rule_name(punit),
@@ -444,6 +446,11 @@ static void check_units(const char *file, const char *function, int line)
 
       if (activity_requires_target(punit->activity)) {
         SANITY_CHECK(punit->activity_target != NULL);
+      }
+
+      if (punit->activity == ACTIVITY_GOTO) {
+        /* ACTIVITY_GOTO requires goto_tile always to be set. */
+        SANITY_CHECK(punit->goto_tile != NULL);
       }
 
       pcity = tile_city(ptile);
@@ -523,8 +530,8 @@ static void check_players(const char *file, const char *function, int line)
     SANITY_CHECK(!pplayer->nation || pplayer->nation->player == pplayer);
     SANITY_CHECK(player_list_search(team_members(pplayer->team), pplayer));
 
-    SANITY_CHECK(!(city_list_size(pplayer->cities) > 0
-                   && !pplayer->server.got_first_city));
+    SANITY_CHECK(player_has_flag(pplayer, PLRF_FIRST_CITY)
+                 || city_list_size(pplayer->cities) == 0);
 
     city_list_iterate(pplayer->cities, pcity) {
       if (pcity->capital == CAPITAL_PRIMARY) {
@@ -683,6 +690,10 @@ void real_sanity_check(const char *file, const char *function, int line)
   check_teams(file, function, line);
   check_researches(file, function, line);
   check_connections(file, function, line);
+
+  players_iterate(pplayer) {
+    CALL_PLR_AI_FUNC(check_sanity, pplayer, pplayer);
+  } players_iterate_end;
 }
 
 /**********************************************************************//**

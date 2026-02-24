@@ -21,10 +21,12 @@
 #include <hand_gen.h>       /* <> so looked from the build directory first. */
 
 bool unit_activity_handling(struct unit *punit,
-                            enum unit_activity new_activity);
+                            enum unit_activity new_activity,
+                            enum gen_action trigger_action);
 bool unit_activity_handling_targeted(struct unit *punit,
                                      enum unit_activity new_activity,
-                                     struct extra_type **new_target);
+                                     struct extra_type **new_target,
+                                     enum gen_action trigger_action);
 void unit_change_homecity_handling(struct unit *punit, struct city *new_pcity,
                                    bool rehome);
 
@@ -63,5 +65,8 @@ enum ane_kind action_not_enabled_reason(struct unit *punit,
 bool unit_server_side_agent_set(struct player *pplayer,
                                 struct unit *punit,
                                 enum server_side_agent agent);
+
+void create_trade_route(struct city *from, struct city *to,
+                        struct goods_type *goods);
 
 #endif /* FC__UNITHAND_H */

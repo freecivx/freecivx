@@ -33,6 +33,8 @@
 
 struct government *governments = NULL;
 
+static struct user_flag user_gov_flags[MAX_NUM_USER_GOVERNMENT_FLAGS];
+
 /**********************************************************************//**
   Returns the government that has the given (translated) name.
   Returns NULL if none match.
@@ -137,7 +139,7 @@ const char *government_rule_name(const struct government *pgovern)
 }
 
 /**********************************************************************//**
-  Return the (translated) name of the given government. 
+  Return the (translated) name of the given government.
   You don't have to free the return pointer.
 **************************************************************************/
 const char *government_name_translation(const struct government *pgovern)
@@ -148,11 +150,15 @@ const char *government_name_translation(const struct government *pgovern)
 }
 
 /**********************************************************************//**
-  Return the (translated) name of the given government of a player. 
-  You don't have to free the return pointer.
+  Return the (translated) name of the given government of a player.
+  You don't need to free returned pointer.
 **************************************************************************/
 const char *government_name_for_player(const struct player *pplayer)
 {
+  if (!pplayer->is_alive) {
+    return "-";
+  }
+
   return government_name_translation(government_of_player(pplayer));
 }
 
@@ -504,6 +510,7 @@ static inline void government_init(struct government *pgovern)
   requirement_vector_init(&pgovern->reqs);
   pgovern->changed_to_times = 0;
   pgovern->ruledit_disabled = FALSE;
+  pgovern->ruledit_dlg = NULL;
 }
 
 /**********************************************************************//**
@@ -570,5 +577,89 @@ bool untargeted_revolution_allowed(void)
      * in order to know how long anarchy will last. */
     return FALSE;
   }
+
   return TRUE;
+}
+
+/**********************************************************************//**
+  Return TRUE if the government has this flag, otherwise FALSE
+**************************************************************************/
+bool government_has_flag(const struct government *pgov,
+                         enum gov_flag_id flag)
+{
+  fc_assert_ret_val(gov_flag_id_is_valid(flag), FALSE);
+
+  return BV_ISSET(pgov->flags, flag);
+}
+
+
+/************************************************************************//**
+  Initialize user government flags.
+****************************************************************************/
+void user_gov_flags_init(void)
+{
+  int i;
+
+  for (i = 0; i < MAX_NUM_USER_GOVERNMENT_FLAGS; i++) {
+    user_flag_init(&user_gov_flags[i]);
+  }
+}
+
+/************************************************************************//**
+  Frees the memory associated with all government flags
+****************************************************************************/
+void gov_flags_free(void)
+{
+  int i;
+
+  for (i = 0; i < MAX_NUM_USER_GOVERNMENT_FLAGS; i++) {
+    user_flag_free(&user_gov_flags[i]);
+  }
+}
+
+/************************************************************************//**
+  Sets user defined name for government flag.
+****************************************************************************/
+void set_user_gov_flag_name(enum gov_flag_id id, const char *name,
+                            const char *helptxt)
+{
+  int gfid = id - GOVF_USER_FLAG_1;
+
+  fc_assert_ret(id >= GOVF_USER_FLAG_1 && id <= GOVF_LAST_USER_FLAG);
+
+  free(user_gov_flags[gfid].name);
+  user_gov_flags[gfid].name = nullptr;
+
+  if (name && name[0] != '\0') {
+    user_gov_flags[gfid].name = fc_strdup(name);
+  }
+
+  free(user_gov_flags[gfid].helptxt);
+  user_gov_flags[gfid].helptxt = nullptr;
+
+  if (helptxt && helptxt[0] != '\0') {
+    user_gov_flags[gfid].helptxt = fc_strdup(helptxt);
+  }
+}
+
+/************************************************************************//**
+  Government flag name callback, called from specenum code.
+****************************************************************************/
+const char *gov_flag_id_name_cb(enum gov_flag_id flag)
+{
+  if (flag < GOVF_USER_FLAG_1 || flag > GOVF_LAST_USER_FLAG) {
+    return nullptr;
+  }
+
+  return user_gov_flags[flag - GOVF_USER_FLAG_1].name;
+}
+
+/************************************************************************//**
+  Return the (untranslated) help text of the user government flag.
+****************************************************************************/
+const char *gov_flag_helptxt(enum gov_flag_id id)
+{
+  fc_assert(id >= GOVF_USER_FLAG_1 && id <= GOVF_LAST_USER_FLAG);
+
+  return user_gov_flags[id - GOVF_USER_FLAG_1].helptxt;
 }

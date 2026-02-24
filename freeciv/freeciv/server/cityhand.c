@@ -59,6 +59,7 @@
 void handle_city_name_suggestion_req(struct player *pplayer, int unit_id)
 {
   struct unit *punit = player_unit_by_number(pplayer, unit_id);
+  const struct civ_map *nmap = &(wld.map);
 
   if (NULL == punit) {
     /* Probably died or bribed. */
@@ -67,7 +68,7 @@ void handle_city_name_suggestion_req(struct player *pplayer, int unit_id)
     return;
   }
 
-  if (action_prob_possible(action_prob_vs_tile(punit, ACTION_FOUND_CITY,
+  if (action_prob_possible(action_prob_vs_tile(nmap, punit, ACTION_FOUND_CITY,
                                                unit_tile(punit), NULL))) {
     log_verbose("handle_city_name_suggest_req(unit_pos (%d, %d))",
                 TILE_XY(unit_tile(punit)));
@@ -98,8 +99,8 @@ void handle_city_change_specialist(struct player *pplayer, int city_id,
     return;
   }
 
-  if (to < 0 || to >= specialist_count()
-      || from < 0 || from >= specialist_count()
+  if (!is_normal_specialist_id(to)
+      || !is_normal_specialist_id(from)
       || !city_can_use_specialist(pcity, to)
       || pcity->specialists[from] == 0) {
     /* This could easily just be due to clicking faster on the specialist
@@ -221,12 +222,12 @@ void handle_city_make_worker(struct player *pplayer,
 
   city_map_update_worker(pcity, ptile);
 
-  specialist_type_iterate(i) {
+  normal_specialist_type_iterate(i) {
     if (pcity->specialists[i] > 0) {
       pcity->specialists[i]--;
       break;
     }
-  } specialist_type_iterate_end;
+  } normal_specialist_type_iterate_end;
 
   city_refresh(pcity);
   sanity_check_city(pcity);
@@ -297,7 +298,7 @@ void really_handle_city_buy(struct player *pplayer, struct city *pcity)
   /* This function corresponds to city_can_buy() in the client. */
 
   fc_assert_ret(pcity && player_owns_city(pplayer, pcity));
- 
+
   if (pcity->turn_founded == game.info.turn) {
     notify_player(pplayer, pcity->tile, E_BAD_COMMAND, ftc_server,
                   _("Cannot buy in city created this turn."));
@@ -329,7 +330,7 @@ void really_handle_city_buy(struct player *pplayer, struct city *pcity)
     return; /* sanity */
   }
   if (cost > pplayer->economic.gold) {
-    /* In case something changed while player tried to buy, or player 
+    /* In case something changed while player tried to buy, or player
      * tried to cheat! */
     /* Split into two to allow localization of two pluralisations. */
     char buf[MAX_LEN_MSG];
@@ -436,6 +437,7 @@ void handle_city_change(struct player *pplayer, int city_id,
 {
   struct universal prod;
   struct city *pcity = player_city_by_number(pplayer, city_id);
+  const struct civ_map *nmap = &(wld.map);
 
   if (!universals_n_is_valid(production_kind)) {
     log_error("[%s] bad production_kind %d.", __FUNCTION__,
@@ -461,7 +463,7 @@ void handle_city_change(struct player *pplayer, int city_id,
     return;
   }
 
-  if (!can_city_build_now(pcity, &prod)) {
+  if (!can_city_build_now(nmap, pcity, &prod)) {
     return;
   }
   if (!city_can_change_build(pcity)) {
@@ -506,7 +508,8 @@ void handle_city_rename(struct player *pplayer, int city_id,
   given city be changed.
 **************************************************************************/
 void handle_city_options_req(struct player *pplayer, int city_id,
-			     bv_city_options options)
+			     bv_city_options options,
+                             enum city_wl_cancel_behavior wlcb)
 {
   struct city *pcity = player_city_by_number(pplayer, city_id);
 
@@ -515,6 +518,7 @@ void handle_city_options_req(struct player *pplayer, int city_id,
   }
 
   pcity->city_options = options;
+  pcity->wlcb = wlcb;
 
   send_city_info(pplayer, pcity);
 }

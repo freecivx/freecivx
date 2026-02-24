@@ -16,9 +16,11 @@
 #endif
 
 // Qt
+#include <QCheckBox>
 #include <QGridLayout>
 #include <QLineEdit>
 #include <QMenu>
+#include <QPushButton>
 #include <QSpinBox>
 #include <QToolButton>
 
@@ -26,25 +28,34 @@
 #include "improvement.h"
 
 // ruledit
+#include "helpeditor.h"
 #include "ruledit.h"
 #include "ruledit_qt.h"
 #include "tab_tech.h"
 
 #include "edit_impr.h"
 
+
+#define FLAGROWS 15
+
 /**********************************************************************//**
   Setup edit_impr object
 **************************************************************************/
-edit_impr::edit_impr(ruledit_gui *ui_in, struct impr_type *impr_in) : QDialog()
+edit_impr::edit_impr(ruledit_gui *ui_in, struct impr_type *impr_in) : values_dlg()
 {
-  QVBoxLayout *main_layout = new QVBoxLayout(this);
+  QHBoxLayout *main_layout = new QHBoxLayout(this);
   QGridLayout *impr_layout = new QGridLayout();
   QLabel *label;
+  QPushButton *button;
   QMenu *menu;
   int row;
+  int rowcount;
+  int column;
 
   ui = ui_in;
   impr = impr_in;
+
+  flag_layout = new QGridLayout();
 
   setWindowTitle(QString::fromUtf8(improvement_rule_name(impr)));
 
@@ -105,9 +116,68 @@ edit_impr::edit_impr(ruledit_gui *ui_in, struct impr_type *impr_in) : QDialog()
   impr_layout->addWidget(label, row, 0);
   impr_layout->addWidget(gfx_tag_alt, row++, 1);
 
+  label = new QLabel(QString::fromUtf8(R__("Second alt gfx tag")));
+  label->setParent(this);
+
+  gfx_tag_alt2 = new QLineEdit(this);
+  connect(gfx_tag_alt2, SIGNAL(returnPressed()), this, SLOT(gfx_tag_alt2_given()));
+
+  impr_layout->addWidget(label, row, 0);
+  impr_layout->addWidget(gfx_tag_alt2, row++, 1);
+
+  label = new QLabel(QString::fromUtf8(R__("Sound tag")));
+  label->setParent(this);
+
+  sound_tag = new QLineEdit(this);
+  connect(sound_tag, SIGNAL(returnPressed()), this, SLOT(sound_tag_given()));
+
+  impr_layout->addWidget(label, row, 0);
+  impr_layout->addWidget(sound_tag, row++, 1);
+
+  label = new QLabel(QString::fromUtf8(R__("Alt sound tag")));
+  label->setParent(this);
+
+  sound_tag_alt = new QLineEdit(this);
+  connect(sound_tag_alt, SIGNAL(returnPressed()), this, SLOT(sound_tag_alt_given()));
+
+  impr_layout->addWidget(label, row, 0);
+  impr_layout->addWidget(sound_tag_alt, row++, 1);
+
+  label = new QLabel(QString::fromUtf8(R__("Second alt sound tag")));
+  label->setParent(this);
+
+  sound_tag_alt2 = new QLineEdit(this);
+  connect(sound_tag_alt2, SIGNAL(returnPressed()), this, SLOT(sound_tag_alt2_given()));
+
+  impr_layout->addWidget(label, row, 0);
+  impr_layout->addWidget(sound_tag_alt2, row++, 1);
+
+  button = new QPushButton(QString::fromUtf8(R__("Helptext")), this);
+  connect(button, SIGNAL(pressed()), this, SLOT(helptext()));
+  impr_layout->addWidget(button, row++, 1);
+
+  rowcount = 0;
+  column = 0;
+  for (int i = 0; i < IF_COUNT; i++) {
+    enum impr_flag_id flag = (enum impr_flag_id)i;
+    QCheckBox *check = new QCheckBox();
+
+    label = new QLabel(impr_flag_id_name(flag));
+    flag_layout->addWidget(label, rowcount, column + 1);
+
+    check->setChecked(BV_ISSET(impr->flags, flag));
+    flag_layout->addWidget(check, rowcount, column);
+
+    if (++rowcount >= FLAGROWS) {
+      column += 2;
+      rowcount = 0;
+    }
+  }
+
   refresh();
 
   main_layout->addLayout(impr_layout);
+  main_layout->addLayout(flag_layout);
 
   setLayout(main_layout);
 }
@@ -117,9 +187,34 @@ edit_impr::edit_impr(ruledit_gui *ui_in, struct impr_type *impr_in) : QDialog()
 **************************************************************************/
 void edit_impr::closeEvent(QCloseEvent *cevent)
 {
+  int rowcount;
+  int column;
+
+  close_help();
+
   // Save values from text fields.
   gfx_tag_given();
   gfx_tag_alt_given();
+  gfx_tag_alt2_given();
+  sound_tag_given();
+  sound_tag_alt_given();
+  sound_tag_alt2_given();
+
+  BV_CLR_ALL(impr->flags);
+  rowcount = 0;
+  column = 0;
+  for (int i = 0; i < IF_COUNT; i++) {
+    QCheckBox *check = static_cast<QCheckBox *>(flag_layout->itemAtPosition(rowcount, column)->widget());
+
+    if (check->isChecked()) {
+      BV_SET(impr->flags, i);
+    }
+
+    if (++rowcount >= FLAGROWS) {
+      rowcount = 0;
+      column += 2;
+    }
+  }
 
   impr->ruledit_dlg = nullptr;
 }
@@ -134,6 +229,10 @@ void edit_impr::refresh()
   genus_button->setText(impr_genus_id_name(impr->genus));
   gfx_tag->setText(impr->graphic_str);
   gfx_tag_alt->setText(impr->graphic_alt);
+  gfx_tag_alt2->setText(impr->graphic_alt2);
+  sound_tag->setText(impr->soundtag);
+  sound_tag_alt->setText(impr->soundtag_alt);
+  sound_tag_alt2->setText(impr->soundtag_alt2);
 }
 
 /**********************************************************************//**
@@ -190,4 +289,52 @@ void edit_impr::gfx_tag_alt_given()
   QByteArray tag_bytes = gfx_tag_alt->text().toUtf8();
 
   sz_strlcpy(impr->graphic_alt, tag_bytes);
+}
+
+/**********************************************************************//**
+  User entered new secondary alternative graphics tag.
+**************************************************************************/
+void edit_impr::gfx_tag_alt2_given()
+{
+  QByteArray tag_bytes = gfx_tag_alt2->text().toUtf8();
+
+  sz_strlcpy(impr->graphic_alt2, tag_bytes);
+}
+
+/**********************************************************************//**
+  User entered new sound tag.
+**************************************************************************/
+void edit_impr::sound_tag_given()
+{
+  QByteArray tag_bytes = sound_tag->text().toUtf8();
+
+  sz_strlcpy(impr->soundtag, tag_bytes);
+}
+
+/**********************************************************************//**
+  User entered new alternative sound tag.
+**************************************************************************/
+void edit_impr::sound_tag_alt_given()
+{
+  QByteArray tag_bytes = sound_tag_alt->text().toUtf8();
+
+  sz_strlcpy(impr->soundtag_alt, tag_bytes);
+}
+
+/**********************************************************************//**
+  User entered new second alternative sound tag.
+**************************************************************************/
+void edit_impr::sound_tag_alt2_given()
+{
+  QByteArray tag_bytes = sound_tag_alt2->text().toUtf8();
+
+  sz_strlcpy(impr->soundtag_alt2, tag_bytes);
+}
+
+/**********************************************************************//**
+  User pressed helptext button
+**************************************************************************/
+void edit_impr::helptext()
+{
+  open_help(&impr->helptext);
 }

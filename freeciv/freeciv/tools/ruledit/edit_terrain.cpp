@@ -16,12 +16,15 @@
 #endif
 
 // Qt
+#include <QCheckBox>
 #include <QGridLayout>
 #include <QLineEdit>
+#include <QPushButton>
 #include <QSpinBox>
 #include <QToolButton>
 
 // common
+#include "game.h"
 #include "terrain.h"
 
 // ruledit
@@ -31,18 +34,27 @@
 
 #include "edit_terrain.h"
 
+
+#define FLAGROWS 15
+
 /**********************************************************************//**
   Setup edit_terrain object
 **************************************************************************/
-edit_terrain::edit_terrain(ruledit_gui *ui_in, struct terrain *ter_in) : QDialog()
+edit_terrain::edit_terrain(ruledit_gui *ui_in, struct terrain *ter_in) : values_dlg()
 {
-  QVBoxLayout *main_layout = new QVBoxLayout(this);
+  QHBoxLayout *main_layout = new QHBoxLayout(this);
   QGridLayout *ter_layout = new QGridLayout();
   QLabel *label;
+  QPushButton *button;
   int row = 0;
+  int rowcount;
+  int column;
 
   ui = ui_in;
   ter = ter_in;
+
+  natives_layout = new QGridLayout();
+  flag_layout = new QGridLayout();
 
   setWindowTitle(QString::fromUtf8(terrain_rule_name(ter)));
 
@@ -84,9 +96,54 @@ edit_terrain::edit_terrain(ruledit_gui *ui_in, struct terrain *ter_in) : QDialog
   ter_layout->addWidget(label, row, 0);
   ter_layout->addWidget(gfx_tag_alt, row++, 1);
 
+  label = new QLabel(QString::fromUtf8(R__("Second alt graphics tag")));
+  label->setParent(this);
+
+  gfx_tag_alt2 = new QLineEdit(this);
+  connect(gfx_tag_alt2, SIGNAL(returnPressed()), this, SLOT(gfx_tag_alt2_given()));
+
+  ter_layout->addWidget(label, row, 0);
+  ter_layout->addWidget(gfx_tag_alt2, row++, 1);
+
+  button = new QPushButton(QString::fromUtf8(R__("Helptext")), this);
+  connect(button, SIGNAL(pressed()), this, SLOT(helptext()));
+  ter_layout->addWidget(button, row++, 1);
+
+  label = new QLabel(QString::fromUtf8(R__("Native to")));
+  natives_layout->addWidget(label, 0, 0);
+  for (int i = 0; i < game.control.num_unit_classes; i++) {
+    QCheckBox *check = new QCheckBox();
+
+    label = new QLabel(uclass_rule_name(uclass_by_number(i)));
+    natives_layout->addWidget(label, i + 1, 0);
+
+    check->setChecked(BV_ISSET(ter->native_to, i));
+    natives_layout->addWidget(check, i + 1, 1);
+  }
+
+  rowcount = 0;
+  column = 0;
+  for (int i = 0; i < TER_USER_LAST; i++) {
+    enum terrain_flag_id flag = (enum terrain_flag_id)i;
+    QCheckBox *check = new QCheckBox();
+
+    label = new QLabel(terrain_flag_id_name(flag));
+    flag_layout->addWidget(label, rowcount, column + 1);
+
+    check->setChecked(BV_ISSET(ter->flags, flag));
+    flag_layout->addWidget(check, rowcount, column);
+
+    if (++rowcount >= FLAGROWS) {
+      column += 2;
+      rowcount = 0;
+    }
+  }
+
   refresh();
 
   main_layout->addLayout(ter_layout);
+  main_layout->addLayout(natives_layout);
+  main_layout->addLayout(flag_layout);
 
   setLayout(main_layout);
 }
@@ -96,9 +153,40 @@ edit_terrain::edit_terrain(ruledit_gui *ui_in, struct terrain *ter_in) : QDialog
 **************************************************************************/
 void edit_terrain::closeEvent(QCloseEvent *cevent)
 {
+  int rowcount;
+  int column;
+
+  close_help();
+
   // Save values from text fields.
   gfx_tag_given();
   gfx_tag_alt_given();
+  gfx_tag_alt2_given();
+
+  BV_CLR_ALL(ter->native_to);
+  for (int i = 0; i < game.control.num_unit_classes; i++) {
+    QCheckBox *check = static_cast<QCheckBox *>(natives_layout->itemAtPosition(i + 1, 1)->widget());
+
+    if (check->isChecked()) {
+      BV_SET(ter->native_to, i);
+    }
+  }
+
+  BV_CLR_ALL(ter->flags);
+  rowcount = 0;
+  column = 0;
+  for (int i = 0; i < TER_USER_LAST; i++) {
+    QCheckBox *check = static_cast<QCheckBox *>(flag_layout->itemAtPosition(rowcount, column)->widget());
+
+    if (check->isChecked()) {
+      BV_SET(ter->flags, i);
+    }
+
+    if (++rowcount >= FLAGROWS) {
+      rowcount = 0;
+      column += 2;
+    }
+  }
 
   ter->ruledit_dlg = nullptr;
 }
@@ -112,6 +200,7 @@ void edit_terrain::refresh()
   defense->setValue(ter->defense_bonus);
   gfx_tag->setText(ter->graphic_str);
   gfx_tag_alt->setText(ter->graphic_alt);
+  gfx_tag_alt2->setText(ter->graphic_alt2);
 }
 
 /**********************************************************************//**
@@ -152,4 +241,22 @@ void edit_terrain::gfx_tag_alt_given()
   QByteArray tag_bytes = gfx_tag_alt->text().toUtf8();
 
   sz_strlcpy(ter->graphic_alt, tag_bytes);
+}
+
+/**********************************************************************//**
+  User entered new second alternative graphics tag.
+**************************************************************************/
+void edit_terrain::gfx_tag_alt2_given()
+{
+  QByteArray tag_bytes = gfx_tag_alt2->text().toUtf8();
+
+  sz_strlcpy(ter->graphic_alt2, tag_bytes);
+}
+
+/**********************************************************************//**
+  User pressed helptext button
+**************************************************************************/
+void edit_terrain::helptext()
+{
+  open_help(&ter->helptext);
 }

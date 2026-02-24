@@ -35,7 +35,7 @@ conveniently provide additional graphics.
 
 There are two layers to the tilespec files:
 
-The top-level file is named, eg: 'trident.tilespec'.  The basename of
+The top-level file is named, eg: 'trident.tilespec'. The basename of
 this file (here, 'trident') corresponds to the parameter of the
 '--tiles' command-line argument for the Freeciv client, as described
 above.
@@ -97,6 +97,8 @@ options include:
                           height in isometric tileset
   small_tile_width      : the width of icon sprites
   small_tile_height     : the height of icon sprites
+  svg_height            : The height svg flags should be drawn to,
+                          if they are used
   fog_style             : Specifies how fog is drawn.
                           "Auto" :     Code automatically adds fog.
                           "Sprite :    A single fog sprite is drawn on top of all
@@ -132,7 +134,7 @@ options include:
   activity_offset_y      draw normal unit activity icons. "Auto" icons are not
                          affected by this as they are usually wanted in different
                          offset than real activity icons for both to appear simultaneously
-                         "Auto" icons are auto_attack, auto_settler, patrol, connect.
+                         "Auto" icons are auto_attack, auto_worker, patrol, connect.
   select_offset_x      : Gives an offset from the tile origin at which to
   select_offset_y        draw selected unit sprites.
   stack_size_offset_x  : Gives an offset from the tile origin at which to
@@ -193,7 +195,7 @@ Terrain options:
 ----------------
 
 The top-level tilespec file also contains information on how to draw each
-terrain type.  For each terrain type include a section "[tile_xxx]".
+terrain type. For each terrain type include a section "[tile_xxx]".
 This section contains information on how to draw this terrain type.
 (The terrain types are specified in the server ruleset file.)
 
@@ -371,6 +373,22 @@ tilespec file, but the individual tiles should be consistent with
 those sizes and/or the usage of those graphics.)
 
 ----------------------------------------------------------------------
+Animations
+----------
+
+Some 'sprites' listed in the following section are actually animations.
+Work to turn single sprite support to animation support is ongoing.
+You can't have animation where a single sprite is expected, nor can
+you have a single sprite tag where animation is expected.
+However, you can of course have a single frame animation that acts
+exactly as a single sprite.
+Animations consist of tags suffixed with ":<frame number>"
+The very first frame (":0") is needed for the animation to exist
+at all - if the animation is mandatory, the client will refuse
+to start without that tag. More frame tags (":1", ":2" ...) can be
+added at will, and the animation will be shown accordingly.
+
+----------------------------------------------------------------------
 Sprites
 -------
 
@@ -439,7 +457,7 @@ sprites.
   matched sprites       : If the terrain has a match type or is layered, a
                           set of matched sprites is needed. This consists of
                           16 sprites with tags "t.<terrain>_n<V>e<V>s<V>w<V>"
-                          (e.g., "t.hills_n0e0s1w0". Each direcional value
+                          (e.g., "t.hills_n0e0s1w0". Each directional value
                           <V> is either 0 or 1. Note that the directions are
                           in map coordinates, so n (north) in iso-view is
                           northeast on the mapview. (Note this only applies

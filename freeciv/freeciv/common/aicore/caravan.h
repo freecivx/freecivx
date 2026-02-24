@@ -22,8 +22,8 @@ extern "C" {
 #include "log.h"                /* enum log_level */
 #include "shared.h"
 
-/* common */
-#include "fc_types.h"
+struct civ_map;
+struct unit;
 
 enum foreign_trade_limit
 {
@@ -45,7 +45,7 @@ enum foreign_trade_limit
  */
 
 /**
- * The result of one trade route, accoring to the parameter below.
+ * The result of one trade route, according to the parameter below.
  * A null destination implies that this is not a real result.
  */
 struct caravan_result {
@@ -93,7 +93,7 @@ struct caravan_parameter {
     bool account_for_broken_routes;
 
     /*
-     * Allow trading with allies and peaceful neighbours.
+     * Allow trading with allies and peaceful neighbors.
      * BUG: currently we only consider allies.
      */
     enum foreign_trade_limit allow_foreign_trade;
@@ -143,17 +143,10 @@ void caravan_result_init_zero(struct caravan_result *result);
 int caravan_result_compare(const struct caravan_result *a,
                            const struct caravan_result *b);
 
-void caravan_evaluate(const struct unit *caravan, const struct city *dest,
-                      const struct caravan_parameter *parameter,
-                      struct caravan_result *result, bool omniscient);
-
-void caravan_find_best_destination(const struct unit *caravan,
+void caravan_find_best_destination(const struct civ_map *nmap,
+                                   const struct unit *caravan,
                                    const struct caravan_parameter *parameter,
                                    struct caravan_result *result, bool omniscient);
-
-void caravan_optimize_allpairs(const struct unit *caravan,
-                               const struct caravan_parameter *parameter,
-                               struct caravan_result *result, bool omniscient);
 
 #ifdef __cplusplus
 }

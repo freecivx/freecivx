@@ -12,7 +12,7 @@
 ***********************************************************************/
 
 /*
- * The DataIO module provides a system independent (endianess and
+ * The DataIO module provides a system independent (endianness and
  * sizeof(int) independent) way to write and read data. It supports
  * multiple datas which are collected in a buffer. It provides
  * recognition of error cases like "not enough space" or "not enough
@@ -65,9 +65,9 @@
 #include "dataio.h"
 
 static bool get_conv(char *dst, size_t ndst, const char *src,
-		     size_t nsrc);
+                     size_t nsrc);
 
-static DIO_PUT_CONV_FUN put_conv_callback = NULL;
+static DIO_PUT_CONV_FUN put_conv_callback = nullptr;
 static DIO_GET_CONV_FUN get_conv_callback = get_conv;
 
 /* Uncomment to make field range tests to asserts, fatal with -F */
@@ -109,9 +109,9 @@ void dio_set_put_conv_callback(DIO_PUT_CONV_FUN fun)
  bad. This is default get_conv_callback.
 **************************************************************************/
 static bool get_conv(char *dst, size_t ndst, const char *src,
-		     size_t nsrc)
+                     size_t nsrc)
 {
-  size_t len = nsrc;		/* length to copy, not including null */
+  size_t len = nsrc;            /* Length to copy, not including null */
   bool ret = TRUE;
 
   if (ndst > 0 && len >= ndst) {
@@ -169,7 +169,7 @@ static bool enough_data(struct data_in *din, size_t size)
   buffer size.
 **************************************************************************/
 void dio_output_init(struct raw_data_out *dout, void *destination,
-		     size_t dest_size)
+                     size_t dest_size)
 {
   dout->dest = destination;
   dout->dest_size = dest_size;
@@ -440,7 +440,7 @@ int dio_put_sfloat_raw(struct raw_data_out *dout, float value, int float_factor)
 }
 
 /**********************************************************************//**
-  Insert number of values brefore stop_value using 8 bits. Then
+  Insert number of values before stop_value using 8 bits. Then
   insert values using 8 bits for each. stop_value is not required to
   fit in 8 bits. Actual values may overflow.
 **************************************************************************/
@@ -467,7 +467,7 @@ int dio_put_uint8_vec8_raw(struct raw_data_out *dout, int *values, int stop_valu
 }
 
 /**********************************************************************//**
-  Insert number of values brefore stop_value using 8 bits. Then
+  Insert number of values before stop_value using 8 bits. Then
   insert values using 16 bits for each. stop_value is not required to
   fit in 16 bits. Actual values may overflow.
 **************************************************************************/
@@ -507,7 +507,7 @@ int dio_put_memory_raw(struct raw_data_out *dout, const void *value, size_t size
 }
 
 /**********************************************************************//**
-  Insert NULL-terminated string. Conversion callback is used if set.
+  Insert nullptr-terminated string. Conversion callback is used if set.
 **************************************************************************/
 int dio_put_string_raw(struct raw_data_out *dout, const char *value)
 {
@@ -1103,7 +1103,7 @@ struct plocation *plocation_field_new(char *name)
 
   out->kind = PADR_FIELD;
   out->name = name;
-  out->sub_location = NULL;
+  out->sub_location = nullptr;
 
   return out;
 }
@@ -1117,7 +1117,7 @@ struct plocation *plocation_elem_new(int number)
 
   out->kind = PADR_ELEMENT;
   out->number = number;
-  out->sub_location = NULL;
+  out->sub_location = nullptr;
 
   return out;
 }
@@ -1131,7 +1131,7 @@ const char *plocation_name(const struct plocation *loc)
 {
   static char locname[10];
 
-  if (loc == NULL) {
+  if (loc == nullptr) {
     return "No location";
   }
 

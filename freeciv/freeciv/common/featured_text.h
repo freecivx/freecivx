@@ -30,7 +30,7 @@ extern "C" {
  * obtain colored chat based patterns. Also for strategic communication,
  * they added some clickable links on particular city or location.
  * The present code is not based on old warclient code, but it also contains
- * the same tools. Whereas colors where determinated in client side only,
+ * the same tools. Whereas colors were determined in client side only,
  * here the server also has the possibility to choose what color to display
  * to the clients. Such embellishments are performed using escape sequences
  * (which are described below) in the strings.
@@ -46,7 +46,7 @@ extern "C" {
  * Text tag.
  *
  * The text_tag type is a structure which tag a particular modification for
- * a string. It contains many informations, which the type of modification,
+ * a string. It contains much information, which the type of modification,
  * the start of the modification in bytes from the start of the string, and
  * the stop of it. It also can contains many others fields, according to
  * sequence type.
@@ -69,7 +69,7 @@ extern "C" {
  * Full name sequence: [strike] ... [/strike]
  * Abbreviation sequence: [s] ... [/s]
  * Text tag type: TTT_STRIKE
- * 
+ *
  * - Underline.
  * Full name sequence: [underline] ... [/underline]
  * Abbreviation sequence: [u] ... [/u]
@@ -104,12 +104,12 @@ typedef int ft_offset_t;
 #define FT_OFFSET_UNSET ((ft_offset_t) -1)
 
 /* Opaque type. */
-struct text_tag;               
+struct text_tag;
 
 /* Define struct text_tag_list. */
 #define SPECLIST_TAG text_tag
 #define SPECLIST_TYPE struct text_tag
-#include "speclist.h"           
+#include "speclist.h"
 
 #define text_tag_list_iterate(tags, ptag) \
   TYPED_LIST_ITERATE(struct text_tag, tags, ptag)
@@ -159,8 +159,8 @@ static inline struct ft_color ft_color_construct(const char *foreground,
 **************************************************************************/
 static inline bool ft_color_requested(const struct ft_color color)
 {
-  return ((NULL != color.foreground && '\0' != color.foreground[0])
-          || (NULL != color.background && '\0' != color.background[0]));
+  return ((color.foreground != nullptr && color.foreground[0] != '\0')
+          || (color.background != nullptr && color.background[0] != '\0'));
 }
 
 /* Predefined colors. */
@@ -172,7 +172,7 @@ extern const struct ft_color ftc_server;
 extern const struct ft_color ftc_client;
 extern const struct ft_color ftc_editor;
 extern const struct ft_color ftc_command;
-extern       struct ft_color ftc_changed;
+extern VAR_ARG_CONST struct ft_color ftc_changed;
 extern const struct ft_color ftc_server_prompt;
 extern const struct ft_color ftc_player_lost;
 extern const struct ft_color ftc_game_start;

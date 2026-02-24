@@ -16,12 +16,15 @@
 #endif
 
 // Qt
+#include <QCheckBox>
 #include <QGridLayout>
 #include <QLineEdit>
+#include <QPushButton>
 #include <QToolButton>
 
 // common
 #include "extras.h"
+#include "game.h"
 
 // ruledit
 #include "ruledit.h"
@@ -29,19 +32,28 @@
 
 #include "edit_extra.h"
 
+
+#define FLAGROWS 15
+
 /**********************************************************************//**
   Setup edit_extra object
 **************************************************************************/
 edit_extra::edit_extra(ruledit_gui *ui_in, struct extra_type *extra_in)
-  : QDialog()
+  : values_dlg()
 {
-  QVBoxLayout *main_layout = new QVBoxLayout(this);
+  QHBoxLayout *main_layout = new QHBoxLayout(this);
   QGridLayout *extra_layout = new QGridLayout();
   QLabel *label;
+  QPushButton *button;
   int row = 0;
+  int rowcount;
+  int column;
 
   ui = ui_in;
   extra = extra_in;
+
+  natives_layout = new QGridLayout();
+  flag_layout = new QGridLayout();
 
   setWindowTitle(QString::fromUtf8(extra_rule_name(extra)));
 
@@ -108,9 +120,54 @@ edit_extra::edit_extra(ruledit_gui *ui_in, struct extra_type *extra_in)
   extra_layout->addWidget(label, row, 0);
   extra_layout->addWidget(rmact_gfx_alt, row++, 1);
 
+  label = new QLabel(QString::fromUtf8(R__("Second alt removal activity gfx tag")));
+  label->setParent(this);
+
+  rmact_gfx_alt2 = new QLineEdit(this);
+  connect(rmact_gfx_alt2, SIGNAL(returnPressed()), this, SLOT(rmact_gfx_alt2_given()));
+
+  extra_layout->addWidget(label, row, 0);
+  extra_layout->addWidget(rmact_gfx_alt2, row++, 1);
+
+  button = new QPushButton(QString::fromUtf8(R__("Helptext")), this);
+  connect(button, SIGNAL(pressed()), this, SLOT(helptext()));
+  extra_layout->addWidget(button, row++, 1);
+
+  label = new QLabel(QString::fromUtf8(R__("Native to")));
+  natives_layout->addWidget(label, 0, 0);
+  for (int i = 0; i < game.control.num_unit_classes; i++) {
+    QCheckBox *check = new QCheckBox();
+
+    label = new QLabel(uclass_rule_name(uclass_by_number(i)));
+    natives_layout->addWidget(label, i + 1, 0);
+
+    check->setChecked(BV_ISSET(extra->native_to, i));
+    natives_layout->addWidget(check, i + 1, 1);
+  }
+
+  rowcount = 0;
+  column = 0;
+  for (int i = 0; i < EF_LAST_USER_FLAG; i++) {
+    enum extra_flag_id flag = (enum extra_flag_id)i;
+    QCheckBox *check = new QCheckBox();
+
+    label = new QLabel(extra_flag_id_name(flag));
+    flag_layout->addWidget(label, rowcount, column + 1);
+
+    check->setChecked(BV_ISSET(extra->flags, flag));
+    flag_layout->addWidget(check, rowcount, column);
+
+    if (++rowcount >= FLAGROWS) {
+      column += 2;
+      rowcount = 0;
+    }
+  }
+
   refresh();
 
   main_layout->addLayout(extra_layout);
+  main_layout->addLayout(natives_layout);
+  main_layout->addLayout(flag_layout);
 
   setLayout(main_layout);
 }
@@ -120,6 +177,11 @@ edit_extra::edit_extra(ruledit_gui *ui_in, struct extra_type *extra_in)
 **************************************************************************/
 void edit_extra::closeEvent(QCloseEvent *cevent)
 {
+  int rowcount;
+  int column;
+
+  close_help();
+
   // Save values from text fields.
   gfx_tag_given();
   gfx_tag_alt_given();
@@ -128,6 +190,32 @@ void edit_extra::closeEvent(QCloseEvent *cevent)
   act_gfx_alt2_given();
   rmact_gfx_given();
   rmact_gfx_alt_given();
+  rmact_gfx_alt2_given();
+
+  BV_CLR_ALL(extra->native_to);
+  for (int i = 0; i < game.control.num_unit_classes; i++) {
+    QCheckBox *check = static_cast<QCheckBox *>(natives_layout->itemAtPosition(i + 1, 1)->widget());
+
+    if (check->isChecked()) {
+      BV_SET(extra->native_to, i);
+    }
+  }
+
+  BV_CLR_ALL(extra->flags);
+  rowcount = 0;
+  column = 0;
+  for (int i = 0; i < EF_LAST_USER_FLAG; i++) {
+    QCheckBox *check = static_cast<QCheckBox *>(flag_layout->itemAtPosition(rowcount, column)->widget());
+
+    if (check->isChecked()) {
+      BV_SET(extra->flags, i);
+    }
+
+    if (++rowcount >= FLAGROWS) {
+      rowcount = 0;
+      column += 2;
+    }
+  }
 
   extra->ruledit_dlg = nullptr;
 }
@@ -144,6 +232,7 @@ void edit_extra::refresh()
   act_gfx_alt2->setText(extra->act_gfx_alt2);
   rmact_gfx->setText(extra->rmact_gfx);
   rmact_gfx_alt->setText(extra->rmact_gfx_alt);
+  rmact_gfx_alt2->setText(extra->rmact_gfx_alt2);
 }
 
 /**********************************************************************//**
@@ -214,4 +303,22 @@ void edit_extra::rmact_gfx_alt_given()
   QByteArray tag_bytes = rmact_gfx_alt->text().toUtf8();
 
   sz_strlcpy(extra->rmact_gfx_alt, tag_bytes);
+}
+
+/**********************************************************************//**
+  User entered new second alternative removal activity graphics tag.
+**************************************************************************/
+void edit_extra::rmact_gfx_alt2_given()
+{
+  QByteArray tag_bytes = rmact_gfx_alt2->text().toUtf8();
+
+  sz_strlcpy(extra->rmact_gfx_alt2, tag_bytes);
+}
+
+/**********************************************************************//**
+  User pressed helptext button
+**************************************************************************/
+void edit_extra::helptext()
+{
+  open_help(&extra->helptext);
 }

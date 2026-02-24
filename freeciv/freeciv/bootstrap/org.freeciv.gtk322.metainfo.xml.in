@@ -4,6 +4,9 @@
     <id>org.freeciv.gtk322</id>
     <project_license>GPL-2.0-or-later</project_license>
     <metadata_license>CC0</metadata_license>
+    <developer id="org.freeciv">
+      <name>Freeciv Team</name>
+    </developer>
     <summary>Gtk+-3.22 based client for the Freeciv game</summary>
     <description>
         <p>
@@ -17,16 +20,13 @@
     <launchable type="desktop-id">org.freeciv.gtk322.desktop</launchable>
 
     <url type="homepage">https://www.freeciv.org/</url>
-    <url type="bugtracker">https://osdn.net/projects/freeciv/ticket/</url>
+    <url type="bugtracker">https://redmine.freeciv.org/projects/freeciv</url>
     <url type="faq">https://www.freeciv.org/wiki/FAQ</url>
     <url type="donation">https://www.freeciv.org/donate.html</url>
     <url type="translate">https://www.freeciv.org/wiki/Translations</url>
     <url type="contact">https://www.freeciv.org/maillists.html</url>
-
-    <!-- flatpak does not understand these
     <url type="vcs-browser">https://github.com/freeciv/freeciv/</url>
     <url type="contribute">https://www.freeciv.org/wiki/How_to_Contribute</url>
-    -->
 
     <releases>
       [release]
@@ -36,9 +36,18 @@
       <content_attribute id="social-chat">intense</content_attribute>
     </content_rating>
 
+    <recommends>
+      <display_length compare="ge">1024</display_length>
+    </recommends>
+
     <screenshots>
       <screenshot type="default">
+        <image>https://files.freeciv.org/screenshots/3.1/client.gtk322-3.1.0.png</image>
+        <caption>Freeciv-3.1.0 gtk3.22-client, hex map, cimpletoon tileset</caption>
+      </screenshot>
+      <screenshot>
         <image>https://files.freeciv.org/screenshots/3.0/client.gtk322-3.0.4.png</image>
+        <caption>Freeciv-3.0.4 gtk3.22-client, hex map, cimpletoon tileset</caption>
       </screenshot>
     </screenshots>
     <update_contact>freeciv-dev@freelists.org</update_contact>

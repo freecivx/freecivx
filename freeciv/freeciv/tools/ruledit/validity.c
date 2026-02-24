@@ -106,7 +106,7 @@ static bool is_universal_needed(struct universal *uni, requirers_cb cb,
     } else {
       struct road_type *proad = extra_road_get(pextra);
 
-      if (proad != NULL
+      if (proad != nullptr
           && universal_is_mentioned_by_requirements(&proad->first_reqs, uni)) {
         cb(extra_rule_name(pextra), data);
         needed = TRUE;
@@ -160,7 +160,8 @@ static bool is_universal_needed(struct universal *uni, requirers_cb cb,
 
     if (info->enabled) {
       if (universal_is_mentioned_by_requirements(&info->giver_reqs, uni)
-          || universal_is_mentioned_by_requirements(&info->receiver_reqs, uni)) {
+          || universal_is_mentioned_by_requirements(&info->receiver_reqs, uni)
+          || universal_is_mentioned_by_requirements(&info->either_reqs, uni)) {
         char buf[1024];
 
         /* TRANS: e.g. "Advance clause" */
@@ -258,11 +259,27 @@ bool is_utype_needed(struct unit_type *ptype, requirers_cb cb,
   needed |= is_universal_needed(&uni, cb, data);
 
   terrain_re_active_iterate(pterr) {
-    if (pterr->animal == ptype) {
-      cb(terrain_rule_name(pterr), data);
-      needed = TRUE;
-    }
+    terrain_animals_iterate(pterr, panimal) {
+      if (panimal == ptype) {
+        cb(terrain_rule_name(pterr), data);
+        needed = TRUE;
+      }
+    } terrain_animals_iterate_end
   } terrain_re_active_iterate_end;
+
+  return needed;
+}
+
+/**********************************************************************//**
+  Check if anything in ruleset needs achievement type
+**************************************************************************/
+bool is_achievement_needed(struct achievement *pach, requirers_cb cb,
+                           void *data)
+{
+  struct universal uni = { .value.achievement = pach, .kind = VUT_ACHIEVEMENT };
+  bool needed = FALSE;
+
+  needed |= is_universal_needed(&uni, cb, data);
 
   return needed;
 }

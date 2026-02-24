@@ -24,10 +24,10 @@
 /* server/advisors */
 #include "advtools.h"
 
-/* 
+/*
  * This file and advdata.c contains global data structures for the AI
- * and some of the functions that fill them with useful values at the 
- * start of every turn. 
+ * and some of the functions that fill them with useful values at the
+ * start of every turn.
  */
 
 enum adv_improvement_status {
@@ -86,7 +86,7 @@ struct adv_data {
       int coast_strict;
 
       /* Unit can do action counts. */
-      int suicide_attackers, paratroopers, airliftable;
+      int suicide_attackers, teleporters, airliftable;
 
       int byclass[UCL_LAST];
 
@@ -134,7 +134,7 @@ struct adv_data {
     } govt;
     struct government *revolution;   /* The best gov of the now available */
   } goal;
-  
+
   /* Whether science would benefit player at all */
   bool wants_science;
 

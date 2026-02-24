@@ -90,7 +90,7 @@ tab_misc::tab_misc(ruledit_gui *ui_in) : QWidget()
   PWSTR folder_path;
 
   if (SHGetKnownFolderPath(FOLDERID_Documents, KF_FLAG_DEFAULT,
-                           NULL, &folder_path) == S_OK) {
+                           nullptr, &folder_path) == S_OK) {
     savedir->setText(QString::fromWCharArray(folder_path) + "\\ruledit-tmp");
   } else {
     savedir->setText("ruledit-tmp");
@@ -228,6 +228,10 @@ tab_misc::tab_misc(ruledit_gui *ui_in) : QWidget()
   stats->setItem(5, 6, item);
   item = new QTableWidgetItem("-");
   stats->setItem(5, 7, item);
+  item = new QTableWidgetItem(QString::fromUtf8(RQ_("?stat:Effects")));
+  stats->setItem(6, 6, item);
+  item = new QTableWidgetItem("-");
+  stats->setItem(6, 7, item);
   stats->verticalHeader()->setVisible(false);
   stats->horizontalHeader()->setVisible(false);
   stats->setEditTriggers(QAbstractItemView::NoEditTriggers);
@@ -235,10 +239,6 @@ tab_misc::tab_misc(ruledit_gui *ui_in) : QWidget()
   button = new QPushButton(QString::fromUtf8(R__("Refresh Stats")), this);
   connect(button, SIGNAL(pressed()), this, SLOT(refresh_stats()));
   main_layout->addWidget(button, row++, 0, 1, 2);
-
-  // Stats never change except with experimental features. Hide useless
-  // button.
-  show_experimental(button);
 
   refresh();
 
@@ -250,7 +250,7 @@ tab_misc::tab_misc(ruledit_gui *ui_in) : QWidget()
 **************************************************************************/
 void tab_misc::ruleset_loaded()
 {
-  if (game.server.ruledit.description_file != NULL) {
+  if (game.server.ruledit.description_file != nullptr) {
     desc_via_file->setChecked(true);
     desc_file->setText(game.server.ruledit.description_file);
   } else {
@@ -292,7 +292,7 @@ void tab_misc::save_now()
   strncpy(game.control.version, ba_bytes.data(),
           sizeof(game.control.version) - 1);
 
-  if (!autoadjust_ruleset_data() || !sanity_check_ruleset_data(NULL)) {
+  if (!autoadjust_ruleset_data() || !sanity_check_ruleset_data(nullptr)) {
     QMessageBox *box = new QMessageBox();
 
     box->setText("Current data fails sanity checks. Save anyway?");
@@ -315,6 +315,20 @@ void tab_misc::save_now()
                &(ui->data));
 
   ui->display_msg(R__("Ruleset saved"));
+}
+
+/**********************************************************************//**
+  Callback to count number of effects
+
+  @param peff   effect to look at - ignored by this callback
+  @param data   pointer to counter integer
+  @return that iteration should continue until all effects calculated
+**************************************************************************/
+static bool effect_counter(struct effect *peff, void *data)
+{
+  (*(int *)data)++;
+
+  return TRUE;
 }
 
 /**********************************************************************//**
@@ -439,6 +453,10 @@ void tab_misc::refresh_stats()
   } multipliers_re_active_iterate_end;
   stats->item(row++, 7)->setText(QString::number(count));
 
+  count = 0;
+  iterate_effect_cache(effect_counter, &count);
+  stats->item(row++, 7)->setText(QString::number(count));
+
   stats->resizeColumnsToContents();
 }
 
@@ -501,10 +519,10 @@ void tab_misc::flush_widgets()
     df_bytes = desc_file->text().toUtf8();
     game.server.ruledit.description_file = fc_strdup(df_bytes.data());
   } else {
-    if (game.server.ruledit.description_file != NULL) {
+    if (game.server.ruledit.description_file != nullptr) {
       free(game.server.ruledit.description_file);
     }
-    game.server.ruledit.description_file = NULL;
+    game.server.ruledit.description_file = nullptr;
   }
 }
 

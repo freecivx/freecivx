@@ -5,5 +5,6 @@ SUBDIRS = src
 EXTRA_DIST = Version.txt \
 	freeciv_lua.patch \
 	doc/readme.html \
+	doc/lua.css \
 	doc/logo.gif \
-	doc/osi-certified-72x60.png
+	doc/OSIApproved_100X125.png

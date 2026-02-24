@@ -56,7 +56,7 @@ static int likely_native(struct tile *ptile,
 {
   int native = 0;
   int foreign = 0;
-  
+
   /* We do not check H_MAP here, it should be done by map_is_known() */
   if (map_is_known(ptile, pplayer)) {
     /* we've seen the tile already. */
@@ -75,7 +75,7 @@ static int likely_native(struct tile *ptile,
     }
   } adjc_dir_iterate_end;
 
-  return 50 + (50 / wld.map.num_valid_dirs * (native - foreign));
+  return 50 + (50 / MAP_NUM_VALID_DIRS * (native - foreign));
 }
 
 /**********************************************************************//**
@@ -87,6 +87,8 @@ static bool player_may_explore(const struct tile *ptile,
                                const struct player *pplayer,
                                const struct unit_type *punittype)
 {
+  struct city *pcity;
+
   /* Don't allow military units to cross borders. */
   if (!utype_has_flag(punittype, UTYF_CIVILIAN)
       && !player_can_invade_tile(pplayer, ptile)) {
@@ -94,13 +96,15 @@ static bool player_may_explore(const struct tile *ptile,
   }
 
   /* Can't visit tiles with non-allied units. */
-  if (is_non_allied_unit_tile(ptile, pplayer)) {
+  if (is_non_allied_unit_tile(ptile, pplayer,
+                              utype_has_flag(punittype, UTYF_FLAGLESS))) {
     return FALSE;
   }
 
   /* Non-allied cities are taboo even if no units are inside. */
-  if (tile_city(ptile)
-      && !pplayers_allied(city_owner(tile_city(ptile)), pplayer)) {
+  pcity = tile_city(ptile);
+  if (pcity != NULL
+      && !pplayers_allied(city_owner(pcity), pplayer)) {
     return FALSE;
   }
 
@@ -131,8 +135,9 @@ static bool explorer_goto(struct unit *punit, struct tile *ptile)
   struct pf_map *pfm;
   struct pf_path *path;
   struct player *pplayer = unit_owner(punit);
+  const struct civ_map *nmap = &(wld.map);
 
-  pft_fill_unit_parameter(&parameter, punit);
+  pft_fill_unit_parameter(&parameter, nmap, punit);
   parameter.omniscience = !has_handicap(pplayer, H_MAP);
   parameter.get_TB = explorer_tb;
   adv_avoid_risks(&parameter, &risk_cost, punit, NORMAL_STACKING_FEARFULNESS);
@@ -158,7 +163,7 @@ static bool explorer_goto(struct unit *punit, struct tile *ptile)
 /**********************************************************************//**
   Return a value indicating how desirable it is to explore the given tile.
   In general, we want to discover unknown terrain of the opposite kind to
-  our natural terrain, i.e. pedestrians like ocean and boats like land.
+  our natural terrain, i.e., pedestrians like ocean and boats like land.
   Even if terrain is known, but of opposite kind, we still want it
   -- so that we follow the shoreline.
   We also would like discovering tiles which can be harvested by our cities --
@@ -170,7 +175,7 @@ static bool explorer_goto(struct unit *punit, struct tile *ptile)
 #define KNOWN_SAME_TER_SCORE   0
 #define KNOWN_DIFF_TER_SCORE   51
 
-/* The maximum number of tiles that the unit might uncover in a move. 
+/* The maximum number of tiles that the unit might uncover in a move.
  * #define MAX_NEW_TILES          (1 + 4 * (unit_type_get(punit)->vision_range))
  * The previous line would be ideal, but we'd like these to be constants
  * for efficiency, so pretend vision_range == 1 */
@@ -182,9 +187,9 @@ static bool explorer_goto(struct unit *punit, struct tile *ptile)
  * As above, set vision_range == 1 */
 #define VISION_TILES           9
 
-/* The desirability of the best tile possible without cities or huts. 
+/* The desirability of the best tile possible without cities or huts.
  * TER_SCORE is given per 1% of certainty about the terrain, so
- * muliply by 100 to compensate. */
+ * multiply by 100 to compensate. */
 #define BEST_NORMAL_TILE       \
   (100 * MAX_NEW_TILES * DIFF_TER_SCORE +\
    100 * (VISION_TILES - MAX_NEW_TILES) * KNOWN_DIFF_TER_SCORE)
@@ -196,11 +201,11 @@ static bool explorer_goto(struct unit *punit, struct tile *ptile)
 /* And we value exploring huts even more than our own cities.
  * FIXME: different desirability of entering different huts
  * in different circumstates must be specifiable by a ruleset. */
-#define HUT_SCORE              (OWN_CITY_SCORE + 1) 
+#define HUT_SCORE              (OWN_CITY_SCORE + 1)
 
 #define BEST_POSSIBLE_SCORE    (HUT_SCORE + BEST_NORMAL_TILE)
 
-static int explorer_desirable(struct tile *ptile, struct player *pplayer, 
+static int explorer_desirable(struct tile *ptile, struct player *pplayer,
                               struct unit *punit)
 {
   int radius_sq = unit_type_get(punit)->vision_radius_sq;
@@ -225,12 +230,12 @@ static int explorer_desirable(struct tile *ptile, struct player *pplayer,
     if (!map_is_known(ptile1, pplayer)) {
       unknown++;
 
-      /* FIXME: we should add OWN_CITY_SCORE to desirable if the tile 
+      /* FIXME: we should add OWN_CITY_SCORE to desirable if the tile
        * can be harvested by a city of ours. Just calculating this each
        * time becomes rather expensive. Jason Short suggests:
        * It should be easy to generate this information once, for
-       * the entire world.  It can be used by everyone and only 
-       * sometimes needs to be recalculated (actually all changes 
+       * the entire world.  It can be used by everyone and only
+       * sometimes needs to be recalculated (actually all changes
        * only require local recalculation, but that could be unstable). */
 
       desirable += (native * SAME_TER_SCORE + (100 - native) * DIFF_TER_SCORE);
@@ -261,7 +266,7 @@ static int explorer_desirable(struct tile *ptile, struct player *pplayer,
 }
 
 /**********************************************************************//**
-  Handle eXplore mode of a unit (explorers are always in eXplore mode 
+  Handle eXplore mode of a unit (explorers are always in eXplore mode
   for AI) - explores unknown territory, finds huts.
 
   MR_OK: there is more territory to be explored.
@@ -275,7 +280,7 @@ enum unit_move_result manage_auto_explorer(struct unit *punit)
   /* Loop prevention */
   const struct tile *init_tile = unit_tile(punit);
 
-  /* The log of the want of the most desirable tile, 
+  /* The log of the want of the most desirable tile,
    * given nearby water, cities, etc. */
   double log_most_desirable = -FC_INFINITY;
 
@@ -285,7 +290,7 @@ enum unit_move_result manage_auto_explorer(struct unit *punit)
    * order to be better than the current most_desirable tile. */
   int max_dist = FC_INFINITY;
 
-  /* Coordinates of most desirable tile. Initialized to make 
+  /* Coordinates of most desirable tile. Initialized to make
    * compiler happy. Also MC to the best tile. */
   struct tile *best_tile = NULL;
   int best_MC = FC_INFINITY;
@@ -293,6 +298,8 @@ enum unit_move_result manage_auto_explorer(struct unit *punit)
   /* Path-finding stuff */
   struct pf_map *pfm;
   struct pf_parameter parameter;
+
+  const struct civ_map *nmap = &(wld.map);
 
 #define DIST_FACTOR   0.6
 
@@ -303,12 +310,13 @@ enum unit_move_result manage_auto_explorer(struct unit *punit)
 
   if (!is_human(pplayer) && unit_has_type_flag(punit, UTYF_GAMELOSS)) {
     UNIT_LOG(LOG_DEBUG, punit, "exploration too dangerous!");
+
     return MR_BAD_ACTIVITY; /* too dangerous */
   }
 
   TIMING_LOG(AIT_EXPLORER, TIMER_START);
 
-  pft_fill_unit_parameter(&parameter, punit);
+  pft_fill_unit_parameter(&parameter, nmap, punit);
   parameter.get_TB = no_fights_or_unknown;
   /* When exploring, even AI should pretend to not cheat. */
   parameter.omniscience = FALSE;
@@ -323,7 +331,7 @@ enum unit_move_result manage_auto_explorer(struct unit *punit)
 
     desirable = explorer_desirable(ptile, pplayer, punit);
 
-    if (desirable <= 0) { 
+    if (desirable <= 0) {
       /* Totally non-desirable tile. No need to continue. */
       continue;
     }
@@ -331,20 +339,20 @@ enum unit_move_result manage_auto_explorer(struct unit *punit)
     /* take the natural log */
     log_desirable = log(desirable);
 
-    /* Ok, the way we calculate goodness is taking the base tile 
+    /* Ok, the way we calculate goodness is taking the base tile
      * desirability amortized by the time it takes to get there:
      *
      *     goodness = desirability * DIST_FACTOR^total_MC
      *
      * TODO: JDS notes that we should really make our exponential
      *       term dimensionless by dividing by move_rate.
-     * 
+     *
      * We want to truncate our search, so we calculate a maximum distance
      * that we would move to find the tile with the most possible desirability
      * (BEST_POSSIBLE_SCORE) that gives us the same goodness as the current
      * tile position we're looking at. Therefore we have:
      *
-     *   desirability * DIST_FACTOR^total_MC = 
+     *   desirability * DIST_FACTOR^total_MC =
      *               BEST_POSSIBLE_SCORE * DIST_FACTOR^(max distance)      (1)
      *
      * and then solve for max_dist. We only want to change max_dist when
@@ -352,7 +360,7 @@ enum unit_move_result manage_auto_explorer(struct unit *punit)
      * the conditional below. It looks cryptic, but all it is is testing which
      * of two goodnesses is bigger after taking the natural log of both sides.
      */
-    if (log_desirable + move_cost * logDF 
+    if (log_desirable + move_cost * logDF
 	> log_most_desirable + best_MC * logDF) {
 
       log_most_desirable = log_desirable;
@@ -375,7 +383,7 @@ enum unit_move_result manage_auto_explorer(struct unit *punit)
 
   /* Go to the best tile found. */
   if (best_tile != NULL) {
-    /* TODO: read the path off the map we made.  Then we can make a path 
+    /* TODO: read the path off the map we made.  Then we can make a path
      * which goes beside the unknown, with a good EC callback... */
     enum override_bool allow = NO_OVERRIDE;
 
@@ -394,12 +402,12 @@ enum unit_move_result manage_auto_explorer(struct unit *punit)
     if (punit->moves_left > 0) {
       /* We can still move on... */
       if (!same_pos(init_tile, unit_tile(punit))) {
-        /* At least we moved (and maybe even got to where we wanted).  
-         * Let's do more exploring. 
+        /* At least we moved (and maybe even got to where we wanted).
+         * Let's do more exploring.
          * (Checking only whether our position changed is unsafe: can allow
          * yoyoing on a RR) */
 	UNIT_LOG(LOG_DEBUG, punit, "recursively exploring...");
-	return manage_auto_explorer(punit);          
+	return manage_auto_explorer(punit);
       } else {
 	UNIT_LOG(LOG_DEBUG, punit, "done exploring (all finished)...");
 	return MR_PAUSE;

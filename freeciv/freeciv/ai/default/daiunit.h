@@ -24,24 +24,24 @@ struct pf_path;
 
 struct section_file;
 
-enum ai_unit_task { AIUNIT_NONE, AIUNIT_AUTO_SETTLER, AIUNIT_BUILD_CITY,
-                    AIUNIT_DEFEND_HOME, AIUNIT_ATTACK, AIUNIT_ESCORT, 
+enum ai_unit_task { AIUNIT_NONE, AIUNIT_AUTO_WORKER, AIUNIT_BUILD_CITY,
+                    AIUNIT_DEFEND_HOME, AIUNIT_ATTACK, AIUNIT_ESCORT,
                     AIUNIT_EXPLORE, AIUNIT_RECOVER, AIUNIT_HUNTER,
                     AIUNIT_TRADE, AIUNIT_WONDER };
 
 struct unit_ai {
   /* The following are unit ids or special indicator values (<=0) */
-  int ferryboat; /* the ferryboat assigned to us */
-  int passenger; /* the unit assigned to this ferryboat */
-  int bodyguard; /* the unit bodyguarding us */
-  int charge; /* the unit this unit is bodyguarding */
+  int ferryboat; /* The ferryboat assigned to us */
+  int passenger; /* The unit assigned to this ferryboat */
+  int bodyguard; /* The unit bodyguarding us */
+  int charge;    /* The unit this unit is bodyguarding */
 
   struct tile *prev_struct, *cur_struct;
   struct tile **prev_pos, **cur_pos;
 
-  int target; /* target we hunt */
-  bv_player hunted; /* if a player is hunting us, set by that player */
-  bool done;  /* we are done controlling this unit this turn */
+  int target; /* Target we hunt */
+  bv_player hunted; /* If a player is hunting us, set by that player */
+  bool done;  /* We are done controlling this unit this turn */
 
   enum ai_unit_task task;
 };
@@ -72,8 +72,8 @@ struct unit_type_ai
 #define POTENTIALLY_HOSTILE_PLAYER(ait, pplayer, aplayer)               \
   (WAR(pplayer, aplayer) || NEVER_MET(pplayer, aplayer)                 \
    || dai_diplomacy_get(ait, pplayer, aplayer)->countdown >= 0)
-#define UNITTYPE_COSTS(ut)						\
-  (ut->pop_cost * 3 + ut->happy_cost					\
+#define UNITTYPE_COSTS(ut)                                              \
+  (ut->pop_cost * 3 + ut->happy_cost                                    \
    + ut->upkeep[O_SHIELD] + ut->upkeep[O_FOOD] + ut->upkeep[O_GOLD])
 
 /* Invasion types */
@@ -86,18 +86,19 @@ extern struct unit_type *simple_ai_types[U_LAST];
 #define RAMPAGE_HUT_OR_BETTER        99998
 #define RAMPAGE_FREE_CITY_OR_BETTER  99999
 #define BODYGUARD_RAMPAGE_THRESHOLD (SHIELD_WEIGHTING * 4)
+
 bool dai_military_rampage(struct unit *punit, int thresh_adj,
                           int thresh_move);
-void dai_manage_units(struct ai_type *ait, struct player *pplayer); 
+void dai_manage_units(struct ai_type *ait, struct player *pplayer);
 void dai_manage_unit(struct ai_type *ait, struct player *pplayer,
                      struct unit *punit);
-void dai_manage_military(struct ai_type *ait, struct player *pplayer,
-                         struct unit *punit);
+void dai_manage_military(struct ai_type *ait, const struct civ_map *nmap,
+                         struct player *pplayer, struct unit *punit);
 struct city *find_nearest_safe_city(struct unit *punit);
 bool uclass_need_trans_between(struct unit_class *pclass,
                                struct tile *ctile, struct tile *ptile);
-adv_want look_for_charge(struct ai_type *ait, struct player *pplayer,
-                         struct unit *punit,
+adv_want look_for_charge(struct ai_type *ait, const struct civ_map *nmap,
+                         struct player *pplayer, struct unit *punit,
                          struct unit **aunit, struct city **acity);
 bool dai_can_unit_type_follow_unit_type(const struct unit_type *follower,
                                         const struct unit_type *followee,
@@ -106,6 +107,7 @@ bool dai_can_unit_type_follow_unit_type(const struct unit_type *follower,
 bool find_beachhead(const struct player *pplayer, struct pf_map *ferry_map,
                     struct tile *dest_tile,
                     const struct unit_type *cargo_type,
+                    const struct unit_type *ferry_type,
                     struct tile **ferry_dest, struct tile **beachhead_tile);
 adv_want find_something_to_kill(struct ai_type *ait, struct player *pplayer,
                                 struct unit *punit,
@@ -129,11 +131,11 @@ const struct impr_type *utype_needs_improvement(const struct unit_type *putype,
                                                 const struct city *pcity);
 
 bool is_on_unit_upgrade_path(const struct unit_type *test,
-			     const struct unit_type *base);
+                             const struct unit_type *base);
 
 void dai_consider_tile_dangerous(struct ai_type *ait, struct tile *ptile,
                                  struct unit *punit,
-				 enum override_bool *result);
+                                 enum override_bool *result);
 
 void dai_units_ruleset_init(struct ai_type *ait);
 void dai_units_ruleset_close(struct ai_type *ait);
@@ -142,14 +144,14 @@ void dai_unit_init(struct ai_type *ait, struct unit *punit);
 void dai_unit_turn_end(struct ai_type *ait, struct unit *punit);
 void dai_unit_close(struct ai_type *ait, struct unit *punit);
 
-#define simple_ai_unit_type_iterate(_ut)				\
-{									\
-  struct unit_type *_ut;						\
-  int _ut##_index = 0;							\
-  while (NULL != (_ut = simple_ai_types[_ut##_index++])) {
+#define simple_ai_unit_type_iterate(_ut)                                \
+{                                                                       \
+  struct unit_type *_ut;                                                \
+  int _ut##_index = 0;                                                  \
+  while ((_ut = simple_ai_types[_ut##_index++]) != nullptr) {
 
-#define simple_ai_unit_type_iterate_end					\
-  }									\
+#define simple_ai_unit_type_iterate_end                                 \
+  }                                                                     \
 }
 
 void dai_unit_save(struct ai_type *ait, const char *aitstr,
@@ -167,5 +169,9 @@ bool dai_unit_can_strike_my_unit(const struct unit *attacker,
 
 void dai_switch_to_explore(struct ai_type *ait, struct unit *punit,
                            struct tile *target, enum override_bool *allow);
+
+enum gen_action dai_select_tile_attack_action(struct civ_map *nmap,
+                                              struct unit *punit,
+                                              struct tile *ptile);
 
 #endif /* FC__DAIUNIT_H */

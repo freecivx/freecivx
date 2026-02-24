@@ -56,7 +56,7 @@ extern "C" {
  *   The intended meaning for EC is "how much we want to avoid this tile",
  *   see DISCUSSION below for more.
  *
- *   tile behaviour (TB): the extra information about a tile which
+ *   tile behavior (TB): the extra information about a tile which
  *   tells us whether we can enter and leave tile as normal (see enum
  *   tile_behavior).
  *
@@ -124,7 +124,7 @@ extern "C" {
  * paths/tiles we want to consider. For example, a trireme might want to
  * never enter deep sea. A chariot, would like to find paths going to
  * enemy cities but not going _through_ them. This can be achieved
- * through an additional tile_behaviour callback, which would return
+ * through an additional tile_behavior callback, which would return
  * TB_IGNORE for tiles we don't want to visit and TB_DONT_LEAVE for tiles
  * we won't be able to leave (at least alive).
  *
@@ -146,7 +146,7 @@ extern "C" {
  *
  *
  * FORMULAE:
- *   For calculating total_MC (given particular tile_behaviour)
+ *   For calculating total_MC (given particular tile_behavior)
  *     total_MC = ((turn + 1) * move_rate - moves_left)
  *
  *   For calculating total_CC:
@@ -255,14 +255,14 @@ extern "C" {
  * not guaranteed to get the one with the least steps in it. If you care,
  * specifying EC to be 1 will do the job.
  * 3. To prevent AI from thinking that it can pass through "chokepoints"
- * controlled by enemy cities, you can specify tile behaviour of each
+ * controlled by enemy cities, you can specify tile behavior of each
  * occupied enemy city to be TB_DONT_LEAVE.
  */
 
 /* MC for an impossible step. If this value is returned by get_MC it
  * is treated like TB_IGNORE for this step. This won't change the TB
  * for any other step to this tile. This is assumed to be negative,
- * i.e., to be catched by "if (cost < 0)" */
+ * i.e., to be caught by "if (cost < 0)" */
 #define PF_IMPOSSIBLE_MC -1
 
 /* The factor which is used to multiple total_EC in the total_CC
@@ -311,7 +311,7 @@ enum tile_behavior {
   TB_DONT_LEAVE         /* Paths can lead _to_ such tile, but are not
                          * allowed to go _through_. This move cost is
                          * always evaluated to a constant single move cost,
-                         * prefering straight paths because we don't need
+                         * preferring straight paths because we don't need
                          * moves left to leave this tile. */
 };
 
@@ -392,7 +392,7 @@ struct pf_parameter {
                                         const struct pf_parameter *param);
   bool ignore_none_scopes;
 
-  /* Callback which determines the behavior of a tile. If NULL
+  /* Callback which determines the behavior of a tile. If nullptr,
    * TB_NORMAL is assumed. It can be assumed that the implementation
    * of "path_finding.h" will cache this value. */
   enum tile_behavior (*get_TB) (const struct tile *ptile,
@@ -400,7 +400,7 @@ struct pf_parameter {
                                 const struct pf_parameter *param);
 
   /* Callback which can be used to provide extra costs depending on the
-   * tile. Can be NULL. It can be assumed that the implementation of
+   * tile. Can be nullptr. It can be assumed that the implementation of
    * "path_finding.h" will cache this value. */
   unsigned (*get_EC) (const struct tile *ptile, enum known_type known,
                       const struct pf_parameter *param);
@@ -426,18 +426,18 @@ struct pf_parameter {
    * of "common" is_my_zoc. Also AI might need to partially ignore
    * ZoC for strategic planning purposes (take into account enemy cities
    * but not units for example).
-   * If this callback is NULL, ZoC are ignored. */
+   * If this callback is nullptr, ZoC are ignored. */
   bool (*get_zoc) (const struct player *pplayer, const struct tile *ptile,
                    const struct civ_map *zmap);
 
-  /* If this callback is non-NULL and returns TRUE this position is
+  /* If this callback is not nullptr and returns TRUE this position is
    * dangerous. The unit will never end a turn at a dangerous
-   * position. Can be NULL. */
+   * position. Can be nullptr. */
   bool (*is_pos_dangerous) (const struct tile *ptile, enum known_type,
                             const struct pf_parameter *param);
 
-  /* If this callback is non-NULL and returns the required moves left to
-   * move to this tile and to leave the position safely. Can be NULL. */
+  /* If this callback is not nullptr and returns the required moves left to
+   * move to this tile and to leave the position safely. Can be nullptr. */
   int (*get_moves_left_req) (const struct tile *ptile, enum known_type,
                              const struct pf_parameter *param);
 
@@ -475,9 +475,8 @@ struct pf_parameter {
 /* The map itself. Opaque type. */
 struct pf_map;
 
-/* The reverse map strucure. Opaque type. */
+/* The reverse map structure. Opaque type. */
 struct pf_reverse_map;
-
 
 
 /* ========================= Public Interface ============================ */
@@ -523,15 +522,15 @@ void pf_path_print_real(const struct pf_path *path, enum log_level level,
 
 
 /* Reverse map functions (Costs to go to start tile). */
-struct pf_reverse_map *pf_reverse_map_new(const struct player *pplayer,
+struct pf_reverse_map *pf_reverse_map_new(const struct civ_map *nmap,
+                                          const struct player *pplayer,
                                           struct tile *start_tile,
-                                          int max_turns, bool omniscient,
-                                          const struct civ_map *map)
+                                          int max_turns, bool omniscient)
                        fc__warn_unused_result;
-struct pf_reverse_map *pf_reverse_map_new_for_city(const struct city *pcity,
+struct pf_reverse_map *pf_reverse_map_new_for_city(const struct civ_map *nmap,
+                                                   const struct city *pcity,
                                                    const struct player *attacker,
-                                                   int max_turns, bool omniscient,
-                                                   const struct civ_map *map)
+                                                   int max_turns, bool omniscient)
                        fc__warn_unused_result;
 void pf_reverse_map_destroy(struct pf_reverse_map *prfm);
 
@@ -613,12 +612,12 @@ if (COND_from_start || pf_map_iterate((ARG_pfm))) {                         \
   } while (pf_map_iterate(_MY_pf_map_));                                    \
 }
 
-/* This macro iterates all possible pathes.
- * NB: you need to free the pathes with pf_path_destroy(path_iter).
+/* This macro iterates all possible paths.
+ * NB: you need to free the paths with pf_path_destroy(path_iter).
  *
  * ARG_pfm - A pf_map structure pointer.
- * NAME_path - The name of the iterator to use (type struct pf_path *). This
- *             is defined inside the macro.
+ * NAME_path - The name of the iterator to use (type struct pf_path *).
+ *             This is defined inside the macro.
  * COND_from_start - A boolean value (or equivalent, it can be a function)
  *                   which indicate if the start tile should be iterated or
  *                   not. */

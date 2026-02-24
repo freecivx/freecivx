@@ -1,4 +1,4 @@
-/********************************************************************** 
+/***********************************************************************
  Freeciv - Copyright (C) 1996 - A Kjeldberg, L Gregersen, P Unold
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -17,6 +17,7 @@
 extern "C" {
 #endif /* __cplusplus */
 
+/* utility */
 #include "shared.h"
 
 struct section;
@@ -30,7 +31,8 @@ struct section_file *secfile_load(const char *filename,
                                   bool allow_duplicates);
 
 void secfile_allow_digital_boolean(struct section_file *secfile,
-                                   bool allow_digital_boolean);
+                                   bool allow_digital_boolean)
+  fc__attribute((nonnull (1)));
 
 const char *secfile_error(void);
 const char *section_name(const struct section *psection);
@@ -41,4 +43,4 @@ const char *section_name(const struct section *psection);
 }
 #endif /* __cplusplus */
 
-#endif  /* FC__REGISTRY_H */
+#endif /* FC__REGISTRY_H */

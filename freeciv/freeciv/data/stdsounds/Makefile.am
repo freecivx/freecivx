@@ -4,6 +4,9 @@
 pkgdatadir = $(datadir)/$(PACKAGE)/stdsounds
 
 pkgdata_DATA =          \
+	complete.ogg	\
+	fanfare.ogg	\
+	fanfarehappy.ogg \
 	foot3.ogg	\
 	illegal.ogg	\
 	inh2o.ogg	\

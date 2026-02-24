@@ -2,9 +2,9 @@
 
 ; Modifying this file:
 ; You should not modify this file except to make bugfixes or
-; for other "maintenance".  If you want to make custom changes,
+; for other "maintenance". If you want to make custom changes,
 ; you should create a new datadir subdirectory and copy this file
-; into that directory, and then modify that copy.  Then use the
+; into that directory, and then modify that copy. Then use the
 ; command "rulesetdir <mysubdir>" in the server to have freeciv
 ; use your new customized file.
 
@@ -13,8 +13,8 @@
 
 [datafile]
 description = "Alien World tile_type data for Freeciv"
-options = "+Freeciv-ruleset-3.3-Devel-2023.Feb.24"
-format_version = 40
+options = "+Freeciv-ruleset-3.4-Devel-2025.Jan.17"
+format_version = 50
 
 [control]
 ; Names for custom terrain flags. There can be up to 10 of these.
@@ -100,6 +100,8 @@ ocean_resources = TRUE
 ; graphic_alt          = alternate graphic. When no tilespec 'tag' matching
 ;                        preferred graphic is not found, this will be used.
 ;                        Otherwise may be "-"
+; graphic_alt2         = second alternate graphic, to be used when neither
+;                        main tag nor first alternate tag is not found.
 ; identifier           = single-character identifier used in savegames. This
 ;                        must be unique for each terrain.
 ; class                = Terrain class terrain belongs to: "Land" or "Oceanic"
@@ -153,7 +155,7 @@ ocean_resources = TRUE
 ;   - "extra"            - Name of the extra
 ;   - "removal_time"     - Time for cleaning activities (0 = impossible)
 ;                          Nonzero values only affect extras with removal_time 0.
-; animal               = unit type that can appear as animal on the terrain
+; animals              = list of unit types that can appear as animal on the terrain
 ; warmer_wetter_result = result of global warming for wet terrains; one of:
 ;                        "no"  -- no change; doesn''t count for warming
 ;                        "yes" -- no change; counts for warming
@@ -209,8 +211,8 @@ ocean_resources = TRUE
 ; color.r              = color of the terrain (red value)
 ; color.g              = color of the terrain (green value)
 ; color.b              = color of the terrain (blue value)
-; helptext	       = optional help text string; should escape all raw
-;		         newlines so that xgettext parsing works
+; helptext             = optional help text string; should escape all raw
+;                        newlines so that xgettext parsing works
 ;
 ; */ <-- avoid gettext warnings
 
@@ -218,6 +220,7 @@ ocean_resources = TRUE
 name                 = _("Inaccessible")
 graphic              = "inaccessible"
 graphic_alt          = "arctic"
+graphic_alt2         = "-"
 identifier           = "i"
 class                = "Land"
 movement_cost        = 0
@@ -242,7 +245,6 @@ transform_result     = "no"
 transform_time       = 0
 placing_time         = 0
 pillage_time         = 0
-animal               = "None"
 warmer_wetter_result = "no"
 warmer_drier_result  = "no"
 cooler_wetter_result = "no"
@@ -255,11 +257,12 @@ helptext             = _("\
 No unit can enter this terrain, nor can city work the tile.\
 ")
 
-[terrain_grassland]
-name                 = _("Grassland")
-graphic              = "grassland"
-graphic_alt	     = "-"
-identifier	     = "g"
+[terrain_savannah]
+name                 = _("Savannah")
+graphic              = "savannah"
+graphic_alt          = "grassland"
+graphic_alt2         = "-"
+identifier           = "g" ; Since this used to be "Grassland"
 class                = "Land"
 movement_cost        = 1
 defense_bonus        = 0
@@ -287,7 +290,6 @@ extra_settings       =
       "Pollution", 3
       "Fallout",   3
     }
-animal               = "None"
 warmer_wetter_result = "no"
 warmer_drier_result  = "no"
 cooler_wetter_result = "no"
@@ -299,15 +301,16 @@ property_green       = 50
 color.r              = 10
 color.g              = 123
 color.b              = 2
-helptext	     = _("\
-For some reason, there is Earth like grass and animals around.\
+helptext             = _("\
+For some reason, there is Earth like plants and animals around.\
 ")
 
 [terrain_alien_forest]
 name                 = _("Alien Forest")
 graphic              = "alien_forest"
-graphic_alt	     = "forest"
-identifier	     = "f"
+graphic_alt          = "forest"
+graphic_alt2         = "-"
+identifier           = "f"
 class                = "Land"
 movement_cost        = 2
 defense_bonus        = 50
@@ -335,7 +338,6 @@ extra_settings       =
       "Pollution", 3
       "Fallout",   3
     }
-animal               = "None"
 warmer_wetter_result = "no"
 warmer_drier_result  = "no"
 cooler_wetter_result = "no"
@@ -347,7 +349,7 @@ property_foliage     = 50
 color.r              = 43
 color.g              = 107
 color.b              = 19
-helptext	     = _("\
+helptext             = _("\
 These forests are filled with strange alien organisms. This planet's \
 radiation makes it impossible for Earthly organisms to survive here.\n\n\
 Cities can work these tiles only when Organic Structures is known. \
@@ -357,8 +359,9 @@ Inventing Alien Rights gives +1 production bonus to Alien Forest tiles.\
 [terrain_radiating_rocks]
 name                 = _("Radiating Rocks")
 graphic              = "radiating_rocks"
-graphic_alt	     = "desert"
-identifier	     = "d"
+graphic_alt          = "desert"
+graphic_alt2         = "-"
+identifier           = "d"
 class                = "Land"
 movement_cost        = 2
 defense_bonus        = 50
@@ -386,7 +389,6 @@ extra_settings       =
       "Pollution", 3
       "Fallout",   3
     }
-animal               = "None"
 warmer_wetter_result = "no"
 warmer_drier_result  = "no"
 cooler_wetter_result = "no"
@@ -398,7 +400,7 @@ property_tropical    = 50
 color.r              = 205
 color.g              = 92
 color.b              = 92
-helptext	     = _("\
+helptext             = _("\
 Planet's radiation makes it impossible for Earth organisms to survive here.\
 \n\n\
 Cities can work these tiles only when Organic Structures is known.\
@@ -408,6 +410,7 @@ Cities can work these tiles only when Organic Structures is known.\
 name                 = _("Hills")
 graphic              = "hills"
 graphic_alt          = "-"
+graphic_alt2         = "-"
 identifier           = "h"
 class                = "Land"
 movement_cost        = 2
@@ -427,7 +430,7 @@ irrigation_food_incr = 1
 irrigation_time      = 10
 mining_shield_incr   = 1
 mining_time          = 10
-transform_result     = "Grassland"
+transform_result     = "Savannah"
 transform_time       = 40
 placing_time         = 6
 pillage_time         = 1
@@ -436,7 +439,6 @@ extra_settings       =
       "Pollution", 3
       "Fallout",   3
     }
-animal               = "None"
 warmer_wetter_result = "no"
 warmer_drier_result  = "no"
 cooler_wetter_result = "no"
@@ -455,6 +457,7 @@ Hills just like on Earth.\
 name                 = _("Thick Mountains")
 graphic              = "mountains"
 graphic_alt          = "-"
+graphic_alt2         = "-"
 identifier           = "m"
 class                = "Land"
 movement_cost        = 3
@@ -483,7 +486,6 @@ extra_settings       =
       "Pollution", 3
       "Fallout",   3
     }
-animal               = "None"
 warmer_wetter_result = "no"
 warmer_drier_result  = "no"
 cooler_wetter_result = "no"
@@ -503,6 +505,7 @@ but at least Burrowing technology makes mining them possible.\
 name                 = _("Ocean")
 graphic              = "ocean"
 graphic_alt          = "coast"
+graphic_alt2         = "-"
 identifier           = " "
 class                = "Oceanic"
 movement_cost        = 1
@@ -531,7 +534,6 @@ extra_settings       =
       "Pollution", 3
       "Fallout",   3
     }
-animal               = "None"
 warmer_wetter_result = "no"
 warmer_drier_result  = "no"
 cooler_wetter_result = "no"
@@ -542,7 +544,7 @@ property_ocean_depth = 35
 color.r              = 0
 color.g              = 0
 color.b              = 200
-helptext	     = _("\
+helptext             = _("\
 This is normal oceanic terrain.\
 ")
 
@@ -550,6 +552,7 @@ This is normal oceanic terrain.\
 name                 = _("Boiling Ocean")
 graphic              = "boiling_ocean"
 graphic_alt          = "floor"
+graphic_alt2         = "-"
 identifier           = "b"
 class                = "Oceanic"
 movement_cost        = 1
@@ -578,7 +581,6 @@ extra_settings       =
       "Pollution", 3
       "Fallout",   3
     }
-animal               = "None"
 warmer_wetter_result = "no"
 warmer_drier_result  = "no"
 cooler_wetter_result = "no"
@@ -674,7 +676,7 @@ ui_name_base_airbase = _("?gui_type:Build Airforce base")
 ; Bases, roads, and resources have additional sections for their specific features.
 ;
 ;
-; Extra types:
+; Extra types, there can be up to 250:
 ;
 ; name                    = translatable name as seen by user
 ; rule_name               = (optional) internal name for savegames, rulesets
@@ -693,7 +695,6 @@ ui_name_base_airbase = _("?gui_type:Build Airforce base")
 ;                           [resource_*] / [base_*] / [road_*] section)
 ; rmcauses                = events that can remove extra type.
 ;                           "Clean", "Pillage", "Disappear", or "Enter"
-;                           For now also "CleanPollution", "CleanFallout"
 ; infracost               = Number of infrapoints it costs to place this
 ;                           extra. 0, the default, means extra cannot be placed.
 ; graphic                 = tag specifying preferred graphic
@@ -709,6 +710,7 @@ ui_name_base_airbase = _("?gui_type:Build Airforce base")
 ;                           This can be "None" to indicate that graphic sprite
 ;                           is not needed.
 ; rmact_gfx_alt           = tag for alternative graphic for unit removing extra
+; rmact_gfx_alt2          = tag for second alternative graphic for unit removing extra
 ; reqs                    = requirements to build the extra (see effects.ruleset
 ;                           and README.effects for help on requirements)
 ; rmreqs                  = requirements to remove the extra
@@ -806,6 +808,7 @@ act_gfx_alt    = "unit.irrigation"
 act_gfx_alt2   = "unit.cultivate"
 rmact_gfx      = "None"
 rmact_gfx_alt  = "-"
+rmact_gfx_alt2 = "-"
 build_time     = 0
 removal_time   = 0
 conflicts      = "Mine"
@@ -835,6 +838,7 @@ act_gfx_alt    = "unit.plant"
 act_gfx_alt2   = "-"
 rmact_gfx      = "None"
 rmact_gfx_alt  = "-"
+rmact_gfx_alt2 = "-"
 build_time     = 0
 removal_time   = 0
 conflicts      = "Irrigation", "Farmland"
@@ -844,10 +848,10 @@ is known, Thick Mountains can also be mined.\
 ")
 
 [extra_pollution]
-name           = _("Pollution")
+name           = _("?extra:Pollution")
 category       = "Nuisance"
 causes         = "Pollution"
-rmcauses       = "Clean", "CleanPollution"
+rmcauses       = "Clean"
 graphic        = "tx.pollution"
 graphic_alt    = "-"
 activity_gfx   = "None"
@@ -855,6 +859,7 @@ act_gfx_alt    = "-"
 act_gfx_alt2   = "-"
 rmact_gfx      = "unit.pollution"
 rmact_gfx_alt  = "-"
+rmact_gfx_alt2 = "-"
 reqs           =
     { "type", "name", "range", "present"
       "TerrainFlag", "NoPollution", "Tile", FALSE
@@ -885,6 +890,7 @@ act_gfx_alt    = "-"
 act_gfx_alt2   = "-"
 rmact_gfx      = "None"
 rmact_gfx_alt  = "-"
+rmact_gfx_alt2 = "-"
 reqs           =
     { "type", "name", "range"
       "TerrainClass", "Land", "Tile"
@@ -914,6 +920,7 @@ act_gfx_alt    = "unit.farmland"
 act_gfx_alt2   = "unit.cultivate"
 rmact_gfx      = "None"
 rmact_gfx_alt  = "-"
+rmact_gfx_alt2 = "-"
 reqs           =
     { "type", "name", "range"
       "Tech", "Protein Modifications", "Player"
@@ -934,7 +941,7 @@ get Protein Houses as soon as they are available.\
 name           = _("Fallout")
 category       = "Nuisance"
 causes         = "Fallout"
-rmcauses       = "Clean", "CleanFallout"
+rmcauses       = "Clean"
 graphic        = "tx.fallout"
 graphic_alt    = "-"
 activity_gfx   = "None"
@@ -942,6 +949,7 @@ act_gfx_alt    = "-"
 act_gfx_alt2   = "-"
 rmact_gfx      = "unit.fallout"
 rmact_gfx_alt  = "-"
+rmact_gfx_alt2 = "-"
 reqs           =
     { "type", "name", "range", "present"
       "TerrainFlag", "NoPollution", "Tile", FALSE
@@ -968,12 +976,13 @@ act_gfx_alt    = "unit.fortress"
 act_gfx_alt2   = "-"
 rmact_gfx      = "None"
 rmact_gfx_alt  = "-"
+rmact_gfx_alt2 = "-"
 reqs           =
-    { "type", "name", "range", "present", "quiet"
-      "Tech", "Strong Force", "Player", TRUE, FALSE
-      "TerrainClass", "Land", "Tile", TRUE, FALSE
-      "UnitFlag", "Settlers", "Local", TRUE, FALSE
-      "CityTile", "Center", "Tile", FALSE, TRUE
+    { "type",         "name",         "range",  "present", "quiet"
+      "Tech",         "Strong Force", "Player", TRUE,      FALSE
+      "TerrainClass", "Land",         "Tile",   TRUE,      FALSE
+      "UnitTypeFlag", "Workers",      "Local",  TRUE,      FALSE
+      "CityTile",     "Center",       "Tile",   FALSE,     TRUE
     }
 build_time     = 3
 removal_time   = 0
@@ -995,12 +1004,13 @@ act_gfx_alt    = "unit.outpost"
 act_gfx_alt2   = "-"
 rmact_gfx      = "None"
 rmact_gfx_alt  = "-"
+rmact_gfx_alt2 = "-"
 reqs           =
-    { "type", "name", "range", "present", "quiet"
-      "Tech", "Force Channeling", "Player", TRUE, FALSE
-      "TerrainClass", "Land", "Tile", TRUE, FALSE
-      "UnitFlag", "Settlers", "Local", TRUE, FALSE
-      "CityTile", "Center", "Tile", FALSE, TRUE
+    { "type",         "name",             "range",  "present", "quiet"
+      "Tech",         "Force Channeling", "Player", TRUE,      FALSE
+      "TerrainClass", "Land",             "Tile",   TRUE,      FALSE
+      "UnitTypeFlag", "Workers",          "Local",  TRUE,      FALSE
+      "CityTile",     "Center",           "Tile",   FALSE,     TRUE
     }
 build_time     = 3
 removal_time   = 0
@@ -1021,12 +1031,13 @@ act_gfx_alt    = "unit.airbase"
 act_gfx_alt2   = "-"
 rmact_gfx      = "None"
 rmact_gfx_alt  = "-"
+rmact_gfx_alt2 = "-"
 reqs           =
-    { "type", "name", "range", "present", "quiet"
-      "Tech", "Commercial Antigravity", "Player", TRUE, FALSE
-      "TerrainClass", "Land", "Tile", TRUE, FALSE
-      "UnitFlag", "Settlers", "Local", TRUE, FALSE
-      "CityTile", "Center", "Tile", FALSE, TRUE
+    { "type",         "name",                   "range",  "present", "quiet"
+      "Tech",         "Commercial Antigravity", "Player", TRUE,      FALSE
+      "TerrainClass", "Land",                   "Tile",   TRUE,      FALSE
+      "UnitTypeFlag", "Workers",                "Local",  TRUE,      FALSE
+      "CityTile",     "Center",                 "Tile",   FALSE,     TRUE
     }
 build_time     = 3
 removal_time   = 0
@@ -1048,10 +1059,11 @@ act_gfx_alt    = "-"
 act_gfx_alt2   = "-"
 rmact_gfx      = "None"
 rmact_gfx_alt  = "-"
+rmact_gfx_alt2 = "-"
 reqs           =
-    { "type", "name", "range"
-      "UnitFlag", "Settlers", "Local"
-      "TerrainClass", "Land", "Tile"
+    { "type",         "name",    "range"
+      "UnitTypeFlag", "Workers", "Local"
+      "TerrainClass", "Land",    "Tile"
     }
 build_time     = 0
 removal_time   = 0
@@ -1061,7 +1073,7 @@ flags          = "AutoOnCityCenter"
 helptext       = _("\
 Basic Road is available for building from the beginning of the game.\
 \n\n\
-Having Road on Grassland tile provides increase of +1 to trade on that tile.\
+Having Road on Savannah tile provides increase of +1 to trade on that tile.\
 ")
 
 [extra_highway]
@@ -1076,12 +1088,13 @@ act_gfx_alt    = "unit.road"
 act_gfx_alt2   = "-"
 rmact_gfx      = "None"
 rmact_gfx_alt  = "-"
+rmact_gfx_alt2 = "-"
 reqs           =
-    { "type", "name", "range"
-      "Tech", "Brute Force", "Player"
-      "Extra", "Road", "Tile"
-      "UnitFlag", "Settlers", "Local"
-      "TerrainClass", "Land", "Tile"
+    { "type",         "name",        "range"
+      "Tech",         "Brute Force", "Player"
+      "Extra",        "Road",        "Tile"
+      "UnitTypeFlag", "Workers",     "Local"
+      "TerrainClass", "Land",        "Tile"
     }
 build_time     = 3
 removal_time   = 0
@@ -1104,12 +1117,13 @@ act_gfx_alt    = "unit.road"
 act_gfx_alt2   = "-"
 rmact_gfx      = "None"
 rmact_gfx_alt  = "-"
+rmact_gfx_alt2 = "-"
 reqs           =
-    { "type", "name", "range"
-      "Tech", "Maglev", "Player"
-      "Extra", "Highway", "Tile"
-      "UnitFlag", "Settlers", "Local"
-      "TerrainClass", "Land", "Tile"
+    { "type",         "name",    "range"
+      "Tech",         "Maglev",  "Player"
+      "Extra",        "Highway", "Tile"
+      "UnitTypeFlag", "Workers", "Local"
+      "TerrainClass", "Land",    "Tile"
     }
 build_time     = 3
 removal_time   = 0
@@ -1135,12 +1149,13 @@ act_gfx_alt    = "unit.road"
 act_gfx_alt2   = "-"
 rmact_gfx      = "None"
 rmact_gfx_alt  = "-"
+rmact_gfx_alt2 = "-"
 reqs           =
-    { "type", "name", "range"
-      "Tech", "Strong Resistance", "Player"
-      "UnitFlag", "Settlers", "Local"
-      "TerrainFlag", "Radiating", "Tile"
-      "TerrainClass", "Land", "Tile" ; Needed explicitly for automatic move type assignment
+    { "type",         "name",              "range"
+      "Tech",         "Strong Resistance", "Player"
+      "UnitTypeFlag", "Workers",           "Local"
+      "TerrainFlag",  "Radiating",         "Tile"
+      "TerrainClass", "Land",              "Tile" ; Needed explicitly for automatic move type assignment
     }
 build_time     = 3
 removal_time   = 0
@@ -1165,11 +1180,12 @@ act_gfx_alt    = "unit.road"
 act_gfx_alt2   = "-"
 rmact_gfx      = "None"
 rmact_gfx_alt  = "-"
+rmact_gfx_alt2 = "-"
 reqs           =
-    { "type", "name", "range"
-      "Tech", "Burrowing", "Player"
-      "UnitFlag", "Settlers", "Local"
-      "TerrainClass", "Oceanic", "Tile"
+    { "type",         "name",      "range"
+      "Tech",         "Burrowing", "Player"
+      "UnitTypeFlag", "Workers",   "Local"
+      "TerrainClass", "Oceanic",   "Tile"
     }
 build_time     = 3
 removal_time   = 0
@@ -1194,6 +1210,7 @@ act_gfx_alt    = "-"
 act_gfx_alt2   = "-"
 rmact_gfx      = "None"
 rmact_gfx_alt  = "-"
+rmact_gfx_alt2 = "-"
 buildable      = FALSE
 defense_bonus  = 50
 native_to      = "Native", "Amphibious"
@@ -1218,6 +1235,7 @@ act_gfx_alt    = "-"
 act_gfx_alt2   = "-"
 rmact_gfx      = "None"
 rmact_gfx_alt  = "-"
+rmact_gfx_alt2 = "-"
 buildable      = FALSE
 defense_bonus  = 50
 native_to      = "Native", "Amphibious"
@@ -1242,6 +1260,7 @@ act_gfx_alt    = "-"
 act_gfx_alt2   = "-"
 rmact_gfx      = "None"
 rmact_gfx_alt  = "-"
+rmact_gfx_alt2 = "-"
 ; /* xgettext:no-c-format */
 helptext       = _("\
 There is more than average amount of various resources,\
@@ -1260,6 +1279,7 @@ act_gfx_alt    = "-"
 act_gfx_alt2   = "-"
 rmact_gfx      = "None"
 rmact_gfx_alt  = "-"
+rmact_gfx_alt2 = "-"
 ; /* xgettext:no-c-format */
 helptext       = _("\
 Mine run by superior alien technology ready to operate.\
@@ -1278,6 +1298,7 @@ act_gfx_alt    = "-"
 act_gfx_alt2   = "-"
 rmact_gfx      = "None"
 rmact_gfx_alt  = "-"
+rmact_gfx_alt2 = "-"
 ; /* xgettext:no-c-format */
 helptext       = _("\
 Entire forest seems to be of the single fast-growing organism with\
@@ -1296,6 +1317,7 @@ act_gfx_alt    = "-"
 act_gfx_alt2   = "-"
 rmact_gfx      = "None"
 rmact_gfx_alt  = "-"
+rmact_gfx_alt2 = "-"
 ; /* xgettext:no-c-format */
 helptext       = _("\
 Where the heat from inside the planet escapes, mineral rich\
@@ -1314,6 +1336,7 @@ act_gfx_alt    = "-"
 act_gfx_alt2   = "-"
 rmact_gfx      = "None"
 rmact_gfx_alt  = "-"
+rmact_gfx_alt2 = "-"
 ; /* xgettext:no-c-format */
 helptext       = _("\
 Weird alien fish might look like something escaped from nightmares, \
@@ -1332,6 +1355,7 @@ act_gfx_alt    = "-"
 act_gfx_alt2   = "-"
 rmact_gfx      = "None"
 rmact_gfx_alt  = "-"
+rmact_gfx_alt2 = "-"
 ; /* xgettext:no-c-format */
 helptext       = _("\
 Rocks in the area have unusually bright glow.\
@@ -1519,3 +1543,24 @@ shield_bonus   = 0
 trade_bonus    = 0
 gui_type       = "Other"
 flags          = "River", "UnrestrictedInfra"
+
+
+; /* <-- avoid gettext warnings
+;
+; Tiledef types, there can be up to 8:
+;
+; The actual tag used (the * in [tiledef_*]) must be unique for each tiledef,
+; and may be used in debug output when reading this file.
+;
+;
+; name                 = translatable name as seen by user
+; rule_name            = (optional) internal name for savegames, rulesets
+;                        etc; if not present, "name" is used for this
+;                        purpose too. Since the name used in savegames must
+;                        not change, if you want to rename an item after a
+;                        ruleset has been released, you should set
+;                        "rule_name" to the original value of "name".
+; extras               = List of extras that the tile must have
+;                        to satisfy tiledef requirements.
+;
+; */ <-- avoid gettext warnings

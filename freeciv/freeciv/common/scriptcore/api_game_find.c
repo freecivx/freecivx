@@ -16,6 +16,7 @@
 #endif
 
 /* common */
+#include "counters.h"
 #include "idex.h"
 #include "map.h"
 #include "movement.h"
@@ -30,7 +31,7 @@
 **************************************************************************/
 Player *api_find_player_by_name(lua_State *L, const char *name)
 {
-  LUASCRIPT_CHECK_STATE(L, NULL);
+  LUASCRIPT_CHECK_STATE(L, nullptr);
 
   return player_by_name(name);
 }
@@ -40,7 +41,7 @@ Player *api_find_player_by_name(lua_State *L, const char *name)
 **************************************************************************/
 Player *api_find_player(lua_State *L, int player_id)
 {
-  LUASCRIPT_CHECK_STATE(L, NULL);
+  LUASCRIPT_CHECK_STATE(L, nullptr);
 
   return player_by_number(player_id);
 }
@@ -50,7 +51,7 @@ Player *api_find_player(lua_State *L, int player_id)
 **************************************************************************/
 City *api_find_city(lua_State *L, Player *pplayer, int city_id)
 {
-  LUASCRIPT_CHECK_STATE(L, NULL);
+  LUASCRIPT_CHECK_STATE(L, nullptr);
 
   if (pplayer) {
     return player_city_by_number(pplayer, city_id);
@@ -64,7 +65,7 @@ City *api_find_city(lua_State *L, Player *pplayer, int city_id)
 **************************************************************************/
 Unit *api_find_unit(lua_State *L, Player *pplayer, int unit_id)
 {
-  LUASCRIPT_CHECK_STATE(L, NULL);
+  LUASCRIPT_CHECK_STATE(L, nullptr);
 
   if (pplayer) {
     return player_unit_by_number(pplayer, unit_id);
@@ -79,14 +80,14 @@ Unit *api_find_unit(lua_State *L, Player *pplayer, int unit_id)
 Unit *api_find_transport_unit(lua_State *L, Player *pplayer,
                               Unit_Type *ptype, Tile *ptile)
 {
-  LUASCRIPT_CHECK_STATE(L, NULL);
-  LUASCRIPT_CHECK_ARG_NIL(L, pplayer, 2, Player, NULL);
-  LUASCRIPT_CHECK_ARG_NIL(L, ptype, 3, Unit_Type, NULL);
-  LUASCRIPT_CHECK_ARG_NIL(L, ptile, 4, Tile, NULL);
+  LUASCRIPT_CHECK_STATE(L, nullptr);
+  LUASCRIPT_CHECK_ARG_NIL(L, pplayer, 2, Player, nullptr);
+  LUASCRIPT_CHECK_ARG_NIL(L, ptype, 3, Unit_Type, nullptr);
+  LUASCRIPT_CHECK_ARG_NIL(L, ptile, 4, Tile, nullptr);
 
   {
     struct unit *ptransport;
-    struct unit *pvirt = unit_virtual_create(pplayer, NULL, ptype, 0);
+    struct unit *pvirt = unit_virtual_create(pplayer, nullptr, ptype, 0);
     unit_tile_set(pvirt, ptile);
     pvirt->homecity = 0;
     ptransport = transporter_for_unit(pvirt);
@@ -104,15 +105,15 @@ Unit_Type *api_find_role_unit_type(lua_State *L, const char *role_name,
 {
   int role_or_flag;
 
-  LUASCRIPT_CHECK_STATE(L, NULL);
-  LUASCRIPT_CHECK_ARG_NIL(L, role_name, 2, string, NULL);
+  LUASCRIPT_CHECK_STATE(L, nullptr);
+  LUASCRIPT_CHECK_ARG_NIL(L, role_name, 2, string, nullptr);
 
   role_or_flag = unit_role_id_by_name(role_name, fc_strcasecmp);
 
   if (!unit_role_id_is_valid(role_or_flag)) {
     role_or_flag = unit_type_flag_id_by_name(role_name, fc_strcasecmp);
     if (!unit_type_flag_id_is_valid(role_or_flag)) {
-      return NULL;
+      return nullptr;
     }
   }
 
@@ -121,7 +122,7 @@ Unit_Type *api_find_role_unit_type(lua_State *L, const char *role_name,
   } else if (num_role_units(role_or_flag) > 0) {
     return get_role_unit(role_or_flag, 0);
   } else {
-    return NULL;
+    return nullptr;
   }
 }
 
@@ -130,7 +131,7 @@ Unit_Type *api_find_role_unit_type(lua_State *L, const char *role_name,
 **************************************************************************/
 Tile *api_find_tile(lua_State *L, int nat_x, int nat_y)
 {
-  LUASCRIPT_CHECK_STATE(L, NULL);
+  LUASCRIPT_CHECK_STATE(L, nullptr);
 
   return native_pos_to_tile(&(wld.map), nat_x, nat_y);
 }
@@ -140,7 +141,7 @@ Tile *api_find_tile(lua_State *L, int nat_x, int nat_y)
 **************************************************************************/
 Tile *api_find_tile_by_index(lua_State *L, int tindex)
 {
-  LUASCRIPT_CHECK_STATE(L, NULL);
+  LUASCRIPT_CHECK_STATE(L, nullptr);
 
   return index_to_tile(&(wld.map), tindex);
 }
@@ -150,7 +151,7 @@ Tile *api_find_tile_by_index(lua_State *L, int tindex)
 **************************************************************************/
 Government *api_find_government(lua_State *L, int government_id)
 {
-  LUASCRIPT_CHECK_STATE(L, NULL);
+  LUASCRIPT_CHECK_STATE(L, nullptr);
 
   return government_by_number(government_id);
 }
@@ -161,8 +162,8 @@ Government *api_find_government(lua_State *L, int government_id)
 Government *api_find_government_by_name(lua_State *L,
                                         const char *name_orig)
 {
-  LUASCRIPT_CHECK_STATE(L, NULL);
-  LUASCRIPT_CHECK_ARG_NIL(L, name_orig, 2, string, NULL);
+  LUASCRIPT_CHECK_STATE(L, nullptr);
+  LUASCRIPT_CHECK_ARG_NIL(L, name_orig, 2, string, nullptr);
 
   return government_by_rule_name(name_orig);
 }
@@ -172,7 +173,7 @@ Government *api_find_government_by_name(lua_State *L,
 **************************************************************************/
 Nation_Type *api_find_nation_type(lua_State *L, int nation_type_id)
 {
-  LUASCRIPT_CHECK_STATE(L, NULL);
+  LUASCRIPT_CHECK_STATE(L, nullptr);
 
   return nation_by_number(nation_type_id);
 }
@@ -183,32 +184,10 @@ Nation_Type *api_find_nation_type(lua_State *L, int nation_type_id)
 Nation_Type *api_find_nation_type_by_name(lua_State *L,
                                           const char *name_orig)
 {
-  LUASCRIPT_CHECK_STATE(L, NULL);
-  LUASCRIPT_CHECK_ARG_NIL(L, name_orig, 2, string, NULL);
+  LUASCRIPT_CHECK_STATE(L, nullptr);
+  LUASCRIPT_CHECK_ARG_NIL(L, name_orig, 2, string, nullptr);
 
   return nation_by_rule_name(name_orig);
-}
-
-/**********************************************************************//**
-  Return the action type with the given action_id number.
-**************************************************************************/
-Action *api_find_action(lua_State *L, action_id act_id)
-{
-  LUASCRIPT_CHECK_STATE(L, NULL);
-
-  return action_by_number(act_id);
-}
-
-/**********************************************************************//**
-  Return the action with the given name_orig.
-**************************************************************************/
-Action *api_find_action_by_name(lua_State *L, const char *name_orig)
-{
-
-  LUASCRIPT_CHECK_STATE(L, NULL);
-  LUASCRIPT_CHECK_ARG_NIL(L, name_orig, 2, string, NULL);
-
-  return action_by_rule_name(name_orig);
 }
 
 /**********************************************************************//**
@@ -216,7 +195,7 @@ Action *api_find_action_by_name(lua_State *L, const char *name_orig)
 **************************************************************************/
 Building_Type *api_find_building_type(lua_State *L, int building_type_id)
 {
-  LUASCRIPT_CHECK_STATE(L, NULL);
+  LUASCRIPT_CHECK_STATE(L, nullptr);
 
   return improvement_by_number(building_type_id);
 }
@@ -227,8 +206,8 @@ Building_Type *api_find_building_type(lua_State *L, int building_type_id)
 Building_Type *api_find_building_type_by_name(lua_State *L,
                                               const char *name_orig)
 {
-  LUASCRIPT_CHECK_STATE(L, NULL);
-  LUASCRIPT_CHECK_ARG_NIL(L, name_orig, 2, string, NULL);
+  LUASCRIPT_CHECK_STATE(L, nullptr);
+  LUASCRIPT_CHECK_ARG_NIL(L, name_orig, 2, string, nullptr);
 
   return improvement_by_rule_name(name_orig);
 }
@@ -238,7 +217,7 @@ Building_Type *api_find_building_type_by_name(lua_State *L,
 **************************************************************************/
 Unit_Type *api_find_unit_type(lua_State *L, int unit_type_id)
 {
-  LUASCRIPT_CHECK_STATE(L, NULL);
+  LUASCRIPT_CHECK_STATE(L, nullptr);
 
   return utype_by_number(unit_type_id);
 }
@@ -248,8 +227,8 @@ Unit_Type *api_find_unit_type(lua_State *L, int unit_type_id)
 **************************************************************************/
 Unit_Type *api_find_unit_type_by_name(lua_State *L, const char *name_orig)
 {
-  LUASCRIPT_CHECK_STATE(L, NULL);
-  LUASCRIPT_CHECK_ARG_NIL(L, name_orig, 2, string, NULL);
+  LUASCRIPT_CHECK_STATE(L, nullptr);
+  LUASCRIPT_CHECK_ARG_NIL(L, name_orig, 2, string, nullptr);
 
   return unit_type_by_rule_name(name_orig);
 }
@@ -259,7 +238,7 @@ Unit_Type *api_find_unit_type_by_name(lua_State *L, const char *name_orig)
 **************************************************************************/
 Tech_Type *api_find_tech_type(lua_State *L, int tech_type_id)
 {
-  LUASCRIPT_CHECK_STATE(L, NULL);
+  LUASCRIPT_CHECK_STATE(L, nullptr);
 
   return advance_by_number(tech_type_id);
 }
@@ -269,8 +248,8 @@ Tech_Type *api_find_tech_type(lua_State *L, int tech_type_id)
 **************************************************************************/
 Tech_Type *api_find_tech_type_by_name(lua_State *L, const char *name_orig)
 {
-  LUASCRIPT_CHECK_STATE(L, NULL);
-  LUASCRIPT_CHECK_ARG_NIL(L, name_orig, 2, string, NULL);
+  LUASCRIPT_CHECK_STATE(L, nullptr);
+  LUASCRIPT_CHECK_ARG_NIL(L, name_orig, 2, string, nullptr);
 
   return advance_by_rule_name(name_orig);
 }
@@ -280,7 +259,7 @@ Tech_Type *api_find_tech_type_by_name(lua_State *L, const char *name_orig)
 **************************************************************************/
 Terrain *api_find_terrain(lua_State *L, int terrain_id)
 {
-  LUASCRIPT_CHECK_STATE(L, NULL);
+  LUASCRIPT_CHECK_STATE(L, nullptr);
 
   return terrain_by_number(terrain_id);
 }
@@ -290,8 +269,8 @@ Terrain *api_find_terrain(lua_State *L, int terrain_id)
 **************************************************************************/
 Terrain *api_find_terrain_by_name(lua_State *L, const char *name_orig)
 {
-  LUASCRIPT_CHECK_STATE(L, NULL);
-  LUASCRIPT_CHECK_ARG_NIL(L, name_orig, 2, string, NULL);
+  LUASCRIPT_CHECK_STATE(L, nullptr);
+  LUASCRIPT_CHECK_ARG_NIL(L, name_orig, 2, string, nullptr);
 
   return terrain_by_rule_name(name_orig);
 }
@@ -301,7 +280,7 @@ Terrain *api_find_terrain_by_name(lua_State *L, const char *name_orig)
 **************************************************************************/
 Achievement *api_find_achievement(lua_State *L, int achievement_id)
 {
-  LUASCRIPT_CHECK_STATE(L, NULL);
+  LUASCRIPT_CHECK_STATE(L, nullptr);
 
   return achievement_by_number(achievement_id);
 }
@@ -311,10 +290,31 @@ Achievement *api_find_achievement(lua_State *L, int achievement_id)
 **************************************************************************/
 Achievement *api_find_achievement_by_name(lua_State *L, const char *name_orig)
 {
-  LUASCRIPT_CHECK_STATE(L, NULL);
-  LUASCRIPT_CHECK_ARG_NIL(L, name_orig, 2, string, NULL);
+  LUASCRIPT_CHECK_STATE(L, nullptr);
+  LUASCRIPT_CHECK_ARG_NIL(L, name_orig, 2, string, nullptr);
 
   return achievement_by_rule_name(name_orig);
+}
+
+/**********************************************************************//**
+  Return the specialist with the given name_orig.
+**************************************************************************/
+Specialist *api_find_specialist_by_name(lua_State *L, const char *name_orig)
+{
+  LUASCRIPT_CHECK_STATE(L, nullptr);
+  LUASCRIPT_CHECK_ARG_NIL(L, name_orig, 2, string, nullptr);
+
+  return specialist_by_rule_name(name_orig);
+}
+
+/**********************************************************************//**
+  Return the specialist with the given spec_id index.
+**************************************************************************/
+Specialist *api_find_specialist(lua_State *L, int spec_id)
+{
+  LUASCRIPT_CHECK_STATE(L, nullptr);
+
+  return specialist_by_number((Specialist_type_id) spec_id);
 }
 
 /**********************************************************************//**
@@ -322,7 +322,7 @@ Achievement *api_find_achievement_by_name(lua_State *L, const char *name_orig)
 **************************************************************************/
 Disaster *api_find_disaster(lua_State *L, int disaster_id)
 {
-  LUASCRIPT_CHECK_STATE(L, NULL);
+  LUASCRIPT_CHECK_STATE(L, nullptr);
 
   return disaster_by_number(disaster_id);
 }
@@ -332,8 +332,8 @@ Disaster *api_find_disaster(lua_State *L, int disaster_id)
 **************************************************************************/
 Disaster *api_find_disaster_by_name(lua_State *L, const char *name_orig)
 {
-  LUASCRIPT_CHECK_STATE(L, NULL);
-  LUASCRIPT_CHECK_ARG_NIL(L, name_orig, 2, string, NULL);
+  LUASCRIPT_CHECK_STATE(L, nullptr);
+  LUASCRIPT_CHECK_ARG_NIL(L, name_orig, 2, string, nullptr);
 
   return disaster_by_rule_name(name_orig);
 }
@@ -343,7 +343,7 @@ Disaster *api_find_disaster_by_name(lua_State *L, const char *name_orig)
 **************************************************************************/
 const Direction *api_find_direction(lua_State *L, int id)
 {
-  LUASCRIPT_CHECK_STATE(L, NULL);
+  LUASCRIPT_CHECK_STATE(L, nullptr);
 
   return luascript_dir((enum direction8) id);
 }
@@ -353,7 +353,7 @@ const Direction *api_find_direction(lua_State *L, int id)
 **************************************************************************/
 Action *api_find_action_type_by_id(lua_State *L, int id)
 {
-  LUASCRIPT_CHECK_STATE(L, NULL);
+  LUASCRIPT_CHECK_STATE(L, nullptr);
 
   return action_by_number(id);
 }
@@ -363,10 +363,31 @@ Action *api_find_action_type_by_id(lua_State *L, int id)
 **************************************************************************/
 Action *api_find_action_type_by_name(lua_State *L, const char *name)
 {
-  LUASCRIPT_CHECK_STATE(L, NULL);
-  LUASCRIPT_CHECK_ARG_NIL(L, name, 2, string, NULL);
+  LUASCRIPT_CHECK_STATE(L, nullptr);
+  LUASCRIPT_CHECK_ARG_NIL(L, name, 2, string, nullptr);
 
   return action_by_rule_name(name);
+}
+
+/**********************************************************************//**
+  Returns the counter specified by id.
+**************************************************************************/
+Counter *api_find_counter(lua_State *L, int counter_id)
+{
+  LUASCRIPT_CHECK_STATE(L, nullptr);
+
+  return counter_by_id(counter_id);
+}
+
+/**********************************************************************//**
+  Returns the counter specified by name.
+**************************************************************************/
+Counter *api_find_counter_by_name(lua_State *L, const char *name)
+{
+  LUASCRIPT_CHECK_STATE(L, nullptr);
+  LUASCRIPT_CHECK_ARG_NIL(L, name, 2, string, nullptr);
+
+  return counter_by_rule_name(name);
 }
 
 /**********************************************************************//**
@@ -376,7 +397,7 @@ Nonexistent *api_find_nonexistent(lua_State *L)
 {
   static char *p = "";
 
-  LUASCRIPT_CHECK_STATE(L, NULL);
+  LUASCRIPT_CHECK_STATE(L, nullptr);
 
   return p;
 }

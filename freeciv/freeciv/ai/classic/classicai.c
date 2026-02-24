@@ -24,17 +24,18 @@
 #include "advdata.h"
 
 /* ai/default */
-#include "aiferry.h"
-#include "aihand.h"
-#include "aitools.h"
 #include "daicity.h"
 #include "daidata.h"
 #include "daidiplomacy.h"
 #include "daidomestic.h"
+#include "daiferry.h"
+#include "daihand.h"
 #include "dailog.h"
 #include "daimilitary.h"
 #include "daiplayer.h"
 #include "daisettler.h"
+#include "daitools.h"
+#include "daiunit.h"
 
 #include "classicai.h"
 
@@ -143,7 +144,7 @@ static void cai_split_by_civil_war(struct player *original,
 {
   struct ai_type *deftype = classic_ai_get_self();
 
-  dai_assess_danger_player(deftype, original, &(wld.map));
+  dai_assess_danger_player(deftype, &(wld.map), original);
 }
 
 /**********************************************************************//**
@@ -407,23 +408,25 @@ static void cai_auto_settler_reset(struct player *pplayer)
 /**********************************************************************//**
   Call default ai with classic ai type as parameter.
 **************************************************************************/
-static void cai_auto_settler_run(struct player *pplayer, struct unit *punit,
-                                 struct settlermap *state)
+static void cai_auto_settler_run(struct player *pplayer,
+                                 struct unit *punit,
+                                 struct workermap *state)
 {
   struct ai_type *deftype = classic_ai_get_self();
 
-  dai_auto_settler_run(deftype, pplayer, punit, state);
+  dai_auto_settler_run(deftype, &(wld.map), pplayer, punit, state);
 }
 
 /**********************************************************************//**
   Call default ai with classic ai type as parameter.
 **************************************************************************/
-static void cai_auto_settler_cont(struct player *pplayer, struct unit *punit,
-                                  struct settlermap *state)
+static void cai_auto_settler_cont(struct player *pplayer,
+                                  struct unit *punit,
+                                  struct workermap *state)
 {
   struct ai_type *deftype = classic_ai_get_self();
 
-  dai_auto_settler_cont(deftype, pplayer, punit, state);
+  dai_auto_settler_cont(deftype, &(wld.map), pplayer, punit, state);
 }
 
 /**********************************************************************//**
@@ -481,7 +484,7 @@ static void cai_do_last_activities(struct player *pplayer)
   Call default ai with classic ai type as parameter.
 **************************************************************************/
 static void cai_treaty_evaluate(struct player *pplayer, struct player *aplayer,
-                                struct Treaty *ptreaty)
+                                struct treaty *ptreaty)
 {
   struct ai_type *deftype = classic_ai_get_self();
 
@@ -491,8 +494,8 @@ static void cai_treaty_evaluate(struct player *pplayer, struct player *aplayer,
 /**********************************************************************//**
   Call default ai with classic ai type as parameter.
 **************************************************************************/
-static void cai_treaty_accepted(struct player *pplayer, struct player *aplayer, 
-                                struct Treaty *ptreaty)
+static void cai_treaty_accepted(struct player *pplayer, struct player *aplayer,
+                                struct treaty *ptreaty)
 {
   struct ai_type *deftype = classic_ai_get_self();
 
@@ -574,6 +577,26 @@ static void cai_consider_wonder_city(struct city *pcity, bool *result)
   struct ai_type *deftype = classic_ai_get_self();
 
   dai_consider_wonder_city(deftype, pcity, result);
+}
+
+/**********************************************************************//**
+  Call default ai with classic ai type as parameter.
+**************************************************************************/
+static void cai_revolution_start(struct player *pplayer)
+{
+  struct ai_type *deftype = classic_ai_get_self();
+
+  dai_revolution_start(deftype, pplayer);
+}
+
+/**********************************************************************//**
+  Call default ai with classic ai type as parameter.
+**************************************************************************/
+static void cai_sanity_check(struct player *pplayer)
+{
+  struct ai_type *deftype = classic_ai_get_self();
+
+  dai_sanity_check(deftype, pplayer);
 }
 
 /**********************************************************************//**
@@ -687,6 +710,9 @@ bool fc_ai_classic_setup(struct ai_type *ai)
   /* ai->funcs.tile_info = NULL; */
   /* ai->funcs.city_info = NULL; */
   /* ai->funcs.unit_info = NULL; */
+
+  ai->funcs.revolution_start = cai_revolution_start;
+  ai->funcs.check_sanity = cai_sanity_check;
 
   return TRUE;
 }
