@@ -197,10 +197,6 @@ function get_tileset_file_extention()
 **************************************************************************/
 function html_safe(text)
 {
-  // Handle STRVEC (array of strings) from packet data
-  if (Array.isArray(text)) {
-    text = text.join("\n");
-  }
   if (typeof text !== 'string') return "";
   text = text.replace(/'/g, "&#39;");
   text = text.replace(/"/g, "&#34;");
@@ -222,16 +218,27 @@ function uncapitalize(s) {
 **************************************************************************/
 function cleaned_text(str)
 {
-  // Handle STRVEC (array of strings) from packet data
-  if (Array.isArray(str)) {
-    str = str.join("\n");
-  }
   if (typeof str !== 'string') return "";
   // Remove each type of ugly spurious character or escape code.
   for (var i = 0; i < STRIPCHAR_LAST; i++) {
     str = str.replace(stripChar[i],"");
   }
   return str;
+}
+
+/**************************************************************************
+  Convert STRVEC (array of strings from packet data) to a single string.
+  Handles both arrays and strings for backward compatibility.
+**************************************************************************/
+function strvec_to_str(strvec)
+{
+  if (Array.isArray(strvec)) {
+    return strvec.join("\n");
+  }
+  if (typeof strvec === 'string') {
+    return strvec;
+  }
+  return "";
 }
 
 /**************************************************************************
