@@ -1193,7 +1193,7 @@ static void send_player_info_c_real(struct player *src,
     } else if (nullptr != pconn->playing) {
       /* Players (including regular observers) */
       package_player_info(src, &info, webp_ptr,
-                          pconn->playing, INFO_MINIMUM);
+                          pconn->playing, player_info_level(src, pconn->playing));
     } else {
       package_player_info(src, &info, webp_ptr, nullptr, INFO_MINIMUM);
     }

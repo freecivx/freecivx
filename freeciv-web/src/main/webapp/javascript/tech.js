@@ -540,16 +540,16 @@ function get_advances_text(tech_id)
             "A:"+fractionalize(utype_real_base_attack_strength(unit)) +" D:"+fractionalize(utype_real_base_defense_strength(unit)) +(unit.firepower>1?" F:"+unit.firepower:"") +" H:"+unit.hp
             +" M:"+move_points_text(unit.move_rate+(unit.move_bonus[0]?unit.move_bonus[0]:0),true)+(unit.fuel?"("+unit.fuel+")":"")
             +(unit.transport_capacity?" C:"+unit.transport_capacity:"") +" Cost:"+unit.build_cost +"\n\n"
-            + html_safe(cleaned_text(unit.helptext))))),
+            + html_safe(cleaned_text(strvec_to_str(unit.helptext))))))),
         format_list_with_intro('', get_improvements_from_tech(tech_id)
           .map(impr => tech_span(impr.name, null, impr.id,
             "Cost:"+impr.build_cost+" Upkeep:"+impr.upkeep + "\n\n"
-            + html_safe(cleaned_text(impr.helptext))))),
+            + html_safe(cleaned_text(strvec_to_str(impr.helptext)))))),
         format_list_with_intro('', Object.keys(techs)
           .filter(is_valid_and_required)
           .map(tid => techs[tid])
           .map(tech => tech_span(tech.name, null, null, tech.rule_name+" ("+Math.trunc(tech.cost)+") "
-          + uncapitalize(html_safe(cleaned_text(tech.helptext))))))
+          + uncapitalize(html_safe(cleaned_text(strvec_to_str(tech.helptext))))))))
       ]) + '.';
 }
 
