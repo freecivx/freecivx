@@ -1,7 +1,7 @@
 /// AI Unit Management - Unit movement, orders, and tactics
 /// Based on freeciv/freeciv/ai/default/daiunit.c
 
-use crate::state::{GameState, Unit};
+use crate::state::{GameState, Unit, City};
 use super::aitasks::{AIData, AIUnitTask};
 
 /// Manage all units for the AI player
@@ -171,10 +171,72 @@ fn manage_settler(state: &GameState, ai_data: &mut AIData, unit: &Unit) {
     }
 }
 
-/// Manage worker unit  
-fn manage_worker(_state: &GameState, ai_data: &mut AIData, unit: &Unit) {
-    println!("[AI Worker] Unit #{} - worker management not fully implemented", unit.id);
+/// Manage worker unit
+/// Based on C AI's autoworkers.c
+fn manage_worker(state: &GameState, ai_data: &mut AIData, unit: &Unit) {
+    println!("[AI Worker] Unit #{} - managing terrain improvements", unit.id);
+    
     ai_data.set_unit_task(unit.id, AIUnitTask::AutoSettler, None);
+    
+    // C AI worker priorities (from autoworkers.c):
+    // 1. Road to connect cities (commerce and movement)
+    // 2. Irrigate tiles near cities (food for growth)
+    // 3. Mine hills/mountains (production)
+    // 4. Railroad (late game - faster movement)
+    // 5. Pollution cleanup (if present)
+    
+    // Find nearest city to work near
+    if let Some(player_id) = state.our_player_id {
+        let (nearest_dist, nearest_city) = find_nearest_city_and_distance(state, unit.tile, player_id);
+        
+        if let (Some(dist), Some(city)) = (nearest_dist, nearest_city) {
+            if dist < 2.0 {
+                println!("[AI Worker] Unit #{} near city '{}', improving local tiles", 
+                    unit.id, city.name);
+                
+                // Priority 1: Improve tiles within city radius
+                // C AI evaluates each tile's improvement potential
+                // TODO: Evaluate tiles in city radius and improve best one
+                
+            } else if dist < 5.0 {
+                println!("[AI Worker] Unit #{} {:.0} tiles from '{}', building road connection", 
+                    unit.id, dist, city.name);
+                
+                // Priority 2: Build road to connect to city
+                // C AI uses pathfinding to find best road path
+                // TODO: Move toward city building road
+                
+            } else {
+                println!("[AI Worker] Unit #{} far from cities ({:.0} tiles), moving closer", 
+                    unit.id, dist);
+                
+                // Priority 3: Move toward nearest city
+                // TODO: Move toward nearest city
+            }
+        } else {
+            println!("[AI Worker] Unit #{} has no cities to work near", unit.id);
+            // No cities - worker should wait or follow settlers
+        }
+    }
+    
+    // C AI worker evaluation factors:
+    // - Food/shield/trade gain from improvement
+    // - Time to complete improvement
+    // - City need (growing city needs food, production city needs shields)
+    // - Current tile usage (being worked vs idle)
+}
+
+/// Evaluate improvement priority for a tile near a city
+/// Based on C AI's tile improvement evaluation
+fn _evaluate_tile_improvement(_state: &GameState, _tile: i32, _city: &City) -> i32 {
+    // C AI calculates improvement value based on:
+    // 1. Output increase (food/shield/trade)
+    // 2. City needs (food for growth, shields for production)
+    // 3. Tile usage (is it being worked?)
+    // 4. Time to complete
+    
+    // Simplified placeholder
+    50
 }
 
 /// Manage defender unit
@@ -321,33 +383,77 @@ fn find_nearby_enemies(state: &GameState, tile: i32) -> Vec<&Unit> {
 }
 
 /// Manage explorer unit
+/// Based on C AI's autoexplorer.c
 fn manage_explorer(state: &GameState, ai_data: &mut AIData, unit: &Unit) {
     println!("[AI Explorer] Unit #{} - exploring from tile {}", unit.id, unit.tile);
     
     ai_data.set_unit_task(unit.id, AIUnitTask::Explore, None);
     
-    // Check if unit is near our cities
+    // C AI exploration strategy:
+    // 1. Avoid danger areas
+    // 2. Move toward unexplored territory
+    // 3. Spiral outward from cities
+    // 4. Prioritize strategic locations (rivers, coasts)
+    
+    // Check for nearby dangers first (safety priority)
+    let enemies = find_nearby_enemies(state, unit.tile);
+    if !enemies.is_empty() {
+        println!("[AI Explorer] Unit #{} avoiding {} nearby enemies", 
+            unit.id, enemies.len());
+        // TODO: Move away from danger using pathfinding
+        // C AI uses danger maps to avoid threats
+        return;
+    }
+    
+    // Determine exploration direction based on distance from cities
     if let Some(player_id) = state.our_player_id {
-        let near_city = state.cities.values()
-            .filter(|c| c.owner == player_id)
-            .any(|c| state.map.distance(c.tile, unit.tile) < 3);
+        let (nearest_city_dist, _) = find_nearest_city_and_distance(state, unit.tile, player_id);
         
-        if near_city {
-            println!("[AI Explorer] Unit #{} is near a city, should move outward", unit.id);
-            // TODO: Move away from cities to explore
+        if let Some(dist) = nearest_city_dist {
+            if dist < 5.0 {
+                println!("[AI Explorer] Unit #{} is {:.0} tiles from city, moving outward", 
+                    unit.id, dist);
+                // TODO: Move away from cities to explore
+                // C AI uses spiral pattern from cities
+            } else if dist > 15.0 {
+                println!("[AI Explorer] Unit #{} is {:.0} tiles from city, may be too far", 
+                    unit.id, dist);
+                // Don't go too far from civilization
+                // TODO: Consider returning toward friendly territory
+            } else {
+                println!("[AI Explorer] Unit #{} is {:.0} tiles from city, good exploration range", 
+                    unit.id, dist);
+                // TODO: Continue exploring in current direction
+            }
         } else {
-            println!("[AI Explorer] Unit #{} should continue exploring", unit.id);
-            // TODO: Move to unexplored areas
+            println!("[AI Explorer] Unit #{} has no cities nearby, exploring freely", unit.id);
+            // TODO: Explore in any direction
         }
     }
     
-    // Check for nearby dangers
-    let enemies = find_nearby_enemies(state, unit.tile);
-    if !enemies.is_empty() {
-        println!("[AI Explorer] Unit #{} should avoid {} nearby enemies", 
-            unit.id, enemies.len());
-        // TODO: Move away from danger
-    }
+    // C AI priorities for exploration:
+    // - Unknown tiles (highest priority)
+    // - Strategic resources (rivers, bonus resources)
+    // - Potential city sites (good tiles)
+    // - Enemy territory (scouting)
+}
+
+/// Find nearest city and its distance
+/// Returns (distance, city) tuple
+fn find_nearest_city_and_distance(
+    state: &GameState, 
+    tile: i32, 
+    owner: u16
+) -> (Option<f32>, Option<&City>) {
+    state.cities.values()
+        .filter(|c| c.owner == owner)
+        .map(|c| {
+            let dist = state.map.distance(c.tile, tile) as f32;
+            (dist, c)
+        })
+        .min_by(|a, b| a.0.partial_cmp(&b.0).unwrap())
+        .map(|(dist, city)| (Some(dist), Some(city)))
+        .unwrap_or((None, None))
 }
 
 /// Manage diplomat/spy unit

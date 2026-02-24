@@ -71,14 +71,64 @@ fn manage_government(state: &GameState) {
     
     println!("[AI Government] Checking government options");
     
-    // TODO: Implement government analysis
-    // - Check if we have access to better governments
-    // - Calculate value of each government type
-    // - Initiate revolution if beneficial
-    // - Set tech wants for government prerequisites
+    // C AI government evaluation:
+    // - Despotism: Default, poor for large empires
+    // - Monarchy: Better than despotism, good for military
+    // - Republic: Great for science/trade, weak military
+    // - Democracy: Best for peace, very weak military
+    // - Communism: Good for military and production
     
-    // For now, just log that we checked
-    println!("[AI Government] Current government OK (analysis not yet implemented)");
+    // Factors C AI considers:
+    // 1. Number of cities (larger empires benefit from better governments)
+    // 2. Current war status (military governments for war)
+    // 3. Tech research speed (Republic/Democracy for science)
+    // 4. Unhappiness issues (some governments have better happiness)
+    
+    let cities = state.get_our_cities();
+    let total_cities = cities.len();
+    
+    if total_cities < 3 {
+        println!("[AI Government] {} cities - Despotism acceptable for now", total_cities);
+        // Early game: Despotism is fine
+        return;
+    }
+    
+    // Calculate average danger to determine if we're at war
+    let avg_danger = calculate_average_city_danger(state);
+    
+    if avg_danger > 40 {
+        println!("[AI Government] High danger ({}), should consider Monarchy for military", avg_danger);
+        // At war: prefer Monarchy or Communism
+        // TODO: Check if we have Monarchy tech and switch
+    } else if total_cities >= 6 {
+        println!("[AI Government] {} cities with low danger, should consider Republic for science", total_cities);
+        // Peaceful expansion: prefer Republic
+        // TODO: Check if we have Republic tech and switch
+    } else if total_cities >= 4 {
+        println!("[AI Government] {} cities, Monarchy would be beneficial", total_cities);
+        // Growing empire: Monarchy is good stepping stone
+        // TODO: Check if we have Monarchy tech and switch
+    }
+    
+    // C AI also considers:
+    // - Gold per turn (some governments have upkeep costs)
+    // - Science output (Republic/Democracy have bonuses)
+    // - Military support (different governments have different unit support)
+}
+
+/// Calculate average danger across all cities
+/// Used for government and tech decisions
+fn calculate_average_city_danger(state: &GameState) -> i32 {
+    let cities = state.get_our_cities();
+    if cities.is_empty() {
+        return 0;
+    }
+    
+    let total_danger: i32 = cities.iter()
+        .map(|c| crate::ai::aitools::assess_city_danger(state, c))
+        .sum();
+    
+    total_danger / cities.len() as i32
 }
 
 /// Manage tax rates - set science/luxury/tax percentages
@@ -97,25 +147,54 @@ fn manage_taxes(state: &GameState) {
     
     println!("[AI Taxes] Managing tax rates");
     
-    // Get our player's gold (if we had that data)
-    // In C AI, this checks pplayer->economic.gold
+    // C AI tax rate algorithm (from aihand.c):
+    // Default split: 50% science, 0% luxury, 50% tax
+    // Adjustments based on:
+    // 1. Treasury level (increase tax if low gold)
+    // 2. Science research (increase science if researching)
+    // 3. City happiness (increase luxury if cities unhappy)
     
-    // TODO: Implement tax rate calculation
-    // Current C AI algorithm:
-    // 1. If we have lots of gold, maximize science
-    // 2. If treasury is low, increase tax
-    // 3. If cities are unhappy, increase luxury
-    // 4. Balance to maintain positive income
-    
-    // For now, assume we want balanced approach
-    let science_rate = 50;  // 50% to science
-    let luxury_rate = 10;   // 10% to luxury
-    let tax_rate = 40;      // 40% to tax
-    
-    println!("[AI Taxes] Rates: Science={}, Luxury={}, Tax={}", 
-        science_rate, luxury_rate, tax_rate);
-    
-    // TODO: Send packet to set tax rates
+    if let Some(player_id) = state.our_player_id {
+        if let Some(player) = state.players.get(&player_id) {
+            let gold = player.gold;
+            
+            // C AI considers gold reserves
+            // AI_GOLD_RESERVE_MIN_TURNS = 10 (from C AI)
+            // Minimum reserve = income * 10 turns
+            
+            let cities = state.get_our_cities();
+            let total_cities = cities.len();
+            
+            // Estimate income (very rough - C AI has precise calculation)
+            let estimated_income = total_cities as u32 * 5; // ~5 gold per city
+            let min_reserve = estimated_income * 10;
+            
+            if gold < min_reserve {
+                println!("[AI Taxes] Low treasury ({} < {}), need more tax income", 
+                    gold, min_reserve);
+                // Recommended: 30% science, 0% luxury, 70% tax
+                // TODO: Send tax rate change packet
+            } else if gold > min_reserve * 3 {
+                println!("[AI Taxes] High treasury ({} > {}), maximize science", 
+                    gold, min_reserve * 3);
+                // Recommended: 80% science, 0% luxury, 20% tax
+                // TODO: Send tax rate change packet
+            } else {
+                println!("[AI Taxes] Moderate treasury ({}), balanced approach", gold);
+                // Recommended: 60% science, 0% luxury, 40% tax
+                // TODO: Send tax rate change packet
+            }
+            
+            // C AI also checks for unhappiness
+            // If cities have unhappy citizens, increase luxury rate
+            // For now, we don't have happiness data
+            
+            // C AI considerations not yet implemented:
+            // - Building wealth in a city (0% science needed)
+            // - No research available (increase tax)
+            // - Rapture growth possibility (increase luxury)
+        }
+    }
 }
 
 /// Calculate economic data for the player
