@@ -121,16 +121,16 @@ def parse_fields(str, types):
             break
 
     typeinfo={}
-    mo=re.search("^(.*)\((.*)\)$",type)
+    mo=re.search(r"^(.*)\((.*)\)$",type)
     assert mo,repr(type)
     typeinfo["dataio_type"],typeinfo["struct_type"]=mo.groups()
 
     if typeinfo["struct_type"]=="ufloat":
-        mo=re.search("^ufloat(\d+)$",typeinfo["dataio_type"])
+        mo=re.search(r"^ufloat(\d+)$",typeinfo["dataio_type"])
         assert mo
         typeinfo["float_factor"]=int(mo.group(1))
     if typeinfo["struct_type"]=="sfloat":
-        mo=re.search("^sfloat(\d+)$",typeinfo["dataio_type"])
+        mo=re.search(r"^sfloat(\d+)$",typeinfo["dataio_type"])
         assert mo
         typeinfo["float_factor"]=int(mo.group(1))
 
@@ -180,11 +180,11 @@ def parse_fields(str, types):
     removes=[]
     remaining=[]
     for i in arr:
-        mo=re.search("^add-cap\((.*)\)$",i)
+        mo=re.search(r"^add-cap\((.*)\)$",i)
         if mo:
             adds.append(mo.group(1))
             continue
-        mo=re.search("^remove-cap\((.*)\)$",i)
+        mo=re.search(r"^remove-cap\((.*)\)$",i)
         if mo:
             removes.append(mo.group(1))
             continue
@@ -952,7 +952,7 @@ class Packet:
         str=str.strip()
         lines=str.split("\n")
         
-        mo=re.search("^\s*(\S+)\s*=\s*(\d+)\s*;\s*(.*?)\s*$",lines[0])
+        mo=re.search(r"^\s*(\S+)\s*=\s*(\d+)\s*;\s*(.*?)\s*$",lines[0])
         assert mo,repr(lines[0])
 
         self.type=mo.group(1)
@@ -1026,7 +1026,7 @@ class Packet:
         removes=[]
         remaining=[]
         for i in arr:
-            mo=re.search("^cancel\((.*)\)$",i)
+            mo=re.search(r"^cancel\((.*)\)$",i)
             if mo:
                 self.cancel.append(mo.group(1))
                 continue
@@ -1479,11 +1479,11 @@ def gen_main(freeciv_dir):
     lines=content.split("\n")
     lines=[re.sub("#.*$","",x) for x in lines]
     lines=[re.sub("//.*$","",x) for x in lines]
-    lines=[x for x in lines if not re.search("^\s*$",x)]
+    lines=[x for x in lines if not re.search(r"^\s*$",x)]
     lines2=[]
     types=[]
     for i in lines:
-        mo=re.search("^type\s+(\S+)\s*=\s*(.+)\s*$",i)
+        mo=re.search(r"^type\s+(\S+)\s*=\s*(.+)\s*$",i)
         if mo:
             types.append(Type(mo.group(1),mo.group(2)))
         else:
