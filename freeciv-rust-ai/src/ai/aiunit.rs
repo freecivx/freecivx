@@ -178,10 +178,10 @@ fn manage_attacker(state: &GameState, _ai_data: &mut AIData, unit: &Unit) {
     if let Some(player_id) = state.our_player_id {
         for city in state.cities.values() {
             if city.owner == player_id {
-                let city_tile_distance = ((city.tile - unit.tile).abs()) as f32;
-                if city_tile_distance < 3.0 {
-                    println!("[AI Attacker] Unit #{} defending city {} at distance {:.0}", 
-                        unit.id, city.name, city_tile_distance);
+                let dist = state.map.distance(city.tile, unit.tile);
+                if dist < 3 {
+                    println!("[AI Attacker] Unit #{} defending city {} at distance {}", 
+                        unit.id, city.name, dist);
                     // TODO: Stay near city to defend
                     return;
                 }
