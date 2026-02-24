@@ -7047,7 +7047,6 @@ void handle_web_goto_path_req(struct player *pplayer, int unit_id, int goal)
   struct pf_map *pfm;
   struct pf_path *path;
   struct tile *old_tile;
-  int i = 0;
   struct packet_web_goto_path p;
 
   if (NULL == punit) {
@@ -7085,7 +7084,7 @@ void handle_web_goto_path_req(struct player *pplayer, int unit_id, int goal)
   pf_map_destroy(pfm);
 
   if (path) {
-    int total_mc = 0;
+    int i;
 
     p.length = path->length - 1;
 
@@ -7095,7 +7094,6 @@ void handle_web_goto_path_req(struct player *pplayer, int unit_id, int goal)
       struct tile *new_tile = path->positions[i + 1].tile;
       int dir;
 
-      total_mc += path->positions[i + 1].total_MC;
       if (same_pos(new_tile, old_tile)) {
         dir = -1;
       } else {
@@ -7105,8 +7103,16 @@ void handle_web_goto_path_req(struct player *pplayer, int unit_id, int goal)
       p.dir[i] = dir;
 
     }
+    
+    /* Calculate total movement cost from final position */
+    if (path->length > 0) {
+      int total_mc = path->positions[path->length - 1].total_MC;
+      p.turns = total_mc / unit_move_rate(punit);
+    } else {
+      p.turns = 0;
+    }
+    
     pf_path_destroy(path);
-    p.turns = total_mc / unit_move_rate(punit);
     send_packet_web_goto_path(pplayer->current_conn, &p);
 
   } else {
@@ -7130,7 +7136,7 @@ void handle_web_info_text_req(struct player *pplayer, int loc,
 
   /* Send basic tile information.
    * TODO: Implement full popup info text with terrain, city, unit details */
-  fc_snprintf(info_text, sizeof(info_text), 
+  fc_snprintf(info_text, sizeof(info_text),
               "Tile at (%d, %d)", TILE_XY(ptile));
   
   conn_list_iterate(pplayer->connections, pconn) {
