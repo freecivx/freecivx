@@ -30,9 +30,9 @@ webapp_dir = args.outdir
 freeciv_dir = args.freeciv
 
 def removeComments(string):
-    string = re.sub(re.compile("/\*.*?\*/",re.DOTALL ) ,"" ,string);
+    string = re.sub(re.compile(r"/\*.*?\*/",re.DOTALL ) ,"" ,string);
     string = re.sub(re.compile("//.*?\n" ) ,"" ,string); 
-    string = re.sub(re.compile("([a-zA-Z]);" ) ,"\g<1>," ,string); 
+    string = re.sub(re.compile("([a-zA-Z]);" ) ,r"\g<1>," ,string); 
     string = re.sub(re.compile(";.*?\n" ) ,"" ,string); 
     return string
 
