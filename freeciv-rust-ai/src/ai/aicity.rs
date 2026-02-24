@@ -153,10 +153,13 @@ fn should_build_settler(state: &GameState, city: &City, total_cities: usize) -> 
 }
 
 /// Check if unit type is a settler
-fn is_settler_unit(_unit_type: u16) -> bool {
-    // TODO: Check unit flags for settler capability
-    // For now, assume unit_type 1 is settler (common in Freeciv)
-    false // Placeholder
+/// TODO: Implement proper unit type checking when unit type data is available
+fn is_settler_unit(unit_type: u16) -> bool {
+    // Placeholder: Need unit type flags to determine settler capability
+    // Common settler unit types in Freeciv are typically ID 1-2
+    // For now, return false until we have ruleset data
+    let _ = unit_type; // Acknowledge parameter
+    false
 }
 
 /// Determine if city should build infrastructure

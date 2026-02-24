@@ -224,8 +224,8 @@ fn find_nearest_city_distance_to_tile(state: &GameState, tile: i32) -> Option<f3
     if let Some(player_id) = state.our_player_id {
         state.cities.values()
             .filter(|c| c.owner == player_id)
-            .map(|c| ((c.tile - tile).abs()) as f32)
-            .min_by(|a, b| a.partial_cmp(b).unwrap())
+            .map(|c| state.map.distance(c.tile, tile) as f32)
+            .min_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal))
     } else {
         None
     }

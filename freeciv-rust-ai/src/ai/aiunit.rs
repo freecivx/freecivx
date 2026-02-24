@@ -228,14 +228,15 @@ fn manage_worker(state: &GameState, ai_data: &mut AIData, unit: &Unit) {
 
 /// Evaluate improvement priority for a tile near a city
 /// Based on C AI's tile improvement evaluation
-fn _evaluate_tile_improvement(_state: &GameState, _tile: i32, _city: &City) -> i32 {
+/// TODO: Implement full evaluation logic when tile data is available
+fn evaluate_tile_improvement_priority(_state: &GameState, _tile: i32, _city: &City) -> i32 {
     // C AI calculates improvement value based on:
     // 1. Output increase (food/shield/trade)
     // 2. City needs (food for growth, shields for production)
     // 3. Tile usage (is it being worked?)
     // 4. Time to complete
     
-    // Simplified placeholder
+    // Simplified placeholder - requires tile output data
     50
 }
 
@@ -451,7 +452,7 @@ fn find_nearest_city_and_distance(
             let dist = state.map.distance(c.tile, tile) as f32;
             (dist, c)
         })
-        .min_by(|a, b| a.0.partial_cmp(&b.0).unwrap())
+        .min_by(|a, b| a.0.partial_cmp(&b.0).unwrap_or(std::cmp::Ordering::Equal))
         .map(|(dist, city)| (Some(dist), Some(city)))
         .unwrap_or((None, None))
 }
