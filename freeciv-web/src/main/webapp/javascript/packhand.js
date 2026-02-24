@@ -1907,3 +1907,28 @@ function handle_investigate_finished(packet)
 {
   // TODO: Implement
 }
+
+function handle_ruleset_gov_flag(packet)
+{
+  // TODO: Implement
+}
+
+function handle_ruleset_tiledef(packet)
+{
+  // TODO: Implement
+}
+
+function handle_edit_fogofwar_state(packet)
+{
+  // TODO: Implement
+}
+
+function handle_popup_image(packet)
+{
+  // TODO: Implement
+}
+
+function handle_sync_serial_reply(packet)
+{
+  // TODO: Implement
+}
