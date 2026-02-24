@@ -198,54 +198,6 @@ fn find_nearest_city_distance(state: &GameState, tile: i32) -> Option<f32> {
     }
 }
 
-/// Manage worker unit  
-fn manage_worker(_state: &GameState, ai_data: &mut AIData, unit: &Unit) {
-    println!("[AI Worker] Unit #{} - worker management not fully implemented", unit.id);
-    ai_data.set_unit_task(unit.id, AIUnitTask::AutoSettler, None);
-}
-
-/// Manage attacker / military unit (no duplicates)
-fn manage_attacker(state: &GameState, ai_data: &mut AIData, unit: &Unit) {
-    println!("[AI Military] Unit #{} - HP: {}, Moves: {}", 
-        unit.id, unit.hp, unit.moves_left);
-    
-    // Check if unit is damaged and should heal
-    if unit.hp < 50 {
-        println!("[AI Military] Unit #{} is damaged (HP: {}), should heal/fortify", 
-            unit.id, unit.hp);
-        ai_data.set_unit_task(unit.id, AIUnitTask::Recover, None);
-        // TODO: Send fortify command
-        return;
-    }
-    
-    // Check if unit should defend a city
-    if let Some(city) = state.get_city_at_tile(unit.tile) {
-        if let Some(our_id) = state.our_player_id {
-            if city.owner == our_id {
-                println!("[AI Military] Unit #{} defending city '{}'", 
-                    unit.id, city.name);
-                ai_data.set_unit_task(unit.id, AIUnitTask::DefendHome, Some(city.tile));
-                // TODO: Send fortify command
-                return;
-            }
-        }
-    }
-    
-    // Look for nearby enemies
-    let nearby_enemies = find_nearby_enemies(state, unit.tile);
-    if !nearby_enemies.is_empty() {
-        println!("[AI Military] Unit #{} found {} nearby enemies", 
-            unit.id, nearby_enemies.len());
-        ai_data.set_unit_task(unit.id, AIUnitTask::Attack, None);
-        // TODO: Implement attack logic
-        return;
-    }
-    
-    // No immediate threats, fortify or patrol
-    println!("[AI Military] Unit #{} has no immediate action, fortifying", unit.id);
-    // TODO: Send fortify command
-}
-
 /// Manage recovering unit (healing)
 fn manage_recover(_state: &GameState, _ai_data: &mut AIData, unit: &Unit) {
     println!("[AI Recover] Unit #{} recovering (HP: {})", unit.id, unit.hp);
@@ -285,7 +237,7 @@ fn manage_explorer(state: &GameState, ai_data: &mut AIData, unit: &Unit) {
     if let Some(player_id) = state.our_player_id {
         let near_city = state.cities.values()
             .filter(|c| c.owner == player_id)
-            .any(|c| ((c.tile - unit.tile).abs()) < 3);
+            .any(|c| state.map.distance(c.tile, unit.tile) < 3);
         
         if near_city {
             println!("[AI Explorer] Unit #{} is near a city, should move outward", unit.id);
