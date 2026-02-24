@@ -7052,23 +7052,22 @@ void handle_web_goto_path_req(struct player *pplayer, int unit_id, int goal)
 
   if (NULL == punit) {
     /* Shouldn't happen */
-    log_error("handle_unit_move(): invalid unit %d",
+    log_error("handle_web_goto_path_req(): invalid unit %d",
               unit_id);
     return;
   }
 
   if (NULL == ptile) {
     /* Shouldn't happen */
-    log_error("handle_unit_move(): invalid %s (%d) tile (%d, %d)",
+    log_error("handle_web_goto_path_req(): invalid tile for unit %s (%d)",
               unit_rule_name(punit),
-              unit_id,
-              TILE_XY(ptile));
+              unit_id);
     return;
   }
 
   if (!is_player_phase(unit_owner(punit), game.info.phase)) {
     /* Client is out of sync, ignore */
-    log_verbose("handle_unit_move(): invalid %s (%d) %s != phase %d",
+    log_verbose("handle_web_goto_path_req(): invalid %s (%d) %s != phase %d",
                 unit_rule_name(punit),
                 unit_id,
                 nation_rule_name(nation_of_unit(punit)),
@@ -7096,7 +7095,7 @@ void handle_web_goto_path_req(struct player *pplayer, int unit_id, int goal)
       struct tile *new_tile = path->positions[i + 1].tile;
       int dir;
 
-      total_mc += path->positions[1].total_MC;
+      total_mc += path->positions[i + 1].total_MC;
       if (same_pos(new_tile, old_tile)) {
         dir = -1;
       } else {
@@ -7125,7 +7124,7 @@ void handle_web_info_text_req(struct player *pplayer, int loc,
   struct tile *ptile = index_to_tile(&(wld.map), loc);
   char info_text[MAX_LEN_MSG];
 
-  if (ptile == nullptr || !map_is_known(ptile, pplayer)) {
+  if (ptile == NULL || !map_is_known(ptile, pplayer)) {
     return;
   }
 
