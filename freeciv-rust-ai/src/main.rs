@@ -1,7 +1,10 @@
+mod packets;
+mod state;
+
 use anyhow::{Context, Result};
 use clap::Parser;
-use serde::{Deserialize, Serialize};
-use serde_json::Value;
+use packets::*;
+use state::*;
 use std::net::SocketAddr;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::net::TcpStream;
@@ -23,16 +26,12 @@ struct Args {
     username: String,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
-struct FreecivPacket {
-    pid: u32,
-    #[serde(flatten)]
-    data: Value,
-}
-
 struct DeityAI {
     stream: TcpStream,
     username: String,
+    state: GameState,
+    connected: bool,
+    authenticated: bool,
 }
 
 impl DeityAI {
@@ -48,10 +47,16 @@ impl DeityAI {
 
         println!("Connected successfully!");
 
-        Ok(DeityAI { stream, username })
+        Ok(DeityAI {
+            stream,
+            username,
+            state: GameState::new(),
+            connected: true,
+            authenticated: false,
+        })
     }
 
-    async fn send_packet(&mut self, packet: &FreecivPacket) -> Result<()> {
+    async fn send_packet<T: serde::Serialize>(&mut self, packet: &T) -> Result<()> {
         let json_str = serde_json::to_string(packet)?;
         let json_bytes = json_str.as_bytes();
 
@@ -63,7 +68,7 @@ impl DeityAI {
         self.stream.write_all(json_bytes).await?;
         self.stream.flush().await?;
 
-        println!("Sent packet: {}", json_str);
+        println!("=> Sent packet: {}", json_str);
         Ok(())
     }
 
@@ -95,37 +100,153 @@ impl DeityAI {
         self.stream.read_exact(&mut buf).await?;
 
         let json_str = String::from_utf8(buf)?;
-        println!("Received packet: {}", json_str);
+        println!("<= Received packet: {}", json_str);
 
         let packet: FreecivPacket = serde_json::from_str(&json_str)?;
         Ok(Some(packet))
     }
 
     async fn handle_packet(&mut self, packet: &FreecivPacket) -> Result<()> {
-        println!("Handling packet ID: {}", packet.pid);
+        match packet.pid {
+            PACKET_PROCESSING_STARTED => {
+                println!("[Processing Started]");
+            }
+            PACKET_PROCESSING_FINISHED => {
+                println!("[Processing Finished]");
+            }
+            PACKET_SERVER_JOIN_REPLY => {
+                let reply: ServerJoinReply = serde_json::from_value(packet.data.clone())?;
+                println!("[Join Reply] Can join: {}", reply.you_can_join);
+                println!("[Join Reply] Message: {}", reply.message);
+                println!("[Join Reply] Capability: {}", reply.capability);
+                println!("[Join Reply] Connection ID: {}", reply.conn_id);
 
-        // TODO: Implement proper packet handling based on packets.def
-        // Match structure prepared for future packet type implementations
-        // See freeciv/freeciv/common/networking/packets.def for packet IDs
-        println!("Unhandled packet type: {}", packet.pid);
+                if !reply.you_can_join {
+                    anyhow::bail!("Server rejected connection: {}", reply.message);
+                }
+
+                self.authenticated = true;
+            }
+            PACKET_AUTHENTICATION_REQ => {
+                let auth: AuthenticationReq = serde_json::from_value(packet.data.clone())?;
+                println!("[Auth Request] Type: {}, Message: {}", auth.auth_type, auth.message);
+
+                // Send empty password for now (assumes no authentication)
+                let reply = AuthenticationReply::new(String::new());
+                self.send_packet(&reply).await?;
+            }
+            PACKET_CONNECT_MSG => {
+                let msg: ConnectMsg = serde_json::from_value(packet.data.clone())?;
+                println!("[Connect] {}", msg.message);
+            }
+            PACKET_CHAT_MSG => {
+                let msg: ChatMsg = serde_json::from_value(packet.data.clone())?;
+                println!("[Chat] {}", msg.message);
+            }
+            PACKET_SERVER_INFO => {
+                let info: ServerInfo = serde_json::from_value(packet.data.clone())?;
+                println!("[Server Info] Version: {}", info.version);
+            }
+            PACKET_GAME_INFO => {
+                let info: GameInfo = serde_json::from_value(packet.data.clone())?;
+                self.state.current_turn = info.turn;
+                self.state.current_year = info.year;
+                println!("[Game Info] Turn: {}, Year: {}", info.turn, info.year);
+            }
+            PACKET_PLAYER_INFO => {
+                let info: PlayerInfo = serde_json::from_value(packet.data.clone())?;
+                println!("[Player Info] #{} {} ({})", info.playerno, info.name, info.username);
+
+                // Check if this is us
+                if info.username == self.username {
+                    println!("[Player Info] This is our player! ID: {}", info.playerno);
+                    self.state.our_player_id = Some(info.playerno);
+                }
+
+                let player = Player {
+                    id: info.playerno,
+                    name: info.name,
+                    username: info.username,
+                    is_alive: info.is_alive,
+                    gold: info.gold,
+                };
+                self.state.update_player(player);
+            }
+            PACKET_CITY_INFO => {
+                let info: CityInfo = serde_json::from_value(packet.data.clone())?;
+                println!("[City Info] #{} {} (owner: {}, size: {})", 
+                    info.id, info.name, info.owner, info.size);
+
+                let city = City {
+                    id: info.id,
+                    owner: info.owner,
+                    name: info.name,
+                    tile: info.tile,
+                    size: info.size,
+                };
+                self.state.update_city(city);
+            }
+            PACKET_UNIT_INFO => {
+                let info: UnitInfo = serde_json::from_value(packet.data.clone())?;
+                println!("[Unit Info] #{} (owner: {}, tile: {})", 
+                    info.id, info.owner, info.tile);
+
+                let unit = Unit {
+                    id: info.id,
+                    owner: info.owner,
+                    tile: info.tile,
+                    homecity: info.homecity,
+                };
+                self.state.update_unit(unit);
+            }
+            PACKET_SERVER_SHUTDOWN => {
+                println!("[Server Shutdown]");
+                self.connected = false;
+            }
+            _ => {
+                // Log unknown packet types
+                println!("[Unhandled] Packet type: {}", packet.pid);
+            }
+        }
 
         Ok(())
     }
 
     async fn run(&mut self) -> Result<()> {
         println!("Deity Rust AI starting as '{}'", self.username);
+        println!("Sending join request...");
+
+        // Send initial join request
+        let join_req = ServerJoinReq::new(self.username.clone());
+        self.send_packet(&join_req).await?;
 
         // Main game loop
         loop {
             match self.receive_packet().await? {
                 Some(packet) => {
                     self.handle_packet(&packet).await?;
+
+                    // Exit if server shutdown
+                    if !self.connected {
+                        break;
+                    }
                 }
                 None => {
                     println!("Connection closed by server");
                     break;
                 }
             }
+        }
+
+        // Print final state summary
+        println!("\n=== Game Session Summary ===");
+        println!("Players: {}", self.state.players.len());
+        println!("Cities: {}", self.state.cities.len());
+        println!("Units: {}", self.state.units.len());
+        if let Some(player_id) = self.state.our_player_id {
+            println!("Our Player ID: {}", player_id);
+            println!("Our Cities: {}", self.state.get_our_cities().len());
+            println!("Our Units: {}", self.state.get_our_units().len());
         }
 
         Ok(())
