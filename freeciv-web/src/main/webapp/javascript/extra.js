@@ -53,7 +53,7 @@ function extra_owner(ptile)
 ****************************************************************************/
 function is_extra_caused_by(pextra, cause)
 {
-  if (pextra == null || pextra.causes == null) {
+  if (pextra === null || pextra === undefined || pextra.causes === null || pextra.causes === undefined) {
     return false;
   }
   return pextra.causes.isSet(cause);

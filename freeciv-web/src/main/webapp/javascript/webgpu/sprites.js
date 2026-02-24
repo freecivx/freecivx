@@ -46,9 +46,9 @@ function create_unit_label_sprite(punit, ptile)
                 0,6,40,20);
     width += 45;
 
-    if (show_unit_in_label && punit.owner != null) {
+    if (show_unit_in_label && punit.owner !== null && punit.owner !== undefined) {
       let unit_sprite = sprites[unit_type['graphic_str'] + "_Idle"];
-      if (unit_sprite != null) {
+      if (unit_sprite !== null && unit_sprite !== undefined) {
         var owner_id = punit.owner;
         var owner = players[owner_id];
         var background_color = nations[owner.nation].color;
