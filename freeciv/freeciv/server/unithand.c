@@ -7038,30 +7038,39 @@ void handle_worker_task(struct player *pplayer,
 
 /**********************************************************************//**
   Handle request for goto path calculation for web client.
+  This is called when the web client requests pathfinding from a unit
+  to a destination tile. The response should be sent back using
+  PACKET_WEB_GOTO_PATH.
 **************************************************************************/
 void handle_web_goto_path_req(struct player *pplayer, int unit_id,
                                int goal)
 {
 #ifdef FREECIV_WEB
-  /* TODO: Implement path calculation and send back to client */
   struct unit *punit = player_unit_by_number(pplayer, unit_id);
   
   if (punit == nullptr) {
     return;
   }
   
-  /* Path calculation would go here */
+  /* TODO: Calculate path from unit position to goal tile
+   * and send result back to client using send_packet_web_goto_path() */
 #endif /* FREECIV_WEB */
 }
 
 /**********************************************************************//**
   Handle request for info text for web client.
+  This is called when the web client requests information about a tile
+  location and potentially visible units. The response should be sent
+  back using PACKET_WEB_INFO_TEXT_MESSAGE.
 **************************************************************************/
 void handle_web_info_text_req(struct player *pplayer, int loc,
                                int visible_unit, int focus_unit)
 {
 #ifdef FREECIV_WEB
-  /* TODO: Implement info text generation and send back to client */
-  /* This would generate tile/unit information text */
+  /* TODO: Generate and send tile/unit information text message
+   * to client using send_packet_web_info_text_message() */
+  (void) loc;
+  (void) visible_unit;
+  (void) focus_unit;
 #endif /* FREECIV_WEB */
 }
