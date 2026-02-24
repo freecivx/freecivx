@@ -458,11 +458,7 @@ function get_unit_activity_sprite(punit)
   switch (activity) {
     /* TODO: Use target specific sprites. */
     case ACTIVITY_CLEAN:
-    case ACTIVITY_POLLUTION:
      return {"key" : "unit.pollution"};
-
-    case ACTIVITY_FALLOUT:
-      return {"key" : "unit.fallout"};
 
     case ACTIVITY_MINE:
       return {"key"      : -1 == act_tgt ?
