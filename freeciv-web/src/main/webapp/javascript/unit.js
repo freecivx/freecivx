@@ -410,10 +410,13 @@ function get_what_can_unit_pillage_from(punit, ptile)
   /* Get what extras that are dependencies of other */
   for (i = 0; i < available.length; i++) {
     extra = extras[available[i]];
-    for (j = 0; j < extra.reqs.length; j++) {
-      var req = extra.reqs[j];
-      if (req.kind == VUT_EXTRA && req.present == true) {
-        cannot_pillage.set(req.value);
+    // Check if extra and its reqs field exist (may be undefined in newer server versions)
+    if (extra && extra.reqs && extra.reqs.length) {
+      for (j = 0; j < extra.reqs.length; j++) {
+        var req = extra.reqs[j];
+        if (req.kind == VUT_EXTRA && req.present == true) {
+          cannot_pillage.set(req.value);
+        }
       }
     }
   }

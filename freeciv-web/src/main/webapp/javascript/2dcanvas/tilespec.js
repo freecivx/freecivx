@@ -101,7 +101,19 @@ var terrain_match = {"t.l0.hills1" : MATCH_NONE,
 **************************************************************************/
 function tileset_has_tag(tagname)
 {
-  return (sprites[tagname] != null);
+  if (sprites[tagname] != null) {
+    return true;
+  }
+  
+  // Handle animation frame suffix (e.g., "u.settlers_Idle:0")
+  // The server may send sprite names with frame indices, but our tileset
+  // uses base names without frame numbers
+  if (tagname && tagname.indexOf(':') > 0) {
+    var base_tag = tagname.substring(0, tagname.indexOf(':'));
+    return (sprites[base_tag] != null);
+  }
+  
+  return false;
 }
 
 /**************************************************************************
@@ -109,6 +121,8 @@ function tileset_has_tag(tagname)
   preferred tag name is in the 'graphic_str' field, the fall back tag in
   case the tileset don't support the first tag is the 'graphic_alt' field
   and the entity name is stored in the 'name' field.
+  
+  Strips animation frame suffix (e.g., ":0") from sprite names if present.
 **************************************************************************/
 function tileset_ruleset_entity_tag_str_or_alt(entity, kind_name)
 {
@@ -117,20 +131,31 @@ function tileset_ruleset_entity_tag_str_or_alt(entity, kind_name)
     return null;
   }
 
-  if (tileset_has_tag(entity['graphic_str'] + "_Idle")) {
-    return entity['graphic_str'] + "_Idle";
+  // Helper to strip animation frame suffix (e.g., ":0")
+  function strip_frame_suffix(tag) {
+    if (tag && tag.indexOf(':') > 0) {
+      return tag.substring(0, tag.indexOf(':'));
+    }
+    return tag;
   }
 
-  if (tileset_has_tag(entity['graphic_str'])) {
-    return entity['graphic_str'];
+  var graphic_str = strip_frame_suffix(entity['graphic_str']);
+  var graphic_alt = strip_frame_suffix(entity['graphic_alt']);
+
+  if (tileset_has_tag(graphic_str + "_Idle")) {
+    return graphic_str + "_Idle";
   }
 
-  if (tileset_has_tag(entity['graphic_alt'])) {
-    return entity['graphic_alt'];
+  if (tileset_has_tag(graphic_str)) {
+    return graphic_str;
   }
 
-  if (tileset_has_tag(entity['graphic_alt'] + "_Idle")) {
-    return entity['graphic_alt'] + "_Idle";
+  if (tileset_has_tag(graphic_alt)) {
+    return graphic_alt;
+  }
+
+  if (tileset_has_tag(graphic_alt + "_Idle")) {
+    return graphic_alt + "_Idle";
   }
 
   console.log("No graphic for " + kind_name + " " + entity['name']);
@@ -148,23 +173,35 @@ function tileset_extra_graphic_tag(extra)
 
 /**************************************************************************
   Returns the tag name of the graphic showing the specified unit type.
+  Strips animation frame suffix (e.g., ":0") from sprite names if present.
 **************************************************************************/
 function tileset_unit_type_graphic_tag(utype)
 {
-  if (tileset_has_tag(utype['graphic_str'] + "_Idle")) {
-    return utype['graphic_str'] + "_Idle";
+  // Helper to strip animation frame suffix (e.g., ":0")
+  function strip_frame_suffix(tag) {
+    if (tag && tag.indexOf(':') > 0) {
+      return tag.substring(0, tag.indexOf(':'));
+    }
+    return tag;
   }
 
-  if (tileset_has_tag(utype['graphic_str'])) {
-    return utype['graphic_str'];
+  var graphic_str = strip_frame_suffix(utype['graphic_str']);
+  var graphic_alt = strip_frame_suffix(utype['graphic_alt']);
+
+  if (tileset_has_tag(graphic_str + "_Idle")) {
+    return graphic_str + "_Idle";
   }
 
-  if (tileset_has_tag(utype['graphic_alt'] + "_Idle")) {
-    return utype['graphic_alt'] + "_Idle";
+  if (tileset_has_tag(graphic_str)) {
+    return graphic_str;
   }
 
-  if (tileset_has_tag(utype['graphic_alt'])) {
-    return utype['graphic_alt'];
+  if (tileset_has_tag(graphic_alt + "_Idle")) {
+    return graphic_alt + "_Idle";
+  }
+
+  if (tileset_has_tag(graphic_alt)) {
+    return graphic_alt;
   }
 
   console.log("No graphic for unit " + utype['name']);

@@ -1757,7 +1757,9 @@ function handle_ruleset_nation_sets(packet)
 
 function handle_ruleset_style(packet)
 {
-  /* TODO: Implement */
+  // In newer Freeciv server versions, city styles are sent separately
+  // Store the style data using the id as key
+  city_rules[packet['id']] = packet;
 }
 
 function handle_nation_availability(packet)
