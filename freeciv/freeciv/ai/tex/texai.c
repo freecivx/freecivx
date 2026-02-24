@@ -20,16 +20,17 @@
 #include "world_object.h"
 
 /* ai/default */
-#include "aiferry.h"
-#include "aihand.h"
-#include "aitools.h"
 #include "daicity.h"
 #include "daidiplomacy.h"
 #include "daidomestic.h"
+#include "daiferry.h"
+#include "daihand.h"
 #include "dailog.h"
 #include "daimilitary.h"
 #include "daiplayer.h"
 #include "daisettler.h"
+#include "daitools.h"
+#include "daiunit.h"
 
 /* tex ai */
 #include "texaicity.h"
@@ -143,7 +144,7 @@ static void texwai_split_by_civil_war(struct player *original,
                                       struct player *created)
 {
   TEXAI_AIT;
-  TEXAI_DFUNC(dai_assess_danger_player, original, &(wld.map));
+  TEXAI_DFUNC(dai_assess_danger_player, &(wld.map), original);
 }
 
 /**********************************************************************//**
@@ -389,11 +390,14 @@ static void texwai_auto_settler_reset(struct player *pplayer)
 /**********************************************************************//**
   Call default ai with tex ai type as parameter.
 **************************************************************************/
-static void texwai_auto_settler_run(struct player *pplayer, struct unit *punit,
-                                    struct settlermap *state)
+static void texwai_auto_settler_run(struct player *pplayer,
+                                    struct unit *punit,
+                                    struct workermap *state)
 {
   TEXAI_AIT;
-  TEXAI_DFUNC(dai_auto_settler_run, pplayer, punit, state);
+
+  /* TODO: Operate on tex map */
+  TEXAI_DFUNC(dai_auto_settler_run, &(wld.map), pplayer, punit, state);
 }
 
 /**********************************************************************//**
@@ -401,10 +405,12 @@ static void texwai_auto_settler_run(struct player *pplayer, struct unit *punit,
 **************************************************************************/
 static void texwai_auto_settler_cont(struct player *pplayer,
                                      struct unit *punit,
-                                     struct settlermap *state)
+                                     struct workermap *state)
 {
   TEXAI_AIT;
-  TEXAI_DFUNC(dai_auto_settler_cont, pplayer, punit, state);
+
+  /* TODO: Operate on tex map */
+  TEXAI_DFUNC(dai_auto_settler_cont, &(wld.map), pplayer, punit, state);
 }
 
 /**********************************************************************//**
@@ -459,7 +465,7 @@ static void texwai_last_activities(struct player *pplayer)
 **************************************************************************/
 static void texwai_treaty_evaluate(struct player *pplayer,
                                    struct player *aplayer,
-                                   struct Treaty *ptreaty)
+                                   struct treaty *ptreaty)
 {
   TEXAI_AIT;
   TEXAI_DFUNC(dai_treaty_evaluate, pplayer, aplayer, ptreaty);
@@ -469,8 +475,8 @@ static void texwai_treaty_evaluate(struct player *pplayer,
   Call default ai with tex ai type as parameter.
 **************************************************************************/
 static void texwai_treaty_accepted(struct player *pplayer,
-                                   struct player *aplayer, 
-                                   struct Treaty *ptreaty)
+                                   struct player *aplayer,
+                                   struct treaty *ptreaty)
 {
   TEXAI_AIT;
   TEXAI_DFUNC(dai_treaty_accepted, pplayer, aplayer, ptreaty);
@@ -558,6 +564,24 @@ static void texwai_refresh(struct player *pplayer)
 {
   TEXAI_AIT;
   TEXAI_TFUNC(texai_refresh, pplayer);
+}
+
+/**********************************************************************//**
+  Call default ai with tex ai type as parameter.
+**************************************************************************/
+static void texwai_revolution_start(struct player *pplayer)
+{
+  TEXAI_AIT;
+  TEXAI_TFUNC(dai_revolution_start, pplayer);
+}
+
+/**********************************************************************//**
+  Call default ai with tex ai type as parameter.
+**************************************************************************/
+static void texwai_sanity_check(struct player *pplayer)
+{
+  TEXAI_AIT;
+  TEXAI_TFUNC(dai_sanity_check, pplayer);
 }
 
 /**********************************************************************//**
@@ -669,6 +693,9 @@ bool fc_ai_tex_setup(struct ai_type *ai)
   ai->funcs.tile_info = texai_tile_info;
   ai->funcs.city_info = texai_city_changed;
   ai->funcs.unit_info = texai_unit_changed;
+
+  ai->funcs.revolution_start = texwai_revolution_start;
+  ai->funcs.check_sanity = texwai_sanity_check;
 
   return TRUE;
 }

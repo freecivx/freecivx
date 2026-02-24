@@ -25,6 +25,7 @@
 #include "movement.h"
 #include "player.h"
 #include "requirements.h"
+#include "specialist.h"
 #include "tile.h"
 #include "traderoutes.h"
 
@@ -32,139 +33,209 @@
 
 static struct actres act_results[ACTRES_LAST] = {
   { ACT_TGT_COMPL_SIMPLE, ABK_NONE,          /* ACTRES_ESTABLISH_EMBASSY */
-    FALSE},
+    FALSE, ACTIVITY_LAST, DRT_NONE,
+    EC_NONE, ERM_NONE, ATK_CITY },
   { ACT_TGT_COMPL_SIMPLE, ABK_NONE,          /* ACTRES_SPY_INVESTIGATE_CITY */
-    TRUE },
+    TRUE, ACTIVITY_LAST, DRT_NONE,
+    EC_NONE, ERM_NONE, ATK_CITY },
   { ACT_TGT_COMPL_SIMPLE, ABK_DIPLOMATIC,    /* ACTRES_SPY_POISON */
-    TRUE },
+    TRUE, ACTIVITY_LAST, DRT_DIPLCHANCE,
+    EC_NONE, ERM_NONE, ATK_CITY },
   { ACT_TGT_COMPL_SIMPLE, ABK_DIPLOMATIC,    /* ACTRES_SPY_STEAL_GOLD */
-    TRUE},
+    TRUE, ACTIVITY_LAST, DRT_DIPLCHANCE,
+    EC_NONE, ERM_NONE, ATK_CITY },
   { ACT_TGT_COMPL_SIMPLE, ABK_DIPLOMATIC,    /* ACTRES_SPY_SABOTAGE_CITY */
-    TRUE },
+    TRUE, ACTIVITY_LAST, DRT_DIPLCHANCE,
+    EC_NONE, ERM_NONE, ATK_CITY },
   { ACT_TGT_COMPL_MANDATORY, ABK_DIPLOMATIC, /* ACTRES_SPY_TARGETED_SABOTAGE_CITY */
-    TRUE },
+    TRUE, ACTIVITY_LAST, DRT_DIPLCHANCE,
+    EC_NONE, ERM_NONE, ATK_CITY },
   { ACT_TGT_COMPL_SIMPLE, ABK_DIPLOMATIC,    /* ACTRES_SPY_SABOTAGE_CITY_PRODUCTION */
-    TRUE },
+    TRUE, ACTIVITY_LAST, DRT_DIPLCHANCE,
+    EC_NONE, ERM_NONE, ATK_CITY },
   { ACT_TGT_COMPL_SIMPLE, ABK_DIPLOMATIC,    /* ACTRES_SPY_STEAL_TECH */
-    TRUE },
+    TRUE, ACTIVITY_LAST, DRT_DIPLCHANCE,
+    EC_NONE, ERM_NONE, ATK_CITY },
   { ACT_TGT_COMPL_MANDATORY, ABK_DIPLOMATIC, /* ACTRES_SPY_TARGETED_STEAL_TECH */
-    TRUE },
+    TRUE, ACTIVITY_LAST, DRT_DIPLCHANCE,
+    EC_NONE, ERM_NONE, ATK_CITY },
   { ACT_TGT_COMPL_SIMPLE, ABK_DIPLOMATIC,    /* ACTRES_SPY_INCITE_CITY */
-    TRUE },
+    TRUE, ACTIVITY_LAST, DRT_DIPLCHANCE,
+    EC_NONE, ERM_NONE, ATK_CITY },
   { ACT_TGT_COMPL_SIMPLE, ABK_NONE,          /* ACTRES_TRADE_ROUTE */
-    FALSE },
+    FALSE, ACTIVITY_LAST, DRT_NONE,
+    EC_NONE, ERM_NONE, ATK_CITY },
   { ACT_TGT_COMPL_SIMPLE, ABK_NONE,          /* ACTRES_MARKETPLACE */
-    FALSE },
+    FALSE, ACTIVITY_LAST, DRT_NONE,
+    EC_NONE, ERM_NONE, ATK_CITY },
   { ACT_TGT_COMPL_SIMPLE, ABK_NONE,          /* ACTRES_HELP_WONDER */
-    FALSE },
+    FALSE, ACTIVITY_LAST, DRT_NONE,
+    EC_NONE, ERM_NONE, ATK_CITY },
   { ACT_TGT_COMPL_SIMPLE, ABK_DIPLOMATIC,    /* ACTRES_SPY_BRIBE_UNIT */
-    TRUE },
+    TRUE, ACTIVITY_LAST, DRT_NONE,
+    EC_NONE, ERM_NONE, ATK_UNIT },
+  { ACT_TGT_COMPL_SIMPLE, ABK_DIPLOMATIC,    /* ACTRES_SPY_BRIBE_STACK */
+    TRUE, ACTIVITY_LAST, DRT_NONE,
+    EC_NONE, ERM_NONE, ATK_STACK },
   { ACT_TGT_COMPL_SIMPLE, ABK_DIPLOMATIC,    /* ACTRES_SPY_SABOTAGE_UNIT */
-    TRUE },
+    TRUE, ACTIVITY_LAST, DRT_NONE,
+    EC_NONE, ERM_NONE, ATK_UNIT },
   { ACT_TGT_COMPL_SIMPLE, ABK_NONE,          /* ACTRES_CAPTURE_UNITS */
-    TRUE },
+    TRUE, ACTIVITY_LAST, DRT_NONE,
+    EC_NONE, ERM_NONE, ATK_STACK },
   { ACT_TGT_COMPL_SIMPLE, ABK_NONE,          /* ACTRES_FOUND_CITY */
-    FALSE },
+    FALSE, ACTIVITY_LAST, DRT_NONE,
+    EC_NONE, ERM_NONE, ATK_TILE },
   { ACT_TGT_COMPL_SIMPLE, ABK_NONE,          /* ACTRES_JOIN_CITY */
-    FALSE },
+    FALSE, ACTIVITY_LAST, DRT_NONE,
+    EC_NONE, ERM_NONE, ATK_CITY },
   { ACT_TGT_COMPL_SIMPLE, ABK_DIPLOMATIC,    /* ACTRES_STEAL_MAPS */
-    TRUE },
+    TRUE, ACTIVITY_LAST, DRT_DIPLCHANCE,
+    EC_NONE, ERM_NONE, ATK_CITY },
   { ACT_TGT_COMPL_SIMPLE, ABK_NONE,          /* ACTRES_BOMBARD */
-    TRUE },
+    TRUE, ACTIVITY_LAST, DRT_NONE,
+    EC_NONE, ERM_NONE, ATK_STACK },
   { ACT_TGT_COMPL_SIMPLE, ABK_DIPLOMATIC,    /* ACTRES_SPY_NUKE */
-    TRUE },
+    TRUE, ACTIVITY_LAST, DRT_DIPLCHANCE,
+    EC_NONE, ERM_NONE, ATK_CITY },
   { ACT_TGT_COMPL_SIMPLE, ABK_NONE,          /* ACTRES_NUKE */
-    TRUE },
+    TRUE, ACTIVITY_LAST, DRT_NONE,
+    EC_NONE, ERM_NONE, ATK_TILE },
   { ACT_TGT_COMPL_SIMPLE, ABK_NONE,          /* ACTRES_NUKE_UNITS */
-    TRUE },
+    TRUE, ACTIVITY_LAST, DRT_NONE,
+    EC_NONE, ERM_NONE, ATK_STACK },
   { ACT_TGT_COMPL_SIMPLE, ABK_NONE,          /* ACTRES_DESTROY_CITY */
-    TRUE },
+    TRUE, ACTIVITY_LAST, DRT_NONE,
+    EC_NONE, ERM_NONE, ATK_CITY },
   { ACT_TGT_COMPL_SIMPLE, ABK_NONE,          /* ACTRES_EXPEL_UNIT */
-    TRUE },
+    TRUE, ACTIVITY_LAST, DRT_NONE,
+    EC_NONE, ERM_NONE, ATK_UNIT },
   { ACT_TGT_COMPL_SIMPLE, ABK_NONE,          /* ACTRES_DISBAND_UNIT_RECOVER */
-    FALSE },
+    FALSE, ACTIVITY_LAST, DRT_NONE,
+    EC_NONE, ERM_NONE, ATK_CITY },
   { ACT_TGT_COMPL_SIMPLE, ABK_NONE,          /* ACTRES_DISBAND_UNIT */
-    FALSE },
+    FALSE, ACTIVITY_LAST, DRT_NONE,
+    EC_NONE, ERM_NONE, ATK_SELF },
   { ACT_TGT_COMPL_SIMPLE, ABK_NONE,          /* ACTRES_HOME_CITY */
-    FALSE },
+    FALSE, ACTIVITY_LAST, DRT_NONE,
+    EC_NONE, ERM_NONE, ATK_CITY },
   { ACT_TGT_COMPL_SIMPLE, ABK_NONE,          /* ACTRES_UPGRADE_UNIT */
-    FALSE },
+    FALSE, ACTIVITY_LAST, DRT_NONE,
+    EC_NONE, ERM_NONE, ATK_CITY },
   { ACT_TGT_COMPL_SIMPLE, ABK_NONE,          /* ACTRES_PARADROP */
-    FALSE },
+    FALSE, ACTIVITY_LAST, DRT_NONE,
+    EC_NONE, ERM_NONE, ATK_TILE },
   { ACT_TGT_COMPL_SIMPLE, ABK_NONE,          /* ACTRES_AIRLIFT */
-    FALSE },
+    FALSE, ACTIVITY_LAST, DRT_NONE,
+    EC_NONE, ERM_NONE, ATK_CITY },
   { ACT_TGT_COMPL_SIMPLE, ABK_STANDARD,      /* ACTRES_ATTACK */
-    TRUE },
+    TRUE, ACTIVITY_LAST, DRT_NONE,
+    EC_NONE, ERM_NONE, ATK_STACK },
   { ACT_TGT_COMPL_MANDATORY, ABK_NONE,       /* ACTRES_STRIKE_BUILDING */
-    TRUE },
+    TRUE, ACTIVITY_LAST, DRT_DIPLCHANCE,
+    EC_NONE, ERM_NONE, ATK_CITY },
   { ACT_TGT_COMPL_SIMPLE, ABK_NONE,          /* ACTRES_STRIKE_PRODUCTION */
-    TRUE },
+    TRUE, ACTIVITY_LAST, DRT_DIPLCHANCE,
+    EC_NONE, ERM_NONE, ATK_CITY },
   { ACT_TGT_COMPL_SIMPLE, ABK_NONE,          /* ACTRES_CONQUER_CITY */
-    TRUE },
+    TRUE, ACTIVITY_LAST, DRT_NONE,
+    EC_NONE, ERM_NONE, ATK_CITY },
   { ACT_TGT_COMPL_SIMPLE, ABK_NONE,          /* ACTRES_HEAL_UNIT */
-    FALSE },
+    FALSE, ACTIVITY_LAST, DRT_NONE,
+    EC_NONE, ERM_NONE, ATK_UNIT },
   { ACT_TGT_COMPL_SIMPLE, ABK_NONE,          /* ACTRES_TRANSFORM_TERRAIN */
-    FALSE },
+    FALSE, ACTIVITY_TRANSFORM, DRT_NONE,
+    EC_NONE, ERM_NONE, ATK_TILE },
   { ACT_TGT_COMPL_SIMPLE, ABK_NONE,          /* ACTRES_CULTIVATE */
-    FALSE },
+    FALSE, ACTIVITY_CULTIVATE, DRT_NONE,
+    EC_NONE, ERM_NONE, ATK_TILE },
   { ACT_TGT_COMPL_SIMPLE, ABK_NONE,          /* ACTRES_PLANT */
-    FALSE },
+    FALSE, ACTIVITY_PLANT, DRT_NONE,
+    EC_NONE, ERM_NONE, ATK_TILE },
   { ACT_TGT_COMPL_FLEXIBLE, ABK_NONE,        /* ACTRES_PILLAGE */
-    TRUE },
+    TRUE, ACTIVITY_PILLAGE, DRT_NONE,
+    EC_NONE, ERM_PILLAGE, ATK_TILE },
   { ACT_TGT_COMPL_SIMPLE, ABK_NONE,          /* ACTRES_FORTIFY */
-    FALSE },
+    FALSE, ACTIVITY_FORTIFYING, DRT_NONE,
+    EC_NONE, ERM_NONE, ATK_SELF },
   { ACT_TGT_COMPL_MANDATORY, ABK_NONE,       /* ACTRES_ROAD */
-    FALSE },
+    FALSE, ACTIVITY_GEN_ROAD, DRT_NONE,
+    EC_ROAD, ERM_NONE, ATK_TILE },
   { ACT_TGT_COMPL_SIMPLE, ABK_NONE,          /* ACTRES_CONVERT */
-    FALSE },
+    FALSE, ACTIVITY_CONVERT, DRT_NONE,
+    EC_NONE, ERM_NONE, ATK_SELF },
   { ACT_TGT_COMPL_MANDATORY, ABK_NONE,       /* ACTRES_BASE */
-    FALSE },
+    FALSE, ACTIVITY_BASE, DRT_NONE,
+    EC_BASE, ERM_NONE, ATK_TILE },
   { ACT_TGT_COMPL_MANDATORY, ABK_NONE,       /* ACTRES_MINE */
-    FALSE },
+    FALSE, ACTIVITY_MINE, DRT_NONE,
+    EC_MINE, ERM_NONE, ATK_TILE },
   { ACT_TGT_COMPL_MANDATORY, ABK_NONE,       /* ACTRES_IRRIGATE */
-    FALSE },
-  { ACT_TGT_COMPL_FLEXIBLE, ABK_NONE,        /* ACTRES_CLEAN_POLLUTION */
-    FALSE },
-  { ACT_TGT_COMPL_FLEXIBLE, ABK_NONE,        /* ACTRES_CLEAN_FALLOUT */
-    FALSE },
+    FALSE, ACTIVITY_IRRIGATE, DRT_NONE,
+    EC_IRRIGATION, ERM_NONE, ATK_TILE },
+  { ACT_TGT_COMPL_SIMPLE, ABK_STANDARD,      /* ACTRES_COLLECT_RANSOM */
+    TRUE, ACTIVITY_LAST, DRT_NONE,
+    EC_NONE, ERM_NONE, ATK_STACK },
   { ACT_TGT_COMPL_SIMPLE, ABK_NONE,          /* ACTRES_TRANSPORT_DEBOARD */
-    FALSE },
+    FALSE, ACTIVITY_LAST, DRT_NONE,
+    EC_NONE, ERM_NONE, ATK_UNIT },
   { ACT_TGT_COMPL_SIMPLE, ABK_NONE,          /* ACTRES_TRANSPORT_UNLOAD */
-    FALSE },
+    FALSE, ACTIVITY_LAST, DRT_NONE,
+    EC_NONE, ERM_NONE, ATK_UNIT },
   { ACT_TGT_COMPL_SIMPLE, ABK_NONE,          /* ACTRES_TRANSPORT_DISEMBARK */
-    FALSE },
+    FALSE, ACTIVITY_LAST, DRT_NONE,
+    EC_NONE, ERM_NONE, ATK_TILE },
   { ACT_TGT_COMPL_SIMPLE, ABK_NONE,          /* ACTRES_TRANSPORT_BOARD */
-    FALSE },
+    FALSE, ACTIVITY_LAST, DRT_NONE,
+    EC_NONE, ERM_NONE, ATK_UNIT },
   { ACT_TGT_COMPL_SIMPLE, ABK_NONE,          /* ACTRES_TRANSPORT_EMBARK */
-    FALSE },
+    FALSE, ACTIVITY_LAST, DRT_NONE,
+    EC_NONE, ERM_NONE, ATK_UNIT },
   { ACT_TGT_COMPL_SIMPLE, ABK_DIPLOMATIC,    /* ACTRES_SPY_SPREAD_PLAGUE */
-    TRUE },
+    TRUE, ACTIVITY_LAST, DRT_DIPLCHANCE,
+    EC_NONE, ERM_NONE, ATK_CITY },
   { ACT_TGT_COMPL_SIMPLE, ABK_DIPLOMATIC,    /* ACTRES_SPY_ATTACK */
-    TRUE },
+    TRUE, ACTIVITY_LAST, DRT_NONE,
+    EC_NONE, ERM_NONE, ATK_STACK },
   { ACT_TGT_COMPL_SIMPLE, ABK_NONE,          /* ACTRES_CONQUER_EXTRAS */
-    TRUE },
+    TRUE, ACTIVITY_LAST, DRT_NONE,
+    EC_NONE, ERM_NONE, ATK_EXTRAS },
   { ACT_TGT_COMPL_SIMPLE, ABK_NONE,          /* ACTRES_HUT_ENTER */
-    FALSE },
+    FALSE, ACTIVITY_LAST, DRT_NONE,
+    EC_NONE, ERM_ENTER, ATK_TILE },
   { ACT_TGT_COMPL_SIMPLE, ABK_NONE,          /* ACTRES_HUT_FRIGHTEN */
-    FALSE },
+    FALSE, ACTIVITY_LAST, DRT_NONE,
+    EC_NONE, ERM_ENTER, ATK_TILE },
   { ACT_TGT_COMPL_SIMPLE, ABK_NONE,          /* ACTRES_UNIT_MOVE */
-    FALSE },
+    FALSE, ACTIVITY_LAST, DRT_NONE,
+    EC_NONE, ERM_NONE, ATK_TILE },
   { ACT_TGT_COMPL_SIMPLE, ABK_NONE,          /* ACTRES_PARADROP_CONQUER */
-    FALSE }, /* TODO: should this be hostile? */
+    FALSE, ACTIVITY_LAST, DRT_NONE, /* TODO: Should this be hostile? */
+    EC_NONE, ERM_NONE, ATK_TILE },
   { ACT_TGT_COMPL_SIMPLE, ABK_NONE,          /* ACTRES_HOMELESS */
-    FALSE },
+    FALSE, ACTIVITY_LAST, DRT_NONE,
+    EC_NONE, ERM_NONE, ATK_SELF },
   { ACT_TGT_COMPL_SIMPLE, ABK_STANDARD,      /* ACTRES_WIPE_UNITS */
-    TRUE },
+    TRUE, ACTIVITY_LAST, DRT_NONE,
+    EC_NONE, ERM_NONE, ATK_STACK },
   { ACT_TGT_COMPL_SIMPLE, ABK_NONE,          /* ACTRES_SPY_ESCAPE */
-    FALSE },
+    FALSE, ACTIVITY_LAST, DRT_NONE,
+    EC_NONE, ERM_NONE, ATK_CITY },
   { ACT_TGT_COMPL_SIMPLE, ABK_NONE,          /* ACTRES_TRANSPORT_LOAD */
-    FALSE },
+    FALSE, ACTIVITY_LAST, DRT_NONE,
+    EC_NONE, ERM_NONE, ATK_UNIT },
   { ACT_TGT_COMPL_FLEXIBLE, ABK_NONE,        /* ACTRES_CLEAN */
-    FALSE },
+    FALSE, ACTIVITY_CLEAN, DRT_NONE,
+    EC_NONE, ERM_CLEAN, ATK_TILE },
   { ACT_TGT_COMPL_SIMPLE, ABK_NONE,          /* ACTRES_TELEPORT */
-    FALSE },
+    FALSE, ACTIVITY_LAST, DRT_NONE,
+    EC_NONE, ERM_NONE, ATK_TILE },
+  { ACT_TGT_COMPL_SIMPLE, ABK_NONE,          /* ACTRES_TELEPORT_CONQUER */
+    FALSE, ACTIVITY_LAST, DRT_NONE,
+    EC_NONE, ERM_NONE, ATK_TILE },
   { ACT_TGT_COMPL_SIMPLE, ABK_NONE,          /* ACTRES_ENABLER_CHECK */
-    FALSE }
+    FALSE, ACTIVITY_LAST, DRT_NONE,
+    EC_NONE, ERM_NONE, ATK_SELF }
 };
 
 /*********************************************************************//**
@@ -223,6 +294,531 @@ bool actres_is_hostile(enum action_result result)
 }
 
 /**********************************************************************//**
+  Map actres to an activity that gets started.
+
+  @param  result  Action result to map to activity
+  @return         Unit activity that the action starts
+**************************************************************************/
+enum unit_activity actres_activity_result(enum action_result result)
+{
+  if (result == ACTRES_NONE) {
+    return ACTIVITY_LAST;
+  }
+
+  return act_results[result].activity;
+}
+
+/**********************************************************************//**
+  Returns the unit activity time (work) this action takes (requires) or
+  ACT_TIME_INSTANTANEOUS if the action happens at once.
+
+  See update_unit_activity() and tile_activity_time()
+**************************************************************************/
+int actres_get_act_time(enum action_result result,
+                        const struct unit *actor_unit,
+                        const struct tile *tgt_tile,
+                        const struct extra_type *tgt_extra)
+{
+  enum unit_activity pactivity = actres_activity_result(result);
+
+  if (pactivity == ACTIVITY_LAST) {
+    /* Happens instantaneously, not at turn change. */
+    return ACT_TIME_INSTANTANEOUS;
+  }
+
+  switch (pactivity) {
+  case ACTIVITY_PILLAGE:
+  case ACTIVITY_CLEAN:
+  case ACTIVITY_BASE:
+  case ACTIVITY_GEN_ROAD:
+  case ACTIVITY_IRRIGATE:
+  case ACTIVITY_MINE:
+  case ACTIVITY_CULTIVATE:
+  case ACTIVITY_PLANT:
+  case ACTIVITY_TRANSFORM:
+    return tile_activity_time(pactivity, tgt_tile, tgt_extra);
+  case ACTIVITY_FORTIFYING:
+    return 1;
+  case ACTIVITY_CONVERT:
+    return unit_type_get(actor_unit)->convert_time * ACTIVITY_FACTOR;
+  case ACTIVITY_EXPLORE:
+  case ACTIVITY_IDLE:
+  case ACTIVITY_FORTIFIED:
+  case ACTIVITY_SENTRY:
+  case ACTIVITY_GOTO:
+  case ACTIVITY_LAST:
+    /* Should not happen. Caught by the assertion below. */
+    break;
+  }
+
+  fc_assert(FALSE);
+
+  return ACT_TIME_INSTANTANEOUS;
+}
+
+/**********************************************************************//**
+  Map actres to initial odds type.
+
+  @param  result  Action result to check odds for
+  @return         Initial odds type
+**************************************************************************/
+enum dice_roll_type actres_dice_type(enum action_result result)
+{
+  if (result == ACTRES_NONE) {
+    return DRT_NONE;
+  }
+
+  return act_results[result].dice;
+}
+
+/**********************************************************************//**
+  Return default min range for the action if it is ruleset settable.
+**************************************************************************/
+int actres_min_range_default(enum action_result result)
+{
+  switch (result) {
+  case ACTRES_ESTABLISH_EMBASSY:
+  case ACTRES_SPY_INVESTIGATE_CITY:
+  case ACTRES_SPY_POISON:
+  case ACTRES_SPY_STEAL_GOLD:
+  case ACTRES_SPY_SABOTAGE_CITY:
+  case ACTRES_SPY_TARGETED_SABOTAGE_CITY:
+  case ACTRES_SPY_SABOTAGE_CITY_PRODUCTION:
+  case ACTRES_SPY_STEAL_TECH:
+  case ACTRES_SPY_TARGETED_STEAL_TECH:
+  case ACTRES_SPY_INCITE_CITY:
+  case ACTRES_TRADE_ROUTE:
+  case ACTRES_MARKETPLACE:
+  case ACTRES_HELP_WONDER:
+  case ACTRES_SPY_BRIBE_UNIT:
+  case ACTRES_SPY_BRIBE_STACK:
+  case ACTRES_SPY_SABOTAGE_UNIT:
+  case ACTRES_CAPTURE_UNITS:
+  case ACTRES_FOUND_CITY:
+  case ACTRES_JOIN_CITY:
+  case ACTRES_STEAL_MAPS:
+  case ACTRES_BOMBARD:
+  case ACTRES_SPY_NUKE:
+  case ACTRES_DESTROY_CITY:
+  case ACTRES_EXPEL_UNIT:
+  case ACTRES_DISBAND_UNIT_RECOVER:
+  case ACTRES_DISBAND_UNIT:
+  case ACTRES_HOME_CITY:
+  case ACTRES_HOMELESS:
+  case ACTRES_UPGRADE_UNIT:
+  case ACTRES_PARADROP:
+  case ACTRES_PARADROP_CONQUER:
+  case ACTRES_AIRLIFT:
+  case ACTRES_STRIKE_BUILDING:
+  case ACTRES_STRIKE_PRODUCTION:
+  case ACTRES_ATTACK:
+  case ACTRES_WIPE_UNITS:
+  case ACTRES_COLLECT_RANSOM:
+  case ACTRES_CONQUER_CITY:
+  case ACTRES_HEAL_UNIT:
+  case ACTRES_TRANSFORM_TERRAIN:
+  case ACTRES_CULTIVATE:
+  case ACTRES_PLANT:
+  case ACTRES_PILLAGE:
+  case ACTRES_CLEAN:
+  case ACTRES_FORTIFY:
+  case ACTRES_ROAD:
+  case ACTRES_CONVERT:
+  case ACTRES_BASE:
+  case ACTRES_MINE:
+  case ACTRES_IRRIGATE:
+  case ACTRES_TRANSPORT_DEBOARD:
+  case ACTRES_TRANSPORT_UNLOAD:
+  case ACTRES_TRANSPORT_LOAD:
+  case ACTRES_TRANSPORT_DISEMBARK:
+  case ACTRES_TRANSPORT_BOARD:
+  case ACTRES_TRANSPORT_EMBARK:
+  case ACTRES_SPY_ATTACK:
+  case ACTRES_SPY_SPREAD_PLAGUE:
+  case ACTRES_CONQUER_EXTRAS:
+  case ACTRES_HUT_ENTER:
+  case ACTRES_HUT_FRIGHTEN:
+  case ACTRES_UNIT_MOVE:
+  case ACTRES_SPY_ESCAPE:
+  case ACTRES_ENABLER_CHECK:
+    /* Non ruleset defined action min range not supported here */
+    fc_assert_msg(FALSE, "Probably wrong value.");
+    return RS_DEFAULT_ACTION_MIN_RANGE;
+  case ACTRES_NUKE:
+  case ACTRES_NUKE_UNITS:
+    return RS_DEFAULT_ACTION_MIN_RANGE;
+  case ACTRES_TELEPORT:
+  case ACTRES_TELEPORT_CONQUER:
+    return RS_DEFAULT_MOVE_MIN_RANGE;
+  case ACTRES_NONE:
+    return RS_DEFAULT_ACTION_MIN_RANGE;
+
+  ASSERT_UNUSED_ACTRES_CASES;
+  }
+
+  fc_assert(action_result_is_valid(result) || result == ACTRES_NONE);
+
+  return 0;
+}
+
+/**********************************************************************//**
+  Return default max range for the action if it is ruleset settable.
+**************************************************************************/
+int actres_max_range_default(enum action_result result)
+{
+  switch (result) {
+  case ACTRES_ESTABLISH_EMBASSY:
+  case ACTRES_SPY_INVESTIGATE_CITY:
+  case ACTRES_SPY_POISON:
+  case ACTRES_SPY_STEAL_GOLD:
+  case ACTRES_SPY_SABOTAGE_CITY:
+  case ACTRES_SPY_TARGETED_SABOTAGE_CITY:
+  case ACTRES_SPY_SABOTAGE_CITY_PRODUCTION:
+  case ACTRES_SPY_STEAL_TECH:
+  case ACTRES_SPY_TARGETED_STEAL_TECH:
+  case ACTRES_SPY_INCITE_CITY:
+  case ACTRES_TRADE_ROUTE:
+  case ACTRES_MARKETPLACE:
+  case ACTRES_SPY_BRIBE_UNIT:
+  case ACTRES_SPY_BRIBE_STACK:
+  case ACTRES_SPY_SABOTAGE_UNIT:
+  case ACTRES_CAPTURE_UNITS:
+  case ACTRES_FOUND_CITY:
+  case ACTRES_JOIN_CITY:
+  case ACTRES_STEAL_MAPS:
+  case ACTRES_SPY_NUKE:
+  case ACTRES_DESTROY_CITY:
+  case ACTRES_EXPEL_UNIT:
+  case ACTRES_DISBAND_UNIT:
+  case ACTRES_HOME_CITY:
+  case ACTRES_HOMELESS:
+  case ACTRES_UPGRADE_UNIT:
+  case ACTRES_PARADROP:
+  case ACTRES_PARADROP_CONQUER:
+  case ACTRES_STRIKE_BUILDING:
+  case ACTRES_STRIKE_PRODUCTION:
+  case ACTRES_ATTACK:
+  case ACTRES_WIPE_UNITS:
+  case ACTRES_COLLECT_RANSOM:
+  case ACTRES_CONQUER_CITY:
+  case ACTRES_HEAL_UNIT:
+  case ACTRES_TRANSFORM_TERRAIN:
+  case ACTRES_CULTIVATE:
+  case ACTRES_PLANT:
+  case ACTRES_PILLAGE:
+  case ACTRES_CLEAN:
+  case ACTRES_FORTIFY:
+  case ACTRES_ROAD:
+  case ACTRES_CONVERT:
+  case ACTRES_BASE:
+  case ACTRES_MINE:
+  case ACTRES_IRRIGATE:
+  case ACTRES_TRANSPORT_DEBOARD:
+  case ACTRES_TRANSPORT_UNLOAD:
+  case ACTRES_TRANSPORT_LOAD:
+  case ACTRES_TRANSPORT_DISEMBARK:
+  case ACTRES_TRANSPORT_BOARD:
+  case ACTRES_TRANSPORT_EMBARK:
+  case ACTRES_SPY_ATTACK:
+  case ACTRES_SPY_SPREAD_PLAGUE:
+  case ACTRES_CONQUER_EXTRAS:
+  case ACTRES_HUT_ENTER:
+  case ACTRES_HUT_FRIGHTEN:
+  case ACTRES_UNIT_MOVE:
+  case ACTRES_SPY_ESCAPE:
+  case ACTRES_ENABLER_CHECK:
+    /* Non ruleset defined action max range not supported here */
+    fc_assert_msg(FALSE, "Probably wrong value.");
+    return RS_DEFAULT_ACTION_MAX_RANGE;
+  case ACTRES_HELP_WONDER:
+  case ACTRES_DISBAND_UNIT_RECOVER:
+    return RS_DEFAULT_ACTION_MAX_RANGE;
+  case ACTRES_BOMBARD:
+    return RS_DEFAULT_ACTION_MAX_RANGE;
+  case ACTRES_NUKE:
+    return RS_DEFAULT_EXPLODE_NUCLEAR_MAX_RANGE;
+  case ACTRES_NUKE_UNITS:
+    return RS_DEFAULT_ACTION_MAX_RANGE;
+  case ACTRES_AIRLIFT:
+  case ACTRES_TELEPORT:
+  case ACTRES_TELEPORT_CONQUER:
+    return ACTION_DISTANCE_UNLIMITED;
+  case ACTRES_NONE:
+    return RS_DEFAULT_ACTION_MAX_RANGE;
+
+  ASSERT_UNUSED_ACTRES_CASES;
+  }
+
+  fc_assert(action_result_is_valid(result) || result == ACTRES_NONE);
+
+  return 0;
+}
+
+/**********************************************************************//**
+  Returns TRUE iff the specified action result works with the specified
+  action target kind.
+**************************************************************************/
+bool actres_legal_target_kind(enum action_result result,
+                              enum action_target_kind tgt_kind)
+{
+  fc_assert_ret_val(action_result_is_valid(result) || result == ACTRES_NONE,
+                    FALSE);
+  fc_assert_ret_val(action_target_kind_is_valid(tgt_kind),
+                    FALSE);
+
+  switch (result) {
+  case ACTRES_ESTABLISH_EMBASSY:
+  case ACTRES_SPY_INVESTIGATE_CITY:
+  case ACTRES_SPY_POISON:
+  case ACTRES_SPY_STEAL_GOLD:
+  case ACTRES_SPY_SABOTAGE_CITY:
+  case ACTRES_SPY_TARGETED_SABOTAGE_CITY:
+  case ACTRES_SPY_SABOTAGE_CITY_PRODUCTION:
+  case ACTRES_SPY_STEAL_TECH:
+  case ACTRES_SPY_TARGETED_STEAL_TECH:
+  case ACTRES_SPY_INCITE_CITY:
+  case ACTRES_TRADE_ROUTE:
+  case ACTRES_MARKETPLACE:
+  case ACTRES_HELP_WONDER:
+  case ACTRES_JOIN_CITY:
+  case ACTRES_STEAL_MAPS:
+  case ACTRES_SPY_NUKE:
+  case ACTRES_DESTROY_CITY:
+  case ACTRES_DISBAND_UNIT_RECOVER:
+  case ACTRES_HOME_CITY:
+  case ACTRES_UPGRADE_UNIT:
+  case ACTRES_AIRLIFT:
+  case ACTRES_STRIKE_BUILDING:
+  case ACTRES_STRIKE_PRODUCTION:
+  case ACTRES_CONQUER_CITY:
+  case ACTRES_SPY_SPREAD_PLAGUE:
+  case ACTRES_SPY_ESCAPE:
+    return tgt_kind == ATK_CITY;
+  case ACTRES_SPY_BRIBE_UNIT:
+  case ACTRES_SPY_SABOTAGE_UNIT:
+  case ACTRES_EXPEL_UNIT:
+  case ACTRES_HEAL_UNIT:
+  case ACTRES_TRANSPORT_DEBOARD:
+  case ACTRES_TRANSPORT_UNLOAD:
+  case ACTRES_TRANSPORT_LOAD:
+  case ACTRES_TRANSPORT_BOARD:
+  case ACTRES_TRANSPORT_EMBARK:
+    return tgt_kind == ATK_UNIT;
+  case ACTRES_SPY_BRIBE_STACK:
+  case ACTRES_CAPTURE_UNITS:
+  case ACTRES_BOMBARD:
+  case ACTRES_NUKE_UNITS:
+  case ACTRES_ATTACK:
+  case ACTRES_WIPE_UNITS:
+  case ACTRES_SPY_ATTACK:
+  case ACTRES_COLLECT_RANSOM:
+    return tgt_kind == ATK_STACK;
+  case ACTRES_FOUND_CITY:
+  case ACTRES_PARADROP:
+  case ACTRES_PARADROP_CONQUER:
+  case ACTRES_TRANSFORM_TERRAIN:
+  case ACTRES_CULTIVATE:
+  case ACTRES_PLANT:
+  case ACTRES_CLEAN:
+  case ACTRES_ROAD:
+  case ACTRES_BASE:
+  case ACTRES_MINE:
+  case ACTRES_IRRIGATE:
+  case ACTRES_TRANSPORT_DISEMBARK:
+  case ACTRES_HUT_ENTER:
+  case ACTRES_HUT_FRIGHTEN:
+  case ACTRES_UNIT_MOVE:
+  case ACTRES_TELEPORT:
+  case ACTRES_TELEPORT_CONQUER:
+    return tgt_kind == ATK_TILE;
+  case ACTRES_CONQUER_EXTRAS:
+    return tgt_kind == ATK_EXTRAS;
+  case ACTRES_DISBAND_UNIT:
+  case ACTRES_CONVERT:
+  case ACTRES_FORTIFY:
+  case ACTRES_HOMELESS:
+  case ACTRES_ENABLER_CHECK:
+    return tgt_kind == ATK_SELF;
+  case ACTRES_PILLAGE:
+    return (tgt_kind == ATK_TILE || tgt_kind == ATK_EXTRAS);
+  case ACTRES_NUKE:
+    return (tgt_kind == ATK_TILE || tgt_kind == ATK_CITY);
+  case ACTRES_NONE:
+    switch (tgt_kind) {
+    case ATK_CITY:
+    case ATK_UNIT:
+    case ATK_STACK:
+    case ATK_TILE:
+    case ATK_EXTRAS:
+    case ATK_SELF:
+      /* Works with all existing target kinds. */
+      return TRUE;
+    case ATK_COUNT:
+      fc_assert_ret_val(tgt_kind != ATK_COUNT, FALSE);
+      break;
+    }
+    break;
+
+  ASSERT_UNUSED_ACTRES_CASES;
+  }
+
+  /* Should never be reached. */
+  return FALSE;
+}
+
+/**********************************************************************//**
+  Return default sub target kind for the action with the specified result.
+**************************************************************************/
+enum action_sub_target_kind
+actres_sub_target_kind_default(enum action_result result)
+{
+  fc_assert_ret_val(action_result_is_valid(result) || result == ACTRES_NONE,
+                    ASTK_NONE);
+
+  switch (result) {
+  case ACTRES_ESTABLISH_EMBASSY:
+  case ACTRES_SPY_INVESTIGATE_CITY:
+  case ACTRES_SPY_POISON:
+  case ACTRES_SPY_STEAL_GOLD:
+  case ACTRES_SPY_SABOTAGE_CITY:
+  case ACTRES_SPY_SABOTAGE_CITY_PRODUCTION:
+  case ACTRES_SPY_STEAL_TECH:
+  case ACTRES_SPY_INCITE_CITY:
+  case ACTRES_TRADE_ROUTE:
+  case ACTRES_MARKETPLACE:
+  case ACTRES_HELP_WONDER:
+  case ACTRES_JOIN_CITY:
+  case ACTRES_STEAL_MAPS:
+  case ACTRES_SPY_NUKE:
+  case ACTRES_DESTROY_CITY:
+  case ACTRES_DISBAND_UNIT_RECOVER:
+  case ACTRES_HOME_CITY:
+  case ACTRES_HOMELESS:
+  case ACTRES_UPGRADE_UNIT:
+  case ACTRES_AIRLIFT:
+  case ACTRES_STRIKE_PRODUCTION:
+  case ACTRES_CONQUER_CITY:
+  case ACTRES_SPY_SPREAD_PLAGUE:
+    return ASTK_NONE;
+  case ACTRES_SPY_TARGETED_SABOTAGE_CITY:
+  case ACTRES_STRIKE_BUILDING:
+    return ASTK_BUILDING;
+  case ACTRES_SPY_TARGETED_STEAL_TECH:
+    return ASTK_TECH;
+  case ACTRES_SPY_BRIBE_UNIT:
+  case ACTRES_SPY_BRIBE_STACK:
+  case ACTRES_SPY_SABOTAGE_UNIT:
+  case ACTRES_EXPEL_UNIT:
+  case ACTRES_HEAL_UNIT:
+  case ACTRES_TRANSPORT_DEBOARD:
+  case ACTRES_TRANSPORT_UNLOAD:
+  case ACTRES_TRANSPORT_LOAD:
+  case ACTRES_TRANSPORT_BOARD:
+  case ACTRES_TRANSPORT_EMBARK:
+    return ASTK_NONE;
+  case ACTRES_CAPTURE_UNITS:
+  case ACTRES_BOMBARD:
+  case ACTRES_NUKE_UNITS:
+  case ACTRES_ATTACK:
+  case ACTRES_WIPE_UNITS:
+  case ACTRES_SPY_ATTACK:
+  case ACTRES_COLLECT_RANSOM:
+    return ASTK_NONE;
+  case ACTRES_FOUND_CITY:
+  case ACTRES_NUKE:
+  case ACTRES_PARADROP:
+  case ACTRES_PARADROP_CONQUER:
+  case ACTRES_TRANSFORM_TERRAIN:
+  case ACTRES_CULTIVATE:
+  case ACTRES_PLANT:
+  case ACTRES_TRANSPORT_DISEMBARK:
+  case ACTRES_HUT_ENTER:
+  case ACTRES_HUT_FRIGHTEN:
+  case ACTRES_UNIT_MOVE:
+  case ACTRES_TELEPORT:
+  case ACTRES_TELEPORT_CONQUER:
+  case ACTRES_ENABLER_CHECK:
+  case ACTRES_SPY_ESCAPE:
+    return ASTK_NONE;
+  case ACTRES_PILLAGE:
+  case ACTRES_CLEAN:
+    return ASTK_EXTRA;
+  case ACTRES_ROAD:
+  case ACTRES_BASE:
+  case ACTRES_MINE:
+  case ACTRES_IRRIGATE:
+    return ASTK_EXTRA_NOT_THERE;
+  case ACTRES_CONQUER_EXTRAS:
+    return ASTK_NONE;
+  case ACTRES_DISBAND_UNIT:
+  case ACTRES_CONVERT:
+  case ACTRES_FORTIFY:
+    return ASTK_NONE;
+  case ACTRES_NONE:
+    return ASTK_NONE;
+
+  ASSERT_UNUSED_ACTRES_CASES;
+  }
+
+  /* Should never be reached. */
+  return ASTK_NONE;
+}
+
+/**********************************************************************//**
+  Return default target kind for the action with the specified result.
+**************************************************************************/
+enum action_target_kind
+actres_target_kind_default(enum action_result result)
+{
+  if (result == ACTRES_NONE) {
+    return RS_DEFAULT_USER_ACTION_TARGET_KIND;
+  }
+
+  fc_assert_ret_val(action_result_is_valid(result),
+                    RS_DEFAULT_USER_ACTION_TARGET_KIND);
+
+  return act_results[result].def_tgt_kind;
+}
+
+/**********************************************************************//**
+  Does action with the result create the extra
+
+  @param  result  Action result to check
+  @param  pextra  Extra to check
+  @return         Whether action creates the extra
+**************************************************************************/
+bool actres_creates_extra(enum action_result result,
+                          const struct extra_type *pextra)
+{
+  if (act_results[result].ecause == EC_NONE) {
+    return FALSE;
+  }
+
+  if (pextra == nullptr || !pextra->buildable) {
+    return FALSE;
+  }
+
+  return is_extra_caused_by(pextra, act_results[result].ecause);
+}
+
+/**********************************************************************//**
+  Does action with the result remove the extra
+
+  @param  result  Action result to check
+  @param  pextra  Extra to check
+  @return         Whether action removes the extra
+**************************************************************************/
+bool actres_removes_extra(enum action_result result,
+                          const struct extra_type *pextra)
+{
+  if (act_results[result].ermcause == ERM_NONE) {
+    return FALSE;
+  }
+
+  return is_extra_removed_by(pextra, act_results[result].ermcause);
+}
+
+/**********************************************************************//**
   Returns TRUE iff the specified player knows (has seen) the specified
   tile.
 **************************************************************************/
@@ -237,7 +833,8 @@ static bool plr_knows_tile(const struct player *plr,
 /**********************************************************************//**
   Could an action with this kind of result be made?
 **************************************************************************/
-enum fc_tristate actres_possible(enum action_result result,
+enum fc_tristate actres_possible(const struct civ_map *nmap,
+                                 enum action_result result,
                                  const struct req_context *actor,
                                  const struct req_context *target,
                                  const struct extra_type *target_extra,
@@ -265,6 +862,7 @@ enum fc_tristate actres_possible(enum action_result result,
   switch (result) {
   case ACTRES_CAPTURE_UNITS:
   case ACTRES_SPY_BRIBE_UNIT:
+  case ACTRES_SPY_BRIBE_STACK:
     /* Why this is a hard requirement: Can't transfer a unique unit if the
      * actor player already has one. */
     /* Info leak: This is only checked for when the actor player can see
@@ -313,7 +911,7 @@ enum fc_tristate actres_possible(enum action_result result,
   case ACTRES_MARKETPLACE:
     {
       /* Checked in action_hard_reqs_actor() */
-      fc_assert_ret_val(homecity != NULL, TRI_NO);
+      fc_assert_ret_val(homecity != nullptr, TRI_NO);
 
       /* Can't establish a trade route or enter the market place if the
        * cities can't trade at all. */
@@ -325,9 +923,13 @@ enum fc_tristate actres_possible(enum action_result result,
 
       /* There are more restrictions on establishing a trade route than on
        * entering the market place. */
-      if (result == ACTRES_TRADE_ROUTE
-          && !can_establish_trade_route(homecity, target->city)) {
-        return TRI_NO;
+      if (result == ACTRES_TRADE_ROUTE) {
+        struct goods_type *pgood = unit_current_goods(actor->unit, homecity);
+
+        if (!can_establish_trade_route(homecity, target->city,
+                                       pgood->replace_priority)) {
+          return TRI_NO;
+        }
       }
     }
 
@@ -365,14 +967,14 @@ enum fc_tristate actres_possible(enum action_result result,
       return TRI_NO;
     }
 
-    if (citymindist_prevents_city_on_tile(target->tile)) {
+    if (citymindist_prevents_city_on_tile(nmap, target->tile)) {
       if (omniscient) {
         /* No need to check again. */
         return TRI_NO;
       } else {
-        square_iterate(&(wld.map), target->tile,
+        square_iterate(nmap, target->tile,
                        game.info.citymindist - 1, otile) {
-          if (tile_city(otile) != NULL
+          if (tile_city(otile) != nullptr
               && can_player_see_tile(actor->player, otile)) {
             /* Known to be blocked by citymindist */
             return TRI_NO;
@@ -392,7 +994,7 @@ enum fc_tristate actres_possible(enum action_result result,
     if (!omniscient) {
       /* The player may not have enough information to find out if
        * citymindist blocks or not. This doesn't depend on if it blocks. */
-      square_iterate(&(wld.map), target->tile,
+      square_iterate(nmap, target->tile,
                      game.info.citymindist - 1, otile) {
         if (!can_player_see_tile(actor->player, otile)) {
           /* Could have a city that blocks via citymindist. Even if this
@@ -408,6 +1010,7 @@ enum fc_tristate actres_possible(enum action_result result,
   case ACTRES_JOIN_CITY:
     {
       int new_pop;
+      Specialist_type_id sid;
 
       if (!omniscient
           && !player_can_see_city_externals(actor->player, target->city)) {
@@ -430,6 +1033,21 @@ enum fc_tristate actres_possible(enum action_result result,
          * VisibleByOthers. */
         return TRI_NO;
       }
+
+      sid = specialist_index(unit_type_get(actor->unit)->spec_type);
+      if (DEFAULT_SPECIALIST != sid) {
+        if (!city_can_use_specialist(target->city, sid)) {
+          /* Respect specialist reqs */
+          /* Potential info leak about if they are fulfilled */
+          return TRI_NO;
+        }
+        if (is_super_specialist_id(sid)
+            && target->city->specialists[sid] >= MAX_CITY_SIZE) {
+          /* No place to add a superspecialist */
+          /* Info leak on city superspecialists but it happens too rarely */
+          return TRI_NO;
+        }
+      }
     }
 
     break;
@@ -441,7 +1059,7 @@ enum fc_tristate actres_possible(enum action_result result,
   case ACTRES_HOME_CITY:
     /* Reason: can't change to what is. */
     /* Info leak: The player knows their unit's current home city. */
-    if (homecity != NULL && homecity->id == target->city->id) {
+    if (homecity != nullptr && homecity->id == target->city->id) {
       /* This is already the unit's home city. */
       return TRI_NO;
     }
@@ -470,7 +1088,7 @@ enum fc_tristate actres_possible(enum action_result result,
      * of cargo, they can predict if there will be enough room in the unit
      * upgraded to, as long as they know what unit type their unit will end
      * up as. */
-    if (unit_upgrade_test(actor->unit, FALSE) != UU_OK) {
+    if (unit_upgrade_test(nmap, actor->unit, FALSE) != UU_OK) {
       return TRI_NO;
     }
 
@@ -497,7 +1115,8 @@ enum fc_tristate actres_possible(enum action_result result,
   case ACTRES_AIRLIFT:
     /* Reason: Keep the old rules. */
     /* Info leak: same as test_unit_can_airlift_to() */
-    switch (test_unit_can_airlift_to(omniscient ? NULL : actor->player,
+    switch (test_unit_can_airlift_to(nmap,
+                                     omniscient ? nullptr : actor->player,
                                      actor->unit, target->city)) {
     case AR_OK:
       return TRI_YES;
@@ -528,9 +1147,22 @@ enum fc_tristate actres_possible(enum action_result result,
     } unit_list_iterate_end;
     break;
 
+  case ACTRES_COLLECT_RANSOM:
+    if (!uclass_has_flag(unit_class_get(actor->unit), UCF_COLLECT_RANSOM)) {
+      return FALSE;
+    }
+
+    unit_list_iterate(target->tile->units, punit) {
+      if (!unit_has_type_flag(punit, UTYF_PROVIDES_RANSOM)) {
+        /* Cannot get ransom when there are other kind of units in the tile */
+        return FALSE;
+      }
+    } unit_list_iterate_end;
+    break;
+
   case ACTRES_CONQUER_CITY:
     /* Reason: "Conquer City" involves moving into the city. */
-    if (!unit_can_move_to_tile(&(wld.map), actor->unit, target->tile,
+    if (!unit_can_move_to_tile(nmap, actor->unit, target->tile,
                                FALSE, FALSE, TRUE)) {
       return TRI_NO;
     }
@@ -539,7 +1171,7 @@ enum fc_tristate actres_possible(enum action_result result,
 
   case ACTRES_CONQUER_EXTRAS:
     /* Reason: "Conquer Extras" involves moving to the tile. */
-    if (!unit_can_move_to_tile(&(wld.map), actor->unit, target->tile,
+    if (!unit_can_move_to_tile(nmap, actor->unit, target->tile,
                                FALSE, FALSE, FALSE)) {
       return TRI_NO;
     }
@@ -568,7 +1200,7 @@ enum fc_tristate actres_possible(enum action_result result,
     pterrain = tile_terrain(target->tile);
     if (pterrain->transform_result == T_NONE
         || pterrain == pterrain->transform_result
-        || !terrain_surroundings_allow_change(target->tile,
+        || !terrain_surroundings_allow_change(nmap, target->tile,
                                               pterrain->transform_result)
         || (terrain_has_flag(pterrain->transform_result, TER_NO_CITIES)
             && (tile_city(target->tile)))) {
@@ -578,10 +1210,10 @@ enum fc_tristate actres_possible(enum action_result result,
 
   case ACTRES_CULTIVATE:
     pterrain = tile_terrain(target->tile);
-    if (pterrain->cultivate_result == NULL) {
+    if (pterrain->cultivate_result == nullptr) {
       return TRI_NO;
     }
-    if (!terrain_surroundings_allow_change(target->tile,
+    if (!terrain_surroundings_allow_change(nmap, target->tile,
                                            pterrain->cultivate_result)
         || (terrain_has_flag(pterrain->cultivate_result, TER_NO_CITIES)
             && tile_city(target->tile))) {
@@ -591,10 +1223,10 @@ enum fc_tristate actres_possible(enum action_result result,
 
   case ACTRES_PLANT:
     pterrain = tile_terrain(target->tile);
-    if (pterrain->plant_result == NULL) {
+    if (pterrain->plant_result == nullptr) {
       return TRI_NO;
     }
-    if (!terrain_surroundings_allow_change(target->tile,
+    if (!terrain_surroundings_allow_change(nmap, target->tile,
                                            pterrain->plant_result)
         || (terrain_has_flag(pterrain->plant_result, TER_NO_CITIES)
             && tile_city(target->tile))) {
@@ -603,21 +1235,21 @@ enum fc_tristate actres_possible(enum action_result result,
     break;
 
   case ACTRES_ROAD:
-    if (target_extra == NULL) {
+    if (target_extra == nullptr) {
       return TRI_NO;
     }
     if (!is_extra_caused_by(target_extra, EC_ROAD)) {
       /* Reason: This is not a road. */
       return TRI_NO;
     }
-    if (!can_build_road(extra_road_get(target_extra), actor->unit,
+    if (!can_build_road(nmap, extra_road_get(target_extra), actor->unit,
                         target->tile)) {
       return TRI_NO;
     }
     break;
 
   case ACTRES_BASE:
-    if (target_extra == NULL) {
+    if (target_extra == nullptr) {
       return TRI_NO;
     }
     if (!is_extra_caused_by(target_extra, EC_BASE)) {
@@ -631,7 +1263,7 @@ enum fc_tristate actres_possible(enum action_result result,
     break;
 
   case ACTRES_MINE:
-    if (target_extra == NULL) {
+    if (target_extra == nullptr) {
       return TRI_NO;
     }
     if (!is_extra_caused_by(target_extra, EC_MINE)) {
@@ -645,7 +1277,7 @@ enum fc_tristate actres_possible(enum action_result result,
     break;
 
   case ACTRES_IRRIGATE:
-    if (target_extra == NULL) {
+    if (target_extra == nullptr) {
       return TRI_NO;
     }
     if (!is_extra_caused_by(target_extra, EC_IRRIGATION)) {
@@ -665,7 +1297,7 @@ enum fc_tristate actres_possible(enum action_result result,
     }
 
     {
-      bv_extras pspresent = get_tile_infrastructure_set(target->tile, NULL);
+      bv_extras pspresent = get_tile_infrastructure_set(target->tile, nullptr);
       bv_extras psworking = get_unit_tile_pillage_set(target->tile);
       bv_extras pspossible;
 
@@ -705,7 +1337,7 @@ enum fc_tristate actres_possible(enum action_result result,
         return TRI_NO;
       }
 
-      if (target_extra != NULL) {
+      if (target_extra != nullptr) {
         if (!game.info.pillage_select) {
           /* Hobson's choice (this case mostly exists for old clients) */
           /* Needs to match what unit_activity_assign_target chooses */
@@ -728,130 +1360,32 @@ enum fc_tristate actres_possible(enum action_result result,
 
   case ACTRES_CLEAN:
     {
-      const struct extra_type *pextra = NULL;
+      const struct extra_type *pextra = nullptr;
 
       pterrain = tile_terrain(target->tile);
 
-      if (target_extra != NULL) {
+      if (target_extra != nullptr) {
         if (tile_has_extra(target->tile, target_extra)
-            && (is_extra_removed_by(target_extra, ERM_CLEAN)
-                || is_extra_removed_by(target_extra, ERM_CLEANPOLLUTION)
-                || is_extra_removed_by(target_extra, ERM_CLEANFALLOUT))) {
+            && (is_extra_removed_by(target_extra, ERM_CLEAN))) {
           pextra = target_extra;
         }
       } else {
         /* TODO: Make sure that all callers set target so that
          * we don't need this fallback. */
-
         pextra = prev_extra_in_tile(target->tile,
                                     ERM_CLEAN,
                                     actor->player,
                                     actor->unit);
-
-        if (pextra == NULL) {
-          pextra = prev_extra_in_tile(target->tile,
-                                      ERM_CLEANPOLLUTION,
-                                      actor->player,
-                                      actor->unit);
-
-          if (pextra == NULL) {
-            pextra = prev_extra_in_tile(target->tile,
-                                        ERM_CLEANFALLOUT,
-                                        actor->player,
-                                        actor->unit);
-          }
-        }
       }
 
-      if (pextra != NULL && pterrain->extra_removal_times[extra_index(pextra)] > 0
+      if (pextra != nullptr
+          && pterrain->extra_removal_times[extra_index(pextra)] > 0
           && can_remove_extra(pextra, actor->unit, target->tile)) {
         return TRI_YES;
       }
 
       return TRI_NO;
     }
-
-  case ACTRES_CLEAN_POLLUTION:
-    {
-      const struct extra_type *pextra;
-
-      pterrain = tile_terrain(target->tile);
-
-      if (target_extra != NULL) {
-        pextra = target_extra;
-
-        if (!is_extra_removed_by(pextra, ERM_CLEANPOLLUTION)) {
-          return TRI_NO;
-        }
-
-        if (!tile_has_extra(target->tile, pextra)) {
-          return TRI_NO;
-        }
-      } else {
-        /* TODO: Make sure that all callers set target so that
-         * we don't need this fallback. */
-        pextra = prev_extra_in_tile(target->tile,
-                                    ERM_CLEANPOLLUTION,
-                                    actor->player,
-                                    actor->unit);
-        if (pextra == NULL) {
-          /* No available pollution extras */
-          return TRI_NO;
-        }
-      }
-
-      if (pterrain->extra_removal_times[extra_index(pextra)] == 0) {
-        return TRI_NO;
-      }
-
-      if (can_remove_extra(pextra, actor->unit, target->tile)) {
-        return TRI_YES;
-      }
-
-      return TRI_NO;
-    }
-    break;
-
-  case ACTRES_CLEAN_FALLOUT:
-    {
-      const struct extra_type *pextra;
-
-      pterrain = tile_terrain(target->tile);
-
-      if (target_extra != NULL) {
-        pextra = target_extra;
-
-        if (!is_extra_removed_by(pextra, ERM_CLEANFALLOUT)) {
-          return TRI_NO;
-        }
-
-        if (!tile_has_extra(target->tile, pextra)) {
-          return TRI_NO;
-        }
-      } else {
-        /* TODO: Make sure that all callers set target so that
-         * we don't need this fallback. */
-        pextra = prev_extra_in_tile(target->tile,
-                                    ERM_CLEANFALLOUT,
-                                    actor->player,
-                                    actor->unit);
-        if (pextra == NULL) {
-          /* No available fallout extras */
-          return TRI_NO;
-        }
-      }
-
-      if (pterrain->extra_removal_times[extra_index(pextra)] == 0) {
-        return TRI_NO;
-      }
-
-      if (can_remove_extra(pextra, actor->unit, target->tile)) {
-        return TRI_YES;
-      }
-
-      return TRI_NO;
-    }
-    break;
 
   case ACTRES_TRANSPORT_DEBOARD:
     if (!can_unit_unload(actor->unit, target->unit)) {
@@ -901,7 +1435,7 @@ enum fc_tristate actres_possible(enum action_result result,
     break;
 
   case ACTRES_TRANSPORT_DISEMBARK:
-    if (!unit_can_move_to_tile(&(wld.map), actor->unit, target->tile,
+    if (!unit_can_move_to_tile(nmap, actor->unit, target->tile,
                                FALSE, FALSE, FALSE)) {
       /* Reason: involves moving to the tile. */
       return TRI_NO;
@@ -911,10 +1445,12 @@ enum fc_tristate actres_possible(enum action_result result,
      * units or cities not allied with all of our cargo. */
     if (get_transporter_capacity(actor->unit) > 0) {
       unit_list_iterate(unit_tile(actor->unit)->units, pcargo) {
+        struct player *cowner = unit_owner(pcargo);
+
         if (unit_contained_in(pcargo, actor->unit)
-            && (is_non_allied_unit_tile(target->tile, unit_owner(pcargo))
-                || is_non_allied_city_tile(target->tile,
-                                           unit_owner(pcargo)))) {
+            && (is_non_allied_unit_tile(target->tile, cowner,
+                                        unit_has_type_flag(pcargo, UTYF_FLAGLESS))
+                || is_non_allied_city_tile(target->tile, cowner))) {
            return TRI_NO;
         }
       } unit_list_iterate_end;
@@ -932,7 +1468,7 @@ enum fc_tristate actres_possible(enum action_result result,
       /* Keep the old rules. */
       return TRI_NO;
     }
-    if (!unit_can_move_to_tile(&(wld.map), actor->unit, target->tile,
+    if (!unit_can_move_to_tile(nmap, actor->unit, target->tile,
                                FALSE, TRUE, FALSE)) {
       /* Reason: involves moving to the tile. */
       return TRI_NO;
@@ -941,10 +1477,13 @@ enum fc_tristate actres_possible(enum action_result result,
      * units or cities not allied with all of our cargo. */
     if (get_transporter_capacity(actor->unit) > 0) {
       unit_list_iterate(unit_tile(actor->unit)->units, pcargo) {
+        struct player *cowner = unit_owner(pcargo);
+
         if (unit_contained_in(pcargo, actor->unit)
-            && (is_non_allied_unit_tile(target->tile, unit_owner(pcargo))
+            && (is_non_allied_unit_tile(target->tile, cowner,
+                                        unit_has_type_flag(pcargo, UTYF_FLAGLESS))
                 || is_non_allied_city_tile(target->tile,
-                                           unit_owner(pcargo)))) {
+                                           cowner))) {
            return TRI_NO;
         }
       } unit_list_iterate_end;
@@ -994,7 +1533,7 @@ enum fc_tristate actres_possible(enum action_result result,
   case ACTRES_HUT_ENTER:
   case ACTRES_HUT_FRIGHTEN:
     /* Reason: involves moving to the tile. */
-    if (!unit_can_move_to_tile(&(wld.map), actor->unit, target->tile,
+    if (!unit_can_move_to_tile(nmap, actor->unit, target->tile,
                                FALSE, FALSE, FALSE)) {
       return TRI_NO;
     }
@@ -1006,36 +1545,38 @@ enum fc_tristate actres_possible(enum action_result result,
 
   case ACTRES_UNIT_MOVE:
   case ACTRES_TELEPORT:
-
+  case ACTRES_TELEPORT_CONQUER:
     if (result == ACTRES_UNIT_MOVE) {
       /* Reason: is moving to the tile. */
-      if (!unit_can_move_to_tile(&(wld.map), actor->unit, target->tile,
+      if (!unit_can_move_to_tile(nmap, actor->unit, target->tile,
                                  FALSE, FALSE, FALSE)) {
         return TRI_NO;
       }
     } else {
-      fc_assert(result == ACTRES_TELEPORT);
+      fc_assert(result == ACTRES_TELEPORT || result == ACTRES_TELEPORT_CONQUER);
 
       /* Reason: is teleporting to the tile. */
-      if (!unit_can_teleport_to_tile(&(wld.map), actor->unit, target->tile,
-                                     FALSE, FALSE)) {
+      if (!unit_can_teleport_to_tile(nmap, actor->unit, target->tile,
+                                     FALSE, result == ACTRES_TELEPORT_CONQUER)) {
         return TRI_NO;
       }
     }
 
     /* Reason: Don't override "Transport Embark" */
-    if (!can_unit_exist_at_tile(&(wld.map), actor->unit, target->tile)) {
+    if (!can_unit_exist_at_tile(nmap, actor->unit, target->tile)) {
       return TRI_NO;
     }
 
     /* We cannot move a transport into a tile that holds
-     * units or cities not allied with all of our cargo. */
+     * units or cities not allied with any of our cargo. */
     if (get_transporter_capacity(actor->unit) > 0) {
       unit_list_iterate(unit_tile(actor->unit)->units, pcargo) {
+        struct player *cowner = unit_owner(pcargo);
+
         if (unit_contained_in(pcargo, actor->unit)
-            && (is_non_allied_unit_tile(target->tile, unit_owner(pcargo))
-                || is_non_allied_city_tile(target->tile,
-                                           unit_owner(pcargo)))) {
+            && (is_non_allied_unit_tile(target->tile, cowner,
+                                        unit_has_type_flag(pcargo, UTYF_FLAGLESS))
+                || is_non_allied_city_tile(target->tile, cowner))) {
            return TRI_NO;
         }
       } unit_list_iterate_end;
@@ -1060,7 +1601,7 @@ enum fc_tristate actres_possible(enum action_result result,
        * what user really wants.
        * Allow bombing when player does not know if there's units in
        * target tile. */
-      if (tile_city(target->tile) == NULL
+      if (tile_city(target->tile) == nullptr
           && fc_funcs->player_tile_vision_get(target->tile, actor->player,
                                               V_MAIN)
           && fc_funcs->player_tile_vision_get(target->tile, actor->player,
@@ -1118,6 +1659,8 @@ enum fc_tristate actres_possible(enum action_result result,
   case ACTRES_NONE:
     /* No known hard coded requirements. */
     break;
+
+  ASSERT_UNUSED_ACTRES_CASES;
   }
 
   return def;

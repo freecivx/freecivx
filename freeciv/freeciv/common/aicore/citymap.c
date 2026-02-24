@@ -36,21 +36,21 @@
 /* CITYMAP - reserve space for cities
  *
  * The citymap is a large int double array that corresponds to
- * the freeciv main map. For each tile, it stores three different 
+ * the freeciv main map. For each tile, it stores three different
  * and exclusive values in a single int: A positive int tells you
- * how many cities can use this tile (a crowdedness inidicator). A 
- * value of zero indicates that the tile is presently unused and 
- * available. A negative value means that this tile is occupied 
+ * how many cities can use this tile (a crowdedness indicator).
+ * A value of zero indicates that the tile is presently unused and
+ * available. A negative value means that this tile is occupied
  * and reserved by some city or unit: in this case the value gives
  * the negative of the ID of the city or unit that has reserved the
  * tile.
  *
- * Code that uses the citymap should modify its behaviour based on
+ * Code that uses the citymap should modify its behavior based on
  * positive values encountered, and never attempt to steal a tile
  * which has a negative value.
  */
 
-static int *citymap = NULL;
+static int *citymap = nullptr;
 
 #define log_citymap log_debug
 
@@ -60,7 +60,9 @@ static int *citymap = NULL;
 **************************************************************************/
 void citymap_turn_init(struct player *pplayer)
 {
-  /* The citymap is reinitialized at the start of ever turn.  This includes
+  const struct civ_map *nmap = &(wld.map);
+
+  /* The citymap is reinitialized at the start of ever turn. This includes
    * a call to realloc, which only really matters if this is the first turn
    * of the game (but it's easier than a separate function to do this). */
   citymap = fc_realloc(citymap, MAP_INDEX_SIZE * sizeof(*citymap));
@@ -70,16 +72,16 @@ void citymap_turn_init(struct player *pplayer)
     city_list_iterate(pother->cities, pcity) {
       struct tile *pcenter = city_tile(pcity);
 
-      /* reserve at least the default (squared) city radius */
-      city_tile_iterate(MAX(city_map_radius_sq_get(pcity),
+      /* Reserve at least the default (squared) city radius */
+      city_tile_iterate(nmap, MAX(city_map_radius_sq_get(pcity),
                             CITY_MAP_DEFAULT_RADIUS_SQ),
                         pcenter, ptile) {
         struct city *pwork = tile_worked(ptile);
 
-        if (NULL != pwork) {
+        if (pwork != nullptr) {
           citymap[tile_index(ptile)] = -(pwork->id);
         } else {
-	  citymap[tile_index(ptile)]++;
+          citymap[tile_index(ptile)]++;
         }
       } city_tile_iterate_end;
     } city_list_iterate_end;
@@ -89,8 +91,8 @@ void citymap_turn_init(struct player *pplayer)
     if (unit_is_cityfounder(punit)
         && punit->server.adv->task == AUT_BUILD_CITY) {
 
-      /* use default (squared) city radius */
-      city_tile_iterate(CITY_MAP_DEFAULT_RADIUS_SQ, punit->goto_tile,
+      /* Use default (squared) city radius */
+      city_tile_iterate(nmap, CITY_MAP_DEFAULT_RADIUS_SQ, punit->goto_tile,
                         ptile) {
         if (citymap[tile_index(ptile)] >= 0) {
           citymap[tile_index(ptile)]++;
@@ -107,20 +109,22 @@ void citymap_turn_init(struct player *pplayer)
 **************************************************************************/
 void citymap_free(void)
 {
-  if (citymap != NULL) {
+  if (citymap != nullptr) {
     FC_FREE(citymap);
   }
 }
 
 /**********************************************************************//**
   This function reserves a single tile for a (possibly virtual) city with
-  a settler's or a city's id. Then it 'crowds' tiles that this city can 
+  a settler's or a city's id. Then it 'crowds' tiles that this city can
   use to make them less attractive to other cities we may consider making.
 **************************************************************************/
 void citymap_reserve_city_spot(struct tile *ptile, int id)
 {
+  const struct civ_map *nmap = &(wld.map);
+
 #ifdef FREECIV_DEBUG
-  log_citymap("id %d reserving (%d, %d), was %d", 
+  log_citymap("id %d reserving (%d, %d), was %d",
               id, TILE_XY(ptile), citymap[tile_index(ptile)]);
   fc_assert_ret(0 <= citymap[tile_index(ptile)]);
 #endif /* FREECIV_DEBUG */
@@ -128,7 +132,7 @@ void citymap_reserve_city_spot(struct tile *ptile, int id)
   /* Tiles will now be "reserved" by actual workers, so free excess
    * reservations. Also mark tiles for city overlapping, or 'crowding'.
    * Uses the default city map size / squared city radius. */
-  city_tile_iterate(CITY_MAP_DEFAULT_RADIUS_SQ, ptile, ptile1) {
+  city_tile_iterate(nmap, CITY_MAP_DEFAULT_RADIUS_SQ, ptile, ptile1) {
     if (citymap[tile_index(ptile1)] == -id) {
       citymap[tile_index(ptile1)] = 0;
     }
@@ -145,7 +149,9 @@ void citymap_reserve_city_spot(struct tile *ptile, int id)
 **************************************************************************/
 void citymap_free_city_spot(struct tile *ptile, int id)
 {
-  city_tile_iterate(CITY_MAP_DEFAULT_RADIUS_SQ, ptile, ptile1) {
+  const struct civ_map *nmap = &(wld.map);
+
+  city_tile_iterate(nmap, CITY_MAP_DEFAULT_RADIUS_SQ, ptile, ptile1) {
     if (citymap[tile_index(ptile1)] == -(id)) {
       citymap[tile_index(ptile1)] = 0;
     } else if (citymap[tile_index(ptile1)] > 0) {
@@ -183,8 +189,9 @@ int citymap_read(struct tile *ptile)
 **************************************************************************/
 bool citymap_is_reserved(struct tile *ptile)
 {
-  if (NULL != tile_worked(ptile) /*|| tile_city(ptile)*/) {
+  if (tile_worked(ptile) != nullptr /*|| tile_city(ptile)*/ ) {
     return TRUE;
   }
+
   return (citymap[tile_index(ptile)] < 0);
 }

@@ -29,15 +29,15 @@
 struct player;
 
 enum winning_strategy {
-  WIN_OPEN,     /* still undetermined */
-  WIN_WAR,      /* we have no other choice than to crush all opposition */
-  WIN_SPACE,    /* we will race for space, peace very important */
-  WIN_CAPITAL   /* we cannot win unless we take war_target's capital */
+  WIN_OPEN,     /* Still undetermined */
+  WIN_WAR,      /* We have no other choice than to crush all opposition */
+  WIN_SPACE,    /* We will race for space, peace very important */
+  WIN_CAPITAL   /* We cannot win unless we take war_target's capital */
 };
 
 #define SPECENUM_NAME war_reason
-#define SPECENUM_VALUE0 DAI_WR_BEHAVIOUR
-#define SPECENUM_VALUE0NAME "Behaviour"
+#define SPECENUM_VALUE0 DAI_WR_BEHAVIOR
+#define SPECENUM_VALUE0NAME "Behavior"
 #define SPECENUM_VALUE1 DAI_WR_SPACE
 #define SPECENUM_VALUE1NAME "Space"
 #define SPECENUM_VALUE2 DAI_WR_EXCUSE
@@ -75,11 +75,11 @@ struct ai_plr
   int last_num_oceans;
 
   struct {
-    int passengers;   /* number of passengers waiting for boats */
+    int passengers;   /* Number of passengers waiting for boats */
     int boats;
     int available_boats;
 
-    int *workers;     /* cities to workers on continent */
+    int *workers;     /* Cities to workers on continent */
     int *ocean_workers;
 
     bv_id diplomat_reservations;
@@ -89,11 +89,12 @@ struct ai_plr
   struct {
     const struct ai_dip_intel **player_intel_slots;
     enum winning_strategy strategy;
-    int timer; /* pursue our goals with some stubbornness, in turns */
+    int timer; /* Pursue our goals with some stubbornness, in turns */
     char love_coeff;          /* Reduce love with this % each turn */
     char love_incr;           /* Modify love with this fixed amount */
     int req_love_for_peace;
     int req_love_for_alliance;
+    struct player *war_target;
   } diplomacy;
 
   /* Cache map for AI settlers; defined in daisettler.c. */

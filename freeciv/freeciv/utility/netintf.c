@@ -81,7 +81,7 @@ static void set_socket_errno(void)
   int err = WSAGetLastError();
 
   switch (err) {
-    /* these have mappings to symbolic errno names in net_types.h */
+    /* These have mappings to symbolic errno names in net_types.h */
   case WSAEINTR:
   case WSAEINPROGRESS:
   case WSAEWOULDBLOCK:
@@ -95,7 +95,7 @@ static void set_socket_errno(void)
     return;
   default:
     bugreport_request("Missing errno mapping for Winsock error #%d.", err);
- 
+
     errno = 0;
   }
 }
@@ -107,9 +107,9 @@ static void set_socket_errno(void)
 int fc_connect(int sockfd, const struct sockaddr *serv_addr, socklen_t addrlen)
 {
   int result;
-  
+
   result = connect(sockfd, serv_addr, addrlen);
-  
+
 #ifdef FREECIV_HAVE_WINSOCK
   if (result == -1) {
     set_socket_errno();
@@ -144,7 +144,7 @@ int fc_select(int n, fd_set *readfds, fd_set *writefds, fd_set *exceptfds,
 int fc_readsocket(int sock, void *buf, size_t size)
 {
   int result;
-  
+
 #ifdef FREECIV_HAVE_WINSOCK
   result = recv(sock, buf, size, 0);
   if (result == -1) {
@@ -163,7 +163,7 @@ int fc_readsocket(int sock, void *buf, size_t size)
 int fc_writesocket(int sock, const void *buf, size_t size)
 {
   int result;
-        
+
 #ifdef FREECIV_HAVE_WINSOCK
   result = send(sock, buf, size, 0);
   if (result == -1) {
@@ -271,7 +271,7 @@ void sockaddr_debug(union fc_sockaddr *addr, enum log_level lvl)
 #ifdef FREECIV_IPV6_SUPPORT
   char buf[INET6_ADDRSTRLEN] = "Unknown";
 
-  if (addr->saddr.sa_family == AF_INET6) { 
+  if (addr->saddr.sa_family == AF_INET6) {
     inet_ntop(AF_INET6, &addr->saddr_in6.sin6_addr, buf, INET6_ADDRSTRLEN);
     log_base(lvl, "Host: %s, Port: %d (IPv6)",
              buf, ntohs(addr->saddr_in6.sin6_port));
@@ -325,7 +325,7 @@ int sockaddr_size(union fc_sockaddr *addr)
 }
 
 /*********************************************************************//**
-  Returns wether address is IPv6 address.
+  Returns whether address is IPv6 address.
 *************************************************************************/
 bool sockaddr_ipv6(union fc_sockaddr *addr)
 {
@@ -387,7 +387,7 @@ static struct fc_sockaddr_list *net_lookup_getaddrinfo(const char *name,
   if (err == 0) {
     struct addrinfo *current = res;
 
-    while (current != NULL) {
+    while (current != nullptr) {
       union fc_sockaddr *caddr;
 
       fc_assert_action(current->ai_addrlen <= sizeof(*caddr), continue);
@@ -487,7 +487,7 @@ bool fc_inet_aton(const char *cp, struct in_addr *inp, bool addr_none_ok)
 }
 
 /*********************************************************************//**
-  Writes buf to socket and returns the response in an fz_FILE.
+  Writes buf to socket and returns the response in a fz_FILE.
   Use only on blocking sockets.
 *************************************************************************/
 fz_FILE *fc_querysocket(int sock, void *buf, size_t size)
@@ -496,13 +496,20 @@ fz_FILE *fc_querysocket(int sock, void *buf, size_t size)
 
 #ifdef HAVE_FDOPEN
   fp = fdopen(sock, "r+b");
+
+  if (fp == nullptr) {
+    log_error("socket %d: failed to fdopen()", sock);
+
+    return nullptr;
+  }
+
   if (fwrite(buf, 1, size, fp) != size) {
     log_error("socket %d: write error", sock);
   }
   fflush(fp);
 
-  /* we don't use fc_closesocket on sock here since when fp is closed
-   * sock will also be closed. fdopen doesn't dup the socket descriptor. */
+  /* We don't use fc_closesocket() on sock here since when fp is closed,
+   * sock will also be closed. fdopen() doesn't dup the socket descriptor. */
 #else  /* HAVE_FDOPEN */
   {
     char tmp[4096];
@@ -525,8 +532,8 @@ fz_FILE *fc_querysocket(int sock, void *buf, size_t size)
 
 #endif /* FREECIV_MSWINDOWS */
 
-    if (fp == NULL) {
-      return NULL;
+    if (fp == nullptr) {
+      return nullptr;
     }
 
     fc_writesocket(sock, buf, size);
@@ -602,7 +609,7 @@ int find_next_free_port(int starting_port, int highest_port,
       struct addrinfo *current = res;
       bool unusable = FALSE;
 
-      while (current != NULL && !unusable) {
+      while (current != nullptr && !unusable) {
         s = socket(current->ai_family, SOCK_STREAM, 0);
 
         if (s == -1) {
@@ -620,7 +627,7 @@ int find_next_free_port(int starting_port, int highest_port,
 
       freeaddrinfo(res);
 
-      if (!unusable && res != NULL) {
+      if (!unusable && res != nullptr) {
         found = TRUE;
       }
     }
@@ -634,12 +641,12 @@ int find_next_free_port(int starting_port, int highest_port,
     memset(&tmp, 0, sizeof(tmp));
     sock4->sin_family = AF_INET;
     sock4->sin_port = htons(port);
-    if (net_interface != NULL) {
+    if (net_interface != nullptr) {
       if (!fc_inet_aton(net_interface, &sock4->sin_addr, FALSE)) {
         struct hostent *hp;
 
         hp = gethostbyname(net_interface);
-        if (hp == NULL) {
+        if (hp == nullptr) {
           log_error("No hostent for %s!", net_interface);
 
           return -1;

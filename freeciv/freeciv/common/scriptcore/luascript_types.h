@@ -23,6 +23,7 @@ extern "C" {
 /* common */
 #include "achievements.h"
 #include "actions.h"
+#include "counters.h"
 #include "city.h"
 #include "connection.h"
 #include "events.h"
@@ -32,6 +33,7 @@ extern "C" {
 #include "improvement.h"
 #include "nation.h"
 #include "player.h"
+#include "specialist.h"
 #include "tech.h"
 #include "terrain.h"
 #include "tile.h"
@@ -44,6 +46,7 @@ extern "C" {
  * tolua_common_z.pkg. */
 typedef struct player Player;
 typedef struct player_ai Player_ai;
+typedef struct counter Counter;
 typedef struct city City;
 typedef struct unit Unit;
 typedef struct tile Tile;
@@ -58,6 +61,7 @@ typedef enum direction8 Direction;
 typedef struct disaster_type Disaster;
 typedef struct achievement Achievement;
 typedef struct action Action;
+typedef struct specialist Specialist;
 typedef struct packet_game_info Game_Info;
 
 typedef void Nonexistent;
@@ -106,6 +110,8 @@ typedef const struct city_list_link City_List_Link;
 #define SPECENUM_VALUE16NAME "Achievement"
 #define SPECENUM_VALUE17      API_TYPE_ACTION
 #define SPECENUM_VALUE17NAME "Action"
+#define SPECENUM_VALUE18      API_TYPE_SPECIALIST
+#define SPECENUM_VALUE18NAME "Specialist"
 #include "specenum_gen.h"
 
 #ifdef __cplusplus

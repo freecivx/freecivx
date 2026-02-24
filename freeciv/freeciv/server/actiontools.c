@@ -225,17 +225,17 @@ static void notify_actor_caught(struct player *receiver,
     notify_player(receiver, victim_tile,
                   E_DIPLOMATIC_INCIDENT, ftc_server,
                   /* TRANS: Suitcase Nuke ... San Francisco */
-                  _("You have caused an incident getting caught"
+                  _("You have caused an diplomatic incident getting caught"
                     " trying to do %s to %s."),
                   action_name_translation(paction),
                   victim_link);
     break;
   case ATK_UNIT:
-  case ATK_UNITS:
+  case ATK_STACK:
     notify_player(receiver, victim_tile,
                   E_DIPLOMATIC_INCIDENT, ftc_server,
                   /* TRANS: Bribe Enemy Unit ... American ... Partisan */
-                  _("You have caused an incident getting caught"
+                  _("You have caused an diplomatic incident getting caught"
                     " trying to do %s to %s %s."),
                   action_name_translation(paction),
                   nation_adjective_for_player(victim_player),
@@ -246,7 +246,7 @@ static void notify_actor_caught(struct player *receiver,
     notify_player(receiver, victim_tile,
                   E_DIPLOMATIC_INCIDENT, ftc_server,
                   /* TRANS: Explode Nuclear ... (54, 26) */
-                  _("You have caused an incident getting caught"
+                  _("You have caused an diplomatic incident getting caught"
                     " trying to do %s at %s."),
                   action_name_translation(paction),
                   victim_link);
@@ -282,18 +282,18 @@ static void notify_victim_caught(struct player *receiver,
     notify_player(receiver, victim_tile,
                   E_DIPLOMATIC_INCIDENT, ftc_server,
                   /* TRANS: Europeans ... Suitcase Nuke ... San Francisco */
-                  _("The %s have caused an incident getting caught"
+                  _("The %s have caused an diplomatic incident getting caught"
                     " trying to do %s to %s."),
                   nation_plural_for_player(offender),
                   action_name_translation(paction),
                   victim_link);
     break;
   case ATK_UNIT:
-  case ATK_UNITS:
+  case ATK_STACK:
     notify_player(receiver, victim_tile,
                   E_DIPLOMATIC_INCIDENT, ftc_server,
                   /* TRANS: Europeans ... Bribe Enemy Unit ... Partisan */
-                  _("The %s have caused an incident getting caught"
+                  _("The %s have caused an diplomatic incident getting caught"
                     " trying to do %s to your %s."),
                   nation_plural_for_player(offender),
                   action_name_translation(paction),
@@ -304,7 +304,7 @@ static void notify_victim_caught(struct player *receiver,
     notify_player(receiver, victim_tile,
                   E_DIPLOMATIC_INCIDENT, ftc_server,
                   /* TRANS: Europeans ... Explode Nuclear ... (54, 26) */
-                  _("The %s have caused an incident getting caught"
+                  _("The %s have caused an diplomatic incident getting caught"
                     " trying to do %s at %s."),
                   nation_plural_for_player(offender),
                   action_name_translation(paction),
@@ -408,16 +408,16 @@ static void notify_actor_success(struct player *receiver,
     notify_player(receiver, victim_tile,
                   E_DIPLOMATIC_INCIDENT, ftc_server,
                   /* TRANS: Suitcase Nuke ... San Francisco */
-                  _("You have caused an incident doing %s to %s."),
+                  _("You have caused an diplomatic incident doing %s to %s."),
                   action_name_translation(paction),
                   victim_link);
     break;
   case ATK_UNIT:
-  case ATK_UNITS:
+  case ATK_STACK:
     notify_player(receiver, victim_tile,
                   E_DIPLOMATIC_INCIDENT, ftc_server,
                   /* TRAND: Bribe Enemy Unit ... American ... Partisan */
-                  _("You have caused an incident doing %s to %s %s."),
+                  _("You have caused an diplomatic incident doing %s to %s %s."),
                   action_name_translation(paction),
                   nation_adjective_for_player(victim_player),
                   victim_link);
@@ -427,7 +427,7 @@ static void notify_actor_success(struct player *receiver,
     notify_player(receiver, victim_tile,
                   E_DIPLOMATIC_INCIDENT, ftc_server,
                   /* TRANS: Explode Nuclear ... (54, 26) */
-                  _("You have caused an incident doing %s at %s."),
+                  _("You have caused an diplomatic incident doing %s at %s."),
                   action_name_translation(paction),
                   victim_link);
     break;
@@ -462,17 +462,17 @@ static void notify_victim_success(struct player *receiver,
     notify_player(receiver, victim_tile,
                   E_DIPLOMATIC_INCIDENT, ftc_server,
                   /* TRANS: Europeans ... Suitcase Nuke ... San Francisco */
-                  _("The %s have caused an incident doing %s to %s."),
+                  _("The %s have caused an diplomatic incident doing %s to %s."),
                   nation_plural_for_player(offender),
                   action_name_translation(paction),
                   victim_link);
     break;
   case ATK_UNIT:
-  case ATK_UNITS:
+  case ATK_STACK:
     notify_player(receiver, victim_tile,
                   E_DIPLOMATIC_INCIDENT, ftc_server,
                   /* TRANS: Europeans ... Bribe Enemy Unit ... Partisan */
-                  _("The %s have caused an incident doing "
+                  _("The %s have caused an diplomatic incident doing "
                     "%s to your %s."),
                   nation_plural_for_player(offender),
                   action_name_translation(paction),
@@ -483,7 +483,7 @@ static void notify_victim_success(struct player *receiver,
     notify_player(receiver, victim_tile,
                   E_DIPLOMATIC_INCIDENT, ftc_server,
                   /* TRANS: Europeans ... Explode Nuclear ... (54, 26) */
-                  _("The %s have caused an incident doing %s at %s."),
+                  _("The %s have caused an diplomatic incident doing %s at %s."),
                   nation_plural_for_player(offender),
                   action_name_translation(paction),
                   victim_link);
@@ -599,6 +599,8 @@ void action_consequence_complete(const struct action *paction,
 static bool may_unit_act_vs_city(struct unit *actor, struct city *target,
                                  bool accept_all_actions)
 {
+  const struct civ_map *nmap = &(wld.map);
+
   if (actor == NULL || target == NULL) {
     /* Can't do any actions if actor or target are missing. */
     return FALSE;
@@ -616,7 +618,7 @@ static bool may_unit_act_vs_city(struct unit *actor, struct city *target,
       continue;
     }
 
-    if (action_prob_possible(action_prob_vs_city(actor, act, target))) {
+    if (action_prob_possible(action_prob_vs_city(nmap, actor, act, target))) {
       /* The actor unit may be able to do this action to the target
        * city. */
       return TRUE;
@@ -663,6 +665,8 @@ struct city *action_tgt_city(struct unit *actor, struct tile *target_tile,
 static bool may_unit_act_vs_unit(struct unit *actor, struct unit *target,
                                  bool accept_all_actions)
 {
+  const struct civ_map *nmap = &(wld.map);
+
   if (actor == NULL || target == NULL) {
     /* Can't do any actions if actor or target are missing. */
     return FALSE;
@@ -680,7 +684,7 @@ static bool may_unit_act_vs_unit(struct unit *actor, struct unit *target,
       continue;
     }
 
-    if (action_prob_possible(action_prob_vs_unit(actor, act, target))) {
+    if (action_prob_possible(action_prob_vs_unit(nmap, actor, act, target))) {
       /* The actor unit may be able to do this action to the target
        * unit. */
       return TRUE;
@@ -731,6 +735,8 @@ struct tile *action_tgt_tile(struct unit *actor,
                              const struct extra_type *target_extra,
                              bool accept_all_actions)
 {
+  const struct civ_map *nmap = &(wld.map);
+
   if (actor == NULL || target == NULL) {
     /* Can't do any actions if actor or target are missing. */
     return NULL;
@@ -751,13 +757,13 @@ struct tile *action_tgt_tile(struct unit *actor,
 
     switch (action_id_get_target_kind(act)) {
     case ATK_TILE:
-      prob = action_prob_vs_tile(actor, act, target, target_extra);
+      prob = action_prob_vs_tile(nmap, actor, act, target, target_extra);
       break;
     case ATK_EXTRAS:
-      prob = action_prob_vs_extras(actor, act, target, target_extra);
+      prob = action_prob_vs_extras(nmap, actor, act, target, target_extra);
       break;
-    case ATK_UNITS:
-      prob = action_prob_vs_units(actor, act, target);
+    case ATK_STACK:
+      prob = action_prob_vs_stack(nmap, actor, act, target);
       break;
     case ATK_CITY:
     case ATK_UNIT:
@@ -797,6 +803,8 @@ static bool may_unit_act_vs_tile_extra(const struct unit *actor,
                                        const struct extra_type *tgt_extra,
                                        bool accept_all_actions)
 {
+  const struct civ_map *nmap = &(wld.map);
+
   if (actor == NULL || tgt_tile == NULL || tgt_extra == NULL) {
     /* Can't do any actions if actor or target are missing. */
     return FALSE;
@@ -818,7 +826,7 @@ static bool may_unit_act_vs_tile_extra(const struct unit *actor,
 
     switch (action_id_get_target_kind(act)) {
     case ATK_TILE:
-      if (action_prob_possible(action_prob_vs_tile(actor, act,
+      if (action_prob_possible(action_prob_vs_tile(nmap, actor, act,
                                                    tgt_tile, tgt_extra))) {
         /* The actor unit may be able to do this action to the target
          * extra. */
@@ -826,7 +834,7 @@ static bool may_unit_act_vs_tile_extra(const struct unit *actor,
       }
       break;
     case ATK_EXTRAS:
-      if (action_prob_possible(action_prob_vs_extras(actor, act,
+      if (action_prob_possible(action_prob_vs_extras(nmap, actor, act,
                                                      tgt_tile,
                                                      tgt_extra))) {
         /* The actor unit may be able to do this action to the target
@@ -836,7 +844,7 @@ static bool may_unit_act_vs_tile_extra(const struct unit *actor,
       break;
     case ATK_CITY:
     case ATK_UNIT:
-    case ATK_UNITS:
+    case ATK_STACK:
     case ATK_SELF:
       /* Not supported. */
       break;
@@ -882,6 +890,7 @@ int action_sub_target_id_for_action(const struct action *paction,
                                     struct unit *actor_unit)
 {
   const struct tile *tgt_tile = unit_tile(actor_unit);
+  const struct civ_map *nmap = &(wld.map);
 
   fc_assert_ret_val(paction->target_complexity == ACT_TGT_COMPL_FLEXIBLE,
                     NO_TARGET);
@@ -906,23 +915,29 @@ int action_sub_target_id_for_action(const struct action *paction,
   case ASTK_EXTRA_NOT_THERE:
     if (action_has_result(paction, ACTRES_PILLAGE)) {
       /* Special treatment for "Pillage" */
-      struct extra_type *pextra;
+      struct extra_type *pextra = NULL;
       enum unit_activity activity = action_get_activity(paction);
 
-      unit_assign_specific_activity_target(actor_unit, &activity, &pextra);
+      unit_assign_specific_activity_target(actor_unit, &activity,
+                                           action_number(paction), &pextra);
 
       if (pextra != NULL) {
         return extra_number(pextra);
       }
     }
     extra_type_re_active_iterate(tgt_extra) {
-      if (action_prob_possible(action_prob_vs_tile(actor_unit, paction->id,
+      if (action_prob_possible(action_prob_vs_tile(nmap, actor_unit, paction->id,
                                                    tgt_tile, tgt_extra))) {
         /* The actor unit may be able to do this action to the target
          * extra. */
         return extra_number(tgt_extra);
       }
     } extra_type_re_active_iterate_end;
+    break;
+  case ASTK_SPECIALIST:
+    /* Implement if a specialist sub targeted action becomes flexible */
+    fc_assert_ret_val(paction->target_complexity == ACT_TGT_COMPL_FLEXIBLE,
+                      NO_TARGET);
     break;
   case ASTK_COUNT:
     /* Should not exist. */
@@ -956,7 +971,10 @@ action_auto_perf_unit_sel(const enum action_auto_perf_cause cause,
   };
 
   action_auto_perf_by_cause_iterate(cause, autoperformer) {
-    if (are_reqs_active(&actor_ctxt, other_player,
+    if (are_reqs_active(&actor_ctxt,
+                        &(const struct req_context) {
+                          .player = other_player,
+                        },
                         &autoperformer->reqs, RPT_CERTAIN)) {
       /* Select this action auto performer. */
       return autoperformer;
@@ -1003,10 +1021,11 @@ action_auto_perf_unit_do(const enum action_auto_perf_cause cause,
   const struct city *tgt_city;
   const struct tile *tgt_tile;
   const struct unit *tgt_unit;
+  const struct civ_map *nmap = &(wld.map);
 
   const struct action_auto_perf *autoperf
-      = action_auto_perf_unit_sel(cause, actor, other_player,
-                                  eval_output, eval_action);
+    = action_auto_perf_unit_sel(cause, actor, other_player,
+                                eval_output, eval_action);
 
   if (!autoperf) {
     /* No matching Action Auto Performer. */
@@ -1030,23 +1049,23 @@ action_auto_perf_unit_do(const enum action_auto_perf_cause cause,
   }
 
       switch (action_id_get_target_kind(act)) {
-      case ATK_UNITS:
+      case ATK_STACK:
         if (tgt_tile
-            && is_action_enabled_unit_on_units(act, actor, tgt_tile)) {
+            && is_action_enabled_unit_on_stack(nmap, act, actor, tgt_tile)) {
           perform_action_to(act, actor, tgt_tile->index, EXTRA_NONE);
         }
         break;
       case ATK_TILE:
         if (tgt_tile
-            && is_action_enabled_unit_on_tile(act, actor, tgt_tile,
-                                              target_extra)) {
+            && is_action_enabled_unit_on_tile(nmap, act, actor,
+                                              tgt_tile, target_extra)) {
           perform_action_to(act, actor, tgt_tile->index,
                             target_extra ? extra_number(target_extra) : -1);
         }
         break;
       case ATK_EXTRAS:
         if (tgt_tile
-            && is_action_enabled_unit_on_extras(act, actor,
+            && is_action_enabled_unit_on_extras(nmap, act, actor,
                                                 tgt_tile, target_extra)) {
           perform_action_to(act, actor, tgt_tile->index,
                             target_extra ? extra_number(target_extra) : -1);
@@ -1054,19 +1073,19 @@ action_auto_perf_unit_do(const enum action_auto_perf_cause cause,
         break;
       case ATK_CITY:
         if (tgt_city
-            && is_action_enabled_unit_on_city(act, actor, tgt_city)) {
+            && is_action_enabled_unit_on_city(nmap, act, actor, tgt_city)) {
           perform_action_to(act, actor, tgt_city->id, EXTRA_NONE)
         }
         break;
       case ATK_UNIT:
         if (tgt_unit
-            && is_action_enabled_unit_on_unit(act, actor, tgt_unit)) {
+            && is_action_enabled_unit_on_unit(nmap, act, actor, tgt_unit)) {
           perform_action_to(act, actor, tgt_unit->id, EXTRA_NONE);
         }
         break;
       case ATK_SELF:
         if (actor
-            && is_action_enabled_unit_on_self(act, actor)) {
+            && is_action_enabled_unit_on_self(nmap, act, actor)) {
           perform_action_to(act, actor, actor->id, EXTRA_NONE);
         }
         break;
@@ -1104,10 +1123,11 @@ action_auto_perf_unit_prob(const enum action_auto_perf_cause cause,
   const struct city *tgt_city;
   const struct tile *tgt_tile;
   const struct unit *tgt_unit;
+  const struct civ_map *nmap = &(wld.map);
 
   const struct action_auto_perf *autoperf
-      = action_auto_perf_unit_sel(cause, actor, other_player,
-                                  eval_output, eval_action);
+    = action_auto_perf_unit_sel(cause, actor, other_player,
+                                eval_output, eval_action);
 
   if (!autoperf) {
     /* No matching Action Auto Performer. */
@@ -1126,42 +1146,43 @@ action_auto_perf_unit_prob(const enum action_auto_perf_cause cause,
       /* This action can be done by units. */
 
       switch (action_id_get_target_kind(act)) {
-      case ATK_UNITS:
+      case ATK_STACK:
         if (tgt_tile
-            && is_action_enabled_unit_on_units(act, actor, tgt_tile)) {
-          current = action_prob_vs_units(actor, act, tgt_tile);
+            && is_action_enabled_unit_on_stack(nmap, act, actor, tgt_tile)) {
+          current = action_prob_vs_stack(nmap, actor, act, tgt_tile);
         }
         break;
       case ATK_TILE:
         if (tgt_tile
-            && is_action_enabled_unit_on_tile(act, actor, tgt_tile, target_extra)) {
-          current = action_prob_vs_tile(actor, act, tgt_tile, target_extra);
+            && is_action_enabled_unit_on_tile(nmap, act, actor,
+                                              tgt_tile, target_extra)) {
+          current = action_prob_vs_tile(nmap, actor, act, tgt_tile, target_extra);
         }
         break;
       case ATK_EXTRAS:
         if (tgt_tile
-            && is_action_enabled_unit_on_extras(act, actor,
+            && is_action_enabled_unit_on_extras(nmap, act, actor,
                                                 tgt_tile, target_extra)) {
-          current = action_prob_vs_extras(actor, act,
+          current = action_prob_vs_extras(nmap, actor, act,
                                           tgt_tile, target_extra);
         }
         break;
       case ATK_CITY:
         if (tgt_city
-            && is_action_enabled_unit_on_city(act, actor, tgt_city)) {
-          current = action_prob_vs_city(actor, act, tgt_city);
+            && is_action_enabled_unit_on_city(nmap, act, actor, tgt_city)) {
+          current = action_prob_vs_city(nmap, actor, act, tgt_city);
         }
         break;
       case ATK_UNIT:
         if (tgt_unit
-            && is_action_enabled_unit_on_unit(act, actor, tgt_unit)) {
-          current = action_prob_vs_unit(actor, act, tgt_unit);
+            && is_action_enabled_unit_on_unit(nmap, act, actor, tgt_unit)) {
+          current = action_prob_vs_unit(nmap, actor, act, tgt_unit);
         }
         break;
       case ATK_SELF:
         if (actor
-            && is_action_enabled_unit_on_self(act, actor)) {
-          current = action_prob_self(actor, act);
+            && is_action_enabled_unit_on_self(nmap, act, actor)) {
+          current = action_prob_self(nmap, actor, act);
         }
         break;
       case ATK_COUNT:
@@ -1190,5 +1211,5 @@ bool action_failed_dice_roll(const struct player *act_player,
                                    paction);
 
   /* Roll the dice. */
-  return fc_rand (100) >= odds;
+  return fc_rand(100) >= odds;
 }

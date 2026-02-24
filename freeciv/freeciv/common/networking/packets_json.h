@@ -27,7 +27,7 @@ void *get_packet_from_connection_json(struct connection *pc,
 #define SEND_PACKET_START(packet_type)                                  \
   unsigned char buffer[MAX_LEN_PACKET * 5];                             \
   struct plocation *pid_addr;                                           \
-  char *json_buffer = NULL;                                             \
+  char *json_buffer = nullptr;                                          \
   struct json_data_out dout;                                            \
   dio_output_init(&(dout.raw), buffer, sizeof(buffer));                 \
   if (pc->json_mode) {                                                  \
@@ -37,7 +37,7 @@ void *get_packet_from_connection_json(struct connection *pc,
     dio_put_uint8_json(&dout, pid_addr, packet_type);                   \
     FC_FREE(pid_addr);                                                  \
   } else {                                                              \
-    dout.json = NULL;                                                   \
+    dout.json = nullptr;                                                \
     dio_put_type_raw(&dout.raw, pc->packet_header.length, 0);           \
     dio_put_type_raw(&dout.raw, pc->packet_header.type, packet_type);   \
   }
@@ -65,9 +65,18 @@ void *get_packet_from_connection_json(struct connection *pc,
     return send_packet_data(pc, buffer, size, packet_type);             \
   }
 
+#define SEND_PACKET_DISCARD() \
+  {                           \
+    if (pc->json_mode) {      \
+      json_decref(dout.json); \
+    }                         \
+    return 0;                 \
+  }
+
 #define RECEIVE_PACKET_START(packet_type, result)                           \
   struct packet_type packet_buf, *result = &packet_buf;                     \
   struct data_in din;                                                       \
+  init_ ##packet_type (&packet_buf);                                        \
   if (!pc->json_mode) {                                                     \
       dio_input_init(&din, pc->buffer->data,                                \
                  data_type_size(pc->packet_header.length));                 \
@@ -89,7 +98,8 @@ void *get_packet_from_connection_json(struct connection *pc,
     return result;                              \
   } else {                                      \
     if (!packet_check(&din, pc)) {              \
-      return NULL;                              \
+      FREE_PACKET_STRUCT(&packet_buf);          \
+      return nullptr;                           \
     }                                           \
     remove_packet_from_buffer(pc->buffer);      \
     result = fc_malloc(sizeof(*result));        \
@@ -99,22 +109,18 @@ void *get_packet_from_connection_json(struct connection *pc,
 
 #define RECEIVE_PACKET_FIELD_ERROR(field, ...)           \
   log_packet("Error on field '" #field "'" __VA_ARGS__); \
-  return NULL;
+  FREE_PACKET_STRUCT(&packet_buf);                       \
+  return nullptr;
 
-/* Utilities to exchange strings and string vectors. */
-#define PACKET_STRVEC_SEPARATOR '\3'
-#define PACKET_STRVEC_COMPUTE(str, strvec)                                  \
-  if (NULL != strvec) {                                                     \
-    strvec_to_str(strvec, PACKET_STRVEC_SEPARATOR, str, sizeof(str));       \
-  } else {                                                                  \
-    str[0] = '\0';                                                          \
-  }
-#define PACKET_STRVEC_EXTRACT(strvec, str)                                  \
-  if ('\0' != str[0]) {                                                     \
-    strvec = strvec_new();                                                  \
-    strvec_from_str(strvec, PACKET_STRVEC_SEPARATOR, str);                  \
-  } else {                                                                  \
-    strvec = NULL;                                                          \
+/* Utilities to move string vectors in and out of packets. */
+#define PACKET_STRVEC_INSERT(dest, src) \
+  dest = src
+#define PACKET_STRVEC_EXTRACT(dest, src)        \
+  if (src != nullptr && strvec_size(src) > 0) { \
+    dest = strvec_new();                        \
+    strvec_copy(dest, src);                     \
+  } else {                                      \
+    dest = nullptr;                             \
   }
 
 #ifdef __cplusplus

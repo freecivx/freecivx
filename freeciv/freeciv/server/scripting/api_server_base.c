@@ -88,7 +88,25 @@ bool api_play_music(lua_State *L, Player *pplayer, const char *tag)
 }
 
 /**********************************************************************//**
-  Return the formated value of the setting or NULL if no such setting
+  Popup image to player
+**************************************************************************/
+bool api_popup_image(lua_State *L, Player *pplayer, const char *tag)
+{
+  struct packet_popup_image p;
+
+  LUASCRIPT_CHECK_STATE(L, FALSE);
+  LUASCRIPT_CHECK_SELF(L, pplayer, FALSE);
+  LUASCRIPT_CHECK_ARG_NIL(L, tag, 3, API_TYPE_STRING, FALSE);
+
+  sz_strlcpy(p.tag, tag);
+
+  lsend_packet_popup_image(pplayer->connections, &p);
+
+  return TRUE;
+}
+
+/**********************************************************************//**
+  Return the formatted value of the setting or NULL if no such setting
   exists.
 **************************************************************************/
 const char *api_server_setting_get(lua_State *L, const char *sett_name)

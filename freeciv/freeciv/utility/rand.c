@@ -44,6 +44,39 @@
 
 #define log_rand log_debug
 
+
+#define STD_RAND_VALUE_LOG(_c, _s, _nr, _f, _l)     \
+  log_rand("%s(%lu) = %lu at %s:%d", _c,            \
+           (unsigned long) _s, (unsigned long) _nr, \
+           _f, _l);
+
+
+#ifdef LOG_RAND_VALUES
+static bool randlog_enabled = TRUE;
+
+/*********************************************************************//**
+  Control if generated random numbers get written to log at LOG_NORMAL
+  logging level.
+
+  @param  enable  Whether to enable or disable the feature
+*************************************************************************/
+void enable_randlog(bool enable)
+{
+  randlog_enabled = enable;
+}
+
+#define RAND_VALUE_LOG(_c, _s, _nr, _f, _l)             \
+  if (randlog_enabled) {                                \
+    log_normal("%lu -> %lu %s:%d",                      \
+               (unsigned long) _s, (unsigned long) _nr, \
+               fc_basename(_f), _l);                    \
+  } else {                                              \
+    STD_RAND_VALUE_LOG(_c, _s, _nr, _f, _l);            \
+  }
+#else
+#define RAND_VALUE_LOG STD_RAND_VALUE_LOG
+#endif
+
 /* A global random state:
  * Initialized by fc_srand(), updated by fc_rand(),
  * Can be duplicated/saved/restored via fc_rand_state()
@@ -72,8 +105,8 @@ static RANDOM_STATE rand_state;
   thus   divisor <= (MAX_UINT32 + 1) / size
 
   Need to calculate this divisor. Want divisor as large as possible
-  given above contraint, but it doesn't hurt us too much if it is a
-  bit smaller (just have to repeat more often). Calculation exactly
+  given above constraint, but it doesn't hurt us too much if it is
+  a bit smaller (just have to repeat more often). Calculation exactly
   as above is complicated by fact that (MAX_UINT32 + 1) may not be
   directly representable in type RANDOM_TYPE, so we do instead:
          divisor = MAX_UINT32 / size
@@ -116,9 +149,8 @@ RANDOM_TYPE fc_rand_debug(RANDOM_TYPE size, const char *called_as,
     new_rand = 0;
   }
 
-  log_rand("%s(%lu) = %lu at %s:%d",
-           called_as, (unsigned long) size,
-           (unsigned long) new_rand, file, line);
+  RAND_VALUE_LOG(called_as, (unsigned long) size,
+                 (unsigned long) new_rand, file, line);
 
   return new_rand;
 }
@@ -213,8 +245,8 @@ void fc_rand_set_state(RANDOM_STATE state)
 
 /*********************************************************************//**
   Test one aspect of randomness, using n numbers.
-  Reports results to LOG_TEST; with good randomness, behaviourchange
-  and behavioursame should be about the same size.
+  Reports results to LOG_TEST; with good randomness, behaviorchange
+  and behaviorsame should be about the same size.
   Tests current random state; saves and restores state, so can call
   without interrupting current sequence.
 *************************************************************************/
@@ -223,10 +255,10 @@ void test_random1(int n)
   RANDOM_STATE saved_state;
   int i, old_value = 0, new_value;
   bool didchange, olddidchange = FALSE;
-  int behaviourchange = 0, behavioursame = 0;
+  int behaviorchange = 0, behaviorsame = 0;
 
   saved_state = fc_rand_state();
-  /* fc_srand(time(NULL)); */  /* Use current state */
+  /* fc_srand(time(nullptr)); */  /* Use current state */
 
   for (i = 0; i < n + 2; i++) {
     new_value = fc_rand(2);
@@ -234,9 +266,9 @@ void test_random1(int n)
       didchange = (new_value != old_value);
       if (i > 1) {              /* Have olddidchange */
         if (didchange != olddidchange) {
-          behaviourchange++;
+          behaviorchange++;
         } else {
-          behavioursame++;
+          behaviorsame++;
         }
       }
       olddidchange = didchange;
@@ -244,7 +276,7 @@ void test_random1(int n)
     old_value = new_value;
   }
   log_test("test_random1(%d) same: %d, change: %d",
-           n, behavioursame, behaviourchange);
+           n, behaviorsame, behaviorchange);
 
   /* Restore state: */
   fc_rand_set_state(saved_state);

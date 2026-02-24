@@ -2,9 +2,9 @@
 
 ; Modifying this file:
 ; You should not modify this file except to make bugfixes or
-; for other "maintenance".  If you want to make custom changes,
+; for other "maintenance". If you want to make custom changes,
 ; you should create a new datadir subdirectory and copy this file
-; into that directory, and then modify that copy.  Then use the
+; into that directory, and then modify that copy. Then use the
 ; command "rulesetdir <mysubdir>" in the server to have freeciv
 ; use your new customized file.
 
@@ -13,12 +13,12 @@
 
 [datafile]
 description = "Alien World cities data for Freeciv"
-options = "+Freeciv-ruleset-3.3-Devel-2023.Feb.24"
-format_version = 40
+options = "+Freeciv-ruleset-3.4-Devel-2025.Jan.17"
+format_version = 50
 
 ; /* <-- avoid gettext warnings
 ;
-; A specialist is a city citizen who is not a tile worker.  Usually the
+; A specialist is a city citizen who is not a tile worker. Usually the
 ; player can control what specialist each citizen is, so long as the
 ; requirements for that specialist are met.
 ;
@@ -34,7 +34,7 @@ format_version = 40
 ;                 to rename an item after a ruleset has been released, you
 ;                 should set "rule_name" to the original value of "name".
 ; short_name    = one-character "short name" used (for instance) in cityrep;
-;                 should be first character/abbrevation of "name"
+;                 should be first character/abbreviation of "name"
 ; graphic       = tag specifying preferred graphic
 ;                 Different images based on citizen number are supported.
 ;                 If no such images indexed with citizen number are found,
@@ -62,25 +62,25 @@ Culturists create works that keep people satisfied. They create two luxury \
 points per turn, four if Specialist Training tech is known.")
 
 [specialist_scientist]
-name		= _("Scientists")
-short_name	= _("?Scientist:S")
+name            = _("Scientists")
+short_name      = _("?Scientist:S")
 graphic         = "specialist.scientists"
 graphic_alt     = "specialist.scientist"
-reqs		=
+reqs            =
     { "type", "name", "range"
 ; Nothing
     }
 helptext = _("\
-Scientist reseach two bulbs worth of science each turn, four bulbs \
+Scientist research two bulbs worth of science each turn, four bulbs \
 when Specialist Training tech is known.")
 
 [specialist_government_merchant]
-name		= _("Government Merchants")
+name            = _("Government Merchants")
 rule_name       = "Government_Merchants"
-short_name	= _("?Merchant:M")
+short_name      = _("?Merchant:M")
 graphic         = "specialist.government_merchants"
 graphic_alt     = "specialist.taxman"
-reqs		=
+reqs            =
     { "type", "name", "range"
 ; Nothing
     }
@@ -89,13 +89,13 @@ Government Merchants produce two gold for the government each turn, \
 four once Specialist Training tech is known.")
 
 [parameters]
-add_to_size_limit  = 8		; cities >= this cannot be added to.
+add_to_size_limit = 8           ; cities >= this cannot be added to.
 angry_citizens = TRUE           ; set to FALSE to disable angry citizens
 celebrate_size_limit = 3        ; cities >= can celebrate
 
 changable_tax = TRUE            ; set to FALSE to disallow changing of tax rates
 
-;forced_science = 0		; set these fields when changeable_tax is turned off
+;forced_science = 0             ; set these fields when changeable_tax is turned off
 ;forced_luxury = 100
 ;forced_gold = 0
 

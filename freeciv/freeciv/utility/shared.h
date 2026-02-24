@@ -85,7 +85,7 @@ enum fc_tristate fc_tristate_or(enum fc_tristate one, enum fc_tristate two);
 #define ARRAY_SIZE(x) (sizeof(x) / sizeof((x)[0]))
 #define ADD_TO_POINTER(p, n) ((void *)((char *)(p)+(n)))
 
-#define FC_MEMBER(type, member) (((type *) NULL)->member)
+#define FC_MEMBER(type, member) (((type *) nullptr)->member)
 #define FC_MEMBER_OFFSETOF(type, member) ((size_t) &FC_MEMBER(type, member))
 #define FC_MEMBER_SIZEOF(type, member) sizeof(FC_MEMBER(type, member))
 #define FC_MEMBER_ARRAY_SIZE(type, member) \
@@ -93,10 +93,6 @@ enum fc_tristate fc_tristate_or(enum fc_tristate one, enum fc_tristate two);
 
 #define FC_INT_TO_PTR(i) ((void *) (intptr_t) (i))
 #define FC_PTR_TO_INT(p) ((int) (intptr_t) (p))
-#define FC_UINT_TO_PTR(u) ((void *) (intptr_t) (u))
-#define FC_PTR_TO_UINT(p) ((unsigned int) (intptr_t) (p))
-#define FC_SIZE_TO_PTR(s) ((void *) (intptr_t) (s))
-#define FC_PTR_TO_SIZE(p) ((size_t) (intptr_t) (p))
 
 /****************************************************************************
   Used to initialize an array 'a' of size 'size' with value 'val' in each
@@ -147,9 +143,12 @@ int compare_strings_ptrs(const void *first, const void *second);
 int compare_strings_strvec(const char *const *first,
                            const char *const *second);
 
-char *skip_leading_spaces(char *s);
-void remove_leading_spaces(char *s);
-void remove_trailing_spaces(char *s);
+char *skip_leading_spaces(char *s)
+  fc__attribute((nonnull (1)));
+void remove_leading_spaces(char *s)
+  fc__attribute((nonnull (1)));
+void remove_trailing_spaces(char *s)
+  fc__attribute((nonnull (1)));
 void remove_leading_trailing_spaces(char *s);
 
 bool check_strlen(const char *str, size_t len, const char *errmsg);
@@ -161,12 +160,15 @@ size_t loud_strlcpy(char *buffer, const char *str, size_t len,
 
 char *end_of_strn(char *str, int *nleft);
 
-bool str_to_int(const char *str, int *pint);
-bool str_to_uint(const char *str, unsigned int *pint);
-bool str_to_float(const char *str, float *pfloat);
+bool str_to_int(const char *str, int *pint)
+  fc__attribute((nonnull (1)));
+bool str_to_uint(const char *str, unsigned int *pint)
+  fc__attribute((nonnull (1)));
+bool str_to_float(const char *str, float *pfloat)
+  fc__attribute((nonnull (1)));
 
 /**************************************************************************
-...
+  ...
 **************************************************************************/
 struct fileinfo {
   char *name;           /* Descriptive file name string */
@@ -206,7 +208,7 @@ void switch_lang(const char *lang);
 
 void dont_run_as_root(const char *argv0, const char *fallback);
 
-/*** matching prefixes: ***/
+/*** Matching prefixes: ***/
 
 enum m_pre_result {
   M_PRE_EXACT,          /* Matches with exact length */

@@ -71,23 +71,36 @@ enum map_startpos {
 struct civ_map {
   int topology_id;
   int wrap_id;
+  bool altitude_info;
   enum direction8 valid_dirs[8], cardinal_dirs[8];
   int num_valid_dirs, num_cardinal_dirs;
   struct iter_index *iterate_outwards_indices;
   int num_iterate_outwards_indices;
-  int xsize, ysize; /* native dimensions */
+  int xsize, ysize;   /* Native dimensions */
   int north_latitude;
   int south_latitude;
-  int num_continents;
-  int num_oceans;               /* not updated at the client */
+
+  Continent_id num_continents;
+  Continent_id num_oceans;
+  /* These arrays are indexed by continent number (or negative of the
+   * ocean number) so the 0th element is unused and the array is 1 element
+   * larger than you'd expect.
+   *
+   * The _sizes arrays give the sizes (in tiles) of each continent and
+   * ocean.
+   */
+  int *continent_sizes;
+  int *ocean_sizes;
+
   struct tile *tiles;
   struct startpos_hash *startpos_table;
 
   union {
     struct {
-      enum mapsize_type mapsize; /* how the map size is defined */
-      int size; /* used to calculate [xy]size */
-      int tilesperplayer; /* tiles per player; used to calculate size */
+      /* Server settings */
+      enum mapsize_type mapsize; /* How the map size is defined */
+      int size;                  /* Used to calculate [xy]size */
+      int tilesperplayer;        /* Tiles per player; used to calculate size */
       randseed seed_setting;
       randseed seed;
       int riches;
@@ -107,9 +120,38 @@ struct civ_map {
       bool have_huts;
       bool have_resources;
       enum team_placement team_placement;
+
+      /* These arrays are indexed by continent number (or negative of the
+       * ocean number) so the 0th element is unused and the array is 1 element
+       * larger than you'd expect.
+       *
+       * The _surrounders arrays tell which single continent surrounds each
+       * ocean, or which single ocean (positive ocean number) surrounds each
+       * continent; or -1 if there's more than one adjacent region.
+       */
+      Continent_id *island_surrounders;
+      Continent_id *lake_surrounders;
     } server;
 
-    /* Add client side when needed */
+    struct {
+      /* This matrix counts how many adjacencies there are between known
+       * tiles of each continent and each ocean, as well as between both of
+       * those and unknown tiles. If a single tile of one region is
+       * adjacent to multiple tiles of another (or multiple unknowns), it
+       * gets counted multiple times.
+       *
+       * The matrix is continent-major, i.e.
+       * - adj_matrix[continent][ocean] is the adjacency count between a
+       *   continent and an ocean
+       * - adj_matrix[continent][0] is the unknown adjacency count for a
+       *   continent
+       * - adj_matrix[0][ocean] is the unknown adjacency count for an ocean
+       * - adj_matrix[0][0] is unused
+       *
+       * If an unknown adjacency count is 0, we know for sure that the
+       * known size of that continent or ocean is accurate. */
+      int **adj_matrix;
+    } client;
   };
 };
 

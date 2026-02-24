@@ -19,7 +19,6 @@ extern "C" {
 
 /* common */
 #include "fc_types.h"
-
 #include "improvement.h" /* bv_imprs */
 
 /****************************************************************************
@@ -27,16 +26,16 @@ extern "C" {
 
   A vision source has a fixed owner and tile; it changes only in range.
   Vision range is given in radius squared; most such values will come from
-  the ruleset.  All vision is circular.
+  the ruleset. All vision is circular.
 
-  A vision source is created using vision_new; this creates the source
-  without any sight points.  Call vision_change_sight to change the sight
-  points of a vision source (generally called from city_refresh_vision
-  and unit_refresh vision; this can be called liberally to do updates after
-  an effect may have changed the source's vision range).  Clear the sight
-  using vision_clear_sight before freeing it with vision_free.
+  A vision source is created using vision_new(); this creates the source
+  without any sight points. Call vision_change_sight() to change the sight
+  points of a vision source (generally called from city_refresh_vision()
+  and unit_refresh_vision(); this can be called liberally to do updates after
+  an effect may have changed the source's vision range). Clear the sight
+  using vision_clear_sight() before freeing it with vision_free().
 
-  vision_get_sight returns the sight points of the source.  This should
+  vision_get_sight() returns the sight points of the source. This should
   only rarely be necessary since all fogging and unfogging operations
   are taken care of internally.
 
@@ -46,15 +45,15 @@ extern "C" {
   discover new tiles.
 
   ***** IMPORTANT *****
-  To change any of the parameters given to vision_new - that is, to change
+  To change any of the parameters given to vision_new() - that is, to change
   the vision source's position (tile) or owner - you must create a new
-  vision and then clear and free the old vision.  Order is very important
-  here since you do not want to fog tiles intermediately.  You must store
+  vision and then clear and free the old vision. Order is very important
+  here since you do not want to fog tiles intermediately. You must store
   a copy of the old vision source, then create and attach and fill out the
   sight for a new vision source, and only then may you clear and free the
-  old vision source.  In most operations you'll want to stick some other
+  old vision source. In most operations you'll want to stick some other
   code in between so that for the bulk of the operation all tiles are
-  visible.  For instance to move a unit:
+  visible. For instance to move a unit:
 
     old_vision = punit->server.vision;
     punit->server.vision = vision_new(unit_owner(punit), dest_tile);
@@ -67,7 +66,7 @@ extern "C" {
     vision_free(old_vision);
 
   note that for all the code in the middle both the new and the old
-  vision sources are active.  The same process applies when transferring
+  vision sources are active. The same process applies when transferring
   a unit or city between players, etc.
 ****************************************************************************/
 
@@ -108,8 +107,9 @@ bool vision_reveal_tiles(struct vision *vision, bool reveal_tiles);
 
 struct vision_site {
   char *name;
-  struct tile *location; /* Cannot be NULL */
-  struct player *owner;  /* May be NULL, always check! */
+  struct tile *location; /* Cannot be nullptr */
+  struct player *owner;  /* May be nullptr, always check! */
+  struct player *original; /* Can be nullptr, even in case of a city */
 
   int identity;          /* city > IDENTITY_NUMBER_ZERO */
   citizens size;         /* city size (0 <= size <= MAX_CITY_SIZE) */
@@ -129,9 +129,11 @@ struct vision_site {
 void vision_site_destroy(struct vision_site *psite);
 struct vision_site *vision_site_new(int identity, struct tile *location,
                                     struct player *owner);
-struct vision_site *vision_site_new_from_city(const struct city *pcity);
+  struct vision_site *vision_site_new_from_city(const struct city *pcity,
+                                                const struct player *watcher);
 void vision_site_update_from_city(struct vision_site *psite,
-                                  const struct city *pcity);
+                                  const struct city *pcity,
+                                  const struct player *watcher);
 struct vision_site *vision_site_copy(const struct vision_site *psite);
 
 citizens vision_site_size_get(const struct vision_site *psite);
@@ -141,4 +143,4 @@ void vision_site_size_set(struct vision_site *psite, citizens size);
 }
 #endif /* __cplusplus */
 
-#endif  /* FC__VISION_H */
+#endif /* FC__VISION_H */

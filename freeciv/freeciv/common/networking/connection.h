@@ -134,19 +134,19 @@ struct packet_header {
   at the other end of a network connection.
 ***********************************************************/
 struct connection {
-  int id;			/* used for server/client communication */
+  int id;                       /* Used for server/client communication */
   int sock;
   bool used;
-  bool established;		/* have negotiated initial packets */
+  bool established;             /* Have negotiated initial packets */
   struct packet_header packet_header;
   char *closing_reason;
 
-  /* connection is "observer", not controller; may be observing
+  /* Connection is "observer", not controller; may be observing
    * specific player, or all (implementation incomplete).
    */
   bool observer;
 
-  /* NULL for connections not yet associated with a specific player.
+  /* nullptr for connections not yet associated with a specific player.
    */
   struct player *playing;
 
@@ -160,17 +160,17 @@ struct connection {
 
   double ping_time;
 
-  struct conn_list *self;     /* list with this connection as single element */
+  struct conn_list *self;     /* List with this connection as single element */
   char username[MAX_LEN_NAME];
   char addr[MAX_LEN_ADDR];
 
-  /* 
+  /*
    * "capability" gives the capability string of the executable (be it
    * a client or server) at the other end of the connection.
    */
   char capability[MAX_LEN_CAPSTR];
 
-  /* 
+  /*
    * "access_level" stores the current access level of the client
    * corresponding to this connection.
    */
@@ -207,17 +207,17 @@ struct connection {
       /* Holds number of tries for authentication from client. */
       int auth_tries;
 
-      /* the time that the server will respond after receiving an auth reply.
-       * this is used to throttle the connection. Also used to reject a 
-       * connection if we've waited too long for a password. */
+      /* The time that the server will respond after receiving an auth reply.
+       * This is used to throttle the connection. Also used to reject
+       * a connection if we've waited too long for a password. */
       time_t auth_settime;
 
-      /* used to follow where the connection is in the authentication
+      /* Used to follow where the connection is in the authentication
        * process */
       enum auth_status status;
       char password[MAX_LEN_PASSWORD];
 
-      /* for reverse lookup and blacklisting in db */
+      /* For reverse lookup and blacklisting in db */
       char ipaddr[MAX_LEN_ADDR];
 
       /* The access level initially given to the client upon connection. */
@@ -249,7 +249,7 @@ struct connection {
    * circular dependency this is impossible.
    */
   void (*incoming_packet_notify) (struct connection * pc,
-				  int packet_type, int size);
+                                  int packet_type, int size);
 
   /*
    * Called before a packet is sent. The packet_type argument should
@@ -257,8 +257,8 @@ struct connection {
    * this is impossible.
    */
   void (*outgoing_packet_notify) (struct connection * pc,
-				  int packet_type, int size,
-				  int request_id);
+                                  int packet_type, int size,
+                                  int request_id);
   struct {
     struct genhash **sent;
     struct genhash **received;

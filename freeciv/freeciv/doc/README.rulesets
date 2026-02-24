@@ -12,7 +12,7 @@ Quickstart:
 
 - To play Freeciv normally: don't do anything special; the new
   features all have defaults which give the standard Freeciv
-  behaviour.
+  behavior.
 
 - To play a game with rules more like Civ1, start the server with:
        ./fcser -r data/civ1.serv
@@ -47,11 +47,11 @@ The rest of this file contains:
 Using and modifying rulesets:
 -----------------------------
 
-Rulesets are specified using the server command "rulesetdir".  The
-command above of "./fcser -r data/civ1.serv" just reads a file which
-uses this command (as well as a few of the standard server options).
-The server command specifies in which directory the ruleset files
-are to be found.
+Rulesets are specified using the server command "rulesetdir".
+The command above of "./fcser -r data/civ1.serv" just reads a file
+which uses this command (as well as a few of the standard
+server options). The server command specifies in which directory
+the ruleset files are to be found.
 
 The ruleset files in the data directory are user-editable, so you can
 modify them to create modified or custom rulesets (without having to
@@ -162,6 +162,8 @@ The information about the changes in the definition of a ruleset between
 different versions of Freeciv is kept in the wiki at https://www.freeciv.org/
 The URLs below list the differences between the freeciv versions from 2.2.x
 to the current version:
+
+https://www.freeciv.org/wiki/How_to_update_a_ruleset_from_3.3_to_3.4
 
 https://www.freeciv.org/wiki/How_to_update_a_ruleset_from_3.2_to_3.3
 

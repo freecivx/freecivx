@@ -22,9 +22,6 @@ void generator_free(void);
 void regenerate_lakes(void);
 void smooth_water_depth(void);
 void assign_continent_numbers(void);
-int get_lake_surrounders(Continent_id cont);
-int get_continent_size(Continent_id id);
-int get_ocean_size(Continent_id id);
 
 struct terrain *most_shallow_ocean(bool frozen);
 struct terrain *pick_ocean(int depth, bool frozen);
@@ -77,7 +74,7 @@ struct extra_type *pick_resource(const struct terrain *pterrain);
 #define axis_iterate_end						\
     }									\
   }									\
-} 
+}
 
 /***************************************************************************
   pdata or pfilter can be NULL!
@@ -118,4 +115,4 @@ bool placed_map_is_initialized(void);
 void set_all_ocean_tiles_placed(void) ;
 void set_placed_near_pos(struct tile *ptile, int dist);
 
-#endif  /* FC__MAPGEN_UTILS_H */
+#endif /* FC__MAPGEN_UTILS_H */

@@ -113,6 +113,8 @@ extern "C" {
    for C++ code */
 #if defined(__GNUC__) && __GNUC__ >= 7
 #define fc__fallthrough __attribute__((fallthrough))
+#elif defined (__clang__) && __clang_major__ >= 12
+#define fc__fallthrough __attribute__((fallthrough))
 #else
 #define fc__fallthrough
 #endif
@@ -144,9 +146,18 @@ typedef int fc_errno;
 #define RETURN_VALUE_AFTER_EXIT(_val_)
 #endif
 
+#ifdef FREECIV_NO_CONST_VAR_ARG
+#define VAR_ARG_CONST
+#else
+#define VAR_ARG_CONST const
+#endif
+
 int fc_strcasecmp(const char *str0, const char *str1);
 int fc_strncasecmp(const char *str0, const char *str1, size_t n);
 int fc_strncasequotecmp(const char *str0, const char *str1, size_t n);
+
+/* TODO: Make UTF-8 aware */
+#define fc_strncmp(_s1_, _s2_, _len_) strncmp(_s1_, _s2_, _len_)
 
 void fc_support_init(void);
 void fc_support_free(void);

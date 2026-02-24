@@ -1,4 +1,4 @@
-/********************************************************************** 
+/***********************************************************************
  Freeciv - Copyright (C) 1996 - A Kjeldberg, L Gregersen, P Unold
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -14,7 +14,7 @@
 #define FC__SECTION_FILE_H
 
 /* This header contains internals of section_file that its users should
- * not care about. This header should be included by soruce files implementing
+ * not care about. This header should be included by source files implementing
  * registry itself. */
 
 #ifdef __cplusplus
@@ -34,7 +34,7 @@ struct section {
 
 /* The section file struct itself. */
 struct section_file {
-  char *name;                           /* Can be NULL. */
+  char *name;                           /* Can be nullptr. */
   size_t num_entries;
   /* num_includes should be size_t, but as there's no truly portable
    * printf format for size_t and we need to construct string containing
@@ -87,4 +87,4 @@ bool entry_from_token(struct section *psection, const char *name,
 }
 #endif /* __cplusplus */
 
-#endif  /* FC__SECTION_FILE_H */
+#endif /* FC__SECTION_FILE_H */

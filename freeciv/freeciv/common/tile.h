@@ -53,16 +53,17 @@ struct tile {
               * (index_to_native_pos()). */
   Continent_id continent;
   bv_extras extras;
-  struct extra_type *resource;          /* NULL for no resource */
-  struct terrain *terrain;		/* NULL for unknown tiles */
+  struct extra_type *resource;          /* nullptr for no resource */
+  struct terrain *terrain;              /* nullptr for unknown tiles */
   struct unit_list *units;
-  struct city *worked;			/* NULL for not worked */
-  struct player *owner;			/* NULL for not owned */
+  struct city *worked;                  /* nullptr for not worked */
+  struct player *owner;                 /* nullptr for not owned */
   struct extra_type *placing;
   int infra_turns;
   struct player *extras_owner;
   struct tile *claimer;
-  char *label;                          /* NULL for no label */
+  int altitude;
+  char *label;                          /* nullptr for no label */
   char *spec_sprite;
   int height;
 };
@@ -91,25 +92,29 @@ struct tile {
 struct city *tile_city(const struct tile *ptile);
 
 #define tile_continent(_tile) ((_tile)->continent)
-/*Continent_id tile_continent(const struct tile *ptile);*/
+/* Continent_id tile_continent(const struct tile *ptile); */
 void tile_set_continent(struct tile *ptile, Continent_id val);
 
 #define tile_owner(_tile) ((_tile)->owner)
-/*struct player *tile_owner(const struct tile *ptile);*/
+/* struct player *tile_owner(const struct tile *ptile); */
 void tile_set_owner(struct tile *ptile, struct player *pplayer,
                     struct tile *claimer);
 #define tile_claimer(_tile) ((_tile)->claimer)
 
 #define tile_resource(_tile) ((_tile)->resource)
+
+/************************************************************************//**
+  Check if the tile has a valid resource on it.
+****************************************************************************/
 static inline bool tile_resource_is_valid(const struct tile *ptile)
-{ return ptile->resource != NULL
+{ return ptile->resource != nullptr
     && BV_ISSET(ptile->extras, ptile->resource->id);
 }
-/*const struct resource *tile_resource(const struct tile *ptile);*/
+/* const struct resource *tile_resource(const struct tile *ptile); */
 void tile_set_resource(struct tile *ptile, struct extra_type *presource);
 
 #define tile_terrain(_tile) ((_tile)->terrain)
-/*struct terrain *tile_terrain(const struct tile *ptile);*/
+/* struct terrain *tile_terrain(const struct tile *ptile); */
 void tile_set_terrain(struct tile *ptile, struct terrain *pterrain);
 
 #define tile_worked(_tile) ((_tile)->worked)
@@ -123,7 +128,6 @@ static inline const bv_extras *tile_extras(const struct tile *ptile)
   return &(ptile->extras);
 }
 
-void tile_set_bases(struct tile *ptile, bv_bases bases);
 bool tile_has_base(const struct tile *ptile, const struct base_type *pbase);
 int tile_has_not_aggressive_extra_for_unit(const struct tile *ptile,
                                            const struct unit_type *punittype);
@@ -161,12 +165,12 @@ enum known_type tile_get_known(const struct tile *ptile,
 bool tile_is_seen(const struct tile *target_tile,
                   const struct player *pow_player);
 
-/* A somewhat arbitrary integer value.  Activity times are multiplied by
- * this amount, and divided by them later before being used.  This may
+/* A somewhat arbitrary integer value. Activity times are multiplied by
+ * this amount, and divided by them later before being used. This may
  * help to avoid rounding errors; however it should probably be removed. */
 #define ACTIVITY_FACTOR 10
 int tile_activity_time(enum unit_activity activity,
-		       const struct tile *ptile,
+                       const struct tile *ptile,
                        const struct extra_type *tgt);
 
 /* These are higher-level functions that handle side effects on the tile. */
@@ -183,7 +187,8 @@ const char *tile_get_info_text(const struct tile *ptile,
 /* Virtual tiles are tiles that do not exist on the game map. */
 struct tile *tile_virtual_new(const struct tile *ptile);
 void tile_virtual_destroy(struct tile *vtile);
-bool tile_virtual_check(struct tile *vtile);
+
+bool tile_map_check(struct civ_map *nmap, struct tile *vtile);
 
 void *tile_hash_key(const struct tile *ptile);
 

@@ -2,7 +2,7 @@
 [tilespec]
 
 ; Format and options of this tilespec file:
-options = "+Freeciv-tilespec-3.2-Devel-2022-Jun-21"
+options = "+Freeciv-tilespec-3.4-Devel-2026-Jan-11"
 
 ; A simple name for the tileset specified by this file:
 name = "Alio"
@@ -32,6 +32,9 @@ normal_tile_width  = 126
 normal_tile_height = 64
 small_tile_width   = 15
 small_tile_height  = 20
+
+; The height svg flags should be drawn to, if they are used
+svg_height = 44
 
 ; Basic tile style.
 hex_side = 16
@@ -107,6 +110,10 @@ tilelabel_offset_y = 20
 ; valid direction for the tileset.
 unit_default_orientation = "s"
 
+; How long (number of refreshes) it takes to move from an animation
+; frame to the next.
+time_per_frame = 3
+
 ; The map is rendered in "layers", just like any decent image editor
 ; supports. The setting below allows to change the layer drawing order. The
 ; first layer in the list will be drawn below the others; the second on top
@@ -159,6 +166,7 @@ files =
   "misc/events.spec",
   "misc/buildings-large.spec",
   "misc/wonders-large.spec",
+  "misc/extra_buildings.spec",
   "misc/shields-large.spec",
   "misc/cursors.spec",
   "misc/space.spec",
@@ -174,6 +182,7 @@ files =
   "hexemplio/bases.spec",
   "hexemplio/cities.spec",
   "hexemplio/terrain.spec",
+  "hexemplio/savannah.spec",
   "hexemplio/embellishments.spec",
   "hexemplio/forests.spec",
   "hexemplio/mountains.spec",
@@ -210,7 +219,7 @@ files =
   "cimpletoon/units/tiger/xxx.spec",
   "cimpletoon/units/truck/xxx.spec",
   "cimpletoon/units/zeppelin/xxx.spec",
-  ; Alio's own parts
+  ; Alio`s own parts
   "alio/roads.spec",
   "alio/riversbrown.spec",
   "alio/riversgreen.spec",
@@ -308,13 +317,6 @@ layer1_match_type = "land"
 layer2_match_type = "foliage"
 layer2_match_with = "foliage"
 
-[tile_grassland]
-tag = "grassland"
-blend_layer = 1
-num_layers = 2
-layer0_match_type = "lake"
-layer1_match_type = "land"
-
 [tile_hills]
 tag = "hills"
 blend_layer = 1
@@ -326,6 +328,15 @@ layer2_match_with = "hills"
 
 [tile_jungle]
 tag = "jungle"
+blend_layer = 1
+num_layers = 3
+layer0_match_type = "lake"
+layer1_match_type = "land"
+layer2_match_type = "foliage"
+layer2_match_with = "foliage"
+
+[tile_savannah]
+tag = "savannah"
 blend_layer = 1
 num_layers = 3
 layer0_match_type = "lake"

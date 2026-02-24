@@ -1,4 +1,4 @@
-/********************************************************************** 
+/***********************************************************************
  Freeciv - Copyright (C) 1996 - A Kjeldberg, L Gregersen, P Unold
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -63,7 +63,7 @@ struct genlist {
   struct genlist_link *tail_link;
   genlist_free_fn_t free_data_func;
 };
-  
+
 struct genlist *genlist_new(void) fc__warn_unused_result;
 struct genlist *genlist_new_full(genlist_free_fn_t free_data_func)
                 fc__warn_unused_result;
@@ -76,50 +76,69 @@ struct genlist *genlist_copy_full(const struct genlist *pgenlist,
                                   genlist_free_fn_t free_data_func)
                 fc__warn_unused_result;
 
-void genlist_clear(struct genlist *pgenlist);
+void genlist_clear(struct genlist *pgenlist)
+  fc__attribute((nonnull (1)));
 
 void genlist_unique(struct genlist *pgenlist);
 void genlist_unique_full(struct genlist *pgenlist,
-                         genlist_comp_fn_t comp_data_func);
+                         genlist_comp_fn_t comp_data_func)
+  fc__attribute((nonnull (1)));
 
-void genlist_append(struct genlist *pgenlist, void *data);
-void genlist_prepend(struct genlist *pgenlist, void *data);
-void genlist_insert(struct genlist *pgenlist, void *data, int idx);
+void genlist_append(struct genlist *pgenlist, void *data)
+  fc__attribute((nonnull (1)));
+void genlist_prepend(struct genlist *pgenlist, void *data)
+  fc__attribute((nonnull (1)));
+void genlist_insert(struct genlist *pgenlist, void *data, int idx)
+  fc__attribute((nonnull (1)));
 void genlist_insert_after(struct genlist *pgenlist, void *data,
-                          struct genlist_link *plink);
+                          struct genlist_link *plink)
+  fc__attribute((nonnull (1)));
 void genlist_insert_before(struct genlist *pgenlist, void *data,
-                           struct genlist_link *plink);
+                           struct genlist_link *plink)
+  fc__attribute((nonnull (1)));
 
-bool genlist_remove(struct genlist *pgenlist, const void *data);
+bool genlist_remove(struct genlist *pgenlist, const void *data)
+  fc__attribute((nonnull (1)));
 bool genlist_remove_if(struct genlist *pgenlist,
-                       genlist_cond_fn_t cond_data_func);
-int genlist_remove_all(struct genlist *pgenlist, const void *data);
+                       genlist_cond_fn_t cond_data_func)
+  fc__attribute((nonnull (1)));
+int genlist_remove_all(struct genlist *pgenlist, const void *data)
+  fc__attribute((nonnull (1)));
 int genlist_remove_all_if(struct genlist *pgenlist,
-                          genlist_cond_fn_t cond_data_func);
-void genlist_erase(struct genlist *pgenlist, struct genlist_link *plink);
-void genlist_pop_front(struct genlist *pgenlist);
-void genlist_pop_back(struct genlist *pgenlist);
+                          genlist_cond_fn_t cond_data_func)
+  fc__attribute((nonnull (1)));
+void genlist_erase(struct genlist *pgenlist, struct genlist_link *plink)
+  fc__attribute((nonnull (1)));
+void genlist_pop_front(struct genlist *pgenlist)
+  fc__attribute((nonnull (1)));
+void genlist_pop_back(struct genlist *pgenlist)
+  fc__attribute((nonnull (1)));
 
-int genlist_size(const struct genlist *pgenlist);
+int genlist_size(const struct genlist *pgenlist)
+  fc__attribute((nonnull (1)));
 void *genlist_get(const struct genlist *pgenlist, int idx);
 void *genlist_front(const struct genlist *pgenlist);
 void *genlist_back(const struct genlist *pgenlist);
-struct genlist_link *genlist_link_get(const struct genlist *pgenlist, int idx);
+struct genlist_link *genlist_link_get(const struct genlist *pgenlist, int idx)
+  fc__attribute((nonnull (1)));
 inline static struct genlist_link *genlist_head(const struct genlist *pgenlist)
 {
-  return (NULL != pgenlist ? pgenlist->head_link : NULL);
+  return (pgenlist != nullptr ? pgenlist->head_link : nullptr);
 }
 struct genlist_link *genlist_tail(const struct genlist *pgenlist);
 
 struct genlist_link *genlist_search(const struct genlist *pgenlist,
-                                    const void *data);
+                                    const void *data)
+  fc__attribute((nonnull (1)));
 struct genlist_link *genlist_search_if(const struct genlist *pgenlist,
-                                       genlist_cond_fn_t cond_data_func);
+                                       genlist_cond_fn_t cond_data_func)
+  fc__attribute((nonnull (1)));
 
 void genlist_sort(struct genlist *pgenlist,
                   int (*compar) (const void *, const void *));
 void genlist_shuffle(struct genlist *pgenlist);
-void genlist_reverse(struct genlist *pgenlist);
+void genlist_reverse(struct genlist *pgenlist)
+  fc__attribute((nonnull (1)));
 
 void genlist_allocate_mutex(struct genlist *pgenlist);
 void genlist_release_mutex(struct genlist *pgenlist);
@@ -132,16 +151,20 @@ struct genlist_link {
   void *dataptr;
 };
 
-/****************************************************************************
-  Returns the pointer of this link.
+/************************************************************************//**
+  Get data pointer of the genlist link
+  @param  plink Link to get data for
+  @return       Pointer to the data
 ****************************************************************************/
 static inline void *genlist_link_data(const struct genlist_link *plink)
 {
-  return (NULL != plink ? plink->dataptr : NULL);
+  return (plink != nullptr ? plink->dataptr : nullptr);
 }
 
-/****************************************************************************
-  Returns the previous link.
+/************************************************************************//**
+  Get previous link in genlist
+  @param  plink Link to start from
+  @return       Previous link
 ****************************************************************************/
 fc__warn_unused_result
 static inline struct genlist_link *genlist_link_prev(const struct genlist_link *plink)
@@ -149,17 +172,19 @@ static inline struct genlist_link *genlist_link_prev(const struct genlist_link *
   return plink->prev;
 }
 
-/****************************************************************************
-  Returns the next link.
+/************************************************************************//**
+  Get next link in genlist
+  @param  plink Link to start from
+  @return       Next link
 ****************************************************************************/
 fc__warn_unused_result
 static inline struct genlist_link *genlist_link_next(const struct genlist_link *plink)
 {
   return plink->next;
 }
-  
+
 #ifdef __cplusplus
 }
 #endif /* __cplusplus */
 
-#endif  /* FC__GENLIST_H */
+#endif /* FC__GENLIST_H */

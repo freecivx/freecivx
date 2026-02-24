@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 #/***********************************************************************
 # Freeciv - Copyright (C) 1996 - A Kjeldberg, L Gregersen, P Unold
 #   This program is free software; you can redistribute it and/or modify
@@ -13,7 +13,7 @@
 #
 #***********************************************************************/
 
-if test "x$1" = "x-h" || test "x$1" = "x--help" || test "x$1" = "x" ; then
+if test "$1" = "-h" || test "$1" = "--help" || test "$1" = "" ; then
    echo "Usage: $(basename $0) <translation domain> <freeciv source root> <freeciv build>"
    exit
 fi
@@ -24,9 +24,9 @@ fi
         echo "$CODE $PRCT $NLANG"
     done ) > "$3/langstat_${1}.txt.tmp"
 
-if ! test -f "$2/bootstrap/langstat_${1}.txt" ||
-   ! cmp "$2/bootstrap/langstat_${1}.txt" "$3/langstat_${1}.txt.tmp" ; then
-    mv "$3/langstat_${1}.txt.tmp" "$2/bootstrap/langstat_${1}.txt"
+if ! test -f "$3/langstat_${1}.txt" ||
+   ! cmp "$3/langstat_${1}.txt" "$3/langstat_${1}.txt.tmp" ; then
+    mv "$3/langstat_${1}.txt.tmp" "$3/langstat_${1}.txt"
 else
     rm -f "$3/langstat_${1}.txt.tmp"
 fi

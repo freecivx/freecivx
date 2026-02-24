@@ -19,9 +19,10 @@
 function _deflua_hut_get_gold(unit, gold)
   local owner = unit.owner
 
-  notify.event(owner, unit.tile, E.HUT_GOLD, PL_("You found %d gold.",
-                                                 "You found %d gold.", gold),
-               gold)
+  notify.event(owner, unit.tile, E.HUT_GOLD,
+               -- TRANS: Begins with a unit name
+               PL_("%s found %d gold.", "%s found %d gold.", gold),
+               unit:link_text(), gold)
   owner:change_gold(gold)
 end
 
@@ -40,10 +41,10 @@ function _deflua_hut_get_tech(unit)
                  _("You found %s in ancient scrolls of wisdom."),
                  tech:name_translation())
     notify.research(owner, false, E.TECH_GAIN,
-                 -- /* TRANS: One player got tech for the whole team. */
-                 _("The %s found %s in ancient scrolls of wisdom for you."),
-                 owner.nation:plural_translation(),
-                 tech:name_translation())
+                    -- /* TRANS: One player got tech for the whole team. */
+                    _("The %s found %s in ancient scrolls of wisdom for you."),
+                    owner.nation:plural_translation(),
+                    tech:name_translation())
     notify.research_embassies(owner, E.TECH_EMBASSY,
                  -- /* TRANS: first %s is nation plural or team name */
                  _("The %s have acquired %s from ancient scrolls of wisdom."),
@@ -83,7 +84,7 @@ function _deflua_hut_get_city(unit)
   local settlers = find.role_unit_type('Cities', owner)
 
   if unit:is_on_possible_city_tile() then
-    owner:create_city(unit.tile, "")
+    owner:city_create(unit.tile, "")
     notify.event(owner, unit.tile, E.HUT_CITY,
                  _("You found a friendly city."))
     return true
@@ -115,14 +116,15 @@ function _deflua_hut_get_barbarians(unit)
     return true
   end
 
+  local dead_link = unit:tile_link_text()
   local alive = tile:unleash_barbarians()
   if alive then
     notify.event(owner, tile, E.HUT_BARB,
-                  _("You have unleashed a horde of barbarians!"));
+                 _("You have unleashed a horde of barbarians!"));
   else
     notify.event(owner, tile, E.HUT_BARB_KILLED,
-                  _("Your %s has been killed by barbarians!"),
-                  utype:name_translation());
+                 _("Your %s has been killed by barbarians!"),
+                 dead_link);
   end
   return alive
 end
@@ -132,7 +134,8 @@ function _deflua_hut_reveal_map(unit)
   local owner = unit.owner
 
   notify.event(owner, unit.tile, E.HUT_MAP,
-               _("You find a map of the surrounding terrain."))
+               _("%s finds a map of the surrounding terrain."),
+               unit:link_text())
   for revealtile in unit.tile:circle_iterate(30) do
     revealtile:show(owner)
   end
@@ -184,19 +187,23 @@ signal.connect("hut_frighten", "_deflua_hut_frighten_callback")
 --[[
   Make partisans around conquered city
 
-  if requirements to make partisans when a city is conquered is fulfilled
+  If requirements to make partisans are fulfilled when a city is conquered,
   this routine makes a lot of partisans based on the city`s size.
-  To be candidate for partisans the following things must be satisfied:
-  1) The loser of the city is the original owner.
-  2) The Inspire_Partisans effect must be larger than zero.
+  To be candidate for partisans, the following things must be satisfied:
+  1) The loser of the city must have local support:
+  1a) If citizen nationality is enabled:
+      Big enough percentage of the city citizens must be of their nationality
+  1b) If citizen nationality is disabled:
+      They must be the original owner (founder) of the city
+  2) The Inspire_Partisans effect value must be bigger than zero
 
   If these conditions are ever satisfied, the ruleset must have a unit
   with the Partisan role.
 
   In the default ruleset, the requirements for inspiring partisans are:
-  a) Guerilla warfare must be known by atleast 1 player
+  a) Guerilla warfare must be known at least by one player
   b) The player must know about Communism and Gunpowder
-  c) The player must run either a democracy or a communist society.
+  c) The player must run either a democracy or a communist government
 ]]--
 
 function _deflua_make_partisans_callback(city, loser, winner, reason)
@@ -210,9 +217,9 @@ function _deflua_make_partisans_callback(city, loser, winner, reason)
   end
   city.tile:place_partisans(loser, partisans, city:map_sq_radius())
   notify.event(loser, city.tile, E.CITY_LOST,
-      _("The loss of %s has inspired partisans!"), city.name)
+      _("The loss of %s has inspired partisans!"), city:link_text())
   notify.event(winner, city.tile, E.UNIT_WIN_ATT,
-      _("The loss of %s has inspired partisans!"), city.name)
+      _("The loss of %s has inspired partisans!"), city:link_text())
 end
 
 signal.connect("city_transferred", "_deflua_make_partisans_callback")

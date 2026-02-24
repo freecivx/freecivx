@@ -2,7 +2,7 @@
 [tilespec]
 
 ; Format and options of this tilespec file:
-options = "+Freeciv-tilespec-3.2-Devel-2022-Jun-21"
+options = "+Freeciv-tilespec-3.4-Devel-2026-Jan-11"
 
 ; A simple name for the tileset specified by this file:
 name = "Isophex"
@@ -26,6 +26,9 @@ normal_tile_width  = 64
 normal_tile_height = 32
 small_tile_width   = 15
 small_tile_height  = 20
+
+; The height svg flags should be drawn to, if they are used
+svg_height = 44
 
 ; Basic tile style.
 type = "isometric"
@@ -96,6 +99,10 @@ tilelabel_offset_y = 10
 ; (e.g., in worklists, editor, and online help). Does not have to be a
 ; valid direction for the tileset.
 ;unit_default_orientation = "s"
+
+; How long (number of refreshes) it takes to move from an animation
+; frame to the next.
+time_per_frame = 3
 
 ; The map is rendered in "layers", just like any decent image editor
 ; supports. The setting below allows to change the layer drawing order. The
@@ -300,6 +307,7 @@ styles =
       "tx.pollution",  "Single2"
       "tx.fallout",    "Single2"
       "tx.village",    "Single1"
+      "tx.nets",       "Single1"
       "base.outpost",  "3Layer"
       "base.fortress", "3Layer"
       "base.airstrip", "3Layer"

@@ -32,6 +32,9 @@ const char *api_methods_game_year_text(lua_State *L);
 const char *api_methods_game_rulesetdir(lua_State *L);
 const char *api_methods_game_ruleset_name(lua_State *L);
 
+const char *api_methods_tech_cost_style(lua_State *L);
+const char *api_methods_tech_leakage_style(lua_State *L);
+
 /* Building Type */
 bool api_methods_building_type_is_wonder(lua_State *L,
                                          Building_Type *pbuilding);
@@ -62,6 +65,16 @@ bool api_methods_is_city_celebrating(lua_State *L, City *pcity);
 bool api_methods_is_gov_center(lua_State *L, City *pcity);
 bool api_methods_is_capital(lua_State *L, City *pcity);
 bool api_methods_is_primary_capital(lua_State *L, City *pcity);
+int api_methods_city_nationality_citizens(lua_State *L, City *pcity,
+                                          Player *nationality);
+int api_methods_city_num_specialists(lua_State *L, City *pcity,
+                                     Specialist *s);
+bool api_methods_city_can_employ(lua_State *L, City *pcity, Specialist *s);
+
+/* Counter */
+const char *api_methods_counter_rule_name(lua_State *L, Counter *c);
+const char *api_methods_counter_name_translation(lua_State *L, Counter *c);
+int api_methods_counter_city_get(lua_State *L, Counter *c, City *city);
 
 /* Government */
 const char *api_methods_government_rule_name(lua_State *L,
@@ -115,6 +128,17 @@ bool api_methods_player_can_build_unit_direct(lua_State *L, Player *pplayer,
                                               Unit_Type *utype);
 bool api_methods_player_can_build_impr_direct(lua_State *L, Player *pplayer,
                                               Building_Type *itype);
+bool api_methods_player_can_employ(lua_State *L, Player *pplayer,
+                                   Specialist *s);
+
+City *api_methods_player_primary_capital(lua_State *L, Player *pplayer);
+
+const char *api_methods_get_diplstate(lua_State *L, Player *pplayer1,
+                                      Player *pplayer2);
+bool api_methods_player_has_embassy(lua_State *L, Player *pplayer,
+                                    Player *target);
+bool api_methods_player_team_has_embassy(lua_State *L, Player *pplayer,
+                                         Player *target);
 
 /* Tech Type */
 const char *api_methods_tech_type_rule_name(lua_State *L, Tech_Type *ptech);
@@ -141,6 +165,12 @@ const char *api_methods_action_name_translation(lua_State *L,
                                                 Action *pact);
 const char *api_methods_action_target_kind(lua_State *L, Action *pact);
 
+/* Specialist */
+const char *api_methods_specialist_rule_name(lua_State *L, Specialist *s);
+const char *api_methods_specialist_name_translation(lua_State *L,
+                                                    Specialist *s);
+bool api_methods_specialist_is_super(lua_State *L, Specialist *s);
+
 /* Tile */
 int api_methods_tile_nat_x(lua_State *L, Tile *ptile);
 int api_methods_tile_nat_y(lua_State *L, Tile *ptile);
@@ -164,6 +194,8 @@ Tile *api_methods_private_tile_for_outward_index(lua_State *L, Tile *pstart,
                                                  int tindex);
 Unit_List_Link *api_methods_private_tile_unit_list_head(lua_State *L,
                                                         Tile *ptile);
+bool api_methods_tile_known(lua_State *L, Tile *self, Player *watcher);
+bool api_methods_tile_seen(lua_State *L, Tile *self, Player *watcher);
 
 /* Unit */
 bool api_methods_unit_city_can_be_built_here(lua_State *L, Unit *punit);
@@ -175,6 +207,7 @@ Unit_List_Link *api_methods_private_unit_cargo_list_head(lua_State *L,
 bool api_methods_unit_can_upgrade(lua_State *L, Unit *punit, bool is_free);
 const char *api_methods_unit_transform_problem(lua_State *L, Unit *punit,
                                                Unit_Type *ptype);
+bool api_methods_unit_seen(lua_State *L, Unit *self, Player *watcher);
 
 /* Unit Type */
 bool api_methods_unit_type_has_flag(lua_State *L, Unit_Type *punit_type,

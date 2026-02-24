@@ -21,7 +21,7 @@ extern "C" {
 /* common/aicore */
 #include "path_finding.h"
 
-/* 
+/*
  * Use to create 'amphibious' paths. An amphibious path starts on a sea tile,
  * perhaps goes over some other sea tiles, then perhaps goes over some land
  * tiles. This is suitable for a land unit riding on a ferry.
@@ -44,25 +44,32 @@ struct pft_amphibious
 
 
 void pft_fill_unit_parameter(struct pf_parameter *parameter,
+                             const struct civ_map *nmap,
                              const struct unit *punit);
 void pft_fill_unit_overlap_param(struct pf_parameter *parameter,
+                                 const struct civ_map *nmap,
                                  const struct unit *punit);
 void pft_fill_unit_attack_param(struct pf_parameter *parameter,
+                                const struct civ_map *nmap,
                                 const struct unit *punit);
 
 void pft_fill_utype_parameter(struct pf_parameter *parameter,
+                              const struct civ_map *nmap,
                               const struct unit_type *punittype,
                               struct tile *pstart_tile,
                               struct player *pplayer);
 void pft_fill_utype_overlap_param(struct pf_parameter *parameter,
+                                  const struct civ_map *nmap,
                                   const struct unit_type *punittype,
                                   struct tile *pstart_tile,
                                   struct player *pplayer);
 void pft_fill_utype_attack_param(struct pf_parameter *parameter,
+                                 const struct civ_map *nmap,
                                  const struct unit_type *punittype,
                                  struct tile *pstart_tile,
                                  struct player *pplayer);
-void pft_fill_reverse_parameter(struct pf_parameter *parameter,
+void pft_fill_reverse_parameter(const struct civ_map *nmap,
+                                struct pf_parameter *parameter,
                                 struct tile *target_tile);
 
 void pft_fill_amphibious_parameter(struct pft_amphibious *parameter);

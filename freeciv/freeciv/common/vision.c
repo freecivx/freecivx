@@ -73,7 +73,7 @@ bool vision_reveal_tiles(struct vision *vision, bool reveal_tiles)
 ****************************************************************************/
 void vision_site_destroy(struct vision_site *psite)
 {
-  if (psite->name != NULL) {
+  if (psite->name != nullptr) {
     free(psite->name);
   }
 
@@ -91,6 +91,7 @@ struct vision_site *vision_site_new(int identity, struct tile *location,
   psite->identity = identity;
   psite->location = location;
   psite->owner = owner;
+  psite->original = nullptr;
 
   return psite;
 }
@@ -98,13 +99,20 @@ struct vision_site *vision_site_new(int identity, struct tile *location,
 /************************************************************************//**
   Returns the basic structure filled with initial elements.
 ****************************************************************************/
-struct vision_site *vision_site_new_from_city(const struct city *pcity)
+struct vision_site *vision_site_new_from_city(const struct city *pcity,
+                                              const struct player *watcher)
 {
-  struct vision_site *psite =
-    vision_site_new(pcity->id, city_tile(pcity), city_owner(pcity));
+  struct vision_site *psite
+    = vision_site_new(pcity->id, city_tile(pcity), city_owner(pcity));
 
   vision_site_size_set(psite, city_size_get(pcity));
   psite->name = fc_strdup(city_name_get(pcity));
+
+  if (watcher == pcity->original) {
+    psite->original = pcity->original;
+  } else {
+    psite->original = nullptr;
+  }
 
   return psite;
 }
@@ -113,7 +121,8 @@ struct vision_site *vision_site_new_from_city(const struct city *pcity)
   Returns the basic structure filled with current elements.
 ****************************************************************************/
 void vision_site_update_from_city(struct vision_site *psite,
-                                  const struct city *pcity)
+                                  const struct city *pcity,
+                                  const struct player *watcher)
 {
   /* Should be same identity and location */
   fc_assert_ret(psite->identity == pcity->id);
@@ -121,9 +130,15 @@ void vision_site_update_from_city(struct vision_site *psite,
 
   psite->owner = city_owner(pcity);
 
+  if (watcher == pcity->original) {
+    psite->original = pcity->original;
+  } else {
+    psite->original = nullptr;
+  }
+
   vision_site_size_set(psite, city_size_get(pcity));
 
-  if (psite->name != NULL) {
+  if (psite->name != nullptr) {
     free(psite->name);
   }
   psite->name = fc_strdup(city_name_get(pcity));
@@ -142,7 +157,7 @@ struct vision_site *vision_site_copy(const struct vision_site *psite)
   *copy = *psite;
 
   /* Then allocate things that aren't shared */
-  if (psite->name != NULL) {
+  if (psite->name != nullptr) {
     copy->name = fc_strdup(psite->name);
   }
 
@@ -154,7 +169,7 @@ struct vision_site *vision_site_copy(const struct vision_site *psite)
 ****************************************************************************/
 citizens vision_site_size_get(const struct vision_site *psite)
 {
-  fc_assert_ret_val(psite != NULL, 0);
+  fc_assert_ret_val(psite != nullptr, 0);
 
   return psite->size;
 }
@@ -164,7 +179,7 @@ citizens vision_site_size_get(const struct vision_site *psite)
 ****************************************************************************/
 void vision_site_size_set(struct vision_site *psite, citizens size)
 {
-  fc_assert_ret(psite != NULL);
+  fc_assert_ret(psite != nullptr);
 
   psite->size = size;
 }

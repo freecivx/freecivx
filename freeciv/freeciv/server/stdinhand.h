@@ -23,7 +23,6 @@
 #include "console.h"
 
 void stdinhand_init(void);
-void stdinhand_turn(void);
 void stdinhand_free(void);
 
 void cmd_reply(enum command_id cmd, struct connection *caller,
@@ -31,6 +30,7 @@ void cmd_reply(enum command_id cmd, struct connection *caller,
                fc__attribute((__format__ (__printf__, 4, 5)));
 
 bool handle_stdin_input(struct connection *caller, char *str);
+bool handle_stdin_input_free(struct connection *caller, char *str);
 void set_ai_level_direct(struct player *pplayer, enum ai_level level);
 bool read_init_script(struct connection *caller, const char *script_filename,
                       bool from_cmdline, bool check);
@@ -58,7 +58,7 @@ bool start_command(struct connection *caller, bool check, bool notify);
 void toggle_ai_player_direct(struct connection *caller,
                              struct player *pplayer);
 
-/* for sernet.c in initing a new connection */
+/* For sernet.c in initing a new connection */
 enum cmdlevel access_level_for_next_connection(void);
 
 void notify_if_first_access_level_is_available(void);

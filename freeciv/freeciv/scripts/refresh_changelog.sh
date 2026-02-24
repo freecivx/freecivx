@@ -1,6 +1,6 @@
-#!/bin/bash
+#!/usr/bin/env bash
 #/***********************************************************************
-# Freeciv - Copyright (C) 2022
+# Freeciv - Copyright (C) 2022-2023
 #   This program is free software; you can redistribute it and/or modify
 #   it under the terms of the GNU General Public License as published by
 #   the Free Software Foundation; either version 2, or (at your option)
@@ -25,7 +25,8 @@ fi
 
 OLDREV="$(head -n 1 ChangeLog | sed 's/.* //')"
 
-git log --no-decorate --pretty=medium ${OLDREV}..HEAD > ChangeLog.new
+git log --no-decorate --pretty=medium ${OLDREV}..HEAD |
+    sed 's/[ ]*$//' > ChangeLog.new
 echo >> ChangeLog.new
 cat ChangeLog >> ChangeLog.new
 mv ChangeLog.new ChangeLog

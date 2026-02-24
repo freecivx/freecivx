@@ -16,6 +16,7 @@
 #endif
 
 /* utility */
+#include "astring.h"
 #include "fciconv.h"
 #include "netfile.h"
 #include "shared.h"
@@ -51,14 +52,32 @@ struct functions *fc_interface_funcs(void)
 }
 
 /************************************************************************//**
+  Set program type to server.
+****************************************************************************/
+void i_am_server(void)
+{
+  am_i_server = TRUE;
+}
+
+/************************************************************************//**
+  Set program type to client.
+****************************************************************************/
+void i_am_client(void)
+{
+  am_i_server = FALSE;
+}
+
+/************************************************************************//**
   Initialize libfreeciv.
 
-  @param check_fc_interface  Whether to lso test and initialize functions.
+  @param check_fc_interface  Whether to also test and initialize functions.
 ****************************************************************************/
 void libfreeciv_init(bool check_fc_interface)
 {
+  fc_astr_init();
   fc_support_init();
   init_nls();
+  requirements_init();
 
   if (check_fc_interface) {
     fc_funcs = &fc_functions;
@@ -90,7 +109,9 @@ void libfreeciv_free(void)
   free_user_home_dir();
   free_fileinfo_data();
   netfile_free();
+  requirements_free();
   free_nls();
   fc_iconv_close();
   fc_support_free();
+  fc_astr_free();
 }

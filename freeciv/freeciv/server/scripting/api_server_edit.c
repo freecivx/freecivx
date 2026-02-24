@@ -19,6 +19,7 @@
 #include "rand.h"
 
 /* common */
+#include "citizens.h"
 #include "map.h"
 #include "movement.h"
 #include "research.h"
@@ -72,7 +73,7 @@ static bool
 ur_transform_unit(struct unit *punit, const struct unit_type *to_unit,
                   int vet_loss)
 {
-  if (UU_OK == unit_transform_result(punit, to_unit)) {
+  if (UU_OK == unit_transform_result(&(wld.map), punit, to_unit)) {
     /* Avoid getting overt veteranship if a user requests increasing it */
     if (vet_loss < 0) {
       int vl = utype_veteran_levels(to_unit);
@@ -148,7 +149,8 @@ Unit *api_edit_create_unit_full(lua_State *L, Player *pplayer,
     return NULL;
   }
 
-  if (is_non_allied_unit_tile(ptile, pplayer)) {
+  if (is_non_allied_unit_tile(ptile, pplayer,
+                              utype_has_flag(ptype, UTYF_FLAGLESS))) {
     luascript_log(fcl, LOG_ERROR, "create_unit_full: tile is occupied by "
                                   "enemy unit");
     return NULL;
@@ -244,8 +246,10 @@ bool api_edit_unit_teleport(lua_State *L, Unit *punit, Tile *dest,
       wipe_unit(punit, ULR_NONNATIVE_TERR, NULL);
       return FALSE;
     }
-    if (is_non_allied_unit_tile(dest, owner)
-        || (pcity && !pplayers_allied(city_owner(pcity), owner))) {
+    if (is_non_allied_unit_tile(dest, owner,
+                                unit_has_type_flag(punit, UTYF_FLAGLESS))
+        || (pcity != NULL
+            && !pplayers_allied(city_owner(pcity), owner))) {
       wipe_unit(punit, ULR_STACK_CONFLICT, NULL);
       return FALSE;
     }
@@ -263,12 +267,14 @@ bool api_edit_perform_action_unit_vs_city(lua_State *L, Unit *punit,
   LUASCRIPT_CHECK_STATE(L, FALSE);
   LUASCRIPT_CHECK_ARG_NIL(L, punit, 2, Unit, FALSE);
   LUASCRIPT_CHECK_ARG_NIL(L, paction, 3, Action, FALSE);
+  LUASCRIPT_CHECK_ARG(L, action_get_actor_kind(paction) == AAK_UNIT, 3,
+                      "Not a unit-performed action", FALSE);
+  LUASCRIPT_CHECK_ARG(L, action_get_target_kind(paction) == ATK_CITY, 3,
+                      "Not a city-targeted action", FALSE);
   LUASCRIPT_CHECK_ARG_NIL(L, tgt, 4, City, FALSE);
 
-  fc_assert_ret_val(action_get_actor_kind(paction) == AAK_UNIT, FALSE);
-  fc_assert_ret_val(action_get_target_kind(paction) == ATK_CITY, FALSE);
   fc_assert_ret_val(!action_has_result(paction, ACTRES_FOUND_CITY), FALSE);
-  if (is_action_enabled_unit_on_city(paction->id, punit, tgt)) {
+  if (is_action_enabled_unit_on_city(&(wld.map), paction->id, punit, tgt)) {
     return unit_perform_action(unit_owner(punit), punit->id,
                                tgt->id, IDENTITY_NUMBER_ZERO, "",
                                paction->id, ACT_REQ_RULES);
@@ -288,13 +294,15 @@ bool api_edit_perform_action_unit_vs_city_impr(lua_State *L, Unit *punit,
   LUASCRIPT_CHECK_STATE(L, FALSE);
   LUASCRIPT_CHECK_ARG_NIL(L, punit, 2, Unit, FALSE);
   LUASCRIPT_CHECK_ARG_NIL(L, paction, 3, Action, FALSE);
+  LUASCRIPT_CHECK_ARG(L, action_get_actor_kind(paction) == AAK_UNIT, 3,
+                      "Not a unit-performed action", FALSE);
+  LUASCRIPT_CHECK_ARG(L, action_get_target_kind(paction) == ATK_CITY, 3,
+                      "Not a city-targeted action", FALSE);
   LUASCRIPT_CHECK_ARG_NIL(L, tgt, 4, City, FALSE);
   LUASCRIPT_CHECK_ARG_NIL(L, sub_tgt, 5, Building_Type, FALSE);
 
-  fc_assert_ret_val(action_get_actor_kind(paction) == AAK_UNIT, FALSE);
-  fc_assert_ret_val(action_get_target_kind(paction) == ATK_CITY, FALSE);
   fc_assert_ret_val(!action_has_result(paction, ACTRES_FOUND_CITY), FALSE);
-  if (is_action_enabled_unit_on_city(paction->id, punit, tgt)) {
+  if (is_action_enabled_unit_on_city(&(wld.map), paction->id, punit, tgt)) {
     return unit_perform_action(unit_owner(punit), punit->id,
                                tgt->id, sub_tgt->item_number, "",
                                paction->id, ACT_REQ_RULES);
@@ -314,13 +322,15 @@ bool api_edit_perform_action_unit_vs_city_tech(lua_State *L, Unit *punit,
   LUASCRIPT_CHECK_STATE(L, FALSE);
   LUASCRIPT_CHECK_ARG_NIL(L, punit, 2, Unit, FALSE);
   LUASCRIPT_CHECK_ARG_NIL(L, paction, 3, Action, FALSE);
+  LUASCRIPT_CHECK_ARG(L, action_get_actor_kind(paction) == AAK_UNIT, 3,
+                      "Not a unit-performed action", FALSE);
+  LUASCRIPT_CHECK_ARG(L, action_get_target_kind(paction) == ATK_CITY, 3,
+                      "Not a city-targeted action", FALSE);
   LUASCRIPT_CHECK_ARG_NIL(L, tgt, 4, City, FALSE);
   LUASCRIPT_CHECK_ARG_NIL(L, sub_tgt, 5, Tech_Type, FALSE);
 
-  fc_assert_ret_val(action_get_actor_kind(paction) == AAK_UNIT, FALSE);
-  fc_assert_ret_val(action_get_target_kind(paction) == ATK_CITY, FALSE);
   fc_assert_ret_val(!action_has_result(paction, ACTRES_FOUND_CITY), FALSE);
-  if (is_action_enabled_unit_on_city(paction->id, punit, tgt)) {
+  if (is_action_enabled_unit_on_city(&(wld.map), paction->id, punit, tgt)) {
     return unit_perform_action(unit_owner(punit), punit->id,
                                tgt->id, sub_tgt->item_number, "",
                                paction->id, ACT_REQ_RULES);
@@ -336,15 +346,19 @@ bool api_edit_perform_action_unit_vs_city_tech(lua_State *L, Unit *punit,
 bool api_edit_perform_action_unit_vs_unit(lua_State *L, Unit *punit,
                                           Action *paction, Unit *tgt)
 {
+  const struct civ_map *nmap = &(wld.map);
+
   LUASCRIPT_CHECK_STATE(L, FALSE);
   LUASCRIPT_CHECK_ARG_NIL(L, punit, 2, Unit, FALSE);
   LUASCRIPT_CHECK_ARG_NIL(L, paction, 3, Action, FALSE);
+  LUASCRIPT_CHECK_ARG(L, action_get_actor_kind(paction) == AAK_UNIT, 3,
+                      "Not a unit-performed action", FALSE);
+  LUASCRIPT_CHECK_ARG(L, action_get_target_kind(paction) == ATK_UNIT, 3,
+                      "Not a unit-targeted action", FALSE);
   LUASCRIPT_CHECK_ARG_NIL(L, tgt, 4, Unit, FALSE);
 
-  fc_assert_ret_val(action_get_actor_kind(paction) == AAK_UNIT, FALSE);
-  fc_assert_ret_val(action_get_target_kind(paction) == ATK_UNIT, FALSE);
   fc_assert_ret_val(!action_has_result(paction, ACTRES_FOUND_CITY), FALSE);
-  if (is_action_enabled_unit_on_unit(paction->id, punit, tgt)) {
+  if (is_action_enabled_unit_on_unit(nmap, paction->id, punit, tgt)) {
     return unit_perform_action(unit_owner(punit), punit->id,
                                tgt->id, IDENTITY_NUMBER_ZERO, "",
                                paction->id, ACT_REQ_RULES);
@@ -361,36 +375,41 @@ bool api_edit_perform_action_unit_vs_tile(lua_State *L, Unit *punit,
                                           Action *paction, Tile *tgt)
 {
   bool enabled = FALSE;
+  const struct civ_map *nmap = &(wld.map);
 
   LUASCRIPT_CHECK_STATE(L, FALSE);
   LUASCRIPT_CHECK_ARG_NIL(L, punit, 2, Unit, FALSE);
   LUASCRIPT_CHECK_ARG_NIL(L, paction, 3, Action, FALSE);
+  LUASCRIPT_CHECK_ARG(L, action_get_actor_kind(paction) == AAK_UNIT, 3,
+                      "Not a unit-performed action", FALSE);
   LUASCRIPT_CHECK_ARG_NIL(L, tgt, 4, Tile, FALSE);
 
-  fc_assert_ret_val(action_get_actor_kind(paction) == AAK_UNIT, FALSE);
   switch (action_get_target_kind(paction)) {
-  case ATK_UNITS:
-    enabled = is_action_enabled_unit_on_units(paction->id, punit, tgt);
+  case ATK_STACK:
+    enabled = is_action_enabled_unit_on_stack(nmap, paction->id, punit, tgt);
     break;
   case ATK_TILE:
-    enabled = is_action_enabled_unit_on_tile(paction->id, punit,
+    enabled = is_action_enabled_unit_on_tile(nmap, paction->id, punit,
                                              tgt, NULL);
     break;
   case ATK_EXTRAS:
-    enabled = is_action_enabled_unit_on_extras(paction->id, punit,
+    enabled = is_action_enabled_unit_on_extras(nmap, paction->id, punit,
                                                tgt, NULL);
     break;
   case ATK_CITY:
     /* Not handled here. */
-    fc_assert(action_get_target_kind(paction) != ATK_CITY);
+    LUASCRIPT_CHECK_ARG(L, action_get_target_kind(paction) != ATK_CITY, 3,
+                        "City-targeted action applied to tile", FALSE);
     break;
   case ATK_UNIT:
     /* Not handled here. */
-    fc_assert(action_get_target_kind(paction) != ATK_UNIT);
+    LUASCRIPT_CHECK_ARG(L, action_get_target_kind(paction) != ATK_UNIT, 3,
+                        "Unit-targeted action applied to tile", FALSE);
     break;
   case ATK_SELF:
     /* Not handled here. */
-    fc_assert(action_get_target_kind(paction) != ATK_SELF);
+    LUASCRIPT_CHECK_ARG(L, action_get_target_kind(paction) != ATK_SELF, 3,
+                        "Self-targeted action applied to tile", FALSE);
     break;
   case ATK_COUNT:
     /* Should not exist */
@@ -418,40 +437,45 @@ bool api_edit_perform_action_unit_vs_tile_extra(lua_State *L, Unit *punit,
 {
   struct extra_type *sub_target;
   bool enabled = FALSE;
+  const struct civ_map *nmap = &(wld.map);
 
   LUASCRIPT_CHECK_STATE(L, FALSE);
   LUASCRIPT_CHECK_ARG_NIL(L, punit, 2, Unit, FALSE);
   LUASCRIPT_CHECK_ARG_NIL(L, paction, 3, Action, FALSE);
+  LUASCRIPT_CHECK_ARG(L, action_get_actor_kind(paction) == AAK_UNIT, 3,
+                      "Not a unit-performed action", FALSE);
   LUASCRIPT_CHECK_ARG_NIL(L, tgt, 4, Tile, FALSE);
   LUASCRIPT_CHECK_ARG_NIL(L, sub_tgt, 5, string, FALSE);
 
   sub_target = extra_type_by_rule_name(sub_tgt);
   LUASCRIPT_CHECK_ARG(L, sub_target != NULL, 5, "No such extra", FALSE);
 
-  fc_assert_ret_val(action_get_actor_kind(paction) == AAK_UNIT, FALSE);
   switch (action_get_target_kind(paction)) {
-  case ATK_UNITS:
-    enabled = is_action_enabled_unit_on_units(paction->id, punit, tgt);
+  case ATK_STACK:
+    enabled = is_action_enabled_unit_on_stack(nmap, paction->id, punit, tgt);
     break;
   case ATK_TILE:
-    enabled = is_action_enabled_unit_on_tile(paction->id, punit,
+    enabled = is_action_enabled_unit_on_tile(nmap, paction->id, punit,
                                              tgt, sub_target);
     break;
   case ATK_EXTRAS:
-    enabled = is_action_enabled_unit_on_extras(paction->id, punit,
+    enabled = is_action_enabled_unit_on_extras(nmap, paction->id, punit,
                                                tgt, sub_target);
     break;
   case ATK_CITY:
     /* Not handled here. */
-    fc_assert(action_get_target_kind(paction) != ATK_CITY);
+    LUASCRIPT_CHECK_ARG(L, action_get_target_kind(paction) != ATK_CITY, 3,
+                        "City-targeted action applied to tile", FALSE);
     break;
   case ATK_UNIT:
     /* Not handled here. */
-    fc_assert(action_get_target_kind(paction) != ATK_UNIT);
+    LUASCRIPT_CHECK_ARG(L, action_get_target_kind(paction) != ATK_UNIT, 3,
+                        "Unit-targeted action applied to tile", FALSE);
     break;
   case ATK_SELF:
     /* Not handled here. */
-    fc_assert(action_get_target_kind(paction) != ATK_SELF);
+    LUASCRIPT_CHECK_ARG(L, action_get_target_kind(paction) != ATK_SELF, 3,
+                        "Self-targeted action applied to tile", FALSE);
     break;
   case ATK_COUNT:
     /* Should not exist */
@@ -476,14 +500,17 @@ bool api_edit_perform_action_unit_vs_tile_extra(lua_State *L, Unit *punit,
 bool api_edit_perform_action_unit_vs_self(lua_State *L, Unit *punit,
                                           Action *paction)
 {
+  const struct civ_map *nmap = &(wld.map);
+
   LUASCRIPT_CHECK_STATE(L, FALSE);
   LUASCRIPT_CHECK_ARG_NIL(L, punit, 2, Unit, FALSE);
   LUASCRIPT_CHECK_ARG_NIL(L, paction, 3, Action, FALSE);
-
-  fc_assert_ret_val(action_get_actor_kind(paction) == AAK_UNIT, FALSE);
-  fc_assert_ret_val(action_get_target_kind(paction) == ATK_SELF, FALSE);
+  LUASCRIPT_CHECK_ARG(L, action_get_actor_kind(paction) == AAK_UNIT, 3,
+                      "Not a unit-performed action", FALSE);
+  LUASCRIPT_CHECK_ARG(L, action_get_target_kind(paction) == ATK_SELF, 3,
+                      "Not a self-targeted action", FALSE);
   fc_assert_ret_val(!action_has_result(paction, ACTRES_FOUND_CITY), FALSE);
-  if (is_action_enabled_unit_on_self(paction->id, punit)) {
+  if (is_action_enabled_unit_on_self(nmap, paction->id, punit)) {
     return unit_perform_action(unit_owner(punit), punit->id,
                                IDENTITY_NUMBER_ZERO, IDENTITY_NUMBER_ZERO,
                                "",
@@ -501,7 +528,7 @@ void api_edit_unit_turn(lua_State *L, Unit *punit, Direction dir)
 {
   LUASCRIPT_CHECK_STATE(L);
   LUASCRIPT_CHECK_ARG_NIL(L, punit, 2, Unit);
- 
+
   if (direction8_is_valid(dir)) {
     punit->facing = dir;
 
@@ -564,6 +591,68 @@ void api_edit_unit_kill(lua_State *L, Unit *punit, const char *reason,
 }
 
 /**********************************************************************//**
+  Change unit hitpoints. Reason and killer are used if unit dies.
+**************************************************************************/
+bool api_edit_unit_hitpoints(lua_State *L, Unit *self, int change,
+                             const char *reason, Player *killer)
+{
+  LUASCRIPT_CHECK_STATE(L, TRUE);
+  LUASCRIPT_CHECK_ARG_NIL(L, self, 2, Unit, TRUE);
+
+  self->hp += change;
+
+  if (self->hp <= 0) {
+    enum unit_loss_reason loss_reason
+      = unit_loss_reason_by_name(reason, fc_strcasecmp);
+
+    wipe_unit(self, loss_reason, killer);
+
+    /* Intentionally only after wiping, so that unit is never left with
+     * zero or less hit points. */
+    LUASCRIPT_CHECK_ARG(L, unit_loss_reason_is_valid(loss_reason), 4,
+                        "Invalid unit loss reason", FALSE);
+
+    return FALSE;
+  } else {
+    int max = unit_type_get(self)->hp;
+
+    if (self->hp > max) {
+      self->hp = max;
+    }
+  }
+
+  send_unit_info(NULL, self);
+
+  return TRUE;
+}
+
+/**********************************************************************//**
+  Change unit move points.
+**************************************************************************/
+void api_edit_unit_movepoints(lua_State *L, Unit *self, int change)
+{
+  bool was_exhausted = FALSE;
+
+  LUASCRIPT_CHECK_STATE(L);
+  LUASCRIPT_CHECK_ARG_NIL(L, self, 2, Unit);
+
+  if (self->moves_left == 0 && self->done_moving) {
+    was_exhausted = TRUE;
+  }
+
+  self->moves_left += change;
+
+  if (self->moves_left <= 0) {
+    self->moves_left = 0;
+  } else if (was_exhausted && !unit_has_orders(self)) {
+    /* Unit has regained ability to move. */
+    self->done_moving = FALSE;
+  }
+
+  send_unit_info(NULL, self);
+}
+
+/**********************************************************************//**
   Change terrain on tile
 **************************************************************************/
 bool api_edit_change_terrain(lua_State *L, Tile *ptile, Terrain *pterr)
@@ -603,14 +692,13 @@ bool api_edit_change_terrain(lua_State *L, Tile *ptile, Terrain *pterr)
   Create a new city.
 **************************************************************************/
 bool api_edit_create_city(lua_State *L, Player *pplayer, Tile *ptile,
-                          const char *name)
+                          const char *name, Player *nationality)
 {
   LUASCRIPT_CHECK_STATE(L, FALSE);
   LUASCRIPT_CHECK_ARG_NIL(L, pplayer, 2, Player, FALSE);
   LUASCRIPT_CHECK_ARG_NIL(L, ptile, 3, Tile, FALSE);
 
-  /* TODO: Allow initial citizen to be of nationality other than owner */
-  return create_city_for_player(pplayer, ptile, name);
+  return create_city_for_player(pplayer, ptile, name, nationality);
 }
 
 /**********************************************************************//**
@@ -622,6 +710,18 @@ void api_edit_remove_city(lua_State *L, City *pcity)
   LUASCRIPT_CHECK_ARG_NIL(L, pcity, 2, City);
 
   remove_city(pcity);
+}
+
+/**********************************************************************//**
+  Transfer city from player to another.
+**************************************************************************/
+bool api_edit_transfer_city(lua_State *L, City *pcity, Player *new_owner)
+{
+  LUASCRIPT_CHECK_STATE(L, FALSE);
+  LUASCRIPT_CHECK_ARG_NIL(L, pcity, 2, City, FALSE);
+  LUASCRIPT_CHECK_ARG_NIL(L, new_owner, 3, Player, FALSE);
+
+  return transfer_city(new_owner, pcity, FALSE, FALSE, FALSE, FALSE, FALSE);
 }
 
 /**********************************************************************//**
@@ -692,6 +792,105 @@ void api_edit_remove_building(lua_State *L, City *pcity, Building_Type *impr)
       send_player_info_c(city_owner(pcity), NULL);
     }
   }
+}
+
+/**********************************************************************//**
+  Reduce specialists of given type s. Superspecialists are just reduced,
+  normal specialists are toggled in a way like toggling in the client.
+  Does not place workers on map, just switches to another specialist.
+  Does nothing if there is less than amount specialists s in pcity.
+  Return if given number could be removed/repurposed.
+**************************************************************************/
+bool api_edit_city_reduce_specialists(lua_State *L, City *pcity,
+                                      Specialist *s, int amount)
+{
+  Specialist_type_id from;
+
+  LUASCRIPT_CHECK_STATE(L, FALSE);
+  LUASCRIPT_CHECK_SELF(L, pcity, FALSE);
+  LUASCRIPT_CHECK_ARG_NIL(L, s, 2, Specialist, FALSE);
+  LUASCRIPT_CHECK_ARG(L, amount >= 0, 3, "must be non-negative", FALSE);
+
+  from = specialist_index(s);
+  if (pcity->specialists[from] < amount) {
+    return FALSE;
+  }
+
+  if (is_super_specialist_id(from)) {
+    /* Just reduce superspecialists */
+    pcity->specialists[from] -= amount;
+  } else {
+    /* Toggle normal specialist */
+    Specialist_type_id to = from;
+
+    do {
+      to = (to + 1) % normal_specialist_count();
+    } while (to != from && !city_can_use_specialist(pcity, to));
+
+    if (to == from) {
+      /* We can use only the default specialist */
+      return FALSE;
+    } else {
+      /* City population must be correct */
+      fc_assert_ret_val_msg(pcity->specialists[to] <= amount - MAX_CITY_SIZE,
+                            FALSE, "Wrong specialist number in %s",
+                            city_name_get(pcity));
+      pcity->specialists[from] -= amount;
+      pcity->specialists[to] += amount;
+    }
+  }
+
+  city_refresh(pcity);
+  /* sanity_check_city(pcity); -- hopefully we don't break things here? */
+  send_city_info(city_owner(pcity), pcity);
+
+  return TRUE;
+}
+
+/**********************************************************************//**
+  Add amount specialists of given type s to pcity, return true iff done.
+  For normal specialists, also increases city size at amount.
+  Fails if either pcity does not fulfill s->reqs or it does not have
+  enough space for given specialists or citizens number.
+**************************************************************************/
+bool api_edit_city_add_specialist(lua_State *L, City *pcity,
+                                  Specialist *s, int amount)
+{
+  Specialist_type_id sid;
+  int csize = 0;
+
+  LUASCRIPT_CHECK_STATE(L, FALSE);
+  LUASCRIPT_CHECK_SELF(L, pcity, FALSE);
+  LUASCRIPT_CHECK_ARG_NIL(L, s, 2, Specialist, FALSE);
+  LUASCRIPT_CHECK_ARG(L, amount >= 0, 3, "must be non-negative", FALSE);
+
+  sid = specialist_index(s);
+
+  if (!city_can_use_specialist(pcity, sid)) {
+    /* Can't employ this one */
+    return FALSE;
+  }
+  if (is_super_specialist(s)) {
+    if (pcity->specialists[sid] > MAX_CITY_SIZE - amount) {
+      /* No place for the specialist */
+      return FALSE;
+    }
+    pcity->specialists[sid] += amount;
+    city_refresh(pcity);
+    send_city_info(city_owner(pcity), pcity);
+  } else {
+    csize = city_size_get(pcity);
+
+    if (csize > MAX_CITY_SIZE - amount) {
+      /* No place for the specialist */
+      return FALSE;
+    }
+    city_change_size(pcity, csize + amount, city_owner(pcity), sid, "script");
+    city_refresh(pcity);
+    send_city_info(nullptr, pcity);
+  }
+
+  return TRUE;
 }
 
 /**********************************************************************//**
@@ -792,7 +991,6 @@ Tech_Type *api_edit_give_technology(lua_State *L, Player *pplayer,
       } else if (cost == -3) {
         cost = game.server.diplbulbcost;
       } else {
-        
         cost = 0;
       }
     }
@@ -1180,4 +1378,74 @@ void api_edit_player_give_bulbs(lua_State *L, Player *pplayer, int amount,
       }
     }
   }
+}
+
+/**********************************************************************//**
+  Create a trade route between two cities.
+**************************************************************************/
+bool api_edit_create_trade_route(lua_State *L, City *from, City *to)
+{
+  struct player *pplayer, *partner_player;
+
+  LUASCRIPT_CHECK_STATE(L, FALSE);
+  LUASCRIPT_CHECK_ARG_NIL(L, from, 2, City, FALSE);
+  LUASCRIPT_CHECK_ARG_NIL(L, to, 3, City, FALSE);
+
+  /* Priority zero -> never replace old routes. */
+  if (!can_establish_trade_route(from, to, 0)) {
+    return FALSE;
+  }
+
+  create_trade_route(from, to, goods_from_city_to_unit(from, NULL));
+
+  /* Refresh the cities. */
+  city_refresh(from);
+  city_refresh(to);
+
+  pplayer = city_owner(from);
+  partner_player = city_owner(to);
+
+  send_city_info(pplayer, from);
+  send_city_info(partner_player, to);
+
+  /* Notify each player about the other's cities. */
+  if (pplayer != partner_player && game.info.reveal_trade_partner) {
+    map_show_tile(partner_player, city_tile(from));
+    send_city_info(partner_player, from);
+    map_show_tile(pplayer, city_tile(to));
+    send_city_info(pplayer, to);
+  }
+
+  return TRUE;
+}
+
+/**********************************************************************//**
+  Change city size.
+**************************************************************************/
+void api_edit_change_city_size(lua_State *L, City *pcity, int change,
+                               Player *nationality)
+{
+  LUASCRIPT_CHECK_STATE(L);
+  LUASCRIPT_CHECK_ARG_NIL(L, pcity, 2, City);
+
+  if (nationality == nullptr) {
+    nationality = city_owner(pcity);
+  }
+
+  city_change_size(pcity, city_size_get(pcity) + change, nationality,
+                   -1, "script");
+}
+
+/**********************************************************************//**
+  Change nationality of the city citizens.
+**************************************************************************/
+void api_edit_change_citizen_nationality(lua_State *L, City *pcity,
+                                         Player *from, Player *to, int amount)
+{
+  LUASCRIPT_CHECK_STATE(L);
+  LUASCRIPT_CHECK_ARG_NIL(L, pcity, 2, City);
+  LUASCRIPT_CHECK_ARG_NIL(L, from, 3, Player);
+  LUASCRIPT_CHECK_ARG_NIL(L, to, 4, Player);
+
+  citizens_nation_move(pcity, from->slot, to->slot, amount);
 }

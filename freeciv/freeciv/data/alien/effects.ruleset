@@ -2,9 +2,9 @@
 
 ; Modifying this file:
 ; You should not modify this file except to make bugfixes or
-; for other "maintenance".  If you want to make custom changes,
+; for other "maintenance". If you want to make custom changes,
 ; you should create a new datadir subdirectory and copy this file
-; into that directory, and then modify that copy.  Then use the
+; into that directory, and then modify that copy. Then use the
 ; command "rulesetdir <mysubdir>" in the server to have freeciv
 ; use your new customized file.
 
@@ -13,8 +13,8 @@
 
 [datafile]
 description = "Alien World effects data for Freeciv"
-options = "+Freeciv-ruleset-3.3-Devel-2023.Feb.24"
-format_version = 40
+options = "+Freeciv-ruleset-3.4-Devel-2025.Jan.17"
+format_version = 50
 
 ; /* <-- avoid gettext warnings
 ;
@@ -100,9 +100,22 @@ reqs    =
 type    = "City_Vision_Radius_Sq"
 value   = 5
 
-[effect_base_unit_upkeep]
-type    = "Upkeep_Factor"
-value	= 1
+[effect_base_unit_upkeep_not_gold]
+type    = "Upkeep_Pct"
+value   = 100
+reqs    =
+    { "type",       "name", "range", "present"
+      "OutputType", "Gold", "Local", FALSE
+    }
+
+[effect_base_unit_upkeep_gold]
+type    = "Upkeep_Pct"
+value   = 100
+reqs    =
+    { "type",       "name",        "range"
+      "OutputType", "Gold",        "Local"
+      "UnitState",  "HasHomeCity", "Local"
+    }
 
 [effect_empire_size_base]
 type    = "Empire_Size_Base"
@@ -721,6 +734,10 @@ value   = 1
 type    = "Tech_Cost_Factor"
 value   = 1
 
+[effect_tech_leakage]
+type    = "Tech_Leakage"
+value   = 1
+
 [effect_mood_center]
 type    = "Make_Content"
 value	= 3
@@ -855,10 +872,10 @@ reqs    =
     }
 
 [effect_martial_law]
-type    = "Martial_Law_Each"
+type    = "Martial_Law_By_Unit"
 value   = 1
 reqs    =
-    { "type", "name", "range"
+    { "type",     "name",          "range"
       "Building", "Secret Police", "City"
     }
 
@@ -960,8 +977,8 @@ reqs    =
 type	= "Unit_Bribe_Cost_Pct"
 value	= -50
 reqs	=
-    { "type", "name", "range"
-      "UnitFlag", "Cities", "Local"
+    { "type",         "name",   "range"
+      "UnitTypeFlag", "Cities", "Local"
     }
 
 [effect_illegal_action_move_cost_base]
@@ -1063,6 +1080,14 @@ reqs    =
       "Action", "Attack", "Local", TRUE
     }
 
+[effect_action_success_move_cost_ransom]
+type    = "Action_Success_Actor_Move_Cost"
+value   = 4
+reqs    =
+    { "type",   "name",           "range", "present"
+      "Action", "Collect Ransom", "Local", TRUE
+    }
+
 [effect_action_success_move_cost_paradrop]
 type    = "Action_Success_Actor_Move_Cost"
 value   = 4
@@ -1095,7 +1120,7 @@ reqs    =
       "CityTile",      "Center",       "Tile", TRUE
       "Activity",      "Fortified",    "Local", FALSE
       "UnitClassFlag", "CanFortify",   "Local", TRUE
-      "UnitFlag",      "Cant_Fortify", "Local", FALSE
+      "UnitTypeFlag",  "Cant_Fortify", "Local", FALSE
     }
 
 [effect_city_min_hp]
@@ -1152,4 +1177,54 @@ value   = -50
 reqs    =
     { "type",   "name",         "range", "present"
       "Action", "Upgrade Unit", "Local", TRUE
+    }
+
+[effect_claim_land]
+type    = "Tile_Claimable"
+value   = 1
+reqs    =
+    { "type",         "name",        "range"
+      "TerrainClass", "Land",        "Tile"
+      "TileRel",      "Same Region", "Tile"
+    }
+
+[effect_claim_ocean_adj]
+type    = "Tile_Claimable"
+value   = 1
+reqs    =
+    { "type",          "name",    "range"
+      "TerrainClass",  "Oceanic", "Tile"
+      "MaxDistanceSq", "2",       "Tile"
+    }
+
+[effect_claim_ocean_lake]
+type    = "Tile_Claimable"
+value   = 1
+reqs    =
+    { "type",           "name",              "range"
+      "TerrainClass",   "Oceanic",           "Tile"
+      "MaxRegionTiles", "20",                "Continent"
+      "TileRel",        "Region Surrounded", "Tile"
+; implicit with Region Surrounded
+;     "TileRel",        "Same Terrain Class", "Tile", FALSE
+    }
+
+[effect_claim_ocean_from_land_bay]
+type    = "Tile_Claimable"
+value   = 1
+reqs    =
+    { "type",           "name",               "range",    "present"
+      "TerrainClass",   "Oceanic",            "Tile",     TRUE
+      "TileRel",        "Same Terrain Class", "Tile",     FALSE
+      "MaxRegionTiles", "3",                  "Adjacent", TRUE
+      "TileRel",        "Only Other Region",  "Adjacent", TRUE
+    }
+
+[effect_claim_ocean_tech]
+type    = "Tile_Claimable"
+value   = 1
+reqs    =
+    { "type",         "name",         "range"
+      "TerrainClass", "Oceanic",      "Tile"
+      "Tech",         "Ocean Cities", "Player"
     }

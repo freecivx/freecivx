@@ -33,7 +33,7 @@ struct player_tile {
   struct terrain *terrain;		/* NULL for unknown tiles */
   struct player *owner; 		/* NULL for unowned */
   struct player *extras_owner;
-  bv_extras extras;
+  struct dbv extras;
 
   /* If you build a city with an unknown square within city radius
      the square stays unknown. However, we still have to keep count
@@ -89,8 +89,10 @@ void remove_player_from_maps(struct player *pplayer);
 
 struct vision_site *map_get_player_city(const struct tile *ptile,
                                         const struct player *pplayer);
-struct vision_site *map_get_player_site(const struct tile *ptile,
-                                        const struct player *pplayer);
+#define map_get_playermap_site(_plrtile_) (_plrtile_)->site
+#define map_get_player_site(_ptile_, _pplayer_) \
+  map_get_playermap_site(map_get_player_tile(_ptile_, _pplayer_))
+
 struct player_tile *map_get_player_tile(const struct tile *ptile,
                                         const struct player *pplayer);
 bool update_player_tile_knowledge(struct player *pplayer, struct tile *ptile);
@@ -144,8 +146,5 @@ bool give_distorted_map(struct player *pfrom, struct player *pto,
 
 void tile_change_side_effects(struct tile *ptile, bool refresh_city)
   fc__attribute((nonnull (1)));
-
-void handle_web_info_text_req(struct player *pplayer, int loc,
-                              int visible_unit_id, int focus_unit_id);
 
 #endif /* FC__MAPHAND_H */

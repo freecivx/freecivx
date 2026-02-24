@@ -57,10 +57,6 @@ setup.)
 Now start the server with
   freeciv-server --Database fc_auth.conf --auth --Newusers
 
-The first time you do this, you need to create the database file and its
-tables with the following server command:
-  /fcdb lua sqlite_createdb()
-
 Now you can create some users by connecting with the client; due to the
 --Newusers flag, when you connect with the client with a previously unknown
 username, the server will prompt for a password and save the new account to
@@ -91,7 +87,7 @@ supported for backward compatibility, but SQLite is probably a better
 option for new deployments unless you have special requirements.
 
 In order to use this, the server must have been built with
-'--enable-fcdb=mysql'.
+'-Dfcdb=mariadb'.
 
 You can still use an existing pre-2.4 MySQL authentication database with
 Freeciv 2.4 or later. Note however that the format of the configuration
@@ -177,6 +173,7 @@ example (for MySQL; SQLite does not need all of these options).
   database="Freeciv"
   table_user="auth"
   table_log="loginlog"
+  table_meta="fcdb_meta"
 
 If that's sufficient for you, it's not necessary to read on.
 
@@ -186,7 +183,7 @@ Freeciv expects the following lua functions to be defined in database.lua:
   -- return TRUE if user from connection exist in the auth system
   function user_exists(conn)
 
-  -- Check use password.
+  -- Check user password.
   -- return TRUE if user exist and password is correct, nil otherwise
   function user_verify(conn, plaintext)
 
@@ -199,11 +196,17 @@ Freeciv expects the following lua functions to be defined in database.lua:
   -- Test and initialise the database connection
   function database_init()
 
+  -- Get capstr of the database
+  function database_capstr()
+
   -- Free the database connection
   function database_free()
 
   -- Called when connection has been fully established
   function conn_established(conn)
+
+  -- Called when the game starts. Return dbid to use now on
+  function game_start(oldid)
 
 Where 'conn' is an object representing the connection to the client which
 requests access.

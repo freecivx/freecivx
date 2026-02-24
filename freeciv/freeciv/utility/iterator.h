@@ -15,6 +15,8 @@
 
 #ifdef __cplusplus
 extern "C" {
+
+#include "mem.h"
 #endif /* __cplusplus */
 
 /* utility */
@@ -24,7 +26,7 @@ extern "C" {
   Iterator base class. "Derived" iterators must have this struct as
   their first member (as a "vtable") and provide implementations of the
   "pure virtual" member functions. See the function comment headers
-  below for the expected behaviour of these functions.
+  below for the expected behavior of these functions.
 ***********************************************************************/
 struct iterator {
   void (*next)(struct iterator *it);
@@ -44,9 +46,9 @@ static inline void iterator_next(struct iterator *it)
 
 /*******************************************************************//**
   Returns the item currently pointed to by the iterator. Note that the
-  iterator could point to an item whose value is NULL; to actually test
-  whether the iterator is still valid (e.g. has not gone past the
-  end of the sequence), use iterator_valid().
+  iterator could point to an item whose value is nullptr; to actually
+  test whether the iterator is still valid (e.g. has not gone past
+  the end of the sequence), use iterator_valid().
 ***********************************************************************/
 static inline void *iterator_get(const struct iterator *it)
 {
@@ -74,33 +76,65 @@ static inline bool iterator_valid(const struct iterator *it)
            of the iteration loop.
   FUNC_size - A function that returns the total size in bytes of a
               'TYPE_it'.
-  FUNC_init - A "construtor" for 'TYPE_it' objects. It returns a pointer to
+  FUNC_init - A "constructor" for 'TYPE_it' objects. It returns a pointer to
               a 'struct iterator' and takes as its first argument a pointer
               to memory large enough to hold a 'TYPE_it' (this amount must
               match the result of FUNC_size()). NB: This function must not
-              return NULL; it must return a valid iterator pointing to the
-              first element in the sequence, or an invalid iterator.
+              return nullptr; it must return a valid iterator pointing to
+              the first element in the sequence, or an invalid iterator.
   ... - Zero or more extra arguments that 'FUNC_init' expects.
 ***************************************************************************/
-#define generic_iterate(TYPE_it, TYPE_a, NAME_a, FUNC_size, FUNC_init, ...)\
-do {\
-  char MY_mem_##NAME_a[FUNC_size()];\
-  struct iterator *MY_it_##NAME_a;\
-  TYPE_a NAME_a;\
-  MY_it_##NAME_a =\
-    FUNC_init((TYPE_it *) (void *) MY_mem_##NAME_a , ## __VA_ARGS__);\
-  for (; iterator_valid(MY_it_##NAME_a); iterator_next(MY_it_##NAME_a)) {\
-    NAME_a = (TYPE_a) iterator_get(MY_it_##NAME_a);\
+#ifdef __cplusplus
 
-#define generic_iterate_end\
-  }\
+/* C++ does not have VLA, except as compiler extension in case of
+   some compilers. Thus we need to fc_malloc() correct size array.
+   Wrap the allocated array within a class, so it will get freed
+   by the destructor when it goes out of scope. */
+class gi_mem
+{
+ public:
+  void *array;
+  gi_mem(int size) {
+    array = fc_malloc(size);
+  }
+  ~gi_mem() {
+    free(array);
+  }
+};
+
+#define generic_iterate(TYPE_it, TYPE_a, NAME_a, FUNC_size, FUNC_init, ...) \
+do { \
+  gi_mem MY_mem_##NAME_a(FUNC_size()); \
+  struct iterator *MY_it_##NAME_a; \
+  TYPE_a NAME_a; \
+  MY_it_##NAME_a = \
+    FUNC_init((TYPE_it *) MY_mem_##NAME_a.array , ## __VA_ARGS__); \
+  for (; iterator_valid(MY_it_##NAME_a); iterator_next(MY_it_##NAME_a)) { \
+    NAME_a = (TYPE_a) iterator_get(MY_it_##NAME_a);
+
+#else  // __cplusplus
+
+#define generic_iterate(TYPE_it, TYPE_a, NAME_a, FUNC_size, FUNC_init, ...) \
+do { \
+  char MY_mem_##NAME_a[FUNC_size()]; \
+  struct iterator *MY_it_##NAME_a; \
+  TYPE_a NAME_a; \
+  MY_it_##NAME_a = \
+    FUNC_init((TYPE_it *) (void *) MY_mem_##NAME_a , ## __VA_ARGS__); \
+  for (; iterator_valid(MY_it_##NAME_a); iterator_next(MY_it_##NAME_a)) { \
+    NAME_a = (TYPE_a) iterator_get(MY_it_##NAME_a);
+
+#endif // __cplusplus
+
+#define generic_iterate_end \
+  } \
 } while (FALSE)
 
 /***************************************************************************
-  Iterator init functions cannot return NULL, so this dummy helper function
-  can be used to return a "generic invalid iterator" that will just exit
-  out of generic_iterate. Its size is just sizeof(struct iterator), so it
-  will fit into any iterator's allocated stack memory.
+  Iterator init functions cannot return nullptr, so this dummy helper
+  function can be used to return a "generic invalid iterator" that will
+  just exit out of generic_iterate. Its size is just sizeof(struct iterator),
+  so it will fit into any iterator's allocated stack memory.
 ***************************************************************************/
 struct iterator *invalid_iter_init(struct iterator *it);
 

@@ -98,12 +98,10 @@ tab_building::tab_building(ruledit_gui *ui_in) : QWidget()
   add_button = new QPushButton(QString::fromUtf8(R__("Add Building")), this);
   connect(add_button, SIGNAL(pressed()), this, SLOT(add_now2()));
   bldg_layout->addWidget(add_button, 5, 0);
-  show_experimental(add_button);
 
   delete_button = new QPushButton(QString::fromUtf8(R__("Remove this Building")), this);
   connect(delete_button, SIGNAL(pressed()), this, SLOT(delete_now()));
   bldg_layout->addWidget(delete_button, 5, 2);
-  show_experimental(delete_button);
 
   refresh();
   update_bldg_info(nullptr);
@@ -120,13 +118,11 @@ void tab_building::refresh()
 {
   bldg_list->clear();
 
-  improvement_iterate(pimpr) {
-    if (!pimpr->ruledit_disabled) {
-      QListWidgetItem *item = new QListWidgetItem(improvement_rule_name(pimpr));
+  improvement_re_active_iterate(pimpr) {
+    QListWidgetItem *item = new QListWidgetItem(improvement_rule_name(pimpr));
 
-      bldg_list->insertItem(improvement_index(pimpr), item);
-    }
-  } improvement_iterate_end;
+    bldg_list->insertItem(improvement_index(pimpr), item);
+  } improvement_re_active_iterate_end;
 }
 
 /**********************************************************************//**
@@ -206,7 +202,7 @@ void tab_building::name_given()
 }
 
 /**********************************************************************//**
-  User requested building deletion 
+  User requested building deletion
 **************************************************************************/
 void tab_building::delete_now()
 {
@@ -230,7 +226,7 @@ void tab_building::delete_now()
 }
 
 /**********************************************************************//**
-  Initialize new tech for use.
+  Initialize new building for use.
 **************************************************************************/
 bool tab_building::initialize_new_bldg(struct impr_type *pimpr)
 {
@@ -239,6 +235,11 @@ bool tab_building::initialize_new_bldg(struct impr_type *pimpr)
   }
 
   name_set(&(pimpr->name), 0, "New Building");
+  BV_CLR_ALL(pimpr->flags);
+  if (pimpr->helptext != nullptr) {
+    strvec_clear(pimpr->helptext);
+  }
+
   return true;
 }
 

@@ -27,7 +27,7 @@
 
 #include "fc_cmdline.h"
 
-/* get 'struct cmdline_value_list' and related functions: */
+/* Get 'struct cmdline_value_list' and related functions: */
 #define SPECLIST_TAG cmdline_value
 #define SPECLIST_TYPE char
 #include "speclist.h"
@@ -36,10 +36,10 @@
     TYPED_LIST_ITERATE(char *, vallist, pvalue)
 #define cmdline_value_list_iterate_end LIST_ITERATE_END
 
-static struct cmdline_value_list *cmdline_values = NULL;
+static struct cmdline_value_list *cmdline_values = nullptr;
 
 /**********************************************************************//**
-  Return a char* to the parameter of the option or NULL.
+  Return a char* to the parameter of the option or nullptr.
   *i can be increased to get next string in the array argv[].
   It is an error for the option to exist but be an empty string.
   This doesn't use log_*() because it is used before logging is set up.
@@ -53,13 +53,13 @@ char *get_option_malloc(const char *option_name,
 {
   int len = strlen(option_name);
 
-  if (gc && cmdline_values == NULL) {
+  if (gc && cmdline_values == nullptr) {
     cmdline_values = cmdline_value_list_new();
   }
 
-  if (strcmp(option_name, argv[*i]) == 0
-      || (strncmp(option_name, argv[*i], len) == 0 && argv[*i][len] == '=')
-      || strncmp(option_name + 1, argv[*i], 2) == 0) {
+  if (!strcmp(option_name, argv[*i])
+      || (!fc_strncmp(option_name, argv[*i], len) && argv[*i][len] == '=')
+      || !fc_strncmp(option_name + 1, argv[*i], 2)) {
     char *opt = argv[*i] + (argv[*i][1] != '-' ? 0 : len);
     char *ret;
 
@@ -88,7 +88,7 @@ char *get_option_malloc(const char *option_name,
     return ret;
  }
 
-  return NULL;
+  return nullptr;
 }
 
 /**********************************************************************//**
@@ -96,7 +96,7 @@ char *get_option_malloc(const char *option_name,
 **************************************************************************/
 void cmdline_option_values_free(void)
 {
-  if (cmdline_values != NULL) {
+  if (cmdline_values != nullptr) {
     cmdline_value_list_iterate(cmdline_values, pval) {
       free(pval);
     } cmdline_value_list_iterate_end;
@@ -111,8 +111,8 @@ void cmdline_option_values_free(void)
 **************************************************************************/
 bool is_option(const char *option_name, char *option)
 {
-  return (strcmp(option_name, option) == 0
-          || strncmp(option_name + 1, option, 2) == 0);
+  return (!strcmp(option_name, option)
+          || !fc_strncmp(option_name + 1, option, 2));
 }
 
 /**********************************************************************//**
@@ -160,7 +160,7 @@ static size_t fc_strcspn(const char *s, const char *reject)
   allocated). If the string would yield more tokens only the first
   num_tokens are extracted.
 
-  The user has the responsiblity to free the memory allocated by
+  The user has the responsibility to free the memory allocated by
   **tokens using free_tokens().
 **************************************************************************/
 int get_tokens(const char *str, char **tokens, size_t num_tokens,
@@ -168,28 +168,28 @@ int get_tokens(const char *str, char **tokens, size_t num_tokens,
 {
   unsigned int token;
 
-  fc_assert_ret_val(NULL != str, -1);
+  fc_assert_ret_val(str != nullptr, -1);
 
   for (token = 0; token < num_tokens && *str != '\0'; token++) {
     size_t len, padlength = 0;
 
-    /* skip leading delimiters */
+    /* Skip leading delimiters */
     str += strspn(str, delimiterset);
 
     len = fc_strcspn(str, delimiterset);
 
-    /* strip start/end quotes if they exist */
+    /* Strip start/end quotes if they exist */
     if (len >= 2) {
       if ((str[0] == '"' && str[len - 1] == '"')
           || (str[0] == '\'' && str[len - 1] == '\'')) {
         len -= 2;
-        padlength = 1; /* to set the string past the end quote */
+        padlength = 1; /* To set the string past the end quote */
         str++;
      }
    }
 
    tokens[token] = fc_malloc(len + 1);
-   (void) fc_strlcpy(tokens[token], str, len + 1); /* adds the '\0' */
+   (void) fc_strlcpy(tokens[token], str, len + 1); /* Adds the '\0' */
 
    str += len + padlength;
   }

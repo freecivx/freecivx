@@ -49,7 +49,7 @@ tab_unit::tab_unit(ruledit_gui *ui_in) : QWidget()
   QGridLayout *unit_layout = new QGridLayout();
   QLabel *label;
   QPushButton *button;
-  int but_row = 0;
+  int row = 0;
 
   ui = ui_in;
   selected = 0;
@@ -66,8 +66,8 @@ tab_unit::tab_unit(ruledit_gui *ui_in) : QWidget()
   rname = new QLineEdit(this);
   rname->setText(R__("None"));
   connect(rname, SIGNAL(returnPressed()), this, SLOT(name_given()));
-  unit_layout->addWidget(label, but_row, 0);
-  unit_layout->addWidget(rname, but_row++, 2);
+  unit_layout->addWidget(label, row, 0);
+  unit_layout->addWidget(rname, row++, 2);
 
   label = new QLabel(QString::fromUtf8(R__("Name")));
   label->setParent(this);
@@ -76,30 +76,30 @@ tab_unit::tab_unit(ruledit_gui *ui_in) : QWidget()
   name = new QLineEdit(this);
   name->setText(R__("None"));
   connect(name, SIGNAL(returnPressed()), this, SLOT(name_given()));
-  unit_layout->addWidget(label, but_row, 0);
-  unit_layout->addWidget(same_name, but_row, 1);
-  unit_layout->addWidget(name, but_row++, 2);
+  unit_layout->addWidget(label, row, 0);
+  unit_layout->addWidget(same_name, row, 1);
+  unit_layout->addWidget(name, row++, 2);
 
   button = new QPushButton(QString::fromUtf8(R__("Edit Values")), this);
   connect(button, SIGNAL(pressed()), this, SLOT(edit_now()));
-  unit_layout->addWidget(button, but_row++, 2);
+  unit_layout->addWidget(button, row++, 2);
 
   button = new QPushButton(QString::fromUtf8(R__("Requirements")), this);
   connect(button, SIGNAL(pressed()), this, SLOT(edit_reqs()));
-  unit_layout->addWidget(button, but_row++, 2);
+  unit_layout->addWidget(button, row++, 2);
 
   button = new QPushButton(QString::fromUtf8(R__("Effects")), this);
   connect(button, SIGNAL(pressed()), this, SLOT(edit_effects()));
-  unit_layout->addWidget(button, but_row++, 2);
+  unit_layout->addWidget(button, row++, 2);
 
   button = new QPushButton(QString::fromUtf8(R__("Add Unit")), this);
   connect(button, SIGNAL(pressed()), this, SLOT(add_now()));
-  unit_layout->addWidget(button, but_row, 0);
+  unit_layout->addWidget(button, row, 0);
   show_experimental(button);
 
   button = new QPushButton(QString::fromUtf8(R__("Remove this Unit")), this);
   connect(button, SIGNAL(pressed()), this, SLOT(delete_now()));
-  unit_layout->addWidget(button, but_row++, 2);
+  unit_layout->addWidget(button, row++, 2);
   show_experimental(button);
 
   refresh();
@@ -117,13 +117,11 @@ void tab_unit::refresh()
 {
   unit_list->clear();
 
-  unit_type_iterate(ptype) {
-    if (!ptype->ruledit_disabled) {
-      QListWidgetItem *item = new QListWidgetItem(utype_rule_name(ptype));
+  unit_type_re_active_iterate(ptype) {
+    QListWidgetItem *item = new QListWidgetItem(utype_rule_name(ptype));
 
-      unit_list->insertItem(utype_index(ptype), item);
-    }
-  } unit_type_iterate_end;
+    unit_list->insertItem(utype_index(ptype), item);
+  } unit_type_re_active_iterate_end;
 }
 
 /**********************************************************************//**
@@ -203,7 +201,7 @@ void tab_unit::name_given()
 }
 
 /**********************************************************************//**
-  User requested unit deletion 
+  User requested unit deletion
 **************************************************************************/
 void tab_unit::delete_now()
 {
@@ -253,6 +251,11 @@ bool tab_unit::initialize_new_utype(struct unit_type *ptype)
   }
 
   name_set(&(ptype->name), 0, "New Unit");
+  BV_CLR_ALL(ptype->flags);
+  if (ptype->helptext != nullptr) {
+    strvec_clear(ptype->helptext);
+  }
+
   return true;
 }
 

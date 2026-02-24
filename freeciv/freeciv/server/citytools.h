@@ -20,16 +20,16 @@
 
 #define LOG_BUILD_TARGET LOG_DEBUG
 
-#define SPECLIST_TAG traderoute_packet
-#define SPECLIST_TYPE struct packet_traderoute_info
+#define SPECLIST_TAG trade_route_packet
+#define SPECLIST_TYPE struct packet_trade_route_info
 #include "speclist.h"
-#define traderoute_packet_list_iterate(ptrlist, ptr) \
-    TYPED_LIST_ITERATE(struct packet_traderoute_info, ptrlist, ptr)
-#define traderoute_packet_list_iterate_end LIST_ITERATE_END
+#define trade_route_packet_list_iterate(ptrlist, ptr) \
+    TYPED_LIST_ITERATE(struct packet_trade_route_info, ptrlist, ptr)
+#define trade_route_packet_list_iterate_end LIST_ITERATE_END
 
 int build_points_left(struct city *pcity);
 
-void transfer_city_units(struct player *pplayer, struct player *pvictim, 
+void transfer_city_units(struct player *pplayer, struct player *pvictim,
                          struct unit_list *units, struct city *pcity,
                          struct city *exclude_city,
                          int kill_outside, bool verbose);
@@ -41,7 +41,8 @@ struct city *find_closest_city(const struct tile *ptile,
                                const struct player *pplayer,
                                bool only_ocean, bool only_continent,
                                bool only_known, bool only_player,
-                               bool only_enemy, const struct unit_class *pclass);
+                               bool only_enemy,
+                               const struct unit_class *pclass);
 bool unit_conquer_city(struct unit *punit, struct city *pcity);
 
 bool send_city_suppression(bool now);
@@ -55,7 +56,7 @@ void package_city(struct city *pcity, struct packet_city_info *packet,
                   struct packet_city_nationalities *nat_packet,
                   struct packet_city_rally_point *rally_packet,
                   struct packet_web_city_info_addition *web_packet,
-                  struct traderoute_packet_list *routes,
+                  struct trade_route_packet_list *routes,
                   bool dipl_invest);
 
 void reality_check_city(struct player *pplayer, struct tile *ptile);
@@ -68,7 +69,7 @@ void city_build_free_buildings(struct city *pcity);
 void create_city(struct player *pplayer, struct tile *ptile,
                  const char *name, struct player *nationality);
 bool create_city_for_player(struct player *pplayer, struct tile *ptile,
-                            const char *name);
+                            const char *name, struct player *nationality);
 void remove_city(struct city *pcity);
 
 struct trade_route *remove_trade_route(struct city *pc1,
@@ -79,9 +80,9 @@ bool city_illness_strike(struct city *pcity);
 
 void do_sell_building(struct player *pplayer, struct city *pcity,
                       struct impr_type *pimprove, const char *reason);
-struct city
-*build_or_move_building(struct city *pcity, struct impr_type *pimprove,
-                        struct player **oldcity_owner);
+struct city *build_or_move_building(struct city *pcity,
+                                    struct impr_type *pimprove,
+                                    struct player **oldcity_owner);
 bool building_removed(struct city *pcity, const struct impr_type *pimprove,
                       const char *reason, struct unit *destroyer);
 void building_lost(struct city *pcity, const struct impr_type *pimprove,
@@ -104,7 +105,7 @@ void city_thaw_workers(struct city *pcity);
 void city_freeze_workers_queue(struct city *pcity);
 void city_thaw_workers_queue(void);
 
-/* city map functions */
+/* City map functions */
 void city_map_update_empty(struct city *pcity, struct tile *ptile);
 void city_map_update_worker(struct city *pcity, struct tile *ptile);
 

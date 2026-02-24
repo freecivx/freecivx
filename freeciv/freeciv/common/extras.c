@@ -34,7 +34,10 @@ static struct user_flag user_extra_flags[MAX_NUM_USER_EXTRA_FLAGS];
 
 static struct extra_type_list *caused_by[EC_LAST];
 static struct extra_type_list *removed_by[ERM_COUNT];
+static struct extra_type_list *cleanable;
 static struct extra_type_list *unit_hidden;
+static struct extra_type_list *zoccers;
+static struct extra_type_list *terr_claimer;
 
 /************************************************************************//**
   Initialize extras structures.
@@ -49,7 +52,10 @@ void extras_init(void)
   for (i = 0; i < ERM_COUNT; i++) {
     removed_by[i] = extra_type_list_new();
   }
+  cleanable = extra_type_list_new();
   unit_hidden = extra_type_list_new();
+  zoccers = extra_type_list_new();
+  terr_claimer = extra_type_list_new();
 
   for (i = 0; i < MAX_EXTRA_TYPES; i++) {
     requirement_vector_init(&(extras[i].reqs));
@@ -57,17 +63,17 @@ void extras_init(void)
     requirement_vector_init(&(extras[i].appearance_reqs));
     requirement_vector_init(&(extras[i].disappearance_reqs));
     extras[i].id = i;
-    extras[i].hiders = NULL;
-    extras[i].bridged = NULL;
+    extras[i].hiders = nullptr;
+    extras[i].bridged = nullptr;
     extras[i].data.special_idx = -1;
-    extras[i].data.base = NULL;
-    extras[i].data.road = NULL;
-    extras[i].data.resource = NULL;
+    extras[i].data.base = nullptr;
+    extras[i].data.road = nullptr;
+    extras[i].data.resource = nullptr;
     extras[i].causes = 0;
     extras[i].rmcauses = 0;
-    extras[i].helptext = NULL;
+    extras[i].helptext = nullptr;
     extras[i].ruledit_disabled = FALSE;
-    extras[i].ruledit_dlg = NULL;
+    extras[i].ruledit_dlg = nullptr;
     extras[i].visibility_req = A_NONE;
   }
 }
@@ -84,32 +90,38 @@ void extras_free(void)
   resource_types_free();
 
   for (i = 0; i < game.control.num_extra_types; i++) {
-    if (extras[i].data.base != NULL) {
+    if (extras[i].data.base != nullptr) {
       FC_FREE(extras[i].data.base);
-      extras[i].data.base = NULL;
+      extras[i].data.base = nullptr;
     }
-    if (extras[i].data.road != NULL) {
+    if (extras[i].data.road != nullptr) {
       FC_FREE(extras[i].data.road);
-      extras[i].data.road = NULL;
+      extras[i].data.road = nullptr;
     }
-    if (extras[i].data.resource != NULL) {
+    if (extras[i].data.resource != nullptr) {
       FC_FREE(extras[i].data.resource);
-      extras[i].data.resource = NULL;
+      extras[i].data.resource = nullptr;
     }
   }
 
   for (i = 0; i < EC_LAST; i++) {
     extra_type_list_destroy(caused_by[i]);
-    caused_by[i] = NULL;
+    caused_by[i] = nullptr;
   }
 
   for (i = 0; i < ERM_COUNT; i++) {
     extra_type_list_destroy(removed_by[i]);
-    removed_by[i] = NULL;
+    removed_by[i] = nullptr;
   }
 
+  extra_type_list_destroy(cleanable);
+  cleanable = nullptr;
   extra_type_list_destroy(unit_hidden);
-  unit_hidden = NULL;
+  unit_hidden = nullptr;
+  extra_type_list_destroy(zoccers);
+  zoccers = nullptr;
+  extra_type_list_destroy(terr_claimer);
+  terr_claimer = nullptr;
 
   for (i = 0; i < MAX_EXTRA_TYPES; i++) {
     requirement_vector_free(&(extras[i].reqs));
@@ -117,20 +129,20 @@ void extras_free(void)
     requirement_vector_free(&(extras[i].appearance_reqs));
     requirement_vector_free(&(extras[i].disappearance_reqs));
 
-    if (NULL != extras[i].helptext) {
+    if (extras[i].helptext != nullptr) {
       strvec_destroy(extras[i].helptext);
-      extras[i].helptext = NULL;
+      extras[i].helptext = nullptr;
     }
   }
 
   extra_type_iterate(pextra) {
-    if (pextra->hiders != NULL) {
+    if (pextra->hiders != nullptr) {
       extra_type_list_destroy(pextra->hiders);
-      pextra->hiders = NULL;
+      pextra->hiders = nullptr;
     }
-    if (pextra->bridged != NULL) {
+    if (pextra->bridged != nullptr) {
       extra_type_list_destroy(pextra->bridged);
-      pextra->bridged = NULL;
+      pextra->bridged = nullptr;
     }
   } extra_type_iterate_end;
 }
@@ -148,7 +160,7 @@ int extra_count(void)
 ****************************************************************************/
 int extra_number(const struct extra_type *pextra)
 {
-  fc_assert_ret_val(NULL != pextra, -1);
+  fc_assert_ret_val(pextra != nullptr, -1);
 
   return pextra->id;
 }
@@ -159,7 +171,7 @@ int extra_number(const struct extra_type *pextra)
 ****************************************************************************/
 int extra_index(const struct extra_type *pextra)
 {
-  fc_assert_ret_val(NULL != pextra, -1);
+  fc_assert_ret_val(pextra != nullptr, -1);
 
   return pextra - extras;
 }
@@ -170,7 +182,7 @@ int extra_index(const struct extra_type *pextra)
 ****************************************************************************/
 struct extra_type *extra_by_number(int id)
 {
-  fc_assert_ret_val(id >= 0 && id < MAX_EXTRA_TYPES, NULL);
+  fc_assert_ret_val(id >= 0 && id < MAX_EXTRA_TYPES, nullptr);
 
   return &extras[id];
 }
@@ -194,15 +206,15 @@ const char *extra_rule_name(const struct extra_type *pextra)
 }
 
 /************************************************************************//**
-  Returns extra type matching rule name or NULL if there is no extra type
+  Returns extra type matching rule name or nullptr if there is no extra type
   with such name.
 ****************************************************************************/
 struct extra_type *extra_type_by_rule_name(const char *name)
 {
   const char *qs;
 
-  if (name == NULL) {
-    return NULL;
+  if (name == nullptr) {
+    return nullptr;
   }
 
   qs = Qn_(name);
@@ -213,11 +225,11 @@ struct extra_type *extra_type_by_rule_name(const char *name)
     }
   } extra_type_iterate_end;
 
-  return NULL;
+  return nullptr;
 }
 
 /************************************************************************//**
-  Returns extra type matching the translated name, or NULL if there is no
+  Returns extra type matching the translated name, or nullptr if there is no
   extra type with that name.
 ****************************************************************************/
 struct extra_type *extra_type_by_translated_name(const char *name)
@@ -228,7 +240,7 @@ struct extra_type *extra_type_by_translated_name(const char *name)
     }
   } extra_type_iterate_end;
 
-  return NULL;
+  return nullptr;
 }
 
 /************************************************************************//**
@@ -250,6 +262,22 @@ struct extra_type_list *extra_type_list_of_unit_hiders(void)
 }
 
 /************************************************************************//**
+  Returns extra types that cauze ZoC by themselves.
+****************************************************************************/
+struct extra_type_list *extra_type_list_of_zoccers(void)
+{
+  return zoccers;
+}
+
+/************************************************************************//**
+  Returns extra types that claim terrain
+****************************************************************************/
+struct extra_type_list *extra_type_list_of_terr_claimers(void)
+{
+  return terr_claimer;
+}
+
+/************************************************************************//**
   Return random extra type for given cause that is native to the tile.
 ****************************************************************************/
 struct extra_type *rand_extra_for_tile(struct tile *ptile, enum extra_cause cause,
@@ -258,7 +286,7 @@ struct extra_type *rand_extra_for_tile(struct tile *ptile, enum extra_cause caus
   struct extra_type_list *full_list = extra_type_list_by_cause(cause);
   struct extra_type_list *potential = extra_type_list_new();
   int options;
-  struct extra_type *selected = NULL;
+  struct extra_type *selected = nullptr;
 
   extra_type_list_iterate(full_list, pextra) {
     if ((!generated || pextra->generated)
@@ -289,7 +317,7 @@ void extra_to_caused_by_list(struct extra_type *pextra, enum extra_cause cause)
 }
 
 /************************************************************************//**
-  Returns extra type for given rmcause.
+  Returns extra type list for given rmcause.
 ****************************************************************************/
 struct extra_type_list *extra_type_list_by_rmcause(enum extra_rmcause rmcause)
 {
@@ -299,14 +327,24 @@ struct extra_type_list *extra_type_list_by_rmcause(enum extra_rmcause rmcause)
 }
 
 /************************************************************************//**
+  Returns extra type list of cleanables
+****************************************************************************/
+struct extra_type_list *extra_type_list_cleanable(void)
+{
+  return cleanable;
+}
+
+/************************************************************************//**
   Add extra type to list of extra removed by given cause.
 ****************************************************************************/
-void extra_to_removed_by_list(struct extra_type *pextra,
-                              enum extra_rmcause rmcause)
+void _extra_to_removed_by_list(struct extra_type *pextra,
+                               enum extra_rmcause rmcause)
 {
-  fc_assert(rmcause < ERM_COUNT);
-
   extra_type_list_append(removed_by[rmcause], pextra);
+
+  if (rmcause == ERM_CLEAN) {
+    extra_type_list_append(cleanable, pextra);
+  }
 }
 
 /************************************************************************//**
@@ -322,9 +360,10 @@ bool is_extra_removed_by(const struct extra_type *pextra,
   Is there extra of the given type cardinally near tile?
   (Does not check ptile itself.)
 ****************************************************************************/
-bool is_extra_card_near(const struct tile *ptile, const struct extra_type *pextra)
+bool is_extra_card_near(const struct civ_map *nmap, const struct tile *ptile,
+                        const struct extra_type *pextra)
 {
-  cardinal_adjc_iterate(&(wld.map), ptile, adjc_tile) {
+  cardinal_adjc_iterate(nmap, ptile, adjc_tile) {
     if (tile_has_extra(adjc_tile, pextra)) {
       return TRUE;
     }
@@ -337,9 +376,10 @@ bool is_extra_card_near(const struct tile *ptile, const struct extra_type *pextr
   Is there extra of the given type near tile?
   (Does not check ptile itself.)
 ****************************************************************************/
-bool is_extra_near_tile(const struct tile *ptile, const struct extra_type *pextra)
+bool is_extra_near_tile(const struct civ_map *nmap, const struct tile *ptile,
+                        const struct extra_type *pextra)
 {
-  adjc_iterate(&(wld.map), ptile, adjc_tile) {
+  adjc_iterate(nmap, ptile, adjc_tile) {
     if (tile_has_extra(adjc_tile, pextra)) {
       return TRUE;
     }
@@ -386,7 +426,7 @@ bool can_build_extra_base(const struct extra_type *pextra,
     if (pterr->base_time == 0) {
       return FALSE;
     }
-    if (tile_city(ptile) != NULL && extra_base_get(pextra)->border_sq >= 0) {
+    if (tile_city(ptile) != nullptr && extra_base_get(pextra)->border_sq >= 0) {
       return FALSE;
     }
   }
@@ -409,7 +449,7 @@ bool can_build_extra_base(const struct extra_type *pextra,
     return FALSE;
   }
 
-  if (pplayer != NULL && !player_knows_techs_with_flag(pplayer, TF_BRIDGE)) {
+  if (pplayer != nullptr && !player_knows_techs_with_flag(pplayer, TF_BRIDGE)) {
     /* Player does not know technology to bridge over extras that require it. */
     extra_type_list_iterate(pextra->bridged, pbridged) {
       if (tile_has_extra(ptile, pbridged)) {
@@ -437,7 +477,9 @@ bool player_can_build_extra(const struct extra_type *pextra,
                            .player = pplayer,
                            .tile = ptile,
                          },
-                         tile_owner(ptile),
+                         &(const struct req_context) {
+                           .player = tile_owner(ptile),
+                         },
                          &pextra->reqs,
                          RPT_POSSIBLE);
 }
@@ -453,7 +495,7 @@ bool player_can_place_extra(const struct extra_type *pextra,
     return FALSE;
   }
 
-  if (ptile->placing != NULL) {
+  if (ptile->placing != nullptr) {
     /* Already placing something */
     return FALSE;
   }
@@ -470,7 +512,7 @@ bool player_can_place_extra(const struct extra_type *pextra,
   } else {
     struct city *pcity = tile_worked(ptile);
 
-    if (pcity == NULL || city_owner(pcity) != pplayer) {
+    if (pcity == nullptr || city_owner(pcity) != pplayer) {
       return FALSE;
     }
   }
@@ -506,7 +548,9 @@ bool can_build_extra(const struct extra_type *pextra,
                            .unit = punit,
                            .unittype = unit_type_get(punit),
                          },
-                         tile_owner(ptile),
+                         &(const struct req_context) {
+                           .player = tile_owner(ptile),
+                         },
                          &pextra->reqs,
                          RPT_CERTAIN);
 }
@@ -520,14 +564,14 @@ static bool can_extra_be_removed(const struct extra_type *pextra,
   struct city *pcity = tile_city(ptile);
 
   /* Cannot remove EF_ALWAYS_ON_CITY_CENTER extras from city center. */
-  if (pcity != NULL) {
+  if (pcity != nullptr) {
     if (extra_has_flag(pextra, EF_ALWAYS_ON_CITY_CENTER)) {
       return FALSE;
     }
     if (extra_has_flag(pextra, EF_AUTO_ON_CITY_CENTER)) {
       struct tile *vtile = tile_virtual_new(ptile);
 
-      /* Would extra get rebuilt if removed */ 
+      /* Would extra get rebuilt if removed */
       tile_remove_extra(vtile, pextra);
       if (player_can_build_extra(pextra, city_owner(pcity), vtile)) {
         /* No need to worry about conflicting extras - extra would had
@@ -560,7 +604,9 @@ bool player_can_remove_extra(const struct extra_type *pextra,
                            .player = pplayer,
                            .tile = ptile,
                          },
-                         tile_owner(ptile),
+                         &(const struct req_context) {
+                           .player = tile_owner(ptile),
+                         },
                          &pextra->rmreqs,
                          RPT_POSSIBLE);
 }
@@ -583,7 +629,9 @@ bool can_remove_extra(const struct extra_type *pextra,
                            .unit = punit,
                            .unittype = unit_type_get(punit),
                          },
-                         tile_owner(ptile),
+                         &(const struct req_context) {
+                           .player = tile_owner(ptile),
+                         },
                          &pextra->rmreqs, RPT_CERTAIN);
 }
 
@@ -613,7 +661,7 @@ bool is_native_tile_to_extra(const struct extra_type *pextra,
     if (pterr->base_time == 0) {
       return FALSE;
     }
-    if (tile_city(ptile) != NULL && extra_base_get(pextra)->border_sq >= 0) {
+    if (tile_city(ptile) != nullptr && extra_base_get(pextra)->border_sq >= 0) {
       return FALSE;
     }
   }
@@ -631,7 +679,7 @@ bool is_native_tile_to_extra(const struct extra_type *pextra,
   }
 
   return are_reqs_active(&(const struct req_context) { .tile = ptile },
-                         NULL, &pextra->reqs, RPT_POSSIBLE);
+                         nullptr, &pextra->reqs, RPT_POSSIBLE);
 }
 
 /************************************************************************//**
@@ -683,8 +731,11 @@ bool unit_can_enter_hut(const struct unit *punit,
   }
   extra_type_by_rmcause_iterate(ERM_ENTER, extra) {
     if (tile_has_extra(ptile, extra)
-        && are_reqs_active(&context, tile_owner(ptile), &extra->rmreqs,
-                           RPT_POSSIBLE)) {
+        && are_reqs_active(&context,
+                           &(const struct req_context) {
+                             .player = tile_owner(ptile),
+                           },
+                           &extra->rmreqs, RPT_POSSIBLE)) {
       return TRUE;
     }
   } extra_type_by_rmcause_iterate_end;
@@ -711,8 +762,11 @@ bool unit_can_displace_hut(const struct unit *punit,
   }
   extra_type_by_rmcause_iterate(ERM_ENTER, extra) {
     if (tile_has_extra(ptile, extra)
-        && are_reqs_active(&context, tile_owner(ptile), &extra->rmreqs,
-                           RPT_POSSIBLE)) {
+        && are_reqs_active(&context,
+                           &(const struct req_context) {
+                             .player = tile_owner(ptile),
+                           },
+                           &extra->rmreqs, RPT_POSSIBLE)) {
       return TRUE;
     }
   } extra_type_by_rmcause_iterate_end;
@@ -728,12 +782,12 @@ struct extra_type *next_extra_for_tile(const struct tile *ptile, enum extra_caus
 {
   extra_type_by_cause_iterate(cause, pextra) {
     if (!tile_has_extra(ptile, pextra)) {
-      if (punit != NULL) {
+      if (punit != nullptr) {
         if (can_build_extra(pextra, punit, ptile)) {
           return pextra;
         }
       } else {
-        /* punit is certainly NULL, pplayer can be too */
+        /* punit is certainly nullptr, pplayer can be too */
         if (player_can_build_extra(pextra, pplayer, ptile)) {
           return pextra;
         }
@@ -741,7 +795,7 @@ struct extra_type *next_extra_for_tile(const struct tile *ptile, enum extra_caus
     }
   } extra_type_by_cause_iterate_end;
 
-  return NULL;
+  return nullptr;
 }
 
 /************************************************************************//**
@@ -752,11 +806,11 @@ struct extra_type *prev_extra_in_tile(const struct tile *ptile,
                                       const struct player *pplayer,
                                       const struct unit *punit)
 {
-  fc_assert(punit != NULL || pplayer != NULL);
+  fc_assert(punit != nullptr || pplayer != nullptr);
 
   extra_type_by_rmcause_iterate(rmcause, pextra) {
     if (tile_has_extra(ptile, pextra)) {
-      if (punit != NULL) {
+      if (punit != nullptr) {
         if (can_remove_extra(pextra, punit, ptile)) {
           return pextra;
         }
@@ -768,7 +822,33 @@ struct extra_type *prev_extra_in_tile(const struct tile *ptile,
     }
   } extra_type_by_rmcause_iterate_end;
 
-  return NULL;
+  return nullptr;
+}
+
+/************************************************************************//**
+  Returns prev cleanable extra that unit or player can remove from tile.
+****************************************************************************/
+struct extra_type *prev_cleanable_in_tile(const struct tile *ptile,
+                                          const struct player *pplayer,
+                                          const struct unit *punit)
+{
+  fc_assert(punit != nullptr || pplayer != nullptr);
+
+  extra_type_cleanable_iterate(pextra) {
+    if (tile_has_extra(ptile, pextra)) {
+      if (punit != nullptr) {
+        if (can_remove_extra(pextra, punit, ptile)) {
+          return pextra;
+        }
+      } else {
+        if (player_can_remove_extra(pextra, pplayer, ptile)) {
+          return pextra;
+        }
+      }
+    }
+  } extra_type_cleanable_iterate_end;
+
+  return nullptr;
 }
 
 /************************************************************************//**
@@ -801,11 +881,12 @@ bool extra_has_flag(const struct extra_type *pextra, enum extra_flag_id flag)
   Returns TRUE iff any cardinally adjacent tile contains an extra with
   the given flag (does not check ptile itself).
 ****************************************************************************/
-bool is_extra_flag_card_near(const struct tile *ptile, enum extra_flag_id flag)
+bool is_extra_flag_card_near(const struct civ_map *nmap, const struct tile *ptile,
+                             enum extra_flag_id flag)
 {
   extra_type_iterate(pextra) {
     if (extra_has_flag(pextra, flag)) {
-      cardinal_adjc_iterate(&(wld.map), ptile, adjc_tile) {
+      cardinal_adjc_iterate(nmap, ptile, adjc_tile) {
         if (tile_has_extra(adjc_tile, pextra)) {
           return TRUE;
         }
@@ -820,11 +901,12 @@ bool is_extra_flag_card_near(const struct tile *ptile, enum extra_flag_id flag)
   Returns TRUE iff any adjacent tile contains an extra with the given flag
   (does not check ptile itself).
 ****************************************************************************/
-bool is_extra_flag_near_tile(const struct tile *ptile, enum extra_flag_id flag)
+bool is_extra_flag_near_tile(const struct civ_map *nmap, const struct tile *ptile,
+                             enum extra_flag_id flag)
 {
   extra_type_iterate(pextra) {
     if (extra_has_flag(pextra, flag)) {
-      adjc_iterate(&(wld.map), ptile, adjc_tile) {
+      adjc_iterate(nmap, ptile, adjc_tile) {
         if (tile_has_extra(adjc_tile, pextra)) {
           return TRUE;
         }
@@ -869,18 +951,18 @@ void set_user_extra_flag_name(enum extra_flag_id id, const char *name,
 
   fc_assert_ret(id >= EF_USER_FLAG_1 && id <= EF_LAST_USER_FLAG);
 
-  if (user_extra_flags[efid].name != NULL) {
+  if (user_extra_flags[efid].name != nullptr) {
     FC_FREE(user_extra_flags[efid].name);
-    user_extra_flags[efid].name = NULL;
+    user_extra_flags[efid].name = nullptr;
   }
 
   if (name && name[0] != '\0') {
     user_extra_flags[efid].name = fc_strdup(name);
   }
 
-  if (user_extra_flags[efid].helptxt != NULL) {
+  if (user_extra_flags[efid].helptxt != nullptr) {
     free(user_extra_flags[efid].helptxt);
-    user_extra_flags[efid].helptxt = NULL;
+    user_extra_flags[efid].helptxt = nullptr;
   }
 
   if (helptxt && helptxt[0] != '\0') {
@@ -894,7 +976,7 @@ void set_user_extra_flag_name(enum extra_flag_id id, const char *name,
 const char *extra_flag_id_name_cb(enum extra_flag_id flag)
 {
   if (flag < EF_USER_FLAG_1 || flag > EF_LAST_USER_FLAG) {
-    return NULL;
+    return nullptr;
   }
 
   return user_extra_flags[flag - EF_USER_FLAG_1].name;
@@ -979,8 +1061,6 @@ bool is_extra_removed_by_worker_action(const struct extra_type *pextra)
   /* Is any of the worker remove action bits set? */
   return (pextra->rmcauses
           & (1 << ERM_CLEAN
-             | 1 << ERM_CLEANPOLLUTION
-             | 1 << ERM_CLEANFALLOUT
              | 1 << ERM_PILLAGE));
 }
 
@@ -1035,10 +1115,6 @@ enum extra_rmcause activity_to_extra_rmcause(enum unit_activity act)
     return ERM_CLEAN;
   case ACTIVITY_PILLAGE:
     return ERM_PILLAGE;
-  case ACTIVITY_POLLUTION:
-    return ERM_CLEANPOLLUTION;
-  case ACTIVITY_FALLOUT:
-    return ERM_CLEANFALLOUT;
   default:
     break;
   }
@@ -1064,7 +1140,9 @@ bool can_extra_appear(const struct extra_type *pextra, const struct tile *ptile)
     && is_native_tile_to_extra(pextra, ptile)
     && !extra_conflicting_on_tile(pextra, ptile)
     && are_reqs_active(&(const struct req_context) { .tile = ptile },
-                       tile_owner(ptile),
+                       &(const struct req_context) {
+                         .player = tile_owner(ptile),
+                       },
                        &pextra->appearance_reqs, RPT_CERTAIN);
 }
 
@@ -1077,7 +1155,9 @@ bool can_extra_disappear(const struct extra_type *pextra, const struct tile *pti
     && is_extra_removed_by(pextra, ERM_DISAPPEARANCE)
     && can_extra_be_removed(pextra, ptile)
     && are_reqs_active(&(const struct req_context) { .tile = ptile },
-                       tile_owner(ptile),
+                       &(const struct req_context) {
+                         .player = tile_owner(ptile),
+                       },
                        &pextra->disappearance_reqs, RPT_CERTAIN);
 }
 

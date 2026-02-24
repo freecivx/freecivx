@@ -2,7 +2,7 @@
 [tilespec]
 
 ; Format and options of this tilespec file:
-options = "+Freeciv-tilespec-3.2-Devel-2022-Jun-21"
+options = "+Freeciv-tilespec-3.4-Devel-2026-Jan-11"
 
 ; A simple name for the tileset specified by this file:
 name = "Cimpletoon"
@@ -29,6 +29,9 @@ normal_tile_width  = 96
 normal_tile_height = 48
 small_tile_width   = 15
 small_tile_height  = 20
+
+; The height svg flags should be drawn to, if they are used
+svg_height = 44
 
 ; Basic tile style.
 type = "isometric"
@@ -97,6 +100,10 @@ tilelabel_offset_y = 15
 ; valid direction for the tileset.
 unit_default_orientation = "s"
 
+; How long (number of refreshes) it takes to move from an animation
+; frame to the next.
+time_per_frame = 3
+
 ; The map is rendered in "layers", just like any decent image editor
 ; supports. The setting below allows to change the layer drawing order. The
 ; first layer in the list will be drawn below the others; the second on top
@@ -147,6 +154,7 @@ files =
   "amplio2/mountains.spec",
   "amplio2/ocean.spec",
   "amplio2/water.spec",
+  "amplio2/volcano.spec",
   "amplio2/tiles.spec",
   "amplio2/upkeep.spec",
   "amplio2/activities.spec",
@@ -332,6 +340,24 @@ blend_layer = 0
 num_layers = 1
 layer0_match_type = "land"
 
+[tile_volcano]
+tag = "volcano"
+blend_layer = 1
+num_layers = 1
+layer0_match_type = "land"
+
+[tile_erupting_volcanoa]
+tag = "erupting_volcanoa"
+blend_layer = 1
+num_layers = 1
+layer0_match_type = "land"
+
+[tile_erupting_volcanob]
+tag = "erupting_volcanob"
+blend_layer = 1
+num_layers = 1
+layer0_match_type = "land"
+
 [extras]
 styles =
     { "name",          "style"
@@ -344,6 +370,7 @@ styles =
       "tx.mine",       "Single1"
       "tx.oil_mine",   "Single1"
       "tx.oil_rig",    "Single1"
+      "tx.nets",       "Single1"
       "tx.pollution",  "Single2"
       "tx.fallout",    "Single2"
       "tx.village",    "Single1"

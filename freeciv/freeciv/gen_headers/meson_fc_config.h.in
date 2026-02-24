@@ -10,15 +10,22 @@
 
 #define LOCALEDIR "@LOCALEDIR@"
 
-#define BUG_URL "https://osdn.net/projects/freeciv/ticket/"
-#define HOMEPAGE_URL "https://www.freeciv.org/"
+#define BUG_URL "https://redmine.freeciv.org/projects/freeciv"
+#mesondefine HOMEPAGE_URL
 
 #define DATASUBDIR "@DATASUBDIR@"
 
-#define AI_MOD_DEFAULT "classic"
+#mesondefine AI_MOD_DEFAULT
 
-#define AI_MOD_STATIC_CLASSIC
-#define AI_MOD_STATIC_TEX
+#mesondefine AI_MOD_STATIC_CLASSIC
+#mesondefine AI_MOD_STATIC_TEX
+#mesondefine AI_MOD_STATIC_STUB
+
+/* Enable AI modules */
+#mesondefine AI_MODULES
+
+/* Directory to search AI modules from */
+#mesondefine AI_MODULEDIR
 
 #mesondefine DEFAULT_SOCK_PORT
 
@@ -42,14 +49,17 @@
 /* Processor stores words with the most significant byte first */
 #mesondefine WORDS_BIGENDIAN
 
+/* Size of int type */
+#mesondefine SIZEOF_INT
+
 /* Database backend available */
 #mesondefine HAVE_FCDB
 
 /* Have Sqlite3 database backend */
 #mesondefine HAVE_FCDB_SQLITE3
 
-/* Build in Qt5 mode */
-#mesondefine FC_QT5_MODE
+/* Build in Qt6x mode */
+#mesondefine FC_QT6X_MODE
 
 /* Release cycle information */
 #mesondefine IS_DEVEL_VERSION
@@ -61,8 +71,11 @@
 /* Produce debug version */
 #mesondefine FREECIV_DEBUG
 
-/* enable audio */
+/* Enable audio */
 #mesondefine AUDIO_SDL
+
+/* Use SDL3_mixer */
+#mesondefine AUDIO_SDL3
 
 /* Native language support enabled */
 #mesondefine ENABLE_NLS
@@ -75,6 +88,15 @@
 
 /* Can run programs as root */
 #mesondefine ALWAYS_ROOT
+
+/* Development version save game compatibility */
+#mesondefine FREECIV_DEV_SAVE_COMPAT
+
+#ifdef FREECIV_DEV_SAVE_COMPAT
+/* Current development versions */
+#define FREECIV_DEV_SAVE_COMPAT_3_4
+#define FREECIV_DEV_SAVE_COMPAT_3_3
+#endif /* FREECIV_DEV_SAVE_COMPAT */
 
 /* Have magickwand mapimg toolkit */
 #mesondefine HAVE_MAPIMG_MAGICKWAND
@@ -248,6 +270,9 @@
 /* bind() available */
 #mesondefine HAVE_BIND
 
+/* <bzlib.h> header available */
+#mesondefine HAVE_BZLIB_H
+
 /* clock_gettime() available */
 #mesondefine HAVE_CLOCK_GETTIME
 
@@ -307,9 +332,6 @@
 /* inet_pton() available */
 #mesondefine HAVE_INET_PTON
 
-/* localtime_r() available */
-#mesondefine HAVE_LOCALTIME_R
-
 /* opendir() available */
 #mesondefine HAVE_OPENDIR
 
@@ -361,9 +383,6 @@
 /* usleep() available */
 #mesondefine HAVE_USLEEP
 
-/* Have C99 va_copy() */
-#mesondefine HAVE_VA_COPY
-
 /* vprintf() available */
 #mesondefine HAVE_VPRINTF
 
@@ -403,3 +422,6 @@
 
 /* Custom path to CA cert bundle */
 #mesondefine CUSTOM_CACERT_PATH
+
+/* It's ok to call malloc() for zero bytes */
+#mesondefine MALLOC_ZERO_OK

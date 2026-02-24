@@ -121,14 +121,12 @@ void tab_extras::refresh()
 {
   extra_list->clear();
 
-  extra_type_iterate(pextra) {
-    if (!pextra->ruledit_disabled) {
-      QListWidgetItem *item =
-        new QListWidgetItem(QString::fromUtf8(extra_rule_name(pextra)));
+  extra_type_re_active_iterate(pextra) {
+    QListWidgetItem *item
+      = new QListWidgetItem(QString::fromUtf8(extra_rule_name(pextra)));
 
-      extra_list->insertItem(extra_index(pextra), item);
-    }
-  } extra_type_iterate_end;
+    extra_list->insertItem(extra_index(pextra), item);
+  } extra_type_re_active_iterate_end;
 }
 
 /**********************************************************************//**
@@ -207,7 +205,7 @@ void tab_extras::name_given()
 }
 
 /**********************************************************************//**
-  User requested extra deletion 
+  User requested extra deletion
 **************************************************************************/
 void tab_extras::delete_now()
 {
@@ -240,6 +238,10 @@ bool tab_extras::initialize_new_extra(struct extra_type *pextra)
   }
 
   name_set(&(pextra->name), 0, "New Extra");
+  BV_CLR_ALL(pextra->flags);
+  if (pextra->helptext != nullptr) {
+    strvec_clear(pextra->helptext);
+  }
 
   return true;
 }

@@ -1,6 +1,6 @@
 [soundspec]
 ; Format and options of this spec file:
-options = "+Freeciv-soundset-Devel-2022-07-03"
+options = "+Freeciv-3.2-soundset"
 
 [info]
 artists = "\
@@ -8,7 +8,11 @@ artists = "\
  OpenQuartz - Ali Jackson (alister667@hotmail.com) [ali]\
  OpenQuartz - Frank Condello (pox@planetquake.com) [pox]\
  Warzone - Eidos Entertainment (GPL release) [warzone]\
- Eskapada - eskapada@o2.pl (Public Domain) [jt]"
+ Eskapada - eskapada@o2.pl (Public Domain) [jt]\
+ Spring Spring - https://opengameart.org/users/spring-spring [spring]\
+ Trex0n - https://opengameart.org/users/trex0n [trex0n]\
+ StumpyStrust - https://opengameart.org/users/stumpystrust [stumpy]\
+"
 
 ; For a list of tags used see README.sound, buildings.ruleset and
 ; units.ruleset.
@@ -28,7 +32,8 @@ artists = "\
 ;b_courthouse = ""
 ;b_factory = ""
 ;b_granary = ""
-;b_harbour = ""
+;b_harbor = ""
+;b_harbour = "" ; Backward compatibility
 ;b_hydro_plant = ""
 ;b_library = ""
 ;b_marketplace = ""
@@ -163,7 +168,7 @@ m_transport = "stdsounds/inh2o.ogg" ; [pox]
 m_trireme = "stdsounds/inh2o.ogg" ; [pox]
 ;m_warriors = ""
 
-;w_generic = ""
+w_generic = "stdsounds/fanfarehappy.ogg" ; [trex0n]
 ;w_apollo_program = ""
 ;w_asmiths_trading_co = ""
 ;w_colossus = ""
@@ -193,6 +198,15 @@ m_trireme = "stdsounds/inh2o.ogg" ; [pox]
 ;w_united_nations = ""
 ;w_womens_suffrage = ""
 
+g_generic = "stdsounds/fanfare.ogg" ; [spring]
+;g_anarchy = ""
+;g_despotism = ""
+;g_tribal = ""
+;g_monarchy = ""
+;g_republic = ""
+;g_democracy = ""
+;g_federation = ""
+;g_fundamentalism = ""
 
 ; This list contains all events up to E_DEPRECATION_WARNING
 ; (as numbered in common/events.h), in the sorted order.
@@ -218,6 +232,7 @@ e_bad_command = "stdsounds/illegal.ogg" ; [fcol]
 ;e_city_gran_throttle = ""
 ;e_city_growth = ""
 ;e_city_lost = ""
+;e_city_conquered = ""
 ;e_city_love = ""
 ;e_city_may_soon_grow = ""
 ;e_city_normal = ""
@@ -253,7 +268,7 @@ e_bad_command = "stdsounds/illegal.ogg" ; [fcol]
 ;e_hut_gold = ""
 ;e_hut_merc = ""
 ;e_hut_settler = ""
-;e_hut_tech = ""
+e_hut_tech = "stdsounds/complete.ogg" ; [stumpy]
 ;e_hut_map = ""
 ;e_imp_auctioned = ""
 ;e_imp_auto = ""
@@ -285,10 +300,10 @@ e_log_fatal = "stdsounds/LrgExpl.ogg" ; [warzone]
 ;e_revolt_start = ""
 ;e_setting = ""
 ;e_spaceship = ""
-;e_tech_embassy = ""
-;e_tech_gain = ""
+e_tech_embassy = "stdsounds/complete.ogg" ; [stumpy]
+e_tech_gain = "stdsounds/complete.ogg" ; [stumpy]
 ;e_tech_goal = ""
-;e_tech_learned = ""
+e_tech_learned = "stdsounds/complete.ogg" ; [stumpy]
 ;e_tech_lost = ""
 ;e_treaty_alliance = ""
 ;e_treaty_broken = ""
@@ -339,5 +354,7 @@ e_log_fatal = "stdsounds/LrgExpl.ogg" ; [warzone]
 ;e_unit_escaped = ""
 
 ; Those pseudo-events are only used in the sound system.
+e_enter_game = "stdsounds/fanfare.ogg" ; [spring]
 ;e_client_quit = ""
+;e_leave_game = ""
 e_player_wake = "stdsounds/wakeup.ogg" ; [jt]

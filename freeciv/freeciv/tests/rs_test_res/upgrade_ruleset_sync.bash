@@ -1,10 +1,23 @@
-#!/bin/bash
+#!/usr/bin/env bash
+#/***********************************************************************
+# Freeciv - Copyright (C) 2017-2023
+#   This program is free software; you can redistribute it and/or modify
+#   it under the terms of the GNU General Public License as published by
+#   the Free Software Foundation; either version 2, or (at your option)
+#   any later version.
+#
+#   This program is distributed in the hope that it will be useful,
+#   but WITHOUT ANY WARRANTY; without even the implied warranty of
+#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#   GNU General Public License for more details.
+#
+#***********************************************************************/
 
 # The revision from the old branch to pick if no revision is specified
-DEFAULT_REVISION="4419acc641"
+DEFAULT_REVISION="5a5b6e27c1"
 
 # The branch of the previous version
-PREVIOUS_BRANCH="S3_2"
+PREVIOUS_BRANCH="S3_3"
 
 set -e
 
@@ -13,13 +26,13 @@ cd $(dirname $0)
 # List of rulesets to copy
 rulesets="$(cat ruleset_list_dist.txt) $(cat ruleset_list_opt.txt)"
 
-if test "x$1" = "x" ; then
-  REVISION=$DEFAULT_REVISION
+if test "$1" = "" ; then
+  REVISION="${DEFAULT_REVISION}"
 else
-  REVISION=$1
+  REVISION="$1"
 fi
 
-# sanity check
+# Sanity check
 git merge-base --is-ancestor $REVISION $PREVIOUS_BRANCH
 
 tmpdir="tmp"

@@ -1,8 +1,8 @@
 ; Modifying this file:
 ; You should not modify this file except to make bugfixes or
-; for other "maintenance".  If you want to make custom changes,
+; for other "maintenance". If you want to make custom changes,
 ; you should create a new datadir subdirectory and copy this file
-; into that directory, and then modify that copy.  Then use the
+; into that directory, and then modify that copy. Then use the
 ; command "rulesetdir <mysubdir>" in the server to have freeciv
 ; use your new customized file.
 
@@ -11,8 +11,8 @@
 
 [datafile]
 description = "Multiplayer game rules for Freeciv"
-options = "+Freeciv-ruleset-3.3-Devel-2023.Feb.24 web-compatible"
-format_version = 40
+options = "+Freeciv-ruleset-3.4-Devel-2025.Jan.17 web-compatible"
+format_version = 50
 
 ; This section contains meta information for freeciv-ruledit to recreate the ruleset
 ; file in a form wanted. These have no in-game effect whatsoever
@@ -20,6 +20,12 @@ format_version = 40
 
 ; Which file to read description in from.
 description_file = "multiplayer/README.multiplayer"
+
+; Should ruleset upgrade do changes matching changes to the standard tilesets
+; of the freeciv distribution. Custom tilesets might do not implement similar
+; changes, so to remain compatible with them shouldn`t do these
+; ruleset changes either (to have this as FALSE)
+std_tileset_compat = TRUE
 
 [about]
 ; Ruleset name
@@ -84,6 +90,9 @@ happy_cost       = 2
 food_cost        = 2
 
 ; Parameters used to generalize the calculation of city granary size:
+;
+; granary_food_ini is a list of up to 24 integers.
+;
 ;   if city_size <= num_inis:
 ;     city_granary_size = (granary_food_ini[city_size] * foodbox / 100)
 ;   if city_size > num_inis;
@@ -135,15 +144,6 @@ tech_parasite_allow_holes = TRUE
 ; due to negative bulbs, if techlossforgiveness allows loss
 tech_loss_allow_holes     = TRUE
 
-; Whether civil war is possible at all
-civil_war_enabled        = TRUE
-
-; How many percents each celebrating city affects chance of civil war
-civil_war_bonus_celebrating = -5
-
-; How many percents each unhappy city affects chance of civil war
-civil_war_bonus_unhappy     = 5
-
 ; Comma separated list of things to happen, in addition to death
 ; of owner, when gameloss unit dies
 ; "CivilWar"   - Part of the empire remains, controlled by a new player
@@ -176,10 +176,6 @@ paradrop_to_transport    = FALSE
 ;            If still more gold is needed, then random units with gold
 ;            upkeep are disbanded.
 gold_upkeep_style = "City"
-
-; Whether also homeless units pay gold upkeep. Enabling requires that
-; gold_upkeep_style is not "City"
-homeless_gold_upkeep = FALSE
 
 ; How many points of output one basic unit consists of. Typically you
 ; want this to be some 10^n.
@@ -269,7 +265,7 @@ low_firepower_badwallattacker = 1
 ; defending on a city tile, attacker`s firepower is doubled
 ; and defenders firepower is reduced to this value.
 ; If firepower is already lower than this, it won`t be affected.
-low_firepower_pearl_harbour = 1
+low_firepower_pearl_harbor = 1
 
 ; When the opponent has LowFirepower combat bonus against
 ; a unit, it`s firepower is reduced to this value.
@@ -359,7 +355,7 @@ tech_leakage = "None"
 ; Method of paying tech upkeep
 ; "None"   - no upkeep
 ; "Basic"  - upkeep is calculated as:
-;     <Cost of technology> / tech_upkeep_divider - tech_upkeep_free
+;     <Cost of technology> / tech_upkeep_divider - <Free tech upkeep>
 ; "Cities" - upkeep is calculated like "Basic", but multiplied by number of cities
 tech_upkeep_style = "None"
 
@@ -389,6 +385,10 @@ history_interest_pml = 0
 ; of a migration point.
 migration_pml = 50
 
+[world_peace]
+; How many turns of world peace is required for a World Peace Victory
+victory_turns = 20
+
 [calendar]
 ; Year in the beginning of the game
 start_year = -4000
@@ -416,12 +416,16 @@ negative_label = _("BCE")
 
 ; /* <-- avoid gettext warnings
 ;
-; Disaster types:
+; Disaster types, there can be up to 10:
 ;
 ; name                    = translatable name as seen by user
 ; reqs                    = requirements for disaster to happen (see effects.ruleset
 ;                           and README.effects for help on requirements)
-; frequency               = how likely disaster is to occur
+; frequency               = how likely disaster is to occur.
+;                           Final probability for each city each turn is -
+;                           (this frequency) * (game settings option disasters
+;                           frequency) / 1000000.
+;                           If omitted, default is 0 and this disaster will not occur.
 ; effects
 ;   - "DestroyBuilding"   = Random building is destroyed
 ;   - "ReducePopulation"  = Reduce city size by one unless it's already 1
@@ -430,6 +434,7 @@ negative_label = _("BCE")
 ;   - "EmptyProdStock"    = Destroy current production
 ;   - "Pollution"         = One tile surrounding city polluted
 ;   - "Fallout"           = One tile surrounding city polluted with fallout
+;   - "Robbery"           = Player loses city's five turn trade worth of gold
 ;
 ; */ <-- avoid gettext warnings
 
@@ -437,7 +442,7 @@ negative_label = _("BCE")
 
 ; /* <-- avoid gettext warnings
 ;
-; Achievement types:
+; Achievement types, there can be up to 40:
 ;
 ; name                    = translatable name as seen by user
 ; rule_name               = (optional) internal name for savegames, rulesets
@@ -468,14 +473,14 @@ negative_label = _("BCE")
 ; For each of the trade route types:
 ; "pct"        - Trade income %. If this is 0, trade route cannot be
 ;                established at all
-; "cancelling" - What to do to previously established traderoutes when they
+; "cancelling" - What to do to previously established trade routes when they
 ;                turn illegal
 ;                "Active"   - Keep them active (although they will only
 ;                             provide nonzero income if illegal due to
 ;                             trademindist rather than pct==0)
 ;                "Inactive" - Keep them inactive
 ;                "Cancel"   - Cancel them altogether
-; "bonus"      - One-time bonuses granted when traderoute established
+; "bonus"      - One-time bonuses granted when trade route established
 ;                "None"     - No one-time bonus
 ;                "Gold"     - Bonus to gold
 ;                "Science"  - Bonus to research
@@ -510,7 +515,7 @@ goods_selection = "Arrival"
 
 ; /* <-- avoid gettext warnings
 ;
-; Goods types:
+; Goods types, there can be up to 25:
 ;
 ; name                    = translatable name as seen by user
 ; rule_name               = (optional) internal name for savegames, rulesets
@@ -525,7 +530,11 @@ goods_selection = "Arrival"
 ;                           This value is applied to both ends of bidirectional routes.
 ; to_pct                  = Income for the receiving end of the trade route. Default is 100%
 ;                           This value is not used at all in case of bidirectional routes.
-; onetime_pct             = Onetime bonuses when traderoute is established. Default is 100%
+; onetime_pct             = Onetime bonuses when trade route gets established. Default is 100%
+; select_priority         = Available good with highest select_priority get selected for
+;                           the traderoute, random among the same select_pririty.
+; replace_priority        = Trade routes get replaced by higher priority goods, or higher
+;                           trade value when priority is the same.
 ; flags
 ;   - "Bidirectional"     = Trade route carrying the goods does not have "from" and "to"
 ;                           ends, but both ends are considered the same.
@@ -533,7 +542,7 @@ goods_selection = "Arrival"
 ;                           goods any more. Bidirectional routes gets cancelled if either
 ;                           one of the involved cities cannot provide goods.
 ;   - "Self-Provided"     = Good requirement (in requirement lists of other rules)
-;                           is fullfilled also for the city exporting, or capable of exporting,
+;                           is fulfilled also for the city exporting, or capable of exporting,
 ;                           the good. Otherwise it would be true only for cities importing the
 ;                           good from elsewhere.
 ; helptext                = Optional help text string; should escape all raw
@@ -542,8 +551,8 @@ goods_selection = "Arrival"
 ; */ <-- avoid gettext warnings
 
 [goods_good]
-name = _("Goods")
-
+name             = _("Goods")
+replace_priority = 1
 
 ; /* <-- avoid gettext warnings
 ;
@@ -554,9 +563,10 @@ name = _("Goods")
 ; type                   = Type of the clause, one of "Advance", "Gold", "Map", "Seamap",
 ;                          "City", "Ceasefire", "Peace", "Alliance", "Vision", "Embassy",
 ;                          "SharedTiles"
-; giver_reqs             = requirements that the giving side of the clause needs to fulfill
+; giver_reqs             = requirements that the giving side of the clause needs to meet
 ;                          (see effects.ruleset and README.effects for help on requirements)
-; receiver_reqs          = requirements that the receiving side of the clause needs to fulfill
+; receiver_reqs          = requirements that the receiving side of the clause needs to meet
+; either_reqs            = requirements that either side of the clause transaction would need to meet
 ;
 ; */ <-- avoid gettext warnings
 
@@ -590,8 +600,15 @@ type = "Vision"
 [clause_embassy]
 type = "Embassy"
 
+[aarea]
+; Unit type to use to determine access areas. Access area is the area this unit
+; can access (move to)
+access_unit = ""
+
+
 ; /* <-- avoid gettext warnings
-;Counter types
+;
+; Counter types, there can be up to 20:
 ;
 ;name                    = translatable name as seen by user
 ;rule_name               = (optional) internal name for savegames, rulesets
@@ -610,6 +627,11 @@ type = "Embassy"
 ;                          does not celebrates, counter is zeroed
 ;                          "Disorder" - Increased each turn city is in disorder state. In
 ;                          case riots are eliminated, value is zeroed.
+;helptext                = Description about relation with requirement
+;                          vectors (effects, building, units, etc.)
+;                          and when counter req of this counter
+;                          will be fulfilled.
+;
 ; */ <-- avoid gettext warnings
 
 [playercolors]

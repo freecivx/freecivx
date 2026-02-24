@@ -69,9 +69,9 @@ static bool dio_get_bool8_json_internal(json_t *json_packet,
 **************************************************************************/
 static CURL *get_curl(void)
 {
-  static CURL *curl_easy_handle = NULL;
+  static CURL *curl_easy_handle = nullptr;
 
-  if (curl_easy_handle == NULL) {
+  if (curl_easy_handle == nullptr) {
     curl_easy_handle = curl_easy_init();
   } else {
     /* Reuse the existing CURL easy handle */
@@ -94,7 +94,7 @@ static int plocation_write_field(json_t *item,
 {
   int e = -1;
 
-  if (location->sub_location == NULL) {
+  if (location->sub_location == nullptr) {
     e = json_object_set_new(item, location->name, data);
   } else {
     e = plocation_write_data(json_object_get(item, location->name),
@@ -113,29 +113,19 @@ static int plocation_write_elem(json_t *item,
 {
   int e = -1;
 
-  if (location->sub_location == NULL) {
+  if (location->sub_location == nullptr) {
     if (location->number == -1) {
       e = json_array_append_new(item, data);
     } else {
       e = json_array_set_new(item, location->number, data);
     }
   } else {
-    // PTZ200718 handles last element get case...
-    // better here than all around put_array-diff algo ?
     size_t n = (location->number == -1)
       ? (json_array_size(item) - 1)
       : location->number;
 
-    json_t *sub_item = json_array_get(item, n);
-
-    if (json_is_array(sub_item)) {
-      e = plocation_write_data(sub_item,
-                               location->sub_location, data);
-    } else {
-      log_error("ERROR:plocation_write_elem:array not found for sub location:"
-                "%s @[" SIZE_T_PRINTF "]",
-                json_dumps(item, JSON_DECODE_ANY), location->number);
-    }
+    e = plocation_write_data(json_array_get(item, n),
+                             location->sub_location, data);
   }
 
   return e;
@@ -175,7 +165,7 @@ static json_t *plocation_read_data(json_t *item,
 static json_t *plocation_read_field(json_t *item,
                                     const struct plocation *location)
 {
-  if (location->sub_location == NULL) {
+  if (location->sub_location == nullptr) {
     return json_object_get(item, location->name);
   } else {
     return plocation_read_data(json_object_get(item, location->name),
@@ -189,7 +179,7 @@ static json_t *plocation_read_field(json_t *item,
 static json_t *plocation_read_elem(json_t *item,
                                    const struct plocation *location)
 {
-  if (location->sub_location == NULL) {
+  if (location->sub_location == nullptr) {
     return json_array_get(item, location->number);
   } else {
     return plocation_read_data(json_array_get(item, location->number),
@@ -214,7 +204,8 @@ static json_t *plocation_read_data(json_t *item,
     return plocation_read_elem(item, location);
   default:
     log_error("Unknown packet part location kind.");
-    return NULL;
+
+    return nullptr;
   }
 }
 
@@ -414,11 +405,6 @@ static bool dio_get_uint8_json_internal(json_t *json_packet,
   }
   *dest = json_integer_value(pint);
 
-  if (!dest) {
-    log_error("ERROR: Unable to get unit8 from location: %s", plocation_name(location));
-    return FALSE;
-  }
-
   return TRUE;
 }
 
@@ -447,13 +433,8 @@ bool dio_get_uint16_json(struct connection *pc, struct data_in *din,
     if (!pint) {
       log_error("ERROR: Unable to get uint16 from location: %s", plocation_name(location));
       return FALSE;
-    } 
-    *dest = json_integer_value(pint);
-
-    if (!dest) {
-      log_error("ERROR: Unable to get unit16 from location: %s", plocation_name(location));
-      return FALSE;
     }
+    *dest = json_integer_value(pint);
   } else {
     return dio_get_uint16_raw(din, dest);
   }
@@ -475,11 +456,6 @@ static bool dio_get_uint32_json_internal(json_t *json_packet,
     return FALSE;
   }
   *dest = json_integer_value(pint);
-
-  if (!dest) {
-    log_error("ERROR: Unable to get unit32 from location: %s", plocation_name(location));
-    return FALSE;
-  }
 
   return TRUE;
 }
@@ -733,6 +709,29 @@ bool dio_get_worklist_json(struct connection *pc, struct data_in *din,
 }
 
 /**********************************************************************//**
+  Receive array length value to dest with json. In json mode, this will
+  simply read the length of the array at that location.
+**************************************************************************/
+bool dio_get_arraylen_json(struct connection *pc, struct data_in *din,
+                           const struct plocation *location, int *dest)
+{
+  if (pc->json_mode) {
+    const json_t *arr = plocation_read_data(pc->json_packet, location);
+
+    if (!json_is_array(arr)) {
+      log_packet("Not an array");
+      return FALSE;
+    }
+
+    *dest = json_array_size(arr);
+  } else {
+    return dio_get_arraylen_raw(din, dest);
+  }
+
+  return TRUE;
+}
+
+/**********************************************************************//**
   Receive vector of 8 bit values, terminated by stop_value.
 **************************************************************************/
 bool dio_get_uint8_vec8_json(struct connection *pc, struct data_in *din,
@@ -914,6 +913,23 @@ int dio_put_farray_json(struct json_data_out *dout,
 }
 
 /**********************************************************************//**
+  Create an empty JSON object.
+**************************************************************************/
+int dio_put_object_json(struct json_data_out *dout,
+                        const struct plocation *location)
+{
+  int e = 0;
+
+  if (dout->json) {
+    e |= plocation_write_data(dout->json, location, json_object());
+  } else {
+    /* No caller needs this */
+  }
+
+  return e;
+}
+
+/**********************************************************************//**
   Insert uint32 value.
 **************************************************************************/
 int dio_put_uint32_json(struct json_data_out *dout,
@@ -1018,6 +1034,24 @@ int dio_put_sfloat_json(struct json_data_out *dout,
 }
 
 /**********************************************************************//**
+  Insert array length. In json mode, this will create an array at that
+  location.
+**************************************************************************/
+int dio_put_arraylen_json(struct json_data_out *dout,
+                          const struct plocation *location, int size)
+{
+  int e;
+
+  if (dout->json) {
+    e = dio_put_farray_json(dout, location, size);
+  } else {
+    e = dio_put_arraylen_raw(&dout->raw, size);
+  }
+
+  return e;
+}
+
+/**********************************************************************//**
   Insert vector of uint8 values, terminated by stop_value.
 **************************************************************************/
 int dio_put_uint8_vec8_json(struct json_data_out *dout,
@@ -1090,7 +1124,7 @@ int dio_put_memory_json(struct json_data_out *dout,
 }
 
 /**********************************************************************//**
-  Insert NULL-terminated string.
+  Insert nullptr-terminated string.
 **************************************************************************/
 int dio_put_string_json(struct json_data_out *dout,
                         const struct plocation *location,
@@ -1119,13 +1153,13 @@ int dio_put_estring_json(struct json_data_out *dout,
   if (dout->json) {
     char *escaped_value;
 
-    /* Let CURL find the length it self by passing 0 */
+    /* Let CURL find the length itself by passing 0 */
     escaped_value = curl_easy_escape(get_curl(), value, 0);
 
     /* Handle as a regular string from now on. */
     e = dio_put_string_json(dout, location, escaped_value);
 
-    /* CURL's memory management wants to free this it self. */
+    /* CURL's memory management wants to free this itself. */
     curl_free(escaped_value);
   } else {
     e = dio_put_estring_raw(&dout->raw, value);
@@ -1212,13 +1246,8 @@ static bool dio_get_bool8_json_internal(json_t *json_packet,
   if (!pbool) {
     log_error("ERROR: Unable to get bool8 from location: %s", plocation_name(location));
     return FALSE;
-  } 
-  *dest = json_is_true(pbool);
-
-  if (!dest) {
-    log_error("ERROR: Unable to get bool from location: %s", plocation_name(location));
-    return FALSE;
   }
+  *dest = json_is_true(pbool);
 
   return TRUE;
 }
@@ -1250,11 +1279,6 @@ bool dio_get_bool32_json(struct connection *pc, struct data_in *din,
       return FALSE;
     }
     *dest = json_is_true(pbool);
-
-    if (!dest) {
-      log_error("ERROR: Unable to get bool32 from location: %s", plocation_name(location));
-      return FALSE;
-    }
   } else {
     return dio_get_bool32_raw(din, dest);
   }
@@ -1320,11 +1344,6 @@ bool dio_get_sint8_json(struct connection *pc, struct data_in *din,
       return FALSE;
     }
     *dest = json_integer_value(pint);
-
-    if (!dest) {
-      log_error("ERROR: Unable to get sint8 from location: %s", plocation_name(location));
-      return FALSE;
-    }
   } else {
     return dio_get_sint8_raw(din, dest);
   }
@@ -1346,11 +1365,6 @@ bool dio_get_sint16_json(struct connection *pc, struct data_in *din,
       return FALSE;
     }
     *dest = json_integer_value(pint);
-
-    if (!dest) {
-      log_error("ERROR: Unable to get sint16 from location: %s", plocation_name(location));
-      return FALSE;
-    }
   } else {
     return dio_get_sint16_raw(din, dest);
   }
@@ -1391,7 +1405,7 @@ bool dio_get_memory_json(struct connection *pc, struct data_in *din,
 }
 
 /**********************************************************************//**
-  Receive at max max_dest_size bytes long NULL-terminated string.
+  Receive at max max_dest_size bytes long nullptr-terminated string.
 **************************************************************************/
 static bool dio_get_string_json_internal(json_t *json_packet,
                                          const struct plocation *location,
@@ -1417,7 +1431,7 @@ static bool dio_get_string_json_internal(json_t *json_packet,
 }
 
 /**********************************************************************//**
-  Receive at max max_dest_size bytes long NULL-terminated string.
+  Receive at max max_dest_size bytes long nullptr-terminated string.
 **************************************************************************/
 bool dio_get_string_json(struct connection *pc, struct data_in *din,
                          const struct plocation *location,
@@ -1453,8 +1467,9 @@ bool dio_get_estring_json(struct connection *pc, struct data_in *din,
       return FALSE;
     }
 
-    /* Let CURL find the length it self by passing 0 */
-    unescaped_value = curl_easy_unescape(get_curl(), escaped_value, 0, NULL);
+    /* Let CURL find the length itself by passing 0 */
+    unescaped_value = curl_easy_unescape(get_curl(), escaped_value,
+                                         0, nullptr);
 
     /* Done with the escaped value. */
     FC_FREE(escaped_value);
@@ -1464,7 +1479,7 @@ bool dio_get_estring_json(struct connection *pc, struct data_in *din,
            /* Don't copy the memory following unescaped_value. */
            MIN(max_dest_size, strlen(unescaped_value) + 1));
 
-    /* CURL's memory management wants to free this it self. */
+    /* CURL's memory management wants to free this itself. */
     curl_free(unescaped_value);
 
     /* Make sure that the string is terminated. */

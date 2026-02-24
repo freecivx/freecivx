@@ -12,6 +12,7 @@ data/nation/ainu.ruleset
 data/nation/akwe.ruleset
 data/nation/alandalus.ruleset
 data/nation/alander.ruleset
+data/nation/alaskan.ruleset
 data/nation/albanian.ruleset
 data/nation/aleut.ruleset
 data/nation/algerian.ruleset
@@ -106,6 +107,7 @@ data/nation/circassian.ruleset
 data/nation/colombian.ruleset
 data/nation/comanche.ruleset
 data/nation/comorian.ruleset
+data/nation/conch.ruleset
 data/nation/confederate.ruleset
 data/nation/congolesebrazzaville.ruleset
 data/nation/congolese.ruleset
@@ -113,7 +115,6 @@ data/nation/cornish.ruleset
 data/nation/corsican.ruleset
 data/nation/cossack.ruleset
 data/nation/costarican.ruleset
-data/nation/coutense.ruleset
 data/nation/cree.ruleset
 data/nation/cretan.ruleset
 data/nation/crimeantatar.ruleset
@@ -127,11 +128,13 @@ data/nation/cyrenaican.ruleset
 data/nation/czechoslovak.ruleset
 data/nation/czech.ruleset
 data/nation/dacian.ruleset
+data/nation/dagestan.ruleset
 data/nation/dahomean.ruleset
 data/nation/darfuri.ruleset
 data/nation/djiboutian.ruleset
 data/nation/dominicano.ruleset
 data/nation/dominican.ruleset
+data/nation/donetsk.ruleset
 data/nation/dryad.ruleset
 data/nation/eastgerman.ruleset
 data/nation/easttimorese.ruleset
@@ -261,6 +264,8 @@ data/nation/lippe.ruleset
 data/nation/lithuanian.ruleset
 data/nation/lojbanistani.ruleset
 data/nation/lorrain.ruleset
+data/nation/louisianian.ruleset
+data/nation/luhansk.ruleset
 data/nation/luwian.ruleset
 data/nation/luxembourgish.ruleset
 data/nation/lycian.ruleset
@@ -294,6 +299,7 @@ data/nation/miao.ruleset
 data/nation/micronesian.ruleset
 data/nation/mikmaq.ruleset
 data/nation/milanese.ruleset
+data/nation/minnesotan.ruleset
 data/nation/miskito.ruleset
 data/nation/mitanni.ruleset
 data/nation/mixtec.ruleset
@@ -324,6 +330,7 @@ data/nation/nigerian.ruleset
 data/nation/nigerien.ruleset
 data/nation/nimiipuu.ruleset
 data/nation/norman.ruleset
+data/nation/northirish.ruleset
 data/nation/northkorean.ruleset
 data/nation/northumbrian.ruleset
 data/nation/norwegian.ruleset
@@ -360,6 +367,7 @@ data/nation/phrygian.ruleset
 data/nation/pictish.ruleset
 data/nation/piedmontese.ruleset
 data/nation/pontic.ruleset
+data/nation/poyaisian.ruleset
 data/nation/prussian.ruleset
 data/nation/puertorican.ruleset
 data/nation/purhepecha.ruleset
@@ -454,6 +462,7 @@ data/nation/tibetan.ruleset
 data/nation/timurid.ruleset
 data/nation/tocharian.ruleset
 data/nation/togolese.ruleset
+data/nation/tokiponan.ruleset
 data/nation/toltec.ruleset
 data/nation/tongan.ruleset
 data/nation/transnistrian.ruleset
@@ -464,6 +473,7 @@ data/nation/tuareg.ruleset
 data/nation/tunisian.ruleset
 data/nation/turkishcypriot.ruleset
 data/nation/turkmen.ruleset
+data/nation/tuvaluan.ruleset
 data/nation/tuvan.ruleset
 data/nation/tyrolian.ruleset
 data/nation/ugandan.ruleset

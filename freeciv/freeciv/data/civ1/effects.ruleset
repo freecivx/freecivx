@@ -1,8 +1,8 @@
 ; Modifying this file:
 ; You should not modify this file except to make bugfixes or
-; for other "maintenance".  If you want to make custom changes,
+; for other "maintenance". If you want to make custom changes,
 ; you should create a new datadir subdirectory and copy this file
-; into that directory, and then modify that copy.  Then use the
+; into that directory, and then modify that copy. Then use the
 ; command "rulesetdir <mysubdir>" in the server to have freeciv
 ; use your new customized file.
 
@@ -11,8 +11,8 @@
 
 [datafile]
 description = "Civ1 effects data for Freeciv (approximate)"
-options = "+Freeciv-ruleset-3.3-Devel-2023.Feb.24"
-format_version = 40
+options = "+Freeciv-ruleset-3.4-Devel-2025.Jan.17"
+format_version = 50
 
 ; /* <-- avoid gettext warnings
 ;
@@ -57,16 +57,18 @@ value   = 4
 type    = "Output_Penalty_Tile"
 value   = 2
 reqs  =
-    { "type",       "name",      "range"
-      "Gov", "Anarchy", "Player"
+    { "type",       "name",        "range",  "present"
+      "Gov",        "Anarchy",     "Player", TRUE
+      "CityStatus", "Celebration", "City",   FALSE
     }
 
 [effect_gov_tile_bonus_1]
 type    = "Output_Penalty_Tile"
 value   = 2
 reqs  =
-    { "type",       "name",      "range"
-      "Gov", "Despotism", "Player"
+    { "type",       "name",        "range",  "present"
+      "Gov",        "Despotism",   "Player", TRUE
+      "CityStatus", "Celebration", "City",   FALSE
     }
 
 [effect_gov_tile_bonus_2]
@@ -266,13 +268,26 @@ value   = 100
 type    = "Max_Rates"
 value   = 100
 
-[effect_base_unit_upkeep]
-type    = "Upkeep_Factor"
-value   = 1
+[effect_base_unit_upkeep_not_gold]
+type    = "Upkeep_Pct"
+value   = 100
+reqs    =
+    { "type",       "name", "range", "present"
+      "OutputType", "Gold", "Local", FALSE
+    }
+
+[effect_base_unit_upkeep_gold]
+type    = "Upkeep_Pct"
+value   = 100
+reqs    =
+    { "type",       "name",        "range"
+      "OutputType", "Gold",        "Local"
+      "UnitState",  "HasHomeCity", "Local"
+    }
 
 [effect_republic_unit_upkeep]
-type    = "Upkeep_Factor"
-value   = 1
+type    = "Upkeep_Pct"
+value   = 100
 reqs    =
     { "type", "name", "range"
       "Gov", "Republic", "Player"
@@ -280,8 +295,8 @@ reqs    =
     }
 
 [effect_democracy_unit_upkeep]
-type    = "Upkeep_Factor"
-value   = 1
+type    = "Upkeep_Pct"
+value   = 100
 reqs    =
     { "type", "name", "range"
       "Gov", "Democracy", "Player"
@@ -425,35 +440,35 @@ type    = "Empire_Size_Step"
 value   = 10
 
 [effect_martial_law_each_0]
-type    = "Martial_Law_Each"
+type    = "Martial_Law_By_Unit"
 value   = 1
 reqs    =
-    { "type",       "name",      "range"
-      "Gov", "Anarchy",   "Player"
+    { "type", "name",    "range"
+      "Gov",  "Anarchy", "Player"
     }
 
 [effect_martial_law_each_1]
-type    = "Martial_Law_Each"
+type    = "Martial_Law_By_Unit"
 value   = 1
 reqs    =
-    { "type",       "name",      "range"
-      "Gov", "Despotism", "Player"
+    { "type", "name",      "range"
+      "Gov",  "Despotism", "Player"
     }
 
 [effect_martial_law_each_2]
-type    = "Martial_Law_Each"
+type    = "Martial_Law_By_Unit"
 value   = 1
 reqs    =
-    { "type",       "name",      "range"
-      "Gov", "Monarchy",  "Player"
+    { "type", "name",     "range"
+      "Gov",  "Monarchy", "Player"
     }
 
 [effect_martial_law_each_3]
-type    = "Martial_Law_Each"
+type    = "Martial_Law_By_Unit"
 value   = 1
 reqs    =
-    { "type",       "name",      "range"
-      "Gov", "Communism", "Player"
+    { "type", "name",      "range"
+      "Gov",  "Communism", "Player"
     }
 
 [effect_martial_law_max_0]
@@ -988,7 +1003,7 @@ value	= 200
 reqs	=
     { "type",     "name",       "range", "present"
       "Building", "Great Wall", "Player", TRUE
-      "CityTile", "Center",     "Tile",  TRUE
+      "CityTile", "Center",     "Tile",   TRUE
       "UnitType", "Artillery",  "Local",  FALSE
       "UnitType", "Bomber",     "Local",  FALSE
     }
@@ -1256,6 +1271,10 @@ reqs    =
       "MinYear", "1", "World"
     }
 
+[effect_tech_leakage]
+type    = "Tech_Leakage"
+value   = 1
+
 ; Cities can always work tiles
 [effect_tile_workable]
 type    = "Tile_Workable"
@@ -1351,7 +1370,6 @@ reqs    =
     { "type",     "name",       "range",  "present"
       "Activity", "Fortified",  "Local",  TRUE
       "CityTile", "Center",     "Tile",   FALSE
-      "Building", "Great Wall", "Player", FALSE
       "Extra",    "Fortress",   "Tile",   FALSE
     }
 
@@ -1407,8 +1425,8 @@ reqs    =
 type	= "Unit_Bribe_Cost_Pct"
 value	= -50
 reqs	=
-    { "type", "name", "range"
-      "UnitFlag", "Cities", "Local"
+    { "type",         "name",   "range"
+      "UnitTypeFlag", "Cities", "Local"
     }
 
 [effect_illegal_action_move_cost_base]
@@ -1553,18 +1571,36 @@ reqs    =
 type    = "Action_Success_Actor_Move_Cost"
 value   = 65535
 reqs    =
-    { "type",     "name",      "range", "quiet"
-      "Action",   "Attack",    "Local", TRUE
-      "UnitFlag", "OneAttack", "Local", TRUE
+    { "type",         "name",      "range", "quiet"
+      "Action",       "Attack",    "Local", TRUE
+      "UnitTypeFlag", "OneAttack", "Local", TRUE
     }
 
 [effect_action_success_attack_normal]
 type    = "Action_Success_Actor_Move_Cost"
 value   = 3
 reqs    =
-    { "type",     "name",      "range", "present"
-      "Action",   "Attack",    "Local", TRUE
-      "UnitFlag", "OneAttack", "Local", FALSE
+    { "type",         "name",      "range", "present"
+      "Action",       "Attack",    "Local", TRUE
+      "UnitTypeFlag", "OneAttack", "Local", FALSE
+    }
+
+[effect_action_success_ransom_one_attack]
+type    = "Action_Success_Actor_Move_Cost"
+value   = 65535
+reqs    =
+    { "type",         "name",           "range", "quiet"
+      "Action",       "Collect Ransom", "Local", TRUE
+      "UnitTypeFlag", "OneAttack",      "Local", TRUE
+    }
+
+[effect_action_success_ransom]
+type    = "Action_Success_Actor_Move_Cost"
+value   = 3
+reqs    =
+    { "type",         "name",           "range", "present"
+      "Action",       "Collect Ransom", "Local", TRUE
+      "UnitTypeFlag", "OneAttack",      "Local", FALSE
     }
 
 [effect_unit_shield_value_recycle]
@@ -1573,4 +1609,61 @@ value   = -50
 reqs    =
     { "type",   "name",                 "range", "present"
       "Action", "Disband Unit Recover", "Local", TRUE
+    }
+
+; Note: There are no oceanic border sources, so we don't need to check
+;       the tiles' terrain class
+[effect_claim_land]
+type    = "Tile_Claimable"
+value   = 1
+reqs    =
+    { "type",         "name",        "range"
+;     "TerrainClass", "Land",        "Tile"
+      "TileRel",      "Same Region", "Tile"
+    }
+
+[effect_claim_ocean_adj]
+type    = "Tile_Claimable"
+value   = 1
+reqs    =
+    { "type",          "name",    "range"
+;     "TerrainClass",  "Oceanic", "Tile"
+      "MaxDistanceSq", "2",       "Tile"
+    }
+
+[effect_claim_ocean_lake]
+type    = "Tile_Claimable"
+value   = 1
+reqs    =
+    { "type",           "name",              "range"
+;     "TerrainClass",   "Oceanic",           "Tile"
+      "MaxRegionTiles", "20",                "Continent"
+      "TileRel",        "Region Surrounded", "Tile"
+    }
+
+[effect_claim_ocean_bay]
+type    = "Tile_Claimable"
+value   = 1
+reqs    =
+    { "type",           "name",              "range"
+;     "TerrainClass",   "Oceanic",           "Tile"
+      "MaxRegionTiles", "3",                 "Adjacent"
+      "TileRel",        "Only Other Region", "Adjacent"
+      "TileRel",        "Same Region",       "Adjacent"
+    }
+
+[effect_civil_war_city_celebration]
+type    = "Civil_War_City_Bonus"
+value   = 5
+reqs    =
+    { "type",       "name",        "range"
+      "CityStatus", "Celebration", "City"
+    }
+
+[effect_civil_war_city_disorder]
+type    = "Civil_War_City_Bonus"
+value   = -5
+reqs    =
+    { "type",       "name",     "range"
+      "CityStatus", "Disorder", "City"
     }

@@ -20,6 +20,7 @@
 #include <gtk/gtk.h>
 
 /* utility */
+#include "executable.h"
 #include "fc_cmdline.h"
 #include "fciconv.h"
 #include "fcintl.h"
@@ -60,7 +61,7 @@ static gboolean quit_dialog_callback(void);
 #define ML_COL_INST    2
 #define ML_COL_TYPE    3
 #define ML_COL_SUBTYPE 4
-#define ML_COL_LIC     5 
+#define ML_COL_LIC     5
 #define ML_COL_URL     6
 
 #define ML_COL_COUNT   7
@@ -472,7 +473,7 @@ static void modinst_setup_widgets(void)
   main_list = gtk_tree_view_new();
   renderer = gtk_cell_renderer_text_new();
   gtk_tree_view_insert_column_with_attributes(GTK_TREE_VIEW(main_list),
-                                              ML_COL_NAME,      
+                                              ML_COL_NAME,
                                               _("Name"), renderer, "text", 0,
                                               NULL);
   renderer = gtk_cell_renderer_text_new();
@@ -598,7 +599,7 @@ static void activate_gui(GtkApplication *app, gpointer data)
 
   modinst_setup_widgets();
 
-  gtk_widget_show(toplevel);
+  gtk_widget_set_visible(toplevel, TRUE);
 
   if (fcmp.autoinstall != NULL) {
     gui_download_modpack(fcmp.autoinstall);
@@ -611,6 +612,8 @@ static void activate_gui(GtkApplication *app, gpointer data)
 int main(int argc, char *argv[])
 {
   int ui_options;
+
+  executable_init();
 
   fcmp_init();
 

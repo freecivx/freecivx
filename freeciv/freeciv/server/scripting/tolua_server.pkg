@@ -34,6 +34,7 @@ $#include "console.h"
 /* server/scripting */
 $#include "api_server_edit.h"
 $#include "api_server_base.h"
+$#include "api_server_counters.h"
 $#include "api_server_luadata.h"
 $#include "api_server_notify.h"
 $#include "api_server_game_methods.h"
@@ -49,11 +50,18 @@ module server {
     @ civilization_score (lua_State *L, Player *pplayer);
   bool api_play_music
     @ play_music (lua_State *L, Player *pplayer, const char *tag);
+  bool api_popup_image
+    @ popup_image (lua_State *L, Player *pplayer, const char *tag);
 
   module setting {
     const char *api_server_setting_get
       @ get (lua_State *L, const char *setting_name);
   }
+}
+
+module Counter {
+  void api_counter_increase @ increase (lua_State *L, Counter *c, City *city);
+  void api_counter_zero @ zero (lua_State *L, Counter *c, City *city);
 }
 
 /* Notify module. */
@@ -97,12 +105,12 @@ end
 
 function notify.research(player, selfmsg, event, ...)
   local arg = table.pack(...);
-  notify.research_msg(player, selfmsg, event, string.format(table.unpack(arg))) 
+  notify.research_msg(player, selfmsg, event, string.format(table.unpack(arg)))
 end
 
 function notify.research_embassies(player, event, ...)
   local arg = table.pack(...);
-  notify.research_embassies_msg(player, event, string.format(table.unpack(arg))) 
+  notify.research_embassies_msg(player, event, string.format(table.unpack(arg)))
 end
 $]
 
@@ -124,17 +132,30 @@ module edit {
   void api_edit_unit_kill
     @ unit_kill(lua_State *L, Unit *self, const char *reason,
                 Player *killer);
+  bool api_edit_unit_hitpoints
+    @ unit_add_hitpoints(lua_State *L, Unit *self, int change,
+                         const char *reason, Player *killer);
+  void api_edit_unit_movepoints
+    @ unit_add_movepoints(lua_State *L, Unit *self, int change);
   bool api_edit_change_terrain
     @ change_terrain(lua_State *L, Tile *ptile, Terrain *pterr);
   bool api_edit_create_city
-    @ create_city (lua_State *L, Player *pplayer, Tile *ptile,
-                   const char *name);
+    @ city_create (lua_State *L, Player *pplayer, Tile *ptile,
+                   const char *name, Player *nationality);
+  bool api_edit_transfer_city
+    @ transfer_city (lua_State *L, City *pcity, Player *new_owner);
   void api_edit_remove_city
     @ remove_city (lua_State *L, City *pcity);
   void api_edit_create_building
     @ create_building (lua_State *L, City *pcity, Building_Type *impr);
   void api_edit_remove_building
     @ remove_building (lua_State *L, City *pcity, Building_Type *impr);
+  bool api_edit_city_reduce_specialists
+    @ reduce_specialists (lua_State *L, City *pcity, Specialist *s,
+                          int amount = 1);
+  bool api_edit_city_add_specialist
+    @ add_specialist (lua_State *L, City *pcity, Specialist *s,
+                      int amount = 1);
   void api_edit_create_owned_extra
     @ create_owned_extra (lua_State *L, Tile *ptile,
                           const char *name, Player *pplayer);
@@ -230,6 +251,15 @@ module edit {
   void api_edit_player_give_bulbs
     @ give_bulbs(lua_State *L, Player *self, int amount,
                  Tech_Type *tech = NULL);
+
+  bool api_edit_create_trade_route
+    @ create_trade_route(lua_State *L, City *from, City *to);
+
+  void api_edit_change_city_size
+    @ change_city_size(lua_State *L, City *pcity, int change, Player *nationality);
+  void api_edit_change_citizen_nationality
+    @ change_citizen_nationality(lua_State *L, City *pcity,
+                                 Player *from, Player *to, int amount);
 }
 
 /* Luadata module. */
@@ -260,7 +290,13 @@ end
 function create_city(player, tile, name)
   log.deprecation_warning("create_city()", "edit.create_city()",
                           "2.4");
-  edit.create_city (player, tile, name)
+  edit.city_create(player, tile, name, nil)
+end
+
+function edit.create_city(player, tile, name)
+  log.deprecation_warning("edit.create_city()", "edit.city_create()",
+                          "3.3");
+  edit.city_create(player, tile, name, nil)
 end
 
 -- Deprecated; use edit.create_owned_extra()
@@ -333,7 +369,13 @@ function Player:civilization_score()
 end
 
 function Player:create_city(tile, name)
-  edit.create_city(self, tile, name)
+  log.deprecation_warning("Player:create_city()", "Player:city_create()",
+                          "3.3");
+  edit.city_create(self, tile, name, nil)
+end
+
+function Player:city_create(tile, name, nationality)
+  edit.city_create(self, tile, name, nationality)
 end
 
 function Player:change_gold(amount)
@@ -380,6 +422,10 @@ function City:remove()
   edit.remove_city(self)
 end
 
+function City:transfer(new_owner)
+  edit.transfer_city(self, new_owner)
+end
+
 function City:add_history(amount)
   edit.add_city_history(self, amount)
 end
@@ -392,6 +438,22 @@ function City:remove_building(impr)
   edit.remove_building(self, impr)
 end
 
+function City:reduce_specialists(spec, amount)
+  return edit.reduce_specialists(self, spec, amount or 1)
+end
+
+function City:add_specialist(spec, amount)
+  return edit.add_specialist(self, spec, amount or 1)
+end
+
+function City:change_size(change, nationality)
+  edit.change_city_size(self, change, nationality)
+end
+
+function City:change_nationality(from, to, amount)
+  edit.change_citizen_nationality(self, from, to, amount)
+end
+
 -- Server functions for Unit module
 function Unit:teleport(dest,
                        embark_to, allow_disembark,
@@ -401,7 +463,7 @@ function Unit:teleport(dest,
     return edit.unit_teleport(self, dest, nil, false,
                               false, false, false, false)
   else
-    return edit.unit_teleport(self, dest, 
+    return edit.unit_teleport(self, dest,
                               embark_to, allow_disembark,
                               conquer_city, conquer_extra,
                               enter_hut, frighten_hut)
@@ -518,6 +580,16 @@ module Player {
     @ lose (lua_State *L, Player *pplayer, Player *looter = NULL);
   int api_methods_player_tech_bulbs
     @ bulbs_saved (lua_State *L, Player *pplayer, Tech_Type *tech);
+
+  int api_methods_tag_score
+    @ tag_score (lua_State *L, Player *pplayer, const char *tag);
+
+  int api_methods_love
+    @ love (lua_State *L, Player *pplayer, Player *towards);
+  void api_methods_add_love
+    @ add_love (lua_State *L, Player *pplayer, Player *towards, int amount);
+  void api_methods_cancel_pact
+    @ cancel_pact (lua_State *L, Player *pplayer, Player *towards);
 }
 
 $[

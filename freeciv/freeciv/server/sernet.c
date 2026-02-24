@@ -149,6 +149,8 @@ static void handle_stdin_close(void)
 
 #endif /* FREECIV_HAVE_LIBREADLINE || (!FREECIV_SOCKET_ZERO_NOT_STDIN && !FREECIV_HAVE_LIBREADLINE) */
 
+static char *current_internal = NULL;
+
 #ifdef FREECIV_HAVE_LIBREADLINE
 /****************************************************************************/
 
@@ -158,7 +160,6 @@ static void handle_stdin_close(void)
 static char *history_file = NULL;
 static bool readline_handled_input = FALSE;
 static bool readline_initialized = FALSE;
-static char *current_internal = NULL;
 
 /*************************************************************************//**
   Readline callback for input.
@@ -181,9 +182,7 @@ static void handle_readline_input_callback(char *line)
   con_prompt_enter();      /* just got an 'Enter' hit */
   current_internal = local_to_internal_string_malloc(line);
   free(line); /* This is already freed if we exit() with /quit command */
-  (void) handle_stdin_input(NULL, current_internal);
-  free(current_internal); /* Since handle_stdin_input() returned,
-                           * we can be sure this was not freed in atexit. */
+  handle_stdin_input_free(NULL, current_internal);
   current_internal = NULL;
 
   readline_handled_input = TRUE;
@@ -209,12 +208,12 @@ void readline_atexit(void)
     rl_callback_handler_remove();
     readline_initialized = FALSE;
   }
+#endif /* FREECIV_HAVE_LIBREADLINE */
 
   if (current_internal != NULL) {
     free(current_internal);
     current_internal = NULL;
   }
-#endif /* FREECIV_HAVE_LIBREADLINE */
 }
 
 /*************************************************************************//**
@@ -449,7 +448,7 @@ struct packet_to_handle {
 /*************************************************************************//**
   Simplify a loop by wrapping get_packet_from_connection.
 *****************************************************************************/
-static bool get_packet(struct connection *pconn, 
+static bool get_packet(struct connection *pconn,
                        struct packet_to_handle *ppacket)
 {
   ppacket->data = get_packet_from_connection(pconn, &ppacket->type);
@@ -491,13 +490,13 @@ static void incoming_client_packets(struct connection *pconn)
     start_processing_request(pconn, pconn->server.last_request_id_seen);
 
     command_ok = server_packet_input(pconn, packet.data, packet.type);
-    free(packet.data);
+    packet_destroy(packet.data, packet.type);
 
     finish_processing_request(pconn);
     connection_do_unbuffer(pconn);
 
 #if PROCESSING_TIME_STATISTICS
-    log_verbose("processed request %d in %gms", request_id, 
+    log_verbose("processed request %d in %gms", request_id,
                 timer_read_seconds(request_time) * 1000.0);
 #endif /* PROCESSING_TIME_STATISTICS */
 
@@ -825,11 +824,11 @@ enum server_events server_sniff_all_input(void)
     }
 #ifdef FREECIV_SOCKET_ZERO_NOT_STDIN
     if (!no_input && (bufptr = fc_read_console())) {
-      char *bufptr_internal = local_to_internal_string_malloc(bufptr);
+      current_internal = local_to_internal_string_malloc(bufptr);
 
-      con_prompt_enter();     /* will need a new prompt, regardless */
-      handle_stdin_input(NULL, bufptr_internal);
-      free(bufptr_internal);
+      con_prompt_enter();     /* Will need a new prompt, regardless */
+      handle_stdin_input_free(NULL, current_internal);
+      current_internal = NULL;
     }
 #else  /* !FREECIV_SOCKET_ZERO_NOT_STDIN */
     if (!no_input && FD_ISSET(0, &readfs)) {    /* input from server operator */
@@ -842,18 +841,17 @@ enum server_events server_sniff_all_input(void)
       continue;
 #else  /* !FREECIV_HAVE_LIBREADLINE */
       ssize_t didget;
-      char *buffer = NULL; /* Must be NULL when calling getline() */
-      char *buf_internal;
+      char *buffer;
 
 #ifdef HAVE_GETLINE
       size_t len = 0;
 
+      buffer = NULL; /* Must be NULL when calling getline() */
       didget = getline(&buffer, &len, stdin);
       if (didget >= 1) {
-        buffer[didget-1] = '\0'; /* overwrite newline character */
-        didget--;
-        log_debug("Got line: \"%s\" (%ld, %ld)", buffer,
-                  (long int) didget, (long int) len);
+        buffer[--didget] = '\0'; /* Overwrite newline character */
+        log_debug("Got line: \"%s\" (" SIZE_T_PRINTF ", " SIZE_T_PRINTF ")", buffer,
+                  didget, len);
       }
 #else  /* HAVE_GETLINE */
       buffer = malloc(BUF_SIZE + 1);
@@ -862,26 +860,26 @@ enum server_events server_sniff_all_input(void)
       if (didget > 0) {
         buffer[didget] = '\0';
       } else {
-        didget = -1; /* error or end-of-file: closing stdin... */
+        didget = -1; /* Error or end-of-file: closing stdin... */
       }
 #endif /* HAVE_GETLINE */
       if (didget < 0) {
         handle_stdin_close();
       }
 
-      con_prompt_enter();  /* will need a new prompt, regardless */
+      con_prompt_enter();  /* Will need a new prompt, regardless */
 
       if (didget >= 0) {
-        buf_internal = local_to_internal_string_malloc(buffer);
-        handle_stdin_input(NULL, buf_internal);
-        free(buf_internal);
+        current_internal = local_to_internal_string_malloc(buffer);
+        handle_stdin_input_free(NULL, current_internal);
+        current_internal = NULL;
       }
       free(buffer);
 #endif /* !FREECIV_HAVE_LIBREADLINE */
     } else
 #endif /* !FREECIV_SOCKET_ZERO_NOT_STDIN */
 
-    {                             /* input from a player */
+    {                             /* Input from a player */
       for (i = 0; i < MAX_NUM_CONNECTIONS; i++) {
         struct connection *pconn = connections + i;
         int nb;
@@ -1109,7 +1107,7 @@ int server_make_connection(int new_sock, const char *client_addr,
 
       conn_list_append(game.all_connections, pconn);
 
-      log_verbose("connection (%s) from %s (%s)", 
+      log_verbose("connection (%s) from %s (%s)",
                   pconn->username, pconn->addr, pconn->server.ipaddr);
       /* Give a ping timeout to send the PACKET_SERVER_JOIN_REQ, or close
        * the mute connection. This timer will be canceled into
@@ -1190,7 +1188,7 @@ int server_open_socket(void)
 
 #ifndef FREECIV_HAVE_WINSOCK
     /* SO_REUSEADDR considered harmful on Win, necessary otherwise */
-    if (setsockopt(s, SOL_SOCKET, SO_REUSEADDR, 
+    if (setsockopt(s, SOL_SOCKET, SO_REUSEADDR,
                    (char *)&on, sizeof(on)) == -1) {
       log_error("setsockopt SO_REUSEADDR failed: %s",
                 fc_strerror(fc_get_errno()));
@@ -1458,7 +1456,7 @@ void handle_conn_pong(struct connection *pconn)
 }
 
 /*************************************************************************//**
-  Handle client's regular hearbeat
+  Handle client's regular heartbeat
 *****************************************************************************/
 void handle_client_heartbeat(struct connection *pconn)
 {
@@ -1612,7 +1610,7 @@ static void send_lanserver_response(void)
   }
 #endif /* FREECIV_HAVE_WINSOCK */
 
-  if (setsockopt(socksend, SOL_SOCKET, SO_BROADCAST, 
+  if (setsockopt(socksend, SOL_SOCKET, SO_BROADCAST,
                  (const char*)&setting, sizeof(setting))) {
     log_error("Lan response setsockopt failed: %s", fc_strerror(fc_get_errno()));
     return;

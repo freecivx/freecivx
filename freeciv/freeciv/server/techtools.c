@@ -381,7 +381,7 @@ void found_new_tech(struct research *presearch, Tech_type_id tech_found,
             && is_great_wonder(pimprove)
             && (pcity = city_from_great_wonder(pimprove))) {
           notify_player(city_owner(pcity), NULL, E_WONDER_OBSOLETE, ftc_server,
-                        _("Discovery of %s OBSOLETES %s in %s!"), 
+                        _("Discovery of %s OBSOLETES %s in %s!"),
                         research_advance_name_translation
                             (research_get(city_owner(pcity)), tech_found),
                         improvement_name_translation(pimprove),
@@ -408,7 +408,7 @@ void found_new_tech(struct research *presearch, Tech_type_id tech_found,
 
   could_switch = create_current_governments_data(presearch);
 
-  /* getting tech allows us to change research without applying techpenalty
+  /* Getting tech allows us to change research without applying techpenalty
    * (without losing bulbs) */
   if (tech_found == presearch->researching) {
     presearch->free_bulbs = presearch->bulbs_researched;
@@ -437,9 +437,10 @@ void found_new_tech(struct research *presearch, Tech_type_id tech_found,
   /* Make proper changes for all players. Use shuffled order, in case
    * a script would detect a signal. */
   shuffled_players_iterate(aplayer) {
+    bool shares_research = (presearch == research_get(aplayer));
     i = player_index(aplayer);
 
-    if (presearch == research_get(aplayer)) {
+    if (shares_research) {
       char buf[250];
 
       /* Only for players sharing the research. */
@@ -450,7 +451,7 @@ void found_new_tech(struct research *presearch, Tech_type_id tech_found,
         upgrade_all_city_extras(aplayer, was_discovery);
 
         /* Revealing of extras with visibility_req */
-        whole_map_iterate(&(wld.map),ptile) {
+        whole_map_iterate(&(wld.map), ptile) {
           if (map_is_known_and_seen(ptile, aplayer, V_MAIN)) {
             if (update_player_tile_knowledge(aplayer, ptile)) {
               send_tile_info(aplayer->connections, ptile, FALSE);
@@ -463,9 +464,11 @@ void found_new_tech(struct research *presearch, Tech_type_id tech_found,
        * that world-ranged effects will not be updated immediately. */
       unit_list_refresh_vision(aplayer->units);
 
-      fc_snprintf(buf, sizeof(buf), _("Discovery of %s"), advance_name);
+      if (shares_research) {
+        fc_snprintf(buf, sizeof(buf), _("Discovery of %s"), advance_name);
 
-      notify_new_government_options(aplayer, could_switch, buf);
+        notify_new_government_options(aplayer, could_switch, buf);
+      }
     }
 
     /* For any player. */
@@ -594,7 +597,7 @@ void found_new_tech(struct research *presearch, Tech_type_id tech_found,
                       radv_name);
     } else if (additional_tech != A_UNSET) {
       /* FIXME: "your" when it was just civilization of one of the players
-       * sharing the reseach. */
+       * sharing the research. */
       notify_research(presearch, NULL, E_TECH_GAIN, ftc_server,
                       _("Great scientists from all the "
                         "world join your civilization: you learn "
@@ -659,10 +662,10 @@ void update_bulbs(struct player *pplayer, int bulbs, bool check_tech,
   }
   fc_assert_ret(research);
 
-  /* count our research contribution this turn */
+  /* Count our research contribution this turn */
   pplayer->server.bulbs_last_turn += bulbs;
   research->bulbs_researched += bulbs;
-  if (A_UNKNOWN != research->researching_saved) {
+  if (research->researching_saved != A_UNKNOWN && research->researching_saved != A_UNSET) {
     fc_assert(research->researching_saved != research->researching);
     research->bulbs_researching_saved += bulbs;
   }
@@ -819,6 +822,7 @@ static void research_tech_lost(struct research *presearch, Tech_type_id tech)
 {
   char research_name[MAX_LEN_NAME * 2];
   /* Research members will be notified when new tech is chosen. */
+  const struct civ_map *nmap = &(wld.map);
 
   research_pretty_name(presearch, research_name, sizeof(research_name));
 
@@ -896,7 +900,7 @@ static void research_tech_lost(struct research *presearch, Tech_type_id tech)
       bool update = FALSE;
 
       if (pcity->production.kind == VUT_UTYPE
-          && !can_city_build_unit_now(pcity, pcity->production.value.utype)) {
+          && !can_city_build_unit_now(nmap, pcity, pcity->production.value.utype)) {
         notify_player(pplayer, city_tile(pcity),
                       E_CITY_CANTBUILD, ftc_server,
                       _("%s can't build %s. The required technology was "
@@ -1254,7 +1258,7 @@ Tech_type_id steal_a_tech(struct player *pplayer, struct player *victim,
         j++;
       }
     } advance_index_iterate_max_end;
-  
+
     if (j == 0)  {
       /* We've moved on to future tech */
       if (vresearch->future_tech > presearch->future_tech) {
@@ -1339,7 +1343,7 @@ void handle_player_research(struct player *pplayer, int tech)
   if (tech != A_FUTURE && !valid_advance_by_number(tech)) {
     return;
   }
-  
+
   if (tech != A_FUTURE
       && research_invention_state(research, tech) != TECH_PREREQS_KNOWN) {
     return;

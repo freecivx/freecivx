@@ -41,60 +41,83 @@ bool dio_get_type_json(struct data_in *din, enum data_type type, int *dest)
     fc__attribute((nonnull (3)));
 
 bool dio_get_uint8_json(struct connection *pc, struct data_in *din,
-                        const struct plocation *location, int *dest);
+                        const struct plocation *location, int *dest)
+    fc__attribute((nonnull (4)));
 bool dio_get_uint16_json(struct connection *pc, struct data_in *din,
-                         const struct plocation *location, int *dest);
+                         const struct plocation *location, int *dest)
+    fc__attribute((nonnull (4)));
 bool dio_get_uint32_json(struct connection *pc, struct data_in *din,
-                         const struct plocation *location, int *dest);
+                         const struct plocation *location, int *dest)
+    fc__attribute((nonnull (4)));
 
 bool dio_get_sint8_json(struct connection *pc, struct data_in *din,
-                        const struct plocation *location, int *dest);
+                        const struct plocation *location, int *dest)
+    fc__attribute((nonnull (4)));
 bool dio_get_sint16_json(struct connection *pc, struct data_in *din,
-                         const struct plocation *location, int *dest);
+                         const struct plocation *location, int *dest)
+    fc__attribute((nonnull (4)));
 bool dio_get_sint32_json(struct connection *pc, struct data_in *din,
-                         const struct plocation *location, int *dest);
+                         const struct plocation *location, int *dest)
+    fc__attribute((nonnull (4)));
 
 bool dio_get_bool8_json(struct connection *pc, struct data_in *din,
-                        const struct plocation *location, bool *dest);
+                        const struct plocation *location, bool *dest)
+    fc__attribute((nonnull (4)));
 bool dio_get_bool32_json(struct connection *pc, struct data_in *din,
-                         const struct plocation *location, bool *dest);
+                         const struct plocation *location, bool *dest)
+    fc__attribute((nonnull (4)));
 bool dio_get_ufloat_json(struct connection *pc, struct data_in *din,
                          const struct plocation *location,
-                         float *dest, int float_factor);
+                         float *dest, int float_factor)
+    fc__attribute((nonnull (4)));
 bool dio_get_sfloat_json(struct connection *pc, struct data_in *din,
                          const struct plocation *location,
-                         float *dest, int float_factor);
+                         float *dest, int float_factor)
+    fc__attribute((nonnull (4)));
 bool dio_get_memory_json(struct connection *pc, struct data_in *din,
                          struct plocation *location,
-                         void *dest, size_t dest_size);
+                         void *dest, size_t dest_size)
+    fc__attribute((nonnull (4)));
 bool dio_get_string_json(struct connection *pc, struct data_in *din,
                          const struct plocation *location,
-                         char *dest, size_t max_dest_size);
+                         char *dest, size_t max_dest_size)
+    fc__attribute((nonnull (4)));
 bool dio_get_estring_json(struct connection *pc, struct data_in *din,
                           const struct plocation *location,
-                          char *dest, size_t max_dest_size);
+                          char *dest, size_t max_dest_size)
+    fc__attribute((nonnull (4)));
 bool dio_get_cm_parameter_json(struct connection *pc, struct data_in *din,
                                struct plocation *location,
-                               struct cm_parameter *param);
+                               struct cm_parameter *param)
+    fc__attribute((nonnull (4)));
 bool dio_get_worklist_json(struct connection *pc, struct data_in *din,
                            struct plocation *location,
-                           struct worklist *pwl);
+                           struct worklist *pwl)
+    fc__attribute((nonnull (4)));
 bool dio_get_unit_order_json(struct connection *pc, struct data_in *din,
                              struct plocation *location,
-                             struct unit_order *order);
+                             struct unit_order *order)
+    fc__attribute((nonnull (4)));
 bool dio_get_requirement_json(struct connection *pc, struct data_in *din,
                               const struct plocation *location,
-                              struct requirement *preq);
+                              struct requirement *preq)
+    fc__attribute((nonnull (4)));
 bool dio_get_action_probability_json(struct connection *pc, struct data_in *din,
                                      const struct plocation *location,
-                                     struct act_prob *prob);
+                                     struct act_prob *prob)
+    fc__attribute((nonnull (4)));
 
+bool dio_get_arraylen_json(struct connection *pc, struct data_in *din,
+                           const struct plocation *location, int *dest)
+    fc__attribute((nonnull (4)));
 bool dio_get_uint8_vec8_json(struct connection *pc, struct data_in *din,
                              const struct plocation *location,
-                             int **values, int stop_value);
+                             int **values, int stop_value)
+    fc__attribute((nonnull (4)));
 bool dio_get_uint16_vec8_json(struct connection *pc, struct data_in *din,
                               const struct plocation *location,
-                              int **values, int stop_value);
+                              int **values, int stop_value)
+    fc__attribute((nonnull (4)));
 
 /* Should be a function but we need some macro magic. */
 #define DIO_BV_GET(pdin, location, bv) \
@@ -107,6 +130,8 @@ bool dio_get_uint16_vec8_json(struct connection *pc, struct data_in *din,
 /* puts */
 int dio_put_farray_json(struct json_data_out *dout,
                         const struct plocation *location, int size);
+int dio_put_object_json(struct json_data_out *dout,
+                        const struct plocation *location);
 
 int dio_put_type_json(struct json_data_out *dout, enum data_type type,
                       const struct plocation *location,
@@ -160,6 +185,8 @@ int dio_put_action_probability_json(struct json_data_out *dout,
                                     const struct plocation *location,
                                     const struct act_prob *prob);
 
+int dio_put_arraylen_json(struct json_data_out *dout,
+                          const struct plocation *location, int size);
 int dio_put_uint8_vec8_json(struct json_data_out *dout,
                             const struct plocation *location,
                             int *values, int stop_value);

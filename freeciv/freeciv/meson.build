@@ -1,14 +1,84 @@
+project('freeciv', ['c'],
+        meson_version: '>= 0.63.0',
+        version : run_command('fc_version', check : true).stdout(),
+        default_options: ['warning_level=1'])
 
-project('freeciv', ['c', 'cpp'], meson_version: '>= 0.57.0')
-
-c_compiler = meson.get_compiler('c')
-cxx_compiler = meson.get_compiler('cpp')
-
-if c_compiler.has_argument('-Wno-nonnull-compare')
-  add_global_arguments('-Wno-nonnull-compare', language : 'c')
+if get_option('audio') == 'sdl2' and get_option('clients').contains('sdl3')
+  error('''sdl3-client and sdl2 audio cannot be enabled simultaneously.
+To build both sdl2-client and sdl3-client with audio support,
+use separate build dirs.''')
 endif
 
-add_global_arguments('-fPIC', language : 'cpp')
+if get_option('audio') == 'sdl3' and get_option('clients').contains('sdl2')
+  error('''sdl2-client and sdl3 audio cannot be enabled simultaneously.
+To build both sdl2-client and sdl3-client with audio support,
+use separate build dirs.''')
+endif
+
+c_compiler = meson.get_compiler('c')
+
+b_root = meson.project_build_root()
+s_root = meson.project_source_root()
+
+if get_option('tools').contains('ruledit') or \
+   get_option('clients').contains('qt') or \
+   get_option('fcmp').contains('qt')
+  add_languages('cpp', native: false)
+  cxx_build = true
+  cxx_compiler = meson.get_compiler('cpp')
+else
+  cxx_build = false
+endif
+
+c_args = [
+  '-Wnested-externs'
+  ]
+
+c_cpp_args = [
+  '-Wmissing-declarations',
+  '-Wpointer-arith',
+  '-Wcast-align',
+  '-Wmissing-prototypes',
+  '-Wformat',
+  '-Wformat-security',
+  '-Wshadow',
+  '-Wold-style-declaration',
+  '-Wold-style-definition',
+  '-Wtype-limits',
+  '-Wimplicit-fallthrough'
+  ]
+
+cpp_args = [
+  '-Wno-deprecated-declarations',
+  '-fPIC',
+  '-Wtrailing-whitespace'
+  ]
+
+foreach arg : c_args
+  if c_compiler.has_argument(arg)
+    add_global_arguments(arg, language : 'c')
+  endif
+endforeach
+
+foreach arg : c_cpp_args
+  if c_compiler.has_argument(arg)
+    add_global_arguments(arg, language : 'c')
+  endif
+
+  if cxx_build
+    if cxx_compiler.has_argument(arg)
+      add_global_arguments(arg, language : 'cpp')
+    endif
+  endif
+endforeach
+
+if cxx_build
+  foreach arg: cpp_args
+    if cxx_compiler.has_argument(arg)
+      add_global_arguments(arg, language : 'cpp')
+    endif
+  endforeach
+endif
 
 host_system = host_machine.system()
 
@@ -17,6 +87,8 @@ mp_list_url = ''
 storage_dir = ''
 default_port = ''
 testmatic = ''
+dev_save_compat = ''
+homepage_url = '"https://www.freeciv.org/"'
 
 proj_def = get_option('project-definition')
 if proj_def != ''
@@ -34,6 +106,10 @@ if proj_def != ''
         default_port = item.substring(21)
       elif item.startswith('FREECIV_TESTMATIC')
         testmatic = item.substring(18)
+      elif item.startswith('FREECIV_DEV_SAVE_COMPAT')
+        dev_save_compat = item.substring(24)
+      elif item.startswith('FREECIV_HOMEPAGE')
+        homepage_url = '"' + item.substring(17) + '"'
       elif not item.startswith('#') and item != ''
         error('Unknown parameter ' + item + ' in project definition')
       endif
@@ -58,13 +134,20 @@ if default_port == ''
 endif
 priv_conf_data.set('DEFAULT_SOCK_PORT', default_port)
 
+priv_conf_data.set('HOMEPAGE_URL', homepage_url)
+
 if testmatic == 'yes'
   pub_conf_data.set('FREECIV_TESTMATIC', 1)
 elif testmatic != '' and testmatic != 'no'
   error('Unknown testmatic value ' + testmatic)
 endif
 
-pub_conf_data.set('FREECIV_AI_MOD_LAST', 3)
+if dev_save_compat == 'yes'
+  priv_conf_data.set('FREECIV_DEV_SAVE_COMPAT', 1)
+elif dev_save_compat != '' and dev_save_compat != 'no'
+  error('Unknown dev_save_compat value ' + dev_save_compat)
+endif
+
 priv_conf_data.set('BINDIR',
                    join_paths(get_option('prefix'), get_option('bindir')))
 
@@ -75,23 +158,23 @@ priv_conf_data.set('SYSCONFDIR',
 
 # Release cycle phases
 # See fc_version about proper values for these.
-priv_conf_data.set('DATASUBDIR', 'dev')
+datasubdir = 'dev'
+priv_conf_data.set('DATASUBDIR', datasubdir)
 priv_conf_data.set('IS_DEVEL_VERSION', 1)
 priv_conf_data.set('IS_FREEZE_VERSION', 0)
 priv_conf_data.set('IS_BETA_VERSION', 0)
 priv_conf_data.set('FREECIV_RELEASE_MONTH', 0)
-priv_conf_data.set('NEXT_STABLE_VERSION', '"3.3.0"')
+priv_conf_data.set('NEXT_STABLE_VERSION', '"3.4.0"')
 
 if host_machine.endian() == 'big'
   priv_conf_data.set('WORDS_BIGENDIAN', 1)
 endif
 
+priv_conf_data.set('SIZEOF_INT', c_compiler.sizeof('int'))
+
 if get_option('debug')
   priv_conf_data.set('FREECIV_DEBUG', 1)
   pub_conf_data.set('FREECIV_DEBUG', 1)
-  add_global_arguments(
-     '-Werror',
-     language: ['c', 'cpp'])
   add_global_arguments('-Wshadow', language: ['c'])
   if host_system == 'windows'
     # Qt headers have problems with dllimport attributes
@@ -101,6 +184,10 @@ if get_option('debug')
   endif
 else
   add_global_arguments('-DQT_NO_DEBUG', language : 'cpp')
+endif
+
+if get_option('buildtype') == 'release'
+  pub_conf_data.set('FREECIV_NDEBUG', 1)
 endif
 
 if host_system == 'windows'
@@ -124,8 +211,7 @@ pub_conf_data.set('FREECIV_STORAGE_DIR', '"' + storage_dir + '"')
 priv_conf_data.set('FREECIV_STORAGE_DIR', storage_dir)
 
 if host_system == 'windows'
-  priv_conf_data.set('LOCALEDIR',
-                     join_paths('.', get_option('datadir'), 'locale'))
+  default_localeprefix = '.'
 
   priv_conf_data.set('DEFAULT_DATA_PATH',
     '".;data;@FREECIV_STORAGE_DIR@/@DATASUBDIR@;@DATADIR@/freeciv"')
@@ -134,9 +220,7 @@ if host_system == 'windows'
   priv_conf_data.set('DEFAULT_SCENARIO_PATH',
     '".;data/scenarios;@FREECIV_STORAGE_DIR@/@DATASUBDIR@/scenarios;@FREECIV_STORAGE_DIR@/scenarios;@DATADIR@/freeciv/scenarios"')
 else
-  priv_conf_data.set('LOCALEDIR',
-                     join_paths(get_option('prefix'),
-                                get_option('datadir'), 'locale'))
+  default_localeprefix = get_option('prefix')
 
   priv_conf_data.set('DEFAULT_DATA_PATH',
     '".:data:@FREECIV_STORAGE_DIR@/@DATASUBDIR@:@DATADIR@/freeciv"')
@@ -146,27 +230,26 @@ else
     '".:data/scenarios:@FREECIV_STORAGE_DIR@/@DATASUBDIR@/scenarios:@FREECIV_STORAGE_DIR@/scenarios:@DATADIR@/freeciv/scenarios"')
 endif
 
-server_type = get_option('server')
+localeprefix = get_option('localeprefix')
 
-if server_type == 'freeciv-web'
-  pub_conf_data.set('FREECIV_WEB', 1)
-  server_binary_name = 'freeciv-web'
+if localeprefix == ''
+  priv_conf_data.set('LOCALEDIR', join_paths(default_localeprefix, get_option('localedir')))
 else
-  pub_conf_data.set('FREECIV_DELTA_PROTOCOL', 1)
-  server_binary_name = 'freeciv-server'
+  priv_conf_data.set('LOCALEDIR', join_paths(localeprefix, get_option('localedir')))
 endif
 
 if meson.is_cross_build()
-  cross_inc_str = meson.get_cross_property('cross_inc_path')
+  cross_inc_str = meson.get_external_property('cross_inc_path', '')
   cross_inc_path = [cross_inc_str]
-  cross_lib_path = [meson.get_cross_property('cross_lib_path')]
-  crosser = meson.get_cross_property('crosser')
+  cross_lib_path = [meson.get_external_property('cross_lib_path', '')]
+  crosser = meson.get_external_property('crosser', false)
 
   # emscripten build is always cross-build, so check it only here
   if c_compiler.compiles(
 '''#ifndef __EMSCRIPTEN__
   error fail
-#endif''')
+#endif''',
+  name: 'emscripten')
     emscripten = true
   else
     emscripten = false
@@ -179,26 +262,110 @@ else
   emscripten = false
 endif
 
+server_type = get_option('server')
+
+if server_type == 'freeciv-web'
+  pub_conf_data.set('FREECIV_WEB', 1)
+  server_binary_name = 'freeciv-web'
+else
+  pub_conf_data.set('FREECIV_DELTA_PROTOCOL', 1)
+  server_binary_name = 'freeciv-server'
+endif
+
+if server_type == 'disabled'
+  pub_conf_data.set('FREECIV_AI_MOD_LAST', 1)
+
+  priv_conf_data.set('AI_MOD_STATIC_STUB', 1)
+  priv_conf_data.set('AI_MOD_DEFAULT', '"stub"')
+  dynai_dep = []
+else
+  aimodcount = 0
+  aisrc = []
+
+  if get_option('dynaimod')
+    priv_conf_data.set('AI_MODULES', 1)
+    priv_conf_data.set('AI_MODULEDIR',
+                       '"' + join_paths(get_option('libdir'), 'fcai') + '"')
+    dynai_dep = c_compiler.find_library('ltdl', dirs: cross_lib_path)
+
+    # Reserve slots for two dynamic modules
+    aimodcount = aimodcount + 2
+  else
+    dynai_dep = []
+  endif
+
+  if get_option('aimodules').contains('classic')
+    priv_conf_data.set('AI_MOD_STATIC_CLASSIC', 1)
+    priv_conf_data.set('AI_MOD_DEFAULT', '"classic"')
+    aimodcount = aimodcount + 1
+    aisrc = [ aisrc, 'ai/classic/classicai.c' ]
+  endif
+  if get_option('aimodules').contains('tex')
+    priv_conf_data.set('AI_MOD_STATIC_TEX', 1)
+    if aimodcount == 0
+      priv_conf_data.set('AI_MOD_DEFAULT', '"tex"')
+    endif
+    aimodcount = aimodcount + 1
+    aisrc = [ aisrc,
+              'ai/tex/texai.c',
+              'ai/tex/texaicity.c',
+              'ai/tex/texaimsg.c',
+              'ai/tex/texaiplayer.c',
+              'ai/tex/texaiworld.c' ]
+  endif
+  if get_option('aimodules').contains('stub')
+    priv_conf_data.set('AI_MOD_STATIC_STUB', 1)
+    if aimodcount == 0
+      priv_conf_data.set('AI_MOD_DEFAULT', '"stub"')
+    endif
+    aimodcount = aimodcount + 1
+    aisrc = [ aisrc, 'ai/stub/stubai.c' ]
+  endif
+
+  if aimodcount == 0
+    error('No AI modules enabled, but at least one needed')
+  endif
+  pub_conf_data.set('FREECIV_AI_MOD_LAST', aimodcount)
+endif
+
+if get_option('appimage')
+  pub_conf_data.set('FREECIV_APPIMAGE', 1)
+endif
+
 qtver = get_option('qtver')
+
+if c_compiler.compiles('''
+#include <threads.h>
+int main(void) { return thrd_create((void *)0, (void *)0, (void *)0); }''',
+  name: 'C11 threads')
+  pub_conf_data.set('FREECIV_HAVE_C11_THREADS', 1)
+  threads='c11'
+else
+  threads=''
+endif
 
 # From this, at least the _WIN32_WINNT must be set before
 # trying to find the functions.
 if host_system == 'windows'
   pub_conf_data.set('FREECIV_MSWINDOWS', 1)
-  pub_conf_data.set('FREECIV_HAVE_TINYCTHR', 1)
   pub_conf_data.set('FREECIV_HAVE_WINSOCK', 1)
   pub_conf_data.set('FREECIV_SOCKET_ZERO_NOT_STDIN', 1)
   priv_conf_data.set('ALWAYS_ROOT', 1)
+
+  if threads == ''
+    pub_conf_data.set('FREECIV_HAVE_TINYCTHR', 1)
+    threads='tinycthread'
+  endif
 
   min_win_ver = get_option('min-win-ver')
 
   if min_win_ver != ''
     add_global_arguments('-D_WIN32_WINNT=' + min_win_ver, language: ['c', 'cpp'])
+  else
+    add_global_arguments('-D_WIN32_WINNT=0x0A00', language : ['c', 'cpp'])
   endif
 
-  if get_option('ruledit') or \
-     get_option('clients').contains('qt') or \
-     get_option('fcmp').contains('qt')
+  if cxx_build
     if get_option('debug')
       # Qt flags have malformed macro definition triggering this error
       # Also C compiler affected as the macro is on its commandline too
@@ -209,15 +376,6 @@ if host_system == 'windows'
         add_global_arguments('-Wno-c99-extensions', language : 'cpp')
       endif
     endif
-    if min_win_ver == ''
-      if qtver == 'qt6' or qtver == 'qt6x'
-        add_global_arguments('-D_WIN32_WINNT=0x0A00', language : ['c', 'cpp'])
-      else
-        add_global_arguments('-D_WIN32_WINNT=0x0603', language : ['c', 'cpp'])
-      endif
-    endif
-  elif min_win_ver == ''
-    add_global_arguments('-D_WIN32_WINNT=0x0603', language : ['c', 'cpp'])
   endif
 
   net_dep = c_compiler.find_library('ws2_32')
@@ -230,12 +388,15 @@ else
   # (that's checked separately)
   priv_conf_data.set('HAVE_WORKING_VSNPRINTF', 1)
 
+  if threads == ''
+    pub_conf_data.set('FREECIV_HAVE_PTHREAD', 1)
+    threads='pthread'
+  endif
+
   if host_system == 'haiku'
     net_dep = c_compiler.find_library('network')
-    pub_conf_data.set('FREECIV_HAVE_PTHREAD', 1)
     priv_conf_data.set('ALWAYS_ROOT', 1)
   else
-    pub_conf_data.set('FREECIV_HAVE_PTHREAD', 1)
     net_dep = []
   endif
 endif
@@ -245,7 +406,6 @@ pub_headers = [
   'inttypes.h',
   'stdint.h',
   'sys/types.h',
-  'unistd.h',
   'sys/time.h',
   'sys/socket.h',
   'sys/select.h',
@@ -257,14 +417,12 @@ pub_headers = [
 
 priv_headers = [
   'arpa/inet.h',
-  'bzlib.h',
   'direct.h',
   'dlfcn.h',
   'execinfo.h',
   'fcntl.h',
   'time.h',
   'libgen.h',
-  'zstd.h',
   'memory.h',
   'netdb.h',
   'pwd.h',
@@ -369,16 +527,27 @@ priv_functions = [
   '_strcoll',
   '_stricoll',
   'fcntl',
-  'ioctl',
-  'vsnprintf',
-  'va_copy',
-  'localtime_r'
+  'ioctl'
   ]
 
 foreach func : priv_functions
   if c_compiler.has_function(func,
-                             dependencies: net_dep)
+                             dependencies: net_dep,
+                             args: ['-O'])
     priv_conf_data.set('HAVE_' + func.underscorify().to_upper(), 1)
+  endif
+endforeach
+
+priv_liblua_functions = [
+  'localtime_r'
+  ]
+
+foreach func : priv_liblua_functions
+  if c_compiler.has_function(func,
+                             dependencies: net_dep,
+                             args: ['-O'])
+    priv_conf_data.set('HAVE_' + func.underscorify().to_upper(), 1)
+    liblua_conf_data.set('HAVE_' + func.underscorify().to_upper(), 1)
   endif
 endforeach
 
@@ -389,36 +558,41 @@ liblua_functions = [
   '_longjmp',
   '_setjmp',
   'gmtime_r',
-  'localtime_r',
   'fseeko'
   ]
 
 foreach func : liblua_functions
   if c_compiler.has_function(func,
-                             dependencies: net_dep)
+                             dependencies: net_dep,
+                             args: ['-O'])
     liblua_conf_data.set('HAVE_' + func.underscorify().to_upper(), 1)
   endif
 endforeach
 
 if c_compiler.has_header('unistd.h')
+  pub_conf_data.set('FREECIV_HAVE_UNISTD_H', 1)
+  priv_conf_data.set('HAVE_UNISTD_H', 1)
   liblua_conf_data.set('FREECIV_HAVE_UNISTD_H', 1)
 endif
 
-if c_compiler.has_function('BCryptGenRandom', args: '-lbcrypt')
+if c_compiler.has_function('BCryptGenRandom', args: ['-lbcrypt', '-O'])
   bcrypt_lib_dep = c_compiler.find_library('bcrypt')
   priv_conf_data.set('HAVE_BCRYPTGENRANDOM', 1)
 else
   bcrypt_lib_dep = []
 endif
 
-if c_compiler.has_function('getaddrinfo', dependencies: net_dep)
+if c_compiler.has_function('getaddrinfo',
+                           dependencies: net_dep,
+                           args: ['-O'])
   priv_conf_data.set('HAVE_GETADDRINFO', 1)
   pub_conf_data.set('FREECIV_IPV6_SUPPORT', 1)
 else
   # Maybe it exist as a macro instead?
   if c_compiler.compiles(net_incl + '''
 int main(void) { getaddrinfo(NULL, NULL, NULL, NULL); }''',
-  include_directories: include_directories(cross_inc_path))
+  include_directories: include_directories(cross_inc_path),
+  name: 'getaddrinfo() as a macro')
     priv_conf_data.set('HAVE_GETADDRINFO', 1)
     pub_conf_data.set('FREECIV_IPV6_SUPPORT', 1)
   else
@@ -427,13 +601,15 @@ int main(void) { getaddrinfo(NULL, NULL, NULL, NULL); }''',
 endif
 
 if c_compiler.has_header('libcharset.h', args: header_arg)
-  if c_compiler.has_function('locale_charset')
+  if c_compiler.has_function('locale_charset', args: ['-O'])
     priv_conf_data.set('HAVE_LIBCHARSET', 1)
     charset_dep = []
   else
     charset_dep = c_compiler.find_library('charset', dirs: cross_lib_path,
                                           required: false)
-    if charset_dep.found() and c_compiler.has_function('locale_charset', dependencies: charset_dep)
+    if charset_dep.found() and c_compiler.has_function('locale_charset',
+                                                       dependencies: charset_dep,
+                                                       args: ['-O'])
       priv_conf_data.set('HAVE_LIBCHARSET', 1)
     else
       charset_dep = []
@@ -449,13 +625,27 @@ if rl_req != 'false'
                                          required:false)
 
   if readline_dep.found() and c_compiler.has_function('rl_completion_suppress_append',
-                                                      dependencies: readline_dep)
+                                                      dependencies: readline_dep,
+                                                      args: ['-O'])
     pub_conf_data.set('FREECIV_HAVE_LIBREADLINE', 1)
   elif rl_req == 'true'
     error('Readline support requested but not found.')
   endif
 else
   readline_dep = []
+endif
+
+if c_compiler.has_header('bzlib.h', args: header_arg)
+  priv_conf_data.set('HAVE_BZLIB_H', 1)
+
+  bz2_dep = c_compiler.find_library('bz2', dirs: cross_lib_path,
+                                    required:false)
+
+  if bz2_dep.found()
+    pub_conf_data.set('FREECIV_HAVE_LIBBZ2', 1)
+  endif
+else
+  bz2_dep = []
 endif
 
 if c_compiler.has_header('lzma.h', args: header_arg)
@@ -471,47 +661,74 @@ else
   lzma_dep = []
 endif
 
-zstd_dep = c_compiler.find_library('zstd', dirs: cross_lib_path,
-                                   required:false)
+if c_compiler.has_header('zstd.h', args: header_arg)
+  priv_conf_data.set('HAVE_ZSTD_H', 1)
 
-if zstd_dep.found()
-  pub_conf_data.set('FREECIV_HAVE_LIBZSTD', 1)
-endif
+  zstd_dep = c_compiler.find_library('zstd', dirs: cross_lib_path,
+                                     required:false)
 
-mw_req = get_option('mwand')
-if mw_req != 'false'
-  mw_dep = dependency('MagickWand', version : '>= 7.0', required : false)
-  if mw_dep.found()
-    pub_conf_data.set('FREECIV_MWAND7', '1')
-  else
-    mw_dep = dependency('MagickWand', version : '>= 6.0', required : false)
-  endif
-  if mw_dep.found()
-    priv_conf_data.set('HAVE_MAPIMG_MAGICKWAND', '1')
-  elif mw_req == 'true'
-    error('MagickWand support requested but not found.')
+  if zstd_dep.found()
+    pub_conf_data.set('FREECIV_HAVE_LIBZSTD', 1)
   endif
 else
-  mw_dep = []
+  zstd_dep = []
 endif
 
 if c_compiler.compiles('''
-#include <stddef>
-int main(void) { int *var = nullptr; return 0; }''',
-  include_directories: include_directories(cross_inc_path))
+#include <assert.h>
+int main(void) { static_assert(1, "1 is not true"); }''',
+  name: 'c23 Static Assert')
+  pub_conf_data.set('FREECIV_C23_STATIC_ASSERT', 1)
+endif
+
+if c_compiler.compiles('''
+#include <assert.h>
+int main(void) { _Static_assert(1, "1 is not true"); }''',
+  name: 'c11 Static Assert')
+  pub_conf_data.set('FREECIV_C11_STATIC_ASSERT', 1)
+endif
+
+if cxx_build and cxx_compiler.compiles('''
+#include <assert.h>
+int main(void) { static_assert(1, "1 is not true"); }''',
+  name: 'c++11 Static Assert')
+  pub_conf_data.set('FREECIV_CXX11_STATIC_ASSERT', 1)
+endif
+
+if c_compiler.compiles('''
+#include <assert.h>
+#include <string.h>
+static const char str[] = "12345";
+int main(void) { _Static_assert(5 == strlen(str), "Wrong length"); }''',
+  name: 'strlen() in static assert')
+  pub_conf_data.set('FREECIV_STATIC_STRLEN', 1)
+endif
+
+# Check for c23 nullptr that can be passed as sentinel
+if c_compiler.compiles('''
+#include <stddef.h>
+void sentinental(...) __attribute__((__sentinel__(0)));
+void caller(void) { sentinental(nullptr); }''',
+  name: 'c23 nullptr',
+  include_directories: include_directories(cross_inc_path),
+  args: ['-Wformat'])
   pub_conf_data.set('FREECIV_HAVE_C23_NULLPTR', 1)
 endif
 
-if cxx_compiler.compiles('''
+if cxx_build and cxx_compiler.compiles('''
 #include <cstddef>
 int main(void) { int *var = nullptr; return 0; }''',
+  name: 'cxx nullptr',
   include_directories: include_directories(cross_inc_path))
   pub_conf_data.set('FREECIV_HAVE_CXX_NULLPTR', 1)
 endif
 
 if emscripten
   icu_dep = []
+  zlib_dep = []
   syslua = 'false'
+
+  priv_conf_data.set('ALWAYS_ROOT', 1)
 
   emscripten_use_args = [
      '-s', 'USE_ICU=1',
@@ -527,65 +744,75 @@ if emscripten
      '-s', 'TOTAL_MEMORY=64MB',
      language : [ 'c', 'cpp'])
 else
-  priv_conf_data.set('HAVE_FCDB', 1)
-  priv_conf_data.set('HAVE_FCDB_SQLITE3', 1)
+  zlib_dep = c_compiler.find_library('z', dirs: cross_lib_path)
+  if not c_compiler.has_header('zlib.h', args: header_arg)
+    error('Mandatory header zlib.h not found!')
+  endif
   icu_dep = dependency('icu-uc')
   syslua = get_option('syslua')
-  lua_dep_tmp = dependency('lua-5.4', required:false)
+  if syslua != 'false'
+    lua_dep_tmp = dependency('lua-5.5', 'lua-55', 'lua55', 'lua5.5', required:false)
+  endif
 endif
 
-if syslua != 'false' and lua_dep_tmp.found()
-  lua_inc_path = []
-  lua_sources = []
-  lua_dep = lua_dep_tmp
-elif syslua == 'true'
-  error('Syslua requested but not found.')
+# Set unconditionally, as it was checked as hard requirement
+pub_conf_data.set('FREECIV_HAVE_LIBZ', 1)
+
+mw_req = get_option('mwand')
+mw_extra_dep = []
+if mw_req != 'false'
+  mw_dep = dependency('MagickWand', version : '>= 7.0', required : false)
+  if mw_dep.found()
+    pub_conf_data.set('FREECIV_MWAND7', '1')
+    mwand_incl = '#include <MagickWand/MagickWand.h>'
+  else
+    mw_dep = dependency('MagickWand', version : '>= 6.0', required : false)
+    if not mw_dep.found()
+      mw_dep = dependency('MagickWand-6.Q16HDRI', required: false)
+    endif
+    if mw_dep.found()
+      mwand_incl = '#include <wand/MagickWand.h>'
+      mwand_incl = '#include <wand/MagickWand.h>'
+    endif
+  endif
+  if mw_dep.found()
+    if not c_compiler.links(mwand_incl + '''
+int main(void) { MagickWandGenesis(); }''',
+    name: 'mwand links',
+    dependencies: mw_dep)
+      mw_extra_dep = [c_compiler.find_library('urlmon', dirs: cross_lib_path,
+                                              required: false),
+                      c_compiler.find_library('gdi32', dirs: cross_lib_path,
+                                              required: false)]
+      if c_compiler.links(mwand_incl + '''
+int main(void) { MagickWandGenesis(); }''',
+      name: 'mwand links',
+      dependencies: [mw_dep, mw_extra_dep, zlib_dep, lzma_dep, net_dep])
+        priv_conf_data.set('HAVE_MAPIMG_MAGICKWAND', '1')
+      elif mw_req == 'true'
+        error('MagickWand support requested but not found.')
+      else
+        mw_dep = []
+        mw_extra_dep = []
+      endif
+    else
+      priv_conf_data.set('HAVE_MAPIMG_MAGICKWAND', '1')
+    endif
+  elif mw_req == 'true'
+    error('MagickWand support requested but not found.')
+  endif
 else
-  lua_inc_path = 'dependencies/lua-5.4/src'
-  lua_sources = [
-    'dependencies/lua-5.4/src/lapi.c',
-    'dependencies/lua-5.4/src/lauxlib.c',
-    'dependencies/lua-5.4/src/lbaselib.c',
-    'dependencies/lua-5.4/src/lcode.c',
-    'dependencies/lua-5.4/src/lcorolib.c',
-    'dependencies/lua-5.4/src/lctype.c',
-    'dependencies/lua-5.4/src/ldblib.c',
-    'dependencies/lua-5.4/src/ldebug.c',
-    'dependencies/lua-5.4/src/ldo.c',
-    'dependencies/lua-5.4/src/ldump.c',
-    'dependencies/lua-5.4/src/lfunc.c',
-    'dependencies/lua-5.4/src/lgc.c',
-    'dependencies/lua-5.4/src/linit.c',
-    'dependencies/lua-5.4/src/liolib.c',
-    'dependencies/lua-5.4/src/llex.c',
-    'dependencies/lua-5.4/src/lmathlib.c',
-    'dependencies/lua-5.4/src/lmem.c',
-    'dependencies/lua-5.4/src/loadlib.c',
-    'dependencies/lua-5.4/src/lobject.c',
-    'dependencies/lua-5.4/src/lopcodes.c',
-    'dependencies/lua-5.4/src/loslib.c',
-    'dependencies/lua-5.4/src/lparser.c',
-    'dependencies/lua-5.4/src/lstate.c',
-    'dependencies/lua-5.4/src/lstring.c',
-    'dependencies/lua-5.4/src/lstrlib.c',
-    'dependencies/lua-5.4/src/ltable.c',
-    'dependencies/lua-5.4/src/ltablib.c',
-    'dependencies/lua-5.4/src/ltm.c',
-    'dependencies/lua-5.4/src/lundump.c',
-    'dependencies/lua-5.4/src/lutf8lib.c',
-    'dependencies/lua-5.4/src/lvm.c',
-    'dependencies/lua-5.4/src/lzio.c',
-  ]
-  lua_dep = dependency('', required:false)
+  mw_dep = []
 endif
 
 if c_compiler.compiles('''#include <netinet/in.h>
 int main(void) { struct ip_mreqn req; req.imr_ifindex = 0; return 0; }''',
+  name: 'ip_mreqn',
   include_directories: include_directories(cross_inc_path))
   priv_conf_data.set('HAVE_IP_MREQN', 1)
 endif
 
-if c_compiler.has_function('iconv', args: header_arg)
+if c_compiler.has_function('iconv', args: [header_arg, '-O'])
   priv_conf_data.set('HAVE_ICONV', 1)
   iconv_lib_dep = []
 elif c_compiler.has_header_symbol('iconv.h', 'iconv', args: header_arg)
@@ -601,6 +828,7 @@ endif
 if c_compiler.compiles('''#include <stddef.h>
 #include <iconv.h>
 int main(void) { iconv_t cd; const char **c; iconv(cd, c, NULL, NULL); return 0; }''',
+  name: 'iconv const',
   include_directories: include_directories(cross_inc_path))
   priv_conf_data.set('ICONV_CONST', 'const')
 else
@@ -619,6 +847,7 @@ endif
 
 potential_size_t_formats = [ '%zu', '%ld', '%lld', '%I64d', '%I32d' ]
 
+size_t_f = ''
 foreach format : potential_size_t_formats
   if c_compiler.compiles('''#include <stdio.h>
 #if defined(__GNUC__)
@@ -628,12 +857,18 @@ void fr(const char *form, ...)
 #define fr(_a_,_b_) printf(_a_,_b_)
 #endif
 int main(void) { size_t var = 0; fr("''' + format + '''", var); return 0; }''',
+  name: 'size_t printf as ' + format,
   include_directories: include_directories(cross_inc_path),
-  args: ['-Werror', '-Wall'])
+  args: ['-Werror', '-Wall', '-O'])
     priv_conf_data.set('SIZE_T_PRINTF', '"' + format + '"')
+    size_t_f = format
     break
   endif
 endforeach
+
+if size_t_f == ''
+  error('Cannot find correct printf format specifier for size_t')
+endif
 
 if c_compiler.compiles('''int main(void) { __builtin_unreachable(); return 0; }''',
   include_directories: include_directories(cross_inc_path),
@@ -642,24 +877,25 @@ if c_compiler.compiles('''int main(void) { __builtin_unreachable(); return 0; }'
     pub_conf_data.set('FREECIV_HAVE_UNREACHABLE', 1)
 endif
 
-if get_option('audio') or get_option('clients').contains('sdl2')
+if get_option('audio') == 'sdl2' or get_option('clients').contains('sdl2')
   if host_system == 'windows'
     sdl2main_dep = [c_compiler.find_library('mingw32', dirs: cross_lib_path),
                     c_compiler.find_library('SDL2main', dirs: cross_lib_path),
-                    c_compiler.find_library('SDL2', dirs: cross_lib_path)]
+                    dependency('SDL2')]
   else
     if emscripten
       emscripten_sdl2_args = [
         '-s', 'USE_SDL=2'
       ]
 
-      if get_option('audio')
+      if get_option('audio') == 'sdl2'
         emscripten_sdl2_args += [ '-s', 'USE_SDL_MIXER=2' ]
       endif
 
       if get_option('clients').contains('sdl2')
         emscripten_sdl2_args += [
           '-s', 'USE_SDL_IMAGE=2',
+          '-s', 'SDL2_IMAGE_FORMATS=["png"]',
           '-s', 'USE_SDL_TTF=2',
           '-s', 'USE_SDL_GFX=2'
         ]
@@ -669,31 +905,68 @@ if get_option('audio') or get_option('clients').contains('sdl2')
       add_global_link_arguments(emscripten_sdl2_args, language: ['c', 'cpp'])
       sdl2main_dep = []
     else
-      sdl2main_dep = [c_compiler.find_library('SDL2', dirs: cross_lib_path)]
+      sdl2main_dep = [dependency('SDL2')]
     endif
   endif
 endif
 
-if qtver == 'qt5'
-  add_global_arguments('-DQT_DISABLE_DEPRECATED_BEFORE=0x050f00', language : 'cpp')
-  priv_conf_data.set('FC_QT5_MODE', 1)
-  qt_opts = []
-elif qtver == 'qt6x'
-  add_global_arguments('-DQT_DISABLE_DEPRECATED_BEFORE=0x060400', language : 'cpp')
+if get_option('audio') == 'sdl3' or get_option('clients').contains('sdl3')
+  if host_system == 'windows'
+    sdl3main_dep = [c_compiler.find_library('mingw32', dirs: cross_lib_path),
+                    dependency('sdl3')]
+  else
+    if emscripten
+      emscripten_sdl3_args = [
+        '-s', 'USE_SDL=3'
+      ]
+
+      if get_option('audio') == 'sdl3'
+        emscripten_sdl3_args += [ '-s', 'USE_SDL_MIXER=3' ]
+      endif
+
+      if get_option('clients').contains('sdl3')
+        emscripten_sdl3_args += [
+          '-s', 'USE_SDL_IMAGE=3',
+          '-s', 'USE_SDL_TTF=3',
+          '-s', 'USE_SDL_GFX=3'
+        ]
+      endif
+
+      add_global_arguments(emscripten_sdl3_args, language: ['c', 'cpp'])
+      add_global_link_arguments(emscripten_sdl3_args, language: ['c', 'cpp'])
+      sdl3main_dep = []
+    else
+      sdl3main_dep = [dependency('sdl3')]
+    endif
+  endif
+endif
+
+if qtver == 'qt6x'
+  qt_minver = '0x060900'
+  qt_vercheck = '6.9'
+  qt_modename = 'Qt6x'
+  add_global_arguments('-DQT_DISABLE_DEPRECATED_BEFORE=' + qt_minver, language : 'cpp')
+  priv_conf_data.set('FC_QT6X_MODE', 1)
   qt_opts = 'cpp_std=c++17'
 else
-  add_global_arguments('-DQT_DISABLE_DEPRECATED_BEFORE=0x060000', language : 'cpp')
+  qt_minver = '0x060400'
+  qt_vercheck = '6.4'
+  qt_modename = 'Qt6'
+  add_global_arguments('-DQT_DISABLE_DEPRECATED_BEFORE=' + qt_minver, language : 'cpp')
   qt_opts = 'cpp_std=c++17'
 endif
 
-if get_option('audio')
+if get_option('audio') != 'none'
   priv_conf_data.set('AUDIO_SDL', 1)
 
   if emscripten
     audio_dep = []
+  elif get_option('audio') == 'sdl3'
+    audio_sdl3_dep = dependency('sdl3-mixer')
+    audio_dep = [sdl3main_dep, audio_sdl3_dep]
+    priv_conf_data.set('AUDIO_SDL3', 1)
   else
-    audio_sdl2_dep = c_compiler.find_library('SDL2_mixer',
-                                             dirs: cross_lib_path)
+    audio_sdl2_dep = dependency('SDL2_mixer')
     audio_dep = [sdl2main_dep, audio_sdl2_dep]
   endif
 
@@ -732,16 +1005,9 @@ else
 endif
 
 if emscripten
-  sqlite3_dep = []
-  sqlite3_src = []
   curl_dep = []
   m_dep = []
 else
-  sqlite3_dep = c_compiler.find_library('sqlite3', dirs: cross_lib_path)
-  sqlite3_src = [
-    'dependencies/luasql/src/luasql.c',
-    'dependencies/luasql/src/ls_sqlite3.c',
-  ]
   curl_dep = c_compiler.find_library('curl', dirs: cross_lib_path)
   m_dep = c_compiler.find_library('m', dirs: cross_lib_path)
 endif
@@ -751,12 +1017,62 @@ if not emscripten
 #include <stddef.h>
 #include <curl/curl.h>
 int main(void) { curl_mime *mime = curl_mime_init(NULL); }''',
+  name: 'curl mime API',
   include_directories: include_directories(cross_inc_path)
   )
     priv_conf_data.set('HAVE_CURL_MIME_API', 1)
   else
     error('Too old libcurl version - does not support mime API')
   endif
+endif
+
+if not emscripten
+  sqlite3_dep = c_compiler.find_library('sqlite3', dirs: cross_lib_path)
+else
+  sqlite3_dep = []
+endif
+
+fcdb = false
+fcdb_src = []
+fcdb_dep = []
+
+if get_option('fcdb').contains('sqlite3')
+  fcdb = true
+  priv_conf_data.set('HAVE_FCDB_SQLITE3', 1)
+  fcdb_src = [ fcdb_src,
+    'dependencies/luasql/src/ls_sqlite3.c',
+  ]
+  fcdb_dep = [ fcdb_dep, sqlite3_dep ]
+endif
+
+if get_option('fcdb').contains('mariadb')
+  fcdb = true
+  priv_conf_data.set('HAVE_FCDB_MYSQL', 1)
+  fcdb_src = [ fcdb_src,
+    'dependencies/luasql/src/ls_mysql.c',
+  ]
+  mdb_dep = dependency('mariadb', required: false)
+  if not mdb_dep.found()
+    mdb_dep = dependency('libmariadb')
+  endif
+  fcdb_dep = [ fcdb_dep, mdb_dep ]
+endif
+
+if get_option('fcdb').contains('odbc')
+  fcdb = true
+  priv_conf_data.set('HAVE_FCDB_ODBC', 1)
+  fcdb_src = [ fcdb_src,
+    'dependencies/luasql/src/ls_odbc.c',
+  ]
+  fcdb_dep = [ fcdb_dep, dependency('odbc') ]
+endif
+
+if fcdb
+  if emscripten
+    error('FCDB not supported on emscripten builds.')
+  endif
+  priv_conf_data.set('HAVE_FCDB', 1)
+  fcdb_src = [ 'dependencies/luasql/src/luasql.c', fcdb_src ]
 endif
 
 if get_option('gitrev')
@@ -767,14 +1083,40 @@ if crosser
   pub_conf_data.set('FREECIV_CROSSER', 1)
 endif
 
-if cxx_compiler.compiles('''
+svgflags = get_option('svgflags')
+if svgflags
+  pub_conf_data.set('FREECIV_SVG_FLAGS', 1)
+endif
+
+if cxx_build and cxx_compiler.compiles('''
 class me {
 void top(); };
-void me::top() { [=, this]() {}; };
+void me::top() { (void) [=, this]() { this->top(); }; };
 ''',
      name: 'C++20 capture this',
      args: ['-Werror', '-Wall'])
   pub_conf_data.set('FREECIV_HAVE_CXX20_CAPTURE_THIS', 1)
+endif
+
+if not meson.is_cross_build()
+  zbm = c_compiler.run('''
+#include <stdlib.h>
+int main()
+{
+  void *allocation = malloc(0);
+
+  if (allocation != NULL) {
+    free(allocation);
+  }
+
+  return (allocation == NULL);
+}''',
+       name: 'zero-byte malloc()',
+       args: ['-Werror', '-Wall'])
+
+  if zbm.returncode() == 0
+    priv_conf_data.set('MALLOC_ZERO_OK', 1)
+  endif
 endif
 
 configure_file(input : 'gen_headers/meson_fc_config.h.in',
@@ -787,6 +1129,39 @@ configure_file(input : 'gen_headers/meson_liblua_config.h.in',
                output : 'liblua_config.h',
                configuration: liblua_conf_data)
 
+man_pages = [
+  'freeciv',
+  'freeciv-client',
+  'freeciv-manual',
+  'freeciv-modpack',
+  'freeciv-ruledit',
+  'freeciv-ruleup',
+  'freeciv-server'
+  ]
+
+man_links = [
+  'freeciv-gtk3.22',
+  'freeciv-gtk4',
+  'freeciv-sdl2',
+  'freeciv-sdl3',
+  'freeciv-qt',
+  'freeciv-mp-gtk3',
+  'freeciv-mp-gtk4',
+  'freeciv-mp-qt',
+  'freeciv-mp-cli'
+  ]
+
+foreach manp : man_pages
+  man_conf_data = configuration_data()
+  man_conf_data.set('HOMEPAGE_URL', '"' + homepage_url + '"')
+  man_conf_data.set('BUG_URL', '"https://redmine.freeciv.org/projects/freeciv"')
+  man_conf_data.set('MAIL_ADDRESS', '"freeciv-dev at freelists.org"')
+  man_conf_data.set('DATASUBDIR', '"' + datasubdir + '"')
+  configure_file(input : 'doc/man/' + manp + '.6.in',
+                 output : manp + '.6',
+                 configuration : man_conf_data)
+endforeach
+
 add_global_arguments('-DHAVE_CONFIG_H',
                      language: ['c', 'cpp'])
 
@@ -798,8 +1173,17 @@ endif
 
 gen_packets_args = get_option('gen-packets-args')
 
-python_exe = find_program('python3')
+python_exe = find_program(get_option('python'))
 sh_exe = find_program('sh')
+gzip_exe = find_program('gzip')
+
+if syslua != 'false' and lua_dep_tmp.found()
+  lua_inc_path = []
+elif syslua == 'true'
+  error('Syslua requested but not found.')
+else
+  lua_inc_path = 'dependencies/lua-5.5/src'
+endif
 
 common_inc = include_directories(cross_inc_path,
   lua_inc_path, 'dependencies/luasql/src', 'dependencies/tinycthread',
@@ -808,13 +1192,17 @@ common_inc = include_directories(cross_inc_path,
   'common/aicore')
 
 server_inc = [common_inc, include_directories('server', 'server/advisors',
-              'server/scripting', 'server/generator', 'server/savegame',
-              'ai', 'ai/classic')]
+              'server/scripting', 'server/generator', 'server/ruleset',
+              'server/savegame', 'ai', 'ai/classic')]
+
+client_inc = [common_inc, include_directories('client', 'client/include',
+              'client/luascript', 'client/agents')]
 
 tool_inc = [server_inc, include_directories('tools/ruleutil', 'tools/shared')]
 
 runwrap = custom_target('runwrap', output: 'run.sh',
-              command: [sh_exe, files('bootstrap/generate_meson_run.sh'), '@OUTPUT@'],
+              command: [sh_exe, files('bootstrap/generate_meson_run.sh'),
+                        '@OUTPUT@', storage_dir, datasubdir],
               depend_files: files('bootstrap/generate_meson_run.sh'),
               build_by_default: true)
 
@@ -824,19 +1212,46 @@ verhdr = custom_target('verhdr', output: 'version_gen.h',
 
 ls_core = custom_target('langstat_core', output: 'langstat_core.txt',
               command: [sh_exe, files('bootstrap/generate_langstat.sh'), 'core',
-                        meson.project_source_root(), meson.project_build_root()])
+                        s_root, b_root])
 
 ls_nations = custom_target('langstat_nations', output: 'langstat_nations.txt',
                command: [sh_exe, files('bootstrap/generate_langstat.sh'), 'nations',
-                          meson.project_source_root(), meson.project_build_root()])
+                         s_root, b_root])
 
 ls_ruledit = custom_target('langstat_ruledit', output: 'langstat_ruledit.txt',
                 command: [sh_exe, files('bootstrap/generate_langstat.sh'), 'ruledit',
-                          meson.project_source_root(), meson.project_build_root()])
+                          s_root, b_root])
 
 specenum = custom_target('specenum_gen.h', output: 'specenum_gen.h',
                          command: [python_exe, files('utility/generate_specenum.py'),
                                    '@OUTPUT@'])
+
+enum_defs = {
+  'common': {
+    'actions_enums': ['actions_enums.def', 'actions_enums_gen.h'],
+    'city_enums': ['city_enums.def', 'city_enums_gen.h'],
+    'effects_enums': ['effects_enums.def', 'effects_enums_gen.h'],
+    'fc_types_enums': ['fc_types_enums.def', 'fc_types_enums_gen.h'],
+    'terrain_enums': ['terrain_enums.def', 'terrain_enums_gen.h'],
+  },
+  'manual': {
+    'manual_enums': ['manual_enums.def', 'manual_enums_gen.h'],
+  }
+}
+
+enum_targets = {}
+foreach group, defs : enum_defs
+  tgts = []
+  foreach name, paths : defs
+    tgts += custom_target(name,
+                          input: join_paths('gen_headers/enums', paths[0]),
+                          output: paths[1],
+                          command: [python_exe, files('gen_headers/generate_enums.py'),
+                                    '@OUTPUT@', '@INPUT@'],
+                          depend_files: files('gen_headers/generate_enums.py'))
+  endforeach
+  enum_targets += {group: tgts}
+endforeach
 
 pack_common = custom_target('packets_common',
                             input: files('common/networking/packets.def'),
@@ -867,8 +1282,31 @@ pack_client = custom_target('packets_client',
 
 gitrev = custom_target('gitrev', output: 'fc_gitrev_gen.h',
                        command: [sh_exe, files('bootstrap/generate_gitrev.sh'),
-                       meson.project_source_root(), '@OUTPUT@'],
+                                 s_root, '@OUTPUT@'],
                        build_by_default: get_option('gitrev'))
+
+rsloads = custom_target('rsloads', output: 'ruleset_loads.sh',
+                        command: [sh_exe,
+                                  files('tests/rs_test_res/generate_ruleset_loads.sh'),
+                                  '@OUTPUT@'])
+
+rs_not_broken = custom_target('rs_not_broken', output: 'rulesets_not_broken.sh',
+                              command: [sh_exe,
+                                        files('tests/generate_rs_not_broken.sh'),
+                                        '@OUTPUT@'],
+                              depends: rsloads)
+
+rs_save = custom_target('rs_save', output: 'rulesets_save.sh',
+                         command: [sh_exe,
+                                   files('tests/generate_rs_save.sh'),
+                                   '@OUTPUT@'],
+                         depends: rsloads)
+
+rs_upgrade = custom_target('rs_upgrade', output: 'rulesets_upgrade.sh',
+                           command: [sh_exe,
+                                     files('tests/generate_rs_upgrade.sh'),
+                                     '@OUTPUT@'],
+                           depends: rs_save)
 
 if host_system == 'windows'
   tinycthr_files = files('dependencies/tinycthread/fc_tinycthread.c')
@@ -876,18 +1314,68 @@ else
   tinycthr_files = files()
 endif
 
+if syslua != 'false' and lua_dep_tmp.found()
+  lua_dep = lua_dep_tmp
+  fc_lua = []
+else
+  lua_c_flags = []
+  foreach arg : ['-Wno-implicit-fallthrough', '-Wno-cast-align' ]
+    if c_compiler.has_argument(arg)
+      lua_c_flags = [ lua_c_flags, arg ]
+    endif
+  endforeach
+
+  fc_lua = static_library('fc_lua',
+    'dependencies/lua-5.5/src/lapi.c',
+    'dependencies/lua-5.5/src/lauxlib.c',
+    'dependencies/lua-5.5/src/lbaselib.c',
+    'dependencies/lua-5.5/src/lcode.c',
+    'dependencies/lua-5.5/src/lcorolib.c',
+    'dependencies/lua-5.5/src/lctype.c',
+    'dependencies/lua-5.5/src/ldblib.c',
+    'dependencies/lua-5.5/src/ldebug.c',
+    'dependencies/lua-5.5/src/ldo.c',
+    'dependencies/lua-5.5/src/ldump.c',
+    'dependencies/lua-5.5/src/lfunc.c',
+    'dependencies/lua-5.5/src/lgc.c',
+    'dependencies/lua-5.5/src/linit.c',
+    'dependencies/lua-5.5/src/liolib.c',
+    'dependencies/lua-5.5/src/llex.c',
+    'dependencies/lua-5.5/src/lmathlib.c',
+    'dependencies/lua-5.5/src/lmem.c',
+    'dependencies/lua-5.5/src/loadlib.c',
+    'dependencies/lua-5.5/src/lobject.c',
+    'dependencies/lua-5.5/src/lopcodes.c',
+    'dependencies/lua-5.5/src/loslib.c',
+    'dependencies/lua-5.5/src/lparser.c',
+    'dependencies/lua-5.5/src/lstate.c',
+    'dependencies/lua-5.5/src/lstring.c',
+    'dependencies/lua-5.5/src/lstrlib.c',
+    'dependencies/lua-5.5/src/ltable.c',
+    'dependencies/lua-5.5/src/ltablib.c',
+    'dependencies/lua-5.5/src/ltm.c',
+    'dependencies/lua-5.5/src/lundump.c',
+    'dependencies/lua-5.5/src/lutf8lib.c',
+    'dependencies/lua-5.5/src/lvm.c',
+    'dependencies/lua-5.5/src/lzio.c',
+    c_args: lua_c_flags
+  )
+
+  lua_dep = []
+endif
+
 fc_deps = static_library('fc_dependencies',
   'dependencies/cvercmp/cvercmp.c',
-  lua_sources,
   'dependencies/tolua-5.2/src/lib/tolua_event.c',
   'dependencies/tolua-5.2/src/lib/tolua_is.c',
   'dependencies/tolua-5.2/src/lib/tolua_map.c',
   'dependencies/tolua-5.2/src/lib/tolua_push.c',
   'dependencies/tolua-5.2/src/lib/tolua_to.c',
-  sqlite3_src, tinycthr_files,
+  fcdb_src, tinycthr_files,
   sources: [verhdr],
   include_directories : common_inc,
-  dependencies: lua_dep
+  link_with: fc_lua,
+  dependencies: [ lua_dep, fcdb_dep ]
   )
 
 if meson.is_cross_build() or get_option('sys-tolua-cmd')
@@ -896,10 +1384,11 @@ else
   tolua_cmd = executable('tolua',
     'dependencies/tolua-5.2/src/bin/tolua.c',
     'dependencies/tolua-5.2/src/bin/toluabind.c',
-    include_directories : ['dependencies/lua-5.4/src',
+    include_directories : ['dependencies/lua-5.5/src',
                            'dependencies/tolua-5.2/include'],
     link_with: fc_deps,
-    dependencies: m_dep
+    dependencies: m_dep,
+    win_subsystem: 'console'
   )
 endif
 
@@ -949,10 +1438,10 @@ if host_system == 'windows'
                                   '-i', '@INPUT@',
                                   '-o', '@OUTPUT@'],
                       output: '@BASENAME@.o')
-  clienticon = windres.process('windows/clienticon.rc')
-  mpicon = windres.process('windows/mpicon.rc')
-  rulediticon = windres.process('windows/rulediticon.rc')
-  servericon = windres.process('windows/servericon.rc')
+  clienticon = windres.process('platforms/windows/icons/clienticon.rc')
+  mpicon = windres.process('platforms/windows/icons/mpicon.rc')
+  rulediticon = windres.process('platforms/windows/icons/rulediticon.rc')
+  servericon = windres.process('platforms/windows/icons/servericon.rc')
 else
   clienticon = []
   mpicon = []
@@ -967,6 +1456,7 @@ common_lib = library('freeciv',
   'utility/capability.c',
   'utility/deprecations.c',
   'utility/distribute.c',
+  'utility/executable.c',
   'utility/fcbacktrace.c',
   'utility/fc_cmdhelp.c',
   'utility/fc_cmdline.c',
@@ -1018,6 +1508,7 @@ common_lib = library('freeciv',
   'common/scriptcore/luascript.c',
   'common/scriptcore/luascript_func.c',
   'common/scriptcore/luascript_signal.c',
+  'common/accessarea.c',
   'common/achievements.c',
   'common/actions.c',
   'common/actres.c',
@@ -1050,6 +1541,7 @@ common_lib = library('freeciv',
   'common/movement.c',
   'common/multipliers.c',
   'common/nation.c',
+  'common/oblig_reqs.c',
   'common/player.c',
   'common/reqtext.c',
   'common/requirements.c',
@@ -1065,6 +1557,7 @@ common_lib = library('freeciv',
   'common/tech.c',
   'common/terrain.c',
   'common/tile.c',
+  'common/tiledef.c',
   'common/traderoutes.c',
   'common/unit.c',
   'common/unitlist.c',
@@ -1075,48 +1568,57 @@ common_lib = library('freeciv',
   'common/workertask.c',
   'common/worklist.c',
   include_directories : common_inc,
-  sources: [specenum, pack_common,
+  sources: [verhdr, gitrev, specenum, enum_targets['common'], pack_common,
             tolua_com_a, tolua_com_z, tolua_game, tolua_signal],
   link_whole: fc_deps,
-  dependencies: [c_compiler.find_library('z', dirs: cross_lib_path),
-                 curl_dep, m_dep, sqlite3_dep, icu_dep,
-                 net_dep, jansson_dep, lua_dep, lzma_dep, zstd_dep,
+  dependencies: [zlib_dep,
+                 curl_dep, m_dep, icu_dep,
+                 net_dep, jansson_dep, lua_dep, bz2_dep, lzma_dep, zstd_dep,
                  bcrypt_lib_dep, iconv_lib_dep,
                  gettext_dep, charset_dep, mw_dep,
                  dependency('threads')],
   install : true
   )
 
+if server_type != 'disabled' or get_option('tools').length() > 0
+
+if server_type == 'disabled'
+
 ais = static_library('fc_ai',
-  'ai/classic/classicai.c',
-  'ai/tex/texai.c',
-  'ai/tex/texaicity.c',
-  'ai/tex/texaimsg.c',
-  'ai/tex/texaiplayer.c',
-  'ai/tex/texaiworld.c',
-  'ai/default/aiair.c',
-  'ai/default/aidiplomat.c',
-  'ai/default/aiferry.c',
-  'ai/default/aiguard.c',
-  'ai/default/aihand.c',
-  'ai/default/aihunt.c',
-  'ai/default/aiparatrooper.c',
-  'ai/default/aitech.c',
-  'ai/default/aitools.c',
+  'ai/stub/stubai.c',
+  sources: [verhdr],
+  include_directories: [server_inc, include_directories('ai/default')]
+  )
+
+else
+
+ais = static_library('fc_ai',
+  aisrc,
+  'ai/default/daiair.c',
   'ai/default/daiactions.c',
   'ai/default/daicity.c',
   'ai/default/daidata.c',
   'ai/default/daidiplomacy.c',
+  'ai/default/daidiplomat.c',
   'ai/default/daidomestic.c',
   'ai/default/daieffects.c',
+  'ai/default/daiferry.c',
+  'ai/default/daiguard.c',
+  'ai/default/daihand.c',
+  'ai/default/daihunter.c',
   'ai/default/dailog.c',
   'ai/default/daimilitary.c',
+  'ai/default/daiparadrop.c',
   'ai/default/daiplayer.c',
   'ai/default/daisettler.c',
+  'ai/default/daitech.c',
+  'ai/default/daitools.c',
   'ai/default/daiunit.c',
-  sources: [verhdr],
+  sources: [verhdr, specenum],
   include_directories: [server_inc, include_directories('ai/default')]
   )
+
+endif
 
 server_lib = static_library('fc_server',
   'ai/aitraits.c',
@@ -1140,6 +1642,9 @@ server_lib = static_library('fc_server',
   'server/generator/mapgen_utils.c',
   'server/generator/startpos.c',
   'server/generator/temperature_map.c',
+  'server/ruleset/rscompat.c',
+  'server/ruleset/rssanity.c',
+  'server/ruleset/ruleload.c',
   'server/savegame/savecompat.c',
   'server/savegame/savegame2.c',
   'server/savegame/savegame3.c',
@@ -1147,6 +1652,8 @@ server_lib = static_library('fc_server',
   'server/scripting/api_fcdb_auth.c',
   'server/scripting/api_fcdb_base.c',
   'server/scripting/api_fcdb_specenum.c',
+  'server/scripting/api_server_counters.c',
+  'server/scripting/api_server_counters.h',
   'server/scripting/api_server_base.c',
   'server/scripting/api_server_edit.c',
   'server/scripting/api_server_game_methods.c',
@@ -1179,9 +1686,6 @@ server_lib = static_library('fc_server',
   'server/notify.c',
   'server/plrhand.c',
   'server/report.c',
-  'server/rscompat.c',
-  'server/rssanity.c',
-  'server/ruleset.c',
   'server/sanitycheck.c',
   'server/score.c',
   'server/sernet.c',
@@ -1197,20 +1701,25 @@ server_lib = static_library('fc_server',
   'server/unittools.c',
   'server/voting.c',
   include_directories: server_inc,
-  sources: [ pack_server,
+  sources: [ verhdr, pack_server,
              tolua.process('server/scripting/tolua_fcdb.pkg',
                            'server/scripting/tolua_server.pkg')],
-  dependencies: lua_dep
+  dependencies: [ lua_dep, dynai_dep ]
   )
+
+endif
 
 if server_type != 'disabled'
   executable(server_binary_name,
-    'server/civserver.c',
+    'server/srv_entrypoint.c',
     servericon,
     include_directories: server_inc,
+    sources: [verhdr],
     link_with: [server_lib, common_lib, ais],
-    dependencies: [m_dep, net_dep, readline_dep, gettext_dep],
-    install: true
+    dependencies: [m_dep, net_dep, readline_dep, gettext_dep, fcdb_dep,
+                   mw_extra_dep],
+    install: true,
+    win_subsystem: 'console'
     )
 
   install_data(
@@ -1227,15 +1736,15 @@ if server_type != 'disabled'
                 input: 'bootstrap/org.freeciv.server.metainfo.xml.in',
                 output: '@BASENAME@',
                 command: [sh_exe, files('bootstrap/generate_metainfo.sh'),
-                          '@OUTPUT@',
-                          meson.project_build_root(), 'development'],
+                          '@OUTPUT@', b_root],
+                depend_files: files('fc_version'),
                 install: true,
                 install_dir: join_paths(get_option('datadir'), 'metainfo'))
 
 endif
 
 install_data(
-  'data/ruledit/comments-3.3.txt',
+  'data/ruledit/comments-3.4.txt',
   install_dir : join_paths(get_option('datadir'), 'freeciv/ruledit')
   )
 
@@ -1252,6 +1761,7 @@ nations = [
   'akwe',
   'alandalus',
   'alander',
+  'alaskan',
   'albanian',
   'aleut',
   'algerian',
@@ -1360,6 +1870,7 @@ nations = [
   'colombian',
   'comanche',
   'comorian',
+  'conch',
   'confederate',
   'congolesebrazzaville',
   'congolese',
@@ -1367,7 +1878,6 @@ nations = [
   'corsican',
   'cossack',
   'costarican',
-  'coutense',
   'cree',
   'cretan',
   'crimeantatar',
@@ -1381,12 +1891,14 @@ nations = [
   'czechoslovak',
   'czech',
   'dacian',
+  'dagestan',
   'dahomean',
   'danish',
   'darfuri',
   'djiboutian',
   'dominicano',
   'dominican',
+  'donetsk',
   'dryad',
   'dutch',
   'eastgerman',
@@ -1447,6 +1959,7 @@ nations = [
   'guinean',
   'gupta',
   'guyanese',
+  'hacker',
   'haitian',
   'hanoverian',
   'han',
@@ -1532,6 +2045,8 @@ nations = [
   'lithuanian',
   'lojbanistani',
   'lorrain',
+  'louisianian',
+  'luhansk',
   'luwian',
   'luxembourgish',
   'lycian',
@@ -1567,6 +2082,7 @@ nations = [
   'micronesian',
   'mikmaq',
   'milanese',
+  'minnesotan',
   'miskito',
   'mitanni',
   'mixtec',
@@ -1587,8 +2103,6 @@ nations = [
   'namibian',
   'nauruan',
   'navajo',
-  'nazi',
-  'is',
   'neapolitan',
   'nenets',
   'nepali',
@@ -1600,6 +2114,7 @@ nations = [
   'nigerien',
   'nimiipuu',
   'norman',
+  'northirish',
   'northkorean',
   'northumbrian',
   'norwegian',
@@ -1641,6 +2156,7 @@ nations = [
   'polynesian',
   'pontic',
   'portuguese',
+  'poyaisian',
   'prussian',
   'puertorican',
   'purhepecha',
@@ -1745,6 +2261,7 @@ nations = [
   'timurid',
   'tocharian',
   'togolese',
+  'tokiponan',
   'toltec',
   'tongan',
   'transnistrian',
@@ -1757,6 +2274,7 @@ nations = [
   'turkishcypriot',
   'turkmen',
   'turk',
+  'tuvaluan',
   'tuvan',
   'tyrolian',
   'ugandan',
@@ -1786,6 +2304,7 @@ nations = [
   'volgagerman',
   'walloon',
   'welsh',
+  'werewolf',
   'westernpomeranian',
   'westernroman',
   'westindian',
@@ -1831,6 +2350,7 @@ client_common = static_library('fc_client_common',
   'client/editor.c',
   'client/global_worklist.c',
   'client/goto.c',
+  'client/gui_properties.c',
   'client/helpdata.c',
   'client/luaconsole_common.c',
   'client/mapctrl_common.c',
@@ -1852,7 +2372,7 @@ client_common = static_library('fc_client_common',
   'client/update_queue.c',
   'client/voteinfo.c',
   'client/zoom.c',
-  sources: [audio_sdl_src, pack_client,
+  sources: [verhdr, audio_sdl_src, pack_client,
             tolua.process('client/luascript/tolua_client.pkg')],
   include_directories: client_inc,
   link_with: [common_lib],
@@ -1860,14 +2380,23 @@ client_common = static_library('fc_client_common',
   )
 
 install_data('data/helpdata.txt',
+             'data/cimpletoon.modpack',
              'data/cimpletoon.tilespec',
+             'data/isophex.modpack',
              'data/isophex.tilespec',
+             'data/isotrident.modpack',
              'data/isotrident.tilespec',
+             'data/toonhex.modpack',
              'data/toonhex.tilespec',
+             'data/alio.modpack',
              'data/alio.tilespec',
+             'data/trident.modpack',
              'data/trident.tilespec',
+             'data/hexemplio.modpack',
              'data/hexemplio.tilespec',
+             'data/hex2t.modpack',
              'data/hex2t.tilespec',
+             'data/amplio2.modpack',
              'data/amplio2.tilespec',
              'data/stdmusic.musicspec',
              'data/stdsounds.soundspec',
@@ -1891,6 +2420,8 @@ install_data('data/misc/colors.tilespec',
              'data/misc/buildings.spec',
              'data/misc/buildings-large.spec',
              'data/misc/wonders-large.spec',
+             'data/misc/extra_buildings.png',
+             'data/misc/extra_buildings.spec',
              'data/misc/flags.spec',
              'data/misc/flags-large.spec',
              'data/misc/shields.spec',
@@ -1954,19 +2485,38 @@ install_data('data/buildings/airport.png',
              install_dir : join_paths(get_option('datadir'),
                                       'freeciv/buildings'))
 
-install_data('data/scenarios/british-isles.sav',
-             'data/scenarios/earth-large.sav',
-             'data/scenarios/earth-small.sav',
-             'data/scenarios/europe.sav',
-             'data/scenarios/europe_1900_WWI.sav',
-             'data/scenarios/france.sav',
-             'data/scenarios/hagworld.sav',
-             'data/scenarios/iberian-peninsula.sav',
-             'data/scenarios/italy.sav',
-             'data/scenarios/japan.sav',
-             'data/scenarios/north_america.sav',
-             'data/scenarios/tutorial.sav',
-             install_dir : join_paths(get_option('datadir'), 'freeciv/scenarios'))
+scenarios = [
+  'british-isles.sav',
+  'earth-large.sav',
+  'earth-small.sav',
+  'europe.sav',
+  'europe_1900_WWI.sav',
+  'france.sav',
+  'hagworld.sav',
+  'iberian-peninsula.sav',
+  'italy.sav',
+  'japan.sav',
+  'north_america.sav',
+  'tutorial.sav'
+]
+
+if host_system != 'windows' or crosser
+  foreach scen : scenarios
+    scenzip = custom_target('gzip_' + scen,
+                            command: [gzip_exe, '--best', '-n', '-c', '@INPUT@' ],
+                            output: '@PLAINNAME@.gz',
+                            capture: true,
+                            input: join_paths('data/scenarios', scen),
+                            install: true,
+                            install_dir: join_paths(get_option('datadir'), 'freeciv/scenarios'))
+  endforeach
+else
+  # Windows msys2 - cannot compress at the moment (msys2 gzip on CI failing)
+  foreach scen : scenarios
+    install_data(join_paths('data/scenarios', scen),
+                 install_dir: join_paths(get_option('datadir'), 'freeciv/scenarios'))
+  endforeach
+endif
 
 install_data('data/wonders/apollo_program.png',
              'data/wonders/asmiths_trading_co.png',
@@ -2015,6 +2565,7 @@ flags = [
   'ainu',
   'akwe',
   'aland',
+  'alaska',
   'albania',
   'aleut',
   'algeria',
@@ -2120,12 +2671,12 @@ flags = [
   'colombia',
   'comanche',
   'comoros',
+  'conch',
   'constantine',
   'cornwall',
   'corsica',
   'cossack',
   'costa_rica',
-  'couto_misto',
   'courland',
   'crete',
   'crimean_tatar',
@@ -2137,6 +2688,7 @@ flags = [
   'czech',
   'czechoslovakia',
   'dacian',
+  'dagestan',
   'dahomey',
   'darfur',
   'ddr',
@@ -2145,6 +2697,7 @@ flags = [
   'djibouti',
   'dominica',
   'dominican_republic',
+  'donetsk',
   'dr_congo',
   'dryad',
   'ecuador',
@@ -2297,6 +2850,8 @@ flags = [
   'lippe',
   'lithuania',
   'lorraine',
+  'louisiana',
+  'luhansk',
   'luik',
   'luna',
   'lusatia',
@@ -2334,6 +2889,7 @@ flags = [
   'micronesia',
   'mikmaq',
   'milan',
+  'minnesota',
   'miskito',
   'mitanni',
   'mixtec',
@@ -2370,6 +2926,7 @@ flags = [
   'nicaragua',
   'niger',
   'nigeria',
+  'northernireland',
   'north_korea',
   'northumbria',
   'norway',
@@ -2411,6 +2968,7 @@ flags = [
   'polynesian',
   'pomerania',
   'portugal',
+  'poyais',
   'prusai',
   'prussia',
   'puerto_rico',
@@ -2515,6 +3073,7 @@ flags = [
   'timur',
   'tocharian',
   'togo',
+  'tokipona',
   'toltec',
   'tonga',
   'transnistria',
@@ -2527,6 +3086,7 @@ flags = [
   'tupi',
   'turkey',
   'turkmenistan',
+  'tuvalu',
   'tyrol',
   'uae',
   'uganda',
@@ -2579,9 +3139,15 @@ flags = [
 ]
 
 foreach flag : flags
-  install_data(join_paths('data/flags', flag + '-large.png'),
+  install_data(join_paths('data/flags', flag + '.png'),
+               join_paths('data/flags', flag + '-shield.png'),
+               join_paths('data/flags', flag + '-large.png'),
                join_paths('data/flags', flag + '-shield-large.png'),
                install_dir : join_paths(get_option('datadir'), 'freeciv/flags'))
+  if svgflags
+    install_data(join_paths('data/flags', flag + '.svg'),
+                 install_dir : join_paths(get_option('datadir'), 'freeciv/flags'))
+  endif
 endforeach
 
 install_data('data/override/flags-large.spec',
@@ -2614,6 +3180,8 @@ install_data('data/hexemplio/activities.png',
              'data/hexemplio/roads.spec',
              'data/hexemplio/roads-rails.png',
              'data/hexemplio/roads-rails.spec',
+             'data/hexemplio/savannah.png',
+             'data/hexemplio/savannah.spec',
              'data/hexemplio/select.png',
              'data/hexemplio/select.spec',
              'data/hexemplio/terrain.png',
@@ -2634,6 +3202,8 @@ install_data('data/hexemplio/activities.png',
 
 install_data('data/hex2t/grid.png',
              'data/hex2t/grid.spec',
+             'data/hex2t/highways.png',
+             'data/hex2t/highways.spec',
              'data/hex2t/items.png',
              'data/hex2t/items.spec',
              'data/hex2t/overlays.png',
@@ -2671,6 +3241,8 @@ install_data('data/trident/cities.png',
              'data/trident/auto_ll.spec',
              'data/trident/grid.png',
              'data/trident/grid.spec',
+             'data/trident/highways.png',
+             'data/trident/highways.spec',
              'data/trident/roads.png',
              'data/trident/roads.spec',
              'data/trident/select.png',
@@ -2813,6 +3385,8 @@ install_data('data/amplio2/activities.png',
              'data/amplio2/upkeep.spec',
              'data/amplio2/veterancy.png',
              'data/amplio2/veterancy.spec',
+             'data/amplio2/volcano.png',
+             'data/amplio2/volcano.spec',
              'data/amplio2/water.png',
              'data/amplio2/water.spec',
              install_dir : join_paths(get_option('datadir'), 'freeciv/amplio2'))
@@ -2820,7 +3394,10 @@ install_data('data/amplio2/activities.png',
 install_data('data/stdmusic/CullamBruce-Lockhart--Dawning_Fanfare.ogg',
              install_dir : join_paths(get_option('datadir'), 'freeciv/stdmusic'))
 
-install_data('data/stdsounds/foot3.ogg',
+install_data('data/stdsounds/complete.ogg',
+             'data/stdsounds/fanfare.ogg',
+             'data/stdsounds/fanfarehappy.ogg',
+             'data/stdsounds/foot3.ogg',
              'data/stdsounds/illegal.ogg',
              'data/stdsounds/inh2o.ogg',
              'data/stdsounds/LrgCan.ogg',
@@ -2851,9 +3428,23 @@ foreach iconsize : i
                  install_dir : join_paths(get_option('datadir'), 'icons/hicolor', iconsize, 'apps'))
 endforeach
 
+foreach manp : man_pages
+  install_data(
+    join_paths(b_root, manp + '.6'),
+    install_dir : join_paths(get_option('mandir'), 'man6')
+    )
+endforeach
+
+foreach manp : man_links
+  install_data(
+    join_paths('doc/man/', manp + '.6'),
+    install_dir : join_paths(get_option('mandir'), 'man6')
+    )
+endforeach
+
 gtk322_dep = dependency('gtk+-3.0', version : '>= 3.22', required : false)
 gtk4_dep = dependency('gtk4', version : '>= 4.0.0', required : false)
-gtk5_dep = dependency('gtk4', version : '>= 4.8.0', required : false)
+gtk5_dep = dependency('gtk4', version : '>= 4.14.0', required : false)
 
 if get_option('clients').contains('gtk3.22')
 
@@ -2916,9 +3507,10 @@ executable('freeciv-gtk3.22',
             '-DGLIB_VERSION_MIN_REQUIRED=GLIB_VERSION_2_50',
             '-DGLIB_VERSION_MAX_ALLOWED=GLIB_VERSION_2_50'],
   include_directories: client_inc,
-  dependencies: [gtk322_dep, net_dep, gettext_dep],
+  dependencies: [gtk322_dep, net_dep, gettext_dep, mw_extra_dep],
   link_with: client_common,
-  install: true
+  install: true,
+  win_subsystem: 'windows'
   )
 
 install_data('data/gtk3.22_menus.xml',
@@ -2939,13 +3531,14 @@ custom_target('mi_gtk322',
               input: 'bootstrap/org.freeciv.gtk322.metainfo.xml.in',
               output: '@BASENAME@',
               command: [sh_exe, files('bootstrap/generate_metainfo.sh'),
-                        '@OUTPUT@',
-                        meson.project_build_root(), 'development'],
+                        '@OUTPUT@', b_root],
+              depend_files: files('fc_version'),
               install: true,
               install_dir: join_paths(get_option('datadir'), 'metainfo'))
 
 endif
 
+gtk4_theme = false
 if get_option('clients').contains('gtk4')
 
 if not gtk4_dep.found()
@@ -3007,16 +3600,13 @@ executable('freeciv-gtk4',
             '-DGLIB_VERSION_MIN_REQUIRED=GLIB_VERSION_2_66',
             '-DGLIB_VERSION_MAX_ALLOWED=GLIB_VERSION_2_66'],
   include_directories: client_inc,
-  dependencies: [gtk4_dep, net_dep, gettext_dep],
+  dependencies: [gtk4_dep, net_dep, gettext_dep, mw_extra_dep],
   link_with: client_common,
-  install: true
+  install: true,
+  win_subsystem: 'windows'
   )
 
-install_data('data/themes/gtk4/Freeciv/gtk-4.0/gtk.css',
-             'data/themes/gtk4/Freeciv/gtk-4.0/menubar.css',
-             'data/themes/gtk4/Freeciv/gtk-4.0/bg.png',
-             install_dir : join_paths(get_option('datadir'),
-                           'freeciv/themes/gtk4/Freeciv/gtk-4.0'))
+  gtk4_theme = true
 
 install_data(
   'bootstrap/org.freeciv.gtk4.desktop',
@@ -3027,8 +3617,8 @@ custom_target('mi_gtk4',
               input: 'bootstrap/org.freeciv.gtk4.metainfo.xml.in',
               output: '@BASENAME@',
               command: [sh_exe, files('bootstrap/generate_metainfo.sh'),
-                        '@OUTPUT@',
-                        meson.project_build_root(), 'development'],
+                        '@OUTPUT@', b_root],
+              depend_files: files('fc_version'),
               install: true,
               install_dir: join_paths(get_option('datadir'), 'metainfo'))
 
@@ -3037,89 +3627,105 @@ endif
 if get_option('clients').contains('gtk4x')
 
 if not gtk5_dep.found()
-  error('gtk-4.0 >= 4.8 required for gtk4x-client, but not found')
+  error('gtk-4.0 >= 4.14 required for gtk4x-client, but not found')
 endif
 
 executable('freeciv-gtk4x',
-  'client/gui-gtk-4.0/action_dialog.c',
-  'client/gui-gtk-4.0/canvas.c',
-  'client/gui-gtk-4.0/chatline.c',
-  'client/gui-gtk-4.0/choice_dialog.c',
-  'client/gui-gtk-4.0/citizensinfo.c',
-  'client/gui-gtk-4.0/citydlg.c',
-  'client/gui-gtk-4.0/cityrep.c',
-  'client/gui-gtk-4.0/cma_fe.c',
-  'client/gui-gtk-4.0/colors.c',
-  'client/gui-gtk-4.0/connectdlg.c',
-  'client/gui-gtk-4.0/dialogs.c',
-  'client/gui-gtk-4.0/diplodlg.c',
-  'client/gui-gtk-4.0/editgui.c',
-  'client/gui-gtk-4.0/editprop.c',
-  'client/gui-gtk-4.0/finddlg.c',
-  'client/gui-gtk-4.0/gamedlgs.c',
-  'client/gui-gtk-4.0/gotodlg.c',
-  'client/gui-gtk-4.0/graphics.c',
-  'client/gui-gtk-4.0/gui_main.c',
-  'client/gui-gtk-4.0/gui_stuff.c',
-  'client/gui-gtk-4.0/happiness.c',
-  'client/gui-gtk-4.0/helpdlg.c',
-  'client/gui-gtk-4.0/infradlg.c',
-  'client/gui-gtk-4.0/inputdlg.c',
-  'client/gui-gtk-4.0/inteldlg.c',
-  'client/gui-gtk-4.0/luaconsole.c',
-  'client/gui-gtk-4.0/mapctrl.c',
-  'client/gui-gtk-4.0/mapview.c',
-  'client/gui-gtk-4.0/menu.c',
-  'client/gui-gtk-4.0/messagedlg.c',
-  'client/gui-gtk-4.0/messagewin.c',
-  'client/gui-gtk-4.0/optiondlg.c',
-  'client/gui-gtk-4.0/pages.c',
-  'client/gui-gtk-4.0/plrdlg.c',
-  'client/gui-gtk-4.0/rallypointdlg.c',
-  'client/gui-gtk-4.0/repodlgs.c',
-  'client/gui-gtk-4.0/soundset_dlg.c',
-  'client/gui-gtk-4.0/spaceshipdlg.c',
-  'client/gui-gtk-4.0/sprite.c',
-  'client/gui-gtk-4.0/theme_dlg.c',
-  'client/gui-gtk-4.0/themes.c',
-  'client/gui-gtk-4.0/tileset_dlg.c',
-  'client/gui-gtk-4.0/transportdlg.c',
-  'client/gui-gtk-4.0/unitselect.c',
-  'client/gui-gtk-4.0/unitselextradlg.c',
-  'client/gui-gtk-4.0/unitselunitdlg.c',
-  'client/gui-gtk-4.0/voteinfo_bar.c',
-  'client/gui-gtk-4.0/wldlg.c',
+  'client/gui-gtk-5.0/action_dialog.c',
+  'client/gui-gtk-5.0/canvas.c',
+  'client/gui-gtk-5.0/chatline.c',
+  'client/gui-gtk-5.0/choice_dialog.c',
+  'client/gui-gtk-5.0/citizensinfo.c',
+  'client/gui-gtk-5.0/citydlg.c',
+  'client/gui-gtk-5.0/cityrep.c',
+  'client/gui-gtk-5.0/cma_fe.c',
+  'client/gui-gtk-5.0/colors.c',
+  'client/gui-gtk-5.0/connectdlg.c',
+  'client/gui-gtk-5.0/dialogs.c',
+  'client/gui-gtk-5.0/diplodlg.c',
+  'client/gui-gtk-5.0/editgui.c',
+  'client/gui-gtk-5.0/editprop.c',
+  'client/gui-gtk-5.0/finddlg.c',
+  'client/gui-gtk-5.0/gamedlgs.c',
+  'client/gui-gtk-5.0/gotodlg.c',
+  'client/gui-gtk-5.0/graphics.c',
+  'client/gui-gtk-5.0/gui_main.c',
+  'client/gui-gtk-5.0/gui_stuff.c',
+  'client/gui-gtk-5.0/happiness.c',
+  'client/gui-gtk-5.0/helpdlg.c',
+  'client/gui-gtk-5.0/infradlg.c',
+  'client/gui-gtk-5.0/inputdlg.c',
+  'client/gui-gtk-5.0/inteldlg.c',
+  'client/gui-gtk-5.0/luaconsole.c',
+  'client/gui-gtk-5.0/mapctrl.c',
+  'client/gui-gtk-5.0/mapview.c',
+  'client/gui-gtk-5.0/menu.c',
+  'client/gui-gtk-5.0/messagedlg.c',
+  'client/gui-gtk-5.0/messagewin.c',
+  'client/gui-gtk-5.0/optiondlg.c',
+  'client/gui-gtk-5.0/pages.c',
+  'client/gui-gtk-5.0/plrdlg.c',
+  'client/gui-gtk-5.0/rallypointdlg.c',
+  'client/gui-gtk-5.0/repodlgs.c',
+  'client/gui-gtk-5.0/soundset_dlg.c',
+  'client/gui-gtk-5.0/spaceshipdlg.c',
+  'client/gui-gtk-5.0/sprite.c',
+  'client/gui-gtk-5.0/theme_dlg.c',
+  'client/gui-gtk-5.0/themes.c',
+  'client/gui-gtk-5.0/tileset_dlg.c',
+  'client/gui-gtk-5.0/transportdlg.c',
+  'client/gui-gtk-5.0/unitselect.c',
+  'client/gui-gtk-5.0/unitselextradlg.c',
+  'client/gui-gtk-5.0/unitselunitdlg.c',
+  'client/gui-gtk-5.0/voteinfo_bar.c',
+  'client/gui-gtk-5.0/wldlg.c',
   clienticon,
   c_args: [ '-DGDK_VERSION_MIN_REQUIRED=GDK_VERSION_4_8',
-            '-DGDK_VERSION_MAX_ALLOWED=GDK_VERSION_4_8',
-            '-DGLIB_VERSION_MIN_REQUIRED=GLIB_VERSION_2_66',
-            '-DGLIB_VERSION_MAX_ALLOWED=GLIB_VERSION_2_66'],
+            '-DGDK_VERSION_MAX_ALLOWED=GDK_VERSION_4_14',
+            '-DGLIB_VERSION_MIN_REQUIRED=GLIB_VERSION_2_76',
+            '-DGLIB_VERSION_MAX_ALLOWED=GLIB_VERSION_2_76'],
   include_directories: client_inc,
-  dependencies: [gtk5_dep, net_dep, gettext_dep],
+  dependencies: [gtk5_dep, net_dep, gettext_dep, mw_extra_dep],
   link_with: client_common,
-  install: true
+  install: true,
+  win_subsystem: 'windows'
   )
 
+  gtk4_theme = true
+
+install_data(
+  'bootstrap/org.freeciv.gtk4x.desktop',
+  install_dir : join_paths(get_option('prefix'), 'share/applications')
+  )
+
+custom_target('mi_gtk4x',
+              input: 'bootstrap/org.freeciv.gtk4x.metainfo.xml.in',
+              output: '@BASENAME@',
+              command: [sh_exe, files('bootstrap/generate_metainfo.sh'),
+                        '@OUTPUT@', b_root],
+              depend_files: files('fc_version'),
+              install: true,
+              install_dir: join_paths(get_option('datadir'), 'metainfo'))
+
 endif
 
-if qtver == 'qt6' or qtver == 'qt6x'
-  qt_mod = import('qt6')
-
-  qt_dep = dependency('Qt6', modules: ['Core', 'Gui', 'Widgets'], required: false)
-else
-  qt_mod = import('qt5')
-
-  qt_dep = dependency('Qt5', modules: ['Core', 'Gui', 'Widgets'], required: false)
+if gtk4_theme
+  install_data('data/themes/gtk4/Freeciv/gtk-4.0/gtk.css',
+               'data/themes/gtk4/Freeciv/gtk-4.0/menubar.css',
+               'data/themes/gtk4/Freeciv/gtk-4.0/bg.png',
+               install_dir : join_paths(get_option('datadir'),
+                             'freeciv/themes/gtk4/Freeciv/gtk-4.0'))
 endif
 
+qt_mod = import('qt6')
+qt_dep = dependency('Qt6', modules: ['Core', 'Gui', 'Widgets'],
+                    version: '>= ' + qt_vercheck,
+                    required: false)
 if get_option('clients').contains('qt')
 
 if not qt_dep.found()
-  if qtver == 'qt6' or qtver == 'qt6x'
-    error('Qt6 >= 6.0 required for qt-client in Qt6 mode, but not found')
-  else
-    error('Qt5 >= 5.15 required for qt-client in Qt5 mode, but not found')
-  endif
+  error('Qt6 >= ' + qt_vercheck + ' required for qt-client in ' + \
+        qt_modename + ' mode, but not found')
 endif
 
 mocced_client = qt_mod.preprocess(
@@ -3188,10 +3794,12 @@ executable('freeciv-qt',
   'client/gui-qt/wldlg.cpp',
   mocced_client, clienticon,
   include_directories: [client_inc, include_directories('client/gui-qt')],
-  dependencies: [qt_dep, net_dep, gettext_dep],
+  dependencies: [qt_dep, net_dep, gettext_dep, mw_extra_dep],
   override_options: qt_opts,
   link_with: client_common,
-  install: true)
+  install: true,
+  win_subsystem: 'windows'
+  )
 
 install_data(
   'data/themes/gui-qt/icons/ai.png',
@@ -3205,6 +3813,7 @@ install_data(
   'data/themes/gui-qt/icons/city-left.png',
   'data/themes/gui-qt/icons/city-right.png',
   'data/themes/gui-qt/icons/city-switch.png',
+  'data/themes/gui-qt/icons/clean.png',
   'data/themes/gui-qt/icons/close.png',
   'data/themes/gui-qt/icons/cmax.png',
   'data/themes/gui-qt/icons/cmin.png',
@@ -3234,7 +3843,6 @@ install_data(
   'data/themes/gui-qt/icons/paradrop.png',
   'data/themes/gui-qt/icons/plantforest.png',
   'data/themes/gui-qt/icons/plus.png',
-  'data/themes/gui-qt/icons/pollution.png',
   'data/themes/gui-qt/icons/preferences-other.png',
   'data/themes/gui-qt/icons/research.png',
   'data/themes/gui-qt/icons/resize.png',
@@ -3350,8 +3958,8 @@ custom_target('mi_qt',
               input: 'bootstrap/org.freeciv.qt.metainfo.xml.in',
               output: '@BASENAME@',
               command: [sh_exe, files('bootstrap/generate_metainfo.sh'),
-                        '@OUTPUT@',
-                        meson.project_build_root(), 'development'],
+                        '@OUTPUT@', b_root],
+              depend_files: files('fc_version'),
               install: true,
               install_dir: join_paths(get_option('datadir'), 'metainfo'))
 
@@ -3359,17 +3967,24 @@ endif
 
 if get_option('clients').contains('sdl2')
 
-sdl2_gfx_dep = c_compiler.find_library('SDL2_gfx', dirs: cross_lib_path,
-                                       required: false)
+sdl2_gfx_dep = []
+sdl2_gfx_src = []
+sdl2_gfx_inc = []
+sdl2_gfx_cargs = []
+sdl2_image_dep = []
+sdl2_ttf_dep = []
 
-if not sdl2_gfx_dep.found()
-  sdl2_gfx_src = 'dependencies/SDL2_gfx/SDL2_rotozoom.c'
-  sdl2_gfx_inc = include_directories('dependencies')
-  sdl2_gfx_cargs = '-DSDL2_GFX_FROM_TREE'
-else
-  sdl2_gfx_src = []
-  sdl2_gfx_inc = []
-  sdl2_gfx_cargs = []
+if not emscripten
+  sdl2_gfx_dep = dependency('SDL2_gfx', required: false)
+
+  if not sdl2_gfx_dep.found()
+    sdl2_gfx_src = 'dependencies/SDL2_gfx/SDL2_rotozoom.c'
+    sdl2_gfx_inc = include_directories('dependencies')
+    sdl2_gfx_cargs = '-DSDL2_GFX_FROM_TREE'
+  endif
+
+  sdl2_image_dep = dependency('SDL2_image', required: false)
+  sdl2_ttf_dep = dependency('SDL2_ttf', required: false)
 endif
 
 executable('freeciv-sdl2',
@@ -3397,7 +4012,6 @@ executable('freeciv-sdl2',
   'client/gui-sdl2/mapctrl.c',
   'client/gui-sdl2/mapview.c',
   'client/gui-sdl2/menu.c',
-  'client/gui-sdl2/messagedlg.c',
   'client/gui-sdl2/messagewin.c',
   'client/gui-sdl2/optiondlg.c',
   'client/gui-sdl2/pages.c',
@@ -3427,12 +4041,11 @@ executable('freeciv-sdl2',
   c_args: sdl2_gfx_cargs,
   include_directories: [client_inc, sdl2_gfx_inc ],
   dependencies: [sdl2main_dep, audio_dep,
-                 c_compiler.find_library('SDL2_image', dirs: cross_lib_path),
-                 sdl2_gfx_dep,
-                 c_compiler.find_library('SDL2_ttf', dirs: cross_lib_path),
-                 net_dep, gettext_dep],
+                 sdl2_image_dep, sdl2_gfx_dep, sdl2_ttf_dep,
+                 net_dep, gettext_dep, mw_extra_dep],
   link_with: client_common,
-  install: true
+  install: true,
+  win_subsystem: 'windows'
   )
 
 install_data('data/themes/gui-sdl2/human/backgrounds.themespec',
@@ -3483,8 +4096,138 @@ custom_target('mi_sdl2',
               input: 'bootstrap/org.freeciv.sdl2.metainfo.xml.in',
               output: '@BASENAME@',
               command: [sh_exe, files('bootstrap/generate_metainfo.sh'),
-                        '@OUTPUT@',
-                        meson.project_build_root(), 'development'],
+                        '@OUTPUT@', b_root],
+              depend_files: files('fc_version'),
+              install: true,
+              install_dir: join_paths(get_option('datadir'), 'metainfo'))
+
+endif
+
+if get_option('clients').contains('sdl3')
+
+sdl3_gfx_dep = []
+sdl3_gfx_inc = []
+sdl3_gfx_cargs = []
+sdl3_image_dep = []
+sdl3_ttf_dep = []
+
+if not emscripten
+  sdl3_gfx_inc = include_directories('dependencies')
+
+  sdl3_image_dep = dependency('sdl3-image', required: false)
+  sdl3_ttf_dep = dependency('sdl3-ttf', required: false)
+endif
+
+executable('freeciv-sdl3',
+  'client/gui-sdl3/action_dialog.c',
+  'client/gui-sdl3/canvas.c',
+  'client/gui-sdl3/chatline.c',
+  'client/gui-sdl3/citydlg.c',
+  'client/gui-sdl3/cityrep.c',
+  'client/gui-sdl3/cma_fe.c',
+  'client/gui-sdl3/colors.c',
+  'client/gui-sdl3/connectdlg.c',
+  'client/gui-sdl3/dialogs.c',
+  'client/gui-sdl3/diplodlg.c',
+  'client/gui-sdl3/finddlg.c',
+  'client/gui-sdl3/gotodlg.c',
+  'client/gui-sdl3/graphics.c',
+  'client/gui-sdl3/gui_main.c',
+  'client/gui-sdl3/gui_mouse.c',
+  'client/gui-sdl3/gui_string.c',
+  'client/gui-sdl3/gui_tilespec.c',
+  'client/gui-sdl3/helpdlg.c',
+  'client/gui-sdl3/infradlg.c',
+  'client/gui-sdl3/inteldlg.c',
+  'client/gui-sdl3/luaconsole.c',
+  'client/gui-sdl3/mapctrl.c',
+  'client/gui-sdl3/mapview.c',
+  'client/gui-sdl3/menu.c',
+  'client/gui-sdl3/messagewin.c',
+  'client/gui-sdl3/optiondlg.c',
+  'client/gui-sdl3/pages.c',
+  'client/gui-sdl3/plrdlg.c',
+  'client/gui-sdl3/repodlgs.c',
+  'client/gui-sdl3/spaceshipdlg.c',
+  'client/gui-sdl3/sprite.c',
+  'client/gui-sdl3/themebackgrounds.c',
+  'client/gui-sdl3/themecolors.c',
+  'client/gui-sdl3/themes.c',
+  'client/gui-sdl3/themespec.c',
+  'client/gui-sdl3/utf8string.c',
+  'client/gui-sdl3/voteinfo_bar.c',
+  'client/gui-sdl3/widget_button.c',
+  'client/gui-sdl3/widget.c',
+  'client/gui-sdl3/widget_checkbox.c',
+  'client/gui-sdl3/widget_combo.c',
+  'client/gui-sdl3/widget_core.c',
+  'client/gui-sdl3/widget_edit.c',
+  'client/gui-sdl3/widget_icon.c',
+  'client/gui-sdl3/widget_label.c',
+  'client/gui-sdl3/widget_scrollbar.c',
+  'client/gui-sdl3/widget_window.c',
+  'client/gui-sdl3/wldlg.c',
+  'client/gui-sdl3/SDL3_gfx/SDL3_rotozoom.c',
+  clienticon,
+  include_directories: [client_inc, sdl3_gfx_inc ],
+  dependencies: [sdl3main_dep, audio_dep,
+                 sdl3_image_dep, sdl3_gfx_dep, sdl3_ttf_dep,
+                 net_dep, gettext_dep, mw_extra_dep],
+  link_with: client_common,
+  install: true,
+  win_subsystem: 'windows'
+  )
+
+install_data('data/themes/gui-sdl3/human/backgrounds.themespec',
+             'data/themes/gui-sdl3/human/bg2.png',
+             'data/themes/gui-sdl3/human/bg.png',
+             'data/themes/gui-sdl3/human/city_fist.png',
+             'data/themes/gui-sdl3/human/city_fist.tspec',
+             'data/themes/gui-sdl3/human/city.png',
+             'data/themes/gui-sdl3/human/city.tspec',
+             'data/themes/gui-sdl3/human/colors.themespec',
+             'data/themes/gui-sdl3/human/COPYING.DejaVu',
+             'data/themes/gui-sdl3/human/COPYING.fireflysung',
+             'data/themes/gui-sdl3/human/COPYING.sazanami',
+             'data/themes/gui-sdl3/human/COPYING.UnDotum',
+             'data/themes/gui-sdl3/human/DejaVuSans.ttf',
+             'data/themes/gui-sdl3/human/dip_icons.png',
+             'data/themes/gui-sdl3/human/dip_icons.tspec',
+             'data/themes/gui-sdl3/human/fireflysung.ttf',
+             'data/themes/gui-sdl3/human/icons.png',
+             'data/themes/gui-sdl3/human/icons.tspec',
+             'data/themes/gui-sdl3/human/intro.png',
+             'data/themes/gui-sdl3/human/options_bg.png',
+             'data/themes/gui-sdl3/human/sazanami-gothic.ttf',
+             'data/themes/gui-sdl3/human/small_theme_buttons.png',
+             'data/themes/gui-sdl3/human/small_theme_buttons.tspec',
+             'data/themes/gui-sdl3/human/tech_tree.png',
+             'data/themes/gui-sdl3/human/tech_tree.tspec',
+             'data/themes/gui-sdl3/human/theme_boxs.png',
+             'data/themes/gui-sdl3/human/theme_boxs.tspec',
+             'data/themes/gui-sdl3/human/theme_buttons.png',
+             'data/themes/gui-sdl3/human/theme_buttons.tspec',
+             'data/themes/gui-sdl3/human/theme_orders_buttons.png',
+             'data/themes/gui-sdl3/human/theme_orders_buttons.tspec',
+             'data/themes/gui-sdl3/human/theme_scrolls.png',
+             'data/themes/gui-sdl3/human/theme_scrolls.tspec',
+             'data/themes/gui-sdl3/human/theme.themespec',
+             'data/themes/gui-sdl3/human/UnDotum.ttf',
+             'data/themes/gui-sdl3/human/world.png',
+             install_dir : join_paths(get_option('datadir'),
+                           'freeciv/themes/gui-sdl3/human'))
+
+install_data(
+  'bootstrap/org.freeciv.sdl3.desktop',
+  install_dir : join_paths(get_option('prefix'), 'share/applications')
+  )
+
+custom_target('mi_sdl3',
+              input: 'bootstrap/org.freeciv.sdl3.metainfo.xml.in',
+              output: '@BASENAME@',
+              command: [sh_exe, files('bootstrap/generate_metainfo.sh'),
+                        '@OUTPUT@', b_root],
+              depend_files: files('fc_version'),
               install: true,
               install_dir: join_paths(get_option('datadir'), 'metainfo'))
 
@@ -3528,9 +4271,10 @@ executable('freeciv-stub',
   'client/gui-stub/wldlg.c',
   clienticon,
   include_directories: client_inc,
-  dependencies: [audio_dep, net_dep, gettext_dep],
+  dependencies: [audio_dep, net_dep, gettext_dep, mw_extra_dep],
   link_with: client_common,
-  install: true
+  install: true,
+  win_subsystem: 'console'
   )
 
 endif
@@ -3562,28 +4306,29 @@ endif
 executable('freeciv-mp-gtk3',
   'tools/fcmp/mpgui_gtk3.c',
   mpicon,
-  sources: [verhdr],
   c_args: [ '-DGDK_VERSION_MIN_REQUIRED=GDK_VERSION_3_20',
             '-DGDK_VERSION_MAX_ALLOWED=GDK_VERSION_3_22',
             '-DGLIB_VERSION_MIN_REQUIRED=GLIB_VERSION_2_50',
             '-DGLIB_VERSION_MAX_ALLOWED=GLIB_VERSION_2_50'],
   include_directories: tool_inc,
+  sources: [verhdr],
   dependencies: [gtk322_dep, sqlite3_dep, gettext_dep],
   link_with: [common_lib, fcmp_common],
-  install: true
+  install: true,
+  win_subsystem: 'windows'
   )
 
 install_data(
-  'bootstrap/org.freeciv.mp.gtk3.desktop',
+  'bootstrap/org.freeciv.gtk3.mp.desktop',
   install_dir : join_paths(get_option('prefix'), 'share/applications')
   )
 
 custom_target('mi_mp_gtk3',
-              input: 'bootstrap/org.freeciv.mp.gtk3.metainfo.xml.in',
+              input: 'bootstrap/org.freeciv.gtk3.mp.metainfo.xml.in',
               output: '@BASENAME@',
               command: [sh_exe, files('bootstrap/generate_metainfo.sh'),
-                        '@OUTPUT@',
-                        meson.project_build_root(), 'development'],
+                        '@OUTPUT@', b_root],
+              depend_files: files('fc_version'),
               install: true,
               install_dir: join_paths(get_option('datadir'), 'metainfo'))
 
@@ -3604,22 +4349,61 @@ executable('freeciv-mp-gtk4',
             '-DGLIB_VERSION_MIN_REQUIRED=GLIB_VERSION_2_66',
             '-DGLIB_VERSION_MAX_ALLOWED=GLIB_VERSION_2_66'],
   include_directories: tool_inc,
+  sources: [verhdr],
   dependencies: [gtk4_dep, sqlite3_dep, gettext_dep],
   link_with: [common_lib, fcmp_common],
-  install: true
+  install: true,
+  win_subsystem: 'windows'
   )
 
 install_data(
-  'bootstrap/org.freeciv.mp.gtk4.desktop',
+  'bootstrap/org.freeciv.gtk4.mp.desktop',
   install_dir : join_paths(get_option('prefix'), 'share/applications')
   )
 
 custom_target('mi_mp_gtk4',
-              input: 'bootstrap/org.freeciv.mp.gtk4.metainfo.xml.in',
+              input: 'bootstrap/org.freeciv.gtk4.mp.metainfo.xml.in',
               output: '@BASENAME@',
               command: [sh_exe, files('bootstrap/generate_metainfo.sh'),
-                        '@OUTPUT@',
-                        meson.project_build_root(), 'development'],
+                        '@OUTPUT@', b_root],
+              depend_files: files('fc_version'),
+              install: true,
+              install_dir: join_paths(get_option('datadir'), 'metainfo'))
+
+endif
+
+if get_option('fcmp').contains('gtk4x')
+
+if not gtk5_dep.found()
+  error('gtk-4.0 >= 4.14 required for gtk4x modpack installer, but not found')
+endif
+
+executable('freeciv-mp-gtk4x',
+  'tools/fcmp/mpgui_gtk5.c',
+  mpicon,
+  c_args: [ '-DGDK_VERSION_MIN_REQUIRED=GDK_VERSION_4_14',
+            '-DGDK_VERSION_MAX_ALLOWED=GDK_VERSION_4_14',
+            '-DGLIB_VERSION_MIN_REQUIRED=GLIB_VERSION_2_76',
+            '-DGLIB_VERSION_MAX_ALLOWED=GLIB_VERSION_2_76'],
+  include_directories: tool_inc,
+  sources: [verhdr],
+  dependencies: [gtk5_dep, sqlite3_dep, gettext_dep],
+  link_with: [common_lib, fcmp_common],
+  install: true,
+  win_subsystem: 'windows'
+  )
+
+install_data(
+  'bootstrap/org.freeciv.gtk4x.mp.desktop',
+  install_dir : join_paths(get_option('prefix'), 'share/applications')
+  )
+
+custom_target('mi_mp_gtk4x',
+              input: 'bootstrap/org.freeciv.gtk4x.mp.metainfo.xml.in',
+              output: '@BASENAME@',
+              command: [sh_exe, files('bootstrap/generate_metainfo.sh'),
+                        '@OUTPUT@', b_root],
+              depend_files: files('fc_version'),
               install: true,
               install_dir: join_paths(get_option('datadir'), 'metainfo'))
 
@@ -3628,11 +4412,8 @@ endif
 if get_option('fcmp').contains('qt')
 
 if not qt_dep.found()
-  if qtver == 'qt6' or qtver == 'qt6x'
-    error('Qt6 >= 6.0 required for qt-modpack-installer in Qt6 mode, but not found')
-  else
-    error('Qt5 >= 5.15 required for qt-modpack-installer in Qt5 mode, but not found')
-  endif
+  error('Qt6 >= ' + qt_vercheck + ' required for qt-modpack-installer in ' + \
+        qt_modename + ' mode, but not found')
 endif
 
 mocced_fcmp = qt_mod.preprocess(
@@ -3646,23 +4427,25 @@ executable('freeciv-mp-qt',
   'tools/fcmp/mpgui_qt_worker.cpp',
   mocced_fcmp, mpicon,
   include_directories: tool_inc,
+  sources: [verhdr],
   dependencies: [qt_dep, sqlite3_dep, gettext_dep],
   link_with: [common_lib, fcmp_common],
   override_options: qt_opts,
-  install: true
+  install: true,
+  win_subsystem: 'windows'
   )
 
 install_data(
-  'bootstrap/org.freeciv.mp.qt.desktop',
+  'bootstrap/org.freeciv.qt.mp.desktop',
   install_dir : join_paths(get_option('prefix'), 'share/applications')
   )
 
 custom_target('mi_mp_qt',
-              input: 'bootstrap/org.freeciv.mp.qt.metainfo.xml.in',
+              input: 'bootstrap/org.freeciv.qt.mp.metainfo.xml.in',
               output: '@BASENAME@',
               command: [sh_exe, files('bootstrap/generate_metainfo.sh'),
-                        '@OUTPUT@',
-                        meson.project_build_root(), 'development'],
+                        '@OUTPUT@', b_root],
+              depend_files: files('fc_version'),
               install: true,
               install_dir: join_paths(get_option('datadir'), 'metainfo'))
 
@@ -3674,12 +4457,16 @@ executable('freeciv-mp-cli',
   'tools/fcmp/mpcli.c',
   mpicon,
   include_directories: tool_inc,
+  sources: [verhdr],
   dependencies: [sqlite3_dep, gettext_dep],
   link_with: [common_lib, fcmp_common],
-  install: true
+  install: true,
+  win_subsystem: 'console'
   )
 
 endif
+
+if get_option('tools').length() > 0
 
 tool_lib = static_library('fc_toolutil',
   'tools/ruleutil/comments.c',
@@ -3689,36 +4476,47 @@ tool_lib = static_library('fc_toolutil',
   include_directories: server_inc,
   )
 
+else
+  tool_lib = []
+endif
+
+if get_option('tools').contains('ruleup')
+
 executable('freeciv-ruleup',
   'tools/ruleup.c',
   link_with: [common_lib, server_lib, tool_lib, ais],
   include_directories: tool_inc,
-  dependencies: [m_dep, net_dep, readline_dep, gettext_dep],
-  install: true
+  dependencies: [m_dep, net_dep, readline_dep, gettext_dep, fcdb_dep,
+                 mw_extra_dep],
+  install: true,
+  win_subsystem: 'console'
   )
 
-if get_option('ruledit')
+endif
+
+if get_option('tools').contains('ruledit')
 
 if not qt_dep.found()
-  if qtver == 'qt6' or qtver == 'qt6x'
-    error('Qt6 >= 6.0 required for ruledit in Qt6 mode, but not found')
-  else
-    error('Qt5 >= 5.15 required for ruledit in Qt5 mode, but not found')
-  endif
+  error('Qt6 >= ' + qt_vercheck +' required for ruledit in ' + \
+        qt_modename + ' mode, but not found')
 endif
 
 mocced_ruledit = qt_mod.preprocess(
   moc_headers: [
    'tools/ruledit/conversion_log.h',
    'tools/ruledit/edit_extra.h',
+   'tools/ruledit/edit_gov.h',
    'tools/ruledit/edit_impr.h',
+   'tools/ruledit/edit_tech.h',
    'tools/ruledit/edit_terrain.h',
    'tools/ruledit/edit_utype.h',
    'tools/ruledit/effect_edit.h',
+   'tools/ruledit/helpeditor.h',
    'tools/ruledit/req_edit.h',
    'tools/ruledit/req_vec_fix.h',
    'tools/ruledit/requirers_dlg.h',
    'tools/ruledit/ruledit_qt.h',
+   'tools/ruledit/tab_achievement.h',
    'tools/ruledit/tab_counters.h',
    'tools/ruledit/tab_enablers.h',
    'tools/ruledit/tab_extras.h',
@@ -3730,21 +4528,26 @@ mocced_ruledit = qt_mod.preprocess(
    'tools/ruledit/tab_building.h',
    'tools/ruledit/tab_good.h',
    'tools/ruledit/tab_gov.h',
-   'tools/ruledit/tab_unit.h']
+   'tools/ruledit/tab_unit.h',
+   'tools/ruledit/values_dlg.h']
   )
 
 executable('freeciv-ruledit',
   'tools/ruledit/conversion_log.cpp',
   'tools/ruledit/edit_extra.cpp',
+  'tools/ruledit/edit_gov.cpp',
   'tools/ruledit/edit_impr.cpp',
+  'tools/ruledit/edit_tech.cpp',
   'tools/ruledit/edit_terrain.cpp',
   'tools/ruledit/edit_utype.cpp',
   'tools/ruledit/effect_edit.cpp',
+  'tools/ruledit/helpeditor.cpp',
   'tools/ruledit/req_edit.cpp',
   'tools/ruledit/requirers_dlg.cpp',
   'tools/ruledit/req_vec_fix.cpp',
   'tools/ruledit/ruledit.cpp',
   'tools/ruledit/ruledit_qt.cpp',
+  'tools/ruledit/tab_achievement.cpp',
   'tools/ruledit/tab_building.cpp',
   'tools/ruledit/tab_counters.cpp',
   'tools/ruledit/tab_enablers.cpp',
@@ -3759,12 +4562,15 @@ executable('freeciv-ruledit',
   'tools/ruledit/tab_unit.cpp',
   'tools/ruledit/univ_value.c',
   'tools/ruledit/validity.c',
+  'tools/ruledit/values_dlg.cpp',
   mocced_ruledit, rulediticon,
   include_directories: tool_inc,
-  dependencies: [qt_dep, m_dep, net_dep, readline_dep, gettext_dep],
+  dependencies: [qt_dep, m_dep, net_dep, readline_dep, gettext_dep,
+                 fcdb_dep, mw_extra_dep],
   link_with: [common_lib, server_lib, ais, tool_lib],
   override_options: qt_opts,
-  install: true
+  install: true,
+  win_subsystem: 'windows'
   )
 
 install_data(
@@ -3781,10 +4587,36 @@ custom_target('mi_ruledit',
               input: 'bootstrap/org.freeciv.ruledit.metainfo.xml.in',
               output: '@BASENAME@',
               command: [sh_exe, files('bootstrap/generate_metainfo.sh'),
-                        '@OUTPUT@',
-                        meson.project_build_root(), 'development'],
+                        '@OUTPUT@', b_root],
+              depend_files: files('fc_version'),
               install: true,
               install_dir: join_paths(get_option('datadir'), 'metainfo'))
+
+endif
+
+if get_option('tools').contains('manual')
+
+executable('freeciv-manual',
+  'tools/manual/fc_manual.c',
+  'tools/manual/manual_buildings.c',
+  'tools/manual/manual_commands.c',
+  'tools/manual/manual_extras.c',
+  'tools/manual/manual_governments.c',
+  'tools/manual/manual_settings.c',
+  'tools/manual/manual_techs.c',
+  'tools/manual/manual_terrain.c',
+  'tools/manual/manual_uclass.c',
+  'tools/manual/manual_units.c',
+  'client/helpdata.c',
+  sources: [enum_targets['manual']],
+  link_with: [common_lib, server_lib, tool_lib, ais],
+  include_directories: [tool_inc,
+                        include_directories('client', 'client/include')],
+  dependencies: [m_dep, net_dep, readline_dep, gettext_dep, fcdb_dep,
+                 mw_extra_dep],
+  install: true,
+  win_subsystem: 'console'
+  )
 
 endif
 
@@ -3813,6 +4645,7 @@ rulesets = [
   'sandbox',
   'civ1',
   'civ2',
+  'granularity',
   'stub'
   ]
 
@@ -3841,6 +4674,7 @@ install_data(
   'data/sandbox.modpack',
   'data/civ1.modpack',
   'data/civ2.modpack',
+  'data/granularity.modpack',
   install_dir : join_paths(get_option('datadir'), 'freeciv')
   )
 
@@ -3875,6 +4709,11 @@ install_data(
   )
 
 install_data(
+  'data/granularity/README.granularity',
+  install_dir : join_paths(get_option('datadir'), 'freeciv/granularity')
+  )
+
+install_data(
   'data/alien/nation/adventurers.ruleset',
   'data/alien/nation/galacticsound.ruleset',
   'data/alien/nation/jw.ruleset',
@@ -3904,14 +4743,13 @@ install_data(
   'NEWS',
   'INSTALL',
   'ChangeLog',
-  'ChangeLog-1.0-S3_0',
   'doc/BUGS',
   'doc/CodingStyle',
   'doc/FAQ',
   'doc/HACKING',
   'doc/HOWTOPLAY',
+  'doc/INSTALL.autotools',
   'doc/INSTALL.Cygwin',
-  'doc/INSTALL.meson',
   'doc/README',
   'doc/README.achievements',
   'doc/README.actions',
@@ -3937,3 +4775,11 @@ install_data(
   'doc/TODO',
   install_dir : join_paths(get_option('datadir'), 'doc/freeciv')
   )
+
+custom_target('gzip_ChangeLog-1.0-S3_0',
+              command: [gzip_exe, '--best', '-n', '-c', '@INPUT@' ],
+              output: '@PLAINNAME@.gz',
+              capture: true,
+              input: 'ChangeLog-1.0-S3_0',
+              install: true,
+              install_dir: join_paths(get_option('datadir'), 'doc/freeciv'))

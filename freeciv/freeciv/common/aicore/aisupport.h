@@ -17,14 +17,13 @@
 extern "C" {
 #endif /* __cplusplus */
 
-
-/* common */
-#include "fc_types.h"
-
+struct city;
+struct player;
+struct civ_map;
 
 struct player *player_leading_spacerace(void);
 int player_distance_to_player(struct player *pplayer, struct player *target);
-int city_gold_worth(struct city *pcity);
+int city_gold_worth(const struct civ_map *nmap, struct city *pcity);
 
 #ifdef __cplusplus
 }

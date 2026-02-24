@@ -25,6 +25,7 @@
 #include "server_settings.h"
 #include "specialist.h"
 #include "tech.h"
+#include "tiledef.h"
 #include "traderoutes.h"
 
 /* server */
@@ -60,7 +61,11 @@ bool universal_value_initial(struct universal *src)
   case VUT_GOVERNMENT:
     src->value.govern = game.government_during_revolution;
     return TRUE;
+  case VUT_GOVFLAG:
+    src->value.govflag = 0;
+    return TRUE;
   case VUT_IMPROVEMENT:
+  case VUT_SITE:
     if (game.control.num_impr_types <= 0) {
       return FALSE;
     }
@@ -156,6 +161,13 @@ bool universal_value_initial(struct universal *src)
     }
     src->value.extra = extra_by_number(0);
     return TRUE;
+  case VUT_TILEDEF:
+  case VUT_TILEDEF_CONNECTED:
+    if (game.control.num_tiledef_types <= 0) {
+      return FALSE;
+    }
+    src->value.tiledef = tiledef_by_number(0);
+    return TRUE;
   case VUT_TECHFLAG:
     src->value.techflag = TF_BONUS_TECH;
     return TRUE;
@@ -172,8 +184,11 @@ bool universal_value_initial(struct universal *src)
   case VUT_DIPLREL_UNITANY_O:
     src->value.diplrel = DS_WAR;
     return TRUE;
-  case VUT_MAXTILEUNITS:
-    src->value.max_tile_units = 0;
+  case VUT_MAXTILETOTALUNITS:
+    src->value.max_tile_total_units = 0;
+    return TRUE;
+  case VUT_MAXTILETOPUNITS:
+    src->value.max_tile_top_units = 0;
     return TRUE;
   case VUT_STYLE:
     if (game.control.num_styles <= 0) {
@@ -205,6 +220,9 @@ bool universal_value_initial(struct universal *src)
   case VUT_AGE:
     src->value.age = 0;
     return TRUE;
+  case VUT_FORM_AGE:
+    src->value.form_age = 0;
+    return TRUE;
   case VUT_NATIONGROUP:
     if (nation_group_count() <= 0) {
       return FALSE;
@@ -227,11 +245,23 @@ bool universal_value_initial(struct universal *src)
   case VUT_IMPR_FLAG:
     src->value.impr_flag = IF_VISIBLE_BY_OTHERS;
     return TRUE;
+  case VUT_PLAYER_FLAG:
+    src->value.plr_flag = PLRF_AI;
+    return TRUE;
+  case VUT_PLAYER_STATE:
+    src->value.plrstate = PLRS_BARBARIAN;
+    return TRUE;
   case VUT_ACTION:
     src->value.action = action_by_number(0);
     return TRUE;
   case VUT_MINTECHS:
     src->value.min_techs = 0;
+    return TRUE;
+  case VUT_FUTURETECHS:
+    src->value.future_techs = 0;
+    return TRUE;
+  case VUT_MINCITIES:
+    src->value.min_cities = 0;
     return TRUE;
   case VUT_EXTRAFLAG:
     src->value.extraflag = EF_NATIVE_TILE;
@@ -239,6 +269,15 @@ bool universal_value_initial(struct universal *src)
   case VUT_MINLATITUDE:
   case VUT_MAXLATITUDE:
     src->value.latitude = 0;
+    return TRUE;
+  case VUT_MAX_DISTANCE_SQ:
+    src->value.distance_sq = 0;
+    return TRUE;
+  case VUT_MAX_REGION_TILES:
+    src->value.region_tiles = 0;
+    return TRUE;
+  case VUT_TILE_REL:
+    src->value.tilerel = TREL_SAME_REGION;
     return TRUE;
   case VUT_COUNT:
     fc_assert(src->kind != VUT_COUNT);
@@ -274,7 +313,13 @@ void universal_kind_values(struct universal *univ,
       cb(government_rule_name(pgov), univ->value.govern == pgov, data);
     } governments_re_active_iterate_end;
     break;
+  case VUT_GOVFLAG:
+    for (i = 0; i < GOVF_LAST_USER_FLAG; i++) {
+      cb(gov_flag_id_name(i), univ->value.govflag == i, data);
+    }
+    break;
   case VUT_IMPROVEMENT:
+  case VUT_SITE:
     improvement_re_active_iterate(pimpr) {
       cb(improvement_rule_name(pimpr), univ->value.building == pimpr, data);
     } improvement_re_active_iterate_end;
@@ -323,6 +368,12 @@ void universal_kind_values(struct universal *univ,
     extra_type_re_active_iterate(pextra) {
       cb(extra_rule_name(pextra), univ->value.extra == pextra, data);
     } extra_type_re_active_iterate_end;
+    break;
+  case VUT_TILEDEF:
+  case VUT_TILEDEF_CONNECTED:
+    tiledef_iterate(ptd) {
+      cb(tiledef_rule_name(ptd), univ->value.tiledef == ptd, data);
+    } tiledef_iterate_end;
     break;
   case VUT_STYLE:
     styles_re_active_iterate(pstyle) {
@@ -387,6 +438,11 @@ void universal_kind_values(struct universal *univ,
   case VUT_CITYSTATUS:
     for (i = 0; i < CITYS_LAST; i++) {
       cb(citystatus_type_name(i), univ->value.citystatus == i, data);
+    }
+    break;
+  case VUT_TILE_REL:
+    for (i = 0; i < TREL_COUNT; i++) {
+      cb(tilerel_type_name(i), univ->value.tilerel == i, data);
     }
     break;
   case VUT_ACHIEVEMENT:
@@ -460,6 +516,16 @@ void universal_kind_values(struct universal *univ,
       cb(impr_flag_id_name(i), univ->value.impr_flag == i, data);
     }
     break;
+  case VUT_PLAYER_FLAG:
+    for (i = 0; i < PLRF_COUNT; i++) {
+      cb(plr_flag_id_name(i), univ->value.plr_flag == i, data);
+    }
+    break;
+  case VUT_PLAYER_STATE:
+    for (i = 0; i < PLRS_LAST; i++) {
+      cb(plrstate_type_name(i), univ->value.plrstate == i, data);
+    }
+    break;
   case VUT_ACTION:
     action_iterate(act) {
       struct action *pact = action_by_number(act);
@@ -470,18 +536,24 @@ void universal_kind_values(struct universal *univ,
   case VUT_MINSIZE:
   case VUT_MINYEAR:
   case VUT_MINCALFRAG:
-  case VUT_MAXTILEUNITS:
+  case VUT_MAXTILETOTALUNITS:
+  case VUT_MAXTILETOPUNITS:
   case VUT_MINCULTURE:
   case VUT_MINFOREIGNPCT:
   case VUT_MINMOVES:
   case VUT_MINVETERAN:
   case VUT_MINHP:
   case VUT_AGE:
+  case VUT_FORM_AGE:
   case VUT_MINTECHS:
+  case VUT_FUTURETECHS:
+  case VUT_MINCITIES:
   case VUT_MINLATITUDE:
   case VUT_MAXLATITUDE:
+  case VUT_MAX_DISTANCE_SQ:
+  case VUT_MAX_REGION_TILES:
     /* Requirement types having numerical value */
-    cb(NULL, FALSE, data);
+    cb(nullptr, FALSE, data);
     break;
   case VUT_COUNT:
     fc_assert(univ->kind != VUT_COUNT);

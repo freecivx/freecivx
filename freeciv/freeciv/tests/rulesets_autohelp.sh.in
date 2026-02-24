@@ -1,4 +1,17 @@
-#!/bin/bash
+#!/usr/bin/env bash
+#/***********************************************************************
+# Freeciv - Copyright (C) 2017-2023
+#   This program is free software; you can redistribute it and/or modify
+#   it under the terms of the GNU General Public License as published by
+#   the Free Software Foundation; either version 2, or (at your option)
+#   any later version.
+#
+#   This program is distributed in the hope that it will be useful,
+#   but WITHOUT ANY WARRANTY; without even the implied warranty of
+#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#   GNU General Public License for more details.
+#
+#***********************************************************************/
 
 # rulesets_autohelp.sh [ruleset]...
 # Exits with 0 when each specified ruleset or, if no rulesets are specified,
@@ -6,7 +19,7 @@
 # generate help texts. Exits with 1 if autohelp fails for any ruleset.
 
 if test "$1" = "" ; then
-  # Try to load all rulesets that are developed with Freeciv
+  # Try to create manual for all rulesets that are developed with Freeciv
   rulesets="$(cat @abs_top_srcdir@/tests/rs_test_res/ruleset_list_dist.txt)"
   optional="$(cat @abs_top_srcdir@/tests/rs_test_res/ruleset_list_opt.txt)"
   for opt in $optional ; do
@@ -26,8 +39,8 @@ FREECIV_DATA_PATH="${FREECIV_DATA_PATH}@HOST_PATH_SEPARATOR@@abs_top_builddir@@H
 export FREECIV_DATA_PATH
 
 for ruleset in $rulesets; do
-  echo "Loading $ruleset"
-  @abs_top_builddir@/tools/freeciv-manual -r $ruleset || exit 1
+  echo "Creating manual for $ruleset"
+  @abs_top_builddir@/tools/manual/freeciv-manual -r $ruleset || exit 1
 done
 
 echo "The automatic help text generation works for all tested rulesets."

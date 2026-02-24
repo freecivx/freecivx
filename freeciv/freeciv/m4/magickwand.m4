@@ -13,6 +13,10 @@ AC_DEFUN([FC_CHECK_MAGICKWAND],
     PKG_CHECK_MODULES([WAND], [MagickWand], [wand=yes], [wand=no])
 
     if test "x$wand" = "xno" ; then
+      PKG_CHECK_MODULES([WAND], [MagickWand-6.Q16HDRI], [wand=yes], [wand=no])
+    fi
+
+    if test "x$wand" = "xno" ; then
       AC_MSG_CHECKING([for MagickWand-config in default path])
 
       for i in /usr/local /usr;
@@ -68,7 +72,7 @@ AC_DEFUN([FC_CHECK_MAGICKWAND],
     ac_save_CFLAGS="$CFLAGS"
     ac_save_LIBS="$LIBS"
     CFLAGS="$CFLAGS $WAND_CFLAGS"
-    LIBS="$WAND_LIBS $LIBS"
+    LIBS="$WAND_LIBS $UTILITY_LIBS $LIBS"
 
     AC_MSG_CHECKING([for all development tools needed for MagickWand])
     dnl First look for MagickWand-7

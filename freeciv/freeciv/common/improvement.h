@@ -41,7 +41,7 @@ struct strvec;          /* Actually defined in "utility/string_vector.h". */
  */
 #define B_LAST MAX_NUM_BUILDINGS
 
-#define B_NEVER (NULL)
+#define B_NEVER (nullptr)
 
 /* Used in the network protocol. */
 BV_DEFINE(bv_imprs, B_LAST);
@@ -50,20 +50,22 @@ BV_DEFINE(bv_imprs, B_LAST);
 struct impr_type {
   Impr_type_id item_number;
   struct name_translation name;
-  bool ruledit_disabled;                /* Does not really exist - hole in improvements array */
+  bool ruledit_disabled;                /* Doesn't really exist - hole in improvements array */
   void *ruledit_dlg;
-  char graphic_str[MAX_LEN_NAME];	/* city icon of improv. */
-  char graphic_alt[MAX_LEN_NAME];	/* city icon of improv. */
+  char graphic_str[MAX_LEN_NAME];       /* City icon of improv. */
+  char graphic_alt[MAX_LEN_NAME];       /* City icon of improv. */
+  char graphic_alt2[MAX_LEN_NAME];      /* City icon of improv. */
   struct requirement_vector reqs;
   struct requirement_vector obsolete_by;
-  int build_cost;			/* Use wrappers to access this. */
+  int build_cost;                       /* Use wrappers to access this. */
   int upkeep;
-  int sabotage;		/* Base chance of diplomat sabotage succeeding. */
-  enum impr_genus_id genus;		/* genus; e.g. GreatWonder */
+  int sabotage;                         /* Base chance of diplomat sabotage succeeding. */
+  enum impr_genus_id genus;             /* Genus; e.g. GreatWonder */
   bv_impr_flags flags;
   struct strvec *helptext;
   char soundtag[MAX_LEN_NAME];
   char soundtag_alt[MAX_LEN_NAME];
+  char soundtag_alt2[MAX_LEN_NAME];
 
   /* Cache */
   bool allows_units;
@@ -76,8 +78,10 @@ struct impr_type {
 
 /* General improvement accessor functions. */
 Impr_type_id improvement_count(void);
-Impr_type_id improvement_index(const struct impr_type *pimprove);
-Impr_type_id improvement_number(const struct impr_type *pimprove);
+Impr_type_id improvement_index(const struct impr_type *pimprove)
+  fc__attribute((nonnull(1)));
+Impr_type_id improvement_number(const struct impr_type *pimprove)
+  fc__attribute((nonnull(1)));
 
 struct impr_type *improvement_by_number(const Impr_type_id id);
 
@@ -143,16 +147,21 @@ const struct impr_type *improvement_replacement(const struct impr_type *pimprove
 #define WONDER_NOT_BUILT 0      /* Used as city id. */
 #define WONDER_BUILT(city_id) ((city_id) > 0)
 
-void wonder_built(const struct city *pcity, const struct impr_type *pimprove);
+void wonder_built(const struct city *pcity, const struct impr_type *pimprove)
+  fc__attribute((nonnull(1)));
 void wonder_destroyed(const struct city *pcity,
-                      const struct impr_type *pimprove);
+                      const struct impr_type *pimprove)
+  fc__attribute((nonnull(1)));
 
 bool wonder_is_lost(const struct player *pplayer,
-                    const struct impr_type *pimprove);
+                    const struct impr_type *pimprove)
+  fc__attribute((nonnull(1)));
 bool wonder_is_built(const struct player *pplayer,
-                     const struct impr_type *pimprove);
+                     const struct impr_type *pimprove)
+  fc__attribute((nonnull(1)));
 struct city *city_from_wonder(const struct player *pplayer,
-                              const struct impr_type *pimprove);
+                              const struct impr_type *pimprove)
+  fc__attribute((nonnull(1)));
 bool wonder_visible_to_player(const struct impr_type *wonder,
                               const struct player *pplayer,
                               const struct player *owner,
@@ -169,9 +178,9 @@ bool small_wonder_is_built(const struct player *pplayer,
 struct city *city_from_small_wonder(const struct player *pplayer,
                                     const struct impr_type *pimprove);
 
-/* player related improvement functions */
+/* Player related improvement functions */
 bool improvement_obsolete(const struct player *pplayer,
-			  const struct impr_type *pimprove,
+                          const struct impr_type *pimprove,
                           const struct city *pcity);
 bool is_improvement_productive(const struct city *pcity,
                                const struct impr_type *pimprove);
@@ -194,15 +203,15 @@ void improvement_feature_cache_init(void);
 struct impr_type *improvement_array_first(void);
 const struct impr_type *improvement_array_last(void);
 
-#define improvement_iterate(_p)						\
-{									\
-  struct impr_type *_p = improvement_array_first();			\
-  if (NULL != _p) {							\
+#define improvement_iterate(_p)                                         \
+{                                                                       \
+  struct impr_type *_p = improvement_array_first();                     \
+  if (_p != nullptr) {                                                  \
     for (; _p <= improvement_array_last(); _p++) {
 
-#define improvement_iterate_end						\
-    }									\
-  }									\
+#define improvement_iterate_end                                         \
+    }                                                                   \
+  }                                                                     \
 }
 
 #define improvement_re_active_iterate(_p)                               \

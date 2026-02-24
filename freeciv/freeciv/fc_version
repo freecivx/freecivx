@@ -1,25 +1,26 @@
 #!/bin/sh
 
 #
-#  Copyright (C) 2004-2008 Freeciv team
+#  Copyright (C) 2004-2025 Freeciv team
 
 # Version definition for Freeciv.
 
 MAJOR_VERSION="3"
-MINOR_VERSION="2"
+MINOR_VERSION="3"
 PATCH_VERSION="90"
-EMERGENCY_VERSION="2"
+EMERGENCY_VERSION="10"
 VERSION_LABEL="-dev"
 
 # Type is either "development" or "stable"
 # Date and NEWS URL are relevant only for "stable" releases
-if test "$VERSION_LABEL" = "" ; then
+if test "${VERSION_LABEL}" = "" ; then
   RELEASE_TYPE="stable"
-  #RELEASE_DATE="2023-03-22"
+  #RELEASE_DATE="2025-01-17"
   NEWS_URL="https://www.freeciv.org/wiki/NEWS-${MAJOR_VERSION}.${MINOR_VERSION}.${PATCH_VERSION}"
 else
   RELEASE_TYPE="development"
-  #NEWS_URL="https://www.freeciv.org/wiki/NEWS-3.3.0"
+  #RELEASE_DATE="2025-01-17"
+  #NEWS_URL="https://www.freeciv.org/wiki/NEWS-3.4.0"
 fi
 
 #
@@ -50,21 +51,20 @@ fi
 #
 # 5) Final.
 # Update DEFAULT_FOLLOW_TAG to "stable", and also
-# windows/installer_msys2/Makefile.autotools --with-followtag to "windows"
-# platforms/macos/homebrew-appbundle.sh -Dfollowtag to "macos"
+# platforms/windows/installer_msys2/Makefile.meson -Dfollowtag to "windows"
 
 IS_DEVEL_VERSION=1
 IS_FREEZE_VERSION=0
 IS_BETA_VERSION=0
 
-NEXT_STABLE_VERSION="3.3.0"
+NEXT_STABLE_VERSION="3.4.0"
 
 # 0 to disable display of release month until we can make better estimate
 RELEASE_MONTH=0
 
-MAIN_VERSION=3.3
+MAIN_VERSION=3.4
 DATASUBDIR=dev
-DEFAULT_FOLLOW_TAG=S3_3
+DEFAULT_FOLLOW_TAG=S3_4
 
 # Freeciv network capstring: see documentation in common/capstr.c
 #
@@ -77,29 +77,34 @@ DEFAULT_FOLLOW_TAG=S3_3
 # appended to this.
 #
 NETWORK_CAPSTRING="+Freeciv.Web.Devel-3.3"
+
+# If you are distributing freeciv, and apply any patches at all,
+# patch also this field to contain your identification.
+#
+# See doc/README.packaging chapter "Compatibility of modified versions"
 FREECIV_DISTRIBUTOR=""
 
-if test "x$FREECIV_LABEL_FORCE" != "x" ; then
-  VERSION_LABEL=$(echo $FREECIV_LABEL_FORCE | sed "s/<base>/$VERSION_LABEL/g")
+if test "${FREECIV_LABEL_FORCE}" != "" ; then
+  VERSION_LABEL="$(echo "${FREECIV_LABEL_FORCE}" | sed "s/<base>/${VERSION_LABEL}/g")"
 fi
 
-if test x$VERSION_REVTYPE = xgit && command -v git > /dev/null ; then
+if test "${VERSION_REVTYPE}" = "git" && command -v git > /dev/null ; then
   VERSION_REV="$(git rev-parse --short HEAD)"
 else
   VERSION_REV=""
 fi
-if test "x$VERSION_REV" != "x" ; then
-  case "x$VERSION_LABEL" in
-    x*+) ;;
+if test "${VERSION_REV}" != "" ; then
+  case "${VERSION_LABEL}" in
+    *+) ;;
     *) VERSION_REV="+${VERSION_REV}" ;;
   esac
 fi
 
-if test x$EMERGENCY_VERSION != x ; then
+if test "${EMERGENCY_VERSION}" != "" ; then
   EMERG_PART=".${EMERGENCY_VERSION}"
 fi
 
-VERSION_STRING=${MAJOR_VERSION}.${MINOR_VERSION}.${PATCH_VERSION}${EMERG_PART}${VERSION_LABEL}
-if test x$VERSION_SCRIPT_SILENT != xyes ; then
-  echo ${VERSION_STRING}${VERSION_REV}
+VERSION_STRING="${MAJOR_VERSION}.${MINOR_VERSION}.${PATCH_VERSION}${EMERG_PART}${VERSION_LABEL}"
+if test "${VERSION_SCRIPT_SILENT}" != "yes" ; then
+  echo "${VERSION_STRING}${VERSION_REV}"
 fi
