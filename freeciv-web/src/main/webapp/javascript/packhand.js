@@ -421,7 +421,7 @@ function handle_city_short_info(packet)
   A traderoute-info packet contains information about one end of a
   traderoute
 **************************************************************************/
-function handle_traderoute_info(packet)
+function handle_trade_route_info(packet)
 {
   if (city_trade_routes[packet['city']] == null) {
     /* This is the first trade route received for this city. */
@@ -1904,6 +1904,31 @@ function handle_investigate_started(packet)
 }
 
 function handle_investigate_finished(packet)
+{
+  // TODO: Implement
+}
+
+function handle_ruleset_gov_flag(packet)
+{
+  // TODO: Implement
+}
+
+function handle_ruleset_tiledef(packet)
+{
+  // TODO: Implement
+}
+
+function handle_edit_fogofwar_state(packet)
+{
+  // TODO: Implement
+}
+
+function handle_popup_image(packet)
+{
+  // TODO: Implement
+}
+
+function handle_sync_serial_reply(packet)
 {
   // TODO: Implement
 }

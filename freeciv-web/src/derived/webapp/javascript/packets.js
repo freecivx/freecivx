@@ -72,6 +72,7 @@
  var packet_edit_player_vision = 217
  var packet_edit_game = 218
  var packet_edit_scenario_desc = 14
+ var packet_sync_serial = 517
  var packet_web_cma_set = 257
  var packet_web_cma_clear = 258
  var packet_web_goto_path_req = 287

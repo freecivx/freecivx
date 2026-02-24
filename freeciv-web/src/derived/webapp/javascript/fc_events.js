@@ -192,10 +192,11 @@ var E_UNIT_ACTION_TARGET_HOSTILE = 134;
 var E_INFRAPOINTS = 135;
 var E_HUT_MAP = 136;
 var E_TREATY_SHARED_TILES = 137;
-var E_CHAT_PRIVATE = 138;
-var E_CHAT_ALLIES = 139;
-var E_CHAT_OBSERVER = 140;
-var E_UNDEFINED = 141;
+var E_CITY_CONQUERED = 138;
+var E_CHAT_PRIVATE = 139;
+var E_CHAT_ALLIES = 140;
+var E_CHAT_OBSERVER = 141;
+var E_UNDEFINED = 142;
 
 var fc_e_events = [
   ["e_city_cantbuild", E_S_CITY, "Building Unavailable Item"],
@@ -222,7 +223,7 @@ var fc_e_events = [
   ["e_first_contact", E_S_NATION, "First Contact"],
   ["e_new_government", E_S_NATION, "Learned New Government"],
   ["e_low_on_funds", E_S_NATION, "Low Funds"],
-  ["e_pollution", E_S_NATION, "Pollution"],
+  ["e_pollution", E_S_NATION, "?event:Pollution"],
   ["e_revolt_done", E_S_NATION, "Revolution Ended"],
   ["e_revolt_start", E_S_NATION, "Revolution Started"],
   ["e_spaceship", E_S_NATION, "Spaceship Events"],
@@ -336,6 +337,7 @@ var fc_e_events = [
   ["e_infrapoints", E_S_NATION, "Infrapoints"],
   ["e_hut_map", E_S_HUT, "Map found from a hut"],
   ["e_treaty_shared_tiles", E_S_TREATY, "Tiles shared"],
+  ["e_city_conquered", E_S_CITY, "Conquered"],
   ["e_chat_private", E_S_CHAT, "Private messages"],
   ["e_chat_allies", E_S_CHAT, "Allies messages"],
   ["e_chat_observer", E_S_CHAT, "Observers messages"],
