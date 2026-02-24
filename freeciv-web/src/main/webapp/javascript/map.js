@@ -457,6 +457,10 @@ function map_tile_height_adjust(ptile)
     } else {
       // Convert tile altitude to web client scale.
       // Server sends altitude in 0-1000 range, convert to 0.0-1.0 range
+      // Formula: (840 + altitude) * 0.00037
+      //   - 840 offset centers the range around ~0.5
+      //   - 0.00037 multiplier scales 0-1000 to approximately 0.31-0.68
+      //   - This provides good visual distinction between ocean (~0.45) and land (~0.55)
       ptile['height'] = (840 + altitude) * 0.00037;
 
       if (is_ocean_tile(ptile) && ptile['height'] > 0.5) {
