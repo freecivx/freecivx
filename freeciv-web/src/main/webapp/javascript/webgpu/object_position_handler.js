@@ -277,9 +277,14 @@ function update_city_position(ptile) {
   if (city_positions[ptile['index']] == null && pcity != null) {
     // add new city
     let model_name = city_to_3d_model_name(pcity);
+    if (!model_name) {
+      console.error(`Failed to get 3D model name for city ${pcity['id']} (${pcity['name']}) - style: ${pcity['style']}`);
+      return;
+    }
     pcity['webgl_model_name'] = model_name;
     let new_city = webgl_get_model(model_name, ptile);
     if (new_city == null) {
+      console.log(`City model '${model_name}' for city ${pcity['id']} (${pcity['name']}) not yet loaded, queued for download`);
       return;
     }
     city_positions[ptile['index']] = new_city;
