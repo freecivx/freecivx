@@ -1033,6 +1033,16 @@ class Packet:
             remaining.append(i)
         arr=remaining
 
+        self.reset=[]
+        remaining=[]
+        for i in arr:
+            mo=re.search(r"^reset\((.*)\)$",i)
+            if mo:
+                self.reset.append(mo.group(1))
+                continue
+            remaining.append(i)
+        arr=remaining
+
         assert len(arr)==0,repr(arr)
         
         if disable_delta:
