@@ -100,3 +100,185 @@ impl GameState {
         self.turn_started = false;
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_game_state_creation() {
+        let state = GameState::new();
+        assert_eq!(state.players.len(), 0);
+        assert_eq!(state.cities.len(), 0);
+        assert_eq!(state.units.len(), 0);
+        assert_eq!(state.current_turn, 0);
+        assert_eq!(state.our_player_id, None);
+    }
+
+    #[test]
+    fn test_add_player() {
+        let mut state = GameState::new();
+        let player = Player {
+            id: 1,
+            name: "TestPlayer".to_string(),
+            username: "test".to_string(),
+            is_alive: true,
+            gold: 100,
+        };
+        state.update_player(player.clone());
+        assert_eq!(state.players.len(), 1);
+        assert!(state.players.contains_key(&1));
+        assert_eq!(state.players.get(&1).unwrap().name, "TestPlayer");
+    }
+
+    #[test]
+    fn test_add_city() {
+        let mut state = GameState::new();
+        let city = City {
+            id: 1,
+            owner: 1,
+            name: "TestCity".to_string(),
+            tile: 100,
+            size: 5,
+            production_kind: None,
+            production_value: None,
+        };
+        state.update_city(city);
+        assert_eq!(state.cities.len(), 1);
+        assert!(state.cities.contains_key(&1));
+    }
+
+    #[test]
+    fn test_add_unit() {
+        let mut state = GameState::new();
+        let unit = Unit {
+            id: 1,
+            owner: 1,
+            tile: 100,
+            homecity: 1,
+            unit_type: 10,
+            moves_left: 3,
+            hp: 10,
+        };
+        state.update_unit(unit);
+        assert_eq!(state.units.len(), 1);
+        assert!(state.units.contains_key(&1));
+    }
+
+    #[test]
+    fn test_get_our_cities() {
+        let mut state = GameState::new();
+        state.our_player_id = Some(1);
+        
+        let city1 = City {
+            id: 1,
+            owner: 1,
+            name: "City1".to_string(),
+            tile: 100,
+            size: 5,
+            production_kind: None,
+            production_value: None,
+        };
+        let city2 = City {
+            id: 2,
+            owner: 2,
+            name: "City2".to_string(),
+            tile: 200,
+            size: 3,
+            production_kind: None,
+            production_value: None,
+        };
+        
+        state.update_city(city1);
+        state.update_city(city2);
+        
+        let our_cities = state.get_our_cities();
+        assert_eq!(our_cities.len(), 1);
+        assert_eq!(our_cities[0].id, 1);
+    }
+
+    #[test]
+    fn test_get_our_units() {
+        let mut state = GameState::new();
+        state.our_player_id = Some(1);
+        
+        let unit1 = Unit {
+            id: 1,
+            owner: 1,
+            tile: 100,
+            homecity: 1,
+            unit_type: 10,
+            moves_left: 3,
+            hp: 10,
+        };
+        let unit2 = Unit {
+            id: 2,
+            owner: 2,
+            tile: 200,
+            homecity: 2,
+            unit_type: 10,
+            moves_left: 3,
+            hp: 10,
+        };
+        
+        state.update_unit(unit1);
+        state.update_unit(unit2);
+        
+        let our_units = state.get_our_units();
+        assert_eq!(our_units.len(), 1);
+        assert_eq!(our_units[0].id, 1);
+    }
+
+    #[test]
+    fn test_turn_state() {
+        let mut state = GameState::new();
+        assert!(!state.turn_started);
+        assert!(!state.turn_done);
+        
+        state.start_turn();
+        assert!(state.turn_started);
+        assert!(!state.turn_done);
+        
+        state.end_turn();
+        assert!(!state.turn_started);
+        assert!(state.turn_done);
+    }
+
+    #[test]
+    fn test_remove_city() {
+        let mut state = GameState::new();
+        let city = City {
+            id: 1,
+            owner: 1,
+            name: "TestCity".to_string(),
+            tile: 100,
+            size: 5,
+            production_kind: None,
+            production_value: None,
+        };
+        state.update_city(city);
+        assert_eq!(state.cities.len(), 1);
+        
+        state.remove_city(1);
+        assert_eq!(state.cities.len(), 0);
+    }
+
+    #[test]
+    fn test_remove_unit() {
+        let mut state = GameState::new();
+        let unit = Unit {
+            id: 1,
+            owner: 1,
+            tile: 100,
+            homecity: 1,
+            unit_type: 10,
+            moves_left: 3,
+            hp: 10,
+        };
+        state.update_unit(unit);
+        assert_eq!(state.units.len(), 1);
+        
+        state.remove_unit(1);
+        assert_eq!(state.units.len(), 0);
+    }
+}

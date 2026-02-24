@@ -52,8 +52,16 @@ Or use the compiled binary:
 The AI is structured as follows:
 
 - **main.rs**: Entry point with command-line argument parsing and main event loop
-- **FreecivPacket**: Struct representing JSON packets sent/received from the server
-- **DeityAI**: Main AI struct that handles connection and game logic
+- **packets.rs**: Packet type definitions and serialization/deserialization
+- **state.rs**: Game state structures (Player, City, Unit, GameState)
+- **ai/mod.rs**: AI coordinator that orchestrates all AI activities
+- **ai/aihand.rs**: AI handler for turn processing and high-level activities
+- **ai/aiunit.rs**: Unit management, movement, and tactics
+- **ai/aicity.rs**: City management, production, and growth
+- **ai/aitech.rs**: Technology research and tech tree management
+- **ai/aitools.rs**: Utility functions and helpers for AI decision making
+
+This modular structure mirrors the Freeciv C AI architecture found in `freeciv/freeciv/ai/default/`, making it easier to replicate the classic AI behavior.
 
 ## Protocol
 
@@ -78,6 +86,9 @@ Each packet consists of:
 - ✅ Packet type constants from packets.def
 - ✅ Structured packet types for common packets
 - ✅ Connection state management
+- ✅ Modular AI structure (aihand, aiunit, aicity, aitech, aitools)
+- ✅ Turn-based processing with PACKET_PLAYER_PHASE_DONE
+- ✅ AI coordinator for orchestrating AI activities
 
 ### In Progress
 
