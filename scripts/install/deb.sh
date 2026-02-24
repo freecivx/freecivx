@@ -51,6 +51,8 @@ dependencies="\
   zlib1g-dev \
   rsync \
   websockify \
+  cargo \
+  rustc \
 "
 
 # TODO: Add back python wikipedia package.
@@ -86,18 +88,4 @@ if [ "${INSTALLED_TOMCAT}" = N ]; then
 fi
 
 TMPINSTDIR=$(mktemp -d)
-
-echo "==== Installing Rust and Cargo ===="
-if ! command -v rustc &> /dev/null || ! command -v cargo &> /dev/null; then
-  echo "Rust not found, installing via rustup..."
-  # Note: Using official rustup installation method from https://rustup.rs
-  # This is the standard and recommended way to install Rust
-  curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --default-toolchain stable
-  source "$HOME/.cargo/env"
-  echo "Rust and Cargo installed successfully"
-else
-  echo "Rust and Cargo already installed"
-  rustc --version
-  cargo --version
-fi
 
