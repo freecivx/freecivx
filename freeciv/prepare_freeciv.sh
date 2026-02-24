@@ -26,7 +26,7 @@ mkdir -p "${BUILD_DIR}"
     -Dfcmp=cli \
     -Djson-protocol=true \
     -Dnls=false \
-    -Daudio=false \
+    -Daudio=none \
     -Druledit=false \
     -Ddefault_library=static \
     -Dprefix="${INSTALL_DIR}" \
