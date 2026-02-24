@@ -51,6 +51,9 @@
 /* common/scriptcore */
 #include "luascript_types.h"
 
+/* aicore */
+#include "pf_tools.h"
+
 /* server */
 #include "actiontools.h"
 #include "barbarian.h"
@@ -7078,7 +7081,7 @@ void handle_web_goto_path_req(struct player *pplayer, int unit_id, int goal)
   p.dest = tile_index(ptile);
 
   /* Use path-finding to find a goto path. */
-  pft_fill_unit_parameter(&parameter, punit);
+  pft_fill_unit_parameter(&parameter, &(wld.map), punit);
   pfm = pf_map_new(&parameter);
   path = pf_map_path(pfm, ptile);
   pf_map_destroy(pfm);
