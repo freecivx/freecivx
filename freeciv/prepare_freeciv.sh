@@ -27,7 +27,6 @@ mkdir -p "${BUILD_DIR}"
     -Djson-protocol=true \
     -Dnls=false \
     -Daudio=none \
-    -Druledit=false \
     -Ddefault_library=static \
     -Dprefix="${INSTALL_DIR}" \
     -Doptimization=3 \

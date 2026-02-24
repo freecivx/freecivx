@@ -74,18 +74,6 @@ bool auth_user(struct connection *pconn, char *username)
 {
   char tmpname[MAX_LEN_NAME] = "\0";
 
-#ifdef FREECIV_WEB
-  if (srvarg.server_password_enabled) {
-    char buffer[MAX_LEN_MSG];
-
-    fc_snprintf(buffer, sizeof(buffer), _("Enter password for this private game:"));
-    dsend_packet_authentication_req(pconn, AUTH_LOGIN_FIRST, buffer);
-    pconn->server.auth_settime = time(NULL);
-
-    return TRUE;
-  }
-#endif /* FREECIV_WEB */
-
   /* Assign the client a unique guest name/Reject if guests aren't allowed */
   if (is_guest_name(username)) {
     if (srvarg.auth_allow_guests) {
@@ -168,32 +156,6 @@ bool auth_user(struct connection *pconn, char *username)
 bool auth_handle_reply(struct connection *pconn, char *password)
 {
   char msg[MAX_LEN_MSG];
-
-#ifdef FREECIV_WEB
-  if (srvarg.server_password_enabled) {
-    if (pconn->server.status == AS_ESTABLISHED) {
-      notify_conn(NULL, NULL, E_SETTING, ftc_server,
-                  _("Server password already set."));
-    } else if (!strncmp(srvarg.server_password, password, MAX_LEN_PASSWORD)) {
-      establish_new_connection(pconn);
-    } else {
-      char buffer[MAX_LEN_MSG];
-
-      fc_snprintf(buffer, sizeof(buffer),
-                  _("Incorrect password entered. Please try again."));
-      dsend_packet_authentication_req(pconn, AUTH_LOGIN_FIRST, buffer);
-      pconn->server.auth_settime = time(NULL);
-    }
-
-    return TRUE;
-  } else {
-    srvarg.server_password_enabled = TRUE;
-    sz_strlcpy(srvarg.server_password, password);
-    notify_conn(NULL, NULL, E_SETTING, ftc_server, _("Server password set."));
-
-    return TRUE;
-  }
-#endif /* FREECIV_WEB */
 
   if (pconn->server.status == AS_REQUESTING_NEW_PASS) {
 
