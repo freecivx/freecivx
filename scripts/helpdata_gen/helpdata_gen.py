@@ -30,10 +30,10 @@ webapp_dir = args.outdir
 freeciv_dir = args.freeciv
 
 def removeComments(string):
-    string = re.sub(re.compile("/\*.*?\*/",re.DOTALL ) ,"" ,string);
-    string = re.sub(re.compile("//.*?\n" ) ,"" ,string); 
-    string = re.sub(re.compile("([a-zA-Z]);" ) ,"\g<1>," ,string); 
-    string = re.sub(re.compile(";.*?\n" ) ,"" ,string); 
+    string = re.sub(re.compile(r"/\*.*?\*/",re.DOTALL ) ,"" ,string);
+    string = re.sub(re.compile(r"//.*?\n" ) ,"" ,string); 
+    string = re.sub(re.compile(r"([a-zA-Z]);" ) ,r"\g<1>," ,string); 
+    string = re.sub(re.compile(r";.*?\n" ) ,"" ,string); 
     return string
 
 def config_read(file):
@@ -74,9 +74,8 @@ for section in config.sections():
         thedict[section][key] = val
 
 output_name = path.join(webapp_dir, 'javascript', 'freeciv-helpdata.js')
-f = open(output_name, 'w')
-
-f.write("var helpdata_order = " + json.dumps(config.sections(), indent=2, separators=(',', ': ')) + ";\n")
-f.write("var helpdata = " + json.dumps(thedict, indent=2, separators=(',', ': ')) + ";\n")
+with open(output_name, 'w') as f:
+    f.write("var helpdata_order = " + json.dumps(config.sections(), indent=2, separators=(',', ': ')) + ";\n")
+    f.write("var helpdata = " + json.dumps(thedict, indent=2, separators=(',', ': ')) + ";\n")
 
 print("Generated " + output_name)
