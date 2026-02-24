@@ -78,5 +78,6 @@ f = open(output_name, 'w')
 
 f.write("var helpdata_order = " + json.dumps(config.sections(), indent=2, separators=(',', ': ')) + ";\n")
 f.write("var helpdata = " + json.dumps(thedict, indent=2, separators=(',', ': ')) + ";\n")
+f.close()
 
 print("Generated " + output_name)

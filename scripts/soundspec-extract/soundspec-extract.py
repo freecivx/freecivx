@@ -36,8 +36,12 @@ freeciv_dir = args.freeciv
 input_name = path.join(freeciv_dir, "data", "stdsounds.soundspec")
 
 print("Parsing " + input_name)
-config = configparser.ConfigParser()
-config.read(input_name)
+config = configparser.ConfigParser(strict=False)
+with open(input_name, "r") as myfile:
+    config_text = myfile.read()
+    # These changes are required so that the Python config parser can read Freeciv spec files.
+    config_text = config_text.replace("\\\n", "")  # Remove backslash line continuations
+    config.read_string(config_text)
 
 output_name = path.join(webapp_dir, 'javascript', 'soundset_spec.js')
 f = open(output_name, 'w')
@@ -49,5 +53,6 @@ for key in config['files']:
   f.write(", ");
 
 f.write("\"last\":null};");
+f.close()
 
 print("Generated " + output_name)
