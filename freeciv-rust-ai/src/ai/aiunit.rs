@@ -164,7 +164,7 @@ fn manage_defender(_state: &GameState, _ai_data: &mut AIData, unit: &Unit) {
 }
 
 /// Manage attacking military unit
-fn manage_attacker(state: &GameState, ai_data: &mut AIData, unit: &Unit) {
+fn manage_attacker(state: &GameState, _ai_data: &mut AIData, unit: &Unit) {
     println!("[AI Settler] Unit #{} - evaluating city founding", unit.id);
     
     // Calculate distance to nearest city

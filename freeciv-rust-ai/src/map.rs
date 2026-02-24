@@ -46,7 +46,7 @@ impl MapInfo {
     pub fn distance(&self, tile1: i32, tile2: i32) -> i32 {
         let (x1, y1) = self.tile_coords(tile1);
         let (x2, y2) = self.tile_coords(tile2);
-        ((x1 - x2).abs() + (y1 - y2).abs())
+        (x1 - x2).abs() + (y1 - y2).abs()
     }
 }
 
