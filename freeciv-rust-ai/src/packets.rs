@@ -22,6 +22,9 @@ pub const PACKET_PLAYER_INFO: u32 = 51;
 pub const PACKET_PLAYER_PHASE_DONE: u32 = 52;
 pub const PACKET_UNIT_INFO: u32 = 60;
 pub const PACKET_TILE_INFO: u32 = 15;
+pub const PACKET_BEGIN_TURN: u32 = 53;
+pub const PACKET_END_TURN: u32 = 54;
+pub const PACKET_START_PHASE: u32 = 55;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct FreecivPacket {
@@ -176,6 +179,12 @@ pub struct UnitInfo {
     pub tile: i32,
     #[serde(default)]
     pub homecity: u16,
+    #[serde(default, rename = "type")]
+    pub unit_type: u16,
+    #[serde(default)]
+    pub moves_left: u16,
+    #[serde(default)]
+    pub hp: u16,
 }
 
 // PACKET_CITY_INFO = 31
@@ -190,4 +199,8 @@ pub struct CityInfo {
     pub tile: i32,
     #[serde(default)]
     pub size: u8,
+    #[serde(default)]
+    pub production_kind: Option<u8>,
+    #[serde(default)]
+    pub production_value: Option<u16>,
 }

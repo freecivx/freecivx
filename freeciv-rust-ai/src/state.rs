@@ -8,6 +8,8 @@ pub struct GameState {
     pub current_turn: i16,
     pub current_year: i32,
     pub our_player_id: Option<u16>,
+    pub turn_started: bool,
+    pub turn_done: bool,
 }
 
 #[derive(Debug, Clone)]
@@ -26,6 +28,8 @@ pub struct City {
     pub name: String,
     pub tile: i32,
     pub size: u8,
+    pub production_kind: Option<u8>,
+    pub production_value: Option<u16>,
 }
 
 #[derive(Debug, Clone)]
@@ -34,6 +38,9 @@ pub struct Unit {
     pub owner: u16,
     pub tile: i32,
     pub homecity: u16,
+    pub unit_type: u16,
+    pub moves_left: u16,
+    pub hp: u16,
 }
 
 impl GameState {
@@ -81,5 +88,15 @@ impl GameState {
         } else {
             Vec::new()
         }
+    }
+
+    pub fn start_turn(&mut self) {
+        self.turn_started = true;
+        self.turn_done = false;
+    }
+
+    pub fn end_turn(&mut self) {
+        self.turn_done = true;
+        self.turn_started = false;
     }
 }
