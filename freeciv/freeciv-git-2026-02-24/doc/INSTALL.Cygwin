@@ -1,0 +1,92 @@
+
+Cygwin installation notes
+=========================
+
+This is doc/INSTALL.Cygwin, which contains Cygwin platform specific
+Freeciv installation information.
+
+A translated version of this file may be in language specific
+subdirectories of doc/.
+
+Recommended build system for building freeciv on cygwin is meson.
+It's still possible to build some freeciv components with
+the older autotools system, but that's not covered in this document.
+
+See also the generic installation notes of meson based builds
+in INSTALL.
+
+Cygwin is a free Unix variant for MS Windows operating systems.
+It comes with an X server, Xorg.
+
+To install Freeciv for Cygwin:
+
+a) Install or update your Cygwin by downloading and running installer
+   from https://www.cygwin.com/
+
+   In addition to default install, install at least following packages
+   to build freeciv
+   (packages to be installed as dependencies of ones in the list
+    are not listed):
+   - meson (section Devel)
+   - gcc-g++ (Devel)
+   - pkg-config (Devel) or pkgconf (Devel)
+   - libsqlite3-devel (Devel)
+   - libiconv-devel (Libs)
+   - libcurl-devel (Libs)
+   - zlib-devel (Libs)
+   - libicu-devel (Libs)
+
+  Install development packages for the guis you want to compile, one or more of
+  - libgtk3-devel (Libs)
+  - libSDL2_image-devel (Libs) + libSDL2_ttf-devel (Libs)
+
+  For additional functionality install also:
+   - libreadline-devel (Libs) (for server command history & completion)
+   - gettext-devel (Development) (for native language support)
+   - libSDL2_mixer-devel (Libs) (for client audio support)
+   - libzstd-devel (Libs) (for support of zst-compressed savegames)
+   - liblzma-devel (Libs) (for support of xz-compressed savegames)
+   - libbz2-devel (Archive) (for loading old bz2-compressed savegames)
+   - libMagick-devel (Graphics) (for better mapimg support)
+
+  To get and build freeciv development version directly from version control,
+  you need also
+   - git (Development)
+   - libtool (Development)
+
+  To run freeciv client, you need to install also
+  - xlaunch (X11)
+
+b) Get a Freeciv source tree (the doc/ directory this INSTALL.Cygwin is in,
+   is a subdirectory of the source tree's root directory).
+   Put it in a temporary place like /tmp/src.
+
+   Then create an empty build directory, e.g. /tmp/build,
+   and run 'meson setup <path to src>' in there:
+
+      meson setup ../src/ -Dclients=<gui> [any other options e.g. -Dprefix=...]
+
+   where <gui> is "gtk3.22", "sdl2", or list like "gtk3.22,sdl2".
+
+   If you get messages of missing or outdated components, install them.
+
+c) Compile and install Freeciv:
+
+      ninja
+      ninja install
+
+You should now have bin/freeciv-server.exe and bin/freeciv-<gui>.exe in the
+directory you installed Freeciv into (/usr/local by default).
+If 'ninja install' succeeds, source code and build trees can be removed.
+
+d) Test the results:
+
+    /path/to/freeciv-server.exe  [any additional options]
+
+  will start the server, but you only need it for private games.
+  To start the client, you need to run the X server (this can be
+  done by typing 'xlaunch'), then into a terminal type
+
+    /path/to/freeciv-<gui>.exe  [any additional options]
+
+More details on using server and client are in doc/README.

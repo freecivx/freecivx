@@ -1,0 +1,36 @@
+
+ General
+ -------
+
+ Ruleset with high granularity values. This makes it possible to have
+more fine grained ruleset effects without integer math peculiarities
+messing with them.
+
+ You can consider all the outputs and costs to be 100x as valuable
+as in more standard rulesets.
+ Each movement point is divided to 6 fragments, so granularity of
+movement costs is 1/6 points.
+
+
+ Rules
+ -----
+
+ * Extras are built by placing them, not by units.
+ * City center tiles get +25 trade until city size 8, +100 after
+ * For cities to work oceanic tiles, Fishing must be known
+ * Cities are protected a bit from rapid shrinking due to
+   continuous famine by the fact that when city shrinks,
+   its granary is set to 10% full, not empty
+ * Initially there's a 50% penalty to collecting taxes. This is
+   removed by the Counting tech.
+ * In cities units heal 10% of their maximum hitpoints each turn,
+   outside cities none. Techs and buildings improve this.
+ * Fortifying is not possible before Trenches technology is known.
+ * Base city radius, both for workable area and vision,
+   extends one tile away from the center.
+ * Units with zero defense value can be captured by any military unit
+ * In the beginning cities can grow up to size 3.
+ * You get +30% research bonus for your three first techs
+ * Units cannot be upgraded before Engineering is known
+ * Research bulbs are for specific tech. If you switch research, accumulated
+   progress stays with the previous tech target.

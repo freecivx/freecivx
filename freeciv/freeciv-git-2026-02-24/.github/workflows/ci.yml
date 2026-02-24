@@ -1,0 +1,248 @@
+name: continuous integration
+
+on:
+  - pull_request
+  - push
+  - workflow_dispatch
+
+jobs:
+  msys2:
+    runs-on: windows-2025
+    steps:
+      - name: check out Freeciv
+        uses: actions/checkout@v6.0.1
+      - name: install dependencies
+        # A mapping from msys2/setup-msys2 version to msys2 version can be
+        # found at
+        # https://github.com/msys2/setup-msys2/blob/main/CHANGELOG.md
+        # 2.30.0 provides msys2 snapshot 20251213
+        uses: msys2/setup-msys2@v2.30.0
+        with:
+          msystem: UCRT64
+          install: >
+            make
+            gettext
+            git
+            mingw-w64-ucrt-x86_64-7zip
+            mingw-w64-ucrt-x86_64-meson
+            mingw-w64-ucrt-x86_64-pkgconf
+            mingw-w64-ucrt-x86_64-gcc
+            mingw-w64-ucrt-x86_64-icu
+            mingw-w64-ucrt-x86_64-curl
+            mingw-w64-ucrt-x86_64-bzip2
+            mingw-w64-ucrt-x86_64-readline
+            mingw-w64-ucrt-x86_64-imagemagick
+            mingw-w64-ucrt-x86_64-SDL2_mixer
+            mingw-w64-ucrt-x86_64-drmingw
+            mingw-w64-ucrt-x86_64-tolua
+            mingw-w64-ucrt-x86_64-gtk3
+            mingw-w64-ucrt-x86_64-gtk4
+            mingw-w64-ucrt-x86_64-qt6-base
+            mingw-w64-ucrt-x86_64-qt6-svg
+            mingw-w64-ucrt-x86_64-SDL2_image
+            mingw-w64-ucrt-x86_64-SDL2_ttf
+            mingw-w64-ucrt-x86_64-SDL2_gfx
+            mingw-w64-ucrt-x86_64-nsis
+      - name: build
+        shell: msys2 {0}
+        run: |
+          cd platforms/windows/installer_msys2
+          make -f Makefile.meson ci
+  mac-meson:
+    runs-on: macos-26
+    steps:
+      - name: check out Freeciv
+        uses: actions/checkout@v6.0.1
+      - name: install dependencies
+        run: |
+          # Remove symlinks of the old python version
+          rm /usr/local/bin/2to3*
+          rm /usr/local/bin/idle3*
+          rm /usr/local/bin/pydoc3*
+          rm /usr/local/bin/python3*
+          brew install \
+            meson \
+            lua@5.4 \
+            jpeg \
+            gtk+3 \
+            gtk4 \
+            sdl2_mixer \
+            sdl2_image \
+            sdl2_ttf \
+            qt@6
+      - name: build
+        shell: bash
+        run: ./scripts/ci-build.sh mac-meson
+  autotools:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: check out Freeciv
+        uses: actions/checkout@v6.0.1
+      - name: install dependencies
+        run: |
+          sudo apt-get update
+          sudo DEBIAN_FRONTEND=noninteractive apt-get -y install \
+            gettext \
+            libgtk-3-dev \
+            libgtk-4-dev \
+            libcurl4-openssl-dev \
+            libtool \
+            automake \
+            autoconf \
+            autotools-dev \
+            language-pack-en \
+            python3.10 \
+            liblzma-dev \
+            libicu-dev \
+            libsqlite3-dev \
+            qt6-base-dev \
+            libsdl2-mixer-dev \
+            libsdl2-gfx-dev \
+            libsdl2-image-dev \
+            libsdl2-ttf-dev \
+            libmysqlclient-dev \
+            unixodbc-dev
+      - name: build
+        shell: bash
+        run: ./scripts/ci-build.sh autotools
+  dist:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: check out Freeciv
+        uses: actions/checkout@v6.0.1
+      - name: install dependencies
+        run: |
+          sudo apt-get update
+          sudo DEBIAN_FRONTEND=noninteractive apt-get -y install \
+            libtolua-dev \
+            zip \
+            gettext \
+            libcurl4-openssl-dev \
+            libtool \
+            automake \
+            autoconf \
+            autotools-dev \
+            python3.10 \
+            liblzma-dev \
+            libicu-dev \
+            libsqlite3-dev \
+            libgtk-3-dev \
+            qt6-base-dev \
+            libsdl2-mixer-dev \
+            libsdl2-gfx-dev \
+            libsdl2-image-dev \
+            libsdl2-ttf-dev \
+            libmysqlclient-dev
+      - name: build
+        shell: bash
+        run: ./scripts/ci-build.sh dist
+  meson:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-24.04, ubuntu-24.04-arm]
+    steps:
+      - name: check out Freeciv
+        uses: actions/checkout@v6.0.1
+      - name: install dependencies
+        run: |
+          sudo apt-get update
+          sudo DEBIAN_FRONTEND=noninteractive apt-get -y install \
+            meson \
+            libtolua-dev \
+            gettext \
+            libgtk-3-dev \
+            libgtk-4-dev \
+            libcurl4-openssl-dev \
+            libtool \
+            automake \
+            autoconf \
+            autotools-dev \
+            language-pack-en \
+            python3.10 \
+            liblzma-dev \
+            libicu-dev \
+            libsqlite3-dev \
+            qt6-base-dev \
+            libsdl2-mixer-dev \
+            libsdl2-gfx-dev \
+            libsdl2-image-dev \
+            libsdl2-ttf-dev \
+            libmysqlclient-dev
+      - name: build
+        shell: bash
+        run: ./scripts/ci-build.sh meson
+  clang-debug:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: check out Freeciv
+        uses: actions/checkout@v6.0.1
+      - name: install dependencies
+        run: |
+          sudo apt-get update
+          sudo DEBIAN_FRONTEND=noninteractive apt-get -y install \
+            meson \
+            clang \
+            libtolua-dev \
+            liblua5.4-dev \
+            gettext \
+            libgtk-3-dev \
+            libgtk-4-dev \
+            libcurl4-openssl-dev \
+            language-pack-en \
+            python3.10 \
+            liblzma-dev \
+            libicu-dev \
+            libsqlite3-dev \
+            qt6-base-dev \
+            libsdl2-mixer-dev \
+            libsdl2-image-dev \
+            libsdl2-ttf-dev \
+            libmariadb-dev \
+            unixodbc-dev
+      - name: build
+        shell: bash
+        run: ./scripts/ci-build.sh clang-debug
+  tcc:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: check out Freeciv
+        uses: actions/checkout@v6.0.1
+      - name: install dependencies
+        run: |
+          sudo apt-get update
+          sudo DEBIAN_FRONTEND=noninteractive apt-get -y install \
+            tcc \
+            gettext \
+            libgtk-3-dev \
+            libgtk-4-dev \
+            libcurl4-openssl-dev \
+            libtool \
+            automake \
+            autoconf \
+            autotools-dev \
+            language-pack-en \
+            python3.10 \
+            liblzma-dev \
+            libicu-dev \
+            libsqlite3-dev \
+            libmysqlclient-dev \
+            unixodbc-dev
+      - name: build
+        shell: bash
+        run: ./scripts/ci-build.sh tcc
+
+  emsdk:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: check out Freeciv
+        uses: actions/checkout@v6.0.1
+      - name: install dependencies
+        run: |
+          sudo apt-get update
+          sudo DEBIAN_FRONTEND=noninteractive apt-get -y install \
+            meson \
+            libtolua-dev
+      - name: build
+        shell: bash
+        run: ./scripts/ci-build.sh emsdk

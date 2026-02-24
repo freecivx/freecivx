@@ -1,0 +1,5 @@
+/Makefile.in
+/tolua_fcdb_gen.c
+/tolua_fcdb_gen.h
+/tolua_server_gen.c
+/tolua_server_gen.h

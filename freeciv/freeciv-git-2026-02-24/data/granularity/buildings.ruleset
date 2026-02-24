@@ -1,0 +1,473 @@
+
+; Modifying this file:
+; You should not modify this file except to make bugfixes or
+; for other "maintenance". If you want to make custom changes,
+; you should create a new datadir subdirectory and copy this file
+; into that directory, and then modify that copy. Then use the
+; command "rulesetdir <mysubdir>" in the server to have freeciv
+; use your new customized file.
+
+; Note that the freeciv AI may not cope well with anything more
+; than minor changes.
+
+[datafile]
+description = "Granularity buildings data for Freeciv"
+options = "+Freeciv-ruleset-3.4-Devel-2025.Jan.17"
+format_version = 50
+
+[control]
+
+; Names for custom building flags. There can be up to 8 of these.
+; name          = rule name; In some circumstances user may see this
+;                 as part of some sentences, so try to make it descriptive
+;                 and sensible.
+; helptxt       = displayed in the help for building types with this flag
+;                 (optional)
+;building_flags =
+;  { "name", "helptxt"
+;  }
+
+; /* <-- avoid gettext warnings
+;
+; Below: The individual buildings, one per section.
+; There can be up to 200.
+; (Buildings = City Improvements and Wonders)
+;
+; The actual tag used (the * in [building_*]) does not matter, except
+; it must be unique within this file, and it may be used in debug
+; output when reading this file.
+;
+; Notes:
+;
+; name          = translatable name as seen by user
+; rule_name     = (optional) internal name for savegames, rulesets etc; if
+;                 not present, "name" is used for this purpose too. Since
+;                 the name used in savegames must not change, if you want
+;                 to rename an item after a ruleset has been released, you
+;                 should set "rule_name" to the original value of "name".
+; genus	        = genus; one of:
+;                 "GreatWonder", "SmallWonder", "Improvement", "Special",
+;                 or "Convert".
+; reqs		= requirements to build the building (see effects.ruleset
+;		  and README.effects for help on requirements)
+; graphic       = icon of improvement (used in city dialog)
+; graphic_alt   = alternate icon of improvement
+; graphic_alt2  = second alternative icon.
+; obsolete_by	= requirements for the building to become obsolete
+; build_cost	= production shields required to build
+; upkeep	= monetary upkeep value
+; sabotage	= percent chance of diplomat sabotage being successful
+; sound         = tag of the sound to play when building finished
+; sound_alt     = alternate sound tag
+; sound_alt2    = second alternative sound tag
+; flags         = special flag strings
+;
+; ** Building flags **
+; "VisibleByOthers"  = Anyone who can see your city knows whether it has
+;                      this improvement. (Great and small wonders are
+;                      always visible.)
+; "SaveSmallWonder"  = If you lose the city with this building in, and the
+;                      "savepalace" server setting is enabled, another will
+;                      be built for free in a random city.
+;                      Should only be used with genus "SmallWonder".
+; "Gold"             = Not a real building; production turned into gold
+;                      indefinitely (capitalization/coinage).
+;                      Genus should be "Convert".
+; "Infra"            = Not a real building; production turned into infrapoints
+;                      indefinitely. Genus should be "Convert".
+; "DisasterProof"    = Disasters never destroy this building. Is meaningful
+;                      only for genus "Improvement" buildings as others are
+;                      automatically disaster proof.
+; "Indestructible"   = Surgical strike can never destroy this building.
+;
+; */ <-- avoid gettext warnings
+
+[building_barracks]
+name		= _("Barracks")
+genus		= "Improvement"
+reqs	=
+    { "type", "name", "range"
+      "Tech", "Combat Practice", "Player"
+    }
+graphic         = "b.barracks"
+graphic_alt     = "b.barracks_i"
+graphic_alt2    = "-"
+obsolete_by	=
+    { "type", "name", "range"
+    }
+build_cost	= 1100
+upkeep		= 5
+sabotage	= 50
+sound		= "b_barracks"
+sound_alt	= "b_barracks_i"
+sound_alt2      = "b_generic"
+helptext	= _("\
+With a Barracks, each new land unit built in a city will \
+automatically have Veteran status. \
+Units in a city with Barracks heal additional 20% of their \
+maximum hitpoints each turn.\
+")
+
+[building_brewery]
+name		= _("Brewery")
+genus		= "Improvement"
+reqs	=
+    { "type", "name",    "range"
+      "Tech", "Brewing", "Player"
+    }
+graphic         = "b.brewery"
+graphic_alt     = "b.granary"
+graphic_alt2    = "-"
+obsolete_by	=
+    { "type", "name", "range"
+    }
+build_cost	= 2200
+upkeep		= 140
+sabotage	= 100
+sound		= "b_brewery"
+sound_alt	= "b_generic"
+sound_alt2      = "-"
+; /* xgettext:no-c-format */
+helptext	= _("\
+Increases luxury output by 25%, and gold output by 15%. \
+Adds food output of the Wheat tiles by 50.\
+")
+
+[building_city_walls]
+name		= _("City Walls")
+genus		= "Improvement"
+flags		= "VisibleByOthers"
+reqs	=
+    { "type", "name", "range"
+      "Tech", "Masonry", "Player"
+    }
+graphic         = "b.city_walls"
+graphic_alt     = "-"
+graphic_alt2    = "-"
+obsolete_by	=
+    { "type", "name", "range"
+    }
+build_cost	= 1200
+upkeep		= 0
+sabotage	= 50
+sound		= "b_city_walls"
+sound_alt	= "b_generic"
+sound_alt2      = "-"
+helptext	= _("\
+City Walls make it easier to defend a city. They triple the defense\
+ strength of units within the city against land units.\
+")
+
+[building_courthouse]
+name		= _("Courthouse")
+genus		= "Improvement"
+reqs	=
+    { "type", "name", "range"
+      "Tech", "Code of Laws", "Player"
+    }
+graphic         = "b.courthouse"
+graphic_alt     = "-"
+graphic_alt2    = "-"
+obsolete_by	=
+    { "type", "name", "range"
+    }
+build_cost	= 1700
+upkeep		= 50
+sabotage	= 50
+sound		= "b_courthouse"
+sound_alt	= "b_generic"
+sound_alt2      = "-"
+; /* xgettext:no-c-format */
+helptext	= _("\
+Reduces corruption by 30% - \
+from the computational total, that might be over 100% of all trade.\
+")
+
+[building_granary]
+name		= _("Granary")
+genus		= "Improvement"
+reqs	=
+    { "type", "name", "range"
+      "Tech", "Food Preservation", "Player"
+    }
+graphic         = "b.granary"
+graphic_alt     = "-"
+graphic_alt2    = "-"
+obsolete_by	=
+    { "type", "name", "range"
+    }
+build_cost	= 1200
+upkeep		= 50
+sabotage	= 50
+sound		= "b_granary"
+sound_alt	= "b_generic"
+sound_alt2      = "-"
+helptext	= _("\
+Granary reduces famine speed by making city food storage half full \
+after city shrinks, and speeds up city growth by making the food storage \
+10% full after city grows.\
+")
+
+[building_housing]
+name		= _("Housing")
+genus		= "Improvement"
+reqs	=
+    { "type", "name", "range"
+    }
+graphic         = "b.housing"
+graphic_alt     = "-"
+graphic_alt2    = "-"
+obsolete_by	=
+    { "type", "name", "range"
+    }
+build_cost	= 800
+upkeep		= 0
+sabotage	= 50
+sound		= "b_housing"
+sound_alt	= "b_generic"
+sound_alt2      = "-"
+helptext	= _("\
+Space for people to live allows settlements to grow one size bigger.\
+")
+
+[building_library]
+name		= _("Library")
+genus		= "Improvement"
+reqs	=
+    { "type", "name", "range"
+      "Tech", "Writing", "Player"
+    }
+graphic         = "b.library"
+graphic_alt     = "-"
+graphic_alt2    = "-"
+obsolete_by	=
+    { "type", "name", "range"
+    }
+build_cost	= 2000
+upkeep		= 100
+sabotage	= 50
+sound		= "b_library"
+sound_alt	= "b_generic"
+sound_alt2      = "-"
+helptext	= _("\
+Increases science output by 50%, 75% if Science known. \
+Produces two points of history each turn, three points \
+if Literature known.\
+")
+
+[building_marketplace]
+name		= _("Marketplace")
+genus		= "Improvement"
+reqs	=
+    { "type", "name", "range"
+      "Tech", "Currency", "Player"
+    }
+graphic         = "b.marketplace"
+graphic_alt     = "-"
+graphic_alt2    = "-"
+obsolete_by	=
+    { "type", "name", "range"
+    }
+build_cost	= 2000
+upkeep		= 100
+sabotage	= 50
+sound		= "b_marketplace"
+sound_alt	= "b_generic"
+sound_alt2      = "-"
+helptext	= _("\
+Increases gold output by 50%. \
+Increases luxury output by 30%.\
+")
+
+[building_sacred_grove]
+name		= _("Sacred Grove")
+genus		= "Improvement"
+reqs	=
+    { "type", "name", "range"
+      "Tech", "Spirits", "Player"
+    }
+graphic         = "b.sacred_grove"
+graphic_alt     = "b.temple"
+graphic_alt2    = "-"
+obsolete_by	=
+    { "type", "name", "range"
+    }
+build_cost	= 1100
+upkeep		= 80
+sabotage	= 100
+sound		= "b_sacred_grove"
+sound_alt	= "b_generic"
+sound_alt2      = "-"
+helptext	= _("\
+Makes one unhappy citizen content. \
+Does not affect citizens made unhappy by military activity.\
+"), _("\
+Produces one point of history each turn.\
+")
+
+[building_temple]
+name		= _("Temple")
+genus		= "Improvement"
+reqs	=
+    { "type", "name",         "range"
+      "Tech", "Construction", "Player"
+    }
+graphic         = "b.temple"
+graphic_alt     = "-"
+graphic_alt2    = "-"
+obsolete_by	=
+    { "type", "name", "range"
+    }
+build_cost	= 2200
+upkeep		= 150
+sabotage	= 100
+sound		= "b_temple"
+sound_alt	= "b_generic"
+sound_alt2      = "-"
+helptext	= _("\
+Makes one unhappy citizen content. \
+Does not affect citizens made unhappy by military activity.\
+"), _("\
+Produces two points of history each turn.\
+")
+
+[building_rock_pile]
+name		= _("Central Rock Pile")
+genus		= "SmallWonder"
+reqs	=
+    { "type",     "name",              "range",  "present"
+      "Building", "Central Rock Pile", "Player", FALSE
+    }
+graphic         = "b.rock_pile"
+graphic_alt	= "b.palace"
+graphic_alt2    = "-"
+obsolete_by     =
+    { "type", "name", "range"
+    }
+build_cost	= 500
+upkeep		= 0
+sabotage	= 100
+sound		= "b_rock_pile"
+sound_alt	= "b_generic"
+sound_alt2      = "-"
+helptext	= _("\
+This Rock Pile marks the spot where your people first settled, and found a city. \
+Increases city center food production by 100. \
+It marks your capital city until you have more fitting building to do so.\
+")
+
+[building_throne]
+name		= _("Throne")
+genus		= "SmallWonder"
+reqs	=
+    { "type", "name", "range"
+; No requirements
+    }
+graphic         = "b.throne"
+graphic_alt	= "b.palace"
+graphic_alt2    = "-"
+obsolete_by     =
+    { "type",     "name",   "range"
+    }
+build_cost	= 1000
+upkeep		= 0
+sabotage	= 100
+sound		= "b_palace"
+sound_alt	= "b_generic"
+sound_alt2      = "-"
+helptext	= _("\
+City with your throne is your capital city.\
+")
+
+[building_palace]
+name		= _("Palace")
+genus		= "SmallWonder"
+reqs	=
+    { "type",     "name",         "range"
+      "Tech",     "Architecture", "Player"
+      "Building", "Throne",       "City"
+    }
+graphic         = "b.palace"
+graphic_alt	= "-"
+graphic_alt2    = "-"
+obsolete_by     =
+    { "type",     "name",   "range"
+    }
+build_cost	= 3000
+upkeep		= 0
+sabotage	= 100
+sound		= "b_palace"
+sound_alt	= "b_generic"
+sound_alt2      = "-"
+helptext	= _("\
+Palace reduces corruption in the empire and gives +3 history each turn.\
+")
+
+[building_quarry]
+name		= _("Quarry")
+genus		= "Improvement"
+reqs	=
+    { "type", "name", "range"
+      "Tech", "Geometry", "Player"
+    }
+graphic         = "b.quarry"
+graphic_alt	= "b.barracks_ii"
+graphic_alt2    = "-"
+obsolete_by     =
+    { "type", "name", "range"
+    }
+build_cost	= 1250
+upkeep		= 2
+sabotage	= 100
+sound		= "b_quarry"
+sound_alt	= "b_generic"
+sound_alt2      = "-"
+helptext	= _("\
+Quarry produces 300 infrapoints per turn.\
+")
+
+[building_stone_circle]
+name		= _("Stone Circle")
+genus		= "SmallWonder"
+reqs	=
+    { "type", "name",      "range"
+      "Tech", "Astronomy", "Player"
+    }
+graphic         = "b.stone_circle"
+graphic_alt	= "b.great_wall"
+graphic_alt2    = "-"
+obsolete_by     =
+    { "type", "name", "range"
+    }
+build_cost	= 3500
+upkeep		= 0
+sabotage	= 100
+sound		= "b_stone_circle"
+sound_alt	= "b_generic"
+sound_alt2      = "-"
+helptext	= _("\
+Stone Circle produces two points of history per turn for each city, \
+five points for the city its located at.\
+")
+
+[building_gather_wood]
+name		= _("Gather Wood")
+genus		= "Convert"
+flags		= "Infra"
+reqs	=
+    { "type", "name", "range"
+    }
+graphic         = "b.gather_wood"
+graphic_alt     = "-"
+graphic_alt2    = "-"
+obsolete_by	=
+    { "type", "name", "range"
+    }
+build_cost	= 999
+upkeep		= 0
+sabotage	= 0
+helptext	= _("\
+This is not a normal improvement. Instead, setting a city's\
+ production to this means its shield production is\
+ converted to infra points.\
+")

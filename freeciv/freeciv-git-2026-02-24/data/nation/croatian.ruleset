@@ -1,0 +1,81 @@
+[nation_croatian]
+
+name   = _("Croatian")
+plural = _("?plural:Croatians")
+groups = "Modern", "European"
+legend = _("Croatia is a country in Southeast Europe. In the 7th century they\
+ migrated into the region and established a duchy which evolved to a kingdom\
+ in the 10th century under Tomislav. After the Trpimirović dynasty followed\
+ a period of symbiotic regimes with varying foreign powers, mostly notably\
+ with Austria-Hungary and the Ottoman Empire. In 1918, Croatia proclaimed\
+ independence from Austria-Hungary alongside other Southeast European nations.\
+ In World War II, the Axis installed a fascist puppet government that was later\
+ dismantled by resistance. Croatia was a member state of the newfound Yugoslav\
+ Federation until 1991 when they proclaimed independence leading to four years\
+ long conflict resulting in Croatia securing its autonomy.")
+
+leaders = {
+ "name",                        "sex"
+ "Ljudevit Posavski",           "Male"
+ "Borna",                       "Male"
+ "Trpimir",                     "Male"
+ "Domagoj",                     "Male"
+ "Branimir",                    "Male"
+ "Tomislav",                    "Male"
+ "Stjepan Držislav",            "Male"
+ "Petar Krešimir IV",           "Male"
+ "Dmitar Zvonimir",             "Male"
+ "Nikola Šubić Zrinski",        "Male"
+ "Matija Gubec",                "Male"
+ "Petar Zrinski",               "Male"
+ "Franjo Frankopan",            "Male"
+ "Franjo Tuđman",               "Male"
+ "Josip Jelačić",               "Male"
+ "Jelena",                      "Female"
+ "Kolinda Grabar-Kitarović",    "Female"
+}
+
+ruler_titles = {
+ "government",      "male_title",      "female_title"
+ ; /* TRANS: Ban = Duke */
+ "Despotism",       _("Ban %s"),       _("?female:Ban %s")
+ "Fundamentalism",  _("Bishop %s"),    _("Mother Superior %s")
+}
+
+flag = "croatia"
+flag_alt = "-"
+style = "European"
+
+init_techs = ""
+init_buildings = ""
+init_units = ""
+
+civilwar_nations = "slovenian"
+
+cities =
+  "Zagreb", "Split", "Osijek", "Rijeka", "Varazdin", "Rovinj",
+  "Vukovar", "Pula", "Sisak", "Petrinja", "Karlovac", "Pazin",
+  "Dubrovnik", "Zadar", "Sibenik", "Krizevci", "Kutina", "Gospic",
+  "Ivanic Grad", "Slavonski Brod", "Bjelovar", "Biograd", "Pozega",
+  "Cakovec", "Ilok", "Opatija", "Vinkovci", "Glina", "Umag", "Pag",
+  "Virovitica", "Samobor", "Trogir", "Pakrac", "Beli Manastir",
+  "Krapina", "Makarska", "Zabok", "Dakovo", "Mali Losinj", "Rab",
+  "Nasice", "Labin", "Zupanja", "Novska", "Delnice", "Porec", "Krk",
+  "Velika Gorica", "Sesvete", "Okucani", "Lepoglava", "Zapresic",
+  "Crikvenica", "Koprivnica", "Dugo Selo", "Belisce", "Buje",
+  "Topusko", "Hvar", "Gradiska", "Slatina", "Plomin", "Ivanec",
+  "Daruvar", "Vrpolje", "Knin", "Drnis", "Vis", "Senj", "Borovo",
+  "Durdevac", "Narta", "Sunja", "Jastrebarsko", "Ogulin", "Cres",
+  "Slunj", "Novi Vinodolski", "Kostajnica", "Skradin", "Ston",
+  "Omis", "Vrbovsko", "Orahovica", "Donji Miholjac", "Solin",
+  "Cavtat", "Benkovac", "Obrovac", "St.Ivan Zelina", "Ludbreg",
+  "Klostar", "Ivankovo", "Dalj", "Otok", "Cepin",
+  "Crnac", "Suhopolje", "Pitomaca", "Kotoriba", "Mursko Sredisce",
+  "Prelog", "Nedelisce", "Konjscina", "Bedekovcina", "Stupnik",
+  "Pokupsko", "Dvor", "Vrginmost", "Ozalj", "Duga Resa", "Otocac",
+  "Cetingrad", "Plaski", "Novigrad", "Vrsar", "Buzet", "Rabac",
+  "Motovun", "Kanfanar", "Medulin", "Lupoglav", "Kastav", "Lovran",
+  "Ravna Gora", "Karlobag", "Plitvice", "Perisic", "Ugljan",
+  "Gracac", "Sukosan", "Filipjakov", "Pirovac", "Vodice", "Kastel",
+  "Supetar", "Baska", "Orebic", "Blato", "Tucepi",
+  "Imotski", "Metkovic", "Opuzen"

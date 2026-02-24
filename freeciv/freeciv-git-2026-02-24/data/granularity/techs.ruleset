@@ -1,0 +1,667 @@
+
+; Modifying this file:
+; You should not modify this file except to make bugfixes or
+; for other "maintenance". If you want to make custom changes,
+; you should create a new datadir subdirectory and copy this file
+; into that directory, and then modify that copy. Then use the
+; command "rulesetdir <mysubdir>" in the server to have freeciv
+; use your new customized file.
+
+[datafile]
+description = "Granularity technology data for Freeciv"
+options = "+Freeciv-ruleset-3.4-Devel-2025.Jan.17"
+format_version = 50
+
+[control]
+; Names for custom tech flags. There can be up to 10 of these.
+; name          = rule name; In some circumstances user may see this
+;                 as part of some sentences, so try to make it descriptive
+;                 and sensible.
+; helptxt       = displayed in the help for advances with this flag (optional)
+;flags =
+;  { "name", "helptxt"
+;  }
+
+; /* <-- avoid gettext warnings
+;
+; Tech classes, there can be up to 16:
+;
+; First one is the default one.
+; If there is none, tech classes feature is disabled
+;
+; name                    = translatable name as seen by user
+; rule_name               = (optional) internal name for savegames, rulesets
+;                           etc; if not present, "name" is used for this
+;                           purpose too. Since the name used in savegames must
+;                           not change, if you want to rename an item after a
+;                           ruleset has been released, you should set
+;                           "rule_name" to the original value of "name".
+; cost_pct                = how much techs of the class cost compared
+;                           to normal. Default is 100%.
+;
+; */ <-- avoid gettext warnings
+
+;[techclass_default]
+;name =
+
+; /* <-- avoid gettext warnings
+;
+; Below: The individual advances, one per section.
+; The number can be variable, up to 400.
+;
+; The actual tag used (the * in [advance_*]) does not matter, except
+; it must be unique within this file, and it may be used in debug
+; output when reading this file.
+;
+; Notes:
+;
+; name          = translatable name as seen by user
+; rule_name     = (optional) internal name for savegames, rulesets etc; if
+;                 not present, "name" is used for this purpose too. Since
+;                 the name used in savegames must not change, if you want
+;                 to rename an item after a ruleset has been released, you
+;                 should set "rule_name" to the original value of "name".
+; class         = tech class this tech belongs to, if they have been defined.
+;                 Default is first one defined above.
+; req1, req2    = advances required before researching this one
+; root_req      = tech required before acquiring this tech, by any means.
+;                 All techs with any direct or indirect dependency on this
+;                 one will *also* have this root_req, as well as their own
+;                 and any others they inherit.
+;                 Giving "None" explicitly here prevents a tech from
+;                 inheriting root_reqs in this way, and stops root_req
+;                 inheritance through that tech.
+;                 Specifying a tech's root_req as itself means that the tech
+;                 can only be acquired by special means (nation's init_techs,
+;                 scripting, etc).
+; research_reqs = requirements before researching this one. Can have non
+;                 tech requirements because it is a requirement vector.
+;                 See doc/README.effects to learn more about requirement
+;                 vectors.
+;                 Requiring a tech here instead of in req1, req2 or
+;                 root_req is not supported yet.
+;                 Requirements that may become fulfilled during the game
+;                 when they weren't at the start of the game is not
+;                 supported yet.
+; flags         = special flag strings
+; graphic       = icon for technology
+; graphic_alt   = alternate icon
+; helptext      = optional help text string (set units ruleset for examples)
+; bonus_message = text seen when a player is the first to discover
+;                 an bonus tech. Must contain '%s' to mark place of the tech
+;                 gained.
+; cost          = if tech_cost_style is set to "Classic+" or "Experimental+",
+;                 this field is read for information on how much a tech
+;                 costs.
+;
+; Special values for req1 and req2 are "None" (first section below)
+; and "Never" (never available). If only one tech is required,
+; it should be listed as req1.
+;
+; As well as custom flags defined above, the following flag strings are
+; possible:
+;
+; "Bonus_Tech"          = player gets extra tech if reached first
+; "Bridge"              = "Settler" unit types can build extras that
+;                         require bridge when occurring with some other
+;                         extra. See "bridged_over" extra property in
+;                         terrain.ruleset.
+; "Build_Airborne"      = from now on can build air units (for use by AI)
+;
+; */ <-- avoid gettext warnings
+
+[advance_agriculture]
+name        = _("Agriculture")
+req1        = "Tools"
+req2        = "None"
+flags       = ""
+graphic     = "a.agriculture"
+graphic_alt = "-"
+helptext    = _("Agriculture allows placing irrigation.")
+
+[advance_alphabet]
+name        = _("Alphabet")
+req1        = "Cave Painting"
+req2        = "Counting"
+flags       = ""
+graphic     = "a.alphabet"
+graphic_alt = "-"
+helptext    = _("\
+Abstract symbols to mark things make it possible to adjust tax/science/lux \
+rates more freely.\
+")
+
+[advance_animal_taming]
+name        = _("Animal Taming")
+req1        = "Cave Painting"
+req2        = "None"
+flags       = ""
+graphic     = "a.animal_taming"
+graphic_alt = "-"
+;helptext    =
+
+[advance_archery]
+name        = _("Archery")
+req1        = "Combat Practice"
+req2        = "None"
+flags       = ""
+graphic     = "a.archery"
+graphic_alt = "-"
+;helptext    =
+
+[advance_architecture]
+name        = _("Architecture")
+req1        = "Construction"
+req2        = "Art"
+flags       = ""
+graphic     = "a.architecture"
+graphic_alt = "-"
+;helptext    =
+
+[advance_art]
+name        = _("Art")
+req1        = "Pottery"
+req2        = "Rituals"
+flags       = ""
+graphic     = "a.art"
+graphic_alt = "-"
+;helptext    =
+
+[advance_astronomy]
+name        = _("Astronomy")
+req1        = "Calendar"
+req2        = "Geometry"
+flags       = ""
+graphic     = "a.astronomy"
+graphic_alt = "-"
+;helptext    =
+
+[advance_brewing]
+name        = _("Brewing")
+req1        = "Medicine"
+req2        = "Currency"
+flags       = ""
+graphic     = "a.brewing"
+graphic_alt = "-"
+helptext    = _("\
+The art of industrial brewing.\
+")
+
+[advance_bronze_weapons]
+name        = _("Bronze Weapons")
+req1        = "Mining"
+req2        = "None"
+flags       = ""
+graphic     = "a.bronze_weapons"
+graphic_alt = "-"
+;helptext    =
+
+[advance_calendar]
+name        = _("Calendar")
+req1        = "Agriculture"
+req2        = "Counting"
+flags       = ""
+graphic     = "a.calendar"
+graphic_alt = "-"
+helptext    = _("\
+Allows nations to agree on fixed length ceasefire.\
+")
+
+[advance_carving]
+name        = _("Carving")
+req1        = "Tools"
+req2        = "Fire"
+flags       = ""
+graphic     = "a.carving"
+graphic_alt = "-"
+helptext    = _("Boats can be carved from wood.")
+
+[advance_cave_painting]
+name        = _("Cave Painting")
+req1        = "None"
+req2        = "None"
+flags       = ""
+graphic     = "a.cave_painting"
+graphic_alt = "-"
+helptext    = _("Cave Paintings record hunting and fights.")
+
+[advance_code_of_laws]
+name        = _("Code of Laws")
+req1        = "Government"
+req2        = "None"
+flags       = ""
+graphic     = "a.code_of_laws"
+graphic_alt = "-"
+;helptext    =
+
+[advance_combat_practice]
+name        = _("Combat Practice")
+req1        = "Government"
+req2        = "Animal Taming"
+flags       = ""
+graphic     = "a.combat_practice"
+graphic_alt = "-"
+helptext    = _("\
+Also humans can be trained.\
+")
+
+[advance_construction]
+name        = _("Construction")
+req1        = "Geometry"
+req2        = "Rituals"
+flags       = ""
+graphic     = "a.construction"
+graphic_alt = "-"
+;helptext    =
+
+[advance_counting]
+name        = _("Counting")
+req1        = "None"
+req2        = "None"
+flags       = ""
+graphic     = "a.counting"
+graphic_alt = "-"
+helptext    = _("\
+Allows collecting taxes without miscalculation penalties.\
+")
+
+[advance_culture]
+name        = _("Culture")
+req1        = "Art"
+req2        = "Code of Laws"
+flags       = ""
+graphic     = "a.culture"
+graphic_alt = "-"
+helptext    = _("\
+Multiplies culture output by 1.5.\
+")
+
+[advance_currency]
+name        = _("Currency")
+req1        = "Bronze Weapons"
+req2        = "Government"
+flags       = ""
+graphic     = "a.currency"
+graphic_alt = "-"
+helptext    = _("\
+Makes it possible for diplomatic units to bribe opponents. \
+Makes it possible to agree on gold transfer as part of diplomatic treaties.\
+")
+
+[advance_deception]
+name        = _("Deception")
+req1        = "Diplomacy"
+req2        = "Literature"
+flags       = ""
+graphic     = "a.deception"
+graphic_alt = "-"
+;helptext    =
+
+[advance_diplomacy]
+name        = _("Diplomacy")
+req1        = "Government"
+req2        = "Maps"
+flags       = ""
+graphic     = "a.diplomacy"
+graphic_alt = "-"
+;helptext    =
+
+[advance_engineering]
+name        = _("Engineering")
+req1        = "Siege Engines"
+req2        = "Military Constructs"
+flags       = ""
+graphic     = "a.engineering"
+graphic_alt = "-"
+helptext    = _("\
+Makes it possible to upgrade units in cities.\
+")
+
+[advance_fire]
+name        = _("Fire")
+req1        = "None"
+req2        = "None"
+flags       = ""
+graphic     = "a.fire"
+graphic_alt = "-"
+helptext    = _("\
+With fire, there can be a place to live permanently. \
+Allows settlements to grow two sizes bigger.\
+")
+
+[advance_fishing]
+name        = _("Fishing")
+req1        = "Tools"
+req2        = "None"
+flags       = ""
+graphic     = "a.fishing"
+graphic_alt = "-"
+helptext    = _("Makes it possible to use Oceanic tiles.")
+
+[advance_flight]
+name        = _("Flight")
+req1        = "Naval Strategies"
+req2        = "Engineering"
+flags       = ""
+graphic     = "a.flight"
+graphic_alt = "-"
+helptext    = _("First flying machines.")
+
+[advance_food_preservartion]
+name        = _("Food Preservation")
+req1        = "Pottery"
+req2        = "Agriculture"
+flags       = ""
+graphic     = "a.food_preservation"
+graphic_alt = "-"
+;helptext    =
+
+[advance_geometry]
+name        = _("Geometry")
+req1        = "Masonry"
+req2        = "Alphabet"
+flags       = ""
+graphic     = "a.geometry"
+graphic_alt = "-"
+;helptext    =
+
+[advance_government]
+name        = _("Government")
+req1        = "Alphabet"
+req2        = "Masonry"
+flags       = ""
+graphic     = "a.government"
+graphic_alt = "-"
+;helptext    =
+
+[advance_herbs]
+name        = _("Herbs")
+req1        = "Rituals"
+req2        = "None"
+flags       = ""
+graphic     = "a.herbs"
+graphic_alt = "-"
+helptext    = _("\
+Makes units that do not move during the turn to heal additional 10% of their maximum hitpoints. \
+Outside cities that might be the only healing they do.\
+")
+
+[advance_iron_working]
+name        = _("Iron Working")
+req1        = "Plow"
+req2        = "Bronze Weapons"
+flags       = ""
+graphic     = "a.iron_working"
+graphic_alt = "-"
+helptext    = _("\
+Make iron available.\
+")
+
+[advance_horseback_riding]
+name        = _("Horseback Riding")
+req1        = "Animal Taming"
+req2        = "None"
+flags       = ""
+graphic     = "a.horseback_riding"
+graphic_alt = "-"
+;helptext    =
+
+[advance_literature]
+name        = _("Literature")
+req1        = "Writing"
+req2        = "Art"
+flags       = ""
+graphic     = "a.literature"
+graphic_alt = "-"
+helptext    = _("\
+Player knowing the Literature tech get the benegit of Tech Leakage from other players. \
+If other players know techs that the Tech Leakage receiving player does not, some bulbs \
+leak per tech per player each turn.\
+")
+
+[advance_magnetism]
+name        = _("Magnetism")
+req1        = "Iron Working"
+req2        = "Astronomy"
+flags       = ""
+graphic     = "a.magnetism"
+graphic_alt = "-"
+;helptext    =
+
+[advance_maps]
+name        = _("Maps")
+req1        = "Alphabet"
+req2        = "Fishing"
+flags       = ""
+graphic     = "a.maps"
+graphic_alt = "-"
+helptext    = _("\
+If both parties know this advance, Maps and Seamaps can be exchanged between players.\
+")
+
+[advance_masonry]
+name        = _("Masonry")
+req1        = "Road Building"
+req2        = "None"
+flags       = ""
+graphic     = "a.masonry"
+graphic_alt = "-"
+;helptext    =
+
+[advance_medicine]
+name        = _("Medicine")
+req1        = "Herbs"
+req2        = "None"
+flags       = ""
+graphic     = "a.medicine"
+graphic_alt = "-"
+helptext    = _("\
+Advancement of medicine allows people to live in higher density. \
+Allows settlements to grow two sizes bigger.\
+")
+
+[advance_military_constructs]
+name        = _("Military Constructs")
+req1        = "Construction"
+req2        = "Trenches"
+flags       = ""
+graphic     = "a.military_constructs"
+graphic_alt = "-"
+;helptext    =
+
+[advance_mining]
+name        = _("Mining")
+req1        = "Carving"
+req2        = "Masonry"
+flags       = ""
+graphic     = "a.mining"
+graphic_alt = "-"
+;helptext    =
+
+[advance_monarchy]
+name        = _("Monarchy")
+req1        = "Diplomacy"
+req2        = "Currency"
+flags       = ""
+graphic     = "a.monarchy"
+graphic_alt = "-"
+;helptext    =
+
+[advance_naval_strategies]
+name        = _("Naval Strategies")
+req1        = "Strategies"
+req2        = "Sailing"
+flags       = ""
+graphic     = "a.naval_strategies"
+graphic_alt = "-"
+;helptext    =
+
+[advance_plow]
+name        = _("Plow")
+req1        = "Agriculture"
+req2        = "Horseback Riding"
+flags       = ""
+graphic     = "a.plow"
+graphic_alt = "-"
+helptext    = _("\
+Make Irrigation fully effective.\
+")
+
+[advance_policing]
+name        = _("Policing")
+req1        = "Code of Laws"
+req2        = "Bronze Weapons"
+flags       = ""
+graphic     = "a.policing"
+graphic_alt = "-"
+;helptext    =
+
+[advance_pottery]
+name        = _("Pottery")
+req1        = "Fire"
+req2        = "None"
+flags       = ""
+graphic     = "a.pottery"
+graphic_alt = "-"
+; /* xgettext:no-c-format */
+helptext    = _("\
+As food can be stored, granary is set to 15% full when city grows\
+ or 25% full when city shrinks.\
+")
+
+[advance_road_building]
+name        = _("Road Building")
+req1        = "None"
+req2        = "None"
+flags       = ""
+graphic     = "a.road_building"
+graphic_alt = "-"
+helptext    = _("Allows build actual roads.")
+
+[advance_rituals]
+name        = _("Rituals")
+req1        = "Cave Painting"
+req2        = "Spirits"
+flags       = ""
+graphic     = "a.rituals"
+graphic_alt = "-"
+helptext    = _("\
+Provides a morale boost increasing both attack and defense values of units by 20%.\
+")
+
+[advance_rope]
+name        = _("Rope")
+req1        = "Fishing"
+req2        = "Herbs"
+flags       = ""
+graphic     = "a.rope"
+graphic_alt = "-"
+;helptext    =
+
+[advance_sailing]
+name        = _("Sailing")
+req1        = "Seafaring"
+req2        = "Food Preservation"
+flags       = ""
+graphic     = "a.sailing"
+graphic_alt = "-"
+helptext    = _("\
+Increases speed of sea-going vessels by 1.\
+")
+
+[advance_science]
+name        = _("Science")
+req1        = "Astronomy"
+req2        = "Medicine"
+flags       = ""
+graphic     = "a.science"
+graphic_alt = "-"
+helptext    = _("\
+Enables philosophers specialist type. \
+Libraries provide more science.\
+")
+
+[advance_seafaring]
+name        = _("Seafaring")
+req1        = "Carving"
+req2        = "Rope"
+flags       = ""
+graphic     = "a.seafaring"
+graphic_alt = "-"
+;helptext    =
+
+[advance_siege_engines]
+name        = _("Siege Engines")
+req1        = "Rope"
+req2        = "The Wheel"
+flags       = ""
+graphic     = "a.siege_engines"
+graphic_alt = "-"
+;helptext    =
+
+[advance_spirits]
+name        = _("Spirits")
+req1        = "None"
+req2        = "None"
+flags       = ""
+graphic     = "a.spirits"
+graphic_alt = "a.alphabet"
+helptext    = _("\
+Belief in natural spirits is the first step in Religious \
+tech tree branch.")
+
+[advance_strategies]
+name        = _("Strategies")
+req1        = "Archery"
+req2        = "Iron Working"
+flags       = ""
+graphic     = "a.strategies"
+graphic_alt = "-"
+helptext    = _("\
+Makes it possible to move 6 units to the same tile. \
+Makes it possible to adjust Offensive Strategies policy.\
+")
+
+[advance_the_wheel]
+name        = _("The Wheel")
+req1        = "Masonry"
+req2        = "Pottery"
+flags       = ""
+graphic     = "a.the_wheel"
+graphic_alt = "-"
+helptext    = _("\
+With carts it's possible to bring produce and resources longer \
+distance away. Increases city radius.\
+")
+
+[advance_tools]
+name        = _("Tools")
+req1        = "None"
+req2        = "None"
+flags       = ""
+graphic     = "a.tools"
+graphic_alt = "-"
+helptext    = _("\
+Anything can be done with right tools. \
+Allows more efficient use of production resources.\
+")
+
+[advance_trenches]
+name        = _("Trenches")
+req1        = "Mining"
+req2        = "Combat Practice"
+flags       = ""
+graphic     = "a.trenches"
+graphic_alt = "-"
+helptext    = _("\
+Allows units to fortify.\
+")
+
+[advance_writing]
+name        = _("Writing")
+req1        = "Alphabet"
+req2        = "None"
+flags       = ""
+graphic     = "a.writing"
+graphic_alt = "-"
+;helptext    =

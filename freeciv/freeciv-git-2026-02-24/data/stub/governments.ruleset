@@ -1,0 +1,133 @@
+; This is minimal governments ruleset. Replace <modpack> with your module name in
+; description.
+
+[datafile]
+description = "<modpack> governments data for Freeciv"
+options = "+Freeciv-ruleset-3.4-Devel-2025.Jan.17"
+format_version = 50
+
+[control]
+; Names for custom government flags. There can be up to 8 of these.
+; name          = rule name; In some circumstances user may see this
+;                 as part of some sentences, so try to make it descriptive
+;                 and sensible.
+; helptxt       = displayed in the help for unit types with this flag (optional)
+;flags =
+;  { "name", "helptxt"
+;  }
+
+[governments]
+during_revolution = "Anarchy"
+
+; /* <-- avoid gettext warnings
+;
+; Below: The individual government types, one per section.
+;
+; The actual tag used (the * in [government_*]) does not matter, except
+; it must be unique within this file, and it may be used in debug
+; output when reading this file.
+;
+; For the "official" rulesets, the order of these sections should not
+; be changed because that would break backward compatibility with
+; savegames. (In particular, if Fundamentalism is added to default
+; ruleset, should be added at end.)
+;
+; Notes on fields:
+;
+; name         = translatable name as seen by user
+; rule_name    = (optional) internal name for savegames, rulesets etc; if
+;                not present, "name" is used for this purpose too. Since
+;                the name used in savegames must not change, if you want
+;                to rename an item after a ruleset has been released, you
+;                should set "rule_name" to the original value of "name".
+; reqs         = requirements for this government (see README.effects)
+; graphic      = tag specifying preferred graphic
+; graphic_alt  = alternate graphics tag if preferred is not found;
+;                should be a standard tag if preferred is not;
+;                otherwise may be "-"
+; sound        = Sound tag for the audio to play when player switch
+;                to government.
+; sound_alt    = Alternative sound tag, in case primary one is not found.
+; sound_alt2   = Second alternative sound tag, in case neither primary tag
+;                nor the first alt tag is found.
+; ai_better    = AI will not consider this government for use if the
+;                government listed here is available
+; ruler_male_title   = The default male ruler title for the government type.
+;                      It's a format string where name of the ruler is marked
+;                      by '%s'.
+;                      Individual nations may override this by their
+;                      own title.
+; ruler_female_title = The default female ruler title for the government type.
+;                      See above ruler_male_title.
+; flags        = special flag strings; list of user flags defined above
+; helptext     = optional help text string; should escape all raw newlines
+;                so that xgettext parsing works
+;
+; */ <-- avoid gettext warnings
+
+;------------------------------------------------------------------------
+[government_anarchy]
+
+name        = _("Anarchy")
+; No reqs
+graphic     = "gov.anarchy"
+graphic_alt = "-"
+sound       = "g_anarchy"
+sound_alt   = "-"
+sound_alt2  = "-"
+
+ruler_male_title = _("Usurper %s")
+ruler_female_title = _("?female:Usurper %s")
+
+helptext = _("\
+Anarchy happens between government changes.\
+")
+
+;------------------------------------------------------------------------
+[government_generic]
+
+name        = _("Generic")
+reqs =
+   { "type", "name", "range"
+; No requirements
+   }
+graphic     = "gov.despotism"
+graphic_alt = "-"
+sound       = "g_generic"
+sound_alt   = "-"
+sound_alt2  = "-"
+
+ruler_male_title = _("Leader %s")
+ruler_female_title = _("Leader %s")
+
+helptext = _("\
+  This is the only available form of government.\
+")
+
+; /* <-- avoid gettext warnings
+;
+; Multipliers (aka policies), there can be up to 50:
+;
+; name                    = translatable name as seen by user
+; rule_name               = (optional) internal name for savegames, rulesets
+;                           etc; if not present, "name" is used for this
+;                           purpose too. Since the name used in savegames must
+;                           not change, if you want to rename an item after a
+;                           ruleset has been released, you should set
+;                           "rule_name" to the original value of "name".
+; default                 = default value (as presented in UI)
+; start                   = minimum value (as presented in UI)
+; stop                    = maximum value (as presented in UI)
+; step                    = minimum increase/decrease (as presented in UI)
+; offset                  = offset/factor control how UI values are turned
+; factor                  = into effect values for use in effects.ruleset.
+;                           effect_value = (ui_value + offset) * (factor/100)
+;                           Optional; by default offset=0, factor=100, so
+;                           that UI values are used as-is.
+; minimum_turns           = how often multiplier can be changed, or: how long one is stuck
+;                           with the given value after changing to it
+; reqs                    = requirements for adjusting this policy (see README.effects)
+; helptext                = optional help text string; should escape all raw
+;                           newlines so that xgettext parsing works
+;
+; */ <-- avoid gettext warnings

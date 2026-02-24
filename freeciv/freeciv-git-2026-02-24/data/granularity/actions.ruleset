@@ -1,0 +1,712 @@
+
+; Modifying this file:
+; You should not modify this file except to make bugfixes or
+; for other "maintenance". If you want to make custom changes,
+; you should create a new datadir subdirectory and copy this file
+; into that directory, and then modify that copy. Then use the
+; command "rulesetdir <mysubdir>" in the server to have freeciv
+; use your new customized file.
+
+; Note that the freeciv AI may not cope well with anything more
+; than minor changes.
+
+[datafile]
+description = "Granularity actions data for Freeciv"
+options = "+Freeciv-ruleset-3.4-Devel-2025.Jan.17"
+format_version = 50
+
+[auto_attack]
+; An auto attack may be triggered when another unit moves to an adjacent
+; tile and the autoattack server setting is enabled. The following details
+; are ruleset controlled.
+;   if_attacker    - this requirement vector must be true before a unit even
+;                    considers to auto attack.
+;   attack_actions - the actions to try during an auto attack in the order
+;                    they should be tried.
+
+;if_attacker =
+;    { "type",         "name",    "range", "present"
+;      "DiplRel",      "War",     "Local", TRUE
+;      "MinMoveFrags", "10"       "Local", TRUE
+;    }
+
+;attack_actions = "Capture Units", "Bombard",
+;                 "Collect Ransom", "Attack", "Suicide Attack"
+
+[actions]
+; Forbid "Attack" if any one of the listed actions are legal.
+attack_blocked_by = "Capture Units", "Bombard", "Bombard 2"
+
+; Forbid "Conquer City Shrink" if any one of the listed actions are legal.
+conquer_city_shrink_blocked_by = "Attack", "Bombard", "Bombard 2"
+
+; Forbid regular unit move if one of the actions below is legal.
+move_blocked_by = "Transport Disembark", "Transport Disembark 2"
+
+; Actor units will - under certain circumstances - be forced to try
+; performing the following actions in the specified order after successfully
+; performing "Bribe Unit".
+bribe_unit_post_success_forced_actions = "Unit Move"
+
+; Actor units will - under certain circumstances - be forced to try
+; performing the following actions in the specified order after successfully
+; performing "Attack".
+attack_post_success_forced_actions = "Transport Disembark",
+                                     "Conquer Extras",
+                                     "Enter Hut",
+                                     "Frighten Hut",
+                                     "Unit Move"
+
+; Actor units will - under certain circumstances - be forced to try
+; performing the following actions in the specified order after successfully
+; performing "Collect Ransom".
+collect_ransom_post_success_forced_actions = "Unit Move"
+
+; The city that made the unit`s current tile native is gone. This is a Hail
+; Mary attempt at survival by performing an action. Evaluated against an
+; adjacent tile. Currently only able to target native tiles.
+escape_city = "Transport Embark", "Unit Move"
+
+; The unit`s stack has been defeated and is scheduled for execution but the
+; unit can do Escape action. Evaluated against an adjacent tile.
+;unit_stack_death = "Transport Embark", "Unit Move"
+
+; If poison_empties_food_stock is set to TRUE a successful "Poison City"
+; or "Poison City Escape" will empty the food stock.
+;poison_empties_food_stock = FALSE
+
+; If steal_maps_reveals_all_cities is set to TRUE a successful "Steal Maps"
+; or "Steal Maps Escape" will transfer the map for all tiles containing a
+; city.
+;steal_maps_reveals_all_cities = TRUE
+
+; The maximum distance from the actor unit to the target of the "Bombard"
+; action. The value 1 means that the targets must be on a tile adjacent to
+; the actor unit. The special value "unlimited" lifts the maximum distance
+; restriction. The maximum distance can`t be smaller than the minimum
+; distance.
+bombard_max_range = 8
+
+; The maximum distance from the actor unit to the target of the "Bombard 2"
+; action. The value 1 means that the targets must be on a tile adjacent to
+; the actor unit. The special value "unlimited" lifts the maximum distance
+; restriction. The maximum distance can`t be smaller than the minimum
+; distance.
+bombard_2_max_range = 1
+
+; The maximum distance from the actor unit to the target of the "Bombard 3"
+; action. The value 1 means that the targets must be on a tile adjacent to
+; the actor unit. The special value "unlimited" lifts the maximum distance
+; restriction. The maximum distance can`t be smaller than the minimum
+; distance.
+bombard_3_max_range = 1
+
+; The maximum distance from the actor unit to the target of the
+; "Bombard Lethal" action. The value 1 means that the targets must be on a
+; tile adjacent to the actor unit. The special value "unlimited" lifts the
+; maximum distance restriction. The maximum distance can`t be smaller than
+; the minimum distance.
+bombard_lethal_max_range = 1
+
+; The minimal distance from the actor unit to the target. The value 0 means
+; that the target must be at the tile of the actor unit. The value 1 means
+; that the tile must be a tile adjacent to the actor unit.
+explode_nuclear_min_range = 0
+
+; The maximum distance from the actor unit to the target of the
+; "Explode Nuclear" action. The value 0 means that the target tile must be
+; the tile of the actor unit. The value 1 means that the tile must be a tile
+; adjacent to the actor unit. The special value "unlimited" lifts the
+; maximum distance restriction. The maximum distance can`t be smaller than
+; the minimum distance.
+explode_nuclear_max_range = 0
+
+; Will performing this action always consume the actor unit?
+explode_nuclear_consuming_always = TRUE
+
+; The minimal distance from the actor unit to the target. The value 0 means
+; that the target must be at the tile of the actor unit. The value 1 means
+; that the tile must be a tile adjacent to the actor unit.
+nuke_city_min_range = 1
+
+; The maximum distance from the actor unit to the target of the
+; "Nuke City" action. The value 1 means that the tile must be a tile
+; adjacent to the actor unit. The special value "unlimited" lifts the
+; maximum distance restriction. The maximum distance can`t be smaller than
+; the minimum distance.
+nuke_city_max_range = 1
+
+; Will performing this action always consume the actor unit?
+nuke_city_consuming_always = TRUE
+
+; The kind of target the "Nuke City" action has. The target requirements of
+; its enablers are evaluated against the target. The target owner is the one
+; that gets a Casus Belli if the ruleset has a Casus Belli for this action.
+; Supported values are "City" and "Tile".
+nuke_city_target_kind = "City"
+
+; The minimal distance from the actor unit to the target. The value 0 means
+; that the target must be at the tile of the actor unit. The value 1 means
+; that the tile must be a tile adjacent to the actor unit.
+nuke_units_min_range = 1
+
+; The maximum distance from the actor unit to the target of the
+; "Nuke Units" action. The value 1 means that the tile must be a tile
+; adjacent to the actor unit. The special value "unlimited" lifts the
+; maximum distance restriction. The maximum distance can`t be smaller than
+; the minimum distance.
+nuke_units_max_range = 1
+
+; Will performing this action always consume the actor unit?
+nuke_units_consuming_always = TRUE
+
+; Will performing this action always consume the actor unit?
+found_city_consuming_always = TRUE
+
+; Blank ruleset defined user actions.
+; See the section "Ruleset defined actions" in doc/README.actions
+; Example: set up "User Action 1"
+;user_action_1_target_kind            = "Unit"
+;user_action_1_min_range              = 1
+;user_action_1_max_range              = 3
+;user_action_1_actor_consuming_always = FALSE
+
+; Some actions have a action dice roll before the action starts where it can
+; fail. The initial probability of success is 100% unless the action appears
+; in the following list. Then the initial probability comes from the setting
+; diplchance. The initial probability of success is modified by the
+; Action_Odds_Pct effect before the roll happens.
+;diplchance_initial_odds = "Steal Gold", "Steal Gold Escape"
+
+; Suppress automatic help text generation about what enables and/or
+; disables the following actions.
+;
+; Can make the help text less redundant when you document it your self.
+
+; "Transport Disembark 2" is "Transport Disembark" but from a non native
+; tile.
+; The version from the non native tile and the native tile version won`t
+; appear in the same action selection dialog given their opposite
+; requirements. Avoid double entries in the auto help by silencing it.
+quiet_actions = "Transport Disembark 2", "Unit Move"
+
+; /* <-- avoid gettext warnings
+;
+; Actions:
+;
+; action               = the action to configure.
+; ui_name              = What each action should be called when showing them to the player.
+;                        The first %s should be before the mnemonic of the action.
+;                        A Freeciv client that supports mnemonics will replace it with
+;                        the in-band signal that marks the following character as a mnemonic
+;                        in its graphical toolkit.
+;                        The second %s marks where extra details should be inserted.
+;
+; README.actions lists the possible actions
+;
+; */ <-- avoid gettext warnings
+
+
+[action_bribe_enemy_unit]
+action  = "Bribe Unit"
+ui_name = _("%sBribe Enemy Unit%s")
+
+[action_build_city]
+action  = "Found City"
+ui_name = _("%sBuild City%s")
+
+[action_bombard]
+action  = "Bombard 2"
+ui_name = _("%sBombard%s")
+
+[action_disembark_from_non_native]
+action  = "Transport Disembark 2"
+ui_name = _("%sDisembark from non native%s")
+
+[action_keep_moving]
+action  = "Unit Move"
+ui_name = _("%sKeep moving%s")
+
+[action_relocate]
+action  = "Teleport"
+ui_name = _("%sRelocate%s")
+
+
+; /* <-- avoid gettext warnings
+;
+; Enablers:
+;
+; action               = the action to enable.
+; actor_reqs           = requirements that apply to the actor.
+; target_reqs          = requirements that apply to the target.
+; comment              = Comment for the benefit to someone examining the ruleset
+;                        Not used by freeciv any other way.
+;
+; README.actions lists the possible actions and their hard coded
+; requirements.
+;
+; An enabler is active when its actor_reqs AND its target_reqs are
+; satisfied.
+;
+; */ <-- avoid gettext warnings
+
+[enabler_establish_embassy]
+action        = "Establish Embassy Stay"
+actor_reqs    =
+    { "type",         "name",             "range", "present"
+      "UnitTypeFlag", "Diplomat",         "Local", TRUE
+      "UnitState",    "OnLivableTile",    "Local", TRUE
+      "MinMoveFrags", "1",                "Local", TRUE
+      "DiplRel",      "Foreign",          "Local", TRUE
+      "DiplRel",      "Has real embassy", "Local", FALSE
+    }
+target_reqs   =
+    { "type",        "name",      "range",  "present"
+      "NationGroup", "Barbarian", "Player", FALSE
+    }
+
+[enabler_bribe_unit]
+action        = "Bribe Unit"
+actor_reqs    =
+    { "type",         "name",          "range",  "present"
+      "UnitTypeFlag", "Diplomat",      "Local",  TRUE
+      "Tech",         "Currency",      "Player", TRUE
+      "DiplRel",      "Alliance",      "Local",  FALSE
+      "DiplRel",      "Team",          "Local",  FALSE
+      "UnitState",    "OnLivableTile", "Local",  TRUE
+      "MinMoveFrags", "1",             "Local",  TRUE
+      "DiplRel",      "Foreign",       "Local",  TRUE
+    }
+target_reqs   =
+    { "type",           "name",   "range", "present"
+      "CityTile",       "Center", "Tile",  FALSE
+      "MaxUnitsOnTile", "1",      "Tile",  TRUE
+    }
+
+[enabler_found_city_tribal]
+action        = "Found City"
+actor_reqs    =
+    { "type",         "name",          "range",  "present"
+      "UnitTypeFlag", "Cities",        "Local",  TRUE
+      "UnitState",    "OnLivableTile", "Local",  TRUE
+      "MinMoveFrags", "5",             "Local",  TRUE
+      "Gov",          "Tribal",        "Player", TRUE
+      "MinCities",    "5",             "Player", FALSE
+    }
+target_reqs   =
+    { "type",        "name",     "range", "present"
+      "TerrainFlag", "NoCities", "Tile",  FALSE
+    }
+
+[enabler_found_city_despotism]
+action        = "Found City"
+actor_reqs    =
+    { "type",         "name",          "range",  "present"
+      "UnitTypeFlag", "Cities",        "Local",  TRUE
+      "UnitState",    "OnLivableTile", "Local",  TRUE
+      "MinMoveFrags", "5",             "Local",  TRUE
+      "Gov",          "Despotism",     "Player", TRUE
+      "MinCities",    "10",            "Player", FALSE
+    }
+target_reqs   =
+    { "type",        "name",     "range", "present"
+      "TerrainFlag", "NoCities", "Tile",  FALSE
+    }
+
+[enabler_found_city_monarchy]
+action        = "Found City"
+actor_reqs    =
+    { "type",         "name",          "range",  "present"
+      "UnitTypeFlag", "Cities",        "Local",  TRUE
+      "UnitState",    "OnLivableTile", "Local",  TRUE
+      "MinMoveFrags", "5",             "Local",  TRUE
+      "Gov",          "Monarchy",      "Player", TRUE
+    }
+target_reqs   =
+    { "type",        "name",     "range", "present"
+      "TerrainFlag", "NoCities", "Tile",  FALSE
+    }
+
+[enabler_attack_from_native]
+action        = "Attack"
+actor_reqs    =
+    { "type",          "name",         "range", "present"
+      "UnitTypeFlag",  "NonMil",       "Local", FALSE
+      "MinMoveFrags",  "1",            "Local", TRUE
+      "UnitState",     "OnNativeTile", "Local", TRUE
+      "DiplRel",       "War",          "Local", TRUE
+    }
+
+[enabler_cultivate]
+action        = "Cultivate"
+actor_reqs    =
+    { "type",         "name",    "range", "present"
+      "UnitTypeFlag", "Workers", "Local", TRUE
+    }
+
+[enabler_plant]
+action        = "Plant"
+actor_reqs    =
+    { "type",         "name",    "range", "present"
+      "UnitTypeFlag", "Workers", "Local", TRUE
+    }
+
+[enabler_deboard]
+action        = "Transport Deboard"
+actor_reqs    =
+    { "type",      "name",          "range"
+      "UnitState", "OnLivableTile", "Local"
+      "UnitState", "Transported",   "Local"
+    }
+target_reqs   =
+    { "type",              "name",         "range"
+      "UnitState",         "Transporting", "Local"
+      "MaxTopUnitsOnTile", "3",            "Tile"
+    }
+
+[enabler_deboard_strategies]
+action        = "Transport Deboard"
+actor_reqs    =
+    { "type",      "name",          "range"
+      "UnitState", "OnLivableTile", "Local"
+      "UnitState", "Transported",   "Local"
+      "Tech",      "Strategies",    "Player"
+    }
+target_reqs   =
+    { "type",              "name",         "range"
+      "UnitState",         "Transporting", "Local"
+      "MaxTopUnitsOnTile", "5",            "Tile"
+    }
+
+[enabler_board]
+action        = "Transport Board"
+actor_reqs    =
+    { "type",    "name",       "range", "present"
+      "DiplRel", "Armistice",  "Local", FALSE
+      "DiplRel", "War",        "Local", FALSE
+      "DiplRel", "Cease-fire", "Local", FALSE
+      "DiplRel", "Peace",      "Local", FALSE
+      "DiplRel", "Never met",  "Local", FALSE
+    }
+
+[enabler_unload]
+action        = "Transport Unload"
+actor_reqs    =
+    { "type",      "name",         "range"
+      "UnitState", "Transporting", "Local"
+    }
+target_reqs   =
+    { "type",              "name",          "range"
+      "UnitState",         "OnLivableTile", "Local"
+      "UnitState",         "Transported",   "Local"
+      "MaxTopUnitsOnTile", "3",             "Tile"
+    }
+
+[enabler_unload_strategies]
+action        = "Transport Unload"
+actor_reqs    =
+    { "type",      "name",         "range"
+      "UnitState", "Transporting", "Local"
+      "Tech",      "Strategies",   "Player"
+    }
+target_reqs   =
+    { "type",              "name",          "range"
+      "UnitState",         "OnLivableTile", "Local"
+      "UnitState",         "Transported",   "Local"
+      "MaxTopUnitsOnTile", "5",             "Tile"
+    }
+
+[enabler_disembark_from_native_tile]
+action        = "Transport Disembark"
+actor_reqs    =
+    { "type",         "name",         "range"
+      "UnitState",    "Transported",  "Local"
+      "MinMoveFrags", "5",            "Local"
+      "UnitState",    "OnNativeTile", "Local"
+    }
+target_reqs   =
+    { "type",              "name", "range"
+      "MaxTopUnitsOnTile", "3",    "Tile"
+    }
+
+[enabler_disembark_from_native_tile_strategies]
+action        = "Transport Disembark"
+actor_reqs    =
+    { "type",         "name",         "range"
+      "UnitState",    "Transported",  "Local"
+      "MinMoveFrags", "5",            "Local"
+      "UnitState",    "OnNativeTile", "Local"
+      "Tech",         "Strategies",   "Player"
+    }
+target_reqs   =
+    { "type",              "name", "range"
+      "MaxTopUnitsOnTile", "5",    "Tile"
+    }
+
+[enabler_disembark_from_native_city]
+action        = "Transport Disembark"
+actor_reqs    =
+    { "type",         "name",        "range"
+      "UnitState",    "Transported", "Local"
+      "MinMoveFrags", "5",           "Local"
+      "CityTile",     "Center",      "Tile"
+    }
+target_reqs   =
+    { "type",              "name", "range"
+      "MaxTopUnitsOnTile", "3",    "Tile"
+    }
+
+[enabler_disembark_from_native_city_strategies]
+action        = "Transport Disembark"
+actor_reqs    =
+    { "type",         "name",        "range"
+      "UnitState",    "Transported", "Local"
+      "MinMoveFrags", "5",           "Local"
+      "CityTile",     "Center",      "Tile"
+      "Tech",         "Strategies",  "Player"
+    }
+target_reqs   =
+    { "type",              "name", "range"
+      "MaxTopUnitsOnTile", "5",    "Tile"
+    }
+
+[enabler_disembark_from_non_native]
+action        = "Transport Disembark 2"
+actor_reqs    =
+    { "type",           "name",         "range", "present"
+      "UnitState",      "Transported",  "Local", TRUE
+      "MinMoveFrags",   "5",            "Local", TRUE
+      "UnitState",      "OnNativeTile", "Local", FALSE
+      "CityTile",       "Center",       "Tile",  FALSE
+    }
+target_reqs   =
+    { "type",              "name", "range"
+      "MaxTopUnitsOnTile", "3",    "Tile"
+    }
+
+[enabler_disembark_from_non_native_strategies]
+action        = "Transport Disembark 2"
+actor_reqs    =
+    { "type",         "name",         "range",  "present"
+      "UnitState",    "Transported",  "Local",  TRUE
+      "MinMoveFrags", "5",            "Local",  TRUE
+      "UnitState",    "OnNativeTile", "Local",  FALSE
+      "CityTile",     "Center",       "Tile",   FALSE
+      "Tech",         "Strategies",   "Player", TRUE
+    }
+target_reqs   =
+    { "type",              "name", "range"
+      "MaxTopUnitsOnTile", "5",    "Tile"
+    }
+
+[enabler_embark]
+action        = "Transport Embark"
+actor_reqs    =
+    { "type",         "name",       "range", "present"
+      "MinMoveFrags", "5",          "Local", TRUE
+      "DiplRel",      "Armistice",  "Local", FALSE
+      "DiplRel",      "War",        "Local", FALSE
+      "DiplRel",      "Cease-fire", "Local", FALSE
+      "DiplRel",      "Peace",      "Local", FALSE
+      "DiplRel",      "Never met",  "Local", FALSE
+    }
+
+[enabler_regular_move]
+action        = "Unit Move"
+actor_reqs    =
+    { "type",         "name",        "range", "present"
+      "MinMoveFrags", "1",           "Local", TRUE
+      "UnitState",    "Transported", "Local", FALSE
+    }
+target_reqs   =
+    { "type",              "name", "range"
+      "MaxTopUnitsOnTile", "3",    "Tile"
+    }
+
+[enabler_regular_move_strategies]
+action        = "Unit Move"
+actor_reqs    =
+    { "type",         "name",        "range",  "present"
+      "MinMoveFrags", "1",           "Local",  TRUE
+      "UnitState",    "Transported", "Local",  FALSE
+      "Tech",         "Strategies",  "Player", TRUE
+    }
+target_reqs   =
+    { "type",              "name", "range"
+      "MaxTopUnitsOnTile", "5",    "Tile"
+    }
+
+[enabler_relocate]
+action        = "Teleport"
+actor_reqs    =
+    { "type",         "name",        "range", "present"
+      "UnitClass",    "Air",         "Local", TRUE
+      "MinMoveFrags", "5",           "Local", TRUE
+      "UnitState",    "Transported", "Local", FALSE
+    }
+target_reqs   =
+    { "type",              "name", "range"
+      "MaxTopUnitsOnTile", "3",    "Tile"
+    }
+
+[enabler_relocate_strategies]
+action        = "Teleport"
+actor_reqs    =
+    { "type",         "name",        "range",  "present"
+      "UnitClass",    "Air",         "Local",  TRUE
+      "MinMoveFrags", "5",           "Local",  TRUE
+      "UnitState",    "Transported", "Local",  FALSE
+      "Tech",         "Strategies",  "Player", TRUE
+    }
+target_reqs   =
+    { "type",              "name", "range"
+      "MaxTopUnitsOnTile", "5",    "Tile"
+    }
+
+[enabler_bombard_land]
+action        = "Bombard 2"
+actor_reqs    =
+    { "type",         "name",      "range"
+      "UnitTypeFlag", "Bombarder", "Local"
+      "MinMoveFrags", "5",         "Local"
+    }
+
+[enabler_surgical_strike]
+action        = "Surgical Strike Building"
+actor_reqs    =
+    { "type",         "name",      "range"
+      "UnitTypeFlag", "Bombarder", "Local"
+      "MinMoveFrags", "5",         "Local"
+    }
+
+[enabler_bombard]
+action        = "Bombard"
+actor_reqs    =
+    { "type",         "name", "range"
+      "UnitClass",    "Air",  "Local"
+      "MinMoveFrags", "5",    "Local"
+    }
+
+[enabler_fortify]
+action        = "Fortify"
+actor_reqs    =
+    { "type",     "name",      "range",  "present"
+      "Tech",     "Trenches",  "Player", TRUE
+      "Activity", "Fortified", "Local",  FALSE
+    }
+
+[enabler_upgrade_unit]
+action        = "Upgrade Unit"
+actor_reqs    =
+    { "type",    "name",        "range",  "present"
+      "Tech",    "Engineering", "Player", TRUE
+      "DiplRel", "Foreign",     "Local",  FALSE
+    }
+
+[enabler_conquer_city_tribal]
+action        = "Conquer City Shrink"
+actor_reqs    =
+    { "type",          "name",          "range",  "present"
+      "UnitClassFlag", "CanOccupyCity", "Local",  TRUE
+      "UnitTypeFlag",  "NonMil",        "Local",  FALSE
+      "DiplRel",       "War",           "Local",  TRUE
+      "MinMoveFrags",  "1",             "Local",  TRUE
+      "Gov",           "Tribal",        "Player", TRUE
+      "MinCities",     "5",             "Player", FALSE
+    }
+target_reqs   =
+    { "type",           "name", "range", "present"
+      "MaxUnitsOnTile", "0",    "Tile",  TRUE
+    }
+
+[enabler_conquer_city_despotism]
+action        = "Conquer City Shrink"
+actor_reqs    =
+    { "type",          "name",          "range",  "present"
+      "UnitClassFlag", "CanOccupyCity", "Local",  TRUE
+      "UnitTypeFlag",  "NonMil",        "Local",  FALSE
+      "DiplRel",       "War",           "Local",  TRUE
+      "MinMoveFrags",  "1",             "Local",  TRUE
+      "Gov",           "Despotism",     "Player", TRUE
+      "MinCities",     "10",            "Player", FALSE
+    }
+target_reqs   =
+    { "type",           "name", "range", "present"
+      "MaxUnitsOnTile", "0",    "Tile",  TRUE
+    }
+
+[enabler_conquer_city_monarchy]
+action        = "Conquer City Shrink"
+actor_reqs    =
+    { "type",          "name",          "range",  "present"
+      "UnitClassFlag", "CanOccupyCity", "Local",  TRUE
+      "UnitTypeFlag",  "NonMil",        "Local",  FALSE
+      "DiplRel",       "War",           "Local",  TRUE
+      "MinMoveFrags",  "1",             "Local",  TRUE
+      "Gov",           "Monarchy",      "Player", TRUE
+    }
+target_reqs   =
+    { "type",           "name", "range", "present"
+      "MaxUnitsOnTile", "0",    "Tile",  TRUE
+    }
+
+[enabler_capture_defenseless]
+action        = "Capture Units"
+actor_reqs    =
+    { "type",         "name", "range"
+      "DiplRel",      "War",  "Local"
+      "MinMoveFrags", "1",    "Local"
+    }
+target_reqs   =
+    { "type",         "name",         "range", "present"
+      "UnitTypeFlag", "Defenseless",  "Local", TRUE
+      "UnitState",    "Transporting", "Local", FALSE
+      "CityTile",     "Center",       "Tile",  FALSE
+    }
+
+[enabler_capture_bounty_hunter]
+action        = "Capture Units"
+actor_reqs    =
+    { "type",         "name",          "range"
+      "UnitType",     "Bounty Hunter", "Local"
+      "DiplRel",      "War",           "Local"
+      "MinMoveFrags", "1",             "Local"
+    }
+target_reqs   =
+    { "type",      "name",         "range", "present"
+      "UnitState", "Transporting", "Local", FALSE
+      "CityTile",  "Center",       "Tile",  FALSE
+    }
+
+[enabler_gain_veterancy]
+action        = "Gain Veterancy"
+actor_reqs    =
+    { "type", "name", "range", "present"
+    }
+
+[enabler_civil_war]
+action        = "Civil War"
+actor_reqs    =
+    { "type", "name", "range", "present"
+    }
+
+[enabler_finish_unit]
+action        = "Finish Unit"
+actor_reqs    =
+    { "type",              "name", "range"
+      "MaxTopUnitsOnTile", "3",    "Tile"
+    }
+
+[enabler_finish_unit_strategies]
+action        = "Finish Unit"
+actor_reqs    =
+    { "type",              "name",       "range"
+      "MaxTopUnitsOnTile", "5",          "Tile"
+      "Tech",              "Strategies", "Player"
+    }
+
+[enabler_finish_building]
+action        = "Finish Building"
+actor_reqs    =
+    { "type", "name", "range", "present"
+    }
