@@ -155,8 +155,16 @@ function tileset_unit_type_graphic_tag(utype)
     return utype['graphic_str'] + "_Idle";
   }
 
+  if (tileset_has_tag(utype['graphic_str'])) {
+    return utype['graphic_str'];
+  }
+
   if (tileset_has_tag(utype['graphic_alt'] + "_Idle")) {
     return utype['graphic_alt'] + "_Idle";
+  }
+
+  if (tileset_has_tag(utype['graphic_alt'])) {
+    return utype['graphic_alt'];
   }
 
   console.log("No graphic for unit " + utype['name']);

@@ -119,7 +119,7 @@ function server_reveal_tile(tile_index, player_id, seen) {
       terrain: ptile.terrain,
       known: known_state,
       extras: ptile.extras ? ptile.extras.toBitSet() : [],
-      height: ptile.height || 0
+      altitude: ptile.altitude || ptile.height || 0
     });
   }
 }
@@ -207,7 +207,7 @@ function server_update_player_vision(player_id) {
         terrain: ptile.terrain,
         known: TILE_KNOWN_UNSEEN,  // Fog it
         extras: ptile.extras ? ptile.extras.toBitSet() : [],
-        height: ptile.height || 0
+        altitude: ptile.altitude || ptile.height || 0
       });
     }
   }

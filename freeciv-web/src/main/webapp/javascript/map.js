@@ -438,13 +438,16 @@ function dir_ccw(dir)
 }
 
 /****************************************************************************
-  Adjust tile height
+  Adjust tile height - converts altitude from C server to normalized height
 ****************************************************************************/
 function map_tile_height_adjust(ptile)
 {
   if (ptile != null && tile_terrain(ptile) != null) {
 
-    if (ptile['height'] == 0) {
+    // Use altitude field from server (0-1000 range), fallback to height if altitude not present
+    var altitude = ptile['altitude'] !== undefined ? ptile['altitude'] : ptile['height'];
+
+    if (altitude == 0) {
       if (is_ocean_tile(ptile)) {
         ptile['height'] = 0.45;
       } else {
@@ -452,8 +455,9 @@ function map_tile_height_adjust(ptile)
       }
 
     } else {
-      // Convert tile height to web client scale.
-      ptile['height'] = (840 + ptile['height']) * 0.00037;
+      // Convert tile altitude to web client scale.
+      // Server sends altitude in 0-1000 range, convert to 0.0-1.0 range
+      ptile['height'] = (840 + altitude) * 0.00037;
 
       if (is_ocean_tile(ptile) && ptile['height'] > 0.5) {
         ptile['height'] = 0.45;
