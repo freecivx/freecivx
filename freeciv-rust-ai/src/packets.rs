@@ -109,6 +109,24 @@ impl ChatMsgReq {
     }
 }
 
+// PACKET_PLAYER_READY = 11
+#[derive(Debug, Serialize)]
+pub struct PlayerReady {
+    pub pid: u32,
+    pub player_no: u16,
+    pub is_ready: bool,
+}
+
+impl PlayerReady {
+    pub fn new(player_no: u16, is_ready: bool) -> Self {
+        Self {
+            pid: PACKET_PLAYER_READY,
+            player_no,
+            is_ready,
+        }
+    }
+}
+
 // PACKET_PLAYER_PHASE_DONE = 52
 #[derive(Debug, Serialize)]
 pub struct PlayerPhaseDone {

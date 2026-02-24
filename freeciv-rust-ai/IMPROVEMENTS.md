@@ -2,6 +2,29 @@
 
 This document summarizes the improvements made to the Deity Rust AI to make it more feature-complete and aligned with the Freeciv C default AI.
 
+## Latest Improvements (2026-02-24)
+
+### PACKET_PLAYER_READY Implementation
+
+**Files Changed**: `freeciv-rust-ai/src/packets.rs`, `freeciv-rust-ai/src/main.rs`
+
+- ✅ Added `PlayerReady` packet structure with `player_no` and `is_ready` fields
+- ✅ AI now sends PACKET_PLAYER_READY when it identifies its player
+- ✅ This allows games to start properly when the Rust AI joins
+
+**Implementation Details**:
+- When the AI receives PACKET_PLAYER_INFO for its own player (matched by username), it immediately sends PACKET_PLAYER_READY with `is_ready: true`
+- This signals to the server that the AI is ready to begin the game
+- Follows the Freeciv protocol defined in `freeciv/freeciv/common/networking/packets.def`
+
+### Code Quality Improvements
+
+- Fixed unnecessary parentheses in map distance calculation
+- Fixed unused variable warning in `manage_attacker` function
+- All unit tests continue to pass (13/13)
+
+## Previous Changes Made
+
 ## Changes Made
 
 ### 1. Build Integration
