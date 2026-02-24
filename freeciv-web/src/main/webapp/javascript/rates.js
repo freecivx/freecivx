@@ -151,6 +151,7 @@ function update_rates_dialog()
 function update_net_income()
 {
   const income = client.conn.playing['expected_income'];
+  if (income == null) return;  // Don't update if not yet available
   const net_income = income > 0 ? '+' + income : income;
   $("#income_info").html(net_income);
 }

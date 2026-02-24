@@ -85,6 +85,9 @@ function update_game_status_panel() {
     var sci = client.conn.playing['science'];
 
     var net_income = pplayer['expected_income'];
+    if (net_income == null) {
+      net_income = 0;  // Default to 0 if not yet available
+    }
     if (pplayer['expected_income'] > 0) {
       net_income = "+" + pplayer['expected_income'];
     }
