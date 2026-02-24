@@ -165,25 +165,34 @@ fn manage_defender(_state: &GameState, _ai_data: &mut AIData, unit: &Unit) {
 
 /// Manage attacking military unit
 fn manage_attacker(state: &GameState, _ai_data: &mut AIData, unit: &Unit) {
-    println!("[AI Settler] Unit #{} - evaluating city founding", unit.id);
+    println!("[AI Attacker] Unit #{} - managing military unit", unit.id);
     
-    // Calculate distance to nearest city
-    let distance_to_city = find_nearest_city_distance(state, unit.tile);
-    
-    if let Some(dist) = distance_to_city {
-        println!("[AI Settler] Unit #{} is {} tiles from nearest city", unit.id, dist);
-        
-        if dist > 3.0 {
-            println!("[AI Settler] Unit #{} should consider founding a city here", unit.id);
-            // TODO: Evaluate tile quality and send build city command
-        } else {
-            println!("[AI Settler] Unit #{} should move to better location", unit.id);
-            // TODO: Move to a better location
-        }
-    } else {
-        println!("[AI Settler] Unit #{} should found first city!", unit.id);
-        // TODO: Found the first city
+    // Check if unit needs healing
+    if unit.hp < 80 {
+        println!("[AI Attacker] Unit #{} needs healing (HP: {})", unit.id, unit.hp);
+        // TODO: Move to safe location to heal
+        return;
     }
+    
+    // Check if we need to defend our cities
+    if let Some(player_id) = state.our_player_id {
+        for city in state.cities.values() {
+            if city.owner == player_id {
+                let city_tile_distance = ((city.tile - unit.tile).abs()) as f32;
+                if city_tile_distance < 3.0 {
+                    println!("[AI Attacker] Unit #{} defending city {} at distance {:.0}", 
+                        unit.id, city.name, city_tile_distance);
+                    // TODO: Stay near city to defend
+                    return;
+                }
+            }
+        }
+    }
+    
+    // Look for enemy units to attack
+    println!("[AI Attacker] Unit #{} looking for enemies", unit.id);
+    // TODO: Find and attack nearby enemy units
+    // TODO: Move toward enemy territory if no nearby threats
 }
 
 /// Find distance to nearest friendly city
