@@ -253,3 +253,104 @@ async function show_turn_summary() {
     message_log.update({ event: E_CONNECTION, message: "<b>Turn Update:</b> " + summary });
   }
 }
+
+/**
+ * Remove unsafe content from a message (phone numbers, emails, URLs, curse words)
+ * This is a synchronous filter that always runs
+ * @param {string} text - The message text to filter
+ * @returns {string} The filtered text
+ */
+function filter_unsafe_content(text) {
+  if (!text) return text;
+  
+  // Remove phone numbers (various formats)
+  // Matches formats like: 123-456-7890, (123) 456-7890, 123.456.7890, +1 123 456 7890
+  text = text.replace(/(\+?\d{1,3}[-.\s]?)?\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}/g, '[removed]');
+  
+  // Remove email addresses
+  text = text.replace(/\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b/g, '[removed]');
+  
+  // Remove URLs (http://, https://, www., etc.)
+  text = text.replace(/https?:\/\/[^\s<]+/g, '[removed]');
+  text = text.replace(/www\.[^\s<]+/g, '[removed]');
+  
+  // Remove common curse words and unsafe words
+  // This is a basic list - can be expanded as needed
+  const curseWords = [
+    'fuck', 'shit', 'damn', 'bitch', 'bastard', 'ass', 'hell',
+    'crap', 'piss', 'dick', 'cock', 'pussy', 'cunt', 'whore',
+    'slut', 'fag', 'retard', 'nigger', 'nigga'
+  ];
+  
+  for (const word of curseWords) {
+    // Case-insensitive replacement with word boundaries
+    const regex = new RegExp('\\b' + word + '\\b', 'gi');
+    text = text.replace(regex, '***');
+  }
+  
+  return text;
+}
+
+/**
+ * Process and enhance a message using web-llm
+ * Makes messages more lively, varied, and interesting
+ * @param {string} text - The message text to enhance
+ * @returns {Promise<string>} The enhanced text, or original if processing fails
+ */
+async function enhance_message_with_llm(text) {
+  if (!webllm_enabled || !webllm_loaded || !text) {
+    return text;
+  }
+  
+  try {
+    // Skip enhancement for very short messages
+    if (text.length < 10) {
+      return text;
+    }
+    
+    // Extract HTML tags to preserve formatting
+    const htmlTagPattern = /<[^>]+>/g;
+    const tags = text.match(htmlTagPattern) || [];
+    const plainText = text.replace(htmlTagPattern, '|||TAG|||');
+    
+    const prompt = `Rewrite this game message to be more lively and interesting while keeping the same meaning. ` +
+                   `Keep it concise (under 50 words). Message: "${plainText}"`;
+    
+    let enhanced = await generate_ai_text(prompt, 80);
+    
+    // Remove quotes if the LLM added them
+    enhanced = enhanced.replace(/^["']|["']$/g, '');
+    
+    // Restore HTML tags
+    for (const tag of tags) {
+      enhanced = enhanced.replace('|||TAG|||', tag);
+    }
+    
+    return enhanced;
+    
+  } catch (error) {
+    console.error("[WebLLM] Failed to enhance message:", error);
+    return text; // Return original text on error
+  }
+}
+
+/**
+ * Process a game message: filter unsafe content and optionally enhance with LLM
+ * This is the main entry point for message processing
+ * @param {string} text - The message text to process
+ * @param {boolean} shouldEnhance - Whether to enhance the message with LLM (default: true)
+ * @returns {Promise<string>} The processed message
+ */
+async function process_game_message(text, shouldEnhance = true) {
+  if (!text) return text;
+  
+  // Always filter unsafe content (synchronous, always runs)
+  let processed = filter_unsafe_content(text);
+  
+  // Optionally enhance with LLM (asynchronous, only if enabled and loaded)
+  if (shouldEnhance && webllm_enabled && webllm_loaded) {
+    processed = await enhance_message_with_llm(processed);
+  }
+  
+  return processed;
+}

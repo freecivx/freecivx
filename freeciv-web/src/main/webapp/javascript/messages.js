@@ -148,8 +148,25 @@ function add_chatbox_text(packet)
                  .replace(/#A020F0/g, '#F020FF');
     }
 
-    packet['message'] = text;
-    message_log.update(packet);
+    // Process the message through web-llm filters and enhancement
+    if (typeof process_game_message === 'function') {
+      // Determine if we should enhance (only if LLM is loaded)
+      var shouldEnhance = (typeof webllm_loaded !== 'undefined' && webllm_loaded);
+      
+      process_game_message(text, shouldEnhance).then(function(processedText) {
+        packet['message'] = processedText;
+        message_log.update(packet);
+      }).catch(function(error) {
+        console.error("[Messages] Error processing message:", error);
+        // Fallback to original text on error
+        packet['message'] = text;
+        message_log.update(packet);
+      });
+    } else {
+      // If web-llm is not available, use original text
+      packet['message'] = text;
+      message_log.update(packet);
+    }
 }
 
 /**************************************************************************
