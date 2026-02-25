@@ -358,6 +358,17 @@ except Exception as e:
     print(f"Warning: Could not parse fc_tristate enum: {e}")
     fc_tristate_enum = {'values': [], 'count': None}
 
+# Parse req_problem_type enum from fc_types.h
+print(f"Parsing {path.join(common_dir, 'fc_types.h')} for req_problem_type enum...")
+try:
+    req_problem_type_enum = parse_simple_enum(
+        path.join(common_dir, 'fc_types.h'),
+        'req_problem_type'
+    )
+except Exception as e:
+    print(f"Warning: Could not parse req_problem_type enum: {e}")
+    req_problem_type_enum = {'values': [], 'count': None}
+
 # Generate JavaScript output
 output_name = path.join(webapp_dir, 'javascript/fc_types.js')
 with open(output_name, 'w') as f:
@@ -431,6 +442,11 @@ with open(output_name, 'w') as f:
     if fc_tristate_enum and fc_tristate_enum['values']:
         write_enum(f, 'fc_tristate', fc_tristate_enum,
                    'fc_tristate enum from utility/shared.h')
+    
+    # Write req_problem_type from fc_types.h
+    if req_problem_type_enum and req_problem_type_enum['values']:
+        write_enum(f, 'req_problem_type', req_problem_type_enum,
+                   'req_problem_type enum (RPT_*) from common/fc_types.h')
     
     # Priority order for specific enums we want to ensure are written first
     priority_enums = [
