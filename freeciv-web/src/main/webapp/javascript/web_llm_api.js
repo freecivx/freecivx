@@ -65,7 +65,7 @@ async function init_webllm_engine() {
     // - Sufficient quality for game narration and turn summaries
     // - Works well on most devices without requiring high-end GPU
     // Alternative models to consider: Phi-2-q4f16 (better quality, slower), Qwen2.5-0.5B
-    const selectedModel = "SmolLM2-360M-Instruct-q4f16_1-MLC";
+    const selectedModel = "Llama-3.2-1B-Instruct-q4f16_1-MLC";
     
     const initProgressCallback = (progress) => {
       console.log("[WebLLM] Loading progress:", progress);
