@@ -16,7 +16,7 @@ var MAX_NUM_UNITS = 250;
 var MAX_NUM_BUILDINGS = 200;
 var MAX_EXTRA_TYPES = 128;
 var MAX_LEN_NAME = 48;
-var FC_INFINITY = (1000 * 1000 * 1000);
+var FC_INFINITY = 1000000000;
 
 /* Client-side player limit (server MAX_NUM_PLAYERS = 500) */
 var MAX_NUM_PLAYERS = 30;
@@ -27,7 +27,7 @@ var MAX_LEN_WORKLIST = 64;
 /* From common/player.h */
 var MAX_AI_LOVE = 1000;
 
-/* Note: MAX_LEN_CITYNAME is 120 in C, but may be limited to 50 in JS for compatibility */
+/* Note: MAX_LEN_CITYNAME is 120 in C, but limited to 50 in JS for compatibility */
 var MAX_LEN_CITYNAME = 50;
 
 

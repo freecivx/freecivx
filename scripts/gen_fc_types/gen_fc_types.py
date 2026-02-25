@@ -22,6 +22,12 @@ from os import path
 import argparse
 import re
 
+# JavaScript-specific constant overrides
+# These values differ from C server for client-side practical reasons
+JS_MAX_NUM_PLAYERS = 30  # C server supports 500, but client uses 30 as practical limit
+JS_MAX_LEN_CITYNAME = 50  # C server allows 120, but client uses 50 for compatibility
+JS_FC_INFINITY = 1000 * 1000 * 1000  # Not defined in C headers, client-specific constant
+
 parser = argparse.ArgumentParser(
     description='Generate fc_types_gen.js from freeciv C sources')
 parser.add_argument('-f', '--freeciv', required=True, help='path to (original) freeciv project')
@@ -205,9 +211,8 @@ fc_types_defines = parse_simple_defines(
 
 # Extract MAX_NUM_PLAYERS (computed value)
 # In C: MAX_NUM_PLAYERS = MAX_NUM_PLAYER_SLOTS - MAX_NUM_BARBARIANS = 512 - 12 = 500
-# But JavaScript uses 30, which might be a client-side limitation
-# We'll keep the JS value for now
-max_num_players_js = 30  # Client-side limit
+# But JavaScript uses a lower value as a client-side practical limitation
+# This value is defined at the top of this script as JS_MAX_NUM_PLAYERS
 
 # Extract from worklist.h
 worklist_defines = parse_simple_defines(
@@ -290,12 +295,12 @@ with open(output_name, 'w') as f:
         if name in fc_types_defines:
             f.write(f'var {name} = {fc_types_defines[name]};\n')
     
-    # Add FC_INFINITY (not found in C headers, JavaScript-specific or different source)
-    f.write('var FC_INFINITY = (1000 * 1000 * 1000);\n')
+    # Add FC_INFINITY (not found in C headers, JavaScript-specific constant)
+    f.write(f'var FC_INFINITY = {JS_FC_INFINITY};\n')
     
     # Add MAX_NUM_PLAYERS (client-side limit, differs from server MAX_NUM_PLAYER_SLOTS)
     f.write(f'\n/* Client-side player limit (server MAX_NUM_PLAYERS = 500) */\n')
-    f.write(f'var MAX_NUM_PLAYERS = {max_num_players_js};\n')
+    f.write(f'var MAX_NUM_PLAYERS = {JS_MAX_NUM_PLAYERS};\n')
     
     # Add MAX_LEN_WORKLIST from worklist.h
     if 'MAX_LEN_WORKLIST' in worklist_defines:
@@ -310,8 +315,8 @@ with open(output_name, 'w') as f:
     # Note about MAX_LEN_CITYNAME
     if 'MAX_LEN_CITYNAME' in cityname_defines:
         f.write(f'\n/* Note: MAX_LEN_CITYNAME is {cityname_defines["MAX_LEN_CITYNAME"]} in C,')
-        f.write(' but may be limited to 50 in JS for compatibility */\n')
-        f.write(f'var MAX_LEN_CITYNAME = 50;\n')
+        f.write(f' but limited to {JS_MAX_LEN_CITYNAME} in JS for compatibility */\n')
+        f.write(f'var MAX_LEN_CITYNAME = {JS_MAX_LEN_CITYNAME};\n')
     
     f.write('\n')
     
