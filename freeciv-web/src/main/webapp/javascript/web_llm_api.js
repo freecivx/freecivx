@@ -253,20 +253,6 @@ async function generate_turn_summary() {
 }
 
 /**
- * Show turn summary in the message log
- */
-async function show_turn_summary() {
-  if (!webllm_enabled) {
-    return;
-  }
-  
-  const summary = await generate_turn_summary();
-  if (summary && typeof message_log !== 'undefined') {
-    message_log.update({ event: E_CONNECTION, message: "<b>Turn Update:</b> " + summary });
-  }
-}
-
-/**
  * Process a game message using web-llm: filter unsafe content and enhance
  * Uses LLM to:
  * - Remove telephone numbers, emails, and web links
