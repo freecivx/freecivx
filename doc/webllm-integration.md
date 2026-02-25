@@ -8,7 +8,7 @@ This document describes the integration of web-llm 0.2.81 into freeciv-web to pr
 ### Files Modified/Created
 
 1. **`web_llm_api.js`** - New JavaScript API module for WebLLM integration
-   - `init_webllm_engine()` - Initializes the WebLLM engine with Phi-2 model
+   - `init_webllm_engine()` - Initializes the WebLLM engine with SmolLM2-360M model
    - `generate_ai_text(prompt, max_tokens)` - Generates AI text from a prompt
    - `generate_game_intro_text()` - Generates a game introduction message
    - `show_ai_intro_dialog()` - Shows jQuery UI dialog with AI-generated intro
@@ -30,7 +30,7 @@ This document describes the integration of web-llm 0.2.81 into freeciv-web to pr
 ### Library Source
 - **web-llm version**: 0.2.81
 - **CDN**: https://esm.run/@mlc-ai/web-llm@0.2.81
-- **Model used**: Phi-2-q4f16_1-MLC (small, fast model)
+- **Model used**: SmolLM2-360M-Instruct-q4f16_1-MLC (very small, fast-loading model with only 376MB VRAM requirement)
 
 ### Usage
 

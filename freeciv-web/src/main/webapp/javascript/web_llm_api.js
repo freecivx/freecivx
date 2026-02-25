@@ -47,8 +47,8 @@ async function init_webllm_engine() {
     console.log("[WebLLM] Module imported, creating engine...");
     
     // Create the engine with a small model for faster loading
-    // Using Phi-2 which is a small but capable model
-    const selectedModel = "Phi-2-q4f16_1-MLC";
+    // Using SmolLM2-360M which is a very small and fast-loading model
+    const selectedModel = "SmolLM2-360M-Instruct-q4f16_1-MLC";
     
     const initProgressCallback = (progress) => {
       console.log("[WebLLM] Loading progress:", progress);
