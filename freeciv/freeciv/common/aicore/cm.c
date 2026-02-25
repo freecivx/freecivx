@@ -714,7 +714,11 @@ static void apply_solution(struct cm_state *state,
 
   /* Clear all specialists, and remove all workers from fields (except
    * the city center). */
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wstringop-overflow"
   memset(&pcity->specialists, 0, sizeof(pcity->specialists));
+#pragma GCC diagnostic pop
+
 
   city_map_iterate(city_radius_sq, cindex, x, y) {
     if (is_free_worked_index(cindex)) {

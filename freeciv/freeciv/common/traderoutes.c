@@ -400,13 +400,17 @@ static int max_tile_trade(const struct city *pcity)
 {
   int i, total = 0;
   int radius_sq = city_map_radius_sq_get(pcity);
-  int tile_trade[city_map_tiles(radius_sq)];
+  int max_tiles = city_map_tiles(radius_sq);
+  int *tile_trade;
   size_t size = 0;
   bool is_celebrating = base_city_celebrating(pcity);
 
   if (pcity->tile == NULL) {
     return 0;
   }
+
+  /* Avoid VLA warning by using dynamic allocation */
+  tile_trade = fc_malloc(max_tiles * sizeof(int));
 
   city_map_iterate(radius_sq, cindex, cx, cy) {
     struct tile *ptile = city_map_to_tile(pcity->tile, radius_sq, cx, cy);
@@ -433,6 +437,8 @@ static int max_tile_trade(const struct city *pcity)
   for (i = 0; i < pcity->size && i < size; i++) {
     total += tile_trade[i];
   }
+
+  free(tile_trade);
 
   return total;
 }

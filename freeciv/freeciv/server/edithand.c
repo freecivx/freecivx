@@ -1477,7 +1477,7 @@ void handle_edit_game(struct connection *pc,
 void handle_edit_scenario_desc(struct connection *pc, const char *scenario_desc)
 {
   if (0 != strncmp(scenario_desc, game.scenario_desc.description,
-                   MAX_LEN_PACKET)) {
+                   sizeof(game.scenario_desc.description))) {
     sz_strlcpy(game.scenario_desc.description, scenario_desc);
     send_scenario_description(NULL);
   }

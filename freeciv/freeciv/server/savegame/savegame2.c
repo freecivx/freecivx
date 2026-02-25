@@ -3517,11 +3517,15 @@ static bool sg_load_player_city(struct loaddata *loading, struct player *plr,
   city_size_set(pcity, size);
 
   for (i = 0; i < loading->specialist.size; i++) {
+    Specialist_type_id sp_id;
+
     sg_warn_ret_val(secfile_lookup_int(loading->file, &value, "%s.nspe%d",
                                        citystr, i),
                     FALSE, "%s", secfile_error());
-    pcity->specialists[specialist_index(loading->specialist.order[i])]
-      = (citizens)value;
+    sp_id = specialist_index(loading->specialist.order[i]);
+    sg_warn_ret_val(sp_id >= 0 && sp_id < SP_MAX, FALSE,
+                    "Invalid specialist type index %d", sp_id);
+    pcity->specialists[sp_id] = (citizens)value;
     sp_count += value;
   }
 

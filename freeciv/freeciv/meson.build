@@ -89,6 +89,8 @@ endif
 if get_option('debug')
   priv_conf_data.set('FREECIV_DEBUG', 1)
   pub_conf_data.set('FREECIV_DEBUG', 1)
+  # Note: Using add_global_arguments instead of werror option to enable
+  # -Werror only in debug mode, not for all builds
   add_global_arguments(
      '-Werror',
      language: ['c', 'cpp'])

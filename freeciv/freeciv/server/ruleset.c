@@ -3520,7 +3520,10 @@ static bool load_ruleset_terrain(struct section_file *file,
   if (ok) {
     /* Extra details */
     extra_type_iterate(pextra) {
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wstringop-overflow"
       BV_CLR_ALL(pextra->conflicts);
+#pragma GCC diagnostic pop
     } extra_type_iterate_end;
 
     extra_type_iterate(pextra) {
