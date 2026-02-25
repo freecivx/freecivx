@@ -61,6 +61,10 @@ Shows a jQuery UI dialog with an AI-generated game introduction. Called automati
 2. **Background Loading**: Model initialization happens in the background to not block the game
 3. **Error Handling**: Falls back to default welcome message if AI generation fails
 4. **Browser Support**: Requires browsers with WebGPU support for optimal performance
+5. **User Preferences**: Web-LLM is enabled by default, and user preference is stored in localStorage
+   - Setting is initialized early from localStorage (default: enabled)
+   - Users can toggle the setting in the pregame options dialog
+   - Choice is persisted across sessions using localStorage
 
 ### Future Enhancements
 
@@ -68,4 +72,3 @@ Possible future improvements:
 - Allow users to customize the AI prompts
 - Add more AI-generated content (city names, unit descriptions, etc.)
 - Support different AI models
-- Add user preference to enable/disable AI features
