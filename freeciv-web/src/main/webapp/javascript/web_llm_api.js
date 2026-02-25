@@ -244,6 +244,10 @@ function show_fallback_intro_message() {
   }
 }
 
+// Command parsing configuration constants
+const MAX_COMMAND_RESPONSE_TOKENS = 50;  // Maximum tokens for command parsing response
+const COMMAND_PARSING_TEMPERATURE = 0.1;  // Low temperature for consistent, deterministic parsing
+
 /**
  * Parse user input and determine if it's a game command
  * @param {string} user_input - The text input from the user
@@ -290,8 +294,8 @@ User: "Good game!" -> {"command": "none"}`;
     
     const reply = await webllm_engine.chat.completions.create({
       messages: messages,
-      max_tokens: 50,
-      temperature: 0.1,  // Low temperature for consistent parsing
+      max_tokens: MAX_COMMAND_RESPONSE_TOKENS,
+      temperature: COMMAND_PARSING_TEMPERATURE,
     });
 
     let response_text = reply.choices[0].message.content.trim();
@@ -356,7 +360,7 @@ function execute_parsed_command(command_data) {
       case "auto_settler":
         // Get the currently focused unit
         if (typeof current_focus !== 'undefined' && current_focus.length > 0) {
-          var punit = current_focus[0];
+          const punit = current_focus[0];
           if (punit != null && typeof request_unit_autosettlers === 'function') {
             request_unit_autosettlers(punit);
             return true;
