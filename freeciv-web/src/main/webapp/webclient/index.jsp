@@ -73,6 +73,9 @@ var renderer_type_override="<%= rendererParam %>";
 <!-- Main application bundle - includes jQuery, Stacktrace, Audio, and all application code -->
 <script src="/javascript/webclient.min.js?ts=${initParam.buildTimeStamp}" defer></script>
 
+<!-- WebLLM API for AI text generation -->
+<script src="/javascript/web_llm_api.js?ts=${initParam.buildTimeStamp}"></script>
+
 <link rel="shortcut icon" href="/images/freeciv-shortcut-icon.png" />
 <link rel="apple-touch-icon" href="/images/freeciv-splash4.png" />
 
