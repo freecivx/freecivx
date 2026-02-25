@@ -30,6 +30,7 @@ GAME_DEST="${DATA_APP_DIR}/savegames"
 
 mkdir -p "${DOCS_DEST}" "${JS_DEST}" "${SOUNDS_DEST}" "${GAME_DEST}" && \
 bash "${DIR}"/freeciv-img-extract/sync.sh -f "${FREECIV_DIR}" -o "${WEBAPP_DIR}" && \
+python3 "${DIR}"/gen_fc_types/gen_fc_types.py -f "${FREECIV_DIR}" -o "${WEBAPP_DIR}" && \
 python3 "${DIR}"/generate_js_hand/generate_js_hand.py -f "${FREECIV_DIR}" -o "${WEBAPP_DIR}" && \
 python3 "${DIR}"/gen_event_types/gen_event_types.py -f "${FREECIV_DIR}" -o "${WEBAPP_DIR}" && \
 python3 "${DIR}"/helpdata_gen/helpdata_gen.py -f "${FREECIV_DIR}" -o "${WEBAPP_DIR}" && \

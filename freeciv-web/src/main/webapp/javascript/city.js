@@ -42,7 +42,7 @@ var FEELING_NATIONALITY = 3;  	/* after citizen nationality effects */
 var FEELING_MARTIAL = 4;	/* after units enforce martial order */
 var FEELING_FINAL = 5;		/* after wonders (final result) */
 
-var MAX_LEN_WORKLIST = 64;
+/* MAX_LEN_WORKLIST is now defined in fc_types.js */
 
 var INCITE_IMPOSSIBLE_COST = (1000 * 1000 * 1000);
 

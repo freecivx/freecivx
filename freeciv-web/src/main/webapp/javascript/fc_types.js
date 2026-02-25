@@ -1,39 +1,37 @@
-/**********************************************************************
-    Freeciv-web - the web version of Freeciv. http://www.FreecivWorld.net/
-    Copyright (C) 2009-2015  The Freeciv-web project
+/****************************************
+ * THIS IS A GENERATED FILE, DO NOT EDIT
+ *
+ * Generated from Freeciv C source files:
+ *   common/fc_types.h
+ *   common/actions.h
+ *   common/actres.h
+ *   common/requirements.h
+ * By scripts/gen_fc_types/gen_fc_types.py
+ ****************************************/
 
-    This program is free software: you can redistribute it and/or modify
-    it under the terms of the GNU Affero General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
-
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU Affero General Public License for more details.
-
-    You should have received a copy of the GNU Affero General Public License
-    along with this program.  If not, see <http://www.gnu.org/licenses/>.
-
-***********************************************************************/
-
-var TRUE = true;
-var FALSE = false;
-
-var TRI_NO = 0;
-var TRI_YES = 1;
-var TRI_MAYBE = 2;
-
+/* Simple constants from fc_types.h */
 var MAX_NUM_ITEMS = 200;
 var MAX_NUM_ADVANCES = 250;
 var MAX_NUM_UNITS = 250;
 var MAX_NUM_BUILDINGS = 200;
 var MAX_EXTRA_TYPES = 128;
 var MAX_LEN_NAME = 48;
+var FC_INFINITY = 1000000000;
+
+/* Client-side player limit (server MAX_NUM_PLAYERS = 500) */
+var MAX_NUM_PLAYERS = 30;
+
+/* From common/worklist.h */
+var MAX_LEN_WORKLIST = 64;
+
+/* From common/player.h */
+var MAX_AI_LOVE = 1000;
+
+/* Note: MAX_LEN_CITYNAME is 120 in C, but limited to 50 in JS for compatibility */
 var MAX_LEN_CITYNAME = 50;
 
-var FC_INFINITY = (1000 * 1000 * 1000);
 
+/* Unit activities from common/fc_types.h */
 var ACTIVITY_IDLE = 0;
 var ACTIVITY_POLLUTION = 1;
 var ACTIVITY_MINE = 2;
@@ -46,15 +44,15 @@ var ACTIVITY_EXPLORE = 8;
 var ACTIVITY_TRANSFORM = 9;
 var ACTIVITY_FORTIFYING = 10;
 var ACTIVITY_FALLOUT = 11;
-var ACTIVITY_BASE = 12;        /* Building base */
+var ACTIVITY_BASE = 12;
 var ACTIVITY_GEN_ROAD = 13;
 var ACTIVITY_CONVERT = 14;
 var ACTIVITY_CULTIVATE = 15;
 var ACTIVITY_PLANT = 16;
 var ACTIVITY_CLEAN = 17;
-var ACTIVITY_LAST = 18;        /* Leave this one last */
+var ACTIVITY_LAST = 18;
 
-/* enum action_result */
+/* Action results (ACTRES_*) from common/fc_types.h */
 var ACTRES_ESTABLISH_EMBASSY = 0;
 var ACTRES_SPY_INVESTIGATE_CITY = 1;
 var ACTRES_SPY_POISON = 2;
@@ -80,7 +78,7 @@ var ACTRES_NUKE = 21;
 var ACTRES_NUKE_UNITS = 22;
 var ACTRES_DESTROY_CITY = 23;
 var ACTRES_EXPEL_UNIT = 24;
-var ACTRES_RECYCLE_UNIT = 25;
+var ACTRES_DISBAND_UNIT_RECOVER = 25;
 var ACTRES_DISBAND_UNIT = 26;
 var ACTRES_HOME_CITY = 27;
 var ACTRES_UPGRADE_UNIT = 28;
@@ -122,27 +120,18 @@ var ACTRES_TRANSPORT_LOAD = 63;
 var ACTRES_CLEAN = 64;
 var ACTRES_TELEPORT = 65;
 var ACTRES_ENABLER_CHECK = 66;
-var ACTRES_NONE = 67;
+var ACTRES_LAST = 67;
 
-/* enum action_sub_result */
-var ACT_SUB_RES_HUT_ENTER = 0;
-var ACT_SUB_RES_HUT_FRIGHTEN = 1;
-var ACT_SUB_RES_MAY_EMBARK = 2;
-var ACT_SUB_RES_NON_LETHAL = 3;
-var ACT_SUB_RES_COUNT = 4;
-
-var IDENTITY_NUMBER_ZERO = 0;
-
-/* Corresponds to the enum action_target_kind */
-var ATK_CITY  = 0;
-var ATK_UNIT  = 1;
+/* Action target kinds (ATK_*) from common/actres.h */
+var ATK_CITY = 0;
+var ATK_UNIT = 1;
 var ATK_UNITS = 2;
-var ATK_TILE  = 3;
+var ATK_TILE = 3;
 var ATK_EXTRAS = 4;
-var ATK_SELF  = 5;
+var ATK_SELF = 5;
 var ATK_COUNT = 6;
 
-/* Corresponds to the enum action_sub_target_kind */
+/* Action sub-target kinds (ASTK_*) from common/actres.h */
 var ASTK_NONE = 0;
 var ASTK_BUILDING = 1;
 var ASTK_TECH = 2;
@@ -150,7 +139,7 @@ var ASTK_EXTRA = 3;
 var ASTK_EXTRA_NOT_THERE = 4;
 var ASTK_COUNT = 5;
 
-/* Actions */
+/* Actions (ACTION_*) from common/actions.h */
 var ACTION_ESTABLISH_EMBASSY = 0;
 var ACTION_ESTABLISH_EMBASSY_STAY = 1;
 var ACTION_SPY_INVESTIGATE_CITY = 2;
@@ -189,9 +178,7 @@ var ACTION_NUKE_CITY = 34;
 var ACTION_NUKE_UNITS = 35;
 var ACTION_DESTROY_CITY = 36;
 var ACTION_EXPEL_UNIT = 37;
-
-// TODO: Rename to ACTION_DISBAND_UNIT_RECOVER to match server side
-var ACTION_RECYCLE_UNIT = 38;
+var ACTION_DISBAND_UNIT_RECOVER = 38;
 var ACTION_DISBAND_UNIT = 39;
 var ACTION_HOME_CITY = 40;
 var ACTION_HOMELESS = 41;
@@ -265,22 +252,17 @@ var ACTION_UNIT_MOVE = 108;
 var ACTION_UNIT_MOVE2 = 109;
 var ACTION_UNIT_MOVE3 = 110;
 var ACTION_CLEAN = 111;
-var ACTION_USER_ACTION1 = 112;
-var ACTION_USER_ACTION2 = 113;
-var ACTION_USER_ACTION3 = 114;
-var ACTION_USER_ACTION4 = 115;
-var ACTION_COUNT = 116;
+var ACTION_TELEPORT = 112;
+var ACTION_USER_ACTION1 = 113;
+var ACTION_USER_ACTION2 = 114;
+var ACTION_USER_ACTION3 = 115;
+var ACTION_USER_ACTION4 = 116;
+var ACTION_COUNT = 117;
 
-/* The action_decision enum */
-/* Doesn't need the player to decide what action to take. */
-var ACT_DEC_NOTHING = 0;
-/* Wants a decision because of something done to the actor. */
-var ACT_DEC_PASSIVE = 1;
-/* Wants a decision because of something the actor did. */
-var ACT_DEC_ACTIVE = 2;
+/* Backward compatibility aliases */
+var ACTION_RECYCLE_UNIT = ACTION_DISBAND_UNIT_RECOVER; // TODO: Update code to use ACTION_DISBAND_UNIT_RECOVER
 
-/* The kind of universals_u (value_union_type was req_source_type).
- * Used in the network protocol. */
+/* Universal types (VUT_*) from common/fc_types.h */
 var VUT_NONE = 0;
 var VUT_ADVANCE = 1;
 var VUT_GOVERNMENT = 2;
@@ -293,12 +275,12 @@ var VUT_UCLASS = 8;
 var VUT_UCFLAG = 9;
 var VUT_OTYPE = 10;
 var VUT_SPECIALIST = 11;
-var VUT_MINSIZE = 12;		/* Minimum size: at city range means city size */
-var VUT_AI_LEVEL = 13;		/* AI level of the player */
-var VUT_TERRAINCLASS = 14;	/* More generic terrain type, currently "Land" or "Ocean" */
+var VUT_MINSIZE = 12;
+var VUT_AI_LEVEL = 13;
+var VUT_TERRAINCLASS = 14;
 var VUT_MINYEAR = 15;
-var VUT_TERRAINALTER = 16;      /* Terrain alterations that are possible */
-var VUT_CITYTILE = 17;          /* Target tile is used by city. */
+var VUT_TERRAINALTER = 16;
+var VUT_CITYTILE = 17;
 var VUT_GOOD = 18;
 var VUT_TERRFLAG = 19;
 var VUT_NATIONALITY = 20;
@@ -330,35 +312,69 @@ var VUT_DIPLREL_TILE = 45;
 var VUT_DIPLREL_TILE_O = 46;
 var VUT_DIPLREL_UNITANY = 47;
 var VUT_DIPLREL_UNITANY_O = 48;
-var VUT_COUNT = 49;             /* Keep this last. */
+var VUT_MINLATITUDE = 49;
+var VUT_MAXLATITUDE = 50;
+var VUT_COUNTER = 51;
+var VUT_ORIGINAL_OWNER = 52;
+var VUT_IMPR_FLAG = 53;
+var VUT_WRAP = 54;
+var VUT_COUNT = 55;
 
-/* Freeciv's gui_type enum */
-/* Used for options which do not belong to any gui. */
-var GUI_STUB    = 0;
-var GUI_GTK2    = 1;
-var GUI_GTK3    = 2;
+/* Requirement ranges (REQ_RANGE_*) from common/requirements.h */
+var REQ_RANGE_LOCAL = 0;
+var REQ_RANGE_TILE = 1;
+var REQ_RANGE_CADJACENT = 2;
+var REQ_RANGE_ADJACENT = 3;
+var REQ_RANGE_CITY = 4;
+var REQ_RANGE_TRADEROUTE = 5;
+var REQ_RANGE_CONTINENT = 6;
+var REQ_RANGE_PLAYER = 7;
+var REQ_RANGE_TEAM = 8;
+var REQ_RANGE_ALLIANCE = 9;
+var REQ_RANGE_WORLD = 10;
+var REQ_RANGE_COUNT = 11;
+
+/* GUI types from common/fc_types.h */
+var GUI_STUB = 0;
+var GUI_GTK2 = 1;
+var GUI_GTK3 = 2;
 var GUI_GTK3_22 = 3;
-/* GUI_SDL remains for now for keeping client options alive until
- * user has migrated them to sdl2-client */
-var GUI_SDL     = 4;
-var GUI_QT      = 5;
-var GUI_SDL2    = 6;
-var GUI_WEB     = 7;
-var GUI_GTK3x   = 8;
+var GUI_SDL = 4;
+var GUI_QT = 5;
+var GUI_SDL2 = 6;
+var GUI_WEB = 7;
+var GUI_GTK4 = 8;
 
-/* Sometimes we don't know (or don't care) if some requirements for effect
- * are currently fulfilled or not. This enum tells lower level functions
- * how to handle uncertain requirements.
- */
-var RPT_POSSIBLE = 0; /* We want to know if it is possible that effect is active */
-var RPT_CERTAIN = 1;  /* We want to know if it is certain that effect is active  */
+/* Derived constants for compatibility */
+var B_LAST = MAX_NUM_BUILDINGS;
+var A_LAST = (MAX_NUM_ADVANCES + 1);
+var U_LAST = MAX_NUM_UNITS;
 
-var O_FOOD = 0;
-var O_SHIELD = 1;
-var O_TRADE = 2;
-var O_GOLD = 3;
-var O_LUXURY = 4;
-var O_SCIENCE = 5;
+/* Additional constants */
+var TRUE = true;
+var FALSE = false;
+
+var TRI_NO = 0;
+var TRI_YES = 1;
+var TRI_MAYBE = 2;
+
+var IDENTITY_NUMBER_ZERO = 0;
+
+/* The action_decision enum */
+var ACT_DEC_NOTHING = 0;
+var ACT_DEC_PASSIVE = 1;
+var ACT_DEC_ACTIVE = 2;
+
+/* Action sub-result enum */
+var ACT_SUB_RES_HUT_ENTER = 0;
+var ACT_SUB_RES_HUT_FRIGHTEN = 1;
+var ACT_SUB_RES_MAY_EMBARK = 2;
+var ACT_SUB_RES_NON_LETHAL = 3;
+var ACT_SUB_RES_COUNT = 4;
+
+/* Requirements */
+var RPT_POSSIBLE = 0;
+var RPT_CERTAIN = 1;
 
 /* vision_layer enum */
 var V_MAIN = 0;
@@ -379,7 +395,7 @@ var EC_RESOURCE = 8;
 
 /* causes for extra removal */
 var ERM_PILLAGE = 0;
-var ERM_CLEANPOLLUTION = 1; // deprecated.
+var ERM_CLEANPOLLUTION = 1;
 var ERM_CLEANFALLOUT = 2;
 var ERM_DISAPPEARANCE = 3;
 var ERM_CLEAN = 1;
@@ -391,6 +407,7 @@ var SEA_BARBARIAN = 2;
 var ANIMAL_BARBARIAN = 3;
 var LAND_AND_SEA_BARBARIAN = 4;
 
+/* capital types */
 var CAPITAL_NOT = 0;
 var CAPITAL_SECONDARY = 1;
 var CAPITAL_PRIMARY = 2;

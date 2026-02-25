@@ -22,9 +22,7 @@
 var players = {};
 var research_data = {};
 
-var MAX_NUM_PLAYERS = 30;
-
-var MAX_AI_LOVE = 1000;
+/* MAX_NUM_PLAYERS and MAX_AI_LOVE are now defined in fc_types.js */
 
 var DS_ARMISTICE = 0;
 var DS_WAR = 1;
