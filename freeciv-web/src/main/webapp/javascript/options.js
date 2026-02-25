@@ -33,8 +33,7 @@ var statsview = null;
 
 var default_user_name = "";
 var default_server_host = "localhost";
-//var  default_server_port = DEFAULT_SOCK_PORT;
-//var default_metaserver = META_URL;
+
 var default_theme_name = "human";
 var default_tileset_name = "";
 var default_sound_set_name = "stdsounds";
@@ -135,13 +134,7 @@ function init_options_dialog()
     }
   });
 
-  if (audio != null && !audio.source.src) {
-    if (!supports_mp3()) {
-      audio.load("/music/" + music_list[Math.floor(Math.random() * music_list.length)] + ".ogg");
-    } else {
-      audio.load("/music/" + music_list[Math.floor(Math.random() * music_list.length)] + ".mp3");
-    }
-  }
+
 
   $(".setting_button").tooltip();
 
