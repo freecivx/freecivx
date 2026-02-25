@@ -25,6 +25,7 @@
 var webllm_engine = null;
 var webllm_loading = false;
 var webllm_loaded = false;
+var webllm_enabled = true; // Can be toggled from pregame settings
 
 /**
  * Initialize the WebLLM engine
@@ -46,8 +47,12 @@ async function init_webllm_engine() {
     
     console.log("[WebLLM] Module imported, creating engine...");
     
-    // Create the engine with a small model for faster loading
-    // Using SmolLM2-360M which is a very small and fast-loading model
+    // SmolLM2-360M-Instruct is optimal for Freeciv 3D because:
+    // - Very small (360M params) = fast loading, low memory usage
+    // - Fast inference = quick text generation without lag
+    // - Sufficient quality for game narration and turn summaries
+    // - Works well on most devices without requiring high-end GPU
+    // Alternative models to consider: Phi-2-q4f16 (better quality, slower), Qwen2.5-0.5B
     const selectedModel = "SmolLM2-360M-Instruct-q4f16_1-MLC";
     
     const initProgressCallback = (progress) => {
@@ -127,17 +132,26 @@ async function generate_game_intro_text() {
 async function show_ai_intro_dialog() {
   console.log("[WebLLM] Showing AI intro dialog");
   
+  // Check if web-llm is enabled
+  if (!webllm_enabled) {
+    console.log("[WebLLM] Web-LLM is disabled, showing fallback message");
+    show_fallback_intro_message();
+    return;
+  }
+  
   // Create dialog element
   $("#ai_intro_dialog").remove();
   $("<div id='ai_intro_dialog'></div>").appendTo("div#game_page");
   
-  // Show loading message first
-  $("#ai_intro_dialog").html("<p>Generating your personalized welcome message...</p><p><i class='fa fa-spinner fa-spin'></i> Please wait...</p>");
-  $("#ai_intro_dialog").attr("title", "Welcome to Freeciv!");
+  // Show loading message first - smaller window at bottom center
+  $("#ai_intro_dialog").html("<p style='text-align: center;'><i class='fa fa-spinner fa-spin'></i> Loading AI model...</p>");
+  $("#ai_intro_dialog").attr("title", "Welcome");
   $("#ai_intro_dialog").dialog({
     bgiframe: true,
     modal: false,
-    width: "500px",
+    width: "300px",
+    height: "auto",
+    position: { my: "center bottom", at: "center bottom-20", of: window },
     buttons: {
       "Close": function() {
         $(this).dialog('close');
@@ -169,9 +183,73 @@ async function show_ai_intro_dialog() {
     
     console.log("[WebLLM] Model loaded, generating intro text...");
     const intro_text = await generate_game_intro_text();
+    
+    // Expand dialog to show the generated text
     $("#ai_intro_dialog").html("<p>" + intro_text + "</p>");
+    $("#ai_intro_dialog").dialog("option", "width", "500px");
+    $("#ai_intro_dialog").dialog("option", "height", "auto");
+    $("#ai_intro_dialog").dialog("option", "position", { my: "center bottom", at: "center bottom-20", of: window });
+    
   } catch (error) {
     console.error("[WebLLM] Error generating intro:", error);
-    $("#ai_intro_dialog").html("<p>Welcome to Freeciv! Build your civilization from the ground up and lead your people to greatness!</p>");
+    show_fallback_intro_message();
+  }
+}
+
+/**
+ * Show fallback intro message in message dialog
+ */
+function show_fallback_intro_message() {
+  const fallback_message = "Welcome to FreecivWorld.net, the free browser-based 3D version of the classic turn-based strategy game Freeciv! Have fun playing FreecivWorld!";
+  if (typeof message_log !== 'undefined') {
+    message_log.update({ event: E_CONNECTION, message: "<b>Welcome:</b> " + fallback_message });
+  }
+}
+
+/**
+ * Generate turn summary text based on current game state
+ * @returns {Promise<string>} The generated turn summary
+ */
+async function generate_turn_summary() {
+  if (!webllm_enabled || !webllm_loaded) {
+    return null;
+  }
+  
+  try {
+    let pplayer = client.conn.playing;
+    if (pplayer == null || pplayer['nation'] == null) {
+      return null;
+    }
+    
+    const turn = game_info['turn'];
+    const player_name = username;
+    const nation_name = nations[pplayer['nation']]['adjective'];
+    const population = civ_population(client.conn.playing.playerno);
+    const gold = pplayer['gold'];
+    
+    const prompt = `You are a narrator for the Freeciv strategy game. Write a brief 1-2 sentence update for turn ${turn}. ` +
+                   `The player ${player_name} leads the ${nation_name} nation with a population of ${population} and ${gold} gold. ` +
+                   `Make it interesting and game-relevant. Keep it under 40 words.`;
+    
+    const turn_text = await generate_ai_text(prompt, 60);
+    return turn_text;
+    
+  } catch (error) {
+    console.error("[WebLLM] Failed to generate turn summary:", error);
+    return null;
+  }
+}
+
+/**
+ * Show turn summary in the message log
+ */
+async function show_turn_summary() {
+  if (!webllm_enabled) {
+    return;
+  }
+  
+  const summary = await generate_turn_summary();
+  if (summary && typeof message_log !== 'undefined') {
+    message_log.update({ event: E_CONNECTION, message: "<b>Turn Update:</b> " + summary });
   }
 }
