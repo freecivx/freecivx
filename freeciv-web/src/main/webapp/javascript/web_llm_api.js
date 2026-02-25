@@ -314,11 +314,6 @@ Processed message:`;
     // Remove any "Processed message:" prefix if LLM included it
     processed = processed.replace(/^Processed message:\s*/i, '');
     
-    // Restore HTML tags
-    for (const tag of tags) {
-      processed = processed.replace('|||TAG|||', tag);
-    }
-    
     return processed;
     
   } catch (error) {
