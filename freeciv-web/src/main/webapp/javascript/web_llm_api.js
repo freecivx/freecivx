@@ -154,8 +154,20 @@ async function show_ai_intro_dialog() {
   
   $("#ai_intro_dialog").dialog('open');
   
-  // Generate and update with AI text
+  // Wait for the model to be loaded before generating text
   try {
+    // Poll until the model is loaded
+    console.log("[WebLLM] Waiting for model to load...");
+    while (!webllm_loaded) {
+      if (!webllm_loading) {
+        // Model failed to load or hasn't started loading
+        throw new Error("Model not loading");
+      }
+      // Wait 500ms before checking again
+      await new Promise(resolve => setTimeout(resolve, 500));
+    }
+    
+    console.log("[WebLLM] Model loaded, generating intro text...");
     const intro_text = await generate_game_intro_text();
     $("#ai_intro_dialog").html("<p>" + intro_text + "</p>");
   } catch (error) {
