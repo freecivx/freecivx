@@ -139,11 +139,29 @@ async function generate_ai_text(prompt, max_tokens = 100) {
  * @returns {Promise<string>} The generated introduction text
  */
 async function generate_game_intro_text() {
-  const prompt = "Write a brief, exciting 2-3 sentence introduction for a player starting a new game of Freeciv, " +
-                 "a civilization-building strategy game. Make it inspiring and welcoming. " +
-                 "Focus on exploration, empire building, and strategic conquest.";
+  let prompt = "Write a brief, exciting 2-3 sentence introduction for a player starting a new game of Freeciv, " +
+               "a civilization-building strategy game. Make it inspiring and welcoming. " +
+               "Focus on exploration, empire building, and strategic conquest.";
   
-  return await generate_ai_text(prompt, 80);
+  // Add player-specific information if available
+  try {
+    let pplayer = client?.conn?.playing;
+    if (pplayer != null && pplayer['nation'] != null && typeof nations !== 'undefined') {
+      const player_name = typeof username !== 'undefined' ? username : 'Leader';
+      const nation_name = nations[pplayer['nation']]['adjective'];
+      const nation_plural = nations[pplayer['nation']]['plural'];
+      const turn = typeof game_info !== 'undefined' && game_info['turn'] ? game_info['turn'] : 1;
+      
+      prompt = `Write a brief, exciting 2-3 sentence personalized introduction for ${player_name}, ` +
+               `who is leading the ${nation_name} civilization (the ${nation_plural}) in a game of Freeciv. ` +
+               `This is turn ${turn}. Make it inspiring and welcoming, emphasizing their unique nation and the journey ahead. ` +
+               `Focus on exploration, empire building, and strategic conquest.`;
+    }
+  } catch (error) {
+    console.log("[WebLLM] Could not get player info for intro, using generic prompt:", error);
+  }
+  
+  return await generate_ai_text(prompt, 100);
 }
 
 /**
@@ -226,95 +244,4 @@ function show_fallback_intro_message() {
   }
 }
 
-/**
- * Generate turn summary text based on current game state
- * @returns {Promise<string>} The generated turn summary
- */
-async function generate_turn_summary() {
-  if (!webllm_enabled || !webllm_loaded) {
-    return null;
-  }
-  
-  try {
-    let pplayer = client.conn.playing;
-    if (pplayer == null || pplayer['nation'] == null) {
-      return null;
-    }
-    
-    const turn = game_info['turn'];
-    const player_name = username;
-    const nation_name = nations[pplayer['nation']]['adjective'];
-    const population = civ_population(client.conn.playing.playerno);
-    const gold = pplayer['gold'];
-    
-    const prompt = `You are a narrator for the Freeciv strategy game. Write a brief 1-2 sentence update for turn ${turn}. ` +
-                   `The player ${player_name} leads the ${nation_name} nation with a population of ${population} and ${gold} gold. ` +
-                   `Make it interesting and game-relevant. Focus on progress, challenges, or opportunities. Keep it under 40 words.`;
-    
-    const turn_text = await generate_ai_text(prompt, 60);
-    return turn_text;
-    
-  } catch (error) {
-    console.error("[WebLLM] Failed to generate turn summary:", error);
-    return null;
-  }
-}
 
-/**
- * Process a game message using web-llm: filter unsafe content and enhance
- * Uses LLM to:
- * - Remove telephone numbers, emails, and web links
- * - Filter curse words and unsafe words
- * - Make messages more lively and varied
- * @param {string} text - The message text to process
- * @returns {Promise<string>} The processed message
- */
-async function process_game_message(text) {
-  if (!text) return text;
-  
-  // If web-llm is not enabled or not loaded, return original text
-  if (!webllm_enabled || !webllm_loaded) {
-    return text;
-  }
-  
-  try {
-    // Skip processing for very short messages
-    if (text.length < 5) {
-      return text;
-    }
-
-
-    
-    // Create a comprehensive prompt for the LLM to handle all filtering and enhancement
-    const prompt = `You are the Freeciv game message assistant. Your task is to clean and enhance this game message.
-Rules:
-1. Remove any emails, phone numbers, or web links
-2. Replace profanity with appropriate game-themed alternatives (like "by the gods!" or "drat!")
-3. Keep the core meaning but make it more immersive for a civilization strategy game
-4. Keep it brief (under 25 words)
-5. Output ONLY the processed message text, without quotes or special formatting
-
-Original message: "${text}"
-
-Enhanced message:`;
-    
-    let processed = await generate_ai_text(prompt, 100);
-    
-    // Clean up the response thoroughly
-    // Remove quotes if the LLM added them
-    processed = processed.replace(/^["']|["']$/g, '').trim();
-    // Remove any *** artifacts
-    processed = processed.replace(/\*\*\*/g, '').trim();
-    // Remove markdown bold/italic markers if present
-    processed = processed.replace(/\*\*([^*]+)\*\*/g, '$1');
-    processed = processed.replace(/\*([^*]+)\*/g, '$1');
-    // Clean up multiple spaces
-    processed = processed.replace(/\s{2,}/g, ' ').trim();
-    
-    return processed;
-    
-  } catch (error) {
-    console.error("[WebLLM] Failed to process message:", error);
-    return text; // Return original text on error
-  }
-}
