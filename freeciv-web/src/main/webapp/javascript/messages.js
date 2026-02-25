@@ -148,12 +148,12 @@ function add_chatbox_text(packet)
                  .replace(/#A020F0/g, '#F020FF');
     }
 
-    // Process the message through web-llm filters and enhancement
-    if (typeof process_game_message === 'function') {
-      // Determine if we should enhance (only if LLM is loaded)
-      var shouldEnhance = (typeof webllm_loaded !== 'undefined' && webllm_loaded);
+    // Process the message through web-llm for filtering and enhancement
+    if (typeof process_game_message === 'function' &&
+        typeof webllm_enabled !== 'undefined' && webllm_enabled &&
+        typeof webllm_loaded !== 'undefined' && webllm_loaded) {
       
-      process_game_message(text, shouldEnhance).then(function(processedText) {
+      process_game_message(text).then(function(processedText) {
         packet['message'] = processedText;
         message_log.update(packet);
       }).catch(function(error) {
@@ -163,7 +163,7 @@ function add_chatbox_text(packet)
         message_log.update(packet);
       });
     } else {
-      // If web-llm is not available, use original text
+      // If web-llm is not available or not loaded, use original text
       packet['message'] = text;
       message_log.update(packet);
     }
