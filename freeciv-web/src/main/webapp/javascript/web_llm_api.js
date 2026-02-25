@@ -295,15 +295,19 @@ async function process_game_message(text) {
     const plainText = text.replace(htmlTagPattern, '|||TAG|||');
     
     // Create a comprehensive prompt for the LLM to handle all filtering and enhancement
-    const prompt = `Process this game chat message:
-1. Remove any phone numbers, email addresses, or web links (replace with [removed])
-2. Remove any curse words or offensive language (replace with ***)
-3. Rewrite the message to be more lively, varied, and interesting while keeping the core meaning
-4. Keep it concise (under 50 words)
+    const prompt = `[INST] <<SYS>>
+                   You are the Freeciv Chat Oracle. Your job is to sanitize and stylize game messages.
+                   STRICT RULES:
+                   1. SECURITY: Replace all emails, phone numbers, and URLs with "[REDACTED]".
+                   2. SAFETY: Replace all profanity or toxic language with "***".
+                   3. STYLE: Rewrite the message to be immersive and engaging for a strategy game.
+                   4. BREVITY: Maximum 25 words.
+                   5. OUTPUT: Provide ONLY the final processed text. No commentary, no quotes, no formatting.
+                   <</SYS>>
 
-Original message: "${plainText}"
+                   Original message: "${plainText}" [/INST]
 
-Processed message:`;
+                   Processed message:`;
     
     let processed = await generate_ai_text(prompt, 100);
     
