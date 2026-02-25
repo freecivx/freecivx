@@ -193,6 +193,50 @@ def parse_simple_defines(file_path, define_names):
     return defines
 
 
+def parse_c_enum(file_path, enum_name):
+    """Parse a regular C enum (not SPECENUM) from a C header file.
+    
+    Args:
+        file_path: Path to the C header file
+        enum_name: Name of the enum to extract
+    
+    Returns:
+        Dictionary with 'values' list containing enum constant names in order
+    """
+    global in_comment
+    in_comment = False
+    
+    enum_values = []
+    in_enum = False
+    enum_re = re.compile(r'^\s*enum\s+' + enum_name + r'\s*\{')
+    value_re = re.compile(r'^\s*([A-Z_][A-Z0-9_]*)\s*[,}]?')
+    
+    with open(file_path, 'r', encoding='utf-8', errors='ignore') as f:
+        for line in f:
+            line = remove_comments(line)
+            
+            if not in_enum:
+                if enum_re.match(line):
+                    in_enum = True
+                continue
+            
+            # Inside enum, look for values
+            match = value_re.match(line)
+            if match:
+                value_name = match.group(1)
+                # Make sure it's not empty and looks like an enum value
+                if value_name and value_name[0].isupper():
+                    enum_values.append(value_name)
+            
+            # Check for end of enum
+            if '}' in line:
+                break
+    
+    if enum_values:
+        return {'values': enum_values, 'count': None}
+    return {}
+
+
 # Extract simple #define constants from fc_types.h
 print(f"Parsing {path.join(common_dir, 'fc_types.h')} for simple defines...")
 simple_define_names = [
@@ -237,8 +281,20 @@ cityname_defines = parse_simple_defines(
 print(f"Parsing {path.join(common_dir, 'fc_types.h')} for SPECENUMs...")
 fc_types_enums = parse_specenum(
     path.join(common_dir, 'fc_types.h'),
-    extract_names=['unit_activity', 'action_result', 'universals_n', 'output_type_id']
+    extract_names=['unit_activity', 'action_result', 'universals_n', 'output_type_id',
+                   'action_decision', 'action_sub_result', 'vision_layer',
+                   'extra_cause', 'extra_rmcause', 'barbarian_type', 'capital_type']
 )
+
+# Parse req_problem_type enum (regular C enum, not SPECENUM)
+print(f"Parsing {path.join(common_dir, 'fc_types.h')} for req_problem_type enum...")
+req_problem_type_enum = parse_c_enum(
+    path.join(common_dir, 'fc_types.h'),
+    'req_problem_type'
+)
+if req_problem_type_enum:
+    fc_types_enums['req_problem_type'] = req_problem_type_enum
+
 
 # Extract action enums from actions.h
 print(f"Parsing {path.join(common_dir, 'actions.h')} for action enums...")
@@ -384,6 +440,46 @@ with open(output_name, 'w') as f:
         write_enum(f, 'gui_type', gui_enums['gui_type'],
                    'GUI types from common/fc_types.h')
     
+    # Write action_decision enum
+    if 'action_decision' in fc_types_enums:
+        write_enum(f, 'action_decision', fc_types_enums['action_decision'],
+                   'The action_decision enum (ACT_DEC_*) from common/fc_types.h')
+    
+    # Write action_sub_result enum
+    if 'action_sub_result' in fc_types_enums:
+        write_enum(f, 'action_sub_result', fc_types_enums['action_sub_result'],
+                   'Action sub-result enum (ACT_SUB_RES_*) from common/fc_types.h')
+    
+    # Write req_problem_type enum (RPT_*)
+    if 'req_problem_type' in fc_types_enums:
+        write_enum(f, 'req_problem_type', fc_types_enums['req_problem_type'],
+                   'Requirements (RPT_*) from common/fc_types.h')
+    
+    # Write vision_layer enum
+    if 'vision_layer' in fc_types_enums:
+        write_enum(f, 'vision_layer', fc_types_enums['vision_layer'],
+                   'vision_layer enum (V_*) from common/fc_types.h')
+    
+    # Write extra_cause enum (causes for extra)
+    if 'extra_cause' in fc_types_enums:
+        write_enum(f, 'extra_cause', fc_types_enums['extra_cause'],
+                   'causes for extra (EC_*) from common/fc_types.h')
+    
+    # Write extra_rmcause enum (causes for extra removal)
+    if 'extra_rmcause' in fc_types_enums:
+        write_enum(f, 'extra_rmcause', fc_types_enums['extra_rmcause'],
+                   'causes for extra removal (ERM_*) from common/fc_types.h')
+    
+    # Write barbarian_type enum
+    if 'barbarian_type' in fc_types_enums:
+        write_enum(f, 'barbarian_type', fc_types_enums['barbarian_type'],
+                   'barbarian types from common/fc_types.h')
+    
+    # Write capital_type enum
+    if 'capital_type' in fc_types_enums:
+        write_enum(f, 'capital_type', fc_types_enums['capital_type'],
+                   'capital types from common/fc_types.h')
+    
     # Add some derived constants that JavaScript needs
     f.write('''
 /* Derived constants for compatibility */
@@ -400,58 +496,6 @@ var TRI_YES = 1;
 var TRI_MAYBE = 2;
 
 var IDENTITY_NUMBER_ZERO = 0;
-
-/* The action_decision enum */
-var ACT_DEC_NOTHING = 0;
-var ACT_DEC_PASSIVE = 1;
-var ACT_DEC_ACTIVE = 2;
-
-/* Action sub-result enum */
-var ACT_SUB_RES_HUT_ENTER = 0;
-var ACT_SUB_RES_HUT_FRIGHTEN = 1;
-var ACT_SUB_RES_MAY_EMBARK = 2;
-var ACT_SUB_RES_NON_LETHAL = 3;
-var ACT_SUB_RES_COUNT = 4;
-
-/* Requirements */
-var RPT_POSSIBLE = 0;
-var RPT_CERTAIN = 1;
-
-/* vision_layer enum */
-var V_MAIN = 0;
-var V_INVIS = 1;
-var V_SUBSURFACE = 2;
-var V_COUNT = 3;
-
-/* causes for extra */
-var EC_IRRIGATION = 0;
-var EC_MINE = 1;
-var EC_ROAD = 2;
-var EC_BASE = 3;
-var EC_POLLUTION = 4;
-var EC_FALLOUT = 5;
-var EC_HUT = 6;
-var EC_APPEARANCE = 7;
-var EC_RESOURCE = 8;
-
-/* causes for extra removal */
-var ERM_PILLAGE = 0;
-var ERM_CLEANPOLLUTION = 1;
-var ERM_CLEANFALLOUT = 2;
-var ERM_DISAPPEARANCE = 3;
-var ERM_CLEAN = 1;
-
-/* barbarian types */
-var NOT_A_BARBARIAN = 0;
-var LAND_BARBARIAN = 1;
-var SEA_BARBARIAN = 2;
-var ANIMAL_BARBARIAN = 3;
-var LAND_AND_SEA_BARBARIAN = 4;
-
-/* capital types */
-var CAPITAL_NOT = 0;
-var CAPITAL_SECONDARY = 1;
-var CAPITAL_PRIMARY = 2;
 ''')
 
 print(f"Generated {output_name}")

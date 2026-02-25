@@ -26,6 +26,16 @@ The generator extracts the following from Freeciv C common headers:
   - Output types (O_*) from `fc_types.h`
   - GUI types (GUI_*) from `fc_types.h`
   - Requirement ranges (REQ_RANGE_*) from `requirements.h` (if available)
+  - Action decision (ACT_DEC_*) from `fc_types.h`
+  - Action sub-result (ACT_SUB_RES_*) from `fc_types.h`
+  - Vision layer (V_*) from `fc_types.h`
+  - Extra causes (EC_*) from `fc_types.h`
+  - Extra removal causes (ERM_*) from `fc_types.h`
+  - Barbarian types (NOT_A_BARBARIAN, LAND_BARBARIAN, etc.) from `fc_types.h`
+  - Capital types (CAPITAL_*) from `fc_types.h`
+
+- **Regular C enums**:
+  - Requirement problem types (RPT_*) from `fc_types.h`
 
 - **Other constants**:
   - MAX_LEN_WORKLIST from `worklist.h`
