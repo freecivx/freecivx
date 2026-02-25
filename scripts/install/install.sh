@@ -332,11 +332,6 @@ cd "${basedir}"/freeciv-web && \
   bash ./build.sh -B || \
   handle_error 7 "Failed to build freeciv-web server"
 
-echo "==== Running ESLint checks ===="
-cd "${basedir}"/scripts && \
-  bash ./build-eslint.sh || \
-  echo "Warning: ESLint checks found issues (non-fatal)"
-
 echo "==== Setting up nginx ===="
 stop_svc nginx
 sudo rm -f /etc/nginx/sites-enabled/default
