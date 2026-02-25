@@ -265,3 +265,64 @@ async function show_turn_summary() {
     message_log.update({ event: E_CONNECTION, message: "<b>Turn Update:</b> " + summary });
   }
 }
+
+/**
+ * Process a game message using web-llm: filter unsafe content and enhance
+ * Uses LLM to:
+ * - Remove telephone numbers, emails, and web links
+ * - Filter curse words and unsafe words
+ * - Make messages more lively and varied
+ * @param {string} text - The message text to process
+ * @returns {Promise<string>} The processed message
+ */
+async function process_game_message(text) {
+  if (!text) return text;
+  
+  // If web-llm is not enabled or not loaded, return original text
+  if (!webllm_enabled || !webllm_loaded) {
+    return text;
+  }
+  
+  try {
+    // Skip processing for very short messages
+    if (text.length < 5) {
+      return text;
+    }
+    
+    // Extract HTML tags to preserve formatting
+    const htmlTagPattern = /<[^>]+>/g;
+    const tags = text.match(htmlTagPattern) || [];
+    const plainText = text.replace(htmlTagPattern, '|||TAG|||');
+    
+    // Create a comprehensive prompt for the LLM to handle all filtering and enhancement
+    const prompt = `Process this game chat message:
+1. Remove any phone numbers, email addresses, or web links (replace with [removed])
+2. Remove any curse words or offensive language (replace with ***)
+3. Rewrite the message to be more lively, varied, and interesting while keeping the core meaning
+4. Keep it concise (under 50 words)
+
+Original message: "${plainText}"
+
+Processed message:`;
+    
+    let processed = await generate_ai_text(prompt, 100);
+    
+    // Clean up the response
+    // Remove quotes if the LLM added them
+    processed = processed.replace(/^["']|["']$/g, '').trim();
+    
+    // Remove any "Processed message:" prefix if LLM included it
+    processed = processed.replace(/^Processed message:\s*/i, '');
+    
+    // Restore HTML tags
+    for (const tag of tags) {
+      processed = processed.replace('|||TAG|||', tag);
+    }
+    
+    return processed;
+    
+  } catch (error) {
+    console.error("[WebLLM] Failed to process message:", error);
+    return text; // Return original text on error
+  }
+}
