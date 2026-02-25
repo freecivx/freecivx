@@ -518,6 +518,8 @@ function pregame_settings()
 
       "<div id='pregame_settings_tabs-3'> <br><br>" +
 	    "<table id='settings_table'>" +
+	    "<tr id='webllm_enabled'><td id='webllm_label'></td>" +
+        "<td><input type='checkbox' id='webllm_setting' checked>Enable Web-LLM AI integration (generates AI-powered messages and turn updates)</td></tr>" +
 	    "<tr id='speech_enabled'><td id='speech_label'></td>" +
         "<td><input type='checkbox' id='speech_setting'>Enable speech audio messages</td></tr>" +
 	    "<tr id='voice_row'><td id='voice_label'></td>" +
@@ -649,6 +651,14 @@ function pregame_settings()
     $("#speech_label").prop("innerHTML", "Speech messages:");
     $("#speech_setting").parent().html("Speech Synthesis API is not supported or enabled in your browser.");
   }
+
+  // Set up Web-LLM setting
+  var stored_webllm_setting = simpleStorage.get("webllm_enabled", "true");
+  if (typeof webllm_enabled !== 'undefined') {
+    $("#webllm_setting").prop("checked", stored_webllm_setting === "true");
+    webllm_enabled = (stored_webllm_setting === "true");
+  }
+  $("#webllm_label").prop("innerHTML", "AI Messages:");
 
   if (server_settings['metamessage'] != null
       && server_settings['metamessage']['val'] != null) {
@@ -828,6 +838,14 @@ function pregame_settings()
       speak_unfiltered("Speech enabled.");
     } else {
       speech_enabled = false;
+    }
+  });
+
+  $('#webllm_setting').change(function() {
+    if (typeof webllm_enabled !== 'undefined') {
+      webllm_enabled = $('#webllm_setting').prop('checked');
+      simpleStorage.set("webllm_enabled", webllm_enabled ? "true" : "false");
+      console.log("[Settings] Web-LLM " + (webllm_enabled ? "enabled" : "disabled"));
     }
   });
 

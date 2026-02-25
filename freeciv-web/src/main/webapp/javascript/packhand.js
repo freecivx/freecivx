@@ -1205,6 +1205,11 @@ function handle_begin_turn(packet)
     redraw_overview();
   }
 
+  // Generate AI turn summary if Web-LLM is enabled
+  if (typeof show_turn_summary !== 'undefined' && game_info['turn'] > 1) {
+    show_turn_summary();
+  }
+
 }
 
 function handle_end_turn(packet)

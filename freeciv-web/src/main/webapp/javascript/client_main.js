@@ -181,8 +181,9 @@ function show_new_game_message()
     return;
 
   } else if (client.conn.playing != null && !game_loaded) {
-    var pplayer = client.conn.playing;
-    message = "Welcome to FreecivWorld.net, the free browser-based 3D version of the classic turn-based strategy game Freeciv! Have fun playing FreecivWorld!";
+    // Welcome message is now shown via web-llm in show_ai_intro_dialog()
+    // No longer showing hardcoded message here
+    return;
 
   } else if (game_loaded) {
     message = "Welcome back, " + username;
@@ -193,7 +194,9 @@ function show_new_game_message()
     return;
   }
 
-  message_log.update({ event: E_CONNECTION, message: message });
+  if (message != null) {
+    message_log.update({ event: E_CONNECTION, message: message });
+  }
 }
 
 /**************************************************************************
