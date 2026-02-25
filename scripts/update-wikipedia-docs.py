@@ -120,7 +120,7 @@ def download_wiki_page(tech_name):
     hsize = int((float(img.size[1])*float(wpercent)))
     if (hsize > max_height):
       hsize = max_height;
-    img = img.resize((image_width,hsize), Image.ANTIALIAS)
+    img = img.resize((image_width,hsize), Image.LANCZOS)
     image = page.title + ".jpg";
 
     image_file = path.join(webapp_dir, 'images', 'wiki', page.title + '.jpg')
