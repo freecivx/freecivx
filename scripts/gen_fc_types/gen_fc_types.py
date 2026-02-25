@@ -38,6 +38,7 @@ webapp_dir = args.outdir
 freeciv_dir = args.freeciv
 
 common_dir = path.join(freeciv_dir, "common")
+utility_dir = path.join(freeciv_dir, "utility")
 
 # Data structures to hold extracted constants
 simple_defines = []  # Simple #define constants
@@ -193,6 +194,78 @@ def parse_simple_defines(file_path, define_names):
     return defines
 
 
+def parse_simple_enum(file_path, enum_name):
+    """Parse a simple C enum (not SPECENUM) from a header file.
+    
+    Args:
+        file_path: Path to the C header file
+        enum_name: Name of the enum to extract
+    
+    Returns:
+        Dictionary with 'values' list of enum constant names in order
+    """
+    global in_comment
+    in_comment = False
+    
+    # Match both multi-line and single-line enum definitions
+    enum_re = re.compile(rf'^\s*enum\s+{enum_name}\s*{{')
+    enum_single_line_re = re.compile(rf'^\s*enum\s+{enum_name}\s*{{\s*(.+?)\s*}};')
+    enum_value_re = re.compile(r'^\s*([A-Z_][A-Z0-9_]*)\s*(?:=\s*(\d+))?\s*,?\s*(?:/\*.*\*/)?$')
+    
+    enum_values = []
+    in_enum = False
+    next_value = 0
+    
+    with open(file_path, 'r', encoding='utf-8', errors='ignore') as f:
+        for line in f:
+            line = remove_comments(line)
+            
+            # Check for single-line enum definition first
+            match = enum_single_line_re.search(line)
+            if match:
+                # Parse all values in the single line
+                values_str = match.group(1)
+                for value_str in values_str.split(','):
+                    value_str = value_str.strip()
+                    if not value_str:
+                        continue
+                    # Extract just the name (ignore explicit values for simplicity)
+                    name_match = re.match(r'([A-Z_][A-Z0-9_]*)', value_str)
+                    if name_match:
+                        name = name_match.group(1)
+                        enum_values.append(name)
+                return {'values': enum_values, 'count': None}
+            
+            # Check if we're starting a multi-line enum
+            if enum_re.search(line):
+                in_enum = True
+                continue
+            
+            if in_enum:
+                # Check for end of enum
+                if '}' in line:
+                    break
+                
+                # Check for enum value
+                match = enum_value_re.match(line)
+                if match:
+                    name = match.group(1)
+                    explicit_value = match.group(2)
+                    if explicit_value:
+                        value = int(explicit_value)
+                        next_value = value + 1
+                    else:
+                        value = next_value
+                        next_value += 1
+                    
+                    # Ensure list is long enough
+                    while len(enum_values) <= value:
+                        enum_values.append(None)
+                    enum_values[value] = name
+    
+    return {'values': enum_values, 'count': None}
+
+
 # Extract simple #define constants from fc_types.h
 print(f"Parsing {path.join(common_dir, 'fc_types.h')} for simple defines...")
 simple_define_names = [
@@ -202,6 +275,7 @@ simple_define_names = [
     'MAX_NUM_BUILDINGS',
     'MAX_EXTRA_TYPES',
     'MAX_LEN_NAME',
+    'IDENTITY_NUMBER_ZERO',
 ]
 
 fc_types_defines = parse_simple_defines(
@@ -233,11 +307,11 @@ cityname_defines = parse_simple_defines(
     ['MAX_LEN_CITYNAME']
 )
 
-# Extract SPECENUM enums from fc_types.h
-print(f"Parsing {path.join(common_dir, 'fc_types.h')} for SPECENUMs...")
+# Extract ALL SPECENUM enums from fc_types.h (not just a select few)
+print(f"Parsing {path.join(common_dir, 'fc_types.h')} for all SPECENUMs...")
 fc_types_enums = parse_specenum(
     path.join(common_dir, 'fc_types.h'),
-    extract_names=['unit_activity', 'action_result', 'universals_n', 'output_type_id']
+    extract_names=None  # Extract all enums
 )
 
 # Extract action enums from actions.h
@@ -267,11 +341,22 @@ except FileNotFoundError:
 # Parse additional simple defines
 print(f"Parsing additional constants...")
 
-# Parse gui_type enum (it's a SPECENUM in fc_types.h)
-gui_enums = parse_specenum(
-    path.join(common_dir, 'fc_types.h'),
-    extract_names=['gui_type']
+# Extract FC_INFINITY from utility/shared.h
+utility_defines = parse_simple_defines(
+    path.join(utility_dir, 'shared.h'),
+    ['FC_INFINITY']
 )
+
+# Parse fc_tristate enum from utility/shared.h
+print(f"Parsing {path.join(utility_dir, 'shared.h')} for fc_tristate enum...")
+try:
+    fc_tristate_enum = parse_simple_enum(
+        path.join(utility_dir, 'shared.h'),
+        'fc_tristate'
+    )
+except Exception as e:
+    print(f"Warning: Could not parse fc_tristate enum: {e}")
+    fc_tristate_enum = {'values': [], 'count': None}
 
 # Generate JavaScript output
 output_name = path.join(webapp_dir, 'javascript/fc_types.js')
@@ -280,10 +365,13 @@ with open(output_name, 'w') as f:
  * THIS IS A GENERATED FILE, DO NOT EDIT
  *
  * Generated from Freeciv C source files:
+ *   utility/shared.h
  *   common/fc_types.h
  *   common/actions.h
  *   common/actres.h
  *   common/requirements.h
+ *   common/worklist.h
+ *   common/player.h
  * By scripts/gen_fc_types/gen_fc_types.py
  ****************************************/
 
@@ -295,8 +383,12 @@ with open(output_name, 'w') as f:
         if name in fc_types_defines:
             f.write(f'var {name} = {fc_types_defines[name]};\n')
     
-    # Add FC_INFINITY (not found in C headers, JavaScript-specific constant)
-    f.write(f'var FC_INFINITY = {JS_FC_INFINITY};\n')
+    # Add FC_INFINITY (extracted from utility/shared.h)
+    if 'FC_INFINITY' in utility_defines:
+        f.write(f'var FC_INFINITY = {utility_defines["FC_INFINITY"]};\n')
+    else:
+        # Fallback to JS override if not found
+        f.write(f'var FC_INFINITY = {JS_FC_INFINITY};\n')
     
     # Add MAX_NUM_PLAYERS (client-side limit, differs from server MAX_NUM_PLAYER_SLOTS)
     f.write(f'\n/* Client-side player limit (server MAX_NUM_PLAYERS = 500) */\n')
@@ -335,27 +427,39 @@ with open(output_name, 'w') as f:
         if enum_data['count']:
             f.write(f'var {enum_data["count"]} = {len(enum_data["values"])};\n')
     
-    # Write unit activities
-    if 'unit_activity' in fc_types_enums:
-        write_enum(f, 'unit_activity', fc_types_enums['unit_activity'],
-                   'Unit activities from common/fc_types.h')
+    # Write fc_tristate from utility/shared.h
+    if fc_tristate_enum and fc_tristate_enum['values']:
+        write_enum(f, 'fc_tristate', fc_tristate_enum,
+                   'fc_tristate enum from utility/shared.h')
     
-    # Write action results
-    if 'action_result' in fc_types_enums:
-        write_enum(f, 'action_result', fc_types_enums['action_result'],
-                   'Action results (ACTRES_*) from common/fc_types.h')
+    # Priority order for specific enums we want to ensure are written first
+    priority_enums = [
+        'unit_activity',
+        'action_result', 
+        'action_sub_result',
+        'action_decision',
+        'vision_layer',
+        'extra_cause',
+        'extra_rmcause',
+        'barbarian_type',
+        'capital_type',
+        'universals_n',
+        'output_type_id'
+    ]
     
-    # Write action target kinds
-    if 'action_target_kind' in actres_enums:
-        write_enum(f, 'action_target_kind', actres_enums['action_target_kind'],
-                   'Action target kinds (ATK_*) from common/actres.h')
+    # Write priority enums from fc_types.h first
+    for enum_name in priority_enums:
+        if enum_name in fc_types_enums:
+            write_enum(f, enum_name, fc_types_enums[enum_name],
+                      f'{enum_name} from common/fc_types.h')
     
-    # Write action sub-target kinds
-    if 'action_sub_target_kind' in actres_enums:
-        write_enum(f, 'action_sub_target_kind', actres_enums['action_sub_target_kind'],
-                   'Action sub-target kinds (ASTK_*) from common/actres.h')
+    # Write remaining enums from fc_types.h that weren't in priority list
+    for enum_name, enum_data in sorted(fc_types_enums.items()):
+        if enum_name not in priority_enums:
+            write_enum(f, enum_name, enum_data,
+                      f'{enum_name} from common/fc_types.h')
     
-    # Write actions
+    # Write actions from actions.h
     if 'gen_action' in actions_enums:
         write_enum(f, 'gen_action', actions_enums['gen_action'],
                    'Actions (ACTION_*) from common/actions.h')
@@ -364,96 +468,32 @@ with open(output_name, 'w') as f:
         f.write('\n/* Backward compatibility aliases */\n')
         f.write('var ACTION_RECYCLE_UNIT = ACTION_DISBAND_UNIT_RECOVER; // TODO: Update code to use ACTION_DISBAND_UNIT_RECOVER\n')
     
-    # Write universal types (VUT_*)
-    if 'universals_n' in fc_types_enums:
-        write_enum(f, 'universals_n', fc_types_enums['universals_n'],
-                   'Universal types (VUT_*) from common/fc_types.h')
+    # Write action target enums from actres.h
+    for enum_name in ['action_target_kind', 'action_sub_target_kind']:
+        if enum_name in actres_enums:
+            write_enum(f, enum_name, actres_enums[enum_name],
+                      f'{enum_name} from common/actres.h')
     
-    # Write requirement ranges if found
-    if 'req_range' in requirements_enums:
-        write_enum(f, 'req_range', requirements_enums['req_range'],
-                   'Requirement ranges (REQ_RANGE_*) from common/requirements.h')
+    # Write requirement enums from requirements.h
+    for enum_name, enum_data in requirements_enums.items():
+        write_enum(f, enum_name, enum_data,
+                  f'{enum_name} from common/requirements.h')
     
-    # Write output types
-    if 'output_type_id' in fc_types_enums:
-        write_enum(f, 'output_type_id', fc_types_enums['output_type_id'],
-                   'Output types (O_*) from common/fc_types.h')
-    
-    # Write GUI types
-    if 'gui_type' in gui_enums:
-        write_enum(f, 'gui_type', gui_enums['gui_type'],
-                   'GUI types from common/fc_types.h')
-    
-    # Add some derived constants that JavaScript needs
+    # Add derived constants that JavaScript needs for compatibility
     f.write('''
 /* Derived constants for compatibility */
 var B_LAST = MAX_NUM_BUILDINGS;
 var A_LAST = (MAX_NUM_ADVANCES + 1);
 var U_LAST = MAX_NUM_UNITS;
 
-/* Additional constants */
+/* JavaScript-specific boolean constants */
 var TRUE = true;
 var FALSE = false;
-
-var TRI_NO = 0;
-var TRI_YES = 1;
-var TRI_MAYBE = 2;
-
-var IDENTITY_NUMBER_ZERO = 0;
-
-/* The action_decision enum */
-var ACT_DEC_NOTHING = 0;
-var ACT_DEC_PASSIVE = 1;
-var ACT_DEC_ACTIVE = 2;
-
-/* Action sub-result enum */
-var ACT_SUB_RES_HUT_ENTER = 0;
-var ACT_SUB_RES_HUT_FRIGHTEN = 1;
-var ACT_SUB_RES_MAY_EMBARK = 2;
-var ACT_SUB_RES_NON_LETHAL = 3;
-var ACT_SUB_RES_COUNT = 4;
-
-/* Requirements */
-var RPT_POSSIBLE = 0;
-var RPT_CERTAIN = 1;
-
-/* vision_layer enum */
-var V_MAIN = 0;
-var V_INVIS = 1;
-var V_SUBSURFACE = 2;
-var V_COUNT = 3;
-
-/* causes for extra */
-var EC_IRRIGATION = 0;
-var EC_MINE = 1;
-var EC_ROAD = 2;
-var EC_BASE = 3;
-var EC_POLLUTION = 4;
-var EC_FALLOUT = 5;
-var EC_HUT = 6;
-var EC_APPEARANCE = 7;
-var EC_RESOURCE = 8;
-
-/* causes for extra removal */
-var ERM_PILLAGE = 0;
-var ERM_CLEANPOLLUTION = 1;
-var ERM_CLEANFALLOUT = 2;
-var ERM_DISAPPEARANCE = 3;
-var ERM_CLEAN = 1;
-
-/* barbarian types */
-var NOT_A_BARBARIAN = 0;
-var LAND_BARBARIAN = 1;
-var SEA_BARBARIAN = 2;
-var ANIMAL_BARBARIAN = 3;
-var LAND_AND_SEA_BARBARIAN = 4;
-
-/* capital types */
-var CAPITAL_NOT = 0;
-var CAPITAL_SECONDARY = 1;
-var CAPITAL_PRIMARY = 2;
 ''')
 
 print(f"Generated {output_name}")
 print(f"  - Extracted {len(fc_types_defines)} simple defines")
-print(f"  - Extracted {len(fc_types_enums) + len(actions_enums) + len(actres_enums) + len(requirements_enums) + len(gui_enums)} enums")
+print(f"  - Extracted {len(fc_types_enums)} enums from fc_types.h")
+print(f"  - Extracted {len(actions_enums)} enums from actions.h")
+print(f"  - Extracted {len(actres_enums)} enums from actres.h")
+print(f"  - Extracted {len(requirements_enums)} enums from requirements.h")
