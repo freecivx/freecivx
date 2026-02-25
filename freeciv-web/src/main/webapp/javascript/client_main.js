@@ -69,6 +69,19 @@ function set_client_state(newstate)
       $("#dialog").dialog('close');
       $("#pregame_page").hide();
 
+      // Initialize WebLLM engine in the background if not already initialized
+      if (typeof init_webllm_engine !== 'undefined' && !webllm_loading && !webllm_loaded) {
+        console.log("[Game] Initializing WebLLM engine in background...");
+        init_webllm_engine();
+      }
+
+      // Show AI-generated introduction dialog when game starts
+      if (typeof show_ai_intro_dialog !== 'undefined') {
+        setTimeout(function() {
+          show_ai_intro_dialog();
+        }, 2000); // Wait 2 seconds after game starts to show the dialog
+      }
+
       break;
     case C_S_OVER:
       setTimeout(show_endgame_dialog, 500);

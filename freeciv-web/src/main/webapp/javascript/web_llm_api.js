@@ -40,8 +40,9 @@ async function init_webllm_engine() {
   console.log("[WebLLM] Initializing WebLLM engine...");
 
   try {
-    // Dynamically import web-llm as ES module
-    const webllm = await import('/javascript/libs/web-llm.js');
+    // Dynamically import web-llm from CDN
+    console.log("[WebLLM] Importing web-llm from CDN...");
+    const webllm = await import('https://esm.run/@mlc-ai/web-llm@0.2.81');
     
     console.log("[WebLLM] Module imported, creating engine...");
     
