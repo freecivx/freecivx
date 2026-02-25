@@ -1,7 +1,7 @@
 # WebLLM Integration in Freeciv-Web
 
 ## Overview
-This document describes the integration of web-llm 0.2.81 into freeciv-web to provide AI-generated text content.
+This document describes the integration of web-llm 0.2.81 into freeciv-web to provide AI-generated intro text for the game.
 
 ## Implementation Details
 
@@ -30,7 +30,7 @@ This document describes the integration of web-llm 0.2.81 into freeciv-web to pr
 ### Library Source
 - **web-llm version**: 0.2.81
 - **CDN**: https://esm.run/@mlc-ai/web-llm@0.2.81
-- **Model used**: SmolLM2-360M-Instruct-q4f16_1-MLC (very small, fast-loading model with only 376MB VRAM requirement)
+- **Model used**: Llama-3.2-1B-Instruct-q4f16_1-MLC (small, fast-loading model optimized for quick responses)
 
 ### Usage
 
@@ -39,6 +39,8 @@ The AI-generated introduction dialog appears automatically 2 seconds after the g
 - Displays AI-generated welcome message once ready
 - Can be closed, minimized, or restored
 - Falls back to a default message if AI generation fails
+
+**Note:** Web-LLM is used **only** for the initial intro message dialog. It does not process or modify game messages.
 
 ### API Functions
 
@@ -51,6 +53,10 @@ Generates AI text based on a prompt.
   - `prompt` (string): The text prompt for the AI
   - `max_tokens` (number): Maximum tokens to generate (default: 100)
 - **Returns:** Promise<string> - The generated text
+
+#### `generate_game_intro_text()`
+Generates a game introduction text specifically for the welcome dialog.
+- **Returns:** Promise<string> - The generated introduction text
 
 #### `show_ai_intro_dialog()`
 Shows a jQuery UI dialog with an AI-generated game introduction. Called automatically when the game starts.
@@ -65,10 +71,11 @@ Shows a jQuery UI dialog with an AI-generated game introduction. Called automati
    - Setting is initialized early from localStorage (default: enabled)
    - Users can toggle the setting in the pregame options dialog
    - Choice is persisted across sessions using localStorage
+6. **Limited Scope**: Web-LLM is used only for the initial intro dialog to minimize performance impact
 
 ### Future Enhancements
 
 Possible future improvements:
 - Allow users to customize the AI prompts
-- Add more AI-generated content (city names, unit descriptions, etc.)
 - Support different AI models
+- Additional intro dialog customization options
