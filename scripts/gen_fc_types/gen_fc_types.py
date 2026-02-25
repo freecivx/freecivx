@@ -203,6 +203,24 @@ fc_types_defines = parse_simple_defines(
     simple_define_names
 )
 
+# Extract MAX_NUM_PLAYERS (computed value)
+# In C: MAX_NUM_PLAYERS = MAX_NUM_PLAYER_SLOTS - MAX_NUM_BARBARIANS = 512 - 12 = 500
+# But JavaScript uses 30, which might be a client-side limitation
+# We'll keep the JS value for now
+max_num_players_js = 30  # Client-side limit
+
+# Extract from worklist.h
+worklist_defines = parse_simple_defines(
+    path.join(common_dir, 'worklist.h'),
+    ['MAX_LEN_WORKLIST']
+)
+
+# Extract from player.h
+player_defines = parse_simple_defines(
+    path.join(common_dir, 'player.h'),
+    ['MAX_AI_LOVE']
+)
+
 # Note: MAX_LEN_CITYNAME is 120 in C but 50 in JS - this might be intentional
 # Let's extract it but note the discrepancy
 cityname_defines = parse_simple_defines(
@@ -274,6 +292,20 @@ with open(output_name, 'w') as f:
     
     # Add FC_INFINITY (not found in C headers, JavaScript-specific or different source)
     f.write('var FC_INFINITY = (1000 * 1000 * 1000);\n')
+    
+    # Add MAX_NUM_PLAYERS (client-side limit, differs from server MAX_NUM_PLAYER_SLOTS)
+    f.write(f'\n/* Client-side player limit (server MAX_NUM_PLAYERS = 500) */\n')
+    f.write(f'var MAX_NUM_PLAYERS = {max_num_players_js};\n')
+    
+    # Add MAX_LEN_WORKLIST from worklist.h
+    if 'MAX_LEN_WORKLIST' in worklist_defines:
+        f.write(f'\n/* From common/worklist.h */\n')
+        f.write(f'var MAX_LEN_WORKLIST = {worklist_defines["MAX_LEN_WORKLIST"]};\n')
+    
+    # Add MAX_AI_LOVE from player.h
+    if 'MAX_AI_LOVE' in player_defines:
+        f.write(f'\n/* From common/player.h */\n')
+        f.write(f'var MAX_AI_LOVE = {player_defines["MAX_AI_LOVE"]};\n')
     
     # Note about MAX_LEN_CITYNAME
     if 'MAX_LEN_CITYNAME' in cityname_defines:
