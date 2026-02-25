@@ -302,7 +302,8 @@ User: "Good game!" -> {"command": "none"}`;
     console.log("[WebLLM] Parse response:", response_text);
     
     // Extract JSON from response (in case LLM adds extra text)
-    const json_match = response_text.match(/\{[^}]+\}/);
+    // Using [\s\S] to match any character including newlines and nested braces
+    const json_match = response_text.match(/\{[\s\S]*\}/);
     if (json_match) {
       response_text = json_match[0];
     }
@@ -361,7 +362,7 @@ function execute_parsed_command(command_data) {
         // Get the currently focused unit
         if (typeof current_focus !== 'undefined' && current_focus.length > 0) {
           const punit = current_focus[0];
-          if (punit != null && typeof request_unit_autosettlers === 'function') {
+          if (punit !== null && typeof request_unit_autosettlers === 'function') {
             request_unit_autosettlers(punit);
             return true;
           }
