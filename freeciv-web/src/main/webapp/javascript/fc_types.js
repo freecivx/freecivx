@@ -345,6 +345,62 @@ var GUI_SDL2 = 6;
 var GUI_WEB = 7;
 var GUI_GTK4 = 8;
 
+/* The action_decision enum (ACT_DEC_*) from common/fc_types.h */
+var ACT_DEC_NOTHING = 0;
+var ACT_DEC_PASSIVE = 1;
+var ACT_DEC_ACTIVE = 2;
+var ACT_DEC_COUNT = 3;
+
+/* Action sub-result enum (ACT_SUB_RES_*) from common/fc_types.h */
+var ACT_SUB_RES_HUT_ENTER = 0;
+var ACT_SUB_RES_HUT_FRIGHTEN = 1;
+var ACT_SUB_RES_MAY_EMBARK = 2;
+var ACT_SUB_RES_NON_LETHAL = 3;
+var ACT_SUB_RES_COUNT = 4;
+
+/* Requirements (RPT_*) from common/fc_types.h */
+var RPT_POSSIBLE = 0;
+var RPT_CERTAIN = 1;
+
+/* vision_layer enum (V_*) from common/fc_types.h */
+var V_MAIN = 0;
+var V_INVIS = 1;
+var V_SUBSURFACE = 2;
+var V_COUNT = 3;
+
+/* causes for extra (EC_*) from common/fc_types.h */
+var EC_IRRIGATION = 0;
+var EC_MINE = 1;
+var EC_ROAD = 2;
+var EC_BASE = 3;
+var EC_POLLUTION = 4;
+var EC_FALLOUT = 5;
+var EC_HUT = 6;
+var EC_APPEARANCE = 7;
+var EC_RESOURCE = 8;
+var EC_COUNT = 9;
+
+/* causes for extra removal (ERM_*) from common/fc_types.h */
+var ERM_PILLAGE = 0;
+var ERM_CLEAN = 1;
+var ERM_CLEANFALLOUT = 2;
+var ERM_DISAPPEARANCE = 3;
+var ERM_ENTER = 4;
+var ERM_CLEANPOLLUTION = 5;
+var ERM_COUNT = 6;
+
+/* barbarian types from common/fc_types.h */
+var NOT_A_BARBARIAN = 0;
+var LAND_BARBARIAN = 1;
+var SEA_BARBARIAN = 2;
+var ANIMAL_BARBARIAN = 3;
+var LAND_AND_SEA_BARBARIAN = 4;
+
+/* capital types from common/fc_types.h */
+var CAPITAL_NOT = 0;
+var CAPITAL_SECONDARY = 1;
+var CAPITAL_PRIMARY = 2;
+
 /* Derived constants for compatibility */
 var B_LAST = MAX_NUM_BUILDINGS;
 var A_LAST = (MAX_NUM_ADVANCES + 1);
@@ -359,55 +415,3 @@ var TRI_YES = 1;
 var TRI_MAYBE = 2;
 
 var IDENTITY_NUMBER_ZERO = 0;
-
-/* The action_decision enum */
-var ACT_DEC_NOTHING = 0;
-var ACT_DEC_PASSIVE = 1;
-var ACT_DEC_ACTIVE = 2;
-
-/* Action sub-result enum */
-var ACT_SUB_RES_HUT_ENTER = 0;
-var ACT_SUB_RES_HUT_FRIGHTEN = 1;
-var ACT_SUB_RES_MAY_EMBARK = 2;
-var ACT_SUB_RES_NON_LETHAL = 3;
-var ACT_SUB_RES_COUNT = 4;
-
-/* Requirements */
-var RPT_POSSIBLE = 0;
-var RPT_CERTAIN = 1;
-
-/* vision_layer enum */
-var V_MAIN = 0;
-var V_INVIS = 1;
-var V_SUBSURFACE = 2;
-var V_COUNT = 3;
-
-/* causes for extra */
-var EC_IRRIGATION = 0;
-var EC_MINE = 1;
-var EC_ROAD = 2;
-var EC_BASE = 3;
-var EC_POLLUTION = 4;
-var EC_FALLOUT = 5;
-var EC_HUT = 6;
-var EC_APPEARANCE = 7;
-var EC_RESOURCE = 8;
-
-/* causes for extra removal */
-var ERM_PILLAGE = 0;
-var ERM_CLEANPOLLUTION = 1;
-var ERM_CLEANFALLOUT = 2;
-var ERM_DISAPPEARANCE = 3;
-var ERM_CLEAN = 1;
-
-/* barbarian types */
-var NOT_A_BARBARIAN = 0;
-var LAND_BARBARIAN = 1;
-var SEA_BARBARIAN = 2;
-var ANIMAL_BARBARIAN = 3;
-var LAND_AND_SEA_BARBARIAN = 4;
-
-/* capital types */
-var CAPITAL_NOT = 0;
-var CAPITAL_SECONDARY = 1;
-var CAPITAL_PRIMARY = 2;
