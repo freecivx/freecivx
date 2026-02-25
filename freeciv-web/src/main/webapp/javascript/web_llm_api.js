@@ -302,7 +302,7 @@ async function process_game_message(text) {
                    2. SAFETY: Replace all profanity or toxic language with "***".
                    3. STYLE: Rewrite the message to be immersive and engaging for a strategy game.
                    4. BREVITY: Maximum 25 words.
-                   5. OUTPUT: Provide ONLY the final processed text. No commentary, no quotes, no formatting.
+                   5. OUTPUT: Provide ONLY the final processed text. No commentary, no quotes, no formatting, no ***.
                    <</SYS>>
 
                    Original message: "${plainText}" [/INST]
