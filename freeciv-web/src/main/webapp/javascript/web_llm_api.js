@@ -106,7 +106,7 @@ async function generate_ai_text(prompt, max_tokens = 100) {
     console.log("[WebLLM] Generating text for prompt:", prompt);
     
     const messages = [
-      { role: "system", content: "You are a helpful assistant for the Freeciv strategy game." },
+      { role: "system", content: "You are a creative narrator and assistant for the Freeciv civilization-building strategy game. Provide concise, engaging, and game-appropriate responses without using asterisks or placeholder symbols." },
       { role: "user", content: prompt }
     ];
 
@@ -116,8 +116,15 @@ async function generate_ai_text(prompt, max_tokens = 100) {
       temperature: 0.7,
     });
 
-    const generated_text = reply.choices[0].message.content;
-    console.log("[WebLLM] Generated text:", generated_text);
+    let generated_text = reply.choices[0].message.content;
+    console.log("[WebLLM] Generated text (raw):", generated_text);
+    
+    // Post-process to remove *** artifacts and clean up formatting
+    generated_text = generated_text.replace(/\*\*\*/g, '').trim();
+    // Remove multiple consecutive spaces that might result from cleanup
+    generated_text = generated_text.replace(/\s{2,}/g, ' ').trim();
+    
+    console.log("[WebLLM] Generated text (cleaned):", generated_text);
     
     return generated_text;
     
@@ -133,7 +140,8 @@ async function generate_ai_text(prompt, max_tokens = 100) {
  */
 async function generate_game_intro_text() {
   const prompt = "Write a brief, exciting 2-3 sentence introduction for a player starting a new game of Freeciv, " +
-                 "a civilization-building strategy game. Make it inspiring and welcoming.";
+                 "a civilization-building strategy game. Make it inspiring and welcoming. " +
+                 "Focus on exploration, empire building, and strategic conquest.";
   
   return await generate_ai_text(prompt, 80);
 }
@@ -241,7 +249,7 @@ async function generate_turn_summary() {
     
     const prompt = `You are a narrator for the Freeciv strategy game. Write a brief 1-2 sentence update for turn ${turn}. ` +
                    `The player ${player_name} leads the ${nation_name} nation with a population of ${population} and ${gold} gold. ` +
-                   `Make it interesting and game-relevant. Keep it under 40 words.`;
+                   `Make it interesting and game-relevant. Focus on progress, challenges, or opportunities. Keep it under 40 words.`;
     
     const turn_text = await generate_ai_text(prompt, 60);
     return turn_text;
@@ -278,26 +286,30 @@ async function process_game_message(text) {
 
     
     // Create a comprehensive prompt for the LLM to handle all filtering and enhancement
-    const prompt = `[INST] <<SYS>>
-                   You are the Freeciv Chat Oracle. Your job is to sanitize and stylize game messages.
-                   STRICT RULES:
-                   1. SECURITY: Remove all emails, phone numbers and contact information.
-                   2. SAFETY: Replace all profanity or toxic language with "***".
-                   3. STYLE: Rewrite the message to be immersive and engaging for a strategy game.
-                   4. BREVITY: Maximum 25 words.
-                   5. OUTPUT: Provide ONLY the final processed text. No commentary, no quotes, no formatting, no ***.
-                   <</SYS>>
+    const prompt = `You are the Freeciv game message assistant. Your task is to clean and enhance this game message.
+Rules:
+1. Remove any emails, phone numbers, or web links
+2. Replace profanity with appropriate game-themed alternatives (like "by the gods!" or "drat!")
+3. Keep the core meaning but make it more immersive for a civilization strategy game
+4. Keep it brief (under 25 words)
+5. Output ONLY the processed message text, without quotes or special formatting
 
-                   Original message: "${text}" [/INST]
+Original message: "${text}"
 
-                   Processed message:`;
+Enhanced message:`;
     
     let processed = await generate_ai_text(prompt, 100);
     
-    // Clean up the response
+    // Clean up the response thoroughly
     // Remove quotes if the LLM added them
     processed = processed.replace(/^["']|["']$/g, '').trim();
-   
+    // Remove any *** artifacts
+    processed = processed.replace(/\*\*\*/g, '').trim();
+    // Remove markdown bold/italic markers if present
+    processed = processed.replace(/\*\*([^*]+)\*\*/g, '$1');
+    processed = processed.replace(/\*([^*]+)\*/g, '$1');
+    // Clean up multiple spaces
+    processed = processed.replace(/\s{2,}/g, ' ').trim();
     
     return processed;
     
