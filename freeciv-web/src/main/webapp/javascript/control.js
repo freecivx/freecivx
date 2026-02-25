@@ -150,9 +150,33 @@ function control_init()
      tech_mapview_mouse_click(event);
    });
 
-  /* disable text-selection, as this gives wrong mouse cursor
-   * during drag to goto units. */
-  document.onselectstart = function(){ return allow_right_click; };
+  /* disable text-selection only on game canvas and interactive elements,
+   * as this gives wrong mouse cursor during drag to goto units.
+   * Text selection is allowed in chat, dialogs, and other text areas. */
+  document.onselectstart = function(e){
+    // Allow text selection in text input fields, chat messages, and dialogs
+    if (e.target && (
+        e.target.tagName === 'INPUT' ||
+        e.target.tagName === 'TEXTAREA' ||
+        e.target.id === 'game_message_area' ||
+        e.target.closest('#game_message_area') ||
+        e.target.closest('.ui-dialog-content') ||
+        e.target.closest('#game_chatbox_panel')
+    )) {
+      return true;
+    }
+    // Prevent selection on game canvas and interactive elements
+    if (e.target && (
+        e.target.id === 'mapcanvas' ||
+        e.target.closest('#mapcanvas') ||
+        e.target.closest('#game_unit_info') ||
+        e.target.closest('#game_unit_panel')
+    )) {
+      return false;
+    }
+    // Default: allow selection
+    return true;
+  };
 
   /* disable right clicks. */
   window.addEventListener('contextmenu', function (e) {

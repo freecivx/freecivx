@@ -1829,3 +1829,36 @@ li.tech-both::before {
   --os-handle-bg-hover: rgba(211, 211, 211, 0.75);
   --os-handle-bg-active: rgba(211, 211, 211, 0.9);
 }
+
+/* Text selection control - Balance between game UX and text selection */
+/* Prevent text selection on interactive game elements */
+#mapcanvas,
+#game_unit_panel,
+#game_unit_info,
+#tabs_menu,
+.order_button,
+#turn_done_button {
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+}
+
+/* Explicitly allow text selection in text areas, dialogs, and chat */
+#game_message_area,
+#game_chatbox_panel,
+.ui-dialog-content,
+#game_text_input,
+#pregame_text_input,
+input[type="text"],
+textarea,
+.helptext,
+#freeciv_manual,
+#chat_context_dialog,
+.manual-tab,
+.diplomacy_messages {
+  -webkit-user-select: text;
+  -moz-user-select: text;
+  -ms-user-select: text;
+  user-select: text;
+}
