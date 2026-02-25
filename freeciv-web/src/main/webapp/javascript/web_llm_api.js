@@ -244,4 +244,131 @@ function show_fallback_intro_message() {
   }
 }
 
+/**
+ * Parse user input and determine if it's a game command
+ * @param {string} user_input - The text input from the user
+ * @returns {Promise<Object>} Object with command type and parameters, or null if not a command
+ */
+async function parse_command_with_llm(user_input) {
+  if (!webllm_enabled || !webllm_loaded) {
+    console.log("[WebLLM] Command parsing disabled or engine not loaded");
+    return null;
+  }
+
+  try {
+    const system_prompt = `You are a command parser for the Freeciv game. Analyze the user's input and determine if they want to execute a game command.
+
+Available commands:
+- "help" - Show game help
+- "build_city" - Build a city with current unit
+- "auto_explore" - Set current unit to auto-explore mode
+- "auto_settler" - Set current unit to auto-settler mode
+
+Respond ONLY with a JSON object in this exact format:
+{"command": "command_name"}
+
+If the input is NOT a game command (e.g., it's a chat message), respond with:
+{"command": "none"}
+
+Examples:
+User: "help" -> {"command": "help"}
+User: "I need help" -> {"command": "help"}
+User: "build a city here" -> {"command": "build_city"}
+User: "found a new city" -> {"command": "build_city"}
+User: "explore the map" -> {"command": "auto_explore"}
+User: "auto explore" -> {"command": "auto_explore"}
+User: "set to auto settler" -> {"command": "auto_settler"}
+User: "Hello everyone" -> {"command": "none"}
+User: "Good game!" -> {"command": "none"}`;
+
+    const messages = [
+      { role: "system", content: system_prompt },
+      { role: "user", content: user_input }
+    ];
+
+    console.log("[WebLLM] Parsing command:", user_input);
+    
+    const reply = await webllm_engine.chat.completions.create({
+      messages: messages,
+      max_tokens: 50,
+      temperature: 0.1,  // Low temperature for consistent parsing
+    });
+
+    let response_text = reply.choices[0].message.content.trim();
+    console.log("[WebLLM] Parse response:", response_text);
+    
+    // Extract JSON from response (in case LLM adds extra text)
+    const json_match = response_text.match(/\{[^}]+\}/);
+    if (json_match) {
+      response_text = json_match[0];
+    }
+    
+    const parsed = JSON.parse(response_text);
+    
+    if (parsed.command && parsed.command !== "none") {
+      console.log("[WebLLM] Detected command:", parsed.command);
+      return parsed;
+    }
+    
+    return null;
+    
+  } catch (error) {
+    console.error("[WebLLM] Command parsing error:", error);
+    return null;
+  }
+}
+
+/**
+ * Execute a parsed command
+ * @param {Object} command_data - The parsed command object with command type
+ * @returns {boolean} True if command was executed, false otherwise
+ */
+function execute_parsed_command(command_data) {
+  if (!command_data || !command_data.command) {
+    return false;
+  }
+
+  console.log("[WebLLM] Executing command:", command_data.command);
+
+  try {
+    switch (command_data.command) {
+      case "help":
+        if (typeof show_help === 'function') {
+          show_help();
+          return true;
+        }
+        break;
+        
+      case "build_city":
+        if (typeof request_unit_build_city === 'function') {
+          request_unit_build_city();
+          return true;
+        }
+        break;
+        
+      case "auto_explore":
+        if (typeof key_unit_auto_explore === 'function') {
+          key_unit_auto_explore();
+          return true;
+        }
+        break;
+        
+      case "auto_settler":
+        // Get the currently focused unit
+        if (typeof current_focus !== 'undefined' && current_focus.length > 0) {
+          var punit = current_focus[0];
+          if (punit != null && typeof request_unit_autosettlers === 'function') {
+            request_unit_autosettlers(punit);
+            return true;
+          }
+        }
+        break;
+    }
+  } catch (error) {
+    console.error("[WebLLM] Error executing command:", error);
+  }
+  
+  return false;
+}
+
 

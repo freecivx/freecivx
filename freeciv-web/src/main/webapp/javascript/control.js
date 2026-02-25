@@ -730,6 +730,18 @@ function check_text_input(event,chatboxtextarea) {
       return;
     }
 
+    // Parse and execute commands with LLM before sending message to server
+    if (typeof parse_command_with_llm === 'function' && typeof execute_parsed_command === 'function') {
+      parse_command_with_llm(message_original).then(function(command_data) {
+        if (command_data) {
+          console.log("[Command Parser] Executing command:", command_data.command);
+          execute_parsed_command(command_data);
+        }
+      }).catch(function(error) {
+        console.error("[Command Parser] Error parsing command:", error);
+      });
+    }
+
     send_message(message);
     return false;
   }
