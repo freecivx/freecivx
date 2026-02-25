@@ -1,7 +1,5 @@
 #!/usr/bin/env python3
 
-from os import *
-from shutil import *
 import time
 import os
 

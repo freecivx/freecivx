@@ -134,22 +134,22 @@ for i, v in enumerate(events):
         i = i + 1
 
 events.append({
-    'index': ++i,
+    'index': i + 1,
     'name': 'E_CHAT_PRIVATE',
     'section': 'E_S_CHAT',
     'description': 'Private messages'})
 events.append({
-    'index': ++i,
+    'index': i + 2,
     'name': 'E_CHAT_ALLIES',
     'section': 'E_S_CHAT',
     'description': 'Allies messages'})
 events.append({
-    'index': ++i,
+    'index': i + 3,
     'name': 'E_CHAT_OBSERVER',
     'section': 'E_S_CHAT',
     'description': 'Observers messages'})
 events.append({
-    'index': ++i,
+    'index': i + 4,
     'name': 'E_UNDEFINED',
     'section': 'E_S_XYZZY',
     'description': 'Unknown event'})
