@@ -25,7 +25,19 @@
 var webllm_engine = null;
 var webllm_loading = false;
 var webllm_loaded = false;
-var webllm_enabled = true; // Can be toggled from pregame settings
+
+// Initialize webllm_enabled from localStorage (default: true)
+// We use localStorage directly to ensure it's available early
+var webllm_enabled = (function() {
+  try {
+    var stored = localStorage.getItem("webllm_enabled");
+    // Default to true if no value is stored
+    return stored === null ? true : stored === "true";
+  } catch (e) {
+    console.log("[WebLLM] localStorage not available, defaulting to enabled");
+    return true;
+  }
+})();
 
 /**
  * Initialize the WebLLM engine
