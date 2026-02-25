@@ -130,11 +130,18 @@ standalone_mode = true;
 <!-- Note: standalone.js is bundled inside webclient.min.js -->
 <script src="/javascript/webclient.min.js" ></script>
 
+<!-- WebLLM API for AI text generation -->
+<script src="/javascript/web_llm_api.js"></script>
+
 <script>
   $(document).ready(function() {
     console.log("First init started from html page.");
     // Initialize standalone mode
     init_standalone();
+    
+    // Initialize WebLLM engine in the background
+    console.log("Initializing WebLLM engine in background...");
+    init_webllm_engine();
   });
 </script>
 
