@@ -25,7 +25,19 @@ Open a Powershell window, run as Administator, this command:
 
   
 
-### 1.3. Build Freeciworld:
+### 1.3. (Optional) Install Node.js and npm for ESLint support:
+
+ESLint checks are optional but recommended for development. If npm is not installed, the build will skip ESLint checks automatically.
+
+To enable ESLint:
+
+> curl -fsSL https://deb.nodesource.com/setup_lts.x | sudo -E bash -
+
+> sudo apt-get install -y nodejs
+
+  
+
+### 1.4. Build Freeciworld:
 
 > cd freecivworld
 
@@ -33,7 +45,7 @@ Open a Powershell window, run as Administator, this command:
 
   
 
-### 1.4. Start Freecivworld:
+### 1.5. Start Freecivworld:
 
 > ./scripts/start-freeciv-web.sh
 
