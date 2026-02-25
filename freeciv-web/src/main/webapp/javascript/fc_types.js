@@ -334,6 +334,15 @@ var REQ_RANGE_ALLIANCE = 9;
 var REQ_RANGE_WORLD = 10;
 var REQ_RANGE_COUNT = 11;
 
+/* Output types (O_*) from common/fc_types.h */
+var O_FOOD = 0;
+var O_SHIELD = 1;
+var O_TRADE = 2;
+var O_GOLD = 3;
+var O_LUXURY = 4;
+var O_SCIENCE = 5;
+var O_LAST = 6;
+
 /* GUI types from common/fc_types.h */
 var GUI_STUB = 0;
 var GUI_GTK2 = 1;

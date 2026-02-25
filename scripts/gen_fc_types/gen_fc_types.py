@@ -209,7 +209,8 @@ def parse_c_enum(file_path, enum_name):
     enum_values = []
     in_enum = False
     enum_re = re.compile(r'^\s*enum\s+' + enum_name + r'\s*\{')
-    value_re = re.compile(r'^\s*([A-Z_][A-Z0-9_]*)\s*[,}]?')
+    # Match all enum values, including multiple on one line
+    value_re = re.compile(r'([A-Z_][A-Z0-9_]*)')
     
     with open(file_path, 'r', encoding='utf-8', errors='ignore') as f:
         for line in f:
@@ -218,12 +219,20 @@ def parse_c_enum(file_path, enum_name):
             if not in_enum:
                 if enum_re.match(line):
                     in_enum = True
+                    # Check if enum values start on the same line as "enum name {"
+                    if '{' in line:
+                        after_brace = line.split('{', 1)[1]
+                        matches = value_re.findall(after_brace)
+                        for value_name in matches:
+                            if value_name and value_name[0].isupper():
+                                enum_values.append(value_name)
+                        if '}' in line:
+                            break
                 continue
             
-            # Inside enum, look for values
-            match = value_re.match(line)
-            if match:
-                value_name = match.group(1)
+            # Inside enum, look for all values on the line
+            matches = value_re.findall(line)
+            for value_name in matches:
                 # Make sure it's not empty and looks like an enum value
                 if value_name and value_name[0].isupper():
                     enum_values.append(value_name)
@@ -281,19 +290,26 @@ cityname_defines = parse_simple_defines(
 print(f"Parsing {path.join(common_dir, 'fc_types.h')} for SPECENUMs...")
 fc_types_enums = parse_specenum(
     path.join(common_dir, 'fc_types.h'),
-    extract_names=['unit_activity', 'action_result', 'universals_n', 'output_type_id',
+    extract_names=['unit_activity', 'action_result', 'universals_n',
                    'action_decision', 'action_sub_result', 'vision_layer',
                    'extra_cause', 'extra_rmcause', 'barbarian_type', 'capital_type']
 )
 
-# Parse req_problem_type enum (regular C enum, not SPECENUM)
-print(f"Parsing {path.join(common_dir, 'fc_types.h')} for req_problem_type enum...")
+# Parse regular C enums (not SPECENUM) from fc_types.h
+print(f"Parsing {path.join(common_dir, 'fc_types.h')} for regular C enums...")
 req_problem_type_enum = parse_c_enum(
     path.join(common_dir, 'fc_types.h'),
     'req_problem_type'
 )
 if req_problem_type_enum:
     fc_types_enums['req_problem_type'] = req_problem_type_enum
+
+output_type_id_enum = parse_c_enum(
+    path.join(common_dir, 'fc_types.h'),
+    'output_type_id'
+)
+if output_type_id_enum:
+    fc_types_enums['output_type_id'] = output_type_id_enum
 
 
 # Extract action enums from actions.h
