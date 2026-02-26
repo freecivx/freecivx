@@ -42,6 +42,9 @@ try {
 <meta name="description" content="FreecivWorld.net play Freeciv in 3D online for free, open source strategy game">
 <meta property="og:image" content="/images/freecivx-icon-web2.jpg" />
 
+<script src="/javascript/libs/xterm.js"></script>
+<script src="/javascript/libs/libv86.js"></script>
+
 <!-- Global configuration variables -->
 <script>
 var ts="${initParam.buildTimeStamp}";
@@ -69,8 +72,7 @@ var renderer_type_override="<%= rendererParam %>";
 <!-- WebGPU module loader - always loaded as WebGPU is required -->
 <script type="module" src="/javascript/three-modules-webgpu.js?ts=${initParam.buildTimeStamp}"></script>
 
-<script src="/javascript/libs/xterm.js"></script>
-<script src="/javascript/libs/libv86.js"></script>
+
 
 
 <!-- Main application bundle - includes jQuery, Stacktrace, Audio, and all application code -->
