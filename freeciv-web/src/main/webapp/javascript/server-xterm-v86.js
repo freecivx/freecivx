@@ -38,7 +38,7 @@ const V86_CONFIG = {
     memory_size: 32 * 1024 * 1024,  // 32 MB
     bios: { url: "/v86/seabios.bin" },
     vga_bios: { url: "/v86/vgabios.bin" },
-    cdrom: { url: "/v86/linux3.iso" },
+    cdrom: { url: "/v86/alpine.iso" },
     cmdline: "console=ttyS0",        // Use serial console for terminal
     autostart: true,
     
