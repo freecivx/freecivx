@@ -292,6 +292,7 @@ Rerun the sync-js-hand.js script.
 							<configuration>
 								<cssFinalFile>webclient.css</cssFinalFile>
 								<cssSourceFiles>
+									<cssSourceFile>xterm.css</cssSourceFile>
 									<cssSourceFile>jquery-ui.min.css</cssSourceFile>
 									<cssSourceFile>sweetalert.css</cssSourceFile>
 									<cssSourceFile>bluecurve.css</cssSourceFile>
