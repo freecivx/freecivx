@@ -19,7 +19,6 @@
  
  MAINTAINABILITY:
  - All configuration in V86_CONFIG object
- - Boot sequence defined in BOOT_COMMANDS array
  - Color codes centralized in COLORS object
 **************************************************************************/
 
@@ -50,14 +49,6 @@ const V86_CONFIG = {
     ],
 };
 
-// Boot initialization commands
-// These commands are sent to the Linux shell after boot completes
-const BOOT_COMMANDS = [
-
-
-    "  uname -a",
-
-];
 
 function init_xterm() {
     // 1. Initialize xterm.js terminal
@@ -125,9 +116,7 @@ function initializeLinuxEnvironment(emulator, term) {
     
     // Join boot commands with AND operator for sequential execution
     // Use || true to continue even if a command fails
-    const bootSequence = BOOT_COMMANDS
-        .map(cmd => `(${cmd}) || true`)
-        .join(' && ') + '\n';
+    const bootSequence = "uname -a \n";
     
     // Send boot sequence to the serial console
     emulator.serial0_send(bootSequence);
