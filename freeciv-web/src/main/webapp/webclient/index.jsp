@@ -69,7 +69,7 @@ var renderer_type_override="<%= rendererParam %>";
 <!-- WebGPU module loader - always loaded as WebGPU is required -->
 <script type="module" src="/javascript/three-modules-webgpu.js?ts=${initParam.buildTimeStamp}"></script>
 
-<script src="/javascript/libs/iterm.js"></script>
+<script src="/javascript/libs/xterm.js"></script>
 
 
 <!-- Main application bundle - includes jQuery, Stacktrace, Audio, and all application code -->
