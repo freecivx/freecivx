@@ -70,6 +70,7 @@ var renderer_type_override="<%= rendererParam %>";
 <script type="module" src="/javascript/three-modules-webgpu.js?ts=${initParam.buildTimeStamp}"></script>
 
 <script src="/javascript/libs/xterm.js"></script>
+<script src="/javascript/libs/libv86.js"></script>
 
 
 <!-- Main application bundle - includes jQuery, Stacktrace, Audio, and all application code -->

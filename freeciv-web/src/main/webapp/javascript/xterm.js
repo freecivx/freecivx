@@ -6,31 +6,30 @@
 
 function init_xterm() {
 
-  const term = new Terminal({
-      cursorBlink: true,
-      theme: {
-        background: '#1b1b1b'
-      }
-    });
+// 1. Initialize xterm.js (as we did before)
+const term = new Terminal();
+term.open(document.getElementById('terminal'));
 
-    term.open(document.getElementById('terminal'));
-    term.writeln('Running \x1B[1;32mxterm.js v6.0.0\x1B[0m');
-    term.write('\r\n$ ');
+// 2. Initialize v86
+const emulator = new V86Starter({
+    wasm_path: "https://copy.sh/v86/build/v86.wasm",
+    memory_size: 32 * 1024 * 1024, // 32MB
+    vga_canvas: document.getElementById("vga"),
+    bios: { url: "https://copy.sh/v86/bios/seabios.bin" },
+    vga_bios: { url: "https://copy.sh/v86/bios/vgabios.bin" },
+    // Use a small linux image
+    cdrom: { url: "https://copy.sh/v86/images/linux.iso" },
+    autostart: true,
+});
 
-    // Basic local echo so you can type
-    term.onData(e => {
-      switch (e) {
-        case '\r': // Enter
-          term.write('\r\n$ ');
-          break;
-        case '\u007F': // Backspace (DEL)
-          if (term.buffer.active.cursorX > 2) {
-            term.write('\b \b');
-          }
-          break;
-        default:
-          term.write(e);
-      }
-    });
+// 3. THE BRIDGE: v86 -> xterm.js
+emulator.add_listener("serial0-output-char", function(char) {
+    term.write(char);
+});
+
+// 4. THE BRIDGE: xterm.js -> v86
+term.onData(data => {
+    emulator.serial0_send(data);
+});
 
 }
