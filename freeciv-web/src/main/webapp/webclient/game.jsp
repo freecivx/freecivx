@@ -12,6 +12,7 @@
 				<li id="cities_tab"><a href="#tabs-cities"><i class="fa fa-city" aria-hidden="true"></i> Cities</a></li>
 				<li id="opt_tab"><a href="#tabs-opt"><i class="fa fa-cogs" aria-hidden="true"></i> Options</a></li>
 				<li id="hel_tab"><a href="#tabs-hel"><i class="fa fa-circle-info" aria-hidden="true"></i> Manual</a></li>
+				<li id="hel_ser"><a href="#tabs-ser"><i class="fa fa-server" aria-hidden="true"></i> Server</a></li>
 
 
         <div id="game_status_panel_top"></div>
@@ -45,6 +46,9 @@
 			<div id="tabs-opt">
 				<jsp:include page="options.jsp" flush="false"/>
 			</div>
+      <div id="tabs-ser">
+        <jsp:include page="server.jsp" flush="false"/>
+      </div>
 			
 		</div>
 	</div>
