@@ -4,7 +4,7 @@
 **************************************************************************/
 function init_xterm() {
 
-  const fs = new V86Starter.FileSystem();
+  const fs = new V86.FileSystem();
 
     // 1. Initialize xterm.js
     const term = new Terminal({
