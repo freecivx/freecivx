@@ -76,7 +76,7 @@ function set_client_state(newstate)
       }
 
       // Show AI-generated introduction dialog when game starts
-      if (typeof show_ai_intro_dialog !== 'undefined') {
+      if (web_llm_enabled) {
         setTimeout(function() {
           show_ai_intro_dialog();
         }, 2000); // Wait 2 seconds after game starts to show the dialog
@@ -181,9 +181,8 @@ function show_new_game_message()
     return;
 
   } else if (client.conn.playing != null && !game_loaded) {
-    // Welcome message is now shown via web-llm in show_ai_intro_dialog()
-    // No longer showing hardcoded message here
-    return;
+     message = "Welcome to Freeciv 3D, " + username + ".";
+
 
   } else if (game_loaded) {
     message = "Welcome back, " + username;

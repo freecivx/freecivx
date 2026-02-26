@@ -162,13 +162,7 @@ function start_standalone_game() {
   console.log("[Standalone] Advance unit focus called");
 
   server_send_chat_message("Welcome to the Freeciv 3D JavaScript server", E_CHAT_MSG);
-  
-  // Show AI-generated introduction dialog
-  if (typeof show_ai_intro_dialog !== 'undefined') {
-    setTimeout(function() {
-      show_ai_intro_dialog();
-    }, 2000); // Wait 2 seconds after game starts to show the dialog
-  }
+
 }
 
 
