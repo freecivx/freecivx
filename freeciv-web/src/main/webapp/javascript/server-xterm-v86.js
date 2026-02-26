@@ -35,7 +35,7 @@ const COLORS = {
 // v86 emulator configuration
 const V86_CONFIG = {
     wasm_path: "/v86/v86.wasm",
-    memory_size: 32 * 1024 * 1024,  // 32 MB
+    memory_size: 256 * 1024 * 1024,  
     bios: { url: "/v86/seabios.bin" },
     vga_bios: { url: "/v86/vgabios.bin" },
     cdrom: { url: "/v86/alpine.iso" },
