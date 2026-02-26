@@ -44,10 +44,14 @@ function init_xterm() {
     });
 
     emulator.add_listener("emulator-ready", function() {
-        // Wait a few seconds for the kernel to finish booting, then auto-mount
         setTimeout(() => {
+            // 1. Create the directory first
+            emulator.serial0_send("mkdir -p /mnt\n");
+
+            // 2. Then mount the filesystem
             emulator.serial0_send("mount -t 9p host9p /mnt\n");
-            term.writeln("\x1B[1;34m[System]\x1B[0m Virtual filesystem mounted at /mnt");
+
+            term.writeln("\x1B[1;34m[System]\x1B[0m Initializing virtual filesystem...");
         }, 5000);
     });
 }
