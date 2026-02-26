@@ -45,13 +45,11 @@ function init_xterm() {
 
     emulator.add_listener("emulator-ready", function() {
         setTimeout(() => {
-            // 1. Create the directory first
-            emulator.serial0_send("mkdir -p /mnt\n");
+            // We use && to ensure mkdir succeeds before attempting the mount
+            const initCommand = "mkdir -p /mnt && mount -t 9p host9p /mnt && echo 'FS_READY'\n";
 
-            // 2. Then mount the filesystem
-            emulator.serial0_send("mount -t 9p host9p /mnt\n");
-
-            term.writeln("\x1B[1;34m[System]\x1B[0m Initializing virtual filesystem...");
+            emulator.serial0_send(initCommand);
+            term.writeln("\x1B[1;34m[System]\x1B[0m Attempting to create and mount /mnt...");
         }, 5000);
     });
 }
