@@ -2,9 +2,10 @@
 /**************************************************************************
  ...
 **************************************************************************/
-
-
 function init_xterm() {
+
+  const fs = new V86Starter.FileSystem();
+
     // 1. Initialize xterm.js
     const term = new Terminal({
         cursorBlink: true,
@@ -22,6 +23,7 @@ function init_xterm() {
         cdrom: { url: "/v86/linux3.iso" },
         cmdline: "console=ttyS0",
         autostart: true,
+        filesystem: fs,
     });
 
     // 3. THE BRIDGE: v86 (Output) -> xterm.js (Display)
@@ -39,5 +41,13 @@ function init_xterm() {
     // 5. DEBUG: Let's see if the emulator is actually running
     emulator.add_listener("emulator-ready", function() {
         term.writeln("\x1B[1;32m[System]\x1B[0m v86 Emulator Ready. Booting...");
+    });
+
+    emulator.add_listener("emulator-ready", function() {
+        // Wait a few seconds for the kernel to finish booting, then auto-mount
+        setTimeout(() => {
+            emulator.serial0_send("mount -t 9p host9p /mnt\n");
+            term.writeln("\x1B[1;34m[System]\x1B[0m Virtual filesystem mounted at /mnt");
+        }, 5000);
     });
 }
