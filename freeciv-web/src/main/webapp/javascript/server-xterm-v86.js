@@ -77,6 +77,9 @@ const BOOT_COMMANDS = [
     // Create a help command for common operations
     "alias help='echo -e \"\\033[1;33mFreeciv Server Commands:\\033[0m\" && echo \"  freeciv-server - Start Freeciv server\" && echo \"  ps - List running processes\" && echo \"  free - Show memory usage\" && echo \"  df - Show disk usage\" && echo \"  ll - List files (long format)\" && echo \"'\"",
     
+    // Check if Freeciv server binary exists and display status
+    "if command -v freeciv-server >/dev/null 2>&1; then echo -e '\\033[1;32m[OK]\\033[0m Freeciv server found'; else echo -e '\\033[1;33m[Warning]\\033[0m Freeciv server not found in PATH'; fi",
+    
     // Display system information
     "echo -e '\\033[1;32m[System]\\033[0m Linux environment ready'",
     "echo -e '\\033[1;34m[Info]\\033[0m Working directory: /tmp/work'",
