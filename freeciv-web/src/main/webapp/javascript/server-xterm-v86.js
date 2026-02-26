@@ -135,5 +135,4 @@ function initializeLinuxEnvironment(emulator, term) {
     // Log configuration for debugging
     console.log("[v86] Boot sequence initialized");
     console.log("[v86] Memory: " + (V86_CONFIG.memory_size / 1024 / 1024) + " MB");
-    console.log("[v86] Boot media: " + V86_CONFIG.cdrom.url);
 }
