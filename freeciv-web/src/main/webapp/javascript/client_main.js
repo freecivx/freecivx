@@ -76,7 +76,7 @@ function set_client_state(newstate)
       }
 
       // Show AI-generated introduction dialog when game starts
-      if (web_llm_enabled) {
+      if (webllm_enabled) {
         setTimeout(function() {
           show_ai_intro_dialog();
         }, 2000); // Wait 2 seconds after game starts to show the dialog
