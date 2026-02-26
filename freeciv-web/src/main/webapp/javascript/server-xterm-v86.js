@@ -116,7 +116,7 @@ function initializeLinuxEnvironment(emulator, term) {
     
     // Join boot commands with AND operator for sequential execution
     // Use || true to continue even if a command fails
-    const bootSequence = "uname -a \n";
+    const bootSequence = "\n\nuname -a \n";
     
     // Send boot sequence to the serial console
     emulator.serial0_send(bootSequence);
