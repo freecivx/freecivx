@@ -361,7 +361,6 @@ Rerun the sync-js-hand.js script.
 									<exclude>webclient.js</exclude>
 									<exclude>webclient.min.js</exclude>
 									<exclude>webclient-app.min.js</exclude>
-									<exclude>libs/xterm.js</exclude>
 									<exclude>libs/overlayscrollbars-global.js</exclude>
 									<exclude>libs/overlayscrollbars.esm.js</exclude>
 									<exclude>webgpu/libs/*js</exclude>
@@ -369,7 +368,6 @@ Rerun the sync-js-hand.js script.
 									<exclude>three-modules.js</exclude>
 									<exclude>three-modules-webgpu.js</exclude>
 									<exclude>web_llm_api.js</exclude>
-									<exclude>libs/libv86.js</exclude>
 								</excludes>
 							</configuration>
 							<goals>
