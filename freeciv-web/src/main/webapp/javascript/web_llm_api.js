@@ -44,7 +44,7 @@ var webllm_enabled = (function() {
  * This will download and load the AI model (may take some time on first run)
  */
 async function init_webllm_engine() {
-  if (webllm_loaded || webllm_loading) {
+  if (webllm_loaded || webllm_loading || !webllm_enabled) {
     console.log("[WebLLM] Engine already loaded or loading");
     return;
   }
