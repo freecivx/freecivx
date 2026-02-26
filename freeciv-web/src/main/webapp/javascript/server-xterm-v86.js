@@ -43,13 +43,21 @@ function init_xterm() {
         term.writeln("\x1B[1;32m[System]\x1B[0m v86 Emulator Ready. Booting...");
     });
 
-    emulator.add_listener("emulator-ready", function() {
-        setTimeout(() => {
-            // We use && to ensure mkdir succeeds before attempting the mount
-            const initCommand = "mkdir -p /mnt && mount -t 9p host9p /mnt && echo 'FS_READY'\n";
+   emulator.add_listener("emulator-ready", function() {
+       setTimeout(() => {
+           // 1. Mount proc (so system tools work)
+           // 2. Create a writable mount point in /tmp
+           // 3. Mount the 9p filesystem
+           const bootSequence = [
+               "mount -t proc proc /proc",
+               "mkdir -p /tmp/mnt",
+               "mount -t 9p host9p /tmp/mnt",
+               "cd /tmp/mnt",
+               "echo '[System] Filesystem is ready at /tmp/mnt'"
+           ].join(" && ") + "\n";
 
-            emulator.serial0_send(initCommand);
-            term.writeln("\x1B[1;34m[System]\x1B[0m Attempting to create and mount /mnt...");
-        }, 5000);
-    });
+           emulator.serial0_send(bootSequence);
+           term.writeln("\x1B[1;34m[System]\x1B[0m Running hardware initialization...");
+       }, 5000);
+   });
 }
