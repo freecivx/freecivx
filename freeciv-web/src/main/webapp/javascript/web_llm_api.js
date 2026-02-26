@@ -31,8 +31,8 @@ var webllm_loaded = false;
 var webllm_enabled = (function() {
   try {
     var stored = localStorage.getItem("webllm_enabled");
-    // Default to true if no value is stored
-    return stored === null ? true : stored === "true";
+    // Default to false if no value is stored
+    return stored === null ? false : stored === "true";
   } catch (e) {
     console.log("[WebLLM] localStorage not available, defaulting to enabled");
     return true;
