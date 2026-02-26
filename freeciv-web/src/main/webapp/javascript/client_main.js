@@ -82,6 +82,8 @@ function set_client_state(newstate)
         }, 2000); // Wait 2 seconds after game starts to show the dialog
       }
 
+    init_xterm();
+
       break;
     case C_S_OVER:
       setTimeout(show_endgame_dialog, 500);
