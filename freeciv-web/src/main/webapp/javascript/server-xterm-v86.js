@@ -38,8 +38,8 @@ const V86_CONFIG = {
     memory_size: 256 * 1024 * 1024,
     bios: { url: "/v86/seabios.bin" },
     vga_bios: { url: "/v86/vgabios.bin" },
-    bzimage: { url: "bzImage" },
-    initrd: { url: "rootfs.cpio" },
+    bzimage: { url: "/v86/bzImage" },
+    initrd: { url: "/v86/rootfs.cpio" },
     autostart: true,
     // Use 'arguments' to pass boot parameters to the kernel
     arguments: [
