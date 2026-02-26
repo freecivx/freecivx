@@ -181,7 +181,7 @@ function show_new_game_message()
     return;
 
   } else if (client.conn.playing != null && !game_loaded) {
-     message = "Welcome to Freeciv 3D, " + username + ".";
+     message = "Welcome to Freeciv 3D!";
 
 
   } else if (game_loaded) {
