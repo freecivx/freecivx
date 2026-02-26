@@ -38,19 +38,16 @@ const V86_CONFIG = {
     memory_size: 256 * 1024 * 1024,
     bios: { url: "/v86/seabios.bin" },
     vga_bios: { url: "/v86/vgabios.bin" },
-    cdrom: { url: "/v86/linux4.iso" },
-    cmdline: "console=ttyS0",        // Use serial console for terminal
+    bzimage: { url: "bzImage" },
+    initrd: { url: "rootfs.cpio" },
     autostart: true,
-    
-    // 9p filesystem configuration (optional - for host-guest file sharing)
-    // To enable file sharing, uncomment and configure:
-    // filesystem: {
-    //     basefs: {
-    //         url: "/v86/fs.json"
-    //     },
-    //     baseurl: "/v86/"
-    // }
-    filesystem: {},
+    // Use 'arguments' to pass boot parameters to the kernel
+    arguments: [
+        "console=ttyS0", // Output to the v86 terminal
+        "root=/dev/ram0", // Tell Linux the OS is in RAM
+        "rw"             // Mount filesystem as Read/Write
+
+    ],
 };
 
 // Boot initialization commands
