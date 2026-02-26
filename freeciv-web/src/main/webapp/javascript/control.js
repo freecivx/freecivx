@@ -261,6 +261,10 @@ function control_init()
     show_help();
   });
 
+  $("#ser_tab").click(function(event) {
+    set_default_mapview_inactive();
+  });
+
   $("#send_message_button").click(function(e) {
     show_send_private_message_dialog();
   });
