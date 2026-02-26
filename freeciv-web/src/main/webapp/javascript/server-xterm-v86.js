@@ -56,21 +56,10 @@ const V86_CONFIG = {
 // Boot initialization commands
 // These commands are sent to the Linux shell after boot completes
 const BOOT_COMMANDS = [
-    // Check if /proc is already mounted (it usually is during init)
-    // If not, mount it silently (2>/dev/null suppresses errors)
-    "mountpoint -q /proc || mount -t proc proc /proc 2>/dev/null",
-    
-    // Create working directory for user operations
-    "mkdir -p /tmp/work",
-    
-    // Set working directory
-    "cd /tmp/work",
-    
-    // Display system information with ANSI color codes
-    "echo -e '\\033[1;32m[System]\\033[0m Linux environment ready'",
-    "echo -e '\\033[1;34m[Info]\\033[0m Working directory: /tmp/work'",
-    "echo -e '\\033[1;34m[Info]\\033[0m Type \"help\" for available commands'",
-    "echo ''",
+
+
+    "echo 'Hello world'",
+
 ];
 
 function init_xterm() {
