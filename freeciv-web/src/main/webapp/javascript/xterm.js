@@ -11,7 +11,7 @@ const term = new Terminal();
 term.open(document.getElementById('terminal'));
 
 // 2. Initialize v86
-const emulator = new V86Starter({
+const emulator = new V86({
     wasm_path: "https://copy.sh/v86/build/v86.wasm",
     memory_size: 32 * 1024 * 1024, // 32MB
     vga_canvas: document.getElementById("vga"),
