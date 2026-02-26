@@ -110,65 +110,16 @@ The system executes these commands after Linux boots:
 # Check/mount proc filesystem (if not already mounted)
 mountpoint -q /proc || mount -t proc proc /proc 2>/dev/null
 
-# Create working directories
-mkdir -p /tmp/work /tmp/freeciv 2>/dev/null
+# Create working directory
+mkdir -p /tmp/work
 
 # Set working directory
 cd /tmp/work
 
-# Create help command with comprehensive documentation
-cat > /usr/local/bin/help << 'HELP_EOF'
-#!/bin/sh
-echo "FreecivWorld v86 Linux Environment - Available Commands:"
-echo ""
-echo "System Information:"
-echo "  uname -a          - Show system information"
-echo "  free              - Display memory usage"
-echo "  df -h             - Show disk space"
-echo "  ps                - List running processes"
-echo ""
-echo "File Operations:"
-echo "  ls [path]         - List directory contents"
-echo "  cd [path]         - Change directory"
-echo "  pwd               - Print working directory"
-echo "  cat [file]        - Display file contents"
-echo "  mkdir [dir]       - Create directory"
-echo ""
-echo "Freeciv Server:"
-echo "  freeciv-server    - Start Freeciv C server (if available)"
-echo "  civserver         - Alternative Freeciv server command"
-echo ""
-echo "Network (if configured):"
-echo "  ifconfig          - Show network interfaces"
-echo "  ping [host]       - Test connectivity"
-echo ""
-echo "Working directories:"
-echo "  /tmp/work         - Current working directory"
-echo "  /tmp/freeciv      - Freeciv server directory"
-echo ""
-echo "Type 'help' anytime to see this message again."
-HELP_EOF
-
-# Make help executable
-chmod +x /usr/local/bin/help 2>/dev/null
-
-# Create convenience aliases
-alias ll='ls -la'
-alias h='help'
-
 # Display ready messages
 echo '[System] Linux environment ready'
 echo '[Info] Working directory: /tmp/work'
-echo '[Info] Type "help" for available commands'
 ```
-
-### Help System (New!)
-Users can now type `help` in the terminal to see available commands:
-- System information commands (uname, free, df, ps)
-- File operations (ls, cd, pwd, cat, mkdir)
-- Freeciv server commands
-- Network diagnostics (if configured)
-- Working directory information
 
 ## File Sharing (9p Filesystem)
 
@@ -259,31 +210,9 @@ window.v86_emulator  // v86 emulator instance
 window.v86_terminal  // xterm.js terminal instance
 ```
 
-### Utility Functions (New!)
-The system now provides convenient utility functions for common operations:
-
+### Emulator Control
 ```javascript
-// Send a command to the Linux shell
-v86_send_command("ls -la");
-v86_send_command("cd /tmp && pwd");
-
-// Start the Freeciv server
-v86_start_freeciv_server({ port: 5556 });
-
-// Get emulator status
-console.log(v86_get_status());
-// Returns: { initialized: true, memory_mb: 32, boot_media: "/v86/linux3.iso", running: true }
-
-// Clear the terminal display
-v86_clear_terminal();
-
-// Restart the emulator (loses all state)
-v86_restart();
-```
-
-### Emulator Control (Low-Level)
-```javascript
-// Send command to Linux (low-level)
+// Send command to Linux
 window.v86_emulator.serial0_send("ls -la\n");
 
 // Restart emulator
@@ -340,32 +269,6 @@ The v86 emulator is initialized in the main game client:
 2. **Terminal UI** can be shown/hidden as needed
 3. **Server management** through terminal commands
 4. **Debugging** capability for development
-
-## Recent Improvements (2026)
-
-### Enhanced Maintainability
-- **Utility Functions**: Added convenient JavaScript functions (`v86_send_command`, `v86_start_freeciv_server`, etc.) for easier interaction with the emulator
-- **Comprehensive Help System**: Built-in `help` command that provides detailed documentation of available commands
-- **Better Documentation**: Improved inline documentation and header comments explaining the architecture
-- **Working Directories**: Created both `/tmp/work` and `/tmp/freeciv` for organized file operations
-
-### Improved User Experience
-- **Help Command**: Users can type `help` at any time to see available commands
-- **Convenience Aliases**: Added `ll` for `ls -la` and `h` for `help`
-- **Better Feedback**: More informative boot messages explaining what's happening
-- **Error Handling**: Improved error handling with color-coded messages (green for success, blue for info, yellow for warnings, red for errors)
-
-### Developer Tools
-- **Download Progress**: Console logs show download progress for large files
-- **Error Reporting**: Better error messages when downloads or initialization fails
-- **Status API**: `v86_get_status()` provides complete emulator status information
-- **Command History**: All sent commands are logged to the console for debugging
-
-### Boot Process Improvements
-- **Multiple Working Directories**: Creates both `/tmp/work` (general purpose) and `/tmp/freeciv` (server-specific)
-- **Error Suppression**: Boot commands silently ignore expected errors (like proc already mounted)
-- **Help System Setup**: Automatically installs the help command during boot
-- **Clean Output**: Reduced clutter in boot messages for better readability
 
 ## Future Improvements
 
