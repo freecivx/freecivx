@@ -4,7 +4,7 @@
 **************************************************************************/
 function init_xterm() {
 
-  const fs = new V86.FileSystem();
+
 
     // 1. Initialize xterm.js
     const term = new Terminal({
@@ -23,7 +23,7 @@ function init_xterm() {
         cdrom: { url: "/v86/linux3.iso" },
         cmdline: "console=ttyS0",
         autostart: true,
-        filesystem: fs,
+        filesystem: {},
     });
 
     // 3. THE BRIDGE: v86 (Output) -> xterm.js (Display)
