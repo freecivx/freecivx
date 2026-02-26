@@ -13,7 +13,7 @@ function init_xterm() {
     term.open(document.getElementById('terminal'));
 
     // 2. Initialize v86 (Note the class name: V86Starter)
-    const emulator = new V86Starter({
+    const emulator = new V86({
         wasm_path: "/v86/v86.wasm",
         memory_size: 32 * 1024 * 1024,
         vga_canvas: document.getElementById("vga"),
