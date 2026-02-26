@@ -8,3 +8,6 @@ Next steps:
 - Network interface between JS and linux.
 - Freeciv C server inside linux.
 - websockify
+
+
+https://github.com/copy/v86/tree/master/bios
