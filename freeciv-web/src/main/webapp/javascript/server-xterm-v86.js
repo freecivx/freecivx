@@ -55,18 +55,26 @@ const V86_CONFIG = {
 
 // Boot initialization commands
 // These commands are sent to the Linux shell after boot completes
+// Each command is sent separately to avoid long command line issues
 const BOOT_COMMANDS = [
     // Check if /proc is already mounted (it usually is during init)
-    // If not, mount it silently (2>/dev/null suppresses errors)
-    "mountpoint -q /proc || mount -t proc proc /proc 2>/dev/null",
+    // If not, mount it silently (errors suppressed with || true)
+    "mountpoint -q /proc || mount -t proc proc /proc 2>&1 >/dev/null || true",
     
     // Create working directory for user operations
-    "mkdir -p /tmp/work",
+    "mkdir -p /tmp/work 2>&1 >/dev/null || true",
     
-    // Set working directory
-    "cd /tmp/work",
+    // Set working directory (use full path to avoid cd issues)
+    "cd /tmp/work 2>&1 >/dev/null || true",
     
-    // Display system information with ANSI color codes
+    // Set up environment variables for Freeciv server
+    "export PATH=/usr/local/bin:/usr/bin:/bin:/usr/local/sbin:/usr/sbin:/sbin",
+    
+    // Create helpful aliases for Freeciv server management
+    "alias ll='ls -lah'",
+    "alias ..='cd ..'",
+    
+    // Display system information
     "echo -e '\\033[1;32m[System]\\033[0m Linux environment ready'",
     "echo -e '\\033[1;34m[Info]\\033[0m Working directory: /tmp/work'",
     "echo -e '\\033[1;34m[Info]\\033[0m Type \"help\" for available commands'",
@@ -133,21 +141,21 @@ function init_xterm() {
 /**
  * Initialize the Linux environment after boot
  * Sends configuration commands to set up the working environment
+ * Commands are sent individually to avoid shell escaping issues
  */
 function initializeLinuxEnvironment(emulator, term) {
     term.writeln(`${COLORS.BLUE}[System]${COLORS.RESET} Initializing environment...`);
     
-    // Join boot commands with AND operator for sequential execution
-    // Use || true to continue even if a command fails
-    const bootSequence = BOOT_COMMANDS
-        .map(cmd => `(${cmd}) || true`)
-        .join(' && ') + '\n';
-    
-    // Send boot sequence to the serial console
-    emulator.serial0_send(bootSequence);
+    // Send each command separately with a newline
+    // This prevents the shell from displaying the entire command sequence
+    // and avoids issues with special characters being HTML-encoded
+    BOOT_COMMANDS.forEach(cmd => {
+        emulator.serial0_send(cmd + '\n');
+    });
     
     // Log configuration for debugging
     console.log("[v86] Boot sequence initialized");
+    console.log("[v86] Commands sent: " + BOOT_COMMANDS.length);
     console.log("[v86] Memory: " + (V86_CONFIG.memory_size / 1024 / 1024) + " MB");
     console.log("[v86] Boot media: " + V86_CONFIG.cdrom.url);
 }
