@@ -1862,3 +1862,17 @@ textarea,
   -ms-user-select: text;
   user-select: text;
 }
+
+/* Ensure the parent takes up the full height of the viewport */
+html, body, #terminal-container {
+    height: 100%;
+    margin: 0;
+    padding: 0;
+}
+
+/* The actual terminal div */
+#terminal {
+    height: 100%;
+    width: 100%;
+    background: #000; /* Match terminal background to prevent white flashes */
+}
