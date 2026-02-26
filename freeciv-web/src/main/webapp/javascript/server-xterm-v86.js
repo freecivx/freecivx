@@ -55,7 +55,7 @@ const V86_CONFIG = {
 const BOOT_COMMANDS = [
 
 
-    "uname -a",
+    "  uname -a",
 
 ];
 
