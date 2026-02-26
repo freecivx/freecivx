@@ -74,6 +74,9 @@ const BOOT_COMMANDS = [
     "alias ll='ls -lah'",
     "alias ..='cd ..'",
     
+    // Create a help command for common operations
+    "alias help='echo -e \"\\033[1;33mFreeciv Server Commands:\\033[0m\" && echo \"  freeciv-server - Start Freeciv server\" && echo \"  ps - List running processes\" && echo \"  free - Show memory usage\" && echo \"  df - Show disk usage\" && echo \"  ll - List files (long format)\" && echo \"'\"",
+    
     // Display system information
     "echo -e '\\033[1;32m[System]\\033[0m Linux environment ready'",
     "echo -e '\\033[1;34m[Info]\\033[0m Working directory: /tmp/work'",
