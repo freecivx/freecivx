@@ -34,7 +34,7 @@ cp -r freeciv-v86/share/freeciv /path/to/v86-buildroot/overlay/usr/local/share/
 git clone https://github.com/novnc/websockify.git
 mkdir -p /path/to/v86-buildroot/overlay/usr/local/lib/python3.x/site-packages/
 cp -r websockify/websockify /path/to/v86-buildroot/overlay/usr/local/lib/python3.x/site-packages/
-cp websockify/run /path/to/v86-buildroot/overlay/usr/local/bin/websockify
+cp websockify/websockify /path/to/v86-buildroot/overlay/usr/local/bin/websockify
 chmod +x /path/to/v86-buildroot/overlay/usr/local/bin/websockify
 
 # 4. Rebuild rootfs.cpio

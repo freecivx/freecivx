@@ -98,7 +98,7 @@ mkdir -p v86-buildroot/overlay/usr/local/lib/python3.x/site-packages/
 cp -r websockify/websockify v86-buildroot/overlay/usr/local/lib/python3.x/site-packages/
 
 # Copy websockify executable
-cp websockify/run v86-buildroot/overlay/usr/local/bin/websockify
+cp websockify/websockify v86-buildroot/overlay/usr/local/bin/websockify
 chmod +x v86-buildroot/overlay/usr/local/bin/websockify
 ```
 
