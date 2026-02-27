@@ -25,7 +25,7 @@ echo "CPU cores: ${NUM_CORES}"
 echo "========================================="
 
 # Clean previous build if requested
-if [ "$1" == "--clean" ]; then
+if [ "$1" = "--clean" ]; then
     echo "Cleaning previous build..."
     rm -rf "${BUILD_DIR}"
     rm -rf "${OUTPUT_DIR}"
@@ -151,29 +151,29 @@ echo "========================================="
 echo ""
 
 if [ -f "${OUTPUT_DIR}/bin/freeciv-web" ]; then
-    echo "✓ Server binary: ${OUTPUT_DIR}/bin/freeciv-web"
+    echo "[OK] Server binary: ${OUTPUT_DIR}/bin/freeciv-web"
     
     # Check if it's actually static
     if file "${OUTPUT_DIR}/bin/freeciv-web" | grep -q "statically linked"; then
-        echo "✓ Binary is statically linked"
+        echo "[OK] Binary is statically linked"
     else
-        echo "⚠ Warning: Binary may not be fully statically linked"
-        echo "  This might cause issues in v86 if required libraries are missing"
+        echo "[WARN] Binary may not be fully statically linked"
+        echo "       This might cause issues in v86 if required libraries are missing"
     fi
     
     # Check if it's 32-bit
     if file "${OUTPUT_DIR}/bin/freeciv-web" | grep -q "80386\|i386\|x86-32"; then
-        echo "✓ Binary is 32-bit x86"
+        echo "[OK] Binary is 32-bit x86"
     else
-        echo "⚠ Warning: Binary is not 32-bit x86"
-        echo "  Architecture: $(file "${OUTPUT_DIR}/bin/freeciv-web" | cut -d: -f2)"
+        echo "[WARN] Binary is not 32-bit x86"
+        echo "       Architecture: $(file "${OUTPUT_DIR}/bin/freeciv-web" | cut -d: -f2)"
     fi
     
     echo ""
     ls -lh "${OUTPUT_DIR}/bin/freeciv-web"
 else
-    echo "✗ Server binary not found!"
-    echo "  Expected at: ${OUTPUT_DIR}/bin/freeciv-web"
+    echo "[FAIL] Server binary not found!"
+    echo "       Expected at: ${OUTPUT_DIR}/bin/freeciv-web"
     exit 1
 fi
 
@@ -189,27 +189,32 @@ echo "========================================="
 echo ""
 echo "To include this Freeciv server in your v86 buildroot rootfs.cpio:"
 echo ""
-echo "1. Copy the binaries and data to your buildroot overlay:"
-echo "   cp -r ${OUTPUT_DIR}/* \$BR2_EXTERNAL/board/v86/rootfs_overlay/usr/local/"
+echo "1. Clone v86-buildroot if you haven't already:"
+echo "   git clone https://github.com/chschnell/v86-buildroot"
+echo "   cd v86-buildroot"
+echo "   make bootstrap"
 echo ""
-echo "2. For websockify support (if needed for WebSocket tunneling):"
+echo "2. Copy the binaries and data to your buildroot overlay:"
+echo "   cp -r ${OUTPUT_DIR}/* board/v86/rootfs_overlay/usr/local/"
+echo ""
+echo "3. For websockify support (if needed for WebSocket tunneling):"
 echo "   - Add python3 package in buildroot menuconfig"
 echo "   - Add python-websockify package or copy websockify.py"
 echo "   - Example: BR2_PACKAGE_PYTHON3=y"
 echo "   - Then get websockify:"
 echo "     git clone https://github.com/novnc/websockify"
-echo "     cp websockify/websockify \$BR2_EXTERNAL/board/v86/rootfs_overlay/usr/local/bin/"
+echo "     cp websockify/websockify board/v86/rootfs_overlay/usr/local/bin/"
 echo ""
-echo "3. Rebuild your rootfs.cpio:"
-echo "   cd \$V86_BUILDROOT_DIR"
+echo "4. Rebuild your rootfs.cpio:"
+echo "   cd /path/to/v86-buildroot"
 echo "   make all"
 echo ""
-echo "4. The resulting rootfs.cpio will contain Freeciv server at:"
+echo "5. The resulting rootfs.cpio will contain Freeciv server at:"
 echo "   /usr/local/bin/freeciv-web"
 echo "   /usr/local/share/freeciv/ (data files)"
 echo ""
-echo "5. To use in v86, copy rootfs.cpio to your web app:"
-echo "   cp build/v86/images/rootfs.cpio /path/to/freeciv-web/src/main/webapp/v86/"
+echo "6. To use in v86, copy rootfs.cpio to your web app:"
+echo "   cp build/v86/images/rootfs.cpio /path/to/freecivworld/freeciv-web/src/main/webapp/v86/"
 echo ""
 echo "For more details on v86 and buildroot, see:"
 echo "  - https://github.com/copy/v86"
