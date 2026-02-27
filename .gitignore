@@ -92,3 +92,9 @@ tomcat.8080
 # Node.js dependencies
 node_modules/
 package-lock.json
+
+# v86 build artifacts
+freeciv/websockify-c/
+freeciv/websockify-v86/
+freeciv/freeciv-v86/
+freeciv/build-v86/
