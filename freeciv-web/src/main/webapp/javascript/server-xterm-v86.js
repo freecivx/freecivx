@@ -8,18 +8,76 @@
  ARCHITECTURE:
  - v86: x86 emulator running in WebAssembly
  - xterm.js: Terminal UI for user interaction
- - linux3.iso: Custom Linux ISO with Freeciv server
+ - bzImage + rootfs.cpio: Custom Linux with Freeciv server
  - Serial bridge: Connects v86 serial output to xterm.js display
  
+ NETWORKING SETUP:
+ The following describes how to enable WebSocket communication between
+ the JavaScript client in the browser and the Freeciv server inside v86:
+ 
+ 1. WEBSOCKIFY INSIDE V86 LINUX:
+    - websockify-c is compiled and included in rootfs.cpio
+    - It acts as a WebSocket-to-TCP proxy inside the v86 Linux
+    - Run inside v86: websockify 8080 localhost:5556
+    - This listens on port 8080 for WebSocket connections
+    - Forwards traffic to Freeciv server on localhost:5556
+ 
+ 2. V86 PORT FORWARDING:
+    - v86 emulator can forward ports from the emulated Linux to the browser
+    - Configure in V86_CONFIG.network_adapter with port_forward option
+    - Example: port_forward: [{guest: 8080, host: 8080}]
+    - This makes the guest's port 8080 accessible as localhost:8080 in browser
+ 
+ 3. JAVASCRIPT WEBSOCKET CLIENT:
+    - Browser JavaScript can connect to the forwarded port
+    - Example: new WebSocket("ws://localhost:8080/")
+    - This reaches websockify inside v86, which forwards to Freeciv server
+ 
+ COMPLETE SETUP STEPS:
+ 
+ A. Inside v86 Linux (via terminal or startup script):
+    # Start Freeciv server on port 5556
+    /usr/local/bin/freeciv-web --port 5556 &
+    
+    # Start websockify-c to proxy WebSocket → Freeciv
+    /usr/local/bin/websockify 8080 localhost:5556 &
+ 
+ B. In v86 configuration (this file):
+    Add to V86_CONFIG:
+    network_adapter: {
+        type: "ws",
+        port_forward: [
+            {guest: 8080, host: 8080}  // Forward websockify port
+        ]
+    }
+ 
+ C. In FreecivWorld JavaScript client:
+    // Connect to Freeciv server via WebSocket
+    var ws = new WebSocket("ws://localhost:8080/");
+    ws.onopen = function() {
+        console.log("Connected to Freeciv server in v86");
+        // Send/receive Freeciv protocol messages
+    };
+ 
+ NETWORK FLOW DIAGRAM:
+ 
+ Browser (FreecivWorld JS)
+    ↓ WebSocket
+ ws://localhost:8080/
+    ↓ [v86 port forward]
+ v86 Linux: localhost:8080 (websockify-c)
+    ↓ TCP
+ v86 Linux: localhost:5556 (freeciv-web server)
+ 
  CONFIGURATION:
- - Memory: 32 MB RAM for the emulated system
- - Boot: linux3.iso via CD-ROM emulation
+ - Memory: 256 MB RAM for the emulated system
+ - Boot: bzImage kernel + rootfs.cpio initramfs
  - Console: Serial console (ttyS0) for terminal access
- - Filesystem: Optional 9p for host-guest file sharing (currently disabled)
  
  MAINTAINABILITY:
  - All configuration in V86_CONFIG object
  - Color codes centralized in COLORS object
+ - Network setup can be enabled by uncommenting network_adapter config
 **************************************************************************/
 
 // Terminal color codes for status messages
@@ -47,6 +105,22 @@ const V86_CONFIG = {
         "rw"             // Mount filesystem as Read/Write
 
     ],
+    // NETWORK CONFIGURATION (currently disabled):
+    // Uncomment and configure the following to enable WebSocket networking
+    // between the browser and Freeciv server inside v86 Linux.
+    //
+    // network_adapter: {
+    //     type: "ws",  // WebSocket-based networking
+    //     port_forward: [
+    //         {guest: 8080, host: 8080}  // Forward websockify port from v86 to browser
+    //     ]
+    // },
+    //
+    // With this configuration:
+    // 1. Start websockify inside v86: websockify 8080 localhost:5556
+    // 2. Start Freeciv server inside v86: freeciv-web --port 5556
+    // 3. Connect from browser: new WebSocket("ws://localhost:8080/")
+    // See header comments above for complete networking setup documentation.
 };
 
 

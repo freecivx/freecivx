@@ -203,13 +203,43 @@ To rebuild or modify rootfs.cpio using v86-buildroot, you need:
    - Copy to buildroot overlay: `board/v86/rootfs_overlay/usr/local/`
    - Include required configuration files
 
-5. **Websockify** (optional, for WebSocket tunneling):
-   - Add Python 3 to buildroot configuration
-   - Include websockify script in rootfs overlay
+5. **websockify-c** (for WebSocket tunneling):
+   - Use `compile_websockify_c_v86.sh` to build static C binary
+   - Copy to buildroot overlay: `board/v86/rootfs_overlay/usr/local/bin/`
+   - C implementation is preferred over Python (no dependencies, better performance)
+   - Source: https://github.com/mittorn/websockify-c
 
 ### Building with v86-buildroot
 
-Recommended approach using v86-buildroot:
+Recommended approach using v86-buildroot with automated integration:
+
+```bash
+# 1. Clone v86-buildroot
+git clone https://github.com/chschnell/v86-buildroot
+cd v86-buildroot
+
+# Bootstrap and configure
+make bootstrap
+make buildroot-defconfig
+
+# 2. Build Freeciv and websockify-c
+cd /path/to/freecivworld/freeciv
+./compile_freeciv_v86.sh
+./compile_websockify_c_v86.sh
+
+# 3. Integrate all files (automated)
+./integrate_v86_buildroot.sh /path/to/v86-buildroot
+
+# 4. Build rootfs
+cd /path/to/v86-buildroot
+make all
+
+# Output files will be in build/v86/images/:
+# - bzImage (kernel)
+# - rootfs.cpio (root filesystem with Freeciv + websockify-c)
+```
+
+Manual approach (if not using integration script):
 
 ```bash
 # Clone v86-buildroot
@@ -220,12 +250,11 @@ cd v86-buildroot
 make bootstrap
 make buildroot-defconfig
 
-# Copy Freeciv binaries to overlay
+# Copy Freeciv binaries and data files to overlay
 cp -r /path/to/freecivworld/freeciv/freeciv-v86/* board/v86/rootfs_overlay/usr/local/
 
-# (Optional) Add websockify
-git clone https://github.com/novnc/websockify
-cp websockify/websockify board/v86/rootfs_overlay/usr/local/bin/
+# Copy websockify-c binary
+cp /path/to/freecivworld/freeciv/websockify-v86/bin/websockify board/v86/rootfs_overlay/usr/local/bin/
 chmod +x board/v86/rootfs_overlay/usr/local/bin/websockify
 
 # Build everything
@@ -258,6 +287,185 @@ If not using v86-buildroot:
 - **v86-buildroot**: https://github.com/chschnell/v86-buildroot - Customized for v86
 - **Buildroot**: https://buildroot.org/ - Automated embedded Linux build system
 - **Docker**: For reproducible builds
+
+## WebSocket Networking Setup
+
+This section describes how to enable network communication between the JavaScript client
+in the browser and the Freeciv C server running inside v86 emulated Linux.
+
+### Overview
+
+The networking architecture uses a multi-layered approach:
+
+1. **Freeciv Server** runs inside v86 Linux on a TCP port (e.g., 5556)
+2. **websockify-c** acts as a WebSocket-to-TCP proxy inside v86 (e.g., port 8080)
+3. **v86 port forwarding** exposes the websockify port to the browser
+4. **JavaScript WebSocket** in the browser connects to the forwarded port
+
+### Network Flow
+
+```
+Browser (FreecivWorld JavaScript)
+    ↓ WebSocket connection
+ws://localhost:8080/
+    ↓ [v86 port forwarding: guest:8080 → host:8080]
+v86 Linux: localhost:8080 (websockify-c)
+    ↓ TCP connection
+v86 Linux: localhost:5556 (freeciv-web server)
+```
+
+### Setup Steps
+
+#### 1. Build and Include websockify-c
+
+```bash
+# Build websockify-c
+cd /path/to/freecivworld/freeciv
+./compile_websockify_c_v86.sh
+
+# Integrate with v86-buildroot
+./integrate_v86_buildroot.sh /path/to/v86-buildroot
+
+# This includes websockify-c in the rootfs at /usr/local/bin/websockify
+```
+
+#### 2. Configure v86 Network Adapter
+
+In `freeciv-web/src/main/webapp/javascript/server-xterm-v86.js`, enable networking:
+
+```javascript
+const V86_CONFIG = {
+    // ... other config ...
+    network_adapter: {
+        type: "ws",  // WebSocket-based networking
+        port_forward: [
+            {guest: 8080, host: 8080}  // Forward websockify port
+        ]
+    }
+};
+```
+
+#### 3. Start Services Inside v86 Linux
+
+After v86 boots, run these commands in the terminal (or add to init script):
+
+```bash
+# Start Freeciv server on port 5556
+/usr/local/bin/freeciv-web --port 5556 &
+
+# Start websockify-c to proxy WebSocket → TCP
+/usr/local/bin/websockify 8080 localhost:5556 &
+```
+
+#### 4. Connect from Browser JavaScript
+
+In your FreecivWorld client JavaScript:
+
+```javascript
+// Connect to Freeciv server via WebSocket
+var ws = new WebSocket("ws://localhost:8080/");
+
+ws.onopen = function() {
+    console.log("Connected to Freeciv server in v86");
+    // Send Freeciv protocol messages
+};
+
+ws.onmessage = function(event) {
+    // Handle messages from Freeciv server
+    console.log("Received:", event.data);
+};
+
+ws.onerror = function(error) {
+    console.error("WebSocket error:", error);
+};
+```
+
+### Automatic Startup (Optional)
+
+To start Freeciv and websockify automatically on boot, create an init script
+in the buildroot overlay:
+
+```bash
+# File: board/v86/rootfs_overlay/etc/init.d/S99freeciv
+#!/bin/sh
+
+case "$1" in
+  start)
+    echo "Starting Freeciv server..."
+    /usr/local/bin/freeciv-web --port 5556 &
+    sleep 2
+    echo "Starting websockify..."
+    /usr/local/bin/websockify 8080 localhost:5556 &
+    ;;
+  stop)
+    echo "Stopping Freeciv services..."
+    killall freeciv-web websockify
+    ;;
+  *)
+    echo "Usage: $0 {start|stop}"
+    exit 1
+esac
+
+exit 0
+```
+
+Make it executable:
+```bash
+chmod +x board/v86/rootfs_overlay/etc/init.d/S99freeciv
+```
+
+### Alternative: Using slirp for NAT Networking
+
+v86 also supports slirp-based networking (user-mode networking):
+
+```javascript
+network_adapter: {
+    type: "slirp",
+    // No port forwarding needed; v86 handles NAT automatically
+}
+```
+
+With slirp, the v86 Linux gets a virtual network interface and can make outbound
+connections, but inbound connections require port forwarding configuration.
+
+### Troubleshooting Networking
+
+#### WebSocket Connection Refused
+**Symptom**: `WebSocket connection to 'ws://localhost:8080/' failed`
+
+**Check**:
+1. Is websockify running inside v86? Run `ps aux | grep websockify`
+2. Is v86 network adapter configured? Check V86_CONFIG.network_adapter
+3. Is port forwarding correct? Check port_forward settings
+
+#### Connection Closes Immediately
+**Symptom**: WebSocket connects but closes right away
+
+**Check**:
+1. Is Freeciv server running? Run `ps aux | grep freeciv-web`
+2. Is Freeciv listening on the right port? Run `netstat -ln | grep 5556`
+3. Check websockify logs for errors
+
+#### Data Not Flowing
+**Symptom**: Connection established but no data transfer
+
+**Check**:
+1. Firewall or security settings blocking traffic
+2. Freeciv server not accepting connections
+3. Protocol mismatch (binary vs. text frames)
+
+### Performance Notes
+
+- **Latency**: Expect 10-50ms additional latency due to emulation overhead
+- **Throughput**: Sufficient for Freeciv protocol (low bandwidth requirements)
+- **Connection Stability**: Generally stable; reconnection logic recommended
+
+### Security Considerations
+
+- WebSocket connections from browser are same-origin by default
+- v86 networking is isolated to the browser tab
+- No access to host system network beyond what v86 exposes
+- Consider TLS (wss://) for production deployments
 
 ## Debugging
 

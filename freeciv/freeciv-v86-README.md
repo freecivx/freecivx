@@ -5,8 +5,23 @@ This directory contains the script to compile Freeciv C server as a static x86 e
 ## Quick Start
 
 ```bash
+# 1. Build Freeciv C server for v86
 ./compile_freeciv_v86.sh
+
+# 2. Build websockify-c for WebSocket support
+./compile_websockify_c_v86.sh
+
+# 3. Integrate with v86-buildroot (if you have it cloned)
+./integrate_v86_buildroot.sh /path/to/v86-buildroot
 ```
+
+## Build Scripts
+
+This directory contains three build scripts:
+
+1. **compile_freeciv_v86.sh** - Builds Freeciv C server as static x86 binary
+2. **compile_websockify_c_v86.sh** - Builds websockify-c for WebSocket support
+3. **integrate_v86_buildroot.sh** - Copies all files to v86-buildroot overlay
 
 ## Overview
 
@@ -61,22 +76,43 @@ cd /path/to/v86-buildroot
 cp -r freeciv-v86/* board/v86/rootfs_overlay/usr/local/
 ```
 
-### Step 2: Add websockify (optional)
+### Step 2: Build websockify-c
 
-If you need WebSocket support for network communication:
+websockify-c is required for WebSocket support for network communication.
+We use the C implementation instead of Python for better performance and no dependencies.
 
 ```bash
-# Add to buildroot configuration
-make buildroot-menuconfig
-# Enable: BR2_PACKAGE_PYTHON3=y
+# Build websockify-c
+./compile_websockify_c_v86.sh
 
-# Add websockify
-git clone https://github.com/novnc/websockify
-cp websockify/websockify board/v86/rootfs_overlay/usr/local/bin/
-chmod +x board/v86/rootfs_overlay/usr/local/bin/websockify
+# This will clone and build https://github.com/mittorn/websockify-c
+# Output: websockify-v86/bin/websockify (statically linked, no dependencies)
 ```
 
-### Step 3: Rebuild rootfs.cpio
+### Step 3: Integrate with buildroot overlay
+
+Use the integration script to copy all files to buildroot:
+
+```bash
+# Assuming you have v86-buildroot cloned
+./integrate_v86_buildroot.sh /path/to/v86-buildroot
+
+# This script will:
+# 1. Copy Freeciv server binary
+# 2. Copy all Freeciv data files (rulesets, nations, scenarios, etc.)
+# 3. Copy websockify-c binary
+# to: board/v86/rootfs_overlay/usr/local/
+```
+
+Alternatively, copy files manually:
+
+```bash
+cd /path/to/v86-buildroot
+cp -r freeciv-v86/* board/v86/rootfs_overlay/usr/local/
+cp websockify-v86/bin/websockify board/v86/rootfs_overlay/usr/local/bin/
+```
+
+### Step 4: Rebuild rootfs.cpio
 
 ```bash
 cd /path/to/v86-buildroot
@@ -85,7 +121,7 @@ make all
 
 This will create a new `rootfs.cpio` in `build/v86/images/` containing your Freeciv server.
 
-### Step 4: Deploy to web application
+### Step 5: Deploy to web application
 
 ```bash
 # Copy the new rootfs.cpio to your FreecivWorld web app
