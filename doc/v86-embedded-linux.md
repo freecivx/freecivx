@@ -157,15 +157,32 @@ filesystem: {
 }
 ```
 
-## Building linux3.iso
+## Building rootfs.cpio with Freeciv Server
 
 ### Current Status
-The linux3.iso is a binary file checked into the repository. Build scripts are not yet documented.
+The system now uses `rootfs.cpio` (initramfs) instead of `linux3.iso`. This is loaded with `bzImage` kernel.
 
-### Requirements for Custom ISO
-To rebuild or modify linux3.iso, you need:
+### Building Freeciv Server for v86
 
-1. **Linux kernel** compiled with:
+A build script is provided to compile the Freeciv C server as a static x86 executable:
+
+```bash
+cd freeciv
+./compile_freeciv_v86.sh
+```
+
+This script:
+- Compiles Freeciv as a statically-linked 32-bit x86 binary
+- Outputs to `freeciv/freeciv-v86/` directory
+- Configures for minimal size and v86 compatibility
+
+See `freeciv/freeciv-v86-README.md` for detailed documentation.
+
+### Requirements for Custom rootfs.cpio
+
+To rebuild or modify rootfs.cpio using v86-buildroot, you need:
+
+1. **Linux kernel** (bzImage) compiled with:
    - `CONFIG_SERIAL_8250=y` (serial console support)
    - `CONFIG_SERIAL_8250_CONSOLE=y`
    - `CONFIG_9P_FS=y` (optional, for 9p filesystem)
@@ -181,18 +198,66 @@ To rebuild or modify linux3.iso, you need:
    - Simple init script that starts a shell on ttyS0
    - Or systemd/sysvinit configured for serial console
 
-4. **Freeciv server** (optional):
-   - Compiled Freeciv C server binaries
-   - Required libraries
-   - Configuration files
+4. **Freeciv server**:
+   - Use `compile_freeciv_v86.sh` to build static binaries
+   - Copy to buildroot overlay: `board/v86/rootfs_overlay/usr/local/`
+   - Include required configuration files
+
+5. **Websockify** (optional, for WebSocket tunneling):
+   - Add Python 3 to buildroot configuration
+   - Include websockify script in rootfs overlay
+
+### Building with v86-buildroot
+
+Recommended approach using v86-buildroot:
+
+```bash
+# Clone v86-buildroot
+git clone https://github.com/chschnell/v86-buildroot
+cd v86-buildroot
+
+# Bootstrap and configure
+make bootstrap
+make buildroot-defconfig
+
+# Copy Freeciv binaries to overlay
+cp -r /path/to/freecivworld/freeciv/freeciv-v86/* board/v86/rootfs_overlay/usr/local/
+
+# (Optional) Add websockify
+git clone https://github.com/novnc/websockify
+cp websockify/websockify board/v86/rootfs_overlay/usr/local/bin/
+chmod +x board/v86/rootfs_overlay/usr/local/bin/websockify
+
+# Build everything
+make all
+
+# Output files will be in build/v86/images/:
+# - bzImage (kernel)
+# - rootfs.cpio (root filesystem)
+```
+
+### Deploying to FreecivWorld
+
+After building, copy the files to the web application:
+
+```bash
+cp build/v86/images/bzImage /path/to/freecivworld/freeciv-web/src/main/webapp/v86/
+cp build/v86/images/rootfs.cpio /path/to/freecivworld/freeciv-web/src/main/webapp/v86/
+```
+
+### Alternative: Using Buildroot directly
+
+If not using v86-buildroot:
+
+1. Get Buildroot and configure for x86 with initramfs
+2. Copy Freeciv files to overlay directory
+3. Build with `make`
+4. Extract `rootfs.cpio` from output
 
 ### Recommended Tools
-- **Buildroot**: Automated embedded Linux build system
+- **v86-buildroot**: https://github.com/chschnell/v86-buildroot - Customized for v86
+- **Buildroot**: https://buildroot.org/ - Automated embedded Linux build system
 - **Docker**: For reproducible builds
-- **mkisofs/genisoimage**: ISO creation tools
-
-### Future Work
-Document the complete build process for linux3.iso to make it maintainable and customizable.
 
 ## Debugging
 
