@@ -53,11 +53,12 @@ The script will:
 ```bash
 # Clone v86 emulator
 git clone https://github.com/copy/v86.git
-
-# Clone v86-buildroot (if you don't have it)
-# Note: v86-buildroot might be a separate repository or in v86/tools/
 cd v86
-# Check for buildroot tools in the v86 repository
+
+# The v86 project includes buildroot tools
+# Check the tools/ or buildroot/ directory for build scripts
+# Alternatively, you can use the copy/buildroot repository:
+# git clone https://github.com/copy/buildroot.git v86-buildroot
 ```
 
 ### Step 2: Prepare the Overlay Directory
@@ -94,6 +95,8 @@ git clone https://github.com/novnc/websockify.git
 # Add to v86-buildroot configuration to include Python3
 
 # Copy websockify
+# Note: Replace 'python3.x' with your actual Python version (e.g., python3.10, python3.11)
+# Or place in a version-independent location: /usr/local/lib/websockify/
 mkdir -p v86-buildroot/overlay/usr/local/lib/python3.x/site-packages/
 cp -r websockify/websockify v86-buildroot/overlay/usr/local/lib/python3.x/site-packages/
 

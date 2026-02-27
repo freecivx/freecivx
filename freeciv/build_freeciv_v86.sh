@@ -49,7 +49,14 @@ cd "${DIR}"
 # Set up build directory
 BUILD_DIR="build-v86"
 OUTPUT_DIR="${DIR}/freeciv-v86"
-NUM_CORES=$(nproc)
+# Detect number of CPU cores with fallback
+if command -v nproc >/dev/null 2>&1; then
+    NUM_CORES=$(nproc)
+elif command -v sysctl >/dev/null 2>&1; then
+    NUM_CORES=$(sysctl -n hw.ncpu 2>/dev/null || echo "1")
+else
+    NUM_CORES=1
+fi
 
 # Detect or set compiler for static builds
 # For best v86 compatibility, use i686-linux-gnu-gcc if available

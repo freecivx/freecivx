@@ -32,6 +32,7 @@ cp -r freeciv-v86/share/freeciv /path/to/v86-buildroot/overlay/usr/local/share/
 
 # 3. Add websockify (for WebSocket support)
 git clone https://github.com/novnc/websockify.git
+# Note: Replace python3.x with your Python version (e.g., python3.10)
 mkdir -p /path/to/v86-buildroot/overlay/usr/local/lib/python3.x/site-packages/
 cp -r websockify/websockify /path/to/v86-buildroot/overlay/usr/local/lib/python3.x/site-packages/
 cp websockify/websockify /path/to/v86-buildroot/overlay/usr/local/bin/websockify
