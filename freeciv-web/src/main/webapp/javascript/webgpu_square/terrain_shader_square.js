@@ -532,14 +532,14 @@ function createTerrainShaderSquareTSL(uniforms) {
     // The offset is based on position along the road for smooth winding
     
     // Extension factor to ensure roads/railroads reach beyond tile edges for seamless connectivity
-    // Increased to 0.5 (50%) to ensure full tile-to-tile connectivity across 3+ tiles
+    // Increased to 0.7 (70%) to ensure full tile-to-tile connectivity across 3+ tiles
     // This ensures roads are continuous when 3 or more tiles in a row have roads
-    const edgeExtension = 0.5;
+    const edgeExtension = 0.7;
     
     // North segment (center to top edge + extension) - winding perpendicular (East-West)
     const northTarget = vec2(0.5, add(1.0, edgeExtension));
     const toNorth = sub(northTarget, center);
-    const hN = clamp(div(dot(tilePosFromCenter, toNorth), dot(toNorth, toNorth)), 0.0, 1.5);
+    const hN = clamp(div(dot(tilePosFromCenter, toNorth), dot(toNorth, toNorth)), 0.0, 2.0);
     // Add winding: offset perpendicular to north direction (along X axis)
     const windingOffsetN = mul(vec2(windingOffset, 0.0), hasAnyRoad);
     const tilePosWindingN = sub(tilePosFromCenter, windingOffsetN);
@@ -549,7 +549,7 @@ function createTerrainShaderSquareTSL(uniforms) {
     // South segment (center to bottom edge - extension) - winding perpendicular (East-West)
     const southTarget = vec2(0.5, sub(0.0, edgeExtension));
     const toSouth = sub(southTarget, center);
-    const hS = clamp(div(dot(tilePosFromCenter, toSouth), dot(toSouth, toSouth)), 0.0, 1.5);
+    const hS = clamp(div(dot(tilePosFromCenter, toSouth), dot(toSouth, toSouth)), 0.0, 2.0);
     const windingOffsetS = mul(vec2(windingOffset, 0.0), hasAnyRoad);
     const tilePosWindingS = sub(tilePosFromCenter, windingOffsetS);
     const distToSouth = sub(sub(tilePosWindingS, mul(toSouth, hS)).length(), roadWidth);
@@ -558,7 +558,7 @@ function createTerrainShaderSquareTSL(uniforms) {
     // East segment (center to right edge + extension) - winding perpendicular (North-South)
     const eastTarget = vec2(add(1.0, edgeExtension), 0.5);
     const toEast = sub(eastTarget, center);
-    const hE = clamp(div(dot(tilePosFromCenter, toEast), dot(toEast, toEast)), 0.0, 1.5);
+    const hE = clamp(div(dot(tilePosFromCenter, toEast), dot(toEast, toEast)), 0.0, 2.0);
     const windingOffsetE = mul(vec2(0.0, windingOffset), hasAnyRoad);
     const tilePosWindingE = sub(tilePosFromCenter, windingOffsetE);
     const distToEast = sub(sub(tilePosWindingE, mul(toEast, hE)).length(), roadWidth);
@@ -567,7 +567,7 @@ function createTerrainShaderSquareTSL(uniforms) {
     // West segment (center to left edge - extension) - winding perpendicular (North-South)
     const westTarget = vec2(sub(0.0, edgeExtension), 0.5);
     const toWest = sub(westTarget, center);
-    const hW = clamp(div(dot(tilePosFromCenter, toWest), dot(toWest, toWest)), 0.0, 1.5);
+    const hW = clamp(div(dot(tilePosFromCenter, toWest), dot(toWest, toWest)), 0.0, 2.0);
     const windingOffsetW = mul(vec2(0.0, windingOffset), hasAnyRoad);
     const tilePosWindingW = sub(tilePosFromCenter, windingOffsetW);
     const distToWest = sub(sub(tilePosWindingW, mul(toWest, hW)).length(), roadWidth);
@@ -576,25 +576,25 @@ function createTerrainShaderSquareTSL(uniforms) {
     // Diagonal segments (extended to corners + extension)
     const neTarget = vec2(add(1.0, edgeExtension), add(1.0, edgeExtension));
     const toNE = sub(neTarget, center);
-    const hNE = clamp(div(dot(tilePosFromCenter, toNE), dot(toNE, toNE)), 0.0, 1.5);
+    const hNE = clamp(div(dot(tilePosFromCenter, toNE), dot(toNE, toNE)), 0.0, 2.0);
     const distToNE = sub(sub(tilePosFromCenter, mul(toNE, hNE)).length(), roadWidth);
     distToRoad = connectNE.select(min(distToRoad, distToNE), distToRoad);
     
     const seTarget = vec2(add(1.0, edgeExtension), sub(0.0, edgeExtension));
     const toSE = sub(seTarget, center);
-    const hSE = clamp(div(dot(tilePosFromCenter, toSE), dot(toSE, toSE)), 0.0, 1.5);
+    const hSE = clamp(div(dot(tilePosFromCenter, toSE), dot(toSE, toSE)), 0.0, 2.0);
     const distToSE = sub(sub(tilePosFromCenter, mul(toSE, hSE)).length(), roadWidth);
     distToRoad = connectSE.select(min(distToRoad, distToSE), distToRoad);
     
     const swTarget = vec2(sub(0.0, edgeExtension), sub(0.0, edgeExtension));
     const toSW = sub(swTarget, center);
-    const hSW = clamp(div(dot(tilePosFromCenter, toSW), dot(toSW, toSW)), 0.0, 1.5);
+    const hSW = clamp(div(dot(tilePosFromCenter, toSW), dot(toSW, toSW)), 0.0, 2.0);
     const distToSW = sub(sub(tilePosFromCenter, mul(toSW, hSW)).length(), roadWidth);
     distToRoad = connectSW.select(min(distToRoad, distToSW), distToRoad);
     
     const nwTarget = vec2(sub(0.0, edgeExtension), add(1.0, edgeExtension));
     const toNW = sub(nwTarget, center);
-    const hNW = clamp(div(dot(tilePosFromCenter, toNW), dot(toNW, toNW)), 0.0, 1.5);
+    const hNW = clamp(div(dot(tilePosFromCenter, toNW), dot(toNW, toNW)), 0.0, 2.0);
     const distToNW = sub(sub(tilePosFromCenter, mul(toNW, hNW)).length(), roadWidth);
     distToRoad = connectNW.select(min(distToRoad, distToNW), distToRoad);
     
