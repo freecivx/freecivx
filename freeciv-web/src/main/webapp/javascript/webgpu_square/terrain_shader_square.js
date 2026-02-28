@@ -116,6 +116,7 @@ function createTerrainShaderSquareTSL(uniforms) {
     const bordersTex = uniforms.borders.value;
     const roadsmapTex = uniforms.roadsmap.value;
     const roadspritesTex = uniforms.roadsprites.value;
+    const riverspritesTex = uniforms.riversprites.value;
     const railroadspritesTex = uniforms.railroadsprites.value;
     const terrainLayersTex = uniforms.terrain_layers.value;
     const terrainAtlasTex = uniforms.terrain_atlas.value;
@@ -143,7 +144,8 @@ function createTerrainShaderSquareTSL(uniforms) {
     // =========================================================================
     // INFRASTRUCTURE CONSTANTS
     // =========================================================================
-    // Road/railroad sprites are stored in DataArrayTexture (texture_2d_array) with 16 layers
+    // Road/railroad/river sprites are stored in DataArrayTexture (texture_2d_array) with 16 layers
+    // Sprite indices: 1-9 for roads, 10-19 for railroads, 20-29 for rivers, 42/43/53 for junctions
     const IRRIGATION_FLAG = 1.0;
     const FARMLAND_FLAG = 2.0;
 
@@ -450,31 +452,42 @@ function createTerrainShaderSquareTSL(uniforms) {
     );
 
     // =========================================================================
-    // ROADS AND RAILROADS RENDERING (using texture_2d_array)
+    // ROADS, RAILROADS AND RIVERS RENDERING (using texture_2d_array)
     // =========================================================================
     const roadData = texture(roadsmapTex, tileCenterUV);
     const roadIndex = floor(mul(roadData.r, 256.0));
     const roadIndex2 = floor(mul(roadData.g, 256.0));
     const roadIndex3 = floor(mul(roadData.b, 256.0));
     
+    const hasRiver = mul(step(19.5, roadIndex), step(roadIndex, 29.5));
+    const hasRiverJunction = mul(step(52.5, roadIndex), step(roadIndex, 53.5));
     const hasRoad = mul(step(0.5, roadIndex), step(roadIndex, 9.5));
     const hasRoadJunction = mul(step(41.5, roadIndex), step(roadIndex, 42.5));
     const hasRailroad = mul(step(9.5, roadIndex), step(roadIndex, 19.5));
     const hasRailJunction = mul(step(42.5, roadIndex), step(roadIndex, 43.5));
     
     // Second texture from G channel
+    const hasRiver2 = mul(step(19.5, roadIndex2), step(roadIndex2, 29.5));
+    const hasRiverJunction2 = mul(step(52.5, roadIndex2), step(roadIndex2, 53.5));
     const hasRoad2 = mul(step(0.5, roadIndex2), step(roadIndex2, 9.5));
     const hasRoadJunction2 = mul(step(41.5, roadIndex2), step(roadIndex2, 42.5));
     const hasRailroad2 = mul(step(9.5, roadIndex2), step(roadIndex2, 19.5));
     const hasRailJunction2 = mul(step(42.5, roadIndex2), step(roadIndex2, 43.5));
     
     // Third texture from B channel
+    const hasRiver3 = mul(step(19.5, roadIndex3), step(roadIndex3, 29.5));
+    const hasRiverJunction3 = mul(step(52.5, roadIndex3), step(roadIndex3, 53.5));
     const hasRoad3 = mul(step(0.5, roadIndex3), step(roadIndex3, 9.5));
     const hasRoadJunction3 = mul(step(41.5, roadIndex3), step(roadIndex3, 42.5));
     const hasRailroad3 = mul(step(9.5, roadIndex3), step(roadIndex3, 19.5));
     const hasRailJunction3 = mul(step(42.5, roadIndex3), step(roadIndex3, 43.5));
     
     // Calculate layer indices for texture array sampling
+    // River sprite layer selection (indices 20-29 for regular rivers)
+    const riverLayerIndex = int(sub(roadIndex, 20.0));
+    const riverLayerIndex2 = int(sub(roadIndex2, 20.0));
+    const riverLayerIndex3 = int(sub(roadIndex3, 20.0));
+    
     // Road sprite layer selection (indices 1-9 for regular roads)
     const roadLayerIndex = int(sub(roadIndex, 1.0));  // Convert 1-based to 0-based layer (0-8), as integer
     const roadLayerIndex2 = int(sub(roadIndex2, 1.0));
@@ -484,6 +497,13 @@ function createTerrainShaderSquareTSL(uniforms) {
     const railLayerIndex = int(sub(roadIndex, 10.0));  // Convert 10-based to 0-based layer (0-9), as integer
     const railLayerIndex2 = int(sub(roadIndex2, 10.0));
     const railLayerIndex3 = int(sub(roadIndex3, 10.0));
+    
+    // Sample river sprite using texture array with vec2 UV and integer layer index
+    // For texture_2d_array (DataArrayTexture), pass layer index as third parameter
+    const riverSpriteUV = vec2(localX, localY);
+    const riverSprite = texture(riverspritesTex, riverSpriteUV).depth(riverLayerIndex);
+    const riverSprite2 = texture(riverspritesTex, riverSpriteUV).depth(riverLayerIndex2);
+    const riverSprite3 = texture(riverspritesTex, riverSpriteUV).depth(riverLayerIndex3);
     
     // Sample road sprite using texture array with vec2 UV and integer layer index
     // For texture_2d_array (DataArrayTexture), pass layer index as third parameter
@@ -500,8 +520,49 @@ function createTerrainShaderSquareTSL(uniforms) {
     
     // Junction sprites - 4-way junctions use layer 0 (top-left sprite in original grid)
     const junctionUV = vec2(localX, localY);
+    const riverJunctionSprite = texture(riverspritesTex, junctionUV).depth(int(0));
     const roadJunctionSprite = texture(roadspritesTex, junctionUV).depth(int(0));
     const railJunctionSprite = texture(railroadspritesTex, junctionUV).depth(int(0));
+    
+    // Blend rivers onto terrain first (lowest layer, rendered before roads)
+    const riverAlpha = mul(hasRiver, riverSprite.a);
+    finalColor = vec4(
+        mix(finalColor.rgb, riverSprite.rgb, mul(riverAlpha, 0.9)),
+        finalColor.a
+    );
+    
+    // Blend second river texture (from G channel)
+    const riverAlpha2 = mul(hasRiver2, riverSprite2.a);
+    finalColor = vec4(
+        mix(finalColor.rgb, riverSprite2.rgb, mul(riverAlpha2, 0.9)),
+        finalColor.a
+    );
+    
+    // Blend third river texture (from B channel)
+    const riverAlpha3 = mul(hasRiver3, riverSprite3.a);
+    finalColor = vec4(
+        mix(finalColor.rgb, riverSprite3.rgb, mul(riverAlpha3, 0.9)),
+        finalColor.a
+    );
+    
+    // Blend river junctions separately (index 53 only)
+    const riverJunctionAlpha = mul(hasRiverJunction, riverJunctionSprite.a);
+    finalColor = vec4(
+        mix(finalColor.rgb, riverJunctionSprite.rgb, mul(riverJunctionAlpha, 0.9)),
+        finalColor.a
+    );
+    
+    const riverJunctionAlpha2 = mul(hasRiverJunction2, riverJunctionSprite.a);
+    finalColor = vec4(
+        mix(finalColor.rgb, riverJunctionSprite.rgb, mul(riverJunctionAlpha2, 0.9)),
+        finalColor.a
+    );
+    
+    const riverJunctionAlpha3 = mul(hasRiverJunction3, riverJunctionSprite.a);
+    finalColor = vec4(
+        mix(finalColor.rgb, riverJunctionSprite.rgb, mul(riverJunctionAlpha3, 0.9)),
+        finalColor.a
+    );
     
     // Blend roads onto terrain
     const roadAlpha = mul(hasRoad, roadSprite.a);
