@@ -68,9 +68,6 @@ function save_game()
 		bgiframe: true,
 		modal: true,
 		width: "65%",
-		close : function(){
-		  keyboard_input = true;
-                        },
 		buttons: [
 			{
 				text: "Save Game",

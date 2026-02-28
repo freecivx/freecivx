@@ -923,7 +923,6 @@ function city_dialog_close_handler()
     active_city = null;
 
   }
-  keyboard_input=true;
   worklist_dialog_active = false;
   map_known_dirty = true;
 }
@@ -989,14 +988,12 @@ function city_name_dialog(suggested_name, unit_id) {
 			modal: true,
 			width: "300",
 			close: function() {
-				keyboard_input=true;
                 act_sel_queue_done(unit_id);
 			},
 			buttons: [	{
 					text: "Cancel",
 				        click: function() {
 						$("#city_name_dialog").remove();
-                        keyboard_input=true;
                         act_sel_queue_done(unit_id);
 					}
 				},{
@@ -1014,7 +1011,6 @@ function city_name_dialog(suggested_name, unit_id) {
                           unit_id, actor_unit['tile'], 0,
                           encodeURIComponent(name));
 						$("#city_name_dialog").remove();
-						keyboard_input=true;
                         act_sel_queue_done(unit_id);
 					}
 					}
@@ -1032,13 +1028,11 @@ function city_name_dialog(suggested_name, unit_id) {
       request_unit_do_action(ACTION_FOUND_CITY,
         unit_id, actor_unit['tile'], 0, encodeURIComponent(name));
 	  $("#city_name_dialog").remove();
-      keyboard_input=true;
       act_sel_queue_done(unit_id);
     }
   });
 
   blur_input_on_touchdevice();
-  keyboard_input=false;
 
 }
 
@@ -1345,14 +1339,10 @@ function rename_city()
 			bgiframe: true,
 			modal: true,
 			width: "300",
-			close: function() {
-				keyboard_input=true;
-			},
 			buttons: [	{
 					text: "Cancel",
 				        click: function() {
 						$("#city_name_dialog").remove();
-        					keyboard_input=true;
 					}
 				},{
 					text: "Ok",
@@ -1367,7 +1357,6 @@ function rename_city()
 						var packet = {"pid" : packet_city_rename, "name" : encodeURIComponent(name), "city_id" : active_city['id'] };
 						send_request(JSON.stringify(packet));
 						$("#city_name_dialog").remove();
-						keyboard_input=true;
 					}
 					}
 				]
@@ -1382,7 +1371,6 @@ function rename_city()
       var packet = {"pid" : packet_city_rename, "name" : encodeURIComponent(name), "city_id" : active_city['id'] };
       send_request(JSON.stringify(packet));
       $("#city_name_dialog").remove();
-      keyboard_input=true;
     }
   });
 }
@@ -2074,8 +2062,8 @@ function get_city_state(pcity)
 **************************************************************************/
 function city_keyboard_listener(ev)
 {
-  // Check if focus is in chat field, where these keyboard events are ignored.
-  if ($('input:focus').length > 0 || !keyboard_input) return;
+  // Check if focus is in an input or textarea field, where these keyboard events are ignored.
+  if ($('input:focus, textarea:focus').length > 0) return;
 
   if (C_S_RUNNING != client_state()) return;
 
