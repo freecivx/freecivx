@@ -522,17 +522,25 @@ function createTerrainShaderTSL(uniforms) {
     // -------------------------------------------------------------------------
     // Procedural Road Shape using Distance Fields
     // -------------------------------------------------------------------------
-    const roadWidth = 0.08;  // Half-width of the road
-    const edgeSoftness = 0.01;  // Anti-aliasing
+    const roadWidth = 0.05;  // Half-width of the road (narrower for better definition)
+    const edgeSoftness = 0.008;  // Anti-aliasing (slightly sharper)
     
     // Current position within tile [0,1]
     const tilePos = vec2(localX, localY);
     const center = vec2(0.5, 0.5);
+    
+    // Add procedural winding to roads for more natural appearance
+    // Use noise to slightly offset the path (only for roads, not railroads)
+    const windingScale = 8.0;
+    const windingCoord = mul(add(tilePos, vec2(mul(tileX, 0.5), mul(tileY, 0.5))), windingScale);
+    const windingNoise = fract(mul(sin(dot(windingCoord, vec2(12.9898, 78.233))), 43758.5453));
+    const windingOffset = mul(sub(windingNoise, 0.5), 0.03);  // Small offset for winding
+    
     const tilePosFromCenter = sub(tilePos, center);
     
     // Central hub - circle at tile center (SDF for circle: length(p) - r)
     const distToCenter = tilePosFromCenter.length();
-    const hubRadius = 0.06;
+    const hubRadius = 0.04;  // Smaller hub to match narrower roads
     let distToRoad = sub(distToCenter, hubRadius);
     
     // Helper function to calculate distance to a line segment (as TSL nodes)
@@ -543,32 +551,44 @@ function createTerrainShaderTSL(uniforms) {
     //   h = saturate(dot(pa, ba) / dot(ba, ba))
     //   return length(pa - ba * h) - r
     
-    // North segment (center to top edge)
+    // Apply winding effect only to roads (not railroads) by adding perpendicular offset
+    // The offset is based on position along the road for smooth winding
+    
+    // North segment (center to top edge) - winding perpendicular (East-West)
     const northTarget = vec2(0.5, 1.0);
     const toNorth = sub(northTarget, center);
     const hN = clamp(div(dot(tilePosFromCenter, toNorth), dot(toNorth, toNorth)), 0.0, 1.0);
-    const distToNorth = sub(sub(tilePosFromCenter, mul(toNorth, hN)).length(), roadWidth);
+    // Add winding: offset perpendicular to north direction (along X axis)
+    const windingOffsetN = mul(vec2(windingOffset, 0.0), hasAnyRoad);
+    const tilePosWindingN = sub(tilePosFromCenter, windingOffsetN);
+    const distToNorth = sub(sub(tilePosWindingN, mul(toNorth, hN)).length(), roadWidth);
     distToRoad = connectN.select(min(distToRoad, distToNorth), distToRoad);
     
-    // South segment (center to bottom edge)
+    // South segment (center to bottom edge) - winding perpendicular (East-West)
     const southTarget = vec2(0.5, 0.0);
     const toSouth = sub(southTarget, center);
     const hS = clamp(div(dot(tilePosFromCenter, toSouth), dot(toSouth, toSouth)), 0.0, 1.0);
-    const distToSouth = sub(sub(tilePosFromCenter, mul(toSouth, hS)).length(), roadWidth);
+    const windingOffsetS = mul(vec2(windingOffset, 0.0), hasAnyRoad);
+    const tilePosWindingS = sub(tilePosFromCenter, windingOffsetS);
+    const distToSouth = sub(sub(tilePosWindingS, mul(toSouth, hS)).length(), roadWidth);
     distToRoad = connectS.select(min(distToRoad, distToSouth), distToRoad);
     
-    // East segment (center to right edge)
+    // East segment (center to right edge) - winding perpendicular (North-South)
     const eastTarget = vec2(1.0, 0.5);
     const toEast = sub(eastTarget, center);
     const hE = clamp(div(dot(tilePosFromCenter, toEast), dot(toEast, toEast)), 0.0, 1.0);
-    const distToEast = sub(sub(tilePosFromCenter, mul(toEast, hE)).length(), roadWidth);
+    const windingOffsetE = mul(vec2(0.0, windingOffset), hasAnyRoad);
+    const tilePosWindingE = sub(tilePosFromCenter, windingOffsetE);
+    const distToEast = sub(sub(tilePosWindingE, mul(toEast, hE)).length(), roadWidth);
     distToRoad = connectE.select(min(distToRoad, distToEast), distToRoad);
     
-    // West segment (center to left edge)
+    // West segment (center to left edge) - winding perpendicular (North-South)
     const westTarget = vec2(0.0, 0.5);
     const toWest = sub(westTarget, center);
     const hW = clamp(div(dot(tilePosFromCenter, toWest), dot(toWest, toWest)), 0.0, 1.0);
-    const distToWest = sub(sub(tilePosFromCenter, mul(toWest, hW)).length(), roadWidth);
+    const windingOffsetW = mul(vec2(0.0, windingOffset), hasAnyRoad);
+    const tilePosWindingW = sub(tilePosFromCenter, windingOffsetW);
+    const distToWest = sub(sub(tilePosWindingW, mul(toWest, hW)).length(), roadWidth);
     distToRoad = connectW.select(min(distToRoad, distToWest), distToRoad);
     
     // Diagonal segments
@@ -620,10 +640,10 @@ function createTerrainShaderTSL(uniforms) {
     const noiseValue3 = fract(mul(sin(dot(noiseCoord3, vec2(67.234, 98.456))), 43758.5453));
     const combinedNoise = mul(add(add(noiseValue1, mul(noiseValue2, 0.6)), mul(noiseValue3, 0.3)), 0.526);
     
-    // Road base color - warmer brown/tan for dirt roads with more variation
-    const roadBaseColor = vec3(0.38, 0.32, 0.24);     // Lighter base
-    const roadMidColor = vec3(0.30, 0.26, 0.19);      // Mid tone
-    const roadDarkColor = vec3(0.20, 0.17, 0.13);     // Darker variation
+    // Road base color - higher contrast brown/tan for dirt roads
+    const roadBaseColor = vec3(0.45, 0.37, 0.26);     // Lighter, more saturated base
+    const roadMidColor = vec3(0.34, 0.28, 0.20);      // Mid tone with better contrast
+    const roadDarkColor = vec3(0.22, 0.18, 0.14);     // Darker variation with more contrast
     
     // Use noise to blend between three color levels for more realistic appearance
     const roadColor1 = mix(roadBaseColor, roadMidColor, step(0.35, combinedNoise));
@@ -660,17 +680,17 @@ function createTerrainShaderTSL(uniforms) {
     const centerLineColor = vec3(0.90, 0.85, 0.50);
     const roadColorWithLine = mix(roadColorWithNoise, centerLineColor, mul(centerLineMask, 0.75));
     
-    // Add darker edge borders for definition
-    const edgeDarkenColor = vec3(0.12, 0.10, 0.08);
-    const roadColorWithEdges = mix(roadColorWithLine, edgeDarkenColor, mul(edgeMask, 0.6));
+    // Add darker edge borders for definition (higher contrast)
+    const edgeDarkenColor = vec3(0.10, 0.08, 0.06);  // Darker edges for better contrast
+    const roadColorWithEdges = mix(roadColorWithLine, edgeDarkenColor, mul(edgeMask, 0.7));
     
     // -------------------------------------------------------------------------
     // Railroad-Specific Rendering (sleepers/ties pattern)
     // -------------------------------------------------------------------------
-    const sleeperWidth = 0.018;      // Slightly wider sleepers
-    const sleeperSpacing = 0.10;     // Closer spacing for better visibility
-    const railWidth = 0.012;         // Width of individual rails
-    const railGap = 0.045;           // Gap between two rails
+    const sleeperWidth = 0.016;      // Narrower sleepers for refined look
+    const sleeperSpacing = 0.09;     // Tighter spacing for better definition
+    const railWidth = 0.010;         // Narrower individual rails
+    const railGap = 0.038;           // Narrower gap between rails
     
     // Calculate distance along the track for sleeper placement
     // Use dominant connection direction to align sleepers perpendicular to track
@@ -707,13 +727,13 @@ function createTerrainShaderTSL(uniforms) {
     const railCenterDist = abs(sub(distFromCenterLine, mul(railGap, 0.5)));
     const railCenterHighlight = clamp(sub(1.0, mul(railCenterDist, 100.0)), 0.0, 1.0);
     
-    // Railroad colors
-    const railMetalColor = vec3(0.48, 0.50, 0.53);      // Metallic for rails
-    const railShineColor = vec3(0.70, 0.72, 0.75);      // Bright highlight on rails
-    const railDarkColor = vec3(0.35, 0.37, 0.40);       // Darker rail edges
-    const sleeperWoodColor = vec3(0.18, 0.13, 0.08);    // Dark weathered wood
-    const sleeperDarkColor = vec3(0.12, 0.09, 0.06);    // Even darker variation
-    const gravelColor = vec3(0.25, 0.23, 0.20);         // Gravel/ballast between tracks
+    // Railroad colors - higher contrast
+    const railMetalColor = vec3(0.52, 0.54, 0.58);      // Brighter metallic for rails
+    const railShineColor = vec3(0.75, 0.77, 0.80);      // Enhanced highlight on rails
+    const railDarkColor = vec3(0.30, 0.32, 0.35);       // Darker rail edges for contrast
+    const sleeperWoodColor = vec3(0.16, 0.12, 0.08);    // Darker weathered wood
+    const sleeperDarkColor = vec3(0.10, 0.08, 0.05);    // Very dark variation for contrast
+    const gravelColor = vec3(0.28, 0.26, 0.22);         // Lighter gravel/ballast for contrast
     
     // Add texture to sleepers with variation
     const sleeperNoise = fract(mul(sin(dot(mul(tilePos, 20.0), vec2(38.456, 67.234))), 43758.5453));
@@ -727,9 +747,9 @@ function createTerrainShaderTSL(uniforms) {
     const railBaseLayer = mix(gravelColor, railColorShiny, mul(doubleRailMask, 0.98));
     const railColor = mix(railBaseLayer, sleeperColorVaried, mul(sleeperPattern, 0.90));
     
-    // Add edge definition to railroad
-    const railEdgeColor = vec3(0.08, 0.06, 0.04);
-    const railColorWithEdges = mix(railColor, railEdgeColor, mul(edgeMask, 0.5));
+    // Add edge definition to railroad (higher contrast)
+    const railEdgeColor = vec3(0.06, 0.05, 0.03);  // Darker edges for better definition
+    const railColorWithEdges = mix(railColor, railEdgeColor, mul(edgeMask, 0.6));
     
     // Choose road or rail color
     const finalRoadColor = hasAnyRail.select(railColorWithEdges, roadColorWithEdges);
