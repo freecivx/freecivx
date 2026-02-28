@@ -1862,3 +1862,36 @@ textarea,
   -ms-user-select: text;
   user-select: text;
 }
+
+/* Game Command Center Chat Styles */
+.user-msg {
+  color: #4af;
+  margin: 3px 0;
+  font-size: 11px;
+}
+
+.ai-msg {
+  color: #aaa;
+  margin: 3px 0;
+  font-size: 11px;
+}
+
+.system-msg {
+  color: #0f0;
+  margin: 3px 0;
+  font-style: italic;
+  font-size: 11px;
+}
+
+.error-msg {
+  color: #f44;
+  margin: 3px 0;
+  font-size: 11px;
+}
+
+.success-msg {
+  color: #0f0;
+  margin: 3px 0;
+  font-weight: bold;
+  font-size: 11px;
+}
