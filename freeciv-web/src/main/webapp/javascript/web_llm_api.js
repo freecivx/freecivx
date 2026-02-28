@@ -391,6 +391,15 @@ function setup_command_center_listeners() {
       handle_command_center_input();
     }
   });
+  
+  // Focus/blur handlers to disable/enable keyboard shortcuts
+  $("#command_center_input").off('focus').on('focus', function() {
+    keyboard_input = false;
+  });
+  
+  $("#command_center_input").off('blur').on('blur', function() {
+    keyboard_input = true;
+  });
 }
 
 /**
