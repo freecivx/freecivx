@@ -996,15 +996,6 @@ function show_intro_dialog(title, message) {
 				icon :"ui-icon-gear"
 			  },
               {
-                  text : "Local",
-                  click : function() {
-                    dialog_close_trigger = "button";
-                    standalone_mode = true;
-                    pregame_handle_user(false);
-                  },
-                  icon : "ui-icon-signal-diag"
-              },
-              {
                   text : "New user",
                   click : function() {
                   	$("#fciv-intro").hide();
