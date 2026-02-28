@@ -913,7 +913,7 @@ function append_command_center_message(message, type, id, typewriter = false) {
   
   // Create message element - use div instead of p for complex HTML content
   const msg_id = id || `msg_${Date.now()}`;
-  const msg_html = `<div id='${msg_id}' class='${css_class}' style='margin: 5px 0;'>${timestamp}<span class='msg-content'></span></div>`;
+  const msg_html = `<div id='${msg_id}' class='${css_class}' style='margin: 5px 0;'>${timestamp}<div class='msg-content'></div></div>`;
   chat_div.append(msg_html);
   
   const msg_element = $(`#${msg_id} .msg-content`);
