@@ -152,6 +152,12 @@ public class NewUser extends HttpServlet {
 	}
 
 	public void sendEmail(String to, String subject, String body) throws MessagingException, IOException {
+		try {
+			Thread.sleep(5000);
+		} catch (InterruptedException e) {
+			Thread.currentThread().interrupt(); 
+		}
+
 		Properties prop = new Properties();
 		prop.load(getServletContext().getResourceAsStream("/WEB-INF/config.properties"));
 
