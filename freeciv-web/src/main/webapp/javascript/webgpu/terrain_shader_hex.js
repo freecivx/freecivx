@@ -764,6 +764,151 @@ function createTerrainShaderTSL(uniforms) {
         finalColor.a
     );
 
+    // =========================================================================
+    // RIVERS RENDERING (Procedural - using math only)
+    // =========================================================================
+    // Sample river data from riversmap texture
+    const riversmapTex = uniforms.riversmap.value;
+    const riverData = texture(riversmapTex, tileCenterUV);
+    const riverIndex = floor(mul(riverData.r, 256.0));
+    
+    // Detect river presence (1-9 for directional, 42 for junction)
+    const hasRiver = mul(step(0.5, riverIndex), step(riverIndex, 9.5));
+    const hasRiverJunction = mul(step(41.5, riverIndex), step(riverIndex, 42.5));
+    const hasAnyRiver = max(hasRiver, hasRiverJunction);
+    
+    // -------------------------------------------------------------------------
+    // Decode River Connectivity from riverIndex
+    // -------------------------------------------------------------------------
+    // River encoding: 1=single, 2=N, 3=NE, 4=S, 5=SE, 6=W, 7=SW, 8=E, 9=NW, 42=junction
+    const riverIndexForDecoding = riverIndex;
+    
+    // Decode connections (each direction has a specific index value or junction)
+    const riverConnectN = riverIndexForDecoding.greaterThanEqual(2.0).and(riverIndexForDecoding.lessThanEqual(2.5))
+                         .or(riverIndexForDecoding.greaterThanEqual(32.0)); // junction
+    const riverConnectE = riverIndexForDecoding.greaterThanEqual(8.0).and(riverIndexForDecoding.lessThanEqual(8.5))
+                         .or(riverIndexForDecoding.greaterThanEqual(32.0)); // junction
+    const riverConnectS = riverIndexForDecoding.greaterThanEqual(4.0).and(riverIndexForDecoding.lessThanEqual(4.5))
+                         .or(riverIndexForDecoding.greaterThanEqual(32.0)); // junction
+    const riverConnectW = riverIndexForDecoding.greaterThanEqual(6.0).and(riverIndexForDecoding.lessThanEqual(6.5))
+                         .or(riverIndexForDecoding.greaterThanEqual(32.0)); // junction
+    
+    // Diagonal connections
+    const riverConnectNE = riverIndexForDecoding.greaterThanEqual(3.0).and(riverIndexForDecoding.lessThanEqual(3.5));
+    const riverConnectSE = riverIndexForDecoding.greaterThanEqual(5.0).and(riverIndexForDecoding.lessThanEqual(5.5));
+    const riverConnectSW = riverIndexForDecoding.greaterThanEqual(7.0).and(riverIndexForDecoding.lessThanEqual(7.5));
+    const riverConnectNW = riverIndexForDecoding.greaterThanEqual(9.0).and(riverIndexForDecoding.lessThanEqual(9.5));
+    
+    // -------------------------------------------------------------------------
+    // Procedural River Shape using Distance Fields (with Strong Winding)
+    // -------------------------------------------------------------------------
+    const riverWidth = 0.06;  // Half-width of the river (wider than roads)
+    const riverEdgeSoftness = 0.012;  // Softer edges for water
+    
+    // Add strong procedural winding to rivers for natural meandering appearance
+    const riverWindingScale = 6.0;  // Lower frequency for longer curves
+    const riverWindingCoord = mul(add(tilePos, vec2(mul(tileX, 0.5), mul(tileY, 0.5))), riverWindingScale);
+    const riverWindingNoise1 = fract(mul(sin(dot(riverWindingCoord, vec2(12.9898, 78.233))), 43758.5453));
+    const riverWindingNoise2 = fract(mul(sin(dot(mul(riverWindingCoord, 1.3), vec2(45.123, 31.789))), 43758.5453));
+    // Combine two noise layers for more complex winding pattern
+    const riverWindingOffset = mul(sub(add(riverWindingNoise1, mul(riverWindingNoise2, 0.5)), 0.75), 0.08);
+    
+    // Central hub - circle at tile center
+    let distToRiver = sub(distToCenter, hubRadius);
+    
+    // North segment with strong winding perpendicular (East-West)
+    const riverWindingOffsetN = vec2(riverWindingOffset, 0.0);
+    const tilePosRiverWindingN = sub(tilePosFromCenter, riverWindingOffsetN);
+    const distToRiverNorth = sub(sub(tilePosRiverWindingN, mul(toNorth, hN)).length(), riverWidth);
+    distToRiver = riverConnectN.select(min(distToRiver, distToRiverNorth), distToRiver);
+    
+    // South segment with strong winding perpendicular (East-West)
+    const riverWindingOffsetS = vec2(riverWindingOffset, 0.0);
+    const tilePosRiverWindingS = sub(tilePosFromCenter, riverWindingOffsetS);
+    const distToRiverSouth = sub(sub(tilePosRiverWindingS, mul(toSouth, hS)).length(), riverWidth);
+    distToRiver = riverConnectS.select(min(distToRiver, distToRiverSouth), distToRiver);
+    
+    // East segment with strong winding perpendicular (North-South)
+    const riverWindingOffsetE = vec2(0.0, riverWindingOffset);
+    const tilePosRiverWindingE = sub(tilePosFromCenter, riverWindingOffsetE);
+    const distToRiverEast = sub(sub(tilePosRiverWindingE, mul(toEast, hE)).length(), riverWidth);
+    distToRiver = riverConnectE.select(min(distToRiver, distToRiverEast), distToRiver);
+    
+    // West segment with strong winding perpendicular (North-South)
+    const riverWindingOffsetW = vec2(0.0, riverWindingOffset);
+    const tilePosRiverWindingW = sub(tilePosFromCenter, riverWindingOffsetW);
+    const distToRiverWest = sub(sub(tilePosRiverWindingW, mul(toWest, hW)).length(), riverWidth);
+    distToRiver = riverConnectW.select(min(distToRiver, distToRiverWest), distToRiver);
+    
+    // Diagonal segments (also with winding)
+    const riverWindingOffsetDiag = mul(vec2(riverWindingOffset, riverWindingOffset), 0.707);
+    const tilePosRiverWindingNE = sub(tilePosFromCenter, riverWindingOffsetDiag);
+    const distToRiverNE = sub(sub(tilePosRiverWindingNE, mul(toNE, hNE)).length(), riverWidth);
+    distToRiver = riverConnectNE.select(min(distToRiver, distToRiverNE), distToRiver);
+    
+    const tilePosRiverWindingSE = sub(tilePosFromCenter, vec2(riverWindingOffset, mul(riverWindingOffset, -1.0)));
+    const distToRiverSE = sub(sub(tilePosRiverWindingSE, mul(toSE, hSE)).length(), riverWidth);
+    distToRiver = riverConnectSE.select(min(distToRiver, distToRiverSE), distToRiver);
+    
+    const tilePosRiverWindingSW = sub(tilePosFromCenter, riverWindingOffsetDiag);
+    const distToRiverSW = sub(sub(tilePosRiverWindingSW, mul(toSW, hSW)).length(), riverWidth);
+    distToRiver = riverConnectSW.select(min(distToRiver, distToRiverSW), distToRiver);
+    
+    const tilePosRiverWindingNW = sub(tilePosFromCenter, vec2(mul(riverWindingOffset, -1.0), riverWindingOffset));
+    const distToRiverNW = sub(sub(tilePosRiverWindingNW, mul(toNW, hNW)).length(), riverWidth);
+    distToRiver = riverConnectNW.select(min(distToRiver, distToRiverNW), distToRiver);
+    
+    // Convert distance to mask (1 = in river, 0 = out of river)
+    const riverMask = clamp(sub(1.0, div(distToRiver, riverEdgeSoftness)), 0.0, 1.0);
+    
+    // -------------------------------------------------------------------------
+    // River Appearance: Blue water with Yellow/Sandy shoreline
+    // -------------------------------------------------------------------------
+    // Multi-scale noise for water texture variation
+    const riverNoiseScale1 = 30.0;
+    const riverNoiseScale2 = 8.0;
+    const riverNoiseCoord1 = mul(add(tilePos, vec2(mul(tileX, 0.5), mul(tileY, 0.5))), riverNoiseScale1);
+    const riverNoiseCoord2 = mul(add(tilePos, vec2(mul(tileX, 0.3), mul(tileY, 0.3))), riverNoiseScale2);
+    
+    const riverNoiseValue1 = fract(mul(sin(dot(riverNoiseCoord1, vec2(12.9898, 78.233))), 43758.5453));
+    const riverNoiseValue2 = fract(mul(sin(dot(riverNoiseCoord2, vec2(45.1523, 31.789))), 43758.5453));
+    const riverCombinedNoise = mul(add(riverNoiseValue1, mul(riverNoiseValue2, 0.5)), 0.667);
+    
+    // River water colors - vibrant blue with depth variation
+    const riverDeepBlue = vec3(0.15, 0.35, 0.65);      // Deep water blue
+    const riverLightBlue = vec3(0.25, 0.50, 0.75);     // Lighter blue for shallow areas
+    const riverWaterColor = mix(riverDeepBlue, riverLightBlue, mul(riverCombinedNoise, 0.6));
+    
+    // Shoreline/beach color - warm yellow/sandy
+    const riverShorelineColor = vec3(0.85, 0.75, 0.45);  // Yellow-sandy beach
+    
+    // Create distance-based gradient for shoreline effect
+    // Inner river (center) = blue water
+    // Outer river (edges) = yellow sandy shoreline
+    const shorelineBlendDist = 0.02;  // Width of shoreline transition zone
+    const distToRiverEdge = abs(add(distToRiver, riverWidth));  // Distance from outer edge
+    const shorelineFactor = clamp(div(distToRiverEdge, shorelineBlendDist), 0.0, 1.0);
+    
+    // Blend from shoreline (edges) to water (center)
+    const riverColor = mix(riverShorelineColor, riverWaterColor, shorelineFactor);
+    
+    // Add subtle shimmer/sparkle to water surface
+    const shimmerScale = 50.0;
+    const shimmerCoord = mul(add(tilePos, vec2(mul(tileX, 0.7), mul(tileY, 0.7))), shimmerScale);
+    const shimmerNoise = fract(mul(sin(dot(shimmerCoord, vec2(67.234, 98.456))), 43758.5453));
+    const shimmer = mul(step(0.92, shimmerNoise), 0.2);  // Occasional bright spots
+    const riverColorWithShimmer = add(riverColor, vec3(shimmer, shimmer, shimmer));
+    
+    // -------------------------------------------------------------------------
+    // Blend Rivers onto Terrain
+    // -------------------------------------------------------------------------
+    const activeRiverMask = mul(hasAnyRiver, riverMask);
+    
+    finalColor = vec4(
+        mix(finalColor.rgb, riverColorWithShimmer, mul(activeRiverMask, 0.95)),
+        finalColor.a
+    );
+
 
     // =========================================================================
     // SLOPE-BASED LIGHTING WITH SUN DIRECTION
