@@ -116,6 +116,15 @@ async function renderer_init() {
 
     setTimeout("$('#mapcanvas').fadeIn(2500); $.unblockUI();", 700);
 
+    // Show AI Game Command Center dialog after renderer initialization completes
+    // This ensures the dialog works for both hex and square map renderers
+    // Note: The AI model will be lazy-loaded only when user first enters a question
+    if (typeof webllm_enabled !== 'undefined' && webllm_enabled && typeof show_ai_intro_dialog === 'function') {
+      setTimeout(function() {
+        show_ai_intro_dialog();
+      }, 2000); // Wait 2 seconds after renderer init to show the dialog
+    }
+
   }
 }
 

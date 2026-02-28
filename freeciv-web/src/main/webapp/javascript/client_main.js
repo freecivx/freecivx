@@ -69,14 +69,6 @@ function set_client_state(newstate)
       $("#dialog").dialog('close');
       $("#pregame_page").hide();
 
-      // Show AI Game Command Center dialog when game starts
-      // Note: The AI model will be lazy-loaded only when user first enters a question
-      if (webllm_enabled) {
-        setTimeout(function() {
-          show_ai_intro_dialog();
-        }, 2000); // Wait 2 seconds after game starts to show the dialog
-      }
-
       break;
     case C_S_OVER:
       setTimeout(show_endgame_dialog, 500);
