@@ -28,7 +28,7 @@
  * - Multi-terrain type support with automatic blending
  * - Terrain edge blending at tile borders (smooth transitions between different terrain types)
  * - Beach/coast transitions based on elevation
- * - Roads and railroads rendering using procedural SDF (Signed Distance Fields)
+ * - Roads and railroads rendering using UV-based texture mapping (optimized, no SDF)
  * - Irrigation and farmland visual indicators
  * - Nation border rendering with distinct colored edge lines
  * - Soft edges between unknown and known map tiles
@@ -490,109 +490,125 @@ function createTerrainShaderSquareTSL(uniforms) {
     const connectNW = roadIndexForDecoding.greaterThanEqual(9.0).and(roadIndexForDecoding.lessThanEqual(9.5));
     
     // -------------------------------------------------------------------------
-    // Procedural Road Shape using Distance Fields
+    // UV-Based Road Rendering (Flow Map Technique - No SDF)
+    // Strategy: Use connectivity to generate UV patterns, then sample procedural
+    // textures along those patterns. This eliminates expensive distance calculations.
     // -------------------------------------------------------------------------
-    const roadWidth = 0.05;  // Half-width of the road (narrower for better definition)
-    const edgeSoftness = 0.008;  // Anti-aliasing (slightly sharper)
+    const roadWidth = 0.10;  // Full width of the road (for UV mapping)
+    const edgeSoftness = 0.012;  // Smooth edge falloff
     
     // Current position within tile [0,1]
     const tilePos = vec2(localX, localY);
     const center = vec2(0.5, 0.5);
     
-    // Add procedural winding to roads for more natural appearance
-    // Use noise to slightly offset the path (only for roads, not railroads)
+    // Add procedural winding using UV offset (much cheaper than per-pixel distance)
     const windingScale = 8.0;
     const windingCoord = mul(add(tilePos, vec2(mul(tileX, 0.5), mul(tileY, 0.5))), windingScale);
     const windingNoise = fract(mul(sin(dot(windingCoord, vec2(12.9898, 78.233))), 43758.5453));
-    const windingOffset = mul(sub(windingNoise, 0.5), 0.03);  // Small offset for winding
+    const windingOffsetUV = mul(sub(windingNoise, 0.5), 0.06);
     
-    const tilePosFromCenter = sub(tilePos, center);
+    // Instead of calculating distance fields, we create UV coordinates
+    // along each direction and blend them based on connectivity
     
-    // Central hub - circle at tile center (SDF for circle: length(p) - r)
-    const distToCenter = tilePosFromCenter.length();
-    const hubRadius = 0.04;  // Smaller hub to match narrower roads
-    let distToRoad = sub(distToCenter, hubRadius);
+    // Initialize with zero (no road)
+    let roadIntensity = 0.0;
+    let roadU = 0.0;  // Along-road coordinate (for patterns like center lines)
+    let roadV = 0.0;  // Across-road coordinate (for width control)
     
-    // Helper function to calculate distance to a line segment (as TSL nodes)
-    // For a segment from center to edge point, we compute capsule SDF
-    // SDF for capsule from point a to b with radius r:
-    //   pa = p - a
-    //   ba = b - a  
-    //   h = saturate(dot(pa, ba) / dot(ba, ba))
-    //   return length(pa - ba * h) - r
+    // North direction: U = y (along), V = (x - 0.5) (across)
+    const uvN_u = sub(tilePos.y, 0.5);  // 0 at center, 0.5 at edge
+    const uvN_v = add(sub(tilePos.x, 0.5), mul(windingOffsetUV, hasAnyRoad));
+    const maskN = mul(
+        step(0.0, uvN_u),  // Only in north half
+        clamp(sub(1.0, div(abs(uvN_v), mul(roadWidth, 0.5))), 0.0, 1.0)
+    );
+    roadIntensity = connectN.select(max(roadIntensity, maskN), roadIntensity);
+    roadU = connectN.select(mix(roadU, add(uvN_u, 0.5), maskN), roadU);
+    roadV = connectN.select(mix(roadV, uvN_v, maskN), roadV);
     
-    // Apply winding effect only to roads (not railroads) by adding perpendicular offset
-    // The offset is based on position along the road for smooth winding
+    // South direction: U = (0.5 - y) (along), V = (x - 0.5) (across)
+    const uvS_u = sub(0.5, tilePos.y);
+    const uvS_v = add(sub(tilePos.x, 0.5), mul(windingOffsetUV, hasAnyRoad));
+    const maskS = mul(
+        step(uvS_u, 0.0).not(),
+        clamp(sub(1.0, div(abs(uvS_v), mul(roadWidth, 0.5))), 0.0, 1.0)
+    );
+    roadIntensity = connectS.select(max(roadIntensity, maskS), roadIntensity);
+    roadU = connectS.select(mix(roadU, add(uvS_u, 0.5), maskS), roadU);
+    roadV = connectS.select(mix(roadV, uvS_v, maskS), roadV);
     
-    // North segment (center to top edge) - winding perpendicular (East-West)
-    const northTarget = vec2(0.5, 1.0);
-    const toNorth = sub(northTarget, center);
-    const hN = clamp(div(dot(tilePosFromCenter, toNorth), dot(toNorth, toNorth)), 0.0, 1.0);
-    // Add winding: offset perpendicular to north direction (along X axis)
-    const windingOffsetN = mul(vec2(windingOffset, 0.0), hasAnyRoad);
-    const tilePosWindingN = sub(tilePosFromCenter, windingOffsetN);
-    const distToNorth = sub(sub(tilePosWindingN, mul(toNorth, hN)).length(), roadWidth);
-    distToRoad = connectN.select(min(distToRoad, distToNorth), distToRoad);
+    // East direction: U = (x - 0.5) (along), V = (y - 0.5) (across)
+    const uvE_u = sub(tilePos.x, 0.5);
+    const uvE_v = add(sub(tilePos.y, 0.5), mul(windingOffsetUV, hasAnyRoad));
+    const maskE = mul(
+        step(0.0, uvE_u),
+        clamp(sub(1.0, div(abs(uvE_v), mul(roadWidth, 0.5))), 0.0, 1.0)
+    );
+    roadIntensity = connectE.select(max(roadIntensity, maskE), roadIntensity);
+    roadU = connectE.select(mix(roadU, add(uvE_u, 0.5), maskE), roadU);
+    roadV = connectE.select(mix(roadV, uvE_v, maskE), roadV);
     
-    // South segment (center to bottom edge) - winding perpendicular (East-West)
-    const southTarget = vec2(0.5, 0.0);
-    const toSouth = sub(southTarget, center);
-    const hS = clamp(div(dot(tilePosFromCenter, toSouth), dot(toSouth, toSouth)), 0.0, 1.0);
-    const windingOffsetS = mul(vec2(windingOffset, 0.0), hasAnyRoad);
-    const tilePosWindingS = sub(tilePosFromCenter, windingOffsetS);
-    const distToSouth = sub(sub(tilePosWindingS, mul(toSouth, hS)).length(), roadWidth);
-    distToRoad = connectS.select(min(distToRoad, distToSouth), distToRoad);
+    // West direction: U = (0.5 - x) (along), V = (y - 0.5) (across)
+    const uvW_u = sub(0.5, tilePos.x);
+    const uvW_v = add(sub(tilePos.y, 0.5), mul(windingOffsetUV, hasAnyRoad));
+    const maskW = mul(
+        step(uvW_u, 0.0).not(),
+        clamp(sub(1.0, div(abs(uvW_v), mul(roadWidth, 0.5))), 0.0, 1.0)
+    );
+    roadIntensity = connectW.select(max(roadIntensity, maskW), roadIntensity);
+    roadU = connectW.select(mix(roadU, add(uvW_u, 0.5), maskW), roadU);
+    roadV = connectW.select(mix(roadV, uvW_v, maskW), roadV);
     
-    // East segment (center to right edge) - winding perpendicular (North-South)
-    const eastTarget = vec2(1.0, 0.5);
-    const toEast = sub(eastTarget, center);
-    const hE = clamp(div(dot(tilePosFromCenter, toEast), dot(toEast, toEast)), 0.0, 1.0);
-    const windingOffsetE = mul(vec2(0.0, windingOffset), hasAnyRoad);
-    const tilePosWindingE = sub(tilePosFromCenter, windingOffsetE);
-    const distToEast = sub(sub(tilePosWindingE, mul(toEast, hE)).length(), roadWidth);
-    distToRoad = connectE.select(min(distToRoad, distToEast), distToRoad);
+    // Diagonal directions - use rotated UVs
+    // NE: rotate 45 degrees
+    const uvNE_u = mul(add(sub(tilePos.x, 0.5), sub(tilePos.y, 0.5)), 0.707);
+    const uvNE_v = mul(sub(sub(tilePos.y, 0.5), sub(tilePos.x, 0.5)), 0.707);
+    const maskNE = mul(
+        mul(step(0.0, uvNE_u), mul(step(0.0, sub(tilePos.x, 0.5)), step(0.0, sub(tilePos.y, 0.5)))),
+        clamp(sub(1.0, div(abs(uvNE_v), mul(roadWidth, 0.5))), 0.0, 1.0)
+    );
+    roadIntensity = connectNE.select(max(roadIntensity, maskNE), roadIntensity);
+    roadU = connectNE.select(mix(roadU, add(uvNE_u, 0.5), maskNE), roadU);
+    roadV = connectNE.select(mix(roadV, uvNE_v, maskNE), roadV);
     
-    // West segment (center to left edge) - winding perpendicular (North-South)
-    const westTarget = vec2(0.0, 0.5);
-    const toWest = sub(westTarget, center);
-    const hW = clamp(div(dot(tilePosFromCenter, toWest), dot(toWest, toWest)), 0.0, 1.0);
-    const windingOffsetW = mul(vec2(0.0, windingOffset), hasAnyRoad);
-    const tilePosWindingW = sub(tilePosFromCenter, windingOffsetW);
-    const distToWest = sub(sub(tilePosWindingW, mul(toWest, hW)).length(), roadWidth);
-    distToRoad = connectW.select(min(distToRoad, distToWest), distToRoad);
+    // SE: rotate -45 degrees
+    const uvSE_u = mul(add(sub(tilePos.x, 0.5), sub(0.5, tilePos.y)), 0.707);
+    const uvSE_v = mul(add(sub(tilePos.y, 0.5), sub(tilePos.x, 0.5)), 0.707);
+    const maskSE = mul(
+        mul(step(0.0, uvSE_u), mul(step(0.0, sub(tilePos.x, 0.5)), step(tilePos.y, 0.5))),
+        clamp(sub(1.0, div(abs(uvSE_v), mul(roadWidth, 0.5))), 0.0, 1.0)
+    );
+    roadIntensity = connectSE.select(max(roadIntensity, maskSE), roadIntensity);
+    roadU = connectSE.select(mix(roadU, add(uvSE_u, 0.5), maskSE), roadU);
+    roadV = connectSE.select(mix(roadV, uvSE_v, maskSE), roadV);
     
-    // Diagonal segments
-    const neTarget = vec2(1.0, 1.0);
-    const toNE = sub(neTarget, center);
-    const hNE = clamp(div(dot(tilePosFromCenter, toNE), dot(toNE, toNE)), 0.0, 1.0);
-    const distToNE = sub(sub(tilePosFromCenter, mul(toNE, hNE)).length(), roadWidth);
-    distToRoad = connectNE.select(min(distToRoad, distToNE), distToRoad);
+    // SW: rotate 135 degrees
+    const uvSW_u = mul(sub(sub(0.5, tilePos.x), sub(tilePos.y, 0.5)), 0.707);
+    const uvSW_v = mul(add(sub(0.5, tilePos.y), sub(0.5, tilePos.x)), 0.707);
+    const maskSW = mul(
+        mul(step(0.0, uvSW_u), mul(step(tilePos.x, 0.5), step(tilePos.y, 0.5))),
+        clamp(sub(1.0, div(abs(uvSW_v), mul(roadWidth, 0.5))), 0.0, 1.0)
+    );
+    roadIntensity = connectSW.select(max(roadIntensity, maskSW), roadIntensity);
+    roadU = connectSW.select(mix(roadU, add(uvSW_u, 0.5), maskSW), roadU);
+    roadV = connectSW.select(mix(roadV, uvSW_v, maskSW), roadV);
     
-    const seTarget = vec2(1.0, 0.0);
-    const toSE = sub(seTarget, center);
-    const hSE = clamp(div(dot(tilePosFromCenter, toSE), dot(toSE, toSE)), 0.0, 1.0);
-    const distToSE = sub(sub(tilePosFromCenter, mul(toSE, hSE)).length(), roadWidth);
-    distToRoad = connectSE.select(min(distToRoad, distToSE), distToRoad);
+    // NW: rotate 225 degrees
+    const uvNW_u = mul(sub(sub(0.5, tilePos.x), sub(0.5, tilePos.y)), 0.707);
+    const uvNW_v = mul(sub(sub(tilePos.y, 0.5), sub(tilePos.x, 0.5)), 0.707);
+    const maskNW = mul(
+        mul(step(0.0, uvNW_u), mul(step(tilePos.x, 0.5), step(0.0, sub(tilePos.y, 0.5)))),
+        clamp(sub(1.0, div(abs(uvNW_v), mul(roadWidth, 0.5))), 0.0, 1.0)
+    );
+    roadIntensity = connectNW.select(max(roadIntensity, maskNW), roadIntensity);
+    roadU = connectNW.select(mix(roadU, add(uvNW_u, 0.5), maskNW), roadU);
+    roadV = connectNW.select(mix(roadV, uvNW_v, maskNW), roadV);
     
-    const swTarget = vec2(0.0, 0.0);
-    const toSW = sub(swTarget, center);
-    const hSW = clamp(div(dot(tilePosFromCenter, toSW), dot(toSW, toSW)), 0.0, 1.0);
-    const distToSW = sub(sub(tilePosFromCenter, mul(toSW, hSW)).length(), roadWidth);
-    distToRoad = connectSW.select(min(distToRoad, distToSW), distToRoad);
+    // Apply soft edge falloff
+    const roadMask = clamp(div(roadIntensity, add(edgeSoftness, 0.001)), 0.0, 1.0);
     
-    const nwTarget = vec2(0.0, 1.0);
-    const toNW = sub(nwTarget, center);
-    const hNW = clamp(div(dot(tilePosFromCenter, toNW), dot(toNW, toNW)), 0.0, 1.0);
-    const distToNW = sub(sub(tilePosFromCenter, mul(toNW, hNW)).length(), roadWidth);
-    distToRoad = connectNW.select(min(distToRoad, distToNW), distToRoad);
-    
-    // Convert distance to mask (1 = on road, 0 = off road)
-    const roadMask = clamp(sub(1.0, div(distToRoad, edgeSoftness)), 0.0, 1.0);
-    
-    // Create edge highlight for better definition
-    const edgeHighlightWidth = 0.015;
-    const distToEdge = abs(distToRoad);
-    const edgeMask = mul(step(distToEdge, edgeHighlightWidth), roadMask);
+    // Create edge highlight using UV gradient
+    const edgeMask = mul(roadMask, sub(1.0, pow(roadMask, 8.0)));
     
     // -------------------------------------------------------------------------
     // Road Surface Appearance (procedural texture)
@@ -619,9 +635,8 @@ function createTerrainShaderSquareTSL(uniforms) {
     const roadColor1 = mix(roadBaseColor, roadMidColor, step(0.35, combinedNoise));
     const roadColorWithNoise = mix(roadColor1, roadDarkColor, mul(step(0.70, combinedNoise), 0.8));
     
-    // Add subtle center line for roads (dashed) - skip for junctions
-    const centerLineDist = abs(sub(distToRoad, 0.0));  // Distance from center
-    const centerLineWidth = 0.008;
+    // Add subtle center line for roads (dashed) - using UV coordinates
+    const centerLineWidth = 0.016;  // Width in UV space
     const dashScale = 6.0;
     
     // Detect if this is a junction (multiple connections)
@@ -636,14 +651,9 @@ function createTerrainShaderSquareTSL(uniforms) {
         connectNW.select(1.0, 0.0))));
     const isJunction = step(2.5, connectionCount);  // 3+ connections = junction
     
-    // Calculate position along road for dashed line
-    let roadPosAlong = connectN.select(tilePos.y, 0.0);
-    roadPosAlong = add(roadPosAlong, connectS.select(sub(1.0, tilePos.y), 0.0));
-    roadPosAlong = add(roadPosAlong, connectE.select(tilePos.x, 0.0));
-    roadPosAlong = add(roadPosAlong, connectW.select(sub(1.0, tilePos.x), 0.0));
-    
-    const dashPattern = step(0.4, fract(mul(roadPosAlong, dashScale)));
-    // Only show center line on non-junction roads
+    // Create dashed center line using roadU coordinate
+    const dashPattern = step(0.4, fract(mul(roadU, dashScale)));
+    const centerLineDist = abs(roadV);  // Distance from center in UV space
     const centerLineMask = mul(mul(step(centerLineDist, centerLineWidth), dashPattern), sub(1.0, isJunction));
     
     // Center line color (yellow/white)
@@ -663,28 +673,16 @@ function createTerrainShaderSquareTSL(uniforms) {
     const railGap = 0.038;           // Narrower gap between rails
     
     // Calculate distance along the track for sleeper placement
-    // Use dominant connection direction to align sleepers perpendicular to track
-    // Include diagonal directions for better coverage
-    let distAlong = connectN.select(abs(sub(tilePos.y, 0.5)), 0.0);
-    distAlong = add(distAlong, connectS.select(abs(sub(tilePos.y, 0.5)), 0.0));
-    distAlong = add(distAlong, connectE.select(abs(sub(tilePos.x, 0.5)), 0.0));
-    distAlong = add(distAlong, connectW.select(abs(sub(tilePos.x, 0.5)), 0.0));
-    
-    // Add diagonal support for sleeper alignment
-    const diagNE = add(tilePos.x, tilePos.y);
-    const diagNW = add(sub(1.0, tilePos.x), tilePos.y);
-    distAlong = add(distAlong, connectNE.select(mul(abs(sub(diagNE, 1.0)), 0.707), 0.0));
-    distAlong = add(distAlong, connectSE.select(mul(abs(sub(tilePos.x, tilePos.y)), 0.707), 0.0));
-    distAlong = add(distAlong, connectSW.select(mul(abs(sub(diagNE, 1.0)), 0.707), 0.0));
-    distAlong = add(distAlong, connectNW.select(mul(abs(sub(diagNW, 1.0)), 0.707), 0.0));
+    // Use roadU coordinate (along-road) for sleeper spacing
+    const distAlong = roadU;
     
     // Create repeating sleeper pattern (dark wooden ties)
-    const sleeperMod = mod(distAlong, sleeperSpacing);
+    const sleeperMod = mod(mul(distAlong, 2.0), sleeperSpacing);  // Scale for proper spacing
     const sleeperPattern = step(sleeperMod, sleeperWidth);
     
     // Create rail tracks (two parallel metallic rails)
-    // Calculate perpendicular distance to center line
-    const distFromCenterLine = abs(distToRoad);
+    // Use UV coordinate (roadV) for perpendicular distance
+    const distFromCenterLine = abs(roadV);
     
     // Create mask for the two parallel rails with improved definition
     const railOuterEdge = add(mul(railGap, 0.5), railWidth);
@@ -770,66 +768,114 @@ function createTerrainShaderSquareTSL(uniforms) {
     const riverConnectNW = riverIndexForDecoding.greaterThanEqual(9.0).and(riverIndexForDecoding.lessThanEqual(9.5));
     
     // -------------------------------------------------------------------------
-    // Procedural River Shape using Distance Fields (with Strong Winding)
+    // UV-Based River Rendering (Flow Map Technique - No SDF)
+    // Strategy: Same as roads but with wider width and stronger winding
     // -------------------------------------------------------------------------
-    const riverWidth = 0.06;  // Half-width of the river (wider than roads)
-    const riverEdgeSoftness = 0.012;  // Softer edges for water
+    const riverWidth = 0.12;  // Full width of the river (wider than roads)
+    const riverEdgeSoftness = 0.015;  // Softer edges for water
     
     // Add strong procedural winding to rivers for natural meandering appearance
-    const riverWindingScale = 6.0;  // Lower frequency for longer curves
+    const riverWindingScale = 6.0;
     const riverWindingCoord = mul(add(tilePos, vec2(mul(tileX, 0.5), mul(tileY, 0.5))), riverWindingScale);
     const riverWindingNoise1 = fract(mul(sin(dot(riverWindingCoord, vec2(12.9898, 78.233))), 43758.5453));
     const riverWindingNoise2 = fract(mul(sin(dot(mul(riverWindingCoord, 1.3), vec2(45.123, 31.789))), 43758.5453));
-    // Combine two noise layers for more complex winding pattern
-    const riverWindingOffset = mul(sub(add(riverWindingNoise1, mul(riverWindingNoise2, 0.5)), 0.75), 0.08);
+    const riverWindingOffsetUV = mul(sub(add(riverWindingNoise1, mul(riverWindingNoise2, 0.5)), 0.75), 0.12);
     
-    // Central hub - circle at tile center
-    let distToRiver = sub(distToCenter, hubRadius);
+    // Initialize river with zero
+    let riverIntensity = 0.0;
+    let riverU = 0.0;
+    let riverV = 0.0;
     
-    // North segment with strong winding perpendicular (East-West)
-    const riverWindingOffsetN = vec2(riverWindingOffset, 0.0);
-    const tilePosRiverWindingN = sub(tilePosFromCenter, riverWindingOffsetN);
-    const distToRiverNorth = sub(sub(tilePosRiverWindingN, mul(toNorth, hN)).length(), riverWidth);
-    distToRiver = riverConnectN.select(min(distToRiver, distToRiverNorth), distToRiver);
+    // North direction
+    const uvRiverN_u = sub(tilePos.y, 0.5);
+    const uvRiverN_v = add(sub(tilePos.x, 0.5), riverWindingOffsetUV);
+    const maskRiverN = mul(
+        step(0.0, uvRiverN_u),
+        clamp(sub(1.0, div(abs(uvRiverN_v), mul(riverWidth, 0.5))), 0.0, 1.0)
+    );
+    riverIntensity = riverConnectN.select(max(riverIntensity, maskRiverN), riverIntensity);
+    riverU = riverConnectN.select(mix(riverU, add(uvRiverN_u, 0.5), maskRiverN), riverU);
+    riverV = riverConnectN.select(mix(riverV, uvRiverN_v, maskRiverN), riverV);
     
-    // South segment with strong winding perpendicular (East-West)
-    const riverWindingOffsetS = vec2(riverWindingOffset, 0.0);
-    const tilePosRiverWindingS = sub(tilePosFromCenter, riverWindingOffsetS);
-    const distToRiverSouth = sub(sub(tilePosRiverWindingS, mul(toSouth, hS)).length(), riverWidth);
-    distToRiver = riverConnectS.select(min(distToRiver, distToRiverSouth), distToRiver);
+    // South direction
+    const uvRiverS_u = sub(0.5, tilePos.y);
+    const uvRiverS_v = add(sub(tilePos.x, 0.5), riverWindingOffsetUV);
+    const maskRiverS = mul(
+        step(uvRiverS_u, 0.0).not(),
+        clamp(sub(1.0, div(abs(uvRiverS_v), mul(riverWidth, 0.5))), 0.0, 1.0)
+    );
+    riverIntensity = riverConnectS.select(max(riverIntensity, maskRiverS), riverIntensity);
+    riverU = riverConnectS.select(mix(riverU, add(uvRiverS_u, 0.5), maskRiverS), riverU);
+    riverV = riverConnectS.select(mix(riverV, uvRiverS_v, maskRiverS), riverV);
     
-    // East segment with strong winding perpendicular (North-South)
-    const riverWindingOffsetE = vec2(0.0, riverWindingOffset);
-    const tilePosRiverWindingE = sub(tilePosFromCenter, riverWindingOffsetE);
-    const distToRiverEast = sub(sub(tilePosRiverWindingE, mul(toEast, hE)).length(), riverWidth);
-    distToRiver = riverConnectE.select(min(distToRiver, distToRiverEast), distToRiver);
+    // East direction
+    const uvRiverE_u = sub(tilePos.x, 0.5);
+    const uvRiverE_v = add(sub(tilePos.y, 0.5), riverWindingOffsetUV);
+    const maskRiverE = mul(
+        step(0.0, uvRiverE_u),
+        clamp(sub(1.0, div(abs(uvRiverE_v), mul(riverWidth, 0.5))), 0.0, 1.0)
+    );
+    riverIntensity = riverConnectE.select(max(riverIntensity, maskRiverE), riverIntensity);
+    riverU = riverConnectE.select(mix(riverU, add(uvRiverE_u, 0.5), maskRiverE), riverU);
+    riverV = riverConnectE.select(mix(riverV, uvRiverE_v, maskRiverE), riverV);
     
-    // West segment with strong winding perpendicular (North-South)
-    const riverWindingOffsetW = vec2(0.0, riverWindingOffset);
-    const tilePosRiverWindingW = sub(tilePosFromCenter, riverWindingOffsetW);
-    const distToRiverWest = sub(sub(tilePosRiverWindingW, mul(toWest, hW)).length(), riverWidth);
-    distToRiver = riverConnectW.select(min(distToRiver, distToRiverWest), distToRiver);
+    // West direction
+    const uvRiverW_u = sub(0.5, tilePos.x);
+    const uvRiverW_v = add(sub(tilePos.y, 0.5), riverWindingOffsetUV);
+    const maskRiverW = mul(
+        step(uvRiverW_u, 0.0).not(),
+        clamp(sub(1.0, div(abs(uvRiverW_v), mul(riverWidth, 0.5))), 0.0, 1.0)
+    );
+    riverIntensity = riverConnectW.select(max(riverIntensity, maskRiverW), riverIntensity);
+    riverU = riverConnectW.select(mix(riverU, add(uvRiverW_u, 0.5), maskRiverW), riverU);
+    riverV = riverConnectW.select(mix(riverV, uvRiverW_v, maskRiverW), riverV);
     
-    // Diagonal segments (also with winding)
-    const riverWindingOffsetDiag = mul(vec2(riverWindingOffset, riverWindingOffset), 0.707);
-    const tilePosRiverWindingNE = sub(tilePosFromCenter, riverWindingOffsetDiag);
-    const distToRiverNE = sub(sub(tilePosRiverWindingNE, mul(toNE, hNE)).length(), riverWidth);
-    distToRiver = riverConnectNE.select(min(distToRiver, distToRiverNE), distToRiver);
+    // Diagonal NE
+    const uvRiverNE_u = mul(add(sub(tilePos.x, 0.5), sub(tilePos.y, 0.5)), 0.707);
+    const uvRiverNE_v = mul(sub(sub(tilePos.y, 0.5), sub(tilePos.x, 0.5)), 0.707);
+    const maskRiverNE = mul(
+        mul(step(0.0, uvRiverNE_u), mul(step(0.0, sub(tilePos.x, 0.5)), step(0.0, sub(tilePos.y, 0.5)))),
+        clamp(sub(1.0, div(abs(uvRiverNE_v), mul(riverWidth, 0.5))), 0.0, 1.0)
+    );
+    riverIntensity = riverConnectNE.select(max(riverIntensity, maskRiverNE), riverIntensity);
+    riverU = riverConnectNE.select(mix(riverU, add(uvRiverNE_u, 0.5), maskRiverNE), riverU);
+    riverV = riverConnectNE.select(mix(riverV, uvRiverNE_v, maskRiverNE), riverV);
     
-    const tilePosRiverWindingSE = sub(tilePosFromCenter, vec2(riverWindingOffset, mul(riverWindingOffset, -1.0)));
-    const distToRiverSE = sub(sub(tilePosRiverWindingSE, mul(toSE, hSE)).length(), riverWidth);
-    distToRiver = riverConnectSE.select(min(distToRiver, distToRiverSE), distToRiver);
+    // Diagonal SE
+    const uvRiverSE_u = mul(add(sub(tilePos.x, 0.5), sub(0.5, tilePos.y)), 0.707);
+    const uvRiverSE_v = mul(add(sub(tilePos.y, 0.5), sub(tilePos.x, 0.5)), 0.707);
+    const maskRiverSE = mul(
+        mul(step(0.0, uvRiverSE_u), mul(step(0.0, sub(tilePos.x, 0.5)), step(tilePos.y, 0.5))),
+        clamp(sub(1.0, div(abs(uvRiverSE_v), mul(riverWidth, 0.5))), 0.0, 1.0)
+    );
+    riverIntensity = riverConnectSE.select(max(riverIntensity, maskRiverSE), riverIntensity);
+    riverU = riverConnectSE.select(mix(riverU, add(uvRiverSE_u, 0.5), maskRiverSE), riverU);
+    riverV = riverConnectSE.select(mix(riverV, uvRiverSE_v, maskRiverSE), riverV);
     
-    const tilePosRiverWindingSW = sub(tilePosFromCenter, riverWindingOffsetDiag);
-    const distToRiverSW = sub(sub(tilePosRiverWindingSW, mul(toSW, hSW)).length(), riverWidth);
-    distToRiver = riverConnectSW.select(min(distToRiver, distToRiverSW), distToRiver);
+    // Diagonal SW
+    const uvRiverSW_u = mul(sub(sub(0.5, tilePos.x), sub(tilePos.y, 0.5)), 0.707);
+    const uvRiverSW_v = mul(add(sub(0.5, tilePos.y), sub(0.5, tilePos.x)), 0.707);
+    const maskRiverSW = mul(
+        mul(step(0.0, uvRiverSW_u), mul(step(tilePos.x, 0.5), step(tilePos.y, 0.5))),
+        clamp(sub(1.0, div(abs(uvRiverSW_v), mul(riverWidth, 0.5))), 0.0, 1.0)
+    );
+    riverIntensity = riverConnectSW.select(max(riverIntensity, maskRiverSW), riverIntensity);
+    riverU = riverConnectSW.select(mix(riverU, add(uvRiverSW_u, 0.5), maskRiverSW), riverU);
+    riverV = riverConnectSW.select(mix(riverV, uvRiverSW_v, maskRiverSW), riverV);
     
-    const tilePosRiverWindingNW = sub(tilePosFromCenter, vec2(mul(riverWindingOffset, -1.0), riverWindingOffset));
-    const distToRiverNW = sub(sub(tilePosRiverWindingNW, mul(toNW, hNW)).length(), riverWidth);
-    distToRiver = riverConnectNW.select(min(distToRiver, distToRiverNW), distToRiver);
+    // Diagonal NW
+    const uvRiverNW_u = mul(sub(sub(0.5, tilePos.x), sub(0.5, tilePos.y)), 0.707);
+    const uvRiverNW_v = mul(sub(sub(tilePos.y, 0.5), sub(tilePos.x, 0.5)), 0.707);
+    const maskRiverNW = mul(
+        mul(step(0.0, uvRiverNW_u), mul(step(tilePos.x, 0.5), step(0.0, sub(tilePos.y, 0.5)))),
+        clamp(sub(1.0, div(abs(uvRiverNW_v), mul(riverWidth, 0.5))), 0.0, 1.0)
+    );
+    riverIntensity = riverConnectNW.select(max(riverIntensity, maskRiverNW), riverIntensity);
+    riverU = riverConnectNW.select(mix(riverU, add(uvRiverNW_u, 0.5), maskRiverNW), riverU);
+    riverV = riverConnectNW.select(mix(riverV, uvRiverNW_v, maskRiverNW), riverV);
     
-    // Convert distance to mask (1 = in river, 0 = out of river)
-    const riverMask = clamp(sub(1.0, div(distToRiver, riverEdgeSoftness)), 0.0, 1.0);
+    // Apply soft edge falloff
+    const riverMask = clamp(div(riverIntensity, add(riverEdgeSoftness, 0.001)), 0.0, 1.0);
     
     // -------------------------------------------------------------------------
     // River Appearance: Blue water with Yellow/Sandy shoreline
@@ -852,15 +898,15 @@ function createTerrainShaderSquareTSL(uniforms) {
     // Shoreline/beach color - warm yellow/sandy
     const riverShorelineColor = vec3(0.85, 0.75, 0.45);  // Yellow-sandy beach
     
-    // Create distance-based gradient for shoreline effect
+    // Create UV-based gradient for shoreline effect
     // Inner river (center) = blue water
     // Outer river (edges) = yellow sandy shoreline
-    const shorelineBlendDist = 0.02;  // Width of shoreline transition zone
-    const distToRiverEdge = abs(add(distToRiver, riverWidth));  // Distance from outer edge
+    const shorelineBlendDist = 0.04;  // Width of shoreline transition zone in UV space
+    const distToRiverEdge = abs(riverV);  // Use riverV (across-river coordinate)
     const shorelineFactor = clamp(div(distToRiverEdge, shorelineBlendDist), 0.0, 1.0);
     
-    // Blend from shoreline (edges) to water (center)
-    const riverColor = mix(riverShorelineColor, riverWaterColor, shorelineFactor);
+    // Blend from water (center) to shoreline (edges)
+    const riverColor = mix(riverWaterColor, riverShorelineColor, shorelineFactor);
     
     // Add subtle shimmer/sparkle to water surface
     const shimmerScale = 50.0;
