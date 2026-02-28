@@ -607,38 +607,58 @@ function createTerrainShaderTSL(uniforms) {
     // -------------------------------------------------------------------------
     // Road Surface Appearance (procedural texture)
     // -------------------------------------------------------------------------
-    // Multi-scale noise for realistic road texture
-    const noiseScale1 = 40.0;  // Fine detail
-    const noiseScale2 = 8.0;   // Medium detail
+    // Multi-scale noise for realistic road texture with more variation
+    const noiseScale1 = 50.0;  // Fine detail (increased)
+    const noiseScale2 = 12.0;  // Medium detail
+    const noiseScale3 = 3.0;   // Large variations
     const noiseCoord1 = mul(add(tilePos, vec2(mul(tileX, 0.5), mul(tileY, 0.5))), noiseScale1);
     const noiseCoord2 = mul(add(tilePos, vec2(mul(tileX, 0.3), mul(tileY, 0.3))), noiseScale2);
+    const noiseCoord3 = mul(add(tilePos, vec2(mul(tileX, 0.7), mul(tileY, 0.7))), noiseScale3);
     
     const noiseValue1 = fract(mul(sin(dot(noiseCoord1, vec2(12.9898, 78.233))), 43758.5453));
     const noiseValue2 = fract(mul(sin(dot(noiseCoord2, vec2(45.1523, 31.789))), 43758.5453));
-    const combinedNoise = mul(add(noiseValue1, mul(noiseValue2, 0.5)), 0.667);
+    const noiseValue3 = fract(mul(sin(dot(noiseCoord3, vec2(67.234, 98.456))), 43758.5453));
+    const combinedNoise = mul(add(add(noiseValue1, mul(noiseValue2, 0.6)), mul(noiseValue3, 0.3)), 0.526);
     
-    // Road base color - warmer brown/tan for dirt roads
-    const roadBaseColor = vec3(0.35, 0.30, 0.22);  // Lighter, more visible
-    const roadDarkColor = vec3(0.22, 0.19, 0.14);   // Darker variation
-    const roadColorWithNoise = mix(roadBaseColor, roadDarkColor, mul(combinedNoise, 0.4));
+    // Road base color - warmer brown/tan for dirt roads with more variation
+    const roadBaseColor = vec3(0.38, 0.32, 0.24);     // Lighter base
+    const roadMidColor = vec3(0.30, 0.26, 0.19);      // Mid tone
+    const roadDarkColor = vec3(0.20, 0.17, 0.13);     // Darker variation
     
-    // Add subtle center line for roads (dashed)
+    // Use noise to blend between three color levels for more realistic appearance
+    const roadColor1 = mix(roadBaseColor, roadMidColor, step(0.35, combinedNoise));
+    const roadColorWithNoise = mix(roadColor1, roadDarkColor, mul(step(0.70, combinedNoise), 0.8));
+    
+    // Add subtle center line for roads (dashed) - skip for junctions
     const centerLineDist = abs(sub(distToRoad, 0.0));  // Distance from center
     const centerLineWidth = 0.008;
     const dashScale = 6.0;
     
+    // Detect if this is a junction (multiple connections)
+    const connectionCount = add(add(add(
+        connectN.select(1.0, 0.0),
+        connectS.select(1.0, 0.0)),
+        add(connectE.select(1.0, 0.0),
+        connectW.select(1.0, 0.0))),
+        add(add(connectNE.select(1.0, 0.0),
+        connectSE.select(1.0, 0.0)),
+        add(connectSW.select(1.0, 0.0),
+        connectNW.select(1.0, 0.0))));
+    const isJunction = step(2.5, connectionCount);  // 3+ connections = junction
+    
     // Calculate position along road for dashed line
-    let roadPosAlong = mul(connectN, tilePos.y);
-    roadPosAlong = add(roadPosAlong, mul(connectS, sub(1.0, tilePos.y)));
-    roadPosAlong = add(roadPosAlong, mul(connectE, tilePos.x));
-    roadPosAlong = add(roadPosAlong, mul(connectW, sub(1.0, tilePos.x)));
+    let roadPosAlong = connectN.select(tilePos.y, 0.0);
+    roadPosAlong = add(roadPosAlong, connectS.select(sub(1.0, tilePos.y), 0.0));
+    roadPosAlong = add(roadPosAlong, connectE.select(tilePos.x, 0.0));
+    roadPosAlong = add(roadPosAlong, connectW.select(sub(1.0, tilePos.x), 0.0));
     
     const dashPattern = step(0.4, fract(mul(roadPosAlong, dashScale)));
-    const centerLineMask = mul(step(centerLineDist, centerLineWidth), dashPattern);
+    // Only show center line on non-junction roads
+    const centerLineMask = mul(mul(step(centerLineDist, centerLineWidth), dashPattern), sub(1.0, isJunction));
     
     // Center line color (yellow/white)
-    const centerLineColor = vec3(0.85, 0.80, 0.45);
-    const roadColorWithLine = mix(roadColorWithNoise, centerLineColor, mul(centerLineMask, 0.7));
+    const centerLineColor = vec3(0.90, 0.85, 0.50);
+    const roadColorWithLine = mix(roadColorWithNoise, centerLineColor, mul(centerLineMask, 0.75));
     
     // Add darker edge borders for definition
     const edgeDarkenColor = vec3(0.12, 0.10, 0.08);
@@ -654,39 +674,58 @@ function createTerrainShaderTSL(uniforms) {
     
     // Calculate distance along the track for sleeper placement
     // Use dominant connection direction to align sleepers perpendicular to track
-    let distAlong = mul(mul(connectN, step(0.5, connectN)), abs(sub(tilePos.y, 0.5)));
-    distAlong = add(distAlong, mul(mul(connectS, step(0.5, connectS)), abs(sub(tilePos.y, 0.5))));
-    distAlong = add(distAlong, mul(mul(connectE, step(0.5, connectE)), abs(sub(tilePos.x, 0.5))));
-    distAlong = add(distAlong, mul(mul(connectW, step(0.5, connectW)), abs(sub(tilePos.x, 0.5))));
+    // Include diagonal directions for better coverage
+    let distAlong = connectN.select(abs(sub(tilePos.y, 0.5)), 0.0);
+    distAlong = add(distAlong, connectS.select(abs(sub(tilePos.y, 0.5)), 0.0));
+    distAlong = add(distAlong, connectE.select(abs(sub(tilePos.x, 0.5)), 0.0));
+    distAlong = add(distAlong, connectW.select(abs(sub(tilePos.x, 0.5)), 0.0));
+    
+    // Add diagonal support for sleeper alignment
+    const diagNE = add(tilePos.x, tilePos.y);
+    const diagNW = add(sub(1.0, tilePos.x), tilePos.y);
+    distAlong = add(distAlong, connectNE.select(mul(abs(sub(diagNE, 1.0)), 0.707), 0.0));
+    distAlong = add(distAlong, connectSE.select(mul(abs(sub(tilePos.x, tilePos.y)), 0.707), 0.0));
+    distAlong = add(distAlong, connectSW.select(mul(abs(sub(diagNE, 1.0)), 0.707), 0.0));
+    distAlong = add(distAlong, connectNW.select(mul(abs(sub(diagNW, 1.0)), 0.707), 0.0));
     
     // Create repeating sleeper pattern (dark wooden ties)
-    const sleeperPattern = step(mod(distAlong, sleeperSpacing), sleeperWidth);
+    const sleeperMod = mod(distAlong, sleeperSpacing);
+    const sleeperPattern = step(sleeperMod, sleeperWidth);
     
     // Create rail tracks (two parallel metallic rails)
     // Calculate perpendicular distance to center line
     const distFromCenterLine = abs(distToRoad);
     
-    // Create mask for the two parallel rails
-    const railMask = step(distFromCenterLine, add(mul(railGap, 0.5), railWidth));
-    const railHighlight = sub(1.0, step(distFromCenterLine, sub(mul(railGap, 0.5), railWidth)));
-    const doubleRailMask = mul(railMask, railHighlight);
+    // Create mask for the two parallel rails with improved definition
+    const railOuterEdge = add(mul(railGap, 0.5), railWidth);
+    const railInnerEdge = sub(mul(railGap, 0.5), railWidth);
+    const railMask = step(distFromCenterLine, railOuterEdge);
+    const railGapMask = step(distFromCenterLine, railInnerEdge);
+    const doubleRailMask = mul(railMask, sub(1.0, railGapMask));
+    
+    // Add subtle highlights to rail center for 3D effect
+    const railCenterDist = abs(sub(distFromCenterLine, mul(railGap, 0.5)));
+    const railCenterHighlight = clamp(sub(1.0, mul(railCenterDist, 100.0)), 0.0, 1.0);
     
     // Railroad colors
-    const railMetalColor = vec3(0.50, 0.52, 0.55);      // Bright metallic for rails
-    const railShineColor = vec3(0.65, 0.67, 0.70);      // Highlight on rails
+    const railMetalColor = vec3(0.48, 0.50, 0.53);      // Metallic for rails
+    const railShineColor = vec3(0.70, 0.72, 0.75);      // Bright highlight on rails
+    const railDarkColor = vec3(0.35, 0.37, 0.40);       // Darker rail edges
     const sleeperWoodColor = vec3(0.18, 0.13, 0.08);    // Dark weathered wood
     const sleeperDarkColor = vec3(0.12, 0.09, 0.06);    // Even darker variation
+    const gravelColor = vec3(0.25, 0.23, 0.20);         // Gravel/ballast between tracks
     
-    // Add texture to sleepers
+    // Add texture to sleepers with variation
     const sleeperNoise = fract(mul(sin(dot(mul(tilePos, 20.0), vec2(38.456, 67.234))), 43758.5453));
-    const sleeperColorVaried = mix(sleeperWoodColor, sleeperDarkColor, mul(sleeperNoise, 0.3));
+    const sleeperColorVaried = mix(sleeperWoodColor, sleeperDarkColor, mul(sleeperNoise, 0.4));
     
-    // Mix rail shine based on viewing angle (center is brighter)
-    const railColorShiny = mix(railMetalColor, railShineColor, mul(doubleRailMask, 0.4));
+    // Enhanced rail color with center highlight and edge darkening
+    const railBaseColor = mix(railMetalColor, railShineColor, mul(railCenterHighlight, 0.6));
+    const railColorShiny = mix(railBaseColor, railDarkColor, mul(sub(1.0, railCenterHighlight), 0.3));
     
-    // Combine rails and sleepers
-    const railBaseLayer = mix(sleeperColorVaried, railColorShiny, mul(doubleRailMask, 0.95));
-    const railColor = mix(railBaseLayer, sleeperColorVaried, mul(sleeperPattern, 0.85));
+    // Combine rails, sleepers, and gravel ballast
+    const railBaseLayer = mix(gravelColor, railColorShiny, mul(doubleRailMask, 0.98));
+    const railColor = mix(railBaseLayer, sleeperColorVaried, mul(sleeperPattern, 0.90));
     
     // Add edge definition to railroad
     const railEdgeColor = vec3(0.08, 0.06, 0.04);
