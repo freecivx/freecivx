@@ -22,7 +22,6 @@ var mouse_x;
 var mouse_y;
 var prev_mouse_x;
 var prev_mouse_y;
-var keyboard_input = true;
 var unitpanel_active = false;
 var allow_right_click = false;
 
@@ -101,12 +100,10 @@ function control_init()
 	  return check_text_input(event, $("#game_text_input"));
   });
   $("#game_text_input").focus(function(event) {
-    keyboard_input=false;
     resize_enabled = false;
   });
 
   $("#game_text_input").blur(function(event) {
-    keyboard_input=true;
     resize_enabled = true;
   });
 
@@ -119,14 +116,12 @@ function control_init()
   });
 
   $("#pregame_text_input").blur(function(event) {
-      keyboard_input=true;
       if (this.value=='') {
         $("#pregame_text_input").value='>';
       }
   });
 
   $("#pregame_text_input").focus(function(event) {
-    keyboard_input=false;
     if (this.value=='>') this.value='';
   });
 
@@ -716,7 +711,6 @@ function check_text_input(event,chatboxtextarea) {
 
     $(chatboxtextarea).val('');
     if (!is_touch_device()) $(chatboxtextarea).focus();
-    keyboard_input = true;
 
     if (message.length >= 4 && message === message.toUpperCase()) {
       return; //disallow all uppercase messages.
@@ -1890,8 +1884,8 @@ function find_active_dialog()
 **************************************************************************/
 function global_keyboard_listener(ev)
 {
-  // Check if focus is in chat field, where these keyboard events are ignored.
-  if ($('input:focus').length > 0 || !keyboard_input) return;
+  // Check if focus is in an input or textarea field, where these keyboard events are ignored.
+  if ($('input:focus, textarea:focus').length > 0) return;
 
   if (C_S_RUNNING != client_state()) return;
 

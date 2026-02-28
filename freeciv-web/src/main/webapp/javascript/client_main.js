@@ -310,7 +310,6 @@ function set_default_mapview_active()
 
   tech_dialog_active = false;
   allow_right_click = false;
-  keyboard_input = true;
 
   scrollbar_scroll_to_bottom("#freeciv_custom_scrollbar_div");
 

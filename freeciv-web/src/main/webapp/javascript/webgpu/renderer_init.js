@@ -103,7 +103,6 @@ async function renderer_init() {
     init_webgl_mapctrl();
     init_game_unit_panel();
     init_chatbox();
-    keyboard_input=true;
 
     // Delay unit focus to ensure units are fully loaded from server
     // This addresses timing issues where the camera position might not be set

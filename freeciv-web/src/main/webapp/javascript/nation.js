@@ -432,7 +432,6 @@ function send_private_message(other_player_name)
   var packet = {"pid" : packet_chat_msg_req,
                 "message" : message};
   send_request(JSON.stringify(packet));
-  keyboard_input = true;
   $("#dialog").dialog('close');
 
 }
@@ -451,7 +450,6 @@ function show_send_private_message_dialog()
   }
 
   var name = pplayer['name'];
-  keyboard_input = false;
 
   // reset dialog page.
   $("#dialog").remove();
