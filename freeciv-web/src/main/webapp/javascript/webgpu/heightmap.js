@@ -165,7 +165,7 @@ function update_heightmap(heightmap_quality)
       if (is_ocean_tile(ptile) && is_land_tile_near(ptile)) {
         ptile['height'] = 0.45;
       }
-      if (!is_ocean_tile(ptile) && is_ocean_tile_near(ptile) && !tile_has_extra(ptile, EXTRA_RIVER)) {
+      if (!is_ocean_tile(ptile) && is_ocean_tile_near(ptile)) {
         ptile['height'] = 0.55;
       }
 
@@ -207,10 +207,6 @@ function update_heightmap(heightmap_quality)
        if (Math.round(gx) == gx && Math.round(gy) == gy) {
         let ptile = map_pos_to_tile(gx, gy);
         heightmap[index] = ptile['height'];
-        if (tile_has_extra(ptile, EXTRA_RIVER)) {
-          // For hex tiles, use existing river depth
-          heightmap[index] = ptile['height'] * 0.98;
-        }
         if (tile_terrain(ptile)['name'] == "Mountains") {
           heightmap[index] = ptile['height'] * 1.02;
         }
@@ -221,18 +217,6 @@ function update_heightmap(heightmap_quality)
           { "x": Math.floor(gx), "y": Math.ceil(gy) },
           { "x": Math.ceil(gx),  "y": Math.floor(gy) },
           { "x": Math.ceil(gx),  "y": Math.ceil(gy) }];
-
-        let num_river_neighbours = 0;
-        for (let i = 0; i < 4; i++) {
-          let coords = neighbours[i];
-          if (coords.x < 0 || coords.x >= map.xsize || coords.y < 0 || coords.y >= map.ysize) {
-            continue;
-          }
-          let ptile = map_pos_to_tile(coords.x, coords.y);
-          if (tile_has_extra(ptile, EXTRA_RIVER)) {
-            num_river_neighbours++;
-          }
-        }
 
         let norm = 0;
         let sum = 0;
@@ -251,10 +235,6 @@ function update_heightmap(heightmap_quality)
             height = ptile['height'] + ((rnd - 0.5) / 50) - 0.01;
           } else {
             height = ptile['height'];
-          }
-          if (tile_has_extra(ptile, EXTRA_RIVER)) {
-            // For hex tiles, keep existing behavior
-            height = ptile['height'] * 1.045 - ((num_river_neighbours / 4) * 0.02);
           }
 
           sum += height / distance / distance;
