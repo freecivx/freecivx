@@ -115,8 +115,6 @@ function createTerrainShaderSquareTSL(uniforms) {
     const maptilesTex = uniforms.maptiles.value;
     const bordersTex = uniforms.borders.value;
     const roadsmapTex = uniforms.roadsmap.value;
-    const roadspritesTex = uniforms.roadsprites.value;
-    const railroadspritesTex = uniforms.railroadsprites.value;
     const terrainLayersTex = uniforms.terrain_layers.value;
     const terrainAtlasTex = uniforms.terrain_atlas.value;
     
@@ -450,55 +448,32 @@ function createTerrainShaderSquareTSL(uniforms) {
     );
 
     // =========================================================================
-    // ROADS AND RAILROADS RENDERING (Procedural SDF-based)
+    // ROADS AND RAILROADS RENDERING (Procedural - using math only)
     // =========================================================================
+    // Sample road data from roadsmap texture
     const roadData = texture(roadsmapTex, tileCenterUV);
     const roadIndex = floor(mul(roadData.r, 256.0));
     
+    // Detect road types based on index ranges
+    // Roads: 1-9, 42; Railroads: 10-19, 43
     const hasRoad = mul(step(0.5, roadIndex), step(roadIndex, 9.5));
     const hasRoadJunction = mul(step(41.5, roadIndex), step(roadIndex, 42.5));
     const hasRailroad = mul(step(9.5, roadIndex), step(roadIndex, 19.5));
     const hasRailJunction = mul(step(42.5, roadIndex), step(roadIndex, 43.5));
     
-    // Any road or railroad present (for procedural rendering)
+    // Combined road/rail flags
     const hasAnyRoad = max(hasRoad, hasRoadJunction);
     const hasAnyRail = max(hasRailroad, hasRailJunction);
-    
-    // -------------------------------------------------------------------------
-    // SDF Helper Functions
-    // -------------------------------------------------------------------------
-    /**
-     * SDF for a circle at position p with radius r
-     * Returns: distance to circle edge (negative inside, positive outside)
-     */
-    function sdCircle(p, r) {
-        return sub(p.length(), r);
-    }
-    
-    /**
-     * SDF for a box (capsule) from point a to point b with width w
-     * Returns: distance to box edge
-     */
-    function sdBox(p, a, b, w) {
-        const pa = sub(p, a);
-        const ba = sub(b, a);
-        const h = clamp(div(dot(pa, ba), dot(ba, ba)), 0.0, 1.0);
-        return sub(sub(pa, mul(ba, h)).length(), w);
-    }
+    const hasAnyInfrastructure = max(hasAnyRoad, hasAnyRail);
     
     // -------------------------------------------------------------------------
     // Decode Road Connectivity from roadIndex
     // -------------------------------------------------------------------------
-    // Road indices encoding (from roads.js):
-    // DIR8_NORTH=1, DIR8_EAST=4, DIR8_SOUTH=6, DIR8_WEST=3
-    // Single tile = 1 (roads) or 10 (railroads)
-    // North connection: 2/12, East: 8/18, South: 4/14, West: 6/16
-    // Diagonals: NE=3/13, SE=5/15, SW=7/17, NW=9/19
-    // 4-way junction: 42 (roads) or 43 (railroads)
-    
+    // Road encoding: 1=single, 2=N, 3=NE, 4=S, 5=SE, 6=W, 7=SW, 8=E, 9=NW, 42=junction
+    // Rail encoding: Same but +10 (10=single, 12=N, etc., 43=junction)
     const roadIndexForDecoding = hasAnyRail.select(sub(roadIndex, 10.0), roadIndex);
     
-    // Decode connections for cardinal directions
+    // Decode connections (each direction has a specific index value or junction)
     const connectN = roadIndexForDecoding.greaterThanEqual(2.0).and(roadIndexForDecoding.lessThanEqual(2.5))
                      .or(roadIndexForDecoding.greaterThanEqual(32.0)); // junction
     const connectE = roadIndexForDecoding.greaterThanEqual(8.0).and(roadIndexForDecoding.lessThanEqual(8.5))
@@ -508,111 +483,192 @@ function createTerrainShaderSquareTSL(uniforms) {
     const connectW = roadIndexForDecoding.greaterThanEqual(6.0).and(roadIndexForDecoding.lessThanEqual(6.5))
                      .or(roadIndexForDecoding.greaterThanEqual(32.0)); // junction
     
-    // Decode diagonal connections
+    // Diagonal connections
     const connectNE = roadIndexForDecoding.greaterThanEqual(3.0).and(roadIndexForDecoding.lessThanEqual(3.5));
     const connectSE = roadIndexForDecoding.greaterThanEqual(5.0).and(roadIndexForDecoding.lessThanEqual(5.5));
     const connectSW = roadIndexForDecoding.greaterThanEqual(7.0).and(roadIndexForDecoding.lessThanEqual(7.5));
     const connectNW = roadIndexForDecoding.greaterThanEqual(9.0).and(roadIndexForDecoding.lessThanEqual(9.5));
     
     // -------------------------------------------------------------------------
-    // Calculate SDF for Road Shape
+    // Procedural Road Shape using Distance Fields
     // -------------------------------------------------------------------------
-    const roadWidth = 0.08;
-    const edgeSoftness = 0.01;
-    const hubRadius = 0.06;
+    const roadWidth = 0.08;  // Half-width of the road
+    const edgeSoftness = 0.01;  // Anti-aliasing
     
-    // Current position in tile space [0,1]
+    // Current position within tile [0,1]
     const tilePos = vec2(localX, localY);
     const center = vec2(0.5, 0.5);
+    const tilePosFromCenter = sub(tilePos, center);
     
-    // Central hub (always present if there's any road/rail)
-    const distToHub = sdCircle(sub(tilePos, center), hubRadius);
+    // Central hub - circle at tile center (SDF for circle: length(p) - r)
+    const distToCenter = tilePosFromCenter.length();
+    const hubRadius = 0.06;
+    let distToRoad = sub(distToCenter, hubRadius);
     
-    // Cardinal direction segments
-    const northEnd = vec2(0.5, 1.0);
-    const southEnd = vec2(0.5, 0.0);
-    const eastEnd = vec2(1.0, 0.5);
-    const westEnd = vec2(0.0, 0.5);
+    // Helper function to calculate distance to a line segment (as TSL nodes)
+    // For a segment from center to edge point, we compute capsule SDF
+    // SDF for capsule from point a to b with radius r:
+    //   pa = p - a
+    //   ba = b - a  
+    //   h = saturate(dot(pa, ba) / dot(ba, ba))
+    //   return length(pa - ba * h) - r
     
-    const distToNorth = sdBox(tilePos, center, northEnd, roadWidth);
-    const distToSouth = sdBox(tilePos, center, southEnd, roadWidth);
-    const distToEast = sdBox(tilePos, center, eastEnd, roadWidth);
-    const distToWest = sdBox(tilePos, center, westEnd, roadWidth);
+    // North segment (center to top edge)
+    const northTarget = vec2(0.5, 1.0);
+    const toNorth = sub(northTarget, center);
+    const hN = clamp(div(dot(tilePosFromCenter, toNorth), dot(toNorth, toNorth)), 0.0, 1.0);
+    const distToNorth = sub(sub(tilePosFromCenter, mul(toNorth, hN)).length(), roadWidth);
+    distToRoad = connectN.select(min(distToRoad, distToNorth), distToRoad);
+    
+    // South segment (center to bottom edge)
+    const southTarget = vec2(0.5, 0.0);
+    const toSouth = sub(southTarget, center);
+    const hS = clamp(div(dot(tilePosFromCenter, toSouth), dot(toSouth, toSouth)), 0.0, 1.0);
+    const distToSouth = sub(sub(tilePosFromCenter, mul(toSouth, hS)).length(), roadWidth);
+    distToRoad = connectS.select(min(distToRoad, distToSouth), distToRoad);
+    
+    // East segment (center to right edge)
+    const eastTarget = vec2(1.0, 0.5);
+    const toEast = sub(eastTarget, center);
+    const hE = clamp(div(dot(tilePosFromCenter, toEast), dot(toEast, toEast)), 0.0, 1.0);
+    const distToEast = sub(sub(tilePosFromCenter, mul(toEast, hE)).length(), roadWidth);
+    distToRoad = connectE.select(min(distToRoad, distToEast), distToRoad);
+    
+    // West segment (center to left edge)
+    const westTarget = vec2(0.0, 0.5);
+    const toWest = sub(westTarget, center);
+    const hW = clamp(div(dot(tilePosFromCenter, toWest), dot(toWest, toWest)), 0.0, 1.0);
+    const distToWest = sub(sub(tilePosFromCenter, mul(toWest, hW)).length(), roadWidth);
+    distToRoad = connectW.select(min(distToRoad, distToWest), distToRoad);
     
     // Diagonal segments
-    const neEnd = vec2(1.0, 1.0);
-    const seEnd = vec2(1.0, 0.0);
-    const swEnd = vec2(0.0, 0.0);
-    const nwEnd = vec2(0.0, 1.0);
-    
-    const distToNE = sdBox(tilePos, center, neEnd, roadWidth);
-    const distToSE = sdBox(tilePos, center, seEnd, roadWidth);
-    const distToSW = sdBox(tilePos, center, swEnd, roadWidth);
-    const distToNW = sdBox(tilePos, center, nwEnd, roadWidth);
-    
-    // Union of active segments using min (SDF union operation)
-    let distToRoad = distToHub;
-    distToRoad = connectN.select(min(distToRoad, distToNorth), distToRoad);
-    distToRoad = connectS.select(min(distToRoad, distToSouth), distToRoad);
-    distToRoad = connectE.select(min(distToRoad, distToEast), distToRoad);
-    distToRoad = connectW.select(min(distToRoad, distToWest), distToRoad);
+    const neTarget = vec2(1.0, 1.0);
+    const toNE = sub(neTarget, center);
+    const hNE = clamp(div(dot(tilePosFromCenter, toNE), dot(toNE, toNE)), 0.0, 1.0);
+    const distToNE = sub(sub(tilePosFromCenter, mul(toNE, hNE)).length(), roadWidth);
     distToRoad = connectNE.select(min(distToRoad, distToNE), distToRoad);
+    
+    const seTarget = vec2(1.0, 0.0);
+    const toSE = sub(seTarget, center);
+    const hSE = clamp(div(dot(tilePosFromCenter, toSE), dot(toSE, toSE)), 0.0, 1.0);
+    const distToSE = sub(sub(tilePosFromCenter, mul(toSE, hSE)).length(), roadWidth);
     distToRoad = connectSE.select(min(distToRoad, distToSE), distToRoad);
+    
+    const swTarget = vec2(0.0, 0.0);
+    const toSW = sub(swTarget, center);
+    const hSW = clamp(div(dot(tilePosFromCenter, toSW), dot(toSW, toSW)), 0.0, 1.0);
+    const distToSW = sub(sub(tilePosFromCenter, mul(toSW, hSW)).length(), roadWidth);
     distToRoad = connectSW.select(min(distToRoad, distToSW), distToRoad);
+    
+    const nwTarget = vec2(0.0, 1.0);
+    const toNW = sub(nwTarget, center);
+    const hNW = clamp(div(dot(tilePosFromCenter, toNW), dot(toNW, toNW)), 0.0, 1.0);
+    const distToNW = sub(sub(tilePosFromCenter, mul(toNW, hNW)).length(), roadWidth);
     distToRoad = connectNW.select(min(distToRoad, distToNW), distToRoad);
     
-    // Generate road mask with smooth edges
+    // Convert distance to mask (1 = on road, 0 = off road)
     const roadMask = clamp(sub(1.0, div(distToRoad, edgeSoftness)), 0.0, 1.0);
     
-    // -------------------------------------------------------------------------
-    // Road Surface Appearance
-    // -------------------------------------------------------------------------
-    // Add noise/grunge for realistic appearance
-    const noiseScale = 40.0;
-    const noiseCoord = mul(add(tilePos, vec2(mul(tileX, 0.5), mul(tileY, 0.5))), noiseScale);
-    const noiseValue = fract(mul(sin(dot(noiseCoord, vec2(12.9898, 78.233))), 43758.5453));
-    
-    // Base road color (asphalt/dirt)
-    const roadBaseColor = vec3(0.25, 0.22, 0.18);
-    const roadGrungeColor = vec3(0.20, 0.18, 0.15);
-    const roadColorWithNoise = mix(roadBaseColor, roadGrungeColor, mul(noiseValue, 0.3));
+    // Create edge highlight for better definition
+    const edgeHighlightWidth = 0.015;
+    const distToEdge = abs(distToRoad);
+    const edgeMask = mul(step(distToEdge, edgeHighlightWidth), roadMask);
     
     // -------------------------------------------------------------------------
-    // Railroad-Specific Rendering
+    // Road Surface Appearance (procedural texture)
     // -------------------------------------------------------------------------
-    // Only render railroad details if it's a railroad
-    const sleeperWidth = 0.015;
-    const sleeperSpacing = 0.12;
+    // Multi-scale noise for realistic road texture
+    const noiseScale1 = 40.0;  // Fine detail
+    const noiseScale2 = 8.0;   // Medium detail
+    const noiseCoord1 = mul(add(tilePos, vec2(mul(tileX, 0.5), mul(tileY, 0.5))), noiseScale1);
+    const noiseCoord2 = mul(add(tilePos, vec2(mul(tileX, 0.3), mul(tileY, 0.3))), noiseScale2);
     
-    // Sleepers (ties) - perpendicular to track direction
-    // Use distance along the dominant track direction for spacing
-    const distAlongN = sub(tilePos.y, 0.5);
-    const distAlongS = sub(0.5, tilePos.y);
-    const distAlongE = sub(tilePos.x, 0.5);
-    const distAlongW = sub(0.5, tilePos.x);
+    const noiseValue1 = fract(mul(sin(dot(noiseCoord1, vec2(12.9898, 78.233))), 43758.5453));
+    const noiseValue2 = fract(mul(sin(dot(noiseCoord2, vec2(45.1523, 31.789))), 43758.5453));
+    const combinedNoise = mul(add(noiseValue1, mul(noiseValue2, 0.5)), 0.667);
     
-    // Calculate sleeper pattern based on distance along path
-    // Weight by connection direction to get proper alignment
-    let distAlong = mul(connectN, abs(distAlongN));
-    distAlong = add(distAlong, mul(connectS, abs(distAlongS)));
-    distAlong = add(distAlong, mul(connectE, abs(distAlongE)));
-    distAlong = add(distAlong, mul(connectW, abs(distAlongW)));
+    // Road base color - warmer brown/tan for dirt roads
+    const roadBaseColor = vec3(0.35, 0.30, 0.22);  // Lighter, more visible
+    const roadDarkColor = vec3(0.22, 0.19, 0.14);   // Darker variation
+    const roadColorWithNoise = mix(roadBaseColor, roadDarkColor, mul(combinedNoise, 0.4));
     
+    // Add subtle center line for roads (dashed)
+    const centerLineDist = abs(sub(distToRoad, 0.0));  // Distance from center
+    const centerLineWidth = 0.008;
+    const dashScale = 6.0;
+    
+    // Calculate position along road for dashed line
+    let roadPosAlong = mul(connectN, tilePos.y);
+    roadPosAlong = add(roadPosAlong, mul(connectS, sub(1.0, tilePos.y)));
+    roadPosAlong = add(roadPosAlong, mul(connectE, tilePos.x));
+    roadPosAlong = add(roadPosAlong, mul(connectW, sub(1.0, tilePos.x)));
+    
+    const dashPattern = step(0.4, fract(mul(roadPosAlong, dashScale)));
+    const centerLineMask = mul(step(centerLineDist, centerLineWidth), dashPattern);
+    
+    // Center line color (yellow/white)
+    const centerLineColor = vec3(0.85, 0.80, 0.45);
+    const roadColorWithLine = mix(roadColorWithNoise, centerLineColor, mul(centerLineMask, 0.7));
+    
+    // Add darker edge borders for definition
+    const edgeDarkenColor = vec3(0.12, 0.10, 0.08);
+    const roadColorWithEdges = mix(roadColorWithLine, edgeDarkenColor, mul(edgeMask, 0.6));
+    
+    // -------------------------------------------------------------------------
+    // Railroad-Specific Rendering (sleepers/ties pattern)
+    // -------------------------------------------------------------------------
+    const sleeperWidth = 0.018;      // Slightly wider sleepers
+    const sleeperSpacing = 0.10;     // Closer spacing for better visibility
+    const railWidth = 0.012;         // Width of individual rails
+    const railGap = 0.045;           // Gap between two rails
+    
+    // Calculate distance along the track for sleeper placement
+    // Use dominant connection direction to align sleepers perpendicular to track
+    let distAlong = mul(mul(connectN, step(0.5, connectN)), abs(sub(tilePos.y, 0.5)));
+    distAlong = add(distAlong, mul(mul(connectS, step(0.5, connectS)), abs(sub(tilePos.y, 0.5))));
+    distAlong = add(distAlong, mul(mul(connectE, step(0.5, connectE)), abs(sub(tilePos.x, 0.5))));
+    distAlong = add(distAlong, mul(mul(connectW, step(0.5, connectW)), abs(sub(tilePos.x, 0.5))));
+    
+    // Create repeating sleeper pattern (dark wooden ties)
     const sleeperPattern = step(mod(distAlong, sleeperSpacing), sleeperWidth);
     
-    // Railroad colors
-    const railMetalColor = vec3(0.45, 0.45, 0.48);  // Metallic grey
-    const sleeperWoodColor = vec3(0.20, 0.15, 0.10);  // Dark wood
+    // Create rail tracks (two parallel metallic rails)
+    // Calculate perpendicular distance to center line
+    const distFromCenterLine = abs(distToRoad);
     
-    // Mix rail metal and sleeper wood based on pattern for railroads
-    // Use road color for regular roads
-    const railColor = mix(railMetalColor, sleeperWoodColor, sleeperPattern);
-    const finalRoadColor = hasAnyRail.select(railColor, roadColorWithNoise);
+    // Create mask for the two parallel rails
+    const railMask = step(distFromCenterLine, add(mul(railGap, 0.5), railWidth));
+    const railHighlight = sub(1.0, step(distFromCenterLine, sub(mul(railGap, 0.5), railWidth)));
+    const doubleRailMask = mul(railMask, railHighlight);
+    
+    // Railroad colors
+    const railMetalColor = vec3(0.50, 0.52, 0.55);      // Bright metallic for rails
+    const railShineColor = vec3(0.65, 0.67, 0.70);      // Highlight on rails
+    const sleeperWoodColor = vec3(0.18, 0.13, 0.08);    // Dark weathered wood
+    const sleeperDarkColor = vec3(0.12, 0.09, 0.06);    // Even darker variation
+    
+    // Add texture to sleepers
+    const sleeperNoise = fract(mul(sin(dot(mul(tilePos, 20.0), vec2(38.456, 67.234))), 43758.5453));
+    const sleeperColorVaried = mix(sleeperWoodColor, sleeperDarkColor, mul(sleeperNoise, 0.3));
+    
+    // Mix rail shine based on viewing angle (center is brighter)
+    const railColorShiny = mix(railMetalColor, railShineColor, mul(doubleRailMask, 0.4));
+    
+    // Combine rails and sleepers
+    const railBaseLayer = mix(sleeperColorVaried, railColorShiny, mul(doubleRailMask, 0.95));
+    const railColor = mix(railBaseLayer, sleeperColorVaried, mul(sleeperPattern, 0.85));
+    
+    // Add edge definition to railroad
+    const railEdgeColor = vec3(0.08, 0.06, 0.04);
+    const railColorWithEdges = mix(railColor, railEdgeColor, mul(edgeMask, 0.5));
+    
+    // Choose road or rail color
+    const finalRoadColor = hasAnyRail.select(railColorWithEdges, roadColorWithEdges);
     
     // -------------------------------------------------------------------------
     // Blend Roads/Railroads onto Terrain
     // -------------------------------------------------------------------------
-    const activeRoadMask = mul(max(hasAnyRoad, hasAnyRail), roadMask);
+    const activeRoadMask = mul(hasAnyInfrastructure, roadMask);
     
     finalColor = vec4(
         mix(finalColor.rgb, finalRoadColor, mul(activeRoadMask, 0.9)),
