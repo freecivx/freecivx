@@ -545,10 +545,39 @@ function createTerrainShaderTSL(uniforms) {
     // Central hub - circle at tile center (SDF for circle: length(p) - r)
     const distToCenter = tilePosFromCenter.length();
     // Use larger hub for single tiles to make them more visible
-    const singleTileHubRadius = 0.12;  // Much larger for single tile visibility
+    const singleTileHubRadius = 0.08;  // Hub radius for single tile
     const normalHubRadius = 0.055;     // Normal hub radius for connected tiles
     const hubRadius = isSingleTile.select(singleTileHubRadius, normalHubRadius);
     let distToRoad = sub(distToCenter, hubRadius);
+    
+    // For single tile roads, add cross-shaped extensions to make them look like actual roads
+    // This creates a visible road segment even when there are no connections
+    const singleTileExtension = 0.25;  // Extend 25% toward edges for single tiles
+    
+    // Single tile road segments (cross pattern: N, S, E, W)
+    const singleTileNorthTarget = vec2(0.5, add(0.5, singleTileExtension));
+    const toSingleNorth = sub(singleTileNorthTarget, center);
+    const hSingleN = clamp(div(dot(tilePosFromCenter, toSingleNorth), dot(toSingleNorth, toSingleNorth)), 0.0, 1.5);
+    const distToSingleNorth = sub(sub(tilePosFromCenter, mul(toSingleNorth, hSingleN)).length(), roadWidth);
+    distToRoad = isSingleTile.select(min(distToRoad, distToSingleNorth), distToRoad);
+    
+    const singleTileSouthTarget = vec2(0.5, sub(0.5, singleTileExtension));
+    const toSingleSouth = sub(singleTileSouthTarget, center);
+    const hSingleS = clamp(div(dot(tilePosFromCenter, toSingleSouth), dot(toSingleSouth, toSingleSouth)), 0.0, 1.5);
+    const distToSingleSouth = sub(sub(tilePosFromCenter, mul(toSingleSouth, hSingleS)).length(), roadWidth);
+    distToRoad = isSingleTile.select(min(distToRoad, distToSingleSouth), distToRoad);
+    
+    const singleTileEastTarget = vec2(add(0.5, singleTileExtension), 0.5);
+    const toSingleEast = sub(singleTileEastTarget, center);
+    const hSingleE = clamp(div(dot(tilePosFromCenter, toSingleEast), dot(toSingleEast, toSingleEast)), 0.0, 1.5);
+    const distToSingleEast = sub(sub(tilePosFromCenter, mul(toSingleEast, hSingleE)).length(), roadWidth);
+    distToRoad = isSingleTile.select(min(distToRoad, distToSingleEast), distToRoad);
+    
+    const singleTileWestTarget = vec2(sub(0.5, singleTileExtension), 0.5);
+    const toSingleWest = sub(singleTileWestTarget, center);
+    const hSingleW = clamp(div(dot(tilePosFromCenter, toSingleWest), dot(toSingleWest, toSingleWest)), 0.0, 1.5);
+    const distToSingleWest = sub(sub(tilePosFromCenter, mul(toSingleWest, hSingleW)).length(), roadWidth);
+    distToRoad = isSingleTile.select(min(distToRoad, distToSingleWest), distToRoad);
     
     // Helper function to calculate distance to a line segment (as TSL nodes)
     // For a segment from center to edge point, we compute capsule SDF
