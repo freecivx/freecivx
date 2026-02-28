@@ -234,7 +234,7 @@ async function show_ai_intro_dialog() {
     buttons: {}
   }).dialogExtend({
     "minimizable" : true,
-    "closable" : true,
+    "closable" : false,
     "icons" : {
       "minimize" : "ui-icon-circle-minus",
       "restore" : "ui-icon-newwin"
