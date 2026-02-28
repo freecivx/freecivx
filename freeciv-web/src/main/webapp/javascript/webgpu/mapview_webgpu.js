@@ -407,8 +407,6 @@ function createTerrainUniforms() {
     selected_x: { type: "i", value: -1 },
     selected_y: { type: "i", value: -1 },
     roadsmap: { type: "t", value: roads_texture },
-    roadsprites: { type: "t", value: webgl_textures["roads"] },
-    railroadsprites: { type: "t", value: webgl_textures["railroads"] },
     terrain_layers: { type: "t", value: webgl_textures["terrain_layers"] },
     terrain_atlas: { type: "t", value: webgl_textures["terrain_atlas"] },
     borders_visible: { type: "bool", value: server_settings['borders']['is_visible'] }
@@ -429,12 +427,6 @@ function createTerrainUniforms() {
   }
   if (webgl_textures["terrain_layers"] && webgl_textures["terrain_layers"].image) {
     console.log(`  terrain_layers: ${webgl_textures["terrain_layers"].image.depth} layers (arctic, tundra, farmland, irrigation)`);
-  }
-  if (webgl_textures["roads"] && webgl_textures["roads"].image) {
-    console.log(`  roadsprites: ${webgl_textures["roads"].image.depth} layers (4x4 sprite grid)`);
-  }
-  if (webgl_textures["railroads"] && webgl_textures["railroads"].image) {
-    console.log(`  railroadsprites: ${webgl_textures["railroads"].image.depth} layers (4x4 sprite grid)`);
   }
 
   return uniforms;
