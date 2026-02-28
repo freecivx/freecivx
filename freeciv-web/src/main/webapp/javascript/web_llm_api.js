@@ -435,70 +435,33 @@ function setup_command_center_listeners() {
  * Display help information about the AI Command Center
  */
 function show_help() {
+  // Simplified help text with clear formatting
   let help_text = "<div style='color: #0f0; font-size: 11px;'>";
-  help_text += "<div style='font-weight: bold; margin-bottom: 8px;'>🎮 AI Command Center - Help</div>";
-  help_text += "<div style='margin-bottom: 8px;'>Control your units with simple text commands or ask questions about the game.</div>";
+  help_text += "<strong>🎮 AI Command Center - Help</strong><br/><br/>";
   
-  help_text += "<div style='font-weight: bold; margin-top: 10px; margin-bottom: 5px;'>Movement Commands:</div>";
-  help_text += "<div style='margin-left: 10px; line-height: 1.4;'>";
+  help_text += "<strong>Movement Commands:</strong><br/>";
   help_text += "• north (n), south (s), east (e), west (w)<br/>";
   help_text += "• northeast (ne), northwest (nw), southeast (se), southwest (sw)<br/>";
-  help_text += "• move &lt;direction&gt; - e.g., 'move north'<br/>";
-  help_text += "</div>";
+  help_text += "• move &lt;direction&gt; - e.g., 'move north'<br/><br/>";
   
-  help_text += "<div style='font-weight: bold; margin-top: 10px; margin-bottom: 5px;'>Unit Commands:</div>";
-  help_text += "<div style='margin-left: 10px; line-height: 1.4;'>";
-  
-  // Collect unique commands and their shortcuts
-  const command_list = [];
-  const seen = new Set();
-  
-  for (const [cmd_name, cmd_config] of Object.entries(GAME_COMMANDS)) {
-    if (cmd_name === 'help') continue; // Skip help in the list
-    
-    // Avoid duplicates - prefer commands with shortcuts
-    const key = cmd_config.fn;
-    if (seen.has(key)) {
-      // Skip this command if we already have one for this function
-      continue;
-    }
-    seen.add(key);
-    
-    let display_name = cmd_name;
-    if (cmd_config.shortcut) {
-      display_name += ` (${cmd_config.shortcut})`;
-    }
-    if (cmd_config.batch) {
-      display_name += " - supports 'all'";
-    }
-    
-    command_list.push(display_name);
-  }
-  
-  // Sort alphabetically
-  command_list.sort();
-  
-  // Display in list format
-  for (const cmd of command_list) {
-    help_text += `• ${cmd}<br/>`;
-  }
-  
-  help_text += "• build city (b) - Build a new city with AI-generated name<br/>";
+  help_text += "<strong>Unit Commands:</strong><br/>";
+  help_text += "• fortify (f) - Fortify unit (add 'all' to apply to all units)<br/>";
+  help_text += "• sentry (s) - Put unit on sentry (add 'all' for all units)<br/>";
+  help_text += "• explore (x) - Auto-explore (add 'all' for all units)<br/>";
+  help_text += "• mine (m), irrigate (i), road (r) - Terrain improvements<br/>";
+  help_text += "• build city (b) - Build a new city<br/>";
   help_text += "• open city (c) - Open city dialog<br/>";
-  help_text += "</div>";
-  help_text += "<div style='font-weight: bold; margin-top: 10px; margin-bottom: 5px;'>Examples:</div>";
-  help_text += "<div style='margin-left: 10px; line-height: 1.4;'>";
-  help_text += "• 'north' or 'n' - Move unit north<br/>";
-  help_text += "• 'move east' - Move unit east<br/>";
-  help_text += "• 'fortify' - Fortify selected unit(s)<br/>";
+  help_text += "• wait (w) - Skip unit turn<br/><br/>";
+  
+  help_text += "<strong>Examples:</strong><br/>";
+  help_text += "• 'north' - Move unit north<br/>";
   help_text += "• 'fortify all' - Fortify all your units<br/>";
-  help_text += "• 'explore all' - Set all units to auto-explore<br/>";
-  help_text += "• 'What should I research?' - Ask AI for advice<br/>";
-  help_text += "</div>";
-  help_text += "<div style='margin-top: 10px;'>Type any command or ask a question to get started!</div>";
+  help_text += "• 'build city' - Build a new city<br/>";
+  help_text += "• Type questions to get AI advice!<br/>";
   help_text += "</div>";
   
   append_command_center_message(help_text, "system");
+  console.log("[WebLLM] Help displayed");
 }
 
 /**
@@ -721,8 +684,15 @@ async function handle_command_center_input() {
         const unit_id = current_focus[0]['id'];
         const actor_unit = game_find_unit_by_number(unit_id);
         if (actor_unit) {
-          // Generate a city name
-          const city_name = await generate_city_name();
+          // Generate a city name (use fallback if model not loaded)
+          let city_name;
+          if (webllm_loaded) {
+            city_name = await generate_city_name();
+          } else {
+            // Use timestamp-based fallback name when AI model isn't loaded to avoid duplicates
+            city_name = "New City " + Date.now().toString().slice(-6);
+            console.log("[WebLLM] Using fallback city name (model not loaded):", city_name);
+          }
           if (typeof request_unit_do_action === 'function' && typeof ACTION_FOUND_CITY !== 'undefined') {
             request_unit_do_action(ACTION_FOUND_CITY, unit_id, actor_unit['tile'], 0, encodeURIComponent(city_name));
             append_command_center_message("✓ Building city: " + city_name, "success");
