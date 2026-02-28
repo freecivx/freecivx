@@ -835,7 +835,12 @@ body
 }
 
 .ui-dialog-titlebar, .unit_dialog .ui-dialog-titlebar, .chatbox_dialog .ui-dialog-titlebar  {
- 
+  padding-bottom: 0px;
+  padding-left: 4px;
+  padding-top: 0px;
+  font-size: 11px;
+  margin-top: -5px;
+  overflow: hidden;
 }
 
 .chatbox_dialog .ui-dialog-titlebar {
