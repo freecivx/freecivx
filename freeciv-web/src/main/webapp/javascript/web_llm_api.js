@@ -256,11 +256,7 @@ async function show_ai_intro_dialog() {
   $("#ai_intro_dialog").parent().css("z-index", "100");
   $("#ai_intro_dialog").parent().css("overflow", "hidden");
   
-  // Apply border styling
-  $('#ai_intro_dialog').parent().each(function () {
-    this.style.setProperty('border', 'solid 1px', 'important');
-    this.style.setProperty('border-color', '#444', 'important');
-  });
+
   
   // Set up event listeners for the input and send button
   setup_command_center_listeners();
