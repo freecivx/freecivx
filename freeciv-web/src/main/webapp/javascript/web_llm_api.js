@@ -275,6 +275,7 @@ async function show_ai_intro_dialog() {
  * Game command lookup object for cleaner command processing
  */
 const GAME_COMMANDS = {
+  'help': { fn: 'show_help', message: '', batch: false },
   'fortify': { fn: 'key_unit_fortify', shortcut: 'f', message: '✓ Units fortifying', batch: true },
   'sentry': { fn: 'key_unit_sentry', shortcut: 's', message: '✓ Units on sentry', batch: true },
   'mine': { fn: 'key_unit_mine', shortcut: 'm', message: '✓ Units mining', batch: false },
@@ -393,6 +394,65 @@ function setup_command_center_listeners() {
 }
 
 /**
+ * Display help information about the AI Command Center
+ */
+function show_help() {
+  let help_text = "<div style='color: #0f0; font-size: 11px;'>";
+  help_text += "<p><strong>AI Command Center - Help</strong></p>";
+  help_text += "<p>Use this command center to control your units with simple text commands or ask questions about the game.</p>";
+  help_text += "<p><strong>Available Commands:</strong></p>";
+  help_text += "<ul style='margin: 5px 0; padding-left: 20px;'>";
+  
+  // Collect unique commands and their shortcuts
+  const command_list = [];
+  const seen = new Set();
+  
+  for (const [cmd_name, cmd_config] of Object.entries(GAME_COMMANDS)) {
+    if (cmd_name === 'help') continue; // Skip help in the list
+    
+    // Avoid duplicates (e.g., 'clean' and 'pollution' map to same function)
+    const key = cmd_config.fn + (cmd_config.shortcut || '');
+    if (!seen.has(key) || !cmd_config.shortcut) {
+      seen.add(key);
+      
+      let display_name = cmd_name;
+      if (cmd_config.shortcut) {
+        display_name += ` (${cmd_config.shortcut})`;
+      }
+      if (cmd_config.batch) {
+        display_name += " - supports 'all'";
+      }
+      
+      command_list.push(display_name);
+    }
+  }
+  
+  // Sort alphabetically
+  command_list.sort();
+  
+  // Display in list format
+  for (const cmd of command_list) {
+    help_text += `<li>${cmd}</li>`;
+  }
+  
+  help_text += "<li>build city (b) - Build a new city with AI-generated name</li>";
+  help_text += "<li>open city (c) - Open city dialog</li>";
+  help_text += "</ul>";
+  help_text += "<p><strong>Examples:</strong></p>";
+  help_text += "<ul style='margin: 5px 0; padding-left: 20px;'>";
+  help_text += "<li>'fortify' - Fortify selected unit(s)</li>";
+  help_text += "<li>'fortify all' - Fortify all your units</li>";
+  help_text += "<li>'explore all' - Set all units to auto-explore</li>";
+  help_text += "<li>'f' - Shortcut for fortify</li>";
+  help_text += "<li>'What should I research?' - Ask AI for advice</li>";
+  help_text += "</ul>";
+  help_text += "<p>Type any command or ask a question to get started!</p>";
+  help_text += "</div>";
+  
+  append_command_center_message(help_text, "system");
+}
+
+/**
  * Handle user input from the Game Command Center
  */
 async function handle_command_center_input() {
@@ -409,6 +469,12 @@ async function handle_command_center_input() {
   append_command_center_message("You: " + input, "user");
   
   const input_lower = input.toLowerCase();
+  
+  // Check for help command first
+  if (input_lower === 'help' || input_lower === 'h' || input_lower === '?') {
+    show_help();
+    return;
+  }
   
   // Check for batch commands (e.g., "fortify all", "sentry all", "explore all")
   const batch_match = input_lower.match(/^(\w+(?:\s+\w+)?)\s+all$/);
