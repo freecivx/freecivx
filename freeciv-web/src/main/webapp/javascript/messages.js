@@ -34,7 +34,7 @@ function init_chatbox()
   $("#game_chatbox_panel").dialog({
 			bgiframe: true,
 			modal: false,
-            width: "380px",
+            width: "450px",
             top: 43,
             left: 2,
 			height: 200,
