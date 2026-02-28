@@ -4200,6 +4200,13 @@ static bool city_build(struct player *pplayer, struct unit *punit,
 
   towner = tile_owner(ptile);
 
+  /* Check that city name is provided */
+  if (name == NULL || name[0] == '\0') {
+    notify_player(pplayer, ptile, E_BAD_COMMAND, ftc_server,
+                  _("City name is required."));
+    return FALSE;
+  }
+
   if (!is_allowed_city_name(pplayer, name, message, sizeof(message))) {
     notify_player(pplayer, ptile, E_BAD_COMMAND, ftc_server,
                   "%s", message);
