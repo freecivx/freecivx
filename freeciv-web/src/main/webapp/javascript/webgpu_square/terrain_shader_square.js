@@ -465,20 +465,26 @@ function createTerrainShaderSquareTSL(uniforms) {
     const hasAnyRail = max(hasRailroad, hasRailJunction);
     
     // -------------------------------------------------------------------------
-    // SDF Helper Functions (inline)
+    // SDF Helper Functions
     // -------------------------------------------------------------------------
-    // SDF for a circle at position p with radius r
-    // Returns: distance to circle edge (negative inside, positive outside)
-    const sdCircle = (p, r) => sub(p.length(), r);
+    /**
+     * SDF for a circle at position p with radius r
+     * Returns: distance to circle edge (negative inside, positive outside)
+     */
+    function sdCircle(p, r) {
+        return sub(p.length(), r);
+    }
     
-    // SDF for a box from point a to point b with width w
-    // Returns: distance to box edge
-    const sdBox = (p, a, b, w) => {
+    /**
+     * SDF for a box (capsule) from point a to point b with width w
+     * Returns: distance to box edge
+     */
+    function sdBox(p, a, b, w) {
         const pa = sub(p, a);
         const ba = sub(b, a);
         const h = clamp(div(dot(pa, ba), dot(ba, ba)), 0.0, 1.0);
         return sub(sub(pa, mul(ba, h)).length(), w);
-    };
+    }
     
     // -------------------------------------------------------------------------
     // Decode Road Connectivity from roadIndex
@@ -574,20 +580,9 @@ function createTerrainShaderSquareTSL(uniforms) {
     // -------------------------------------------------------------------------
     // Railroad-Specific Rendering
     // -------------------------------------------------------------------------
-    let railColor = roadColorWithNoise;
-    let railMask = roadMask;
-    
     // Only render railroad details if it's a railroad
-    const railWidth = 0.025;
-    const railOffset = 0.03;
     const sleeperWidth = 0.015;
     const sleeperSpacing = 0.12;
-    
-    // Two parallel rails
-    const leftRailPos = sub(tilePos, vec2(railOffset, 0.0));
-    const rightRailPos = sub(tilePos, vec2(-railOffset, 0.0));
-    
-    let railsDist = distToRoad;
     
     // Sleepers (ties) - perpendicular to track direction
     // Use distance along the dominant track direction for spacing
@@ -597,6 +592,7 @@ function createTerrainShaderSquareTSL(uniforms) {
     const distAlongW = sub(0.5, tilePos.x);
     
     // Calculate sleeper pattern based on distance along path
+    // Weight by connection direction to get proper alignment
     let distAlong = mul(connectN, abs(distAlongN));
     distAlong = add(distAlong, mul(connectS, abs(distAlongS)));
     distAlong = add(distAlong, mul(connectE, abs(distAlongE)));
@@ -608,17 +604,15 @@ function createTerrainShaderSquareTSL(uniforms) {
     const railMetalColor = vec3(0.45, 0.45, 0.48);  // Metallic grey
     const sleeperWoodColor = vec3(0.20, 0.15, 0.10);  // Dark wood
     
-    // Mix rail metal and sleeper wood based on pattern
-    railColor = hasAnyRail.select(
-        mix(railMetalColor, sleeperWoodColor, sleeperPattern),
-        roadColorWithNoise
-    );
+    // Mix rail metal and sleeper wood based on pattern for railroads
+    // Use road color for regular roads
+    const railColor = mix(railMetalColor, sleeperWoodColor, sleeperPattern);
+    const finalRoadColor = hasAnyRail.select(railColor, roadColorWithNoise);
     
     // -------------------------------------------------------------------------
     // Blend Roads/Railroads onto Terrain
     // -------------------------------------------------------------------------
     const activeRoadMask = mul(max(hasAnyRoad, hasAnyRail), roadMask);
-    const finalRoadColor = hasAnyRail.select(railColor, roadColorWithNoise);
     
     finalColor = vec4(
         mix(finalColor.rgb, finalRoadColor, mul(activeRoadMask, 0.9)),
