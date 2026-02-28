@@ -414,10 +414,10 @@ function setup_command_center_listeners() {
  */
 function show_help() {
   let help_text = "<div style='color: #0f0; font-size: 11px;'>";
-  help_text += "<p><strong>AI Command Center - Help</strong></p>";
-  help_text += "<p>Use this command center to control your units with simple text commands or ask questions about the game.</p>";
-  help_text += "<p><strong>Available Commands:</strong></p>";
-  help_text += "<ul style='margin: 5px 0; padding-left: 20px;'>";
+  help_text += "<div style='font-weight: bold; margin-bottom: 8px;'>🎮 AI Command Center - Help</div>";
+  help_text += "<div style='margin-bottom: 8px;'>Control your units with simple text commands or ask questions about the game.</div>";
+  help_text += "<div style='font-weight: bold; margin-top: 10px; margin-bottom: 5px;'>Available Commands:</div>";
+  help_text += "<div style='margin-left: 10px; line-height: 1.4;'>";
   
   // Collect unique commands and their shortcuts
   const command_list = [];
@@ -450,21 +450,21 @@ function show_help() {
   
   // Display in list format
   for (const cmd of command_list) {
-    help_text += `<li>${cmd}</li>`;
+    help_text += `• ${cmd}<br/>`;
   }
   
-  help_text += "<li>build city (b) - Build a new city with AI-generated name</li>";
-  help_text += "<li>open city (c) - Open city dialog</li>";
-  help_text += "</ul>";
-  help_text += "<p><strong>Examples:</strong></p>";
-  help_text += "<ul style='margin: 5px 0; padding-left: 20px;'>";
-  help_text += "<li>'fortify' - Fortify selected unit(s)</li>";
-  help_text += "<li>'fortify all' - Fortify all your units</li>";
-  help_text += "<li>'explore all' - Set all units to auto-explore</li>";
-  help_text += "<li>'f' - Shortcut for fortify</li>";
-  help_text += "<li>'What should I research?' - Ask AI for advice</li>";
-  help_text += "</ul>";
-  help_text += "<p>Type any command or ask a question to get started!</p>";
+  help_text += "• build city (b) - Build a new city with AI-generated name<br/>";
+  help_text += "• open city (c) - Open city dialog<br/>";
+  help_text += "</div>";
+  help_text += "<div style='font-weight: bold; margin-top: 10px; margin-bottom: 5px;'>Examples:</div>";
+  help_text += "<div style='margin-left: 10px; line-height: 1.4;'>";
+  help_text += "• 'fortify' - Fortify selected unit(s)<br/>";
+  help_text += "• 'fortify all' - Fortify all your units<br/>";
+  help_text += "• 'explore all' - Set all units to auto-explore<br/>";
+  help_text += "• 'f' - Shortcut for fortify<br/>";
+  help_text += "• 'What should I research?' - Ask AI for advice<br/>";
+  help_text += "</div>";
+  help_text += "<div style='margin-top: 10px;'>Type any command or ask a question to get started!</div>";
   help_text += "</div>";
   
   append_command_center_message(help_text, "system");
@@ -829,9 +829,9 @@ function append_command_center_message(message, type, id, typewriter = false) {
     css_class = "success-msg";
   }
   
-  // Create message element
+  // Create message element - use div instead of p for complex HTML content
   const msg_id = id || `msg_${Date.now()}`;
-  const msg_html = `<p id='${msg_id}' class='${css_class}'>${timestamp}<span class='msg-content'></span></p>`;
+  const msg_html = `<div id='${msg_id}' class='${css_class}' style='margin: 5px 0;'>${timestamp}<span class='msg-content'></span></div>`;
   chat_div.append(msg_html);
   
   const msg_element = $(`#${msg_id} .msg-content`);
