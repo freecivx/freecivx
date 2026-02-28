@@ -689,8 +689,8 @@ async function handle_command_center_input() {
           if (webllm_loaded) {
             city_name = await generate_city_name();
           } else {
-            // Use simple fallback name when AI model isn't loaded
-            city_name = "New City " + Math.floor(Math.random() * 1000);
+            // Use timestamp-based fallback name when AI model isn't loaded to avoid duplicates
+            city_name = "New City " + Date.now().toString().slice(-6);
             console.log("[WebLLM] Using fallback city name (model not loaded):", city_name);
           }
           if (typeof request_unit_do_action === 'function' && typeof ACTION_FOUND_CITY !== 'undefined') {
