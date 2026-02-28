@@ -455,6 +455,90 @@ function show_help() {
 }
 
 /**
+ * Execute a game command with proper validation
+ * @param {Object} cmd_config - Command configuration from GAME_COMMANDS
+ * @param {string} cmd_name - Name of the command being executed
+ * @returns {boolean} - True if command was executed successfully
+ */
+function execute_command(cmd_config, cmd_name) {
+  // Validate current_focus for most commands
+  if (!cmd_config.no_focus_check && (typeof current_focus === 'undefined' || current_focus.length === 0)) {
+    append_command_center_message("No unit selected", "error");
+    return false;
+  }
+  
+  // Execute the command function
+  if (typeof window[cmd_config.fn] === 'function') {
+    window[cmd_config.fn]();
+    append_command_center_message(cmd_config.message, "success");
+    return true;
+  }
+  
+  return false;
+}
+
+/**
+ * Dispatch an intent detected from AI response
+ * @param {string} intentName - The intent command name (e.g., "BUILD_CITY", "ROAD")
+ */
+async function dispatch_intent(intentName) {
+  console.log("[WebLLM] Dispatching intent:", intentName);
+  
+  // Validate current_focus before executing intent
+  if (typeof current_focus === 'undefined' || current_focus.length === 0) {
+    console.log("[WebLLM] Cannot dispatch intent - no unit selected");
+    return;
+  }
+  
+  // Map intent to command configuration
+  const intentMap = {
+    'BUILD_CITY': 'build city',
+    'FORTIFY': 'fortify',
+    'SENTRY': 'sentry',
+    'MINE': 'mine',
+    'IRRIGATE': 'irrigate',
+    'ROAD': 'road',
+    'CLEAN': 'clean',
+    'TRANSFORM': 'transform',
+    'PILLAGE': 'pillage',
+    'EXPLORE': 'explore',
+    'SETTLE': 'settle',
+    'UPGRADE': 'upgrade',
+    'WAIT': 'wait'
+  };
+  
+  const commandKey = intentMap[intentName];
+  if (!commandKey) {
+    console.log("[WebLLM] Unknown intent:", intentName);
+    return;
+  }
+  
+  // Handle BUILD_CITY specially
+  if (intentName === 'BUILD_CITY') {
+    try {
+      const unit_id = current_focus[0]['id'];
+      const actor_unit = game_find_unit_by_number(unit_id);
+      if (actor_unit) {
+        const city_name = await generate_city_name();
+        if (typeof request_unit_do_action === 'function' && typeof ACTION_FOUND_CITY !== 'undefined') {
+          request_unit_do_action(ACTION_FOUND_CITY, unit_id, actor_unit['tile'], 0, encodeURIComponent(city_name));
+          append_command_center_message("✓ Building city: " + city_name, "success");
+        }
+      }
+    } catch (error) {
+      console.error("[WebLLM] Error executing BUILD_CITY intent:", error);
+    }
+    return;
+  }
+  
+  // Execute regular command via GAME_COMMANDS lookup
+  const cmd_config = GAME_COMMANDS[commandKey];
+  if (cmd_config) {
+    execute_command(cmd_config, commandKey);
+  }
+}
+
+/**
  * Handle user input from the Game Command Center
  */
 async function handle_command_center_input() {
@@ -574,12 +658,8 @@ async function handle_command_center_input() {
       // Try to find a matching command (check both full name and shortcut)
       for (const [cmd_name, cmd_config] of Object.entries(GAME_COMMANDS)) {
         if (input_lower === cmd_name || (cmd_config.shortcut && input_lower === cmd_config.shortcut)) {
-          if (typeof window[cmd_config.fn] === 'function') {
-            window[cmd_config.fn]();
-            append_command_center_message(cmd_config.message, "success");
-            command_executed = true;
-            break;
-          }
+          command_executed = execute_command(cmd_config, cmd_name);
+          if (command_executed) break;
         }
       }
     }
@@ -623,7 +703,7 @@ async function handle_command_center_input() {
         if (context.selected_tile_terrain) context_str += `Terrain: ${context.selected_tile_terrain}. `;
         
         // Process the command/question with the LLM
-        const system_message = `You are the Game Command Center AI for Freeciv. ${context_str}Provide concise, context-aware advice without using asterisks or placeholder symbols.`;
+        const system_message = `You are the Game Command Center AI for Freeciv. ${context_str}Provide concise, context-aware advice without using asterisks or placeholder symbols. If the player's command is clear and you can help execute it, add an intent flag at the end in the format: [INTENT: COMMAND_NAME]. Available intents: BUILD_CITY, FORTIFY, SENTRY, MINE, IRRIGATE, ROAD, CLEAN, TRANSFORM, PILLAGE, EXPLORE, SETTLE, UPGRADE, WAIT. Only include an intent if the player's request is unambiguous and you're confident about their intention. Do not include an intent if the player is asking for general advice.`;
         const user_message = `The player said: "${input}". Respond appropriately. Keep responses concise (2-3 sentences).`;
         
         const messages = [
@@ -642,11 +722,37 @@ async function handle_command_center_input() {
         response = response.replace(/\*\*\*/g, '').trim();
         response = response.replace(/\s{2,}/g, ' ').trim();
         
-        // Remove thinking indicator
-        $("#thinking_msg").remove();
+        // Check for intent pattern in response
+        const intentRegex = /\[INTENT:\s*([A-Z_]+)\]/;
+        const intentMatch = response.match(intentRegex);
         
-        // Append AI's response with typewriter effect
-        append_command_center_message("AI: " + response, "ai", null, true);
+        let displayText = response;
+        
+        if (intentMatch) {
+          const intentName = intentMatch[1];
+          console.log("[WebLLM] Detected intent:", intentName);
+          
+          // Strip the intent block from the visible text
+          displayText = response.replace(intentRegex, '').trim();
+          
+          // Remove thinking indicator
+          $("#thinking_msg").remove();
+          
+          // Display the AI response (without intent) with typewriter effect
+          append_command_center_message("AI: " + displayText, "ai", null, true);
+          
+          // Dispatch the intent after a short delay to allow typewriter to start
+          setTimeout(async () => {
+            await dispatch_intent(intentName);
+          }, 100);
+        } else {
+          // No intent detected, just display the response
+          // Remove thinking indicator
+          $("#thinking_msg").remove();
+          
+          // Append AI's response with typewriter effect
+          append_command_center_message("AI: " + displayText, "ai", null, true);
+        }
         
       } catch (error) {
         console.error("[WebLLM] Error processing question:", error);
