@@ -165,6 +165,39 @@ async function generate_game_intro_text() {
 }
 
 /**
+ * Generate a city name based on the player's civilization
+ * @returns {Promise<string>} The generated city name
+ */
+async function generate_city_name() {
+  let prompt = "Generate a single creative city name for a civilization-building game. " +
+               "Return only the city name, nothing else. Max 15 characters.";
+  
+  // Add nation-specific information if available
+  try {
+    let pplayer = client?.conn?.playing;
+    if (pplayer != null && pplayer['nation'] != null && typeof nations !== 'undefined') {
+      const nation_name = nations[pplayer['nation']]['adjective'];
+      const nation_plural = nations[pplayer['nation']]['plural'];
+      
+      prompt = `Generate a single creative city name appropriate for the ${nation_name} civilization (${nation_plural}). ` +
+               `Return only the city name, nothing else. Max 15 characters. Make it sound authentic to the culture.`;
+    }
+  } catch (error) {
+    console.log("[WebLLM] Could not get nation info for city name, using generic prompt:", error);
+  }
+  
+  try {
+    const city_name = await generate_ai_text(prompt, 20);
+    // Clean up the response - remove quotes, periods, and extra whitespace
+    return city_name.replace(/['".,]/g, '').trim();
+  } catch (error) {
+    console.error("[WebLLM] Failed to generate city name, using default:", error);
+    // Fallback to a simple generated name
+    return "New City " + Math.floor(Math.random() * 1000);
+  }
+}
+
+/**
  * Show Game Command Center dialog
  */
 async function show_ai_intro_dialog() {
@@ -181,21 +214,21 @@ async function show_ai_intro_dialog() {
   $("#ai_intro_dialog").remove();
   $("<div id='ai_intro_dialog'></div>").appendTo("div#game_page");
   
-  // Show loading message first
+  // Show loading message first - with black background and white text
   $("#ai_intro_dialog").html(`
-    <div id='command_center_chat' style='max-height: 400px; overflow-y: auto; margin-bottom: 10px; padding: 10px; border: 1px solid #ccc; background-color: #f9f9f9;'>
+    <div id='command_center_chat' style='height: 300px; overflow-y: auto; margin-bottom: 8px; padding: 8px; border: 1px solid #444; background-color: #000; color: #fff; font-size: 11px;'>
       <p style='text-align: center;'><i class='fa fa-spinner fa-spin'></i> Loading AI model...</p>
     </div>
     <div style='display: flex; gap: 5px;'>
-      <input type='text' id='command_center_input' style='flex: 1; padding: 8px;' placeholder='Enter command or question...' />
-      <button id='command_center_send' style='padding: 8px 16px;'>Send</button>
+      <input type='text' id='command_center_input' style='flex: 1; padding: 6px; font-size: 11px; background-color: #222; color: #fff; border: 1px solid #444;' placeholder='Enter command or question...' />
+      <button id='command_center_send' style='padding: 6px 12px; font-size: 11px; background-color: #333; color: #fff; border: 1px solid #444; cursor: pointer;'>Send</button>
     </div>
   `);
   $("#ai_intro_dialog").attr("title", "Game Command Center");
   $("#ai_intro_dialog").dialog({
     bgiframe: true,
     modal: false,
-    width: "500px",
+    width: "450px",
     height: "auto",
     position: { my: "center bottom", at: "center bottom-20", of: window },
     buttons: {}
@@ -227,10 +260,10 @@ async function show_ai_intro_dialog() {
     }
     
     console.log("[WebLLM] Model loaded, showing ready message...");
-    const ready_message = "Game Command Center active. You can issue unit commands (Sentry, Fortify, Build) or ask questions about your empire's status here.";
+    const ready_message = "Game Command Center active. Commands: fortify, sentry, build city, mine, irrigate, road, clean, transform, pillage, auto explore, auto settle, upgrade, disband, open city, wait, load, unload. Or ask questions.";
     
     // Update dialog with ready message
-    $("#command_center_chat").html("<p style='color: #2c5aa0; font-weight: bold;'>" + ready_message + "</p>");
+    $("#command_center_chat").html("<p style='color: #0f0; font-weight: bold; font-size: 11px;'>" + ready_message + "</p>");
     
   } catch (error) {
     console.error("[WebLLM] Error initializing Command Center:", error);
@@ -272,28 +305,232 @@ async function handle_command_center_input() {
   // Append user's message to chat
   append_command_center_message("You: " + input, "user");
   
-  // Show thinking indicator
-  append_command_center_message("<i class='fa fa-spinner fa-spin'></i> Processing...", "system", "thinking_msg");
+  const input_lower = input.toLowerCase();
+  
+  // Check if it's a game command
+  let command_executed = false;
   
   try {
-    // Process the command/question with the LLM
-    const prompt = `You are the Game Command Center AI for Freeciv. The player said: "${input}". ` +
-                   `Respond appropriately. If it's a command (like "Sentry", "Fortify", "Build city", "Control units"), ` +
-                   `acknowledge and explain what action would be taken. If it's a question about game state, ` +
-                   `provide a helpful response. Keep responses concise (2-3 sentences).`;
-    
-    const response = await generate_ai_text(prompt, 150);
-    
-    // Remove thinking indicator
-    $("#thinking_msg").remove();
-    
-    // Append AI's response
-    append_command_center_message("AI: " + response, "ai");
+    // Unit commands
+    if (input_lower === "fortify" || input_lower === "f") {
+      if (typeof key_unit_fortify === 'function') {
+        key_unit_fortify();
+        append_command_center_message("✓ Units fortifying", "success");
+        command_executed = true;
+      }
+    } else if (input_lower === "sentry" || input_lower === "s") {
+      if (typeof key_unit_sentry === 'function') {
+        key_unit_sentry();
+        append_command_center_message("✓ Units on sentry", "success");
+        command_executed = true;
+      }
+    } else if (input_lower === "build city" || input_lower === "build" || input_lower === "b") {
+      if (typeof current_focus !== 'undefined' && current_focus.length > 0) {
+        const unit_id = current_focus[0]['id'];
+        const actor_unit = game_find_unit_by_number(unit_id);
+        if (actor_unit) {
+          // Generate a city name
+          const city_name = await generate_city_name();
+          if (typeof request_unit_do_action === 'function' && typeof ACTION_FOUND_CITY !== 'undefined') {
+            request_unit_do_action(ACTION_FOUND_CITY, unit_id, actor_unit['tile'], 0, encodeURIComponent(city_name));
+            append_command_center_message("✓ Building city: " + city_name, "success");
+            command_executed = true;
+          }
+        }
+      } else {
+        append_command_center_message("No unit selected", "error");
+        command_executed = true;
+      }
+    } else if (input_lower === "mine" || input_lower === "m") {
+      if (typeof key_unit_mine === 'function') {
+        key_unit_mine();
+        append_command_center_message("✓ Units mining", "success");
+        command_executed = true;
+      }
+    } else if (input_lower === "irrigate" || input_lower === "i") {
+      if (typeof key_unit_irrigate === 'function') {
+        key_unit_irrigate();
+        append_command_center_message("✓ Units irrigating", "success");
+        command_executed = true;
+      }
+    } else if (input_lower === "road" || input_lower === "r") {
+      if (typeof key_unit_road === 'function') {
+        key_unit_road();
+        append_command_center_message("✓ Units building road", "success");
+        command_executed = true;
+      }
+    } else if (input_lower === "clean" || input_lower === "pollution") {
+      if (typeof key_unit_clean === 'function') {
+        key_unit_clean();
+        append_command_center_message("✓ Units cleaning pollution", "success");
+        command_executed = true;
+      }
+    } else if (input_lower === "transform" || input_lower === "t") {
+      if (typeof key_unit_transform === 'function') {
+        key_unit_transform();
+        append_command_center_message("✓ Units transforming terrain", "success");
+        command_executed = true;
+      }
+    } else if (input_lower === "pillage" || input_lower === "p") {
+      if (typeof key_unit_pillage === 'function') {
+        key_unit_pillage();
+        append_command_center_message("✓ Units pillaging", "success");
+        command_executed = true;
+      }
+    } else if (input_lower === "auto explore" || input_lower === "explore" || input_lower === "x") {
+      if (typeof key_unit_auto_explore === 'function') {
+        key_unit_auto_explore();
+        append_command_center_message("✓ Units auto-exploring", "success");
+        command_executed = true;
+      }
+    } else if (input_lower === "auto settle" || input_lower === "settle") {
+      if (typeof key_unit_auto_settle === 'function') {
+        key_unit_auto_settle();
+        append_command_center_message("✓ Units auto-settling", "success");
+        command_executed = true;
+      }
+    } else if (input_lower === "upgrade" || input_lower === "u") {
+      if (typeof key_unit_upgrade === 'function') {
+        key_unit_upgrade();
+        append_command_center_message("✓ Units upgrading", "success");
+        command_executed = true;
+      }
+    } else if (input_lower === "disband" || input_lower === "d") {
+      if (typeof key_unit_disband === 'function') {
+        key_unit_disband();
+        append_command_center_message("✓ Disband command sent", "success");
+        command_executed = true;
+      }
+    } else if (input_lower === "wait" || input_lower === "w") {
+      if (typeof key_unit_wait === 'function') {
+        key_unit_wait();
+        append_command_center_message("✓ Units waiting", "success");
+        command_executed = true;
+      }
+    } else if (input_lower === "load" || input_lower === "l") {
+      if (typeof key_unit_load === 'function') {
+        key_unit_load();
+        append_command_center_message("✓ Units loading", "success");
+        command_executed = true;
+      }
+    } else if (input_lower === "unload") {
+      if (typeof key_unit_unload === 'function') {
+        key_unit_unload();
+        append_command_center_message("✓ Units unloading", "success");
+        command_executed = true;
+      }
+    } else if (input_lower === "fortress") {
+      if (typeof key_unit_fortress === 'function') {
+        key_unit_fortress();
+        append_command_center_message("✓ Units building fortress", "success");
+        command_executed = true;
+      }
+    } else if (input_lower === "airbase") {
+      if (typeof key_unit_airbase === 'function') {
+        key_unit_airbase();
+        append_command_center_message("✓ Units building airbase", "success");
+        command_executed = true;
+      }
+    } else if (input_lower === "cultivate") {
+      if (typeof key_unit_cultivate === 'function') {
+        key_unit_cultivate();
+        append_command_center_message("✓ Units cultivating", "success");
+        command_executed = true;
+      }
+    } else if (input_lower === "plant") {
+      if (typeof key_unit_plant === 'function') {
+        key_unit_plant();
+        append_command_center_message("✓ Units planting", "success");
+        command_executed = true;
+      }
+    } else if (input_lower === "nuke") {
+      if (typeof key_unit_nuke === 'function') {
+        key_unit_nuke();
+        append_command_center_message("✓ Nuke ready - select target", "success");
+        command_executed = true;
+      }
+    } else if (input_lower === "paradrop") {
+      if (typeof key_unit_paradrop === 'function') {
+        key_unit_paradrop();
+        append_command_center_message("✓ Paradrop - select target", "success");
+        command_executed = true;
+      }
+    } else if (input_lower === "airlift") {
+      if (typeof key_unit_airlift === 'function') {
+        key_unit_airlift();
+        append_command_center_message("✓ Airlift - select target city", "success");
+        command_executed = true;
+      }
+    } else if (input_lower === "home city" || input_lower === "homecity") {
+      if (typeof key_unit_homecity === 'function') {
+        key_unit_homecity();
+        append_command_center_message("✓ Changed home city", "success");
+        command_executed = true;
+      }
+    } else if (input_lower === "idle" || input_lower === "stop") {
+      if (typeof key_unit_idle === 'function') {
+        key_unit_idle();
+        append_command_center_message("✓ Units idle", "success");
+        command_executed = true;
+      }
+    } else if (input_lower === "no orders") {
+      if (typeof key_unit_noorders === 'function') {
+        key_unit_noorders();
+        append_command_center_message("✓ Units done moving", "success");
+        command_executed = true;
+      }
+    } else if (input_lower === "open city" || input_lower === "city" || input_lower === "c") {
+      // Open city at current unit location
+      if (typeof current_focus !== 'undefined' && current_focus.length > 0) {
+        const punit = current_focus[0];
+        if (punit && typeof index_to_tile === 'function' && typeof tile_city === 'function' && typeof show_city_dialog === 'function') {
+          const ptile = index_to_tile(punit['tile']);
+          const pcity = tile_city(ptile);
+          if (pcity) {
+            show_city_dialog(pcity);
+            append_command_center_message("✓ Opening city: " + pcity['name'], "success");
+            command_executed = true;
+          } else {
+            append_command_center_message("No city at this location", "error");
+            command_executed = true;
+          }
+        }
+      } else {
+        append_command_center_message("No unit selected", "error");
+        command_executed = true;
+      }
+    }
     
   } catch (error) {
-    console.error("[WebLLM] Error processing command:", error);
-    $("#thinking_msg").remove();
-    append_command_center_message("Error: Failed to process command. " + error.message, "error");
+    console.error("[WebLLM] Error executing command:", error);
+    append_command_center_message("Error: " + error.message, "error");
+    command_executed = true;
+  }
+  
+  // If no command was executed, use AI to respond
+  if (!command_executed) {
+    // Show thinking indicator
+    append_command_center_message("<i class='fa fa-spinner fa-spin'></i> Processing...", "system", "thinking_msg");
+    
+    try {
+      // Process the command/question with the LLM
+      const prompt = `You are the Game Command Center AI for Freeciv. The player said: "${input}". ` +
+                     `Respond appropriately. If it's a question about game state or strategy, ` +
+                     `provide a helpful response. Keep responses concise (2-3 sentences).`;
+      
+      const response = await generate_ai_text(prompt, 150);
+      
+      // Remove thinking indicator
+      $("#thinking_msg").remove();
+      
+      // Append AI's response
+      append_command_center_message("AI: " + response, "ai");
+      
+    } catch (error) {
+      console.error("[WebLLM] Error processing question:", error);
+      $("#thinking_msg").remove();
+      append_command_center_message("Error: Failed to process question. " + error.message, "error");
+    }
   }
 }
 
@@ -305,13 +542,15 @@ function append_command_center_message(message, type, id) {
   let style = "";
   
   if (type === "user") {
-    style = "color: #0066cc; margin: 5px 0;";
+    style = "color: #4af; margin: 3px 0; font-size: 11px;";
   } else if (type === "ai") {
-    style = "color: #2c5aa0; margin: 5px 0;";
+    style = "color: #aaa; margin: 3px 0; font-size: 11px;";
   } else if (type === "error") {
-    style = "color: #cc0000; margin: 5px 0;";
+    style = "color: #f44; margin: 3px 0; font-size: 11px;";
   } else if (type === "system") {
-    style = "color: #666; margin: 5px 0; font-style: italic;";
+    style = "color: #0f0; margin: 3px 0; font-style: italic; font-size: 11px;";
+  } else if (type === "success") {
+    style = "color: #0f0; margin: 3px 0; font-weight: bold; font-size: 11px;";
   }
   
   const msg_html = id ? `<p id='${id}' style='${style}'>${message}</p>` : `<p style='${style}'>${message}</p>`;
