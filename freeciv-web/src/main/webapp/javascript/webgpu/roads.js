@@ -111,8 +111,8 @@ function road_image_color(map_x, map_y)
         if (dir == 6) result[adj_river_count] = 26;
         adj_river_count++;
         if (adj_river_count > 2) {
-          let checktile = mapstep(ptile, 6);
-          if (checktile != null && tile_has_extra(checktile, EXTRA_RIVER)) return [53,0,0];  //special case, 4 connected rivers.
+          let checktile_south = mapstep(ptile, 6);
+          if (checktile_south != null && tile_has_extra(checktile_south, EXTRA_RIVER)) return [53,0,0];  //special case, 4 connected rivers.
           break;
         }
       }
