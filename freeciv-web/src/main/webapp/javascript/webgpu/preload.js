@@ -98,6 +98,18 @@ function webgl_preload()
     })()
   );
 
+  /* Preload river textures as DataArrayTexture (texture_2d_array).
+   * Same format as roads: 4x4 grid of sprites converted to 16 texture array layers.
+   */
+  imgurl = "/textures/large/river.png";
+  textureLoader.load(imgurl, (function () {
+          return function (image) {
+                $("#download_progress").html(" river textures 20%");
+                webgl_textures["river"] = createSpriteArrayTexture(image, 4, 4);
+            }
+    })()
+  );
+
   /* Preload railroads textures as DataArrayTexture (texture_2d_array).
    * Same format as roads: 4x4 grid of sprites converted to 16 texture array layers.
    */
