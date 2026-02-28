@@ -141,8 +141,6 @@ function createTerrainShaderTSL(uniforms) {
     const maptilesTex = uniforms.maptiles.value;
     const bordersTex = uniforms.borders.value;
     const roadsmapTex = uniforms.roadsmap.value;
-    const roadspritesTex = uniforms.roadsprites.value;
-    const railroadspritesTex = uniforms.railroadsprites.value;
     const terrainLayersTex = uniforms.terrain_layers.value;
     const terrainAtlasTex = uniforms.terrain_atlas.value;
     

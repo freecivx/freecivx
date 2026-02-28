@@ -85,31 +85,6 @@ function webgl_preload()
   }
 
 
-  /* Preload road textures as DataArrayTexture (texture_2d_array).
-   * The sprite sheet is a 4x4 grid (16 sprites), each 256x256 pixels.
-   * We convert this into a DataArrayTexture with 16 layers for efficient sampling.
-   */
-  var imgurl = "/textures/large/roads.png";
-  textureLoader.load(imgurl, (function () {
-          return function (image) {
-                $("#download_progress").html(" road textures 15%");
-                webgl_textures["roads"] = createSpriteArrayTexture(image, 4, 4);
-            }
-    })()
-  );
-
-  /* Preload railroads textures as DataArrayTexture (texture_2d_array).
-   * Same format as roads: 4x4 grid of sprites converted to 16 texture array layers.
-   */
-  imgurl = "/textures/large/railroads.png";
-  textureLoader.load(imgurl, (function () {
-          return function (image) {
-                $("#download_progress").html(" railroad textures 25%");
-                webgl_textures["railroads"] = createSpriteArrayTexture(image, 4, 4);
-            }
-    })()
-  );
-
   /* Preload arctic/tundra/farmland/irrigation textures as DataArrayTexture (texture_2d_array).
    * These 4 textures are loaded as separate layers in a single texture array to avoid
    * exceeding the 16 texture binding limit.
@@ -123,7 +98,7 @@ function webgl_preload()
     textureLoader.load("/textures/large/" + textureName + ".png", function(image) {
       loadedTerrainImages[index] = image;
       loadedCount++;
-      $("#download_progress").html(" terrain layer textures " + Math.floor(25 + (loadedCount / terrainLayerTextures.length) * 10) + "%");
+      $("#download_progress").html(" terrain layer textures " + Math.floor(15 + (loadedCount / terrainLayerTextures.length) * 20) + "%");
       
       // When all 4 textures are loaded, combine them into a DataArrayTexture
       if (loadedCount === terrainLayerTextures.length) {
