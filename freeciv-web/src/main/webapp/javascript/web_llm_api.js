@@ -53,11 +53,15 @@ async function init_webllm_engine() {
   console.log("[WebLLM] Initializing WebLLM engine...");
 
   try {
+    // Show loading message in dialog if it exists
+    update_command_center_status("<i class='fa fa-spinner fa-spin'></i> Initializing AI model...");
+    
     // Dynamically import web-llm from CDN
     console.log("[WebLLM] Importing web-llm from CDN...");
     const webllm = await import('https://esm.run/@mlc-ai/web-llm@0.2.81');
     
     console.log("[WebLLM] Module imported, creating engine...");
+    update_command_center_status("<i class='fa fa-spinner fa-spin'></i> Downloading AI model...");
     
     // SmolLM2-360M-Instruct is optimal for Freeciv 3D because:
     // - Very small (360M params) = fast loading, low memory usage
@@ -71,6 +75,8 @@ async function init_webllm_engine() {
       console.log("[WebLLM] Loading progress:", progress);
       if (progress.text) {
         console.log("[WebLLM]", progress.text);
+        // Update dialog with progress
+        update_command_center_status("<i class='fa fa-spinner fa-spin'></i> " + progress.text);
       }
     };
 
@@ -82,11 +88,13 @@ async function init_webllm_engine() {
     webllm_loaded = true;
     webllm_loading = false;
     console.log("[WebLLM] Engine initialized successfully!");
+    update_command_center_status("✓ AI model loaded and ready!");
     
   } catch (error) {
     console.error("[WebLLM] Failed to initialize:", error);
     webllm_loading = false;
     webllm_loaded = false;
+    update_command_center_status("<span style='color: red;'>Error: Failed to load AI model</span>");
   }
 }
 
@@ -214,10 +222,13 @@ async function show_ai_intro_dialog() {
   $("#ai_intro_dialog").remove();
   $("<div id='ai_intro_dialog'></div>").appendTo("div#game_page");
   
-  // Show loading message first - with black background and white text
+  // Show intro text immediately - don't wait for model to load
   $("#ai_intro_dialog").html(`
     <div id='command_center_chat' style='height: 140px; overflow-y: auto; margin-bottom: 8px; padding: 8px; border: 1px solid #444; background-color: #000; color: #fff; font-size: 11px;'>
-      <p style='text-align: center;'><i class='fa fa-spinner fa-spin'></i> Loading AI model...</p>
+      <p style='color: #0f0; font-weight: bold; font-size: 11px;'>🎮 Game Command Center</p>
+      <p style='font-size: 11px; margin-top: 5px;'>Control your units with simple commands or ask questions about the game.</p>
+      <p style='font-size: 11px; margin-top: 5px;'><strong>Quick commands:</strong> north, south, east, west, fortify, sentry, explore, build city, mine, irrigate, road. Type 'help' for full list.</p>
+      <p style='font-size: 11px; margin-top: 5px; color: #888;'><em>AI model will load on first use.</em></p>
     </div>
     <div style='display: flex; gap: 5px;'>
       <input type='text' id='command_center_input' style='flex: 1; padding: 6px; font-size: 11px; background-color: #222; color: #fff; border: 1px solid #444;' placeholder='Enter command or question...' />
@@ -255,29 +266,24 @@ async function show_ai_intro_dialog() {
   
   // Set up event listeners for the input and send button
   setup_command_center_listeners();
-  
-  // Wait for the model to be loaded before showing ready message
-  try {
-    // Poll until the model is loaded
-    console.log("[WebLLM] Waiting for model to load...");
-    while (!webllm_loaded) {
-      if (!webllm_loading) {
-        // Model failed to load or hasn't started loading
-        throw new Error("Model not loading");
-      }
-      // Wait 500ms before checking again
-      await new Promise(resolve => setTimeout(resolve, 500));
+}
+
+/**
+ * Update the command center status message
+ * @param {string} message - The status message to display
+ */
+function update_command_center_status(message) {
+  const chat_div = $("#command_center_chat");
+  if (chat_div.length > 0) {
+    // Check if there's already a status message, update it or append new one
+    const existing_status = chat_div.find(".status-msg");
+    if (existing_status.length > 0) {
+      existing_status.html(message);
+    } else {
+      chat_div.append(`<p class='status-msg' style='color: #0f0; font-size: 11px;'>${message}</p>`);
     }
-    
-    console.log("[WebLLM] Model loaded, showing ready message...");
-    const ready_message = "Game Command Center active. Commands: fortify, sentry, build city, mine, irrigate, road, clean, transform, pillage, auto explore, auto settle, upgrade, disband, open city, wait, load, unload. Or ask questions.";
-    
-    // Update dialog with ready message
-    $("#command_center_chat").html("<p style='color: #0f0; font-weight: bold; font-size: 11px;'>" + ready_message + "</p>");
-    
-  } catch (error) {
-    console.error("[WebLLM] Error initializing Command Center:", error);
-    $("#command_center_chat").html("<p style='color: red;'>Error: Failed to load AI model. Please try again later.</p>");
+    // Auto-scroll to bottom
+    chat_div.scrollTop(chat_div[0].scrollHeight);
   }
 }
 
@@ -316,6 +322,28 @@ const GAME_COMMANDS = {
   'idle': { fn: 'key_unit_idle', message: '✓ Units idle', batch: false },
   'stop': { fn: 'key_unit_idle', message: '✓ Units idle', batch: false },
   'no orders': { fn: 'key_unit_noorders', message: '✓ Units done moving', batch: false }
+};
+
+/**
+ * Direction mappings for unit movement
+ */
+const DIRECTION_MAP = {
+  'north': 1,      // DIR8_NORTH
+  'n': 1,
+  'northeast': 2,  // DIR8_NORTHEAST
+  'ne': 2,
+  'east': 4,       // DIR8_EAST
+  'e': 4,
+  'southeast': 7,  // DIR8_SOUTHEAST
+  'se': 7,
+  'south': 6,      // DIR8_SOUTH
+  's': 6,
+  'southwest': 5,  // DIR8_SOUTHWEST
+  'sw': 5,
+  'west': 3,       // DIR8_WEST
+  'w': 3,
+  'northwest': 0,  // DIR8_NORTHWEST
+  'nw': 0
 };
 
 /**
@@ -408,10 +436,18 @@ function setup_command_center_listeners() {
  */
 function show_help() {
   let help_text = "<div style='color: #0f0; font-size: 11px;'>";
-  help_text += "<p><strong>AI Command Center - Help</strong></p>";
-  help_text += "<p>Use this command center to control your units with simple text commands or ask questions about the game.</p>";
-  help_text += "<p><strong>Available Commands:</strong></p>";
-  help_text += "<ul style='margin: 5px 0; padding-left: 20px;'>";
+  help_text += "<div style='font-weight: bold; margin-bottom: 8px;'>🎮 AI Command Center - Help</div>";
+  help_text += "<div style='margin-bottom: 8px;'>Control your units with simple text commands or ask questions about the game.</div>";
+  
+  help_text += "<div style='font-weight: bold; margin-top: 10px; margin-bottom: 5px;'>Movement Commands:</div>";
+  help_text += "<div style='margin-left: 10px; line-height: 1.4;'>";
+  help_text += "• north (n), south (s), east (e), west (w)<br/>";
+  help_text += "• northeast (ne), northwest (nw), southeast (se), southwest (sw)<br/>";
+  help_text += "• move &lt;direction&gt; - e.g., 'move north'<br/>";
+  help_text += "</div>";
+  
+  help_text += "<div style='font-weight: bold; margin-top: 10px; margin-bottom: 5px;'>Unit Commands:</div>";
+  help_text += "<div style='margin-left: 10px; line-height: 1.4;'>";
   
   // Collect unique commands and their shortcuts
   const command_list = [];
@@ -444,21 +480,22 @@ function show_help() {
   
   // Display in list format
   for (const cmd of command_list) {
-    help_text += `<li>${cmd}</li>`;
+    help_text += `• ${cmd}<br/>`;
   }
   
-  help_text += "<li>build city (b) - Build a new city with AI-generated name</li>";
-  help_text += "<li>open city (c) - Open city dialog</li>";
-  help_text += "</ul>";
-  help_text += "<p><strong>Examples:</strong></p>";
-  help_text += "<ul style='margin: 5px 0; padding-left: 20px;'>";
-  help_text += "<li>'fortify' - Fortify selected unit(s)</li>";
-  help_text += "<li>'fortify all' - Fortify all your units</li>";
-  help_text += "<li>'explore all' - Set all units to auto-explore</li>";
-  help_text += "<li>'f' - Shortcut for fortify</li>";
-  help_text += "<li>'What should I research?' - Ask AI for advice</li>";
-  help_text += "</ul>";
-  help_text += "<p>Type any command or ask a question to get started!</p>";
+  help_text += "• build city (b) - Build a new city with AI-generated name<br/>";
+  help_text += "• open city (c) - Open city dialog<br/>";
+  help_text += "</div>";
+  help_text += "<div style='font-weight: bold; margin-top: 10px; margin-bottom: 5px;'>Examples:</div>";
+  help_text += "<div style='margin-left: 10px; line-height: 1.4;'>";
+  help_text += "• 'north' or 'n' - Move unit north<br/>";
+  help_text += "• 'move east' - Move unit east<br/>";
+  help_text += "• 'fortify' - Fortify selected unit(s)<br/>";
+  help_text += "• 'fortify all' - Fortify all your units<br/>";
+  help_text += "• 'explore all' - Set all units to auto-explore<br/>";
+  help_text += "• 'What should I research?' - Ask AI for advice<br/>";
+  help_text += "</div>";
+  help_text += "<div style='margin-top: 10px;'>Type any command or ask a question to get started!</div>";
   help_text += "</div>";
   
   append_command_center_message(help_text, "system");
@@ -471,6 +508,12 @@ function show_help() {
  * @returns {boolean} - True if command was executed successfully
  */
 function execute_command(cmd_config, cmd_name) {
+  // Handle help command specially
+  if (cmd_name === 'help') {
+    show_help();
+    return true;
+  }
+  
   // Validate current_focus for most commands
   if (!cmd_config.no_focus_check && (typeof current_focus === 'undefined' || current_focus.length === 0)) {
     append_command_center_message("No unit selected", "error");
@@ -490,9 +533,24 @@ function execute_command(cmd_config, cmd_name) {
 /**
  * Dispatch an intent detected from AI response
  * @param {string} intentName - The intent command name (e.g., "BUILD_CITY", "ROAD")
+ * @param {string} direction - Optional direction for movement commands (e.g., "north", "south")
  */
-async function dispatch_intent(intentName) {
-  console.log("[WebLLM] Dispatching intent:", intentName);
+async function dispatch_intent(intentName, direction = null) {
+  console.log("[WebLLM] Dispatching intent:", intentName, direction);
+  
+  // Handle MOVE with direction
+  if (intentName === 'MOVE' && direction) {
+    const dir = DIRECTION_MAP[direction.toLowerCase()];
+    if (dir !== undefined && typeof current_focus !== 'undefined' && current_focus.length > 0) {
+      if (typeof key_unit_move === 'function') {
+        key_unit_move(dir);
+        append_command_center_message(`✓ Moving ${direction}`, "success");
+      }
+    } else {
+      append_command_center_message("Cannot move - no unit selected or invalid direction", "error");
+    }
+    return;
+  }
   
   // Validate current_focus before executing intent
   if (typeof current_focus === 'undefined' || current_focus.length === 0) {
@@ -623,8 +681,42 @@ async function handle_command_center_input() {
   let command_executed = false;
   
   try {
+    // Check for directional movement commands first
+    const direction = DIRECTION_MAP[input_lower];
+    if (direction !== undefined) {
+      if (typeof current_focus !== 'undefined' && current_focus.length > 0) {
+        if (typeof key_unit_move === 'function') {
+          key_unit_move(direction);
+          append_command_center_message(`✓ Moving ${input_lower}`, "success");
+          command_executed = true;
+        }
+      } else {
+        append_command_center_message("No unit selected", "error");
+        command_executed = true;
+      }
+    }
+    // Check for "move <direction>" pattern
+    else if (input_lower.startsWith("move ")) {
+      const dir_name = input_lower.substring(5).trim();
+      const dir = DIRECTION_MAP[dir_name];
+      if (dir !== undefined) {
+        if (typeof current_focus !== 'undefined' && current_focus.length > 0) {
+          if (typeof key_unit_move === 'function') {
+            key_unit_move(dir);
+            append_command_center_message(`✓ Moving ${dir_name}`, "success");
+            command_executed = true;
+          }
+        } else {
+          append_command_center_message("No unit selected", "error");
+          command_executed = true;
+        }
+      } else {
+        append_command_center_message("Invalid direction. Use: north, south, east, west, northeast, northwest, southeast, southwest", "error");
+        command_executed = true;
+      }
+    }
     // Special handling for "build city" command
-    if (input_lower === "build city" || input_lower === "build" || input_lower === "b") {
+    else if (input_lower === "build city" || input_lower === "build" || input_lower === "b") {
       if (typeof current_focus !== 'undefined' && current_focus.length > 0) {
         const unit_id = current_focus[0]['id'];
         const actor_unit = game_find_unit_by_number(unit_id);
@@ -682,13 +774,30 @@ async function handle_command_center_input() {
   
   // If no command was executed, use AI to respond
   if (!command_executed) {
+    // Lazy-load the model if not already loaded
+    if (!webllm_loaded && !webllm_loading) {
+      console.log("[WebLLM] Model not loaded, starting initialization...");
+      append_command_center_message("⚙️ Loading AI model for the first time (this may take a moment)...", "system");
+      init_webllm_engine(); // Start loading in background
+    }
+    
+    // Check if model is still loading
+    if (!webllm_loaded) {
+      append_command_center_message(
+        "AI model is still loading. Please wait a moment and try again, or use direct commands like 'fortify', 'explore', 'build city', etc.",
+        "system"
+      );
+      return;
+    }
+    
     // Check if it sounds like a tactical command we can't handle yet
-    const tactical_keywords = ['attack', 'move to', 'capture', 'conquer', 'defend against', 'go to', 'march'];
+    // Note: "move" and "goto" are now supported, so we exclude them
+    const tactical_keywords = ['attack', 'capture', 'conquer', 'defend against', 'march'];
     const is_tactical = tactical_keywords.some(keyword => input_lower.includes(keyword));
     
     if (is_tactical) {
       append_command_center_message(
-        "AI: I cannot perform complex tactical maneuvers yet. However, I can help with unit commands like 'fortify', 'sentry', 'explore', 'build city', 'mine', 'irrigate', and more. Try 'fortify all' or 'sentry all' for batch commands!",
+        "AI: I cannot perform complex tactical maneuvers yet. However, I can help with unit commands like 'north', 'south', 'fortify', 'sentry', 'explore', 'build city', 'mine', 'irrigate', and more. Try 'fortify all' or 'sentry all' for batch commands!",
         "ai"
       );
     } else {
@@ -712,9 +821,9 @@ async function handle_command_center_input() {
         if (context.selected_unit_type) context_str += `Selected unit: ${context.selected_unit_type}. `;
         if (context.selected_tile_terrain) context_str += `Terrain: ${context.selected_tile_terrain}. `;
         
-        // Process the command/question with the LLM
-        const system_message = `You are the Game Command Center AI for Freeciv. ${context_str}Provide concise, context-aware advice without using asterisks or placeholder symbols. If the player's command is clear and you can help execute it, add an intent flag at the end in the format: [INTENT: COMMAND_NAME]. Available intents: BUILD_CITY, FORTIFY, SENTRY, MINE, IRRIGATE, ROAD, CLEAN, TRANSFORM, PILLAGE, EXPLORE, SETTLE, UPGRADE, WAIT. Only include an intent if the player's request is unambiguous and you're confident about their intention. Do not include an intent if the player is asking for general advice.`;
-        const user_message = `The player said: "${input}". Respond appropriately. Keep responses concise (2-3 sentences).`;
+        // Process the command/question with the LLM - optimized for speed
+        const system_message = `You are the Game Command Center AI for Freeciv. ${context_str}Provide concise, context-aware advice without using asterisks or placeholder symbols. If the player asks to move in a direction, add [INTENT: MOVE <DIRECTION>] where DIRECTION is one of: north, south, east, west, northeast, northwest, southeast, southwest. For other clear commands, add an intent flag in the format: [INTENT: COMMAND_NAME]. Available intents: BUILD_CITY, FORTIFY, SENTRY, MINE, IRRIGATE, ROAD, CLEAN, TRANSFORM, PILLAGE, EXPLORE, SETTLE, UPGRADE, WAIT, MOVE. Only include an intent if the player's request is unambiguous and you're confident about their intention. Do not include an intent if the player is asking for general advice.`;
+        const user_message = `The player said: "${input}". Respond appropriately. Keep responses concise (1-2 sentences).`;
         
         const messages = [
           { role: "system", content: system_message },
@@ -723,8 +832,8 @@ async function handle_command_center_input() {
         
         const reply = await webllm_engine.chat.completions.create({
           messages: messages,
-          max_tokens: 150,
-          temperature: 0.7,
+          max_tokens: 80,  // Reduced from 150 for faster responses
+          temperature: 0.5,  // Reduced from 0.7 for more focused, faster responses
         });
         
         let response = reply.choices[0].message.content;
@@ -732,15 +841,16 @@ async function handle_command_center_input() {
         response = response.replace(/\*\*\*/g, '').trim();
         response = response.replace(/\s{2,}/g, ' ').trim();
         
-        // Check for intent pattern in response
-        const intentRegex = /\[INTENT:\s*([A-Z_]+)\]/;
+        // Check for intent pattern in response (supports MOVE with direction)
+        const intentRegex = /\[INTENT:\s*([A-Z_]+)(?:\s+([a-z]+))?\]/;
         const intentMatch = response.match(intentRegex);
         
         let displayText = response;
         
         if (intentMatch) {
           const intentName = intentMatch[1];
-          console.log("[WebLLM] Detected intent:", intentName);
+          const intentParam = intentMatch[2]; // For MOVE direction
+          console.log("[WebLLM] Detected intent:", intentName, intentParam);
           
           // Strip the intent block from the visible text
           displayText = response.replace(intentRegex, '').trim();
@@ -748,20 +858,18 @@ async function handle_command_center_input() {
           // Remove thinking indicator
           $("#thinking_msg").remove();
           
-          // Display the AI response (without intent) with typewriter effect
-          append_command_center_message("AI: " + displayText, "ai", null, true);
+          // Display the AI response (without intent) - no typewriter for speed
+          append_command_center_message("AI: " + displayText, "ai");
           
-          // Dispatch the intent after a short delay to allow typewriter to start
-          setTimeout(async () => {
-            await dispatch_intent(intentName);
-          }, 100);
+          // Dispatch the intent immediately
+          await dispatch_intent(intentName, intentParam);
         } else {
           // No intent detected, just display the response
           // Remove thinking indicator
           $("#thinking_msg").remove();
           
-          // Append AI's response with typewriter effect
-          append_command_center_message("AI: " + displayText, "ai", null, true);
+          // Append AI's response - no typewriter for speed
+          append_command_center_message("AI: " + displayText, "ai");
         }
         
       } catch (error) {
@@ -803,9 +911,9 @@ function append_command_center_message(message, type, id, typewriter = false) {
     css_class = "success-msg";
   }
   
-  // Create message element
+  // Create message element - use div instead of p for complex HTML content
   const msg_id = id || `msg_${Date.now()}`;
-  const msg_html = `<p id='${msg_id}' class='${css_class}'>${timestamp}<span class='msg-content'></span></p>`;
+  const msg_html = `<div id='${msg_id}' class='${css_class}' style='margin: 5px 0;'>${timestamp}<span class='msg-content'></span></div>`;
   chat_div.append(msg_html);
   
   const msg_element = $(`#${msg_id} .msg-content`);
