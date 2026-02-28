@@ -906,7 +906,7 @@ function createTerrainShaderSquareTSL(uniforms) {
     const riverColorWithFlow = mix(riverColorWithShore, mul(riverColorWithShore, 1.15), mul(flowNoise, 0.2));
     
     // Blend rivers onto terrain
-    const activeRiverMask = mul(hasAnyRiver, riverMask);
+    const activeRiverMask = mul(hasAnyRiver.toFloat(), riverMask);
     
     finalColor = vec4(
         mix(finalColor.rgb, riverColorWithFlow, mul(activeRiverMask, 0.95)),
