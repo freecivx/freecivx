@@ -629,11 +629,10 @@ function createTerrainShaderTSL(uniforms) {
     
     // Calculate sleeper pattern based on distance along path
     // Weight by connection direction to get proper alignment
-    // Convert boolean connections to float (1.0 or 0.0) for multiplication
-    let distAlong = mul(connectN.select(1.0, 0.0), abs(distAlongN));
-    distAlong = add(distAlong, mul(connectS.select(1.0, 0.0), abs(distAlongS)));
-    distAlong = add(distAlong, mul(connectE.select(1.0, 0.0), abs(distAlongE)));
-    distAlong = add(distAlong, mul(connectW.select(1.0, 0.0), abs(distAlongW)));
+    let distAlong = mul(connectN, abs(distAlongN));
+    distAlong = add(distAlong, mul(connectS, abs(distAlongS)));
+    distAlong = add(distAlong, mul(connectE, abs(distAlongE)));
+    distAlong = add(distAlong, mul(connectW, abs(distAlongW)));
     
     const sleeperPattern = step(mod(distAlong, sleeperSpacing), sleeperWidth);
     
