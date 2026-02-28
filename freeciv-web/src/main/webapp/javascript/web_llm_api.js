@@ -229,7 +229,7 @@ async function show_ai_intro_dialog() {
     bgiframe: true,
     modal: false,
     width: "450px",
-    height: 200,
+    height: "auto",
     resizable: false,
     dialogClass: 'command_center_dialog',
     closeOnEscape: false,
