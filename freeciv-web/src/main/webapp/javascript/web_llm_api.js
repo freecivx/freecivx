@@ -227,7 +227,7 @@ async function show_ai_intro_dialog() {
     <div id='command_center_chat' style='height: 140px; overflow-y: auto; margin-bottom: 8px; padding: 8px; border: 1px solid #444; background-color: #000; color: #fff; font-size: 11px;'>
       <p style='color: #0f0; font-weight: bold; font-size: 11px;'>🎮 Game Command Center</p>
       <p style='font-size: 11px; margin-top: 5px;'>Control your units with simple commands or ask questions about the game.</p>
-      <p style='font-size: 11px; margin-top: 5px;'><strong>Quick commands:</strong> north, south, east, west, fortify, sentry, explore, build city, mine, irrigate, road. Type 'help' for full list.</p>
+      <p style='font-size: 11px; margin-top: 5px;'><strong>Quick commands:</strong> north, south, east, west, fortify, sentry, explore, build city, mine, irrigate, road, end turn. Type 'help' for full list.</p>
       <p style='font-size: 11px; margin-top: 5px; color: #888;'><em>AI model will load on first use.</em></p>
     </div>
     <div style='display: flex; gap: 5px;'>
@@ -321,7 +321,9 @@ const GAME_COMMANDS = {
   'homecity': { fn: 'key_unit_homecity', message: '✓ Changed home city', batch: false },
   'idle': { fn: 'key_unit_idle', message: '✓ Units idle', batch: false },
   'stop': { fn: 'key_unit_idle', message: '✓ Units idle', batch: false },
-  'no orders': { fn: 'key_unit_noorders', message: '✓ Units done moving', batch: false }
+  'no orders': { fn: 'key_unit_noorders', message: '✓ Units done moving', batch: false },
+  'end turn': { fn: 'send_end_turn', message: '✓ Turn ended', batch: false, no_focus_check: true },
+  'done': { fn: 'send_end_turn', message: '✓ Turn ended', batch: false, no_focus_check: true }
 };
 
 /**
@@ -451,7 +453,8 @@ function show_llm_help() {
   help_text += "• mine (m), irrigate (i), road (r) - Terrain improvements<br/>";
   help_text += "• build city (b) - Build a new city<br/>";
   help_text += "• open city (c) - Open city dialog<br/>";
-  help_text += "• wait (w) - Skip unit turn<br/><br/>";
+  help_text += "• wait (w) - Skip unit turn<br/>";
+  help_text += "• end turn / done - End your turn<br/><br/>";
   
   help_text += "<strong>Examples:</strong><br/>";
   help_text += "• 'north' - Move unit north<br/>";
@@ -510,6 +513,15 @@ async function dispatch_intent(intentName, direction = null) {
       }
     } else {
       append_command_center_message("Cannot move - no unit selected or invalid direction", "error");
+    }
+    return;
+  }
+  
+  // Handle END_TURN specially (no unit focus required)
+  if (intentName === 'END_TURN') {
+    if (typeof send_end_turn === 'function') {
+      send_end_turn();
+      append_command_center_message("✓ Turn ended", "success");
     }
     return;
   }
@@ -791,7 +803,7 @@ async function handle_command_center_input() {
         if (context.selected_tile_terrain) context_str += `Terrain: ${context.selected_tile_terrain}. `;
         
         // Process the command/question with the LLM - optimized for speed
-        const system_message = `You are the Game Command Center AI for Freeciv. ${context_str}Provide concise, context-aware advice without using asterisks or placeholder symbols. If the player asks to move in a direction, add [INTENT: MOVE <DIRECTION>] where DIRECTION is one of: north, south, east, west, northeast, northwest, southeast, southwest. For other clear commands, add an intent flag in the format: [INTENT: COMMAND_NAME]. Available intents: BUILD_CITY, FORTIFY, SENTRY, MINE, IRRIGATE, ROAD, CLEAN, TRANSFORM, PILLAGE, EXPLORE, SETTLE, UPGRADE, WAIT, MOVE. Only include an intent if the player's request is unambiguous and you're confident about their intention. Do not include an intent if the player is asking for general advice.`;
+        const system_message = `You are the Game Command Center AI for Freeciv. ${context_str}Provide concise, context-aware advice without using asterisks or placeholder symbols. If the player asks to move in a direction, add [INTENT: MOVE <DIRECTION>] where DIRECTION is one of: north, south, east, west, northeast, northwest, southeast, southwest. For other clear commands, add an intent flag in the format: [INTENT: COMMAND_NAME]. Available intents: BUILD_CITY, FORTIFY, SENTRY, MINE, IRRIGATE, ROAD, CLEAN, TRANSFORM, PILLAGE, EXPLORE, SETTLE, UPGRADE, WAIT, MOVE, END_TURN. Only include an intent if the player's request is unambiguous and you're confident about their intention. Do not include an intent if the player is asking for general advice.`;
         const user_message = `The player said: "${input}". Respond appropriately. Keep responses concise (1-2 sentences).`;
         
         const messages = [
