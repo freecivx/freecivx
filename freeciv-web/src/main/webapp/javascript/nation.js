@@ -136,9 +136,6 @@ function update_nation_screen()
 **************************************************************************/
 function col_love(pplayer)
 {
-  if (is_standalone_mode()) {
-    return "-";
-  }
   if (client_is_observer() || client.conn.playing == null || pplayer['playerno'] == client.conn.playing['playerno']
       || pplayer['flags'].isSet(PLRF_AI) == false) {
     return "-";

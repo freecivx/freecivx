@@ -47,10 +47,6 @@ function tile_get_known(ptile)
 **************************************************************************/
 function tile_has_extra(ptile, extra)
 {
-  if (is_standalone_mode()) {
-    return false; // FIXME
-  }
-
   if (ptile == null || ptile['extras'] == null) {
     return false;
   }
@@ -60,9 +56,6 @@ function tile_has_extra(ptile, extra)
 
 function tile_resource(tile)
 {
-  if (is_standalone_mode()) {
-    return null; // FIXME
-  }
   if (tile != null && tile.extras != null) {
     const tile_extras = tile.extras.toBitSet();
     for (var extra in tile_extras) {

@@ -62,10 +62,6 @@ function webgl_preload_complete()
 
   network_init();
 
-  if (is_standalone_mode()) {
-    show_standalone_pregame_dialog();
-  }
-
 }
 
 /****************************************************************************
