@@ -530,7 +530,7 @@ function createTerrainShaderSquareTSL(uniforms) {
     const uvS_u = sub(0.5, tilePos.y);
     const uvS_v = add(sub(tilePos.x, 0.5), mul(windingOffsetUV, hasAnyRoad));
     const maskS = mul(
-        step(uvS_u, 0.0).not(),
+        step(0.0, uvS_u),
         clamp(sub(1.0, div(abs(uvS_v), mul(roadWidth, 0.5))), 0.0, 1.0)
     );
     roadIntensity = connectS.select(max(roadIntensity, maskS), roadIntensity);
@@ -552,7 +552,7 @@ function createTerrainShaderSquareTSL(uniforms) {
     const uvW_u = sub(0.5, tilePos.x);
     const uvW_v = add(sub(tilePos.y, 0.5), mul(windingOffsetUV, hasAnyRoad));
     const maskW = mul(
-        step(uvW_u, 0.0).not(),
+        step(0.0, uvW_u),
         clamp(sub(1.0, div(abs(uvW_v), mul(roadWidth, 0.5))), 0.0, 1.0)
     );
     roadIntensity = connectW.select(max(roadIntensity, maskW), roadIntensity);
@@ -801,7 +801,7 @@ function createTerrainShaderSquareTSL(uniforms) {
     const uvRiverS_u = sub(0.5, tilePos.y);
     const uvRiverS_v = add(sub(tilePos.x, 0.5), riverWindingOffsetUV);
     const maskRiverS = mul(
-        step(uvRiverS_u, 0.0).not(),
+        step(0.0, uvRiverS_u),
         clamp(sub(1.0, div(abs(uvRiverS_v), mul(riverWidth, 0.5))), 0.0, 1.0)
     );
     riverIntensity = riverConnectS.select(max(riverIntensity, maskRiverS), riverIntensity);
@@ -823,7 +823,7 @@ function createTerrainShaderSquareTSL(uniforms) {
     const uvRiverW_u = sub(0.5, tilePos.x);
     const uvRiverW_v = add(sub(tilePos.y, 0.5), riverWindingOffsetUV);
     const maskRiverW = mul(
-        step(uvRiverW_u, 0.0).not(),
+        step(0.0, uvRiverW_u),
         clamp(sub(1.0, div(abs(uvRiverW_v), mul(riverWidth, 0.5))), 0.0, 1.0)
     );
     riverIntensity = riverConnectW.select(max(riverIntensity, maskRiverW), riverIntensity);
