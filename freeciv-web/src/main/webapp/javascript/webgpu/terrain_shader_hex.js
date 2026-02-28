@@ -856,12 +856,15 @@ function createTerrainShaderTSL(uniforms) {
     // River extension for better connectivity
     const riverEdgeExtension = 0.7;
     
+    // Precompute winding offsets for reuse
+    const riverWindingOffsetX = vec2(riverWindingOffset, 0.0);
+    const riverWindingOffsetY = vec2(0.0, riverWindingOffset);
+    
     // North segment with winding
     const riverNorthTarget = vec2(0.5, add(1.0, riverEdgeExtension));
     const toRiverNorth = sub(riverNorthTarget, center);
     const hRiverN = clamp(div(dot(tilePosFromCenter, toRiverNorth), dot(toRiverNorth, toRiverNorth)), 0.0, 2.0);
-    const riverWindingOffsetN = vec2(riverWindingOffset, 0.0);
-    const tilePosRiverWindingN = sub(tilePosFromCenter, riverWindingOffsetN);
+    const tilePosRiverWindingN = sub(tilePosFromCenter, riverWindingOffsetX);
     const distToRiverNorth = sub(sub(tilePosRiverWindingN, mul(toRiverNorth, hRiverN)).length(), riverWidth);
     distToRiver = riverConnectN.select(min(distToRiver, distToRiverNorth), distToRiver);
     
@@ -869,8 +872,7 @@ function createTerrainShaderTSL(uniforms) {
     const riverSouthTarget = vec2(0.5, sub(0.0, riverEdgeExtension));
     const toRiverSouth = sub(riverSouthTarget, center);
     const hRiverS = clamp(div(dot(tilePosFromCenter, toRiverSouth), dot(toRiverSouth, toRiverSouth)), 0.0, 2.0);
-    const riverWindingOffsetS = vec2(riverWindingOffset, 0.0);
-    const tilePosRiverWindingS = sub(tilePosFromCenter, riverWindingOffsetS);
+    const tilePosRiverWindingS = sub(tilePosFromCenter, riverWindingOffsetX);
     const distToRiverSouth = sub(sub(tilePosRiverWindingS, mul(toRiverSouth, hRiverS)).length(), riverWidth);
     distToRiver = riverConnectS.select(min(distToRiver, distToRiverSouth), distToRiver);
     
@@ -878,8 +880,7 @@ function createTerrainShaderTSL(uniforms) {
     const riverEastTarget = vec2(add(1.0, riverEdgeExtension), 0.5);
     const toRiverEast = sub(riverEastTarget, center);
     const hRiverE = clamp(div(dot(tilePosFromCenter, toRiverEast), dot(toRiverEast, toRiverEast)), 0.0, 2.0);
-    const riverWindingOffsetE = vec2(0.0, riverWindingOffset);
-    const tilePosRiverWindingE = sub(tilePosFromCenter, riverWindingOffsetE);
+    const tilePosRiverWindingE = sub(tilePosFromCenter, riverWindingOffsetY);
     const distToRiverEast = sub(sub(tilePosRiverWindingE, mul(toRiverEast, hRiverE)).length(), riverWidth);
     distToRiver = riverConnectE.select(min(distToRiver, distToRiverEast), distToRiver);
     
@@ -887,8 +888,7 @@ function createTerrainShaderTSL(uniforms) {
     const riverWestTarget = vec2(sub(0.0, riverEdgeExtension), 0.5);
     const toRiverWest = sub(riverWestTarget, center);
     const hRiverW = clamp(div(dot(tilePosFromCenter, toRiverWest), dot(toRiverWest, toRiverWest)), 0.0, 2.0);
-    const riverWindingOffsetW = vec2(0.0, riverWindingOffset);
-    const tilePosRiverWindingW = sub(tilePosFromCenter, riverWindingOffsetW);
+    const tilePosRiverWindingW = sub(tilePosFromCenter, riverWindingOffsetY);
     const distToRiverWest = sub(sub(tilePosRiverWindingW, mul(toRiverWest, hRiverW)).length(), riverWidth);
     distToRiver = riverConnectW.select(min(distToRiver, distToRiverWest), distToRiver);
     
@@ -932,11 +932,8 @@ function createTerrainShaderTSL(uniforms) {
     // Blend water color with shore color at edges
     const riverColorWithShore = mix(riverWaterColor, riverShoreColor, mul(riverShoreMask, 0.85));
     
-    // Add subtle flow animation effect using noise
-    const flowNoiseScale = 8.0;
-    const flowNoiseCoord = mul(add(tilePos, vec2(mul(tileX, 0.5), mul(tileY, 0.5))), flowNoiseScale);
-    const flowNoise = fract(mul(sin(dot(flowNoiseCoord, vec2(23.456, 89.123))), 43758.5453));
-    const riverColorWithFlow = mix(riverColorWithShore, mul(riverColorWithShore, 1.15), mul(flowNoise, 0.2));
+    // Add subtle flow animation effect (reuse riverWindingNoise for performance)
+    const riverColorWithFlow = mix(riverColorWithShore, mul(riverColorWithShore, 1.15), mul(riverWindingNoise, 0.2));
     
     // Blend rivers onto terrain
     const activeRiverMask = mul(hasAnyRiver.toFloat(), riverMask);
