@@ -270,7 +270,7 @@ async function show_ai_intro_dialog() {
 
   $("#ai_intro_dialog").parent().css("top", "52px");
   $("#ai_intro_dialog").parent().css("right", "3px");
-  $("#ai_intro_dialog").parent().css("background", "rgba(0,0,0,0)");
+  $("#ai_intro_dialog").parent().css("background", "rgba(0,0,0,0.5)");
   
   // Set up event listeners for the input and send button
   setup_command_center_listeners();
