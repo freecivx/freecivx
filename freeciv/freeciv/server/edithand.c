@@ -756,7 +756,7 @@ void handle_edit_city(struct connection *pc,
   BV_CLR_ALL(need_player_info);
 
   /* Handle name change. */
-  if (packet->name != NULL && packet->name[0] != '\0'
+  if (packet->name[0] != '\0'
       && 0 != strcmp(pcity->name, packet->name)) {
     if (!is_allowed_city_name(pplayer, packet->name, buf, sizeof(buf))) {
       notify_conn(pc->self, ptile, E_BAD_COMMAND, ftc_editor,
