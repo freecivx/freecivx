@@ -490,6 +490,13 @@ void handle_city_rename(struct player *pplayer, int city_id,
     return;
   }
 
+  /* Check that city name is provided */
+  if (name == NULL || name[0] == '\0') {
+    notify_player(pplayer, pcity->tile, E_BAD_COMMAND, ftc_server,
+                  _("City name is required."));
+    return;
+  }
+
   if (!is_allowed_city_name(pplayer, name, message, sizeof(message))) {
     notify_player(pplayer, pcity->tile, E_BAD_COMMAND,
                   ftc_server, "%s", message);
