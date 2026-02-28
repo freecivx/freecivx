@@ -247,16 +247,7 @@ async function show_ai_intro_dialog() {
   });
   
   $("#ai_intro_dialog").dialog('open');
-  $("#ai_intro_dialog").parent().addClass("command_center_dialog");
-  
-  // Apply similar styling as Game messages dialog
-  $(".command_center_dialog").css("top", "52px");
-  $(".command_center_dialog").css("right", "3px");
-  $("#ai_intro_dialog").parent().css("background", "rgba(0, 0, 0, 0.85)");
   $("#ai_intro_dialog").parent().css("z-index", "100");
-  $("#ai_intro_dialog").parent().css("overflow", "hidden");
-  
-
   
   // Set up event listeners for the input and send button
   setup_command_center_listeners();
