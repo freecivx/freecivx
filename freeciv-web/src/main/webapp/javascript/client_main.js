@@ -69,13 +69,8 @@ function set_client_state(newstate)
       $("#dialog").dialog('close');
       $("#pregame_page").hide();
 
-      // Initialize WebLLM engine in the background if not already initialized
-      if (typeof init_webllm_engine !== 'undefined' && !webllm_loading && !webllm_loaded) {
-        console.log("[Game] Initializing WebLLM engine in background...");
-        init_webllm_engine();
-      }
-
-      // Show AI-generated introduction dialog when game starts
+      // Show AI Game Command Center dialog when game starts
+      // Note: The AI model will be lazy-loaded only when user first enters a question
       if (webllm_enabled) {
         setTimeout(function() {
           show_ai_intro_dialog();

@@ -53,11 +53,15 @@ async function init_webllm_engine() {
   console.log("[WebLLM] Initializing WebLLM engine...");
 
   try {
+    // Show loading message in dialog if it exists
+    update_command_center_status("<i class='fa fa-spinner fa-spin'></i> Initializing AI model...");
+    
     // Dynamically import web-llm from CDN
     console.log("[WebLLM] Importing web-llm from CDN...");
     const webllm = await import('https://esm.run/@mlc-ai/web-llm@0.2.81');
     
     console.log("[WebLLM] Module imported, creating engine...");
+    update_command_center_status("<i class='fa fa-spinner fa-spin'></i> Downloading AI model...");
     
     // SmolLM2-360M-Instruct is optimal for Freeciv 3D because:
     // - Very small (360M params) = fast loading, low memory usage
@@ -71,6 +75,8 @@ async function init_webllm_engine() {
       console.log("[WebLLM] Loading progress:", progress);
       if (progress.text) {
         console.log("[WebLLM]", progress.text);
+        // Update dialog with progress
+        update_command_center_status("<i class='fa fa-spinner fa-spin'></i> " + progress.text);
       }
     };
 
@@ -82,11 +88,13 @@ async function init_webllm_engine() {
     webllm_loaded = true;
     webllm_loading = false;
     console.log("[WebLLM] Engine initialized successfully!");
+    update_command_center_status("✓ AI model loaded and ready!");
     
   } catch (error) {
     console.error("[WebLLM] Failed to initialize:", error);
     webllm_loading = false;
     webllm_loaded = false;
+    update_command_center_status("<span style='color: red;'>Error: Failed to load AI model</span>");
   }
 }
 
@@ -214,10 +222,13 @@ async function show_ai_intro_dialog() {
   $("#ai_intro_dialog").remove();
   $("<div id='ai_intro_dialog'></div>").appendTo("div#game_page");
   
-  // Show loading message first - with black background and white text
+  // Show intro text immediately - don't wait for model to load
   $("#ai_intro_dialog").html(`
     <div id='command_center_chat' style='height: 140px; overflow-y: auto; margin-bottom: 8px; padding: 8px; border: 1px solid #444; background-color: #000; color: #fff; font-size: 11px;'>
-      <p style='text-align: center;'><i class='fa fa-spinner fa-spin'></i> Loading AI model...</p>
+      <p style='color: #0f0; font-weight: bold; font-size: 11px;'>🎮 Game Command Center</p>
+      <p style='font-size: 11px; margin-top: 5px;'>Control your units with simple commands or ask questions about the game.</p>
+      <p style='font-size: 11px; margin-top: 5px;'><strong>Quick commands:</strong> fortify, sentry, explore, build city, mine, irrigate, road. Type 'help' for full list.</p>
+      <p style='font-size: 11px; margin-top: 5px; color: #888;'><em>AI model will load on first use.</em></p>
     </div>
     <div style='display: flex; gap: 5px;'>
       <input type='text' id='command_center_input' style='flex: 1; padding: 6px; font-size: 11px; background-color: #222; color: #fff; border: 1px solid #444;' placeholder='Enter command or question...' />
@@ -255,29 +266,24 @@ async function show_ai_intro_dialog() {
   
   // Set up event listeners for the input and send button
   setup_command_center_listeners();
-  
-  // Wait for the model to be loaded before showing ready message
-  try {
-    // Poll until the model is loaded
-    console.log("[WebLLM] Waiting for model to load...");
-    while (!webllm_loaded) {
-      if (!webllm_loading) {
-        // Model failed to load or hasn't started loading
-        throw new Error("Model not loading");
-      }
-      // Wait 500ms before checking again
-      await new Promise(resolve => setTimeout(resolve, 500));
+}
+
+/**
+ * Update the command center status message
+ * @param {string} message - The status message to display
+ */
+function update_command_center_status(message) {
+  const chat_div = $("#command_center_chat");
+  if (chat_div.length > 0) {
+    // Check if there's already a status message, update it or append new one
+    const existing_status = chat_div.find(".status-msg");
+    if (existing_status.length > 0) {
+      existing_status.html(message);
+    } else {
+      chat_div.append(`<p class='status-msg' style='color: #0f0; font-size: 11px;'>${message}</p>`);
     }
-    
-    console.log("[WebLLM] Model loaded, showing ready message...");
-    const ready_message = "Game Command Center active. Commands: fortify, sentry, build city, mine, irrigate, road, clean, transform, pillage, auto explore, auto settle, upgrade, disband, open city, wait, load, unload. Or ask questions.";
-    
-    // Update dialog with ready message
-    $("#command_center_chat").html("<p style='color: #0f0; font-weight: bold; font-size: 11px;'>" + ready_message + "</p>");
-    
-  } catch (error) {
-    console.error("[WebLLM] Error initializing Command Center:", error);
-    $("#command_center_chat").html("<p style='color: red;'>Error: Failed to load AI model. Please try again later.</p>");
+    // Auto-scroll to bottom
+    chat_div.scrollTop(chat_div[0].scrollHeight);
   }
 }
 
@@ -471,6 +477,12 @@ function show_help() {
  * @returns {boolean} - True if command was executed successfully
  */
 function execute_command(cmd_config, cmd_name) {
+  // Handle help command specially
+  if (cmd_name === 'help') {
+    show_help();
+    return true;
+  }
+  
   // Validate current_focus for most commands
   if (!cmd_config.no_focus_check && (typeof current_focus === 'undefined' || current_focus.length === 0)) {
     append_command_center_message("No unit selected", "error");
@@ -682,6 +694,22 @@ async function handle_command_center_input() {
   
   // If no command was executed, use AI to respond
   if (!command_executed) {
+    // Lazy-load the model if not already loaded
+    if (!webllm_loaded && !webllm_loading) {
+      console.log("[WebLLM] Model not loaded, starting initialization...");
+      append_command_center_message("⚙️ Loading AI model for the first time (this may take a moment)...", "system");
+      init_webllm_engine(); // Start loading in background
+    }
+    
+    // Check if model is still loading
+    if (!webllm_loaded) {
+      append_command_center_message(
+        "AI model is still loading. Please wait a moment and try again, or use direct commands like 'fortify', 'explore', 'build city', etc.",
+        "system"
+      );
+      return;
+    }
+    
     // Check if it sounds like a tactical command we can't handle yet
     const tactical_keywords = ['attack', 'move to', 'capture', 'conquer', 'defend against', 'go to', 'march'];
     const is_tactical = tactical_keywords.some(keyword => input_lower.includes(keyword));
@@ -712,9 +740,9 @@ async function handle_command_center_input() {
         if (context.selected_unit_type) context_str += `Selected unit: ${context.selected_unit_type}. `;
         if (context.selected_tile_terrain) context_str += `Terrain: ${context.selected_tile_terrain}. `;
         
-        // Process the command/question with the LLM
+        // Process the command/question with the LLM - optimized for speed
         const system_message = `You are the Game Command Center AI for Freeciv. ${context_str}Provide concise, context-aware advice without using asterisks or placeholder symbols. If the player's command is clear and you can help execute it, add an intent flag at the end in the format: [INTENT: COMMAND_NAME]. Available intents: BUILD_CITY, FORTIFY, SENTRY, MINE, IRRIGATE, ROAD, CLEAN, TRANSFORM, PILLAGE, EXPLORE, SETTLE, UPGRADE, WAIT. Only include an intent if the player's request is unambiguous and you're confident about their intention. Do not include an intent if the player is asking for general advice.`;
-        const user_message = `The player said: "${input}". Respond appropriately. Keep responses concise (2-3 sentences).`;
+        const user_message = `The player said: "${input}". Respond appropriately. Keep responses concise (1-2 sentences).`;
         
         const messages = [
           { role: "system", content: system_message },
@@ -723,8 +751,8 @@ async function handle_command_center_input() {
         
         const reply = await webllm_engine.chat.completions.create({
           messages: messages,
-          max_tokens: 150,
-          temperature: 0.7,
+          max_tokens: 80,  // Reduced from 150 for faster responses
+          temperature: 0.5,  // Reduced from 0.7 for more focused, faster responses
         });
         
         let response = reply.choices[0].message.content;
@@ -748,20 +776,18 @@ async function handle_command_center_input() {
           // Remove thinking indicator
           $("#thinking_msg").remove();
           
-          // Display the AI response (without intent) with typewriter effect
-          append_command_center_message("AI: " + displayText, "ai", null, true);
+          // Display the AI response (without intent) - no typewriter for speed
+          append_command_center_message("AI: " + displayText, "ai");
           
-          // Dispatch the intent after a short delay to allow typewriter to start
-          setTimeout(async () => {
-            await dispatch_intent(intentName);
-          }, 100);
+          // Dispatch the intent immediately
+          await dispatch_intent(intentName);
         } else {
           // No intent detected, just display the response
           // Remove thinking indicator
           $("#thinking_msg").remove();
           
-          // Append AI's response with typewriter effect
-          append_command_center_message("AI: " + displayText, "ai", null, true);
+          // Append AI's response - no typewriter for speed
+          append_command_center_message("AI: " + displayText, "ai");
         }
         
       } catch (error) {
