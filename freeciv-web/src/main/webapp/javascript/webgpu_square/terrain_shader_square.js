@@ -455,6 +455,7 @@ function createTerrainShaderSquareTSL(uniforms) {
     const roadData = texture(roadsmapTex, tileCenterUV);
     const roadIndex = floor(mul(roadData.r, 256.0));
     const roadIndex2 = floor(mul(roadData.g, 256.0));
+    const roadIndex3 = floor(mul(roadData.b, 256.0));
     
     const hasRoad = mul(step(0.5, roadIndex), step(roadIndex, 9.5));
     const hasRoadJunction = mul(step(41.5, roadIndex), step(roadIndex, 42.5));
@@ -467,25 +468,35 @@ function createTerrainShaderSquareTSL(uniforms) {
     const hasRailroad2 = mul(step(9.5, roadIndex2), step(roadIndex2, 19.5));
     const hasRailJunction2 = mul(step(42.5, roadIndex2), step(roadIndex2, 43.5));
     
+    // Third texture from B channel
+    const hasRoad3 = mul(step(0.5, roadIndex3), step(roadIndex3, 9.5));
+    const hasRoadJunction3 = mul(step(41.5, roadIndex3), step(roadIndex3, 42.5));
+    const hasRailroad3 = mul(step(9.5, roadIndex3), step(roadIndex3, 19.5));
+    const hasRailJunction3 = mul(step(42.5, roadIndex3), step(roadIndex3, 43.5));
+    
     // Calculate layer indices for texture array sampling
     // Road sprite layer selection (indices 1-9 for regular roads)
     const roadLayerIndex = int(sub(roadIndex, 1.0));  // Convert 1-based to 0-based layer (0-8), as integer
     const roadLayerIndex2 = int(sub(roadIndex2, 1.0));
+    const roadLayerIndex3 = int(sub(roadIndex3, 1.0));
     
     // Railroad sprite layer selection (indices 10-19 for regular railroads)
     const railLayerIndex = int(sub(roadIndex, 10.0));  // Convert 10-based to 0-based layer (0-9), as integer
     const railLayerIndex2 = int(sub(roadIndex2, 10.0));
+    const railLayerIndex3 = int(sub(roadIndex3, 10.0));
     
     // Sample road sprite using texture array with vec2 UV and integer layer index
     // For texture_2d_array (DataArrayTexture), pass layer index as third parameter
     const roadSpriteUV = vec2(localX, localY);
     const roadSprite = texture(roadspritesTex, roadSpriteUV).depth(roadLayerIndex);
     const roadSprite2 = texture(roadspritesTex, roadSpriteUV).depth(roadLayerIndex2);
+    const roadSprite3 = texture(roadspritesTex, roadSpriteUV).depth(roadLayerIndex3);
     
     // Sample railroad sprite using texture array
     const railSpriteUV = vec2(localX, localY);
     const railSprite = texture(railroadspritesTex, railSpriteUV).depth(railLayerIndex);
     const railSprite2 = texture(railroadspritesTex, railSpriteUV).depth(railLayerIndex2);
+    const railSprite3 = texture(railroadspritesTex, railSpriteUV).depth(railLayerIndex3);
     
     // Junction sprites - 4-way junctions use layer 0 (top-left sprite in original grid)
     const junctionUV = vec2(localX, localY);
@@ -506,6 +517,13 @@ function createTerrainShaderSquareTSL(uniforms) {
         finalColor.a
     );
     
+    // Blend third road texture (from B channel)
+    const roadAlpha3 = mul(hasRoad3, roadSprite3.a);
+    finalColor = vec4(
+        mix(finalColor.rgb, roadSprite3.rgb, mul(roadAlpha3, 0.9)),
+        finalColor.a
+    );
+    
     const roadJunctionAlpha = mul(hasRoadJunction, roadJunctionSprite.a);
     finalColor = vec4(
         mix(finalColor.rgb, roadJunctionSprite.rgb, mul(roadJunctionAlpha, 0.9)),
@@ -515,6 +533,12 @@ function createTerrainShaderSquareTSL(uniforms) {
     const roadJunctionAlpha2 = mul(hasRoadJunction2, roadJunctionSprite.a);
     finalColor = vec4(
         mix(finalColor.rgb, roadJunctionSprite.rgb, mul(roadJunctionAlpha2, 0.9)),
+        finalColor.a
+    );
+    
+    const roadJunctionAlpha3 = mul(hasRoadJunction3, roadJunctionSprite.a);
+    finalColor = vec4(
+        mix(finalColor.rgb, roadJunctionSprite.rgb, mul(roadJunctionAlpha3, 0.9)),
         finalColor.a
     );
     
@@ -532,6 +556,13 @@ function createTerrainShaderSquareTSL(uniforms) {
         finalColor.a
     );
     
+    // Blend third railroad texture (from B channel)
+    const railAlpha3 = mul(hasRailroad3, railSprite3.a);
+    finalColor = vec4(
+        mix(finalColor.rgb, railSprite3.rgb, mul(railAlpha3, 0.9)),
+        finalColor.a
+    );
+    
     // Blend railroad junctions (index 43)
     const railJunctionAlpha = mul(hasRailJunction, railJunctionSprite.a);
     finalColor = vec4(
@@ -542,6 +573,12 @@ function createTerrainShaderSquareTSL(uniforms) {
     const railJunctionAlpha2 = mul(hasRailJunction2, railJunctionSprite.a);
     finalColor = vec4(
         mix(finalColor.rgb, railJunctionSprite.rgb, mul(railJunctionAlpha2, 0.9)),
+        finalColor.a
+    );
+    
+    const railJunctionAlpha3 = mul(hasRailJunction3, railJunctionSprite.a);
+    finalColor = vec4(
+        mix(finalColor.rgb, railJunctionSprite.rgb, mul(railJunctionAlpha3, 0.9)),
         finalColor.a
     );
 
