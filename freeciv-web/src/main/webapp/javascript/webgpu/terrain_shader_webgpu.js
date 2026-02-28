@@ -546,62 +546,54 @@ function createTerrainShaderTSL(uniforms) {
     // North segment (center to top edge)
     const northTarget = vec2(0.5, 1.0);
     const toNorth = sub(northTarget, center);
-    const offsetN = sub(tilePos, center);
-    const hN = clamp(div(dot(offsetN, toNorth), dot(toNorth, toNorth)), 0.0, 1.0);
-    const distToNorth = sub(sub(offsetN, mul(toNorth, hN)).length(), roadWidth);
+    const hN = clamp(div(dot(tilePosFromCenter, toNorth), dot(toNorth, toNorth)), 0.0, 1.0);
+    const distToNorth = sub(sub(tilePosFromCenter, mul(toNorth, hN)).length(), roadWidth);
     distToRoad = connectN.select(min(distToRoad, distToNorth), distToRoad);
     
     // South segment (center to bottom edge)
     const southTarget = vec2(0.5, 0.0);
     const toSouth = sub(southTarget, center);
-    const offsetS = sub(tilePos, center);
-    const hS = clamp(div(dot(offsetS, toSouth), dot(toSouth, toSouth)), 0.0, 1.0);
-    const distToSouth = sub(sub(offsetS, mul(toSouth, hS)).length(), roadWidth);
+    const hS = clamp(div(dot(tilePosFromCenter, toSouth), dot(toSouth, toSouth)), 0.0, 1.0);
+    const distToSouth = sub(sub(tilePosFromCenter, mul(toSouth, hS)).length(), roadWidth);
     distToRoad = connectS.select(min(distToRoad, distToSouth), distToRoad);
     
     // East segment (center to right edge)
     const eastTarget = vec2(1.0, 0.5);
     const toEast = sub(eastTarget, center);
-    const offsetE = sub(tilePos, center);
-    const hE = clamp(div(dot(offsetE, toEast), dot(toEast, toEast)), 0.0, 1.0);
-    const distToEast = sub(sub(offsetE, mul(toEast, hE)).length(), roadWidth);
+    const hE = clamp(div(dot(tilePosFromCenter, toEast), dot(toEast, toEast)), 0.0, 1.0);
+    const distToEast = sub(sub(tilePosFromCenter, mul(toEast, hE)).length(), roadWidth);
     distToRoad = connectE.select(min(distToRoad, distToEast), distToRoad);
     
     // West segment (center to left edge)
     const westTarget = vec2(0.0, 0.5);
     const toWest = sub(westTarget, center);
-    const offsetW = sub(tilePos, center);
-    const hW = clamp(div(dot(offsetW, toWest), dot(toWest, toWest)), 0.0, 1.0);
-    const distToWest = sub(sub(offsetW, mul(toWest, hW)).length(), roadWidth);
+    const hW = clamp(div(dot(tilePosFromCenter, toWest), dot(toWest, toWest)), 0.0, 1.0);
+    const distToWest = sub(sub(tilePosFromCenter, mul(toWest, hW)).length(), roadWidth);
     distToRoad = connectW.select(min(distToRoad, distToWest), distToRoad);
     
     // Diagonal segments
     const neTarget = vec2(1.0, 1.0);
     const toNE = sub(neTarget, center);
-    const offsetNE = sub(tilePos, center);
-    const hNE = clamp(div(dot(offsetNE, toNE), dot(toNE, toNE)), 0.0, 1.0);
-    const distToNE = sub(sub(offsetNE, mul(toNE, hNE)).length(), roadWidth);
+    const hNE = clamp(div(dot(tilePosFromCenter, toNE), dot(toNE, toNE)), 0.0, 1.0);
+    const distToNE = sub(sub(tilePosFromCenter, mul(toNE, hNE)).length(), roadWidth);
     distToRoad = connectNE.select(min(distToRoad, distToNE), distToRoad);
     
     const seTarget = vec2(1.0, 0.0);
     const toSE = sub(seTarget, center);
-    const offsetSE = sub(tilePos, center);
-    const hSE = clamp(div(dot(offsetSE, toSE), dot(toSE, toSE)), 0.0, 1.0);
-    const distToSE = sub(sub(offsetSE, mul(toSE, hSE)).length(), roadWidth);
+    const hSE = clamp(div(dot(tilePosFromCenter, toSE), dot(toSE, toSE)), 0.0, 1.0);
+    const distToSE = sub(sub(tilePosFromCenter, mul(toSE, hSE)).length(), roadWidth);
     distToRoad = connectSE.select(min(distToRoad, distToSE), distToRoad);
     
     const swTarget = vec2(0.0, 0.0);
     const toSW = sub(swTarget, center);
-    const offsetSW = sub(tilePos, center);
-    const hSW = clamp(div(dot(offsetSW, toSW), dot(toSW, toSW)), 0.0, 1.0);
-    const distToSW = sub(sub(offsetSW, mul(toSW, hSW)).length(), roadWidth);
+    const hSW = clamp(div(dot(tilePosFromCenter, toSW), dot(toSW, toSW)), 0.0, 1.0);
+    const distToSW = sub(sub(tilePosFromCenter, mul(toSW, hSW)).length(), roadWidth);
     distToRoad = connectSW.select(min(distToRoad, distToSW), distToRoad);
     
     const nwTarget = vec2(0.0, 1.0);
     const toNW = sub(nwTarget, center);
-    const offsetNW = sub(tilePos, center);
-    const hNW = clamp(div(dot(offsetNW, toNW), dot(toNW, toNW)), 0.0, 1.0);
-    const distToNW = sub(sub(offsetNW, mul(toNW, hNW)).length(), roadWidth);
+    const hNW = clamp(div(dot(tilePosFromCenter, toNW), dot(toNW, toNW)), 0.0, 1.0);
+    const distToNW = sub(sub(tilePosFromCenter, mul(toNW, hNW)).length(), roadWidth);
     distToRoad = connectNW.select(min(distToRoad, distToNW), distToRoad);
     
     // Convert distance to mask (1 = on road, 0 = off road)
@@ -674,9 +666,7 @@ function createTerrainShaderTSL(uniforms) {
     // Calculate perpendicular distance to center line
     const distFromCenterLine = abs(distToRoad);
     
-    // Left and right rail positions
-    const leftRailDist = abs(sub(distFromCenterLine, mul(railGap, 0.5)));
-    const rightRailDist = abs(sub(distFromCenterLine, mul(railGap, 0.5)));
+    // Create mask for the two parallel rails
     const railMask = step(distFromCenterLine, add(mul(railGap, 0.5), railWidth));
     const railHighlight = sub(1.0, step(distFromCenterLine, sub(mul(railGap, 0.5), railWidth)));
     const doubleRailMask = mul(railMask, railHighlight);
