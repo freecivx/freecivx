@@ -96,41 +96,73 @@ function road_image_color(map_x, map_y)
 
   // Rivers - rendered first (lowest priority)
   if (ptile != null && tile_has_extra(ptile, EXTRA_RIVER)) {
+    // Direction constants: 0=NW, 1=N, 2=NE, 3=W, 4=E, 5=SW, 6=S, 7=SE
+    // Sprite mapping: each sprite shows river flowing in specific directions
+    // 22=N, 24=E, 26=S, 28=W (cardinals)
+    // 23=NE, 25=SE, 27=SW, 29=NW (diagonals)
+    // 53=4-way junction, 20=isolated/default
 
-    var result = [20, 0, 0]; // single river tile.
+    // Direction to sprite index lookup table
+    var spriteMap = [29, 22, 23, 28, 24, 27, 26, 25];  // dir 0-7 -> sprite
+    var dirToSprite = function(dir) {
+      return spriteMap[dir] || 20;  // default to 20 if invalid direction
+    };
 
-    // 1. iterate over adjacent tiles, see if they have river.
-    var adj_river_count = 0;
+    // Check all 8 directions for adjacent rivers
+    var connections = [];
     for (let dir = 0; dir < 8; dir++) {
-      if (dir != 1 && dir != 3 && dir != 4 && dir != 6) continue;
       let checktile = mapstep(ptile, dir);
       if (checktile != null && tile_has_extra(checktile, EXTRA_RIVER)) {
-        if (dir == 1) result[adj_river_count] = 22;
-        if (dir == 3) result[adj_river_count] = 28;
-        if (dir == 4) result[adj_river_count] = 24;
-        if (dir == 6) result[adj_river_count] = 26;
-        adj_river_count++;
-        if (adj_river_count > 2) {
-          let checktile_south = mapstep(ptile, 6);
-          if (checktile_south != null && tile_has_extra(checktile_south, EXTRA_RIVER)) return [53,0,0];  //special case, 4 connected rivers.
-          break;
-        }
-      }
-    }
-    for (let dir = 0; dir < 8; dir++) {
-      if (dir != 0 && dir != 2 && dir != 5 && dir != 7) continue;
-      let checktile = mapstep(ptile, dir);
-      if (checktile != null && tile_has_extra(checktile, EXTRA_RIVER)) {
-        if (dir == 0) result[adj_river_count] = 29;
-        if (dir == 2) result[adj_river_count] = 23;
-        if (dir == 5) result[adj_river_count] = 27;
-        if (dir == 7) result[adj_river_count] = 25;
-        adj_river_count++;
-        if (adj_river_count > 2) break;
+        connections.push(dir);
       }
     }
 
-    return [result[0], result[1], result[2]];
+    // Select appropriate sprite(s) based on connections
+    var conn_count = connections.length;
+    
+    // 3+ connections: use junction sprite
+    if (conn_count >= 3) {
+      return [53, 0, 0];
+    }
+    
+    // 2 connections: select sprite(s) that show both connections
+    if (conn_count === 2) {
+      let dir1 = connections[0];
+      let dir2 = connections[1];
+      
+      // Map direction pairs to appropriate sprite indices
+      // For straight lines and turns, we use two sprites
+      // Cardinals: N=1, E=4, S=6, W=3
+      // Diagonals: NW=0, NE=2, SE=7, SW=5
+      
+      // N-S line
+      if ((dir1 === 1 && dir2 === 6) || (dir1 === 6 && dir2 === 1)) {
+        return [26, 22, 0];  // S sprite + N sprite for vertical flow
+      }
+      // E-W line
+      if ((dir1 === 3 && dir2 === 4) || (dir1 === 4 && dir2 === 3)) {
+        return [24, 28, 0];  // E sprite + W sprite for horizontal flow
+      }
+      // NE-SW diagonal line
+      if ((dir1 === 2 && dir2 === 5) || (dir1 === 5 && dir2 === 2)) {
+        return [23, 27, 0];  // NE sprite + SW sprite for diagonal flow
+      }
+      // NW-SE diagonal line
+      if ((dir1 === 0 && dir2 === 7) || (dir1 === 7 && dir2 === 0)) {
+        return [29, 25, 0];  // NW sprite + SE sprite for diagonal flow
+      }
+      
+      // For turns and other 2-connection cases, pick the two relevant sprites
+      return [dirToSprite(dir1), dirToSprite(dir2), 0];
+    }
+    
+    // 1 connection: show sprite in that direction
+    if (conn_count === 1) {
+      return [dirToSprite(connections[0]), 0, 0];
+    }
+    
+    // 0 connections: isolated river tile
+    return [20, 0, 0];
   }
 
   // Railroads.
