@@ -1893,10 +1893,7 @@ function global_keyboard_listener(ev)
   var keyboard_key = String.fromCharCode(ev.keyCode);
 
   if (0 === $("#tabs").tabs("option", "active")) {
-    // The Map tab is active
-    if (find_active_dialog() == null) {
       map_handle_key(keyboard_key, ev.keyCode, ev['ctrlKey'], ev['altKey'], ev['shiftKey'], ev);
-    }
   }
   civclient_handle_key(keyboard_key, ev.keyCode, ev['ctrlKey'],  ev['altKey'], ev['shiftKey'], ev);
 
