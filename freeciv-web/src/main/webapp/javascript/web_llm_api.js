@@ -436,8 +436,7 @@ function setup_command_center_listeners() {
  */
 function show_help() {
   // Simplified help text with clear formatting
-  let help_text = "<div style='color: #0f0; font-size: 11px;'>";
-  help_text += "<strong>🎮 AI Command Center - Help</strong><br/><br/>";
+  let help_text = "<strong>🎮 AI Command Center - Help</strong><br/><br/>";
   
   help_text += "<strong>Movement Commands:</strong><br/>";
   help_text += "• north (n), south (s), east (e), west (w)<br/>";
@@ -458,7 +457,6 @@ function show_help() {
   help_text += "• 'fortify all' - Fortify all your units<br/>";
   help_text += "• 'build city' - Build a new city<br/>";
   help_text += "• Type questions to get AI advice!<br/>";
-  help_text += "</div>";
   
   append_command_center_message(help_text, "system");
   console.log("[WebLLM] Help displayed");
