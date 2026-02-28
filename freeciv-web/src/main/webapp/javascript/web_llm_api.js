@@ -216,7 +216,7 @@ async function show_ai_intro_dialog() {
   
   // Show loading message first - with black background and white text
   $("#ai_intro_dialog").html(`
-    <div id='command_center_chat' style='height: 180px; overflow-y: auto; margin-bottom: 8px; padding: 8px; border: 1px solid #444; background-color: #000; color: #fff; font-size: 11px;'>
+    <div id='command_center_chat' style='height: 140px; overflow-y: auto; margin-bottom: 8px; padding: 8px; border: 1px solid #444; background-color: #000; color: #fff; font-size: 11px;'>
       <p style='text-align: center;'><i class='fa fa-spinner fa-spin'></i> Loading AI model...</p>
     </div>
     <div style='display: flex; gap: 5px;'>
@@ -228,7 +228,7 @@ async function show_ai_intro_dialog() {
   $("#ai_intro_dialog").dialog({
     bgiframe: true,
     modal: false,
-    width: "380px",
+    width: "420px",
     height: "auto",
     position: { my: "center bottom", at: "center bottom-20", of: window },
     buttons: {}
