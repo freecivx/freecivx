@@ -502,10 +502,10 @@ function createTerrainShaderSquareTSL(uniforms) {
     
     // Add procedural winding to roads for more natural appearance
     // Use noise to slightly offset the path (only for roads, not railroads)
-    const windingScale = 8.0;
-    const windingCoord = mul(add(tilePos, vec2(mul(tileX, 0.5), mul(tileY, 0.5))), windingScale);
+    const windingScale = 5.0;  // Reduced for larger, smoother curves
+    const windingCoord = mul(add(tilePos, vec2(mul(tileX, 1.0), mul(tileY, 1.0))), windingScale);
     const windingNoise = fract(mul(sin(dot(windingCoord, vec2(12.9898, 78.233))), 43758.5453));
-    const windingOffset = mul(sub(windingNoise, 0.5), 0.03);  // Small offset for winding
+    const windingOffset = mul(sub(windingNoise, 0.5), 0.10);  // Increased for more visible winding
     
     const tilePosFromCenter = sub(tilePos, center);
     
