@@ -493,8 +493,8 @@ function createTerrainShaderSquareTSL(uniforms) {
     // -------------------------------------------------------------------------
     // Procedural Road Shape using Distance Fields
     // -------------------------------------------------------------------------
-    const roadWidth = 0.06;  // Half-width of the road (improved visibility)
-    const edgeSoftness = 0.008;  // Anti-aliasing (slightly sharper)
+    const roadWidth = 0.065;  // Half-width of the road (improved visibility and connectivity)
+    const edgeSoftness = 0.01;  // Anti-aliasing for smooth edges
     
     // Current position within tile [0,1]
     const tilePos = vec2(localX, localY);
@@ -509,9 +509,15 @@ function createTerrainShaderSquareTSL(uniforms) {
     
     const tilePosFromCenter = sub(tilePos, center);
     
+    // Detect single tile roads/railroads (no connections)
+    const isSingleTile = roadIndexForDecoding.greaterThanEqual(0.5).and(roadIndexForDecoding.lessThanEqual(1.5));
+    
     // Central hub - circle at tile center (SDF for circle: length(p) - r)
     const distToCenter = tilePosFromCenter.length();
-    const hubRadius = 0.05;  // Hub radius to match road width
+    // Use larger hub for single tiles to make them more visible
+    const singleTileHubRadius = 0.12;  // Much larger for single tile visibility
+    const normalHubRadius = 0.055;     // Normal hub radius for connected tiles
+    const hubRadius = isSingleTile.select(singleTileHubRadius, normalHubRadius);
     let distToRoad = sub(distToCenter, hubRadius);
     
     // Helper function to calculate distance to a line segment (as TSL nodes)
@@ -526,7 +532,8 @@ function createTerrainShaderSquareTSL(uniforms) {
     // The offset is based on position along the road for smooth winding
     
     // Extension factor to ensure roads/railroads reach beyond tile edges for seamless connectivity
-    const edgeExtension = 0.15;  // Extend 15% beyond tile edges
+    // Increased to 0.25 (25%) to ensure full tile-to-tile connectivity across 3+ tiles
+    const edgeExtension = 0.25;
     
     // North segment (center to top edge + extension) - winding perpendicular (East-West)
     const northTarget = vec2(0.5, add(1.0, edgeExtension));
@@ -614,10 +621,10 @@ function createTerrainShaderSquareTSL(uniforms) {
     const noiseValue3 = fract(mul(sin(dot(noiseCoord3, vec2(67.234, 98.456))), 43758.5453));
     const combinedNoise = mul(add(add(noiseValue1, mul(noiseValue2, 0.6)), mul(noiseValue3, 0.3)), 0.526);
     
-    // Road base color - improved contrast for dirt/gravel roads
-    const roadBaseColor = vec3(0.48, 0.40, 0.28);     // Warmer, more saturated base
-    const roadMidColor = vec3(0.36, 0.30, 0.22);      // Mid tone with better contrast
-    const roadDarkColor = vec3(0.24, 0.20, 0.16);     // Darker variation with depth
+    // Road base color - optimized for Freeciv 3D game aesthetics
+    const roadBaseColor = vec3(0.50, 0.42, 0.30);     // Warmer dirt/gravel road
+    const roadMidColor = vec3(0.38, 0.32, 0.24);      // Mid tone with good contrast
+    const roadDarkColor = vec3(0.26, 0.22, 0.18);     // Darker variation for depth
     
     // Use noise to blend between three color levels for more realistic appearance
     const roadColor1 = mix(roadBaseColor, roadMidColor, step(0.35, combinedNoise));
@@ -664,10 +671,10 @@ function createTerrainShaderSquareTSL(uniforms) {
     // -------------------------------------------------------------------------
     // Railroad-Specific Rendering (sleepers/ties pattern)
     // -------------------------------------------------------------------------
-    const sleeperWidth = 0.018;      // Slightly wider sleepers for better visibility
-    const sleeperSpacing = 0.08;     // Tighter spacing for better definition
-    const railWidth = 0.012;         // Wider individual rails for better visibility
-    const railGap = 0.042;           // Slightly wider gap between rails
+    const sleeperWidth = 0.020;      // Wider sleepers for better visibility
+    const sleeperSpacing = 0.075;    // Optimal spacing for visual clarity
+    const railWidth = 0.014;         // Wider individual rails for better visibility
+    const railGap = 0.045;           // Optimal gap between rails for realism
     
     // Calculate distance along the track for sleeper placement
     // Use dominant connection direction to align sleepers perpendicular to track
@@ -704,13 +711,13 @@ function createTerrainShaderSquareTSL(uniforms) {
     const railCenterDist = abs(sub(distFromCenterLine, mul(railGap, 0.5)));
     const railCenterHighlight = clamp(sub(1.0, mul(railCenterDist, 100.0)), 0.0, 1.0);
     
-    // Railroad colors - improved contrast and realism
-    const railMetalColor = vec3(0.56, 0.58, 0.62);      // Brighter metallic steel for rails
-    const railShineColor = vec3(0.78, 0.80, 0.83);      // Enhanced shine on rails
-    const railDarkColor = vec3(0.28, 0.30, 0.33);       // Darker rail edges for depth
-    const sleeperWoodColor = vec3(0.18, 0.14, 0.10);    // Weathered dark wood
-    const sleeperDarkColor = vec3(0.12, 0.09, 0.06);    // Very dark variation
-    const gravelColor = vec3(0.32, 0.30, 0.26);         // Lighter gravel/ballast
+    // Railroad colors - optimized for Freeciv 3D game aesthetics
+    const railMetalColor = vec3(0.58, 0.60, 0.64);      // Metallic steel for rails
+    const railShineColor = vec3(0.80, 0.82, 0.85);      // Enhanced shine on rails
+    const railDarkColor = vec3(0.30, 0.32, 0.35);       // Darker rail edges for depth
+    const sleeperWoodColor = vec3(0.20, 0.16, 0.12);    // Weathered wood sleepers
+    const sleeperDarkColor = vec3(0.14, 0.11, 0.08);    // Dark variation
+    const gravelColor = vec3(0.34, 0.32, 0.28);         // Gravel/ballast base
     
     // Add texture to sleepers with variation
     const sleeperNoise = fract(mul(sin(dot(mul(tilePos, 20.0), vec2(38.456, 67.234))), 43758.5453));
