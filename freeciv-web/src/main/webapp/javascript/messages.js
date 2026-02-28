@@ -30,16 +30,16 @@ function init_chatbox()
 
   chatbox_active = true;
 
-  $("#game_chatbox_panel").attr("title", "");
+  $("#game_chatbox_panel").attr("title", "Game messages");
   $("#game_chatbox_panel").dialog({
 			bgiframe: true,
 			modal: false,
-            width: "36%",
+            width: "380px",
             top: 43,
             left: 2,
 			height: 200,
 			resizable: false,
-			dialogClass: 'chatbox_dialog no-close noTitleBar',
+			dialogClass: 'chatbox_dialog',
 			closeOnEscape: false,
 			position: {my: 'left bottom', at: 'left bottom', of: window, within: $("#game_page")},
 			close: function(event, ui) { chatbox_active = false;}
@@ -60,14 +60,14 @@ function init_chatbox()
 
   $(".chatbox_dialog").css("top", "52px");
   $(".chatbox_dialog").css("left", "3px");
-  $("#game_chatbox_panel").parent().css("background", "rgba(0, 0, 0, 0.7)");
+  $("#game_chatbox_panel").parent().css("background", "rgba(0, 0, 0, 0.85)");
 
   $("#game_chatbox_panel").parent().css("z-index","100"); // ensure it can always be opened/closed/never covered
   $("#game_chatbox_panel").parent().css("overflow", "hidden"); // make it immune to glitches making standard scrollbars (it already has a custom)
   // This is how you override unknown css ghosts who think they're !important:
   $( '#game_chatbox_panel' ).parent().each(function () {
     this.style.setProperty( 'border', 'solid 1px', 'important' );
-    this.style.setProperty( 'border-color', '#4328', 'important' );
+    this.style.setProperty( 'border-color', '#444', 'important' );
   });
 
   init_custom_scrollbar("#freeciv_custom_scrollbar_div");
