@@ -249,8 +249,8 @@ async function show_ai_intro_dialog() {
   $("#ai_intro_dialog").dialog('open');
   $("#ai_intro_dialog").parent().css("z-index", "100");
 
-  $(".command_center_dialog").css("top", "52px");
-  $(".command_center_dialog").css("right", "3px");
+  $("#ai_intro_dialog").parent().css("top", "52px");
+  $("#ai_intro_dialog").parent().css("right", "3px");
   
   // Set up event listeners for the input and send button
   setup_command_center_listeners();
