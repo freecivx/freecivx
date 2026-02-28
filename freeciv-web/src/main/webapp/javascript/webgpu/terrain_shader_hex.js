@@ -499,18 +499,19 @@ function createTerrainShaderTSL(uniforms) {
     // -------------------------------------------------------------------------
     // Decode Road Connectivity from roadIndex
     // -------------------------------------------------------------------------
-    // Road encoding: 1=single, 2=N, 3=NE, 4=S, 5=SE, 6=W, 7=SW, 8=E, 9=NW, 42=junction
+    // Road encoding from roads.js:
+    // 1=single, 2=N, 3=NE, 4=E, 5=SE, 6=S, 7=SW, 8=W, 9=NW, 42=junction
     // Rail encoding: Same but +10 (10=single, 12=N, etc., 43=junction)
     const roadIndexForDecoding = hasAnyRail.select(sub(roadIndex, 10.0), roadIndex);
     
     // Decode connections (each direction has a specific index value or junction)
     const connectN = roadIndexForDecoding.greaterThanEqual(2.0).and(roadIndexForDecoding.lessThanEqual(2.5))
                      .or(roadIndexForDecoding.greaterThanEqual(32.0)); // junction
-    const connectE = roadIndexForDecoding.greaterThanEqual(8.0).and(roadIndexForDecoding.lessThanEqual(8.5))
+    const connectE = roadIndexForDecoding.greaterThanEqual(4.0).and(roadIndexForDecoding.lessThanEqual(4.5))
                      .or(roadIndexForDecoding.greaterThanEqual(32.0)); // junction
-    const connectS = roadIndexForDecoding.greaterThanEqual(4.0).and(roadIndexForDecoding.lessThanEqual(4.5))
+    const connectS = roadIndexForDecoding.greaterThanEqual(6.0).and(roadIndexForDecoding.lessThanEqual(6.5))
                      .or(roadIndexForDecoding.greaterThanEqual(32.0)); // junction
-    const connectW = roadIndexForDecoding.greaterThanEqual(6.0).and(roadIndexForDecoding.lessThanEqual(6.5))
+    const connectW = roadIndexForDecoding.greaterThanEqual(8.0).and(roadIndexForDecoding.lessThanEqual(8.5))
                      .or(roadIndexForDecoding.greaterThanEqual(32.0)); // junction
     
     // Diagonal connections
@@ -522,7 +523,7 @@ function createTerrainShaderTSL(uniforms) {
     // -------------------------------------------------------------------------
     // Procedural Road Shape using Distance Fields
     // -------------------------------------------------------------------------
-    const roadWidth = 0.05;  // Half-width of the road (narrower for better definition)
+    const roadWidth = 0.06;  // Half-width of the road (improved visibility)
     const edgeSoftness = 0.008;  // Anti-aliasing (slightly sharper)
     
     // Current position within tile [0,1]
@@ -540,7 +541,7 @@ function createTerrainShaderTSL(uniforms) {
     
     // Central hub - circle at tile center (SDF for circle: length(p) - r)
     const distToCenter = tilePosFromCenter.length();
-    const hubRadius = 0.04;  // Smaller hub to match narrower roads
+    const hubRadius = 0.05;  // Hub radius to match road width
     let distToRoad = sub(distToCenter, hubRadius);
     
     // Helper function to calculate distance to a line segment (as TSL nodes)
@@ -643,10 +644,10 @@ function createTerrainShaderTSL(uniforms) {
     const noiseValue3 = fract(mul(sin(dot(noiseCoord3, vec2(67.234, 98.456))), 43758.5453));
     const combinedNoise = mul(add(add(noiseValue1, mul(noiseValue2, 0.6)), mul(noiseValue3, 0.3)), 0.526);
     
-    // Road base color - higher contrast brown/tan for dirt roads
-    const roadBaseColor = vec3(0.45, 0.37, 0.26);     // Lighter, more saturated base
-    const roadMidColor = vec3(0.34, 0.28, 0.20);      // Mid tone with better contrast
-    const roadDarkColor = vec3(0.22, 0.18, 0.14);     // Darker variation with more contrast
+    // Road base color - improved contrast for dirt/gravel roads
+    const roadBaseColor = vec3(0.48, 0.40, 0.28);     // Warmer, more saturated base
+    const roadMidColor = vec3(0.36, 0.30, 0.22);      // Mid tone with better contrast
+    const roadDarkColor = vec3(0.24, 0.20, 0.16);     // Darker variation with depth
     
     // Use noise to blend between three color levels for more realistic appearance
     const roadColor1 = mix(roadBaseColor, roadMidColor, step(0.35, combinedNoise));
@@ -658,15 +659,18 @@ function createTerrainShaderTSL(uniforms) {
     const dashScale = 6.0;
     
     // Detect if this is a junction (multiple connections)
-    const connectionCount = add(add(add(
-        connectN.select(1.0, 0.0),
+    // Count cardinal and diagonal connections
+    const cardinalConnections = add(add(add(
+        connectN.select(1.0, 0.0), 
         connectS.select(1.0, 0.0)),
-        add(connectE.select(1.0, 0.0),
-        connectW.select(1.0, 0.0))),
-        add(add(connectNE.select(1.0, 0.0),
+        connectE.select(1.0, 0.0)),
+        connectW.select(1.0, 0.0));
+    const diagonalConnections = add(add(add(
+        connectNE.select(1.0, 0.0),
         connectSE.select(1.0, 0.0)),
-        add(connectSW.select(1.0, 0.0),
-        connectNW.select(1.0, 0.0))));
+        connectSW.select(1.0, 0.0)),
+        connectNW.select(1.0, 0.0));
+    const connectionCount = add(cardinalConnections, diagonalConnections);
     const isJunction = step(2.5, connectionCount);  // 3+ connections = junction
     
     // Calculate position along road for dashed line
@@ -690,10 +694,10 @@ function createTerrainShaderTSL(uniforms) {
     // -------------------------------------------------------------------------
     // Railroad-Specific Rendering (sleepers/ties pattern)
     // -------------------------------------------------------------------------
-    const sleeperWidth = 0.016;      // Narrower sleepers for refined look
-    const sleeperSpacing = 0.09;     // Tighter spacing for better definition
-    const railWidth = 0.010;         // Narrower individual rails
-    const railGap = 0.038;           // Narrower gap between rails
+    const sleeperWidth = 0.018;      // Slightly wider sleepers for better visibility
+    const sleeperSpacing = 0.08;     // Tighter spacing for better definition
+    const railWidth = 0.012;         // Wider individual rails for better visibility
+    const railGap = 0.042;           // Slightly wider gap between rails
     
     // Calculate distance along the track for sleeper placement
     // Use dominant connection direction to align sleepers perpendicular to track
@@ -730,13 +734,13 @@ function createTerrainShaderTSL(uniforms) {
     const railCenterDist = abs(sub(distFromCenterLine, mul(railGap, 0.5)));
     const railCenterHighlight = clamp(sub(1.0, mul(railCenterDist, 100.0)), 0.0, 1.0);
     
-    // Railroad colors - higher contrast
-    const railMetalColor = vec3(0.52, 0.54, 0.58);      // Brighter metallic for rails
-    const railShineColor = vec3(0.75, 0.77, 0.80);      // Enhanced highlight on rails
-    const railDarkColor = vec3(0.30, 0.32, 0.35);       // Darker rail edges for contrast
-    const sleeperWoodColor = vec3(0.16, 0.12, 0.08);    // Darker weathered wood
-    const sleeperDarkColor = vec3(0.10, 0.08, 0.05);    // Very dark variation for contrast
-    const gravelColor = vec3(0.28, 0.26, 0.22);         // Lighter gravel/ballast for contrast
+    // Railroad colors - improved contrast and realism
+    const railMetalColor = vec3(0.56, 0.58, 0.62);      // Brighter metallic steel for rails
+    const railShineColor = vec3(0.78, 0.80, 0.83);      // Enhanced shine on rails
+    const railDarkColor = vec3(0.28, 0.30, 0.33);       // Darker rail edges for depth
+    const sleeperWoodColor = vec3(0.18, 0.14, 0.10);    // Weathered dark wood
+    const sleeperDarkColor = vec3(0.12, 0.09, 0.06);    // Very dark variation
+    const gravelColor = vec3(0.32, 0.30, 0.26);         // Lighter gravel/ballast
     
     // Add texture to sleepers with variation
     const sleeperNoise = fract(mul(sin(dot(mul(tilePos, 20.0), vec2(38.456, 67.234))), 43758.5453));
