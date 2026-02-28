@@ -228,20 +228,39 @@ async function show_ai_intro_dialog() {
   $("#ai_intro_dialog").dialog({
     bgiframe: true,
     modal: false,
-    width: "420px",
-    height: "auto",
-    position: { my: "center bottom", at: "center bottom-20", of: window },
+    width: "450px",
+    height: 200,
+    resizable: false,
+    dialogClass: 'command_center_dialog',
+    closeOnEscape: false,
+    position: { my: "right top", at: "right top", of: window },
     buttons: {}
   }).dialogExtend({
     "minimizable" : true,
+    "maximizable" : true,
     "closable" : false,
     "icons" : {
       "minimize" : "ui-icon-circle-minus",
+      "maximize" : "ui-icon-circle-plus",
       "restore" : "ui-icon-newwin"
     }
   });
   
   $("#ai_intro_dialog").dialog('open');
+  $("#ai_intro_dialog").parent().addClass("command_center_dialog");
+  
+  // Apply similar styling as Game messages dialog
+  $(".command_center_dialog").css("top", "52px");
+  $(".command_center_dialog").css("right", "3px");
+  $("#ai_intro_dialog").parent().css("background", "rgba(0, 0, 0, 0.85)");
+  $("#ai_intro_dialog").parent().css("z-index", "100");
+  $("#ai_intro_dialog").parent().css("overflow", "hidden");
+  
+  // Apply border styling
+  $('#ai_intro_dialog').parent().each(function () {
+    this.style.setProperty('border', 'solid 1px', 'important');
+    this.style.setProperty('border-color', '#444', 'important');
+  });
   
   // Set up event listeners for the input and send button
   setup_command_center_listeners();
