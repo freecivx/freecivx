@@ -94,6 +94,45 @@ function road_image_color(map_x, map_y)
 {
   var ptile = map_pos_to_tile(map_x, map_y);
 
+  // Rivers - rendered first (lowest priority)
+  if (ptile != null && tile_has_extra(ptile, EXTRA_RIVER)) {
+
+    var result = [20, 0, 0]; // single river tile.
+
+    // 1. iterate over adjacent tiles, see if they have river.
+    var adj_river_count = 0;
+    for (let dir = 0; dir < 8; dir++) {
+      if (dir != 1 && dir != 3 && dir != 4 && dir != 6) continue;
+      let checktile = mapstep(ptile, dir);
+      if (checktile != null && tile_has_extra(checktile, EXTRA_RIVER)) {
+        if (dir == 1) result[adj_river_count] = 22;
+        if (dir == 3) result[adj_river_count] = 28;
+        if (dir == 4) result[adj_river_count] = 24;
+        if (dir == 6) result[adj_river_count] = 26;
+        adj_river_count++;
+        if (adj_river_count > 2) {
+          let checktile_south = mapstep(ptile, 6);
+          if (checktile_south != null && tile_has_extra(checktile_south, EXTRA_RIVER)) return [53,0,0];  //special case, 4 connected rivers.
+          break;
+        }
+      }
+    }
+    for (let dir = 0; dir < 8; dir++) {
+      if (dir != 0 && dir != 2 && dir != 5 && dir != 7) continue;
+      let checktile = mapstep(ptile, dir);
+      if (checktile != null && tile_has_extra(checktile, EXTRA_RIVER)) {
+        if (dir == 0) result[adj_river_count] = 29;
+        if (dir == 2) result[adj_river_count] = 23;
+        if (dir == 5) result[adj_river_count] = 27;
+        if (dir == 7) result[adj_river_count] = 25;
+        adj_river_count++;
+        if (adj_river_count > 2) break;
+      }
+    }
+
+    return [result[0], result[1], result[2]];
+  }
+
   // Railroads.
   if (ptile != null && tile_has_extra(ptile, EXTRA_RAIL)) {
 
