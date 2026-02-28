@@ -410,21 +410,23 @@ function show_help() {
   for (const [cmd_name, cmd_config] of Object.entries(GAME_COMMANDS)) {
     if (cmd_name === 'help') continue; // Skip help in the list
     
-    // Avoid duplicates (e.g., 'clean' and 'pollution' map to same function)
-    const key = cmd_config.fn + (cmd_config.shortcut || '');
-    if (!seen.has(key) || !cmd_config.shortcut) {
-      seen.add(key);
-      
-      let display_name = cmd_name;
-      if (cmd_config.shortcut) {
-        display_name += ` (${cmd_config.shortcut})`;
-      }
-      if (cmd_config.batch) {
-        display_name += " - supports 'all'";
-      }
-      
-      command_list.push(display_name);
+    // Avoid duplicates - prefer commands with shortcuts
+    const key = cmd_config.fn;
+    if (seen.has(key)) {
+      // Skip this command if we already have one for this function
+      continue;
     }
+    seen.add(key);
+    
+    let display_name = cmd_name;
+    if (cmd_config.shortcut) {
+      display_name += ` (${cmd_config.shortcut})`;
+    }
+    if (cmd_config.batch) {
+      display_name += " - supports 'all'";
+    }
+    
+    command_list.push(display_name);
   }
   
   // Sort alphabetically
