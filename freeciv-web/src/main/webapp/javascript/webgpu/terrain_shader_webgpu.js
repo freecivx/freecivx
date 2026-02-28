@@ -628,10 +628,10 @@ function createTerrainShaderTSL(uniforms) {
     const dashScale = 6.0;
     
     // Calculate position along road for dashed line
-    let roadPosAlong = mul(connectN, tilePos.y);
-    roadPosAlong = add(roadPosAlong, mul(connectS, sub(1.0, tilePos.y)));
-    roadPosAlong = add(roadPosAlong, mul(connectE, tilePos.x));
-    roadPosAlong = add(roadPosAlong, mul(connectW, sub(1.0, tilePos.x)));
+    let roadPosAlong = connectN.select(tilePos.y, 0.0);
+    roadPosAlong = add(roadPosAlong, connectS.select(sub(1.0, tilePos.y), 0.0));
+    roadPosAlong = add(roadPosAlong, connectE.select(tilePos.x, 0.0));
+    roadPosAlong = add(roadPosAlong, connectW.select(sub(1.0, tilePos.x), 0.0));
     
     const dashPattern = step(0.4, fract(mul(roadPosAlong, dashScale)));
     const centerLineMask = mul(step(centerLineDist, centerLineWidth), dashPattern);
@@ -654,10 +654,10 @@ function createTerrainShaderTSL(uniforms) {
     
     // Calculate distance along the track for sleeper placement
     // Use dominant connection direction to align sleepers perpendicular to track
-    let distAlong = mul(mul(connectN, step(0.5, connectN)), abs(sub(tilePos.y, 0.5)));
-    distAlong = add(distAlong, mul(mul(connectS, step(0.5, connectS)), abs(sub(tilePos.y, 0.5))));
-    distAlong = add(distAlong, mul(mul(connectE, step(0.5, connectE)), abs(sub(tilePos.x, 0.5))));
-    distAlong = add(distAlong, mul(mul(connectW, step(0.5, connectW)), abs(sub(tilePos.x, 0.5))));
+    let distAlong = connectN.select(abs(sub(tilePos.y, 0.5)), 0.0);
+    distAlong = add(distAlong, connectS.select(abs(sub(tilePos.y, 0.5)), 0.0));
+    distAlong = add(distAlong, connectE.select(abs(sub(tilePos.x, 0.5)), 0.0));
+    distAlong = add(distAlong, connectW.select(abs(sub(tilePos.x, 0.5)), 0.0));
     
     // Create repeating sleeper pattern (dark wooden ties)
     const sleeperPattern = step(mod(distAlong, sleeperSpacing), sleeperWidth);
