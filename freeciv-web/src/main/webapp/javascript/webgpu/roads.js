@@ -102,17 +102,10 @@ function road_image_color(map_x, map_y)
     // 23=NE, 25=SE, 27=SW, 29=NW (diagonals)
     // 53=4-way junction, 20=isolated/default
 
-    // Helper function to map direction to sprite index
+    // Direction to sprite index lookup table
+    var spriteMap = [29, 22, 23, 28, 24, 27, 26, 25];  // dir 0-7 -> sprite
     var dirToSprite = function(dir) {
-      if (dir === 1) return 22;  // N
-      if (dir === 2) return 23;  // NE
-      if (dir === 3) return 28;  // W
-      if (dir === 4) return 24;  // E
-      if (dir === 5) return 27;  // SW
-      if (dir === 6) return 26;  // S
-      if (dir === 7) return 25;  // SE
-      if (dir === 0) return 29;  // NW
-      return 20;  // default
+      return spriteMap[dir] || 20;  // default to 20 if invalid direction
     };
 
     // Check all 8 directions for adjacent rivers
@@ -127,13 +120,8 @@ function road_image_color(map_x, map_y)
     // Select appropriate sprite(s) based on connections
     var conn_count = connections.length;
     
-    // 4+ connections: use junction sprite
-    if (conn_count >= 4) {
-      return [53, 0, 0];
-    }
-    
-    // 3 connections: use junction sprite
-    if (conn_count === 3) {
+    // 3+ connections: use junction sprite
+    if (conn_count >= 3) {
       return [53, 0, 0];
     }
     
