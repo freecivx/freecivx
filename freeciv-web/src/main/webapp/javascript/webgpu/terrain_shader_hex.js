@@ -556,27 +556,32 @@ function createTerrainShaderTSL(uniforms) {
     const singleTileExtension = 0.25;  // Extend 25% toward edges for single tiles
     
     // Single tile road segments (cross pattern: N, S, E, W)
+    // Precompute direction vectors to optimize performance
     const singleTileNorthTarget = vec2(0.5, add(0.5, singleTileExtension));
     const toSingleNorth = sub(singleTileNorthTarget, center);
-    const hSingleN = clamp(div(dot(tilePosFromCenter, toSingleNorth), dot(toSingleNorth, toSingleNorth)), 0.0, 1.5);
+    const dotSingleNorth = dot(toSingleNorth, toSingleNorth); // Precomputed constant
+    const hSingleN = clamp(div(dot(tilePosFromCenter, toSingleNorth), dotSingleNorth), 0.0, 1.5);
     const distToSingleNorth = sub(sub(tilePosFromCenter, mul(toSingleNorth, hSingleN)).length(), roadWidth);
     distToRoad = isSingleTile.select(min(distToRoad, distToSingleNorth), distToRoad);
     
     const singleTileSouthTarget = vec2(0.5, sub(0.5, singleTileExtension));
     const toSingleSouth = sub(singleTileSouthTarget, center);
-    const hSingleS = clamp(div(dot(tilePosFromCenter, toSingleSouth), dot(toSingleSouth, toSingleSouth)), 0.0, 1.5);
+    const dotSingleSouth = dot(toSingleSouth, toSingleSouth); // Precomputed constant
+    const hSingleS = clamp(div(dot(tilePosFromCenter, toSingleSouth), dotSingleSouth), 0.0, 1.5);
     const distToSingleSouth = sub(sub(tilePosFromCenter, mul(toSingleSouth, hSingleS)).length(), roadWidth);
     distToRoad = isSingleTile.select(min(distToRoad, distToSingleSouth), distToRoad);
     
     const singleTileEastTarget = vec2(add(0.5, singleTileExtension), 0.5);
     const toSingleEast = sub(singleTileEastTarget, center);
-    const hSingleE = clamp(div(dot(tilePosFromCenter, toSingleEast), dot(toSingleEast, toSingleEast)), 0.0, 1.5);
+    const dotSingleEast = dot(toSingleEast, toSingleEast); // Precomputed constant
+    const hSingleE = clamp(div(dot(tilePosFromCenter, toSingleEast), dotSingleEast), 0.0, 1.5);
     const distToSingleEast = sub(sub(tilePosFromCenter, mul(toSingleEast, hSingleE)).length(), roadWidth);
     distToRoad = isSingleTile.select(min(distToRoad, distToSingleEast), distToRoad);
     
     const singleTileWestTarget = vec2(sub(0.5, singleTileExtension), 0.5);
     const toSingleWest = sub(singleTileWestTarget, center);
-    const hSingleW = clamp(div(dot(tilePosFromCenter, toSingleWest), dot(toSingleWest, toSingleWest)), 0.0, 1.5);
+    const dotSingleWest = dot(toSingleWest, toSingleWest); // Precomputed constant
+    const hSingleW = clamp(div(dot(tilePosFromCenter, toSingleWest), dotSingleWest), 0.0, 1.5);
     const distToSingleWest = sub(sub(tilePosFromCenter, mul(toSingleWest, hSingleW)).length(), roadWidth);
     distToRoad = isSingleTile.select(min(distToRoad, distToSingleWest), distToRoad);
     
@@ -599,7 +604,8 @@ function createTerrainShaderTSL(uniforms) {
     // North segment (center to top edge + extension) - winding perpendicular (East-West)
     const northTarget = vec2(0.5, add(1.0, edgeExtension));
     const toNorth = sub(northTarget, center);
-    const hN = clamp(div(dot(tilePosFromCenter, toNorth), dot(toNorth, toNorth)), 0.0, 2.0);
+    const dotNorth = dot(toNorth, toNorth); // Precomputed constant
+    const hN = clamp(div(dot(tilePosFromCenter, toNorth), dotNorth), 0.0, 2.0);
     // Add winding: offset perpendicular to north direction (along X axis)
     const windingOffsetN = mul(vec2(windingOffset, 0.0), hasAnyRoad);
     const tilePosWindingN = sub(tilePosFromCenter, windingOffsetN);
@@ -609,7 +615,8 @@ function createTerrainShaderTSL(uniforms) {
     // South segment (center to bottom edge - extension) - winding perpendicular (East-West)
     const southTarget = vec2(0.5, sub(0.0, edgeExtension));
     const toSouth = sub(southTarget, center);
-    const hS = clamp(div(dot(tilePosFromCenter, toSouth), dot(toSouth, toSouth)), 0.0, 2.0);
+    const dotSouth = dot(toSouth, toSouth); // Precomputed constant
+    const hS = clamp(div(dot(tilePosFromCenter, toSouth), dotSouth), 0.0, 2.0);
     const windingOffsetS = mul(vec2(windingOffset, 0.0), hasAnyRoad);
     const tilePosWindingS = sub(tilePosFromCenter, windingOffsetS);
     const distToSouth = sub(sub(tilePosWindingS, mul(toSouth, hS)).length(), roadWidth);
@@ -618,7 +625,8 @@ function createTerrainShaderTSL(uniforms) {
     // East segment (center to right edge + extension) - winding perpendicular (North-South)
     const eastTarget = vec2(add(1.0, edgeExtension), 0.5);
     const toEast = sub(eastTarget, center);
-    const hE = clamp(div(dot(tilePosFromCenter, toEast), dot(toEast, toEast)), 0.0, 2.0);
+    const dotEast = dot(toEast, toEast); // Precomputed constant
+    const hE = clamp(div(dot(tilePosFromCenter, toEast), dotEast), 0.0, 2.0);
     const windingOffsetE = mul(vec2(0.0, windingOffset), hasAnyRoad);
     const tilePosWindingE = sub(tilePosFromCenter, windingOffsetE);
     const distToEast = sub(sub(tilePosWindingE, mul(toEast, hE)).length(), roadWidth);
@@ -627,7 +635,8 @@ function createTerrainShaderTSL(uniforms) {
     // West segment (center to left edge - extension) - winding perpendicular (North-South)
     const westTarget = vec2(sub(0.0, edgeExtension), 0.5);
     const toWest = sub(westTarget, center);
-    const hW = clamp(div(dot(tilePosFromCenter, toWest), dot(toWest, toWest)), 0.0, 2.0);
+    const dotWest = dot(toWest, toWest); // Precomputed constant
+    const hW = clamp(div(dot(tilePosFromCenter, toWest), dotWest), 0.0, 2.0);
     const windingOffsetW = mul(vec2(0.0, windingOffset), hasAnyRoad);
     const tilePosWindingW = sub(tilePosFromCenter, windingOffsetW);
     const distToWest = sub(sub(tilePosWindingW, mul(toWest, hW)).length(), roadWidth);
@@ -636,25 +645,29 @@ function createTerrainShaderTSL(uniforms) {
     // Diagonal segments (extended to corners + extension)
     const neTarget = vec2(add(1.0, edgeExtension), add(1.0, edgeExtension));
     const toNE = sub(neTarget, center);
-    const hNE = clamp(div(dot(tilePosFromCenter, toNE), dot(toNE, toNE)), 0.0, 2.0);
+    const dotNE = dot(toNE, toNE); // Precomputed constant
+    const hNE = clamp(div(dot(tilePosFromCenter, toNE), dotNE), 0.0, 2.0);
     const distToNE = sub(sub(tilePosFromCenter, mul(toNE, hNE)).length(), roadWidth);
     distToRoad = connectNE.select(min(distToRoad, distToNE), distToRoad);
     
     const seTarget = vec2(add(1.0, edgeExtension), sub(0.0, edgeExtension));
     const toSE = sub(seTarget, center);
-    const hSE = clamp(div(dot(tilePosFromCenter, toSE), dot(toSE, toSE)), 0.0, 2.0);
+    const dotSE = dot(toSE, toSE); // Precomputed constant
+    const hSE = clamp(div(dot(tilePosFromCenter, toSE), dotSE), 0.0, 2.0);
     const distToSE = sub(sub(tilePosFromCenter, mul(toSE, hSE)).length(), roadWidth);
     distToRoad = connectSE.select(min(distToRoad, distToSE), distToRoad);
     
     const swTarget = vec2(sub(0.0, edgeExtension), sub(0.0, edgeExtension));
     const toSW = sub(swTarget, center);
-    const hSW = clamp(div(dot(tilePosFromCenter, toSW), dot(toSW, toSW)), 0.0, 2.0);
+    const dotSW = dot(toSW, toSW); // Precomputed constant
+    const hSW = clamp(div(dot(tilePosFromCenter, toSW), dotSW), 0.0, 2.0);
     const distToSW = sub(sub(tilePosFromCenter, mul(toSW, hSW)).length(), roadWidth);
     distToRoad = connectSW.select(min(distToRoad, distToSW), distToRoad);
     
     const nwTarget = vec2(sub(0.0, edgeExtension), add(1.0, edgeExtension));
     const toNW = sub(nwTarget, center);
-    const hNW = clamp(div(dot(tilePosFromCenter, toNW), dot(toNW, toNW)), 0.0, 2.0);
+    const dotNW = dot(toNW, toNW); // Precomputed constant
+    const hNW = clamp(div(dot(tilePosFromCenter, toNW), dotNW), 0.0, 2.0);
     const distToNW = sub(sub(tilePosFromCenter, mul(toNW, hNW)).length(), roadWidth);
     distToRoad = connectNW.select(min(distToRoad, distToNW), distToRoad);
     
