@@ -291,7 +291,7 @@ function update_command_center_status(message) {
  * Game command lookup object for cleaner command processing
  */
 const GAME_COMMANDS = {
-  'help': { fn: 'show_help', message: '', batch: false },
+  'help': { fn: 'show_llm_help', message: '', batch: false },
   'fortify': { fn: 'key_unit_fortify', shortcut: 'f', message: '✓ Units fortifying', batch: true },
   'sentry': { fn: 'key_unit_sentry', shortcut: 's', message: '✓ Units on sentry', batch: true },
   'mine': { fn: 'key_unit_mine', shortcut: 'm', message: '✓ Units mining', batch: false },
@@ -434,9 +434,10 @@ function setup_command_center_listeners() {
 /**
  * Display help information about the AI Command Center
  */
-function show_help() {
-  // Simplified help text with clear formatting
-  let help_text = "<strong>🎮 AI Command Center - Help</strong><br/><br/>";
+function show_llm_help() {
+  let help_text = "<div style='color: #0f0; font-size: 11px;'>";
+  help_text += "<div style='font-weight: bold; margin-bottom: 8px;'>🎮 AI Command Center - Help</div>";
+  help_text += "<div style='margin-bottom: 8px;'>Control your units with simple text commands or ask questions about the game.</div>";
   
   help_text += "<strong>Movement Commands:</strong><br/>";
   help_text += "• north (n), south (s), east (e), west (w)<br/>";
@@ -471,7 +472,7 @@ function show_help() {
 function execute_command(cmd_config, cmd_name) {
   // Handle help command specially
   if (cmd_name === 'help') {
-    show_help();
+    show_llm_help();
     return true;
   }
   
@@ -587,7 +588,7 @@ async function handle_command_center_input() {
   
   // Check for help command first
   if (input_lower === 'help' || input_lower === 'h' || input_lower === '?') {
-    show_help();
+    show_llm_help();
     return;
   }
   
