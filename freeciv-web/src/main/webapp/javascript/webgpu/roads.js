@@ -102,6 +102,19 @@ function road_image_color(map_x, map_y)
     // 23=NE, 25=SE, 27=SW, 29=NW (diagonals)
     // 53=4-way junction, 20=isolated/default
 
+    // Helper function to map direction to sprite index
+    var dirToSprite = function(dir) {
+      if (dir === 1) return 22;  // N
+      if (dir === 2) return 23;  // NE
+      if (dir === 3) return 28;  // W
+      if (dir === 4) return 24;  // E
+      if (dir === 5) return 27;  // SW
+      if (dir === 6) return 26;  // S
+      if (dir === 7) return 25;  // SE
+      if (dir === 0) return 29;  // NW
+      return 20;  // default
+    };
+
     // Check all 8 directions for adjacent rivers
     var connections = [];
     for (let dir = 0; dir < 8; dir++) {
@@ -130,7 +143,7 @@ function road_image_color(map_x, map_y)
       let dir2 = connections[1];
       
       // Map direction pairs to appropriate sprite indices
-      // For straight lines and turns, we use a single sprite
+      // For straight lines and turns, we use two sprites
       // Cardinals: N=1, E=4, S=6, W=3
       // Diagonals: NW=0, NE=2, SE=7, SW=5
       
@@ -152,43 +165,12 @@ function road_image_color(map_x, map_y)
       }
       
       // For turns and other 2-connection cases, pick the two relevant sprites
-      var sprite1 = 20;
-      var sprite2 = 0;
-      
-      // Map first direction to sprite
-      if (dir1 === 1) sprite1 = 22;  // N
-      else if (dir1 === 2) sprite1 = 23;  // NE
-      else if (dir1 === 3) sprite1 = 28;  // W
-      else if (dir1 === 4) sprite1 = 24;  // E
-      else if (dir1 === 5) sprite1 = 27;  // SW
-      else if (dir1 === 6) sprite1 = 26;  // S
-      else if (dir1 === 7) sprite1 = 25;  // SE
-      else if (dir1 === 0) sprite1 = 29;  // NW
-      
-      // Map second direction to sprite
-      if (dir2 === 1) sprite2 = 22;  // N
-      else if (dir2 === 2) sprite2 = 23;  // NE
-      else if (dir2 === 3) sprite2 = 28;  // W
-      else if (dir2 === 4) sprite2 = 24;  // E
-      else if (dir2 === 5) sprite2 = 27;  // SW
-      else if (dir2 === 6) sprite2 = 26;  // S
-      else if (dir2 === 7) sprite2 = 25;  // SE
-      else if (dir2 === 0) sprite2 = 29;  // NW
-      
-      return [sprite1, sprite2, 0];
+      return [dirToSprite(dir1), dirToSprite(dir2), 0];
     }
     
     // 1 connection: show sprite in that direction
     if (conn_count === 1) {
-      let dir = connections[0];
-      if (dir === 1) return [22, 0, 0];  // N
-      if (dir === 2) return [23, 0, 0];  // NE
-      if (dir === 3) return [28, 0, 0];  // W
-      if (dir === 4) return [24, 0, 0];  // E
-      if (dir === 5) return [27, 0, 0];  // SW
-      if (dir === 6) return [26, 0, 0];  // S
-      if (dir === 7) return [25, 0, 0];  // SE
-      if (dir === 0) return [29, 0, 0];  // NW
+      return [dirToSprite(connections[0]), 0, 0];
     }
     
     // 0 connections: isolated river tile
