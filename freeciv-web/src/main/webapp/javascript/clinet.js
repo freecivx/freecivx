@@ -37,11 +37,6 @@ var freecivx_server = true;
 ****************************************************************************/
 function network_init()
 {
-  if (is_standalone_mode()) {
-    console.log("Skipping network initialization in standalone mode");
-    return;
-  }
-
   var civclient_request_url = "/civclientlauncher";
   if ($.getUrlVar('action') != null) civclient_request_url += "?action=" + $.getUrlVar('action');
   if ($.getUrlVar('action') == null && $.getUrlVar('civserverport') != null) civclient_request_url += "?";

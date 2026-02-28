@@ -42,13 +42,6 @@ Flyway migrations of the database is supported. Remember to set the mysql passwo
 To migrate the database to the latest version, run this Maven command:
 mvn flyway:migrate
 
-Standalone client
-=================
-The freeciv-web [freeciv-web-standalone.html](/freeciv-web/src/main/webapp/freeciv-web-standalone.html) allows running the client in a browser without a Freeciv C server.
-This can be used to make a Freeciv pure JavaScript server for running games fully in the browser, and to implement hexagonal map tiles.
-See [freeciv-web-standalone.html](/freeciv-web/src/main/webapp/freeciv-web-standalone.html) for instructions about how to run and test, then in the web browser open: http://localhost/freeciv-web-standalone.html
-
-
 License
 =======
 Freeciv-web has the GNU Affero General Public License.
