@@ -489,12 +489,19 @@ function createTerrainShaderTSL(uniforms) {
     // - B channel: tertiary connection sprite index
     const roadData = texture(roadsmapTex, tileCenterUV);
     const roadIndex = floor(mul(roadData.r, 256.0));
+    const roadIndex2 = floor(mul(roadData.g, 256.0));
     
     // Determine if this tile has roads (indices 1-9, 42) or railroads (indices 10-19, 43)
     const hasRoad = mul(step(0.5, roadIndex), step(roadIndex, 9.5));
     const hasRoadJunction = mul(step(41.5, roadIndex), step(roadIndex, 42.5));
     const hasRailroad = mul(step(9.5, roadIndex), step(roadIndex, 19.5));
     const hasRailJunction = mul(step(42.5, roadIndex), step(roadIndex, 43.5));
+    
+    // Second texture from G channel
+    const hasRoad2 = mul(step(0.5, roadIndex2), step(roadIndex2, 9.5));
+    const hasRoadJunction2 = mul(step(41.5, roadIndex2), step(roadIndex2, 42.5));
+    const hasRailroad2 = mul(step(9.5, roadIndex2), step(roadIndex2, 19.5));
+    const hasRailJunction2 = mul(step(42.5, roadIndex2), step(roadIndex2, 43.5));
     
     // Calculate layer indices for texture array sampling
     // Roads and railroads are now stored in DataArrayTexture with 16 layers (4x4 grid)
@@ -505,19 +512,23 @@ function createTerrainShaderTSL(uniforms) {
     
     // Road sprite layer selection (indices 1-9 for regular roads)
     const roadLayerIndex = int(sub(roadIndex, 1.0));  // Convert 1-based to 0-based layer (0-8), as integer
+    const roadLayerIndex2 = int(sub(roadIndex2, 1.0));
     
     // Railroad sprite layer selection (indices 10-19 for regular railroads)
     const railLayerIndex = int(sub(roadIndex, 10.0));  // Convert 10-based to 0-based layer (0-9), as integer
+    const railLayerIndex2 = int(sub(roadIndex2, 10.0));
     
     // Sample road sprite using texture array with vec2 UV and integer layer index
     // For texture_2d_array (DataArrayTexture), pass layer index as third parameter
     // localX, localY are the UV coordinates within the tile (0-1 range)
     const roadSpriteUV = vec2(localX, localY);
     const roadSprite = texture(roadspritesTex, roadSpriteUV).depth(roadLayerIndex);
+    const roadSprite2 = texture(roadspritesTex, roadSpriteUV).depth(roadLayerIndex2);
     
     // Sample railroad sprite using texture array
     const railSpriteUV = vec2(localX, localY);
     const railSprite = texture(railroadspritesTex, railSpriteUV).depth(railLayerIndex);
+    const railSprite2 = texture(railroadspritesTex, railSpriteUV).depth(railLayerIndex2);
     
     // Junction sprites - 4-way junctions use layer 0 (top-left sprite in original grid)
     const junctionUV = vec2(localX, localY);
@@ -532,10 +543,23 @@ function createTerrainShaderTSL(uniforms) {
         finalColor.a
     );
     
+    // Blend second road texture (from G channel)
+    const roadAlpha2 = mul(hasRoad2, roadSprite2.a);
+    finalColor = vec4(
+        mix(finalColor.rgb, roadSprite2.rgb, mul(roadAlpha2, 0.9)),
+        finalColor.a
+    );
+    
     // Blend road junctions separately (index 42 only)
     const roadJunctionAlpha = mul(hasRoadJunction, roadJunctionSprite.a);
     finalColor = vec4(
         mix(finalColor.rgb, roadJunctionSprite.rgb, mul(roadJunctionAlpha, 0.9)),
+        finalColor.a
+    );
+    
+    const roadJunctionAlpha2 = mul(hasRoadJunction2, roadJunctionSprite.a);
+    finalColor = vec4(
+        mix(finalColor.rgb, roadJunctionSprite.rgb, mul(roadJunctionAlpha2, 0.9)),
         finalColor.a
     );
     
@@ -546,10 +570,23 @@ function createTerrainShaderTSL(uniforms) {
         finalColor.a
     );
     
+    // Blend second railroad texture (from G channel)
+    const railAlpha2 = mul(hasRailroad2, railSprite2.a);
+    finalColor = vec4(
+        mix(finalColor.rgb, railSprite2.rgb, mul(railAlpha2, 0.9)),
+        finalColor.a
+    );
+    
     // Blend railroad junctions separately (index 43 only)
     const railJunctionAlpha = mul(hasRailJunction, railJunctionSprite.a);
     finalColor = vec4(
         mix(finalColor.rgb, railJunctionSprite.rgb, mul(railJunctionAlpha, 0.9)),
+        finalColor.a
+    );
+    
+    const railJunctionAlpha2 = mul(hasRailJunction2, railJunctionSprite.a);
+    finalColor = vec4(
+        mix(finalColor.rgb, railJunctionSprite.rgb, mul(railJunctionAlpha2, 0.9)),
         finalColor.a
     );
 
