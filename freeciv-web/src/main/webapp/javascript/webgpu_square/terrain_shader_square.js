@@ -115,6 +115,7 @@ function createTerrainShaderSquareTSL(uniforms) {
     const maptilesTex = uniforms.maptiles.value;
     const bordersTex = uniforms.borders.value;
     const roadsmapTex = uniforms.roadsmap.value;
+    const riversmapTex = uniforms.riversmap.value;
     const terrainLayersTex = uniforms.terrain_layers.value;
     const terrainAtlasTex = uniforms.terrain_atlas.value;
     
@@ -775,6 +776,140 @@ function createTerrainShaderSquareTSL(uniforms) {
     
     finalColor = vec4(
         mix(finalColor.rgb, finalRoadColor, mul(activeRoadMask, 0.9)),
+        finalColor.a
+    );
+
+    // =========================================================================
+    // RIVER RENDERING (Similar to Roads, with Blue Color and Winding)
+    // =========================================================================
+    
+    // Sample river data from riversmap texture
+    const riverData = texture(riversmapTex, tileCenterUV);
+    const riverIndex = mul(riverData.r, 255.0);
+    
+    // Check if there's any river on this tile
+    const hasAnyRiver = riverIndex.greaterThan(0.5);
+    
+    // Decode River Connectivity from riverIndex (same encoding as roads)
+    const riverConnectN = riverIndex.greaterThanEqual(2.0).and(riverIndex.lessThanEqual(2.5))
+                     .or(riverIndex.greaterThanEqual(32.0));
+    const riverConnectE = riverIndex.greaterThanEqual(4.0).and(riverIndex.lessThanEqual(4.5))
+                     .or(riverIndex.greaterThanEqual(32.0));
+    const riverConnectS = riverIndex.greaterThanEqual(6.0).and(riverIndex.lessThanEqual(6.5))
+                     .or(riverIndex.greaterThanEqual(32.0));
+    const riverConnectW = riverIndex.greaterThanEqual(8.0).and(riverIndex.lessThanEqual(8.5))
+                     .or(riverIndex.greaterThanEqual(32.0));
+    const riverConnectNE = riverIndex.greaterThanEqual(3.0).and(riverIndex.lessThanEqual(3.5));
+    const riverConnectSE = riverIndex.greaterThanEqual(5.0).and(riverIndex.lessThanEqual(5.5));
+    const riverConnectSW = riverIndex.greaterThanEqual(7.0).and(riverIndex.lessThanEqual(7.5));
+    const riverConnectNW = riverIndex.greaterThanEqual(9.0).and(riverIndex.lessThanEqual(9.5));
+    
+    // River Shape using Distance Fields
+    const riverWidth = 0.055;
+    const riverEdgeSoftness = 0.012;
+    
+    // Add winding to rivers
+    const riverWindingScale = 4.0;
+    const riverWindingCoord = mul(add(tilePos, vec2(mul(tileX, 1.0), mul(tileY, 1.0))), riverWindingScale);
+    const riverWindingNoise = fract(mul(sin(dot(riverWindingCoord, vec2(12.9898, 78.233))), 43758.5453));
+    const riverWindingOffset = mul(sub(riverWindingNoise, 0.5), 0.15);
+    
+    // Detect single tile rivers
+    const isSingleRiver = riverIndex.greaterThanEqual(0.5).and(riverIndex.lessThanEqual(1.5));
+    
+    // Central hub
+    const riverHubRadius = isSingleRiver.select(0.07, 0.05);
+    let distToRiver = sub(distToCenter, riverHubRadius);
+    
+    // River segments with winding
+    const riverEdgeExtension = 0.7;
+    
+    // North segment
+    const riverNorthTarget = vec2(0.5, add(1.0, riverEdgeExtension));
+    const toRiverNorth = sub(riverNorthTarget, center);
+    const hRiverN = clamp(div(dot(tilePosFromCenter, toRiverNorth), dot(toRiverNorth, toRiverNorth)), 0.0, 2.0);
+    const riverWindingOffsetN = vec2(riverWindingOffset, 0.0);
+    const tilePosRiverWindingN = sub(tilePosFromCenter, riverWindingOffsetN);
+    const distToRiverNorth = sub(sub(tilePosRiverWindingN, mul(toRiverNorth, hRiverN)).length(), riverWidth);
+    distToRiver = riverConnectN.select(min(distToRiver, distToRiverNorth), distToRiver);
+    
+    // South segment
+    const riverSouthTarget = vec2(0.5, sub(0.0, riverEdgeExtension));
+    const toRiverSouth = sub(riverSouthTarget, center);
+    const hRiverS = clamp(div(dot(tilePosFromCenter, toRiverSouth), dot(toRiverSouth, toRiverSouth)), 0.0, 2.0);
+    const riverWindingOffsetS = vec2(riverWindingOffset, 0.0);
+    const tilePosRiverWindingS = sub(tilePosFromCenter, riverWindingOffsetS);
+    const distToRiverSouth = sub(sub(tilePosRiverWindingS, mul(toRiverSouth, hRiverS)).length(), riverWidth);
+    distToRiver = riverConnectS.select(min(distToRiver, distToRiverSouth), distToRiver);
+    
+    // East segment
+    const riverEastTarget = vec2(add(1.0, riverEdgeExtension), 0.5);
+    const toRiverEast = sub(riverEastTarget, center);
+    const hRiverE = clamp(div(dot(tilePosFromCenter, toRiverEast), dot(toRiverEast, toRiverEast)), 0.0, 2.0);
+    const riverWindingOffsetE = vec2(0.0, riverWindingOffset);
+    const tilePosRiverWindingE = sub(tilePosFromCenter, riverWindingOffsetE);
+    const distToRiverEast = sub(sub(tilePosRiverWindingE, mul(toRiverEast, hRiverE)).length(), riverWidth);
+    distToRiver = riverConnectE.select(min(distToRiver, distToRiverEast), distToRiver);
+    
+    // West segment
+    const riverWestTarget = vec2(sub(0.0, riverEdgeExtension), 0.5);
+    const toRiverWest = sub(riverWestTarget, center);
+    const hRiverW = clamp(div(dot(tilePosFromCenter, toRiverWest), dot(toRiverWest, toRiverWest)), 0.0, 2.0);
+    const riverWindingOffsetW = vec2(0.0, riverWindingOffset);
+    const tilePosRiverWindingW = sub(tilePosFromCenter, riverWindingOffsetW);
+    const distToRiverWest = sub(sub(tilePosRiverWindingW, mul(toRiverWest, hRiverW)).length(), riverWidth);
+    distToRiver = riverConnectW.select(min(distToRiver, distToRiverWest), distToRiver);
+    
+    // Diagonal segments
+    const riverNeTarget = vec2(add(1.0, riverEdgeExtension), add(1.0, riverEdgeExtension));
+    const toRiverNE = sub(riverNeTarget, center);
+    const hRiverNE = clamp(div(dot(tilePosFromCenter, toRiverNE), dot(toRiverNE, toRiverNE)), 0.0, 2.0);
+    const distToRiverNE = sub(sub(tilePosFromCenter, mul(toRiverNE, hRiverNE)).length(), riverWidth);
+    distToRiver = riverConnectNE.select(min(distToRiver, distToRiverNE), distToRiver);
+    
+    const riverSeTarget = vec2(add(1.0, riverEdgeExtension), sub(0.0, riverEdgeExtension));
+    const toRiverSE = sub(riverSeTarget, center);
+    const hRiverSE = clamp(div(dot(tilePosFromCenter, toRiverSE), dot(toRiverSE, toRiverSE)), 0.0, 2.0);
+    const distToRiverSE = sub(sub(tilePosFromCenter, mul(toRiverSE, hRiverSE)).length(), riverWidth);
+    distToRiver = riverConnectSE.select(min(distToRiver, distToRiverSE), distToRiver);
+    
+    const riverSwTarget = vec2(sub(0.0, riverEdgeExtension), sub(0.0, riverEdgeExtension));
+    const toRiverSW = sub(riverSwTarget, center);
+    const hRiverSW = clamp(div(dot(tilePosFromCenter, toRiverSW), dot(toRiverSW, toRiverSW)), 0.0, 2.0);
+    const distToRiverSW = sub(sub(tilePosFromCenter, mul(toRiverSW, hRiverSW)).length(), riverWidth);
+    distToRiver = riverConnectSW.select(min(distToRiver, distToRiverSW), distToRiver);
+    
+    const riverNwTarget = vec2(sub(0.0, riverEdgeExtension), add(1.0, riverEdgeExtension));
+    const toRiverNW = sub(riverNwTarget, center);
+    const hRiverNW = clamp(div(dot(tilePosFromCenter, toRiverNW), dot(toRiverNW, toRiverNW)), 0.0, 2.0);
+    const distToRiverNW = sub(sub(tilePosFromCenter, mul(toRiverNW, hRiverNW)).length(), riverWidth);
+    distToRiver = riverConnectNW.select(min(distToRiver, distToRiverNW), distToRiver);
+    
+    // Convert distance to mask
+    const riverMask = clamp(sub(1.0, div(distToRiver, riverEdgeSoftness)), 0.0, 1.0);
+    
+    // River colors - blue water with yellow sandy shore
+    const riverWaterColor = vec3(0.15, 0.35, 0.55);
+    const riverShoreColor = vec3(0.75, 0.65, 0.40);
+    
+    // Shore edge effect
+    const riverShoreWidth = 0.018;
+    const distToRiverEdge = abs(distToRiver);
+    const riverShoreMask = step(distToRiverEdge, riverShoreWidth);
+    
+    const riverColorWithShore = mix(riverWaterColor, riverShoreColor, mul(riverShoreMask, 0.85));
+    
+    // Add flow effect
+    const flowNoiseScale = 8.0;
+    const flowNoiseCoord = mul(add(tilePos, vec2(mul(tileX, 0.5), mul(tileY, 0.5))), flowNoiseScale);
+    const flowNoise = fract(mul(sin(dot(flowNoiseCoord, vec2(23.456, 89.123))), 43758.5453));
+    const riverColorWithFlow = mix(riverColorWithShore, mul(riverColorWithShore, 1.15), mul(flowNoise, 0.2));
+    
+    // Blend rivers onto terrain
+    const activeRiverMask = mul(hasAnyRiver, riverMask);
+    
+    finalColor = vec4(
+        mix(finalColor.rgb, riverColorWithFlow, mul(activeRiverMask, 0.95)),
         finalColor.a
     );
 

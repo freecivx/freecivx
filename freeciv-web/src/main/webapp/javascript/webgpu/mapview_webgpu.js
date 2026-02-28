@@ -407,6 +407,7 @@ function createTerrainUniforms() {
     selected_x: { type: "i", value: -1 },
     selected_y: { type: "i", value: -1 },
     roadsmap: { type: "t", value: roads_texture },
+    riversmap: { type: "t", value: rivers_texture },
     terrain_layers: { type: "t", value: webgl_textures["terrain_layers"] },
     terrain_atlas: { type: "t", value: webgl_textures["terrain_atlas"] },
     borders_visible: { type: "bool", value: server_settings['borders']['is_visible'] }

@@ -90,9 +90,6 @@ function update_heightmap_square(heightmap_quality)
        if (Math.round(gx) == gx && Math.round(gy) == gy) {
         let ptile = map_pos_to_tile(gx, gy);
         heightmap[index] = ptile['height'];
-        if (tile_has_extra(ptile, EXTRA_RIVER)) {
-          heightmap[index] = ptile['height'] * 0.98;
-        }
         if (tile_terrain(ptile)['name'] == "Mountains") {
           heightmap[index] = ptile['height'] * 1.02;
         }
@@ -132,9 +129,6 @@ function update_heightmap_square(heightmap_quality)
             height = ptile['height'] + ((rnd - 0.5) / 50) - 0.01;
           } else {
             height = ptile['height'];
-          }
-          if (tile_has_extra(ptile, EXTRA_RIVER)) {
-            height = ptile['height'] * 1.045  - ((num_river_neighbours / 4) * 0.02);
           }
 
           sum += height / distance / distance;
