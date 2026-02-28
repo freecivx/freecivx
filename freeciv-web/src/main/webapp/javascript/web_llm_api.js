@@ -25,6 +25,8 @@
 var webllm_engine = null;
 var webllm_loading = false;
 var webllm_loaded = false;
+var command_center_active = false;
+var current_command_center_state = null;
 
 // Initialize webllm_enabled from localStorage (default: true)
 // We use localStorage directly to ensure it's available early
@@ -225,7 +227,7 @@ async function show_ai_intro_dialog() {
   // Show intro text immediately - don't wait for model to load
   $("#ai_intro_dialog").html(`
     <div id='command_center_chat' style='height: 140px; overflow-y: auto; margin-bottom: 8px; padding: 8px; border: 1px solid #444; background-color: #000; color: #fff; font-size: 11px;'>
-      <p style='color: #0f0; font-weight: bold; font-size: 11px;'>🎮 Game Command Center</p>
+      <p style='color: #fff; font-weight: bold; font-size: 11px;'>🎮 Game Command Center</p>
       <p style='font-size: 11px; margin-top: 5px;'>Control your units with simple commands or ask questions about the game.</p>
       <p style='font-size: 11px; margin-top: 5px;'><strong>Quick commands:</strong> north, south, east, west, fortify, sentry, explore, build city, mine, irrigate, road, end turn. Type 'help' for full list.</p>
       <p style='font-size: 11px; margin-top: 5px; color: #888;'><em>AI model will load on first use.</em></p>
@@ -245,19 +247,25 @@ async function show_ai_intro_dialog() {
     dialogClass: 'command_center_dialog',
     closeOnEscape: false,
     position: { my: "right top", at: "right top", of: window },
-    buttons: {}
+    buttons: {},
+    close: function(event, ui) { command_center_active = false; }
   }).dialogExtend({
     "minimizable" : true,
     "maximizable" : true,
-    "closable" : false,
+    "closable" : true,
+    "minimize" : function(evt, dlg){ current_command_center_state = $("#ai_intro_dialog").dialogExtend("state") },
+    "restore" : function(evt, dlg){ current_command_center_state = $("#ai_intro_dialog").dialogExtend("state") },
+    "maximize" : function(evt, dlg){ current_command_center_state = $("#ai_intro_dialog").dialogExtend("state") },
     "icons" : {
       "minimize" : "ui-icon-circle-minus",
       "maximize" : "ui-icon-circle-plus",
-      "restore" : "ui-icon-newwin"
+      "restore" : "ui-icon-newwin",
+      "close" : "ui-icon-closethick"
     }
   });
   
   $("#ai_intro_dialog").dialog('open');
+  command_center_active = true;
   $("#ai_intro_dialog").parent().css("z-index", "100");
 
   $("#ai_intro_dialog").parent().css("top", "52px");
@@ -280,7 +288,7 @@ function update_command_center_status(message) {
     if (existing_status.length > 0) {
       existing_status.html(message);
     } else {
-      chat_div.append(`<p class='status-msg' style='color: #0f0; font-size: 11px;'>${message}</p>`);
+      chat_div.append(`<p class='status-msg' style='color: #fff; font-size: 11px;'>${message}</p>`);
     }
     // Auto-scroll to bottom
     chat_div.scrollTop(chat_div[0].scrollHeight);
@@ -437,7 +445,7 @@ function setup_command_center_listeners() {
  * Display help information about the AI Command Center
  */
 function show_llm_help() {
-  let help_text = "<div style='color: #0f0; font-size: 11px;'>";
+  let help_text = "<div style='color: #fff; font-size: 11px;'>";
   help_text += "<div style='font-weight: bold; margin-bottom: 8px;'>🎮 AI Command Center - Help</div>";
   help_text += "<div style='margin-bottom: 8px;'>Control your units with simple text commands or ask questions about the game.</div>";
   

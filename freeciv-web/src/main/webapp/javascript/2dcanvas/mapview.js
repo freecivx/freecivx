@@ -157,6 +157,7 @@ function set_default_mapview_inactive()
 {
   $("#game_unit_panel").parent().hide();
   if (chatbox_active) $("#game_chatbox_panel").parent().hide();
+  if (command_center_active) $("#ai_intro_dialog").parent().hide();
   $("#tile_dialog").parent().hide();
 
 }
