@@ -300,6 +300,11 @@ function set_default_mapview_active()
     if (current_message_dialog_state == "minimized") $("#game_chatbox_panel").dialogExtend("minimize");
   }
 
+  if (command_center_active) {
+    $("#ai_intro_dialog").parent().show();
+    if (current_command_center_state == "minimized") $("#ai_intro_dialog").dialogExtend("minimize");
+  }
+
   $("#tabs").tabs("option", "active", 0);
   $("#tabs-map").height("auto");
 

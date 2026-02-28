@@ -1894,3 +1894,23 @@ textarea,
   font-weight: bold;
   font-size: 11px;
 }
+
+/* Command Center Dialog Titlebar Styling */
+.command_center_dialog .ui-dialog-titlebar {
+  font-size: 11px;
+  padding: 4px 8px;
+  border-bottom: 1px solid #444;
+}
+
+.command_center_dialog .ui-dialog-title {
+  font-size: 11px;
+}
+
+.command_center_dialog .ui-dialog-titlebar-buttonpane {
+  height: auto;
+}
+
+.command_center_dialog .ui-dialog-titlebar-buttonpane button {
+  width: 16px;
+  height: 16px;
+}
