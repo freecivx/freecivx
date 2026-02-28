@@ -272,6 +272,109 @@ async function show_ai_intro_dialog() {
 }
 
 /**
+ * Game command lookup object for cleaner command processing
+ */
+const GAME_COMMANDS = {
+  'fortify': { fn: 'key_unit_fortify', shortcut: 'f', message: '✓ Units fortifying', batch: true },
+  'sentry': { fn: 'key_unit_sentry', shortcut: 's', message: '✓ Units on sentry', batch: true },
+  'mine': { fn: 'key_unit_mine', shortcut: 'm', message: '✓ Units mining', batch: false },
+  'irrigate': { fn: 'key_unit_irrigate', shortcut: 'i', message: '✓ Units irrigating', batch: false },
+  'road': { fn: 'key_unit_road', shortcut: 'r', message: '✓ Units building road', batch: false },
+  'clean': { fn: 'key_unit_clean', message: '✓ Units cleaning pollution', batch: false },
+  'pollution': { fn: 'key_unit_clean', message: '✓ Units cleaning pollution', batch: false },
+  'transform': { fn: 'key_unit_transform', shortcut: 't', message: '✓ Units transforming terrain', batch: false },
+  'pillage': { fn: 'key_unit_pillage', shortcut: 'p', message: '✓ Units pillaging', batch: false },
+  'auto explore': { fn: 'key_unit_auto_explore', message: '✓ Units auto-exploring', batch: true },
+  'explore': { fn: 'key_unit_auto_explore', shortcut: 'x', message: '✓ Units auto-exploring', batch: true },
+  'auto settle': { fn: 'key_unit_auto_settle', message: '✓ Units auto-settling', batch: false },
+  'settle': { fn: 'key_unit_auto_settle', message: '✓ Units auto-settling', batch: false },
+  'upgrade': { fn: 'key_unit_upgrade', shortcut: 'u', message: '✓ Units upgrading', batch: false },
+  'disband': { fn: 'key_unit_disband', shortcut: 'd', message: '✓ Disband command sent', batch: false },
+  'wait': { fn: 'key_unit_wait', shortcut: 'w', message: '✓ Units waiting', batch: false },
+  'load': { fn: 'key_unit_load', shortcut: 'l', message: '✓ Units loading', batch: false },
+  'unload': { fn: 'key_unit_unload', message: '✓ Units unloading', batch: false },
+  'fortress': { fn: 'key_unit_fortress', message: '✓ Units building fortress', batch: false },
+  'airbase': { fn: 'key_unit_airbase', message: '✓ Units building airbase', batch: false },
+  'cultivate': { fn: 'key_unit_cultivate', message: '✓ Units cultivating', batch: false },
+  'plant': { fn: 'key_unit_plant', message: '✓ Units planting', batch: false },
+  'nuke': { fn: 'key_unit_nuke', message: '✓ Nuke ready - select target', batch: false },
+  'paradrop': { fn: 'key_unit_paradrop', message: '✓ Paradrop - select target', batch: false },
+  'airlift': { fn: 'key_unit_airlift', message: '✓ Airlift - select target city', batch: false },
+  'home city': { fn: 'key_unit_homecity', message: '✓ Changed home city', batch: false },
+  'homecity': { fn: 'key_unit_homecity', message: '✓ Changed home city', batch: false },
+  'idle': { fn: 'key_unit_idle', message: '✓ Units idle', batch: false },
+  'stop': { fn: 'key_unit_idle', message: '✓ Units idle', batch: false },
+  'no orders': { fn: 'key_unit_noorders', message: '✓ Units done moving', batch: false }
+};
+
+/**
+ * Gather current game state data for contextual AI responses
+ */
+function gather_game_context() {
+  const context = {
+    gold: null,
+    science_rate: null,
+    year: null,
+    turn: null,
+    num_cities: 0,
+    selected_unit_type: null,
+    selected_tile_terrain: null
+  };
+  
+  try {
+    // Get player's gold and science rate
+    const pplayer = client?.conn?.playing;
+    if (pplayer) {
+      context.gold = pplayer['gold'] || 0;
+      context.science_rate = pplayer['science'] || 0;
+    }
+    
+    // Get current year and turn
+    if (typeof game_info !== 'undefined') {
+      context.year = game_info['year'];
+      context.turn = game_info['turn'];
+    }
+    
+    // Count number of cities owned by player
+    if (pplayer && typeof cities !== 'undefined') {
+      const player_id = pplayer['playerno'];
+      for (const city_id in cities) {
+        const pcity = cities[city_id];
+        if (pcity && pcity['owner'] === player_id) {
+          context.num_cities++;
+        }
+      }
+    }
+    
+    // Get selected unit type
+    if (typeof current_focus !== 'undefined' && current_focus.length > 0) {
+      const punit = current_focus[0];
+      if (punit && typeof unit_types !== 'undefined') {
+        const unit_type = unit_types[punit['type']];
+        if (unit_type) {
+          context.selected_unit_type = unit_type['name'];
+        }
+      }
+      
+      // Get terrain of selected tile
+      if (punit && typeof index_to_tile === 'function' && typeof tile_terrain === 'function') {
+        const ptile = index_to_tile(punit['tile']);
+        if (ptile) {
+          const terrain = tile_terrain(ptile);
+          if (terrain) {
+            context.selected_tile_terrain = terrain['name'];
+          }
+        }
+      }
+    }
+  } catch (error) {
+    console.error("[WebLLM] Error gathering game context:", error);
+  }
+  
+  return context;
+}
+
+/**
  * Set up event listeners for the Game Command Center
  */
 function setup_command_center_listeners() {
@@ -307,24 +410,59 @@ async function handle_command_center_input() {
   
   const input_lower = input.toLowerCase();
   
-  // Check if it's a game command
+  // Check for batch commands (e.g., "fortify all", "sentry all", "explore all")
+  const batch_match = input_lower.match(/^(\w+(?:\s+\w+)?)\s+all$/);
+  if (batch_match) {
+    const command_name = batch_match[1].trim();
+    const command = GAME_COMMANDS[command_name];
+    
+    if (command && command.batch) {
+      try {
+        const pplayer = client?.conn?.playing;
+        if (pplayer && typeof units !== 'undefined') {
+          let count = 0;
+          const player_id = pplayer['playerno'];
+          
+          // Loop through all player units
+          for (const unit_id in units) {
+            const punit = units[unit_id];
+            if (punit && punit['owner'] === player_id) {
+              // Set focus to this unit temporarily
+              if (typeof set_unit_focus === 'function') {
+                set_unit_focus(punit);
+              }
+              
+              // Execute the command
+              if (typeof window[command.fn] === 'function') {
+                window[command.fn]();
+                count++;
+              }
+            }
+          }
+          
+          append_command_center_message(`✓ ${command_name} applied to ${count} unit(s)`, "success");
+          return;
+        } else {
+          append_command_center_message("No units available for batch command", "error");
+          return;
+        }
+      } catch (error) {
+        console.error("[WebLLM] Error executing batch command:", error);
+        append_command_center_message("Error: " + error.message, "error");
+        return;
+      }
+    } else if (command && !command.batch) {
+      append_command_center_message("Batch mode not supported for this command", "error");
+      return;
+    }
+  }
+  
+  // Check if it's a game command (including shortcuts)
   let command_executed = false;
   
   try {
-    // Unit commands
-    if (input_lower === "fortify" || input_lower === "f") {
-      if (typeof key_unit_fortify === 'function') {
-        key_unit_fortify();
-        append_command_center_message("✓ Units fortifying", "success");
-        command_executed = true;
-      }
-    } else if (input_lower === "sentry" || input_lower === "s") {
-      if (typeof key_unit_sentry === 'function') {
-        key_unit_sentry();
-        append_command_center_message("✓ Units on sentry", "success");
-        command_executed = true;
-      }
-    } else if (input_lower === "build city" || input_lower === "build" || input_lower === "b") {
+    // Special handling for "build city" command
+    if (input_lower === "build city" || input_lower === "build" || input_lower === "b") {
       if (typeof current_focus !== 'undefined' && current_focus.length > 0) {
         const unit_id = current_focus[0]['id'];
         const actor_unit = game_find_unit_by_number(unit_id);
@@ -341,146 +479,9 @@ async function handle_command_center_input() {
         append_command_center_message("No unit selected", "error");
         command_executed = true;
       }
-    } else if (input_lower === "mine" || input_lower === "m") {
-      if (typeof key_unit_mine === 'function') {
-        key_unit_mine();
-        append_command_center_message("✓ Units mining", "success");
-        command_executed = true;
-      }
-    } else if (input_lower === "irrigate" || input_lower === "i") {
-      if (typeof key_unit_irrigate === 'function') {
-        key_unit_irrigate();
-        append_command_center_message("✓ Units irrigating", "success");
-        command_executed = true;
-      }
-    } else if (input_lower === "road" || input_lower === "r") {
-      if (typeof key_unit_road === 'function') {
-        key_unit_road();
-        append_command_center_message("✓ Units building road", "success");
-        command_executed = true;
-      }
-    } else if (input_lower === "clean" || input_lower === "pollution") {
-      if (typeof key_unit_clean === 'function') {
-        key_unit_clean();
-        append_command_center_message("✓ Units cleaning pollution", "success");
-        command_executed = true;
-      }
-    } else if (input_lower === "transform" || input_lower === "t") {
-      if (typeof key_unit_transform === 'function') {
-        key_unit_transform();
-        append_command_center_message("✓ Units transforming terrain", "success");
-        command_executed = true;
-      }
-    } else if (input_lower === "pillage" || input_lower === "p") {
-      if (typeof key_unit_pillage === 'function') {
-        key_unit_pillage();
-        append_command_center_message("✓ Units pillaging", "success");
-        command_executed = true;
-      }
-    } else if (input_lower === "auto explore" || input_lower === "explore" || input_lower === "x") {
-      if (typeof key_unit_auto_explore === 'function') {
-        key_unit_auto_explore();
-        append_command_center_message("✓ Units auto-exploring", "success");
-        command_executed = true;
-      }
-    } else if (input_lower === "auto settle" || input_lower === "settle") {
-      if (typeof key_unit_auto_settle === 'function') {
-        key_unit_auto_settle();
-        append_command_center_message("✓ Units auto-settling", "success");
-        command_executed = true;
-      }
-    } else if (input_lower === "upgrade" || input_lower === "u") {
-      if (typeof key_unit_upgrade === 'function') {
-        key_unit_upgrade();
-        append_command_center_message("✓ Units upgrading", "success");
-        command_executed = true;
-      }
-    } else if (input_lower === "disband" || input_lower === "d") {
-      if (typeof key_unit_disband === 'function') {
-        key_unit_disband();
-        append_command_center_message("✓ Disband command sent", "success");
-        command_executed = true;
-      }
-    } else if (input_lower === "wait" || input_lower === "w") {
-      if (typeof key_unit_wait === 'function') {
-        key_unit_wait();
-        append_command_center_message("✓ Units waiting", "success");
-        command_executed = true;
-      }
-    } else if (input_lower === "load" || input_lower === "l") {
-      if (typeof key_unit_load === 'function') {
-        key_unit_load();
-        append_command_center_message("✓ Units loading", "success");
-        command_executed = true;
-      }
-    } else if (input_lower === "unload") {
-      if (typeof key_unit_unload === 'function') {
-        key_unit_unload();
-        append_command_center_message("✓ Units unloading", "success");
-        command_executed = true;
-      }
-    } else if (input_lower === "fortress") {
-      if (typeof key_unit_fortress === 'function') {
-        key_unit_fortress();
-        append_command_center_message("✓ Units building fortress", "success");
-        command_executed = true;
-      }
-    } else if (input_lower === "airbase") {
-      if (typeof key_unit_airbase === 'function') {
-        key_unit_airbase();
-        append_command_center_message("✓ Units building airbase", "success");
-        command_executed = true;
-      }
-    } else if (input_lower === "cultivate") {
-      if (typeof key_unit_cultivate === 'function') {
-        key_unit_cultivate();
-        append_command_center_message("✓ Units cultivating", "success");
-        command_executed = true;
-      }
-    } else if (input_lower === "plant") {
-      if (typeof key_unit_plant === 'function') {
-        key_unit_plant();
-        append_command_center_message("✓ Units planting", "success");
-        command_executed = true;
-      }
-    } else if (input_lower === "nuke") {
-      if (typeof key_unit_nuke === 'function') {
-        key_unit_nuke();
-        append_command_center_message("✓ Nuke ready - select target", "success");
-        command_executed = true;
-      }
-    } else if (input_lower === "paradrop") {
-      if (typeof key_unit_paradrop === 'function') {
-        key_unit_paradrop();
-        append_command_center_message("✓ Paradrop - select target", "success");
-        command_executed = true;
-      }
-    } else if (input_lower === "airlift") {
-      if (typeof key_unit_airlift === 'function') {
-        key_unit_airlift();
-        append_command_center_message("✓ Airlift - select target city", "success");
-        command_executed = true;
-      }
-    } else if (input_lower === "home city" || input_lower === "homecity") {
-      if (typeof key_unit_homecity === 'function') {
-        key_unit_homecity();
-        append_command_center_message("✓ Changed home city", "success");
-        command_executed = true;
-      }
-    } else if (input_lower === "idle" || input_lower === "stop") {
-      if (typeof key_unit_idle === 'function') {
-        key_unit_idle();
-        append_command_center_message("✓ Units idle", "success");
-        command_executed = true;
-      }
-    } else if (input_lower === "no orders") {
-      if (typeof key_unit_noorders === 'function') {
-        key_unit_noorders();
-        append_command_center_message("✓ Units done moving", "success");
-        command_executed = true;
-      }
-    } else if (input_lower === "open city" || input_lower === "city" || input_lower === "c") {
-      // Open city at current unit location
+    }
+    // Special handling for "open city" command
+    else if (input_lower === "open city" || input_lower === "city" || input_lower === "c") {
       if (typeof current_focus !== 'undefined' && current_focus.length > 0) {
         const punit = current_focus[0];
         if (punit && typeof index_to_tile === 'function' && typeof tile_city === 'function' && typeof show_city_dialog === 'function') {
@@ -500,6 +501,20 @@ async function handle_command_center_input() {
         command_executed = true;
       }
     }
+    // Check against GAME_COMMANDS lookup
+    else {
+      // Try to find a matching command (check both full name and shortcut)
+      for (const [cmd_name, cmd_config] of Object.entries(GAME_COMMANDS)) {
+        if (input_lower === cmd_name || (cmd_config.shortcut && input_lower === cmd_config.shortcut)) {
+          if (typeof window[cmd_config.fn] === 'function') {
+            window[cmd_config.fn]();
+            append_command_center_message(cmd_config.message, "success");
+            command_executed = true;
+            break;
+          }
+        }
+      }
+    }
     
   } catch (error) {
     console.error("[WebLLM] Error executing command:", error);
@@ -509,52 +524,128 @@ async function handle_command_center_input() {
   
   // If no command was executed, use AI to respond
   if (!command_executed) {
-    // Show thinking indicator
-    append_command_center_message("<i class='fa fa-spinner fa-spin'></i> Processing...", "system", "thinking_msg");
+    // Check if it sounds like a tactical command we can't handle yet
+    const tactical_keywords = ['attack', 'move to', 'capture', 'conquer', 'defend against', 'go to', 'march'];
+    const is_tactical = tactical_keywords.some(keyword => input_lower.includes(keyword));
     
-    try {
-      // Process the command/question with the LLM
-      const prompt = `You are the Game Command Center AI for Freeciv. The player said: "${input}". ` +
-                     `Respond appropriately. If it's a question about game state or strategy, ` +
-                     `provide a helpful response. Keep responses concise (2-3 sentences).`;
+    if (is_tactical) {
+      append_command_center_message(
+        "AI: I cannot perform complex tactical maneuvers yet. However, I can help with unit commands like 'fortify', 'sentry', 'explore', 'build city', 'mine', 'irrigate', and more. Try 'fortify all' or 'sentry all' for batch commands!",
+        "ai"
+      );
+    } else {
+      // Show thinking indicator
+      append_command_center_message("<i class='fa fa-spinner fa-spin'></i> Processing...", "system", "thinking_msg");
       
-      const response = await generate_ai_text(prompt, 150);
-      
-      // Remove thinking indicator
-      $("#thinking_msg").remove();
-      
-      // Append AI's response
-      append_command_center_message("AI: " + response, "ai");
-      
-    } catch (error) {
-      console.error("[WebLLM] Error processing question:", error);
-      $("#thinking_msg").remove();
-      append_command_center_message("Error: Failed to process question. " + error.message, "error");
+      try {
+        // Gather game state context
+        const context = gather_game_context();
+        
+        // Build context string for the system message
+        let context_str = "Current game state: ";
+        if (context.gold !== null) context_str += `Gold: ${context.gold}. `;
+        if (context.science_rate !== null) context_str += `Science rate: ${context.science_rate}%. `;
+        if (context.year !== null) {
+          const year_label = context.year < 0 ? `${Math.abs(context.year)} BC` : `${context.year} AD`;
+          context_str += `Year: ${year_label}. `;
+        }
+        if (context.turn !== null) context_str += `Turn: ${context.turn}. `;
+        if (context.num_cities > 0) context_str += `Cities: ${context.num_cities}. `;
+        if (context.selected_unit_type) context_str += `Selected unit: ${context.selected_unit_type}. `;
+        if (context.selected_tile_terrain) context_str += `Terrain: ${context.selected_tile_terrain}. `;
+        
+        // Process the command/question with the LLM
+        const system_message = `You are the Game Command Center AI for Freeciv. ${context_str}Provide concise, context-aware advice without using asterisks or placeholder symbols.`;
+        const user_message = `The player said: "${input}". Respond appropriately. Keep responses concise (2-3 sentences).`;
+        
+        const messages = [
+          { role: "system", content: system_message },
+          { role: "user", content: user_message }
+        ];
+        
+        const reply = await webllm_engine.chat.completions.create({
+          messages: messages,
+          max_tokens: 150,
+          temperature: 0.7,
+        });
+        
+        let response = reply.choices[0].message.content;
+        // Post-process to remove *** artifacts
+        response = response.replace(/\*\*\*/g, '').trim();
+        response = response.replace(/\s{2,}/g, ' ').trim();
+        
+        // Remove thinking indicator
+        $("#thinking_msg").remove();
+        
+        // Append AI's response with typewriter effect
+        append_command_center_message("AI: " + response, "ai", null, true);
+        
+      } catch (error) {
+        console.error("[WebLLM] Error processing question:", error);
+        $("#thinking_msg").remove();
+        append_command_center_message("Error: Failed to process question. " + error.message, "error");
+      }
     }
   }
 }
 
 /**
  * Append a message to the Game Command Center chat
+ * @param {string} message - The message to append
+ * @param {string} type - Message type (user, ai, error, system, success)
+ * @param {string} id - Optional ID for the message element
+ * @param {boolean} typewriter - Whether to use typewriter effect (default: false)
  */
-function append_command_center_message(message, type, id) {
+function append_command_center_message(message, type, id, typewriter = false) {
   const chat_div = $("#command_center_chat");
-  let style = "";
   
+  // Generate timestamp [HH:MM]
+  const now = new Date();
+  const hours = String(now.getHours()).padStart(2, '0');
+  const minutes = String(now.getMinutes()).padStart(2, '0');
+  const timestamp = `[${hours}:${minutes}] `;
+  
+  // Determine CSS class based on type
+  let css_class = "";
   if (type === "user") {
-    style = "color: #4af; margin: 3px 0; font-size: 11px;";
+    css_class = "user-msg";
   } else if (type === "ai") {
-    style = "color: #aaa; margin: 3px 0; font-size: 11px;";
+    css_class = "ai-msg";
   } else if (type === "error") {
-    style = "color: #f44; margin: 3px 0; font-size: 11px;";
+    css_class = "error-msg";
   } else if (type === "system") {
-    style = "color: #0f0; margin: 3px 0; font-style: italic; font-size: 11px;";
+    css_class = "system-msg";
   } else if (type === "success") {
-    style = "color: #0f0; margin: 3px 0; font-weight: bold; font-size: 11px;";
+    css_class = "success-msg";
   }
   
-  const msg_html = id ? `<p id='${id}' style='${style}'>${message}</p>` : `<p style='${style}'>${message}</p>`;
+  // Create message element
+  const msg_id = id || `msg_${Date.now()}`;
+  const msg_html = `<p id='${msg_id}' class='${css_class}'>${timestamp}<span class='msg-content'></span></p>`;
   chat_div.append(msg_html);
+  
+  const msg_element = $(`#${msg_id} .msg-content`);
+  
+  // Apply typewriter effect for AI messages if requested
+  if (typewriter && type === "ai") {
+    let char_index = 0;
+    const text = message;
+    const type_speed = 20; // milliseconds per character
+    
+    const typewriter_interval = setInterval(() => {
+      if (char_index < text.length) {
+        msg_element.append(text.charAt(char_index));
+        char_index++;
+        // Auto-scroll to bottom during typing
+        chat_div.scrollTop(chat_div[0].scrollHeight);
+      } else {
+        clearInterval(typewriter_interval);
+      }
+    }, type_speed);
+  } else {
+    // Display message immediately
+    msg_element.html(message);
+  }
   
   // Auto-scroll to bottom
   chat_div.scrollTop(chat_div[0].scrollHeight);
