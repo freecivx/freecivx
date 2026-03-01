@@ -36,9 +36,9 @@ FreecivWorld.net consists of these components:
 
 * [Freeciv](freeciv) - the Freeciv C server. Forked. Implemented in C.
 
-* [Publite2](publite2) - a process launcher for Freeciv C servers, which manages
+* [Publite-go](publite-go) - a process launcher for Freeciv C servers, which manages
   multiple Freeciv server processes and checks capacity through the Metaserver. 
-  Implemented in Python.
+  Implemented in Go.
 
 Freeciv 3D
 -------------
