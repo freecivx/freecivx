@@ -69,6 +69,25 @@ function add_quality_dependent_objects_webgpu() {
   water_hq.name = "water_surface";
   scene.add(water_hq);
   console.log("Added stylized game water surface (hex topology).");
+
+  // Add a large black ground plane 100 units below the terrain mesh to soften the map border edge
+  const groundGeometry = new THREE.PlaneGeometry(
+    mapview_model_width * 10,   // 10x map width so it extends far beyond the terrain edge
+    mapview_model_height * hexHeightFactor * 10,  // 10x map height so it extends far beyond the terrain edge
+    1,
+    1
+  );
+  const groundMaterial = new THREE.MeshBasicMaterial({ color: 0x000000 });
+  const groundMesh = new THREE.Mesh(groundGeometry, groundMaterial);
+  groundMesh.rotation.x = -Math.PI * 0.5;
+  groundMesh.translateOnAxis(new THREE.Vector3(0, 0, 1).normalize(), -100);  // 100 units below terrain base
+  groundMesh.translateOnAxis(new THREE.Vector3(1, 0, 0).normalize(), Math.floor(mapview_model_width / 2) - 500);  // centre to match land mesh
+  groundMesh.translateOnAxis(new THREE.Vector3(0, 1, 0).normalize(), -Math.floor(mapview_model_height * hexHeightFactor / 2));  // centre to match land mesh
+  groundMesh.renderOrder = -2;
+  groundMesh.castShadow = false;
+  groundMesh.name = "black_ground_plane";
+  scene.add(groundMesh);
+  console.log("Added black ground plane (hex topology).");
 }
 
 /****************************************************************************
