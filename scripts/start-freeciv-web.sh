@@ -19,7 +19,7 @@ if [ ! -f ${SCRIPT_DIR}/configuration.sh ]; then
 fi
 . ./configuration.sh
 
-echo "Starting up Freeciv-web: nginx, tomcat, publite2, websockify."
+echo "Starting up Freeciv-web: nginx, tomcat, publite-go, websockify."
 
 mkdir -p ${FREECIV_WEB_DIR}/logs
 if [ ! -f /etc/nginx/sites-enabled/freeciv-web ]; then
@@ -40,9 +40,9 @@ url="http://${TOMCATMANAGER_USER}:${TOMCATMANAGER_PASSWORD}@localhost:8080/manag
 EOF
 fi
 
-echo "Starting publite2" && \
-(cd ${FREECIV_WEB_DIR}/publite2/ && \
+echo "Starting publite-go" && \
+(cd ${FREECIV_WEB_DIR}/publite-go/ && \
 sh run.sh) && \
-echo "Publite2 started" && \
+echo "publite-go started" && \
 bash ${FREECIV_WEB_DIR}/scripts/status-freeciv-web.sh
 echo "FreecivX started!"

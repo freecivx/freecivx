@@ -12,7 +12,7 @@ if [ ! -f ${SCRIPT_DIR}/configuration.sh ]; then
 fi
 . ./configuration.sh
 
-echo "Shutting down Freeciv-web: nginx, tomcat, publite2, websockify."
+echo "Shutting down Freeciv-web: nginx, tomcat, publite-go, websockify."
 
 if [ "${TOMCATMANAGER}" = "Y" ]; then
     if [ -z "${TOMCATMANAGER_PASSWORD}" ]; then
@@ -32,8 +32,8 @@ fi
 # configuration.
 . ./dependency-services-stop.sh
 
-#3. publite2
-ps aux | grep -ie publite2 | awk '{print $2}' | xargs kill -9 
+#3. publite-go
+ps aux | grep -ie publite-go | awk '{print $2}' | xargs kill -9 
 killall -9 freeciv-web
 
 
