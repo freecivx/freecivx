@@ -27,11 +27,13 @@
 var goto_lines_square = [];
 
 // Arrow styling constants for square maps
-var GOTO_LINE_COLOR_SQUARE = 0x55c0ff;        // Cyan color for the path
+var GOTO_LINE_COLOR_SQUARE = 0xffffff;        // White color for the path
 var GOTO_LINE_WIDTH_SQUARE = 1.5;             // Width of path line
 var GOTO_HEIGHT_OFFSET_SQUARE = 10.0;         // Height above terrain
-var GOTO_ARROW_HEAD_LENGTH_SQUARE = 12;       // Length of flat arrowhead triangle
-var GOTO_ARROW_HEAD_WIDTH_SQUARE = 7;         // Half-width of flat arrowhead triangle
+var GOTO_ARROW_HEAD_LENGTH_SQUARE = 9;        // Length of flat arrowhead triangle
+var GOTO_ARROW_HEAD_WIDTH_SQUARE = 5;         // Half-width of flat arrowhead triangle
+var GOTO_DASH_LENGTH_SQUARE = 8;              // Length of each dash segment
+var GOTO_GAP_LENGTH_SQUARE = 5;              // Length of each gap between dashes
 
 // BFS pathfinding constants
 var GOTO_MAX_BFS_TILES = 500;              // Maximum tiles explored by client-side BFS
@@ -66,6 +68,57 @@ function get_tile_center_position_square(tile) {
 }
 
 /****************************************************************************
+ Draws a dashed thick line (as mesh quads) from startPos to endPos.
+ Alternates between dash and gap segments to create a dashed effect.
+ Adds created meshes directly to the scene and appends them to goto_lines_square.
+
+ @param {THREE.Vector3} startPos   - Start of the line segment
+ @param {THREE.Vector3} endPos     - End of the line segment
+ @param {THREE.Material} material  - Material to use for dash quads
+ @param {number}         lineWidth - Half-width of the line
+ ****************************************************************************/
+function draw_dashed_line_square(startPos, endPos, material, lineWidth) {
+    var direction = new THREE.Vector3().subVectors(endPos, startPos).normalize();
+    var perpendicular = new THREE.Vector3(-direction.z, 0, direction.x)
+                          .normalize().multiplyScalar(lineWidth);
+    var totalLen = startPos.distanceTo(endPos);
+    var step = 0;
+    var isDash = true;
+
+    while (step < totalLen) {
+        var segLen = isDash ? GOTO_DASH_LENGTH_SQUARE : GOTO_GAP_LENGTH_SQUARE;
+        var actualLen = Math.min(segLen, totalLen - step);
+        var dashStart = startPos.clone().add(direction.clone().multiplyScalar(step));
+        var dashEnd   = startPos.clone().add(direction.clone().multiplyScalar(step + actualLen));
+
+        if (isDash && actualLen > 0.1) {
+            var v = [
+                dashStart.clone().add(perpendicular),
+                dashStart.clone().sub(perpendicular),
+                dashEnd.clone().add(perpendicular),
+                dashEnd.clone().sub(perpendicular)
+            ];
+            var geometry = new THREE.BufferGeometry();
+            geometry.setAttribute('position', new THREE.BufferAttribute(new Float32Array([
+                v[0].x, v[0].y, v[0].z,
+                v[1].x, v[1].y, v[1].z,
+                v[2].x, v[2].y, v[2].z,
+                v[1].x, v[1].y, v[1].z,
+                v[3].x, v[3].y, v[3].z,
+                v[2].x, v[2].y, v[2].z
+            ]), 3));
+            var dash = new THREE.Mesh(geometry, material);
+            dash.name = "goto_line_square";
+            scene.add(dash);
+            goto_lines_square.push(dash);
+        }
+
+        step += segLen;
+        isDash = !isDash;
+    }
+}
+
+/****************************************************************************
  Renders goto path for square map tiles as an arrow from start to destination.
  
  @param {Object} start_tile - The starting tile of the path
@@ -82,48 +135,19 @@ function webgl_render_goto_line_square(start_tile, dest_tile) {
     
     if (startPos == null || destPos == null) return;
 
-    const material = new THREE.MeshBasicMaterial({
+    var material = new THREE.MeshBasicMaterial({
         color: GOTO_LINE_COLOR_SQUARE,
         side: THREE.DoubleSide,
         transparent: true,
         opacity: 0.8
     });
 
-    const lineWidth = GOTO_LINE_WIDTH_SQUARE;
-
-    // Calculate direction and perpendicular
+    // End the dashed line at the arrowhead base
     var direction = new THREE.Vector3().subVectors(destPos, startPos).normalize();
-    var perpendicular = new THREE.Vector3(-direction.z, 0, direction.x).normalize().multiplyScalar(lineWidth);
-
-    // End the quad at the arrowhead base so the line doesn't overlap the arrow
     var arrowBase = destPos.clone().sub(direction.clone().multiplyScalar(GOTO_ARROW_HEAD_LENGTH_SQUARE));
 
-    var vertices = [
-        startPos.clone().add(perpendicular),
-        startPos.clone().sub(perpendicular),
-        arrowBase.clone().add(perpendicular),
-        arrowBase.clone().sub(perpendicular),
-    ];
+    draw_dashed_line_square(startPos, arrowBase, material, GOTO_LINE_WIDTH_SQUARE);
 
-    // Create geometry for the quad
-    const geometry = new THREE.BufferGeometry();
-    const position = new Float32Array([
-        vertices[0].x, vertices[0].y, vertices[0].z,
-        vertices[1].x, vertices[1].y, vertices[1].z,
-        vertices[2].x, vertices[2].y, vertices[2].z,
-
-        vertices[1].x, vertices[1].y, vertices[1].z,
-        vertices[3].x, vertices[3].y, vertices[3].z,
-        vertices[2].x, vertices[2].y, vertices[2].z,
-    ]);
-    geometry.setAttribute('position', new THREE.BufferAttribute(position, 3));
-
-    // Create the mesh and add to the scene
-    const gotoline = new THREE.Mesh(geometry, material);
-    gotoline.name = "goto_line_square";
-    scene.add(gotoline);
-    goto_lines_square.push(gotoline);
-    
     // Add arrow head at destination
     create_goto_arrow_head_square(destPos, direction);
 }
@@ -245,8 +269,8 @@ function compute_client_goto_path(punit, dest_tile) {
 }
 
 /****************************************************************************
- Renders the client-side goto path for square maps as a sequence of blue
- line segments following the BFS-computed route.
+ Renders the client-side goto path for square maps as a sequence of white
+ dashed line segments following the BFS-computed route.
 
  @param {Object} punit - The unit to move
  @param {Object} path  - Path object from compute_client_goto_path
@@ -277,44 +301,21 @@ function webgl_render_goto_path_square(punit, path) {
 
     var lineWidth = GOTO_LINE_WIDTH_SQUARE;
 
-    /* Draw one quad-strip segment per step in the path. */
+    /* Draw dashed line segments per step in the path. */
     for (var j = 0; j < path_tiles.length - 1; j++) {
         var startPos = get_tile_center_position_square(path_tiles[j]);
         var endPos   = get_tile_center_position_square(path_tiles[j + 1]);
         if (startPos == null || endPos == null) continue;
 
         var direction    = new THREE.Vector3().subVectors(endPos, startPos).normalize();
-        var perpendicular = new THREE.Vector3(-direction.z, 0, direction.x)
-                              .normalize().multiplyScalar(lineWidth);
 
-        // For the last segment, stop the quad at the arrowhead base
+        // For the last segment, stop the dashes at the arrowhead base
         var segEnd = endPos;
         if (j == path_tiles.length - 2) {
             segEnd = endPos.clone().sub(direction.clone().multiplyScalar(GOTO_ARROW_HEAD_LENGTH_SQUARE));
         }
 
-        var v = [
-            startPos.clone().add(perpendicular),
-            startPos.clone().sub(perpendicular),
-            segEnd.clone().add(perpendicular),
-            segEnd.clone().sub(perpendicular)
-        ];
-
-        var geometry = new THREE.BufferGeometry();
-        var positions = new Float32Array([
-            v[0].x, v[0].y, v[0].z,
-            v[1].x, v[1].y, v[1].z,
-            v[2].x, v[2].y, v[2].z,
-            v[1].x, v[1].y, v[1].z,
-            v[3].x, v[3].y, v[3].z,
-            v[2].x, v[2].y, v[2].z
-        ]);
-        geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-
-        var seg = new THREE.Mesh(geometry, material);
-        seg.name = "goto_line_square";
-        scene.add(seg);
-        goto_lines_square.push(seg);
+        draw_dashed_line_square(startPos, segEnd, material, lineWidth);
     }
 
     /* Arrow head pointing into the destination tile. */
