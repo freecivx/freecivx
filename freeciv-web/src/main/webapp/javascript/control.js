@@ -35,7 +35,7 @@ var paradrop_active = false;
 var airlift_active = false;
 var action_tgt_sel_active = false;
 
-/* True when using client-side pathfinding (square maps). Set in activate_goto_last. */
+/* True when using client-side pathfinding (square and hex maps). Set in activate_goto_last. */
 var client_side_goto = false;
 
 /* Will be set when the goto is activated. */
@@ -1656,7 +1656,7 @@ function do_map_click(ptile, qtype, first_time_called)
         /* Get the path the server sent using PACKET_WEB_GOTO_PATH. */
         var goto_path = goto_request_map[punit['id'] + "," + ptile['x'] + "," + ptile['y']];
         if (goto_path == null && client_side_goto) {
-          /* Compute client-side path on the fly for square maps. */
+          /* Compute client-side path on the fly. */
           goto_path = compute_client_goto_path(punit, ptile);
         }
         if (goto_path == null) {
@@ -2394,7 +2394,7 @@ function activate_goto()
 function activate_goto_last(last_order, last_action)
 {
   goto_active = true;
-  client_side_goto = !is_hex();
+  client_side_goto = true;
   $("#mapcanvas").css("cursor", "crosshair");
   controls.enabled = false;
 
@@ -3200,7 +3200,7 @@ function check_request_goto_path()
     var ptile = webgl_canvas_pos_to_tile(mouse_x, mouse_y);
 
     if (client_side_goto) {
-      /* Client-side pathfinding for square maps: update whenever mouse moves. */
+      /* Client-side pathfinding: update whenever mouse moves. */
       if (ptile != null && (prev_mouse_x != mouse_x || prev_mouse_y != mouse_y)) {
         clear_goto_tiles();
         for (var i = 0; i < current_focus.length; i++) {
@@ -3209,7 +3209,11 @@ function check_request_goto_path()
           if (path != null) {
             goto_request_map[punit['id'] + "," + ptile['x'] + "," + ptile['y']] = path;
             current_goto_turns = path['turns'];
-            webgl_render_goto_path_square(punit, path);
+            if (is_hex()) {
+              webgl_render_goto_path_hex(punit, path);
+            } else {
+              webgl_render_goto_path_square(punit, path);
+            }
           } else {
             current_goto_turns = null;
           }
