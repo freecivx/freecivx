@@ -35,10 +35,10 @@ var goto_arrow_group = null;
 // Arrow styling constants
 var GOTO_ARROW_COLOR = 0x00ff00;  // Green color for the arrow
 // Note: WebGL/WebGPU linewidth is often limited to 1 on many platforms/browsers.
-// The arrow head (cone) provides the primary visual weight regardless of line width.
+// The arrow head provides the primary visual weight regardless of line width.
 var GOTO_ARROW_LINE_WIDTH = 3;    // Line width (may be clamped to 1 on some platforms)
-var GOTO_ARROW_HEAD_LENGTH = 6;   // Length of the arrow head cone
-var GOTO_ARROW_HEAD_RADIUS = 3;   // Radius of the arrow head cone base
+var GOTO_ARROW_HEAD_LENGTH = 12;  // Length of the flat arrowhead triangle
+var GOTO_ARROW_HEAD_WIDTH = 8;    // Half-width of the flat arrowhead triangle
 var GOTO_ARROW_HEIGHT_OFFSET = 25; // Height above terrain for the arrow
 
 /****************************************************************************
@@ -152,15 +152,15 @@ function create_goto_arrow(startPos, destPos) {
     // Normalize direction
     var dirNormalized = direction.clone().normalize();
     
-    // Create arrow line (from start to just before the arrow head)
-    var lineEndPos = new THREE.Vector3().copy(destPos).sub(
-        dirNormalized.clone().multiplyScalar(GOTO_ARROW_HEAD_LENGTH * 0.8)
+    // The arrow head base sits at this position; the line ends here too
+    var arrowHeadBase = new THREE.Vector3().copy(destPos).sub(
+        dirNormalized.clone().multiplyScalar(GOTO_ARROW_HEAD_LENGTH)
     );
-    
+
     var lineGeometry = new THREE.BufferGeometry();
     var lineVertices = new Float32Array([
         startPos.x, startPos.y, startPos.z,
-        lineEndPos.x, lineEndPos.y, lineEndPos.z
+        arrowHeadBase.x, arrowHeadBase.y, arrowHeadBase.z
     ]);
     lineGeometry.setAttribute('position', new THREE.BufferAttribute(lineVertices, 3));
     lineGeometry.name = "goto_line_geometry";
@@ -176,35 +176,29 @@ function create_goto_arrow(startPos, destPos) {
     goto_arrow_line.name = "goto_arrow_line";
     goto_arrow_group.add(goto_arrow_line);
     
-    // Create arrow head (cone)
-    var coneGeometry = new THREE.ConeGeometry(
-        GOTO_ARROW_HEAD_RADIUS,
-        GOTO_ARROW_HEAD_LENGTH,
-        8  // radial segments
-    );
-    coneGeometry.name = "goto_cone_geometry";
-    
-    var coneMaterial = new THREE.MeshBasicMaterial({
+    // Create a flat triangular arrowhead in the XZ plane for clear top-down visibility
+    var perpendicular = new THREE.Vector3(-dirNormalized.z, 0, dirNormalized.x);
+    var tip  = destPos.clone();
+    var left  = arrowHeadBase.clone().add(perpendicular.clone().multiplyScalar(GOTO_ARROW_HEAD_WIDTH));
+    var right = arrowHeadBase.clone().sub(perpendicular.clone().multiplyScalar(GOTO_ARROW_HEAD_WIDTH));
+
+    var arrowGeometry = new THREE.BufferGeometry();
+    arrowGeometry.setAttribute('position', new THREE.BufferAttribute(new Float32Array([
+        tip.x,   tip.y,   tip.z,
+        left.x,  left.y,  left.z,
+        right.x, right.y, right.z
+    ]), 3));
+    arrowGeometry.name = "goto_arrow_geometry";
+
+    var arrowMaterial = new THREE.MeshBasicMaterial({
         color: GOTO_ARROW_COLOR,
+        side: THREE.DoubleSide,
         depthTest: true,
         depthWrite: true
     });
-    
-    goto_arrow_head = new THREE.Mesh(coneGeometry, coneMaterial);
+
+    goto_arrow_head = new THREE.Mesh(arrowGeometry, arrowMaterial);
     goto_arrow_head.name = "goto_arrow_head";
-    
-    // Position the cone at the destination
-    goto_arrow_head.position.copy(destPos);
-    
-    // Orient the cone to point in the direction of travel
-    // ConeGeometry points up (0, 1, 0) by default, so we need to rotate it
-    var up = new THREE.Vector3(0, 1, 0);
-    var quaternion = new THREE.Quaternion().setFromUnitVectors(up, dirNormalized);
-    goto_arrow_head.quaternion.copy(quaternion);
-    
-    // Move cone back slightly so its tip is at the destination
-    goto_arrow_head.position.sub(dirNormalized.clone().multiplyScalar(GOTO_ARROW_HEAD_LENGTH / 2));
-    
     goto_arrow_group.add(goto_arrow_head);
     
     // Make the group visible

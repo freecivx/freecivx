@@ -27,9 +27,11 @@
 var goto_lines_square = [];
 
 // Arrow styling constants for square maps
-var GOTO_LINE_COLOR_SQUARE = 0x55c0ff;     // Cyan color for the path
-var GOTO_LINE_WIDTH_SQUARE = 1.5;          // Width of path line
-var GOTO_HEIGHT_OFFSET_SQUARE = 10.0;      // Height above terrain
+var GOTO_LINE_COLOR_SQUARE = 0x55c0ff;        // Cyan color for the path
+var GOTO_LINE_WIDTH_SQUARE = 1.5;             // Width of path line
+var GOTO_HEIGHT_OFFSET_SQUARE = 10.0;         // Height above terrain
+var GOTO_ARROW_HEAD_LENGTH_SQUARE = 12;       // Length of flat arrowhead triangle
+var GOTO_ARROW_HEAD_WIDTH_SQUARE = 7;         // Half-width of flat arrowhead triangle
 
 // BFS pathfinding constants
 var GOTO_MAX_BFS_TILES = 500;              // Maximum tiles explored by client-side BFS
@@ -93,11 +95,14 @@ function webgl_render_goto_line_square(start_tile, dest_tile) {
     var direction = new THREE.Vector3().subVectors(destPos, startPos).normalize();
     var perpendicular = new THREE.Vector3(-direction.z, 0, direction.x).normalize().multiplyScalar(lineWidth);
 
+    // End the quad at the arrowhead base so the line doesn't overlap the arrow
+    var arrowBase = destPos.clone().sub(direction.clone().multiplyScalar(GOTO_ARROW_HEAD_LENGTH_SQUARE));
+
     var vertices = [
         startPos.clone().add(perpendicular),
         startPos.clone().sub(perpendicular),
-        destPos.clone().add(perpendicular),
-        destPos.clone().sub(perpendicular),
+        arrowBase.clone().add(perpendicular),
+        arrowBase.clone().sub(perpendicular),
     ];
 
     // Create geometry for the quad
@@ -124,34 +129,37 @@ function webgl_render_goto_line_square(start_tile, dest_tile) {
 }
 
 /****************************************************************************
- Creates an arrow head cone at the destination point.
- @param {THREE.Vector3} position - Position of the arrow head
- @param {THREE.Vector3} direction - Direction the arrow is pointing
+ Creates a flat triangular arrowhead at the destination point.
+ The triangle lies in the XZ plane, giving a clear arrow shape when viewed
+ from above.
+ @param {THREE.Vector3} position  - Tip position of the arrowhead (destination)
+ @param {THREE.Vector3} direction - Normalised direction the arrow is pointing
  ****************************************************************************/
 function create_goto_arrow_head_square(position, direction) {
-    var coneGeometry = new THREE.ConeGeometry(3, 6, 8);
-    var coneMaterial = new THREE.MeshBasicMaterial({
+    var perpendicular = new THREE.Vector3(-direction.z, 0, direction.x);
+    var tip   = position.clone();
+    var base  = tip.clone().sub(direction.clone().multiplyScalar(GOTO_ARROW_HEAD_LENGTH_SQUARE));
+    var left  = base.clone().add(perpendicular.clone().multiplyScalar(GOTO_ARROW_HEAD_WIDTH_SQUARE));
+    var right = base.clone().sub(perpendicular.clone().multiplyScalar(GOTO_ARROW_HEAD_WIDTH_SQUARE));
+
+    var arrowGeometry = new THREE.BufferGeometry();
+    arrowGeometry.setAttribute('position', new THREE.BufferAttribute(new Float32Array([
+        tip.x,   tip.y,   tip.z,
+        left.x,  left.y,  left.z,
+        right.x, right.y, right.z
+    ]), 3));
+
+    var arrowMaterial = new THREE.MeshBasicMaterial({
         color: GOTO_LINE_COLOR_SQUARE,
+        side: THREE.DoubleSide,
         transparent: true,
         opacity: 0.9
     });
-    
-    var cone = new THREE.Mesh(coneGeometry, coneMaterial);
-    cone.name = "goto_arrow_head_square";
-    
-    // Position the cone at the destination
-    cone.position.copy(position);
-    
-    // Orient the cone to point in the direction of travel
-    var up = new THREE.Vector3(0, 1, 0);
-    var quaternion = new THREE.Quaternion().setFromUnitVectors(up, direction);
-    cone.quaternion.copy(quaternion);
-    
-    // Move cone back slightly so its tip is at the destination
-    cone.position.sub(direction.clone().multiplyScalar(3));
-    
-    scene.add(cone);
-    goto_lines_square.push(cone);
+
+    var arrow = new THREE.Mesh(arrowGeometry, arrowMaterial);
+    arrow.name = "goto_arrow_head_square";
+    scene.add(arrow);
+    goto_lines_square.push(arrow);
 }
 
 /**************************************************************************
@@ -279,11 +287,17 @@ function webgl_render_goto_path_square(punit, path) {
         var perpendicular = new THREE.Vector3(-direction.z, 0, direction.x)
                               .normalize().multiplyScalar(lineWidth);
 
+        // For the last segment, stop the quad at the arrowhead base
+        var segEnd = endPos;
+        if (j == path_tiles.length - 2) {
+            segEnd = endPos.clone().sub(direction.clone().multiplyScalar(GOTO_ARROW_HEAD_LENGTH_SQUARE));
+        }
+
         var v = [
             startPos.clone().add(perpendicular),
             startPos.clone().sub(perpendicular),
-            endPos.clone().add(perpendicular),
-            endPos.clone().sub(perpendicular)
+            segEnd.clone().add(perpendicular),
+            segEnd.clone().sub(perpendicular)
         ];
 
         var geometry = new THREE.BufferGeometry();
