@@ -33,12 +33,12 @@ var goto_arrow_head = null;
 var goto_arrow_group = null;
 
 // Arrow styling constants
-var GOTO_ARROW_COLOR = 0x00ff00;  // Green color for the arrow
+var GOTO_ARROW_COLOR = 0xffffff;  // White color for the arrow
 // Note: WebGL/WebGPU linewidth is often limited to 1 on many platforms/browsers.
 // The arrow head provides the primary visual weight regardless of line width.
 var GOTO_ARROW_LINE_WIDTH = 3;    // Line width (may be clamped to 1 on some platforms)
-var GOTO_ARROW_HEAD_LENGTH = 12;  // Length of the flat arrowhead triangle
-var GOTO_ARROW_HEAD_WIDTH = 8;    // Half-width of the flat arrowhead triangle
+var GOTO_ARROW_HEAD_LENGTH = 9;   // Length of the flat arrowhead triangle
+var GOTO_ARROW_HEAD_WIDTH = 6;    // Half-width of the flat arrowhead triangle
 var GOTO_ARROW_HEIGHT_OFFSET = 25; // Height above terrain for the arrow
 
 /****************************************************************************
@@ -165,14 +165,17 @@ function create_goto_arrow(startPos, destPos) {
     lineGeometry.setAttribute('position', new THREE.BufferAttribute(lineVertices, 3));
     lineGeometry.name = "goto_line_geometry";
     
-    var lineMaterial = new THREE.LineBasicMaterial({
+    var lineMaterial = new THREE.LineDashedMaterial({
         color: GOTO_ARROW_COLOR,
         linewidth: GOTO_ARROW_LINE_WIDTH,
+        dashSize: 8,
+        gapSize: 5,
         depthTest: true,
         depthWrite: true
     });
     
     goto_arrow_line = new THREE.Line(lineGeometry, lineMaterial);
+    goto_arrow_line.computeLineDistances();
     goto_arrow_line.name = "goto_arrow_line";
     goto_arrow_group.add(goto_arrow_line);
     
