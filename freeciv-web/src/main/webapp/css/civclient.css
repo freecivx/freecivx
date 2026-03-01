@@ -553,11 +553,37 @@ body
 #nation_table {
   cursor: pointer;
   padding-bottom: 400px;
+  width: 95%;
+}
+
+#nations_dialog {
+  padding: 10px;
+}
+
+#nations_header {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid rgba(255,255,255,0.15);
+  margin-bottom: 10px;
 }
 
 #nations_button_div {
-  padding-bottom: 15px;
-  clear: left;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding-bottom: 12px;
+}
+
+.nations_action_btn {
+  transition: all 0.2s ease;
+}
+
+.nations_action_btn:not([disabled]):hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 6px rgba(0,0,0,0.3);
 }
 
 .act_sel_dialog {
@@ -588,6 +614,12 @@ body
   background-color: #bbbbbb;
   color: black;
 }
+
+.nation_row_selected {
+  background-color: rgba(74, 158, 255, 0.25) !important;
+  outline: 1px solid rgba(74, 158, 255, 0.6);
+}
+
 .tablesorter-dark td {
 	background-color: inherit;
 	color: inherit;
@@ -597,6 +629,10 @@ body
 .tablesorter-dark tbody > tr.even:hover > td,
 .tablesorter-dark tbody > tr.odd:hover > td {
 	background: inherit;
+}
+
+.tablesorter-dark tbody > tr:hover {
+  background-color: rgba(255,255,255,0.07);
 }
 
 .nation_row_self {
@@ -609,6 +645,40 @@ body
 
 .nation_row_dead {
   color: #9e9e9e;
+}
+
+/* Diplomatic state badge styling */
+.nation_diplstate {
+  display: inline-block;
+  padding: 1px 6px;
+  border-radius: 3px;
+  font-size: 90%;
+  font-weight: 500;
+}
+
+.diplstate_war       { background-color: rgba(192,32,32,0.85);  color: #fff; }
+.diplstate_armistice { background-color: rgba(150,80,10,0.85);  color: #fff; }
+.diplstate_ceasefire { background-color: rgba(120,130,20,0.85); color: #fff; }
+.diplstate_peace     { background-color: rgba(0,140,40,0.85);   color: #fff; }
+.diplstate_alliance  { background-color: rgba(0,80,200,0.85);   color: #fff; }
+.diplstate_team      { background-color: rgba(80,0,200,0.85);   color: #fff; }
+
+/* Nation status badges */
+.nation_alive  { color: #7dff7d; }
+.nation_dead   { color: #9e9e9e; }
+
+/* Turn state badges */
+.nation_state_done   { color: #7dff7d; font-weight: 500; }
+.nation_state_moving { color: #ffcc44; }
+.nation_state_idle   { color: #ff9944; }
+
+/* Nation color swatch */
+.nation_color_swatch {
+  margin: 5px;
+  width: 25px;
+  height: 25px;
+  border-radius: 4px;
+  border: 1px solid rgba(255,255,255,0.3);
 }
 
 #city_disband_options {
@@ -1381,14 +1451,14 @@ li.tech-both::before {
 }
 
 #nations_title {
-  font-size: 170%;
-  float: left;
-  padding: 10px;
+  font-size: 150%;
+  font-weight: bold;
+  color: #ffffff;
 }
 
 #nations_label {
-  float: left;
-  padding: 15px;
+  font-size: 95%;
+  color: #cccccc;
 }
 
 #technology_dialog {
