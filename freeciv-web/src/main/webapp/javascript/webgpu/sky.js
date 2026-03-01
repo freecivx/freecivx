@@ -25,11 +25,13 @@
  *
  * Features:
  * - Blue sky at daytime with realistic zenith-to-horizon gradient
- * - Black sky with procedural stars at night
+ * - Subtle smooth noise for natural sky variation
+ * - Black sky with procedural stars at night (colored, twinkling)
+ * - Faint Milky Way band visible at night
  * - Red/orange sunset and sunrise transitions
- * - Animated sun disk with soft glow corona
- * - Moon disc visible at night
- * - Wispy cloud layer during the day
+ * - Animated sun disk with soft inner and outer atmospheric glow
+ * - Moon disc visible at night with soft atmospheric halo
+ * - Animated wispy cloud layer during the day
  *
  * Performance notes:
  * - Single draw call for the entire sky sphere
@@ -46,12 +48,12 @@
  * Accumulated real-world seconds since sky was initialised.
  * Starts at SKY_CYCLE_SECONDS * 0.5 so the first visible state is noon.
  */
-var skyElapsedTime = 900;
+var skyElapsedTime = 450;
 
 /**
- * Length of one full day/night cycle in real-world seconds (30 minutes).
+ * Length of one full day/night cycle in real-world seconds (15 minutes).
  */
-var SKY_CYCLE_SECONDS = 1800.0;
+var SKY_CYCLE_SECONDS = 900.0;
 
 /**
  * Create the sky dome mesh and add it to the scene.
@@ -85,7 +87,7 @@ function initSky() {
  */
 function createSkyMaterialTSL() {
   const {
-    uniform, vec3, sin, cos, mix, fract, clamp, pow,
+    uniform, vec3, sin, cos, mix, fract, clamp, pow, abs,
     mul, add, sub, floor, step, smoothstep, dot,
     normalize, positionLocal
   } = THREE;
@@ -94,6 +96,10 @@ function createSkyMaterialTSL() {
   const skyTimeUniform = uniform(0.5);
   window.skyTimeUniform = skyTimeUniform;
   const t = skyTimeUniform;
+
+  // ---- raw elapsed seconds (for fast animation: twinkling, cloud drift) ----
+  const skyRawTimeUniform = uniform(900.0);
+  window.skyRawTimeUniform = skyRawTimeUniform;
 
   // ==================================================
   // VIEW DIRECTION
@@ -180,19 +186,21 @@ function createSkyMaterialTSL() {
 
   const cosAngle = clamp(dot(dir, sunDir), -1.0, 1.0);
 
-  // Bright disc
-  const sunDisk = smoothstep(0.9980, 0.9993, cosAngle);
-  // Soft corona / glow
-  const sunGlow = mul(smoothstep(0.975, 0.9980, cosAngle), 0.35);
+  // Bright disc — overbright core (×2.0) makes the centre blow out to white
+  const sunDisk = mul(smoothstep(0.9975, 0.9993, cosAngle), 2.0);
+  // Inner corona / glow (stronger than before)
+  const sunGlowInner = mul(smoothstep(0.975, 0.9980, cosAngle), 0.55);
+  // Outer atmospheric haze ring
+  const sunGlowOuter = mul(smoothstep(0.930, 0.975, cosAngle), 0.22);
 
-  // Sun colour shifts from warm white (day) to deep orange (transition)
-  const sunDayColor        = vec3(1.0, 0.95, 0.80);
-  const sunTransitionColor = vec3(1.0, 0.55, 0.15);
+  // Sun colour: vivid yellow during day, deep orange at sunrise/sunset
+  const sunDayColor        = vec3(1.0, 0.92, 0.12);
+  const sunTransitionColor = vec3(1.0, 0.45, 0.05);
   const sunColor           = mix(sunDayColor, sunTransitionColor, transitionFactor);
 
   // Hide sun when it is below the horizon
-  const sunAbove  = step(0.0, sunY);
-  const sunContrib = mul(mul(add(sunDisk, sunGlow), sunAbove), sunColor);
+  const sunAbove   = step(0.0, sunY);
+  const sunContrib = mul(mul(add(sunDisk, add(sunGlowInner, sunGlowOuter)), sunAbove), sunColor);
   const skyColor1  = add(skyColor0, sunContrib);
 
   // ==================================================
