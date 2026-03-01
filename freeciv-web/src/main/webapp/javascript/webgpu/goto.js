@@ -41,10 +41,6 @@ var GOTO_ARROW_HEAD_LENGTH = 6;   // Length of the arrow head cone
 var GOTO_ARROW_HEAD_RADIUS = 3;   // Radius of the arrow head cone base
 var GOTO_ARROW_HEIGHT_OFFSET = 25; // Height above terrain for the arrow
 
-// Hex path line styling constants (for computed BFS path visualization)
-var GOTO_LINE_COLOR_HEX = 0x55c0ff;  // Cyan color for the hex path
-var GOTO_LINE_WIDTH_HEX = 1.5;        // Width of hex path line segments
-
 /****************************************************************************
  Initialize the goto arrow visualization.
  Creates the arrow group and adds it to the scene.
@@ -212,100 +208,6 @@ function create_goto_arrow(startPos, destPos) {
     goto_arrow_group.add(goto_arrow_head);
     
     // Make the group visible
-    goto_arrow_group.visible = true;
-}
-
-/****************************************************************************
- Renders the client-side goto path for hex maps as a sequence of line
- segments following the BFS-computed route, with an arrow head at the end.
-
- @param {Object} punit - The unit to move
- @param {Object} path  - Path object from compute_client_goto_path
- ****************************************************************************/
-function webgl_render_goto_path_hex(punit, path) {
-    clear_goto_tiles();
-    if (!goto_active || punit == null || path == null) return;
-
-    var start_tile = index_to_tile(punit['tile']);
-    if (start_tile == null) return;
-
-    if (goto_arrow_group == null) {
-        init_goto_arrow();
-    }
-
-    /* Reconstruct the tile sequence from the direction list. */
-    var path_tiles = [start_tile];
-    var current = start_tile;
-    for (var i = 0; i < path['length']; i++) {
-        current = mapstep(current, path['dir'][i]);
-        if (current == null) break;
-        path_tiles.push(current);
-    }
-    if (path_tiles.length < 2) return;
-
-    var material = new THREE.MeshBasicMaterial({
-        color: GOTO_LINE_COLOR_HEX,
-        side: THREE.DoubleSide,
-        transparent: true,
-        opacity: 0.8
-    });
-
-    var lineWidth = GOTO_LINE_WIDTH_HEX;
-
-    /* Draw one quad-strip segment per step in the path. */
-    for (var j = 0; j < path_tiles.length - 1; j++) {
-        var startPos = get_tile_center_position(path_tiles[j]);
-        var endPos   = get_tile_center_position(path_tiles[j + 1]);
-        if (startPos == null || endPos == null) continue;
-
-        var direction     = new THREE.Vector3().subVectors(endPos, startPos).normalize();
-        var perpendicular = new THREE.Vector3(-direction.z, 0, direction.x)
-                              .normalize().multiplyScalar(lineWidth);
-
-        var v = [
-            startPos.clone().add(perpendicular),
-            startPos.clone().sub(perpendicular),
-            endPos.clone().add(perpendicular),
-            endPos.clone().sub(perpendicular)
-        ];
-
-        var geometry = new THREE.BufferGeometry();
-        var positions = new Float32Array([
-            v[0].x, v[0].y, v[0].z,
-            v[1].x, v[1].y, v[1].z,
-            v[2].x, v[2].y, v[2].z,
-            v[1].x, v[1].y, v[1].z,
-            v[3].x, v[3].y, v[3].z,
-            v[2].x, v[2].y, v[2].z
-        ]);
-        geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-
-        var seg = new THREE.Mesh(geometry, material);
-        seg.name = "goto_line_hex";
-        goto_arrow_group.add(seg);
-    }
-
-    /* Arrow head pointing into the destination tile. */
-    var lastPos = get_tile_center_position(path_tiles[path_tiles.length - 1]);
-    var prevPos = get_tile_center_position(path_tiles[path_tiles.length - 2]);
-    if (lastPos != null && prevPos != null) {
-        var arrowDir = new THREE.Vector3().subVectors(lastPos, prevPos).normalize();
-        var coneGeometry = new THREE.ConeGeometry(GOTO_ARROW_HEAD_RADIUS, GOTO_ARROW_HEAD_LENGTH, 8);
-        var coneMaterial = new THREE.MeshBasicMaterial({
-            color: GOTO_LINE_COLOR_HEX,
-            transparent: true,
-            opacity: 0.9
-        });
-        var cone = new THREE.Mesh(coneGeometry, coneMaterial);
-        cone.name = "goto_arrow_head_hex";
-        cone.position.copy(lastPos);
-        var up = new THREE.Vector3(0, 1, 0);
-        var quaternion = new THREE.Quaternion().setFromUnitVectors(up, arrowDir);
-        cone.quaternion.copy(quaternion);
-        cone.position.sub(arrowDir.clone().multiplyScalar(GOTO_ARROW_HEAD_LENGTH / 2));
-        goto_arrow_group.add(cone);
-    }
-
     goto_arrow_group.visible = true;
 }
 
