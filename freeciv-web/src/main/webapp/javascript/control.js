@@ -275,6 +275,7 @@ function control_init()
   $('#toggle_ai_button').click(toggle_ai_clicked);
   $('#game_scores_button').click(view_game_scores);
   $('#nations_list').on('click', 'tbody tr', handle_nation_table_select);
+  init_cities_filter();
 
   /* prevents keyboard input from changing tabs. */
   $('#tabs>ul>li').off('keydown');

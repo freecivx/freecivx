@@ -1366,6 +1366,78 @@ body
   cursor:pointer;
 }
 
+.cities_row:hover td {
+  background-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+.cities_state_celebrating {
+  color: #90ee90;
+}
+
+.cities_state_disorder {
+  color: #ff6666;
+}
+
+.cities_surplus_pos {
+  color: #90ee90;
+}
+
+.cities_surplus_neg {
+  color: #ff6666;
+}
+
+.cities_production_cell {
+  white-space: nowrap;
+}
+
+.cities_empty_msg {
+  padding: 20px;
+  color: #aaa;
+  font-style: italic;
+  text-align: center;
+}
+
+#cities_header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 6px 4px 8px 4px;
+  flex-wrap: wrap;
+}
+
+#cities_heading {
+  font-size: 1.1em;
+  font-weight: bold;
+  white-space: nowrap;
+}
+
+#cities_filter_box {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #aaa;
+}
+
+#cities_filter_input {
+  background: rgba(255,255,255,0.1);
+  border: 1px solid rgba(255,255,255,0.2);
+  border-radius: 4px;
+  color: white;
+  padding: 3px 8px;
+  font-size: 0.9em;
+  width: 160px;
+}
+
+#cities_filter_input::placeholder {
+  color: rgba(255,255,255,0.4);
+}
+
+#cities_filter_input:focus {
+  outline: none;
+  border-color: rgba(255,255,255,0.5);
+  background: rgba(255,255,255,0.15);
+}
+
 #wiki_dialog {
   overflow: auto;
 }
