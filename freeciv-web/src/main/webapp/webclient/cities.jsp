@@ -1,7 +1,7 @@
 <div>
 
     <div id="cities_header">
-        <span id="cities_heading">Cities</span>
+        <span id="cities_heading"><i class="fa fa-city" aria-hidden="true"></i> Your Cities</span>
         <span id="cities_filter_box">
             <i class="fa fa-search" aria-hidden="true"></i>
             <input type="text" id="cities_filter_input" placeholder="Filter cities..." title="Filter cities by name">

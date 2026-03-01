@@ -124,7 +124,7 @@ function update_city_screen()
 
     $("#city_table").tablesorter({theme:"dark", sortList: sortList});
 
-    $("#cities_heading").text(count + " Cities");
+    $("#cities_heading").html("<i class='fa fa-city' aria-hidden='true'></i> ").append(document.createTextNode(count + " Cities"));
 
     /* Apply any existing filter value */
     var filter_val = $("#cities_filter_input").val();
