@@ -40,6 +40,11 @@ dependencies="\
   pkg-config \
   procps \
   python3-minimal \
+  python3-pip \
+  python3-setuptools \
+  python3-pillow \
+  python3-dev \
+  python3-wheel \
   sed \
   tar \
   unzip \
