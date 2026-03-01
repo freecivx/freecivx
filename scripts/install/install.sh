@@ -310,13 +310,12 @@ cd "${basedir}"/freeciv && \
   cd build && ninja install || \
   handle_error 5 "Failed to install freeciv"
 
-
-echo "==== Building freeciv-web ===="
-if [ ! -f "${basedir}"/publite2/settings.ini ]; then
-  cp "${basedir}"/publite2/settings.ini{.dist,}
+if [ ! -f "${basedir}"/publite-go/settings.ini ]; then
+  cp "${basedir}"/publite-go/settings.ini{.dist,}
 fi
 
 
+echo "==== Building freeciv-web ===="
 
 mkdir -p "${basedir}/freeciv-web/src/derived/webapp" && \
 bash "${basedir}"/scripts/sync-js-hand.sh \
