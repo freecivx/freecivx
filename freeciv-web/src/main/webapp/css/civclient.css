@@ -566,7 +566,7 @@ body
   flex-wrap: wrap;
   gap: 8px;
   padding-bottom: 8px;
-  border-bottom: 1px solid rgba(255,255,255,0.15);
+  border-bottom: 1px solid rgba(0,0,0,0.15);
   margin-bottom: 10px;
 }
 
@@ -1403,11 +1403,14 @@ body
   gap: 16px;
   padding: 6px 4px 8px 4px;
   flex-wrap: wrap;
+  border-bottom: 1px solid rgba(0,0,0,0.15);
+  margin-bottom: 6px;
 }
 
 #cities_heading {
-  font-size: 1.1em;
+  font-size: 1.4em;
   font-weight: bold;
+  color: #1a1a1a;
   white-space: nowrap;
 }
 
@@ -1415,27 +1418,27 @@ body
   display: flex;
   align-items: center;
   gap: 6px;
-  color: #aaa;
+  color: #555;
 }
 
 #cities_filter_input {
-  background: rgba(255,255,255,0.1);
-  border: 1px solid rgba(255,255,255,0.2);
+  background: rgba(0,0,0,0.06);
+  border: 1px solid rgba(0,0,0,0.2);
   border-radius: 4px;
-  color: white;
+  color: #1a1a1a;
   padding: 3px 8px;
   font-size: 0.9em;
   width: 160px;
 }
 
 #cities_filter_input::placeholder {
-  color: rgba(255,255,255,0.4);
+  color: rgba(0,0,0,0.4);
 }
 
 #cities_filter_input:focus {
   outline: none;
-  border-color: rgba(255,255,255,0.5);
-  background: rgba(255,255,255,0.15);
+  border-color: rgba(0,0,0,0.4);
+  background: rgba(0,0,0,0.1);
 }
 
 #wiki_dialog {
@@ -1525,12 +1528,12 @@ li.tech-both::before {
 #nations_title {
   font-size: 150%;
   font-weight: bold;
-  color: #ffffff;
+  color: #1a1a1a;
 }
 
 #nations_label {
   font-size: 95%;
-  color: #cccccc;
+  color: #444444;
 }
 
 #technology_dialog {
