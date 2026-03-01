@@ -287,6 +287,9 @@ function animate_webgl() {
   // Update water animation
   updateWaterAnimation(deltaTime);
 
+  // Update procedural sky (time of day, dome follows camera)
+  updateSkyAnimation(deltaTime);
+
   
   // Update selected unit animation (TSL-based pulsing effect)
 
