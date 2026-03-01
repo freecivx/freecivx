@@ -28,96 +28,98 @@ var selected_player = -1;
 **************************************************************************/
 function update_nation_screen()
 {
-  var total_players = 0;
-  var no_humans = 0;
-  var no_ais = 0;
+  let total_players = 0;
+  let no_humans = 0;
+  let no_ais = 0;
 
-  var nation_list_html = "<table class='tablesorter' id='nation_table' width='95%' border=0 cellspacing=0 >"
-	  + "<thead><tr><th>Flag</th><th>Color</th><th>Player Name:</th>"
-	  + "<th>Nation:</th><th class='nation_attitude'>Attitude</th><th>Score</th><th>AI/Human</th><th>Alive?</th>"
-	  + "<th>Diplomatic state</th><th>Embassy</th><th>Shared vision</th><th class='nation_team'>Team</th><th>State</th></tr></thead><tbody class='nation_table_body'>";
+  let rows_html = "";
 
-  for (var player_id in players) {
-    var pplayer = players[player_id];
+  for (const player_id in players) {
+    const pplayer = players[player_id];
     if (pplayer['nation'] == -1) continue;
     total_players++;
 
-    var flag_html = "<canvas id='nation_dlg_flags_" + player_id + "' width='44' height='30' class='nation_flags'></canvas>";
-
-    var plr_class = "";
+    let plr_class = "";
     if (!client_is_observer() && client.conn.playing != null && player_id == client.conn.playing['playerno']) plr_class = "nation_row_self";
     if (!pplayer['is_alive']) plr_class = "nation_row_dead";
     if (!client_is_observer() && diplstates[player_id] != null && diplstates[player_id] == DS_WAR) plr_class = "nation_row_war";
 
-    nation_list_html += "<tr data-plrid='" + player_id + "' class='" + plr_class
-	   + "'><td>" + flag_html + "</td>";
-    nation_list_html += "<td><div style='background-color: " + nations[pplayer['nation']]['color']
-           + "; margin: 5px; width: 25px; height: 25px;'>"
-           + "</div></td>";
+    const flag_html = `<canvas id='nation_dlg_flags_${player_id}' width='44' height='30' class='nation_flags'></canvas>`;
+    const color_swatch = `<div class='nation_color_swatch' style='background-color: ${nations[pplayer['nation']]['color']};'></div>`;
 
-    nation_list_html += "<td>" + pplayer['name'] + "</td><td title=\"" + nations[pplayer['nation']]['legend'] + "\">"
-           + nations[pplayer['nation']]['adjective']  + "</td>"
-       + "<td class='nation_attitude'>" + col_love(pplayer) + "</td>"
-       + "<td>" + get_score_text(pplayer) + "</td>"
-       +"<td>" + (pplayer['flags'].isSet(PLRF_AI) ?
-          get_ai_level_text(pplayer) + " AI" : "Human") + "</td><td>"
-	   + (pplayer['is_alive'] ? "Alive" : "Dead") +  "</td>";
-
+    let diplstate_html = "<td>-</td>";
     if (!client_is_observer() && client.conn.playing != null && diplstates[player_id] != null && player_id != client.conn.playing['playerno']) {
-      nation_list_html += "<td>" + get_diplstate_text(diplstates[player_id]) + "</td>";
-    } else {
-      nation_list_html += "<td>-</td>";
+      const ds = diplstates[player_id];
+      const ds_class = get_diplstate_css_class(ds);
+      diplstate_html = `<td><span class='nation_diplstate ${ds_class}'>${get_diplstate_text(ds)}</span></td>`;
     }
 
-    nation_list_html += "<td>" + get_embassy_text(player_id) + "</td>";
-
-    nation_list_html += "<td>";
+    let vision_text = "";
     if (!client_is_observer() && client.conn.playing != null) {
       if (pplayer['gives_shared_vision'].isSet(client.conn.playing['playerno']) && client.conn.playing['gives_shared_vision'].isSet(player_id)) {
-        nation_list_html += "Both ways";
+        vision_text = "Both ways";
       } else if (pplayer['gives_shared_vision'].isSet(client.conn.playing['playerno'])) {
-        nation_list_html += "To you";
+        vision_text = "To you";
       } else if (client.conn.playing['gives_shared_vision'].isSet(player_id)) {
-        nation_list_html += "To them";
+        vision_text = "To them";
       } else {
-        nation_list_html += "None";
+        vision_text = "None";
       }
     }
-    nation_list_html += "</td>";
 
-    nation_list_html += "<td class='nation_team'>" + (pplayer['team'] + 1) + "</td>";
-    var pstate = " ";
+    let pstate = " ";
     if (pplayer['phase_done'] && !pplayer['flags'].isSet(PLRF_AI)) {
-      pstate = "Done";
-    } else if (!pplayer['flags'].isSet(PLRF_AI)
-               && pplayer['nturns_idle'] > 1) {
-      pstate += "Idle for " + pplayer['nturns_idle'] + " turns";
-    } else if (!pplayer['phase_done']
-               && !pplayer['flags'].isSet(PLRF_AI)) {
-      pstate = "Moving";
+      pstate = "<span class='nation_state_done'>Done</span>";
+    } else if (!pplayer['flags'].isSet(PLRF_AI) && pplayer['nturns_idle'] > 1) {
+      pstate = `<span class='nation_state_idle'>Idle ${pplayer['nturns_idle']}t</span>`;
+    } else if (!pplayer['phase_done'] && !pplayer['flags'].isSet(PLRF_AI)) {
+      pstate = "<span class='nation_state_moving'>Moving</span>";
     }
-    nation_list_html += "<td id='player_state_" + player_id + "'>" + pstate + "</td>";
-    nation_list_html += "</tr>";
+
+    rows_html += `<tr data-plrid='${player_id}' class='${plr_class}'>
+      <td>${flag_html}</td>
+      <td>${color_swatch}</td>
+      <td>${pplayer['name']}</td>
+      <td title="${nations[pplayer['nation']]['legend']}">${nations[pplayer['nation']]['adjective']}</td>
+      <td class='nation_attitude'>${col_love(pplayer)}</td>
+      <td>${get_score_text(pplayer)}</td>
+      <td>${pplayer['flags'].isSet(PLRF_AI) ? get_ai_level_text(pplayer) + " AI" : "Human"}</td>
+      <td>${pplayer['is_alive'] ? "<span class='nation_alive'>Alive</span>" : "<span class='nation_dead'>Dead</span>"}</td>
+      ${diplstate_html}
+      <td>${get_embassy_text(player_id)}</td>
+      <td>${vision_text}</td>
+      <td class='nation_team'>${pplayer['team'] + 1}</td>
+      <td id='player_state_${player_id}'>${pstate}</td>
+    </tr>`;
 
     if (!pplayer['flags'].isSet(PLRF_AI) && pplayer['is_alive'] && pplayer['nturns_idle'] <= 4) no_humans++;
     if (pplayer['flags'].isSet(PLRF_AI) && pplayer['is_alive']) no_ais++;
-
   }
-  nation_list_html += "</tbody></table>";
+
+  const nation_list_html = `<table class='tablesorter' id='nation_table' border='0' cellspacing='0'>
+    <thead><tr>
+      <th>Flag</th><th>Color</th><th>Player Name</th>
+      <th>Nation</th><th class='nation_attitude'>Attitude</th><th>Score</th>
+      <th>Type</th><th>Status</th>
+      <th>Diplomatic state</th><th>Embassy</th><th>Shared vision</th>
+      <th class='nation_team'>Team</th><th>State</th>
+    </tr></thead>
+    <tbody class='nation_table_body'>${rows_html}</tbody>
+  </table>`;
 
   $("#nations_list").html(nation_list_html);
 
-  $("#nations_title").html("Nations of the World");
-  $("#nations_label").html("Human players: " + no_humans + ". AIs: " + no_ais + ". Inactive/dead: " + (total_players - no_humans - no_ais) + ".");
+  $("#nations_title").html(`<i class='fa fa-globe' aria-hidden='true'></i> Nations of the World`);
+  $("#nations_label").html(`Human players: <strong>${no_humans}</strong> &nbsp; AIs: <strong>${no_ais}</strong> &nbsp; Inactive/dead: <strong>${total_players - no_humans - no_ais}</strong>`);
 
   select_no_nation();
 
-  for (let player_id in players) {
-    let pplayer = players[player_id];
-    let flag_canvas = $('#nation_dlg_flags_' + player_id);
+  for (const player_id in players) {
+    const pplayer = players[player_id];
+    const flag_canvas = $(`#nation_dlg_flags_${player_id}`);
     if (flag_canvas.length > 0) {
-      let flag_canvas_ctx = flag_canvas[0].getContext("2d");
-      let tag = "f." + nations[pplayer['nation']]['graphic_str'];
+      const flag_canvas_ctx = flag_canvas[0].getContext("2d");
+      const tag = "f." + nations[pplayer['nation']]['graphic_str'];
       if (flag_canvas_ctx != null && sprites[tag] != null) {
         flag_canvas_ctx.drawImage(sprites[tag], 0, 0);
       }
@@ -125,11 +127,25 @@ function update_nation_screen()
   }
 
   $("#nation_table").tablesorter({theme: "dark", sortList: [[2,0]] });
-
   $("#nation_table").tooltip();
-
 }
 
+
+/**************************************************************************
+  Returns a CSS class for the given diplomatic state ID.
+**************************************************************************/
+function get_diplstate_css_class(state_id)
+{
+  switch (state_id) {
+    case DS_WAR:       return "diplstate_war";
+    case DS_CEASEFIRE: return "diplstate_ceasefire";
+    case DS_ARMISTICE: return "diplstate_armistice";
+    case DS_PEACE:     return "diplstate_peace";
+    case DS_ALLIANCE:  return "diplstate_alliance";
+    case DS_TEAM:      return "diplstate_team";
+    default:           return "";
+  }
+}
 
 /**************************************************************************
  ...
@@ -152,15 +168,15 @@ function handle_nation_table_select(ev)
 {
   ev.stopPropagation();
 
-  var new_element = $(this);
-  var new_player = parseFloat(new_element.data("plrid"));
+  const new_element = $(this);
+  const new_player = parseFloat(new_element.data("plrid"));
 
   if (new_player === selected_player) {
-     new_element.removeClass('ui-selected');
+     new_element.removeClass('nation_row_selected');
      select_no_nation();
   } else {
-     new_element.siblings().removeClass('ui-selected');
-     new_element.addClass('ui-selected');
+     new_element.siblings().removeClass('nation_row_selected');
+     new_element.addClass('nation_row_selected');
      selected_player = new_player;
      select_a_nation();
   }
