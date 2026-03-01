@@ -274,6 +274,7 @@ async function show_ai_intro_dialog() {
   
   // Set up event listeners for the input and send button
   setup_command_center_listeners();
+  $("#command_center_input").blur();
 }
 
 /**
