@@ -524,21 +524,23 @@ function createTerrainShaderTSL(uniforms) {
     // Roads: indices 1-9 -> layer index = (index-1) since they map to layers 0-8
     // Railroads: indices 10-19 -> layer index = (index-10) since they map to layers 0-9
     // Junctions: index 42/43/53 use layer 0 (top-left sprite)
+    // Indices are clamped to valid ranges for cross-platform safety: some WebGPU
+    // implementations have undefined behaviour on out-of-bounds array access.
     
     // River sprite layer selection (indices 20-29 for regular rivers)
-    const riverLayerIndex = int(sub(roadIndex, 20.0));  // Convert 20-based to 0-based layer (0-9), as integer
-    const riverLayerIndex2 = int(sub(roadIndex2, 20.0));
-    const riverLayerIndex3 = int(sub(roadIndex3, 20.0));
+    const riverLayerIndex = int(clamp(sub(roadIndex, 20.0), 0.0, 9.0));
+    const riverLayerIndex2 = int(clamp(sub(roadIndex2, 20.0), 0.0, 9.0));
+    const riverLayerIndex3 = int(clamp(sub(roadIndex3, 20.0), 0.0, 9.0));
     
     // Road sprite layer selection (indices 1-9 for regular roads)
-    const roadLayerIndex = int(sub(roadIndex, 1.0));  // Convert 1-based to 0-based layer (0-8), as integer
-    const roadLayerIndex2 = int(sub(roadIndex2, 1.0));
-    const roadLayerIndex3 = int(sub(roadIndex3, 1.0));
+    const roadLayerIndex = int(clamp(sub(roadIndex, 1.0), 0.0, 8.0));
+    const roadLayerIndex2 = int(clamp(sub(roadIndex2, 1.0), 0.0, 8.0));
+    const roadLayerIndex3 = int(clamp(sub(roadIndex3, 1.0), 0.0, 8.0));
     
     // Railroad sprite layer selection (indices 10-19 for regular railroads)
-    const railLayerIndex = int(sub(roadIndex, 10.0));  // Convert 10-based to 0-based layer (0-9), as integer
-    const railLayerIndex2 = int(sub(roadIndex2, 10.0));
-    const railLayerIndex3 = int(sub(roadIndex3, 10.0));
+    const railLayerIndex = int(clamp(sub(roadIndex, 10.0), 0.0, 9.0));
+    const railLayerIndex2 = int(clamp(sub(roadIndex2, 10.0), 0.0, 9.0));
+    const railLayerIndex3 = int(clamp(sub(roadIndex3, 10.0), 0.0, 9.0));
     
     // Sample river sprite using texture array with vec2 UV and integer layer index
     // For texture_2d_array (DataArrayTexture), pass layer index as third parameter
@@ -758,7 +760,7 @@ function createTerrainShaderTSL(uniforms) {
     
     // Convert texture value (0-1) to visibility scale
     // Texture stores: 0=unknown, ~0.541=fogged, 1.0=visible
-    // After scaling by VISIBILITY_VISIBLE (1.06): 0, ~0.57, 1.06
+    // After scaling by VISIBILITY_VISIBLE (1.0): 0, ~0.54, 1.0
     const hexVisibilityScaled = mul(hexVisibility, VISIBILITY_VISIBLE);
     
     // =========================================================================
