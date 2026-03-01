@@ -35,9 +35,7 @@ var GOTO_ARROW_HEAD_WIDTH_SQUARE = 5;         // Half-width of flat arrowhead tr
 var GOTO_DASH_LENGTH_SQUARE = 8;              // Length of each dash segment
 var GOTO_GAP_LENGTH_SQUARE = 5;              // Length of each gap between dashes
 
-// BFS pathfinding constants
-var GOTO_MAX_BFS_TILES = 500;              // Maximum tiles explored by client-side BFS
-var GOTO_AVG_MOVES_PER_TURN = 3;          // Estimated unit moves per turn for turn display
+// Pathfinding constants are defined in webgpu/pathfinding.js
 
 /****************************************************************************
  Get the 3D scene position for a tile, centered on the tile (square maps).
@@ -205,72 +203,8 @@ function clear_goto_tiles_square() {
 }
 
 /****************************************************************************
- Compute a client-side goto path for square maps using BFS.
- Avoids ocean tiles (unless the destination itself is ocean).
- Returns a path object compatible with the server goto_path format:
-   { unit_id, dest, length, dir[], turns }
- or null if no path is found.
-
- @param {Object} punit    - The unit to move
- @param {Object} dest_tile - The destination tile
- @returns {Object|null}
- ****************************************************************************/
-function compute_client_goto_path(punit, dest_tile) {
-    var start_tile = index_to_tile(punit['tile']);
-    if (start_tile == null || dest_tile == null) return null;
-    if (start_tile['index'] == dest_tile['index']) return null;
-
-    /* BFS – avoid ocean tiles except when they are the destination. */
-    var visited = {};
-    visited[start_tile['index']] = {parent_idx: -1, dir: -1};
-    var queue = [start_tile];
-    var found = false;
-    var explored = 0;
-
-    while (queue.length > 0 && explored < GOTO_MAX_BFS_TILES) {
-        var current = queue.shift();
-        explored++;
-
-        if (current['index'] == dest_tile['index']) {
-            found = true;
-            break;
-        }
-
-        for (var dir = 0; dir < DIR8_LAST; dir++) {
-            if (!is_valid_dir(dir)) continue;
-            var next_tile = mapstep(current, dir);
-            if (next_tile == null) continue;
-            if (visited[next_tile['index']] != null) continue;
-            /* Skip ocean tiles unless this is the destination. */
-            if (is_ocean_tile(next_tile) && next_tile['index'] != dest_tile['index']) continue;
-            visited[next_tile['index']] = {parent_idx: current['index'], dir: dir};
-            queue.push(next_tile);
-        }
-    }
-
-    if (!found) return null;
-
-    /* Reconstruct the direction list by walking back through visited. */
-    var dirs = [];
-    var cur_idx = dest_tile['index'];
-    while (visited[cur_idx]['parent_idx'] != -1) {
-        dirs.unshift(visited[cur_idx]['dir']);
-        cur_idx = visited[cur_idx]['parent_idx'];
-    }
-    if (dirs.length == 0) return null;
-
-    return {
-        'unit_id': punit['id'],
-        'dest'   : dest_tile['index'],
-        'length' : dirs.length,
-        'dir'    : dirs,
-        'turns'  : Math.max(1, Math.ceil(dirs.length / GOTO_AVG_MOVES_PER_TURN))
-    };
-}
-
-/****************************************************************************
  Renders the client-side goto path for square maps as a sequence of white
- dashed line segments following the BFS-computed route.
+ dashed line segments following the Dijkstra-computed route.
 
  @param {Object} punit - The unit to move
  @param {Object} path  - Path object from compute_client_goto_path
