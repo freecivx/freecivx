@@ -716,8 +716,9 @@ function createTerrainShaderTSL(uniforms) {
     const lightingFactor = add(ambientLight, mul(NdotL, diffuseStrength));
     
     // Apply lighting to terrain color for natural appearance
-    // Brightness boost of 1.232 (1.12 * 1.10) provides 10% increase in terrain brightness
-    const brightnessBoost = 1.232;
+    // Brightness boost: 1.331 = 1.232 (previous) * 1.08 (8% increase requested)
+    // Cumulative effect: base 1.0 * 1.12 * 1.10 * 1.08 = ~1.331 total brightness multiplier
+    const brightnessBoost = 1.331;
     finalColor = vec4(mul(mul(finalColor.rgb, lightingFactor), brightnessBoost), finalColor.a);
 
     // =========================================================================
