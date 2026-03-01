@@ -115,7 +115,7 @@ checkWebURL "Tomcat DB connection" "http://localhost/game/list" --head
 
 checkWebURL "Pubstatus" "http://localhost:4002/pubstatus"
 
-checkPID "freeciv-web (spawned by publite2)" "freeciv-web"
+checkPID "freeciv-web (spawned by publite-go)" "freeciv-web"
 
 checkWebURL "webclient.min.js generation" "http://localhost/javascript/webclient.min.js" --head
 checkWebURL "tileset generation" "http://localhost/tileset/freeciv-web-tileset-amplio2-0.png" --head
