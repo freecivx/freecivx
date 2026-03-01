@@ -228,11 +228,13 @@ function createWaterMaterialSquareTSL() {
   
   // ==== EDGE DARKENING (Vignette) ====
   // Slight darkening at edges for depth
+  // Use Chebyshev distance (max(|cx|,|cy|)) instead of Euclidean sqrt for better
+  // performance and a square falloff that matches tile-based game viewports.
   const edgeDarkenStrength = waterConfig ? waterConfig.EDGE.DARKEN : 0.15;
   const edgeMax = waterConfig ? waterConfig.EDGE.MAX : 0.1;
   const cx = sub(uvNode.x, 0.5);
   const cy = sub(uvNode.y, 0.5);
-  const edgeDist = sqrt(add(mul(cx, cx), mul(cy, cy)));
+  const edgeDist = max(abs(cx), abs(cy));
   const edgeDarken = clamp(mul(edgeDist, edgeDarkenStrength), 0.0, edgeMax);
   
   // ==== FINAL COMPOSITION ====
@@ -268,5 +270,10 @@ function createWaterMaterialSquareTSL() {
 function updateWaterAnimationSquare(deltaTime) {
   if (window.waterTimeUniform && window.waterTimeUniform.value !== undefined) {
     window.waterTimeUniform.value += deltaTime;
+    // Wrap time to prevent float precision loss in sin() after long play sessions.
+    // 1000 seconds keeps values well within float32 precision range.
+    if (window.waterTimeUniform.value > 1000.0) {
+      window.waterTimeUniform.value -= 1000.0;
+    }
   }
 }
