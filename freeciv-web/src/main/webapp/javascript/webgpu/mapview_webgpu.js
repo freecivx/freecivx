@@ -59,6 +59,9 @@ function webgpu_start_renderer()
   // Set up scene lighting using LightingConfig
   setupSceneLighting();
 
+  // Add procedural sky dome background
+  initSky();
+
   // Determine antialiasing based on quality settings
   let enable_antialiasing = graphics_quality >= QUALITY_MEDIUM;
   const stored_antialiasing_setting = simpleStorage.get("antialiasing_setting", "");
