@@ -292,13 +292,22 @@ function createSkyMaterialTSL() {
   const skyColor4  = mix(skyColor3, cloudColor, cloudAlpha);
 
   // ==================================================
+  // BOTTOM BLACK MASK
+  // The bottom 40 % of the sphere (upY < -0.2) is pure black — it
+  // represents ground/underground, not sky.  A narrow smoothstep
+  // (-0.25 → -0.1) avoids a hard visible seam at the transition.
+  // ==================================================
+  const skyVisibleMask = smoothstep(-0.25, -0.1, upY);
+  const skyColor5      = mul(skyColor4, skyVisibleMask);
+
+  // ==================================================
   // MATERIAL
   // depthTest = false → sky always drawn as background
   // depthWrite = false → don't pollute the depth buffer
   // BackSide → render the inside surface of the sphere
   // ==================================================
   const skyMaterial = new THREE.MeshBasicNodeMaterial();
-  skyMaterial.colorNode = skyColor4;
+  skyMaterial.colorNode = skyColor5;
   skyMaterial.side       = THREE.BackSide;
   skyMaterial.depthTest  = false;
   skyMaterial.depthWrite = false;
