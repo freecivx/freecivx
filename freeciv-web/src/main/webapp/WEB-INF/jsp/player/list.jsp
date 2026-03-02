@@ -62,6 +62,10 @@
 	#singleplayer-table td:last-child {
 		width: 140px;
 	}
+	.tooltip-term {
+		cursor: help;
+		text-decoration: underline dotted;
+	}
 </style>
 	
 	
@@ -74,7 +78,7 @@
 		<div class="alert alert-info text-center" style="background-color: white; background-image: none;">
 			<strong style="font-size:24px;">The Honourable List of Players of FreecivWorld</strong>
 			<p class="mb-0">These are the honourable, real registered and verified human players of FreecivX. <b><a href="https://www.FreecivWorld.net/">Register here</a>.</b></p>
-			<p class="mb-0">Multiplayer games are <b>Elo rated</b>. Play multiplayer games to climb the rankings!</p>
+			<p class="mb-0">Multiplayer games are <b><span class="tooltip-term" title="The Elo rating system measures the relative skill levels of players. Your rating increases when you win and decreases when you lose. The number of points gained or lost depends on the difference in ratings between you and your opponent — beating a higher-rated player earns more points.">Elo rated</span></b>. Win multiplayer games to increase your Elo score and climb the rankings!</p>
 		</div>
 	</div>
 	<div id="content" class="container">
