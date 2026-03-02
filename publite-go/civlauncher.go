@@ -90,6 +90,7 @@ func (cl *CivLauncher) launchGame() error {
 
 	proxyCmd := exec.Command("websockify",
 		"--no-ssl",
+		"--cert=",
 		fmt.Sprintf("%d", 1000+cl.Port),
 		fmt.Sprintf("localhost:%d", cl.Port),
 	)
