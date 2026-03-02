@@ -89,6 +89,7 @@ func (cl *CivLauncher) launchGame() error {
 	defer proxyLogFile.Close()
 
 	proxyCmd := exec.Command("websockify",
+		"--no-ssl",
 		fmt.Sprintf("%d", 1000+cl.Port),
 		fmt.Sprintf("localhost:%d", cl.Port),
 	)
