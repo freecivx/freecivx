@@ -18,13 +18,20 @@ func TestPlayersHandler(t *testing.T) {
 	if rr.Code != http.StatusOK {
 		t.Fatalf("expected status 200, got %d", rr.Code)
 	}
-	// Stub engine returns an empty list, so body should be empty.
-	body := rr.Body.String()
-	if body != "" {
-		t.Errorf("expected empty body in stub mode, got %q", body)
+	if ct := rr.Header().Get("Content-Type"); ct != "application/json" {
+		t.Errorf("expected Content-Type application/json, got %q", ct)
 	}
-	if ct := rr.Header().Get("Content-Type"); ct != "text/plain" {
-		t.Errorf("expected Content-Type text/plain, got %q", ct)
+	// Stub engine returns an empty list, so body should be a JSON empty array.
+	var players []struct {
+		Name string `json:"name"`
+		IsAI bool   `json:"is_ai"`
+		ID   int    `json:"id"`
+	}
+	if err := json.NewDecoder(rr.Body).Decode(&players); err != nil {
+		t.Fatalf("failed to decode players response: %v", err)
+	}
+	if len(players) != 0 {
+		t.Errorf("expected empty players array in stub mode, got %d entries", len(players))
 	}
 }
 
