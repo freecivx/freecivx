@@ -302,7 +302,7 @@ mkdir -p webapps/data/{savegames/pbem,scorelogs,ranklogs}
 setfacl -Rm d:u:tomcat:rwX webapps/data
 
 echo "==== Building Freeciv C server ===="
-echo "Please be patient"
+mkdir -p "${basedir}/ranklog"
 echo "If you get an error: Clock skew detected, on Windows, then try setting the clock exactly correct on your computer using ntp or some clock software."
 
 cd "${basedir}"/freeciv && \
