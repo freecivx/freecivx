@@ -32,9 +32,14 @@ public class Players {
 
     public List<Player> getPlayers() {
 
-        String query = "SELECT id, username, last_login, elo_rating from auth  "
-                + "WHERE verified = '1' "
-                + "ORDER BY elo_rating DESC, last_login DESC";
+        String query = "SELECT a.id, a.username, a.last_login, a.elo_rating, "
+                + "COALESCE(SUM(CASE WHEN gr.win = 1 THEN 1 ELSE 0 END), 0) AS wins, "
+                + "COALESCE(SUM(CASE WHEN gr.loss = 1 THEN 1 ELSE 0 END), 0) AS losses "
+                + "FROM auth a "
+                + "LEFT JOIN game_results gr ON gr.player = a.username "
+                + "WHERE a.verified = '1' "
+                + "GROUP BY a.id, a.username, a.last_login, a.elo_rating "
+                + "ORDER BY a.elo_rating DESC, a.last_login DESC";
 
         try (Connection connection = DatabaseUtil.getConnection();
              PreparedStatement statement = connection.prepareStatement(query);
@@ -51,6 +56,8 @@ public class Players {
                 }
 
                 player.setElo_rating(rs.getInt("elo_rating"));
+                player.setWins(rs.getInt("wins"));
+                player.setLosses(rs.getInt("losses"));
                 players.add(player);
             }
             return players;

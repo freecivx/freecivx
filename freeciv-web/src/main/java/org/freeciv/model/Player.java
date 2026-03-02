@@ -12,6 +12,8 @@ public class Player {
     private long id;
     private String name;
     private int elo_rating;
+    private int wins;
+    private int losses;
     private LocalDateTime last_login;
 
     public long getId() {
@@ -36,6 +38,22 @@ public class Player {
 
     public void setElo_rating(int elo_rating) {
         this.elo_rating = elo_rating;
+    }
+
+    public int getWins() {
+        return wins;
+    }
+
+    public void setWins(int wins) {
+        this.wins = wins;
+    }
+
+    public int getLosses() {
+        return losses;
+    }
+
+    public void setLosses(int losses) {
+        this.losses = losses;
     }
 
     public LocalDateTime getLast_login() {

@@ -74,6 +74,7 @@
 		<div class="alert alert-info text-center" style="background-color: white; background-image: none;">
 			<strong style="font-size:24px;">The Honourable List of Players of FreecivWorld</strong>
 			<p class="mb-0">These are the honourable, real registered and verified human players of FreecivX. <b><a href="https://www.FreecivWorld.net/">Register here</a>.</b></p>
+			<p class="mb-0">Multiplayer games are <b>Elo rated</b>. Play multiplayer games to climb the rankings!</p>
 		</div>
 	</div>
 	<div id="content" class="container">
@@ -93,7 +94,9 @@
 								<th>Id:</th>
 								<th>Name:</th>
 								<th>Last Login:</th>
-								<th title="Elo rating games coming soon">Elo rating:</th>
+								<th>Elo rating:</th>
+								<th>Wins:</th>
+								<th>Losses:</th>
 								<th class="hidden-xs">Online</th>
 							</tr>
 							<c:forEach items="${playersList}" var="player">
@@ -107,8 +110,14 @@
 									<td >
 									   ${player.formattedLastLogin}
 									</td>
-									<td title="Elo rating games coming soon">
+									<td>
 									   ${player.elo_rating}
+									</td>
+									<td>
+									   ${player.wins}
+									</td>
+									<td>
+									   ${player.losses}
 									</td>
 									<td >
 									   ${player.onlineStatusHtml}
