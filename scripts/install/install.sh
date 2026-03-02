@@ -314,6 +314,15 @@ if [ ! -f "${basedir}"/publite-go/settings.ini ]; then
   cp "${basedir}"/publite-go/settings.ini{.dist,}
 fi
 
+echo "==== Building freeciv-server-go ===="
+cd "${basedir}"/freeciv-server-go && \
+  bash ./prepare_freeciv_server_go.sh || \
+  handle_error 8 "Failed to build freeciv-server-go"
+
+if [ ! -f "${basedir}"/freeciv-server-go/settings.ini ]; then
+  cp "${basedir}"/freeciv-server-go/settings.ini{.dist,}
+fi
+
 
 echo "==== Building freeciv-web ===="
 
