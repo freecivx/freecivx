@@ -60,8 +60,8 @@ var SKY_CYCLE_SECONDS = 900.0;
  * Must be called after `scene` is available (i.e. inside webgpu_start_renderer).
  */
 function initSky() {
-  // High enough segment count for a smooth gradient; sky is only 1 draw call
-  const skyGeometry = new THREE.SphereGeometry(8000, 64, 32);
+  // 32×16 segments is plenty for a smooth sky gradient and halves vertex count
+  const skyGeometry = new THREE.SphereGeometry(8000, 32, 16);
   const skyMaterial = createSkyMaterialTSL();
 
   window.skyMesh = new THREE.Mesh(skyGeometry, skyMaterial);
@@ -206,8 +206,9 @@ function createSkyMaterialTSL() {
   // ==================================================
   // STARS (night only, upper hemisphere)
   // Procedural stars via a 3-D cell hash of the sky direction.
+  // Higher starScale = finer cells = smaller, sharper stars.
   // ==================================================
-  const starScale = 100.0;
+  const starScale = 400.0;
   const sx = floor(mul(dir.x, starScale));
   const sy = floor(mul(dir.y, starScale));
   const sz = floor(mul(dir.z, starScale));
@@ -217,7 +218,7 @@ function createSkyMaterialTSL() {
     43758.5453
   ));
 
-  // ~1 % of cells contain a star
+  // ~1 % of cells contain a star (same density, much smaller apparent size)
   const starExists     = step(0.990, starHash);
   // Each star has a slightly different brightness (0.5–1.0)
   const starBrightness = add(0.5, mul(starHash, 0.5));
