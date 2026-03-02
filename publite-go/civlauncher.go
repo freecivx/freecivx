@@ -168,7 +168,7 @@ func (cl *CivLauncher) buildFreecivArgs() (args []string, logsDir string, err er
 	}
 	// Logic Change: Only add --Ranklog for multiplayer games
 	if cl.GameType == "multiplayer" {
-		ranklogPath := fmt.Sprintf("/var/lib/tomcat11/webapps/freeciv-web/ranklogs/ranklog-game-%d.score", cl.Port)
+		ranklogPath := fmt.Sprintf("../ranklog/ranklog-game-%d.score", cl.Port)
 		args = append(args, "--Ranklog", ranklogPath)
 	}
 	return args, logsDir, nil
