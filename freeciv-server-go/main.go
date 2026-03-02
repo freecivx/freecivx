@@ -2,11 +2,15 @@ package main
 
 import (
 	"context"
+	"encoding/json"
+	"flag"
 	"log/slog"
 	"net/http"
 	"os"
 	"os/signal"
 	"strings"
+	"sync"
+	"sync/atomic"
 	"syscall"
 	"time"
 
@@ -14,8 +18,6 @@ import (
 
 	"github.com/gorilla/websocket"
 )
-
-const listenAddr = ":8080"
 
 // upgrader configures the WebSocket handshake.  CheckOrigin always
 // returns true here for simplicity; restrict this in production
@@ -25,16 +27,42 @@ var upgrader = websocket.Upgrader{
 	CheckOrigin: func(r *http.Request) bool { return true },
 }
 
+// server holds shared runtime state used by HTTP handlers.
+type server struct {
+	startTime        time.Time
+	connectedClients atomic.Int64
+	mu               sync.Mutex // guards wsConns
+	wsConns          map[*websocket.Conn]struct{}
+}
+
+func newServer() *server {
+	return &server{
+		startTime: time.Now(),
+		wsConns:   make(map[*websocket.Conn]struct{}),
+	}
+}
+
 // wsHandler upgrades an HTTP connection to WebSocket, sends the
 // current player list as a greeting, and then echoes messages until
 // the client disconnects or the server shuts down.
-func wsHandler(w http.ResponseWriter, r *http.Request) {
+func (s *server) wsHandler(w http.ResponseWriter, r *http.Request) {
 	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
 		slog.Error("WebSocket upgrade failed", "error", err)
 		return
 	}
 	defer conn.Close()
+
+	s.mu.Lock()
+	s.wsConns[conn] = struct{}{}
+	s.mu.Unlock()
+	s.connectedClients.Add(1)
+	defer func() {
+		s.mu.Lock()
+		delete(s.wsConns, conn)
+		s.mu.Unlock()
+		s.connectedClients.Add(-1)
+	}()
 
 	slog.Info("WebSocket client connected", "remote", r.RemoteAddr)
 
@@ -68,8 +96,69 @@ func wsHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// playersHandler writes the current player list as plain text.
+func (s *server) playersHandler(w http.ResponseWriter, r *http.Request) {
+	players := engine.GetPlayerList()
+	w.Header().Set("Content-Type", "text/plain")
+	for _, name := range players {
+		_, _ = w.Write([]byte(name + "\n"))
+	}
+}
+
+// statusResponse is the JSON body returned by the /status endpoint.
+type statusResponse struct {
+	Status           string   `json:"status"`
+	UptimeSeconds    float64  `json:"uptime_seconds"`
+	ConnectedClients int64    `json:"connected_clients"`
+	Players          []string `json:"players"`
+}
+
+// statusHandler returns a JSON document with server health information.
+func (s *server) statusHandler(w http.ResponseWriter, r *http.Request) {
+	resp := statusResponse{
+		Status:           "ok",
+		UptimeSeconds:    time.Since(s.startTime).Seconds(),
+		ConnectedClients: s.connectedClients.Load(),
+		Players:          engine.GetPlayerList(),
+	}
+	w.Header().Set("Content-Type", "application/json")
+	_ = json.NewEncoder(w).Encode(resp)
+}
+
 func main() {
-	slog.SetDefault(slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelInfo})))
+	settingsFile := flag.String("settings", "settings.ini", "Path to settings.ini")
+	logLevelFlag := flag.String("log-level", "", "Logging level override (DEBUG, INFO, WARN, ERROR)")
+	flag.Parse()
+
+	// Load configuration from file; fall back gracefully if not found.
+	cfg, err := loadConfig(*settingsFile)
+	if err != nil {
+		// Use defaults when the file is missing (e.g. first run without setup).
+		slog.Info("Config file not found, using defaults", "path", *settingsFile, "error", err)
+		cfg = &Config{
+			ListenAddr: ":8080",
+			LogLevel:   "INFO",
+			LogFile:    "../logs/freeciv-server-go.log",
+		}
+	}
+
+	// Command-line flag overrides the config file.
+	if *logLevelFlag != "" {
+		cfg.LogLevel = *logLevelFlag
+	}
+
+	var level slog.Level
+	switch strings.ToUpper(cfg.LogLevel) {
+	case "DEBUG":
+		level = slog.LevelDebug
+	case "WARN", "WARNING":
+		level = slog.LevelWarn
+	case "ERROR":
+		level = slog.LevelError
+	default:
+		level = slog.LevelInfo
+	}
+	slog.SetDefault(slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: level})))
 
 	// Root context – cancelled on SIGTERM / SIGINT for graceful shutdown.
 	ctx, cancel := context.WithCancel(context.Background())
@@ -89,19 +178,16 @@ func main() {
 	// immediately.
 	go engine.RunCServer()
 
-	// Set up the HTTP mux and WebSocket endpoint.
-	mux := http.NewServeMux()
-	mux.HandleFunc("/ws", wsHandler)
-	mux.HandleFunc("/players", func(w http.ResponseWriter, r *http.Request) {
-		players := engine.GetPlayerList()
-		w.Header().Set("Content-Type", "text/plain")
-		for _, name := range players {
-			_, _ = w.Write([]byte(name + "\n"))
-		}
-	})
+	srv := newServer()
 
-	srv := &http.Server{
-		Addr:         listenAddr,
+	// Set up the HTTP mux and endpoints.
+	mux := http.NewServeMux()
+	mux.HandleFunc("/ws", srv.wsHandler)
+	mux.HandleFunc("/players", srv.playersHandler)
+	mux.HandleFunc("/status", srv.statusHandler)
+
+	httpSrv := &http.Server{
+		Addr:         cfg.ListenAddr,
 		Handler:      mux,
 		ReadTimeout:  15 * time.Second,
 		WriteTimeout: 15 * time.Second,
@@ -110,8 +196,8 @@ func main() {
 
 	// Start HTTP server in a goroutine.
 	go func() {
-		slog.Info("freeciv-server-go listening", "addr", listenAddr)
-		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+		slog.Info("freeciv-server-go listening", "addr", cfg.ListenAddr)
+		if err := httpSrv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 			slog.Error("HTTP server error", "error", err)
 			cancel()
 		}
@@ -123,7 +209,7 @@ func main() {
 	// Give active connections up to 10 seconds to finish.
 	shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer shutdownCancel()
-	if err := srv.Shutdown(shutdownCtx); err != nil {
+	if err := httpSrv.Shutdown(shutdownCtx); err != nil {
 		slog.Error("HTTP server shutdown error", "error", err)
 	}
 

@@ -1,0 +1,9 @@
+[Config]
+# Address (host:port) the server listens on.
+listen_addr = :8080
+
+# Logging level: DEBUG, INFO, WARN, ERROR
+log_level = INFO
+
+# Path for the log file (stdout is always used as well).
+log_file = ../logs/freeciv-server-go.log
