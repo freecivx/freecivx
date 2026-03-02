@@ -43,6 +43,12 @@ fi
 echo "Starting publite-go" && \
 (cd ${FREECIV_WEB_DIR}/publite-go/ && \
 bash run.sh) && \
-echo "publite-go started" && \
+echo "publite-go started"
+
+echo "Starting freeciv-scores-go" && \
+(cd ${FREECIV_WEB_DIR}/freeciv-scores-go/ && \
+bash run.sh) && \
+echo "freeciv-scores-go started"
+
 bash ${FREECIV_WEB_DIR}/scripts/status-freeciv-web.sh
 echo "FreecivX started!"
