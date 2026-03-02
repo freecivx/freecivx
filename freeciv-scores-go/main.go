@@ -88,10 +88,9 @@ func run(cfg *Config) {
 			"losers", strings.Join(result.Losers, ","),
 		)
 
-		// Rename to .done so we don't process it again.
-		donePath := fullPath + ".done"
-		if err := os.Rename(fullPath, donePath); err != nil {
-			slog.Error("Failed to rename ranklog to .done", "file", fullPath, "error", err)
+		slog.Info("Deleting ranklog file", "file", fullPath)
+		if err := os.Remove(fullPath); err != nil {
+			slog.Error("Failed to delete ranklog file", "file", fullPath, "error", err)
 		}
 	}
 }
