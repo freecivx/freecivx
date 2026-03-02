@@ -24,6 +24,7 @@
 Freeciv.h
 Makefile
 Makefile.in
+!freeciv-server-go/Makefile
 POTFILES
 TAGS
 acinclude.m4
