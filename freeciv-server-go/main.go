@@ -9,10 +9,11 @@ import (
 	"os"
 	"os/signal"
 	"strings"
-	"sync"
 	"sync/atomic"
 	"syscall"
 	"time"
+
+	cgoBridge "freeciv-server-go/internal/cgo"
 
 	"freeciv-server-go/engine"
 
@@ -31,14 +32,13 @@ var upgrader = websocket.Upgrader{
 type server struct {
 	startTime        time.Time
 	connectedClients atomic.Int64
-	mu               sync.Mutex // guards wsConns
-	wsConns          map[*websocket.Conn]struct{}
+	hub              *Hub
 }
 
 func newServer() *server {
 	return &server{
 		startTime: time.Now(),
-		wsConns:   make(map[*websocket.Conn]struct{}),
+		hub:       newHub(),
 	}
 }
 
@@ -53,14 +53,10 @@ func (s *server) wsHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	defer conn.Close()
 
-	s.mu.Lock()
-	s.wsConns[conn] = struct{}{}
-	s.mu.Unlock()
+	s.hub.register <- conn
 	s.connectedClients.Add(1)
 	defer func() {
-		s.mu.Lock()
-		delete(s.wsConns, conn)
-		s.mu.Unlock()
+		s.hub.unregister <- conn
 		s.connectedClients.Add(-1)
 	}()
 
@@ -96,12 +92,14 @@ func (s *server) wsHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// playersHandler writes the current player list as plain text.
+// playersHandler writes the current player list as a JSON array.  In CGO
+// mode the list is fetched directly from the C engine's memory; in stub mode
+// it returns an empty array.
 func (s *server) playersHandler(w http.ResponseWriter, r *http.Request) {
-	players := engine.GetPlayerList()
-	w.Header().Set("Content-Type", "text/plain")
-	for _, name := range players {
-		_, _ = w.Write([]byte(name + "\n"))
+	players := cgoBridge.FetchCPlayerList()
+	w.Header().Set("Content-Type", "application/json")
+	if err := json.NewEncoder(w).Encode(players); err != nil {
+		slog.Error("playersHandler: failed to encode response", "error", err)
 	}
 }
 
@@ -179,6 +177,10 @@ func main() {
 	go engine.RunCServer()
 
 	srv := newServer()
+
+	// Start the Hub event loop so register/unregister/broadcast channels
+	// are serviced as soon as the first WebSocket client connects.
+	go srv.hub.Run()
 
 	// Set up the HTTP mux and endpoints.
 	mux := http.NewServeMux()
