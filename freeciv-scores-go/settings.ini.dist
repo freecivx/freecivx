@@ -1,0 +1,17 @@
+[Database]
+# MySQL connection settings
+db_host = localhost
+db_port = 3306
+db_name = freeciv_web
+db_user = freeciv
+db_password = changeme
+
+[Config]
+# Directory containing ranklog-game-XXXX.score files
+ranklog_dir = ../ranklog
+
+# Path for the log file
+log_file = ../logs/freeciv-scores-go.log
+
+# How often (in seconds) to poll the ranklog directory for new files
+poll_interval = 60
