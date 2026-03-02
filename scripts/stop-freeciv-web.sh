@@ -36,8 +36,11 @@ fi
 ps aux | grep -ie publite-go | awk '{print $2}' | xargs kill -9 
 killall -9 freeciv-web
 
+#4. freeciv-scores-go
+ps aux | grep -ie freeciv-scores-go | awk '{print $2}' | xargs kill -9 || true
 
-#4. websockify
+
+#5. websockify
 ps aux | grep -ie websockify | awk '{print $2}' | xargs kill -9 
 
 
