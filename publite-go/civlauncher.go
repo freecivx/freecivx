@@ -165,7 +165,11 @@ func (cl *CivLauncher) buildFreecivArgs() (args []string, logsDir string, err er
 		"--log", logFile,
 		"--quitidle", "20",
 		"--saves", cl.SavesDir,
-		"--Ranklog", fmt.Sprintf("../ranklog/ranklog-game-%d.score", cl.Port),
+	}
+	// Logic Change: Only add --Ranklog for multiplayer games
+	if cl.GameType == "multiplayer" {
+		ranklogPath := fmt.Sprintf("../ranklog/ranklog-game-%d.score", cl.Port)
+		args = append(args, "--Ranklog", ranklogPath)
 	}
 	return args, logsDir, nil
 }
