@@ -165,7 +165,7 @@ func (cl *CivLauncher) buildFreecivArgs() (args []string, logsDir string, err er
 		"--log", logFile,
 		"--quitidle", "20",
 		"--saves", cl.SavesDir,
-		"--Ranklog", fmt.Sprintf("ranklog-game-%d.score", cl.Port),
+		"--Ranklog", fmt.Sprintf("../ranklog/ranklog-game-%d.score", cl.Port),
 	}
 	return args, logsDir, nil
 }
