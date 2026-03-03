@@ -17,6 +17,13 @@ package engine
 // file's directory so paths are resolved correctly regardless of where
 // `go build` is invoked.
 //
+// The inline #cgo LDFLAGS below use hardcoded library names for libraries
+// that Freeciv's static libraries depend on (sqlite3, lzma, icu-uc,
+// MagickWand).  These defaults work on standard Ubuntu installs.  The
+// Makefile and prepare_freeciv_server_go.sh use pkg-config to resolve
+// version-specific names (e.g. MagickWand-7.Q16HDRI); when building via
+// those tools the environment CGO_LDFLAGS override these inline directives.
+//
 // Freeciv is built with meson; source headers live in ../freeciv/freeciv
 // and the compiled static libraries are in ../freeciv/build (both paths
 // relative to this module root, i.e. two levels up from this file).
@@ -33,7 +40,7 @@ package engine
 #cgo CFLAGS: -DFC_HAVE_UNISTD_H -DHAVE_CONFIG_H
 #cgo LDFLAGS: -L${SRCDIR}/../../freeciv/build
 #cgo LDFLAGS: -lfc_server -lfreeciv -lfc_ai -lfc_dependencies
-#cgo LDFLAGS: -ljansson -lm -ldl -lpthread -lreadline -lcurl -lzstd
+#cgo LDFLAGS: -ljansson -lm -ldl -lpthread -lreadline -lcurl -lzstd -lsqlite3 -llzma -licuuc -lMagickWand
 
 #include "srv_main.h"
 #include "player.h"

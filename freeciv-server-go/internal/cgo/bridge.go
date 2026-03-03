@@ -18,6 +18,12 @@ package cgo
 // Freeciv is built with meson; source headers live in ../freeciv/freeciv
 // and the static libraries are in ../freeciv/build (both relative to
 // this module root, three levels up from this file).
+//
+// The inline #cgo LDFLAGS use hardcoded library names for external
+// dependencies (sqlite3, lzma, icu-uc, MagickWand).  The Makefile and
+// prepare_freeciv_server_go.sh use pkg-config for version-specific
+// resolution; when building via those tools their CGO_LDFLAGS override
+// these inline directives.
 
 /*
 #cgo CFLAGS: -I${SRCDIR}/../../../freeciv/freeciv
@@ -31,7 +37,7 @@ package cgo
 #cgo CFLAGS: -DFC_HAVE_UNISTD_H -DHAVE_CONFIG_H
 #cgo LDFLAGS: -L${SRCDIR}/../../../freeciv/build
 #cgo LDFLAGS: -lfc_server -lfreeciv -lfc_ai -lfc_dependencies
-#cgo LDFLAGS: -ljansson -lm -ldl -lpthread -lreadline -lcurl -lzstd
+#cgo LDFLAGS: -ljansson -lm -ldl -lpthread -lreadline -lcurl -lzstd -lsqlite3 -llzma -licuuc -lMagickWand
 
 #include "player.h"
 #include "game.h"

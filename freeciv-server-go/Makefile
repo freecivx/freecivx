@@ -46,11 +46,29 @@ CGO_LDFLAGS_EXTRA ?=
 
 # When liblua5.4-dev is installed (as deb.sh installs it if available), meson
 # uses the system Lua instead of the bundled copy.  The static Freeciv
-# libraries then contain unresolved Lua-symbol references that must be
+# libraries then contain unresolved references to Lua symbols that must be
 # satisfied by linking against the system Lua library.  Detect via pkg-config;
 # if system Lua is absent the bundled copy is compiled into fc_dependencies and
-# no extra flag is required.
+# no extra flag is needed.
 LUA_LDFLAGS := $(shell pkg-config --libs lua5.4 2>/dev/null || pkg-config --libs lua-5.4 2>/dev/null)
+
+# SQLite3 and LZMA are used by Freeciv's luasql driver and ioz compression
+# respectively.  Link against the system libraries unconditionally.
+SQLITE_LDFLAGS := -lsqlite3
+LZMA_LDFLAGS   := -llzma
+
+# ICU (unicode) is used by Freeciv's utility/support.c.  Prefer pkg-config so
+# that the correct versioned library path is used; fall back to -licuuc.
+ICU_LDFLAGS := $(shell pkg-config --libs icu-uc 2>/dev/null || echo "-licuuc")
+
+# ImageMagick (MagickWand) is used by Freeciv's common/mapimg.c.  The
+# pkg-config name varies across versions/builds of ImageMagick; try the most
+# common variants in order and fall back to bare -l flags.
+MAGICK_LDFLAGS := $(shell \
+  pkg-config --libs MagickWand 2>/dev/null || \
+  pkg-config --libs 'MagickWand-7.Q16HDRI' 2>/dev/null || \
+  pkg-config --libs 'MagickWand-7.Q16' 2>/dev/null || \
+  echo "-lMagickWand -lMagickCore")
 
 # Full CGO flag set used when building against the real Freeciv tree.
 # These override the inline #cgo directives in the Go source files.
@@ -77,6 +95,7 @@ FREECIV_LDFLAGS := \
 	-lfc_server -lfreeciv -lfc_ai -lfc_dependencies \
 	$(LUA_LDFLAGS) \
 	-ljansson -lm -ldl -lpthread -lreadline -lcurl -lzstd \
+	$(SQLITE_LDFLAGS) $(LZMA_LDFLAGS) $(ICU_LDFLAGS) $(MAGICK_LDFLAGS) \
 	$(CGO_LDFLAGS_EXTRA)
 
 .PHONY: build build-stub test run-stub clean
