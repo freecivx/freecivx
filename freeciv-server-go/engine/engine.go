@@ -18,11 +18,14 @@ package engine
 // `go build` is invoked.
 //
 // The inline #cgo LDFLAGS below use hardcoded library names for libraries
-// that Freeciv's static libraries depend on (sqlite3, lzma, icu-uc,
-// MagickWand).  These defaults work on standard Ubuntu installs.  The
-// Makefile and prepare_freeciv_server_go.sh use pkg-config to resolve
-// version-specific names (e.g. MagickWand-7.Q16HDRI); when building via
-// those tools the environment CGO_LDFLAGS override these inline directives.
+// that Freeciv's static libraries depend on (sqlite3, lzma, icu-uc).
+// MagickWand is intentionally omitted here because its library name is
+// version-specific on Ubuntu (e.g. libMagickWand-6.Q16); the Makefile and
+// prepare_freeciv_server_go.sh resolve the correct name via pkg-config and
+// supply it through the CGO_LDFLAGS environment variable.  CGO_LDFLAGS
+// appends to (rather than replaces) inline directives, so including
+// -lMagickWand here would cause a link failure on systems where only the
+// versioned library name exists.
 //
 // Freeciv is built with meson; source headers live in ../freeciv/freeciv
 // and the compiled static libraries are in ../freeciv/build (both paths
@@ -40,7 +43,7 @@ package engine
 #cgo CFLAGS: -DFC_HAVE_UNISTD_H -DHAVE_CONFIG_H
 #cgo LDFLAGS: -L${SRCDIR}/../../freeciv/build
 #cgo LDFLAGS: -lfc_server -lfreeciv -lfc_ai -lfc_dependencies
-#cgo LDFLAGS: -ljansson -lm -ldl -lpthread -lreadline -lcurl -lzstd -lsqlite3 -llzma -licuuc -lMagickWand
+#cgo LDFLAGS: -ljansson -lm -ldl -lpthread -lreadline -lcurl -lzstd -lsqlite3 -llzma -licuuc
 
 #include "srv_main.h"
 #include "player.h"
