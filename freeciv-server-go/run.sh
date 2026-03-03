@@ -3,7 +3,7 @@
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" >/dev/null && pwd)"
 LOG_DIR="${SCRIPT_DIR}/../logs"
 LOG_FILE="${LOG_DIR}/freeciv-server-go.log"
-BINARY="${SCRIPT_DIR}/freeciv-server-go-stub"
+BINARY="${SCRIPT_DIR}/freeciv-server-go"
 SETTINGS="${SCRIPT_DIR}/settings.ini"
 
 # Ensure log directory exists
@@ -13,7 +13,7 @@ mkdir -p "$LOG_DIR"
 if [ ! -f "$BINARY" ]; then
     echo "Building freeciv-server-go..."
     cd "$SCRIPT_DIR"
-    CGO_ENABLED=0 go build -o freeciv-server-go-stub . || { echo "Build failed"; exit 1; }
+    bash ./prepare_freeciv_server_go.sh || { echo "Build failed"; exit 1; }
 fi
 
 # Start freeciv-server-go with nohup and logging

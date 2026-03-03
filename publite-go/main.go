@@ -176,6 +176,10 @@ func main() {
 	// Start the status HTTP server in the background.
 	go startPubStatus(mc)
 
+	// Start one freeciv-server-go instance.
+	goLauncher := NewGoServerLauncher(cfg.FreecivServerGoBinary, cfg.FreecivServerGoSettings, mc.shutdown)
+	go goLauncher.Run()
+
 	// Launch one initial server of each type.
 	port := cfg.InitialPort
 	port = mc.launchServer("singleplayer", port)
