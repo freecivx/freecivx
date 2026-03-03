@@ -49,6 +49,7 @@ CGO_LDFLAGS_EXTRA ?=
 FREECIV_CFLAGS := \
 	-I$(FREECIV_SRC) \
 	-I$(FREECIV_SRC)/common \
+	-I$(FREECIV_SRC)/common/networking \
 	-I$(FREECIV_SRC)/server \
 	-I$(FREECIV_SRC)/utility \
 	-I$(FREECIV_SRC)/dependencies/lua-5.4/src \

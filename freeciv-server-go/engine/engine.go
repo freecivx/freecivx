@@ -24,6 +24,7 @@ package engine
 /*
 #cgo CFLAGS: -I${SRCDIR}/../../freeciv/freeciv
 #cgo CFLAGS: -I${SRCDIR}/../../freeciv/freeciv/common
+#cgo CFLAGS: -I${SRCDIR}/../../freeciv/freeciv/common/networking
 #cgo CFLAGS: -I${SRCDIR}/../../freeciv/freeciv/server
 #cgo CFLAGS: -I${SRCDIR}/../../freeciv/freeciv/utility
 #cgo CFLAGS: -I${SRCDIR}/../../freeciv/freeciv/dependencies/lua-5.4/src
