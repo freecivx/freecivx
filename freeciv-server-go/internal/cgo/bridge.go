@@ -22,6 +22,7 @@ package cgo
 /*
 #cgo CFLAGS: -I${SRCDIR}/../../../freeciv/freeciv
 #cgo CFLAGS: -I${SRCDIR}/../../../freeciv/freeciv/common
+#cgo CFLAGS: -I${SRCDIR}/../../../freeciv/freeciv/common/aicore
 #cgo CFLAGS: -I${SRCDIR}/../../../freeciv/freeciv/common/networking
 #cgo CFLAGS: -I${SRCDIR}/../../../freeciv/freeciv/server
 #cgo CFLAGS: -I${SRCDIR}/../../../freeciv/freeciv/utility
