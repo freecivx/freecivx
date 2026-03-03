@@ -19,6 +19,14 @@ initial_port = 6000
 # Can be overridden with environment variable: PUBLITE_CHECK_INTERVAL
 check_interval = 40
 
+# Path to freeciv-server-go binary
+# Can be overridden with environment variable: PUBLITE_SERVER_GO_BINARY
+freeciv_server_go_binary = ../freeciv-server-go/freeciv-server-go
+
+# Path to freeciv-server-go settings file
+# Can be overridden with environment variable: PUBLITE_SERVER_GO_SETTINGS
+freeciv_server_go_settings = ../freeciv-server-go/settings.ini
+
 [Resource usage]
 server_capacity_single = 4
 server_capacity_multi = 2

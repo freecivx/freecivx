@@ -10,15 +10,17 @@ import (
 
 // Config holds the publite-go configuration.
 type Config struct {
-	ServerCapacitySingle int
-	ServerCapacityMulti  int
-	ServerLimit          int
-	SavesDir             string
-	MetaHost             string
-	MetaPort             int
-	StatusPort           int
-	InitialPort          int
-	CheckInterval        int
+	ServerCapacitySingle      int
+	ServerCapacityMulti       int
+	ServerLimit               int
+	SavesDir                  string
+	MetaHost                  string
+	MetaPort                  int
+	StatusPort                int
+	InitialPort               int
+	CheckInterval             int
+	FreecivServerGoBinary     string
+	FreecivServerGoSettings   string
 }
 
 // loadConfig reads an INI-format settings file and returns a Config.
@@ -97,14 +99,16 @@ func loadConfig(path string) (*Config, error) {
 	}
 
 	return &Config{
-		ServerCapacitySingle: getInt("Resource usage", "server_capacity_single", 5),
-		ServerCapacityMulti:  getInt("Resource usage", "server_capacity_multi", 2),
-		ServerLimit:          getInt("Resource usage", "server_limit", 250),
-		SavesDir:             get("Config", "save_directory", "/var/lib/tomcat11/webapps/data/savegames/"),
-		MetaHost:             envStr("PUBLITE_METAHOST", get("Config", "metahost", "localhost")),
-		MetaPort:             envInt("PUBLITE_METAPORT", getInt("Config", "metaport", 8080)),
-		StatusPort:           envInt("PUBLITE_STATUS_PORT", getInt("Config", "status_port", 4002)),
-		InitialPort:          envInt("PUBLITE_INITIAL_PORT", getInt("Config", "initial_port", 6000)),
-		CheckInterval:        envInt("PUBLITE_CHECK_INTERVAL", getInt("Config", "check_interval", 40)),
+		ServerCapacitySingle:    getInt("Resource usage", "server_capacity_single", 5),
+		ServerCapacityMulti:     getInt("Resource usage", "server_capacity_multi", 2),
+		ServerLimit:             getInt("Resource usage", "server_limit", 250),
+		SavesDir:                get("Config", "save_directory", "/var/lib/tomcat11/webapps/data/savegames/"),
+		MetaHost:                envStr("PUBLITE_METAHOST", get("Config", "metahost", "localhost")),
+		MetaPort:                envInt("PUBLITE_METAPORT", getInt("Config", "metaport", 8080)),
+		StatusPort:              envInt("PUBLITE_STATUS_PORT", getInt("Config", "status_port", 4002)),
+		InitialPort:             envInt("PUBLITE_INITIAL_PORT", getInt("Config", "initial_port", 6000)),
+		CheckInterval:           envInt("PUBLITE_CHECK_INTERVAL", getInt("Config", "check_interval", 40)),
+		FreecivServerGoBinary:   envStr("PUBLITE_SERVER_GO_BINARY", get("Config", "freeciv_server_go_binary", "../freeciv-server-go/freeciv-server-go")),
+		FreecivServerGoSettings: envStr("PUBLITE_SERVER_GO_SETTINGS", get("Config", "freeciv_server_go_settings", "../freeciv-server-go/settings.ini")),
 	}, nil
 }
