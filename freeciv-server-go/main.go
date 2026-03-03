@@ -42,9 +42,15 @@ func newServer() *server {
 	}
 }
 
-// wsHandler upgrades an HTTP connection to WebSocket, sends the
-// current player list as a greeting, and then echoes messages until
-// the client disconnects or the server shuts down.
+// wsHandler upgrades an HTTP connection to WebSocket and implements the
+// Freeciv client login protocol:
+//
+//  1. Read the first message, which must be a server_join_req (pid 4).
+//  2. Assign a unique connection ID and reply with server_join_reply (pid 5).
+//  3. Send a conn_info (pid 115) packet so the client knows its own connection.
+//  4. Start a background goroutine that sends periodic conn_ping (pid 88)
+//     keepalives so the client does not time out.
+//  5. Read subsequent client packets and dispatch them (pong, chat, etc.).
 func (s *server) wsHandler(w http.ResponseWriter, r *http.Request) {
 	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
@@ -62,32 +68,127 @@ func (s *server) wsHandler(w http.ResponseWriter, r *http.Request) {
 
 	slog.Info("WebSocket client connected", "remote", r.RemoteAddr)
 
-	// Send the current player list as an initial message.
-	players := engine.GetPlayerList()
-	var sb strings.Builder
-	sb.WriteString("players:")
-	for _, name := range players {
-		sb.WriteByte(' ')
-		sb.WriteString(name)
-	}
-	if err := conn.WriteMessage(websocket.TextMessage, []byte(sb.String())); err != nil {
-		slog.Error("WebSocket write error", "error", err)
+	// ------------------------------------------------------------------ //
+	// Step 1 – read the join request (pid 4).                             //
+	// ------------------------------------------------------------------ //
+	_, rawMsg, err := conn.ReadMessage()
+	if err != nil {
+		if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway, websocket.CloseNormalClosure) {
+			slog.Error("WebSocket read error (join req)", "error", err)
+		}
 		return
 	}
 
-	// Echo loop – read until the client closes or an error occurs.
+	var joinReq serverJoinReq
+	if jsonErr := json.Unmarshal(rawMsg, &joinReq); jsonErr != nil || joinReq.PID != pidServerJoinReq {
+		slog.Warn("WebSocket: expected server_join_req (pid 4)", "remote", r.RemoteAddr, "raw", string(rawMsg))
+		return
+	}
+
+	username := joinReq.Username
+	if username == "" {
+		username = "anonymous"
+	}
+	connID := nextConnID()
+	slog.Info("WebSocket login", "remote", r.RemoteAddr, "user", username, "conn_id", connID)
+
+	// ------------------------------------------------------------------ //
+	// Step 2 – send server_join_reply (pid 5).                           //
+	// ------------------------------------------------------------------ //
+	replyPkt := serverJoinReply{
+		PID:           pidServerJoinReply,
+		YouCanJoin:    true,
+		Message:       "Welcome to FreecivWorld! You are logged in as " + username,
+		Capability:    serverCapability,
+		ChallengeFile: "",
+		ConnID:        connID,
+	}
+	replyJSON, err := marshalPacket(replyPkt)
+	if err != nil {
+		slog.Error("WebSocket: marshal server_join_reply", "error", err)
+		return
+	}
+	if err := conn.WriteMessage(websocket.TextMessage, replyJSON); err != nil {
+		slog.Error("WebSocket write error (join reply)", "error", err)
+		return
+	}
+
+	// ------------------------------------------------------------------ //
+	// Step 3 – send conn_info (pid 115).                                  //
+	// ------------------------------------------------------------------ //
+	infoPkt := connInfo{
+		PID:         pidConnInfo,
+		ID:          connID,
+		Used:        true,
+		Established: true,
+		Observer:    false,
+		PlayerNum:   -1,
+		AccessLevel: 0,
+		Username:    username,
+		Addr:        r.RemoteAddr,
+		Capability:  serverCapability,
+	}
+	infoJSON, err := marshalPacket(infoPkt)
+	if err != nil {
+		slog.Error("WebSocket: marshal conn_info", "error", err)
+		return
+	}
+	if err := conn.WriteMessage(websocket.TextMessage, infoJSON); err != nil {
+		slog.Error("WebSocket write error (conn_info)", "error", err)
+		return
+	}
+
+	// ------------------------------------------------------------------ //
+	// Step 4 – periodic conn_ping (pid 88) goroutine.                    //
+	// ------------------------------------------------------------------ //
+	pingStop := make(chan struct{})
+	defer close(pingStop)
+	go func() {
+		pingJSON, _ := marshalPacket(connPing{PID: pidConnPing})
+		ticker := time.NewTicker(30 * time.Second)
+		defer ticker.Stop()
+		for {
+			select {
+			case <-pingStop:
+				return
+			case <-ticker.C:
+				if err := conn.WriteMessage(websocket.TextMessage, pingJSON); err != nil {
+					slog.Debug("WebSocket ping write error", "error", err)
+					return
+				}
+			}
+		}
+	}()
+
+	// ------------------------------------------------------------------ //
+	// Step 5 – main message loop.                                         //
+	// ------------------------------------------------------------------ //
 	for {
-		mt, message, err := conn.ReadMessage()
+		_, message, err := conn.ReadMessage()
 		if err != nil {
 			if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway, websocket.CloseNormalClosure) {
 				slog.Error("WebSocket read error", "error", err)
 			}
 			return
 		}
-		slog.Debug("WebSocket message received", "remote", r.RemoteAddr, "message", string(message))
-		if err := conn.WriteMessage(mt, message); err != nil {
-			slog.Error("WebSocket write error", "error", err)
-			return
+
+		// Peek at the packet ID to decide how to handle it.
+		var pkt struct {
+			PID int `json:"pid"`
+		}
+		if jsonErr := json.Unmarshal(message, &pkt); jsonErr != nil {
+			slog.Warn("WebSocket: unreadable packet", "remote", r.RemoteAddr, "raw", string(message))
+			continue
+		}
+
+		switch pkt.PID {
+		case pidConnPong:
+			// Client responded to our ping – nothing to do.
+		case pidClientInfo:
+			// Client sent its GUI/version info – acknowledge silently.
+			slog.Debug("WebSocket client_info received", "remote", r.RemoteAddr)
+		default:
+			slog.Debug("WebSocket packet received", "remote", r.RemoteAddr, "pid", pkt.PID, "raw", string(message))
 		}
 	}
 }
