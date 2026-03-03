@@ -95,9 +95,37 @@ The `-log-level` flag takes precedence over the value in `settings.ini`.
 
 | Endpoint | Method | Description |
 |---|---|---|
-| `/ws` | `GET` (WebSocket upgrade) | WebSocket connection; sends initial player list, then echoes messages |
-| `/players` | `GET` | Current player list, one name per line (plain text) |
+| `/ws` | `GET` (WebSocket upgrade) | WebSocket connection; implements the Freeciv login protocol |
+| `/players` | `GET` | Current player list as a JSON array |
 | `/status` | `GET` | JSON health document |
+
+## WebSocket Protocol
+
+The `/ws` endpoint implements the Freeciv client login protocol used by the
+JavaScript web client (`clinet.js`):
+
+1. The client connects and immediately sends a **server_join_req** packet
+   (`pid: 4`) containing the username, capability string, and version fields.
+2. The server assigns a unique connection ID and responds with a
+   **server_join_reply** packet (`pid: 5`) with `you_can_join: true`,
+   `conn_id`, `message`, `capability`, and `challenge_file`.
+3. The server immediately follows with a **conn_info** packet (`pid: 115`)
+   describing the new connection (id, username, established flag, etc.).
+4. The server sends periodic **conn_ping** packets (`pid: 88`) every 30 seconds;
+   the client responds with **conn_pong** (`pid: 89`).
+5. Subsequent packets from the client (client_info `pid: 119`, chat, etc.) are
+   dispatched appropriately.
+
+### Packet IDs (subset)
+
+| pid | Name | Direction |
+|-----|------|-----------|
+| 4 | server_join_req | client → server |
+| 5 | server_join_reply | server → client |
+| 88 | conn_ping | server → client |
+| 89 | conn_pong | client → server |
+| 115 | conn_info | server → client |
+| 119 | client_info | client → server |
 
 ### `/status` response example
 
