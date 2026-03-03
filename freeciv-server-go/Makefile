@@ -63,7 +63,7 @@ FREECIV_CFLAGS := \
 FREECIV_LDFLAGS := \
 	-L$(FREECIV_BUILD) \
 	-lfc_server -lfreeciv -lfc_ai -lfc_dependencies \
-	-lm -ldl -lpthread \
+	-ljansson -lm -ldl -lpthread \
 	$(CGO_LDFLAGS_EXTRA)
 
 .PHONY: build build-stub test run-stub clean
