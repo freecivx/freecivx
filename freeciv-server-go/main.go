@@ -180,7 +180,7 @@ func main() {
 
 	// Start the Hub event loop so register/unregister/broadcast channels
 	// are serviced as soon as the first WebSocket client connects.
-	go srv.hub.Run()
+	go srv.hub.Run(ctx)
 
 	// Set up the HTTP mux and endpoints.
 	mux := http.NewServeMux()
