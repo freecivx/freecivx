@@ -31,7 +31,7 @@ package cgo
 #cgo CFLAGS: -DFC_HAVE_UNISTD_H -DHAVE_CONFIG_H
 #cgo LDFLAGS: -L${SRCDIR}/../../../freeciv/build
 #cgo LDFLAGS: -lfc_server -lfreeciv -lfc_ai -lfc_dependencies
-#cgo LDFLAGS: -ljansson -lm -ldl -lpthread
+#cgo LDFLAGS: -ljansson -lm -ldl -lpthread -lreadline -lcurl
 
 #include "player.h"
 #include "game.h"
