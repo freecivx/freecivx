@@ -20,10 +20,14 @@ package cgo
 // this module root, three levels up from this file).
 //
 // The inline #cgo LDFLAGS use hardcoded library names for external
-// dependencies (sqlite3, lzma, icu-uc, MagickWand).  The Makefile and
-// prepare_freeciv_server_go.sh use pkg-config for version-specific
-// resolution; when building via those tools their CGO_LDFLAGS override
-// these inline directives.
+// dependencies (sqlite3, lzma, icu-uc).  MagickWand is intentionally
+// omitted here because its library name is version-specific on Ubuntu
+// (e.g. libMagickWand-6.Q16); the Makefile and
+// prepare_freeciv_server_go.sh resolve the correct name via pkg-config and
+// supply it through the CGO_LDFLAGS environment variable.  CGO_LDFLAGS
+// appends to (rather than replaces) inline directives, so including
+// -lMagickWand here would cause a link failure on systems where only the
+// versioned library name exists.
 
 /*
 #cgo CFLAGS: -I${SRCDIR}/../../../freeciv/freeciv
@@ -37,7 +41,7 @@ package cgo
 #cgo CFLAGS: -DFC_HAVE_UNISTD_H -DHAVE_CONFIG_H
 #cgo LDFLAGS: -L${SRCDIR}/../../../freeciv/build
 #cgo LDFLAGS: -lfc_server -lfreeciv -lfc_ai -lfc_dependencies
-#cgo LDFLAGS: -ljansson -lm -ldl -lpthread -lreadline -lcurl -lzstd -lsqlite3 -llzma -licuuc -lMagickWand
+#cgo LDFLAGS: -ljansson -lm -ldl -lpthread -lreadline -lcurl -lzstd -lsqlite3 -llzma -licuuc
 
 #include "player.h"
 #include "game.h"
