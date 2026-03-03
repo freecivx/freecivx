@@ -60,7 +60,11 @@ FREECIV_CFLAGS := \
 
 # Meson produces static libraries named libfc_server.a, libfreeciv.a,
 # libfc_ai.a, and libfc_dependencies.a in the build directory.
+# -flto is required because prepare_freeciv.sh builds Freeciv with
+# -Db_lto=true; the static libraries contain LTO IR and must be linked
+# with -flto so gcc can resolve all symbols via the LTO plugin.
 FREECIV_LDFLAGS := \
+	-flto \
 	-L$(FREECIV_BUILD) \
 	-lfc_server -lfreeciv -lfc_ai -lfc_dependencies \
 	-ljansson -lm -ldl -lpthread -lreadline -lcurl \
