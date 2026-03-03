@@ -35,7 +35,25 @@ elif pkg-config --exists lua-5.4 2>/dev/null; then
   LUA_LDFLAGS=$(pkg-config --libs lua-5.4)
 fi
 
-CGO_LDFLAGS_VAL="-flto -L${FREECIV_BUILD} -lfc_server -lfreeciv -lfc_ai -lfc_dependencies ${LUA_LDFLAGS} -ljansson -lm -ldl -lpthread -lreadline -lcurl -lzstd"
+ICU_LDFLAGS=""
+if pkg-config --exists icu-uc 2>/dev/null; then
+  ICU_LDFLAGS=$(pkg-config --libs icu-uc)
+else
+  ICU_LDFLAGS="-licuuc"
+fi
+
+MAGICK_LDFLAGS=""
+if pkg-config --exists MagickWand 2>/dev/null; then
+  MAGICK_LDFLAGS=$(pkg-config --libs MagickWand)
+elif pkg-config --exists 'MagickWand-7.Q16HDRI' 2>/dev/null; then
+  MAGICK_LDFLAGS=$(pkg-config --libs 'MagickWand-7.Q16HDRI')
+elif pkg-config --exists 'MagickWand-7.Q16' 2>/dev/null; then
+  MAGICK_LDFLAGS=$(pkg-config --libs 'MagickWand-7.Q16')
+else
+  MAGICK_LDFLAGS="-lMagickWand -lMagickCore"
+fi
+
+CGO_LDFLAGS_VAL="-flto -L${FREECIV_BUILD} -lfc_server -lfreeciv -lfc_ai -lfc_dependencies ${LUA_LDFLAGS} -ljansson -lm -ldl -lpthread -lreadline -lcurl -lzstd -lsqlite3 -llzma ${ICU_LDFLAGS} ${MAGICK_LDFLAGS}"
 
 echo "Building freeciv-server-go (full CGO build)..."
 CGO_ENABLED=1 CGO_CFLAGS="${CGO_CFLAGS_VAL}" CGO_LDFLAGS="${CGO_LDFLAGS_VAL}" \
