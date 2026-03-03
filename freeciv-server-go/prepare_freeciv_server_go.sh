@@ -15,7 +15,7 @@ BINARY="freeciv-server-go"
 FREECIV_SRC="${DIR}/../freeciv/freeciv"
 FREECIV_BUILD="${DIR}/../freeciv/build"
 
-CGO_CFLAGS_VAL="-I${FREECIV_SRC} -I${FREECIV_SRC}/common -I${FREECIV_SRC}/server -I${FREECIV_SRC}/utility -I${FREECIV_SRC}/dependencies/lua-5.4/src -I${FREECIV_BUILD} -DFC_HAVE_UNISTD_H -DHAVE_CONFIG_H"
+CGO_CFLAGS_VAL="-I${FREECIV_SRC} -I${FREECIV_SRC}/common -I${FREECIV_SRC}/common/aicore -I${FREECIV_SRC}/server -I${FREECIV_SRC}/utility -I${FREECIV_SRC}/dependencies/lua-5.4/src -I${FREECIV_BUILD} -DFC_HAVE_UNISTD_H -DHAVE_CONFIG_H"
 
 # Meson produces: libfc_server.a, libfreeciv.a, libfc_ai.a, libfc_dependencies.a
 CGO_LDFLAGS_VAL="-L${FREECIV_BUILD} -lfc_server -lfreeciv -lfc_ai -lfc_dependencies -lm -ldl -lpthread"
