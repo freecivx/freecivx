@@ -21,7 +21,7 @@ CGO_CFLAGS_VAL="-I${FREECIV_SRC} -I${FREECIV_SRC}/common -I${FREECIV_SRC}/common
 # -flto is required because prepare_freeciv.sh builds with -Db_lto=true; the
 # resulting static libraries contain LTO IR rather than regular object code and
 # must be linked with -flto so gcc can resolve all symbols via the LTO plugin.
-CGO_LDFLAGS_VAL="-flto -L${FREECIV_BUILD} -lfc_server -lfreeciv -lfc_ai -lfc_dependencies -ljansson -lm -ldl -lpthread -lreadline -lcurl"
+CGO_LDFLAGS_VAL="-flto -L${FREECIV_BUILD} -lfc_server -lfreeciv -lfc_ai -lfc_dependencies -ljansson -lm -ldl -lpthread -lreadline -lcurl -lzstd"
 
 echo "Building freeciv-server-go (full CGO build)..."
 CGO_ENABLED=1 CGO_CFLAGS="${CGO_CFLAGS_VAL}" CGO_LDFLAGS="${CGO_LDFLAGS_VAL}" \
