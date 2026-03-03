@@ -44,6 +44,14 @@ BINARY        := freeciv-server-go
 CGO_CFLAGS_EXTRA  ?=
 CGO_LDFLAGS_EXTRA ?=
 
+# When liblua5.4-dev is installed (as deb.sh installs it if available), meson
+# uses the system Lua instead of the bundled copy.  The static Freeciv
+# libraries then contain unresolved Lua-symbol references that must be
+# satisfied by linking against the system Lua library.  Detect via pkg-config;
+# if system Lua is absent the bundled copy is compiled into fc_dependencies and
+# no extra flag is required.
+LUA_LDFLAGS := $(shell pkg-config --libs lua5.4 2>/dev/null || pkg-config --libs lua-5.4 2>/dev/null)
+
 # Full CGO flag set used when building against the real Freeciv tree.
 # These override the inline #cgo directives in the Go source files.
 FREECIV_CFLAGS := \
@@ -67,6 +75,7 @@ FREECIV_LDFLAGS := \
 	-flto \
 	-L$(FREECIV_BUILD) \
 	-lfc_server -lfreeciv -lfc_ai -lfc_dependencies \
+	$(LUA_LDFLAGS) \
 	-ljansson -lm -ldl -lpthread -lreadline -lcurl -lzstd \
 	$(CGO_LDFLAGS_EXTRA)
 
