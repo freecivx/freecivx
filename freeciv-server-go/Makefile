@@ -3,8 +3,8 @@
 # Targets
 # -------
 #   make build       Build the server linked against the real Freeciv C
-#                    libraries (requires a pre-compiled Freeciv tree at
-#                    ../freeciv).
+#                    libraries (requires a pre-compiled Freeciv tree built
+#                    with meson at ../freeciv/build).
 #
 #   make build-stub  Build the server using stub CGO implementations.
 #                    No C compiler or Freeciv headers required.
@@ -18,23 +18,25 @@
 #
 # Prerequisites (for 'make build')
 # ---------------------------------
-#   1. A configured and compiled Freeciv tree at ../freeciv.
-#      Run:  cd ../freeciv/freeciv && ./autogen.sh && ./configure && make
+#   1. A Freeciv tree built with meson at ../freeciv.
+#      Run:  cd ../freeciv && bash prepare_freeciv.sh
 #
 #   2. CGO_ENABLED=1 and a C compiler (gcc / clang) on PATH.
 #
 # CGO flags
 # ---------
-# The Go files in engine/engine.go declare #cgo CFLAGS and LDFLAGS
-# directives that point to the Freeciv headers and libraries.  The
-# variables below are passed as overrides when you need a non-standard
-# Freeciv prefix.
+# The Go files in engine/engine.go and internal/cgo/bridge.go declare
+# #cgo CFLAGS and LDFLAGS directives using ${SRCDIR}-relative paths that
+# point to the meson source tree (../freeciv/freeciv) and build directory
+# (../freeciv/build).  The variables below can be used to override these
+# defaults when the Freeciv tree is at a non-standard location.
 #
 # Example:
-#   make build FREECIV_PREFIX=/opt/freeciv
+#   make build FREECIV_SRC=/opt/freeciv/src FREECIV_BUILD=/opt/freeciv/build
 
-FREECIV_PREFIX ?= ../freeciv/freeciv
-BINARY         := freeciv-server-go
+FREECIV_SRC   ?= ../freeciv/freeciv
+FREECIV_BUILD ?= ../freeciv/build
+BINARY        := freeciv-server-go
 
 # Extra CGO flags can be injected from the environment:
 #   CGO_CFLAGS_EXTRA  additional -I / -D flags
@@ -43,26 +45,28 @@ CGO_CFLAGS_EXTRA  ?=
 CGO_LDFLAGS_EXTRA ?=
 
 # Full CGO flag set used when building against the real Freeciv tree.
+# These override the inline #cgo directives in the Go source files.
 FREECIV_CFLAGS := \
-	-I$(FREECIV_PREFIX) \
-	-I$(FREECIV_PREFIX)/common \
-	-I$(FREECIV_PREFIX)/server \
-	-I$(FREECIV_PREFIX)/utility \
-	-I$(FREECIV_PREFIX)/dependencies/lua \
+	-I$(FREECIV_SRC) \
+	-I$(FREECIV_SRC)/common \
+	-I$(FREECIV_SRC)/server \
+	-I$(FREECIV_SRC)/utility \
+	-I$(FREECIV_SRC)/dependencies/lua-5.4/src \
+	-I$(FREECIV_BUILD) \
 	-DHAVE_CONFIG_H \
 	$(CGO_CFLAGS_EXTRA)
 
+# Meson produces static libraries named libfc_server.a, libfreeciv.a,
+# libfc_ai.a, and libfc_dependencies.a in the build directory.
 FREECIV_LDFLAGS := \
-	-L$(FREECIV_PREFIX)/server/.libs   -lfreecivserver \
-	-L$(FREECIV_PREFIX)/common/.libs   -lfreecivclient \
-	-L$(FREECIV_PREFIX)/utility/.libs  -lfreecivutility \
-	-L$(FREECIV_PREFIX)/dependencies/lua/.libs -llua \
+	-L$(FREECIV_BUILD) \
+	-lfc_server -lfreeciv -lfc_ai -lfc_dependencies \
 	-lm -ldl -lpthread \
 	$(CGO_LDFLAGS_EXTRA)
 
 .PHONY: build build-stub test run-stub clean
 
-## build: compile with real Freeciv C libraries (CGO, requires Freeciv tree)
+## build: compile with real Freeciv C libraries (CGO, requires meson build)
 build:
 	CGO_ENABLED=1 \
 	CGO_CFLAGS="$(FREECIV_CFLAGS)" \

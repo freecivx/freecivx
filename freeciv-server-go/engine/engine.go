@@ -13,26 +13,25 @@ package engine
 //
 // Header search paths and compiler flags are declared below via the
 // special #cgo comment directives that the Go tool picks up before the
-// import "C" line.
+// import "C" line.  ${SRCDIR} expands to the absolute path of this
+// file's directory so paths are resolved correctly regardless of where
+// `go build` is invoked.
 //
-// Adjust the paths if your Freeciv tree lives somewhere other than
-// ../freeciv relative to this module.
+// Freeciv is built with meson; source headers live in ../freeciv/freeciv
+// and the compiled static libraries are in ../freeciv/build (both paths
+// relative to this module root, i.e. two levels up from this file).
 
 /*
-#cgo CFLAGS: -I../freeciv/freeciv \
-             -I../freeciv/freeciv/common \
-             -I../freeciv/freeciv/server \
-             -I../freeciv/freeciv/utility \
-             -I../freeciv/freeciv/dependencies/lua \
-             -I../freeciv/freeciv \
-             -DFC_HAVE_UNISTD_H \
-             -DHAVE_CONFIG_H
-
-#cgo LDFLAGS: -L../freeciv/freeciv/server/.libs   -lfreecivserver \
-              -L../freeciv/freeciv/common/.libs    -lfreecivclient \
-              -L../freeciv/freeciv/utility/.libs   -lfreecivutility \
-              -L../freeciv/freeciv/dependencies/lua/.libs -llua \
-              -lm -ldl -lpthread
+#cgo CFLAGS: -I${SRCDIR}/../../freeciv/freeciv
+#cgo CFLAGS: -I${SRCDIR}/../../freeciv/freeciv/common
+#cgo CFLAGS: -I${SRCDIR}/../../freeciv/freeciv/server
+#cgo CFLAGS: -I${SRCDIR}/../../freeciv/freeciv/utility
+#cgo CFLAGS: -I${SRCDIR}/../../freeciv/freeciv/dependencies/lua-5.4/src
+#cgo CFLAGS: -I${SRCDIR}/../../freeciv/build
+#cgo CFLAGS: -DFC_HAVE_UNISTD_H -DHAVE_CONFIG_H
+#cgo LDFLAGS: -L${SRCDIR}/../../freeciv/build
+#cgo LDFLAGS: -lfc_server -lfreeciv -lfc_ai -lfc_dependencies
+#cgo LDFLAGS: -lm -ldl -lpthread
 
 #include "srv_main.h"
 #include "player.h"

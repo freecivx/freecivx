@@ -13,24 +13,23 @@ package cgo
 // CGO bridge to the Freeciv C player data.
 //
 // The #cgo CFLAGS and LDFLAGS below mirror those in engine/engine.go.
-// The Makefile overrides these at build time via CGO_CFLAGS / CGO_LDFLAGS
-// environment variables so that the paths resolve correctly regardless of
-// where the build is invoked.
+// ${SRCDIR} expands to the absolute path of this file's directory so
+// paths resolve correctly regardless of where `go build` is invoked.
+// Freeciv is built with meson; source headers live in ../freeciv/freeciv
+// and the static libraries are in ../freeciv/build (both relative to
+// this module root, three levels up from this file).
 
 /*
-#cgo CFLAGS: -I../../../freeciv/freeciv \
-             -I../../../freeciv/freeciv/common \
-             -I../../../freeciv/freeciv/server \
-             -I../../../freeciv/freeciv/utility \
-             -I../../../freeciv/freeciv/dependencies/lua \
-             -DFC_HAVE_UNISTD_H \
-             -DHAVE_CONFIG_H
-
-#cgo LDFLAGS: -L../../../freeciv/freeciv/server/.libs  -lfreecivserver \
-              -L../../../freeciv/freeciv/common/.libs   -lfreecivclient \
-              -L../../../freeciv/freeciv/utility/.libs  -lfreecivutility \
-              -L../../../freeciv/freeciv/dependencies/lua/.libs -llua \
-              -lm -ldl -lpthread
+#cgo CFLAGS: -I${SRCDIR}/../../../freeciv/freeciv
+#cgo CFLAGS: -I${SRCDIR}/../../../freeciv/freeciv/common
+#cgo CFLAGS: -I${SRCDIR}/../../../freeciv/freeciv/server
+#cgo CFLAGS: -I${SRCDIR}/../../../freeciv/freeciv/utility
+#cgo CFLAGS: -I${SRCDIR}/../../../freeciv/freeciv/dependencies/lua-5.4/src
+#cgo CFLAGS: -I${SRCDIR}/../../../freeciv/build
+#cgo CFLAGS: -DFC_HAVE_UNISTD_H -DHAVE_CONFIG_H
+#cgo LDFLAGS: -L${SRCDIR}/../../../freeciv/build
+#cgo LDFLAGS: -lfc_server -lfreeciv -lfc_ai -lfc_dependencies
+#cgo LDFLAGS: -lm -ldl -lpthread
 
 #include "player.h"
 #include "game.h"
