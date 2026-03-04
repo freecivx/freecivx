@@ -651,12 +651,14 @@ function get_tech_infobox_html(tech_id)
   
   const tag = tileset_tech_graphic_tag(ptech);
   if (!tag) return null;
-  
-  const tileset_x = tileset[tag][0];
-  const tileset_y = tileset[tag][1];
-  const width = tileset[tag][2];
-  const height = tileset[tag][3];
-  const i = tileset[tag][4];
+
+  const entry = tileset[tileset_name + "." + tag];
+  if (!entry) return null;
+  const tileset_x = entry[0];
+  const tileset_y = entry[1];
+  const width = entry[2];
+  const height = entry[3];
+  const i = entry[4];
   const image_src = `/tileset/freeciv-web-tileset-${tileset_name}-${i}${get_tileset_file_extention()}?ts=${ts}`;
   const tech_description = get_advances_text(tech_id).replace(/(<([^>]+)>)/ig, "");
   

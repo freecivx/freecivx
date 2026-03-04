@@ -22,6 +22,12 @@ var webgl_models = {};
 var total_model_count = 0;
 var load_count = 0;
 
+/* Supported 2D tilesets: amplio2 (isometric, 96x48) and trident (overhead, 30x30).
+ * Tileset images are preloaded by init_sprites() in mapview.js using Promise-based
+ * loading. Both tilesets generate separate image files and tileset_spec JS files
+ * via scripts/freeciv-img-extract/img-extract.py. */
+var supported_tilesets = ["amplio2", "trident"];
+
 var model_filenames_initial = ["Settlers",   "Explorer",   "Workers", "city_european_0",  "city_modern_0", "city_roman_0",  "city_babylonian_0", "city_chinese_0", "Warriors", "citywalls_stone", "citywalls_roman",
                                "Cactus1", "Palm1", "Palm2", "Pine1", "Pine3", "Tree1", "Tree2", "Tree3", "Fish1", "Fish2", "Fish3", "Whales", "Wheat"];
 var tiles_of_unloaded_models_map = {};

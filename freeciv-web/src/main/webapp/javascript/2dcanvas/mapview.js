@@ -54,13 +54,18 @@ function init_sprites()
   $("body").css("padding-bottom", "0px");
 
   if (loaded_images != tileset_image_count) {
+    var loadPromises = [];
     for (var i = 0; i < tileset_image_count; i++) {
-      var tileset_image = new Image();
-      tileset_image.onload = preload_check;
-      tileset_image.src = '/tileset/freeciv-web-tileset-'
-                          + tileset_name + '-' + i + get_tileset_file_extention() + '?ts=' + ts;
-      tileset_images[i] = tileset_image;
+      loadPromises.push(load_tileset_image(i));
     }
+    Promise.all(loadPromises).then(function(images) {
+      images.forEach(function(img, idx) { tileset_images[idx] = img; });
+      loaded_images = tileset_image_count;
+      init_cache_sprites();
+      webgl_preload();
+    }).catch(function(err) {
+      console.error("Failed to load tileset images: " + String(err));
+    });
   } else {
     // already loaded
     webgl_preload();
@@ -70,7 +75,22 @@ function init_sprites()
 }
 
 /**************************************************************************
+  Returns a Promise that resolves to a loaded Image for tileset index i.
+**************************************************************************/
+function load_tileset_image(i)
+{
+  return new Promise(function(resolve, reject) {
+    var img = new Image();
+    img.onload = function() { resolve(img); };
+    img.onerror = function() { reject("Error loading tileset image " + i); };
+    img.src = '/tileset/freeciv-web-tileset-'
+              + tileset_name + '-' + i + get_tileset_file_extention() + '?ts=' + ts;
+  });
+}
+
+/**************************************************************************
   Determines when the whole tileset has been preloaded.
+  Kept for backward compatibility.
 **************************************************************************/
 function preload_check()
 {
@@ -96,6 +116,7 @@ function init_cache_sprites()
     return;
   }
 
+  var prefix = tileset_name + ".";
   for (var tile_tag in tileset) {
     var x = tileset[tile_tag][0];
     var y = tileset[tile_tag][1];
@@ -110,7 +131,9 @@ function init_cache_sprites()
 
     newCtx.drawImage(tileset_images[i], x, y,
                        w, h, 0, 0, w, h);
-    sprites[tile_tag] = newCanvas;
+    // Strip tileset name prefix (e.g. "amplio2.") to cache with bare tags
+    // for backward compatibility with code that looks up sprites by bare tag name.
+    sprites[tile_tag.slice(prefix.length)] = newCanvas;
 
   }
 
