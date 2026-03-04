@@ -308,8 +308,8 @@ for tileset_id in sorted(files.keys()):
                   curr_y += max_row_height;
                   max_row_height = 0;
   
-            elif tag in dither_types:
-              # handle a dithered tile.
+            elif tileset_id == 'amplio2' and tag in dither_types:
+              # handle a dithered tile (amplio2 only; trident uses directional sprites instead).
               dither_map[tag] = result_tile.copy();
   
             elif tag.find("explode.nuke_") > -1 \

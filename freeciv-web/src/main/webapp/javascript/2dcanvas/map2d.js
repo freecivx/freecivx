@@ -62,27 +62,22 @@ var MAP2D_RENDER_DELAY_MS = 60; /* coalesce rapid packet bursts into one repaint
 /* ------------------------------------------------------------------ */
 
 /*
- * For most terrains the Trident tileset provides a single base tile
- * tagged "t.l0.<terrain>1" plus optional directional variants.
+ * Trident uses directional terrain sprites for almost all terrain types.
  * Directional terrain tags follow the pattern
  * "t.l0.<terrain>_n<0|1>e<0|1>s<0|1>w<0|1>" where each flag
  * indicates whether the same terrain type lies in that direction.
  *
- * Oceanic terrains use the layer-1 naming "t.l1.coast_n…" and
- * "t.l1.floor_n…".
+ * The only exception is grassland, which has a single non-directional
+ * base tile "t.l0.grassland1".  This tile is drawn beneath ALL land
+ * terrain overlays.  All other land terrains (plains, desert, hills,
+ * mountains, arctic, forest, etc.) use directional sprites only.
  *
- * In Trident, grassland ("t.l0.grassland1") is the background tile
- * drawn beneath ALL land terrain overlays.  Terrains like plains,
- * desert, hills, etc. are directional overlay sprites composited on
- * top of that background.  Only grassland itself has a simple "1"
- * tag; every other land terrain uses the directional naming.
+ * Oceanic terrains use the layer-1 naming "t.l1.coast_n…" and
+ * "t.l1.floor_n…".  Both coast and floor are considered "ocean" for
+ * the purpose of directional neighbor detection.
  */
 var map2d_terrain_simple = {
-  "grassland": true,   /* non-directional base tile: t.l0.grassland1 */
-  "hills":     true,   /* MATCH_NONE in Trident: t.l0.hills1 */
-  "mountains": true,   /* MATCH_NONE in Trident: t.l0.mountains1 */
-  "plains":    true,   /* MATCH_NONE in Trident: t.l0.plains1 */
-  "desert":    true    /* MATCH_NONE in Trident: t.l0.desert1 */
+  "grassland": true    /* only terrain with a non-directional base tile: t.l0.grassland1 */
 };
 
 /* Fallback solid colours used when sprites are missing */
@@ -118,12 +113,14 @@ function get_2d_terrain_sprite_tag(pterrain, ptile)
     return "t.l0." + g + "1";
   }
 
-  /* Oceanic terrains use layer-1 tags */
+  /* Oceanic terrains use layer-1 tags.  Both coast and floor count as
+   * "ocean" neighbours so the correct shoreline/transition sprite is
+   * chosen regardless of whether the adjacent tile is shallow or deep. */
   if (g === "coast" || g === "floor") {
-    var dir_tag = "t.l1." + g + "_n" + map2d_neighbor_flag(ptile, g, DIR8_NORTH)
-                              + "e" + map2d_neighbor_flag(ptile, g, DIR8_EAST)
-                              + "s" + map2d_neighbor_flag(ptile, g, DIR8_SOUTH)
-                              + "w" + map2d_neighbor_flag(ptile, g, DIR8_WEST);
+    var dir_tag = "t.l1." + g + "_n" + map2d_ocean_neighbor_flag(ptile, DIR8_NORTH)
+                              + "e" + map2d_ocean_neighbor_flag(ptile, DIR8_EAST)
+                              + "s" + map2d_ocean_neighbor_flag(ptile, DIR8_SOUTH)
+                              + "w" + map2d_ocean_neighbor_flag(ptile, DIR8_WEST);
     if (sprites_2d_init && sprites_2d[dir_tag]) return dir_tag;
     return "t.l1." + g + "_n0e0s0w0";
   }
@@ -155,6 +152,22 @@ function map2d_neighbor_flag(ptile, graphic_str, dir)
   var nterrain = tile_terrain(ntile);
   if (nterrain == null) return 0;
   return (nterrain['graphic_str'] === graphic_str) ? 1 : 0;
+}
+
+/**
+ * Returns 1 if the tile in direction `dir` from `ptile` is any ocean
+ * terrain (coast or floor), 0 otherwise.  Used for the directional
+ * neighbour flags of ocean tiles so that coast↔floor transitions are
+ * handled correctly.
+ */
+function map2d_ocean_neighbor_flag(ptile, dir)
+{
+  var ntile = mapstep(ptile, dir);
+  if (ntile == null) return 0;
+  var nterrain = tile_terrain(ntile);
+  if (nterrain == null) return 0;
+  var ng = nterrain['graphic_str'];
+  return (ng === 'coast' || ng === 'floor') ? 1 : 0;
 }
 
 /* ------------------------------------------------------------------ */
