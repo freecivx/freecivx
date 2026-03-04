@@ -320,6 +320,45 @@ function set_default_mapview_active()
 
 }
 
+/**************************************************************************
+  Activates the 2D map view: shows the same overlay panels as the 3D map
+  (overview, chat, command center, active unit panel) and synchronises the
+  2D map centre to the current 3D camera position before rendering.
+**************************************************************************/
+function set_default_mapview_2d_active()
+{
+  if (unitpanel_active) {
+    update_active_units_dialog();
+  }
+
+  if (chatbox_active) {
+    $("#game_chatbox_panel").parent().show();
+    if (current_message_dialog_state == "minimized") $("#game_chatbox_panel").dialogExtend("minimize");
+  }
+
+  if (command_center_active) {
+    $("#ai_intro_dialog").parent().show();
+    if (current_command_center_state == "minimized") $("#ai_intro_dialog").dialogExtend("minimize");
+  }
+
+  /* Synchronise the 2D map centre to the 3D camera position. */
+  if (typeof scene_to_map_coords === 'function' && camera_current_x !== 0) {
+    var pos = scene_to_map_coords(camera_current_x, camera_current_z);
+    if (pos && map && map['xsize']) {
+      map2d_center_x = Math.max(0, Math.min(map['xsize'] - 1, pos['x']));
+      map2d_center_y = Math.max(0, Math.min(map['ysize'] - 1, pos['y']));
+    }
+  } else if (typeof find_a_focus_unit_tile_to_center_on === 'function') {
+    var ftile = find_a_focus_unit_tile_to_center_on();
+    if (ftile != null) {
+      map2d_center_x = ftile['x'];
+      map2d_center_y = ftile['y'];
+    }
+  }
+
+  setTimeout(render_2d_map, 5);
+}
+
 
 /**************************************************************************
 Received tile info text.

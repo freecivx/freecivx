@@ -52,6 +52,9 @@ var map2d_drag_moved = false;  /* true if the mouse moved during the current pre
 /* Tile under the mouse cursor (for context menu) */
 var map2d_mouse_tile = null;
 
+/* Deferred render: avoids triggering dozens of redraws during packet bursts */
+var map2d_render_pending = false;
+var MAP2D_RENDER_DELAY_MS = 60; /* coalesce rapid packet bursts into one repaint */
 
 
 /* ------------------------------------------------------------------ */
@@ -75,7 +78,11 @@ var map2d_mouse_tile = null;
  * tag; every other land terrain uses the directional naming.
  */
 var map2d_terrain_simple = {
-  "grassland": true   /* only terrain with a non-directional base tile */
+  "grassland": true,   /* non-directional base tile: t.l0.grassland1 */
+  "hills":     true,   /* MATCH_NONE in Trident: t.l0.hills1 */
+  "mountains": true,   /* MATCH_NONE in Trident: t.l0.mountains1 */
+  "plains":    true,   /* MATCH_NONE in Trident: t.l0.plains1 */
+  "desert":    true    /* MATCH_NONE in Trident: t.l0.desert1 */
 };
 
 /* Fallback solid colours used when sprites are missing */
@@ -227,15 +234,12 @@ function init_2d_map_canvas()
     if (e.key === '-')          { map2d_zoom = Math.max(0.3, map2d_zoom / 1.2); render_2d_map(); }
   });
 
-  /* Left-click: select unit on tile (only if not a drag) */
+  /* Left-click: unit selection, city dialog, or goto destination */
   map2d_canvas.addEventListener('click', function(e) {
     if (map2d_drag_moved) { map2d_drag_moved = false; return; }
     var ptile = map2d_tile_from_event(e);
     if (ptile == null) return;
-    var punits = tile_units(ptile);
-    if (punits && punits.length > 0) {
-      unit_focus_set(punits[0]);
-    }
+    map2d_handle_tile_click(ptile);
   });
 
   /* Context menu on right-click */
@@ -520,9 +524,9 @@ function map2d_draw_city_label(ctx, pcity, cx, cy, tw, th)
 
 function map2d_draw_unit(ctx, punit, cx, cy, tw, th)
 {
-  /* Try unit sprite from the trident tileset */
+  /* Try unit sprite from the trident tileset using a 2D-specific lookup */
   if (sprites_2d_init) {
-    var tag = tileset_unit_graphic_tag(punit);
+    var tag = get_2d_unit_sprite_tag(punit);
     if (tag && sprites_2d[tag]) {
       ctx.drawImage(sprites_2d[tag], cx, cy, tw, th);
       map2d_draw_unit_shield(ctx, punit, cx, cy, tw, th);
@@ -613,6 +617,100 @@ function center_2d_map_on_tile(ptile)
   render_2d_map();
 }
 
+/**
+ * Schedule a re-render of the 2D map, coalescing rapid packet bursts into
+ * a single repaint.  Has no effect when the 2D tab is not visible.
+ */
+function map2d_schedule_render()
+{
+  if (map2d_render_pending) return;
+  if (typeof $ === 'undefined') return;
+  try {
+    if ($('#tabs').tabs('option', 'active') !== 1) return;
+  } catch (e) {
+    return;
+  }
+  map2d_render_pending = true;
+  setTimeout(function() {
+    map2d_render_pending = false;
+    render_2d_map();
+  }, MAP2D_RENDER_DELAY_MS);
+}
+
+/**
+ * Handle a left-click on the 2D map canvas.
+ *
+ * Mirrors the logic in do_map_click() for the 3D map:
+ *  – If goto is active, send the focused unit(s) to the clicked tile.
+ *  – If a city owned by the player is on the tile, open the city dialog.
+ *  – Otherwise focus the top unit on the tile.
+ */
+function map2d_handle_tile_click(ptile)
+{
+  if (ptile == null) return;
+  if (typeof client_is_observer === 'function' && client_is_observer()) return;
+
+  /* Delegate goto path execution to the shared do_map_click handler. */
+  if (typeof goto_active !== 'undefined' && goto_active) {
+    if (typeof do_map_click === 'function') {
+      do_map_click(ptile, SELECT_POPUP, true); /* SELECT_POPUP: show context if same tile */
+    }
+    render_2d_map();
+    return;
+  }
+
+  var pcity  = tile_city(ptile);
+  var punits = tile_units(ptile);
+
+  /* Click on own city: show city dialog (or focus idle unit if present). */
+  if (pcity != null && client.conn.playing != null
+      && pcity['owner'] == client.conn.playing.playerno) {
+    if (punits && punits.length > 0
+        && typeof ACTIVITY_IDLE !== 'undefined'
+        && punits[0]['activity'] == ACTIVITY_IDLE) {
+      if (typeof unit_focus_set === 'function') unit_focus_set(punits[0]);
+    } else {
+      if (typeof show_city_dialog === 'function') show_city_dialog(pcity);
+    }
+    render_2d_map();
+    return;
+  }
+
+  /* Click on a tile with units: focus the top unit. */
+  if (punits && punits.length > 0) {
+    if (typeof unit_focus_set === 'function') unit_focus_set(punits[0]);
+  }
+  render_2d_map();
+}
+
+/**
+ * Look up the best matching sprite tag for a unit in the trident tileset
+ * (sprites_2d dictionary).  Tries common naming conventions used by the
+ * Trident tileset before falling back to amplio2-style tags.
+ */
+function get_2d_unit_sprite_tag(punit)
+{
+  if (!sprites_2d_init || punit == null) return null;
+  var utype = unit_type(punit);
+  if (!utype) return null;
+
+  /* Candidate tag list in preference order. */
+  var candidates = [
+    utype['graphic_str'],
+    utype['graphic_alt'],
+    utype['graphic_str'] + '_Idle',
+    utype['graphic_alt'] + '_Idle',
+    'u.' + utype['graphic_str'],
+    'u.' + utype['graphic_alt']
+  ];
+
+  for (var i = 0; i < candidates.length; i++) {
+    var t = candidates[i];
+    if (t && sprites_2d[t]) return t;
+  }
+  return null;
+}
+
 /* ------------------------------------------------------------------ */
 /*  Extras / improvements rendering                                     */
 /* ------------------------------------------------------------------ */
@@ -625,10 +723,11 @@ function center_2d_map_on_tile(ptile)
 function map2d_draw_tile_extras(ctx, ptile, cx, cy, tw, th)
 {
   if (ptile == null || ptile['extras'] == null) return;
+  var spr;
 
   /* --- Irrigation (light blue diagonal lines) --- */
   if (typeof EXTRA_IRRIGATION !== 'undefined' && tile_has_extra(ptile, EXTRA_IRRIGATION)) {
-    var spr = sprites_2d_init && sprites_2d['tx.irrigation'];
+    spr = sprites_2d_init && sprites_2d['tx.irrigation'];
     if (spr) {
       ctx.drawImage(spr, cx, cy, tw, th);
     } else {
@@ -645,7 +744,7 @@ function map2d_draw_tile_extras(ctx, ptile, cx, cy, tw, th)
 
   /* --- Mine (small gray M symbol) --- */
   if (typeof EXTRA_MINE !== 'undefined' && tile_has_extra(ptile, EXTRA_MINE)) {
-    var spr = sprites_2d_init && sprites_2d['tx.mine'];
+    spr = sprites_2d_init && sprites_2d['tx.mine'];
     if (spr) {
       ctx.drawImage(spr, cx, cy, tw, th);
     } else {
@@ -659,7 +758,7 @@ function map2d_draw_tile_extras(ctx, ptile, cx, cy, tw, th)
 
   /* --- Fortress (thin dark border) --- */
   if (typeof EXTRA_FORTRESS !== 'undefined' && tile_has_extra(ptile, EXTRA_FORTRESS)) {
-    var spr = sprites_2d_init && sprites_2d['base.fortress_fg'];
+    spr = sprites_2d_init && sprites_2d['base.fortress_fg'];
     if (spr) {
       ctx.drawImage(spr, cx, cy, tw, th);
     } else {
@@ -671,7 +770,7 @@ function map2d_draw_tile_extras(ctx, ptile, cx, cy, tw, th)
 
   /* --- Pollution (dark red dots) --- */
   if (typeof EXTRA_POLLUTION !== 'undefined' && tile_has_extra(ptile, EXTRA_POLLUTION)) {
-    var spr = sprites_2d_init && sprites_2d['tx.pollution'];
+    spr = sprites_2d_init && sprites_2d['tx.pollution'];
     if (spr) {
       ctx.drawImage(spr, cx, cy, tw, th);
     } else {
@@ -682,7 +781,7 @@ function map2d_draw_tile_extras(ctx, ptile, cx, cy, tw, th)
 
   /* --- Hut / minor tribe village --- */
   if (typeof EXTRA_HUT !== 'undefined' && tile_has_extra(ptile, EXTRA_HUT)) {
-    var spr = sprites_2d_init && sprites_2d['tx.village'];
+    spr = sprites_2d_init && sprites_2d['tx.village'];
     if (spr) {
       ctx.drawImage(spr, cx, cy, tw, th);
     } else {
