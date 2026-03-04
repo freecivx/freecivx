@@ -351,6 +351,10 @@ for tileset_id in files.keys():
   tileset_file = 'tileset_spec_' + tileset_id + '.js'
   f = open(path.join(out_dir, tileset_file), 'w')
   prefixed_coords = {tileset_id + "." + k: v for k, v in coords[tileset_id].items()}
-  f.write("var tileset = " + json.dumps(prefixed_coords, separators=(',', ':')) + ";")
+  if tileset_id == "amplio2":
+    f.write("var tileset = " + json.dumps(prefixed_coords, separators=(',', ':')) + ";")
+  else:
+    f.write("if (typeof tileset === 'undefined') var tileset = {};\n")
+    f.write("Object.assign(tileset, " + json.dumps(prefixed_coords, separators=(',', ':')) + ");")
 
 print("Freeciv-img-extract creating tilesets complete.");

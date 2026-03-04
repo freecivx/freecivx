@@ -44,12 +44,12 @@ tileset_confg['trident'] = {
   "small_tile_height" : 20
 };
 
-/* Default to amplio2 */
-var tileset_name        = tileset_confg['amplio2']['name'];
-var tileset_image_count = tileset_confg['amplio2']['image_count'];
-var tileset_tile_width  = tileset_confg['amplio2']['tile_width'];
-var tileset_tile_height = tileset_confg['amplio2']['tile_height'];
-var normal_tile_width   = tileset_confg['amplio2']['normal_tile_width'];
-var normal_tile_height  = tileset_confg['amplio2']['normal_tile_height'];
-var small_tile_width    = tileset_confg['amplio2']['small_tile_width'];
-var small_tile_height   = tileset_confg['amplio2']['small_tile_height'];
+/* Default to trident for the 2D map renderer */
+var tileset_name        = tileset_confg['trident']['name'];
+var tileset_image_count = tileset_confg['trident']['image_count'];
+var tileset_tile_width  = tileset_confg['trident']['tile_width'];
+var tileset_tile_height = tileset_confg['trident']['tile_height'];
+var normal_tile_width   = tileset_confg['trident']['normal_tile_width'];
+var normal_tile_height  = tileset_confg['trident']['normal_tile_height'];
+var small_tile_width    = tileset_confg['trident']['small_tile_width'];
+var small_tile_height   = tileset_confg['trident']['small_tile_height'];
