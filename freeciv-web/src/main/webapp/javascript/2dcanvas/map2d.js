@@ -406,10 +406,13 @@ function render_2d_map()
  * Render a single tile's terrain onto the canvas (layer 1).
  *
  * Trident uses a composited approach:
- *   – Ocean tiles (coast / floor) receive a solid water-colour base, then the
- *     directional layer-1 sprite is composited on top.  The directional sprites
- *     are partially or fully transparent (the all-ocean variant is completely
- *     transparent), so the solid base must be painted first.
+ *   – Ocean tiles (coast / floor) receive a textured water base built from
+ *     the four coast_cell / floor_cell quadrant sprites (t.l0.<g>_cell_u/r/l/d
+ *     with the "000" neighbour-code variant), then the directional layer-1
+ *     sprite is composited on top.  The directional sprites are partially or
+ *     fully transparent (the all-ocean variant is completely transparent), so
+ *     the textured base must be painted first.  A solid-colour fill is used
+ *     as a fallback when the cell sprites have not yet been loaded.
  *   – All non-ocean land tiles first receive the grassland base sprite.
  *   – The terrain-specific directional overlay is drawn on top.
  *
@@ -426,12 +429,28 @@ function map2d_render_terrain(ctx, ptile, cx, cy, tw, th)
   var g         = pterrain ? pterrain['graphic_str'] : null;
   var is_ocean  = (g === 'coast' || g === 'floor');
 
-  /* Step 1 – solid water base for ocean tiles, grassland base for land tiles.
-   * Ocean directional sprites are (partially) transparent and must be drawn
-   * over a solid colour so open-water tiles are not left black. */
+  /* Step 1 – textured water base for ocean tiles, grassland base for land
+   * tiles.  Ocean directional sprites are (partially) transparent and must be
+   * drawn over a base so open-water tiles are not left black.
+   * Use the four cell-quadrant sprites (t.l0.<g>_cell_u/r/l/d000) when
+   * available; fall back to a solid colour fill. */
   if (is_ocean) {
-    ctx.fillStyle = map2d_terrain_colors[g] || '#1a3a6a';
-    ctx.fillRect(cx, cy, tw, th);
+    var cp = 't.l0.' + g + '_cell_';
+    var su = sprites_2d_init && sprites_2d[cp + 'u000'];
+    var sr = sprites_2d_init && sprites_2d[cp + 'r000'];
+    var sl = sprites_2d_init && sprites_2d[cp + 'l000'];
+    var sd = sprites_2d_init && sprites_2d[cp + 'd000'];
+    if (su && sr && sl && sd) {
+      var hw = Math.ceil(tw / 2);
+      var hh = Math.ceil(th / 2);
+      ctx.drawImage(su, cx,      cy,      hw,      hh);
+      ctx.drawImage(sr, cx + hw, cy,      tw - hw, hh);
+      ctx.drawImage(sl, cx,      cy + hh, hw,      th - hh);
+      ctx.drawImage(sd, cx + hw, cy + hh, tw - hw, th - hh);
+    } else {
+      ctx.fillStyle = map2d_terrain_colors[g] || '#1a3a6a';
+      ctx.fillRect(cx, cy, tw, th);
+    }
   } else if (sprites_2d_init && sprites_2d['t.l0.grassland1']) {
     ctx.drawImage(sprites_2d['t.l0.grassland1'], cx, cy, tw, th);
   }
