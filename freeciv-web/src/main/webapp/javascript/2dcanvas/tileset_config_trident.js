@@ -17,17 +17,13 @@
 
 ***********************************************************************/
 
-/* Trident.tilespec ported to Javascript. */
+/* Trident tileset — activates the trident config from tileset_config.js. */
 
-
-var tileset_trident_tile_width = 30;
-var tileset_trident_tile_height = 30;
-
-var tileset_trident_name = "trident";
-
-var tileset_trident_image_count = 2;
-
-var trident_normal_tile_width  = 30;
-var trident_normal_tile_height = 30;
-var trident_small_tile_width   = 15;
-var trident_small_tile_height  = 20;
+tileset_name        = tileset_confg['trident']['name'];
+tileset_image_count = tileset_confg['trident']['image_count'];
+tileset_tile_width  = tileset_confg['trident']['tile_width'];
+tileset_tile_height = tileset_confg['trident']['tile_height'];
+normal_tile_width   = tileset_confg['trident']['normal_tile_width'];
+normal_tile_height  = tileset_confg['trident']['normal_tile_height'];
+small_tile_width    = tileset_confg['trident']['small_tile_width'];
+small_tile_height   = tileset_confg['trident']['small_tile_height'];

@@ -17,20 +17,16 @@
 
 ***********************************************************************/
 
-/* Amplio.tilespec ported to Javascript. */
+/* Amplio2 tileset — activates the amplio2 config from tileset_config.js. */
 
-
-var tileset_tile_width = 96;
-var tileset_tile_height = 48;
-
-var tileset_name = "amplio2";
-
-var tileset_image_count = 2;
-
-var normal_tile_width  = 96;
-var normal_tile_height = 48;
-var small_tile_width   = 15;
-var small_tile_height  = 20;
+tileset_name        = tileset_confg['amplio2']['name'];
+tileset_image_count = tileset_confg['amplio2']['image_count'];
+tileset_tile_width  = tileset_confg['amplio2']['tile_width'];
+tileset_tile_height = tileset_confg['amplio2']['tile_height'];
+normal_tile_width   = tileset_confg['amplio2']['normal_tile_width'];
+normal_tile_height  = tileset_confg['amplio2']['normal_tile_height'];
+small_tile_width    = tileset_confg['amplio2']['small_tile_width'];
+small_tile_height   = tileset_confg['amplio2']['small_tile_height'];
 
 
 
