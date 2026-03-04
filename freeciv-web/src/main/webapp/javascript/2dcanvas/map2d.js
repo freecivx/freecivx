@@ -406,9 +406,12 @@ function render_2d_map()
  * Render a single tile's terrain onto the canvas (layer 1).
  *
  * Trident uses a composited approach:
+ *   – Ocean tiles (coast / floor) receive a solid water-colour base, then the
+ *     directional layer-1 sprite is composited on top.  The directional sprites
+ *     are partially or fully transparent (the all-ocean variant is completely
+ *     transparent), so the solid base must be painted first.
  *   – All non-ocean land tiles first receive the grassland base sprite.
  *   – The terrain-specific directional overlay is drawn on top.
- *   – Ocean tiles (coast / floor) use a single layer-1 sprite directly.
  *
  * After terrain, fog-of-war is applied where the tile is known-but-unseen.
  */
@@ -423,8 +426,13 @@ function map2d_render_terrain(ctx, ptile, cx, cy, tw, th)
   var g         = pterrain ? pterrain['graphic_str'] : null;
   var is_ocean  = (g === 'coast' || g === 'floor');
 
-  /* Step 1 – grassland background for all non-ocean land tiles */
-  if (!is_ocean && sprites_2d_init && sprites_2d['t.l0.grassland1']) {
+  /* Step 1 – solid water base for ocean tiles, grassland base for land tiles.
+   * Ocean directional sprites are (partially) transparent and must be drawn
+   * over a solid colour so open-water tiles are not left black. */
+  if (is_ocean) {
+    ctx.fillStyle = map2d_terrain_colors[g] || '#1a3a6a';
+    ctx.fillRect(cx, cy, tw, th);
+  } else if (sprites_2d_init && sprites_2d['t.l0.grassland1']) {
     ctx.drawImage(sprites_2d['t.l0.grassland1'], cx, cy, tw, th);
   }
 
