@@ -613,35 +613,45 @@ function map2d_draw_city(ctx, pcity, cx, cy, tw, th)
 function map2d_draw_city_label(ctx, pcity, cx, cy, tw, th)
 {
   if (tw < 20) return; /* too small to be readable */
-  var name      = pcity['name'] || '';
+  var city_size = (typeof pcity['size'] === 'number') ? pcity['size'] : null;
+  var name      = (city_size !== null ? city_size + ' ' : '') + (pcity['name'] || '');
   var font_size = Math.max(8, Math.floor(th * 0.45));
   var label_y   = cy + th + 1;
-  var label_cx  = cx + tw / 2;
 
-  /* Draw nation flag/shield to the left of the city name */
-  var flag_drawn_w = 0;
+  /* Set font before measuring text width */
+  ctx.font         = font_size + 'px sans-serif';
+  ctx.textBaseline = 'top';
+  var text_w = ctx.measureText(name).width;
+
+  /* Resolve nation flag sprite */
+  var flag_spr = null, fw = 0, fh = 0;
   if (sprites_2d_init && typeof get_city_flag_sprite === 'function') {
     var flag_info = get_city_flag_sprite(pcity);
     if (flag_info && flag_info['key']) {
-      var flag_spr = sprites_2d[flag_info['key']];
-      if (flag_spr) {
-        var fh = Math.max(8, font_size);
-        var fw = Math.round(fh * flag_spr.width / Math.max(1, flag_spr.height));
-        var fx = Math.floor(label_cx - fw / 2 - fw - 2);
-        ctx.drawImage(flag_spr, fx, label_y, fw, fh);
-        flag_drawn_w = fw + 2;
+      var spr = sprites_2d[flag_info['key']];
+      if (spr) {
+        fh = Math.max(8, font_size);
+        fw = Math.round(fh * spr.width / Math.max(1, spr.height));
+        flag_spr = spr;
       }
     }
   }
 
-  ctx.font          = font_size + 'px sans-serif';
-  ctx.textAlign     = 'center';
-  ctx.textBaseline  = 'top';
-  ctx.strokeStyle   = '#000000';
-  ctx.lineWidth     = 2;
-  ctx.strokeText(name, label_cx + flag_drawn_w / 2, label_y);
-  ctx.fillStyle     = '#ffffff';
-  ctx.fillText(name, label_cx + flag_drawn_w / 2, label_y);
+  /* Centre the whole label (flag + gap + text) horizontally over the tile */
+  var gap     = flag_spr ? 2 : 0;
+  var total_w = fw + gap + text_w;
+  var start_x = Math.floor(cx + tw / 2 - total_w / 2);
+
+  if (flag_spr) {
+    ctx.drawImage(flag_spr, start_x, label_y, fw, fh);
+  }
+
+  ctx.textAlign   = 'left';
+  ctx.strokeStyle = '#000000';
+  ctx.lineWidth   = 2;
+  ctx.strokeText(name, start_x + fw + gap, label_y);
+  ctx.fillStyle   = '#ffffff';
+  ctx.fillText(name, start_x + fw + gap, label_y);
 }
 
 function map2d_draw_unit(ctx, punit, cx, cy, tw, th)
