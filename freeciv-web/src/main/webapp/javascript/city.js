@@ -25,6 +25,9 @@ var city_trade_routes = {};
 var goods = {};
 
 var active_city = null;
+/* Tab index that was active when the city dialog was opened (0=3D, 1=2D, …).
+ * Used by city_dialog_close_handler() to restore the correct map view. */
+var city_dialog_source_tab = 0;
 var worklist_dialog_active = false;
 var production_selection = [];
 var worklist_selection = [];
@@ -311,6 +314,15 @@ function show_city_dialog(pcity)
     worklist_selection = [];
   }
 
+  /* Remember which map tab the player came from so we can restore it on close. */
+  if (active_city == null) {
+    try {
+      city_dialog_source_tab = $('#tabs').tabs('option', 'active');
+    } catch (ex) {
+      city_dialog_source_tab = 0;
+    }
+  }
+
   if (active_city != null) close_city_dialog();
   active_city = pcity;
   if (pcity == null) return;
@@ -357,7 +369,7 @@ function show_city_dialog(pcity)
                    }).dialogExtend({
                      "minimizable" : true,
                      "closable" : true,
-                     "minimize" : function(evt, dlg){ set_default_mapview_active(); },
+                     "minimize" : function(evt, dlg){ city_restore_mapview(); },
                      "icons" : {
                        "minimize" : "ui-icon-circle-minus",
                        "restore" : "ui-icon-newwin"
@@ -902,6 +914,20 @@ function close_city_dialog_trigger()
 
 
 /**************************************************************************
+ Restore the map view that was active when the city dialog was opened.
+ If the player was on the 2D map (tab 1) restore that; otherwise restore
+ the default 3D map view.
+**************************************************************************/
+function city_restore_mapview()
+{
+  if (city_dialog_source_tab === 1) {
+    set_default_mapview_2d_active();
+  } else {
+    set_default_mapview_active();
+  }
+}
+
+/**************************************************************************
  Close dialog.
 **************************************************************************/
 function close_city_dialog()
@@ -915,7 +941,7 @@ function close_city_dialog()
 **************************************************************************/
 function city_dialog_close_handler()
 {
-  set_default_mapview_active();
+  city_restore_mapview();
 
   if (active_city != null) {
     setup_window_size ();

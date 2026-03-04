@@ -1295,7 +1295,7 @@ function init_game_unit_panel()
 			closeOnEscape: false,
 			dialogClass: 'unit_dialog  no-close',
 			position: {my: 'right bottom', at: 'right bottom', of: window},
-			appendTo: '#tabs-map',
+			appendTo: '#game_page',
             create: function(event, ui) {
               $(this).parent().find(".ui-dialog-titlebar").hide();
             },
@@ -1904,7 +1904,8 @@ function global_keyboard_listener(ev)
   if (!ev) ev = window.event;
   var keyboard_key = String.fromCharCode(ev.keyCode);
 
-  if (0 === $("#tabs").tabs("option", "active")) {
+  var active_tab = $("#tabs").tabs("option", "active");
+  if (active_tab === 0 || active_tab === 1) {
       map_handle_key(keyboard_key, ev.keyCode, ev['ctrlKey'], ev['altKey'], ev['shiftKey'], ev);
   }
   civclient_handle_key(keyboard_key, ev.keyCode, ev['ctrlKey'],  ev['altKey'], ev['shiftKey'], ev);
