@@ -653,12 +653,16 @@ function pregame_settings()
   }
 
   // Set up Web-LLM setting
-  var stored_webllm_setting = simpleStorage.get("webllm_enabled", "true");
-  if (typeof webllm_enabled !== 'undefined') {
-    $("#webllm_setting").prop("checked", stored_webllm_setting != "false");
-    webllm_enabled = (stored_webllm_setting != "false");
+  if (is_small_screen()) {
+    $("#webllm_enabled").hide();
+  } else {
+    var stored_webllm_setting = simpleStorage.get("webllm_enabled", "true");
+    if (typeof webllm_enabled !== 'undefined') {
+      $("#webllm_setting").prop("checked", stored_webllm_setting != "false");
+      webllm_enabled = (stored_webllm_setting != "false");
+    }
+    $("#webllm_label").prop("innerHTML", "AI Messages:");
   }
-  $("#webllm_label").prop("innerHTML", "AI Messages:");
 
   if (server_settings['metamessage'] != null
       && server_settings['metamessage']['val'] != null) {

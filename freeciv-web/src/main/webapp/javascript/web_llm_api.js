@@ -30,7 +30,12 @@ var current_command_center_state = null;
 
 // Initialize webllm_enabled from localStorage (default: true)
 // We use localStorage directly to ensure it's available early
+// Disabled on mobile (small screens < 768px)
 var webllm_enabled = (function() {
+  if (window.innerWidth < 768) {
+    console.log("[WebLLM] Disabled on mobile/small screen");
+    return false;
+  }
   try {
     var stored = localStorage.getItem("webllm_enabled");
     // Default to true if no value is stored
