@@ -54,3 +54,9 @@ var normal_tile_width   = tileset_confg['amplio2']['normal_tile_width'];
 var normal_tile_height  = tileset_confg['amplio2']['normal_tile_height'];
 var small_tile_width    = tileset_confg['amplio2']['small_tile_width'];
 var small_tile_height   = tileset_confg['amplio2']['small_tile_height'];
+
+/*
+ * The 2D map renderer uses the trident tileset exclusively.
+ * All tile dimensions and sprite look-ups are based on this config.
+ */
+var map2d_tileset_config = tileset_confg['trident'];

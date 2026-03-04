@@ -52,11 +52,7 @@ var map2d_drag_moved = false;  /* true if the mouse moved during the current pre
 /* Tile under the mouse cursor (for context menu) */
 var map2d_mouse_tile = null;
 
-/*
- * The 2D map renderer uses the trident tileset exclusively.
- * All tile dimensions and sprite look-ups are based on this config.
- */
-var map2d_tileset_config = tileset_confg['trident'];
+
 
 /* ------------------------------------------------------------------ */
 /*  Terrain → sprite-tag mapping (Trident tileset naming convention)   */
