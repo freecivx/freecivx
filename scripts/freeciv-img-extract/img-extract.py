@@ -229,7 +229,7 @@ for tileset_id in sorted(files.keys()):
       if verbose: print("  processing: " + gfx_file)
       im = Image.open(gfx_file)
  
-      for current_section in ["grid_main", "grid_roads", "grid_rails", "grid_coasts", "grid_extra"]: 
+      for current_section in ["grid_main", "grid_roads", "grid_rails", "grid_coasts", "grid_extra", "grid_ocean"]: 
         if current_section in config.sections():
           dx = int(config.get(current_section, "dx"));
           dy = int(config.get(current_section, "dy"));
