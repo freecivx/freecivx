@@ -5,7 +5,8 @@
 		    
 			<ul id="tabs_menu">
 			    <div id="freeciv_logo" ></div>
-				<li id="map_tab"><a href="#tabs-map"><i class="fa fa-map" aria-hidden="true"></i> Map</a></li>
+				<li id="map_tab"><a href="#tabs-map"><i class="fa fa-globe" aria-hidden="true"></i> 3D Map</a></li>
+				<li id="map_2d_tab"><a href="#tabs-2dmap"><i class="fa fa-table-cells" aria-hidden="true"></i> 2D Map</a></li>
 				<li id="civ_tab"><a href="#tabs-civ"><i class="fa fa-university" aria-hidden="true"></i> Government</a></li>
 				<li id="tech_tab"><a id="tech_tab_item" href="#tabs-tec"><i class="fa fa-flask" aria-hidden="true"></i> Research</a></li>
 				<li id="players_tab"><a href="#tabs-nat"><i class="fa fa-flag" aria-hidden="true"></i> Nations</a></li>
@@ -26,6 +27,10 @@
 			
 			<div id="tabs-map" tabindex="-1">
 			  <jsp:include page="canvas.jsp" flush="false"/>
+			</div>
+
+			<div id="tabs-2dmap" tabindex="-1">
+			  <canvas id="mapcanvas_2d"></canvas>
 			</div>
 
 			<div id="tabs-civ">

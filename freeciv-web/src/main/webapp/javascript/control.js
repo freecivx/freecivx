@@ -223,6 +223,11 @@ function control_init()
     setTimeout(set_default_mapview_active, 5);
   });
 
+  $("#map_2d_tab").click(function(event) {
+    set_default_mapview_inactive();
+    setTimeout(render_2d_map, 5);
+  });
+
 
   $("#civ_tab").click(function(event) {
     set_default_mapview_inactive();
