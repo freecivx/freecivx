@@ -34,7 +34,3 @@ var small_tile_height  = 20;
 
 
 
-
-
-
-

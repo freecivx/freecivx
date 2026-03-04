@@ -20,14 +20,14 @@
 /* Trident.tilespec ported to Javascript. */
 
 
-var tileset_trident_tile_width = 30;
-var tileset_trident_tile_height = 30;
+var tileset_tile_width = 30;
+var tileset_tile_height = 30;
 
-var tileset_trident_name = "trident";
+var tileset_name = "trident";
 
-var tileset_trident_image_count = 2;
+var tileset_image_count = 2;
 
-var trident_normal_tile_width  = 30;
-var trident_normal_tile_height = 30;
-var trident_small_tile_width   = 15;
-var trident_small_tile_height  = 20;
+var normal_tile_width  = 30;
+var normal_tile_height = 30;
+var small_tile_width   = 15;
+var small_tile_height  = 20;
