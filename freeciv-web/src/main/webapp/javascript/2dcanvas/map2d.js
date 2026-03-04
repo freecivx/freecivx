@@ -860,6 +860,38 @@ function map2d_draw_tile_extras(ctx, ptile, cx, cy, tw, th)
   if (typeof EXTRA_RAIL !== 'undefined' && tile_has_extra(ptile, EXTRA_RAIL)) {
     map2d_draw_road_lines(ctx, ptile, cx, cy, tw, th, true);
   }
+
+  /* --- Resources (wheat, whales, gems, oil, coal, gold, fish, etc.) --- */
+  var res_id = tile_resource(ptile);
+  if (res_id !== null) {
+    var res_extra = extra_by_number(res_id);
+    var res_tag = res_extra && res_extra['graphic_str'];
+    spr = res_tag && sprites_2d_init && sprites_2d[res_tag];
+    if (!spr && res_extra && res_extra['graphic_alt']
+        && res_extra['graphic_alt'] !== '-') {
+      spr = sprites_2d_init && sprites_2d[res_extra['graphic_alt']];
+    }
+    if (spr) {
+      /* Draw the resource sprite scaled to the tile size */
+      ctx.drawImage(spr, cx, cy, tw, th);
+    } else {
+      /* Fallback: small colored diamond in the bottom-right corner */
+      var diamondSize = Math.max(3, Math.floor(Math.min(tw, th) * 0.22));
+      var diamondX = cx + tw - diamondSize - 1;
+      var diamondY = cy + th - diamondSize - 1;
+      ctx.fillStyle = 'rgba(255, 220, 0, 0.92)';
+      ctx.beginPath();
+      ctx.moveTo(diamondX + diamondSize / 2, diamondY);
+      ctx.lineTo(diamondX + diamondSize, diamondY + diamondSize / 2);
+      ctx.lineTo(diamondX + diamondSize / 2, diamondY + diamondSize);
+      ctx.lineTo(diamondX, diamondY + diamondSize / 2);
+      ctx.closePath();
+      ctx.fill();
+      ctx.strokeStyle = 'rgba(180, 120, 0, 0.8)';
+      ctx.lineWidth = 1;
+      ctx.stroke();
+    }
+  }
 }
 
 /**
