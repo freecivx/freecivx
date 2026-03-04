@@ -18,4 +18,3 @@ standard `clean` phase.
 To regenerate files in this directory, run the script:
 `${FREECIV_WEB}\scripts\sync-js-hand.sh`.
 
-2026: Trying with these files committed, maybe standalone builds will be easier and faster.
