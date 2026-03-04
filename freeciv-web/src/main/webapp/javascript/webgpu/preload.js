@@ -206,20 +206,6 @@ function webgl_preload()
       nuke_glow.needsUpdate = true;
   } );
 
-  imgurl = '/textures/sky.jpg';
-  textureLoader.load(imgurl, (function () {
-          return function (image) {
-                webgl_textures["skybox"] = new THREE.Texture();
-                webgl_textures["skybox"].image = image;
-                webgl_textures["skybox"].wrapS = THREE.RepeatWrapping;
-                webgl_textures["skybox"].wrapT = THREE.RepeatWrapping;
-                webgl_textures["skybox"].magFilter = THREE.LinearFilter;
-                webgl_textures["skybox"].minFilter = THREE.LinearFilter;
-                webgl_textures["skybox"].needsUpdate = true;
-            }
-    })()
-  );
-
   imgurl =  '/textures/Water_1_M_Normal.jpg';
   textureLoader.load(imgurl, (function () {
         return function (image) {
