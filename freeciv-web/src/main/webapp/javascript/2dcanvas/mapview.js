@@ -24,6 +24,10 @@ var loaded_images = 0;
 
 var sprites_init = false;
 
+/* Separate sprite cache for the 2D map renderer (trident tileset). */
+var sprites_2d = {};
+var sprites_2d_init = false;
+
 var canvas_text_font = "16px Georgia, serif"; // with canvas text support
 
 var fullfog = [];
@@ -62,6 +66,7 @@ function init_sprites()
       images.forEach(function(img, idx) { tileset_images[idx] = img; });
       loaded_images = tileset_image_count;
       init_cache_sprites();
+      init_sprites_2d();
       webgl_preload();
     }).catch(function(err) {
       console.error("Failed to load tileset images: " + String(err));
@@ -186,4 +191,43 @@ function set_default_mapview_inactive()
   if (command_center_active) $("#ai_intro_dialog").parent().hide();
   $("#tile_dialog").parent().hide();
 
+}
+
+/**************************************************************************
+  Load the trident tileset image and populate sprites_2d for the 2D map.
+**************************************************************************/
+function init_sprites_2d()
+{
+  var cfg = tileset_confg['trident'];
+  var img = new Image();
+  img.onload = function() { _cache_sprites_2d(img); };
+  img.onerror = function() { console.error("Failed to load trident tileset image."); };
+  img.src = '/tileset/freeciv-web-tileset-' + cfg['name'] + '-0'
+            + get_tileset_file_extention() + '?ts=' + ts;
+}
+
+/**************************************************************************
+  Extract and cache all trident sprites into the sprites_2d dictionary.
+**************************************************************************/
+function _cache_sprites_2d(img)
+{
+  try {
+    if (typeof tileset === 'undefined') return;
+    var prefix = tileset_confg['trident']['name'] + '.';
+    for (var tile_tag in tileset) {
+      if (tile_tag.indexOf(prefix) !== 0) continue;
+      var data = tileset[tile_tag];
+      var newCanvas = document.createElement('canvas');
+      newCanvas.width  = data[2];
+      newCanvas.height = data[3];
+      newCanvas.getContext('2d').drawImage(img, data[0], data[1],
+                                           data[2], data[3],
+                                           0, 0, data[2], data[3]);
+      sprites_2d[tile_tag.slice(prefix.length)] = newCanvas;
+    }
+    sprites_2d_init = true;
+    render_2d_map();
+  } catch(e) {
+    console.error("Error caching 2D trident sprites: " + e);
+  }
 }

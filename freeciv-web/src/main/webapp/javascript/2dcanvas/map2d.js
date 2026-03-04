@@ -52,6 +52,12 @@ var map2d_drag_moved = false;  /* true if the mouse moved during the current pre
 /* Tile under the mouse cursor (for context menu) */
 var map2d_mouse_tile = null;
 
+/*
+ * The 2D map renderer uses the trident tileset exclusively.
+ * All tile dimensions and sprite look-ups are based on this config.
+ */
+var map2d_tileset_config = tileset_confg['trident'];
+
 /* ------------------------------------------------------------------ */
 /*  Terrain → sprite-tag mapping (Trident tileset naming convention)   */
 /* ------------------------------------------------------------------ */
@@ -65,13 +71,15 @@ var map2d_mouse_tile = null;
  *
  * Oceanic terrains use the layer-1 naming "t.l1.coast_n…" and
  * "t.l1.floor_n…".
+ *
+ * In Trident, grassland ("t.l0.grassland1") is the background tile
+ * drawn beneath ALL land terrain overlays.  Terrains like plains,
+ * desert, hills, etc. are directional overlay sprites composited on
+ * top of that background.  Only grassland itself has a simple "1"
+ * tag; every other land terrain uses the directional naming.
  */
 var map2d_terrain_simple = {
-  "grassland": true,
-  "plains":    true,
-  "swamp":     true,
-  "tundra":    true,
-  "jungle":    true
+  "grassland": true   /* only terrain with a non-directional base tile */
 };
 
 /* Fallback solid colours used when sprites are missing */
@@ -113,20 +121,21 @@ function get_2d_terrain_sprite_tag(pterrain, ptile)
                               + "e" + map2d_neighbor_flag(ptile, g, DIR8_EAST)
                               + "s" + map2d_neighbor_flag(ptile, g, DIR8_SOUTH)
                               + "w" + map2d_neighbor_flag(ptile, g, DIR8_WEST);
-    if (sprites_init && sprites[dir_tag]) return dir_tag;
+    if (sprites_2d_init && sprites_2d[dir_tag]) return dir_tag;
     return "t.l1." + g + "_n0e0s0w0";
   }
 
-  /* Directional land terrains: hills, forest, mountains, desert, arctic */
+  /* Directional land terrains: hills, forest, mountains, desert, arctic,
+   * plains, swamp, tundra, jungle — all use directional sprites in Trident */
   var base_dir = "t.l0." + g + "_n" + map2d_neighbor_flag(ptile, g, DIR8_NORTH)
                             + "e" + map2d_neighbor_flag(ptile, g, DIR8_EAST)
                             + "s" + map2d_neighbor_flag(ptile, g, DIR8_SOUTH)
                             + "w" + map2d_neighbor_flag(ptile, g, DIR8_WEST);
-  if (sprites_init && sprites[base_dir]) return base_dir;
+  if (sprites_2d_init && sprites_2d[base_dir]) return base_dir;
 
   /* Simplest directional variant */
   var simple_dir = "t.l0." + g + "_n0e0s0w0";
-  if (sprites_init && sprites[simple_dir]) return simple_dir;
+  if (sprites_2d_init && sprites_2d[simple_dir]) return simple_dir;
 
   /* Last resort: numbered base tag */
   return "t.l0." + g + "1";
@@ -191,8 +200,8 @@ function init_2d_map_canvas()
 
     if (!map2d_drag_active) return;
     map2d_drag_moved = true;
-    var tw = Math.max(1, Math.floor(normal_tile_width  * map2d_zoom));
-    var th = Math.max(1, Math.floor(normal_tile_height * map2d_zoom));
+    var tw = Math.max(1, Math.floor(map2d_tileset_config['normal_tile_width']  * map2d_zoom));
+    var th = Math.max(1, Math.floor(map2d_tileset_config['normal_tile_height'] * map2d_zoom));
     var dx = Math.round((map2d_drag_start_x - e.clientX) / tw);
     var dy = Math.round((map2d_drag_start_y - e.clientY) / th);
     map2d_center_x = map2d_drag_center_x + dx;
@@ -265,7 +274,13 @@ function map2d_resize_canvas()
 /* ------------------------------------------------------------------ */
 
 /**
- * Render the full 2D map onto the canvas.
+ * Render the full 2D map onto the canvas using multiple layers:
+ *   1. Terrain  (grassland base + directional overlay, or ocean)
+ *   2. Extras + territory borders
+ *   3. City sprites
+ *   4. Unit sprites + shield flags
+ *   5. City labels with nation flags  (always on top)
+ *
  * Safe to call at any time; returns silently if data is not ready yet.
  */
 function render_2d_map()
@@ -280,16 +295,17 @@ function render_2d_map()
 
   map2d_resize_canvas();
 
-  var cw = map2d_canvas.width;
-  var ch = map2d_canvas.height;
+  var ctx = map2d_ctx;
+  var cw  = map2d_canvas.width;
+  var ch  = map2d_canvas.height;
 
-  /* Tile dimensions at current zoom */
-  var tw = Math.max(1, Math.floor(normal_tile_width  * map2d_zoom));
-  var th = Math.max(1, Math.floor(normal_tile_height * map2d_zoom));
+  /* Tile dimensions at current zoom (from trident config) */
+  var tw = Math.max(1, Math.floor(map2d_tileset_config['normal_tile_width']  * map2d_zoom));
+  var th = Math.max(1, Math.floor(map2d_tileset_config['normal_tile_height'] * map2d_zoom));
 
   /* Clear */
-  map2d_ctx.fillStyle = '#000000';
-  map2d_ctx.fillRect(0, 0, cw, ch);
+  ctx.fillStyle = '#000000';
+  ctx.fillRect(0, 0, cw, ch);
 
   /* How many tiles fit on screen (add 2 as margin) */
   var tiles_x = Math.ceil(cw / tw) + 2;
@@ -303,20 +319,63 @@ function render_2d_map()
   var off_x = Math.floor(cw / 2 - (map2d_center_x - start_x) * tw);
   var off_y = Math.floor(ch / 2 - (map2d_center_y - start_y) * th);
 
+  /* Build visible-tile list (avoids recomputing positions for every layer) */
+  var vis = [];
   for (var ty = 0; ty < tiles_y; ty++) {
     var map_y = start_y + ty;
     if (map_y < 0 || map_y >= map['ysize']) continue;
-
     for (var tx = 0; tx < tiles_x; tx++) {
-      /* Wrap x for cylindrical maps */
       var map_x = ((start_x + tx) % map['xsize'] + map['xsize']) % map['xsize'];
-
-      var canvas_x = off_x + tx * tw;
-      var canvas_y = off_y + ty * th;
-
       var ptile = map_pos_to_tile(map_x, map_y);
-      render_2d_tile(map2d_ctx, ptile, canvas_x, canvas_y, tw, th);
+      if (ptile) vis.push({ptile: ptile, cx: off_x + tx * tw, cy: off_y + ty * th});
     }
+  }
+
+  var i, v;
+
+  /* --- Layer 1: terrain + fog --- */
+  for (i = 0; i < vis.length; i++) {
+    v = vis[i];
+    map2d_render_terrain(ctx, v.ptile, v.cx, v.cy, tw, th);
+  }
+
+  /* --- Layer 2: extras + territory borders --- */
+  for (i = 0; i < vis.length; i++) {
+    v = vis[i];
+    if (tile_get_known(v.ptile) !== TILE_KNOWN_SEEN) continue;
+    map2d_draw_tile_extras(ctx, v.ptile, v.cx, v.cy, tw, th);
+    map2d_draw_border(ctx, v.ptile, v.cx, v.cy, tw, th);
+  }
+
+  /* --- Layer 3: city sprites --- */
+  var city_label_queue = [];
+  for (i = 0; i < vis.length; i++) {
+    v = vis[i];
+    if (tile_get_known(v.ptile) !== TILE_KNOWN_SEEN) continue;
+    var pcity = tile_city(v.ptile);
+    if (pcity) {
+      map2d_draw_city(ctx, pcity, v.cx, v.cy, tw, th);
+      city_label_queue.push({pcity: pcity, cx: v.cx, cy: v.cy});
+    }
+  }
+
+  /* --- Layer 4: unit sprites + shield flags --- */
+  for (i = 0; i < vis.length; i++) {
+    v = vis[i];
+    if (tile_get_known(v.ptile) !== TILE_KNOWN_SEEN) continue;
+    var punits = tile_units(v.ptile);
+    if (punits && punits.length > 0) {
+      map2d_draw_unit(ctx, punits[0], v.cx, v.cy, tw, th);
+      if (punits.length > 1) {
+        map2d_draw_unit_count(ctx, punits.length, v.cx, v.cy, tw, th);
+      }
+    }
+  }
+
+  /* --- Layer 5: city labels with flags (always on top) --- */
+  for (i = 0; i < city_label_queue.length; i++) {
+    var q = city_label_queue[i];
+    map2d_draw_city_label(ctx, q.pcity, q.cx, q.cy, tw, th);
   }
 
   /* Draw grid lines (optional, subtle) */
@@ -324,68 +383,82 @@ function render_2d_map()
 }
 
 /* ------------------------------------------------------------------ */
-/*  Per-tile rendering                                                  */
+/*  Terrain layer renderer                                              */
 /* ------------------------------------------------------------------ */
 
-function render_2d_tile(ctx, ptile, cx, cy, tw, th)
+/**
+ * Render a single tile's terrain onto the canvas (layer 1).
+ *
+ * Trident uses a composited approach:
+ *   – All non-ocean land tiles first receive the grassland base sprite.
+ *   – The terrain-specific directional overlay is drawn on top.
+ *   – Ocean tiles (coast / floor) use a single layer-1 sprite directly.
+ *
+ * After terrain, fog-of-war is applied where the tile is known-but-unseen.
+ */
+function map2d_render_terrain(ctx, ptile, cx, cy, tw, th)
 {
   if (ptile == null) return;
 
   var known = tile_get_known(ptile);
+  if (known === TILE_UNKNOWN) return;
 
-  if (known === TILE_UNKNOWN) {
-    /* Already black from the clear; nothing to draw */
-    return;
+  var pterrain  = tile_terrain(ptile);
+  var g         = pterrain ? pterrain['graphic_str'] : null;
+  var is_ocean  = (g === 'coast' || g === 'floor');
+
+  /* Step 1 – grassland background for all non-ocean land tiles */
+  if (!is_ocean && sprites_2d_init && sprites_2d['t.l0.grassland1']) {
+    ctx.drawImage(sprites_2d['t.l0.grassland1'], cx, cy, tw, th);
   }
 
-  /* --- Terrain --- */
-  var pterrain = tile_terrain(ptile);
+  /* Step 2 – terrain overlay (or solid-colour fallback) */
   var terrain_drawn = false;
-
-  if (pterrain && sprites_init) {
+  if (pterrain && sprites_2d_init) {
     var tag = get_2d_terrain_sprite_tag(pterrain, ptile);
-    var spr = sprites[tag];
+    var spr = sprites_2d[tag];
     if (spr) {
-      ctx.drawImage(spr, cx, cy, tw, th);
+      /* Grassland is already drawn as the background; skip double-draw */
+      if (is_ocean || tag !== 't.l0.grassland1') {
+        ctx.drawImage(spr, cx, cy, tw, th);
+      }
       terrain_drawn = true;
     }
   }
 
   if (!terrain_drawn) {
-    var color = '#334';
-    if (pterrain) {
-      color = map2d_terrain_colors[pterrain['graphic_str']] || '#334';
-    }
-    ctx.fillStyle = color;
+    ctx.fillStyle = (pterrain && map2d_terrain_colors[g])
+                    ? map2d_terrain_colors[g] : '#334';
     ctx.fillRect(cx, cy, tw, th);
   }
 
-  /* --- Fog of war overlay --- */
+  /* Step 3 – fog of war overlay */
   if (known === TILE_KNOWN_UNSEEN) {
     ctx.fillStyle = 'rgba(0,0,0,0.55)';
     ctx.fillRect(cx, cy, tw, th);
-    return; /* Don't draw units/cities under deep fog */
   }
+}
 
-  /* --- Extras: irrigation, mine, roads, railroads, fortress, hut --- */
+/* ------------------------------------------------------------------ */
+/*  Per-tile rendering (legacy stub – rendering now done in layers)    */
+/* ------------------------------------------------------------------ */
+
+/**
+ * @deprecated  Use render_2d_map() which calls the individual layer
+ *              renderers.  This stub is retained for API compatibility.
+ */
+function render_2d_tile(ctx, ptile, cx, cy, tw, th)
+{
+  map2d_render_terrain(ctx, ptile, cx, cy, tw, th);
+  if (!ptile || tile_get_known(ptile) !== TILE_KNOWN_SEEN) return;
   map2d_draw_tile_extras(ctx, ptile, cx, cy, tw, th);
-
-  /* --- Territory border --- */
   map2d_draw_border(ctx, ptile, cx, cy, tw, th);
-
-  /* --- City --- */
   var pcity = tile_city(ptile);
-  if (pcity != null) {
-    map2d_draw_city(ctx, pcity, cx, cy, tw, th);
-  }
-
-  /* --- Unit (topmost unit on tile) --- */
+  if (pcity) map2d_draw_city(ctx, pcity, cx, cy, tw, th);
   var punits = tile_units(ptile);
   if (punits && punits.length > 0) {
     map2d_draw_unit(ctx, punits[0], cx, cy, tw, th);
-    if (punits.length > 1) {
-      map2d_draw_unit_count(ctx, punits.length, cx, cy, tw, th);
-    }
+    if (punits.length > 1) map2d_draw_unit_count(ctx, punits.length, cx, cy, tw, th);
   }
 }
 
@@ -395,14 +468,14 @@ function render_2d_tile(ctx, ptile, cx, cy, tw, th)
 
 function map2d_draw_city(ctx, pcity, cx, cy, tw, th)
 {
-  /* Try to draw the city sprite from the loaded tileset */
-  if (sprites_init) {
-    var city_sprite = sprites['city.medium_coastal_city']
-                   || sprites['city.medium_city']
-                   || sprites['city.small_city'];
+  /* Try city sprites from the trident tileset (style_city_0 variants) */
+  if (sprites_2d_init) {
+    var city_sprite = sprites_2d['city.european_city_0']
+                   || sprites_2d['city.classical_city_0']
+                   || sprites_2d['city.industrial_city_0']
+                   || sprites_2d['city.modern_city_0'];
     if (city_sprite) {
       ctx.drawImage(city_sprite, cx, cy, tw, th);
-      map2d_draw_city_label(ctx, pcity, cx, cy, tw, th);
       return;
     }
   }
@@ -413,31 +486,50 @@ function map2d_draw_city(ctx, pcity, cx, cy, tw, th)
   ctx.beginPath();
   ctx.arc(cx + tw / 2, cy + th / 2, r, 0, 2 * Math.PI);
   ctx.fill();
-
-  map2d_draw_city_label(ctx, pcity, cx, cy, tw, th);
 }
 
 function map2d_draw_city_label(ctx, pcity, cx, cy, tw, th)
 {
   if (tw < 20) return; /* too small to be readable */
-  var name = pcity['name'] || '';
-  ctx.font = Math.max(8, Math.floor(th * 0.45)) + 'px sans-serif';
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'top';
-  ctx.fillStyle = '#ffffff';
-  ctx.strokeStyle = '#000000';
-  ctx.lineWidth = 2;
-  ctx.strokeText(name, cx + tw / 2, cy + th + 1);
-  ctx.fillText(name, cx + tw / 2, cy + th + 1);
+  var name      = pcity['name'] || '';
+  var font_size = Math.max(8, Math.floor(th * 0.45));
+  var label_y   = cy + th + 1;
+  var label_cx  = cx + tw / 2;
+
+  /* Draw nation flag/shield to the left of the city name */
+  var flag_drawn_w = 0;
+  if (sprites_2d_init && typeof get_city_flag_sprite === 'function') {
+    var flag_info = get_city_flag_sprite(pcity);
+    if (flag_info && flag_info['key']) {
+      var flag_spr = sprites_2d[flag_info['key']];
+      if (flag_spr) {
+        var fh = Math.max(8, font_size);
+        var fw = Math.round(fh * flag_spr.width / Math.max(1, flag_spr.height));
+        var fx = Math.floor(label_cx - fw / 2 - fw - 2);
+        ctx.drawImage(flag_spr, fx, label_y, fw, fh);
+        flag_drawn_w = fw + 2;
+      }
+    }
+  }
+
+  ctx.font          = font_size + 'px sans-serif';
+  ctx.textAlign     = 'center';
+  ctx.textBaseline  = 'top';
+  ctx.strokeStyle   = '#000000';
+  ctx.lineWidth     = 2;
+  ctx.strokeText(name, label_cx + flag_drawn_w / 2, label_y);
+  ctx.fillStyle     = '#ffffff';
+  ctx.fillText(name, label_cx + flag_drawn_w / 2, label_y);
 }
 
 function map2d_draw_unit(ctx, punit, cx, cy, tw, th)
 {
-  /* Try unit sprite */
-  if (sprites_init) {
+  /* Try unit sprite from the trident tileset */
+  if (sprites_2d_init) {
     var tag = tileset_unit_graphic_tag(punit);
-    if (tag && sprites[tag]) {
-      ctx.drawImage(sprites[tag], cx, cy, tw, th);
+    if (tag && sprites_2d[tag]) {
+      ctx.drawImage(sprites_2d[tag], cx, cy, tw, th);
+      map2d_draw_unit_shield(ctx, punit, cx, cy, tw, th);
       return;
     }
   }
@@ -446,6 +538,27 @@ function map2d_draw_unit(ctx, punit, cx, cy, tw, th)
   var us = Math.max(4, Math.floor(Math.min(tw, th) * 0.4));
   ctx.fillStyle = map2d_player_color(punit['owner'], '#ffff00');
   ctx.fillRect(cx + Math.floor((tw - us) / 2), cy + Math.floor((th - us) / 2), us, us);
+  map2d_draw_unit_shield(ctx, punit, cx, cy, tw, th);
+}
+
+/**
+ * Draw a small nation shield/flag badge in the top-left of the unit tile.
+ */
+function map2d_draw_unit_shield(ctx, punit, cx, cy, tw, th)
+{
+  if (!sprites_2d_init || tw < 12) return;
+  var owner_id = punit['owner'];
+  if (owner_id == null) return;
+  var pplayer = players[owner_id];
+  if (!pplayer) return;
+  var nation = nations[pplayer['nation']];
+  if (!nation) return;
+  var shield_tag = 'f.shield.' + nation['graphic_str'];
+  var shield_spr = sprites_2d[shield_tag];
+  if (!shield_spr) return;
+  var sh = Math.max(6, Math.floor(th * 0.35));
+  var sw = Math.round(sh * shield_spr.width / Math.max(1, shield_spr.height));
+  ctx.drawImage(shield_spr, cx + 1, cy + 1, sw, sh);
 }
 
 /* ------------------------------------------------------------------ */
@@ -519,7 +632,7 @@ function map2d_draw_tile_extras(ctx, ptile, cx, cy, tw, th)
 
   /* --- Irrigation (light blue diagonal lines) --- */
   if (typeof EXTRA_IRRIGATION !== 'undefined' && tile_has_extra(ptile, EXTRA_IRRIGATION)) {
-    var spr = sprites_init && sprites['tx.irrigation'];
+    var spr = sprites_2d_init && sprites_2d['tx.irrigation'];
     if (spr) {
       ctx.drawImage(spr, cx, cy, tw, th);
     } else {
@@ -536,7 +649,7 @@ function map2d_draw_tile_extras(ctx, ptile, cx, cy, tw, th)
 
   /* --- Mine (small gray M symbol) --- */
   if (typeof EXTRA_MINE !== 'undefined' && tile_has_extra(ptile, EXTRA_MINE)) {
-    var spr = sprites_init && sprites['tx.mine'];
+    var spr = sprites_2d_init && sprites_2d['tx.mine'];
     if (spr) {
       ctx.drawImage(spr, cx, cy, tw, th);
     } else {
@@ -550,7 +663,7 @@ function map2d_draw_tile_extras(ctx, ptile, cx, cy, tw, th)
 
   /* --- Fortress (thin dark border) --- */
   if (typeof EXTRA_FORTRESS !== 'undefined' && tile_has_extra(ptile, EXTRA_FORTRESS)) {
-    var spr = sprites_init && sprites['base.fortress_fg'];
+    var spr = sprites_2d_init && sprites_2d['base.fortress_fg'];
     if (spr) {
       ctx.drawImage(spr, cx, cy, tw, th);
     } else {
@@ -562,7 +675,7 @@ function map2d_draw_tile_extras(ctx, ptile, cx, cy, tw, th)
 
   /* --- Pollution (dark red dots) --- */
   if (typeof EXTRA_POLLUTION !== 'undefined' && tile_has_extra(ptile, EXTRA_POLLUTION)) {
-    var spr = sprites_init && sprites['tx.pollution'];
+    var spr = sprites_2d_init && sprites_2d['tx.pollution'];
     if (spr) {
       ctx.drawImage(spr, cx, cy, tw, th);
     } else {
@@ -573,7 +686,7 @@ function map2d_draw_tile_extras(ctx, ptile, cx, cy, tw, th)
 
   /* --- Hut / minor tribe village --- */
   if (typeof EXTRA_HUT !== 'undefined' && tile_has_extra(ptile, EXTRA_HUT)) {
-    var spr = sprites_init && sprites['tx.village'];
+    var spr = sprites_2d_init && sprites_2d['tx.village'];
     if (spr) {
       ctx.drawImage(spr, cx, cy, tw, th);
     } else {
@@ -668,7 +781,7 @@ function map2d_draw_road_lines(ctx, ptile, cx, cy, tw, th, is_rail)
 /* ------------------------------------------------------------------ */
 
 /**
- * Draw a thin colored border on tile edges that border a different owner.
+ * Draw a dashed colored border on tile edges that border a different owner.
  */
 function map2d_draw_border(ctx, ptile, cx, cy, tw, th)
 {
@@ -679,9 +792,10 @@ function map2d_draw_border(ctx, ptile, cx, cy, tw, th)
   if (!border_color) return;
 
   ctx.save();
-  ctx.strokeStyle = border_color;
-  ctx.lineWidth = Math.max(1, Math.floor(tw * 0.08));
-  ctx.globalAlpha = 0.6;
+  ctx.strokeStyle  = border_color;
+  ctx.lineWidth    = Math.max(1, Math.floor(tw * 0.08));
+  ctx.globalAlpha  = 0.6;
+  ctx.setLineDash([Math.max(2, Math.floor(tw * 0.2)), Math.max(2, Math.floor(tw * 0.12))]);
 
   var edges = [
     {dx: 0,  dy: -1, x1: cx,      y1: cy,      x2: cx + tw, y2: cy     },  /* N */
@@ -701,7 +815,7 @@ function map2d_draw_border(ctx, ptile, cx, cy, tw, th)
       ctx.stroke();
       continue;
     }
-    var ntile = map_pos_to_tile(nx, ny);
+    var ntile  = map_pos_to_tile(nx, ny);
     var nowner = ntile ? tile_owner(ntile) : null;
     if (nowner !== owner) {
       ctx.beginPath();
@@ -752,8 +866,8 @@ function map2d_tile_from_event(e)
   var px = e.clientX - rect.left;
   var py = e.clientY - rect.top;
 
-  var tw = Math.max(1, Math.floor(normal_tile_width  * map2d_zoom));
-  var th = Math.max(1, Math.floor(normal_tile_height * map2d_zoom));
+  var tw = Math.max(1, Math.floor(map2d_tileset_config['normal_tile_width']  * map2d_zoom));
+  var th = Math.max(1, Math.floor(map2d_tileset_config['normal_tile_height'] * map2d_zoom));
 
   var cw = map2d_canvas.width;
   var ch = map2d_canvas.height;
