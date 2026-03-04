@@ -37,22 +37,42 @@ freeciv_data_dir = path.join(freeciv_dir, "data")
 
 gfxdir = freeciv_data_dir
 
-misc_files = [
-  "wonders-large.spec",
-  "colors.tilespec",
-  "buildings-large.spec",
-  "overlays.spec",
-  "shields-large.spec",
-  "small.spec",
-  "governments.spec",
-  "specialists.spec",
-  "space.spec",
-  "editor.spec",
-  "techs.spec",
-  "flags-large.spec",
-  "treaty.spec",
-  "citybar.spec"
-]
+misc_files = {
+  "amplio2": [
+    "wonders-large.spec",
+    "colors.tilespec",
+    "buildings-large.spec",
+    "overlays.spec",
+    "shields-large.spec",
+    "small.spec",
+    "governments.spec",
+    "specialists.spec",
+    "space.spec",
+    "editor.spec",
+    "techs.spec",
+    "flags-large.spec",
+    "treaty.spec",
+    "citybar.spec"
+  ],
+  "trident": [
+    "colors.tilespec",
+    "overlays.spec",
+    "citybar.spec",
+    "small.spec",
+    "events.spec",
+    "governments.spec",
+    "specialists.spec",
+    "flags.spec",
+    "shields.spec",
+    "cursors.spec",
+    "buildings.spec",
+    "space.spec",
+    "techs.spec",
+    "treaty.spec",
+    "icons.spec",
+    "editor.spec"
+  ]
+}
 spec_files = {
   "amplio2" : [
     "terrain1.spec",
@@ -68,12 +88,25 @@ spec_files = {
     "upkeep.spec",
     "veterancy.spec",
     "extra_units.spec"
-   ]
+   ],
+  "trident" : [
+    "tiles.spec",
+    "earth.spec",
+    "units.spec",
+    "extra_units.spec",
+    "select.spec",
+    "grid.spec",
+    "roads.spec",
+    "fog.spec",
+    "cities.spec",
+    "explosions.spec",
+    "auto_ll.spec"
+  ]
 }
 def expand_spec_files(name, file_names):
   files = [path.join(freeciv_data_dir, name + ".tilespec")]
   files.extend([path.join(freeciv_data_dir, name, f) for f in file_names])
-  files.extend([path.join(freeciv_data_dir, "misc", f) for f in misc_files])
+  files.extend([path.join(freeciv_data_dir, "misc", f) for f in misc_files[name]])
   return files
 
 files = {k: expand_spec_files(k, v) for k,v in spec_files.items()}
@@ -317,6 +350,7 @@ if verbose: print("MAX: " + str(max_width) + "  " + str(max_height) + "  " + str
 for tileset_id in files.keys():
   tileset_file = 'tileset_spec_' + tileset_id + '.js'
   f = open(path.join(out_dir, tileset_file), 'w')
-  f.write("var tileset = " + json.dumps(coords[tileset_id], separators=(',', ':')) + ";")
+  prefixed_coords = {tileset_id + "." + k: v for k, v in coords[tileset_id].items()}
+  f.write("var tileset = " + json.dumps(prefixed_coords, separators=(',', ':')) + ";")
 
 print("Freeciv-img-extract creating tilesets complete.");

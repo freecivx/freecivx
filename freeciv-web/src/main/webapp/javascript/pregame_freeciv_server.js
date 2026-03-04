@@ -291,7 +291,7 @@ function pick_nation(player_id)
       var flag_canvas_ctx = flag_canvas.getContext("2d");
       var tag = "f." + pnation['graphic_str'];
 
-      if (tileset[tag] == null) continue;
+      if (tileset[tileset_name + "." + tag] == null) continue;
 
       flag_canvas_ctx.drawImage(sprites[tag], 0, 0);
     }

@@ -105,6 +105,15 @@ function tileset_has_tag(tagname)
 }
 
 /**************************************************************************
+  Returns the tileset data array for the given bare tag name,
+  automatically prepending the active tileset name prefix.
+**************************************************************************/
+function get_tileset_entry(tag)
+{
+  return tileset[tileset_name + "." + tag];
+}
+
+/**************************************************************************
   Returns the tag name of the sprite of a ruleset entity where the
   preferred tag name is in the 'graphic_str' field, the fall back tag in
   case the tileset don't support the first tag is the 'graphic_alt' field
@@ -567,11 +576,13 @@ function get_unit_type_image_sprite(punittype)
     return null;
   }
 
-  var tileset_x = tileset[tag][0];
-  var tileset_y = tileset[tag][1];
-  var width = tileset[tag][2];
-  var height = tileset[tag][3];
-  var i = tileset[tag][4];
+  var entry = get_tileset_entry(tag);
+  if (entry == null) return null;
+  var tileset_x = entry[0];
+  var tileset_y = entry[1];
+  var width = entry[2];
+  var height = entry[3];
+  var i = entry[4];
   return {"tag": tag,
             "image-src" : "/tileset/freeciv-web-tileset-" + tileset_name + "-" + i + get_tileset_file_extention() + "?ts=" + ts,
             "tileset-x" : tileset_x,
@@ -592,11 +603,13 @@ function get_improvement_image_sprite(pimprovement)
     return null;
   }
 
-  var tileset_x = tileset[tag][0];
-  var tileset_y = tileset[tag][1];
-  var width = tileset[tag][2];
-  var height = tileset[tag][3];
-  var i = tileset[tag][4];
+  var entry = get_tileset_entry(tag);
+  if (entry == null) return null;
+  var tileset_x = entry[0];
+  var tileset_y = entry[1];
+  var width = entry[2];
+  var height = entry[3];
+  var i = entry[4];
   return {"tag": tag,
             "image-src" : "/tileset/freeciv-web-tileset-" + tileset_name + "-" + i + get_tileset_file_extention() + "?ts=" + ts,
             "tileset-x" : tileset_x,
@@ -611,13 +624,14 @@ function get_improvement_image_sprite(pimprovement)
 ****************************************************************************/
 function get_specialist_image_sprite(tag)
 {
-  if (tileset[tag] == null) return null;
+  var entry = get_tileset_entry(tag);
+  if (entry == null) return null;
 
-  var tileset_x = tileset[tag][0];
-  var tileset_y = tileset[tag][1];
-  var width = tileset[tag][2];
-  var height = tileset[tag][3];
-  var i = tileset[tag][4];
+  var tileset_x = entry[0];
+  var tileset_y = entry[1];
+  var width = entry[2];
+  var height = entry[3];
+  var i = entry[4];
   return {"tag": tag,
             "image-src" : "/tileset/freeciv-web-tileset-" + tileset_name + "-" + i + get_tileset_file_extention() + "?ts=" + ts,
             "tileset-x" : tileset_x,
@@ -637,11 +651,13 @@ function get_technology_image_sprite(ptech)
 
   if (tag == null) return null;
 
-  var tileset_x = tileset[tag][0];
-  var tileset_y = tileset[tag][1];
-  var width = tileset[tag][2];
-  var height = tileset[tag][3];
-  var i = tileset[tag][4];
+  var entry = get_tileset_entry(tag);
+  if (entry == null) return null;
+  var tileset_x = entry[0];
+  var tileset_y = entry[1];
+  var width = entry[2];
+  var height = entry[3];
+  var i = entry[4];
   return {"tag": tag,
             "image-src" : "/tileset/freeciv-web-tileset-" + tileset_name + "-" + i + get_tileset_file_extention() + "?ts=" + ts,
             "tileset-x" : tileset_x,
@@ -658,13 +674,14 @@ function get_nation_flag_sprite(pnation)
 {
   var tag = "f." + pnation['graphic_str'];
 
-  if (tileset[tag] == null) return null;
+  var entry = get_tileset_entry(tag);
+  if (entry == null) return null;
 
-  var tileset_x = tileset[tag][0];
-  var tileset_y = tileset[tag][1];
-  var width = tileset[tag][2];
-  var height = tileset[tag][3];
-  var i = tileset[tag][4];
+  var tileset_x = entry[0];
+  var tileset_y = entry[1];
+  var width = entry[2];
+  var height = entry[3];
+  var i = entry[4];
   return {"tag": tag,
             "image-src" : "/tileset/freeciv-web-tileset-" + tileset_name + "-" + i + get_tileset_file_extention() + "?ts=" + ts,
             "tileset-x" : tileset_x,
@@ -681,11 +698,13 @@ function get_treaty_agree_thumb_up()
 {
   var tag = "treaty.agree_thumb_up";
 
-  var tileset_x = tileset[tag][0];
-  var tileset_y = tileset[tag][1];
-  var width = tileset[tag][2];
-  var height = tileset[tag][3];
-  var i = tileset[tag][4];
+  var entry = get_tileset_entry(tag);
+  if (entry == null) return null;
+  var tileset_x = entry[0];
+  var tileset_y = entry[1];
+  var width = entry[2];
+  var height = entry[3];
+  var i = entry[4];
   return {"tag": tag,
             "image-src" : "/tileset/freeciv-web-tileset-" + tileset_name + "-" + i + get_tileset_file_extention() + "?ts=" + ts,
             "tileset-x" : tileset_x,
@@ -702,11 +721,13 @@ function get_treaty_disagree_thumb_down()
 {
   var tag = "treaty.disagree_thumb_down";
 
-  var tileset_x = tileset[tag][0];
-  var tileset_y = tileset[tag][1];
-  var width = tileset[tag][2];
-  var height = tileset[tag][3];
-  var i = tileset[tag][4];
+  var entry = get_tileset_entry(tag);
+  if (entry == null) return null;
+  var tileset_x = entry[0];
+  var tileset_y = entry[1];
+  var width = entry[2];
+  var height = entry[3];
+  var i = entry[4];
   return {"tag": tag,
             "image-src" : "/tileset/freeciv-web-tileset-" + tileset_name + "-" + i + get_tileset_file_extention() + "?ts=" + ts,
             "tileset-x" : tileset_x,
@@ -730,8 +751,10 @@ function assign_nation_color(nation_id)
   var flag_sprite = sprites[flag_key];
   if (flag_sprite == null) return;
   var c = flag_sprite.getContext('2d');
-  var width = tileset[flag_key][2];
-  var height = tileset[flag_key][3];
+  var flag_entry = get_tileset_entry(flag_key);
+  if (flag_entry == null) return;
+  var width = flag_entry[2];
+  var height = flag_entry[3];
   var color_counts = {};
   /* gets the flag image data, except for the black border. */
   if (c == null) return;

@@ -17,10 +17,9 @@ TILESET_DEST="${WEBAPP_DIR}/tileset"
 SPEC_DEST="${WEBAPP_DIR}/javascript/2dcanvas"
 FLAG_DEST="${WEBAPP_DIR}/images/flags"
 
-TEMP_DIR=$(mktemp -d -t 'freeciv-img-extract.XXX')
-
 echo "running Freeciv-img-extract..."
-echo "  extracting to ${TEMP_DIR}"
+echo "  extracting to ${TILESET_DEST}"
+echo "  generating tilesets: amplio2 and trident"
 mkdir -p "${TILESET_DEST}" "${SPEC_DEST}" "${FLAG_DEST}" &&
 python3 "${DIR}"/img-extract.py -f "${FREECIV_DIR}" -o "${TILESET_DEST}" &&
 cp "${TILESET_DEST}"/tileset_spec_*.js "${SPEC_DEST}" &&
