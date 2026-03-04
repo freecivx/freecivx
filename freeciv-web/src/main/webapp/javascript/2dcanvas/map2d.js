@@ -200,6 +200,7 @@ function init_2d_map_canvas()
   map2d_canvas.addEventListener('mousemove', function(e) {
     /* Track tile under cursor for context menu and click handling */
     map2d_mouse_tile = map2d_tile_from_event(e);
+    map2d_update_mouse_cursor();
 
     if (!map2d_drag_active) return;
     map2d_drag_moved = true;
@@ -214,7 +215,7 @@ function init_2d_map_canvas()
 
   map2d_canvas.addEventListener('mouseup',   function() {
     map2d_drag_active = false;
-    map2d_canvas.style.cursor = 'grab';
+    map2d_update_mouse_cursor();
   });
   map2d_canvas.addEventListener('mouseleave', function() {
     map2d_drag_active = false;
@@ -222,14 +223,16 @@ function init_2d_map_canvas()
   });
   map2d_canvas.style.cursor = 'grab';
 
-  /* Arrow-key panning (canvas must be focusable) */
+  /* Arrow-key panning (canvas must be focusable).
+   * stopPropagation prevents arrow keys from also triggering unit-movement
+   * commands in the global keyboard listener. */
   map2d_canvas.setAttribute('tabindex', '0');
   map2d_canvas.addEventListener('keydown', function(e) {
     var step = 3;
-    if (e.key === 'ArrowLeft')  { map2d_center_x -= step; render_2d_map(); e.preventDefault(); }
-    if (e.key === 'ArrowRight') { map2d_center_x += step; render_2d_map(); e.preventDefault(); }
-    if (e.key === 'ArrowUp')    { map2d_center_y -= step; render_2d_map(); e.preventDefault(); }
-    if (e.key === 'ArrowDown')  { map2d_center_y += step; render_2d_map(); e.preventDefault(); }
+    if (e.key === 'ArrowLeft')  { map2d_center_x -= step; render_2d_map(); e.preventDefault(); e.stopPropagation(); return; }
+    if (e.key === 'ArrowRight') { map2d_center_x += step; render_2d_map(); e.preventDefault(); e.stopPropagation(); return; }
+    if (e.key === 'ArrowUp')    { map2d_center_y -= step; render_2d_map(); e.preventDefault(); e.stopPropagation(); return; }
+    if (e.key === 'ArrowDown')  { map2d_center_y += step; render_2d_map(); e.preventDefault(); e.stopPropagation(); return; }
     if (e.key === '+')          { map2d_zoom = Math.min(6, map2d_zoom * 1.2); render_2d_map(); }
     if (e.key === '-')          { map2d_zoom = Math.max(0.3, map2d_zoom / 1.2); render_2d_map(); }
   });
@@ -638,48 +641,56 @@ function map2d_schedule_render()
 }
 
 /**
+ * Update the mouse cursor on the 2D map canvas based on the tile under the
+ * pointer.  Mirrors the logic of update_mouse_cursor() for the 3D map:
+ *  – 'grabbing'   while dragging (panning the map)
+ *  – 'crosshair'  when a valid goto destination is highlighted
+ *  – 'not-allowed' when goto is active but no valid path exists
+ *  – 'pointer'    when hovering over an own city or own unit
+ *  – 'grab'       (default) everywhere else
+ */
+function map2d_update_mouse_cursor()
+{
+  if (!map2d_canvas) return;
+  if (map2d_drag_active) {
+    map2d_canvas.style.cursor = 'grabbing';
+    return;
+  }
+  if (typeof goto_active !== 'undefined' && goto_active) {
+    map2d_canvas.style.cursor =
+      (typeof current_goto_turns !== 'undefined' && current_goto_turns != null)
+        ? 'crosshair' : 'not-allowed';
+    return;
+  }
+  var ptile = map2d_mouse_tile;
+  if (ptile != null && typeof client !== 'undefined'
+      && client.conn && client.conn.playing != null) {
+    var pcity = (typeof tile_city === 'function') ? tile_city(ptile) : null;
+    if (pcity != null && typeof city_owner_player_id === 'function'
+        && city_owner_player_id(pcity) == client.conn.playing.playerno) {
+      map2d_canvas.style.cursor = 'pointer';
+      return;
+    }
+    var punit = (typeof find_visible_unit === 'function') ? find_visible_unit(ptile) : null;
+    if (punit != null && punit['owner'] == client.conn.playing.playerno) {
+      map2d_canvas.style.cursor = 'pointer';
+      return;
+    }
+  }
+  map2d_canvas.style.cursor = 'grab';
+}
+
+/**
  * Handle a left-click on the 2D map canvas.
  *
- * Mirrors the logic in do_map_click() for the 3D map:
- *  – If goto is active, send the focused unit(s) to the clicked tile.
- *  – If a city owned by the player is on the tile, open the city dialog.
- *  – Otherwise focus the top unit on the tile.
+ * Delegates entirely to do_map_click() so that all game actions (goto,
+ * city dialog, unit focus, paradrop, airlift, …) behave identically to
+ * the 3D map.
  */
 function map2d_handle_tile_click(ptile)
 {
   if (ptile == null) return;
-  if (typeof client_is_observer === 'function' && client_is_observer()) return;
-
-  /* Delegate goto path execution to the shared do_map_click handler. */
-  if (typeof goto_active !== 'undefined' && goto_active) {
-    if (typeof do_map_click === 'function') {
-      do_map_click(ptile, SELECT_POPUP, true); /* SELECT_POPUP: show context if same tile */
-    }
-    render_2d_map();
-    return;
-  }
-
-  var pcity  = tile_city(ptile);
-  var punits = tile_units(ptile);
-
-  /* Click on own city: show city dialog (or focus idle unit if present). */
-  if (pcity != null && client.conn.playing != null
-      && pcity['owner'] == client.conn.playing.playerno) {
-    if (punits && punits.length > 0
-        && typeof ACTIVITY_IDLE !== 'undefined'
-        && punits[0]['activity'] == ACTIVITY_IDLE) {
-      if (typeof unit_focus_set === 'function') unit_focus_set(punits[0]);
-    } else {
-      if (typeof show_city_dialog === 'function') show_city_dialog(pcity);
-    }
-    render_2d_map();
-    return;
-  }
-
-  /* Click on a tile with units: focus the top unit. */
-  if (punits && punits.length > 0) {
-    if (typeof unit_focus_set === 'function') unit_focus_set(punits[0]);
-  }
+  do_map_click(ptile, SELECT_POPUP, true);
   render_2d_map();
 }
 
@@ -994,8 +1005,8 @@ function map2d_show_context_menu(e)
   /* Focus any unit on the clicked tile */
   if (map2d_mouse_tile != null) {
     var punits = tile_units(map2d_mouse_tile);
-    if (punits && punits.length > 0 && typeof unit_focus_set === 'function') {
-      unit_focus_set(punits[0]);
+    if (punits && punits.length > 0 && typeof set_unit_focus === 'function') {
+      set_unit_focus(punits[0]);
     }
   }
 
