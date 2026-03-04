@@ -63,11 +63,6 @@ $(document).ready(function() {
 **************************************************************************/
 function civclient_init()
 {
-  if (!navigator.gpu) {
-    swal("WebGPU is not supported by your browser.");
-    
-  }
-
   $("#introtxtja").hide();
 
   $.blockUI.defaults['css']['backgroundColor'] = "#222";

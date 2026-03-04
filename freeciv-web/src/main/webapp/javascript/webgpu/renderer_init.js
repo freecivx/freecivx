@@ -26,6 +26,11 @@ var terrain_quality = 8; // 8 is slow, 7 has problems with rivers.
 
 var anaglyph_3d_enabled = false;
 
+// When true, only the 2D map renderer is used (no WebGPU or mobile device).
+var use_2d_only = false;
+
+var DEFAULT_CAMERA_HEIGHT = 450; // default 3D camera Y position
+
 // stats is defined in webgpu/mapview_common.js
 
 /****************************************************************************
@@ -33,10 +38,15 @@ var anaglyph_3d_enabled = false;
 ****************************************************************************/
 function init_webgl_renderer()
 {
-  // WebGPU is required - no WebGL fallback
-  if (!navigator.gpu) {
-    console.log("WebGPU not supported by browser. maybe WebGL fallback will work, but WebGPU is required for the best experience.");
-    $("#intro_extra_txt").text("WebGPU is not supported by your browser.");
+  if (!navigator.gpu || is_small_screen()) {
+    use_2d_only = true;
+    if (!navigator.gpu) {
+      console.log("WebGPU not supported by browser, using 2D map renderer.");
+      $("#intro_extra_txt").text("WebGPU is not supported by your browser. The 2D map will be used.");
+    } else {
+      console.log("Mobile device detected, using 2D map renderer.");
+    }
+    return;
   }
 
   renderer_type = "webgpu";
@@ -65,14 +75,24 @@ function webgl_preload_complete()
 }
 
 /****************************************************************************
- Init the map renderer (WebGPU only)
+ Init the map renderer.  Uses 2D-only mode when WebGPU is unavailable or
+ the device is a small/mobile screen.
  ****************************************************************************/
 async function renderer_init() {
   console.log("renderer_init()");
 
-  if (!navigator.gpu) {
-    console.log("WebGPU not supported by browser");
-    $("#intro_extra_txt").text("WebGPU is not supported by your browser.");
+  if (use_2d_only) {
+    // Hide the 3D map tab and activate the 2D map tab.
+    $("#map_tab").hide();
+    $("#tabs").tabs("option", "active", 1);
+    init_game_unit_panel();
+    init_chatbox();
+    setTimeout(function() {
+      advance_unit_focus();
+      $("#game_text_input").blur();
+    }, 100);
+    setTimeout(function() { $.unblockUI(); }, 700);
+    return;
   }
 
   renderer_type = "webgpu";
@@ -104,8 +124,7 @@ async function renderer_init() {
     // This addresses timing issues where the camera position might not be set
     // correctly if units aren't available yet
     setTimeout(function() {
-      // On mobile, zoom out more (50% scale) to fit more on screen
-      camera.position.y = is_small_screen() ? 900 : 450;
+      camera.position.y = DEFAULT_CAMERA_HEIGHT;
       advance_unit_focus();
       $("#game_text_input").blur();
     }, 100);
