@@ -37,7 +37,7 @@ tileset_confg['trident'] = {
   "tile_width"        : 30,
   "tile_height"       : 30,
   "name"              : "trident",
-  "image_count"       : 2,
+  "image_count"       : 1,
   "normal_tile_width" : 30,
   "normal_tile_height": 30,
   "small_tile_width"  : 15,
