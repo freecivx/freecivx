@@ -57,9 +57,8 @@ function handle_thaw_hint(packet)
 /* 100% */
 function handle_ruleset_terrain(packet)
 {
-  /* FIXME: These two hacks are there since Freeciv-web doesn't support rendering Lake and Glacier correctly. */
+  /* FIXME: Lake is not rendered correctly, so fall back to its alt graphic. */
   if (packet['name'] == "Lake") packet['graphic_str'] = packet['graphic_alt'];
-  if (packet['name'] == "Glacier") packet['graphic_str'] = "tundra";
   terrains[packet['id']] = packet;
 }
 
@@ -192,6 +191,7 @@ function handle_tile_info(packet)
     update_roads_tile(tiles[packet['tile']], true);
     update_tiletypes_tile(tiles[packet['tile']]);
 
+    if (typeof map2d_schedule_render === 'function') map2d_schedule_render();
   }
 }
 
@@ -392,6 +392,8 @@ function handle_web_city_info_addition(packet)
   /* Update the cities info tab */
   city_screen_updater();
   bulbs_output_updater();
+
+  if (typeof map2d_schedule_render === 'function') map2d_schedule_render();
 }
 
 /* 99% complete
@@ -415,6 +417,8 @@ function handle_city_short_info(packet)
   /* Update the cities info tab */
   city_screen_updater();
   bulbs_output_updater();
+
+  if (typeof map2d_schedule_render === 'function') map2d_schedule_render();
 }
 
 /**************************************************************************
@@ -930,6 +934,7 @@ function handle_unit_packet_common(packet_unit)
   update_unit_position(index_to_tile(units[packet_unit['id']]['tile']));
 
   /* TODO: update various dialogs and mapview. */
+  if (typeof map2d_schedule_render === 'function') map2d_schedule_render();
 }
 
 function handle_unit_combat_info(packet)

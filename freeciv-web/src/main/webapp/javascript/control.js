@@ -224,8 +224,7 @@ function control_init()
   });
 
   $("#map_2d_tab").click(function(event) {
-    set_default_mapview_inactive();
-    setTimeout(render_2d_map, 5);
+    set_default_mapview_2d_active();
   });
 
 
