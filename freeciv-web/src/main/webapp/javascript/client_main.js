@@ -111,10 +111,12 @@ function setup_window_size ()
 
   $('#tabs').css("height", $(window).height());
   $("#tabs-map").height(new_mapview_height);
+  $("#tabs-2dmap").height(new_mapview_height);
 
   $("#city_viewport").height( new_mapview_height - 20);
 
   $("#tabs-map").css("overflow", "hidden");
+  $("#tabs-2dmap").css("overflow", "hidden");
 
   $(".chatbox_dialog").css("top", "52px");
 
@@ -285,7 +287,7 @@ function set_default_mapview_active()
 {
 
   var active_tab = $('#tabs').tabs('option', 'active');
-  if (active_tab == 4) { // cities dialog is active
+  if (active_tab == 5) { // cities dialog is active
     return;
   }
 
