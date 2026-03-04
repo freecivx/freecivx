@@ -1,0 +1,64 @@
+# 2D Canvas Map Renderer
+
+Classic top-down 2D map renderer for Freeciv-web, built on the HTML5 Canvas API.
+
+## Overview
+
+This module renders the Freeciv game map as a 2D top-down view using the **Trident** tileset
+(30×30 px tiles).  It runs alongside the main 3D WebGL/WebGPU renderer and is displayed in the
+**2D Map** tab of the in-game UI.
+
+## Files
+
+| File | Description |
+|------|-------------|
+| `map2d.js` | Core 2D map renderer.  Handles canvas initialisation, tile layout, multi-layer rendering, mouse/keyboard input (pan, zoom, click, context menu) and the deferred-repaint scheduler. |
+| `mapview.js` | Tileset sprite loader and cache.  Loads the active tileset image sheets via `Promise.all`, extracts individual sprite canvases into `sprites` (amplio2, used by the 3D renderer) and `sprites_2d` (trident, used by the 2D renderer). |
+| `tileset_config.js` | Tileset configuration objects for **amplio2** (default, 96×48 px isometric tiles) and **trident** (30×30 px top-down tiles).  Exports the global tileset variables consumed by the rest of the client. |
+| `tilespec.js` | Tileset layer constants (`LAYER_TERRAIN1` … `LAYER_COUNT`), darkness style constants, terrain-match flags, and sprite-tag helper functions (`tileset_has_tag`, `get_tileset_entry`, `tileset_unit_graphic_tag`, etc.). |
+
+## Rendering pipeline
+
+`render_2d_map()` is the main entry point.  It draws five ordered layers:
+
+1. **Terrain + fog** — grassland base tile beneath every land tile; directional Trident sprites for all other terrain types; solid colour fallback when sprites are not yet loaded.
+2. **Extras + territory borders** — roads, railroads, irrigation, mines, fortresses, and player-colour border overlays.
+3. **City sprites** — Trident city graphics scaled to the current zoom level.
+4. **Unit sprites + shield flags** — top unit on each tile; a count badge when multiple units are stacked.
+5. **City labels with nation flags** — always rendered last so they appear on top of everything else.
+
+An optional subtle grid is drawn after all layers via `map2d_draw_grid()`.
+
+## Tilesets
+
+| Name | Tile size | Used for |
+|------|-----------|----------|
+| `amplio2` | 96×48 px (isometric) | 3D renderer, city dialog, tech dialog |
+| `trident` | 30×30 px (top-down) | 2D canvas renderer |
+
+`tileset_config.js` is the single source of truth for tile dimensions.  The global
+`map2d_tileset_config` always points to the trident configuration.
+
+## Input handling
+
+The canvas supports:
+
+- **Mouse-wheel** — zoom in / out (0.3× – 6×)
+- **Mouse-drag** — pan the map
+- **Left-click** — select unit, open city dialog, or set goto destination
+- **Right-click** — context menu for tile actions
+- **Arrow keys** — pan (3 tiles per key press)
+- **`+` / `-`** — zoom in / out
+
+## Deferred rendering
+
+Rapid server packet bursts are coalesced into a single repaint via a 60 ms timer
+(`MAP2D_RENDER_DELAY_MS`).  Call `render_2d_map()` freely; redundant redraws are
+automatically suppressed.
+
+## Related modules
+
+- `javascript/webgpu/` — WebGPU 3D renderer for hexagonal map tiles
+- `javascript/webgpu_square/` — WebGPU 3D renderer for square map tiles
+- `javascript/map.js` — shared map data and coordinate helpers
+- `javascript/tile.js` — tile data accessors used by all renderers
