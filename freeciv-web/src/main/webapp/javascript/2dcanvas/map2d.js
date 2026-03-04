@@ -292,10 +292,11 @@ function map2d_resize_canvas()
 /**
  * Render the full 2D map onto the canvas using multiple layers:
  *   1. Terrain  (grassland base + directional overlay, or ocean)
- *   2. Extras + territory borders
- *   3. City sprites
- *   4. Unit sprites + shield flags
- *   5. City labels with nation flags  (always on top)
+ *   2. Extras   (roads, railroads, irrigation, mines, fortresses, …)
+ *   3. Territory borders  (dashed colored lines, separate layer)
+ *   4. City sprites
+ *   5. Unit sprites + shield flags
+ *   6. City labels with nation flags  (always on top)
  *
  * Safe to call at any time; returns silently if data is not ready yet.
  */
@@ -355,15 +356,21 @@ function render_2d_map()
     map2d_render_terrain(ctx, v.ptile, v.cx, v.cy, tw, th);
   }
 
-  /* --- Layer 2: extras + territory borders --- */
+  /* --- Layer 2: extras --- */
   for (i = 0; i < vis.length; i++) {
     v = vis[i];
     if (tile_get_known(v.ptile) !== TILE_KNOWN_SEEN) continue;
     map2d_draw_tile_extras(ctx, v.ptile, v.cx, v.cy, tw, th);
+  }
+
+  /* --- Layer 3: territory borders (dashed colored lines) --- */
+  for (i = 0; i < vis.length; i++) {
+    v = vis[i];
+    if (tile_get_known(v.ptile) !== TILE_KNOWN_SEEN) continue;
     map2d_draw_border(ctx, v.ptile, v.cx, v.cy, tw, th);
   }
 
-  /* --- Layer 3: city sprites --- */
+  /* --- Layer 4: city sprites --- */
   var city_label_queue = [];
   for (i = 0; i < vis.length; i++) {
     v = vis[i];
@@ -375,7 +382,7 @@ function render_2d_map()
     }
   }
 
-  /* --- Layer 4: unit sprites + shield flags --- */
+  /* --- Layer 5: unit sprites + shield flags --- */
   for (i = 0; i < vis.length; i++) {
     v = vis[i];
     if (tile_get_known(v.ptile) !== TILE_KNOWN_SEEN) continue;
@@ -388,7 +395,7 @@ function render_2d_map()
     }
   }
 
-  /* --- Layer 5: city labels with flags (always on top) --- */
+  /* --- Layer 6: city labels with flags (always on top) --- */
   for (i = 0; i < city_label_queue.length; i++) {
     var q = city_label_queue[i];
     map2d_draw_city_label(ctx, q.pcity, q.cx, q.cy, tw, th);
