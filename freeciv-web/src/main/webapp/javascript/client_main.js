@@ -285,6 +285,11 @@ function update_metamessage_game_running_status()
 **************************************************************************/
 function set_default_mapview_active()
 {
+  // In 2D-only mode (no WebGPU or mobile) redirect to the 2D map view.
+  if (typeof use_2d_only !== 'undefined' && use_2d_only) {
+    set_default_mapview_2d_active();
+    return;
+  }
 
   var active_tab = $('#tabs').tabs('option', 'active');
   if (active_tab == 5) { // cities dialog is active

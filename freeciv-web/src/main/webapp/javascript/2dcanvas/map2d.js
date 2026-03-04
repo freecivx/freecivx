@@ -41,13 +41,20 @@ var map2d_ctx      = null;
 var map2d_initialized = false;
 var map2d_zoom     = 1.0; /* zoom multiplier applied to the base tile size */
 
-/* Panning by mouse-drag */
+var MAP2D_MIN_ZOOM = 0.3; /* minimum zoom level */
+var MAP2D_MAX_ZOOM = 6;   /* maximum zoom level */
+
+/* Panning by mouse-drag / touch */
 var map2d_drag_active = false;
 var map2d_drag_start_x = 0;
 var map2d_drag_start_y = 0;
 var map2d_drag_center_x = 0;
 var map2d_drag_center_y = 0;
 var map2d_drag_moved = false;  /* true if the mouse moved during the current press */
+
+/* Pinch-zoom state (two-finger touch) */
+var map2d_pinch_start_dist = 0;
+var map2d_pinch_start_zoom = 1.0;
 
 /* Tile under the mouse cursor (for context menu) */
 var map2d_mouse_tile = null;
@@ -192,9 +199,9 @@ function init_2d_map_canvas()
   map2d_canvas.addEventListener('wheel', function(e) {
     e.preventDefault();
     if (e.deltaY < 0) {
-      map2d_zoom = Math.min(6, map2d_zoom * 1.15);
+      map2d_zoom = Math.min(MAP2D_MAX_ZOOM, map2d_zoom * 1.15);
     } else {
-      map2d_zoom = Math.max(0.3, map2d_zoom / 1.15);
+      map2d_zoom = Math.max(MAP2D_MIN_ZOOM, map2d_zoom / 1.15);
     }
     render_2d_map();
   }, { passive: false });
@@ -246,8 +253,8 @@ function init_2d_map_canvas()
     if (e.key === 'ArrowRight') { map2d_center_x += step; render_2d_map(); e.preventDefault(); e.stopPropagation(); return; }
     if (e.key === 'ArrowUp')    { map2d_center_y -= step; render_2d_map(); e.preventDefault(); e.stopPropagation(); return; }
     if (e.key === 'ArrowDown')  { map2d_center_y += step; render_2d_map(); e.preventDefault(); e.stopPropagation(); return; }
-    if (e.key === '+')          { map2d_zoom = Math.min(6, map2d_zoom * 1.2); render_2d_map(); }
-    if (e.key === '-')          { map2d_zoom = Math.max(0.3, map2d_zoom / 1.2); render_2d_map(); }
+    if (e.key === '+')          { map2d_zoom = Math.min(MAP2D_MAX_ZOOM, map2d_zoom * 1.2); render_2d_map(); }
+    if (e.key === '-')          { map2d_zoom = Math.max(MAP2D_MIN_ZOOM, map2d_zoom / 1.2); render_2d_map(); }
   });
 
   /* Left-click: unit selection, city dialog, or goto destination */
@@ -266,6 +273,71 @@ function init_2d_map_canvas()
     map2d_mouse_tile = map2d_tile_from_event(e);
     map2d_show_context_menu(e);
   });
+
+  /* ------------------------------------------------------------------
+   * Touch controls for mobile devices
+   * Single-finger drag = pan; two-finger pinch = zoom; tap = tile click
+   * ------------------------------------------------------------------ */
+  map2d_canvas.addEventListener('touchstart', function(e) {
+    e.preventDefault();
+    if (e.touches.length === 1) {
+      var t = e.touches[0];
+      map2d_drag_active   = true;
+      map2d_drag_moved    = false;
+      map2d_drag_start_x  = t.clientX;
+      map2d_drag_start_y  = t.clientY;
+      map2d_drag_center_x = map2d_center_x;
+      map2d_drag_center_y = map2d_center_y;
+    } else if (e.touches.length === 2) {
+      map2d_drag_active = false;
+      var t1 = e.touches[0];
+      var t2 = e.touches[1];
+      map2d_pinch_start_dist = Math.hypot(t2.clientX - t1.clientX, t2.clientY - t1.clientY);
+      map2d_pinch_start_zoom = map2d_zoom;
+    }
+  }, { passive: false });
+
+  map2d_canvas.addEventListener('touchmove', function(e) {
+    e.preventDefault();
+    if (e.touches.length === 1 && map2d_drag_active) {
+      var t = e.touches[0];
+      map2d_drag_moved = true;
+      var tw = Math.max(1, Math.floor(map2d_tileset_config['normal_tile_width']  * map2d_zoom));
+      var th = Math.max(1, Math.floor(map2d_tileset_config['normal_tile_height'] * map2d_zoom));
+      var dx = Math.round((map2d_drag_start_x - t.clientX) / tw);
+      var dy = Math.round((map2d_drag_start_y - t.clientY) / th);
+      map2d_center_x = map2d_drag_center_x + dx;
+      map2d_center_y = map2d_drag_center_y + dy;
+      render_2d_map();
+    } else if (e.touches.length === 2 && map2d_pinch_start_dist > 0) {
+      var t1 = e.touches[0];
+      var t2 = e.touches[1];
+      var dist = Math.hypot(t2.clientX - t1.clientX, t2.clientY - t1.clientY);
+      map2d_zoom = Math.max(MAP2D_MIN_ZOOM, Math.min(MAP2D_MAX_ZOOM, map2d_pinch_start_zoom * dist / map2d_pinch_start_dist));
+      render_2d_map();
+    }
+  }, { passive: false });
+
+  map2d_canvas.addEventListener('touchend', function(e) {
+    e.preventDefault();
+    if (e.touches.length === 0) {
+      if (map2d_drag_active && !map2d_drag_moved && e.changedTouches.length > 0) {
+        /* Treat a tap as a tile click */
+        var ct = e.changedTouches[0];
+        var ptile = map2d_tile_from_event({clientX: ct.clientX, clientY: ct.clientY});
+        if (ptile != null) map2d_handle_tile_click(ptile);
+      }
+      map2d_drag_active = false;
+      map2d_drag_moved  = false;
+      map2d_pinch_start_dist = 0;
+    }
+  }, { passive: false });
+
+  map2d_canvas.addEventListener('touchcancel', function() {
+    map2d_drag_active = false;
+    map2d_drag_moved  = false;
+    map2d_pinch_start_dist = 0;
+  }, { passive: false });
 
   map2d_initialized = true;
 }
