@@ -63,6 +63,10 @@ var map2d_mouse_tile = null;
 var map2d_render_pending = false;
 var MAP2D_RENDER_DELAY_MS = 60; /* coalesce rapid packet bursts into one repaint */
 
+/* Goto path overlay state for the 2D canvas */
+var map2d_goto_punit = null;  /* focused unit being moved during goto preview */
+var map2d_goto_path  = null;  /* path object from compute_client_goto_path */
+
 
 /* ------------------------------------------------------------------ */
 /*  Terrain → sprite-tag mapping (Trident tileset naming convention)   */
@@ -222,6 +226,12 @@ function init_2d_map_canvas()
     map2d_mouse_tile = map2d_tile_from_event(e);
     map2d_update_mouse_cursor();
 
+    /* Update goto preview when goto mode is active (don't pan in goto mode) */
+    if (typeof goto_active !== 'undefined' && goto_active) {
+      map2d_update_goto_preview(map2d_mouse_tile);
+      return;
+    }
+
     if (!map2d_drag_active) return;
     map2d_drag_moved = true;
     var tw = Math.max(1, Math.floor(map2d_tileset_config['normal_tile_width']  * map2d_zoom));
@@ -299,16 +309,22 @@ function init_2d_map_canvas()
 
   map2d_canvas.addEventListener('touchmove', function(e) {
     e.preventDefault();
-    if (e.touches.length === 1 && map2d_drag_active) {
+    if (e.touches.length === 1) {
       var t = e.touches[0];
-      map2d_drag_moved = true;
-      var tw = Math.max(1, Math.floor(map2d_tileset_config['normal_tile_width']  * map2d_zoom));
-      var th = Math.max(1, Math.floor(map2d_tileset_config['normal_tile_height'] * map2d_zoom));
-      var dx = Math.round((map2d_drag_start_x - t.clientX) / tw);
-      var dy = Math.round((map2d_drag_start_y - t.clientY) / th);
-      map2d_center_x = map2d_drag_center_x + dx;
-      map2d_center_y = map2d_drag_center_y + dy;
-      render_2d_map();
+      if (typeof goto_active !== 'undefined' && goto_active) {
+        /* In goto mode: show path preview to the finger position, don't pan */
+        var ptile = map2d_tile_from_event({clientX: t.clientX, clientY: t.clientY});
+        map2d_update_goto_preview(ptile);
+      } else if (map2d_drag_active) {
+        map2d_drag_moved = true;
+        var tw = Math.max(1, Math.floor(map2d_tileset_config['normal_tile_width']  * map2d_zoom));
+        var th = Math.max(1, Math.floor(map2d_tileset_config['normal_tile_height'] * map2d_zoom));
+        var dx = Math.round((map2d_drag_start_x - t.clientX) / tw);
+        var dy = Math.round((map2d_drag_start_y - t.clientY) / th);
+        map2d_center_x = map2d_drag_center_x + dx;
+        map2d_center_y = map2d_drag_center_y + dy;
+        render_2d_map();
+      }
     } else if (e.touches.length === 2 && map2d_pinch_start_dist > 0) {
       var t1 = e.touches[0];
       var t2 = e.touches[1];
@@ -321,7 +337,12 @@ function init_2d_map_canvas()
   map2d_canvas.addEventListener('touchend', function(e) {
     e.preventDefault();
     if (e.touches.length === 0) {
-      if (map2d_drag_active && !map2d_drag_moved && e.changedTouches.length > 0) {
+      if (typeof goto_active !== 'undefined' && goto_active && e.changedTouches.length > 0) {
+        /* In goto mode: lift finger = confirm goto destination */
+        var ct = e.changedTouches[0];
+        var ptile = map2d_tile_from_event({clientX: ct.clientX, clientY: ct.clientY});
+        if (ptile != null) map2d_handle_tile_click(ptile);
+      } else if (map2d_drag_active && !map2d_drag_moved && e.changedTouches.length > 0) {
         /* Treat a tap as a tile click */
         var ct = e.changedTouches[0];
         var ptile = map2d_tile_from_event({clientX: ct.clientX, clientY: ct.clientY});
@@ -475,6 +496,13 @@ function render_2d_map()
 
   /* Draw grid lines (optional, subtle) */
   map2d_draw_grid(cw, ch, tw, th, off_x, off_y);
+
+  /* --- Layer 7: goto path overlay --- */
+  if (typeof goto_active !== 'undefined' && goto_active
+      && map2d_goto_punit != null && map2d_goto_path != null) {
+    map2d_render_goto_overlay(ctx, map2d_goto_punit, map2d_goto_path,
+                              tw, th, start_x, start_y, off_x, off_y);
+  }
 }
 
 /* ------------------------------------------------------------------ */
@@ -821,6 +849,178 @@ function map2d_handle_tile_click(ptile)
   if (ptile == null) return;
   do_map_click(ptile, SELECT_POPUP, true);
   render_2d_map();
+}
+
+/* ------------------------------------------------------------------ */
+/*  Goto path overlay (2D canvas)                                       */
+/* ------------------------------------------------------------------ */
+
+/**
+ * Compute the goto path preview for the focused unit towards ptile and
+ * store it in map2d_goto_punit / map2d_goto_path.  Triggers a re-render
+ * so the overlay updates immediately.
+ *
+ * @param {Object|null} ptile - Destination tile (may be null to clear preview)
+ */
+function map2d_update_goto_preview(ptile)
+{
+  if (typeof goto_active === 'undefined' || !goto_active
+      || typeof current_focus === 'undefined' || current_focus.length === 0
+      || typeof compute_client_goto_path !== 'function') {
+    map2d_goto_punit = null;
+    map2d_goto_path  = null;
+    return;
+  }
+
+  if (ptile == null) {
+    map2d_goto_punit = null;
+    map2d_goto_path  = null;
+    render_2d_map();
+    map2d_update_mouse_cursor();
+    return;
+  }
+
+  var punit = current_focus[0];
+  var path  = compute_client_goto_path(punit, ptile);
+  if (path != null) {
+    map2d_goto_punit   = punit;
+    map2d_goto_path    = path;
+    if (typeof current_goto_turns !== 'undefined') current_goto_turns = path['turns'];
+  } else {
+    map2d_goto_punit   = null;
+    map2d_goto_path    = null;
+    if (typeof current_goto_turns !== 'undefined') current_goto_turns = null;
+  }
+  render_2d_map();
+  map2d_update_mouse_cursor();
+}
+
+/**
+ * Clear the 2D goto path overlay and schedule a re-render.
+ * Called from clear_goto_tiles() in goto.js.
+ */
+function map2d_clear_goto_overlay()
+{
+  map2d_goto_punit = null;
+  map2d_goto_path  = null;
+}
+
+/**
+ * Convert a map tile coordinate to a canvas pixel position (centre of tile).
+ *
+ * Handles horizontal wrapping so that short paths near the map edge are
+ * drawn correctly.  Returns null if the tile falls off-screen.
+ *
+ * @param {number} tile_x  - Map tile x coordinate
+ * @param {number} tile_y  - Map tile y coordinate
+ * @param {number} tw      - Tile width in pixels at current zoom
+ * @param {number} th      - Tile height in pixels at current zoom
+ * @param {number} start_x - Leftmost map x of the visible area
+ * @param {number} start_y - Topmost  map y of the visible area
+ * @param {number} off_x   - Canvas pixel offset for start_x column
+ * @param {number} off_y   - Canvas pixel offset for start_y row
+ * @returns {{x: number, y: number}|null}
+ */
+function map2d_tile_to_canvas_center(tile_x, tile_y, tw, th, start_x, start_y, off_x, off_y)
+{
+  var tx = tile_x - start_x;
+  /* Wrap so that we pick the closest visual copy of the tile. */
+  if (typeof map !== 'undefined' && map && map['xsize']) {
+    if (tx >  map['xsize'] / 2) tx -= map['xsize'];
+    if (tx < -map['xsize'] / 2) tx += map['xsize'];
+  }
+  var ty = tile_y - start_y;
+  return {
+    x: off_x + tx * tw + tw / 2,
+    y: off_y + ty * th + th / 2
+  };
+}
+
+/**
+ * Render the goto path overlay on the 2D canvas.
+ *
+ * Draws a white dashed line following the Dijkstra-computed route and a
+ * solid arrowhead at the destination tile.  The overlay is drawn as the
+ * topmost layer so it is always visible regardless of terrain or units.
+ *
+ * @param {CanvasRenderingContext2D} ctx
+ * @param {Object} punit    - Focused unit (start of the path)
+ * @param {Object} path     - Path object from compute_client_goto_path
+ * @param {number} tw       - Tile width at current zoom
+ * @param {number} th       - Tile height at current zoom
+ * @param {number} start_x  - Leftmost map x of the visible area
+ * @param {number} start_y  - Topmost  map y of the visible area
+ * @param {number} off_x    - Canvas pixel offset for start_x column
+ * @param {number} off_y    - Canvas pixel offset for start_y row
+ */
+function map2d_render_goto_overlay(ctx, punit, path, tw, th, start_x, start_y, off_x, off_y)
+{
+  if (punit == null || path == null) return;
+
+  var start_tile = (typeof index_to_tile === 'function') ? index_to_tile(punit['tile']) : null;
+  if (start_tile == null) return;
+
+  /* Reconstruct the tile sequence from the direction list. */
+  var path_tiles = [start_tile];
+  var current = start_tile;
+  for (var i = 0; i < path['length']; i++) {
+    current = (typeof mapstep === 'function') ? mapstep(current, path['dir'][i]) : null;
+    if (current == null) break;
+    path_tiles.push(current);
+  }
+  if (path_tiles.length < 2) return;
+
+  /* Build pixel-coordinate list. */
+  var pts = [];
+  for (var j = 0; j < path_tiles.length; j++) {
+    var t  = path_tiles[j];
+    var pt = map2d_tile_to_canvas_center(t['x'], t['y'], tw, th, start_x, start_y, off_x, off_y);
+    pts.push(pt);
+  }
+
+  var lineWidth  = Math.max(1.5, tw / 15);
+  var dashLen    = Math.max(4, tw / 5);
+  var gapLen     = Math.max(3, tw / 8);
+  var arrowSize  = Math.max(6, tw / 2.5);
+
+  ctx.save();
+
+  /* Dashed line along the full path. */
+  ctx.strokeStyle = 'rgba(255, 255, 255, 0.85)';
+  ctx.lineWidth   = lineWidth;
+  ctx.setLineDash([dashLen, gapLen]);
+  ctx.lineCap     = 'round';
+  ctx.lineJoin    = 'round';
+
+  ctx.beginPath();
+  ctx.moveTo(pts[0].x, pts[0].y);
+  for (var k = 1; k < pts.length; k++) {
+    ctx.lineTo(pts[k].x, pts[k].y);
+  }
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  /* Arrowhead at the destination tile. */
+  var last = pts[pts.length - 1];
+  var prev = pts[pts.length - 2];
+  var dx   = last.x - prev.x;
+  var dy   = last.y - prev.y;
+  var len  = Math.sqrt(dx * dx + dy * dy);
+  if (len > 0) {
+    dx /= len;
+    dy /= len;
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
+    ctx.beginPath();
+    ctx.moveTo(last.x, last.y);
+    ctx.lineTo(last.x - arrowSize * dx + arrowSize * 0.45 * dy,
+               last.y - arrowSize * dy - arrowSize * 0.45 * dx);
+    ctx.lineTo(last.x - arrowSize * dx - arrowSize * 0.45 * dy,
+               last.y - arrowSize * dy + arrowSize * 0.45 * dx);
+    ctx.closePath();
+    ctx.fill();
+  }
+
+  ctx.restore();
 }
 
 /**

@@ -213,6 +213,11 @@ function create_goto_arrow(startPos, destPos) {
  Also clears square map goto tiles if using square topology.
 **************************************************************************/
 function clear_goto_tiles() {
+    // Clear 2D canvas goto overlay whenever present
+    if (typeof map2d_clear_goto_overlay === 'function') {
+        map2d_clear_goto_overlay();
+    }
+
     // Clear square map goto tiles if in square mode
     if (typeof is_hex === 'function' && !is_hex() && typeof clear_goto_tiles_square === 'function') {
         clear_goto_tiles_square();
