@@ -200,9 +200,21 @@ func (s *server) wsHandler(w http.ResponseWriter, r *http.Request) {
 
 		// ── Pre-game / lobby ─────────────────────────────────────────────
 		case pidNationSelectReq:
-			slog.Debug("nation_select_req received", "remote", r.RemoteAddr)
+			var req nationSelectReq
+			if err := json.Unmarshal(message, &req); err != nil {
+				slog.Warn("nation_select_req: unmarshal error", "remote", r.RemoteAddr, "error", err)
+			} else {
+				slog.Debug("nation_select_req received", "remote", r.RemoteAddr, "nation", req.NationNo)
+				cgoBridge.HandleNationSelectReq(connID, req.PlayerNo, req.NationNo, req.IsMale, req.Name, req.Style)
+			}
 		case pidPlayerReady:
-			slog.Debug("player_ready received", "remote", r.RemoteAddr)
+			var req playerReady
+			if err := json.Unmarshal(message, &req); err != nil {
+				slog.Warn("player_ready: unmarshal error", "remote", r.RemoteAddr, "error", err)
+			} else {
+				slog.Debug("player_ready received", "remote", r.RemoteAddr, "player", req.PlayerNo)
+				cgoBridge.HandlePlayerReady(connID, req.PlayerNo, req.IsReady)
+			}
 
 		// ── Chat ─────────────────────────────────────────────────────────
 		case pidChatMsgReq:
@@ -211,15 +223,34 @@ func (s *server) wsHandler(w http.ResponseWriter, r *http.Request) {
 				slog.Warn("chat_msg_req: unmarshal error", "remote", r.RemoteAddr, "error", err)
 			} else {
 				slog.Info("chat_msg_req received", "remote", r.RemoteAddr, "user", username, "message", chat.Message)
+				cgoBridge.HandleChatMsgReq(connID, chat.Message)
 			}
 
 		// ── City management ──────────────────────────────────────────────
 		case pidCitySell:
-			slog.Debug("city_sell received", "remote", r.RemoteAddr)
+			var req citySell
+			if err := json.Unmarshal(message, &req); err != nil {
+				slog.Warn("city_sell: unmarshal error", "remote", r.RemoteAddr, "error", err)
+			} else {
+				slog.Debug("city_sell received", "remote", r.RemoteAddr, "city_id", req.CityID)
+				cgoBridge.HandleCitySell(connID, req.CityID, req.BuildID)
+			}
 		case pidCityBuy:
-			slog.Debug("city_buy received", "remote", r.RemoteAddr)
+			var req cityBuy
+			if err := json.Unmarshal(message, &req); err != nil {
+				slog.Warn("city_buy: unmarshal error", "remote", r.RemoteAddr, "error", err)
+			} else {
+				slog.Debug("city_buy received", "remote", r.RemoteAddr, "city_id", req.CityID)
+				cgoBridge.HandleCityBuy(connID, req.CityID)
+			}
 		case pidCityChange:
-			slog.Debug("city_change received", "remote", r.RemoteAddr)
+			var req cityChange
+			if err := json.Unmarshal(message, &req); err != nil {
+				slog.Warn("city_change: unmarshal error", "remote", r.RemoteAddr, "error", err)
+			} else {
+				slog.Debug("city_change received", "remote", r.RemoteAddr, "city_id", req.CityID)
+				cgoBridge.HandleCityChange(connID, req.CityID, req.ProductionKind, req.ProductionValue)
+			}
 		case pidCityWorklist:
 			slog.Debug("city_worklist received", "remote", r.RemoteAddr)
 		case pidCityMakeSpecialist:
@@ -229,13 +260,37 @@ func (s *server) wsHandler(w http.ResponseWriter, r *http.Request) {
 		case pidCityChangeSpecialist:
 			slog.Debug("city_change_specialist received", "remote", r.RemoteAddr)
 		case pidCityRename:
-			slog.Debug("city_rename received", "remote", r.RemoteAddr)
+			var req cityRename
+			if err := json.Unmarshal(message, &req); err != nil {
+				slog.Warn("city_rename: unmarshal error", "remote", r.RemoteAddr, "error", err)
+			} else {
+				slog.Debug("city_rename received", "remote", r.RemoteAddr, "city_id", req.CityID)
+				cgoBridge.HandleCityRename(connID, req.CityID, req.Name)
+			}
 		case pidCityOptionsReq:
-			slog.Debug("city_options_req received", "remote", r.RemoteAddr)
+			var req cityOptionsReq
+			if err := json.Unmarshal(message, &req); err != nil {
+				slog.Warn("city_options_req: unmarshal error", "remote", r.RemoteAddr, "error", err)
+			} else {
+				slog.Debug("city_options_req received", "remote", r.RemoteAddr, "city_id", req.CityID)
+				cgoBridge.HandleCityOptionsReq(connID, req.CityID, req.Options)
+			}
 		case pidCityRefresh:
-			slog.Debug("city_refresh received", "remote", r.RemoteAddr)
+			var req cityRefresh
+			if err := json.Unmarshal(message, &req); err != nil {
+				slog.Warn("city_refresh: unmarshal error", "remote", r.RemoteAddr, "error", err)
+			} else {
+				slog.Debug("city_refresh received", "remote", r.RemoteAddr, "city_id", req.CityID)
+				cgoBridge.HandleCityRefresh(connID, req.CityID)
+			}
 		case pidCityNameSuggestionReq:
-			slog.Debug("city_name_suggestion_req received", "remote", r.RemoteAddr)
+			var req cityNameSuggestionReq
+			if err := json.Unmarshal(message, &req); err != nil {
+				slog.Warn("city_name_suggestion_req: unmarshal error", "remote", r.RemoteAddr, "error", err)
+			} else {
+				slog.Debug("city_name_suggestion_req received", "remote", r.RemoteAddr, "unit_id", req.UnitID)
+				cgoBridge.HandleCityNameSuggestionReq(connID, req.UnitID)
+			}
 		case pidCityRallyPoint:
 			slog.Debug("city_rally_point received", "remote", r.RemoteAddr)
 		case pidWebCmaSet:
@@ -245,17 +300,48 @@ func (s *server) wsHandler(w http.ResponseWriter, r *http.Request) {
 
 		// ── Player / turn ────────────────────────────────────────────────
 		case pidPlayerPhaseDone:
-			slog.Debug("player_phase_done received", "remote", r.RemoteAddr)
+			var req playerPhaseDone
+			if err := json.Unmarshal(message, &req); err != nil {
+				slog.Warn("player_phase_done: unmarshal error", "remote", r.RemoteAddr, "error", err)
+			} else {
+				slog.Debug("player_phase_done received", "remote", r.RemoteAddr, "turn", req.Turn)
+				cgoBridge.HandlePlayerPhaseDone(connID, req.Turn)
+			}
 		case pidPlayerRates:
-			slog.Debug("player_rates received", "remote", r.RemoteAddr)
+			var req playerRates
+			if err := json.Unmarshal(message, &req); err != nil {
+				slog.Warn("player_rates: unmarshal error", "remote", r.RemoteAddr, "error", err)
+			} else {
+				slog.Debug("player_rates received", "remote", r.RemoteAddr)
+				cgoBridge.HandlePlayerRates(connID, req.Tax, req.Luxury, req.Science)
+			}
 		case pidPlayerChangeGovernment:
-			slog.Debug("player_change_government received", "remote", r.RemoteAddr)
+			var req playerChangeGovernment
+			if err := json.Unmarshal(message, &req); err != nil {
+				slog.Warn("player_change_government: unmarshal error", "remote", r.RemoteAddr, "error", err)
+			} else {
+				slog.Debug("player_change_government received", "remote", r.RemoteAddr, "gov", req.Government)
+				cgoBridge.HandlePlayerChangeGovernment(connID, req.Government)
+			}
 		case pidPlayerResearch:
-			slog.Debug("player_research received", "remote", r.RemoteAddr)
+			var req playerResearch
+			if err := json.Unmarshal(message, &req); err != nil {
+				slog.Warn("player_research: unmarshal error", "remote", r.RemoteAddr, "error", err)
+			} else {
+				slog.Debug("player_research received", "remote", r.RemoteAddr, "tech", req.Tech)
+				cgoBridge.HandlePlayerResearch(connID, req.Tech)
+			}
 		case pidPlayerTechGoal:
-			slog.Debug("player_tech_goal received", "remote", r.RemoteAddr)
+			var req playerTechGoal
+			if err := json.Unmarshal(message, &req); err != nil {
+				slog.Warn("player_tech_goal: unmarshal error", "remote", r.RemoteAddr, "error", err)
+			} else {
+				slog.Debug("player_tech_goal received", "remote", r.RemoteAddr, "tech", req.Tech)
+				cgoBridge.HandlePlayerTechGoal(connID, req.Tech)
+			}
 		case pidPlayerAttributeBlock:
 			slog.Debug("player_attribute_block received", "remote", r.RemoteAddr)
+			cgoBridge.HandlePlayerAttributeBlock(connID)
 		case pidPlayerAttributeChunk:
 			slog.Debug("player_attribute_chunk received", "remote", r.RemoteAddr)
 		case pidPlayerPlaceInfra:
@@ -285,35 +371,96 @@ func (s *server) wsHandler(w http.ResponseWriter, r *http.Request) {
 
 		// ── Diplomacy ────────────────────────────────────────────────────
 		case pidDiplomacyInitMeetingReq:
-			slog.Debug("diplomacy_init_meeting_req received", "remote", r.RemoteAddr)
+			var req diplomacyInitMeetingReq
+			if err := json.Unmarshal(message, &req); err != nil {
+				slog.Warn("diplomacy_init_meeting_req: unmarshal error", "remote", r.RemoteAddr, "error", err)
+			} else {
+				slog.Debug("diplomacy_init_meeting_req received", "remote", r.RemoteAddr, "counterpart", req.Counterpart)
+				cgoBridge.HandleDiplomacyInitMeetingReq(connID, req.Counterpart)
+			}
 		case pidDiplomacyCancelMeetingReq:
-			slog.Debug("diplomacy_cancel_meeting_req received", "remote", r.RemoteAddr)
+			var req diplomacyCancelMeetingReq
+			if err := json.Unmarshal(message, &req); err != nil {
+				slog.Warn("diplomacy_cancel_meeting_req: unmarshal error", "remote", r.RemoteAddr, "error", err)
+			} else {
+				slog.Debug("diplomacy_cancel_meeting_req received", "remote", r.RemoteAddr, "counterpart", req.Counterpart)
+				cgoBridge.HandleDiplomacyCancelMeetingReq(connID, req.Counterpart)
+			}
 		case pidDiplomacyCreateClauseReq:
-			slog.Debug("diplomacy_create_clause_req received", "remote", r.RemoteAddr)
+			var req diplomacyCreateClauseReq
+			if err := json.Unmarshal(message, &req); err != nil {
+				slog.Warn("diplomacy_create_clause_req: unmarshal error", "remote", r.RemoteAddr, "error", err)
+			} else {
+				slog.Debug("diplomacy_create_clause_req received", "remote", r.RemoteAddr)
+				cgoBridge.HandleDiplomacyCreateClauseReq(connID, req.Counterpart, req.Giver, req.Type, req.Value)
+			}
 		case pidDiplomacyRemoveClauseReq:
-			slog.Debug("diplomacy_remove_clause_req received", "remote", r.RemoteAddr)
+			var req diplomacyRemoveClauseReq
+			if err := json.Unmarshal(message, &req); err != nil {
+				slog.Warn("diplomacy_remove_clause_req: unmarshal error", "remote", r.RemoteAddr, "error", err)
+			} else {
+				slog.Debug("diplomacy_remove_clause_req received", "remote", r.RemoteAddr)
+				cgoBridge.HandleDiplomacyRemoveClauseReq(connID, req.Counterpart, req.Giver, req.Type, req.Value)
+			}
 		case pidDiplomacyAcceptTreatyReq:
-			slog.Debug("diplomacy_accept_treaty_req received", "remote", r.RemoteAddr)
+			var req diplomacyAcceptTreatyReq
+			if err := json.Unmarshal(message, &req); err != nil {
+				slog.Warn("diplomacy_accept_treaty_req: unmarshal error", "remote", r.RemoteAddr, "error", err)
+			} else {
+				slog.Debug("diplomacy_accept_treaty_req received", "remote", r.RemoteAddr, "counterpart", req.Counterpart)
+				cgoBridge.HandleDiplomacyAcceptTreatyReq(connID, req.Counterpart)
+			}
 		case pidDiplomacyCancelPact:
-			slog.Debug("diplomacy_cancel_pact received", "remote", r.RemoteAddr)
+			var req diplomacyCancelPact
+			if err := json.Unmarshal(message, &req); err != nil {
+				slog.Warn("diplomacy_cancel_pact: unmarshal error", "remote", r.RemoteAddr, "error", err)
+			} else {
+				slog.Debug("diplomacy_cancel_pact received", "remote", r.RemoteAddr, "other_player_id", req.OtherPlayerID)
+				cgoBridge.HandleDiplomacyCancelPact(connID, req.OtherPlayerID, req.Clause)
+			}
 
 		// ── Reports / misc ───────────────────────────────────────────────
 		case pidReportReq:
-			slog.Debug("report_req received", "remote", r.RemoteAddr)
+			var req reportReq
+			if err := json.Unmarshal(message, &req); err != nil {
+				slog.Warn("report_req: unmarshal error", "remote", r.RemoteAddr, "error", err)
+			} else {
+				slog.Debug("report_req received", "remote", r.RemoteAddr, "type", req.Type)
+				cgoBridge.HandleReportReq(connID, req.Type)
+			}
 		case pidSpaceshipLaunch:
 			slog.Debug("spaceship_launch received", "remote", r.RemoteAddr)
+			cgoBridge.HandleSpaceshipLaunch(connID)
 		case pidSpaceshipPlace:
 			slog.Debug("spaceship_place received", "remote", r.RemoteAddr)
 		case pidSaveScenario:
 			slog.Debug("save_scenario received", "remote", r.RemoteAddr)
 		case pidVoteSubmit:
-			slog.Debug("vote_submit received", "remote", r.RemoteAddr)
+			var req voteSubmit
+			if err := json.Unmarshal(message, &req); err != nil {
+				slog.Warn("vote_submit: unmarshal error", "remote", r.RemoteAddr, "error", err)
+			} else {
+				slog.Debug("vote_submit received", "remote", r.RemoteAddr, "vote_no", req.VoteNo)
+				cgoBridge.HandleVoteSubmit(connID, req.VoteNo, req.Value)
+			}
 
 		// ── Web-specific ─────────────────────────────────────────────────
 		case pidWebGotoPathReq:
-			slog.Debug("web_goto_path_req received", "remote", r.RemoteAddr)
+			var req webGotoPathReq
+			if err := json.Unmarshal(message, &req); err != nil {
+				slog.Warn("web_goto_path_req: unmarshal error", "remote", r.RemoteAddr, "error", err)
+			} else {
+				slog.Debug("web_goto_path_req received", "remote", r.RemoteAddr, "unit_id", req.UnitID)
+				cgoBridge.HandleWebGotoPathReq(connID, req.UnitID, req.TileIndex)
+			}
 		case pidWebInfoTextReq:
-			slog.Debug("web_info_text_req received", "remote", r.RemoteAddr)
+			var req webInfoTextReq
+			if err := json.Unmarshal(message, &req); err != nil {
+				slog.Warn("web_info_text_req: unmarshal error", "remote", r.RemoteAddr, "error", err)
+			} else {
+				slog.Debug("web_info_text_req received", "remote", r.RemoteAddr, "tile", req.Tile)
+				cgoBridge.HandleWebInfoTextReq(connID, req.Tile)
+			}
 
 		// ── Edit mode ────────────────────────────────────────────────────
 		case pidEditMode:

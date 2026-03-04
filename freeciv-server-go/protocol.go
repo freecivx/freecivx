@@ -281,6 +281,53 @@ type chatMsgReq struct {
 	Message string `json:"message"`
 }
 
+// citySell requests selling a city improvement (pid = 33).
+type citySell struct {
+	PID     int `json:"pid"`
+	CityID  int `json:"city_id"`
+	BuildID int `json:"build_id"`
+}
+
+// cityBuy requests a rush-buy of city production (pid = 34).
+type cityBuy struct {
+	PID    int `json:"pid"`
+	CityID int `json:"city_id"`
+}
+
+// cityChange requests a change of city production target (pid = 35).
+type cityChange struct {
+	PID             int `json:"pid"`
+	CityID          int `json:"city_id"`
+	ProductionKind  int `json:"production_kind"`
+	ProductionValue int `json:"production_value"`
+}
+
+// cityRename renames a city (pid = 40).
+type cityRename struct {
+	PID    int    `json:"pid"`
+	CityID int    `json:"city_id"`
+	Name   string `json:"name"`
+}
+
+// cityOptionsReq sets city option flags (pid = 41).
+type cityOptionsReq struct {
+	PID     int `json:"pid"`
+	CityID  int `json:"city_id"`
+	Options int `json:"options"`
+}
+
+// cityRefresh requests a city data refresh (pid = 42).
+type cityRefresh struct {
+	PID    int `json:"pid"`
+	CityID int `json:"city_id"`
+}
+
+// cityNameSuggestionReq asks the server for a city-name suggestion (pid = 43).
+type cityNameSuggestionReq struct {
+	PID    int `json:"pid"`
+	UnitID int `json:"unit_id"`
+}
+
 // playerPhaseDone signals that the player has ended their turn phase (pid = 52).
 type playerPhaseDone struct {
 	PID  int `json:"pid"`
@@ -337,17 +384,67 @@ type rulesetSelect struct {
 	Modpack string `json:"modpack"`
 }
 
+// voteSubmit submits a vote on an active server motion (pid = 189).
+type voteSubmit struct {
+	PID    int `json:"pid"`
+	VoteNo int `json:"vote_no"`
+	Value  int `json:"value"`
+}
+
+// diplomacyInitMeetingReq opens a diplomacy meeting (pid = 95).
+type diplomacyInitMeetingReq struct {
+	PID        int `json:"pid"`
+	Counterpart int `json:"counterpart"`
+}
+
+// diplomacyCancelMeetingReq cancels a diplomacy meeting (pid = 97).
+type diplomacyCancelMeetingReq struct {
+	PID        int `json:"pid"`
+	Counterpart int `json:"counterpart"`
+}
+
+// diplomacyCreateClauseReq adds a clause to a treaty (pid = 99).
+type diplomacyCreateClauseReq struct {
+	PID        int `json:"pid"`
+	Counterpart int `json:"counterpart"`
+	Giver      int `json:"giver"`
+	Type       int `json:"type"`
+	Value      int `json:"value"`
+}
+
+// diplomacyRemoveClauseReq removes a clause from a treaty (pid = 101).
+type diplomacyRemoveClauseReq struct {
+	PID        int `json:"pid"`
+	Counterpart int `json:"counterpart"`
+	Giver      int `json:"giver"`
+	Type       int `json:"type"`
+	Value      int `json:"value"`
+}
+
+// diplomacyAcceptTreatyReq accepts a pending treaty (pid = 103).
+type diplomacyAcceptTreatyReq struct {
+	PID        int `json:"pid"`
+	Counterpart int `json:"counterpart"`
+}
+
+// diplomacyCancelPact cancels an existing diplomatic agreement (pid = 105).
+type diplomacyCancelPact struct {
+	PID           int `json:"pid"`
+	OtherPlayerID int `json:"other_player_id"`
+	Clause        int `json:"clause"`
+}
+
 // clientHeartbeat is a periodic keep-alive from the client (pid = 254).
 type clientHeartbeat struct {
 	PID int `json:"pid"`
 }
 
 // webGotoPathReq asks the server to compute a goto path (pid = 287).
+// TileIndex is the flat map-tile index passed to index_to_tile() on the C side.
 type webGotoPathReq struct {
-	PID    int `json:"pid"`
-	UnitID int `json:"unit_id"`
-	TileX  int `json:"tile_x"`
-	TileY  int `json:"tile_y"`
+	PID       int `json:"pid"`
+	UnitID    int `json:"unit_id"`
+	TileIndex int `json:"tile_index"`
 }
 
 // webInfoTextReq asks the server for an info-text description (pid = 289).
