@@ -118,6 +118,9 @@ function init_cache_sprites()
 
   var prefix = tileset_name + ".";
   for (var tile_tag in tileset) {
+    /* Skip entries that don't belong to the active tileset */
+    if (tile_tag.indexOf(prefix) !== 0) continue;
+
     var x = tileset[tile_tag][0];
     var y = tileset[tile_tag][1];
     var w = tileset[tile_tag][2];

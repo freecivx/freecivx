@@ -217,7 +217,6 @@ Rerun the sync-js-hand.js script.
 										<excludes>
 											<exclude>.gitignore</exclude>
 											<exclude>README.md</exclude>
-											<exclude>javascript/2dcanvas/*trident*</exclude>
 										</excludes>
 									</resource>
 								</resources>
