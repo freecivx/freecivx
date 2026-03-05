@@ -1406,6 +1406,7 @@ function set_unit_focus(punit)
     highlight_map_tile_selected(index_to_tile(punit['tile']).x, index_to_tile(punit['tile']).y);
   }
   update_active_units_dialog();
+  if (typeof map2d_schedule_render === 'function') map2d_schedule_render();
 }
 
 /**************************************************************************
@@ -1427,6 +1428,7 @@ function set_unit_focus_and_redraw(punit)
 
   auto_center_on_focus_unit();
   update_active_units_dialog();
+  if (typeof map2d_schedule_render === 'function') map2d_schedule_render();
 }
 
 /**************************************************************************

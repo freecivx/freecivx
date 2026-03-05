@@ -343,10 +343,19 @@ function init_2d_map_canvas()
         var ptile = map2d_tile_from_event({clientX: ct.clientX, clientY: ct.clientY});
         if (ptile != null) map2d_handle_tile_click(ptile);
       } else if (map2d_drag_active && !map2d_drag_moved && e.changedTouches.length > 0) {
-        /* Treat a tap as a tile click */
+        /* Treat a tap as a tile click; if there are units on the tile show the
+         * context menu so the player can issue orders (mirrors right-click on desktop). */
         var ct = e.changedTouches[0];
         var ptile = map2d_tile_from_event({clientX: ct.clientX, clientY: ct.clientY});
-        if (ptile != null) map2d_handle_tile_click(ptile);
+        if (ptile != null) {
+          map2d_mouse_tile = ptile;
+          var punits = tile_units(ptile);
+          if (punits && punits.length > 0) {
+            map2d_show_context_menu({clientX: ct.clientX, clientY: ct.clientY});
+          } else {
+            map2d_handle_tile_click(ptile);
+          }
+        }
       }
       map2d_drag_active = false;
       map2d_drag_moved  = false;
@@ -475,13 +484,30 @@ function render_2d_map()
     }
   }
 
-  /* --- Layer 5: unit sprites + shield flags --- */
+  /* --- Layer 5: unit sprites + shield flags + activity badges --- */
+  var focused_unit = (typeof current_focus !== 'undefined' && current_focus.length > 0)
+                     ? current_focus[0] : null;
   for (i = 0; i < vis.length; i++) {
     v = vis[i];
     if (tile_get_known(v.ptile) !== TILE_KNOWN_SEEN) continue;
     var punits = tile_units(v.ptile);
     if (punits && punits.length > 0) {
-      map2d_draw_unit(ctx, punits[0], v.cx, v.cy, tw, th);
+      /* If the focused unit is on this tile, display it on top */
+      var display_unit = punits[0];
+      if (focused_unit != null) {
+        for (var fi = 0; fi < punits.length; fi++) {
+          if (punits[fi]['id'] === focused_unit['id']) {
+            display_unit = punits[fi];
+            break;
+          }
+        }
+      }
+      /* Draw selection indicator under the focused unit */
+      if (focused_unit != null && display_unit['id'] === focused_unit['id']) {
+        map2d_draw_unit_select(ctx, v.cx, v.cy, tw, th);
+      }
+      map2d_draw_unit(ctx, display_unit, v.cx, v.cy, tw, th);
+      map2d_draw_unit_activity(ctx, display_unit, v.cx, v.cy, tw, th);
       if (punits.length > 1) {
         map2d_draw_unit_count(ctx, punits.length, v.cx, v.cy, tw, th);
       }
@@ -642,8 +668,10 @@ function map2d_draw_city_label(ctx, pcity, cx, cy, tw, th)
 {
   if (tw < 20) return; /* too small to be readable */
   var city_size = (typeof pcity['size'] === 'number') ? pcity['size'] : null;
-  var name      = (city_size !== null ? city_size + ' ' : '') + (pcity['name'] || '');
-  var font_size = Math.max(8, Math.floor(th * 0.45));
+  /* Match 3D label format: CITYNAME SIZE (uppercase, size after name) */
+  var city_name = (pcity['name'] || '').toUpperCase();
+  var name      = city_name + (city_size !== null ? ' ' + city_size : '');
+  var font_size = Math.max(7, Math.floor(th * 0.35));
   var label_y   = cy + th + 1;
 
   /* Set font before measuring text width */
@@ -658,7 +686,7 @@ function map2d_draw_city_label(ctx, pcity, cx, cy, tw, th)
     if (flag_info && flag_info['key']) {
       var spr = sprites_2d[flag_info['key']];
       if (spr) {
-        fh = Math.max(8, font_size);
+        fh = font_size;
         fw = Math.round(fh * spr.width / Math.max(1, spr.height));
         flag_spr = spr;
       }
@@ -669,6 +697,16 @@ function map2d_draw_city_label(ctx, pcity, cx, cy, tw, th)
   var gap     = flag_spr ? 2 : 0;
   var total_w = fw + gap + text_w;
   var start_x = Math.floor(cx + tw / 2 - total_w / 2);
+  var pad     = 3;
+
+  /* Semi-transparent black background behind the text (matching 3D style) */
+  var bg_x = start_x + fw + gap - pad;
+  var bg_w = text_w + pad * 2;
+  var bg_h = font_size + pad * 2;
+  ctx.globalAlpha = 0.85;
+  ctx.fillStyle   = '#000000';
+  ctx.fillRect(bg_x, label_y - pad, bg_w, bg_h);
+  ctx.globalAlpha = 1.0;
 
   if (flag_spr) {
     ctx.drawImage(flag_spr, start_x, label_y, fw, fh);
@@ -676,10 +714,20 @@ function map2d_draw_city_label(ctx, pcity, cx, cy, tw, th)
 
   ctx.textAlign   = 'left';
   ctx.strokeStyle = '#000000';
-  ctx.lineWidth   = 2;
+  ctx.lineWidth   = 3;
   ctx.strokeText(name, start_x + fw + gap, label_y);
   ctx.fillStyle   = '#ffffff';
   ctx.fillText(name, start_x + fw + gap, label_y);
+
+  /* Nation colour border outline around the full label (matching 3D style) */
+  var nation_color = map2d_player_color(pcity['owner'], null);
+  if (nation_color) {
+    var outline_x = start_x - pad;
+    var outline_w = total_w + pad * 2;
+    ctx.lineWidth   = 1;
+    ctx.strokeStyle = nation_color;
+    ctx.strokeRect(outline_x, label_y - pad, outline_w, bg_h);
+  }
 }
 
 function map2d_draw_unit(ctx, punit, cx, cy, tw, th)
@@ -690,6 +738,8 @@ function map2d_draw_unit(ctx, punit, cx, cy, tw, th)
     if (tag && sprites_2d[tag]) {
       ctx.drawImage(sprites_2d[tag], cx, cy, tw, th);
       map2d_draw_unit_shield(ctx, punit, cx, cy, tw, th);
+      map2d_draw_unit_hp(ctx, punit, cx, cy, tw, th);
+      map2d_draw_unit_veteran(ctx, punit, cx, cy, tw, th);
       return;
     }
   }
@@ -699,6 +749,37 @@ function map2d_draw_unit(ctx, punit, cx, cy, tw, th)
   ctx.fillStyle = map2d_player_color(punit['owner'], '#ffff00');
   ctx.fillRect(cx + Math.floor((tw - us) / 2), cy + Math.floor((th - us) / 2), us, us);
   map2d_draw_unit_shield(ctx, punit, cx, cy, tw, th);
+  map2d_draw_unit_hp(ctx, punit, cx, cy, tw, th);
+  map2d_draw_unit_veteran(ctx, punit, cx, cy, tw, th);
+}
+
+/**
+ * Draw the selection indicator sprite (unit.select0) under the focused unit.
+ */
+function map2d_draw_unit_select(ctx, cx, cy, tw, th)
+{
+  if (!sprites_2d_init) return;
+  var spr = sprites_2d['unit.select0'];
+  if (spr) {
+    ctx.drawImage(spr, cx, cy, tw, th);
+  }
+}
+
+/**
+ * Draw the unit activity sprite (fortify, sentry, goto, etc.) over the unit.
+ */
+function map2d_draw_unit_activity(ctx, punit, cx, cy, tw, th)
+{
+  if (!sprites_2d_init || tw < 10) return;
+  if (typeof get_unit_activity_sprite !== 'function') return;
+  var act_info = get_unit_activity_sprite(punit);
+  if (!act_info || !act_info['key']) return;
+  var spr = sprites_2d[act_info['key']];
+  if (!spr) return;
+  /* Draw activity icon in the bottom-right quarter of the tile */
+  var aw = Math.floor(tw * 0.5);
+  var ah = Math.floor(th * 0.5);
+  ctx.drawImage(spr, cx + tw - aw, cy + th - ah, aw, ah);
 }
 
 /**
@@ -719,6 +800,39 @@ function map2d_draw_unit_shield(ctx, punit, cx, cy, tw, th)
   var sh = Math.max(6, Math.floor(th * 0.35));
   var sw = Math.round(sh * shield_spr.width / Math.max(1, shield_spr.height));
   ctx.drawImage(shield_spr, cx + 1, cy + 1, sw, sh);
+}
+
+/**
+ * Draw the unit HP sprite in the bottom-left corner of the tile.
+ */
+function map2d_draw_unit_hp(ctx, punit, cx, cy, tw, th)
+{
+  if (!sprites_2d_init || tw < 14) return;
+  if (typeof get_unit_hp_sprite !== 'function') return;
+  var hp_info = get_unit_hp_sprite(punit);
+  if (!hp_info || !hp_info['key']) return;
+  var spr = sprites_2d[hp_info['key']];
+  if (!spr) return;
+  var bh = Math.max(4, Math.floor(th * 0.33));
+  var bw = Math.round(bh * spr.width / Math.max(1, spr.height));
+  ctx.drawImage(spr, cx + 1, cy + th - bh - 1, bw, bh);
+}
+
+/**
+ * Draw the unit veteran badge in the top-right corner of the tile.
+ */
+function map2d_draw_unit_veteran(ctx, punit, cx, cy, tw, th)
+{
+  if (!sprites_2d_init || tw < 14) return;
+  if (!punit['veteran'] || punit['veteran'] < 1) return;
+  if (typeof get_unit_veteran_sprite !== 'function') return;
+  var vet_info = get_unit_veteran_sprite(punit);
+  if (!vet_info || !vet_info['key']) return;
+  var spr = sprites_2d[vet_info['key']];
+  if (!spr) return;
+  var bh = Math.max(4, Math.floor(th * 0.33));
+  var bw = Math.round(bh * spr.width / Math.max(1, spr.height));
+  ctx.drawImage(spr, cx + tw - bw - 1, cy + 1, bw, bh);
 }
 
 /* ------------------------------------------------------------------ */
@@ -1432,10 +1546,11 @@ function map2d_show_context_menu(e)
 
   document.body.appendChild(menu);
 
-  /* Close on any outside click */
+  /* Close on any outside click or touch */
   setTimeout(function() {
     document.addEventListener('click', map2d_close_context_menu, {once: true});
     document.addEventListener('contextmenu', map2d_close_context_menu, {once: true});
+    document.addEventListener('touchstart', map2d_close_context_menu, {once: true});
   }, 0);
 }
 
