@@ -1325,3 +1325,132 @@ function map2d_tile_from_event(e)
 /* ------------------------------------------------------------------ */
 /*  Context menu for the 2D map                                         */
 /* ------------------------------------------------------------------ */
+
+/**
+ * Show a context menu popup at the given mouse event position.
+ * Re-uses the same unit-action commands as the 3D map context menu.
+ */
+function map2d_show_context_menu(e)
+{
+  /* Focus any unit on the clicked tile */
+  if (map2d_mouse_tile != null) {
+    var punits = tile_units(map2d_mouse_tile);
+    if (punits && punits.length > 0 && typeof set_unit_focus_and_redraw === 'function') {
+      set_unit_focus_and_redraw(punits[0]);
+    }
+  }
+
+  /* Build menu items using the shared helper */
+  var items = {};
+  if (typeof update_unit_order_commands === 'function') {
+    items = update_unit_order_commands();
+  }
+
+  /* Always offer tile info */
+  if (!items['tile_info']) {
+    items['tile_info'] = {name: 'Tile info', icon: 'fas fa-info-circle'};
+  }
+
+  if (Object.keys(items).length === 0) return;
+
+  /* Remove any stale menu */
+  var old = document.getElementById('map2d_context_menu');
+  if (old) old.parentNode.removeChild(old);
+
+  var menu = document.createElement('ul');
+  menu.id = 'map2d_context_menu';
+  menu.style.cssText = [
+    'position:fixed',
+    'left:' + e.clientX + 'px',
+    'top:' + e.clientY + 'px',
+    'background:#1a1a2e',
+    'border:1px solid #444',
+    'border-radius:4px',
+    'padding:4px 0',
+    'list-style:none',
+    'margin:0',
+    'z-index:9000',
+    'min-width:160px',
+    'box-shadow:2px 2px 8px rgba(0,0,0,0.6)',
+    'font:13px sans-serif',
+    'color:#eee'
+  ].join(';');
+
+  for (var key in items) {
+    if (!items.hasOwnProperty(key)) continue;
+    var item = items[key];
+    (function(k, label) {
+      var li = document.createElement('li');
+      li.style.cssText = 'padding:5px 14px;cursor:pointer;white-space:nowrap;';
+      li.textContent = label;
+      li.addEventListener('mouseenter', function() { li.style.background = '#2a2a4e'; });
+      li.addEventListener('mouseleave', function() { li.style.background = ''; });
+
+      /* Shared action handler used by both click and touchend. */
+      function map2d_menu_item_action() {
+        map2d_close_context_menu();
+        if (k === 'tile_info') {
+          if (map2d_mouse_tile != null && typeof popit_req === 'function') {
+            popit_req(map2d_mouse_tile);
+          }
+        } else if (typeof handle_context_menu_callback === 'function') {
+          handle_context_menu_callback(k);
+        }
+      }
+
+      li.addEventListener('click', map2d_menu_item_action);
+
+      /* touchend fires reliably on mobile (Firefox Android) even when the
+       * browser's synthetic click is delayed or suppressed.  We stop
+       * propagation so the document-level close-on-outside-tap handler
+       * does not also fire for this same gesture. */
+      li.addEventListener('touchend', function(ev) {
+        ev.preventDefault();
+        ev.stopPropagation();
+        map2d_menu_item_action();
+      });
+
+      menu.appendChild(li);
+    })(key, item['name'] || key);
+  }
+
+  document.body.appendChild(menu);
+
+  /* Close when the user interacts outside the menu.
+   *
+   * Chrome for Android fires a synthetic 'click' event roughly 300 ms after
+   * touchend.  Registering the close listener inside a 350 ms setTimeout
+   * ensures that synthetic click is already gone before we start listening,
+   * so the menu is not immediately dismissed the moment it appears.
+   *
+   * We do NOT listen to 'touchstart' here: that event fires before 'click',
+   * so a touchstart-based listener would remove the menu before the menu
+   * item's click handler could execute (Firefox Android bug).  Instead we
+   * rely on 'click' (desktop + Chrome Android synthetic click on outside
+   * elements) and 'touchend' (direct outside-tap on mobile). */
+  setTimeout(function() {
+    function map2d_close_if_outside(ev) {
+      var menu = document.getElementById('map2d_context_menu');
+      if (!menu || menu.contains(ev.target)) return; /* already gone or tap inside menu */
+      map2d_close_context_menu();
+      cleanup();
+    }
+    function cleanup() {
+      document.removeEventListener('click',       map2d_close_if_outside);
+      document.removeEventListener('touchend',    map2d_close_if_outside);
+      document.removeEventListener('contextmenu', map2d_close_if_outside);
+    }
+    document.addEventListener('click',       map2d_close_if_outside);
+    document.addEventListener('touchend',    map2d_close_if_outside);
+    document.addEventListener('contextmenu', map2d_close_if_outside);
+  }, 350);
+}
+
+/**
+ * Remove the 2D map context menu if present.
+ */
+function map2d_close_context_menu()
+{
+  var menu = document.getElementById('map2d_context_menu');
+  if (menu && menu.parentNode) menu.parentNode.removeChild(menu);
+}
