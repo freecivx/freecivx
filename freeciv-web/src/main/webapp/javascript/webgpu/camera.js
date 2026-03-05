@@ -70,7 +70,7 @@ function camera_look_at(x, y, z)
 **************************************************************************/
 function center_tile_mapcanvas_3d(ptile)
 {
-  if (camera == null) return;
+  if (use_2d_only && camera == null) return;
   if (ptile != null) {
     if (slide_init) {
       enable_mapview_slide_3d(ptile);
