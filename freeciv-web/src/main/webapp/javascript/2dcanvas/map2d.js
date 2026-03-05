@@ -749,7 +749,7 @@ function map2d_schedule_render()
 function map2d_update_mouse_cursor()
 {
   if (!map2d_canvas) return;
-  if (map2d_drag_active) {
+  if (typeof map2d_drag !== 'undefined' && map2d_drag.active) {
     map2d_canvas.style.cursor = 'grabbing';
     return;
   }
