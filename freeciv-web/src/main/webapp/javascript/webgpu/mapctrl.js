@@ -33,6 +33,8 @@ const min_y_zoom_level = 250;
 ****************************************************************************/
 function init_webgl_mapctrl()
 {
+  // Don't initialize 3D map controls when running in 2D-only mode on mobile.
+  if (is_small_screen()) return;
   $("#mapcanvas").mousedown(webglOnDocumentMouseDown);
   $("#mapcanvas").mouseup(webglOnDocumentMouseUp);
   $(window).mousemove(mouse_moved_cb);
