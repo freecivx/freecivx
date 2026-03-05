@@ -69,6 +69,7 @@ function init_2d_map_controls() {
     map2d_drag.moved = false;
     map2d_drag.is_goto = false;
     map2d_drag.unit = (units && units.length > 0) ? units[0] : null;
+    map2d_drag.start_tile = start_tile;
     map2d_drag.start_x = ptr.clientX;
     map2d_drag.start_y = ptr.clientY;
     map2d_drag.start_cx = map2d_center_x;
@@ -101,9 +102,8 @@ function init_2d_map_controls() {
       // If we started on a unit, this drag becomes a GOTO action
       if (map2d_drag.unit) {
         map2d_drag.is_goto = true;
-        if (typeof set_unit_focus_and_redraw === 'function') {
-          set_unit_focus_and_redraw(map2d_drag.unit);
-        }
+        if (typeof set_unit_focus === 'function') set_unit_focus(map2d_drag.unit);
+        if (typeof activate_goto === 'function') activate_goto();
       }
     }
 
@@ -153,13 +153,15 @@ function init_2d_map_controls() {
     map2d_drag.active = false;
 
     if (was_goto) {
-      /* EXECUTE GOTO */
+      /* EXECUTE GOTO: use do_map_click which handles goto_active and
+       * sends the unit orders, then calls deactivate_goto() to clean up. */
       var ptr = e.type === 'touchend' ? e.originalEvent.changedTouches[0] : e;
       var target_tile = map2d_tile_from_event(ptr);
-      if (unit && target_tile && typeof unit_goto_tile === 'function') {
-        unit_goto_tile(unit, target_tile);
+      if (target_tile && typeof do_map_click === 'function') {
+        do_map_click(target_tile, SELECT_POPUP, true);
+      } else if (typeof deactivate_goto === 'function') {
+        deactivate_goto(false);
       }
-      if (typeof map2d_clear_goto_preview === 'function') map2d_clear_goto_preview();
       return;
     }
 
