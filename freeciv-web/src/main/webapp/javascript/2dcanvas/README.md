@@ -12,7 +12,8 @@ This module renders the Freeciv game map as a 2D top-down view using the **Tride
 
 | File | Description |
 |------|-------------|
-| `map2d.js` | Core 2D map renderer.  Handles canvas initialisation, tile layout, multi-layer rendering, mouse/keyboard input (pan, zoom, click, context menu) and the deferred-repaint scheduler. |
+| `map2d.js` | Core 2D map renderer.  Handles canvas initialisation, tile layout, multi-layer rendering, and the deferred-repaint scheduler. |
+| `mapctrl2d.js` | All input handling for the 2D map canvas: mouse wheel zoom, mouse drag panning, left-click, right-click context menu, arrow-key panning, and simplified touch controls (pan, pinch-zoom, and tap to always show context menu). |
 | `mapview.js` | Tileset sprite loader and cache.  Loads the active tileset image sheets via `Promise.all`, extracts individual sprite canvases into `sprites` (amplio2, used by the 3D renderer) and `sprites_2d` (trident, used by the 2D renderer). |
 | `tileset_config.js` | Tileset configuration objects for **amplio2** (default, 96×48 px isometric tiles) and **trident** (30×30 px top-down tiles).  Exports the global tileset variables consumed by the rest of the client. |
 | `tilespec.js` | Tileset layer constants (`LAYER_TERRAIN1` … `LAYER_COUNT`), darkness style constants, terrain-match flags, and sprite-tag helper functions (`tileset_has_tag`, `get_tileset_entry`, `tileset_unit_graphic_tag`, etc.). |
@@ -47,6 +48,8 @@ An optional subtle grid is drawn after all layers via `map2d_draw_grid()`.
 
 ## Input handling
 
+Input handling is implemented in `mapctrl2d.js` via the `init_2d_map_controls()` function.
+
 The canvas supports:
 
 - **Mouse-wheel** — zoom in / out (0.3× – 6×)
@@ -55,6 +58,9 @@ The canvas supports:
 - **Right-click** — context menu for tile actions
 - **Arrow keys** — pan (3 tiles per key press)
 - **`+` / `-`** — zoom in / out
+- **Touch tap** — context menu always shown
+- **Touch drag** — pan the map
+- **Two-finger pinch** — zoom in / out
 
 ## Deferred rendering
 
