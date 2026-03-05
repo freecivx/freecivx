@@ -24,7 +24,13 @@ This module renders the Freeciv game map as a 2D top-down view using the **Tride
 1. **Terrain + fog** — grassland base tile beneath every land tile; directional Trident sprites for all other terrain types; solid colour fallback when sprites are not yet loaded.
 2. **Extras + territory borders** — roads, railroads, irrigation, mines, fortresses, and player-colour border overlays.
 3. **City sprites** — Trident city graphics scaled to the current zoom level.
-4. **Unit sprites + shield flags** — top unit on each tile; a count badge when multiple units are stacked.
+4. **Unit sprites + badges** — the focused unit (or the first unit) on each tile; a count badge when multiple units are stacked. Each unit tile shows:
+   - **Selection indicator** (`unit.select0`) drawn behind the focused unit so it is easy to identify.
+   - **Unit sprite** (Trident `units.png`) centred on the tile.
+   - **Nation shield** (top-left corner).
+   - **HP bar** sprite (bottom-left corner).
+   - **Veteran badge** (top-right corner, only when veteran level ≥ 1).
+   - **Activity sprite** (bottom-right corner) — fortify, sentry, goto, auto-explore, etc.
 5. **City labels with nation flags** — always rendered last so they appear on top of everything else.
 
 An optional subtle grid is drawn after all layers via `map2d_draw_grid()`.

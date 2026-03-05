@@ -475,13 +475,30 @@ function render_2d_map()
     }
   }
 
-  /* --- Layer 5: unit sprites + shield flags --- */
+  /* --- Layer 5: unit sprites + shield flags + activity badges --- */
+  var focused_unit = (typeof current_focus !== 'undefined' && current_focus.length > 0)
+                     ? current_focus[0] : null;
   for (i = 0; i < vis.length; i++) {
     v = vis[i];
     if (tile_get_known(v.ptile) !== TILE_KNOWN_SEEN) continue;
     var punits = tile_units(v.ptile);
     if (punits && punits.length > 0) {
-      map2d_draw_unit(ctx, punits[0], v.cx, v.cy, tw, th);
+      /* If the focused unit is on this tile, display it on top */
+      var display_unit = punits[0];
+      if (focused_unit != null) {
+        for (var fi = 0; fi < punits.length; fi++) {
+          if (punits[fi]['id'] === focused_unit['id']) {
+            display_unit = punits[fi];
+            break;
+          }
+        }
+      }
+      /* Draw selection indicator under the focused unit */
+      if (focused_unit != null && display_unit['id'] === focused_unit['id']) {
+        map2d_draw_unit_select(ctx, v.cx, v.cy, tw, th);
+      }
+      map2d_draw_unit(ctx, display_unit, v.cx, v.cy, tw, th);
+      map2d_draw_unit_activity(ctx, display_unit, v.cx, v.cy, tw, th);
       if (punits.length > 1) {
         map2d_draw_unit_count(ctx, punits.length, v.cx, v.cy, tw, th);
       }
@@ -690,6 +707,8 @@ function map2d_draw_unit(ctx, punit, cx, cy, tw, th)
     if (tag && sprites_2d[tag]) {
       ctx.drawImage(sprites_2d[tag], cx, cy, tw, th);
       map2d_draw_unit_shield(ctx, punit, cx, cy, tw, th);
+      map2d_draw_unit_hp(ctx, punit, cx, cy, tw, th);
+      map2d_draw_unit_veteran(ctx, punit, cx, cy, tw, th);
       return;
     }
   }
@@ -699,6 +718,37 @@ function map2d_draw_unit(ctx, punit, cx, cy, tw, th)
   ctx.fillStyle = map2d_player_color(punit['owner'], '#ffff00');
   ctx.fillRect(cx + Math.floor((tw - us) / 2), cy + Math.floor((th - us) / 2), us, us);
   map2d_draw_unit_shield(ctx, punit, cx, cy, tw, th);
+  map2d_draw_unit_hp(ctx, punit, cx, cy, tw, th);
+  map2d_draw_unit_veteran(ctx, punit, cx, cy, tw, th);
+}
+
+/**
+ * Draw the selection indicator sprite (unit.select0) under the focused unit.
+ */
+function map2d_draw_unit_select(ctx, cx, cy, tw, th)
+{
+  if (!sprites_2d_init) return;
+  var spr = sprites_2d['unit.select0'];
+  if (spr) {
+    ctx.drawImage(spr, cx, cy, tw, th);
+  }
+}
+
+/**
+ * Draw the unit activity sprite (fortify, sentry, goto, etc.) over the unit.
+ */
+function map2d_draw_unit_activity(ctx, punit, cx, cy, tw, th)
+{
+  if (!sprites_2d_init || tw < 10) return;
+  if (typeof get_unit_activity_sprite !== 'function') return;
+  var act_info = get_unit_activity_sprite(punit);
+  if (!act_info || !act_info['key']) return;
+  var spr = sprites_2d[act_info['key']];
+  if (!spr) return;
+  /* Draw activity icon in the bottom-right quarter of the tile */
+  var aw = Math.floor(tw * 0.5);
+  var ah = Math.floor(th * 0.5);
+  ctx.drawImage(spr, cx + tw - aw, cy + th - ah, aw, ah);
 }
 
 /**
@@ -719,6 +769,39 @@ function map2d_draw_unit_shield(ctx, punit, cx, cy, tw, th)
   var sh = Math.max(6, Math.floor(th * 0.35));
   var sw = Math.round(sh * shield_spr.width / Math.max(1, shield_spr.height));
   ctx.drawImage(shield_spr, cx + 1, cy + 1, sw, sh);
+}
+
+/**
+ * Draw the unit HP sprite in the bottom-left corner of the tile.
+ */
+function map2d_draw_unit_hp(ctx, punit, cx, cy, tw, th)
+{
+  if (!sprites_2d_init || tw < 14) return;
+  if (typeof get_unit_hp_sprite !== 'function') return;
+  var hp_info = get_unit_hp_sprite(punit);
+  if (!hp_info || !hp_info['key']) return;
+  var spr = sprites_2d[hp_info['key']];
+  if (!spr) return;
+  var bh = Math.max(4, Math.floor(th * 0.33));
+  var bw = Math.round(bh * spr.width / Math.max(1, spr.height));
+  ctx.drawImage(spr, cx + 1, cy + th - bh - 1, bw, bh);
+}
+
+/**
+ * Draw the unit veteran badge in the top-right corner of the tile.
+ */
+function map2d_draw_unit_veteran(ctx, punit, cx, cy, tw, th)
+{
+  if (!sprites_2d_init || tw < 14) return;
+  if (!punit['veteran'] || punit['veteran'] < 1) return;
+  if (typeof get_unit_veteran_sprite !== 'function') return;
+  var vet_info = get_unit_veteran_sprite(punit);
+  if (!vet_info || !vet_info['key']) return;
+  var spr = sprites_2d[vet_info['key']];
+  if (!spr) return;
+  var bh = Math.max(4, Math.floor(th * 0.33));
+  var bw = Math.round(bh * spr.width / Math.max(1, spr.height));
+  ctx.drawImage(spr, cx + tw - bw - 1, cy + 1, bw, bh);
 }
 
 /* ------------------------------------------------------------------ */
