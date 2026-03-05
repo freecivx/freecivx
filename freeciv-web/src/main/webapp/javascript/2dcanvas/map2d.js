@@ -67,6 +67,9 @@ var MAP2D_RENDER_DELAY_MS = 60; /* coalesce rapid packet bursts into one repaint
 var map2d_goto_punit = null;  /* focused unit being moved during goto preview */
 var map2d_goto_path  = null;  /* path object from compute_client_goto_path */
 
+/* Touch: tile where the current single-finger touch began (for drag-to-goto) */
+var map2d_touch_start_ptile = null;
+
 
 /* ------------------------------------------------------------------ */
 /*  Terrain → sprite-tag mapping (Trident tileset naming convention)   */
@@ -298,8 +301,11 @@ function init_2d_map_canvas()
       map2d_drag_start_y  = t.clientY;
       map2d_drag_center_x = map2d_center_x;
       map2d_drag_center_y = map2d_center_y;
+      /* Record start tile so a drag from an owned unit can activate goto */
+      map2d_touch_start_ptile = map2d_tile_from_event({clientX: t.clientX, clientY: t.clientY});
     } else if (e.touches.length === 2) {
       map2d_drag_active = false;
+      map2d_touch_start_ptile = null;
       var t1 = e.touches[0];
       var t2 = e.touches[1];
       map2d_pinch_start_dist = Math.hypot(t2.clientX - t1.clientX, t2.clientY - t1.clientY);
@@ -316,6 +322,25 @@ function init_2d_map_canvas()
         var ptile = map2d_tile_from_event({clientX: t.clientX, clientY: t.clientY});
         map2d_update_goto_preview(ptile);
       } else if (map2d_drag_active) {
+        var dist_px = Math.hypot(t.clientX - map2d_drag_start_x, t.clientY - map2d_drag_start_y);
+        /* If the touch started on a player-owned unit and moved far enough,
+         * activate goto mode so the finger drag traces the path instead of panning. */
+        if (dist_px > 10 && map2d_touch_start_ptile != null) {
+          var start_units = tile_units(map2d_touch_start_ptile);
+          if (start_units && start_units.length > 0
+              && typeof client !== 'undefined' && client.conn && client.conn.playing
+              && start_units[0]['owner'] == client.conn.playing.playerno
+              && typeof activate_goto === 'function'
+              && typeof set_unit_focus_and_redraw === 'function') {
+            set_unit_focus_and_redraw(start_units[0]);
+            activate_goto();
+            map2d_touch_start_ptile = null; /* prevent re-activation on subsequent moves */
+            map2d_drag_moved = true;        /* suppress tap handler on touchend */
+            var ptile = map2d_tile_from_event({clientX: t.clientX, clientY: t.clientY});
+            map2d_update_goto_preview(ptile);
+            return;
+          }
+        }
         map2d_drag_moved = true;
         var tw = Math.max(1, Math.floor(map2d_tileset_config['normal_tile_width']  * map2d_zoom));
         var th = Math.max(1, Math.floor(map2d_tileset_config['normal_tile_height'] * map2d_zoom));
@@ -343,16 +368,21 @@ function init_2d_map_canvas()
         var ptile = map2d_tile_from_event({clientX: ct.clientX, clientY: ct.clientY});
         if (ptile != null) map2d_handle_tile_click(ptile);
       } else if (map2d_drag_active && !map2d_drag_moved && e.changedTouches.length > 0) {
-        /* Treat a tap as a tile click; if there are units on the tile show the
-         * context menu so the player can issue orders (mirrors right-click on desktop). */
+        /* Tap (no drag): select unit / show context menu or open city dialog */
         var ct = e.changedTouches[0];
         var ptile = map2d_tile_from_event({clientX: ct.clientX, clientY: ct.clientY});
         if (ptile != null) {
           map2d_mouse_tile = ptile;
           var punits = tile_units(ptile);
-          if (punits && punits.length > 0) {
+          var own_units = punits && punits.length > 0
+              && typeof client !== 'undefined' && client.conn && client.conn.playing
+              && punits[0]['owner'] == client.conn.playing.playerno;
+          if (own_units) {
+            /* Tap on own unit: select it and show context menu for orders */
             map2d_show_context_menu({clientX: ct.clientX, clientY: ct.clientY});
           } else {
+            /* Tap on empty tile, city, or enemy unit: use normal click handler
+             * which opens the city dialog or handles enemy-unit display */
             map2d_handle_tile_click(ptile);
           }
         }
@@ -360,6 +390,7 @@ function init_2d_map_canvas()
       map2d_drag_active = false;
       map2d_drag_moved  = false;
       map2d_pinch_start_dist = 0;
+      map2d_touch_start_ptile = null;
     }
   }, { passive: false });
 
@@ -367,6 +398,7 @@ function init_2d_map_canvas()
     map2d_drag_active = false;
     map2d_drag_moved  = false;
     map2d_pinch_start_dist = 0;
+    map2d_touch_start_ptile = null;
   }, { passive: false });
 
   map2d_initialized = true;
@@ -1480,8 +1512,8 @@ function map2d_show_context_menu(e)
   /* Focus any unit on the clicked tile */
   if (map2d_mouse_tile != null) {
     var punits = tile_units(map2d_mouse_tile);
-    if (punits && punits.length > 0 && typeof set_unit_focus === 'function') {
-      set_unit_focus(punits[0]);
+    if (punits && punits.length > 0 && typeof set_unit_focus_and_redraw === 'function') {
+      set_unit_focus_and_redraw(punits[0]);
     }
   }
 
