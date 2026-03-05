@@ -1647,7 +1647,7 @@ function do_map_click(ptile, qtype, first_time_called)
       deactivate_goto(false);
     }
 
-    $("#mapcanvas").contextMenu();
+    show_map_context_menu();
 
     return;
   }
@@ -1827,7 +1827,7 @@ function do_map_click(ptile, qtype, first_time_called)
             && sunits[0]['activity'] == ACTIVITY_IDLE) {
           set_unit_focus_and_redraw(sunits[0]);
 
-          $("#mapcanvas").contextMenu();
+          show_map_context_menu();
 
         } else if (!goto_active) {
           show_city_dialog(pcity);
@@ -1853,7 +1853,7 @@ function do_map_click(ptile, qtype, first_time_called)
         }
 
         if (is_touch_device()) {
-          $("#mapcanvas").contextMenu();
+          show_map_context_menu();
 
 	    }
       } else if (pcity == null) {
@@ -2241,6 +2241,29 @@ map_handle_key(keyboard_key, key_code, ctrl, alt, shift, the_event)
 
   }
 
+}
+
+/**************************************************************************
+ Show the map context menu.  In 2D-only mode (mobile / no WebGPU) the
+ custom 2D context menu is used; otherwise the jQuery contextMenu plugin
+ bound to #mapcanvas is triggered.
+
+ @param {object} [event_pos] - Optional {clientX, clientY} used to
+   position the 2D menu.  Falls back to the last recorded 2D-canvas
+   interaction position (map2d_last_event_pos).
+**************************************************************************/
+function show_map_context_menu(event_pos)
+{
+  if (typeof use_2d_only !== 'undefined' && use_2d_only) {
+    if (typeof map2d_show_context_menu === 'function') {
+      var pos = event_pos
+             || (typeof map2d_last_event_pos !== 'undefined' ? map2d_last_event_pos : null)
+             || {clientX: 100, clientY: 100};
+      map2d_show_context_menu(pos);
+    }
+    return;
+  }
+  $("#mapcanvas").contextMenu();
 }
 
 /**************************************************************************
