@@ -70,6 +70,10 @@ var map2d_goto_path  = null;  /* path object from compute_client_goto_path */
 /* Touch: tile where the current single-finger touch began (for drag-to-goto) */
 var map2d_touch_start_ptile = null;
 
+/* Last pointer position on the 2D canvas (used to position the context menu
+ * when it is triggered indirectly, e.g. via do_map_click → show_map_context_menu). */
+var map2d_last_event_pos = {clientX: 0, clientY: 0};
+
 
 /* ------------------------------------------------------------------ */
 /*  Terrain → sprite-tag mapping (Trident tileset naming convention)   */
@@ -273,9 +277,10 @@ function init_2d_map_canvas()
   /* Left-click: unit selection, city dialog, or goto destination */
   map2d_canvas.addEventListener('click', function(e) {
     if (map2d_drag_moved) { map2d_drag_moved = false; return; }
+    map2d_last_event_pos = {clientX: e.clientX, clientY: e.clientY};
     var ptile = map2d_tile_from_event(e);
     if (ptile == null) return;
-    map2d_handle_tile_click(ptile);
+    map2d_handle_tile_click(ptile, e);
   });
 
   /* Context menu on right-click */
@@ -370,7 +375,9 @@ function init_2d_map_canvas()
       } else if (map2d_drag_active && !map2d_drag_moved && e.changedTouches.length > 0) {
         /* Tap (no drag): select unit / show context menu or open city dialog */
         var ct = e.changedTouches[0];
-        var ptile = map2d_tile_from_event({clientX: ct.clientX, clientY: ct.clientY});
+        var touch_pos = {clientX: ct.clientX, clientY: ct.clientY};
+        map2d_last_event_pos = touch_pos;
+        var ptile = map2d_tile_from_event(touch_pos);
         if (ptile != null) {
           map2d_mouse_tile = ptile;
           var punits = tile_units(ptile);
@@ -379,13 +386,13 @@ function init_2d_map_canvas()
               && punits[0]['owner'] == client.conn.playing.playerno;
           if (own_units) {
             /* Tap on own unit: select it and show context menu for orders */
-            map2d_show_context_menu({clientX: ct.clientX, clientY: ct.clientY});
+            map2d_show_context_menu(touch_pos);
           } else {
             /* Tap on empty tile, city, or enemy unit: use normal click handler
              * which opens the city dialog or handles enemy-unit display.
              * Pass the touch position so map2d_handle_tile_click can show the
              * 2D context menu on small screens when relevant. */
-            map2d_handle_tile_click(ptile, {clientX: ct.clientX, clientY: ct.clientY});
+            map2d_handle_tile_click(ptile, touch_pos);
           }
         }
       }
@@ -995,16 +1002,19 @@ function map2d_update_mouse_cursor()
  *
  * @param {object} ptile     - The tile that was clicked.
  * @param {object} [event_pos] - Optional {clientX, clientY} for context
- *                               menu positioning on small screens.
+ *                               menu positioning in 2D mode.
  */
 function map2d_handle_tile_click(ptile, event_pos)
 {
   if (ptile == null) return;
 
-  /* On small screens show the 2D context menu whenever it is relevant,
+  /* In 2D-only mode show the 2D context menu whenever it is relevant,
    * instead of delegating to do_map_click() which would trigger the 3D
-   * map's #mapcanvas context menu (not visible in 2D mode). */
-  if (is_small_screen() && event_pos != null && !client_is_observer()
+   * map's #mapcanvas context menu (not visible in 2D mode).
+   * use_2d_only covers both small/mobile screens and browsers without WebGPU. */
+  var is_2d_mode = typeof use_2d_only !== 'undefined' && use_2d_only;
+  var pos = event_pos || map2d_last_event_pos;
+  if (is_2d_mode && !client_is_observer()
       && typeof client !== 'undefined' && client.conn && client.conn.playing) {
     var punits = tile_units(ptile);
     var own_units = punits && punits.length > 0
@@ -1015,7 +1025,7 @@ function map2d_handle_tile_click(ptile, event_pos)
       /* Set the global tile so map2d_show_context_menu knows which tile
        * to focus a unit on and which tile "Tile info" refers to. */
       map2d_mouse_tile = ptile;
-      map2d_show_context_menu(event_pos);
+      map2d_show_context_menu(pos);
       render_2d_map();
       return;
     }
@@ -1590,7 +1600,9 @@ function map2d_show_context_menu(e)
       li.textContent = label;
       li.addEventListener('mouseenter', function() { li.style.background = '#2a2a4e'; });
       li.addEventListener('mouseleave', function() { li.style.background = ''; });
-      li.addEventListener('click', function() {
+
+      /* Shared action handler used by both click and touchend. */
+      function map2d_menu_item_action() {
         map2d_close_context_menu();
         if (k === 'tile_info') {
           if (map2d_mouse_tile != null && typeof popit_req === 'function') {
@@ -1599,19 +1611,54 @@ function map2d_show_context_menu(e)
         } else if (typeof handle_context_menu_callback === 'function') {
           handle_context_menu_callback(k);
         }
+      }
+
+      li.addEventListener('click', map2d_menu_item_action);
+
+      /* touchend fires reliably on mobile (Firefox Android) even when the
+       * browser's synthetic click is delayed or suppressed.  We stop
+       * propagation so the document-level close-on-outside-tap handler
+       * does not also fire for this same gesture. */
+      li.addEventListener('touchend', function(ev) {
+        ev.preventDefault();
+        ev.stopPropagation();
+        map2d_menu_item_action();
       });
+
       menu.appendChild(li);
     })(key, item['name'] || key);
   }
 
   document.body.appendChild(menu);
 
-  /* Close on any outside click or touch */
+  /* Close when the user interacts outside the menu.
+   *
+   * Chrome for Android fires a synthetic 'click' event roughly 300 ms after
+   * touchend.  Registering the close listener inside a 350 ms setTimeout
+   * ensures that synthetic click is already gone before we start listening,
+   * so the menu is not immediately dismissed the moment it appears.
+   *
+   * We do NOT listen to 'touchstart' here: that event fires before 'click',
+   * so a touchstart-based listener would remove the menu before the menu
+   * item's click handler could execute (Firefox Android bug).  Instead we
+   * rely on 'click' (desktop + Chrome Android synthetic click on outside
+   * elements) and 'touchend' (direct outside-tap on mobile). */
   setTimeout(function() {
-    document.addEventListener('click', map2d_close_context_menu, {once: true});
-    document.addEventListener('contextmenu', map2d_close_context_menu, {once: true});
-    document.addEventListener('touchstart', map2d_close_context_menu, {once: true});
-  }, 0);
+    function map2d_close_if_outside(ev) {
+      var menu = document.getElementById('map2d_context_menu');
+      if (!menu || menu.contains(ev.target)) return; /* already gone or tap inside menu */
+      map2d_close_context_menu();
+      cleanup();
+    }
+    function cleanup() {
+      document.removeEventListener('click',       map2d_close_if_outside);
+      document.removeEventListener('touchend',    map2d_close_if_outside);
+      document.removeEventListener('contextmenu', map2d_close_if_outside);
+    }
+    document.addEventListener('click',       map2d_close_if_outside);
+    document.addEventListener('touchend',    map2d_close_if_outside);
+    document.addEventListener('contextmenu', map2d_close_if_outside);
+  }, 350);
 }
 
 /**
