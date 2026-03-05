@@ -343,10 +343,19 @@ function init_2d_map_canvas()
         var ptile = map2d_tile_from_event({clientX: ct.clientX, clientY: ct.clientY});
         if (ptile != null) map2d_handle_tile_click(ptile);
       } else if (map2d_drag_active && !map2d_drag_moved && e.changedTouches.length > 0) {
-        /* Treat a tap as a tile click */
+        /* Treat a tap as a tile click; if there are units on the tile show the
+         * context menu so the player can issue orders (mirrors right-click on desktop). */
         var ct = e.changedTouches[0];
         var ptile = map2d_tile_from_event({clientX: ct.clientX, clientY: ct.clientY});
-        if (ptile != null) map2d_handle_tile_click(ptile);
+        if (ptile != null) {
+          map2d_mouse_tile = ptile;
+          var punits = tile_units(ptile);
+          if (punits && punits.length > 0) {
+            map2d_show_context_menu({clientX: ct.clientX, clientY: ct.clientY});
+          } else {
+            map2d_handle_tile_click(ptile);
+          }
+        }
       }
       map2d_drag_active = false;
       map2d_drag_moved  = false;
@@ -1537,10 +1546,11 @@ function map2d_show_context_menu(e)
 
   document.body.appendChild(menu);
 
-  /* Close on any outside click */
+  /* Close on any outside click or touch */
   setTimeout(function() {
     document.addEventListener('click', map2d_close_context_menu, {once: true});
     document.addEventListener('contextmenu', map2d_close_context_menu, {once: true});
+    document.addEventListener('touchstart', map2d_close_context_menu, {once: true});
   }, 0);
 }
 
