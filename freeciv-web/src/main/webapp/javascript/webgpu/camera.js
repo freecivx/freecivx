@@ -85,6 +85,16 @@ function center_tile_mapcanvas_3d(ptile)
 }
 
 /**************************************************************************
+  Centers the 2D mapview around the given tile, used when use_2d_only is
+  true (mobile devices or browsers without WebGPU support).
+**************************************************************************/
+function center_tile_mapcanvas_2d(ptile)
+{
+  if (ptile == null) return;
+  center_2d_map_on_tile(ptile);
+}
+
+/**************************************************************************
 ...
 **************************************************************************/
 function center_tile_city(city)

@@ -3268,7 +3268,11 @@ function update_goto_path(goto_packet)
 **************************************************************************/
 function center_tile_mapcanvas(ptile)
 {
-  center_tile_mapcanvas_3d(ptile);
+  if (typeof use_2d_only !== 'undefined' && use_2d_only) {
+    center_tile_mapcanvas_2d(ptile);
+  } else {
+    center_tile_mapcanvas_3d(ptile);
+  }
 }
 
 /**************************************************************************
