@@ -1,250 +1,168 @@
-/**********************************************************************
-    Freeciv-web - the web version of Freeciv. http://www.FreecivWorld.net/
-    Copyright (C) 2009-2025  The Freeciv-web project
-
-    This program is free software: you can redistribute it and/or modify
-    it under the terms of the GNU Affero General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
-
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU Affero General Public License for more details.
-
-    You should have received a copy of the GNU Affero General Public License
-    along with this program.  If not, see <http://www.gnu.org/licenses/>.
-
-***********************************************************************/
-
 /**
- * 2D Map Canvas Controls (mapctrl2d.js)
- *
- * Contains all input handling for the 2D map canvas:
- *  - Mouse wheel zoom
- *  - Mouse drag panning
- *  - Mouse click (unit selection / goto destination)
- *  - Right-click context menu
- *  - Keyboard arrow-key panning
- *  - Touch controls: single-finger pan, two-finger pinch-zoom,
- *    and tap to always show context menu
- *
- * All event listeners use jQuery .on() / .off().
- * No setTimeout or other deferred logic is used here.
- *
- * Public API
- * ----------
- *  init_2d_map_controls()  – attach all event listeners to the canvas
+ * 2D Map Canvas Controls (jQuery Simplified)
+ * Ensures robust "Tap for Context Menu" on mobile.
  */
 
-/* ------------------------------------------------------------------ */
-/*  Control state                                                       */
-/* ------------------------------------------------------------------ */
+var map2d_drag_active = false;
+var map2d_drag_moved = false;
+var map2d_start_x = 0;
+var map2d_start_y = 0;
+var map2d_start_center_x = 0;
+var map2d_start_center_y = 0;
 
-/* Panning by mouse-drag / touch */
-var map2d_drag_active   = false;
-var map2d_drag_start_x  = 0;
-var map2d_drag_start_y  = 0;
-var map2d_drag_center_x = 0;
-var map2d_drag_center_y = 0;
-var map2d_drag_moved    = false; /* true if pointer moved during current press */
+var map2d_pinch_dist = 0;
+var map2d_pinch_zoom = 1.0;
 
-/* Pinch-zoom state (two-finger touch) */
-var map2d_pinch_start_dist = 0;
-var map2d_pinch_start_zoom = 1.0;
-
-/* Timestamp of the last touch-tap that showed the context menu.
- * Used to suppress the synthetic 'click' Chrome Android fires ~300 ms
- * after every touchend so it does not re-trigger map logic. */
-var map2d_touch_ctx_time = 0;
-
-/* ------------------------------------------------------------------ */
-/*  Event handler setup                                                 */
-/* ------------------------------------------------------------------ */
-
-/**
- * Attach all mouse, keyboard, and touch event listeners to the 2D map
- * canvas using jQuery.  Called once from init_2d_map_canvas() in
- * map2d.js after the canvas element has been obtained.
- */
-function init_2d_map_controls()
-{
+function init_2d_map_controls() {
   if (!map2d_canvas) return;
-
   var $canvas = $(map2d_canvas);
 
-  /* ---- Mouse-wheel zoom ------------------------------------------ */
-  /* jQuery on a <canvas> uses non-passive listeners, so preventDefault()
-   * works correctly here without needing native addEventListener options. */
+  /* ---- Zoom (Wheel) ---- */
   $canvas.on('wheel', function(e) {
     e.preventDefault();
     var delta = e.originalEvent.deltaY;
-    if (delta < 0) {
-      map2d_zoom = Math.min(MAP2D_MAX_ZOOM, map2d_zoom * 1.15);
-    } else {
-      map2d_zoom = Math.max(MAP2D_MIN_ZOOM, map2d_zoom / 1.15);
-    }
+    var factor = delta < 0 ? 1.15 : 1 / 1.15;
+    map2d_zoom = Math.max(MAP2D_MIN_ZOOM, Math.min(MAP2D_MAX_ZOOM, map2d_zoom * factor));
     render_2d_map();
   });
 
-  /* ---- Mouse-drag panning ---------------------------------------- */
-  $canvas.on('mousedown', function(e) {
-    map2d_drag_active   = true;
-    map2d_drag_moved    = false;
-    map2d_drag_start_x  = e.clientX;
-    map2d_drag_start_y  = e.clientY;
-    map2d_drag_center_x = map2d_center_x;
-    map2d_drag_center_y = map2d_center_y;
-    map2d_canvas.style.cursor = 'grabbing';
+  /* ---- Unified Press (Mouse & Touch) ---- */
+  $canvas.on('mousedown touchstart', function(e) {
+    var isTouch = e.type === 'touchstart';
+    var ptr = isTouch ? e.originalEvent.touches[0] : e;
+
+    // Ignore right-click for dragging
+    if (!isTouch && e.button === 2) return;
+
+    map2d_drag_active = true;
+    map2d_drag_moved = false;
+    map2d_start_x = ptr.clientX;
+    map2d_start_y = ptr.clientY;
+    map2d_start_center_x = map2d_center_x;
+    map2d_start_center_y = map2d_center_y;
+
+    if (isTouch && e.originalEvent.touches.length === 2) {
+      var t1 = e.originalEvent.touches[0];
+      var t2 = e.originalEvent.touches[1];
+      map2d_pinch_dist = Math.hypot(t2.clientX - t1.clientX, t2.clientY - t1.clientY);
+      map2d_pinch_zoom = map2d_zoom;
+      map2d_drag_active = false; // Pinch overrides pan
+    }
   });
 
-  $canvas.on('mousemove', function(e) {
-    /* Track tile under cursor for context menu and click handling */
-    map2d_mouse_tile = map2d_tile_from_event(e);
-    map2d_update_mouse_cursor();
-
-    /* Update goto preview when goto mode is active (don't pan in goto mode) */
-    if (typeof goto_active !== 'undefined' && goto_active) {
-      map2d_update_goto_preview(map2d_mouse_tile);
-      return;
-    }
-
+  /* ---- Unified Move ---- */
+  $(window).on('mousemove touchmove', function(e) {
     if (!map2d_drag_active) return;
-    map2d_drag_moved = true;
-    var tw = Math.max(1, Math.floor(map2d_tileset_config['normal_tile_width']  * map2d_zoom));
-    var th = Math.max(1, Math.floor(map2d_tileset_config['normal_tile_height'] * map2d_zoom));
-    var dx = Math.round((map2d_drag_start_x - e.clientX) / tw);
-    var dy = Math.round((map2d_drag_start_y - e.clientY) / th);
-    map2d_center_x = map2d_drag_center_x + dx;
-    map2d_center_y = map2d_drag_center_y + dy;
-    render_2d_map();
-  });
 
-  $canvas.on('mouseup', function() {
-    map2d_drag_active = false;
-    map2d_update_mouse_cursor();
-  });
+    var isTouch = e.type === 'touchmove';
+    var ptr = isTouch ? e.originalEvent.touches[0] : e;
 
-  $canvas.on('mouseleave', function() {
-    map2d_drag_active = false;
-    map2d_canvas.style.cursor = 'grab';
-  });
+    var dx = ptr.clientX - map2d_start_x;
+    var dy = ptr.clientY - map2d_start_y;
 
-  map2d_canvas.style.cursor = 'grab';
-
-  /* ---- Arrow-key panning ----------------------------------------- */
-  /* Canvas must be focusable; stopPropagation prevents arrow keys from
-   * also triggering unit-movement in the global keyboard listener. */
-  map2d_canvas.setAttribute('tabindex', '0');
-  $canvas.on('keydown', function(e) {
-    var step = 3;
-    if (e.key === 'ArrowLeft')  { map2d_center_x -= step; render_2d_map(); e.preventDefault(); e.stopPropagation(); return; }
-    if (e.key === 'ArrowRight') { map2d_center_x += step; render_2d_map(); e.preventDefault(); e.stopPropagation(); return; }
-    if (e.key === 'ArrowUp')    { map2d_center_y -= step; render_2d_map(); e.preventDefault(); e.stopPropagation(); return; }
-    if (e.key === 'ArrowDown')  { map2d_center_y += step; render_2d_map(); e.preventDefault(); e.stopPropagation(); return; }
-    if (e.key === '+')          { map2d_zoom = Math.min(MAP2D_MAX_ZOOM, map2d_zoom * 1.2); render_2d_map(); }
-    if (e.key === '-')          { map2d_zoom = Math.max(MAP2D_MIN_ZOOM, map2d_zoom / 1.2); render_2d_map(); }
-  });
-
-  /* ---- Left-click: unit selection / context menu ----------------- */
-  /* Suppress synthetic clicks that Chrome Android fires ~300 ms after
-   * a touchend which already showed the context menu. */
-  $canvas.on('click', function(e) {
-    if (map2d_drag_moved) { map2d_drag_moved = false; return; }
-    if (Date.now() - map2d_touch_ctx_time < 500) return;
-    map2d_last_event_pos = {clientX: e.clientX, clientY: e.clientY};
-    var ptile = map2d_tile_from_event(e);
-    if (ptile == null) return;
-    map2d_handle_tile_click(ptile, e);
-    e.stopPropagation(); /* keep close-on-outside listener from firing */
-  });
-
-  /* ---- Right-click context menu ---------------------------------- */
-  $canvas.on('contextmenu', function(e) {
-    e.preventDefault();
-    e.stopPropagation(); /* keep close-on-outside listener from firing */
-    map2d_mouse_tile = map2d_tile_from_event(e);
-    map2d_show_context_menu(e);
-  });
-
-  /* ----------------------------------------------------------------
-   * Touch controls – simple and always working
-   *
-   * Single-finger drag = pan
-   * Two-finger pinch   = zoom
-   * Tap (no drag)      = context menu ALWAYS shown
-   *
-   * jQuery on a <canvas> uses non-passive listeners, so preventDefault()
-   * inside touchstart/touchmove works correctly to block page scrolling.
-   * ---------------------------------------------------------------- */
-  $canvas.on('touchstart', function(e) {
-    e.preventDefault();
-    var oe = e.originalEvent;
-    if (oe.touches.length === 1) {
-      var t = oe.touches[0];
-      map2d_drag_active   = true;
-      map2d_drag_moved    = false;
-      map2d_drag_start_x  = t.clientX;
-      map2d_drag_start_y  = t.clientY;
-      map2d_drag_center_x = map2d_center_x;
-      map2d_drag_center_y = map2d_center_y;
-    } else if (oe.touches.length === 2) {
-      map2d_drag_active = false;
-      var t1 = oe.touches[0];
-      var t2 = oe.touches[1];
-      map2d_pinch_start_dist = Math.hypot(t2.clientX - t1.clientX, t2.clientY - t1.clientY);
-      map2d_pinch_start_zoom = map2d_zoom;
-    }
-  });
-
-  $canvas.on('touchmove', function(e) {
-    e.preventDefault();
-    var oe = e.originalEvent;
-    if (oe.touches.length === 1 && map2d_drag_active) {
-      var t = oe.touches[0];
+    // Distinguish Tap from Drag (threshold of 6 pixels)
+    if (Math.hypot(dx, dy) > 6) {
       map2d_drag_moved = true;
-      var tw = Math.max(1, Math.floor(map2d_tileset_config['normal_tile_width']  * map2d_zoom));
-      var th = Math.max(1, Math.floor(map2d_tileset_config['normal_tile_height'] * map2d_zoom));
-      var dx = Math.round((map2d_drag_start_x - t.clientX) / tw);
-      var dy = Math.round((map2d_drag_start_y - t.clientY) / th);
-      map2d_center_x = map2d_drag_center_x + dx;
-      map2d_center_y = map2d_drag_center_y + dy;
-      render_2d_map();
-    } else if (oe.touches.length === 2 && map2d_pinch_start_dist > 0) {
-      var t1 = oe.touches[0];
-      var t2 = oe.touches[1];
-      var dist = Math.hypot(t2.clientX - t1.clientX, t2.clientY - t1.clientY);
-      map2d_zoom = Math.max(MAP2D_MIN_ZOOM, Math.min(MAP2D_MAX_ZOOM,
-                    map2d_pinch_start_zoom * dist / map2d_pinch_start_dist));
+      var tw = Math.floor(map2d_tileset_config.normal_tile_width * map2d_zoom);
+      var th = Math.floor(map2d_tileset_config.normal_tile_height * map2d_zoom);
+
+      map2d_center_x = map2d_start_center_x - Math.round(dx / tw);
+      map2d_center_y = map2d_start_center_y - Math.round(dy / th);
       render_2d_map();
     }
+
+    if (isTouch) e.preventDefault(); // Prevent scrolling while panning
   });
 
-  $canvas.on('touchend', function(e) {
-    e.preventDefault();
-    var oe = e.originalEvent;
-    /* Tap (no drag): ALWAYS show the context menu */
-    if (oe.touches.length === 0 && !map2d_drag_moved && oe.changedTouches.length > 0) {
-      var ct = oe.changedTouches[0];
-      var touch_pos = {clientX: ct.clientX, clientY: ct.clientY};
-      map2d_last_event_pos = touch_pos;
-      var ptile = map2d_tile_from_event(touch_pos);
-      if (ptile != null) {
-        map2d_mouse_tile = ptile;
-        map2d_touch_ctx_time = Date.now(); /* suppress the following synthetic click */
-        map2d_show_context_menu(touch_pos);
-        render_2d_map();
+  /* ---- Unified Release (The Tap Logic) ---- */
+  $(window).on('mouseup touchend', function(e) {
+    if (!map2d_drag_active) return;
+    map2d_drag_active = false;
+
+    // If we didn't drag significantly, it's a CLICK/TAP
+    if (!map2d_drag_moved) {
+      var isTouch = e.type === 'touchend';
+      var ptr = isTouch ? e.originalEvent.changedTouches[0] : e;
+
+      map2d_mouse_tile = map2d_tile_from_event(ptr);
+
+      if (isTouch || e.button === 2) {
+        // Mobile tap OR Right-click always shows menu
+        map2d_show_context_menu(ptr);
+      } else {
+        // Regular left-click selects unit
+        map2d_handle_tile_click(map2d_mouse_tile, e);
       }
-      e.stopPropagation(); /* keep close-on-outside listener from firing */
     }
-    map2d_drag_active      = false;
-    map2d_drag_moved       = false;
-    map2d_pinch_start_dist = 0;
   });
 
-  $canvas.on('touchcancel', function() {
-    map2d_drag_active      = false;
-    map2d_drag_moved       = false;
-    map2d_pinch_start_dist = 0;
+  /* ---- Cleanup & Helpers ---- */
+  $canvas.on('contextmenu', function(e) { e.preventDefault(); });
+
+  $canvas.attr('tabindex', '0').on('keydown', function(e) {
+    var step = 3;
+    if (e.key.includes('Arrow')) {
+      if (e.key === 'ArrowLeft')  map2d_center_x -= step;
+      if (e.key === 'ArrowRight') map2d_center_x += step;
+      if (e.key === 'ArrowUp')    map2d_center_y -= step;
+      if (e.key === 'ArrowDown')  map2d_center_y += step;
+      e.preventDefault();
+      render_2d_map();
+    }
   });
+}
+
+/**
+ * Modern Context Menu (Robust)
+ */
+function map2d_show_context_menu(pos) {
+  map2d_close_context_menu();
+
+  var items = (typeof update_unit_order_commands === 'function') ? update_unit_order_commands() : {};
+  items['tile_info'] = { name: 'Tile Info', icon: 'fa-info-circle' };
+
+  var $menu = $('<ul id="map2d_context_menu"></ul>').css({
+    position: 'fixed',
+    left: pos.clientX,
+    top: pos.clientY,
+    background: '#1a1a2e',
+    color: '#eee',
+    border: '1px solid #444',
+    padding: '5px 0',
+    listStyle: 'none',
+    zIndex: 10000,
+    borderRadius: '4px',
+    minWidth: '150px'
+  });
+
+  $.each(items, function(key, val) {
+    $('<li>')
+      .text(val.name || key)
+      .css({ padding: '8px 15px', cursor: 'pointer' })
+      .hover(function() { $(this).css('background', '#333'); }, function() { $(this).css('background', ''); })
+      .on('click touchend', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        map2d_close_context_menu();
+        if (key === 'tile_info') {
+          if (typeof popit_req === 'function') popit_req(map2d_mouse_tile);
+        } else {
+          if (typeof handle_context_menu_callback === 'function') handle_context_menu_callback(key);
+        }
+      })
+      .appendTo($menu);
+  });
+
+  $('body').append($menu);
+
+  // Close menu on outside click
+  setTimeout(function() {
+    $(document).one('mousedown touchstart', function(e) {
+      if (!$('#map2d_context_menu').has(e.target).length) map2d_close_context_menu();
+    });
+  }, 10);
+}
+
+function map2d_close_context_menu() {
+  $('#map2d_context_menu').remove();
 }
