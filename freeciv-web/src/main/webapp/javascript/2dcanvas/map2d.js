@@ -659,8 +659,10 @@ function map2d_draw_city_label(ctx, pcity, cx, cy, tw, th)
 {
   if (tw < 20) return; /* too small to be readable */
   var city_size = (typeof pcity['size'] === 'number') ? pcity['size'] : null;
-  var name      = (city_size !== null ? city_size + ' ' : '') + (pcity['name'] || '');
-  var font_size = Math.max(8, Math.floor(th * 0.45));
+  /* Match 3D label format: CITYNAME SIZE (uppercase, size after name) */
+  var city_name = (pcity['name'] || '').toUpperCase();
+  var name      = city_name + (city_size !== null ? ' ' + city_size : '');
+  var font_size = Math.max(7, Math.floor(th * 0.35));
   var label_y   = cy + th + 1;
 
   /* Set font before measuring text width */
@@ -675,7 +677,7 @@ function map2d_draw_city_label(ctx, pcity, cx, cy, tw, th)
     if (flag_info && flag_info['key']) {
       var spr = sprites_2d[flag_info['key']];
       if (spr) {
-        fh = Math.max(8, font_size);
+        fh = font_size;
         fw = Math.round(fh * spr.width / Math.max(1, spr.height));
         flag_spr = spr;
       }
@@ -686,6 +688,16 @@ function map2d_draw_city_label(ctx, pcity, cx, cy, tw, th)
   var gap     = flag_spr ? 2 : 0;
   var total_w = fw + gap + text_w;
   var start_x = Math.floor(cx + tw / 2 - total_w / 2);
+  var pad     = 3;
+
+  /* Semi-transparent black background behind the text (matching 3D style) */
+  var bg_x = start_x + fw + gap - pad;
+  var bg_w = text_w + pad * 2;
+  var bg_h = font_size + pad * 2;
+  ctx.globalAlpha = 0.85;
+  ctx.fillStyle   = '#000000';
+  ctx.fillRect(bg_x, label_y - pad, bg_w, bg_h);
+  ctx.globalAlpha = 1.0;
 
   if (flag_spr) {
     ctx.drawImage(flag_spr, start_x, label_y, fw, fh);
@@ -693,10 +705,20 @@ function map2d_draw_city_label(ctx, pcity, cx, cy, tw, th)
 
   ctx.textAlign   = 'left';
   ctx.strokeStyle = '#000000';
-  ctx.lineWidth   = 2;
+  ctx.lineWidth   = 3;
   ctx.strokeText(name, start_x + fw + gap, label_y);
   ctx.fillStyle   = '#ffffff';
   ctx.fillText(name, start_x + fw + gap, label_y);
+
+  /* Nation colour border outline around the full label (matching 3D style) */
+  var nation_color = map2d_player_color(pcity['owner'], null);
+  if (nation_color) {
+    var outline_x = start_x - pad;
+    var outline_w = total_w + pad * 2;
+    ctx.lineWidth   = 1;
+    ctx.strokeStyle = nation_color;
+    ctx.strokeRect(outline_x, label_y - pad, outline_w, bg_h);
+  }
 }
 
 function map2d_draw_unit(ctx, punit, cx, cy, tw, th)
