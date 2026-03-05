@@ -387,6 +387,7 @@ function init_2d_map_canvas()
           if (own_units) {
             /* Tap on own unit: select it and show context menu for orders */
             map2d_show_context_menu(touch_pos);
+            render_2d_map();
           } else {
             /* Tap on empty tile, city, or enemy unit: use normal click handler
              * which opens the city dialog or handles enemy-unit display.

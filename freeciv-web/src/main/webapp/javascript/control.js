@@ -151,23 +151,24 @@ function control_init()
    * as this gives wrong mouse cursor during drag to goto units.
    * Text selection is allowed in chat, dialogs, and other text areas. */
   document.onselectstart = function(e){
+    var hasClosest = e.target && typeof e.target.closest === 'function';
     // Allow text selection in text input fields, chat messages, and dialogs
     if (e.target && (
         e.target.tagName === 'INPUT' ||
         e.target.tagName === 'TEXTAREA' ||
         e.target.id === 'game_message_area' ||
-        e.target.closest('#game_message_area') ||
-        e.target.closest('.ui-dialog-content') ||
-        e.target.closest('#game_chatbox_panel')
+        (hasClosest && e.target.closest('#game_message_area')) ||
+        (hasClosest && e.target.closest('.ui-dialog-content')) ||
+        (hasClosest && e.target.closest('#game_chatbox_panel'))
     )) {
       return true;
     }
     // Prevent selection on game canvas and interactive elements
     if (e.target && (
         e.target.id === 'mapcanvas' ||
-        e.target.closest('#mapcanvas') ||
-        e.target.closest('#game_unit_info') ||
-        e.target.closest('#game_unit_panel')
+        (hasClosest && e.target.closest('#mapcanvas')) ||
+        (hasClosest && e.target.closest('#game_unit_info')) ||
+        (hasClosest && e.target.closest('#game_unit_panel'))
     )) {
       return false;
     }
