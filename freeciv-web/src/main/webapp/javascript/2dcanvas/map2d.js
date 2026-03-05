@@ -382,8 +382,10 @@ function init_2d_map_canvas()
             map2d_show_context_menu({clientX: ct.clientX, clientY: ct.clientY});
           } else {
             /* Tap on empty tile, city, or enemy unit: use normal click handler
-             * which opens the city dialog or handles enemy-unit display */
-            map2d_handle_tile_click(ptile);
+             * which opens the city dialog or handles enemy-unit display.
+             * Pass the touch position so map2d_handle_tile_click can show the
+             * 2D context menu on small screens when relevant. */
+            map2d_handle_tile_click(ptile, {clientX: ct.clientX, clientY: ct.clientY});
           }
         }
       }
@@ -984,15 +986,41 @@ function map2d_update_mouse_cursor()
 }
 
 /**
- * Handle a left-click on the 2D map canvas.
+ * Handle a left-click (or tap) on the 2D map canvas.
  *
- * Delegates entirely to do_map_click() so that all game actions (goto,
- * city dialog, unit focus, paradrop, airlift, …) behave identically to
- * the 3D map.
+ * On small screens (mobile), clicking own units or re-clicking the
+ * already-focused tile shows the 2D context menu directly, because
+ * do_map_click() would otherwise trigger the 3D map's #mapcanvas
+ * context menu which is not visible in 2D mode.
+ *
+ * @param {object} ptile     - The tile that was clicked.
+ * @param {object} [event_pos] - Optional {clientX, clientY} for context
+ *                               menu positioning on small screens.
  */
-function map2d_handle_tile_click(ptile)
+function map2d_handle_tile_click(ptile, event_pos)
 {
   if (ptile == null) return;
+
+  /* On small screens show the 2D context menu whenever it is relevant,
+   * instead of delegating to do_map_click() which would trigger the 3D
+   * map's #mapcanvas context menu (not visible in 2D mode). */
+  if (is_small_screen() && event_pos != null && !client_is_observer()
+      && typeof client !== 'undefined' && client.conn && client.conn.playing) {
+    var punits = tile_units(ptile);
+    var own_units = punits && punits.length > 0
+        && punits[0]['owner'] == client.conn.playing.playerno;
+    var same_tile = current_focus.length > 0
+        && current_focus[0]['tile'] == ptile['index'];
+    if (own_units || same_tile) {
+      /* Set the global tile so map2d_show_context_menu knows which tile
+       * to focus a unit on and which tile "Tile info" refers to. */
+      map2d_mouse_tile = ptile;
+      map2d_show_context_menu(event_pos);
+      render_2d_map();
+      return;
+    }
+  }
+
   do_map_click(ptile, SELECT_POPUP, true);
   render_2d_map();
 }
