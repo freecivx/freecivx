@@ -86,7 +86,6 @@ function control_init()
 
   $(document).keydown(global_keyboard_listener);
   $(window).resize(mapview_window_resized);
-  $(window).bind('orientationchange resize', orientation_changed);
 
   $("#turn_done_button").click(send_end_turn);
   if (!is_touch_device()) {
