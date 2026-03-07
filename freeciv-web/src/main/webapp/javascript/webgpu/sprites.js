@@ -384,7 +384,7 @@ function create_city_worked_sprite(food, shields, trade) {
   }
 
   var sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: texture }));
-  sprite.scale.set(24, 8, 1);
+  sprite.scale.set(12, 8, 1);
   return sprite;
 }
 
