@@ -480,6 +480,11 @@ function map2d_draw_city(ctx, pcity, cx, cy, tw, th)
                    || sprites_2d['city.modern_city_0'];
     if (city_sprite) {
       ctx.drawImage(city_sprite, cx, cy, tw, th);
+      /* Draw city walls on top if the city has them (mirrors 3D client) */
+      if (pcity['walls']) {
+        var wall_sprite = map2d_get_city_wall_sprite(pcity);
+        if (wall_sprite) ctx.drawImage(wall_sprite, cx, cy, tw, th);
+      }
       return;
     }
   }
@@ -490,6 +495,33 @@ function map2d_draw_city(ctx, pcity, cx, cy, tw, th)
   ctx.beginPath();
   ctx.arc(cx + tw / 2, cy + th / 2, r, 0, 2 * Math.PI);
   ctx.fill();
+}
+
+/* Returns the wall sprite canvas for a city based on its style, or null. */
+function map2d_get_city_wall_sprite(pcity)
+{
+  if (!sprites_2d_init) return null;
+
+  /* Map city style index to wall sprite key (matches styles.ruleset order).
+   * Styles without a dedicated wall sprite fall back to their graphic_alt. */
+  var style_wall_keys = [
+    'city.european_wall_0',    /* 0: European */
+    'city.classical_wall_0',   /* 1: Classical */
+    'city.tropical_wall_0',    /* 2: Tropical */
+    'city.asian_wall_0',       /* 3: Asian */
+    'city.classical_wall_0',   /* 4: Babylonian (graphic_alt: classical) */
+    'city.european_wall_0',    /* 5: Celtic (graphic_alt: european) */
+    'city.industrial_wall_0',  /* 6: Industrial */
+    'city.electricage_wall_0', /* 7: ElectricAge */
+    'city.modern_wall_0',      /* 8: Modern */
+    'city.postmodern_wall_0',  /* 9: PostModern */
+  ];
+
+  var style = pcity['style'];
+  var key = (typeof style === 'number' && style_wall_keys[style])
+            ? style_wall_keys[style] : null;
+
+  return (key && sprites_2d[key]) || sprites_2d['cd.city_wall'] || null;
 }
 
 function map2d_draw_city_label(ctx, pcity, cx, cy, tw, th)
