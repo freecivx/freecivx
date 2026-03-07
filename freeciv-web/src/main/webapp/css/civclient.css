@@ -1836,9 +1836,9 @@ li.tech-both::before {
 
 #cma_form {
   float: left;
-  padding-left: 100px;
-  padding-top: 20px;
-  border-spacing: 30px;
+  padding-left: 20px;
+  padding-top: 10px;
+  border-spacing: 10px;
   font-size: 140%;
 }
 
