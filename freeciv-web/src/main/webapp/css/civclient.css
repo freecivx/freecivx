@@ -237,7 +237,7 @@ body
   float: right; 
   width: 55%;
   background: url("/images/bg.jpg") repeat scroll 0 0 #222222;
-  height: 533px;
+  min-height: 200px;
 }
 
 
@@ -1256,24 +1256,37 @@ body
   cursor:pointer;
 }
 
-/* city tabs will be on the bottom of the dialog. */
-#city_tabs .ui-tabs-nav { 
-    position: absolute; 
-    left: 0.25em; 
-    right: 0.25em; 
-    bottom: 0.25em; 
-    padding: 0em 0.2em 0.2em; 
-} 
-#city_tabs .ui-tabs-nav li { 
-    border-top: none; 
-    border-bottom: 1px solid #ccc; 
-    -moz-border-radius: 0px 0px 4px 4px; 
-    -webkit-border-radius: 0px 0px 4px 4px; 
-    border-radius: 0px 0px 4px 4px; 
-} 
-#city_tabs .ui-tabs-nav li.ui-tabs-selected, 
-#city_tabs .ui-tabs-nav li.ui-state-active { 
-    top: -1px; 
+/* city tabs at the top of the dialog. */
+#city_tabs {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+}
+#city_tabs .ui-tabs-nav {
+    flex-shrink: 0;
+    padding: 0.2em 0.2em 0;
+}
+#city_tabs .ui-tabs-nav li {
+    border-bottom: none;
+    border-top: 1px solid #ccc;
+    -moz-border-radius: 4px 4px 0px 0px;
+    -webkit-border-radius: 4px 4px 0px 0px;
+    border-radius: 4px 4px 0px 0px;
+}
+#city_tabs .ui-tabs-nav li.ui-tabs-selected,
+#city_tabs .ui-tabs-nav li.ui-state-active {
+    top: 1px;
+}
+#city_tabs .ui-tabs-panel {
+    flex: 1;
+    overflow: auto;
+    box-sizing: border-box;
+}
+
+@media (max-width: 767px) {
+  #city_tabs .ui-tabs-nav li.extra_tabs_big {
+    display: none;
+  }
 }
 
 

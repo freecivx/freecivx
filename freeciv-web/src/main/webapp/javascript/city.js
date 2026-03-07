@@ -347,12 +347,16 @@ function show_city_dialog(pcity)
      "Add to worklist" : city_add_to_worklist
   });
 
-  dialog_buttons = $.extend(dialog_buttons, {"Rename" : rename_city});
+  if (!is_small_screen()) {
+    dialog_buttons = $.extend(dialog_buttons, {"Rename" : rename_city});
+  }
   if (pcity['buy_cost'] > 0) {
     dialog_buttons = $.extend(dialog_buttons, {"Buy (B)": request_city_buy});
   }
-  dialog_buttons = $.extend(dialog_buttons, {"Previous city": previous_city});
-  dialog_buttons = $.extend(dialog_buttons, {"Next city (N)": next_city});
+  if (!is_small_screen()) {
+    dialog_buttons = $.extend(dialog_buttons, {"Previous city": previous_city});
+    dialog_buttons = $.extend(dialog_buttons, {"Next city (N)": next_city});
+  }
 
   dialog_buttons = $.extend(dialog_buttons, {"Close (W)": close_city_dialog});
 
