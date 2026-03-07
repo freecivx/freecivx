@@ -513,6 +513,12 @@ function handle_map_info(packet)
 
   map_init_topology(false);
 
+  if (is_hex()) {
+    $("#map_2d_tab").hide();
+  } else {
+    $("#map_2d_tab").show();
+  }
+
   map_allocate();
 
   set_mapview_model_size();
