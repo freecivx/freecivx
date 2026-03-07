@@ -312,6 +312,11 @@ function render_2d_map()
     }
   }
 
+  /* --- Layer 4.5: city worked tile output overlay --- */
+  if (typeof active_city !== 'undefined' && active_city != null) {
+    map2d_draw_city_worked_overlay(ctx, vis, tw, th);
+  }
+
   /* --- Layer 5: unit sprites + shield flags + activity badges --- */
   var focused_unit = (typeof current_focus !== 'undefined' && current_focus.length > 0)
                      ? current_focus[0] : null;
@@ -587,6 +592,64 @@ function map2d_draw_city_label(ctx, pcity, cx, cy, tw, th)
     ctx.lineWidth   = 1;
     ctx.strokeStyle = nation_color;
     ctx.strokeRect(outline_x, label_y - pad, outline_w, bg_h);
+  }
+}
+
+/**
+ * Draw city worked tile output sprites (food / shields / trade) on every
+ * tile worked by the currently open city dialog.  Only called when a city
+ * dialog is open (active_city != null).
+ *
+ * The sprites used are the Trident tileset number icons:
+ *   city.t_food_N, city.t_shields_N, city.t_trade_N  (N = 0..9)
+ * drawn in a row along the bottom edge of each worked tile.
+ */
+function map2d_draw_city_worked_overlay(ctx, vis, tw, th)
+{
+  if (active_city == null) return;
+  if (!sprites_2d_init) return;
+  if (tw < 12) return;
+
+  var ctile = city_tile(active_city);
+  if (ctile == null) return;
+  if (active_city['output_food'] == null) return;
+
+  var granularity = (game_info && game_info['granularity'])
+                    ? game_info['granularity'] : 1;
+
+  /* Each output icon occupies 1/3 of the tile width, 1/3 of the height */
+  var icon_w = Math.max(4, Math.floor(tw / 3));
+  var icon_h = Math.max(4, Math.floor(th / 3));
+
+  for (var i = 0; i < vis.length; i++) {
+    var v = vis[i];
+    var ptile = v.ptile;
+
+    if (tile_get_known(ptile) !== TILE_KNOWN_SEEN) continue;
+    if (ptile['worked'] !== active_city['id']) continue;
+
+    var d   = map_distance_vector(ctile, ptile);
+    var idx = get_city_dxy_to_index(d[0], d[1], active_city);
+    if (idx == null || idx < 0) continue;
+
+    var food    = Math.min(9, Math.max(0, Math.floor(
+                    (active_city['output_food'][idx]   || 0) / granularity)));
+    var shields = Math.min(9, Math.max(0, Math.floor(
+                    (active_city['output_shield'][idx] || 0) / granularity)));
+    var trade   = Math.min(9, Math.max(0, Math.floor(
+                    (active_city['output_trade'][idx]  || 0) / granularity)));
+
+    /* Position the three icons in a row at the bottom of the tile */
+    var base_x = v.cx;
+    var base_y = v.cy + th - icon_h;
+
+    var food_spr    = sprites_2d['city.t_food_'    + food];
+    var shields_spr = sprites_2d['city.t_shields_' + shields];
+    var trade_spr   = sprites_2d['city.t_trade_'   + trade];
+
+    if (food_spr)    ctx.drawImage(food_spr,    base_x,              base_y, icon_w, icon_h);
+    if (shields_spr) ctx.drawImage(shields_spr, base_x + icon_w,     base_y, icon_w, icon_h);
+    if (trade_spr)   ctx.drawImage(trade_spr,   base_x + icon_w * 2, base_y, icon_w, icon_h);
   }
 }
 
