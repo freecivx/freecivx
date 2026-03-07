@@ -114,7 +114,7 @@ function show_city_worked_tiles()
 ****************************************************************************/
 function remove_city_worked_tiles() {
   for (const workedid in city_worked_positions) {
-    if (city_worked_positions[workedid] != null) {
+    if (city_worked_positions[workedid] != null && scene != null) {
       scene.remove(city_worked_positions[workedid]);
     }
     delete city_worked_positions[workedid];

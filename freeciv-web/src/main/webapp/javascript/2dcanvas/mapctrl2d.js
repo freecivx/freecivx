@@ -47,49 +47,62 @@ function init_2d_map_controls() {
   /* ---- Mouse-wheel zoom ------------------------------------------ */
   $canvas.on('wheel', function(e) {
     e.preventDefault();
-    var delta = e.originalEvent.deltaY;
-    var factor = delta < 0 ? 1.15 : 1 / 1.15;
-    map2d_zoom = Math.max(MAP2D_MIN_ZOOM, Math.min(MAP2D_MAX_ZOOM, map2d_zoom * factor));
-    render_2d_map();
+    try {
+      var delta = e.originalEvent && e.originalEvent.deltaY;
+      if (typeof delta !== 'number') return;
+      var factor = delta < 0 ? 1.15 : 1 / 1.15;
+      map2d_zoom = Math.max(MAP2D_MIN_ZOOM, Math.min(MAP2D_MAX_ZOOM, map2d_zoom * factor));
+      render_2d_map();
+    } catch (err) {
+      console.error("map2d wheel zoom error:", err);
+    }
   });
 
   /* ---- Pointer Down (Mouse & Touch) ------------------------------ */
   $canvas.on('mousedown touchstart', function(e) {
-    var isTouch = e.type === 'touchstart';
-    var ptr = isTouch ? e.originalEvent.touches[0] : e;
+    try {
+      var isTouch = e.type === 'touchstart';
+      var oe = e.originalEvent;
+      if (!oe) return;
+      var ptr = isTouch ? (oe.touches && oe.touches[0]) : e;
+      if (!ptr) return;
 
-    // Right-click (button 2) logic handled by Context Menu release
-    if (!isTouch && e.button === 2) return;
+      // Right-click (button 2) logic handled by Context Menu release
+      if (!isTouch && e.button === 2) return;
 
-    var start_tile = map2d_tile_from_event(ptr);
-    var units = start_tile ? tile_units(start_tile) : null;
+      var start_tile = map2d_tile_from_event(ptr);
+      var units = start_tile ? tile_units(start_tile) : null;
 
-    // Initialize drag state
-    map2d_drag.active = true;
-    map2d_drag.moved = false;
-    map2d_drag.is_goto = false;
-    /* If a unit from this tile is already in focus, drag that unit so that
-     * the goto gesture moves the intended unit rather than always picking
-     * the first unit in the tile's list. */
-    var focused_on_tile = (typeof current_focus !== 'undefined'
-                           && current_focus.length > 0
-                           && start_tile
-                           && current_focus[0]['tile'] === start_tile['index'])
-                          ? current_focus[0] : null;
-    map2d_drag.unit = focused_on_tile || (units && units.length > 0 ? units[0] : null);
-    map2d_drag.start_tile = start_tile;
-    map2d_drag.start_x = ptr.clientX;
-    map2d_drag.start_y = ptr.clientY;
-    map2d_drag.start_cx = map2d_center_x;
-    map2d_drag.start_cy = map2d_center_y;
+      // Initialize drag state
+      map2d_drag.active = true;
+      map2d_drag.moved = false;
+      map2d_drag.is_goto = false;
+      /* If a unit from this tile is already in focus, drag that unit so that
+       * the goto gesture moves the intended unit rather than always picking
+       * the first unit in the tile's list. */
+      var focused_on_tile = (typeof current_focus !== 'undefined'
+                             && current_focus.length > 0
+                             && start_tile
+                             && current_focus[0]['tile'] === start_tile['index'])
+                            ? current_focus[0] : null;
+      map2d_drag.unit = focused_on_tile || (units && units.length > 0 ? units[0] : null);
+      map2d_drag.start_tile = start_tile;
+      map2d_drag.start_x = ptr.clientX;
+      map2d_drag.start_y = ptr.clientY;
+      map2d_drag.start_cx = map2d_center_x;
+      map2d_drag.start_cy = map2d_center_y;
 
-    // Handle Pinch-Zoom Start
-    if (isTouch && e.originalEvent.touches.length === 2) {
-      map2d_drag.active = false; // Disable panning during pinch
-      var t1 = e.originalEvent.touches[0];
-      var t2 = e.originalEvent.touches[1];
-      map2d_pinch_start_dist = Math.hypot(t2.clientX - t1.clientX, t2.clientY - t1.clientY);
-      map2d_pinch_start_zoom = map2d_zoom;
+      // Handle Pinch-Zoom Start
+      if (isTouch && oe.touches && oe.touches.length === 2) {
+        map2d_drag.active = false; // Disable panning during pinch
+        var t1 = oe.touches[0];
+        var t2 = oe.touches[1];
+        map2d_pinch_start_dist = Math.hypot(t2.clientX - t1.clientX, t2.clientY - t1.clientY);
+        map2d_pinch_start_zoom = map2d_zoom;
+      }
+    } catch (err) {
+      console.error("map2d pointerdown error:", err);
+      map2d_drag.active = false;
     }
   });
 
@@ -112,49 +125,62 @@ function init_2d_map_controls() {
   $(window).on('mousemove touchmove', function(e) {
     if (!map2d_drag.active) return;
 
-    var isTouch = e.type === 'touchmove';
-    var ptr = isTouch ? e.originalEvent.touches[0] : e;
-    var dx = ptr.clientX - map2d_drag.start_x;
-    var dy = ptr.clientY - map2d_drag.start_y;
+    try {
+      var isTouch = e.type === 'touchmove';
+      var oe = e.originalEvent;
+      var ptr = isTouch ? (oe && oe.touches && oe.touches[0]) : e;
+      if (!ptr) return;
 
-    // Distance threshold to differentiate Tap vs Drag:
-    // $Distance = \sqrt{\Delta x^2 + \Delta y^2}$
-    if (!map2d_drag.moved && Math.hypot(dx, dy) > 8) {
-      map2d_drag.moved = true;
+      var dx = ptr.clientX - map2d_drag.start_x;
+      var dy = ptr.clientY - map2d_drag.start_y;
 
-      // If we started on a unit, this drag becomes a GOTO action
-      if (map2d_drag.unit) {
-        map2d_drag.is_goto = true;
-        if (typeof set_unit_focus === 'function') set_unit_focus(map2d_drag.unit);
-        if (typeof activate_goto === 'function') activate_goto();
-      }
-    }
+      // Distance threshold to differentiate Tap vs Drag:
+      // $Distance = \sqrt{\Delta x^2 + \Delta y^2}$
+      if (!map2d_drag.moved && Math.hypot(dx, dy) > 8) {
+        map2d_drag.moved = true;
 
-    if (map2d_drag.moved) {
-      var current_tile = map2d_tile_from_event(ptr);
-      map2d_mouse_tile = current_tile;
-
-      if (map2d_drag.is_goto) {
-        /* GOTO MODE: Draw Path */
-        if (typeof map2d_update_goto_preview === 'function') {
-          map2d_update_goto_preview(current_tile);
+        // If we started on a unit, this drag becomes a GOTO action
+        if (map2d_drag.unit) {
+          map2d_drag.is_goto = true;
+          if (typeof set_unit_focus === 'function') set_unit_focus(map2d_drag.unit);
+          if (typeof activate_goto === 'function') activate_goto();
         }
-      } else {
-        /* PAN MODE: Move Map */
-        var tw = Math.floor(map2d_tileset_config.normal_tile_width * map2d_zoom);
-        var th = Math.floor(map2d_tileset_config.normal_tile_height * map2d_zoom);
-        map2d_center_x = map2d_drag.start_cx - Math.round(dx / tw);
-        map2d_center_y = map2d_drag.start_cy - Math.round(dy / th);
-        render_2d_map();
       }
-    }
 
-    if (isTouch) e.preventDefault(); // Prevent browser scroll
+      if (map2d_drag.moved) {
+        var current_tile = map2d_tile_from_event(ptr);
+        map2d_mouse_tile = current_tile;
+
+        if (map2d_drag.is_goto) {
+          /* GOTO MODE: Draw Path */
+          if (typeof map2d_update_goto_preview === 'function') {
+            map2d_update_goto_preview(current_tile);
+          }
+        } else {
+          /* PAN MODE: Move Map */
+          if (!map2d_tileset_config || !map2d_tileset_config.normal_tile_width
+              || !map2d_tileset_config.normal_tile_height) return;
+          var tw = Math.floor(map2d_tileset_config.normal_tile_width * map2d_zoom);
+          var th = Math.floor(map2d_tileset_config.normal_tile_height * map2d_zoom);
+          if (tw > 0 && th > 0) {
+            map2d_center_x = map2d_drag.start_cx - Math.round(dx / tw);
+            map2d_center_y = map2d_drag.start_cy - Math.round(dy / th);
+            render_2d_map();
+          }
+        }
+      }
+
+      if (isTouch) e.preventDefault(); // Prevent browser scroll
+    } catch (err) {
+      console.error("map2d pointermove error:", err);
+      map2d_drag.active = false;
+    }
   });
 
   /* ---- Pinch Zoom Move ------------------------------------------- */
   $canvas.on('touchmove', function(e) {
     var oe = e.originalEvent;
+    if (!oe || !oe.touches) return;
     if (oe.touches.length === 2 && map2d_pinch_start_dist > 0) {
       e.preventDefault();
       var t1 = oe.touches[0], t2 = oe.touches[1];
@@ -171,43 +197,48 @@ function init_2d_map_controls() {
 
     var was_goto = map2d_drag.is_goto;
     var was_moved = map2d_drag.moved;
-    var unit = map2d_drag.unit;
 
     map2d_drag.active = false;
 
-    if (was_goto) {
-      /* EXECUTE GOTO: use do_map_click which handles goto_active and
-       * sends the unit orders, then calls deactivate_goto() to clean up. */
-      var ptr = e.type === 'touchend' ? e.originalEvent.changedTouches[0] : e;
-      var target_tile = map2d_tile_from_event(ptr);
-      if (target_tile && typeof do_map_click === 'function') {
-        do_map_click(target_tile, SELECT_POPUP, true);
-      } else if (typeof deactivate_goto === 'function') {
-        deactivate_goto(false);
+    try {
+      var oe = e.originalEvent;
+      var ptr = (e.type === 'touchend' && oe && oe.changedTouches && oe.changedTouches[0])
+                ? oe.changedTouches[0] : e;
+
+      if (was_goto) {
+        /* EXECUTE GOTO: use do_map_click which handles goto_active and
+         * sends the unit orders, then calls deactivate_goto() to clean up. */
+        var target_tile = map2d_tile_from_event(ptr);
+        if (target_tile && typeof do_map_click === 'function') {
+          do_map_click(target_tile, SELECT_POPUP, true);
+        } else if (typeof deactivate_goto === 'function') {
+          deactivate_goto(false);
+        }
+        return;
       }
-      return;
-    }
 
-    if (!was_moved) {
-      /* TAP / CLICK ACTION */
-      var ptr = e.type === 'touchend' ? e.originalEvent.changedTouches[0] : e;
-      var tile = map2d_tile_from_event(ptr);
+      if (!was_moved) {
+        /* TAP / CLICK ACTION */
+        var tile = map2d_tile_from_event(ptr);
 
-      if (e.button === 2) {
-        // Right-click: Show Context Menu
-        map2d_mouse_tile = tile;
-        map2d_show_context_menu(ptr);
-      } else if (tile) {
-        // Left-click or Mobile tap: delegate to the tile-click handler so that
-        // city dialogs, unit selection, and goto all work correctly on mobile.
-        map2d_handle_tile_click(tile, e.type === 'touchend' ? ptr : e);
+        if (e.button === 2) {
+          // Right-click: Show Context Menu
+          map2d_mouse_tile = tile;
+          map2d_show_context_menu(ptr);
+        } else if (tile) {
+          // Left-click or Mobile tap: delegate to the tile-click handler so that
+          // city dialogs, unit selection, and goto all work correctly on mobile.
+          map2d_handle_tile_click(tile, e.type === 'touchend' ? ptr : e);
+        }
       }
-    }
 
-    // Reset cursor based on tile under pointer now that drag has ended.
-    // Skip on touchend: touch devices have no persistent hover state.
-    if (e.type !== 'touchend' && typeof map2d_update_mouse_cursor === 'function') {
-      map2d_update_mouse_cursor();
+      // Reset cursor based on tile under pointer now that drag has ended.
+      // Skip on touchend: touch devices have no persistent hover state.
+      if (e.type !== 'touchend' && typeof map2d_update_mouse_cursor === 'function') {
+        map2d_update_mouse_cursor();
+      }
+    } catch (err) {
+      console.error("map2d pointerup error:", err);
     }
   });
 
