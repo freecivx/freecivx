@@ -85,6 +85,21 @@ function init_2d_map_controls() {
     }
   });
 
+  /* ---- Mouse Hover (Canvas-level, no drag required) -------------- */
+  $canvas.on('mousemove', function(e) {
+    if (map2d_drag.active) return; // Handled by window-level handler below
+    map2d_mouse_tile = map2d_tile_from_event(e);
+    if (typeof map2d_update_mouse_cursor === 'function') map2d_update_mouse_cursor();
+  });
+
+  /* ---- Mouse Leave (reset cursor when pointer leaves the canvas) -- */
+  $canvas.on('mouseleave', function() {
+    map2d_mouse_tile = null;
+    if (!map2d_drag.active && map2d_canvas) {
+      map2d_canvas.style.cursor = 'default';
+    }
+  });
+
   /* ---- Pointer Move (Window-level for smoothness) ---------------- */
   $(window).on('mousemove touchmove', function(e) {
     if (!map2d_drag.active) return;
@@ -178,6 +193,12 @@ function init_2d_map_controls() {
         // Standard Left-click: Select unit
         map2d_handle_tile_click(tile, e);
       }
+    }
+
+    // Reset cursor based on tile under pointer now that drag has ended.
+    // Skip on touchend: touch devices have no persistent hover state.
+    if (e.type !== 'touchend' && typeof map2d_update_mouse_cursor === 'function') {
+      map2d_update_mouse_cursor();
     }
   });
 
