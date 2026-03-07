@@ -341,11 +341,13 @@ function show_city_dialog(pcity)
   show_city_traderoutes();
 
   var dialog_buttons = {};
-  dialog_buttons = $.extend(dialog_buttons,
-  {
-     "Change production" : city_change_production,
-     "Add to worklist" : city_add_to_worklist
-  });
+  if (!is_small_screen()) {
+    dialog_buttons = $.extend(dialog_buttons,
+    {
+       "Change production" : city_change_production,
+       "Add to worklist" : city_add_to_worklist
+    });
+  }
 
   if (!is_small_screen()) {
     dialog_buttons = $.extend(dialog_buttons, {"Rename" : rename_city});

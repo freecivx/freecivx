@@ -1995,12 +1995,6 @@ li.tech-both::before {
     padding: 6px 12px !important;
   }
 
-  /* Smaller city dialog buttons on mobile so they all fit */
-  .ui-dialog-buttonpane .ui-button {
-    font-size: 11px !important;
-    padding: 3px 6px !important;
-    margin: 1px !important;
-  }
 }
 
 /* Custom OverlayScrollbars styling - light grey theme */
