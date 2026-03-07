@@ -794,6 +794,14 @@ function map2d_handle_tile_click(ptile, event_pos)
 {
   if (ptile == null) return;
 
+  /* When goto is active, always delegate to do_map_click so the goto order
+   * is executed (the context menu must not intercept the destination click). */
+  if (typeof goto_active !== 'undefined' && goto_active) {
+    do_map_click(ptile, SELECT_POPUP, true);
+    render_2d_map();
+    return;
+  }
+
   /* In 2D-only mode always show the 2D context menu instead of
    * delegating to do_map_click() which would trigger the 3D map's
    * #mapcanvas context menu (not visible in 2D mode). */

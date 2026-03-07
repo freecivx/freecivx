@@ -181,6 +181,19 @@ function init_2d_map_controls() {
     }
   });
 
+  /* ---- Keyboard-goto hover path preview (desktop) --------------- */
+  /* When goto is activated via the 'g' key (not drag), track the mouse
+   * over the canvas and keep the dashed-line preview up to date. */
+  $canvas.on('mousemove', function(e) {
+    if (map2d_drag.active) return; // drag mode is handled by the window handler
+    if (typeof goto_active === 'undefined' || !goto_active) return;
+    var current_tile = map2d_tile_from_event(e);
+    map2d_mouse_tile = current_tile;
+    if (typeof map2d_update_goto_preview === 'function') {
+      map2d_update_goto_preview(current_tile);
+    }
+  });
+
   /* ---- Final Cleanup & Keyboard ---------------------------------- */
   $canvas.on('contextmenu', function(e) { e.preventDefault(); });
 
