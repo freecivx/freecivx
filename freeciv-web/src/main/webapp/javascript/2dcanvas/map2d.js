@@ -39,7 +39,7 @@ var map2d_center_y = 0;   /* map y-coordinate of the view centre tile */
 var map2d_canvas   = null;
 var map2d_ctx      = null;
 var map2d_initialized = false;
-var map2d_zoom     = 1.0; /* zoom multiplier applied to the base tile size */
+var map2d_zoom     = 1.3; /* zoom multiplier applied to the base tile size */
 
 var MAP2D_MIN_ZOOM = 0.3; /* minimum zoom level */
 var MAP2D_MAX_ZOOM = 6;   /* maximum zoom level */
