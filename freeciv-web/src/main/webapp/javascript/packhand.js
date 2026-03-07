@@ -181,8 +181,8 @@ function handle_tile_info(packet)
     update_tile_extras($.extend(old_tile, packet));
 
     if (active_city != null) {
-      remove_city_worked_tiles();
-      show_city_worked_tiles();
+      if (typeof remove_city_worked_tiles === 'function') remove_city_worked_tiles();
+      if (typeof show_city_worked_tiles === 'function') show_city_worked_tiles();
     }
 
     tiles[packet['tile']] = $.extend(tiles[packet['tile']], packet);

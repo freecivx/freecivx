@@ -386,7 +386,7 @@ function show_city_dialog(pcity)
   city_worklist_dialog(pcity);
   set_default_mapview_inactive();
 
-  show_city_worked_tiles();
+  if (typeof show_city_worked_tiles === 'function') show_city_worked_tiles();
 
   $("#city_size").html("Population: " + numberWithCommas(city_population(pcity)*1000) + "<br>"
                        + "Size: " + pcity['size'] + "<br>"
@@ -945,7 +945,7 @@ function city_dialog_close_handler()
 
   if (active_city != null) {
     setup_window_size ();
-    remove_city_worked_tiles();
+    if (typeof remove_city_worked_tiles === 'function') remove_city_worked_tiles();
     active_city = null;
 
   }
