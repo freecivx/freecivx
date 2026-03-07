@@ -636,10 +636,10 @@ function map2d_draw_unit_activity(ctx, punit, cx, cy, tw, th)
   if (!act_info || !act_info['key']) return;
   var spr = sprites_2d[act_info['key']];
   if (!spr) return;
-  /* Draw activity icon in the bottom-right quarter of the tile */
-  var aw = Math.floor(tw * 0.5);
-  var ah = Math.floor(th * 0.5);
-  ctx.drawImage(spr, cx + tw - aw, cy + th - ah, aw, ah);
+  /* Draw activity icon in the top-right of the tile */
+  var aw = Math.floor(tw * 0.65);
+  var ah = Math.floor(th * 0.65);
+  ctx.drawImage(spr, cx + tw - aw, cy, aw, ah);
 }
 
 /**
