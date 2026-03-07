@@ -18,14 +18,14 @@
  ***********************************************************************/
 
 
-var shownInvites = new Set();
+const shownInvites = new Set();
 
 /**************************************************************************
  Invite player to multiplayer game
  **************************************************************************/
-function show_invite_player_dialog()
+async function show_invite_player_dialog()
 {
-    var message = "<div id=\"invite_dialog\" title=\"Invite Player\">\n" +
+    const message = "<div id=\"invite_dialog\" title=\"Invite Player\">\n" +
         "    <p>Select a player to invite (online last 12 hours):</p>\n" +
         "    <select id=\"playerList\"></select>\n" +
         "</div><br>" ;
@@ -41,25 +41,23 @@ function show_invite_player_dialog()
         modal: true,
         width: 400,
         buttons: {
-            "Invite Player": function() {
-                let selectedPlayer = $("#playerList").val();
+            "Invite Player": async function() {
+                const selectedPlayer = $("#playerList").val();
                 if (!selectedPlayer) {
                     alert("Please select a player.");
                     return;
                 }
 
                 // Send invite request
-                $.ajax({
-                    url: "/PlayerMatcher?from=" + username + "&to=" + selectedPlayer + "&port=" + civserverport,
-                    method: "GET",
-                    success: function(response) {
-                        alert("Player invited successfully!");
-                        $("#invite_dialog").dialog("close");
-                    },
-                    error: function() {
-                        alert("Error sending invite.");
-                    }
-                });
+                try {
+                    await fetch("/PlayerMatcher?from=" + encodeURIComponent(username)
+                        + "&to=" + encodeURIComponent(selectedPlayer)
+                        + "&port=" + encodeURIComponent(civserverport));
+                    alert("Player invited successfully!");
+                    $("#invite_dialog").dialog("close");
+                } catch (err) {
+                    alert("Error sending invite.");
+                }
             },
             "Cancel": function() {
                 $(this).dialog("close");
@@ -67,66 +65,60 @@ function show_invite_player_dialog()
         }
     });
 
-    $.ajax({
-        url: "/player/onlinelist",
-        method: "GET",
-        success: function(data) {
-            let playerList = $("#playerList");
-            playerList.empty(); // Clear existing options
-            $.each(data.players, function(index, player) {
-                if (player.toLowerCase() != username.toLowerCase()) {
-                    playerList.append(`<option value="${player}">${player}</option>`);
-                }
-            });
+    try {
+        const response = await fetch("/player/onlinelist");
+        const data = await response.json();
+        const playerList = document.getElementById("playerList");
+        playerList.innerHTML = "";
+        data.players.forEach(player => {
+            if (player.toLowerCase() !== username.toLowerCase()) {
+                const option = document.createElement("option");
+                option.value = player;
+                option.textContent = player;
+                playerList.appendChild(option);
+            }
+        });
 
-            // Open the dialog after loading data
-            $("#invite_dialog").dialog("open");
-        },
-        error: function() {
-            alert("Error fetching player list.");
-        }
-    });
-
-
+        // Open the dialog after loading data
+        $("#invite_dialog").dialog("open");
+    } catch (err) {
+        alert("Error fetching player list.");
+    }
 }
 
 
 
-function checkInvitations() {
-    if ($.getUrlVar('invite') == "true") {
+async function checkInvitations() {
+    if (new URLSearchParams(window.location.search).get('invite') === "true") {
         return;
     }
 
-    var stored_username = simpleStorage.get("username", "");
+    const stored_username = simpleStorage.get("username", "");
     if (stored_username != null ) {
         username = stored_username;
     }
     if (username == null) return;
 
-    $.ajax({
-        url: "/PlayerMatcher?username=" + username,
-        method: "GET",
-        dataType: "json",
-        success: function (data) {
-            if (data.invitations && data.invitations.length > 0) {
-                data.invitations.forEach(invite => {
-                    let inviteKey = `${invite.from}-${invite.port}`; // Unique key for each invite
+    try {
+        const response = await fetch("/PlayerMatcher?username=" + encodeURIComponent(username));
+        const data = await response.json();
+        if (data.invitations && data.invitations.length > 0) {
+            data.invitations.forEach(invite => {
+                const inviteKey = `${invite.from}-${invite.port}`; // Unique key for each invite
 
-                    if (!shownInvites.has(inviteKey)) {
-                        shownInvites.add(inviteKey); // Mark as shown
-                        showInviteDialog(invite.from, invite.port);
-                    }
-                });
-            }
-        },
-        error: function () {
-            console.error("Error fetching invitations.");
+                if (!shownInvites.has(inviteKey)) {
+                    shownInvites.add(inviteKey); // Mark as shown
+                    showInviteDialog(invite.from, invite.port);
+                }
+            });
         }
-    });
+    } catch (err) {
+        console.error("Error fetching invitations.");
+    }
 }
 
 function showInviteDialog(from, port) {
-    let dialogId = `inviteDialog-${from}-${port}`; // Unique ID for each dialog
+    const dialogId = `inviteDialog-${from}-${port}`; // Unique ID for each dialog
     if ($(`#${dialogId}`).length > 0) return; // Prevent duplicate dialogs
 
     // Create dialog HTML
