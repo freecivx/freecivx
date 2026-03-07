@@ -951,6 +951,14 @@ function city_dialog_close_handler()
   }
   worklist_dialog_active = false;
   map_known_dirty = true;
+
+  /* On mobile in 2D map mode, reset the drag state so that any touch gesture
+   * that was in progress when the dialog opened or closed does not leave the
+   * 2D map controls in a stuck state (controls appear unresponsive). */
+  if (is_touch_device() && typeof map2d_drag !== 'undefined') {
+    map2d_drag.active = false;
+    map2d_drag.moved  = false;
+  }
 }
 
 /**************************************************************************

@@ -56,6 +56,10 @@ function init_2d_map_controls() {
   /* ---- Pointer Down (Mouse & Touch) ------------------------------ */
   $canvas.on('mousedown touchstart', function(e) {
     var isTouch = e.type === 'touchstart';
+    /* Prevent the browser from treating the touch as a scroll/zoom gesture.
+     * Without this, iOS Safari may drop or delay touch events on the canvas
+     * after the user has scrolled in a dialog (e.g. the city dialog). */
+    if (isTouch) e.preventDefault();
     var ptr = isTouch ? e.originalEvent.touches[0] : e;
 
     // Right-click (button 2) logic handled by Context Menu release

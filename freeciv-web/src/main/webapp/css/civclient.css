@@ -776,6 +776,7 @@ body
 #mapcanvas_2d {
   display: block;
   background-color: black;
+  touch-action: none; /* Prevent browser from intercepting touch events on mobile */
 }
 
 #tabs-globe {
