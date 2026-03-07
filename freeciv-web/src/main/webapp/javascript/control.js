@@ -92,6 +92,7 @@ function control_init()
     $("#turn_done_button").tooltip();
     $("#zoom_map_image").tooltip();
   }
+  $("#turn_done_button").button("option", "label", "<i class='fa fa-check-circle turn-done-icon' aria-hidden='true'></i> Turn Done");
 
   $("#freeciv_logo").click(function(event) {
     window.open('/', '_new');
@@ -146,6 +147,12 @@ function control_init()
   $("#tech_canvas").click(function(event) {
      tech_mapview_mouse_click(event);
    });
+
+  /* Touch support for tech canvas on mobile devices */
+  $("#tech_canvas").on("touchend", function(event) {
+    event.preventDefault();
+    tech_mapview_mouse_click(event);
+  });
 
   /* disable text-selection only on game canvas and interactive elements,
    * as this gives wrong mouse cursor during drag to goto units.
@@ -1075,7 +1082,7 @@ function advance_unit_focus()
         }
       }
     }
-    $("#turn_done_button").button("option", "label", "<i class='fa fa-check-circle-o' style='color: green;'aria-hidden='true'></i> Turn Done");
+    $("#turn_done_button").button("option", "label", "<i class='fa fa-check-circle turn-done-icon' aria-hidden='true'></i> Turn Done");
 
   }
 }

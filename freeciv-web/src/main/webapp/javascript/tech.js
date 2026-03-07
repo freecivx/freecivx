@@ -136,12 +136,13 @@ function init_tech_screen()
   var isTablet = windowWidth >= 768 && windowWidth < 1024;
   
   // Improved responsive scale based on window width
-  // Mobile: 0.5-0.7, Tablet: 0.7-0.9, Desktop: 0.9-1.0
+  // Mobile: 0.7-0.9 (divisor 800 chosen so a 560px-wide phone gives ~0.7, 720px gives ~0.9)
+  // Tablet: 0.8-0.95, Desktop: 0.9-1.0
   if (isMobile) {
-    tech_canvas_scale = Math.min(0.7, Math.max(0.5, windowWidth / 1000));
-    tech_canvas_text_font = "16px Arial";
-    $("#tech_result_text").css("font-size", "80%");
-    $("#tech_color_help").css("font-size", "60%");
+    tech_canvas_scale = Math.min(0.9, Math.max(0.7, windowWidth / 800));
+    tech_canvas_text_font = "18px Arial";
+    $("#tech_result_text").css("font-size", "95%");
+    $("#tech_color_help").css("font-size", "70%");
     $("#tech_progress_box").css("padding-left", "5px");
     $("#tech_info_box").css("padding", "5px");
   } else if (isTablet) {
@@ -596,8 +597,21 @@ function tech_mapview_mouse_click(e)
     rightclick = (e.button == 2);
   }
 
+  // Get page coordinates from the event directly (handles both mouse and touch)
+  var page_x, page_y;
+  if (e.originalEvent && e.originalEvent.changedTouches && e.originalEvent.changedTouches.length > 0) {
+    page_x = e.originalEvent.changedTouches[0].pageX;
+    page_y = e.originalEvent.changedTouches[0].pageY;
+  } else if (e.pageX != null && e.pageY != null) {
+    page_x = e.pageX;
+    page_y = e.pageY;
+  } else {
+    page_x = e.clientX;
+    page_y = e.clientY;
+  }
+
   if (rightclick) {
-    if (mouse_x > $(window).width() / 2) {
+    if (page_x > $(window).width() / 2) {
       $("#technologies").scrollLeft($("#technologies").scrollLeft() + 150);
     } else {
         $("#technologies").scrollLeft($("#technologies").scrollLeft() - 150);
@@ -606,12 +620,13 @@ function tech_mapview_mouse_click(e)
   }
 
    if (tech_canvas != null) {
-    var tech_mouse_x = mouse_x - $("#technologies").offset().left + $("#technologies").scrollLeft();
-    var tech_mouse_y = mouse_y - $("#technologies").offset().top + $("#technologies").scrollTop();
+    var tech_offset = $("#technologies").offset();
+    var tech_mouse_x = page_x - tech_offset.left + $("#technologies").scrollLeft();
+    var tech_mouse_y = page_y - tech_offset.top + $("#technologies").scrollTop();
 
     // Adjust hit area for touch devices - make it slightly larger for better touch accuracy
     var isTouchDevice = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
-    var hitAreaPadding = isTouchDevice ? 5 : 0;
+    var hitAreaPadding = isTouchDevice ? 10 : 0;
 
     for (var tech_id in techs) {
       var ptech = techs[tech_id];
@@ -625,8 +640,8 @@ function tech_mapview_mouse_click(e)
         y = y * tech_canvas_scale;
       }
 
-      if (tech_mouse_x > x - hitAreaPadding && tech_mouse_x < x + tech_item_width + hitAreaPadding
-          && tech_mouse_y > y - hitAreaPadding && tech_mouse_y < y + tech_item_height + hitAreaPadding) {
+      if (tech_mouse_x > x - hitAreaPadding && tech_mouse_x < x + tech_item_width * tech_canvas_scale + hitAreaPadding
+          && tech_mouse_y > y - hitAreaPadding && tech_mouse_y < y + tech_item_height * tech_canvas_scale + hitAreaPadding) {
         if (player_invention_state(client.conn.playing, ptech['id']) == TECH_PREREQS_KNOWN) {
           send_player_research(ptech['id']);
         } else if (player_invention_state(client.conn.playing, ptech['id']) == TECH_UNKNOWN) {
