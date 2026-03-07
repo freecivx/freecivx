@@ -1,9 +1,9 @@
-# FreecivX docker file
+# FreecivWorld docker file
 # Dockerfile update based on debian/tomcat package
 
 FROM ubuntu:latest
 
-MAINTAINER FREECIVX : 3.3
+LABEL maintainer="FreecivWorld"
 
 RUN DEBIAN_FRONTEND=noninteractive apt-get update --yes --quiet && \
     DEBIAN_FRONTEND=noninteractive apt-get install --yes \
@@ -31,8 +31,8 @@ RUN useradd -m docker && echo "docker:docker" | chpasswd && adduser docker sudo 
 COPY .git /docker/.git
 COPY freeciv /docker/freeciv
 COPY freeciv-web /docker/freeciv-web
-COPY publite2 /docker/publite2
-COPY freecivx-server /docker/freecivx-server
+COPY publite-go /docker/publite-go
+COPY freeciv-scores-go /docker/freeciv-scores-go
 COPY LICENSE.md /docker/LICENSE.md
 
 COPY scripts /docker/scripts

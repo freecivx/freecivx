@@ -66,7 +66,7 @@ Start and stop Freeciv-web with the following commands:
 
 ### Running freecivworld on Podman / Docker
 Get https://podman.io/
-See: [Docker](/doc/Docker.md)
+See: [Podman / Docker](/doc/PodmanDocker.md)
 
 ### Running Freeciv-web on Windows Subsystem for Linux (WSL)
 [Windows Subsystem for Linux (WSL)](/doc/Windows%20Subsystem%20for%20Linux.md)
