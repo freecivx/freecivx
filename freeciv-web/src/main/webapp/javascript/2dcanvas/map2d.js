@@ -619,9 +619,12 @@ function map2d_draw_city_worked_overlay(ctx, vis, tw, th)
 
   /* Each output icon: ~85% of tile height and 2/3 of tile width (doubled
    * from the previous tw/3) so the icons are larger and easier to read.
-   * Math.round is used for better sub-pixel scaling.  Centred horizontally. */
+   * Math.round is used for better sub-pixel scaling.  Centred horizontally.
+   * The three icons are stacked at the same x position (0 spacing) so they
+   * appear as a tight cluster rather than spread across multiple tiles. */
   var icon_w = Math.max(10, Math.round(tw * 2 / 3));
   var icon_h = Math.max(10, Math.round(th * 17 / 20));
+  var icon_spacing = 0;
 
   for (var i = 0; i < vis.length; i++) {
     var v = vis[i];
@@ -641,17 +644,18 @@ function map2d_draw_city_worked_overlay(ctx, vis, tw, th)
     var trade   = Math.min(9, Math.max(0, Math.floor(
                     (active_city['output_trade'][idx]  || 0) / granularity)));
 
-    /* Centre the three icons horizontally, bottom-aligned within the tile */
-    var base_x = v.cx + Math.round((tw - icon_w * 3) / 2);
+    /* Centre the three icons horizontally (0 spacing → all at same x),
+     * bottom-aligned within the tile */
+    var base_x = v.cx + Math.round((tw - icon_w) / 2);
     var base_y = v.cy + th - icon_h;
 
     var food_spr    = sprites_2d['city.t_food_'    + food];
     var shields_spr = sprites_2d['city.t_shields_' + shields];
     var trade_spr   = sprites_2d['city.t_trade_'   + trade];
 
-    if (food_spr)    ctx.drawImage(food_spr,    base_x,              base_y, icon_w, icon_h);
-    if (shields_spr) ctx.drawImage(shields_spr, base_x + icon_w,     base_y, icon_w, icon_h);
-    if (trade_spr)   ctx.drawImage(trade_spr,   base_x + icon_w * 2, base_y, icon_w, icon_h);
+    if (food_spr)    ctx.drawImage(food_spr,    base_x + icon_spacing * 0, base_y, icon_w, icon_h);
+    if (shields_spr) ctx.drawImage(shields_spr, base_x + icon_spacing * 1, base_y, icon_w, icon_h);
+    if (trade_spr)   ctx.drawImage(trade_spr,   base_x + icon_spacing * 2, base_y, icon_w, icon_h);
   }
 }
 
