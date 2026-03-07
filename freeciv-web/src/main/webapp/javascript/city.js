@@ -393,6 +393,7 @@ function show_city_dialog(pcity)
   set_default_mapview_inactive();
 
   if (!is_small_screen() && typeof show_city_worked_tiles === 'function') show_city_worked_tiles();
+  if (typeof map2d_schedule_render === 'function') map2d_schedule_render();
 
   $("#city_size").html("Population: " + numberWithCommas(city_population(pcity)*1000) + "<br>"
                        + "Size: " + pcity['size'] + "<br>"
@@ -957,6 +958,7 @@ function city_dialog_close_handler()
   }
   worklist_dialog_active = false;
   map_known_dirty = true;
+  if (typeof map2d_schedule_render === 'function') map2d_schedule_render();
 }
 
 /**************************************************************************
