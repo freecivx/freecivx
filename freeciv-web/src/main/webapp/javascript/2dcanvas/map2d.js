@@ -617,12 +617,11 @@ function map2d_draw_city_worked_overlay(ctx, vis, tw, th)
   var granularity = (game_info && game_info['granularity'])
                     ? game_info['granularity'] : 1;
 
-  /* Each output icon: half the tile height (bigger) and a quarter of the
-   * tile width per icon.  The three icons are centred horizontally so that
-   * food / shields / trade sit closer together rather than spanning the
-   * entire tile width. */
-  var icon_w = Math.max(6, Math.floor(tw / 4));
-  var icon_h = Math.max(6, Math.floor(th / 2));
+  /* Each output icon: ~85% of tile height (70% bigger than the previous
+   * th/2) and a third of the tile width per icon so the three icons fill
+   * the full tile width.  Centred horizontally. */
+  var icon_w = Math.max(10, Math.floor(tw / 3));
+  var icon_h = Math.max(10, Math.floor(th * 17 / 20));
 
   for (var i = 0; i < vis.length; i++) {
     var v = vis[i];
