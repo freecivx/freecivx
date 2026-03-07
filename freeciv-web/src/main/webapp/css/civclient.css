@@ -201,7 +201,12 @@ body
 
 
 #turn_done_button {
+  font-size: 15px;
+  padding: 6px 14px;
+}
 
+.turn-done-icon {
+  color: green;
 }
 
 .main_menu_buttons {
@@ -1954,40 +1959,47 @@ li.tech-both::before {
     display: none !important;
   }
   
-  /* Chat window at 100% width on mobile and move down 40px for tabs/game info */
+  /* Game messages just below the game tabs on mobile */
   .chatbox_dialog {
     width: 100% !important;
     left: 0 !important;
     right: 0 !important;
-    top: 92px !important;
+    top: 46px !important;
   }
   
   #game_chatbox_panel {
     width: 100% !important;
   }
   
-  /* Hide text in tabs, show only icons */
+  /* Hide text in tabs, show only icons - increase icon size for mobile */
   #tabs_menu li a {
     font-size: 0;
   }
   
   #tabs_menu li a i {
-    font-size: 18px;
+    font-size: 26px;
   }
   
-  /* Adjust tab padding for icons only */
+  /* Adjust tab padding for larger icons */
   .ui-tabs .ui-tabs-nav .ui-tabs-anchor {
-    padding: 0.4em 0.6em;
+    padding: 0.4em 0.7em;
   }
   
-  /* Make turn done button smaller on mobile */
+  /* Larger end turn button on mobile */
   #turn_done_button_div {
     padding: 4px !important;
   }
   
   #turn_done_button {
-    font-size: 12px !important;
-    padding: 4px 8px !important;
+    font-size: 15px !important;
+    padding: 6px 12px !important;
+  }
+
+  /* Smaller city dialog buttons on mobile so they all fit */
+  .ui-dialog-buttonpane .ui-button {
+    font-size: 11px !important;
+    padding: 3px 6px !important;
+    margin: 1px !important;
   }
 }
 
