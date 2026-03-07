@@ -617,9 +617,12 @@ function map2d_draw_city_worked_overlay(ctx, vis, tw, th)
   var granularity = (game_info && game_info['granularity'])
                     ? game_info['granularity'] : 1;
 
-  /* Each output icon occupies 1/3 of the tile width, 1/3 of the height */
-  var icon_w = Math.max(4, Math.floor(tw / 3));
-  var icon_h = Math.max(4, Math.floor(th / 3));
+  /* Each output icon: half the tile height (bigger) and a quarter of the
+   * tile width per icon.  The three icons are centred horizontally so that
+   * food / shields / trade sit closer together rather than spanning the
+   * entire tile width. */
+  var icon_w = Math.max(6, Math.floor(tw / 4));
+  var icon_h = Math.max(6, Math.floor(th / 2));
 
   for (var i = 0; i < vis.length; i++) {
     var v = vis[i];
@@ -639,8 +642,8 @@ function map2d_draw_city_worked_overlay(ctx, vis, tw, th)
     var trade   = Math.min(9, Math.max(0, Math.floor(
                     (active_city['output_trade'][idx]  || 0) / granularity)));
 
-    /* Position the three icons in a row at the bottom of the tile */
-    var base_x = v.cx;
+    /* Centre the three icons horizontally, bottom-aligned within the tile */
+    var base_x = v.cx + Math.floor((tw - icon_w * 3) / 2);
     var base_y = v.cy + th - icon_h;
 
     var food_spr    = sprites_2d['city.t_food_'    + food];
