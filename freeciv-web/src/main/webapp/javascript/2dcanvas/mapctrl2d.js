@@ -68,7 +68,15 @@ function init_2d_map_controls() {
     map2d_drag.active = true;
     map2d_drag.moved = false;
     map2d_drag.is_goto = false;
-    map2d_drag.unit = (units && units.length > 0) ? units[0] : null;
+    /* If a unit from this tile is already in focus, drag that unit so that
+     * the goto gesture moves the intended unit rather than always picking
+     * the first unit in the tile's list. */
+    var focused_on_tile = (typeof current_focus !== 'undefined'
+                           && current_focus.length > 0
+                           && start_tile
+                           && current_focus[0]['tile'] === start_tile['index'])
+                          ? current_focus[0] : null;
+    map2d_drag.unit = focused_on_tile || (units && units.length > 0 ? units[0] : null);
     map2d_drag.start_tile = start_tile;
     map2d_drag.start_x = ptr.clientX;
     map2d_drag.start_y = ptr.clientY;
@@ -234,10 +242,16 @@ function init_2d_map_controls() {
 function map2d_show_context_menu(pos) {
   map2d_close_context_menu();
 
-  // Focus unit on the tile if applicable
+  // Focus unit on the tile if applicable, but do not switch to a different
+  // unit when one from this tile is already in focus.  This prevents an
+  // unwanted unit-switch when the player taps a stack that already has a
+  // focused unit (e.g. tapping settlers+explorer stack keeps the focused unit).
   if (map2d_mouse_tile) {
     var punits = tile_units(map2d_mouse_tile);
-    if (punits?.length > 0 && typeof set_unit_focus_and_redraw === 'function') {
+    var focus_on_tile = typeof current_focus !== 'undefined'
+                        && current_focus.length > 0
+                        && current_focus[0]['tile'] === map2d_mouse_tile['index'];
+    if (!focus_on_tile && punits?.length > 0 && typeof set_unit_focus_and_redraw === 'function') {
       set_unit_focus_and_redraw(punits[0]);
     }
   }
