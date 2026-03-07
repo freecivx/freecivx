@@ -835,15 +835,20 @@ function map2d_handle_tile_click(ptile, event_pos)
     return;
   }
 
-  /* In 2D-only mode always show the 2D context menu instead of
-   * delegating to do_map_click() which would trigger the 3D map's
-   * #mapcanvas context menu (not visible in 2D mode). */
+  /* In 2D-only mode, update the last known event position so that any
+   * context menu opened via do_map_click → show_map_context_menu appears
+   * near the pointer.  Then delegate to do_map_click() which correctly
+   * handles city dialogs (show_city_dialog), unit selection, and routes
+   * context-menu requests through show_map_context_menu() – which already
+   * knows to call map2d_show_context_menu() in 2D mode, avoiding the
+   * invisible 3D #mapcanvas menu. */
   var is_2d_mode = typeof use_2d_only !== 'undefined' && use_2d_only;
   var pos = event_pos || map2d_last_event_pos;
   if (is_2d_mode && !client_is_observer()
       && typeof client !== 'undefined' && client.conn && client.conn.playing) {
     map2d_mouse_tile = ptile;
-    map2d_show_context_menu(pos);
+    if (pos) map2d_last_event_pos = pos;
+    do_map_click(ptile, SELECT_POPUP, true);
     render_2d_map();
     return;
   }
