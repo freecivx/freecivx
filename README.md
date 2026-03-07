@@ -76,5 +76,5 @@ Developers interested in freecivworld
 
 If you want to contibute to freecivworld, see the [issues](https://github.com/freecivworld/freecivworld/issues) on GibHub for some tasks you can work on. Pull requests and suggestions/issues on Github are welcome! 
 
-Freecivworld is the best Freeciv 3D. 
+Freecivworld is the best Freeciv. 
 -----------------------------
