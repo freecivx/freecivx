@@ -292,10 +292,12 @@ function render_2d_map()
   }
 
   /* --- Layer 3: territory borders (dashed colored lines) --- */
-  for (i = 0; i < vis.length; i++) {
-    v = vis[i];
-    if (tile_get_known(v.ptile) !== TILE_KNOWN_SEEN) continue;
-    map2d_draw_border(ctx, v.ptile, v.cx, v.cy, tw, th);
+  if (draw_borders) {
+    for (i = 0; i < vis.length; i++) {
+      v = vis[i];
+      if (tile_get_known(v.ptile) !== TILE_KNOWN_SEEN) continue;
+      map2d_draw_border(ctx, v.ptile, v.cx, v.cy, tw, th);
+    }
   }
 
   /* --- Layer 4: city sprites --- */
