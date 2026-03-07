@@ -254,34 +254,70 @@ function render_overview_to_canvas() {
   canvas.height = height;
 
   var ctx = canvas.getContext('2d');
-  var imageData = ctx.createImageData(width, height);
-  var data = imageData.data;
 
-  // Render each tile
-  for (var map_y = 0; map_y < rows; map_y++) {
-    for (var map_x = 0; map_x < cols; map_x++) {
-      var color_index = overview_tile_color(map_x, map_y);
-      var rgb = palette[color_index];
-      
-      if (rgb) {
-        // Render OVERVIEW_TILE_SIZE x OVERVIEW_TILE_SIZE pixel block
-        for (var py = 0; py < OVERVIEW_TILE_SIZE; py++) {
-          for (var px = 0; px < OVERVIEW_TILE_SIZE; px++) {
-            var pixel_x = map_x * OVERVIEW_TILE_SIZE + px;
-            var pixel_y = map_y * OVERVIEW_TILE_SIZE + py;
-            var index = (pixel_y * width + pixel_x) * 4;
-            
-            data[index] = rgb[0];     // Red
-            data[index + 1] = rgb[1]; // Green
-            data[index + 2] = rgb[2]; // Blue
-            data[index + 3] = 255;    // Alpha
+  if (sprites_2d_init) {
+    // Render terrain using 2D map sprites (one sprite scaled to OVERVIEW_TILE_SIZE per tile),
+    // then paint city/unit palette overlays on top.
+    ctx.fillStyle = '#000000';
+    ctx.fillRect(0, 0, width, height);
+
+    for (var map_y = 0; map_y < rows; map_y++) {
+      for (var map_x = 0; map_x < cols; map_x++) {
+        var ptile = map_pos_to_tile(map_x, map_y);
+        if (!ptile) continue;
+        var cx = map_x * OVERVIEW_TILE_SIZE;
+        var cy = map_y * OVERVIEW_TILE_SIZE;
+
+        // Terrain base from the 2D map renderer
+        map2d_render_terrain(ctx, ptile, cx, cy, OVERVIEW_TILE_SIZE, OVERVIEW_TILE_SIZE);
+
+        // City and unit overlays using the overview palette
+        var color_index = overview_tile_color(map_x, map_y);
+        var rgb = palette[color_index];
+        if (rgb) {
+          if (color_index === COLOR_OVERVIEW_MY_CITY
+              || color_index === COLOR_OVERVIEW_ALLIED_CITY
+              || color_index === COLOR_OVERVIEW_ENEMY_CITY) {
+            ctx.fillStyle = 'rgb(' + rgb[0] + ',' + rgb[1] + ',' + rgb[2] + ')';
+            ctx.fillRect(cx, cy, OVERVIEW_TILE_SIZE, OVERVIEW_TILE_SIZE);
+          } else if (color_index === COLOR_OVERVIEW_MY_UNIT
+                     || color_index === COLOR_OVERVIEW_ALLIED_UNIT
+                     || color_index === COLOR_OVERVIEW_ENEMY_UNIT) {
+            ctx.fillStyle = 'rgba(' + rgb[0] + ',' + rgb[1] + ',' + rgb[2] + ',0.9)';
+            ctx.fillRect(cx, cy, OVERVIEW_TILE_SIZE, OVERVIEW_TILE_SIZE);
           }
         }
       }
     }
-  }
+  } else {
+    // Fallback: palette-based colour rendering when 2D sprites are not yet loaded
+    var imageData = ctx.createImageData(width, height);
+    var data = imageData.data;
 
-  ctx.putImageData(imageData, 0, 0);
+    for (var map_y = 0; map_y < rows; map_y++) {
+      for (var map_x = 0; map_x < cols; map_x++) {
+        var color_index = overview_tile_color(map_x, map_y);
+        var rgb = palette[color_index];
+
+        if (rgb) {
+          for (var py = 0; py < OVERVIEW_TILE_SIZE; py++) {
+            for (var px = 0; px < OVERVIEW_TILE_SIZE; px++) {
+              var pixel_x = map_x * OVERVIEW_TILE_SIZE + px;
+              var pixel_y = map_y * OVERVIEW_TILE_SIZE + py;
+              var index = (pixel_y * width + pixel_x) * 4;
+
+              data[index]     = rgb[0]; // Red
+              data[index + 1] = rgb[1]; // Green
+              data[index + 2] = rgb[2]; // Blue
+              data[index + 3] = 255;    // Alpha
+            }
+          }
+        }
+      }
+    }
+
+    ctx.putImageData(imageData, 0, 0);
+  }
 }
 
 /****************************************************************************
