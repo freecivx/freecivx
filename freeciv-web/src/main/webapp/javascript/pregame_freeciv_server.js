@@ -653,7 +653,7 @@ function pregame_settings()
   }
 
   // Set up Web-LLM setting
-  if (is_small_screen()) {
+  if (is_small_screen() || !navigator.gpu) {
     $("#webllm_enabled").hide();
   } else {
     var stored_webllm_setting = simpleStorage.get("webllm_enabled", "true");
