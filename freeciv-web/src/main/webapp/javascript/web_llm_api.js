@@ -30,10 +30,14 @@ var current_command_center_state = null;
 
 // Initialize webllm_enabled from localStorage (default: true)
 // We use localStorage directly to ensure it's available early
-// Disabled on mobile (small screens < 768px)
+// Disabled on mobile (small screens < 768px) or when WebGPU is not supported
 var webllm_enabled = (function() {
   if (window.innerWidth < 768) {
     console.log("[WebLLM] Disabled on mobile/small screen");
+    return false;
+  }
+  if (!navigator.gpu) {
+    console.log("[WebLLM] Disabled: WebGPU not supported by browser");
     return false;
   }
   try {
