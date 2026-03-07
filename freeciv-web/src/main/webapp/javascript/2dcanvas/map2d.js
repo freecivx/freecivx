@@ -702,9 +702,10 @@ function map2d_player_color(player_id, fallback)
 {
   if (player_id == null) return fallback;
   var pplayer = players[player_id];
-  if (!pplayer || !pplayer['color']) return fallback;
-  var c = pplayer['color'];
-  return 'rgb(' + c['r'] + ',' + c['g'] + ',' + c['b'] + ')';
+  if (!pplayer || pplayer['nation'] == null) return fallback;
+  var nation = nations[pplayer['nation']];
+  if (!nation || !nation['color']) return fallback;
+  return nation['color'];
 }
 
 /**
