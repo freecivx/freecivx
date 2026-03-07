@@ -1849,7 +1849,9 @@ function do_map_click(ptile, qtype, first_time_called)
           set_unit_focus_and_activate(unit);
         } else {
           /* more than one unit is on the selected tile. */
-          set_unit_focus_and_redraw(sunits[0]);
+          if (!is_touch_device()) {
+            set_unit_focus_and_redraw(sunits[0]);
+          }
           update_active_units_dialog();
         }
 
