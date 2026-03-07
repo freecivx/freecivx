@@ -75,7 +75,7 @@ function init_overview()
   $("#game_overview_panel").dialog({
 			bgiframe: true,
 			modal: false,
-			appendTo: '#tabs-map',
+			appendTo: 'body',
 			resizable: false,
 			closeOnEscape: false,
 			dialogClass: 'overview_dialog no-close',

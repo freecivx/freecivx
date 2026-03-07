@@ -51,8 +51,8 @@ function set_client_state(newstate)
 
       renderer_init();
 
-      /* Initialize the overview/minimap window */
-      if (typeof init_overview === 'function') {
+      /* Initialize the overview/minimap window (skip on mobile) */
+      if (typeof init_overview === 'function' && !is_small_screen()) {
         init_overview();
       }
 
@@ -310,6 +310,11 @@ function set_default_mapview_active()
     if (current_command_center_state == "minimized") $("#ai_intro_dialog").dialogExtend("minimize");
   }
 
+  if (overview_active) {
+    $("#game_overview_panel").parent().show();
+    if (overview_current_state == "minimized") $("#game_overview_panel").dialogExtend("minimize");
+  }
+
   $("#tabs").tabs("option", "active", 0);
   $("#tabs-map").height("auto");
 
@@ -344,6 +349,11 @@ function set_default_mapview_2d_active()
   if (command_center_active) {
     $("#ai_intro_dialog").parent().show();
     if (current_command_center_state == "minimized") $("#ai_intro_dialog").dialogExtend("minimize");
+  }
+
+  if (overview_active) {
+    $("#game_overview_panel").parent().show();
+    if (overview_current_state == "minimized") $("#game_overview_panel").dialogExtend("minimize");
   }
 
   /* Synchronise the 2D map centre to the 3D camera position. */
