@@ -94,6 +94,7 @@ function civclient_init()
 
   game_init();
   $('#tabs').tabs({ heightStyle: "fill" });
+  $(".button").button();
   control_init();
 
   timeoutTimerId = setInterval(update_timeout, 1000);
@@ -113,8 +114,6 @@ function civclient_init()
   $("#tabs-opt").height("auto");
   $("#tabs-hel").height("auto");
   $("#tabs-mentat").height("auto");
-
-  $(".button").button();
 
   sounds_enabled = simpleStorage.get('sndFX');
 
