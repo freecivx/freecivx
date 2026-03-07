@@ -617,11 +617,11 @@ function map2d_draw_city_worked_overlay(ctx, vis, tw, th)
   var granularity = (game_info && game_info['granularity'])
                     ? game_info['granularity'] : 1;
 
-  /* Each output icon: ~85% of tile height (70% bigger than the previous
-   * th/2) and a third of the tile width per icon so the three icons fill
-   * the full tile width.  Centred horizontally. */
-  var icon_w = Math.max(10, Math.floor(tw / 3));
-  var icon_h = Math.max(10, Math.floor(th * 17 / 20));
+  /* Each output icon: ~85% of tile height and 2/3 of tile width (doubled
+   * from the previous tw/3) so the icons are larger and easier to read.
+   * Math.round is used for better sub-pixel scaling.  Centred horizontally. */
+  var icon_w = Math.max(10, Math.round(tw * 2 / 3));
+  var icon_h = Math.max(10, Math.round(th * 17 / 20));
 
   for (var i = 0; i < vis.length; i++) {
     var v = vis[i];
@@ -642,7 +642,7 @@ function map2d_draw_city_worked_overlay(ctx, vis, tw, th)
                     (active_city['output_trade'][idx]  || 0) / granularity)));
 
     /* Centre the three icons horizontally, bottom-aligned within the tile */
-    var base_x = v.cx + Math.floor((tw - icon_w * 3) / 2);
+    var base_x = v.cx + Math.round((tw - icon_w * 3) / 2);
     var base_y = v.cy + th - icon_h;
 
     var food_spr    = sprites_2d['city.t_food_'    + food];
