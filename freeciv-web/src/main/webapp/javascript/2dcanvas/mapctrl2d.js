@@ -221,11 +221,7 @@ function init_2d_map_controls() {
         /* TAP / CLICK ACTION */
         var tile = map2d_tile_from_event(ptr);
 
-        if (e.button === 2) {
-          // Right-click: Show Context Menu
-          map2d_mouse_tile = tile;
-          map2d_show_context_menu(ptr);
-        } else if (tile) {
+        if (tile && e.button !== 2) {
           // Left-click or Mobile tap: delegate to the tile-click handler so that
           // city dialogs, unit selection, and goto all work correctly on mobile.
           map2d_handle_tile_click(tile, e.type === 'touchend' ? ptr : e);
@@ -256,7 +252,12 @@ function init_2d_map_controls() {
   });
 
   /* ---- Final Cleanup & Keyboard ---------------------------------- */
-  $canvas.on('contextmenu', function(e) { e.preventDefault(); });
+  /* Always show context menu on right-click, regardless of drag state. */
+  $canvas.on('contextmenu', function(e) {
+    e.preventDefault();
+    map2d_mouse_tile = map2d_tile_from_event(e);
+    map2d_show_context_menu(e);
+  });
 
   $canvas.attr('tabindex', '0').on('keydown', function(e) {
     var step = 3;
@@ -289,7 +290,6 @@ function map2d_show_context_menu(pos) {
   }
 
   var items = (typeof update_unit_order_commands === 'function') ? update_unit_order_commands() : {};
-  items['tile_info'] = { name: 'Tile Info', icon: 'fa-info-circle' };
 
   var $menu = $('<ul id="map2d_context_menu"></ul>').css({
     position: 'fixed',
@@ -308,9 +308,13 @@ function map2d_show_context_menu(pos) {
   });
 
   $.each(items, function(key, val) {
+    var $icon = val.icon
+      ? $('<i>').addClass(val.icon).css({ marginRight: '8px', width: '16px', textAlign: 'center', display: 'inline-block' })
+      : $('<span>').css({ marginRight: '24px', display: 'inline-block' });
     $('<li>')
-      .text(val.name || key)
-      .css({ padding: '10px 18px', cursor: 'pointer', whiteSpace: 'nowrap' })
+      .append($icon)
+      .append(document.createTextNode(val.name || key))
+      .css({ padding: '8px 18px', cursor: 'pointer', whiteSpace: 'nowrap' })
       .hover(function() { $(this).css('background', '#2a2a4e'); }, function() { $(this).css('background', ''); })
       .on('click touchend', function(e) {
         e.preventDefault();
