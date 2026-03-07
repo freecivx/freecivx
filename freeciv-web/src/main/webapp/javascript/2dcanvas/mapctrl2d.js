@@ -193,13 +193,14 @@ function init_2d_map_controls() {
       var ptr = e.type === 'touchend' ? e.originalEvent.changedTouches[0] : e;
       var tile = map2d_tile_from_event(ptr);
 
-      if (e.type === 'touchend' || e.button === 2) {
-        // Mobile tap OR Right-click: Show Context Menu
+      if (e.button === 2) {
+        // Right-click: Show Context Menu
         map2d_mouse_tile = tile;
         map2d_show_context_menu(ptr);
       } else if (tile) {
-        // Standard Left-click: Select unit
-        map2d_handle_tile_click(tile, e);
+        // Left-click or Mobile tap: delegate to the tile-click handler so that
+        // city dialogs, unit selection, and goto all work correctly on mobile.
+        map2d_handle_tile_click(tile, e.type === 'touchend' ? ptr : e);
       }
     }
 
