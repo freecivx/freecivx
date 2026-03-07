@@ -385,6 +385,15 @@ function show_city_dialog(pcity)
   $("#city_dialog").dialog('open');
   $("#game_text_input").blur();
 
+  if (active_city['traderoute_count'] == 0) {
+    $("#city_tabs li:nth-child(3)").hide();
+    if (city_tab_index == 2) {
+      city_tab_index = 0;
+    }
+  } else {
+    $("#city_tabs li:nth-child(3)").show();
+  }
+
   $("#city_tabs").tabs({ active: city_tab_index});
 
   $(".citydlg_tabs").height(242);
