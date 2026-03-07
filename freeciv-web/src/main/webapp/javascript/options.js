@@ -166,8 +166,11 @@ function init_options_dialog()
   $('#borders_setting').prop('checked', draw_borders);
   $('#borders_setting').change(function() {
     draw_borders = this.checked;
-    terrain_material.uniforms.borders_visible.value = draw_borders;
-    terrain_material.uniforms.borders_visible.needsUpdate = true;
+    if (terrain_material != null && terrain_material.uniforms) {
+      terrain_material.uniforms.borders_visible.value = draw_borders;
+      terrain_material.uniforms.borders_visible.needsUpdate = true;
+    }
+    if (typeof map2d_schedule_render === 'function') map2d_schedule_render();
   });
 
   $('#show_buildings_setting').prop('checked', show_buildings);
