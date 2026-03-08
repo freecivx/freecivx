@@ -278,10 +278,16 @@ function render_2d_map()
 
   var i, v;
 
-  /* --- Layer 1: terrain + fog --- */
+  /* --- Layer 1: terrain --- */
   for (i = 0; i < vis.length; i++) {
     v = vis[i];
     map2d_render_terrain(ctx, v.ptile, v.cx, v.cy, tw, th);
+  }
+
+  /* --- Layer 1.5: fog of war (smooth directional edges) --- */
+  for (i = 0; i < vis.length; i++) {
+    v = vis[i];
+    map2d_draw_fog_overlay(ctx, v.ptile, v.cx, v.cy, tw, th);
   }
 
   /* --- Layer 2: extras --- */
@@ -382,7 +388,8 @@ function render_2d_map()
  *   – All non-ocean land tiles first receive the grassland base sprite.
  *   – The terrain-specific directional overlay is drawn on top.
  *
- * After terrain, fog-of-war is applied where the tile is known-but-unseen.
+ * After terrain, fog-of-war is applied by the dedicated fog layer in
+ * render_2d_map() using directional fog sprites for smooth edges.
  */
 function map2d_render_terrain(ctx, ptile, cx, cy, tw, th)
 {
@@ -440,9 +447,66 @@ function map2d_render_terrain(ctx, ptile, cx, cy, tw, th)
                     ? map2d_terrain_colors[g] : '#334';
     ctx.fillRect(cx, cy, tw, th);
   }
+}
 
-  /* Step 3 – fog of war overlay */
-  if (known === TILE_KNOWN_UNSEEN) {
+/* ------------------------------------------------------------------ */
+/*  Fog-of-war layer                                                   */
+/* ------------------------------------------------------------------ */
+
+/**
+ * Returns the fog-edge character for the boundary between two tiles:
+ *   'u'  – at least one side is completely unknown (black)
+ *   'f'  – at least one side is known-but-unseen (fogged)
+ *   'k'  – both sides are fully visible (known-seen)
+ */
+function map2d_fog_edge_char(state_a, state_b)
+{
+  if (state_a === TILE_UNKNOWN || state_b === TILE_UNKNOWN) return 'u';
+  if (state_a === TILE_KNOWN_UNSEEN || state_b === TILE_KNOWN_UNSEEN) return 'f';
+  return 'k';
+}
+
+/**
+ * Draw the fog-of-war sprite overlay for a single tile using the Trident
+ * directional fog sprites (e.g. "t.fog_f_k_k_u").
+ *
+ * Each cardinal edge is classified as 'u' (unknown), 'f' (fogged) or 'k'
+ * (known-seen) based on the combined visibility of the tile and its neighbour
+ * on that side.  The resulting four-character code selects the matching fog
+ * sprite which provides smooth gradients at fog/visible and fog/unknown
+ * boundaries.  The sprite "t.fog_k_k_k_k" (all-visible) is intentionally
+ * absent from the tileset; fully-visible tiles with all-visible neighbours
+ * therefore receive no overlay.
+ *
+ * Falls back to a solid semi-transparent rectangle for fogged tiles when
+ * sprites are not yet available.
+ */
+function map2d_draw_fog_overlay(ctx, ptile, cx, cy, tw, th)
+{
+  if (ptile == null) return;
+
+  var known = tile_get_known(ptile);
+  /* Unknown tiles stay black from the canvas fill – no sprite needed */
+  if (known === TILE_UNKNOWN) return;
+
+  /* Compute the fog-edge character for each cardinal direction */
+  var dirs  = [DIR8_NORTH, DIR8_EAST, DIR8_SOUTH, DIR8_WEST];
+  var chars = [];
+  for (var d = 0; d < 4; d++) {
+    var ntile  = mapstep(ptile, dirs[d]);
+    var nstate = ntile ? tile_get_known(ntile) : TILE_UNKNOWN;
+    chars.push(map2d_fog_edge_char(known, nstate));
+  }
+
+  /* Fully visible tile with all visible neighbours – nothing to draw */
+  if (chars[0] === 'k' && chars[1] === 'k' && chars[2] === 'k' && chars[3] === 'k') return;
+
+  var tag = 't.fog_' + chars[0] + '_' + chars[1] + '_' + chars[2] + '_' + chars[3];
+
+  if (sprites_2d_init && sprites_2d[tag]) {
+    ctx.drawImage(sprites_2d[tag], cx, cy, tw, th);
+  } else if (known === TILE_KNOWN_UNSEEN) {
+    /* Fallback when the sprite atlas has not yet loaded */
     ctx.fillStyle = 'rgba(0,0,0,0.55)';
     ctx.fillRect(cx, cy, tw, th);
   }
@@ -459,6 +523,7 @@ function map2d_render_terrain(ctx, ptile, cx, cy, tw, th)
 function render_2d_tile(ctx, ptile, cx, cy, tw, th)
 {
   map2d_render_terrain(ctx, ptile, cx, cy, tw, th);
+  map2d_draw_fog_overlay(ctx, ptile, cx, cy, tw, th);
   if (!ptile || tile_get_known(ptile) !== TILE_KNOWN_SEEN) return;
   map2d_draw_tile_extras(ctx, ptile, cx, cy, tw, th);
   map2d_draw_border(ctx, ptile, cx, cy, tw, th);
