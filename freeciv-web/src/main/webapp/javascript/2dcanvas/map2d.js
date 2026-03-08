@@ -454,15 +454,21 @@ function map2d_render_terrain(ctx, ptile, cx, cy, tw, th)
 /* ------------------------------------------------------------------ */
 
 /**
- * Returns the fog-edge character for the boundary between two tiles:
- *   'u'  – at least one side is completely unknown (black)
- *   'f'  – at least one side is known-but-unseen (fogged)
- *   'k'  – both sides are fully visible (known-seen)
+ * Returns the fog-edge character for a single cardinal direction based
+ * solely on the *neighbour* tile's visibility state:
+ *   'u'  – neighbour is completely unknown (black)
+ *   'f'  – neighbour is known-but-unseen (fogged)
+ *   'k'  – neighbour is fully visible (known-seen)
+ *
+ * This matches Freeciv's DARKNESS_CORNER sprite-selection logic, where
+ * each corner sprite is chosen from the states of the tiles surrounding
+ * that corner, not from a combination of the current tile and its
+ * neighbour.
  */
-function map2d_fog_edge_char(state_a, state_b)
+function map2d_fog_edge_char(nstate)
 {
-  if (state_a === TILE_UNKNOWN || state_b === TILE_UNKNOWN) return 'u';
-  if (state_a === TILE_KNOWN_UNSEEN || state_b === TILE_KNOWN_UNSEEN) return 'f';
+  if (nstate === TILE_UNKNOWN) return 'u';
+  if (nstate === TILE_KNOWN_UNSEEN) return 'f';
   return 'k';
 }
 
@@ -471,15 +477,20 @@ function map2d_fog_edge_char(state_a, state_b)
  * directional fog sprites (e.g. "t.fog_f_k_k_u").
  *
  * Each cardinal edge is classified as 'u' (unknown), 'f' (fogged) or 'k'
- * (known-seen) based on the combined visibility of the tile and its neighbour
- * on that side.  The resulting four-character code selects the matching fog
+ * (known-seen) based solely on the *neighbour* tile's visibility in that
+ * direction.  The resulting four-character code selects the matching fog
  * sprite which provides smooth gradients at fog/visible and fog/unknown
- * boundaries.  The sprite "t.fog_k_k_k_k" (all-visible) is intentionally
- * absent from the tileset; fully-visible tiles with all-visible neighbours
- * therefore receive no overlay.
+ * boundaries.
+ *
+ * The sprite "t.fog_k_k_k_k" (all-visible neighbours) is intentionally
+ * absent from the tileset, so a visible tile whose every neighbour is also
+ * visible receives no overlay.  A fogged tile (TILE_KNOWN_UNSEEN) always
+ * needs an overlay; if all its neighbours happen to be visible the sprite
+ * "t.fog_k_k_k_k" will not be found, and the fallback semi-transparent
+ * rectangle is drawn instead.
  *
  * Falls back to a solid semi-transparent rectangle for fogged tiles when
- * sprites are not yet available.
+ * the sprite atlas has not yet loaded or the exact sprite is absent.
  */
 function map2d_draw_fog_overlay(ctx, ptile, cx, cy, tw, th)
 {
@@ -489,24 +500,30 @@ function map2d_draw_fog_overlay(ctx, ptile, cx, cy, tw, th)
   /* Unknown tiles stay black from the canvas fill – no sprite needed */
   if (known === TILE_UNKNOWN) return;
 
-  /* Compute the fog-edge character for each cardinal direction */
+  /* Compute the fog-edge character for each cardinal direction using
+   * only the neighbour's visibility state (not the current tile's). */
   var dirs  = [DIR8_NORTH, DIR8_EAST, DIR8_SOUTH, DIR8_WEST];
   var chars = [];
   for (var d = 0; d < 4; d++) {
     var ntile  = mapstep(ptile, dirs[d]);
     var nstate = ntile ? tile_get_known(ntile) : TILE_UNKNOWN;
-    chars.push(map2d_fog_edge_char(known, nstate));
+    chars.push(map2d_fog_edge_char(nstate));
   }
 
-  /* Fully visible tile with all visible neighbours – nothing to draw */
-  if (chars[0] === 'k' && chars[1] === 'k' && chars[2] === 'k' && chars[3] === 'k') return;
+  /* Fully visible tile with all visible neighbours – nothing to draw.
+   * Fogged tiles (TILE_KNOWN_UNSEEN) are never skipped here: even if
+   * every neighbour is visible they still need a fog overlay. */
+  if (known === TILE_KNOWN_SEEN &&
+      chars[0] === 'k' && chars[1] === 'k' &&
+      chars[2] === 'k' && chars[3] === 'k') return;
 
   var tag = 't.fog_' + chars[0] + '_' + chars[1] + '_' + chars[2] + '_' + chars[3];
 
   if (sprites_2d_init && sprites_2d[tag]) {
     ctx.drawImage(sprites_2d[tag], cx, cy, tw, th);
   } else if (known === TILE_KNOWN_UNSEEN) {
-    /* Fallback when the sprite atlas has not yet loaded */
+    /* Fallback when the sprite atlas has not yet loaded or the sprite
+     * for this combination is absent (e.g. t.fog_k_k_k_k). */
     ctx.fillStyle = 'rgba(0,0,0,0.55)';
     ctx.fillRect(cx, cy, tw, th);
   }
