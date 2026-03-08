@@ -3806,6 +3806,10 @@ bool load_command(struct connection *caller, const char *filename, bool check,
 
     webdirs = strvec_new();
 
+    if (srvarg.saves_pathname[0] != '\0') {
+      strvec_append(webdirs, srvarg.saves_pathname);
+    }
+
     if (caller != NULL) {
       char lowercase_username[MAX_LEN_NAME];
       size_t username_length = strnlen(caller->username, MAX_LEN_NAME);
