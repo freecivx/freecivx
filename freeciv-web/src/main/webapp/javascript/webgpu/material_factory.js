@@ -57,7 +57,7 @@ function convertToNodeMaterial(originalMaterial, options = {}) {
     const {
         doubleSided = true,
         flatShading = false,
-        brightnessMultiplier = 1.1
+        brightnessMultiplier = 1.265
     } = options;
     
     // Create a new MeshStandardNodeMaterial with lighting support
