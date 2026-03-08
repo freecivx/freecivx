@@ -661,7 +661,19 @@ function map2d_draw_city_worked_overlay(ctx, vis, tw, th)
 
 function map2d_draw_unit(ctx, punit, cx, cy, tw, th)
 {
-  /* Try unit sprite from the trident tileset using a 2D-specific lookup */
+  /* Prefer amplio2 unit sprites (better graphics), scaled to tile size. */
+  if (sprites_init) {
+    var tag = _resolve_unit_sprite_tag(punit, sprites);
+    if (tag && sprites[tag]) {
+      ctx.drawImage(sprites[tag], cx, cy, tw, th);
+      map2d_draw_unit_shield(ctx, punit, cx, cy, tw, th);
+      map2d_draw_unit_hp(ctx, punit, cx, cy, tw, th);
+      map2d_draw_unit_veteran(ctx, punit, cx, cy, tw, th);
+      return;
+    }
+  }
+
+  /* Fall back to trident tileset sprites. */
   if (sprites_2d_init) {
     var tag = get_2d_unit_sprite_tag(punit);
     if (tag && sprites_2d[tag]) {
@@ -1099,13 +1111,12 @@ function map2d_render_goto_overlay(ctx, punit, path, tw, th, start_x, start_y, o
 }
 
 /**
- * Look up the best matching sprite tag for a unit in the trident tileset
- * (sprites_2d dictionary).  Tries common naming conventions used by the
- * Trident tileset before falling back to amplio2-style tags.
+ * Return the best matching sprite tag for a unit by searching the given
+ * sprite dictionary.  Tries common naming conventions in preference order.
  */
-function get_2d_unit_sprite_tag(punit)
+function _resolve_unit_sprite_tag(punit, sprite_dict)
 {
-  if (!sprites_2d_init || punit == null) return null;
+  if (punit == null || sprite_dict == null) return null;
   var utype = unit_type(punit);
   if (!utype) return null;
 
@@ -1121,9 +1132,19 @@ function get_2d_unit_sprite_tag(punit)
 
   for (var i = 0; i < candidates.length; i++) {
     var t = candidates[i];
-    if (t && sprites_2d[t]) return t;
+    if (t && sprite_dict[t]) return t;
   }
   return null;
+}
+
+/**
+ * Look up the best matching sprite tag for a unit in the trident tileset
+ * (sprites_2d dictionary).
+ */
+function get_2d_unit_sprite_tag(punit)
+{
+  if (!sprites_2d_init) return null;
+  return _resolve_unit_sprite_tag(punit, sprites_2d);
 }
 
 /* ------------------------------------------------------------------ */

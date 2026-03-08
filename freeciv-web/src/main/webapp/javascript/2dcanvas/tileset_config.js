@@ -44,8 +44,9 @@ tileset_confg['trident'] = {
   "small_tile_height" : 20
 };
 
-/* amplio2 is the default tileset (used by 3D renderer, city dialog, tech dialog).
- * The 2D map renderer uses trident; see map2d_tileset_config in map2d.js. */
+/* amplio2 is the default tileset (used by 3D renderer, city dialog, tech dialog,
+ * and 2D map unit sprites). The 2D map renderer uses trident for terrain/badges;
+ * unit sprites come from amplio2 (scaled to tile size). See map2d.js. */
 var tileset_name        = tileset_confg['amplio2']['name'];
 var tileset_image_count = tileset_confg['amplio2']['image_count'];
 var tileset_tile_width  = tileset_confg['amplio2']['tile_width'];
