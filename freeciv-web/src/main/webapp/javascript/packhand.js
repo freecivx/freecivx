@@ -59,7 +59,7 @@ function handle_ruleset_terrain(packet)
 {
   /* FIXME: Lake is not rendered correctly, so fall back to its alt graphic. */
   if (packet['name'] == "Lake") packet['graphic_str'] = packet['graphic_alt'];
-  terrains[packet['id']] = packet;
+  terrains[packet['id']] = new Terrain(packet);
 }
 
 /****************************************************************************
@@ -509,7 +509,11 @@ function handle_set_topology(packet)
 
 function handle_map_info(packet)
 {
-  map = packet;
+  if (map instanceof MapInfo) {
+    map.update(packet);
+  } else {
+    map = new MapInfo(packet);
+  }
 
   map_init_topology(false);
 
@@ -1247,7 +1251,7 @@ function handle_ruleset_unit(packet)
   if (packet['name'] != null && packet['name'].indexOf('?unit:') == 0)
     packet['name'] = packet['name'].replace('?unit:', '');
 
-  unit_types[packet['id']] = packet;
+  unit_types[packet['id']] = new UnitType(packet);
 }
 
 /************************************************************************//**
@@ -1373,7 +1377,7 @@ function handle_ruleset_building(packet)
 function handle_ruleset_unit_class(packet)
 {
   packet['flags'] = new BitVector(packet['flags']);
-  unit_classes[packet['id']] = packet;
+  unit_classes[packet['id']] = new UnitClass(packet);
 }
 
 function handle_ruleset_disaster(packet)

@@ -21,7 +21,7 @@
  * Represents the Freeciv game map on the client side.
  * Fields mirror PACKET_MAP_INFO defined in packets.def.
  */
-class Map {
+class MapInfo {
   constructor(packet) {
     // Fields from PACKET_MAP_INFO (packets.def)
     this.xsize = 0;

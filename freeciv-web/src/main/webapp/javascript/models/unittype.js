@@ -17,6 +17,100 @@
 
 ***********************************************************************/
 
+/**
+ * Represents a Freeciv unit type (ruleset entry) on the client side.
+ * Fields mirror PACKET_RULESET_UNIT defined in packets.def.
+ */
+class UnitType {
+  constructor(packet) {
+    // Fields from PACKET_RULESET_UNIT (packets.def)
+    this.id = 0;
+    this.name = "";
+    this.rule_name = "";
+    this.graphic_str = "";
+    this.graphic_alt = "";
+    this.graphic_alt2 = "";
+    this.sound_move = "";
+    this.sound_move_alt = "";
+    this.sound_fight = "";
+    this.sound_fight_alt = "";
+    this.unit_class_id = 0;
+    this.build_cost = 0;
+    this.pop_cost = 0;
+    this.attack_strength = 0;
+    this.defense_strength = 0;
+    this.move_rate = 0;
+    this.build_reqs_count = 0;
+    this.build_reqs = [];
+    this.vision_radius_sq = 0;
+    this.transport_capacity = 0;
+    this.hp = 0;
+    this.firepower = 0;
+    this.obsoleted_by = 0;
+    this.converted_to = 0;
+    this.convert_time = 0;
+    this.fuel = 0;
+    this.happy_cost = 0;
+    this.upkeep = [];
+    this.paratroopers_range = 0;
+    this.veteran_levels = 0;
+    this.veteran_name = [];
+    this.power_fact = [];
+    this.move_bonus = [];
+    this.base_raise_chance = [];
+    this.work_raise_chance = [];
+    this.bombard_rate = 0;
+    this.city_size = 0;
+    this.city_slots = 0;
+    this.tp_defense = 0;
+    this.cargo = 0;
+    this.targets = 0;
+    this.embarks = 0;
+    this.disembarks = 0;
+    this.vlayer = 0;
+    this.helptext = [];
+    this.flags = 0;
+    this.roles = 0;
+    this.worker = false;
+    this.tech_requirement = 0;
+    // Client-side properties (added by handle_web_ruleset_unit_addition)
+    this.utype_actions = null;
+    Object.assign(this, packet);
+  }
+
+  /**
+   * Update this unit type with data from a new server packet.
+   */
+  update(packet) {
+    Object.assign(this, packet);
+  }
+}
+
+/**
+ * Represents a Freeciv unit class (ruleset entry) on the client side.
+ * Fields mirror PACKET_RULESET_UNIT_CLASS defined in packets.def.
+ */
+class UnitClass {
+  constructor(packet) {
+    // Fields from PACKET_RULESET_UNIT_CLASS (packets.def)
+    this.id = 0;
+    this.name = "";
+    this.rule_name = "";
+    this.min_speed = 0;
+    this.hp_loss_pct = 0;
+    this.non_native_def_pct = 0;
+    this.flags = null;
+    this.helptext = [];
+    Object.assign(this, packet);
+  }
+
+  /**
+   * Update this unit class with data from a new server packet.
+   */
+  update(packet) {
+    Object.assign(this, packet);
+  }
+}
 
 var unit_types = {};  /* packet_ruleset_unit */
 var unit_classes = {};  /* packet_ruleset_unit_class */
@@ -258,7 +352,7 @@ function utype_has_flag(ptype, flag)
 /************************************************************************
  * Returns the REAL base attack strength of a unit based on its v0 vet
  * power level.
-*************************************************************************/
+ *************************************************************************/
 function utype_real_base_attack_strength(ptype) {
   // no custom power_fact means default of 100%:
   if (ptype.power_fact[0] === undefined) return ptype.attack_strength;
@@ -271,7 +365,7 @@ function utype_real_base_attack_strength(ptype) {
 }
 /************************************************************************
  * Same as above, for base defense strength.
-*************************************************************************/
+ *************************************************************************/
 function utype_real_base_defense_strength(ptype) {
   // no custom power_fact means default of 100%:
   if (ptype.power_fact[0] === undefined) return ptype.defense_strength;
@@ -287,7 +381,7 @@ function utype_real_base_defense_strength(ptype) {
  * Returns the "real" base move rate of a unit, since v0 veteran level
  * can be used to achieve non-integer values for base movement.
  * Return value is in move_frags.
-*************************************************************************/
+ *************************************************************************/
 function utype_real_base_move_rate(punit_type)
 {
   var move_bonus = (punit_type['move_bonus'] && punit_type['move_bonus'][0] !== undefined) 
