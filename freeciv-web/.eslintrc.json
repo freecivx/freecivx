@@ -11,6 +11,10 @@
   },
   "ignorePatterns": [
     "libs/**",
+    "**/libs/**",
+    "**/utils/BufferGeometryUtils.js",
+    "**/utils/SkeletonUtils.js",
+    "**/webgpu-path-tracer/**",
     "*.min.js",
     "three-modules*.js"
   ],
@@ -18,10 +22,6 @@
     "THREE": "readonly",
     "webgl_preload": "readonly",
     "mapview": "readonly",
-    "scene": "writable",
-    "camera": "writable",
-    "renderer": "readonly",
-    "controls": "writable",
     "webgl_width": "readonly",
     "webgl_height": "readonly"
   },

@@ -95,7 +95,7 @@ function get_improvement_requirements(improvement_id)
 function improvement_id_by_name(name)
 {
   // 0 is a valid id, so cannot use `|| -1`
-  return improvements_name_index.hasOwnProperty(name)
+  return Object.prototype.hasOwnProperty.call(improvements_name_index, name)
     ? improvements_name_index[name]
     : -1;
 }

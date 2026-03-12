@@ -294,10 +294,10 @@ function render_overview_to_canvas() {
     var imageData = ctx.createImageData(width, height);
     var data = imageData.data;
 
-    for (var map_y = 0; map_y < rows; map_y++) {
-      for (var map_x = 0; map_x < cols; map_x++) {
-        var color_index = overview_tile_color(map_x, map_y);
-        var rgb = palette[color_index];
+    for (map_y = 0; map_y < rows; map_y++) {
+      for (map_x = 0; map_x < cols; map_x++) {
+        color_index = overview_tile_color(map_x, map_y);
+        rgb = palette[color_index];
 
         if (rgb) {
           for (var py = 0; py < OVERVIEW_TILE_SIZE; py++) {

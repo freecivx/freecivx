@@ -83,22 +83,24 @@ PriorityQueue.prototype._bubbleUp = function(i) {
 
 PriorityQueue.prototype._siftDown = function(i) {
     var n = this._heap.length;
-    while (true) {
+    var smallest;
+    do {
         var left  = 2 * i + 1;
         var right = 2 * i + 2;
-        var smallest = i;
+        smallest = i;
         if (left < n && this._heap[left].cost < this._heap[smallest].cost) {
             smallest = left;
         }
         if (right < n && this._heap[right].cost < this._heap[smallest].cost) {
             smallest = right;
         }
-        if (smallest === i) break;
-        var tmp = this._heap[smallest];
-        this._heap[smallest] = this._heap[i];
-        this._heap[i] = tmp;
-        i = smallest;
-    }
+        if (smallest !== i) {
+            var tmp = this._heap[smallest];
+            this._heap[smallest] = this._heap[i];
+            this._heap[i] = tmp;
+            i = smallest;
+        }
+    } while (smallest !== i);
 };
 
 /****************************************************************************

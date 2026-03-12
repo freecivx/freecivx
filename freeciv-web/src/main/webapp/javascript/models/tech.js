@@ -538,7 +538,7 @@ function get_advances_text(tech_id)
     + ` onclick='show_tech_info_dialog("${name}", ${num(unit_id)}, ${num(impr_id)})'>${name}</span>`;
 
   const is_valid_and_required = (next_tech_id) =>
-    reqtree.hasOwnProperty(next_tech_id) && is_tech_req_for_tech(tech_id, next_tech_id);
+    Object.prototype.hasOwnProperty.call(reqtree, next_tech_id) && is_tech_req_for_tech(tech_id, next_tech_id);
 
   const format_list_with_intro = (intro, list) =>
     (list = list.filter(Boolean)).length ? (intro + ' ' + list.join(', ')) : '';
@@ -858,7 +858,7 @@ function show_wikipedia_dialog(tech_name)
   if (freeciv_wiki_docs[tech_name]['image'] != null) {
     const wiki_image = freeciv_wiki_docs[tech_name]['image'];
     // Validate image filename - only allow safe characters
-    if (/^[a-zA-Z0-9_\-\.]+\.(jpg|jpeg|png|gif|svg)$/i.test(wiki_image)) {
+    if (/^[a-zA-Z0-9_\-.]+\.(jpg|jpeg|png|gif|svg)$/i.test(wiki_image)) {
       message += `<img id='wiki_image' src='/images/wiki/${encodeURIComponent(wiki_image)}' alt="${tech_name_escaped}"><br>`;
     }
   }
@@ -928,7 +928,7 @@ function show_tech_info_dialog(tech_name, unit_type_id, improvement_id)
     if (freeciv_wiki_docs[tech_name]['image'] != null) {
       const wiki_image = freeciv_wiki_docs[tech_name]['image'];
       // Validate image filename - only allow safe characters
-      if (/^[a-zA-Z0-9_\-\.]+\.(jpg|jpeg|png|gif|svg)$/i.test(wiki_image)) {
+      if (/^[a-zA-Z0-9_\-.]+\.(jpg|jpeg|png|gif|svg)$/i.test(wiki_image)) {
         message += `<img id='wiki_image' src='/images/wiki/${encodeURIComponent(wiki_image)}' alt="${tech_name_escaped}"><br>`;
       }
     }

@@ -247,7 +247,6 @@ function client_diplomacy_clause_string(counterpart, giver, type, value)
     } else {
       return "The " + nation + " give unknown city.";
     }
-    break;
 
   case CLAUSE_GOLD:
     if (giver == client.conn.playing['playerno']) {

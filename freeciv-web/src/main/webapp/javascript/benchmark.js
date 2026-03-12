@@ -47,13 +47,13 @@ function benchmark_check()
 {
   try {
     $("#dialog").dialog('close');
-  } catch (err)  {}
+  } catch (err)  { /* dialog may not be open */ }
   try {
     $(".diplomacy_dialog").dialog('close');
-  } catch (err)  {}
+  } catch (err)  { /* dialog may not be open */ }
   try {
     $("#tech_dialog").dialog('close');
-  } catch (err)  {}
+  } catch (err)  { /* dialog may not be open */ }
 
   if (game_info != null && game_info['turn'] >= 15) {
     var time_elapsed =  (new Date().getTime() - benchmark_start) / 1000;

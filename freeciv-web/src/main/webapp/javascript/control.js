@@ -3291,7 +3291,7 @@ function check_request_goto_path()
       clear_goto_tiles();
       if (ptile != null) {
         /* Send request for goto_path to server. */
-        for (var i = 0; i < current_focus.length; i++) {
+        for (i = 0; i < current_focus.length; i++) {
           request_goto_path(current_focus[i]['id'], ptile['x'], ptile['y']);
         }
       }
