@@ -661,19 +661,7 @@ function map2d_draw_city_worked_overlay(ctx, vis, tw, th)
 
 function map2d_draw_unit(ctx, punit, cx, cy, tw, th)
 {
-  /* Prefer amplio2 unit sprites (better graphics), scaled to tile size. */
-  if (sprites_init) {
-    var tag = _resolve_unit_sprite_tag(punit, sprites);
-    if (tag && sprites[tag]) {
-      ctx.drawImage(sprites[tag], cx, cy, tw, th);
-      map2d_draw_unit_shield(ctx, punit, cx, cy, tw, th);
-      map2d_draw_unit_hp(ctx, punit, cx, cy, tw, th);
-      map2d_draw_unit_veteran(ctx, punit, cx, cy, tw, th);
-      return;
-    }
-  }
-
-  /* Fall back to trident tileset sprites. */
+  /* Try unit sprite from the trident tileset using a 2D-specific lookup */
   if (sprites_2d_init) {
     var tag = get_2d_unit_sprite_tag(punit);
     if (tag && sprites_2d[tag]) {
@@ -1111,12 +1099,13 @@ function map2d_render_goto_overlay(ctx, punit, path, tw, th, start_x, start_y, o
 }
 
 /**
- * Return the best matching sprite tag for a unit by searching the given
- * sprite dictionary.  Tries common naming conventions in preference order.
+ * Look up the best matching sprite tag for a unit in the trident tileset
+ * (sprites_2d dictionary).  Tries common naming conventions used by the
+ * Trident tileset before falling back to amplio2-style tags.
  */
-function _resolve_unit_sprite_tag(punit, sprite_dict)
+function get_2d_unit_sprite_tag(punit)
 {
-  if (punit == null || sprite_dict == null) return null;
+  if (!sprites_2d_init || punit == null) return null;
   var utype = unit_type(punit);
   if (!utype) return null;
 
@@ -1132,19 +1121,9 @@ function _resolve_unit_sprite_tag(punit, sprite_dict)
 
   for (var i = 0; i < candidates.length; i++) {
     var t = candidates[i];
-    if (t && sprite_dict[t]) return t;
+    if (t && sprites_2d[t]) return t;
   }
   return null;
-}
-
-/**
- * Look up the best matching sprite tag for a unit in the trident tileset
- * (sprites_2d dictionary).
- */
-function get_2d_unit_sprite_tag(punit)
-{
-  if (!sprites_2d_init) return null;
-  return _resolve_unit_sprite_tag(punit, sprites_2d);
 }
 
 /* ------------------------------------------------------------------ */
