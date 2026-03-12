@@ -185,7 +185,11 @@ function handle_tile_info(packet)
       if (typeof show_city_worked_tiles === 'function') show_city_worked_tiles();
     }
 
-    tiles[packet['tile']] = $.extend(tiles[packet['tile']], packet);
+    if (tiles[packet['tile']] instanceof Tile) {
+      tiles[packet['tile']].update(packet);
+    } else {
+      tiles[packet['tile']] = new Tile(Object.assign({}, tiles[packet['tile']], packet));
+    }
 
     update_borders_tile(tiles[packet['tile']]);
     update_roads_tile(tiles[packet['tile']], true);
@@ -273,16 +277,15 @@ function handle_city_info(packet)
   packet['unhappy'] = city_unhappy(packet);
 
   if (cities[packet['id']] == null) {
-    pcity = packet;
-    cities[packet['id']] = packet;
+    cities[packet['id']] = new City(packet);
     if (C_S_RUNNING == client_state() && !observing && benchmark_start == 0
         && !client_is_observer() && packet['owner'] == client.conn.playing.playerno) {
       show_city_dialog_by_id(packet['id']);
     }
   } else {
-    pcity = cities[packet['id']];
-    cities[packet['id']] = $.extend(cities[packet['id']], packet);
+    cities[packet['id']].update(packet);
   }
+  pcity = cities[packet['id']];
 
   if (pcity['shield_stock'] != packet['shield_stock']) {
     shield_stock_changed = true;
@@ -448,7 +451,11 @@ function handle_player_info(packet)
   packet['flags'] = new BitVector(packet['flags']);
   packet['gives_shared_vision'] = new BitVector(packet['gives_shared_vision']);
 
-  players[packet['playerno']] = $.extend(players[packet['playerno']], packet);
+  if (players[packet['playerno']] instanceof Player) {
+    players[packet['playerno']].update(packet);
+  } else {
+    players[packet['playerno']] = new Player(packet);
+  }
 
   if (C_S_PREPARING == client_state()) {
     update_player_info_pregame();
@@ -462,7 +469,11 @@ function handle_player_info(packet)
 ****************************************************************************/
 function handle_web_player_info_addition(packet)
 {
-  players[packet['playerno']] = $.extend(players[packet['playerno']], packet);
+  if (players[packet['playerno']] instanceof Player) {
+    players[packet['playerno']].update(packet);
+  } else {
+    players[packet['playerno']] = new Player(packet);
+  }
 
   if (client.conn.playing != null) {
     if (packet['playerno'] == client.conn.playing['playerno']) {
@@ -1317,7 +1328,7 @@ function recreate_old_tech_req(packet)
 function handle_ruleset_tech(packet)
 {
   packet['name'] = packet['name'].replace("?tech:", "");
-  techs[packet['id']] = packet;
+  techs[packet['id']] = new Tech(packet);
 
   recreate_old_tech_req(packet);
 }
@@ -1360,7 +1371,7 @@ function handle_ruleset_nation_groups(packet)
 /* 100% complete */
 function handle_ruleset_nation(packet)
 {
-  nations[packet['id']] = packet;
+  nations[packet['id']] = new Nation(packet);
 }
 
 function handle_ruleset_city(packet)
