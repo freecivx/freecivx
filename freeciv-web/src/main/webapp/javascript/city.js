@@ -18,6 +18,79 @@
 ***********************************************************************/
 
 
+/**
+ * Represents a Freeciv city on the client side.
+ * Fields mirror PACKET_CITY_INFO defined in packets.def; client-side
+ * properties (unhappy) are initialised to sensible defaults and may be
+ * overwritten by derived calculations.
+ */
+class City {
+  constructor(packet) {
+    // Fields from PACKET_CITY_INFO (packets.def)
+    this.id = 0;
+    this.tile = 0;
+    this.owner = 0;
+    this.original = 0;
+    this.size = 0;
+    this.city_radius_sq = 0;
+    this.style = 0;
+    this.capital = 0;
+    this.ppl_happy = [];
+    this.ppl_content = [];
+    this.ppl_unhappy = [];
+    this.ppl_angry = [];
+    this.specialists_size = 0;
+    this.specialists = [];
+    this.history = 0;
+    this.culture = 0;
+    this.buy_cost = 0;
+    this.surplus = [];
+    this.waste = [];
+    this.unhappy_penalty = [];
+    this.prod = [];
+    this.citizen_base = [];
+    this.usage = [];
+    this.food_stock = 0;
+    this.shield_stock = 0;
+    this.traderoute_count = 0;
+    this.pollution = 0;
+    this.illness_trade = 0;
+    this.production_kind = 0;
+    this.production_value = 0;
+    this.turn_founded = 0;
+    this.turn_last_built = 0;
+    this.changed_from_kind = 0;
+    this.changed_from_value = 0;
+    this.before_change_shields = 0;
+    this.disbanded_shields = 0;
+    this.caravan_shields = 0;
+    this.last_turns_shield_surplus = 0;
+    this.airlift = 0;
+    this.did_buy = false;
+    this.did_sell = false;
+    this.was_happy = false;
+    this.had_famine = false;
+    this.diplomat_investigate = false;
+    this.walls = 0;
+    this.city_image = 0;
+    this.steal = 0;
+    this.worklist = [];
+    this.improvements = null;
+    this.city_options = null;
+    this.name = "";
+    // Client-side properties (not from server packets)
+    this.unhappy = false;
+    Object.assign(this, packet);
+  }
+
+  /**
+   * Update this city with data from a new server packet.
+   */
+  update(packet) {
+    Object.assign(this, packet);
+  }
+}
+
 var cities = {};
 var city_rules = {};
 var city_trade_routes = {};

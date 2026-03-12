@@ -18,6 +18,68 @@
 ***********************************************************************/
 
 
+/**
+ * Represents a Freeciv player on the client side.
+ * Fields mirror PACKET_PLAYER_INFO defined in packets.def; client-side
+ * properties (color) are initialised to sensible defaults.
+ */
+class Player {
+  constructor(packet) {
+    // Fields from PACKET_PLAYER_INFO (packets.def)
+    this.playerno = 0;
+    this.name = "";
+    this.username = "";
+    this.unassigned_user = false;
+    this.score = 0;
+    this.is_male = false;
+    this.was_created = false;
+    this.government = 0;
+    this.target_government = 0;
+    this.real_embassy = [];
+    this.mood = 0;
+    this.style = 0;
+    this.music_style = 0;
+    this.nation = 0;
+    this.team = 0;
+    this.is_ready = false;
+    this.phase_done = false;
+    this.nturns_idle = 0;
+    this.turns_alive = 0;
+    this.is_alive = true;
+    this.autoselect_weight = 0;
+    this.gold = 0;
+    this.tax = 0;
+    this.science = 0;
+    this.luxury = 0;
+    this.infrapoints = 0;
+    this.tech_upkeep = 0;
+    this.science_cost = 0;
+    this.is_connected = false;
+    this.revolution_finishes = -1;
+    this.ai_skill_level = 0;
+    this.barbarian_type = 0;
+    this.gives_shared_vision = null;
+    this.gives_shared_tiles = null;
+    this.history = 0;
+    this.culture = 0;
+    this.love = [];
+    this.color_valid = false;
+    this.color_changeable = false;
+    this.color_red = 0;
+    this.color_green = 0;
+    this.color_blue = 0;
+    this.flags = null;
+    this.wonders = [];
+    Object.assign(this, packet);
+  }
+
+  /**
+   * Update this player with data from a new server packet.
+   */
+  update(packet) {
+    Object.assign(this, packet);
+  }
+}
 
 var players = {};
 var research_data = {};

@@ -17,6 +17,38 @@
 
 ***********************************************************************/
 
+/**
+ * Represents a Freeciv nation (ruleset entry) on the client side.
+ * Fields mirror PACKET_RULESET_NATION defined in packets.def.
+ */
+class Nation {
+  constructor(packet) {
+    // Fields from PACKET_RULESET_NATION (packets.def)
+    this.id = 0;
+    this.translation_domain = "";
+    this.adjective = "";
+    this.rule_name = "";
+    this.noun_plural = "";
+    this.graphic_str = "";
+    this.graphic_alt = "";
+    this.legend = "";
+    this.style = 0;
+    this.leader_count = 0;
+    this.leader_name = [];
+    this.leader_is_male = [];
+    this.is_playable = false;
+    this.barbarian_type = 0;
+    Object.assign(this, packet);
+  }
+
+  /**
+   * Update this nation with data from a new server packet.
+   */
+  update(packet) {
+    Object.assign(this, packet);
+  }
+}
+
 var nations = {};
 var nation_groups = [];
 var diplstates = {};
