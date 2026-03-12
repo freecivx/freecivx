@@ -18,6 +18,70 @@
 ***********************************************************************/
 
 
+/**
+ * Represents a Freeciv map tile on the client side.
+ * Fields mirror PACKET_TILE_INFO defined in packets.def; client-side
+ * properties (units, seen, specials, goto_dir, nuke) are initialised to
+ * sensible defaults and are never overwritten by server packets.
+ */
+class Tile {
+  constructor(packet) {
+    // Fields from PACKET_TILE_INFO (packets.def)
+    this.tile = 0;
+    this.continent = 0;
+    this.known = null;
+    this.owner = null;
+    this.extras_owner = null;
+    this.worked = null;
+    this.terrain = 0;
+    this.resource = null;
+    this.extras = null;
+    this.placing = -1;
+    this.place_turn = 0;
+    this.spec_sprite = null;
+    this.label = "";
+    this.height = 0;
+    // Client-side properties (not from server packets)
+    this.units = [];
+    this.seen = {};
+    this.specials = [];
+    this.goto_dir = null;
+    this.nuke = 0;
+    Object.assign(this, packet);
+  }
+
+  /**
+   * Update this tile with data from a new server packet.
+   */
+  update(packet) {
+    Object.assign(this, packet);
+  }
+}
+
+/**
+ * Represents the Freeciv game map on the client side.
+ * Fields mirror PACKET_MAP_INFO defined in packets.def.
+ */
+class Map {
+  constructor(packet) {
+    // Fields from PACKET_MAP_INFO (packets.def)
+    this.xsize = 0;
+    this.ysize = 0;
+    this.topology_id = 0;
+    this.wrap_id = 0;
+    this.north_latitude = 0;
+    this.south_latitude = 0;
+    Object.assign(this, packet);
+  }
+
+  /**
+   * Update this map with data from a new server packet.
+   */
+  update(packet) {
+    Object.assign(this, packet);
+  }
+}
+
 var map = {};
 var tiles = {};
 

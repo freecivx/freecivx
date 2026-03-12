@@ -18,6 +18,38 @@
 ***********************************************************************/
 
 
+/**
+ * Represents a Freeciv technology (advance) on the client side.
+ * Fields mirror PACKET_RULESET_TECH defined in packets.def.
+ */
+class Tech {
+  constructor(packet) {
+    // Fields from PACKET_RULESET_TECH (packets.def)
+    this.id = 0;
+    this.root_req = 0;
+    this.research_reqs_count = 0;
+    this.research_reqs = [];
+    this.tclass = 0;
+    this.removed = false;
+    this.flags = 0;
+    this.cost = 0;
+    this.num_reqs = 0;
+    this.name = "";
+    this.rule_name = "";
+    this.helptext = [];
+    this.graphic_str = "";
+    this.graphic_alt = "";
+    Object.assign(this, packet);
+  }
+
+  /**
+   * Update this tech with data from a new server packet.
+   */
+  update(packet) {
+    Object.assign(this, packet);
+  }
+}
+
 var techs = {};
 
 var tech_canvas_text_font = "18px Arial";
