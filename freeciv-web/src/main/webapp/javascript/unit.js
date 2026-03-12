@@ -20,26 +20,62 @@
 
 /**
  * Represents a Freeciv unit on the client side.
- * Constructed from a server packet; client-side properties (anim_list,
- * facing) are initialised to sensible defaults when not provided.
+ * Fields mirror PACKET_UNIT_INFO defined in packets.def; client-side
+ * properties (anim_list) are initialised to sensible defaults and are
+ * never overwritten by server packets.
  */
 class Unit {
   constructor(packet) {
+    // Fields from PACKET_UNIT_INFO (packets.def)
+    this.id = 0;
+    this.owner = 0;
+    this.nationality = 0;
+    this.tile = 0;
+    this.facing = 6;
+    this.homecity = 0;
+    this.upkeep = [];
+    this.veteran = 0;
+    this.ssa_controller = SSA_NONE;
+    this.paradropped = false;
+    this.occupied = false;
+    this.transported = false;
+    this.done_moving = false;
+    this.stay = false;
+    this.type = 0;
+    this.transported_by = 0;
+    this.carrying = 0;
+    this.movesleft = 0;
+    this.hp = 0;
+    this.fuel = 0;
+    this.activity_count = 0;
+    this.changed_from_count = 0;
+    this.goto_tile = -1;
+    this.activity = 0;
+    this.activity_tgt = 0;
+    this.changed_from = 0;
+    this.changed_from_tgt = 0;
+    this.battlegroup = 0;
+    this.has_orders = false;
+    this.orders_length = 0;
+    this.orders_index = 0;
+    this.orders_repeat = false;
+    this.orders_vigilant = false;
+    this.orders = [];
+    this.action_decision_want = 0;
+    this.action_decision_tile = 0;
+    // Client-side properties (not from server packets)
+    this.anim_list = [];
     Object.assign(this, packet);
-    this.anim_list = this.anim_list ?? [];
-    this.facing = this.facing ?? 6;
   }
 
   /**
    * Update this unit with data from a new server packet, preserving
-   * client-side state (anim_list, facing) that the server does not send.
+   * client-side state (anim_list) that the server does not send.
    */
   update(packet) {
     var saved_anim_list = this.anim_list;
-    var saved_facing = this.facing;
     Object.assign(this, packet);
     if (this.anim_list == null) this.anim_list = saved_anim_list;
-    if (this.facing == null) this.facing = saved_facing;
   }
 }
 
