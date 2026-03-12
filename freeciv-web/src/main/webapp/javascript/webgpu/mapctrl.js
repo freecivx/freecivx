@@ -248,6 +248,7 @@ function webgl_mapview_touch_move(e)
 /**************************************************************************
   Recenter the map on the canvas location, on user request.  Usually this
   is done with a right-click.
+  @param {Tile} ptile - The tile to recenter the map on.
 **************************************************************************/
 function webgl_recenter_button_pressed(ptile)
 {

@@ -157,6 +157,8 @@ function tileset_extra_graphic_tag(extra)
 
 /**************************************************************************
   Returns the tag name of the graphic showing the specified unit type.
+  @param {UnitType} utype - The unit type to get the graphic tag for.
+  @returns {string|null} The graphic tag string, or null if unavailable.
 **************************************************************************/
 function tileset_unit_type_graphic_tag(utype)
 {
@@ -174,6 +176,8 @@ function tileset_unit_type_graphic_tag(utype)
 
 /**************************************************************************
   Returns the tag name of the graphic for the unit.
+  @param {Unit} punit - The unit to get the graphic tag for.
+  @returns {string|null} The graphic tag string, or null if unavailable.
 **************************************************************************/
 function tileset_unit_graphic_tag(punit)
 {
@@ -191,6 +195,8 @@ function tileset_building_graphic_tag(pimprovement)
 
 /**************************************************************************
   Returns the tag name of the graphic showing the specified tech.
+  @param {Tech} ptech - The technology to get the graphic tag for.
+  @returns {string|null} The graphic tag string, or null if unavailable.
 **************************************************************************/
 function tileset_tech_graphic_tag(ptech)
 {
@@ -246,6 +252,10 @@ function tileset_extra_id_activity_graphic_tag(extra_id)
 /****************************************************************************
   Add sprites for the base tile to the sprite list.  This doesn't
   include specials or rivers.
+  @param {number} layer_num - The layer index to add sprites for.
+  @param {Tile} ptile - The map tile to add sprites for.
+  @param {Terrain} pterrain - The terrain type for this tile.
+  @param {Array} tterrain_near - Array of terrain types for neighbouring tiles.
 ****************************************************************************/
 function fill_terrain_sprite_layer(layer_num, ptile, pterrain, tterrain_near)
 {
@@ -325,6 +335,8 @@ function cardinal_index_str(idx)
 
 /**********************************************************************
   Return the flag graphic to be used by the city.
+  @param {City} pcity - The city to get the flag graphic for.
+  @returns {{key: string}} An object with the sprite key.
 ***********************************************************************/
 function get_city_flag_sprite(pcity) {
   var owner_id = pcity['owner'];
@@ -340,6 +352,8 @@ function get_city_flag_sprite(pcity) {
 
 /**********************************************************************
   Return the flag graphic to be used by the base on tile
+  @param {Tile} ptile - The tile to get the base flag graphic for.
+  @returns {{key: string}|{}} An object with the sprite key, or empty object.
 ***********************************************************************/
 function get_base_flag_sprite(ptile) {
   var owner_id = ptile['extras_owner'];
@@ -357,6 +371,8 @@ function get_base_flag_sprite(ptile) {
 
 /**********************************************************************
  Returns the sprite key for the number of defending units in a city.
+ @param {City} pcity - The city to get the occupancy sprite key for.
+ @returns {string} The sprite key string.
 ***********************************************************************/
 function get_city_occupied_sprite(pcity) {
   var owner_id = pcity['owner'];
@@ -418,6 +434,8 @@ function get_city_invalid_worked_sprite() {
 
 /**********************************************************************
 ...
+  @param {Tile} ptile - The tile whose goto direction is used.
+  @returns {{key: string, goto_dir: *}} Sprite info object.
 ***********************************************************************/
 function fill_goto_line_sprite_array(ptile)
 {
@@ -428,7 +446,9 @@ function fill_goto_line_sprite_array(ptile)
 
 
 /**********************************************************************
-  ...
+  Returns a stack sprite info object (always "unit.stack").
+  @param {Unit} punit - The unit to get the stack sprite for.
+  @returns {{key: string}} The sprite info object.
 ***********************************************************************/
 function get_unit_stack_sprite(punit)
 {
@@ -436,7 +456,10 @@ function get_unit_stack_sprite(punit)
 }
 
 /**********************************************************************
-  ...
+  Returns the HP bar sprite info for a unit based on its current HP
+  as a percentage of its maximum HP.
+  @param {Unit} punit - The unit to get the HP sprite for.
+  @returns {{key: string}} The sprite info object.
 ***********************************************************************/
 function get_unit_hp_sprite(punit)
 {
@@ -449,7 +472,9 @@ function get_unit_hp_sprite(punit)
 }
 
 /**********************************************************************
-  ...
+  Returns the veteran level badge sprite info for a unit.
+  @param {Unit} punit - The unit to get the veteran sprite for.
+  @returns {{key: string}} The sprite info object.
 ***********************************************************************/
 function get_unit_veteran_sprite(punit)
 {
@@ -457,7 +482,10 @@ function get_unit_veteran_sprite(punit)
 }
 
 /**********************************************************************
-  ...
+  Returns the current activity sprite info for a unit, or null if
+  the unit has no displayable activity.
+  @param {Unit} punit - The unit to get the activity sprite for.
+  @returns {{key: string}|null} The sprite info object, or null.
 ***********************************************************************/
 function get_unit_activity_sprite(punit)
 {
@@ -537,7 +565,9 @@ function get_unit_activity_sprite(punit)
 }
 
 /****************************************************************************
- ...
+  Returns the city info text sprite data for display on the map.
+  @param {City} pcity - The city to get the info text sprite for.
+  @returns {{key: string, city: City, offset_x: number, offset_y: number}}
 ****************************************************************************/
 function get_city_info_text(pcity)
 {
@@ -546,7 +576,9 @@ function get_city_info_text(pcity)
 }
 
 /****************************************************************************
- ...
+  Returns the tile label text sprite data for display on the map.
+  @param {Tile} ptile - The tile to get the label text sprite for.
+  @returns {{key: string, tile: Tile, offset_x: number, offset_y: number}}
 ****************************************************************************/
 function get_tile_label_text(ptile)
 {
@@ -556,7 +588,9 @@ function get_tile_label_text(ptile)
 
 
 /****************************************************************************
- ...
+  Returns the image sprite data for a unit based on its unit type.
+  @param {Unit} punit - The unit to get the image sprite for.
+  @returns {object|null} The sprite info object, or null if unavailable.
 ****************************************************************************/
 function get_unit_image_sprite(punit)
 {
@@ -566,7 +600,9 @@ function get_unit_image_sprite(punit)
 
 
 /****************************************************************************
- ...
+  Returns the image sprite data for a unit type.
+  @param {UnitType} punittype - The unit type to get the image sprite for.
+  @returns {object|null} The sprite info object, or null if unavailable.
 ****************************************************************************/
 function get_unit_type_image_sprite(punittype)
 {
@@ -643,7 +679,9 @@ function get_specialist_image_sprite(tag)
 
 
 /****************************************************************************
- ...
+  Returns the image sprite data for a technology.
+  @param {Tech} ptech - The technology to get the image sprite for.
+  @returns {object|null} The sprite info object, or null if unavailable.
 ****************************************************************************/
 function get_technology_image_sprite(ptech)
 {
@@ -668,7 +706,9 @@ function get_technology_image_sprite(ptech)
 }
 
 /****************************************************************************
- ...
+  Returns the flag image sprite data for a nation.
+  @param {Nation} pnation - The nation to get the flag sprite for.
+  @returns {object|null} The sprite info object, or null if unavailable.
 ****************************************************************************/
 function get_nation_flag_sprite(pnation)
 {

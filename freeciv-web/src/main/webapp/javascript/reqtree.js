@@ -88,6 +88,8 @@ function generate_req_tree() {
  Assign horizontal level (xlevel) based on maximum prerequisite level
  Civ 6-style: Places tech at max(prerequisite levels) + 1
  Includes cycle detection to prevent infinite recursion
+ @param {Tech} ptech - The technology to assign the horizontal level for.
+ @returns {number} The horizontal level assigned to the technology.
 **************************************************************************/
 function reqtree_assign_xlevel(ptech) {
   if (ptech['xlevel'] != -1) {
@@ -172,6 +174,8 @@ function reqtree_assign_ylevels() {
 /**************************************************************************
  Helper: Get average Y position of a tech's prerequisites
  Used for sorting techs to minimize crossing lines
+ @param {Tech} ptech - The technology to get the average prerequisite Y for.
+ @returns {number} The average Y position of the technology's prerequisites.
 **************************************************************************/
 function get_prereq_avg_y(ptech) {
   let total_y = 0;

@@ -847,7 +847,7 @@ switch (filename) {
  If not loaded, initiates async loading and returns null.
  
  @param {string} filename - The model filename (without extension)
- @param {Object} ptile - The tile object for tracking unloaded models
+ @param {Tile} ptile - The tile object for tracking unloaded models
  @returns {THREE.Object3D|null} Cloned model or null if not yet loaded
 ****************************************************************************/
 function webgl_get_model(filename, ptile)

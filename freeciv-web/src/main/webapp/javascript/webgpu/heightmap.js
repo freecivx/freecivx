@@ -23,6 +23,8 @@ var heightmap_hash = -1;
 
 /****************************************************************************
   Returns height offset for units. This will make units higher above cities.
+  @param {Unit} punit - The unit to get the height offset for.
+  @returns {number} The height offset in world units.
 ****************************************************************************/
 function get_unit_height_offset(punit)
 {
@@ -90,6 +92,8 @@ function get_unit_height_offset(punit)
 
 /****************************************************************************
 ...
+  @param {Tile} ptile - The tile to get the forest height offset for.
+  @returns {number} The height offset for forest terrain on this tile.
 ****************************************************************************/
 function get_forest_offset(ptile)
 {
@@ -109,6 +113,8 @@ function get_forest_offset(ptile)
 
 /****************************************************************************
   Returns height offset for cities.
+  @param {City} pcity - The city to get the height offset for.
+  @returns {number} The height offset in world units.
 ****************************************************************************/
 function get_city_height_offset(pcity)
 {

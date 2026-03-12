@@ -128,8 +128,8 @@ function remove_city_worked_tiles() {
 /****************************************************************************
  Checks if the given tile is within the city radius of the active city.
  
- @param {Object} ptile - The tile to check
- @param {Object} active_city - The city to check against
+ @param {Tile} ptile - The tile to check
+ @param {City} active_city - The city to check against
  @returns {boolean} True if tile is within city working radius
 ****************************************************************************/
 function is_city_tile(ptile, active_city)
@@ -173,7 +173,7 @@ function hide_city_labels() {
 /**
  * Returns the appropriate scale for city walls based on city size and style.
  * 
- * @param {Object} pcity - The city object
+ * @param {City} pcity - The city object
  * @returns {number} Scale factor for city walls model
  */
 function get_citywalls_scale(pcity)
@@ -205,7 +205,7 @@ function get_citywalls_scale(pcity)
 /**
  * Returns the city walls model name based on city style.
  * 
- * @param {Object} pcity - The city object
+ * @param {City} pcity - The city object
  * @returns {string} Model name for city walls
  */
 function get_citywalls_models(pcity) {

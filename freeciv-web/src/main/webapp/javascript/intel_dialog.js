@@ -37,6 +37,7 @@ function show_intelligence_report_dialog()
 
 /**************************************************************************
  Show the intelligence report dialog when there's no embassy.
+ @param {Player} pplayer - The player to show intelligence report for.
 **************************************************************************/
 function show_intelligence_report_hearsay(pplayer)
 {
@@ -63,6 +64,7 @@ function show_intelligence_report_hearsay(pplayer)
 
 /**************************************************************************
  Show the intelligence report dialog when there's an embassy.
+ @param {Player} pplayer - The player to show the embassy intelligence report for.
 **************************************************************************/
 function show_intelligence_report_embassy(pplayer) {
   // Reset dialog page.

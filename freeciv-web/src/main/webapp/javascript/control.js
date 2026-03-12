@@ -749,6 +749,8 @@ function check_text_input(event,chatboxtextarea) {
 /**********************************************************************//**
   Returns TRUE iff the client should ask the server about what actions a
   unit can perform.
+  @param {Unit} punit - The unit to check for action decisions.
+  @returns {boolean} True if the server should be asked for possible actions.
 **************************************************************************/
 function should_ask_server_for_actions(punit)
 {
@@ -775,6 +777,8 @@ function can_ask_server_for_actions()
 
   The server's reply will pop up the action selection dialog unless no
   alternatives exists.
+  @param {Unit} punit - The unit to ask the server about.
+  @returns {boolean} False if observing or punit is null, undefined otherwise.
 **************************************************************************/
 function ask_server_for_actions(punit)
 {
@@ -870,6 +874,7 @@ function action_selection_next_in_focus(old_actor_id)
 
 /**********************************************************************//**
   Request that the player makes a decision for the specified unit.
+  @param {Unit} actor_unit - The unit that requires a player decision.
 **************************************************************************/
 function action_decision_request(actor_unit)
 {
@@ -892,6 +897,8 @@ function action_decision_request(actor_unit)
 
 /****************************************************************************
   Return TRUE iff a unit on this tile is in focus.
+  @param {Tile} ptile - The tile to check for a focused unit.
+  @returns {Unit|null} The focused unit on the tile, or null if none.
 ****************************************************************************/
 function get_focus_unit_on_tile(ptile)
 {
@@ -911,6 +918,8 @@ function get_focus_unit_on_tile(ptile)
 /****************************************************************************
   Return TRUE iff this unit is in focus.
   TODO: not implemented yet.
+  @param {Unit} cunit - The unit to check if it is in focus.
+  @returns {boolean} True if the unit is currently in focus.
 ****************************************************************************/
 function unit_is_in_focus(cunit)
 {
@@ -934,6 +943,7 @@ function get_units_in_focus()
 
 /**********************************************************************//**
   Store a priority focus unit.
+  @param {Unit} punit - The unit to add to the urgent focus queue.
 **************************************************************************/
 function unit_focus_urgent(punit)
 {
@@ -948,6 +958,7 @@ function unit_focus_urgent(punit)
 
 /**********************************************************************//**
   Called when a unit is killed; this removes it from the control lists.
+  @param {Unit} punit - The unit that was killed.
 **************************************************************************/
 function control_unit_killed(punit)
 {
@@ -1399,6 +1410,7 @@ function unit_distance_compare(unit_a, unit_b)
   This function is called for several reasons.  Sometimes a fast-focus
   happens immediately as a result of a client action.  Other times it
   happens because of a server-sent packet that wakes up a unit.
+  @param {Unit|null} punit - The unit to focus, or null to clear focus.
 **************************************************************************/
 function set_unit_focus(punit)
 {
@@ -1418,6 +1430,7 @@ function set_unit_focus(punit)
 
 /**************************************************************************
  See set_unit_focus()
+ @param {Unit|null} punit - The unit to focus and redraw, or null to clear.
 **************************************************************************/
 function set_unit_focus_and_redraw(punit)
 {
@@ -1440,6 +1453,7 @@ function set_unit_focus_and_redraw(punit)
 
 /**************************************************************************
  ...
+ @param {Unit} punit - The unit to focus and set to idle activity.
 **************************************************************************/
 function set_unit_focus_and_activate(punit)
 {
@@ -1449,6 +1463,7 @@ function set_unit_focus_and_activate(punit)
 
 /**************************************************************************
  See set_unit_focus_and_redraw()
+ @param {Unit} punit - The unit to activate from the city dialog.
 **************************************************************************/
 function city_dialog_activate_unit(punit)
 {
@@ -1486,6 +1501,8 @@ function find_a_focus_unit_tile_to_center_on()
 
 /**************************************************************************
 Return a pointer to a visible unit, if there is one.
+  @param {Tile} ptile - The tile to find a visible unit on.
+  @returns {Unit|null} The visible unit on the tile, or null if none.
 **************************************************************************/
 function find_visible_unit(ptile)
 {
@@ -1528,6 +1545,9 @@ function find_visible_unit(ptile)
 
 /**********************************************************************
 TODO: not complete yet
+  @param {Tile} ptile - The tile to get the drawable unit for.
+  @param {City|null} [citymode] - The city being viewed, or null.
+  @returns {Unit|null} The unit to draw on the tile, or null if none.
 ***********************************************************************/
 function get_drawable_unit(ptile, citymode)
 {
@@ -1548,6 +1568,10 @@ function get_drawable_unit(ptile, citymode)
 /**************************************************************************
   Returns true if the order preferably should be performed from an
   adjacent tile.
+  @param {number} order - The order type constant (ORDER_MOVE, etc.).
+  @param {number} act_id - The action ID to check.
+  @param {Tile} ptile - The target tile for the action.
+  @returns {boolean} True if the order should be from an adjacent tile.
 **************************************************************************/
 function order_wants_direction(order, act_id, ptile) {
   var action = actions[act_id];
@@ -1593,6 +1617,8 @@ function order_wants_direction(order, act_id, ptile) {
 
 /**********************************************************************//**
   Paradrop to a location.
+  @param {Unit} punit - The unit to paradrop.
+  @param {Tile} ptile - The destination tile for the paradrop.
 **************************************************************************/
 function do_unit_paradrop_to(punit, ptile)
 {
@@ -1636,6 +1662,9 @@ function do_unit_paradrop_to(punit, ptile)
 
 /**************************************************************************
   Handles everything when the user clicked a tile
+  @param {Tile} ptile - The tile that was clicked.
+  @param {number} qtype - The click type (select/action/etc.).
+  @param {boolean} first_time_called - True if this is the initial click.
 **************************************************************************/
 function do_map_click(ptile, qtype, first_time_called)
 {
@@ -2921,6 +2950,7 @@ function key_unit_action_select()
 /**************************************************************************
   An action selection dialog for the selected units against the specified
   tile is wanted.
+  @param {Tile} ptile - The target tile for the action selection dialog.
 **************************************************************************/
 function request_unit_act_sel_vs(ptile)
 {
@@ -2987,6 +3017,7 @@ function key_unit_auto_settle()
 
 /**************************************************************************
   Ask the server to cancel unit orders, if any.
+  @param {Unit} punit - The unit whose orders are to be cancelled.
 **************************************************************************/
 function request_unit_cancel_orders(punit)
 {

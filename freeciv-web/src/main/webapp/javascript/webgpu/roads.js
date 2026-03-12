@@ -42,7 +42,9 @@ function init_roads_image()
 }
 
 /****************************************************************************
-  ...
+  Updates road models for the given tile and optionally for adjacent tiles.
+  @param {Tile} ptile - The tile whose road models need to be updated.
+  @param {boolean} recursive - If true, also updates adjacent tiles.
 ****************************************************************************/
 function update_roads_tile(ptile, recursive)
 {
