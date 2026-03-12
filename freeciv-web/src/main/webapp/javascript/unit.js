@@ -18,6 +18,31 @@
 ***********************************************************************/
 
 
+/**
+ * Represents a Freeciv unit on the client side.
+ * Constructed from a server packet; client-side properties (anim_list,
+ * facing) are initialised to sensible defaults when not provided.
+ */
+class Unit {
+  constructor(packet) {
+    Object.assign(this, packet);
+    this.anim_list = this.anim_list ?? [];
+    this.facing = this.facing ?? 6;
+  }
+
+  /**
+   * Update this unit with data from a new server packet, preserving
+   * client-side state (anim_list, facing) that the server does not send.
+   */
+  update(packet) {
+    var saved_anim_list = this.anim_list;
+    var saved_facing = this.facing;
+    Object.assign(this, packet);
+    if (this.anim_list == null) this.anim_list = saved_anim_list;
+    if (this.facing == null) this.facing = saved_facing;
+  }
+}
+
 var units = {};
 
 /* Depends on the ruleset. Comes in the packet ruleset_terrain_control.

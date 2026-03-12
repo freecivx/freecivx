@@ -904,9 +904,7 @@ function handle_unit_packet_common(packet_unit)
     if (should_ask_server_for_actions(packet_unit)) {
       action_decision_handle(packet_unit);
     }
-    packet_unit['anim_list'] = [];
-    units[packet_unit['id']] = packet_unit;
-    units[packet_unit['id']]['facing'] = 6;
+    units[packet_unit['id']] = new Unit(packet_unit);
   } else {
     if ((punit['action_decision_want'] != packet_unit['action_decision_want']
          || punit['action_decision_tile'] != packet_unit['action_decision_tile'])
@@ -916,7 +914,7 @@ function handle_unit_packet_common(packet_unit)
     }
 
     update_unit_anim_list(units[packet_unit['id']], packet_unit);
-    units[packet_unit['id']] = $.extend(units[packet_unit['id']], packet_unit);
+    units[packet_unit['id']].update(packet_unit);
 
     for (var i = 0; i < current_focus.length; i++) {
       if (current_focus[i]['id'] == packet_unit['id']) {
