@@ -24,8 +24,7 @@ var loaded_images = 0;
 
 var sprites_init = false;
 
-/* Separate sprite cache for the 2D map renderer (trident tileset for terrain/badges;
- * amplio2 unit sprites are drawn from the main sprites{} dict). */
+/* Separate sprite cache for the 2D map renderer (trident tileset). */
 var sprites_2d = {};
 var sprites_2d_init = false;
 
