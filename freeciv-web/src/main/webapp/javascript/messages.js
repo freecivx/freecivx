@@ -131,8 +131,6 @@ function add_chatbox_text(packet)
     var text = packet['message'];
 
     if (text == null) return;
-    if (!check_text_with_banlist(text)) return;
-
     if (text.length >= max_chat_message_length) return;
 
     if (packet['event'] === E_CHAT_MSG) {

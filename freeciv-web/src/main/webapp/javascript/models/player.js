@@ -338,8 +338,6 @@ function get_invalid_username_reason(username)
   }
   if (!/^[a-z][a-z0-9]*$/.test(username)) {
     return "invalid: only English letters and numbers are allowed, and must start with a letter";
-  } else if (!check_text_with_banlist_exact(username)) {
-    return "banned";
   }
   return null;
 }
