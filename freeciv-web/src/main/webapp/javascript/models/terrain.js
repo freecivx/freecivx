@@ -17,7 +17,59 @@
 
 ***********************************************************************/
 
+/**
+ * Represents a Freeciv terrain type on the client side.
+ * Fields mirror PACKET_RULESET_TERRAIN defined in packets.def.
+ */
+class Terrain {
+  constructor(packet) {
+    // Fields from PACKET_RULESET_TERRAIN (packets.def)
+    this.id = 0;
+    this.tclass = 0;
+    this.flags = 0;
+    this.native_to = 0;
+    this.name = "";
+    this.rule_name = "";
+    this.graphic_str = "";
+    this.graphic_alt = "";
+    this.movement_cost = 0;
+    this.defense_bonus = 0;
+    this.output = [];
+    this.num_resources = 0;
+    this.resources = [];
+    this.resource_freq = [];
+    this.road_output_incr_pct = [];
+    this.base_time = 0;
+    this.road_time = 0;
+    this.cultivate_result = 0;
+    this.cultivate_time = 0;
+    this.plant_result = 0;
+    this.plant_time = 0;
+    this.irrigation_food_incr = 0;
+    this.irrigation_time = 0;
+    this.mining_shield_incr = 0;
+    this.mining_time = 0;
+    this.animal = 0;
+    this.transform_result = 0;
+    this.transform_time = 0;
+    this.placing_time = 0;
+    this.pillage_time = 0;
+    this.extra_count = 0;
+    this.extra_removal_times = [];
+    this.color_red = 0;
+    this.color_green = 0;
+    this.color_blue = 0;
+    this.helptext = [];
+    Object.assign(this, packet);
+  }
 
+  /**
+   * Update this terrain with data from a new server packet.
+   */
+  update(packet) {
+    Object.assign(this, packet);
+  }
+}
 
 var terrains = {};
 var resources = {};
