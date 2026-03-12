@@ -113,6 +113,7 @@ var special_resources = ["Fish", "Whales", "Oasis", "Wine", "Iron", "Spice", "Iv
 
 /****************************************************************************
   Handles unit positions
+  @param {Tile} ptile - The tile whose units' positions need to be updated.
 ****************************************************************************/
 function update_unit_position(ptile) {
   if (scene == null) return;
@@ -249,6 +250,7 @@ function update_unit_position(ptile) {
 
 /****************************************************************************
   Handles city positions
+  @param {Tile} ptile - The tile whose city position needs to be updated.
 ****************************************************************************/
 function update_city_position(ptile) {
 
@@ -407,6 +409,7 @@ function update_city_position(ptile) {
 
 /****************************************************************************
   Handles tile extras, such as specials.
+  @param {Tile} ptile - The tile whose extras need to be updated.
 ****************************************************************************/
 function update_tile_extras(ptile) {
 
@@ -432,6 +435,9 @@ function update_tile_extras(ptile) {
 
 /****************************************************************************
   Adds city buildings
+  @param {Tile} ptile - The tile where the city is located.
+  @param {City} pcity - The city whose buildings are to be added.
+  @param {object} scene - The Three.js scene to add buildings to.
 ****************************************************************************/
 function add_city_buildings(ptile, pcity, scene) {
   const wonders = ["Pyramids", "Lighthouse", "Statue of Liberty", "Colossus", "Eiffel Tower", "Hanging Gardens", "Oracle", "Great Library", "Sun Tzu's War Academy",
@@ -448,6 +454,10 @@ function add_city_buildings(ptile, pcity, scene) {
 
 /****************************************************************************
   Adds a wonder 3d model.
+  @param {Tile} ptile - The tile where the wonder is located.
+  @param {City} pcity - The city that owns the wonder.
+  @param {object} scene - The Three.js scene to add the wonder model to.
+  @param {string} wonder_name - The name of the wonder to add.
 ****************************************************************************/
 function add_wonder(ptile, pcity, scene, wonder_name) {
   if (city_has_building(pcity, improvement_id_by_name(wonder_name)) && pcity[wonder_name + '_added'] == null) {
@@ -540,6 +550,10 @@ function add_wonder(ptile, pcity, scene, wonder_name) {
 
 /****************************************************************************
   Adds a city building 3d model.
+  @param {Tile} ptile - The tile where the city building is located.
+  @param {City} pcity - The city that owns the building.
+  @param {object} scene - The Three.js scene to add the building model to.
+  @param {string} building_name - The name of the building type to add.
 ****************************************************************************/
 function add_city_building(ptile, pcity, scene, building_name) {
     if (city_has_building(pcity, improvement_id_by_name(building_name)) && pcity[building_name + '_added'] == null) {
@@ -659,6 +673,9 @@ function add_city_building(ptile, pcity, scene, building_name) {
 
 /****************************************************************************
   Adds or removes a extra tile 3d model.
+  @param {number} extra_type - The extra type index.
+  @param {string} extra_name - The name of the extra type.
+  @param {Tile} ptile - The tile whose extra model needs to be updated.
 ****************************************************************************/
 function update_tile_extra_update_model(extra_type, extra_name, ptile)
 {
@@ -813,6 +830,7 @@ function update_tile_extra_update_model(extra_type, extra_name, ptile)
 
 /****************************************************************************
   Adds cactus
+  @param {Tile} ptile - The tile to add the cactus model to.
 ****************************************************************************/
 function update_tile_cactus(ptile)
 {

@@ -113,8 +113,8 @@ PriorityQueue.prototype._siftDown = function(i) {
    { unit_id, dest, length, dir[], turns }
  or null if no path is found.
 
- @param {Object} punit     - The unit to move
- @param {Object} dest_tile - The destination tile
+ @param {Unit} punit     - The unit to move
+ @param {Tile} dest_tile - The destination tile
  @returns {Object|null}
  ****************************************************************************/
 function compute_client_goto_path(punit, dest_tile) {

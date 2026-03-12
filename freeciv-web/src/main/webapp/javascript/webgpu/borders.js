@@ -46,6 +46,7 @@ function init_borders_image()
 
 /****************************************************************************
  Update one border tile.
+ @param {Tile} ptile - The tile whose border model needs to be updated.
 ****************************************************************************/
 function update_borders_tile(ptile)
 {

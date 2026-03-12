@@ -20,6 +20,8 @@
 
 /****************************************************************************
  Create a unit label, flag, action sprite
+ @param {Unit} punit - The unit to create the label sprite for.
+ @param {Tile} ptile - The tile where the unit is located.
 ****************************************************************************/
 function create_unit_label_sprite(punit, ptile)
 {
@@ -118,6 +120,8 @@ function create_unit_label_sprite(punit, ptile)
 
 /****************************************************************************
  Create a city label sprite with flag, nation colors, and improved styling
+ @param {City} pcity - The city to create the label sprite for.
+ @param {number} index - The index of the city label.
 ****************************************************************************/
 function create_city_label_sprite(pcity, index) {
   var fcanvas = document.createElement("canvas");
@@ -232,6 +236,8 @@ function create_city_label_sprite(pcity, index) {
  Update a city name label. This updates the canvas image of the city label,
  which then updates the corresponding Three.js Texture.
  Matches the improved styling from create_city_label_sprite with nation colors.
+ @param {City} pcity - The city whose label needs to be updated.
+ @param {number} index - The index of the city label to update.
 ****************************************************************************/
 function update_city_label(pcity, index)
 {
@@ -483,7 +489,9 @@ function create_star_sky_texture(num_stars, width, height, full) {
 }
 
 /**********************************************************************
- ...
+ Returns the nation flag sprite info for a unit's owning nation.
+ @param {Unit} punit - The unit to get the nation flag sprite for.
+ @returns {{key: string}|null} The sprite info object, or null if unavailable.
  ***********************************************************************/
 function get_unit_nation_flag_sprite(punit)
 {

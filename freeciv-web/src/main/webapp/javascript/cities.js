@@ -33,6 +33,8 @@ function format_surplus(value)
 
 /**************************************************************************
  Returns HTML for a production icon + name for use in the cities table.
+ @param {City} pcity - The city to get production HTML for.
+ @returns {string} HTML string containing the production icon and name.
  **************************************************************************/
 function get_city_production_html(pcity)
 {

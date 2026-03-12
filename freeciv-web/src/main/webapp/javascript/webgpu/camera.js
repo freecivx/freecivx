@@ -67,6 +67,7 @@ function camera_look_at(x, y, z)
 
 /**************************************************************************
   Centers the mapview around the given tile..
+  @param {Tile} ptile - The tile to center the 3D map view on.
 **************************************************************************/
 function center_tile_mapcanvas_3d(ptile)
 {
@@ -87,6 +88,7 @@ function center_tile_mapcanvas_3d(ptile)
 /**************************************************************************
   Centers the 2D mapview around the given tile, used when use_2d_only is
   true (mobile devices or browsers without WebGPU support).
+  @param {Tile} ptile - The tile to center the 2D map view on.
 **************************************************************************/
 function center_tile_mapcanvas_2d(ptile)
 {
@@ -109,6 +111,7 @@ function center_tile_city(city)
 
 /**************************************************************************
   Enabled silding of the mapview to the given tile.
+  @param {Tile} ptile - The destination tile to slide the map view to.
 **************************************************************************/
 function enable_mapview_slide_3d(ptile)
 {

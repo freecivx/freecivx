@@ -44,7 +44,8 @@ function init_map_tiletype_image()
  }
 
 /****************************************************************************
-  ...
+  Updates the tile type texture data for the given tile.
+  @param {Tile} ptile - The tile whose type data needs to be updated.
 ****************************************************************************/
 function update_tiletypes_tile(ptile)
 {
@@ -93,6 +94,7 @@ function update_tiletypes_tile(ptile)
 /****************************************************************************
   Updates just the visibility information for a tile in the maptiles texture.
   Called when tile visibility changes (fog of war updates).
+  @param {Tile} ptile - The tile whose visibility needs to be updated.
 ****************************************************************************/
 function update_tiletypes_visibility(ptile)
 {

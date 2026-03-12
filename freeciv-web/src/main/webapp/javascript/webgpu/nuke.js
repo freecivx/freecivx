@@ -26,6 +26,7 @@ var nuke_active = false;
 
 /****************************************************************************
  Renders a nuclear explosion animation on the given tile.
+ @param {Tile} ptile - The tile on which to render the nuclear explosion.
 ****************************************************************************/
 function render_nuclear_explosion(ptile)
 {

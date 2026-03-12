@@ -106,6 +106,9 @@ var map2d_terrain_colors = {
 /**
  * Returns the best matching sprite tag for the given terrain and tile,
  * trying directional variants before falling back to the simple base tag.
+ * @param {Terrain} pterrain - The terrain type for this tile.
+ * @param {Tile} ptile - The map tile being rendered.
+ * @returns {string} The sprite tag key.
  */
 function get_2d_terrain_sprite_tag(pterrain, ptile)
 {
@@ -147,6 +150,10 @@ function get_2d_terrain_sprite_tag(pterrain, ptile)
 /**
  * Returns 1 if the tile in direction `dir` from `ptile` has the same
  * terrain as described by `graphic_str`, 0 otherwise.
+ * @param {Tile} ptile - The source map tile.
+ * @param {string} graphic_str - The terrain graphic string to match.
+ * @param {number} dir - The direction constant (e.g. DIR8_NORTH).
+ * @returns {number} 1 if the neighbour has the same terrain, 0 otherwise.
  */
 function map2d_neighbor_flag(ptile, graphic_str, dir)
 {
@@ -162,6 +169,9 @@ function map2d_neighbor_flag(ptile, graphic_str, dir)
  * terrain (coast or floor), 0 otherwise.  Used for the directional
  * neighbour flags of ocean tiles so that coast↔floor transitions are
  * handled correctly.
+ * @param {Tile} ptile - The source map tile.
+ * @param {number} dir - The direction constant (e.g. DIR8_NORTH).
+ * @returns {number} 1 if the neighbour is ocean terrain, 0 otherwise.
  */
 function map2d_ocean_neighbor_flag(ptile, dir)
 {
@@ -383,6 +393,12 @@ function render_2d_map()
  *   – The terrain-specific directional overlay is drawn on top.
  *
  * After terrain, fog-of-war is applied where the tile is known-but-unseen.
+ * @param {CanvasRenderingContext2D} ctx - The canvas 2D rendering context.
+ * @param {Tile} ptile - The map tile to render terrain for.
+ * @param {number} cx - Canvas x pixel coordinate of the tile's top-left corner.
+ * @param {number} cy - Canvas y pixel coordinate of the tile's top-left corner.
+ * @param {number} tw - Tile width in pixels at the current zoom level.
+ * @param {number} th - Tile height in pixels at the current zoom level.
  */
 function map2d_render_terrain(ctx, ptile, cx, cy, tw, th)
 {
@@ -455,6 +471,12 @@ function map2d_render_terrain(ctx, ptile, cx, cy, tw, th)
 /**
  * @deprecated  Use render_2d_map() which calls the individual layer
  *              renderers.  This stub is retained for API compatibility.
+ * @param {CanvasRenderingContext2D} ctx - The canvas 2D rendering context.
+ * @param {Tile} ptile - The map tile to render.
+ * @param {number} cx - Canvas x pixel coordinate of the tile's top-left corner.
+ * @param {number} cy - Canvas y pixel coordinate of the tile's top-left corner.
+ * @param {number} tw - Tile width in pixels at the current zoom level.
+ * @param {number} th - Tile height in pixels at the current zoom level.
  */
 function render_2d_tile(ctx, ptile, cx, cy, tw, th)
 {
@@ -475,6 +497,15 @@ function render_2d_tile(ctx, ptile, cx, cy, tw, th)
 /*  City and unit drawing                                               */
 /* ------------------------------------------------------------------ */
 
+/**
+ * Draw a city sprite (or coloured-circle fallback) onto the canvas tile.
+ * @param {CanvasRenderingContext2D} ctx - The canvas 2D rendering context.
+ * @param {City} pcity - The city to draw.
+ * @param {number} cx - Canvas x pixel coordinate of the tile's top-left corner.
+ * @param {number} cy - Canvas y pixel coordinate of the tile's top-left corner.
+ * @param {number} tw - Tile width in pixels at the current zoom level.
+ * @param {number} th - Tile height in pixels at the current zoom level.
+ */
 function map2d_draw_city(ctx, pcity, cx, cy, tw, th)
 {
   /* Try city sprites from the trident tileset (style_city_0 variants) */
@@ -502,7 +533,11 @@ function map2d_draw_city(ctx, pcity, cx, cy, tw, th)
   ctx.fill();
 }
 
-/* Returns the wall sprite canvas for a city based on its style, or null. */
+/**
+ * Returns the wall sprite canvas for a city based on its style, or null.
+ * @param {City} pcity - The city whose wall sprite is needed.
+ * @returns {HTMLCanvasElement|null} The wall sprite canvas, or null if unavailable.
+ */
 function map2d_get_city_wall_sprite(pcity)
 {
   if (!sprites_2d_init) return null;
@@ -529,6 +564,15 @@ function map2d_get_city_wall_sprite(pcity)
   return (key && sprites_2d[key]) || sprites_2d['cd.city_wall'] || null;
 }
 
+/**
+ * Draw the city name and size label below the city tile.
+ * @param {CanvasRenderingContext2D} ctx - The canvas 2D rendering context.
+ * @param {City} pcity - The city whose label is to be drawn.
+ * @param {number} cx - Canvas x pixel coordinate of the tile's top-left corner.
+ * @param {number} cy - Canvas y pixel coordinate of the tile's top-left corner.
+ * @param {number} tw - Tile width in pixels at the current zoom level.
+ * @param {number} th - Tile height in pixels at the current zoom level.
+ */
 function map2d_draw_city_label(ctx, pcity, cx, cy, tw, th)
 {
   if (tw < 20) return; /* too small to be readable */
@@ -659,6 +703,15 @@ function map2d_draw_city_worked_overlay(ctx, vis, tw, th)
   }
 }
 
+/**
+ * Draw a unit sprite (or coloured-rectangle fallback) onto the canvas tile.
+ * @param {CanvasRenderingContext2D} ctx - The canvas 2D rendering context.
+ * @param {Unit} punit - The unit to draw.
+ * @param {number} cx - Canvas x pixel coordinate of the tile's top-left corner.
+ * @param {number} cy - Canvas y pixel coordinate of the tile's top-left corner.
+ * @param {number} tw - Tile width in pixels at the current zoom level.
+ * @param {number} th - Tile height in pixels at the current zoom level.
+ */
 function map2d_draw_unit(ctx, punit, cx, cy, tw, th)
 {
   /* Try unit sprite from the trident tileset using a 2D-specific lookup */
@@ -696,6 +749,12 @@ function map2d_draw_unit_select(ctx, cx, cy, tw, th)
 
 /**
  * Draw the unit activity sprite (fortify, sentry, goto, etc.) over the unit.
+ * @param {CanvasRenderingContext2D} ctx - The canvas 2D rendering context.
+ * @param {Unit} punit - The unit whose activity sprite is to be drawn.
+ * @param {number} cx - Canvas x pixel coordinate of the tile's top-left corner.
+ * @param {number} cy - Canvas y pixel coordinate of the tile's top-left corner.
+ * @param {number} tw - Tile width in pixels at the current zoom level.
+ * @param {number} th - Tile height in pixels at the current zoom level.
  */
 function map2d_draw_unit_activity(ctx, punit, cx, cy, tw, th)
 {
@@ -713,6 +772,12 @@ function map2d_draw_unit_activity(ctx, punit, cx, cy, tw, th)
 
 /**
  * Draw a small nation shield/flag badge in the top-left of the unit tile.
+ * @param {CanvasRenderingContext2D} ctx - The canvas 2D rendering context.
+ * @param {Unit} punit - The unit whose owner shield is to be drawn.
+ * @param {number} cx - Canvas x pixel coordinate of the tile's top-left corner.
+ * @param {number} cy - Canvas y pixel coordinate of the tile's top-left corner.
+ * @param {number} tw - Tile width in pixels at the current zoom level.
+ * @param {number} th - Tile height in pixels at the current zoom level.
  */
 function map2d_draw_unit_shield(ctx, punit, cx, cy, tw, th)
 {
@@ -733,6 +798,12 @@ function map2d_draw_unit_shield(ctx, punit, cx, cy, tw, th)
 
 /**
  * Draw the unit HP sprite in the bottom-left corner of the tile.
+ * @param {CanvasRenderingContext2D} ctx - The canvas 2D rendering context.
+ * @param {Unit} punit - The unit whose HP sprite is to be drawn.
+ * @param {number} cx - Canvas x pixel coordinate of the tile's top-left corner.
+ * @param {number} cy - Canvas y pixel coordinate of the tile's top-left corner.
+ * @param {number} tw - Tile width in pixels at the current zoom level.
+ * @param {number} th - Tile height in pixels at the current zoom level.
  */
 function map2d_draw_unit_hp(ctx, punit, cx, cy, tw, th)
 {
@@ -749,6 +820,12 @@ function map2d_draw_unit_hp(ctx, punit, cx, cy, tw, th)
 
 /**
  * Draw the unit veteran badge in the top-right corner of the tile.
+ * @param {CanvasRenderingContext2D} ctx - The canvas 2D rendering context.
+ * @param {Unit} punit - The unit whose veteran badge is to be drawn.
+ * @param {number} cx - Canvas x pixel coordinate of the tile's top-left corner.
+ * @param {number} cy - Canvas y pixel coordinate of the tile's top-left corner.
+ * @param {number} tw - Tile width in pixels at the current zoom level.
+ * @param {number} th - Tile height in pixels at the current zoom level.
  */
 function map2d_draw_unit_veteran(ctx, punit, cx, cy, tw, th)
 {
@@ -811,7 +888,7 @@ function map2d_player_color(player_id, fallback)
 
 /**
  * Centre the 2D map view on the given tile.
- * @param {object} ptile  A tile object with 'x' and 'y' fields.
+ * @param {Tile} ptile  A tile object with 'x' and 'y' fields.
  */
 function center_2d_map_on_tile(ptile)
 {
@@ -888,7 +965,7 @@ function map2d_update_mouse_cursor()
  * actions and tile info are reachable with a single click/tap,
  * including on mobile where there is no right-click.
  *
- * @param {object} ptile     - The tile that was clicked.
+ * @param {Tile} ptile     - The tile that was clicked.
  * @param {object} [event_pos] - Optional {clientX, clientY} for context
  *                               menu positioning in 2D mode.
  */
@@ -935,7 +1012,7 @@ function map2d_handle_tile_click(ptile, event_pos)
  * store it in map2d_goto_punit / map2d_goto_path.  Triggers a re-render
  * so the overlay updates immediately.
  *
- * @param {Object|null} ptile - Destination tile (may be null to clear preview)
+ * @param {Tile|null} ptile - Destination tile (may be null to clear preview)
  */
 function map2d_update_goto_preview(ptile)
 {
@@ -1019,7 +1096,7 @@ function map2d_tile_to_canvas_center(tile_x, tile_y, tw, th, start_x, start_y, o
  * topmost layer so it is always visible regardless of terrain or units.
  *
  * @param {CanvasRenderingContext2D} ctx
- * @param {Object} punit    - Focused unit (start of the path)
+ * @param {Unit} punit    - Focused unit (start of the path)
  * @param {Object} path     - Path object from compute_client_goto_path
  * @param {number} tw       - Tile width at current zoom
  * @param {number} th       - Tile height at current zoom
@@ -1102,6 +1179,8 @@ function map2d_render_goto_overlay(ctx, punit, path, tw, th, start_x, start_y, o
  * Look up the best matching sprite tag for a unit in the trident tileset
  * (sprites_2d dictionary).  Tries common naming conventions used by the
  * Trident tileset before falling back to amplio2-style tags.
+ * @param {Unit} punit - The unit to find a sprite tag for.
+ * @returns {string|null} The best matching sprite tag, or null if none found.
  */
 function get_2d_unit_sprite_tag(punit)
 {
@@ -1134,6 +1213,12 @@ function get_2d_unit_sprite_tag(punit)
  * Draw tile improvement/extra sprites (roads, irrigation, mine,
  * fortress, pollution, hut) using tileset sprites where available,
  * falling back to simple geometric indicators.
+ * @param {CanvasRenderingContext2D} ctx - The canvas 2D rendering context.
+ * @param {Tile} ptile - The map tile whose extras are to be drawn.
+ * @param {number} cx - Canvas x pixel coordinate of the tile's top-left corner.
+ * @param {number} cy - Canvas y pixel coordinate of the tile's top-left corner.
+ * @param {number} tw - Tile width in pixels at the current zoom level.
+ * @param {number} th - Tile height in pixels at the current zoom level.
  */
 function map2d_draw_tile_extras(ctx, ptile, cx, cy, tw, th)
 {
@@ -1255,6 +1340,13 @@ function map2d_draw_tile_extras(ctx, ptile, cx, cy, tw, th)
  * Draw road or railroad lines connecting to adjacent tiles.
  * Uses simple geometric lines as fallback (trident road sprites are
  * directional composites that require the full tilespec rendering pipeline).
+ * @param {CanvasRenderingContext2D} ctx - The canvas 2D rendering context.
+ * @param {Tile} ptile - The map tile whose road/railroad lines are to be drawn.
+ * @param {number} cx - Canvas x pixel coordinate of the tile's top-left corner.
+ * @param {number} cy - Canvas y pixel coordinate of the tile's top-left corner.
+ * @param {number} tw - Tile width in pixels at the current zoom level.
+ * @param {number} th - Tile height in pixels at the current zoom level.
+ * @param {boolean} is_rail - True to draw railroad lines, false for roads.
  */
 function map2d_draw_road_lines(ctx, ptile, cx, cy, tw, th, is_rail)
 {
@@ -1324,6 +1416,12 @@ function map2d_draw_road_lines(ctx, ptile, cx, cy, tw, th, is_rail)
 
 /**
  * Draw a dashed colored border on tile edges that border a different owner.
+ * @param {CanvasRenderingContext2D} ctx - The canvas 2D rendering context.
+ * @param {Tile} ptile - The map tile whose territory border is to be drawn.
+ * @param {number} cx - Canvas x pixel coordinate of the tile's top-left corner.
+ * @param {number} cy - Canvas y pixel coordinate of the tile's top-left corner.
+ * @param {number} tw - Tile width in pixels at the current zoom level.
+ * @param {number} th - Tile height in pixels at the current zoom level.
  */
 function map2d_draw_border(ctx, ptile, cx, cy, tw, th)
 {
