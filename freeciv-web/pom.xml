@@ -327,6 +327,7 @@ Rerun the sync-js-hand.js script.
 									<include>map-constants.js</include>
 									<include>2dcanvas/tilespec-constants.js</include>
 									<!-- end of order dependent includes -->
+									<include>models/*.js</include>
 									<include>*.js</include>
 									<include>libs/*.js</include>
 									<include>server/*.js</include>
