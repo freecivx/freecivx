@@ -169,7 +169,9 @@ public class Ruleset {
                 int    buildCost = sec.getInt("build_cost", 60);
                 int    upkeep    = sec.getInt("upkeep", 1);
                 int    sabotage  = sec.getInt("sabotage", 100);
-                String techReq   = sec.getTechReq();
+                // techReqId is stored as -1 (no requirement) since tech IDs are
+                // assigned after buildings are loaded; tech prerequisites are
+                // available via RuleSection.getTechReq() for name-based checks.
                 improvements.add(new Improvement(id, name, name, graphic, graphic + "_alt",
                         genus, buildCost, upkeep, sabotage,
                         "b_" + sec.title.replace("building_", ""),
