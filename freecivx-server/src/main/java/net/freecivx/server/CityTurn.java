@@ -99,9 +99,15 @@ public class CityTurn {
             int unitTypeId = city.getProductionValue();
             UnitType unitType = game.unitTypes.get((long) unitTypeId);
             if (unitType != null) {
-                // Unit cost: (attack + defense) * hp / 2 (simplified production cost formula)
-                int cost = Math.max(MIN_UNIT_COST, (unitType.getAttackStrength() + unitType.getDefenseStrength())
-                        * unitType.getHp() / 2);
+                // Unit cost: use explicit ruleset cost if set, else legacy formula.
+                // Mirrors the build_cost field in the Freeciv units ruleset.
+                int cost;
+                if (unitType.getCost() > 0) {
+                    cost = unitType.getCost();
+                } else {
+                    cost = Math.max(MIN_UNIT_COST, (unitType.getAttackStrength() + unitType.getDefenseStrength())
+                            * unitType.getHp() / 2);
+                }
                 if (city.getShieldStock() >= cost) {
                     UnitTools.createUnit(game, city.getOwner(), city.getTile(), unitTypeId);
                     city.setShieldStock(city.getShieldStock() - cost);
@@ -249,7 +255,9 @@ public class CityTurn {
     /**
      * Calculates and returns the science (bulbs) produced by a city this turn.
      * The value depends on the city's population and improvements:
-     * Library (id 3) adds 50% science bonus.
+     * Library (id 3) adds 50% science bonus; University (id 13) adds another 50%.
+     * Mirrors the science output calculation ({@code O_SCIENCE}) in the C Freeciv
+     * server's {@code common/city.c}, incorporating EFT_SCIENCE_BONUS effects.
      *
      * @param game   the current game state
      * @param cityId the ID of the city to evaluate
@@ -262,9 +270,12 @@ public class CityTurn {
         // Base science: 1 bulb per population point
         int science = city.getSize();
         // Library (id=3) gives +50% science bonus (mirrors EFT_SCIENCE_BONUS in C server).
-        // Using * 3 / 2 avoids two integer-division steps and matches the C server's
-        // percentage-multiplier approach (science * (100 + 50) / 100).
         if (city.hasImprovement(3)) {
+            science = science * 3 / 2;
+        }
+        // University (id=13) gives an additional +50% science bonus on top of Library.
+        // Together: size * 1.5 * 1.5 = size * 2.25 (same as C server stacking rule).
+        if (city.hasImprovement(13)) {
             science = science * 3 / 2;
         }
         return science;
