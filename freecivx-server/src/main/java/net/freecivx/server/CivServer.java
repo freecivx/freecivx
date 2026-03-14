@@ -236,11 +236,17 @@ public class CivServer extends org.java_websocket.server.WebSocketServer {
             if (message.equalsIgnoreCase("/start")) {
                 game.startGame();
             }
+            if (message.toLowerCase().startsWith("/set ")) {
+                handleSetCommand(connId, message);
+            }
             if (message.equalsIgnoreCase("/help")) {
                 String helptext = """
                         Freecivx Java server commands:
-                        /start  - Start the game (also starts automatically when ready)
-                        /help   - Show this help text
+                        /start          - Start the game (also starts automatically when ready)
+                        /set timeout N  - Set turn timeout in seconds (0 = no timeout, max 500)
+                        /set aifill N   - Set number of AI players (0-9, applied at game start)
+                        /set gold N     - Set starting gold for all players (0-50000)
+                        /help           - Show this help text
                         Game features: units move with movement limits, AI players included.
                         Join at any time - late joiners receive the current game state.
                         """;
@@ -249,6 +255,67 @@ public class CivServer extends org.java_websocket.server.WebSocketServer {
             if (connection != null) {
                 sendMessageAll(connection.getUsername() + ": " + message);
             }
+        }
+    }
+
+    /**
+     * Handles a {@code /set <setting> <value>} command from the client.
+     * Mirrors handle_stdin_input() / set_command() in the C Freeciv server's
+     * sernet.c / settings.c.  Supported settings:
+     * <ul>
+     *   <li>{@code timeout} – turn timeout in seconds (0 = no timeout, max 500)</li>
+     *   <li>{@code aifill}  – number of AI players to create at game start (0–9)</li>
+     *   <li>{@code gold}    – starting gold for every player (0–50 000)</li>
+     * </ul>
+     *
+     * @param connId  the connection ID of the issuing client
+     * @param message the raw {@code /set …} command string
+     */
+    private void handleSetCommand(long connId, String message) {
+        String[] parts = message.trim().split("\\s+", 3);
+        if (parts.length < 3) {
+            sendMessage(connId, "Usage: /set <setting> <value>");
+            return;
+        }
+        String setting = parts[1].toLowerCase();
+        String rawValue = parts[2];
+        int value;
+        try {
+            value = Integer.parseInt(rawValue);
+        } catch (NumberFormatException e) {
+            sendMessage(connId, "Setting '" + setting + "': value must be an integer.");
+            return;
+        }
+        switch (setting) {
+            case "timeout" -> {
+                if (value < 0 || value > 500) {
+                    sendMessage(connId, "timeout must be between 0 and 500.");
+                    return;
+                }
+                game.setTurnTimeout(value);
+                String msg = value == 0
+                        ? "timeout: disabled (turns advance when all players end their turn)."
+                        : "timeout: set to " + value + " seconds.";
+                sendMessageAll(msg);
+            }
+            case "aifill" -> {
+                if (value < 0 || value > 9) {
+                    sendMessage(connId, "aifill must be between 0 and 9.");
+                    return;
+                }
+                game.setAifill(value);
+                sendMessageAll("aifill: set to " + value + " AI players.");
+            }
+            case "gold" -> {
+                if (value < 0 || value > 50000) {
+                    sendMessage(connId, "gold must be between 0 and 50000.");
+                    return;
+                }
+                game.setInitialGold(value);
+                sendMessageAll("gold: starting gold set to " + value + ".");
+            }
+            default -> sendMessage(connId, "Unknown setting '" + setting
+                    + "'. Try /help for available settings.");
         }
     }
 
@@ -321,6 +388,41 @@ public class CivServer extends org.java_websocket.server.WebSocketServer {
         msg.put("event", 95);
 
         clients.get(conn_id).send(msg.toString());
+    }
+
+    /**
+     * Sends a PACKET_CHAT_MSG with a specific event-type integer to a single
+     * client.  Mirrors notify_player() / E_* event codes in the C Freeciv server.
+     *
+     * @param conn_id   the connection ID of the recipient
+     * @param message   the notification text
+     * @param eventType an integer event-type code (mirrors E_* in the C server)
+     */
+    public void sendEventMessage(long conn_id, String message, int eventType) {
+        sendEventMessage(conn_id, message, eventType, -1, -1);
+    }
+
+    /**
+     * Sends a PACKET_CHAT_MSG with an event-type integer and tile coordinates
+     * to a single client.  Mirrors notify_player() in the C Freeciv server's
+     * notify.c, which includes tile location for geo-located events.
+     *
+     * @param conn_id   the connection ID of the recipient
+     * @param message   the notification text
+     * @param eventType an integer event-type code (mirrors E_* in the C server)
+     * @param tileX     the x map-coordinate of the event (-1 if not applicable)
+     * @param tileY     the y map-coordinate of the event (-1 if not applicable)
+     */
+    public void sendEventMessage(long conn_id, String message, int eventType, int tileX, int tileY) {
+        JSONObject msg = new JSONObject();
+        msg.put("pid", Packets.PACKET_CHAT_MSG);
+        msg.put("message", message);
+        msg.put("event", eventType);
+        if (tileX >= 0) msg.put("tile_x", tileX);
+        if (tileY >= 0) msg.put("tile_y", tileY);
+
+        WebSocket ws = clients.get(conn_id);
+        if (ws != null) ws.send(msg.toString());
     }
 
     public void sendBeginTurnAll() {

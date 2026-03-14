@@ -21,7 +21,6 @@ package net.freecivx.server;
 
 import net.freecivx.game.Game;
 import net.freecivx.game.Player;
-import org.json.JSONObject;
 
 /**
  * Notification system for sending event messages to players and connections.
@@ -43,11 +42,7 @@ public class Notify {
     public static void notifyPlayer(Game game, CivServer server, long playerId, String message) {
         Player player = game.players.get(playerId);
         if (player == null) return;
-
-        JSONObject msg = new JSONObject();
-        msg.put("pid", Packets.PACKET_CHAT_MSG);
-        msg.put("message", message);
-        server.sendMessage(player.getConnectionId(), msg.toString());
+        server.sendMessage(player.getConnectionId(), message);
     }
 
     /**
@@ -58,10 +53,7 @@ public class Notify {
      * @param message the notification text to broadcast
      */
     public static void notifyAllPlayers(Game game, CivServer server, String message) {
-        JSONObject msg = new JSONObject();
-        msg.put("pid", Packets.PACKET_CHAT_MSG);
-        msg.put("message", message);
-        server.sendMessageAll(msg.toString());
+        server.sendMessageAll(message);
     }
 
     /**
@@ -75,21 +67,15 @@ public class Notify {
      * @param playerId  the ID of the player to notify
      * @param x         the x map-coordinate of the event
      * @param y         the y map-coordinate of the event
-     * @param eventType a string key identifying the event type (e.g. "CITY_GROWTH")
+     * @param eventType an integer identifying the event type (mirrors E_* constants
+     *                  in the C Freeciv server's events.h)
      * @param message   the notification text to display
      */
     public static void notifyEvent(Game game, CivServer server, long playerId,
-                                   int x, int y, String eventType, String message) {
+                                   int x, int y, int eventType, String message) {
         Player player = game.players.get(playerId);
         if (player == null) return;
-
-        JSONObject msg = new JSONObject();
-        msg.put("pid", Packets.PACKET_CHAT_MSG);
-        msg.put("message", message);
-        msg.put("event", eventType);
-        msg.put("tile_x", x);
-        msg.put("tile_y", y);
-        server.sendMessage(player.getConnectionId(), msg.toString());
+        server.sendEventMessage(player.getConnectionId(), message, eventType, x, y);
     }
 
     /**
@@ -102,9 +88,6 @@ public class Notify {
      * @param message the notification text to broadcast
      */
     public static void notifyConnections(Game game, CivServer server, String message) {
-        JSONObject msg = new JSONObject();
-        msg.put("pid", Packets.PACKET_CHAT_MSG);
-        msg.put("message", message);
-        server.sendMessageAll(msg.toString());
+        server.sendMessageAll(message);
     }
 }
