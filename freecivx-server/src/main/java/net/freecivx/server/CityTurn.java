@@ -24,6 +24,7 @@ import net.freecivx.game.Game;
 import net.freecivx.game.Government;
 import net.freecivx.game.Improvement;
 import net.freecivx.game.Player;
+import net.freecivx.game.Technology;
 import net.freecivx.game.Tile;
 import net.freecivx.game.Unit;
 import net.freecivx.game.UnitType;
@@ -31,6 +32,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.Collectors;
 
 /**
@@ -152,6 +154,21 @@ public class CityTurn {
      * Matches extras entry 1 registered in {@code Game.initGame()}.
      */
     public static final int EXTRA_BIT_MINE = 1;
+    /**
+     * Tile extras bitvector index for Pollution.
+     * Matches extras entry 4 ("Pollution") registered in {@code Game.initGame()}.
+     * Mirrors the {@code EC_POLLUTION} extra cause in the C Freeciv server.
+     */
+    public static final int EXTRA_BIT_POLLUTION = 4;
+
+    /**
+     * Base pollution modifier (negative offset) applied when computing a city's
+     * pollution level.  Mirrors {@code RS_DEFAULT_BASE_POLLUTION = -20} in the
+     * C Freeciv server's {@code common/game.h}.
+     * A city must produce more than {@value #BASE_POLLUTION} combined shields and
+     * population points before any pollution is generated.
+     */
+    private static final int BASE_POLLUTION = 20;
 
     /**
      * Returns the granary size (food needed to grow) for a city of the given size.
@@ -420,6 +437,9 @@ public class CityTurn {
             cityGrowth(game, cityId);
             cityProduction(game, cityId);
             updateCityHappiness(game, cityId);
+            // Check for pollution from production and population waste.
+            // Mirrors check_pollution() in the C Freeciv server's cityturn.c.
+            checkPollution(game, cityId);
         }
 
         // Aggregate per-player gold income from all their cities
@@ -930,5 +950,157 @@ public class CityTurn {
         if (activity == ACTIVITY_IRRIGATE) return "Irrigation";
         if (activity == ACTIVITY_MINE)     return "Mine";
         return "";
+    }
+
+    /**
+     * Checks whether a city generates pollution this turn and, if so, places it
+     * on a random tile within the city radius.
+     *
+     * <p>The pollution level is calculated as:
+     * <pre>
+     *   pollution = max(0, shieldOutput + citySize - BASE_POLLUTION)
+     * </pre>
+     * This mirrors {@code city_pollution_types()} in {@code common/city.c}:
+     * one pollution per shield, one per citizen, minus the base offset of
+     * {@value #BASE_POLLUTION} ({@code RS_DEFAULT_BASE_POLLUTION = -20}).
+     *
+     * <p>If {@code random(100) < pollution}, the Pollution extra bit is set on a
+     * randomly chosen tile within the city's 3×3 neighbourhood (the city centre
+     * plus up to 8 adjacent tiles).  Tiles that already have pollution are
+     * skipped.  Mirrors {@code check_pollution()} and {@code place_pollution()}
+     * in the C Freeciv server's {@code server/cityturn.c}.
+     *
+     * @param game   the current game state
+     * @param cityId the ID of the city to check
+     */
+    public static void checkPollution(Game game, long cityId) {
+        City city = game.cities.get(cityId);
+        if (city == null) return;
+
+        // Calculate pollution level: shields + population - base offset.
+        // Mirrors city_pollution_types() in common/city.c:
+        //   prod = shield_total * (100 + EFT_POLLU_PROD_PCT) / 100   (one per shield)
+        //   pop  = city_size * (100 + EFT_POLLU_POP_PCT) / 100       (one per citizen)
+        //   mod  = game.info.base_pollution                           (-20 by default)
+        //   total = max(0, prod + pop + mod)
+        // Simplification: we use city size as the shield estimate because the Java
+        // server does not yet track per-tile shield yields.  The C server uses the
+        // actual per-tile production; this approximation is intentionally conservative
+        // (same value for both prod and pop terms) to avoid over-polluting in the
+        // simplified server model.
+        int shieldOutput = Math.max(1, city.getSize()); // simplified: 1 shield/pop
+        int pollution = Math.max(0, shieldOutput + city.getSize() - BASE_POLLUTION);
+        if (pollution == 0) return;
+
+        // Probabilistic: only place pollution if random roll is below pollution level.
+        // Mirrors: if (fc_rand(100) < pcity->pollution) { place_pollution(...) }
+        if (ThreadLocalRandom.current().nextInt(100) >= pollution) return;
+
+        // Collect candidate tiles: city centre + 8 adjacent tiles.
+        // Mirrors place_pollution() picking from city_map_tiles(city_radius_sq).
+        int xsize = game.map.getXsize();
+        int ysize = game.map.getYsize();
+        Tile cityTile = game.tiles.get(city.getTile());
+        if (cityTile == null) return;
+
+        long cx = cityTile.getX(xsize);
+        long cy = cityTile.getY(xsize);
+
+        // Collect tiles within radius 1 (3×3 neighbourhood) that do not already
+        // have pollution; the city centre is included as a valid target.
+        List<Tile> candidates = new ArrayList<>();
+        for (int dy = -1; dy <= 1; dy++) {
+            long ny = cy + dy;
+            if (ny < 0 || ny >= ysize) continue; // off the top/bottom edge
+            for (int dx = -1; dx <= 1; dx++) {
+                long nx = ((cx + dx) % xsize + xsize) % xsize; // wrap horizontally
+                long tileIdx = ny * xsize + nx;
+                Tile t = game.tiles.get(tileIdx);
+                if (t == null) continue;
+                // Skip tiles that already have pollution
+                if ((t.getExtras() & (1 << EXTRA_BIT_POLLUTION)) != 0) continue;
+                candidates.add(t);
+            }
+        }
+
+        if (candidates.isEmpty()) return; // nowhere to place pollution
+
+        // Pick a random tile from the candidates and add the Pollution extra.
+        Tile target = candidates.get(ThreadLocalRandom.current().nextInt(candidates.size()));
+        target.setExtras(target.getExtras() | (1 << EXTRA_BIT_POLLUTION));
+        game.getServer().sendTileInfoAll(target);
+        Notify.notifyPlayer(game, game.getServer(), city.getOwner(),
+                "Pollution has appeared near " + city.getName() + ".");
+    }
+
+    /**
+     * Removes buildings from all of a player's cities that have become obsolete
+     * because the player has acquired the required technology.  The player receives
+     * a partial gold refund equal to half the building's build cost, mirroring
+     * {@code do_sell_building()} in the C Freeciv server's {@code cityturn.c}.
+     *
+     * <p>Only buildings whose {@code obsoletedByTechName} matches a technology the
+     * player currently knows are affected; "World"-range obsolescence (triggered by
+     * any player discovering a tech) is not handled here.
+     *
+     * <p>Mirrors {@code remove_obsolete_buildings_city()} in the C Freeciv server's
+     * {@code server/cityturn.c}.
+     *
+     * @param game     the current game state
+     * @param playerId the ID of the player whose cities should be checked
+     */
+    public static void removeObsoleteBuildingsForPlayer(Game game, long playerId) {
+        Player player = game.players.get(playerId);
+        if (player == null) return;
+
+        for (Map.Entry<Long, City> entry : game.cities.entrySet()) {
+            City city = entry.getValue();
+            if (city == null || city.getOwner() != playerId) continue;
+            long cityId = entry.getKey();
+
+            List<Integer> toRemove = new ArrayList<>();
+            for (int improvId : new ArrayList<>(city.getImprovements())) {
+                Improvement impr = game.improvements.get((long) improvId);
+                if (impr == null) continue;
+
+                String obsoletedBy = impr.getObsoletedByTechName();
+                if (obsoletedBy == null || obsoletedBy.isEmpty()) continue;
+
+                // Check whether the player knows the tech that obsoletes this building.
+                boolean playerHasObsoletingTech = false;
+                for (long techId : player.getKnownTechs()) {
+                    Technology tech = game.techs.get(techId);
+                    if (tech != null && obsoletedBy.equalsIgnoreCase(tech.getName())) {
+                        playerHasObsoletingTech = true;
+                        break;
+                    }
+                }
+
+                if (playerHasObsoletingTech) {
+                    toRemove.add(improvId);
+                }
+            }
+
+            for (int improvId : toRemove) {
+                city.getImprovements().remove(Integer.valueOf(improvId));
+                Improvement impr = game.improvements.get((long) improvId);
+                if (impr != null) {
+                    // Partial gold refund: half the build cost, mirroring
+                    // impr_sell_gold() in the C Freeciv server.
+                    int sellGold = impr.getBuildCost() / 2;
+                    player.setGold(player.getGold() + sellGold);
+                    Notify.notifyPlayer(game, game.getServer(), playerId,
+                            city.getName() + " is selling " + impr.getName()
+                                    + " (obsolete) for " + sellGold + " gold.");
+                }
+            }
+
+            if (!toRemove.isEmpty()) {
+                CityTools.sendCityInfo(game, game.getServer(), -1L, cityId);
+            }
+        }
+
+        // Broadcast updated player gold to all clients after all sales.
+        game.getServer().sendPlayerInfoAll(player);
     }
 }

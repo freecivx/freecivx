@@ -196,10 +196,16 @@ public class Ruleset {
                 // techReqId is stored as -1 (no requirement) since tech IDs are
                 // assigned after buildings are loaded; tech prerequisites are
                 // available via RuleSection.getTechReq() for name-based checks.
-                improvements.add(new Improvement(id, name, name, graphic, graphic + "_alt",
+                Improvement impr = new Improvement(id, name, name, graphic, graphic + "_alt",
                         genus, buildCost, upkeep, sabotage,
                         "b_" + sec.title.replace("building_", ""),
-                        "b_fallback", name, -1));
+                        "b_fallback", name, -1);
+                // Store the obsolete-by tech name parsed from the obsolete_by table.
+                // Resolved to a player-level check in CityTurn.removeObsoleteBuildingsForPlayer().
+                if (!sec.obsoleteTechName.isEmpty()) {
+                    impr.setObsoletedByTechName(sec.obsoleteTechName);
+                }
+                improvements.add(impr);
                 id++;
             }
             System.out.println("Loaded " + improvements.size() + " buildings from " + path);
@@ -359,6 +365,12 @@ public class Ruleset {
         final String title;
         final Map<String, String> entries = new LinkedHashMap<>();
         String techReq = "";
+        /**
+         * Technology name read from the first {@code "Tech"} / {@code "Player"} row
+         * of the {@code obsolete_by} table.  Empty string means no tech obsoletes
+         * this building for its owner.
+         */
+        String obsoleteTechName = "";
         /** Anti-horse defense multiplier bonus from the bonuses table (0 = none). */
         int antiHorseBonus = 0;
 
@@ -460,6 +472,23 @@ public class Ruleset {
                             if ("Tech".equalsIgnoreCase(type)) {
                                 if (current.techReq.isEmpty()) {
                                     current.techReq = stripQuotes(cells[1]);
+                                }
+                            }
+                        }
+                    }
+                    // Capture the technology that obsoletes this building from the
+                    // "obsolete_by" table, but only for "Player" range entries.
+                    // Mirrors the Tech-type "Player"-range rows in the C Freeciv server's
+                    // buildings ruleset (e.g. Barracks obsoleted by Gunpowder).
+                    // "World"-range entries (wonder replacements) are not handled here.
+                    if ("obsolete_by".equals(pendingKey) && tableColumns != null && !tableColumns.isEmpty()) {
+                        String[] cells = splitCsv(line);
+                        if (cells.length >= 3) {
+                            String type  = stripQuotes(cells[0]);
+                            String range = stripQuotes(cells[2]);
+                            if ("Tech".equalsIgnoreCase(type) && "Player".equalsIgnoreCase(range)) {
+                                if (current.obsoleteTechName.isEmpty()) {
+                                    current.obsoleteTechName = stripQuotes(cells[1]);
                                 }
                             }
                         }
