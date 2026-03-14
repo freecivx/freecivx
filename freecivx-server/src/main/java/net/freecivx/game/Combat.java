@@ -246,19 +246,20 @@ public class Combat {
 
     /**
      * Returns a combat defence bonus percentage for a unit based on its current
-     * activity state.  A fortified unit receives a +25% defence bonus, mirroring
-     * the {@code EFT_DEFEND_BONUS} (POWER_BONUS_FACTOR) in the C Freeciv server.
+     * activity state.  A fortified unit receives a +50% defence bonus, mirroring
+     * the {@code Fortify_Defense_Bonus} effect (value=50) in the C Freeciv server's
+     * classic {@code effects.ruleset}.
      * The returned value is applied as: {@code defStr * (100 + bonus) / 100}.
      *
      * @param unit     the unit to evaluate
      * @param unitType the type definition for the unit
-     * @return the defence bonus percentage (e.g. 25 = +25%), or 0 for no bonus
+     * @return the defence bonus percentage (e.g. 50 = +50%), or 0 for no bonus
      */
     public static int unitCombatModifier(Unit unit, UnitType unitType) {
         if (unit == null) return 0;
-        // Activity 3 = ACTIVITY_FORTIFIED in the C server: grants +25% defence bonus.
-        // Mirrors the fortification bonus from EFT_DEFEND_BONUS in common/combat.c.
-        if (unit.getActivity() == 3) return 25;
+        // Activity 3 = ACTIVITY_FORTIFIED in the C server: grants +50% defence bonus.
+        // Mirrors effect_fortified: Fortify_Defense_Bonus = 50 in classic effects.ruleset.
+        if (unit.getActivity() == 3) return 50;
         return 0;
     }
 
