@@ -19,6 +19,7 @@ type Config struct {
 	StatusPort           int
 	InitialPort          int
 	CheckInterval        int
+	FreecivxPort         int
 }
 
 // loadConfig reads an INI-format settings file and returns a Config.
@@ -106,5 +107,6 @@ func loadConfig(path string) (*Config, error) {
 		StatusPort:           envInt("PUBLITE_STATUS_PORT", getInt("Config", "status_port", 4002)),
 		InitialPort:          envInt("PUBLITE_INITIAL_PORT", getInt("Config", "initial_port", 6000)),
 		CheckInterval:        envInt("PUBLITE_CHECK_INTERVAL", getInt("Config", "check_interval", 40)),
+		FreecivxPort:         envInt("PUBLITE_FREECIVX_PORT", getInt("Config", "freecivx_port", 7800)),
 	}, nil
 }
