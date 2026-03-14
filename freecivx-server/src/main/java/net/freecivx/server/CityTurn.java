@@ -246,6 +246,17 @@ public class CityTurn {
             int unitTypeId = city.getProductionValue();
             UnitType unitType = game.unitTypes.get((long) unitTypeId);
             if (unitType != null) {
+                // Check technology prerequisite before completing unit construction.
+                // Mirrors the req-check in city_build_unit() in server/citytools.c:
+                // a unit cannot be finished unless the player has the required technology.
+                // If the tech is not yet known, shields are kept and production waits.
+                long unitTechReq = unitType.getTechReqId();
+                if (player != null && unitTechReq >= 0 && !player.hasTech(unitTechReq)) {
+                    // Tech prerequisite not yet met; keep shields and wait for the tech.
+                    CityTools.sendCityInfo(game, game.getServer(), -1L, cityId);
+                    return;
+                }
+
                 // Unit cost: use explicit ruleset cost if set, else legacy formula.
                 // Mirrors the build_cost field in the Freeciv units ruleset.
                 int cost;
@@ -256,8 +267,32 @@ public class CityTurn {
                             * unitType.getHp() / 2);
                 }
                 if (city.getShieldStock() >= cost) {
+                    // Apply population cost: remove citizens from the city when the unit is built.
+                    // Mirrors the pop_cost field in the Freeciv units ruleset and
+                    // city_build_unit() pop_cost handling in server/citytools.c.
+                    // Settlers have pop_cost=1; the city must have at least size 2 to
+                    // prevent the unit from destroying the last citizen (mirrors
+                    // city_size_add() / city_reduce_size() constraints in C server).
+                    int popCost = unitType.getPopCost();
+                    if (popCost > 0 && city.getSize() <= popCost) {
+                        // Cannot build: city too small to afford the population cost.
+                        // Keep shields; player must grow the city first.
+                        CityTools.sendCityInfo(game, game.getServer(), -1L, cityId);
+                        return;
+                    }
+
                     UnitTools.createUnit(game, city.getOwner(), city.getTile(), unitTypeId);
                     city.setShieldStock(city.getShieldStock() - cost);
+
+                    // Deduct population cost after the unit is created.
+                    // Mirrors pop_cost handling in server/citytools.c city_build_unit().
+                    if (popCost > 0) {
+                        city.setSize(city.getSize() - popCost);
+                        Notify.notifyPlayer(game, game.getServer(), city.getOwner(),
+                                city.getName() + " has shrunk to size " + city.getSize()
+                                        + " after building " + unitType.getName() + ".");
+                    }
+
                     Notify.notifyPlayer(game, game.getServer(),
                             city.getOwner(),
                             city.getName() + " has built " + unitType.getName() + ".");
