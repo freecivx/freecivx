@@ -37,6 +37,8 @@ public class Packets {
     public static int PACKET_PLAYER_INFO = 51;
     public static int PACKET_PLAYER_PHASE_DONE = 52;
     public static int PACKET_PLAYER_RATES = 53;
+    public static int PACKET_PLAYER_RESEARCH = 55;
+    public static int PACKET_PLAYER_TECH_GOAL = 56;
     public static int PACKET_RESEARCH_INFO = 60;
     public static int PACKET_UNIT_REMOVE = 62;
     public static int PACKET_UNIT_INFO = 63;

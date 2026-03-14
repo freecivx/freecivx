@@ -120,6 +120,45 @@ public class PlrHand {
         }
 
         player.setResearchingTech((long) techId);
+        player.setBulbsResearched(0);
+        TechTools.sendResearchInfo(game, game.getServer(), connId, connId);
+    }
+
+    /**
+     * Handles a PACKET_PLAYER_TECH_GOAL packet, setting the player's long-term
+     * research goal.  The server will automatically advance research toward this
+     * goal after each technology is completed.
+     * Mirrors {@code handle_player_tech_goal} in the C Freeciv server's plrhand.c.
+     *
+     * @param game   the current game state
+     * @param connId the connection ID of the requesting player
+     * @param techId the ID of the technology to set as the research goal
+     */
+    public static void handleTechGoalChange(Game game, long connId, int techId) {
+        Player player = game.players.get(connId);
+        if (player == null) return;
+
+        Technology tech = game.techs.get((long) techId);
+        if (tech == null) return;
+
+        // The goal may be multiple steps away; only reject techs already known.
+        if (player.hasTech((long) techId)) {
+            Notify.notifyPlayer(game, game.getServer(), connId,
+                    "You have already researched " + tech.getName() + ".");
+            return;
+        }
+
+        player.setTechGoal((long) techId);
+
+        // If the player has no current research, pick the next step toward the goal.
+        if (player.getResearchingTech() < 0) {
+            long nextTech = TechTools.pickNextResearchTowardGoal(game, player);
+            if (nextTech >= 0) {
+                player.setResearchingTech(nextTech);
+                player.setBulbsResearched(0);
+            }
+        }
+
         TechTools.sendResearchInfo(game, game.getServer(), connId, connId);
     }
 
