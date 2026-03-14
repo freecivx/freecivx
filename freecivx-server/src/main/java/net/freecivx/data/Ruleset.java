@@ -26,8 +26,14 @@ import net.freecivx.game.Technology;
 import net.freecivx.game.Terrain;
 import net.freecivx.game.UnitType;
 
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Loads and manages ruleset data from {@code .ruleset} configuration files.
@@ -35,6 +41,15 @@ import java.util.List;
  * A ruleset defines the game rules: available units, technologies, buildings,
  * terrain types, governments, and nations.  The server must call
  * {@link #loadRuleset(String)} before starting a game.
+ *
+ * <p>The ruleset files use an INI-style format with:
+ * <ul>
+ *   <li>Section headers: {@code [section_name]}</li>
+ *   <li>Key-value pairs: {@code key = value}</li>
+ *   <li>Translatable strings: {@code _("text")} or {@code _("?context:text")}</li>
+ *   <li>Comments: lines starting with {@code ;} or {@code #}</li>
+ *   <li>Multi-line table blocks: {@code { col1, col2\n val1, val2\n }}</li>
+ * </ul>
  */
 public class Ruleset {
 
@@ -49,7 +64,7 @@ public class Ruleset {
     private List<Nation> nations = new ArrayList<>();
 
     /**
-     * Loads the complete ruleset with the given name.
+     * Loads the complete ruleset with the given name from classpath resources.
      * Reads all sub-files (units, buildings, techs, terrains, governments,
      * nations) from the standard ruleset directory and populates the
      * internal data lists.
@@ -59,7 +74,7 @@ public class Ruleset {
      */
     public boolean loadRuleset(String rulesetName) {
         this.rulesetName = rulesetName;
-        String basePath = "data/" + rulesetName + "/";
+        String basePath = rulesetName + "/";
 
         boolean ok = true;
         ok &= loadUnits(basePath + "units.ruleset");
@@ -74,86 +89,489 @@ public class Ruleset {
     }
 
     /**
-     * Loads nation definitions from the specified ruleset file path.
-     * Each nation entry provides a name, adjective, rule-name, and a list
-     * of city names used for suggestions.
+     * Loads nation definitions from the specified ruleset resource path.
+     * Nations are kept as stubs since the full nation list is managed
+     * separately via nation/*.ruleset files.
      *
-     * @param path the file-system path to the nations ruleset file
-     * @return {@code true} if the file was parsed without errors
+     * @param path classpath-relative path to the nations ruleset file
+     * @return {@code true} always (nations are optional)
      */
     public boolean loadNations(String path) {
-        // TODO: parse SectionFile and populate nations list
-        System.out.println("Loading nations from: " + path);
         return true;
     }
 
     /**
-     * Loads unit type definitions from the specified ruleset file path.
-     * Populates attack/defence strengths, move rates, HP values, and
-     * allowed actions for each unit type.
+     * Loads unit type definitions from the specified classpath resource.
+     * Parses every {@code [unit_*]} section to extract name, graphic,
+     * build cost, attack/defence strengths, hit points, move rate, and
+     * unit class (domain: land/sea/air).
      *
-     * @param path the file-system path to the units ruleset file
+     * @param path classpath-relative path to the units ruleset file
      * @return {@code true} if the file was parsed without errors
      */
     public boolean loadUnits(String path) {
-        // TODO: parse SectionFile and populate unitTypes list
-        System.out.println("Loading units from: " + path);
-        return true;
+        InputStream is = openResource(path);
+        if (is == null) return false;
+        try {
+            List<RuleSection> sections = parseSections(is);
+            String defaultActions =
+                    "000000000000000000000000000010000000001110001000000000000011011111111001100011000000001100110000000000000000100100000000";
+            String settlerActions =
+                    "000000000000000000000000000110000000001110001000000000000011011111111001100011000000001100110000000000000000100100000000";
+            for (RuleSection sec : sections) {
+                if (!sec.title.startsWith("unit_")) continue;
+                String name = sec.get("name");
+                if (name.isEmpty()) continue;
+                String graphic   = sec.get("graphic");
+                int    buildCost = sec.getInt("build_cost", 30);
+                int    attack    = sec.getInt("attack", 0);
+                int    defense   = sec.getInt("defense", 1);
+                int    hp        = sec.getInt("hitpoints", 10);
+                int    moveRate  = sec.getInt("move_rate", 1);
+                String unitClass = sec.get("class");
+                int    domain    = classToDomain(unitClass);
+                String flags     = sec.get("flags");
+                boolean isSettler = flags.contains("Settlers") || flags.contains("Cities");
+                String actions = isSettler ? settlerActions : defaultActions;
+                unitTypes.add(new UnitType(name, graphic, moveRate, hp, 1, name,
+                        attack, defense, actions, domain, buildCost));
+            }
+            System.out.println("Loaded " + unitTypes.size() + " unit types from " + path);
+            return true;
+        } catch (IOException e) {
+            System.err.println("Error loading units from " + path + ": " + e.getMessage());
+            return false;
+        }
     }
 
     /**
-     * Loads building (city improvement) definitions from the specified ruleset
-     * file path.  Populates build costs, upkeep, effects, and prerequisites.
+     * Loads building (city improvement) definitions from the specified
+     * classpath resource.  Parses every {@code [building_*]} section to
+     * extract name, genus, graphic, build cost, upkeep, sabotage chance,
+     * and the first technology prerequisite listed in the {@code reqs} table.
      *
-     * @param path the file-system path to the buildings ruleset file
+     * @param path classpath-relative path to the buildings ruleset file
      * @return {@code true} if the file was parsed without errors
      */
     public boolean loadBuildings(String path) {
-        // TODO: parse SectionFile and populate improvements list
-        System.out.println("Loading buildings from: " + path);
-        return true;
+        InputStream is = openResource(path);
+        if (is == null) return false;
+        try {
+            List<RuleSection> sections = parseSections(is);
+            long id = 0;
+            for (RuleSection sec : sections) {
+                if (!sec.title.startsWith("building_")) continue;
+                String name = sec.get("name");
+                if (name.isEmpty()) continue;
+                String graphic   = sec.get("graphic");
+                String genusStr  = sec.get("genus");
+                int    genus     = genusToInt(genusStr);
+                int    buildCost = sec.getInt("build_cost", 60);
+                int    upkeep    = sec.getInt("upkeep", 1);
+                int    sabotage  = sec.getInt("sabotage", 100);
+                // techReqId is stored as -1 (no requirement) since tech IDs are
+                // assigned after buildings are loaded; tech prerequisites are
+                // available via RuleSection.getTechReq() for name-based checks.
+                improvements.add(new Improvement(id, name, name, graphic, graphic + "_alt",
+                        genus, buildCost, upkeep, sabotage,
+                        "b_" + sec.title.replace("building_", ""),
+                        "b_fallback", name, -1));
+                id++;
+            }
+            System.out.println("Loaded " + improvements.size() + " buildings from " + path);
+            return true;
+        } catch (IOException e) {
+            System.err.println("Error loading buildings from " + path + ": " + e.getMessage());
+            return false;
+        }
     }
 
     /**
-     * Loads technology (advance) definitions from the specified ruleset file path.
-     * Populates tech names, research costs, prerequisites, and help text.
+     * Loads technology (advance) definitions from the specified classpath
+     * resource.  Parses every {@code [advance_*]} section to extract name,
+     * graphic tag, prerequisite technologies, and optional research cost.
      *
-     * @param path the file-system path to the techs ruleset file
+     * @param path classpath-relative path to the techs ruleset file
      * @return {@code true} if the file was parsed without errors
      */
     public boolean loadTechnologies(String path) {
-        // TODO: parse SectionFile and populate technologies list
-        System.out.println("Loading technologies from: " + path);
-        return true;
+        InputStream is = openResource(path);
+        if (is == null) return false;
+        try {
+            List<RuleSection> sections = parseSections(is);
+            for (RuleSection sec : sections) {
+                if (!sec.title.startsWith("advance_")) continue;
+                String name = sec.get("name");
+                if (name.isEmpty()) continue;
+                String graphic = sec.get("graphic");
+                String req1    = sec.get("req1");
+                String req2    = sec.get("req2");
+                int    cost    = sec.getInt("cost", 0);
+                if (req1.isEmpty()) req1 = "None";
+                if (req2.isEmpty()) req2 = "None";
+                technologies.add(new Technology(name, graphic, name, req1, req2, cost));
+            }
+            System.out.println("Loaded " + technologies.size() + " technologies from " + path);
+            return true;
+        } catch (IOException e) {
+            System.err.println("Error loading technologies from " + path + ": " + e.getMessage());
+            return false;
+        }
     }
 
     /**
-     * Loads terrain type definitions from the specified ruleset file path.
-     * Populates movement costs, defence bonuses, food/production/trade yields,
-     * and transformation targets.
+     * Loads terrain type definitions from the specified classpath resource.
+     * Parses every {@code [terrain_*]} section to extract name, graphic tag,
+     * movement cost, and defence bonus.
      *
-     * @param path the file-system path to the terrain ruleset file
+     * @param path classpath-relative path to the terrain ruleset file
      * @return {@code true} if the file was parsed without errors
      */
     public boolean loadTerrains(String path) {
-        // TODO: parse SectionFile and populate terrains list
-        System.out.println("Loading terrains from: " + path);
-        return true;
+        InputStream is = openResource(path);
+        if (is == null) return false;
+        try {
+            List<RuleSection> sections = parseSections(is);
+            for (RuleSection sec : sections) {
+                if (!sec.title.startsWith("terrain_")) continue;
+                String name       = sec.get("name");
+                if (name.isEmpty()) continue;
+                String graphic    = sec.get("graphic");
+                int    moveCost   = sec.getInt("movement_cost", 1);
+                int    defBonus   = sec.getInt("defense_bonus", 0);
+                terrains.add(new Terrain(name, graphic, defBonus, moveCost));
+            }
+            System.out.println("Loaded " + terrains.size() + " terrains from " + path);
+            return true;
+        } catch (IOException e) {
+            System.err.println("Error loading terrains from " + path + ": " + e.getMessage());
+            return false;
+        }
     }
 
     /**
-     * Loads government type definitions from the specified ruleset file path.
-     * Populates government names, corruption rates, unit upkeep rules,
-     * and associated effects.
+     * Loads government type definitions from the specified classpath resource.
+     * Parses every {@code [government_*]} section to extract name, graphic tag,
+     * and the first technology prerequisite from the {@code reqs} table.
      *
-     * @param path the file-system path to the governments ruleset file
+     * @param path classpath-relative path to the governments ruleset file
      * @return {@code true} if the file was parsed without errors
      */
     public boolean loadGovernments(String path) {
-        // TODO: parse SectionFile and populate governments list
-        System.out.println("Loading governments from: " + path);
-        return true;
+        InputStream is = openResource(path);
+        if (is == null) return false;
+        try {
+            List<RuleSection> sections = parseSections(is);
+            for (RuleSection sec : sections) {
+                if (!sec.title.startsWith("government_")) continue;
+                String name    = sec.get("name");
+                if (name.isEmpty()) continue;
+                String techReq = sec.getTechReq();
+                if (techReq.isEmpty()) techReq = null;
+                governments.add(new Government(name, name, name, techReq, 0));
+            }
+            System.out.println("Loaded " + governments.size() + " governments from " + path);
+            return true;
+        } catch (IOException e) {
+            System.err.println("Error loading governments from " + path + ": " + e.getMessage());
+            return false;
+        }
     }
+
+    // -----------------------------------------------------------------------
+    // Internal parsing helpers
+    // -----------------------------------------------------------------------
+
+    /** Opens a classpath resource; logs and returns {@code null} on failure. */
+    private InputStream openResource(String path) {
+        InputStream is = getClass().getClassLoader().getResourceAsStream(path);
+        if (is == null) {
+            System.err.println("Ruleset resource not found: " + path);
+        }
+        return is;
+    }
+
+    /**
+     * Lightweight representation of one {@code [section_name]} block from a
+     * {@code .ruleset} file.  Stores plain key→value pairs extracted after
+     * stripping {@code _(\"...\")} wrappers and surrounding quotes.
+     * Also records the tech name from the first {@code "Tech"} row in any
+     * {@code reqs} table.
+     */
+    static class RuleSection {
+        final String title;
+        final Map<String, String> entries = new LinkedHashMap<>();
+        String techReq = "";
+
+        RuleSection(String title) {
+            this.title = title;
+        }
+
+        /** Returns the value for {@code key}, or an empty string if absent. */
+        String get(String key) {
+            return entries.getOrDefault(key, "");
+        }
+
+        /** Returns the integer value for {@code key}, or {@code def} if absent/unparseable. */
+        int getInt(String key, int def) {
+            String v = entries.get(key);
+            if (v == null || v.isEmpty()) return def;
+            try { return Integer.parseInt(v); } catch (NumberFormatException e) { return def; }
+        }
+
+        /**
+         * Returns the technology prerequisite name extracted from this section's
+         * {@code reqs} table (the {@code name} column of the first row whose
+         * {@code type} column equals {@code "Tech"}).  Returns an empty string
+         * when there is no tech requirement.
+         */
+        String getTechReq() {
+            return techReq;
+        }
+    }
+
+    /**
+     * Parses a {@code .ruleset} file into a list of {@link RuleSection} objects.
+     *
+     * <p>The parser handles:
+     * <ul>
+     *   <li>Line comments starting with {@code ;} or {@code #}</li>
+     *   <li>Translatable strings: {@code _("text")} or {@code _("?ctx:text")}</li>
+     *   <li>Quoted string values: {@code "value"}</li>
+     *   <li>Multi-line string continuation via trailing {@code \}</li>
+     *   <li>Inline table blocks: {@code key = { col1, col2\n val1, val2\n }}</li>
+     *   <li>Table blocks where {@code {} appears on its own line after {@code key =}</li>
+     * </ul>
+     *
+     * @param is the input stream of a ruleset file (UTF-8 encoded)
+     * @return ordered list of parsed sections
+     * @throws IOException on read errors
+     */
+    static List<RuleSection> parseSections(InputStream is) throws IOException {
+        List<RuleSection> sections = new ArrayList<>();
+        RuleSection current = null;
+        boolean inTable = false;
+        boolean pendingTable = false;
+        String pendingKey = null;
+        List<String> tableColumns = null;
+
+        try (BufferedReader reader = new BufferedReader(
+                new InputStreamReader(is, "UTF-8"))) {
+            String line;
+            while ((line = reader.readLine()) != null) {
+                // Handle backslash line continuation (multi-line helptext etc.)
+                while (line.endsWith("\\")) {
+                    String next = reader.readLine();
+                    if (next == null) break;
+                    line = line.substring(0, line.length() - 1) + " " + next;
+                }
+
+                line = stripComment(line).trim();
+                if (line.isEmpty()) continue;
+
+                // Section header: [section_name]
+                if (line.startsWith("[") && line.endsWith("]")) {
+                    current = new RuleSection(line.substring(1, line.length() - 1));
+                    sections.add(current);
+                    inTable = false;
+                    pendingTable = false;
+                    pendingKey = null;
+                    tableColumns = null;
+                    continue;
+                }
+
+                if (current == null) continue;
+
+                // Table end
+                if (line.equals("}")) {
+                    inTable = false;
+                    pendingTable = false;
+                    pendingKey = null;
+                    continue;
+                }
+
+                // Table row
+                if (inTable) {
+                    // Only capture tech requirements from the "reqs" table,
+                    // not from "obsolete_by" or other tables.
+                    if ("reqs".equals(pendingKey) && tableColumns != null && !tableColumns.isEmpty()) {
+                        String[] cells = splitCsv(line);
+                        if (cells.length >= 2) {
+                            String type = stripQuotes(cells[0]);
+                            if ("Tech".equalsIgnoreCase(type)) {
+                                if (current.techReq.isEmpty()) {
+                                    current.techReq = stripQuotes(cells[1]);
+                                }
+                            }
+                        }
+                    }
+                    continue;
+                }
+
+                // Standalone '{' opens the table started by the previous 'key ='
+                if (pendingTable && line.startsWith("{")) {
+                    inTable = true;
+                    pendingTable = false;
+                    String colStr = line.substring(1).trim();
+                    tableColumns = colStr.isEmpty() ? new ArrayList<>() : splitColumnsFromHeader(colStr);
+                    continue;
+                }
+
+                // Key = value
+                int eqIdx = line.indexOf('=');
+                if (eqIdx < 0) continue;
+
+                String key = line.substring(0, eqIdx).trim();
+                String rawValue = line.substring(eqIdx + 1).trim();
+
+                if (rawValue.startsWith("{")) {
+                    // Inline table opening: key = { col1, col2 ...
+                    inTable = true;
+                    pendingTable = false;
+                    pendingKey = key;
+                    String colStr = rawValue.substring(1).trim();
+                    tableColumns = colStr.isEmpty() ? new ArrayList<>() : splitColumnsFromHeader(colStr);
+                } else if (rawValue.isEmpty()) {
+                    // Table block starts on the next non-empty line
+                    pendingTable = true;
+                    pendingKey = key;
+                } else {
+                    current.entries.put(key, extractValue(rawValue));
+                }
+            }
+        }
+        return sections;
+    }
+
+    /**
+     * Strips a trailing inline comment from {@code line}.
+     * Semicolons inside quoted strings are not treated as comment markers.
+     * Full-line comments (lines starting with {@code ;} or {@code #}) are
+     * reduced to an empty string.
+     */
+    static String stripComment(String line) {
+        boolean inQuote = false;
+        for (int i = 0; i < line.length(); i++) {
+            char c = line.charAt(i);
+            if (c == '"') {
+                inQuote = !inQuote;
+            } else if (!inQuote && (c == ';' || c == '#')) {
+                return line.substring(0, i);
+            }
+        }
+        return line;
+    }
+
+    /**
+     * Extracts a plain string from a raw ruleset value.
+     * <ul>
+     *   <li>{@code _("?ctx:text")} → {@code text}</li>
+     *   <li>{@code _("text")} → {@code text}</li>
+     *   <li>{@code "text"} → {@code text}</li>
+     *   <li>Numeric or unquoted values → unchanged</li>
+     * </ul>
+     */
+    static String extractValue(String raw) {
+        if (raw == null) return "";
+        raw = raw.trim();
+        // _("?context:text") or _("text")
+        if (raw.startsWith("_(\"")) {
+            int start = 3;
+            if (start < raw.length() && raw.charAt(start) == '?') {
+                int colon = raw.indexOf(':', start);
+                if (colon >= 0) start = colon + 1;
+            }
+            int end = raw.indexOf('"', start);
+            return end >= start ? raw.substring(start, end) : raw;
+        }
+        // "text"
+        if (raw.startsWith("\"") && raw.length() > 1) {
+            int end = raw.indexOf('"', 1);
+            return end > 0 ? raw.substring(1, end) : raw;
+        }
+        return raw;
+    }
+
+    /** Strips surrounding double quotes from a token, e.g. {@code "Foo"} → {@code Foo}. */
+    private static String stripQuotes(String s) {
+        s = s.trim();
+        if (s.startsWith("\"") && s.endsWith("\"") && s.length() >= 2) {
+            return s.substring(1, s.length() - 1);
+        }
+        return s;
+    }
+
+    /**
+     * Splits a CSV line (table row in a ruleset) into individual cell tokens.
+     * Handles cells wrapped in double quotes.
+     */
+    static String[] splitCsv(String line) {
+        List<String> result = new ArrayList<>();
+        StringBuilder current = new StringBuilder();
+        boolean inQuote = false;
+        for (char c : line.toCharArray()) {
+            if (c == '"') {
+                inQuote = !inQuote;
+                current.append(c);
+            } else if (c == ',' && !inQuote) {
+                result.add(current.toString().trim());
+                current.setLength(0);
+            } else {
+                current.append(c);
+            }
+        }
+        if (!current.isEmpty()) result.add(current.toString().trim());
+        return result.toArray(new String[0]);
+    }
+
+    /**
+     * Parses column-header tokens from the text following the opening {@code {}
+     * of a table block, stopping at the first {@code }} (if any) on the same
+     * line.
+     */
+    private static List<String> splitColumnsFromHeader(String colStr) {
+        // Strip optional closing } on the same line
+        int close = colStr.indexOf('}');
+        if (close >= 0) colStr = colStr.substring(0, close);
+        List<String> cols = new ArrayList<>();
+        for (String c : colStr.split(",")) {
+            String t = stripQuotes(c.trim());
+            if (!t.isEmpty()) cols.add(t);
+        }
+        return cols;
+    }
+
+    /**
+     * Maps a Freeciv unit class name to the integer domain used by
+     * {@link UnitType}: 0 = Land, 1 = Sea / Trireme, 2 = Air / Helicopter / Missile.
+     */
+    private static int classToDomain(String cls) {
+        if (cls == null) return 0;
+        return switch (cls.toLowerCase()) {
+            case "sea", "trireme"                  -> 1;
+            case "air", "helicopter", "missile"    -> 2;
+            default                                 -> 0;
+        };
+    }
+
+    /**
+     * Maps the {@code genus} string from a building section to the integer
+     * used by {@link Improvement}: 0 = GreatWonder, 1 = SmallWonder,
+     * 2 = Improvement, 3 = Special.
+     */
+    private static int genusToInt(String genus) {
+        if (genus == null) return 2;
+        return switch (genus.toLowerCase()) {
+            case "greatwonder" -> 0;
+            case "smallwonder" -> 1;
+            case "special"     -> 3;
+            default            -> 2;
+        };
+    }
+
+    // -----------------------------------------------------------------------
+    // Public accessors
+    // -----------------------------------------------------------------------
 
     /**
      * Returns the name of the currently loaded ruleset.
