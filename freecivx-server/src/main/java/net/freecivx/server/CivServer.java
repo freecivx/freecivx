@@ -256,6 +256,23 @@ public class CivServer extends org.java_websocket.server.WebSocketServer {
             if (message.equalsIgnoreCase("/start")) {
                 game.startGame();
             }
+            if (message.toLowerCase().startsWith("/load ")) {
+                String scenarioName = message.substring(6).trim();
+                if (game.isGameStarted()) {
+                    sendMessage(connId, "Cannot load scenario: game already started.");
+                } else if (scenarioName.isEmpty()) {
+                    sendMessage(connId, "Usage: /load <scenario.sav>");
+                } else {
+                    boolean loaded = game.loadScenario(scenarioName);
+                    if (loaded) {
+                        sendMessageAll("Scenario loaded: " + scenarioName
+                                + ". Type /start to begin.");
+                    } else {
+                        sendMessage(connId, "Failed to load scenario: " + scenarioName
+                                + ". Use /help to see available scenarios.");
+                    }
+                }
+            }
             if (message.toLowerCase().startsWith("/set ")) {
                 handleSetCommand(connId, message);
             }
@@ -263,10 +280,12 @@ public class CivServer extends org.java_websocket.server.WebSocketServer {
                 String helptext = """
                         Freecivx Java server commands:
                         /start          - Start the game (also starts automatically when ready)
+                        /load <file>    - Load a scenario map before starting, e.g. /load earth-small.sav
                         /set timeout N  - Set turn timeout in seconds (0 = no timeout, max 500)
                         /set aifill N   - Set number of AI players (0-9, applied at game start)
                         /set gold N     - Set starting gold for all players (0-50000)
                         /help           - Show this help text
+                        Available scenarios: africa-350x350-v1.0.sav, british-isles.sav, caribbean-500x250-v1.2.sav, earth-large.sav, earth-small.sav, europe.sav, france.sav, hagworld.sav, iberian-peninsula.sav, india-350x350-v1.2.sav, italy.sav, japan.sav, middleeast-350x350-v1.1.sav, north_america.sav, scandinavia-350x350-v1.0.sav, tutorial.sav
                         Game features: units move with movement limits, AI players included.
                         Join at any time - late joiners receive the current game state.
                         """;
