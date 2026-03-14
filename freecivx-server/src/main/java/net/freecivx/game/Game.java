@@ -494,6 +494,10 @@ public class Game {
         Unit unit = units.get(unit_id);
         if (unit == null) return;
         unit.setActivity(activity);
+        // Reset the terrain-improvement progress counter whenever the
+        // activity changes.  Mirrors unit_activity_handling() in the C server
+        // where any new order resets the activity work done so far.
+        unit.setActivityCount(0);
         server.sendUnitAll(unit);
     }
 
@@ -547,6 +551,25 @@ public class Game {
         // Deduct terrain cost; allow the move even if cost exceeds remaining moves
         // (C server rule: a unit can always spend its last move to enter difficult terrain).
         unit.setMovesleft(Math.max(0, unit.getMovesleft() - moveCost));
+
+        // Moving cancels any in-progress terrain improvement activity.
+        // Mirrors the C Freeciv server's behaviour where a unit order (move)
+        // interrupts any ongoing unit_activity (road, mine, irrigate).
+        if (unit.getActivity() == net.freecivx.server.CityTurn.ACTIVITY_ROAD
+                || unit.getActivity() == net.freecivx.server.CityTurn.ACTIVITY_IRRIGATE
+                || unit.getActivity() == net.freecivx.server.CityTurn.ACTIVITY_MINE) {
+            unit.setActivity(0);
+            unit.setActivityCount(0);
+        }
+
+        // Check for a goodie hut (village) on the destination tile.
+        // Mirrors unit_enter_hut() in the C Freeciv server's server/unittools.c:
+        // entering a tile with the Hut extra (bit 8) removes the hut and awards
+        // a random reward (gold or a technology).
+        if (destTileObj != null && (destTileObj.getExtras() & (1 << 8)) != 0) {
+            enterHut(unit, destTileObj);
+        }
+
         server.sendUnitAll(unit);
         return true;
     }
@@ -834,6 +857,80 @@ public class Game {
             for (long uid : idsToRemove) {
                 units.remove(uid);
                 server.sendUnitRemove(uid);
+            }
+        }
+    }
+
+    /**
+     * Minimum gold reward from entering a goodie hut.
+     * Mirrors the minimum hut gold in the C Freeciv server's
+     * {@code server/unittools.c}.
+     */
+    private static final int MIN_HUT_GOLD = 25;
+    /**
+     * Maximum gold reward from entering a goodie hut.
+     * Mirrors the maximum hut gold in the C Freeciv server's
+     * {@code server/unittools.c}.
+     */
+    private static final int MAX_HUT_GOLD = 100;
+
+    /**
+     * Awards a random reward to the unit's owner when a unit enters a goodie hut.
+     * Removes the Hut extra from the tile and broadcasts the tile update, then
+     * gives either a random amount of gold (25–100) or a random researchable
+     * technology to the owning player.
+     * Mirrors {@code unit_enter_hut()} in the C Freeciv server's
+     * {@code server/unittools.c}.
+     *
+     * @param unit the unit entering the hut
+     * @param tile the tile containing the hut (extra bit 8 will be cleared)
+     */
+    private void enterHut(Unit unit, Tile tile) {
+        // Remove the hut from the tile so it cannot be entered again
+        tile.setExtras(tile.getExtras() & ~(1 << 8));
+        server.sendTileInfoAll(tile);
+
+        long ownerId = unit.getOwner();
+        Player player = players.get(ownerId);
+        if (player == null) return;
+
+        // 50 % chance of gold, 50 % chance of a free technology.
+        // Mirrors the hut outcome distribution in the C Freeciv server where
+        // gold, technology, or a unit can be awarded.
+        if (random.nextBoolean()) {
+            // Gold reward: MIN_HUT_GOLD–MAX_HUT_GOLD coins
+            int gold = MIN_HUT_GOLD + random.nextInt(MAX_HUT_GOLD - MIN_HUT_GOLD + 1);
+            player.setGold(player.getGold() + gold);
+            server.sendPlayerInfoAll(player);
+            Notify.notifyPlayer(this, server, ownerId,
+                    "Your explorers found " + gold + " gold in a goodie hut!");
+        } else {
+            // Tech reward: pick a random technology the player can research now.
+            // Mirrors the "tech" branch in hut_enter_worker() / do_hut_effects().
+            List<Long> researchable = new ArrayList<>();
+            for (Map.Entry<Long, Technology> entry : techs.entrySet()) {
+                long tid = entry.getKey();
+                if (!player.hasTech(tid)
+                        && net.freecivx.server.TechTools.canPlayerResearch(this, ownerId, tid)) {
+                    researchable.add(tid);
+                }
+            }
+            if (!researchable.isEmpty()) {
+                long techId = researchable.get(random.nextInt(researchable.size()));
+                Technology tech = techs.get(techId);
+                net.freecivx.server.TechTools.giveTechToPlayer(this, ownerId, techId);
+                server.sendPlayerInfoAll(player);
+                Notify.notifyPlayer(this, server, ownerId,
+                        "Your explorers discovered "
+                                + (tech != null ? tech.getName() : "a new technology")
+                                + " in a goodie hut!");
+            } else {
+                // No researchable technology available – fall back to gold
+                int gold = MIN_HUT_GOLD;
+                player.setGold(player.getGold() + gold);
+                server.sendPlayerInfoAll(player);
+                Notify.notifyPlayer(this, server, ownerId,
+                        "Your explorers found " + gold + " gold in a goodie hut!");
             }
         }
     }

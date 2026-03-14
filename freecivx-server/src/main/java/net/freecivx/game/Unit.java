@@ -34,6 +34,13 @@ public class Unit {
     private boolean done_moving = false;
     private boolean transported = false;
     private int ssa_controller = 0;
+    /**
+     * Number of turns the unit has spent on the current terrain improvement
+     * activity (road, irrigation, mine).  Mirrors {@code activity_count} in the
+     * C Freeciv unit struct.  Reset to 0 whenever the unit's activity changes
+     * or the unit moves.
+     */
+    private int activityCount = 0;
 
     // Constructor
     public Unit(long id, long owner, long tile, int type, int facing, int veteran, int hp, int activity, int movesleft) {
@@ -141,6 +148,16 @@ public class Unit {
 
     public void setTransported(boolean transported) {
         this.transported = transported;
+    }
+
+    /** Returns the number of turns this unit has spent on the current terrain improvement. */
+    public int getActivityCount() {
+        return activityCount;
+    }
+
+    /** Sets the terrain improvement activity progress counter. */
+    public void setActivityCount(int activityCount) {
+        this.activityCount = activityCount;
     }
 
     // Optional toString method for debugging
