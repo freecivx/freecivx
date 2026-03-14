@@ -79,7 +79,7 @@ public class GameHand {
         msg.put("phase", game.phase);
         msg.put("timeout", game.getTurnTimeout());
         msg.put("first_timeout", -1);
-        game.getServer().sendPacketTo(connId, msg);
+        game.getServer().sendPacket(connId, msg);
     }
 
     /**
@@ -113,6 +113,6 @@ public class GameHand {
         msg.put("name", player.getUsername());
         msg.put("nation", player.getNation());
         msg.put("is_alive", player.isAlive());
-        game.getServer().sendPacketTo(connId, msg);
+        game.getServer().sendPacket(connId, msg);
     }
 }
