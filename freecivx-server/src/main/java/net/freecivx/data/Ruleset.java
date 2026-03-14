@@ -133,8 +133,16 @@ public class Ruleset {
                 String flags     = sec.get("flags");
                 boolean isSettler = flags.contains("Settlers") || flags.contains("Cities");
                 String actions = isSettler ? settlerActions : defaultActions;
-                unitTypes.add(new UnitType(name, graphic, moveRate, hp, 1, name,
-                        attack, defense, actions, domain, buildCost));
+                UnitType ut = new UnitType(name, graphic, moveRate, hp, 1, name,
+                        attack, defense, actions, domain, buildCost);
+                // Parse obsolete_by: the unit type name this unit upgrades to.
+                // Resolved to an integer ID in Game.populateFromRuleset().
+                // Mirrors the obsolete_by field in the C Freeciv units ruleset.
+                String obsoletedBy = sec.get("obsolete_by");
+                if (obsoletedBy != null && !obsoletedBy.isEmpty() && !"None".equals(obsoletedBy)) {
+                    ut.setObsoletedByName(obsoletedBy);
+                }
+                unitTypes.add(ut);
             }
             System.out.println("Loaded " + unitTypes.size() + " unit types from " + path);
             return true;

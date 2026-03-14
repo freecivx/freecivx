@@ -304,6 +304,23 @@ public class Game {
             unitTypes.put((long) i, rUnits.get(i));
         }
 
+        // Resolve obsolete_by names to integer IDs now that all unit types are loaded.
+        // Mirrors the unit-upgrade chain setup in the C Freeciv server's rules loading.
+        // Build a name→ID map first (one O(n) pass) then resolve in a second O(n) pass.
+        Map<String, Long> unitNameToId = new HashMap<>();
+        for (Map.Entry<Long, UnitType> entry : unitTypes.entrySet()) {
+            unitNameToId.put(entry.getValue().getName().toLowerCase(), entry.getKey());
+        }
+        for (UnitType ut : unitTypes.values()) {
+            String obs = ut.getObsoletedByName();
+            if (obs != null && !obs.isEmpty()) {
+                Long targetId = unitNameToId.get(obs.toLowerCase());
+                if (targetId != null) {
+                    ut.setUpgradesTo(targetId.intValue());
+                }
+            }
+        }
+
         List<Improvement> rImprov = ruleset.getImprovements();
         for (int i = 0; i < rImprov.size(); i++) {
             improvements.put((long) i, rImprov.get(i));
@@ -386,6 +403,19 @@ public class Game {
         unitTypes.put(16L, new UnitType("Riflemen",   "u.riflemen",  1, 20, 1, "Riflemen",      5, 6, defaultActions, 0, 60));
         unitTypes.put(17L, new UnitType("Trireme",    "u.trireme",   3, 10, 1, "Trireme",       1, 1, defaultActions, 1, 40));
         unitTypes.put(18L, new UnitType("Frigate",    "u.frigate",   4, 20, 1, "Frigate",       4, 2, defaultActions, 1, 50));
+
+        // Unit upgrade chains for the fallback dataset.
+        // Mirrors the obsolete_by field in the classic Freeciv units ruleset and
+        // the do_upgrade_effects() upgrade chain in the C Freeciv server.
+        // Format: source unit ID → target unit ID.
+        unitTypes.get(3L).setUpgradesTo(8);   // Warriors   → Musketeers
+        unitTypes.get(4L).setUpgradesTo(11);  // Horsemen   → Knight
+        unitTypes.get(5L).setUpgradesTo(8);   // Archers    → Musketeers
+        unitTypes.get(7L).setUpgradesTo(16);  // Pikemen    → Riflemen
+        unitTypes.get(9L).setUpgradesTo(15);  // Catapult   → Cannon
+        unitTypes.get(10L).setUpgradesTo(14); // Chariot    → Cavalry
+        unitTypes.get(12L).setUpgradesTo(8);  // Phalanx    → Musketeers
+        unitTypes.get(17L).setUpgradesTo(18); // Trireme    → Frigate
 
         improvements.put(0L,  new Improvement(0,  "Palace",      "Palace",      "b.palace",      "b.fallback", 1, 100, 0, 0, "b_palace",      "b_fallback", "The Palace",      -1));
         improvements.put(1L,  new Improvement(1,  "Barracks",    "Barracks",    "b.barracks",    "b.fallback", 2,  40, 1, 0, "b_barracks",    "b_fallback", "The Barracks",     3));

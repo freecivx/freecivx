@@ -23,7 +23,11 @@ import net.freecivx.game.Game;
 import net.freecivx.game.Player;
 import net.freecivx.game.City;
 import net.freecivx.game.Technology;
+import net.freecivx.game.Unit;
+import net.freecivx.game.UnitType;
 import org.json.JSONObject;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -57,6 +61,9 @@ public class TechTools {
         if (player.hasTech(techId)) return; // already known
         player.addKnownTech(techId);
         System.out.println("Player " + player.getUsername() + " received tech: " + tech.getName());
+        // Auto-upgrade units that are made obsolete by the newly acquired technology.
+        // Mirrors do_upgrade_effects() in the C Freeciv server's server/unittools.c.
+        doUpgradeEffects(game, playerId);
         sendResearchInfo(game, game.getServer(), player.getConnectionId(), playerId);
     }
 
@@ -230,5 +237,63 @@ public class TechTools {
 
         // No direct prereq found; return first researchable tech (progress toward goal)
         return -1L;
+    }
+
+    /**
+     * Automatically upgrades all of a player's units that have become obsolete due
+     * to a newly acquired technology.  Each unit whose type has an {@code upgradesTo}
+     * target is transformed in-place: HP and movement are scaled proportionally to
+     * the new unit type's maximum values and the veteran level is preserved (clipped
+     * to the new unit type's maximum levels).
+     *
+     * <p>Mirrors {@code do_upgrade_effects()} and {@code transform_unit()} in the
+     * C Freeciv server's {@code server/unittools.c}.
+     *
+     * @param game     the current game state
+     * @param playerId the ID of the player whose units should be checked for upgrade
+     */
+    public static void doUpgradeEffects(Game game, long playerId) {
+        // Collect upgradeable units first to avoid concurrent modification
+        List<Unit> candidates = new ArrayList<>();
+        for (Unit unit : game.units.values()) {
+            if (unit.getOwner() != playerId) continue;
+            UnitType utype = game.unitTypes.get((long) unit.getType());
+            if (utype != null && utype.getUpgradesTo() >= 0
+                    && game.unitTypes.containsKey((long) utype.getUpgradesTo())) {
+                candidates.add(unit);
+            }
+        }
+
+        for (Unit unit : candidates) {
+            UnitType oldType = game.unitTypes.get((long) unit.getType());
+            int newTypeId = oldType.getUpgradesTo();
+            UnitType newType = game.unitTypes.get((long) newTypeId);
+
+            // Scale HP proportionally to the new type's max HP.
+            // Mirrors: punit->hp = MAX(punit->hp * new_hp / old_hp, 1) in transform_unit().
+            int oldMaxHp = Math.max(1, oldType.getHp());
+            int newMaxHp = newType.getHp();
+            int scaledHp = Math.max(1, unit.getHp() * newMaxHp / oldMaxHp);
+
+            // Scale remaining move points proportionally to the new move rate.
+            // Mirrors: punit->moves_left = moves_left * new_mr / old_mr in transform_unit().
+            int oldMoveRate = Math.max(1, oldType.getMoveRate());
+            int newMoveRate = newType.getMoveRate();
+            int scaledMoves = unit.getMovesleft() * newMoveRate / oldMoveRate;
+
+            // Veteran level must not exceed the new unit type's maximum.
+            // Mirrors: punit->veteran = MIN(punit->veteran, lvls) in transform_unit().
+            int newVeteran = Math.min(unit.getVeteran(),
+                    Math.max(0, newType.getVeteranLevels() - 1));
+
+            unit.setType(newTypeId);
+            unit.setHp(scaledHp);
+            unit.setMovesleft(scaledMoves);
+            unit.setVeteran(newVeteran);
+
+            game.getServer().sendUnitAll(unit);
+            Notify.notifyPlayer(game, game.getServer(), playerId,
+                    oldType.getName() + " has been upgraded to " + newType.getName() + ".");
+        }
     }
 }
