@@ -55,10 +55,6 @@ public class PlrHand {
         // Validate tech prerequisites: check that the player knows the required tech
         String techReq = gov.getTechReq();
         if (techReq != null && !"None".equals(techReq)) {
-            boolean hasTech = game.techs.values().stream()
-                    .anyMatch(t -> techReq.equals(t.getName())
-                            && player.hasTech(t.getName().hashCode())); // look up by name
-            // More robust: search by name across all techs
             boolean hasRequiredTech = false;
             for (Map.Entry<Long, net.freecivx.game.Technology> entry : game.techs.entrySet()) {
                 if (techReq.equals(entry.getValue().getName())

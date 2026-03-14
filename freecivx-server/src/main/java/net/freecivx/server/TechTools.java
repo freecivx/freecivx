@@ -168,14 +168,11 @@ public class TechTools {
     private static boolean isPrereqSatisfied(Game game, Player player, String prereqName) {
         if (prereqName == null || "None".equals(prereqName)) return true;
         if ("Never".equals(prereqName)) return false;
-        // Find tech by name in the game's tech map
-        for (Technology t : game.techs.values()) {
-            if (t.getName().equals(prereqName)) {
-                return player.getKnownTechs().stream()
-                        .anyMatch(id -> game.techs.containsKey(id)
-                                && game.techs.get(id).getName().equals(prereqName));
-            }
+        // Check if any known tech ID maps to a tech with the required name
+        for (long id : player.getKnownTechs()) {
+            Technology known = game.techs.get(id);
+            if (known != null && prereqName.equals(known.getName())) return true;
         }
-        return false; // unknown prereq name = not satisfied
+        return false; // prerequisite tech not yet known
     }
 }

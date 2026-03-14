@@ -135,7 +135,7 @@ public class Research {
         if (player == null) return 0;
 
         int bonus = 0;
-        // Library (id=3) gives +50% science per city; University (not in default set) +100%
+        // Library gives +50% science per city (improvement ID 3 in classic ruleset)
         for (City city : game.cities.values()) {
             if (city.getOwner() != playerId) continue;
             if (city.hasImprovement(3)) bonus += 50;  // Library

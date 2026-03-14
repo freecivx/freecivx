@@ -28,6 +28,22 @@ package net.freecivx.game;
  */
 public class Effects {
 
+    // Improvement ID constants matching Game.initGame() initialisation order
+    // (mirrors the classic ruleset building IDs in the C Freeciv server)
+    private static final int IMPROV_PALACE      = 0;
+    private static final int IMPROV_BARRACKS    = 1;
+    private static final int IMPROV_GRANARY     = 2;
+    private static final int IMPROV_LIBRARY     = 3;
+    private static final int IMPROV_MARKETPLACE = 4;
+    private static final int IMPROV_BANK        = 5;
+    private static final int IMPROV_TEMPLE      = 6;
+    private static final int IMPROV_CITY_WALLS  = 7;
+    private static final int IMPROV_AQUEDUCT    = 8;
+    private static final int IMPROV_COURTHOUSE  = 9;
+    private static final int IMPROV_HARBOR      = 10;
+    private static final int IMPROV_COLOSSEUM   = 11;
+    private static final int IMPROV_CATHEDRAL   = 12;
+
     /**
      * Returns the cumulative value of a named effect for a specific city.
      * Sums contributions from all improvements built in the city, the player's
@@ -125,12 +141,19 @@ public class Effects {
     public static boolean improvementHasEffect(Improvement improvement, String effectType) {
         if (improvement == null || effectType == null) return false;
         switch ((int) improvement.getId()) {
-            case 3: return "Science_Per_Tile".equals(effectType) || "Output_Bonus".equals(effectType);
-            case 4: return "Tax_Bonus".equals(effectType) || "Trade_Revenue_Bonus".equals(effectType);
-            case 5: return "Tax_Bonus".equals(effectType) || "Trade_Revenue_Bonus".equals(effectType);
-            case 6: return "Make_Content".equals(effectType);
-            case 9: return "Corrupt_Pct".equals(effectType);
-            case 2: return "Growth_Food_Pct".equals(effectType);
+            case IMPROV_LIBRARY:
+                return "Science_Per_Tile".equals(effectType) || "Output_Bonus".equals(effectType);
+            case IMPROV_MARKETPLACE:
+            case IMPROV_BANK:
+                return "Tax_Bonus".equals(effectType) || "Trade_Revenue_Bonus".equals(effectType);
+            case IMPROV_TEMPLE:
+            case IMPROV_COLOSSEUM:
+            case IMPROV_CATHEDRAL:
+                return "Make_Content".equals(effectType);
+            case IMPROV_COURTHOUSE:
+                return "Corrupt_Pct".equals(effectType);
+            case IMPROV_GRANARY:
+                return "Growth_Food_Pct".equals(effectType);
             default: return false;
         }
     }
