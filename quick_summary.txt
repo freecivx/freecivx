@@ -1,0 +1,270 @@
+═══════════════════════════════════════════════════════════════════════════════
+FREECIV C SERVER RULESET vs FREECIVX-SERVER COMPARISON - QUICK REFERENCE
+═══════════════════════════════════════════════════════════════════════════════
+
+1. RULESET FILES LOCATION
+───────────────────────────────────────────────────────────────────────────────
+C Server:        /freeciv/freeciv/data/classic/
+Freecivx-Server: /freecivx-server/src/main/resources/classic/
+
+11 Files (identical structure):
+  • actions.ruleset, buildings.ruleset, cities.ruleset, effects.ruleset
+  • game.ruleset, governments.ruleset, nations.ruleset, styles.ruleset
+  • techs.ruleset, terrain.ruleset, units.ruleset
+
+2. KEY TERRAIN TYPES (terrain.ruleset)
+───────────────────────────────────────────────────────────────────────────────
+Terrain          Movement  Food  Shield  Trade  Native Units
+Inaccessible           0     0      0       0     [IMPASSABLE]
+Lake                   1     1      0       2     Sea, Air, Missile
+Ocean                  1     1      0       2     Sea, Air, Missile
+Grassland              1     2      1       1     Land
+Forest                 1     1      1       1     Land
+Hills                  1     0      1       0     Land
+Mountains              1     0      1       0     Land
+Desert                 1     0      1       0     Land
+Plains                 1     1      1       1     Land
+Jungle                 1     1      0       1     Land
+Tundra                 1     0      1       0     Land
+Glacier                1     0      0       0     Land (Frozen flag)
+
+Movement cost formula: move_fragments = 3
+Terrain transforms: Lake → Swamp, Ocean → Glacier, Ocean → Tundra
+
+3. KEY BUILDINGS (buildings.ruleset) - COST/UPKEEP/EFFECTS
+───────────────────────────────────────────────────────────────────────────────
+ECONOMIC:
+  Granary          30/2    | +50% food storage, 50% retention on grow
+  Library          60/1    | +100% science (Writing req)
+  Marketplace      60/0    | +50% tax/luxury (Currency req)
+  Bank             80/2    | +100% tax/luxury (Banking + Marketplace req)
+  Factory          210/5   | +50% shields
+  Windmill         15/1    | +50% tax, halves food waste
+
+MILITARY:
+  Barracks         30/1    | New units = Veteran (+50%), heal full/turn
+  Barracks II      30/1    | Same (Gunpowder req)
+  Barracks III     30/1    | Same (Mobile Warfare req)
+  City Walls       60/2    | +Defense (Masonry req)
+
+ADMIN:
+  Palace           70/0    | SmallWonder, capital, corruption-based on distance
+  Courthouse       120/1   | Halves corruption & waste
+  Aqueduct         60/2    | City can grow past size 8
+  Sewer System     150/2   | City can grow past size 12
+
+HAPPINESS:
+  Temple           40/1    | +1 content citizen
+  Colosseum        100/4   | +3 content citizens
+  Cathedral        80/3    | +3 content citizens
+
+UTILITIES:
+  Airport          120/3   | Veteran air units, heal air units, airlift
+  Mass Transit     120/4   | Neutralizes population pollution
+  Offshore Plat.   120/3   | +1 shield per oceanic tile
+
+4. AIPLAYER.JAVA (834 lines) - AI DECISION-MAKING PIPELINE
+───────────────────────────────────────────────────────────────────────────────
+Phase 1: Government Evolution
+  Despotism → Monarchy (when "Monarchy" tech) → Republic (when "The Republic")
+  Mirrors: ai/default/daicity.c dai_manage_government()
+
+Phase 2: Research Selection (Priority Tech Order)
+  Pottery → Bronze Working → Warrior Code → Masonry → Alphabet → Writing →
+  Code of Laws → Horseback Riding → Mathematics → Iron Working → The Republic
+  Mirrors: ai/default/aitech.c dai_select_tech()
+
+Phase 3: City Production Management (Priority Order)
+  1. Granary (if size < 2 and no Granary)
+  2. Barracks (if threatened or small military)
+  3. Library (if size ≥ 2)
+  4. Marketplace (if size ≥ 3)
+  5. City Walls (defense)
+  6. Warriors (default military expansion)
+  Mirrors: ai/default/daicity.c city production logic
+
+Phase 4: Unit Actions
+  Settlers (type 0):
+    • Search radius: 12 tiles (∼25×25 area)
+    • Scoring: terrain-based fitness evaluation
+    • Minimum separation: 3 tiles (Manhattan)
+    • Founding threshold: score ≥ 2
+    • Persistent target memory (prevents goal-jitter)
+    Mirrors: ai/default/daisettler.c
+
+  Military Units:
+    • Opportunistic adjacent attacks
+    • Defense assignment: guard ungarrisoned cities
+    • Multi-unit coordination: if city has ≥2 defenders, roam
+    • Fallback: advance toward nearest enemy
+    Mirrors: ai/default/daimilitary.c
+
+  Other Units: Random movement
+
+Terrain Constants in AiPlayer:
+  TERRAIN_GRASSLAND=7, TERRAIN_PLAINS=11, TERRAIN_HILLS=8, TERRAIN_FOREST=6,
+  TERRAIN_JUNGLE=9, TERRAIN_DESERT=5, TERRAIN_TUNDRA=13, TERRAIN_OCEAN=2
+
+Improvement Constants:
+  IMPR_GRANARY=2, IMPR_LIBRARY=3, IMPR_MARKETPLACE=4, IMPR_CITY_WALLS=7
+
+Unit Constants:
+  UNIT_SETTLERS=0, UNIT_WARRIORS=3
+
+Tech Constants:
+  TECH_POTTERY=10, TECH_BRONZE_WORKING=4, TECH_WARRIOR_CODE=11, etc.
+
+5. AUTOGAME.JAVA (315 lines) - HEADLESS SIMULATION
+───────────────────────────────────────────────────────────────────────────────
+Purpose: Run complete game with AI-only civilizations (no WebSocket clients)
+
+Defaults:
+  DEFAULT_AI_PLAYERS = 5
+  DEFAULT_TURNS = 100
+
+Constructor:
+  AutoGame(int numAiPlayers, int numTurns, int seed)
+    • seed = -1 for random (mirrors mapseed/gameseed in C Freeciv)
+
+Simulation Flow:
+  1. game.startAutoGame(numAiPlayers)  // Create AI players
+  2. for (t=1; t<=numTurns; t++) game.turnDone()
+  3. Print progress every 10 turns
+  4. Early exit if ≤1 player alive
+  5. Print final per-player statistics
+
+AI Names (cycle if more players):
+  Caesar, Alexander, Napoleon, Genghis, Cleopatra, Augustus, Cyrus,
+  Ramesses, Pericles, Montezuma
+
+Historical Year Calculation:
+  historicalYear = -4000 + (turn - 1) × 20
+
+Command-line:
+  java net.freecivx.main.AutoGame -players 5 -turns 100 -seed 12345
+
+6. CITYTURN.JAVA (888 lines) - CITY PROCESSING EACH TURN
+───────────────────────────────────────────────────────────────────────────────
+Key Constants:
+  MIN_UNIT_COST=10, IMPR_BARRACKS=1, HP_RESTORE_DIVISOR=5
+  IMPR_COURTHOUSE=9, IMPR_TEMPLE=6, IMPR_COLOSSEUM=11, IMPR_CATHEDRAL=12
+  HAPPY_COST=2
+
+cityGranarySize(citySize):
+  size=1: 20 food
+  size>1: 10*size + 10 food
+  Mirrors: RS_DEFAULT_GRANARY_FOOD_INI=20, FOOD_INC=10
+
+cityProduction():
+  • Shield output: max(1, city.size) per turn
+  • Waste: gov.corruptionPct() / 2 (Courthouse halves further)
+  • Tech prerequisite check before completion
+  • Population cost deducted (e.g., Settler costs 1 population)
+  Mirrors: city_distribute_surplus_shields, city_build_unit, city_build_building
+
+cityGrowth():
+  • Food surplus: 2/turn base + 1 if Granary
+  • Granary needed for growth past size 8; Sewer System for size 12+
+  • Granary retention: 50% of new capacity on growth
+  • Starvation: shrink if foodStock < 0 and size > 1
+  Mirrors: city_populate
+
+cityTaxContribution():
+  • Base tax: 1 gold per population
+  • Corruption: gov.corruptionPct(); Courthouse halves
+  • Formula: taxBase * (100 - corruption%) / 100
+
+cityScienceContribution():
+  • Base science: 1 bulb per population
+  • Library: +100% (×2 multiplier)
+  • Library+University: +150% additional (×3.5 total)
+  • Applied additively: (100+100+150)/100 = 3.5
+  • Corruption applied (same as gold; Courthouse halves)
+
+updateCityHappiness():
+  • Base content: size/2 citizens
+  • Temple: +1 content
+  • Colosseum: +3 content
+  • Cathedral: +3 content
+  • Luxury: HAPPY_COST=2 per content→happy upgrade
+
+updateAllCities(Game):
+  1. Restore unit HP (Barracks=full; otherwise max_hp/5)
+  2. Process worker activities
+  3. For each city: growth → production → happiness
+  4. Aggregate per-player gold from all cities
+  5. Per-player: deduct building/unit upkeep
+  6. Auto-disband military if newGold < 0
+  7. Trigger research progress
+
+7. GAME.JAVA - startAutoGame() METHOD
+───────────────────────────────────────────────────────────────────────────────
+public void startAutoGame(int numAiPlayers) {
+    if (gameStarted) return;
+    
+    // Create AI players with standard names
+    String[] aiNames = {
+        "Caesar", "Alexander", "Napoleon", "Genghis", "Cleopatra",
+        "Augustus", "Cyrus", "Ramesses", "Pericles", "Montezuma"
+    };
+    
+    for (int i = 0; i < numAiPlayers; i++) {
+        long aiId = 1000L + i;
+        Player aiPlayer = new Player(aiId, aiNames[i % aiNames.length],
+                                     "ai", i % nations.size());
+        aiPlayer.setAi(true);
+        players.put(aiId, aiPlayer);
+    }
+    
+    // Spawn starting units
+    for (Player player : players.values()) {
+        long startPos = findStartPosition();
+        spawnStartingUnits(player, startPos);
+    }
+}
+
+8. KEY ARCHITECTURAL ALIGNMENT
+───────────────────────────────────────────────────────────────────────────────
+C Server Component          Freecivx-Server Equivalent
+─────────────────────       ────────────────────────────────────
+terrain.ruleset             /classic/terrain.ruleset
+buildings.ruleset           /classic/buildings.ruleset
+effects.ruleset             CityTurn.java improvements
+techs.ruleset               Game.techs map + TechTools.java
+governments.ruleset         Game.governments map
+cityturn.c                  CityTurn.java
+ai/default/aitech.c         AiPlayer.pickResearchGoals()
+ai/default/daicity.c        AiPlayer.manageAiCities()
+ai/default/daisettler.c     AiPlayer.handleSettler()
+ai/default/daimilitary.c    AiPlayer.handleMilitaryUnit()
+server scripts               AutoGame.java
+
+9. KEY IMPROVEMENTS NEEDED
+───────────────────────────────────────────────────────────────────────────────
+IMPLEMENTED:
+  ✓ Government evolution (3 types)
+  ✓ Research tech chain with priorities
+  ✓ City production building selection
+  ✓ Settler site evaluation + city founding
+  ✓ Military coordination (garrison + pursuit)
+  ✓ Population growth with granary system
+  ✓ Shield production & accumulation
+  ✓ Tax & science contributions
+  ✓ Happiness system
+  ✓ Corruption & waste penalties
+  ✓ Tech research & completion
+  ✓ Auto-disband bankrupt units
+
+MISSING/RECOMMENDED:
+  1. Advanced settler evaluation (resources, water access)
+  2. Diplomatic relations (peace treaties, alliances)
+  3. Advanced military (multi-unit attacks, naval units)
+  4. Wonder building (Palace, Great Library, etc.)
+  5. Trade routes & caravan logic
+  6. Distance-based corruption (from capital)
+  7. Worker unit AI (road/irrigation automation)
+  8. Late-game transitions (space race, science victory)
+  9. Disaster events (earthquakes, volcanic eruptions)
+  10. Unit upgrade chains (auto-upgrade when better unit available)
+
+═══════════════════════════════════════════════════════════════════════════════
