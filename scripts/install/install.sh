@@ -329,6 +329,10 @@ cd "${basedir}"/freeciv-web && \
   bash ./build.sh -B || \
   handle_error 7 "Failed to build freeciv-web server"
 
+echo "==== Building freecivx-server ===="
+(cd "${basedir}"/freecivx-server && mvn -q package -DskipTests) || \
+  handle_error 8 "Failed to build freecivx-server"
+
 echo "==== Setting up nginx ===="
 stop_svc nginx
 sudo rm -f /etc/nginx/sites-enabled/default
