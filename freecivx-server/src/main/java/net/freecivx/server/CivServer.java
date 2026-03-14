@@ -413,7 +413,8 @@ public class CivServer extends org.java_websocket.server.WebSocketServer {
         msg.put("message", message);
         msg.put("event", 95);
 
-        clients.get(conn_id).send(msg.toString());
+        WebSocket ws = clients.get(conn_id);
+        if (ws != null) ws.send(msg.toString());
     }
 
     /**
