@@ -31,10 +31,9 @@ import org.json.JSONArray;
 import java.net.InetSocketAddress;
 
 /**
- * AutoGame simulates a complete Freecivx game with {@value #NUM_AI_PLAYERS}
- * AI-controlled civilisations for {@value #NUM_TURNS} turns without any
- * WebSocket clients connected.  All network broadcasts are suppressed so
- * the simulation runs headlessly and can be used for automated testing or
+ * AutoGame simulates a complete Freecivx game with AI-controlled civilisations
+ * without any WebSocket clients connected.  All network broadcasts are suppressed
+ * so the simulation runs headlessly and can be used for automated testing or
  * game-balance analysis.
  *
  * <p>The class overrides every {@code send*()} method of {@link CivServer}
@@ -43,25 +42,72 @@ import java.net.InetSocketAddress;
  *
  * <p>Run {@link #main(String[])} to execute a full auto-game and print a
  * per-turn progress summary followed by a final civilisation report.
+ *
+ * <p>Command-line arguments (all optional):
+ * <ul>
+ *   <li>{@code -players N}  – number of AI civilisations (default: {@value #DEFAULT_AI_PLAYERS})</li>
+ *   <li>{@code -turns N}    – number of turns to simulate (default: {@value #DEFAULT_TURNS})</li>
+ *   <li>{@code -seed N}     – map &amp; game seed for reproducibility (default: random)
+ *                             Mirrors {@code gameseed} / {@code mapseed} in the C Freeciv
+ *                             server's {@code scripts/test-autogame.serv}.</li>
+ * </ul>
  */
 public class AutoGame {
 
-    /** Number of AI-controlled civilisations to create. */
-    public static final int NUM_AI_PLAYERS = 5;
+    /** Default number of AI civilisations. */
+    public static final int DEFAULT_AI_PLAYERS = 5;
 
-    /** Number of turns to simulate. */
-    public static final int NUM_TURNS = 100;
+    /** Default number of turns to simulate. */
+    public static final int DEFAULT_TURNS = 100;
+
+    /**
+     * Number of AI-controlled civilisations to create.
+     * @deprecated Use the command-line {@code -players} argument instead.
+     */
+    @Deprecated
+    public static final int NUM_AI_PLAYERS = DEFAULT_AI_PLAYERS;
+
+    /**
+     * Number of turns to simulate.
+     * @deprecated Use the command-line {@code -turns} argument instead.
+     */
+    @Deprecated
+    public static final int NUM_TURNS = DEFAULT_TURNS;
 
     private final Game game;
+    private final int numAiPlayers;
+    private final int numTurns;
+
+    /**
+     * Constructs an AutoGame backed by a headless (no-op network) server with
+     * default settings ({@value #DEFAULT_AI_PLAYERS} players,
+     * {@value #DEFAULT_TURNS} turns, random seed).
+     */
+    public AutoGame() {
+        this(DEFAULT_AI_PLAYERS, DEFAULT_TURNS, -1);
+    }
 
     /**
      * Constructs an AutoGame backed by a headless (no-op network) server.
-     * {@link Game#initGame()} is called during construction via the
-     * {@link CivServer} superclass constructor.
+     *
+     * @param numAiPlayers number of AI civilisations to create (≥ 1)
+     * @param numTurns     number of turns to simulate (≥ 1)
+     * @param seed         map/game seed; {@code -1} for a unique random game
+     *                     (mirrors {@code mapseed} / {@code gameseed} in the
+     *                     C Freeciv server test script)
      */
-    public AutoGame() {
+    public AutoGame(int numAiPlayers, int numTurns, int seed) {
+        this.numAiPlayers = numAiPlayers;
+        this.numTurns = numTurns;
         CivServer headlessServer = createHeadlessServer();
         this.game = headlessServer.getGame();
+        if (seed >= 0) {
+            // Regenerate the map with the specified seed for reproducibility.
+            // The map is initially generated with a random seed during CivServer
+            // construction; reinitializeMap() replaces it with a deterministic one.
+            // Mirrors "mapseed" / "gameseed" in the C Freeciv server test script.
+            this.game.reinitializeMap(seed);
+        }
     }
 
     // -------------------------------------------------------------------------
@@ -150,15 +196,14 @@ public class AutoGame {
     // -------------------------------------------------------------------------
 
     /**
-     * Initialises {@value #NUM_AI_PLAYERS} AI players and simulates
-     * {@value #NUM_TURNS} turns, printing a progress line every 10 turns and
-     * a final per-civilisation summary at the end.
+     * Initialises AI players and simulates turns, printing a progress line
+     * every 10 turns and a final per-civilisation summary at the end.
      */
     public void run() {
-        System.out.println("=== AutoGame: " + NUM_AI_PLAYERS + " AI players, "
-                + NUM_TURNS + " turns ===");
+        System.out.println("=== AutoGame: " + numAiPlayers + " AI players, "
+                + numTurns + " turns ===");
 
-        game.startAutoGame(NUM_AI_PLAYERS);
+        game.startAutoGame(numAiPlayers);
 
         System.out.println("Game initialised. "
                 + "Players: " + game.players.size()
@@ -166,10 +211,18 @@ public class AutoGame {
                 + " | Map: " + game.map.getXsize() + "x" + game.map.getYsize());
         System.out.println();
 
-        for (int t = 1; t <= NUM_TURNS; t++) {
+        for (int t = 1; t <= numTurns; t++) {
             game.turnDone();
             if (t == 1 || t % 10 == 0) {
                 logTurnSummary(t);
+            }
+            // Stop early if all players but one are eliminated
+            long alivePlayers = game.players.values().stream()
+                    .filter(Player::isAlive).count();
+            if (alivePlayers <= 1 && t > 1) {
+                System.out.printf("%nGame ended early: only %d civilisation(s) remaining after turn %d.%n",
+                        alivePlayers, t);
+                break;
             }
         }
 
@@ -181,24 +234,36 @@ public class AutoGame {
     private void logTurnSummary(int turn) {
         long alivePlayers = game.players.values().stream()
                 .filter(Player::isAlive).count();
-        System.out.printf("Turn %3d | Alive: %d/%d | Units: %3d | Cities: %3d%n",
-                turn, alivePlayers, game.players.size(),
+        long year = game.year;
+        // Classic Freeciv: turn 1 = 4000 BCE, each turn advances 20 years.
+        // historicalYear < 0 means BCE, > 0 means CE.
+        long historicalYear = -4000L + (year - 1) * 20L;
+        String yearStr = historicalYear <= 0
+                ? (-historicalYear) + " BCE"
+                : historicalYear + " CE";
+        System.out.printf("Turn %3d (%s) | Alive: %d/%d | Units: %3d | Cities: %3d%n",
+                turn, yearStr, alivePlayers, game.players.size(),
                 game.units.size(), game.cities.size());
     }
 
     /** Prints a per-civilisation report after the last turn. */
     private void logFinalSummary() {
-        System.out.println("=== Final Summary after " + NUM_TURNS + " turns ===");
+        System.out.println("=== Final Summary after " + game.turn + " turns ===");
         game.players.values().stream()
-                .sorted((a, b) -> Long.compare(
-                        countCities(b), countCities(a)))   // rank by cities descending
+                .sorted((a, b) -> Long.compare(countCities(b), countCities(a)))
                 .forEach(p -> {
                     long unitCount = countUnits(p);
                     long cityCount = countCities(p);
+                    String status = p.isAlive() ? "alive" : "eliminated";
+                    int govId = p.getGovernmentId();
+                    String govName = game.governments.containsKey((long) govId)
+                            ? game.governments.get((long) govId).getName()
+                            : "Gov" + govId;
                     System.out.printf("  %-14s | Cities: %2d | Units: %2d"
-                            + " | Techs: %2d | Gold: %4d%n",
+                                    + " | Techs: %2d | Gold: %4d | Gov: %-12s | %s%n",
                             p.getUsername(), cityCount, unitCount,
-                            p.getKnownTechs().size(), p.getGold());
+                            p.getKnownTechs().size(), p.getGold(),
+                            govName, status);
                 });
         System.out.println("=== End of AutoGame ===");
     }
@@ -220,9 +285,30 @@ public class AutoGame {
     /**
      * Entry point for running a standalone auto-game simulation.
      *
-     * @param args command-line arguments (unused)
+     * <p>Accepted arguments (all optional):
+     * <ul>
+     *   <li>{@code -players N}  – number of AI civilisations</li>
+     *   <li>{@code -turns N}    – number of turns</li>
+     *   <li>{@code -seed N}     – reproducibility seed (mirrors {@code mapseed}
+     *                             and {@code gameseed} in the C Freeciv server)</li>
+     * </ul>
+     *
+     * @param args command-line arguments
      */
     public static void main(String[] args) {
-        new AutoGame().run();
+        int players = DEFAULT_AI_PLAYERS;
+        int turns   = DEFAULT_TURNS;
+        int seed    = -1;
+
+        for (int i = 0; i < args.length - 1; i++) {
+            switch (args[i]) {
+                case "-players": players = Integer.parseInt(args[i + 1]); i++; break;
+                case "-turns":   turns   = Integer.parseInt(args[i + 1]); i++; break;
+                case "-seed":    seed    = Integer.parseInt(args[i + 1]); i++; break;
+                default: break;
+            }
+        }
+
+        new AutoGame(players, turns, seed).run();
     }
 }

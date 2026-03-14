@@ -30,6 +30,7 @@ import net.freecivx.game.UnitType;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * Turn-based city processing: production completion, population growth,
@@ -41,6 +42,21 @@ public class CityTurn {
 
     /** Minimum unit production cost in shields. */
     private static final int MIN_UNIT_COST = 10;
+
+    /**
+     * Improvement ID for Barracks.  Units in a city with Barracks restore to
+     * full HP each turn.  Mirrors the {@code HP_Regen = 100} effect applied by
+     * Barracks in the classic Freeciv {@code effects.ruleset}.
+     */
+    private static final int IMPR_BARRACKS = 1;
+
+    /**
+     * HP restored per turn (as a fraction of max HP) when a unit is in a
+     * friendly city without Barracks.  Provides modest recovery without
+     * full-heal, mirroring the baseline regen in the C Freeciv server.
+     * Value 5 → restore 1/5 (20%) of max HP per turn.
+     */
+    private static final int HP_RESTORE_DIVISOR = 5;
 
     /**
      * Returns the granary size (food needed to grow) for a city of the given size.
@@ -202,6 +218,10 @@ public class CityTurn {
      * @param game the current game state
      */
     public static void updateAllCities(Game game) {
+        // Restore unit HP for units in friendly cities before other processing.
+        // Mirrors unit_restore_hitpoints() in the C Freeciv server's unittools.c.
+        restoreUnitHitpoints(game);
+
         // Snapshot city IDs to avoid concurrent-modification issues
         for (long cityId : new ArrayList<>(game.cities.keySet())) {
             cityGrowth(game, cityId);
@@ -355,6 +375,49 @@ public class CityTurn {
         // Tax rate = 100% - scienceRate (simplified: no luxury)
         int taxRate = 100 - player.getScienceRate();
         return trade * taxRate / 100;
+    }
+
+    /**
+     * Restores HP to units that are garrisoned in a friendly city at the
+     * start of the turn.  Mirrors {@code unit_restore_hitpoints()} in the C
+     * Freeciv server's {@code server/unittools.c}:
+     * <ul>
+     *   <li>A city with <b>Barracks</b> (improvement id {@value #IMPR_BARRACKS})
+     *       provides full HP restoration in one turn
+     *       ({@code EFT_HP_REGEN = 100} in {@code effects.ruleset}).</li>
+     *   <li>A city without Barracks restores 1/{@value #HP_RESTORE_DIVISOR} of
+     *       max HP per turn (modest baseline recovery).</li>
+     * </ul>
+     * Only units belonging to the city owner benefit; enemy units occupying a
+     * tile with a friendly city are not healed.
+     *
+     * @param game the current game state
+     */
+    public static void restoreUnitHitpoints(Game game) {
+        // Build a fast tileId → City lookup restricted to owned cities.
+        Map<Long, City> cityByTile = game.cities.values().stream()
+                .collect(Collectors.toMap(City::getTile, c -> c, (a, b) -> a));
+
+        for (Unit unit : game.units.values()) {
+            UnitType utype = game.unitTypes.get((long) unit.getType());
+            if (utype == null) continue;
+            int maxHp = utype.getHp();
+            if (unit.getHp() >= maxHp) continue; // Already at full HP
+
+            // Unit must be in a friendly city to receive healing
+            City city = cityByTile.get(unit.getTile());
+            if (city == null) continue;
+            if (city.getOwner() != unit.getOwner()) continue;
+
+            if (city.hasImprovement(IMPR_BARRACKS)) {
+                // Barracks: full heal in one turn (EFT_HP_REGEN = 100%)
+                unit.setHp(maxHp);
+            } else {
+                // No Barracks: restore 20% of max HP (baseline regen)
+                int restore = Math.max(1, maxHp / HP_RESTORE_DIVISOR);
+                unit.setHp(Math.min(maxHp, unit.getHp() + restore));
+            }
+        }
     }
 
     /**

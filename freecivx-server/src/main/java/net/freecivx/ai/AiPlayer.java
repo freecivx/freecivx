@@ -23,6 +23,7 @@ import net.freecivx.game.City;
 import net.freecivx.game.Game;
 import net.freecivx.game.Improvement;
 import net.freecivx.game.Player;
+import net.freecivx.game.Technology;
 import net.freecivx.game.Tile;
 import net.freecivx.game.Unit;
 import net.freecivx.game.UnitType;
@@ -155,6 +156,10 @@ public class AiPlayer {
 
     /** Performs all AI actions for the current turn (runs on the AI thread). */
     private void executeAiTurns() {
+        // Phase 0: Manage government evolution when better governments are available.
+        // Mirrors dai_manage_government() in ai/default/daicity.c.
+        manageAiGovernments();
+
         // Phase 1: Choose research goals for AI players (inspired by aitech.c).
         pickResearchGoals();
 
@@ -188,6 +193,64 @@ public class AiPlayer {
             while (unit.getMovesleft() > 0 && movesUsed < utype.getMoveRate()) {
                 if (!moveUnitRandomly(unit, utype)) break;
                 movesUsed++;
+            }
+        }
+    }
+
+    // =========================================================================
+    // Government management (inspired by dai_manage_government() in daicity.c)
+    // =========================================================================
+
+    /**
+     * Upgrades the government of every AI player that has researched a better
+     * government technology.  Mirrors the {@code dai_manage_government()} logic
+     * in {@code ai/default/daicity.c}: the AI moves to the best government
+     * it can sustain once the required tech is available.
+     *
+     * <p>Upgrade path (classic Freeciv):
+     * <ol>
+     *   <li>Despotism (default) → <b>Monarchy</b> when "Monarchy" tech is known</li>
+     *   <li>Monarchy → <b>Republic</b> when "The Republic" tech is known</li>
+     * </ol>
+     */
+    private void manageAiGovernments() {
+        for (Player player : new ArrayList<>(game.players.values())) {
+            if (!player.isAi()) continue;
+            upgradeGovernmentIfPossible(player);
+        }
+    }
+
+    /**
+     * Checks whether the given AI player can adopt a superior government and
+     * switches to it.  The government names and tech requirements mirror the
+     * classic Freeciv ruleset.
+     *
+     * @param player the AI player whose government may be upgraded
+     */
+    private void upgradeGovernmentIfPossible(Player player) {
+        int currentGov = player.getGovernmentId();
+
+        if (currentGov <= 1) {
+            // Try to advance from Despotism (1) to Monarchy (2)
+            for (Map.Entry<Long, Technology> entry : game.techs.entrySet()) {
+                if ("Monarchy".equals(entry.getValue().getName())
+                        && player.hasTech(entry.getKey())) {
+                    player.setGovernmentId(2); // Monarchy
+                    game.getServer().sendPlayerInfoAll(player);
+                    return;
+                }
+            }
+        }
+
+        if (currentGov == 2) {
+            // Try to advance from Monarchy (2) to Republic (4)
+            for (Map.Entry<Long, Technology> entry : game.techs.entrySet()) {
+                if ("The Republic".equals(entry.getValue().getName())
+                        && player.hasTech(entry.getKey())) {
+                    player.setGovernmentId(4); // Republic
+                    game.getServer().sendPlayerInfoAll(player);
+                    return;
+                }
             }
         }
     }
