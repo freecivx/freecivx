@@ -453,7 +453,7 @@ public class Game {
         unitTypes.get(17L).setUpgradesTo(18); // Trireme    → Frigate
 
         improvements.put(0L,  new Improvement(0,  "Palace",      "Palace",      "b.palace",      "b.fallback", 1, 100, 0, 0, "b_palace",      "b_fallback", "The Palace",      -1));
-        improvements.put(1L,  new Improvement(1,  "Barracks",    "Barracks",    "b.barracks",    "b.fallback", 2,  40, 1, 0, "b_barracks",    "b_fallback", "The Barracks",     3));
+        improvements.put(1L,  new Improvement(1,  "Barracks",    "Barracks",    "b.barracks",    "b.fallback", 2,  40, 1, 0, "b_barracks",    "b_fallback", "The Barracks",    -1));
         improvements.put(2L,  new Improvement(2,  "Granary",     "Granary",     "b.granary",     "b.fallback", 2,  60, 1, 0, "b_granary",     "b_fallback", "The Granary",     10));
         improvements.put(3L,  new Improvement(3,  "Library",     "Library",     "b.library",     "b.fallback", 2,  80, 1, 0, "b_library",     "b_fallback", "The Library",      7));
         improvements.put(4L,  new Improvement(4,  "Marketplace", "Marketplace", "b.marketplace", "b.fallback", 2, 100, 1, 0, "b_marketplace", "b_fallback", "The Marketplace",  8));
@@ -547,7 +547,13 @@ public class Game {
         checkPlayerElimination();
 
         server.sendGameInfoAll(year, turn, phase);
-        server.sendMessageAll("Turn " + turn + " has started (Year " + (4000 + year * 20) + " BC).");
+        // Classic Freeciv: year 4000 BCE at turn 1, each turn advances 20 years.
+        // Mirrors the calendar used in AutoGame.logTurnSummary().
+        long historicalYear = 4000L - (year - 1) * 20L;
+        String yearStr = historicalYear > 0
+                ? historicalYear + " BC"
+                : Math.abs(historicalYear) + " AD";
+        server.sendMessageAll("Turn " + turn + " has started (Year " + yearStr + ").");
         server.sendBeginTurnAll();
         server.sendStartPhaseAll();
     }

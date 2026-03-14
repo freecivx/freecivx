@@ -237,35 +237,62 @@ public class AutoGame {
         long year = game.year;
         // Classic Freeciv: turn 1 = 4000 BCE, each turn advances 20 years.
         // historicalYear < 0 means BCE, > 0 means CE.
-        long historicalYear = -4000L + (year - 1) * 20L;
-        String yearStr = historicalYear <= 0
-                ? (-historicalYear) + " BCE"
-                : historicalYear + " CE";
-        System.out.printf("Turn %3d (%s) | Alive: %d/%d | Units: %3d | Cities: %3d%n",
+        long historicalYear = 4000L - (year - 1) * 20L;
+        String yearStr = historicalYear > 0
+                ? historicalYear + " BCE"
+                : Math.abs(historicalYear) + " CE";
+        // Find the leading civilisation by score for the turn summary.
+        Player leader = game.players.values().stream()
+                .filter(Player::isAlive)
+                .max((a, b) -> Long.compare(computeScore(a), computeScore(b)))
+                .orElse(null);
+        String leaderInfo = leader != null
+                ? " | Leader: " + leader.getUsername()
+                        + " (" + countCities(leader) + " cities)"
+                : "";
+        System.out.printf("Turn %3d (%s) | Alive: %d/%d | Units: %3d | Cities: %3d%s%n",
                 turn, yearStr, alivePlayers, game.players.size(),
-                game.units.size(), game.cities.size());
+                game.units.size(), game.cities.size(), leaderInfo);
     }
 
     /** Prints a per-civilisation report after the last turn. */
     private void logFinalSummary() {
         System.out.println("=== Final Summary after " + game.turn + " turns ===");
         game.players.values().stream()
-                .sorted((a, b) -> Long.compare(countCities(b), countCities(a)))
+                .sorted((a, b) -> Long.compare(computeScore(b), computeScore(a)))
                 .forEach(p -> {
                     long unitCount = countUnits(p);
                     long cityCount = countCities(p);
+                    long score = computeScore(p);
                     String status = p.isAlive() ? "alive" : "eliminated";
                     int govId = p.getGovernmentId();
                     String govName = game.governments.containsKey((long) govId)
                             ? game.governments.get((long) govId).getName()
                             : "Gov" + govId;
                     System.out.printf("  %-14s | Cities: %2d | Units: %2d"
-                                    + " | Techs: %2d | Gold: %4d | Gov: %-12s | %s%n",
+                                    + " | Techs: %2d | Gold: %4d | Gov: %-12s | Score: %4d | %s%n",
                             p.getUsername(), cityCount, unitCount,
                             p.getKnownTechs().size(), p.getGold(),
-                            govName, status);
+                            govName, score, status);
                 });
         System.out.println("=== End of AutoGame ===");
+    }
+
+    /**
+     * Computes a civilisation score to rank players in the final summary.
+     * Mirrors the simplified score used by the C Freeciv server's
+     * {@code score.c}: cities × 5 + techs × 2 + (gold / 10).
+     * A living civilisation receives an additional 50-point bonus.
+     *
+     * @param p the player to score
+     * @return a non-negative integer score
+     */
+    private long computeScore(Player p) {
+        long cityScore = countCities(p) * 5L;
+        long techScore = p.getKnownTechs().size() * 2L;
+        long goldScore = Math.max(0, p.getGold()) / 10L;
+        long aliveBonus = p.isAlive() ? 50L : 0L;
+        return cityScore + techScore + goldScore + aliveBonus;
     }
 
     private long countUnits(Player p) {

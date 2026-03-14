@@ -133,17 +133,17 @@ public class CityTurn {
      * Tile extras bitvector index for Road.
      * Matches extras entry 6 registered in {@code Game.initGame()}.
      */
-    private static final int EXTRA_BIT_ROAD = 6;
+    public static final int EXTRA_BIT_ROAD = 6;
     /**
      * Tile extras bitvector index for Irrigation.
      * Matches extras entry 9 registered in {@code Game.initGame()}.
      */
-    private static final int EXTRA_BIT_IRRIGATION = 9;
+    public static final int EXTRA_BIT_IRRIGATION = 9;
     /**
      * Tile extras bitvector index for Mine.
      * Matches extras entry 1 registered in {@code Game.initGame()}.
      */
-    private static final int EXTRA_BIT_MINE = 1;
+    public static final int EXTRA_BIT_MINE = 1;
 
     /**
      * Returns the granary size (food needed to grow) for a city of the given size.
@@ -164,6 +164,27 @@ public class CityTurn {
         // Mirrors city_granary_size() in C Freeciv server's common/city.c.
         // RS_DEFAULT_GRANARY_FOOD_INI=20, RS_DEFAULT_GRANARY_FOOD_INC=10, foodbox=100.
         return 10 * citySize + 10;
+    }
+
+    /**
+     * Finds a city improvement's numeric ID by its display name.
+     * This is necessary because improvement IDs differ between the loaded
+     * ruleset (alphabetical order) and the hardcoded fallback dataset.
+     * Mirrors the name-based building lookup in the C Freeciv server's
+     * {@code server/ruleset.c}.
+     *
+     * @param game     the current game state
+     * @param name     the improvement display name (case-insensitive)
+     * @param fallback the ID to return when the name is not found
+     * @return the improvement's numeric ID, or {@code fallback} if not found
+     */
+    static int findImprId(Game game, String name, int fallback) {
+        for (Map.Entry<Long, Improvement> e : game.improvements.entrySet()) {
+            if (name.equalsIgnoreCase(e.getValue().getName())) {
+                return e.getKey().intValue();
+            }
+        }
+        return fallback;
     }
 
     /**
@@ -195,9 +216,10 @@ public class CityTurn {
             Government gov = game.governments.get((long) player.getGovernmentId());
             if (gov != null) {
                 int wastePct = gov.getCorruptionPct() / 2;
-                // Courthouse (id=9) also halves production waste, mirroring the
+                // Courthouse also halves production waste, mirroring the
                 // C server's Courthouse effect on both corruption and waste.
-                if (city.hasImprovement(IMPR_COURTHOUSE)) {
+                int courthouseId = findImprId(game, "Courthouse", IMPR_COURTHOUSE);
+                if (city.hasImprovement(courthouseId)) {
                     wastePct /= 2;
                 }
                 if (wastePct > 0) {
@@ -318,10 +340,11 @@ public class CityTurn {
         City city = game.cities.get(cityId);
         if (city == null) return;
 
-        // Food surplus per turn: base 2 (grassland city center) + 1 per Granary (id=2)
+        // Food surplus per turn: base 2 (grassland city center) + 1 per Granary
         // Mirrors food surplus[O_FOOD] calculation in C server (simplified).
+        int granaryImprId = findImprId(game, "Granary", IMPR_GRANARY);
         int foodSurplus = 2;
-        if (city.hasImprovement(2)) { // Granary doubles food retention and adds output
+        if (city.hasImprovement(granaryImprId)) { // Granary doubles food retention and adds output
             foodSurplus += 1;
         }
 
@@ -331,7 +354,8 @@ public class CityTurn {
         if (city.getFoodStock() >= granarySize) {
             // Cities above size 8 require an Aqueduct to grow further.
             // Mirrors city_can_grow_to() check in C Freeciv server.
-            if (city.getSize() >= 8 && !city.hasImprovement(8)) { // 8 = Aqueduct
+            int aqueductId = findImprId(game, "Aqueduct", 8);
+            if (city.getSize() >= 8 && !city.hasImprovement(aqueductId)) {
                 // Cap food stock at granary size; cannot grow without Aqueduct
                 city.setFoodStock(granarySize);
                 Notify.notifyPlayer(game, game.getServer(), city.getOwner(),
@@ -343,7 +367,7 @@ public class CityTurn {
                 // Granary improvement retains 50% of the new granary capacity after growth.
                 // The C server also computes savings based on the new (larger) size:
                 //   city_size_add(pcity, 1); ... new_food = city_granary_size(new_size) * savings_pct / 100
-                if (city.hasImprovement(2)) {
+                if (city.hasImprovement(granaryImprId)) {
                     city.setFoodStock(cityGranarySize(city.getSize()) / 2);
                 } else {
                     city.setFoodStock(0);
@@ -498,10 +522,12 @@ public class CityTurn {
         // University (effect_university): +150% additional when BOTH Library and
         // University are present. (Requires Library as a prerequisite.)
         // Combined: Library alone = ×2; Library+University = ×(100+100+150)/100 = ×3.5.
+        int libraryId    = findImprId(game, "Library",    3);
+        int universityId = findImprId(game, "University", 13);
         int scienceBonus = 0;
-        if (city.hasImprovement(3)) {
+        if (city.hasImprovement(libraryId)) {
             scienceBonus += 100; // Library: +100% (effect_library)
-            if (city.hasImprovement(13)) {
+            if (city.hasImprovement(universityId)) {
                 scienceBonus += 150; // University+Library: +150% additional (effect_university)
             }
         }
@@ -510,13 +536,14 @@ public class CityTurn {
         // Apply government corruption to science output.
         // Mirrors the C Freeciv server where all trade output (gold, science,
         // luxury) is reduced by the government's corruption factor before being
-        // split among the three output channels.  Courthouse (id 9) halves it.
+        // split among the three output channels.  Courthouse halves it.
         Player player = game.players.get(city.getOwner());
         if (player != null) {
             Government gov = game.governments.get((long) player.getGovernmentId());
             if (gov != null) {
                 int corruptionPct = gov.getCorruptionPct();
-                if (city.hasImprovement(IMPR_COURTHOUSE)) {
+                int courthouseId = findImprId(game, "Courthouse", IMPR_COURTHOUSE);
+                if (city.hasImprovement(courthouseId)) {
                     corruptionPct /= 2;
                 }
                 science = science * (100 - corruptionPct) / 100;
@@ -557,10 +584,12 @@ public class CityTurn {
         // Marketplace (effect_marketplace): +50% gold.
         // Bank (effect_bank): +50% additional gold when Marketplace is also present.
         // Combined: Marketplace alone = ×1.5; Marketplace+Bank = ×(100+50+50)/100 = ×2.0.
+        int marketplaceId = findImprId(game, "Marketplace", 4);
+        int bankId        = findImprId(game, "Bank",        5);
         int goldBonus = 0;
-        if (city.hasImprovement(4)) {
+        if (city.hasImprovement(marketplaceId)) {
             goldBonus += 50; // Marketplace: +50% (effect_marketplace)
-            if (city.hasImprovement(5)) {
+            if (city.hasImprovement(bankId)) {
                 goldBonus += 50; // Bank (requires Marketplace): +50% additional (effect_bank)
             }
         }
@@ -570,7 +599,8 @@ public class CityTurn {
         Government gov = game.governments.get((long) player.getGovernmentId());
         if (gov != null) {
             int corruptionPct = gov.getCorruptionPct();
-            if (city.hasImprovement(IMPR_COURTHOUSE)) {
+            int courthouseId = findImprId(game, "Courthouse", IMPR_COURTHOUSE);
+            if (city.hasImprovement(courthouseId)) {
                 corruptionPct /= 2;
             }
             trade = trade * (100 - corruptionPct) / 100;
@@ -613,9 +643,11 @@ public class CityTurn {
 
         // Apply trade bonuses from Marketplace and Bank (same as tax).
         int tradeBonus = 0;
-        if (city.hasImprovement(4)) {
+        int marketplaceId = findImprId(game, "Marketplace", 4);
+        int bankId        = findImprId(game, "Bank",        5);
+        if (city.hasImprovement(marketplaceId)) {
             tradeBonus += 50; // Marketplace: +50%
-            if (city.hasImprovement(5)) {
+            if (city.hasImprovement(bankId)) {
                 tradeBonus += 50; // Bank (requires Marketplace): +50% additional
             }
         }
@@ -625,7 +657,8 @@ public class CityTurn {
         Government gov = game.governments.get((long) player.getGovernmentId());
         if (gov != null) {
             int corruptionPct = gov.getCorruptionPct();
-            if (city.hasImprovement(IMPR_COURTHOUSE)) {
+            int courthouseId = findImprId(game, "Courthouse", IMPR_COURTHOUSE);
+            if (city.hasImprovement(courthouseId)) {
                 corruptionPct /= 2;
             }
             trade = trade * (100 - corruptionPct) / 100;
@@ -654,6 +687,8 @@ public class CityTurn {
         Map<Long, City> cityByTile = game.cities.values().stream()
                 .collect(Collectors.toMap(City::getTile, c -> c, (a, b) -> a));
 
+        int barracksId = findImprId(game, "Barracks", IMPR_BARRACKS);
+
         for (Unit unit : game.units.values()) {
             UnitType utype = game.unitTypes.get((long) unit.getType());
             if (utype == null) continue;
@@ -665,7 +700,7 @@ public class CityTurn {
             if (city == null) continue;
             if (city.getOwner() != unit.getOwner()) continue;
 
-            if (city.hasImprovement(IMPR_BARRACKS)) {
+            if (city.hasImprovement(barracksId)) {
                 // Barracks: full heal in one turn (EFT_HP_REGEN = 100%)
                 unit.setHp(maxHp);
             } else {
@@ -748,10 +783,13 @@ public class CityTurn {
         //   Colosseum (id=11): EFT_MAKE_CONTENT = 3
         //   Cathedral (id=12): EFT_MAKE_CONTENT = 3
         // Mirrors citizen_content_buildings() in common/city.c.
+        int templeId    = findImprId(game, "Temple",    IMPR_TEMPLE);
+        int colosseumId = findImprId(game, "Colosseum", IMPR_COLOSSEUM);
+        int cathedralId = findImprId(game, "Cathedral", IMPR_CATHEDRAL);
         int makeContent = 0;
-        if (city.hasImprovement(IMPR_TEMPLE))    makeContent += 1;
-        if (city.hasImprovement(IMPR_COLOSSEUM)) makeContent += 3;
-        if (city.hasImprovement(IMPR_CATHEDRAL)) makeContent += 3;
+        if (city.hasImprovement(templeId))    makeContent += 1;
+        if (city.hasImprovement(colosseumId)) makeContent += 3;
+        if (city.hasImprovement(cathedralId)) makeContent += 3;
 
         // Net unhappy citizens after applying building effects
         int netUnhappy = Math.max(0, baseUnhappy - makeContent);
