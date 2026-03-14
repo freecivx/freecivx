@@ -86,6 +86,18 @@ public class CityTurn {
     private static final int IMPR_CATHEDRAL  = 12;
 
     /**
+     * Luxury goods cost per citizen mood upgrade.
+     * Mirrors {@code RS_DEFAULT_HAPPY_COST = 2} in the C Freeciv server's
+     * {@code common/game.h} and the classic {@code game.ruleset}.
+     * Each {@value #HAPPY_COST} luxury points converts one content citizen to
+     * happy.  Two content→happy upgrades worth of luxury (i.e.
+     * {@code 2 * HAPPY_COST}) instead converts one unhappy citizen directly
+     * to happy (a two-level upgrade).  See {@code citizen_luxury_happy()} in
+     * {@code common/city.c}.
+     */
+    private static final int HAPPY_COST = 2;
+
+    /**
      * Returns the granary size (food needed to grow) for a city of the given size.
      * Mirrors {@code city_granary_size} in the C Freeciv server's {@code common/city.c}.
      * Uses the classic Freeciv ruleset defaults:
@@ -423,13 +435,65 @@ public class CityTurn {
             trade = trade * (100 - corruptionPct) / 100;
         }
 
-        // Tax rate = 100% - scienceRate (simplified: no luxury)
-        int taxRate = 100 - player.getScienceRate();
-        return trade * taxRate / 100;
+        // Tax rate: use the stored tax rate (= 100 - scienceRate - luxuryRate).
+        // This ensures that luxury spending reduces gold income correctly.
+        // Mirrors the economic split in the C Freeciv server (economic.tax).
+        return trade * player.getTaxRate() / 100;
     }
 
     /**
-     * Restores HP to units that are garrisoned in a friendly city at the
+     * Calculates and returns the luxury goods produced by a city this turn.
+     * Luxury goods make citizens happy: each {@value #HAPPY_COST} luxury points
+     * converts one content citizen to happy, or one unhappy citizen to content.
+     * This mirrors {@code citizen_happy_luxury()} in the C Freeciv server's
+     * {@code common/city.c}, where {@code game.info.happy_cost = 2} in the
+     * classic ruleset.
+     *
+     * <p>The luxury output comes from the city's trade pool (same base as gold
+     * output) multiplied by the player's luxury rate.  Building bonuses from
+     * Marketplace and Bank also apply, since they boost the trade output that
+     * feeds into the luxury split.
+     *
+     * @param game   the current game state
+     * @param cityId the ID of the city to evaluate
+     * @return the amount of luxury goods produced this turn
+     */
+    public static int cityLuxuryContribution(Game game, long cityId) {
+        City city = game.cities.get(cityId);
+        if (city == null) return 0;
+
+        Player player = game.players.get(city.getOwner());
+        if (player == null) return 0;
+
+        if (player.getLuxuryRate() == 0) return 0;
+
+        // Base trade: 1 trade per population (same base as cityTaxContribution)
+        int trade = city.getSize();
+
+        // Apply trade bonuses from Marketplace and Bank (same as tax).
+        int tradeBonus = 0;
+        if (city.hasImprovement(4)) {
+            tradeBonus += 50; // Marketplace: +50%
+            if (city.hasImprovement(5)) {
+                tradeBonus += 50; // Bank (requires Marketplace): +50% additional
+            }
+        }
+        trade = trade * (100 + tradeBonus) / 100;
+
+        // Apply corruption (reduces effective trade before the rate split).
+        Government gov = game.governments.get((long) player.getGovernmentId());
+        if (gov != null) {
+            int corruptionPct = gov.getCorruptionPct();
+            if (city.hasImprovement(IMPR_COURTHOUSE)) {
+                corruptionPct /= 2;
+            }
+            trade = trade * (100 - corruptionPct) / 100;
+        }
+
+        return trade * player.getLuxuryRate() / 100;
+    }
+
+    /**
      * start of the turn.  Mirrors {@code unit_restore_hitpoints()} in the C
      * Freeciv server's {@code server/unittools.c}:
      * <ul>
@@ -473,11 +537,11 @@ public class CityTurn {
 
     /**
      * Calculates and updates the happiness state of a city based on its size,
-     * government type, and happiness-producing buildings.
+     * government type, happiness-producing buildings, and luxury goods output.
      *
-     * <p>The calculation mirrors the core of {@code citizen_base_mood()} and
-     * {@code citizen_content_buildings()} in the C Freeciv server's
-     * {@code common/city.c}:
+     * <p>The calculation mirrors the core of {@code citizen_base_mood()},
+     * {@code citizen_content_buildings()}, and {@code citizen_happy_luxury()} in
+     * the C Freeciv server's {@code common/city.c}:
      * <ol>
      *   <li>A base number of unhappy citizens is derived from the city size and
      *       the current government.  More permissive governments (Republic,
@@ -487,6 +551,13 @@ public class CityTurn {
      *       Colosseum = 3, Cathedral = 3) converts unhappy citizens back to
      *       content, mirroring {@code citizen_content_buildings()} in
      *       {@code common/city.c}.</li>
+     *   <li>Luxury goods output (trade × player's luxury rate) further reduces
+     *       unhappiness: each {@value #HAPPY_COST} luxury points converts one
+     *       unhappy citizen to content, mirroring {@code citizen_happy_luxury()}
+     *       with {@code happy_cost = 2} from the classic Freeciv ruleset.
+     *       Note: the C server also upgrades content→happy via luxury, but since
+     *       this implementation tracks only a boolean happy/unhappy flag that
+     *       upgrade has no additional visible effect.</li>
      *   <li>The city's {@code happy}/{@code unhappy} flags are updated to
      *       reflect the final citizen counts, mirroring {@code city_happy()} and
      *       {@code city_unhappy()} in the C server.</li>
@@ -543,6 +614,19 @@ public class CityTurn {
 
         // Net unhappy citizens after applying building effects
         int netUnhappy = Math.max(0, baseUnhappy - makeContent);
+
+        // Apply luxury-goods happiness effect.
+        // Mirrors citizen_happy_luxury() / citizen_luxury_happy() in common/city.c.
+        // Each HAPPY_COST (= 2) luxury points reduces netUnhappy by 1.
+        // In the C server luxury can also convert content citizens to happy, but
+        // since this implementation only tracks a boolean happy/unhappy flag (not
+        // per-citizen counts), that content→happy upgrade has no additional effect
+        // here and is intentionally omitted as a known simplification.
+        int luxury = cityLuxuryContribution(game, cityId);
+        if (luxury > 0 && netUnhappy > 0) {
+            int happyFromLuxury = luxury / HAPPY_COST;
+            netUnhappy = Math.max(0, netUnhappy - happyFromLuxury);
+        }
 
         // Determine happiness flags.
         // city_happy()  (C server): no angry, no unhappy, happy >= (size+1)/2

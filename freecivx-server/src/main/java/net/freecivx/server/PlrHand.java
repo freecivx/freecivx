@@ -138,11 +138,10 @@ public class PlrHand {
     }
 
     /**
-     * Handles a PACKET_PLAYER_RATES packet, updating the player's science and
-     * tax rates.  The science rate must be between 0 and 100 inclusive and the
-     * sum of science, tax, and luxury rates must equal 100 (luxury is ignored in
-     * this simplified model).  Mirrors {@code handle_player_rates} in the C Freeciv
-     * server's {@code plrhand.c}.
+     * Handles a PACKET_PLAYER_RATES packet, updating the player's science,
+     * luxury, and tax rates.  Each rate must be between 0 and 100 inclusive
+     * and the sum of all three must equal 100.  Mirrors
+     * {@code handle_player_rates} in the C Freeciv server's {@code plrhand.c}.
      * The client sends JSON fields: {@code tax}, {@code luxury}, {@code science}.
      *
      * @param game   the current game state
@@ -176,6 +175,8 @@ public class PlrHand {
         }
 
         player.setScienceRate(science);
+        player.setLuxuryRate(luxury);
+        player.setTaxRate(tax);
         TechTools.sendResearchInfo(game, game.getServer(), connId, connId);
         game.getServer().sendPlayerInfoAll(player);
     }
