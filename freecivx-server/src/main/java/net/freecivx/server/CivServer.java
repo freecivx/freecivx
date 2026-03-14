@@ -193,11 +193,7 @@ public class CivServer extends org.java_websocket.server.WebSocketServer {
 
         if (pid == Packets.PACKET_CITY_NAME_SUGGESTION_REQ) {
             int unit_id = json.optInt("unit_id");
-            JSONObject msg = new JSONObject();
-            msg.put("pid", Packets.PACKET_CITY_NAME_SUGGESTION_INFO);
-            msg.put("name", "Paris"); // TODO
-            msg.put("unit_id", unit_id);
-            clients.get(connId).send(msg.toString());
+            CityHand.handleCityNameSuggestionReq(game, connId, unit_id);
         }
 
         if (pid == Packets.PACKET_WEB_GOTO_PATH_REQ) {
@@ -209,8 +205,9 @@ public class CivServer extends org.java_websocket.server.WebSocketServer {
         if (pid == Packets.PACKET_UNIT_DO_ACTION) {
             long actor_id = json.optInt("actor_id");
             long target_id = json.optInt("target_id");
-            String actionName = json.optString("name");
-            UnitHand.handleUnitDoAction(game, connId, actor_id, target_id, actionName);
+            int action_type = json.optInt("action_type");
+            String name = json.optString("name");
+            UnitHand.handleUnitDoAction(game, connId, actor_id, target_id, action_type, name);
         }
 
         if (pid == Packets.PACKET_UNIT_CHANGE_ACTIVITY) {

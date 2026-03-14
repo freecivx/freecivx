@@ -32,15 +32,15 @@ import java.util.List;
 public class Actions {
 
     /** Action ID: found a new city with a settler unit. */
-    public static final int ACTION_FOUND_CITY = 28;
+    public static final int ACTION_FOUND_CITY = 27;
     /** Action ID: join an existing city with a migrants unit. */
-    public static final int ACTION_JOIN_CITY = 29;
+    public static final int ACTION_JOIN_CITY = 28;
     /** Action ID: build a road on the current tile. */
-    public static final int ACTION_ROAD = 64;
+    public static final int ACTION_ROAD = 61;
     /** Action ID: build an irrigation improvement on the tile. */
-    public static final int ACTION_IRRIGATE = 65;
+    public static final int ACTION_IRRIGATE = 62;
     /** Action ID: build a mine on the current tile. */
-    public static final int ACTION_MINE = 66;
+    public static final int ACTION_MINE = 63;
     /** Action ID: fortify the unit on its current tile. */
     public static final int ACTION_FORTIFY = 57;
     /** Action ID: attack an enemy unit or city. */
