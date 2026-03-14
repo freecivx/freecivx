@@ -76,28 +76,32 @@ public class Game {
     public void initGame() {
         map = new WorldMap(45, 45);
 
-        // Initialize Technologies (10+)
-        techs.put(0L, new Technology("Alphabet", "a.alphabet", "Alphabet"));
-        techs.put(1L, new Technology("Mathematics", "a.mathematics", "Mathematics"));
-        techs.put(2L, new Technology("The Republic", "a.the_republic", "The Republic"));
-        techs.put(3L, new Technology("Masonry", "a.masonry", "Masonry"));
-        techs.put(4L, new Technology("Bronze Working", "a.bronze_working", "Bronze Working"));
-        techs.put(5L, new Technology("Iron Working", "a.iron_working", "Iron Working"));
-        techs.put(6L, new Technology("The Wheel", "a.the_wheel", "The Wheel"));
-        techs.put(7L, new Technology("Writing", "a.writing", "Writing"));
-        techs.put(8L, new Technology("Code of Laws", "a.code_of_laws", "Code of Laws"));
-        techs.put(9L, new Technology("Horseback Riding", "a.horseback_riding", "Horseback Riding"));
-        techs.put(10L, new Technology("Pottery", "a.pottery", "Pottery"));
-        techs.put(11L, new Technology("Warrior Code", "a.warrior_code", "Warrior Code"));
-        techs.put(12L, new Technology("Map Making", "a.map_making", "Map Making"));
+        // Initialize Technologies (10+) with prerequisite chains from classic ruleset
+        techs.put(0L,  new Technology("Alphabet",          "a.alphabet",          "Alphabet",          "None",         "None",           20));
+        techs.put(1L,  new Technology("Mathematics",       "a.mathematics",       "Mathematics",       "Alphabet",     "None",           40));
+        techs.put(2L,  new Technology("The Republic",      "a.the_republic",      "The Republic",      "Code of Laws", "None",           60));
+        techs.put(3L,  new Technology("Masonry",           "a.masonry",           "Masonry",           "None",         "None",           20));
+        techs.put(4L,  new Technology("Bronze Working",    "a.bronze_working",    "Bronze Working",    "None",         "None",           20));
+        techs.put(5L,  new Technology("Iron Working",      "a.iron_working",      "Iron Working",      "Bronze Working","None",          40));
+        techs.put(6L,  new Technology("The Wheel",         "a.the_wheel",         "The Wheel",         "None",         "None",           20));
+        techs.put(7L,  new Technology("Writing",           "a.writing",           "Writing",           "Alphabet",     "None",           40));
+        techs.put(8L,  new Technology("Code of Laws",      "a.code_of_laws",      "Code of Laws",      "Alphabet",     "None",           40));
+        techs.put(9L,  new Technology("Horseback Riding",  "a.horseback_riding",  "Horseback Riding",  "None",         "None",           20));
+        techs.put(10L, new Technology("Pottery",           "a.pottery",           "Pottery",           "None",         "None",           20));
+        techs.put(11L, new Technology("Warrior Code",      "a.warrior_code",      "Warrior Code",      "None",         "None",           20));
+        techs.put(12L, new Technology("Map Making",        "a.map_making",        "Map Making",        "Alphabet",     "None",           40));
+        techs.put(13L, new Technology("Monarchy",          "a.monarchy",          "Monarchy",          "Code of Laws", "None",           60));
+        techs.put(14L, new Technology("Democracy",         "a.democracy",         "Democracy",         "The Republic", "None",           80));
+        techs.put(15L, new Technology("Communism",         "a.communism",         "Communism",         "Philosophy",   "None",           80));
 
-        // Initialize Governments
-        governments.put(0L, new Government("Anarchy", "Anarchy", "Anarchy"));
-        governments.put(1L, new Government("Despotism", "Despotism", "Despotism"));
-        governments.put(2L, new Government("Monarchy", "Monarchy", "Monarchy"));
-        governments.put(3L, new Government("Communism", "Communism", "Communism"));
-        governments.put(4L, new Government("Republic", "Republic", "Republic"));
-        governments.put(5L, new Government("Democracy", "Democracy", "Democracy"));
+        // Initialize Governments with tech prerequisites and corruption percentages
+        // (mirrors classic ruleset: Anarchy/Despotism need no tech; others require specific advances)
+        governments.put(0L, new Government("Anarchy",    "Anarchy",    "Anarchy",    null,         30));
+        governments.put(1L, new Government("Despotism",  "Despotism",  "Despotism",  null,         20));
+        governments.put(2L, new Government("Monarchy",   "Monarchy",   "Monarchy",   "Monarchy",   10));
+        governments.put(3L, new Government("Communism",  "Communism",  "Communism",  "Communism",  15));
+        governments.put(4L, new Government("Republic",   "Republic",   "Republic",   "The Republic", 5));
+        governments.put(5L, new Government("Democracy",  "Democracy",  "Democracy",  "Democracy",   0));
 
         // Initialize Nations
         nations.put(0L, new Nation("Soviet Union", "Soviet", "soviet", "The Soviets!"));
@@ -122,22 +126,23 @@ public class Game {
         extras.put(14L, new Extra("Fortress"));
 
 
-        // Initialize Terrains
-        terrains.put(0L, new Terrain("Arctic", ""));
-        terrains.put(1L, new Terrain("Lake", "lake"));
-        terrains.put(2L, new Terrain("Ocean", "floor"));
-        terrains.put(3L, new Terrain("Deep Ocean", "coast"));
-        terrains.put(4L, new Terrain("Glacier", ""));
-        terrains.put(5L, new Terrain("Desert", ""));
-        terrains.put(6L, new Terrain("Forest", ""));
-        terrains.put(7L, new Terrain("Grassland", ""));
-        terrains.put(8L, new Terrain("Hills", ""));
-        terrains.put(9L, new Terrain("Jungle", ""));
-        terrains.put(10L, new Terrain("Mountains", ""));
-        terrains.put(11L, new Terrain("Plains", ""));
-        terrains.put(12L, new Terrain("Swamp", ""));
-        terrains.put(13L, new Terrain("Tundra", ""));
-        terrains.put(14L, new Terrain("Inaccessible", ""));
+        // Initialize Terrains with defence bonuses from classic terrain ruleset
+        // (defense_bonus values: Forest=50, Hills=100, Jungle=50, Mountains=200, Swamp=50)
+        terrains.put(0L,  new Terrain("Arctic",       "",       0,   1));
+        terrains.put(1L,  new Terrain("Lake",         "lake",   0,   1));
+        terrains.put(2L,  new Terrain("Ocean",        "floor",  0,   1));
+        terrains.put(3L,  new Terrain("Deep Ocean",   "coast",  0,   1));
+        terrains.put(4L,  new Terrain("Glacier",      "",       0,   2));
+        terrains.put(5L,  new Terrain("Desert",       "",       0,   1));
+        terrains.put(6L,  new Terrain("Forest",       "",      50,   2));
+        terrains.put(7L,  new Terrain("Grassland",    "",       0,   1));
+        terrains.put(8L,  new Terrain("Hills",        "",     100,   2));
+        terrains.put(9L,  new Terrain("Jungle",       "",      50,   2));
+        terrains.put(10L, new Terrain("Mountains",    "",     200,   3));
+        terrains.put(11L, new Terrain("Plains",       "",       0,   1));
+        terrains.put(12L, new Terrain("Swamp",        "",      50,   2));
+        terrains.put(13L, new Terrain("Tundra",       "",       0,   1));
+        terrains.put(14L, new Terrain("Inaccessible", "",       0,  99));
 
 
         // Initialize UnitTypes (10+)

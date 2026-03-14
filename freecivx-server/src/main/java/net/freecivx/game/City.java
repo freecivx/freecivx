@@ -19,6 +19,9 @@
 
 package net.freecivx.game;
 
+import java.util.ArrayList;
+import java.util.List;
+
 public class City {
 
     private String name;
@@ -31,11 +34,22 @@ public class City {
     private int walls;
     private boolean happy;
     private boolean unhappy;
-    private String improvements; //FIXME: Should be int array or json array
+    /** IDs of improvements (buildings) present in this city. */
+    private List<Integer> improvements = new ArrayList<>();
     private int productionKind;
     private int productionValue;
+    /**
+     * Accumulated production shields towards current build target.
+     * Mirrors {@code shield_stock} in the C Freeciv city struct.
+     */
+    private int shieldStock = 0;
+    /**
+     * Accumulated food in the granary.
+     * Mirrors {@code food_stock} in the C Freeciv city struct.
+     */
+    private int foodStock = 0;
 
-    // Constructor
+    // Constructor (backwards-compatible: accepts the old String improvements arg and ignores it)
     public City(String name, long owner, long tile, int size, int style, boolean capital, boolean occupied, int walls,
                 boolean happy, boolean unhappy, String improvements, int productionKind, int productionValue) {
         this.name = name;
@@ -48,7 +62,7 @@ public class City {
         this.walls = walls;
         this.happy = happy;
         this.unhappy = unhappy;
-        this.improvements = improvements;
+        // Old callers passed an empty String; migrate to list representation
         this.productionKind = productionKind;
         this.productionValue = productionValue;
     }
@@ -134,12 +148,25 @@ public class City {
         this.unhappy = unhappy;
     }
 
-    public String getImprovements() {
+    /** Returns the list of improvement IDs built in this city. */
+    public List<Integer> getImprovements() {
         return improvements;
     }
 
-    public void setImprovements(String improvements) {
+    public void setImprovements(List<Integer> improvements) {
         this.improvements = improvements;
+    }
+
+    /** Returns {@code true} if the improvement with the given ID is built here. */
+    public boolean hasImprovement(int improvementId) {
+        return improvements.contains(improvementId);
+    }
+
+    /** Adds an improvement to the city if not already present. */
+    public void addImprovement(int improvementId) {
+        if (!improvements.contains(improvementId)) {
+            improvements.add(improvementId);
+        }
     }
 
     public int getProductionKind() {
@@ -158,7 +185,23 @@ public class City {
         this.productionValue = productionValue;
     }
 
+    /** Returns the accumulated shields in the production queue. */
+    public int getShieldStock() {
+        return shieldStock;
+    }
 
+    public void setShieldStock(int shieldStock) {
+        this.shieldStock = shieldStock;
+    }
+
+    /** Returns the food stored in the city granary. */
+    public int getFoodStock() {
+        return foodStock;
+    }
+
+    public void setFoodStock(int foodStock) {
+        this.foodStock = foodStock;
+    }
 
     @Override
     public String toString() {
@@ -173,9 +216,11 @@ public class City {
                 ", walls=" + walls +
                 ", happy=" + happy +
                 ", unhappy=" + unhappy +
-                ", improvements='" + improvements + '\'' +
+                ", improvements=" + improvements +
                 ", productionKind=" + productionKind +
                 ", productionValue=" + productionValue +
+                ", shieldStock=" + shieldStock +
                 '}';
     }
 }
+

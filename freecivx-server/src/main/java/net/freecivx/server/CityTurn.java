@@ -36,6 +36,7 @@ public class CityTurn {
      * Adds the city's shields output to the current production item's progress.
      * If the item is complete the product (unit or improvement) is created and
      * the next item in the worklist is selected.
+     * Mirrors {@code city_distribute_surplus_shields} in the C Freeciv server.
      *
      * @param game   the current game state
      * @param cityId the ID of the city whose production is being processed
@@ -44,7 +45,31 @@ public class CityTurn {
         City city = game.cities.get(cityId);
         if (city == null) return;
 
-        // TODO: accumulate shields and complete production items
+        // Accumulate shields: 1 shield per population point per turn (simplified)
+        int shieldOutput = Math.max(1, city.getSize());
+        city.setShieldStock(city.getShieldStock() + shieldOutput);
+
+        // Check for production completion when building an improvement
+        // (productionKind 1 = improvement)
+        if (city.getProductionKind() == 1) {
+            int improvId = city.getProductionValue();
+            net.freecivx.game.Improvement improvement = game.improvements.get((long) improvId);
+            if (improvement != null) {
+                int cost = improvement.getBuildCost();
+                if (city.getShieldStock() >= cost) {
+                    // Complete the improvement
+                    city.addImprovement(improvId);
+                    city.setShieldStock(city.getShieldStock() - cost);
+                    net.freecivx.server.Notify.notifyPlayer(game, game.getServer(),
+                            city.getOwner(),
+                            city.getName() + " has built " + improvement.getName() + ".");
+                    // Reset production to nothing
+                    city.setProductionKind(0);
+                    city.setProductionValue(0);
+                }
+            }
+        }
+
         CityTools.sendCityInfo(game, game.getServer(), -1L, cityId);
     }
 
@@ -119,6 +144,8 @@ public class CityTurn {
      * Calculates and applies corruption and production waste to a city.
      * The amount depends on the city's distance from the capital, the current
      * government type, and any anti-corruption improvements.
+     * Mirrors the corruption/waste calculation in the C Freeciv server's
+     * {@code cityturn.c} — government corruption percentage reduces city trade output.
      *
      * @param game   the current game state
      * @param cityId the ID of the city to evaluate
@@ -127,6 +154,24 @@ public class CityTurn {
         City city = game.cities.get(cityId);
         if (city == null) return;
 
-        // TODO: compute and deduct corruption/waste based on government and distance
+        net.freecivx.game.Player player = game.players.get(city.getOwner());
+        if (player == null) return;
+
+        net.freecivx.game.Government gov = game.governments.get((long) player.getGovernmentId());
+        if (gov == null) return;
+
+        int corruptionPct = gov.getCorruptionPct();
+        // Courthouse (improvement id=9) halves corruption
+        if (city.hasImprovement(9)) {
+            corruptionPct = corruptionPct / 2;
+        }
+        // Corruption is informational; actual deduction applied when computing city output
+        // Here we log it so it's visible during development
+        if (corruptionPct > 0) {
+            int tradeBase = city.getSize(); // simplified: 1 trade per population
+            int corrupted = tradeBase * corruptionPct / 100;
+            System.out.println("City " + city.getName()
+                    + " loses " + corrupted + " trade to corruption (" + corruptionPct + "%)");
+        }
     }
 }

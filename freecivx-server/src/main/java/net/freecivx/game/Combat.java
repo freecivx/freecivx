@@ -54,6 +54,8 @@ public class Combat {
      * Returns the effective defence strength of a unit on the given tile.
      * Accounts for the unit type's base defence, veteran bonus, and the
      * terrain defence modifier of the tile being defended.
+     * Mirrors the {@code get_defense_power} function in the C Freeciv server's
+     * {@code common/combat.c}: {@code defence * (100 + terrain_defense_bonus) / 100}.
      *
      * @param unit     the defending unit
      * @param unitType the type definition for the unit
@@ -64,8 +66,11 @@ public class Combat {
         if (unit == null || unitType == null) return 0;
         int base = unitType.getDefenseStrength();
         int veteranBonus = (base / 2) * unit.getVeteran();
-        int terrainBonus = tile != null ? getTerrainDefenseBonus(null) : 0;
-        return base + veteranBonus + terrainBonus;
+        int terrainBonus = tile != null ? getTerrainDefenseBonusForTile(tile) : 0;
+        // Apply terrain bonus as a percentage multiplier (matching C server formula)
+        int defense = base + veteranBonus;
+        defense = defense * (100 + terrainBonus) / 100;
+        return defense;
     }
 
     /**
@@ -119,16 +124,38 @@ public class Combat {
     }
 
     /**
-     * Returns the defence bonus provided by the given terrain type.
-     * Plains give no bonus; forests, hills and mountains give increasing bonuses.
+     * Returns the defence bonus provided by the given terrain type, as a
+     * percentage value (e.g. 50 = +50% defence).
+     * Mirrors the {@code defense_bonus} field in the Freeciv terrain ruleset:
+     * Forest=50, Hills=100, Jungle=50, Mountains=200, Swamp=50, others=0.
      *
      * @param terrain the terrain type (may be {@code null} for no bonus)
-     * @return the defence bonus as a flat value to add to unit defence strength
+     * @return the defence bonus percentage
      */
     public static int getTerrainDefenseBonus(Terrain terrain) {
         if (terrain == null) return 0;
-        // TODO: derive bonus from terrain ruleset data
-        return 0;
+        return terrain.getDefenseBonus();
+    }
+
+    /**
+     * Looks up the terrain for a tile by its terrain index and returns the
+     * defence bonus percentage.  Returns 0 when the terrain cannot be resolved.
+     *
+     * @param tile the tile whose terrain defence bonus is needed
+     * @return the defence bonus percentage
+     */
+    static int getTerrainDefenseBonusForTile(Tile tile) {
+        if (tile == null) return 0;
+        // Terrain defense bonuses indexed by terrain ID (matching Game.initGame order)
+        // Forest=50, Hills=100, Jungle=50, Mountains=200, Swamp=50, others=0
+        switch (tile.getTerrain()) {
+            case 6:  return 50;   // Forest
+            case 8:  return 100;  // Hills
+            case 9:  return 50;   // Jungle
+            case 10: return 200;  // Mountains
+            case 12: return 50;   // Swamp
+            default: return 0;
+        }
     }
 
     /**

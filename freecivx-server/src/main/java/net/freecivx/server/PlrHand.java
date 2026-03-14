@@ -25,6 +25,8 @@ import net.freecivx.game.Player;
 import net.freecivx.game.Technology;
 import org.json.JSONObject;
 
+import java.util.Map;
+
 /**
  * Handles player-related packets from clients and broadcasts player state.
  * Mirrors the functionality of plrhand.c in the C Freeciv server.
@@ -35,8 +37,9 @@ public class PlrHand {
 
     /**
      * Handles a client request to change the player's government type.
-     * Validates that the player has researched the prerequisite technology,
-     * then updates the government and notifies all clients.
+     * Validates that the player has researched the prerequisite technology
+     * before allowing the change.
+     * Mirrors {@code handle_player_change_government} in the C Freeciv server.
      *
      * @param game   the current game state
      * @param connId the connection ID of the requesting player
@@ -49,7 +52,26 @@ public class PlrHand {
         Government gov = game.governments.get((long) govId);
         if (gov == null) return;
 
-        // TODO: validate tech prerequisites before allowing government change
+        // Validate tech prerequisites: check that the player knows the required tech
+        String techReq = gov.getTechReq();
+        if (techReq != null && !"None".equals(techReq)) {
+            boolean hasRequiredTech = false;
+            for (Map.Entry<Long, net.freecivx.game.Technology> entry : game.techs.entrySet()) {
+                if (techReq.equals(entry.getValue().getName())
+                        && player.hasTech(entry.getKey())) {
+                    hasRequiredTech = true;
+                    break;
+                }
+            }
+            if (!hasRequiredTech) {
+                Notify.notifyPlayer(game, game.getServer(), connId,
+                        "You need to research " + techReq
+                                + " before adopting " + gov.getName() + ".");
+                return;
+            }
+        }
+
+        player.setGovernmentId(govId);
         sendAllPlayerInfo(game);
     }
 

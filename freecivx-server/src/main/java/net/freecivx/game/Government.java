@@ -24,12 +24,31 @@ public class Government {
     private String name;
     private String ruleName;
     private String helptext;
+    /**
+     * Name of the technology required before a player can adopt this government.
+     * Mirrors the {@code reqs} tech entry in the Freeciv governments ruleset.
+     * {@code null} or "None" means no prerequisite (e.g. Anarchy, Despotism).
+     */
+    private String techReq;
+    /**
+     * Corruption percentage applied to city trade output under this government.
+     * Mirrors the corruption/waste effects in the C Freeciv effects system.
+     * Value is a percentage (e.g. 20 means 20% of trade is lost to corruption).
+     */
+    private int corruptionPct;
 
-    // Constructor
+    // Constructor (backwards-compatible)
     public Government(String name, String ruleName, String helptext) {
+        this(name, ruleName, helptext, null, 0);
+    }
+
+    public Government(String name, String ruleName, String helptext,
+                      String techReq, int corruptionPct) {
         this.name = name;
         this.ruleName = ruleName;
         this.helptext = helptext;
+        this.techReq = techReq;
+        this.corruptionPct = corruptionPct;
     }
 
     // Getters
@@ -45,6 +64,22 @@ public class Government {
         return helptext;
     }
 
+    /**
+     * Returns the name of the technology required to adopt this government, or
+     * {@code null} if no prerequisite exists.
+     */
+    public String getTechReq() {
+        return techReq;
+    }
+
+    /**
+     * Returns the corruption percentage applied to city trade under this
+     * government (e.g. 20 = 20% of trade lost to corruption).
+     */
+    public int getCorruptionPct() {
+        return corruptionPct;
+    }
+
     // Setters (if needed)
     public void setName(String name) {
         this.name = name;
@@ -56,6 +91,14 @@ public class Government {
 
     public void setHelptext(String helptext) {
         this.helptext = helptext;
+    }
+
+    public void setTechReq(String techReq) {
+        this.techReq = techReq;
+    }
+
+    public void setCorruptionPct(int corruptionPct) {
+        this.corruptionPct = corruptionPct;
     }
 
     @Override
