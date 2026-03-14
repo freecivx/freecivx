@@ -24,6 +24,8 @@ import com.sun.net.httpserver.HttpServer;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 import net.freecivx.server.CivServer;
 
@@ -56,6 +58,23 @@ public class Main {
             CivServer wsServer = new CivServer(new InetSocketAddress(port));
             wsServer.start();
             System.out.println("WebSocket server started on port: " + port);
+
+            // Idle restart: reset game if no players for 24 hours
+            final long IDLE_RESET_MS = TimeUnit.HOURS.toMillis(24);
+            ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
+            scheduler.scheduleAtFixedRate(() -> {
+                try {
+                    if (wsServer.getConnectedClientCount() == 0) {
+                        long idleMs = System.currentTimeMillis() - wsServer.getLastActivityTime();
+                        if (idleMs > IDLE_RESET_MS) {
+                            System.out.println("No players for 24h, resetting game...");
+                            wsServer.resetGame();
+                        }
+                    }
+                } catch (Exception e) {
+                    System.err.println("Idle-restart check error: " + e.getMessage());
+                }
+            }, 1, 1, TimeUnit.HOURS);
 
             // Start HTTP server
             httpServer.start();

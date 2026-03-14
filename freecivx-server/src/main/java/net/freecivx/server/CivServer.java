@@ -31,13 +31,68 @@ import java.net.InetSocketAddress;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
+import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class CivServer extends org.java_websocket.server.WebSocketServer {
 
+    private static final int[] ACTION_RESULTS = {
+        0,  0,  1,  1,  2,  2,  3,  3,  4,  4,
+        5,  5,  6,  6,  7,  7,  8,  8,  9,  9,
+        10, 11, 12, 13, 15, 14, 14, 16, 17, 18,
+        18, 20, 20, 21, 21, 22, 23, 24, 25, 26,
+        27, 60, 28, 42, 30, 31, 31, 32, 33, 34,
+        34, 34, 34, 19, 19, 19, 19, 40, 37, 38,
+        36, 41, 45, 44, 43, 39, 46, 47, 51, 51,
+        51, 48, 52, 52, 52, 52, 50, 50, 50, 50,
+        63, 63, 63, 49, 53, 54, 55, 55, 55, 55,
+        56, 56, 56, 56, 57, 57, 57, 57, 35, 35,
+        29, 59, 29, 59, 29, 59, 61, 62, 58, 58,
+        58, 64, 65, 66, 66, 66, 66
+    };
+
+    private static final String[] ACTION_NAMES = {
+        "Establish Embassy", "Establish Embassy Stay", "Investigate City",
+        "Investigate City Spend", "Poison City", "Poison City Escape",
+        "Steal Gold", "Steal Gold Escape", "Sabotage City", "Sabotage City Escape",
+        "Targeted Sabotage City", "Targeted Sabotage City Escape",
+        "Sabotage City Production", "Sabotage City Production Escape",
+        "Steal Tech", "Steal Tech Escape", "Targeted Steal Tech",
+        "Targeted Steal Tech Escape", "Incite City", "Incite City Escape",
+        "Trade Route", "Marketplace", "Help Wonder", "Bribe Unit",
+        "Capture Units", "Sabotage Unit", "Sabotage Unit Escape",
+        "Found City", "Join City", "Steal Maps", "Steal Maps Escape",
+        "Nuke City Spy", "Nuke City Spy Escape", "Nuke", "Nuke City", "Nuke Units",
+        "Destroy City", "Expel Unit", "Disband Unit Recover", "Disband Unit",
+        "Home City", "Homeless", "Upgrade Unit", "Convert", "Airlift",
+        "Attack", "Suicide Attack", "Strike Building", "Strike Production",
+        "Conquer City", "Conquer City 2", "Conquer City 3", "Conquer City 4",
+        "Bombard", "Bombard 2", "Bombard 3", "Bombard Lethal", "Fortify",
+        "Cultivate", "Plant", "Transform Terrain", "Road", "Irrigate",
+        "Mine", "Base", "Pillage", "Clean Pollution", "Clean Fallout",
+        "Transport Board", "Transport Board 2", "Transport Board 3",
+        "Transport Deboard", "Transport Embark", "Transport Embark 2",
+        "Transport Embark 3", "Transport Embark 4",
+        "Transport Disembark", "Transport Disembark 2",
+        "Transport Disembark 3", "Transport Disembark 4",
+        "Transport Load", "Transport Load 2", "Transport Load 3",
+        "Transport Unload", "Spread Plague", "Spy Attack",
+        "Conquer Extras", "Conquer Extras 2", "Conquer Extras 3", "Conquer Extras 4",
+        "Enter Hut", "Enter Hut 2", "Enter Hut 3", "Enter Hut 4",
+        "Frighten Hut", "Frighten Hut 2", "Frighten Hut 3", "Frighten Hut 4",
+        "Heal Unit", "Heal Unit 2",
+        "Paradrop", "Paradrop Conquer", "Paradrop Frighten",
+        "Paradrop Frighten Conquer", "Paradrop Enter", "Paradrop Enter Conquer",
+        "Wipe Units", "Spy Escape",
+        "Unit Move", "Unit Move 2", "Unit Move 3",
+        "Clean", "Teleport",
+        "User Action 1", "User Action 2", "User Action 3", "User Action 4"
+    };
+
     private final ConcurrentHashMap<Long, WebSocket> clients = new ConcurrentHashMap<>();
     private final AtomicInteger clientIdGenerator = new AtomicInteger(1);
+    private long lastActivityTime = System.currentTimeMillis();
     Game game = null;
 
     public CivServer(InetSocketAddress address) {
@@ -71,6 +126,7 @@ public class CivServer extends org.java_websocket.server.WebSocketServer {
     public void onMessage(WebSocket conn, String packet) {
         System.out.println("Message received: " + packet);
         long connId = conn.getAttachment();
+        lastActivityTime = System.currentTimeMillis();
         Connection connection = game.connections.get(connId);
 
         JSONObject json = new JSONObject(packet);
@@ -88,7 +144,11 @@ public class CivServer extends org.java_websocket.server.WebSocketServer {
         }
 
         if (pid == Packets.PACKET_PLAYER_READY) {
-            game.startGame();
+            if (game.isGameStarted()) {
+                game.syncNewPlayer(connId);
+            } else {
+                game.startGame();
+            }
         }
 
         if (pid == Packets.PACKET_PLAYER_PHASE_DONE) {
@@ -153,9 +213,11 @@ public class CivServer extends org.java_websocket.server.WebSocketServer {
             }
             if (message.equalsIgnoreCase("/help")) {
                 String helptext = """
-                        This is the Freecivx Java server. It supports these commands:
-                        /start
-                        /quit
+                        Freecivx Java server commands:
+                        /start  - Start the game (also starts automatically when ready)
+                        /help   - Show this help text
+                        Game features: units move with movement limits, AI players included.
+                        Join at any time - late joiners receive the current game state.
                         """;
                 sendMessage(connId, helptext);
             }
@@ -189,15 +251,37 @@ public class CivServer extends org.java_websocket.server.WebSocketServer {
         return clients.get(clientId);
     }
 
+    public long getLastActivityTime() {
+        return lastActivityTime;
+    }
+
+    public int getConnectedClientCount() {
+        return clients.size();
+    }
+
+    public void resetGame() {
+        game = new Game(this);
+        game.initGame();
+        sendMessageAll("Server has been reset after 24 hours of inactivity.");
+    }
+
+    private void broadcast(JSONObject msg) {
+        String s = msg.toString();
+        for (WebSocket conn : clients.values()) conn.send(s);
+    }
+
+    private void sendTo(long connId, JSONObject msg) {
+        WebSocket ws = clients.get(connId);
+        if (ws != null) ws.send(msg.toString());
+    }
+
     public void sendMessageAll(String message) {
         JSONObject msg = new JSONObject();
         msg.put("pid", Packets.PACKET_CHAT_MSG);
         msg.put("message", message);
         msg.put("event", 95);
 
-        for (WebSocket conn : clients.values()) {
-            conn.send(msg.toString());
-        }
+        broadcast(msg);
     }
 
     public void sendMessage(long conn_id, String message) {
@@ -213,18 +297,14 @@ public class CivServer extends org.java_websocket.server.WebSocketServer {
         JSONObject msg = new JSONObject();
         msg.put("pid", Packets.PACKET_BEGIN_TURN);
 
-        for (WebSocket conn : clients.values()) {
-            conn.send(msg.toString());
-        }
+        broadcast(msg);
     }
 
     public void sendStartPhaseAll() {
         JSONObject msg = new JSONObject();
         msg.put("pid", Packets.PACKET_START_PHASE);
 
-        for (WebSocket conn : clients.values()) {
-            conn.send(msg.toString());
-        }
+        broadcast(msg);
     }
 
     public void sendGameInfoAll(long year, long turn, long phase) {
@@ -234,9 +314,7 @@ public class CivServer extends org.java_websocket.server.WebSocketServer {
         msg.put("turn", turn);
         msg.put("phase", phase);
 
-        for (WebSocket conn : clients.values()) {
-            conn.send(msg.toString());
-        }
+        broadcast(msg);
     }
 
     public void sendCalendarInfoAll() {
@@ -245,10 +323,7 @@ public class CivServer extends org.java_websocket.server.WebSocketServer {
         msg.put("positive_year_label", "AC");
         msg.put("negative_year_label", "BC");
 
-
-        for (WebSocket conn : clients.values()) {
-            conn.send(msg.toString());
-        }
+        broadcast(msg);
     }
 
     public void sendMapInfoAll(int xsize, int ysize) {
@@ -257,9 +332,7 @@ public class CivServer extends org.java_websocket.server.WebSocketServer {
         msg.put("xsize", xsize);
         msg.put("ysize", ysize);
 
-        for (WebSocket conn : clients.values()) {
-            conn.send(msg.toString());
-        }
+        broadcast(msg);
     }
 
     public void sendTerrainInfoAll(long id, String name, String graphic_str) {
@@ -269,9 +342,7 @@ public class CivServer extends org.java_websocket.server.WebSocketServer {
         msg.put("name", name);
         msg.put("graphic_str", graphic_str);
 
-        for (WebSocket conn : clients.values()) {
-            conn.send(msg.toString());
-        }
+        broadcast(msg);
     }
 
     public void sendRulesetCityInfoAll(long style_id, String name, String rule_name) {
@@ -281,9 +352,7 @@ public class CivServer extends org.java_websocket.server.WebSocketServer {
         msg.put("name", name);
         msg.put("rule_name", rule_name);
 
-        for (WebSocket conn : clients.values()) {
-            conn.send(msg.toString());
-        }
+        broadcast(msg);
     }
 
     public void sendRuleseGovernmentAll(long id, String name, String rule_name, String helptext) {
@@ -293,10 +362,9 @@ public class CivServer extends org.java_websocket.server.WebSocketServer {
         msg.put("name", name);
         msg.put("rule_name", rule_name);
         msg.put("helptext", helptext);
+        msg.put("reqs", new JSONArray());
 
-        for (WebSocket conn : clients.values()) {
-            conn.send(msg.toString());
-        }
+        broadcast(msg);
     }
 
     public void sendRulesetUnitAll(long id, UnitType utype) {
@@ -313,9 +381,7 @@ public class CivServer extends org.java_websocket.server.WebSocketServer {
             msg.put("defense_strength", utype.getDefenseStrength());
             msg.put("build_reqs", new JSONArray());
 
-        for (WebSocket conn : clients.values()) {
-            conn.send(msg.toString());
-        }
+        broadcast(msg);
 
 
     }
@@ -325,9 +391,7 @@ public class CivServer extends org.java_websocket.server.WebSocketServer {
         msg.put("pid", Packets.PACKET_WEB_RULESET_UNIT_ADDITION);
         msg.put("id", id);
         msg.put("utype_actions", binaryStringToJsonArray(utype.getUtypeActions()));
-        for (WebSocket conn : clients.values()) {
-            conn.send(msg.toString());
-        }
+        broadcast(msg);
     }
 
     public void sendUnitAll(Unit unit) {
@@ -345,19 +409,14 @@ public class CivServer extends org.java_websocket.server.WebSocketServer {
         msg.put("done_moving", unit.isDoneMoving());
         msg.put("transported", unit.isTransported());
         msg.put("ssa_controller", unit.getSsa_controller());
-        for (WebSocket conn : clients.values()) {
-            conn.send(msg.toString());
-        }
+        broadcast(msg);
     }
 
     public void sendUnitRemove(long unit_id) {
         JSONObject msg = new JSONObject();
         msg.put("pid", Packets.PACKET_UNIT_REMOVE);
         msg.put("unit_id", unit_id);
-        for (WebSocket conn : clients.values()) {
-            conn.send(msg.toString());
-        }
-
+        broadcast(msg);
     }
 
     public void sendCityShortInfoAll(long id, long owner, long tile, int size, int style, boolean capital, boolean occupied, int walls, boolean happy,
@@ -378,9 +437,7 @@ public class CivServer extends org.java_websocket.server.WebSocketServer {
         msg.put("improvements", improvements);
         msg.put("name", name);
 
-        for (WebSocket conn : clients.values()) {
-            conn.send(msg.toString());
-        }
+        broadcast(msg);
     }
 
     public void sendCityInfoAll(long id, long owner, long tile, int size, int style, boolean capital, boolean occupied, int walls, boolean happy,
@@ -416,13 +473,9 @@ public class CivServer extends org.java_websocket.server.WebSocketServer {
         msg.put("ppl_angry", pplHappyArray);
         msg.put("ppl_happy", pplHappyArray);
 
-
-
         msg.put("surplus", pplHappyArray);
         msg.put("prod", pplHappyArray);
-        for (WebSocket conn : clients.values()) {
-            conn.send(msg.toString());
-        }
+        broadcast(msg);
     }
 
     public void sendExtrasInfoAll(long id, String extra_name) {
@@ -433,9 +486,7 @@ public class CivServer extends org.java_websocket.server.WebSocketServer {
         msg.put("graphic_str", extra_name.toLowerCase());
         msg.put("rule_name", extra_name);
 
-        for (WebSocket conn : clients.values()) {
-            conn.send(msg.toString());
-        }
+        broadcast(msg);
     }
 
     public void sendTileInfoAll(Tile tile) {
@@ -449,10 +500,7 @@ public class CivServer extends org.java_websocket.server.WebSocketServer {
         msg.put("height", tile.getHeight());
         msg.put("worked", tile.getWorked() >= 0 ? tile.getWorked() : JSONObject.NULL);
 
-        for (WebSocket conn : clients.values()) {
-            conn.send(msg.toString());
-        }
-
+        broadcast(msg);
     }
 
     public void sendConnInfoAll(long id, String username, String address, long player_num) {
@@ -464,9 +512,7 @@ public class CivServer extends org.java_websocket.server.WebSocketServer {
         msg.put("established", true);
         msg.put("player_num", player_num);
         msg.put("addr", address);
-        for (WebSocket conn : clients.values()) {
-            conn.send(msg.toString());
-        }
+        broadcast(msg);
     }
 
 
@@ -476,10 +522,7 @@ public class CivServer extends org.java_websocket.server.WebSocketServer {
         msg.put("playerno", playerno);
         msg.put("expected_income", expected_income);
 
-
-        for (WebSocket conn : clients.values()) {
-            conn.send(msg.toString());
-        }
+        broadcast(msg);
     }
 
     public void sendPlayerInfoAll(Player player) {
@@ -493,7 +536,6 @@ public class CivServer extends org.java_websocket.server.WebSocketServer {
         msg.put("researching", 1);
         msg.put("bulbs_researched", 0);
         JSONArray inventions = new JSONArray();
-        //inventions.put(0);
         msg.put("inventions", inventions);
         JSONArray flags = new JSONArray();
         flags.put(0);
@@ -515,9 +557,7 @@ public class CivServer extends org.java_websocket.server.WebSocketServer {
         msg.put("science", 60);
         msg.put("gold", 100);
 
-        for (WebSocket conn : clients.values()) {
-            conn.send(msg.toString());
-        }
+        broadcast(msg);
     }
 
     public void sendNationInfoAll(long id, String name, String adjective, String graphic_str, String legend) {
@@ -529,9 +569,7 @@ public class CivServer extends org.java_websocket.server.WebSocketServer {
         msg.put("graphic_str", graphic_str);
         msg.put("legend", legend);
 
-        for (WebSocket conn : clients.values()) {
-            conn.send(msg.toString());
-        }
+        broadcast(msg);
     }
 
     public void sendTechAll(long id, int root_req, String name, JSONArray research_reqs, String graphic_str, String helptext) {
@@ -544,24 +582,18 @@ public class CivServer extends org.java_websocket.server.WebSocketServer {
         msg.put("name", name);
         msg.put("graphic_str", graphic_str);
 
-        for (WebSocket conn : clients.values()) {
-            conn.send(msg.toString());
-        }
+        broadcast(msg);
     }
 
     public void sendBordersServerSettingsAll() {
         JSONObject msg = new JSONObject();
         msg.put("pid", Packets.PACKET_SERVER_SETTING_CONST);
         msg.put("name", "borders");
-        for (WebSocket conn : clients.values()) {
-            conn.send(msg.toString());
-        }
+        broadcast(msg);
         JSONObject val = new JSONObject();
         val.put("pid", Packets.PACKET_SERVER_SETTING_BOOL);
         val.put("is_visible", true);
-        for (WebSocket conn : clients.values()) {
-            conn.send(val.toString());
-        }
+        broadcast(val);
     }
 
     public void sendRulesetControl(int numImprovements) {
@@ -569,9 +601,7 @@ public class CivServer extends org.java_websocket.server.WebSocketServer {
         msg.put("pid", Packets.PACKET_RULESET_CONTROL);
         msg.put("num_impr_types", numImprovements);
 
-        for (WebSocket conn : clients.values()) {
-            conn.send(msg.toString());
-        }
+        broadcast(msg);
     }
 
     public void sendRulesetBuildingAll(Improvement impr) {
@@ -607,9 +637,7 @@ public class CivServer extends org.java_websocket.server.WebSocketServer {
         msg.put("obs_count", 0);
         msg.put("flags", new JSONArray());
 
-        for (WebSocket conn : clients.values()) {
-            conn.send(msg.toString());
-        }
+        broadcast(msg);
     }
 
     public static JSONArray binaryStringToJsonArray(String binaryString) {
@@ -629,6 +657,346 @@ public class CivServer extends org.java_websocket.server.WebSocketServer {
         }
 
         return jsonArray;
+    }
+
+    /**
+     * Sends PACKET_RULESET_ACTION (pid=246) for all 117 actions to populate
+     * the client's actions[] map and eliminate "Asked for non existing action" errors.
+     */
+    public void sendRulesetActionsAll() {
+        for (int i = 0; i < ACTION_RESULTS.length; i++) {
+            JSONObject msg = new JSONObject();
+            msg.put("pid", Packets.PACKET_RULESET_ACTION);
+            msg.put("id", i);
+            msg.put("ui_name", i < ACTION_NAMES.length ? ACTION_NAMES[i] : "Action " + i);
+            msg.put("result", ACTION_RESULTS[i]);
+            msg.put("quiet", false);
+            msg.put("actor_consuming_always", false);
+            msg.put("act_kind", 0);
+            msg.put("tgt_kind", 3);
+            msg.put("sub_tgt_kind", 0);
+            msg.put("min_distance", 0);
+            msg.put("max_distance", 1);
+            msg.put("sub_results", new JSONArray());
+            msg.put("blocked_by", new JSONArray());
+            broadcast(msg);
+        }
+    }
+
+    /**
+     * Sends the complete current game state to a single late-joining player.
+     */
+    public void sendGameStateTo(long connId) {
+        WebSocket ws = clients.get(connId);
+        if (ws == null) return;
+
+        // Calendar
+        JSONObject cal = new JSONObject();
+        cal.put("pid", Packets.PACKET_CALENDAR_INFO);
+        cal.put("positive_year_label", "AC");
+        cal.put("negative_year_label", "BC");
+        ws.send(cal.toString());
+
+        // Map dimensions
+        JSONObject mapMsg = new JSONObject();
+        mapMsg.put("pid", Packets.PACKET_MAP_INFO);
+        mapMsg.put("xsize", game.map.getXsize());
+        mapMsg.put("ysize", game.map.getYsize());
+        ws.send(mapMsg.toString());
+
+        // Game state
+        JSONObject gameMsg = new JSONObject();
+        gameMsg.put("pid", Packets.PACKET_GAME_INFO);
+        gameMsg.put("year", game.year);
+        gameMsg.put("turn", game.turn);
+        gameMsg.put("phase", game.phase);
+        ws.send(gameMsg.toString());
+
+        // Ruleset control
+        JSONObject rsc = new JSONObject();
+        rsc.put("pid", Packets.PACKET_RULESET_CONTROL);
+        rsc.put("num_impr_types", game.improvements.size());
+        ws.send(rsc.toString());
+
+        // Technologies
+        game.techs.forEach((id, tech) -> {
+            JSONObject msg = new JSONObject();
+            msg.put("pid", Packets.PACKET_RULESET_TECH);
+            msg.put("id", id);
+            msg.put("root_req", -1);
+            msg.put("research_reqs", new JSONArray());
+            msg.put("helptext", tech.getHelptext());
+            msg.put("name", tech.getName());
+            msg.put("graphic_str", tech.getGraphicsStr());
+            ws.send(msg.toString());
+        });
+
+        // Governments
+        game.governments.forEach((id, gov) -> {
+            JSONObject msg = new JSONObject();
+            msg.put("pid", Packets.PACKET_RULESET_GOVERNMENT);
+            msg.put("id", id);
+            msg.put("name", gov.getName());
+            msg.put("rule_name", gov.getRuleName());
+            msg.put("helptext", gov.getHelptext());
+            msg.put("reqs", new JSONArray());
+            ws.send(msg.toString());
+        });
+
+        // Nations
+        game.nations.forEach((id, nation) -> {
+            JSONObject msg = new JSONObject();
+            msg.put("pid", Packets.PACKET_RULESET_NATION);
+            msg.put("id", id);
+            msg.put("name", nation.getName());
+            msg.put("adjective", nation.getAdjective());
+            msg.put("graphic_str", nation.getGraphicsStr());
+            msg.put("legend", nation.getLegend());
+            ws.send(msg.toString());
+        });
+
+        // Extras
+        game.extras.forEach((id, extra) -> {
+            JSONObject msg = new JSONObject();
+            msg.put("pid", Packets.PACKET_RULESET_EXTRA);
+            msg.put("id", id);
+            msg.put("name", extra.getName());
+            msg.put("graphic_str", extra.getName().toLowerCase());
+            msg.put("rule_name", extra.getName());
+            ws.send(msg.toString());
+        });
+
+        // Terrains
+        game.terrains.forEach((id, terrain) -> {
+            JSONObject msg = new JSONObject();
+            msg.put("pid", Packets.PACKET_RULESET_TERRAIN);
+            msg.put("id", id);
+            msg.put("name", terrain.getName());
+            msg.put("graphic_str", terrain.getGraphicsStr());
+            ws.send(msg.toString());
+        });
+
+        // Unit types
+        game.unitTypes.forEach((id, utype) -> {
+            JSONObject msg = new JSONObject();
+            msg.put("pid", Packets.PACKET_RULESET_UNIT);
+            msg.put("id", id);
+            msg.put("name", utype.getName());
+            msg.put("graphic_str", utype.getGraphicsStr());
+            msg.put("move_rate", utype.getMoveRate());
+            msg.put("hp", utype.getHp());
+            msg.put("veteran_levels", utype.getVeteranLevels());
+            msg.put("helptext", utype.getHelptext());
+            msg.put("attack_strength", utype.getAttackStrength());
+            msg.put("defense_strength", utype.getDefenseStrength());
+            msg.put("build_reqs", new JSONArray());
+            ws.send(msg.toString());
+        });
+        game.unitTypes.forEach((id, utype) -> {
+            JSONObject msg = new JSONObject();
+            msg.put("pid", Packets.PACKET_WEB_RULESET_UNIT_ADDITION);
+            msg.put("id", id);
+            msg.put("utype_actions", binaryStringToJsonArray(utype.getUtypeActions()));
+            ws.send(msg.toString());
+        });
+
+        // Improvements
+        game.improvements.forEach((id, impr) -> {
+            JSONObject msg = new JSONObject();
+            msg.put("pid", Packets.PACKET_RULESET_BUILDING);
+            msg.put("id", impr.getId());
+            msg.put("name", impr.getName());
+            msg.put("rule_name", impr.getRuleName());
+            msg.put("graphic_str", impr.getGraphicStr());
+            msg.put("graphic_alt", impr.getGraphicAlt());
+            msg.put("genus", impr.getGenus());
+            msg.put("build_cost", impr.getBuildCost());
+            msg.put("upkeep", impr.getUpkeep());
+            msg.put("sabotage", impr.getSabotage());
+            msg.put("soundtag", impr.getSoundtag());
+            msg.put("soundtag_alt", impr.getSoundtagAlt());
+            msg.put("helptext", impr.getHelptext());
+            JSONArray reqs = new JSONArray();
+            if (impr.getTechReqId() >= 0) {
+                JSONObject req = new JSONObject();
+                req.put("kind", 1);
+                req.put("value", impr.getTechReqId());
+                req.put("range", 2);
+                req.put("present", true);
+                req.put("survives", false);
+                reqs.put(req);
+            }
+            msg.put("reqs", reqs);
+            msg.put("reqs_count", reqs.length());
+            msg.put("obs_reqs", new JSONArray());
+            msg.put("obs_count", 0);
+            msg.put("flags", new JSONArray());
+            ws.send(msg.toString());
+        });
+
+        // Ruleset actions
+        for (int i = 0; i < ACTION_RESULTS.length; i++) {
+            JSONObject msg = new JSONObject();
+            msg.put("pid", Packets.PACKET_RULESET_ACTION);
+            msg.put("id", i);
+            msg.put("ui_name", i < ACTION_NAMES.length ? ACTION_NAMES[i] : "Action " + i);
+            msg.put("result", ACTION_RESULTS[i]);
+            msg.put("quiet", false);
+            msg.put("actor_consuming_always", false);
+            msg.put("act_kind", 0);
+            msg.put("tgt_kind", 3);
+            msg.put("sub_tgt_kind", 0);
+            msg.put("min_distance", 0);
+            msg.put("max_distance", 1);
+            msg.put("sub_results", new JSONArray());
+            msg.put("blocked_by", new JSONArray());
+            ws.send(msg.toString());
+        }
+
+        // Tiles
+        game.tiles.forEach((id, tile) -> {
+            JSONObject msg = new JSONObject();
+            msg.put("pid", Packets.PACKET_TILE_INFO);
+            msg.put("tile", tile.getIndex());
+            msg.put("known", tile.getKnown());
+            msg.put("terrain", tile.getTerrain());
+            msg.put("resource", tile.getResource());
+            msg.put("extras", tile.getExtras());
+            msg.put("height", tile.getHeight());
+            msg.put("worked", tile.getWorked() >= 0 ? tile.getWorked() : JSONObject.NULL);
+            ws.send(msg.toString());
+        });
+
+        // Units
+        game.units.forEach((id, unit) -> {
+            JSONObject msg = new JSONObject();
+            msg.put("pid", Packets.PACKET_UNIT_SHORT_INFO);
+            msg.put("id", unit.getId());
+            msg.put("owner", unit.getOwner());
+            msg.put("tile", unit.getTile());
+            msg.put("type", unit.getType());
+            msg.put("facing", unit.getFacing());
+            msg.put("veteran", unit.getVeteran());
+            msg.put("hp", unit.getHp());
+            msg.put("activity", unit.getActivity());
+            msg.put("movesleft", unit.getMovesleft());
+            msg.put("done_moving", unit.isDoneMoving());
+            msg.put("transported", unit.isTransported());
+            msg.put("ssa_controller", unit.getSsa_controller());
+            ws.send(msg.toString());
+        });
+
+        // City styles
+        game.cityStyle.forEach((id, style) -> {
+            JSONObject msg = new JSONObject();
+            msg.put("pid", Packets.PACKET_RULESET_CITY);
+            msg.put("style_id", id);
+            msg.put("name", style.getName());
+            msg.put("rule_name", style.getName());
+            ws.send(msg.toString());
+        });
+
+        // Cities
+        game.cities.forEach((id, city) -> {
+            JSONObject shortMsg = new JSONObject();
+            shortMsg.put("pid", Packets.PACKET_CITY_SHORT_INFO);
+            shortMsg.put("id", id);
+            shortMsg.put("tile", city.getTile());
+            shortMsg.put("owner", city.getOwner());
+            shortMsg.put("original", city.getOwner());
+            shortMsg.put("size", city.getSize());
+            shortMsg.put("style", city.getStyle());
+            shortMsg.put("capital", city.isCapital());
+            shortMsg.put("occupied", city.isOccupied());
+            shortMsg.put("walls", city.getWalls());
+            shortMsg.put("happy", city.isHappy());
+            shortMsg.put("unhappy", city.isUnhappy());
+            shortMsg.put("improvements", city.getImprovements());
+            shortMsg.put("name", city.getName());
+            ws.send(shortMsg.toString());
+
+            JSONArray ppl = new JSONArray();
+            ppl.put(1); ppl.put(1); ppl.put(2); ppl.put(1); ppl.put(1);
+            JSONObject fullMsg = new JSONObject();
+            fullMsg.put("pid", Packets.PACKET_CITY_INFO);
+            fullMsg.put("id", id);
+            fullMsg.put("tile", city.getTile());
+            fullMsg.put("owner", city.getOwner());
+            fullMsg.put("original", city.getOwner());
+            fullMsg.put("size", city.getSize());
+            fullMsg.put("style", city.getStyle());
+            fullMsg.put("capital", city.isCapital());
+            fullMsg.put("occupied", city.isOccupied());
+            fullMsg.put("walls", city.getWalls());
+            fullMsg.put("happy", city.isHappy());
+            fullMsg.put("unhappy", city.isUnhappy());
+            fullMsg.put("improvements", city.getImprovements());
+            fullMsg.put("name", city.getName());
+            fullMsg.put("production_kind", city.getProductionKind());
+            fullMsg.put("production_value", city.getProductionValue());
+            fullMsg.put("ppl_happy", ppl);
+            fullMsg.put("ppl_content", ppl);
+            fullMsg.put("ppl_unhappy", ppl);
+            fullMsg.put("ppl_angry", ppl);
+            fullMsg.put("surplus", ppl);
+            fullMsg.put("prod", ppl);
+            ws.send(fullMsg.toString());
+        });
+
+        // Players
+        game.players.forEach((pid2, player) -> {
+            JSONObject msg = new JSONObject();
+            msg.put("pid", Packets.PACKET_PLAYER_INFO);
+            msg.put("playerno", player.getPlayerNo());
+            msg.put("username", player.getUsername());
+            msg.put("name", player.getUsername());
+            msg.put("nation", player.getNation());
+            msg.put("government", 1);
+            msg.put("researching", 1);
+            msg.put("bulbs_researched", 0);
+            msg.put("inventions", new JSONArray());
+            JSONArray flags = new JSONArray(); flags.put(0); flags.put(0);
+            msg.put("flags", flags);
+            JSONArray vis = new JSONArray(); vis.put(0); vis.put(0);
+            msg.put("gives_shared_vision", vis);
+            JSONArray emb = new JSONArray(); emb.put(false); emb.put(false);
+            msg.put("real_embassy", emb);
+            msg.put("is_alive", player.isAlive());
+            msg.put("tax", 40); msg.put("luxury", 0);
+            msg.put("science", 60); msg.put("gold", 100);
+            ws.send(msg.toString());
+        });
+
+        // Connections
+        game.connections.forEach((id, conn) -> {
+            JSONObject msg = new JSONObject();
+            msg.put("pid", Packets.PACKET_CONN_INFO);
+            msg.put("id", id);
+            msg.put("username", conn.getUsername());
+            msg.put("used", true);
+            msg.put("established", true);
+            msg.put("player_num", conn.getPlayerNo());
+            msg.put("addr", conn.getIp());
+            ws.send(msg.toString());
+        });
+
+        // Server settings
+        JSONObject sc = new JSONObject();
+        sc.put("pid", Packets.PACKET_SERVER_SETTING_CONST);
+        sc.put("name", "borders");
+        ws.send(sc.toString());
+        JSONObject sb = new JSONObject();
+        sb.put("pid", Packets.PACKET_SERVER_SETTING_BOOL);
+        sb.put("is_visible", true);
+        ws.send(sb.toString());
+
+        // Begin turn
+        JSONObject sp = new JSONObject();
+        sp.put("pid", Packets.PACKET_START_PHASE);
+        ws.send(sp.toString());
+        JSONObject bt = new JSONObject();
+        bt.put("pid", Packets.PACKET_BEGIN_TURN);
+        ws.send(bt.toString());
     }
 }
 

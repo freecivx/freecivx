@@ -23,7 +23,9 @@ package net.freecivx.game;
 import net.freecivx.server.CivServer;
 import org.json.JSONArray;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Random;
 
@@ -34,10 +36,20 @@ public class Game {
 
     CivServer server;
 
-    long year = 0;
-    long turn = 0;
-    long phase = 0;
+    public long year = 0;
+    public long turn = 0;
+    public long phase = 0;
     boolean gameStarted = false;
+
+    private static final int MAX_START_POSITION_ATTEMPTS = 200;
+    private static final int AI_CITY_BUILD_CHANCE = 3;
+    private static final String[] AI_CITY_NAMES = {
+        "Rome", "Athens", "Cairo", "Babylon", "Carthage", "Persepolis",
+        "Thebes", "Memphis", "Nineveh", "Tyre", "Samarkand", "Antioch"
+    };
+    private int aiCityNameIndex = 0;
+    private long lastActivityTime = System.currentTimeMillis();
+    private Random random = new Random();
 
     public WorldMap map;
     public Map<Long, Player> players = new HashMap<>();
@@ -134,18 +146,18 @@ public class Game {
         // See freeciv/common/actions.h and the PACKET_WEB_RULESET_UNIT_ADDITION packet.
         String defaultActions  = "000000000000000000000000000010000000001110001000000000000011011111111001100011000000001100110000000000000000100100000000";
         String settlerActions  = "000000000000000000000000000110000000001110001000000000000011011111111001100011000000001100110000000000000000100100000000";
-        unitTypes.put(0L, new UnitType("Settlers", "u.settlers", 1, 1, 1, "Settlers unit", 0, 1, settlerActions));
-        unitTypes.put(1L, new UnitType("Workers", "u.worker", 1, 1, 1, "Workers unit", 0, 1, settlerActions));
-        unitTypes.put(2L, new UnitType("Explorer", "u.explorer", 3, 1, 1, "Explorer unit", 0, 1, defaultActions));
-        unitTypes.put(3L, new UnitType("Warriors", "u.warriors", 1, 10, 1, "Warriors", 1, 1, defaultActions));
-        unitTypes.put(4L, new UnitType("Horsemen", "u.horsemen", 3, 10, 1, "Horsemen", 2, 1, defaultActions));
-        unitTypes.put(5L, new UnitType("Archers", "u.archers", 1, 10, 1, "Archers", 3, 2, defaultActions));
-        unitTypes.put(6L, new UnitType("Legion", "u.legion", 1, 20, 1, "Legion", 3, 3, defaultActions));
-        unitTypes.put(7L, new UnitType("Pikemen", "u.pikemen", 1, 10, 1, "Pikemen", 1, 2, defaultActions));
-        unitTypes.put(8L, new UnitType("Musketeers", "u.musketeers", 1, 20, 1, "Musketeers", 5, 4, defaultActions));
-        unitTypes.put(9L, new UnitType("Catapult", "u.catapult", 1, 10, 1, "Catapult", 6, 1, defaultActions));
-        unitTypes.put(10L, new UnitType("Chariot", "u.chariot", 3, 10, 1, "Chariot", 3, 1, defaultActions));
-        unitTypes.put(11L, new UnitType("Knight", "u.knights", 3, 20, 1, "Knight", 5, 2, defaultActions));
+        unitTypes.put(0L, new UnitType("Settlers", "u.settlers", 1, 1, 1, "Settlers unit", 0, 1, settlerActions, 0));
+        unitTypes.put(1L, new UnitType("Workers", "u.worker", 1, 1, 1, "Workers unit", 0, 1, settlerActions, 0));
+        unitTypes.put(2L, new UnitType("Explorer", "u.explorer", 3, 1, 1, "Explorer unit", 0, 1, defaultActions, 0));
+        unitTypes.put(3L, new UnitType("Warriors", "u.warriors", 1, 10, 1, "Warriors", 1, 1, defaultActions, 0));
+        unitTypes.put(4L, new UnitType("Horsemen", "u.horsemen", 3, 10, 1, "Horsemen", 2, 1, defaultActions, 0));
+        unitTypes.put(5L, new UnitType("Archers", "u.archers", 1, 10, 1, "Archers", 3, 2, defaultActions, 0));
+        unitTypes.put(6L, new UnitType("Legion", "u.legion", 1, 20, 1, "Legion", 3, 3, defaultActions, 0));
+        unitTypes.put(7L, new UnitType("Pikemen", "u.pikemen", 1, 10, 1, "Pikemen", 1, 2, defaultActions, 0));
+        unitTypes.put(8L, new UnitType("Musketeers", "u.musketeers", 1, 20, 1, "Musketeers", 5, 4, defaultActions, 0));
+        unitTypes.put(9L, new UnitType("Catapult", "u.catapult", 1, 10, 1, "Catapult", 6, 1, defaultActions, 0));
+        unitTypes.put(10L, new UnitType("Chariot", "u.chariot", 3, 10, 1, "Chariot", 3, 1, defaultActions, 0));
+        unitTypes.put(11L, new UnitType("Knight", "u.knights", 3, 20, 1, "Knight", 5, 2, defaultActions, 0));
 
 
 
@@ -213,26 +225,29 @@ public class Game {
         unitTypes.forEach((id, unitType) -> server.sendRulesetUnitAll(id, unitType));
         unitTypes.forEach((id, unitType) -> server.sendRulesetUnitWebAdditionAll(id, unitType));
 
+        // Send all action ruleset data to fix "Asked for non existing action" JS errors
+        server.sendRulesetActionsAll();
+
         // Send improvements (buildings)
         improvements.forEach((id, impr) -> server.sendRulesetBuildingAll(impr));
 
         tiles.forEach((id, tile) -> server.sendTileInfoAll(tile));
 
-        // Initialize Units
+        // Create 4 AI players (aifill 5 = up to 5 total players including humans)
+        String[] aiNames = {"Caesar", "Alexander", "Napoleon", "Genghis"};
+        for (int i = 0; i < 4; i++) {
+            long aiId = 1000L + i;
+            Player aiPlayer = new Player(aiId, aiNames[i], "ai", i % nations.size());
+            aiPlayer.setAi(true);
+            players.put(aiId, aiPlayer);
+        }
+        players.forEach((id, iplayer) -> server.sendPlayerInfoAll(iplayer));
+        players.forEach((id, iplayer) -> server.sendPlayerInfoAdditionAll(id, 0));
+
+        // Initialize Units for all players
         for (Player player : players.values()) {
-            long startPos = 0;
-            for (var i = 0; i < 100; i++) {
-                startPos = new Random().nextInt(map.getXsize() * map.getYsize());
-                Tile startTile = tiles.get(startPos);
-                if (startTile.getTerrain() == 7) {
-                    break;
-                }
-            }
-            units.put(Long.valueOf(units.size()), new Unit(units.size(), player.getPlayerNo(), startPos , 0, 0, 1, 1, 0, 2));
-            units.put(Long.valueOf(units.size()), new Unit(units.size(),  player.getPlayerNo(), startPos, 1, 0, 1, 1, 0, 2));
-            units.put(Long.valueOf(units.size()), new Unit(units.size(),  player.getPlayerNo(),  startPos, 2, 0, 1, 1, 0, 2));
-            units.put(Long.valueOf(units.size()), new Unit(units.size(),  player.getPlayerNo(),  startPos, 3, 0, 1, 1, 0, 2));
-            units.put(Long.valueOf(units.size()), new Unit(units.size(),  player.getPlayerNo(),  startPos, 4, 0, 1, 1, 0, 2));
+            long startPos = findStartPosition();
+            spawnStartingUnits(player, startPos);
         }
         // Send units
         units.forEach((id, unit) -> server.sendUnitAll(unit));
@@ -258,11 +273,40 @@ public class Game {
     }
 
 
+    public boolean isGameStarted() {
+        return gameStarted;
+    }
+
+    public void updateLastActivity() {
+        lastActivityTime = System.currentTimeMillis();
+    }
+
+    public long getLastActivityTime() {
+        return lastActivityTime;
+    }
+
+    public int getConnectedPlayerCount() {
+        return connections.size();
+    }
+
     public void turnDone() {
         year++;
         turn++;
 
+        // Reset movement points for all units
+        units.forEach((id, unit) -> {
+            UnitType utype = unitTypes.get((long) unit.getType());
+            if (utype != null) {
+                unit.setMovesleft(utype.getMoveRate());
+                unit.setDoneMoving(false);
+            }
+        });
+
+        // Run AI turns before broadcasting
+        runAiTurns();
+
         server.sendGameInfoAll(year, turn, phase);
+        server.sendMessageAll("Turn " + turn + " has started (Year " + (4000 + year * 20) + " BC).");
         server.sendBeginTurnAll();
         server.sendStartPhaseAll();
     }
@@ -274,15 +318,32 @@ public class Game {
         server.sendUnitAll(unit);
     }
 
-    public void moveUnit(long unit_id, int dest_tile, int dir) {
+    public boolean moveUnit(long unit_id, int dest_tile, int dir) {
         Unit unit = units.get(unit_id);
+        if (unit == null) return false;
+
+        // Enforce movement limits
+        if (unit.getMovesleft() <= 0) return false;
+
+        // Terrain check: land units cannot enter ocean tiles (terrain 2=Ocean, 3=Deep Ocean)
+        UnitType utype = unitTypes.get((long) unit.getType());
+        if (utype != null && utype.getDomain() == 0) {
+            Tile destTile = tiles.get((long) dest_tile);
+            if (destTile != null) {
+                int terrain = destTile.getTerrain();
+                if (terrain == 2 || terrain == 3) return false;
+            }
+        }
+
         unit.setTile(dest_tile);
         unit.setFacing(dir);
+        unit.setMovesleft(Math.max(0, unit.getMovesleft() - 1));
         server.sendUnitAll(unit);
+        return true;
     }
 
     public void addPlayer(long connId, String username, String addr) {
-        Player player = new Player(connId, username, addr, new Random().nextInt(3));
+        Player player = new Player(connId, username, addr, random.nextInt(3));
         players.put(connId, player);
         server.sendMessageAll(username + " has joined the game.");
 
@@ -295,6 +356,28 @@ public class Game {
     public void addConnection(long connId, String username, long player_no, String address) {
         Connection connection = new Connection(connId, username, player_no, address);
         connections.put(connId, connection);
+    }
+
+    private long findStartPosition() {
+        long startPos = 0;
+        for (int i = 0; i < MAX_START_POSITION_ATTEMPTS; i++) {
+            startPos = random.nextInt(map.getXsize() * map.getYsize());
+            Tile startTile = tiles.get(startPos);
+            if (startTile != null && startTile.getTerrain() == 7 && startTile.getWorked() < 0) {
+                break;
+            }
+        }
+        return startPos;
+    }
+
+    private void spawnStartingUnits(Player player, long startPos) {
+        UnitType settlerType = unitTypes.get(0L);
+        int moveRate = settlerType != null ? settlerType.getMoveRate() : 1;
+        units.put((long) units.size(), new Unit(units.size(), player.getPlayerNo(), startPos, 0, 0, 1, 1, 0, moveRate));
+        units.put((long) units.size(), new Unit(units.size(), player.getPlayerNo(), startPos, 1, 0, 1, 1, 0, 1));
+        units.put((long) units.size(), new Unit(units.size(), player.getPlayerNo(), startPos, 3, 0, 1, 10, 0, 1));
+        units.put((long) units.size(), new Unit(units.size(), player.getPlayerNo(), startPos, 4, 0, 1, 10, 0, 3));
+        units.put((long) units.size(), new Unit(units.size(), player.getPlayerNo(), startPos, 2, 0, 1, 1, 0, 3));
     }
 
     public void buildCity(long unit_id, String city_name, long tile_id) {
@@ -318,8 +401,89 @@ public class Game {
                 city.isOccupied(), city.getWalls(), city.isHappy(), city.isUnhappy(), "", city.getName(), 6, 0);
         server.sendUnitRemove(unit_id);
         units.remove(unit_id);
+    }
 
+    private void runAiTurns() {
+        List<Unit> unitsSnapshot = new ArrayList<>(units.values());
+        for (Unit unit : unitsSnapshot) {
+            Player owner = players.get(unit.getOwner());
+            if (owner == null || !owner.isAi()) continue;
 
+            UnitType utype = unitTypes.get((long) unit.getType());
+            if (utype == null) continue;
 
+            // Settlers: build a city if on a good tile with no existing city
+            if (unit.getType() == 0) { // Settlers
+                Tile tile = tiles.get(unit.getTile());
+                if (tile != null && tile.getTerrain() == 7 && tile.getWorked() < 0
+                        && units.containsKey(unit.getId())) {
+                    if (random.nextInt(AI_CITY_BUILD_CHANCE) == 0) { // 33% chance per turn to build city
+                        String cityName = AI_CITY_NAMES[aiCityNameIndex % AI_CITY_NAMES.length];
+                        aiCityNameIndex++;
+                        buildCity(unit.getId(), cityName, unit.getTile());
+                        continue;
+                    }
+                }
+            }
+
+            // Move unit randomly (while it has movement points)
+            int movesUsed = 0;
+            while (unit.getMovesleft() > 0 && movesUsed < utype.getMoveRate()) {
+                if (!moveUnitRandomly(unit, utype)) break;
+                movesUsed++;
+            }
+        }
+    }
+
+    private boolean moveUnitRandomly(Unit unit, UnitType utype) {
+        int[] shuffledDirs = {0, 1, 2, 3, 4, 5, 6, 7};
+        for (int i = shuffledDirs.length - 1; i > 0; i--) {
+            int j = random.nextInt(i + 1);
+            int tmp = shuffledDirs[i];
+            shuffledDirs[i] = shuffledDirs[j];
+            shuffledDirs[j] = tmp;
+        }
+        int[] DIR_DX = {-1, 0, 1, -1, 1, -1, 0, 1};
+        int[] DIR_DY = {-1, -1, -1, 0, 0, 1, 1, 1};
+
+        long currentTile = unit.getTile();
+        long x = currentTile % map.getXsize();
+        long y = currentTile / map.getXsize();
+
+        for (int dir : shuffledDirs) {
+            long nx = x + DIR_DX[dir];
+            long ny = y + DIR_DY[dir];
+            if (nx < 0 || nx >= map.getXsize() || ny < 0 || ny >= map.getYsize()) continue;
+            long newTileId = ny * map.getXsize() + nx;
+            Tile destTile = tiles.get(newTileId);
+            if (destTile == null) continue;
+            // Land units avoid ocean
+            if (utype.getDomain() == 0) {
+                int terrain = destTile.getTerrain();
+                if (terrain == 2 || terrain == 3) continue;
+            }
+            return moveUnit(unit.getId(), (int) newTileId, dir);
+        }
+        return false;
+    }
+
+    public void syncNewPlayer(long connId) {
+        Player player = players.get(connId);
+        if (player == null) return;
+
+        // Spawn starting units for the late joiner
+        long startPos = findStartPosition();
+        spawnStartingUnits(player, startPos);
+
+        // Send full current game state to just this player
+        server.sendGameStateTo(connId);
+
+        // Broadcast the new player's units to all existing players
+        units.values().stream()
+                .filter(u -> u.getOwner() == player.getPlayerNo())
+                .forEach(u -> server.sendUnitAll(u));
+
+        server.sendMessage(connId, "Welcome! The game is in progress (turn " + turn + ").");
+        server.sendMessageAll(player.getUsername() + " has joined the game in progress.");
     }
 }

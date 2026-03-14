@@ -29,6 +29,7 @@ public class Player {
     private String address;
     private int nation;
     private boolean is_alive = true;
+    private boolean isAi = false;
     private List<Boolean> real_embassy = new ArrayList<Boolean>();
 
     // Constructor
@@ -82,6 +83,14 @@ public class Player {
 
     public void setAlive(boolean is_alive) {
         this.is_alive = is_alive;
+    }
+
+    public boolean isAi() {
+        return isAi;
+    }
+
+    public void setAi(boolean isAi) {
+        this.isAi = isAi;
     }
 
     public List<Boolean> getReal_embassy() {
