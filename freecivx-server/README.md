@@ -27,6 +27,10 @@ License: GNU Affero General Public License
 - **Security:** Java is significantly more secure than C.
 
 
+## Tests
+
+Do **not** create Java unit tests for freecivx-server. The server is tested through integration and end-to-end testing only.
+
 ## Getting Started
 
 ### Prerequisites
