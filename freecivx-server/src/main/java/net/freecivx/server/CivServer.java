@@ -889,9 +889,11 @@ public class CivServer extends org.java_websocket.server.WebSocketServer {
         // Game state
         JSONObject gameMsg = new JSONObject();
         gameMsg.put("pid", Packets.PACKET_GAME_INFO);
-        gameMsg.put("year", game.year);
+        gameMsg.put("year", game.getHistoricalYear());
         gameMsg.put("turn", game.turn);
         gameMsg.put("phase", game.phase);
+        gameMsg.put("timeout", game.getTurnTimeout());
+        gameMsg.put("first_timeout", -1);
         ws.send(gameMsg.toString());
 
         // Ruleset control

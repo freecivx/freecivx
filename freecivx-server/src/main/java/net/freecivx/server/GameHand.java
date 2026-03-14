@@ -74,12 +74,12 @@ public class GameHand {
     public static void sendGameInfo(Game game, long connId) {
         JSONObject msg = new JSONObject();
         msg.put("pid", Packets.PACKET_GAME_INFO);
-        msg.put("year", game.year);
+        msg.put("year", game.getHistoricalYear());
         msg.put("turn", game.turn);
         msg.put("phase", game.phase);
         msg.put("timeout", game.getTurnTimeout());
         msg.put("first_timeout", -1);
-        game.getServer().sendMessage(connId, msg.toString());
+        game.getServer().sendPacketTo(connId, msg);
     }
 
     /**
@@ -113,6 +113,6 @@ public class GameHand {
         msg.put("name", player.getUsername());
         msg.put("nation", player.getNation());
         msg.put("is_alive", player.isAlive());
-        game.getServer().sendMessage(connId, msg.toString());
+        game.getServer().sendPacketTo(connId, msg);
     }
 }
