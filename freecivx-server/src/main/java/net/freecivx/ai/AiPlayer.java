@@ -27,6 +27,7 @@ import net.freecivx.game.Technology;
 import net.freecivx.game.Tile;
 import net.freecivx.game.Unit;
 import net.freecivx.game.UnitType;
+import net.freecivx.server.CityTurn;
 import net.freecivx.server.TechTools;
 
 import java.util.ArrayList;
@@ -62,6 +63,11 @@ public class AiPlayer {
     // Per-unit persistent target tile IDs (inspired by daiunit.c unit-task system).
     // Storing targets across turns prevents units from changing goals every turn.
     private final Map<Long, Long> unitTargets = new HashMap<>();
+
+    // Flag to ensure improvement and technology IDs are resolved only once.
+    // IDs are assigned when the game starts and never change, so a single
+    // resolution pass is sufficient.
+    private boolean idsResolved = false;
 
     // Terrain types suitable for city founding (excludes ocean and impassable tiles)
     private static final Set<Integer> CITY_SUITABLE_TERRAINS = new HashSet<>();
@@ -104,28 +110,36 @@ public class AiPlayer {
     private static final int TERRAIN_OCEAN     = 2;
     private static final int TERRAIN_DEEP_OCEAN = 3;
 
-    // Improvement IDs — must match the constants initialised in Game.initGame().
-    private static final int IMPR_GRANARY     = 2;
-    private static final int IMPR_LIBRARY     = 3;
-    private static final int IMPR_MARKETPLACE = 4;
-    private static final int IMPR_CITY_WALLS  = 7;
+    // Improvement IDs — resolved at runtime by name in resolveGameIds() because IDs
+    // differ between the loaded ruleset (alphabetical order) and the hardcoded fallback.
+    // Fallback values match populateFallback() in Game.java.
+    private int imprBarracks    = 1;
+    private int imprGranary     = 2;
+    private int imprLibrary     = 3;
+    private int imprMarketplace = 4;
+    private int imprCityWalls   = 7;
 
     // Unit-type IDs — must match the constants initialised in Game.initGame().
     private static final int UNIT_SETTLERS = 0;
+    private static final int UNIT_WORKERS  = 1;
     private static final int UNIT_WARRIORS = 3;
 
-    // Technology IDs — must match the constants initialised in Game.initGame().
-    private static final long TECH_ALPHABET         = 0L;
-    private static final long TECH_MATHEMATICS      = 1L;
-    private static final long TECH_THE_REPUBLIC     = 2L;
-    private static final long TECH_MASONRY          = 3L;
-    private static final long TECH_BRONZE_WORKING   = 4L;
-    private static final long TECH_IRON_WORKING     = 5L;
-    private static final long TECH_WRITING          = 7L;
-    private static final long TECH_CODE_OF_LAWS     = 8L;
-    private static final long TECH_HORSEBACK_RIDING = 9L;
-    private static final long TECH_POTTERY          = 10L;
-    private static final long TECH_WARRIOR_CODE     = 11L;
+    // Technology IDs — resolved at runtime by name in resolveGameIds() because IDs
+    // differ between the loaded ruleset (alphabetical order) and the hardcoded fallback.
+    // Fallback values match populateFallback() in Game.java.
+    private long techAlphabet        =  0L;
+    private long techMathematics     =  1L;
+    private long techTheRepublic     =  2L;
+    private long techMasonry         =  3L;
+    private long techBronzeWorking   =  4L;
+    private long techIronWorking     =  5L;
+    private long techWriting         =  7L;
+    private long techCodeOfLaws      =  8L;
+    private long techHorsebackRiding =  9L;
+    private long techPottery         = 10L;
+    private long techWarriorCode     = 11L;
+    private long techMonarchy        = 13L;
+    private long techDemocracy       = 14L;
 
     private static final int[] DIR_DX = {-1, 0, 1, -1, 1, -1, 0, 1};
     private static final int[] DIR_DY = {-1, -1, -1, 0, 0, 1, 1, 1};
@@ -156,6 +170,12 @@ public class AiPlayer {
 
     /** Performs all AI actions for the current turn (runs on the AI thread). */
     private void executeAiTurns() {
+        // Resolve improvement and tech IDs from the loaded game data on the first
+        // turn.  IDs are stable for the lifetime of the game (ruleset loaded once
+        // at startup), so this is a one-time O(n) pass.  Mirrors the name-based
+        // lookup used in the C Freeciv server's ruleset.c.
+        resolveGameIds();
+
         // Phase 0: Manage government evolution when better governments are available.
         // Mirrors dai_manage_government() in ai/default/daicity.c.
         manageAiGovernments();
@@ -182,17 +202,75 @@ public class AiPlayer {
                 continue;
             }
 
+            // Workers (type 1): build terrain improvements (roads, irrigation, mines)
+            if (unit.getType() == UNIT_WORKERS) {
+                handleWorker(unit, utype);
+                continue;
+            }
+
             // Military units: defend cities first, then attack enemies
             if (utype.getAttackStrength() > 0) {
                 handleMilitaryUnit(unit, utype, owner);
                 continue;
             }
 
-            // Other units (explorers, workers): move randomly
+            // Other units (explorers): move randomly
             int movesUsed = 0;
             while (unit.getMovesleft() > 0 && movesUsed < utype.getMoveRate()) {
                 if (!moveUnitRandomly(unit, utype)) break;
                 movesUsed++;
+            }
+        }
+    }
+
+    // =========================================================================
+    // Runtime ID resolution
+    // =========================================================================
+
+    /**
+     * Resolves improvement and technology IDs from the loaded game data by name.
+     * This is necessary because IDs are assigned in the order buildings/techs
+     * appear in the ruleset file (alphabetical), which differs from the hardcoded
+     * fallback in {@code Game.populateFallback()}.
+     *
+     * <p>Runs only once: IDs are stable for the lifetime of the game since the
+     * ruleset is loaded once at startup.  Mirrors the name-based lookup pass in
+     * the C Freeciv server's {@code server/ruleset.c}.
+     */
+    private void resolveGameIds() {
+        if (idsResolved) return;
+        idsResolved = true;
+
+        for (Map.Entry<Long, Improvement> e : game.improvements.entrySet()) {
+            String n = e.getValue().getName();
+            int id = e.getKey().intValue();
+            switch (n) {
+                case "Barracks":    imprBarracks    = id; break;
+                case "Granary":     imprGranary     = id; break;
+                case "Library":     imprLibrary     = id; break;
+                case "Marketplace": imprMarketplace = id; break;
+                case "City Walls":  imprCityWalls   = id; break;
+                default: break;
+            }
+        }
+        for (Map.Entry<Long, Technology> e : game.techs.entrySet()) {
+            String n = e.getValue().getName();
+            long id = e.getKey();
+            switch (n) {
+                case "Alphabet":          techAlphabet        = id; break;
+                case "Mathematics":       techMathematics     = id; break;
+                case "The Republic":      techTheRepublic     = id; break;
+                case "Masonry":           techMasonry         = id; break;
+                case "Bronze Working":    techBronzeWorking   = id; break;
+                case "Iron Working":      techIronWorking     = id; break;
+                case "Writing":           techWriting         = id; break;
+                case "Code of Laws":      techCodeOfLaws      = id; break;
+                case "Horseback Riding":  techHorsebackRiding = id; break;
+                case "Pottery":           techPottery         = id; break;
+                case "Warrior Code":      techWarriorCode     = id; break;
+                case "Monarchy":          techMonarchy        = id; break;
+                case "Democracy":         techDemocracy       = id; break;
+                default: break;
             }
         }
     }
@@ -223,7 +301,9 @@ public class AiPlayer {
     /**
      * Checks whether the given AI player can adopt a superior government and
      * switches to it.  The government names and tech requirements mirror the
-     * classic Freeciv ruleset.
+     * classic Freeciv ruleset.  Uses the resolved tech IDs from
+     * {@link #resolveGameIds()} so this works with both the loaded ruleset and
+     * the hardcoded fallback.
      *
      * @param player the AI player whose government may be upgraded
      */
@@ -232,25 +312,27 @@ public class AiPlayer {
 
         if (currentGov <= 1) {
             // Try to advance from Despotism (1) to Monarchy (2)
-            for (Map.Entry<Long, Technology> entry : game.techs.entrySet()) {
-                if ("Monarchy".equals(entry.getValue().getName())
-                        && player.hasTech(entry.getKey())) {
-                    player.setGovernmentId(2); // Monarchy
-                    game.getServer().sendPlayerInfoAll(player);
-                    return;
-                }
+            if (player.hasTech(techMonarchy)) {
+                player.setGovernmentId(2); // Monarchy
+                game.getServer().sendPlayerInfoAll(player);
+                return;
             }
         }
 
         if (currentGov == 2) {
             // Try to advance from Monarchy (2) to Republic (4)
-            for (Map.Entry<Long, Technology> entry : game.techs.entrySet()) {
-                if ("The Republic".equals(entry.getValue().getName())
-                        && player.hasTech(entry.getKey())) {
-                    player.setGovernmentId(4); // Republic
-                    game.getServer().sendPlayerInfoAll(player);
-                    return;
-                }
+            if (player.hasTech(techTheRepublic)) {
+                player.setGovernmentId(4); // Republic
+                game.getServer().sendPlayerInfoAll(player);
+                return;
+            }
+        }
+
+        if (currentGov == 4) {
+            // Try to advance from Republic (4) to Democracy (5)
+            if (player.hasTech(techDemocracy)) {
+                player.setGovernmentId(5); // Democracy
+                game.getServer().sendPlayerInfoAll(player);
             }
         }
     }
@@ -295,17 +377,19 @@ public class AiPlayer {
         if (player.getResearchingTech() >= 0) return; // Already researching
 
         long[] priorityTechs = {
-            TECH_POTTERY,          // Granary → faster city growth
-            TECH_BRONZE_WORKING,   // Military prerequisite chain
-            TECH_WARRIOR_CODE,     // Better warriors
-            TECH_MASONRY,          // Barracks + City Walls
-            TECH_ALPHABET,         // Temple (happiness) + many prerequisites
-            TECH_WRITING,          // Library → science bonus
-            TECH_CODE_OF_LAWS,     // Marketplace → trade bonus
-            TECH_HORSEBACK_RIDING, // Horsemen (fast military)
-            TECH_MATHEMATICS,      // Bank prerequisite
-            TECH_IRON_WORKING,     // Legion (strong military)
-            TECH_THE_REPUBLIC,     // Better government
+            techPottery,          // Granary → faster city growth
+            techBronzeWorking,    // Military prerequisite chain
+            techWarriorCode,      // Better warriors
+            techMasonry,          // Barracks + City Walls
+            techAlphabet,         // Temple (happiness) + many prerequisites
+            techWriting,          // Library → science bonus
+            techCodeOfLaws,       // Marketplace + Monarchy prerequisite
+            techMonarchy,         // Better government (less corruption)
+            techHorsebackRiding,  // Horsemen (fast military)
+            techMathematics,      // Bank prerequisite
+            techIronWorking,      // Legion (strong military)
+            techTheRepublic,      // Republic government
+            techDemocracy,        // Democracy government (zero corruption)
         };
 
         for (long techId : priorityTechs) {
@@ -379,17 +463,30 @@ public class AiPlayer {
             return;
         }
 
-        // Priority 2: Granary for sustained food growth (Pottery required)
-        if (!city.hasImprovement(IMPR_GRANARY)) {
-            Improvement granary = game.improvements.get((long) IMPR_GRANARY);
-            if (granary != null && canBuildImprovement(owner, granary)) {
+        // Priority 2: Barracks for fast unit healing (no tech required).
+        // Mirrors the high priority given to Barracks in the C Freeciv AI because
+        // veteran-producing and full-healing Barracks are essential for sustained
+        // military campaigns.
+        if (!city.hasImprovement(imprBarracks)) {
+            Improvement barracks = game.improvements.get((long) imprBarracks);
+            if (barracks != null && canBuildImprovement(owner, barracks)) {
                 city.setProductionKind(1);
-                city.setProductionValue(IMPR_GRANARY);
+                city.setProductionValue(imprBarracks);
                 return;
             }
         }
 
-        // Priority 3: Settlers to expand the empire when it is still small
+        // Priority 3: Granary for sustained food growth (Pottery required)
+        if (!city.hasImprovement(imprGranary)) {
+            Improvement granary = game.improvements.get((long) imprGranary);
+            if (granary != null && canBuildImprovement(owner, granary)) {
+                city.setProductionKind(1);
+                city.setProductionValue(imprGranary);
+                return;
+            }
+        }
+
+        // Priority 4: Settlers to expand the empire when it is still small
         long myCityCount = game.cities.values().stream()
                 .filter(c -> c.getOwner() == ownerId).count();
         if (myCityCount < 4 && city.getSize() >= 2) {
@@ -398,32 +495,32 @@ public class AiPlayer {
             return;
         }
 
-        // Priority 4: Library for science output (Writing required)
-        if (!city.hasImprovement(IMPR_LIBRARY) && city.getSize() >= 2) {
-            Improvement library = game.improvements.get((long) IMPR_LIBRARY);
+        // Priority 5: Library for science output (Writing required)
+        if (!city.hasImprovement(imprLibrary) && city.getSize() >= 2) {
+            Improvement library = game.improvements.get((long) imprLibrary);
             if (library != null && canBuildImprovement(owner, library)) {
                 city.setProductionKind(1);
-                city.setProductionValue(IMPR_LIBRARY);
+                city.setProductionValue(imprLibrary);
                 return;
             }
         }
 
-        // Priority 5: Marketplace for trade income (Code of Laws required)
-        if (!city.hasImprovement(IMPR_MARKETPLACE) && city.getSize() >= 3) {
-            Improvement marketplace = game.improvements.get((long) IMPR_MARKETPLACE);
+        // Priority 6: Marketplace for trade income (Code of Laws required)
+        if (!city.hasImprovement(imprMarketplace) && city.getSize() >= 3) {
+            Improvement marketplace = game.improvements.get((long) imprMarketplace);
             if (marketplace != null && canBuildImprovement(owner, marketplace)) {
                 city.setProductionKind(1);
-                city.setProductionValue(IMPR_MARKETPLACE);
+                city.setProductionValue(imprMarketplace);
                 return;
             }
         }
 
-        // Priority 6: City Walls for passive defence (Masonry required)
-        if (!city.hasImprovement(IMPR_CITY_WALLS)) {
-            Improvement walls = game.improvements.get((long) IMPR_CITY_WALLS);
+        // Priority 7: City Walls for passive defence (Masonry required)
+        if (!city.hasImprovement(imprCityWalls)) {
+            Improvement walls = game.improvements.get((long) imprCityWalls);
             if (walls != null && canBuildImprovement(owner, walls)) {
                 city.setProductionKind(1);
-                city.setProductionValue(IMPR_CITY_WALLS);
+                city.setProductionValue(imprCityWalls);
                 return;
             }
         }
@@ -614,6 +711,142 @@ public class AiPlayer {
                 // Prefer higher score; break ties by proximity
                 if (score > bestScore || (score == bestScore && dist < bestDist)) {
                     bestScore = score;
+                    bestDist = dist;
+                    bestTile = tileId;
+                }
+            }
+        }
+        return bestTile;
+    }
+
+    // =========================================================================
+    // Worker AI (inspired by auto_settlers.c)
+    // =========================================================================
+
+    /**
+     * Worker AI: build terrain improvements (roads, irrigation, mines) to boost
+     * city output.  Mirrors the auto-settler logic in the C Freeciv server's
+     * {@code server/settlers.c} and {@code ai/default/autosettlers.c}.
+     *
+     * <p>Priority (mirroring the C server's improvement evaluation order):
+     * <ol>
+     *   <li>If the worker is already performing a terrain improvement, do nothing
+     *       (let {@link net.freecivx.server.CityTurn#processWorkerActivities} finish it).</li>
+     *   <li>Build a <b>road</b> if the current land tile has none – roads boost
+     *       trade output and movement speed on every terrain type.</li>
+     *   <li>Build <b>irrigation</b> on Grassland or Plains if none exists – adds
+     *       food surplus equivalent to an extra citizen in the C ruleset.</li>
+     *   <li>Build a <b>mine</b> on Hills if none exists – converts defensive
+     *       terrain into productive terrain.</li>
+     *   <li>If the current tile is already fully improved, move toward the nearest
+     *       unimproved land tile within a search radius, or wander randomly.</li>
+     * </ol>
+     *
+     * @param unit  the Worker unit
+     * @param utype the Worker's unit type (used for movement checks)
+     */
+    private void handleWorker(Unit unit, UnitType utype) {
+        // If the worker is already engaged in terrain improvement, let it finish.
+        // CityTurn.processWorkerActivities() advances the activity counter and
+        // completes the improvement when the required turns are accumulated.
+        int activity = unit.getActivity();
+        if (activity == CityTurn.ACTIVITY_ROAD
+                || activity == CityTurn.ACTIVITY_IRRIGATE
+                || activity == CityTurn.ACTIVITY_MINE) {
+            return; // Let the current task complete
+        }
+
+        Tile currentTile = game.tiles.get(unit.getTile());
+        if (currentTile == null) return;
+
+        int terrain = currentTile.getTerrain();
+        // Workers only operate on traversable land terrain (not ocean or polar).
+        if (terrain == TERRAIN_OCEAN || terrain == TERRAIN_DEEP_OCEAN
+                || terrain == 0 /* Arctic */ || terrain == 4 /* Glacier */
+                || terrain == 14 /* Inaccessible */) {
+            moveUnitRandomly(unit, utype);
+            return;
+        }
+
+        // Priority 1: Build a road if the tile has none.
+        // Roads improve movement and provide a trade bonus on most terrain.
+        boolean hasRoad = (currentTile.getExtras()
+                & (1 << CityTurn.EXTRA_BIT_ROAD)) != 0;
+        if (!hasRoad) {
+            game.changeUnitActivity(unit.getId(),
+                    CityTurn.ACTIVITY_ROAD);
+            return;
+        }
+
+        // Priority 2: Irrigate Grassland or Plains to boost food output.
+        boolean hasIrrigation = (currentTile.getExtras()
+                & (1 << CityTurn.EXTRA_BIT_IRRIGATION)) != 0;
+        if (!hasIrrigation
+                && (terrain == TERRAIN_GRASSLAND || terrain == TERRAIN_PLAINS)) {
+            game.changeUnitActivity(unit.getId(),
+                    CityTurn.ACTIVITY_IRRIGATE);
+            return;
+        }
+
+        // Priority 3: Mine Hills to boost production output.
+        boolean hasMine = (currentTile.getExtras()
+                & (1 << CityTurn.EXTRA_BIT_MINE)) != 0;
+        if (!hasMine && terrain == TERRAIN_HILLS) {
+            game.changeUnitActivity(unit.getId(),
+                    CityTurn.ACTIVITY_MINE);
+            return;
+        }
+
+        // Current tile is fully improved – move toward the nearest unimproved tile.
+        long bestTarget = findBestWorkerTarget(unit.getTile());
+        if (bestTarget >= 0) {
+            moveUnitToward(unit, utype, bestTarget);
+        } else {
+            moveUnitRandomly(unit, utype);
+        }
+    }
+
+    /**
+     * Finds the nearest land tile within a search radius that would benefit from
+     * a terrain improvement.  Returns the best candidate tile ID, or {@code -1}
+     * if all nearby tiles are already improved or unsuitable.
+     *
+     * @param fromTile the worker's current tile ID
+     * @return the tile ID of the best improvement target, or {@code -1}
+     */
+    private long findBestWorkerTarget(long fromTile) {
+        final int WORKER_SEARCH_RADIUS = 8;
+        long x = fromTile % game.map.getXsize();
+        long y = fromTile / game.map.getXsize();
+        long bestTile = -1;
+        long bestDist = Long.MAX_VALUE;
+
+        long minY = Math.max(0, y - WORKER_SEARCH_RADIUS);
+        long maxY = Math.min(game.map.getYsize() - 1, y + WORKER_SEARCH_RADIUS);
+        long minX = Math.max(0, x - WORKER_SEARCH_RADIUS);
+        long maxX = Math.min(game.map.getXsize() - 1, x + WORKER_SEARCH_RADIUS);
+
+        for (long ty = minY; ty <= maxY; ty++) {
+            for (long tx = minX; tx <= maxX; tx++) {
+                long tileId = ty * game.map.getXsize() + tx;
+                Tile tile = game.tiles.get(tileId);
+                if (tile == null) continue;
+                int t = tile.getTerrain();
+                // Skip ocean and impassable terrain
+                if (t == TERRAIN_OCEAN || t == TERRAIN_DEEP_OCEAN
+                        || t == 0 || t == 4 || t == 14) continue;
+
+                int extras = tile.getExtras();
+                boolean roadMissing = (extras & (1 << CityTurn.EXTRA_BIT_ROAD)) == 0;
+                boolean irrigationUseful = (t == TERRAIN_GRASSLAND || t == TERRAIN_PLAINS)
+                        && (extras & (1 << CityTurn.EXTRA_BIT_IRRIGATION)) == 0;
+                boolean mineUseful = (t == TERRAIN_HILLS)
+                        && (extras & (1 << CityTurn.EXTRA_BIT_MINE)) == 0;
+
+                if (!roadMissing && !irrigationUseful && !mineUseful) continue;
+
+                long dist = Math.abs(tx - x) + Math.abs(ty - y);
+                if (dist < bestDist) {
                     bestDist = dist;
                     bestTile = tileId;
                 }
