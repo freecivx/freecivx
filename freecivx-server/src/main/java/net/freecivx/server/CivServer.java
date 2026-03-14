@@ -531,9 +531,9 @@ public class CivServer extends org.java_websocket.server.WebSocketServer {
         msg.put("username", player.getUsername());
         msg.put("name", player.getUsername());
         msg.put("nation", player.getNation());
-        msg.put("government", 1);
-        msg.put("researching", 1);
-        msg.put("bulbs_researched", 0);
+        msg.put("government", player.getGovernmentId());
+        msg.put("researching", player.getResearchingTech());
+        msg.put("bulbs_researched", player.getBulbsResearched());
         JSONArray inventions = new JSONArray();
         msg.put("inventions", inventions);
         JSONArray flags = new JSONArray();
@@ -551,10 +551,10 @@ public class CivServer extends org.java_websocket.server.WebSocketServer {
         msg.put("real_embassy", embassies);
         msg.put("is_alive", player.isAlive());
 
-        msg.put("tax", 40);
+        msg.put("tax", 100 - player.getScienceRate());
         msg.put("luxury", 0);
-        msg.put("science", 60);
-        msg.put("gold", 100);
+        msg.put("science", player.getScienceRate());
+        msg.put("gold", player.getGold());
 
         broadcast(msg);
     }
