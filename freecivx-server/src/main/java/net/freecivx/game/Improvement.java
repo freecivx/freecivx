@@ -38,6 +38,15 @@ public class Improvement {
     private String helptext;
     private long techReqId;   // Technology required to build (-1 = none)
 
+    /**
+     * Name of the technology that makes this improvement obsolete, as read from
+     * the {@code obsolete_by} table in the buildings ruleset.  {@code null} means
+     * the building never becomes obsolete via technology.
+     * Mirrors the {@code obsolete_by} Tech-type requirement in the C Freeciv server's
+     * {@code server/cityturn.c:remove_obsolete_buildings_city()}.
+     */
+    private String obsoletedByTechName = null;
+
     public Improvement(long id, String name, String ruleName, String graphicStr,
                        String graphicAlt, int genus, int buildCost, int upkeep,
                        int sabotage, String soundtag, String soundtagAlt,
@@ -70,6 +79,20 @@ public class Improvement {
     public String getSoundtagAlt() { return soundtagAlt; }
     public String getHelptext() { return helptext; }
     public long getTechReqId() { return techReqId; }
+
+    /**
+     * Returns the name of the technology that makes this improvement obsolete,
+     * or {@code null} if no technology obsoletes it.
+     */
+    public String getObsoletedByTechName() { return obsoletedByTechName; }
+
+    /**
+     * Sets the name of the technology that makes this improvement obsolete.
+     * Called during ruleset loading once the {@code obsolete_by} table has been parsed.
+     *
+     * @param techName the technology name, or {@code null} for none
+     */
+    public void setObsoletedByTechName(String techName) { this.obsoletedByTechName = techName; }
 
     @Override
     public String toString() {

@@ -64,6 +64,9 @@ public class TechTools {
         // Auto-upgrade units that are made obsolete by the newly acquired technology.
         // Mirrors do_upgrade_effects() in the C Freeciv server's server/unittools.c.
         doUpgradeEffects(game, playerId);
+        // Remove buildings that are now obsolete due to the newly acquired technology.
+        // Mirrors remove_obsolete_buildings_city() in the C Freeciv server's cityturn.c.
+        CityTurn.removeObsoleteBuildingsForPlayer(game, playerId);
         sendResearchInfo(game, game.getServer(), player.getConnectionId(), playerId);
     }
 
