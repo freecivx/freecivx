@@ -307,6 +307,10 @@ public class Game {
             }
         });
 
+        // Process end-of-turn city updates: growth, production, economy, research.
+        // Mirrors update_city_activities() in the C Freeciv server's cityturn.c.
+        net.freecivx.server.CityTurn.updateAllCities(this);
+
         // Run AI turns (executed in the dedicated AI thread)
         aiPlayer.runAiTurns();
 
