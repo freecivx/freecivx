@@ -25,3 +25,4 @@ Put all copilot documentation files in the doc directory.
 - Run CodeQL security scan not needed for small javascript changes, to speed up dev process. :)
 - No need to check if fuctions are defined all the time.  typeof current_focus !== 'undefined'
 - When doing changes to the "Freeciv server", this means the freeciv directory. Do not modify "freecivx-server" unless directly told to.
+- do not create java tests for freecivx-server
