@@ -277,21 +277,51 @@ public class Game {
         nations.put(1L, new Nation("France", "French", "france", "Vive La France!"));
         nations.put(2L, new Nation("Germany", "German", "germany", "Deutschland"));
 
-        extras.put(0L,  new Extra("River"));
-        extras.put(1L,  new Extra("Mine"));
-        extras.put(2L,  new Extra("Oil_well"));
-        extras.put(3L,  new Extra("Fallout"));
-        extras.put(4L,  new Extra("Pollution"));
-        extras.put(5L,  new Extra("Buoy"));
-        extras.put(6L,  new Extra("Road"));
-        extras.put(7L,  new Extra("Rail"));
-        extras.put(8L,  new Extra("Hut"));
-        extras.put(9L,  new Extra("Irrigation"));
-        extras.put(10L, new Extra("Farmland"));
-        extras.put(11L, new Extra("Ruins"));
-        extras.put(12L, new Extra("Airbase"));
-        extras.put(13L, new Extra("Airport"));
-        extras.put(14L, new Extra("Fortress"));
+        // EC_* cause bit values (matching fc_types.js / common/fc_types.h):
+        //   EC_IRRIGATION=0 → 1, EC_MINE=1 → 2, EC_ROAD=2 → 4, EC_BASE=3 → 8,
+        //   EC_POLLUTION=4 → 16, EC_FALLOUT=5 → 32, EC_HUT=6 → 64,
+        //   EC_APPEARANCE=7 → 128, EC_RESOURCE=8 → 256
+        final int EC_IRRIGATION  = 1;
+        final int EC_MINE        = 2;
+        final int EC_ROAD        = 4;
+        final int EC_BASE        = 8;
+        final int EC_POLLUTION   = 16;
+        final int EC_FALLOUT     = 32;
+        final int EC_HUT         = 64;
+        final int EC_APPEARANCE  = 128;
+        final int EC_RESOURCE    = 256;
+
+        // Infrastructure / base extras (bits 0-14)
+        extras.put(0L,  new Extra("River",      0,            null));
+        extras.put(1L,  new Extra("Mine",        EC_MINE,      null));
+        extras.put(2L,  new Extra("Oil_well",    EC_MINE,      null));
+        extras.put(3L,  new Extra("Fallout",     EC_FALLOUT,   null));
+        extras.put(4L,  new Extra("Pollution",   EC_POLLUTION, null));
+        extras.put(5L,  new Extra("Buoy",        EC_BASE,      null));
+        extras.put(6L,  new Extra("Road",        EC_ROAD,      null));
+        extras.put(7L,  new Extra("Rail",        EC_ROAD,      null));
+        extras.put(8L,  new Extra("Hut",         EC_HUT,       null));
+        extras.put(9L,  new Extra("Irrigation",  EC_IRRIGATION, null));
+        extras.put(10L, new Extra("Farmland",    EC_IRRIGATION, null));
+        extras.put(11L, new Extra("Ruins",       EC_APPEARANCE, null));
+        extras.put(12L, new Extra("Airbase",     EC_BASE,      null));
+        extras.put(13L, new Extra("Airport",     0,            null));
+        extras.put(14L, new Extra("Fortress",    EC_BASE,      null));
+
+        // Resource extras (bits 15-25): EC_RESOURCE cause; graphic tags match the
+        // classic Freeciv tileset (amplio2) so the 2D/3D map can draw them.
+        // Bit positions must match MapGenerator.EXTRA_BIT_* constants.
+        extras.put(15L, new Extra("Cattle",      EC_RESOURCE, "ts.cattle"));
+        extras.put(16L, new Extra("Game",        EC_RESOURCE, "ts.game"));
+        extras.put(17L, new Extra("Wheat",       EC_RESOURCE, "ts.wheat"));
+        extras.put(18L, new Extra("Horses",      EC_RESOURCE, "ts.horses"));
+        extras.put(19L, new Extra("Forest_Game", EC_RESOURCE, "ts.forest_game"));
+        extras.put(20L, new Extra("Coal",        EC_RESOURCE, "ts.coal"));
+        extras.put(21L, new Extra("Iron",        EC_RESOURCE, "ts.iron"));
+        extras.put(22L, new Extra("Gold",        EC_RESOURCE, "ts.gold"));
+        extras.put(23L, new Extra("Oasis",       EC_RESOURCE, "ts.oasis"));
+        extras.put(24L, new Extra("Fish",        EC_RESOURCE, "ts.fish"));
+        extras.put(25L, new Extra("Whales",      EC_RESOURCE, "ts.whales"));
 
         // City styles are always hardcoded
         cityStyle.put(0L, new CityStyle("European"));
@@ -355,8 +385,8 @@ public class Game {
         // Send nations
         nations.forEach((id, nation) -> server.sendNationInfoAll(id, nation.getName(), nation.getAdjective(), nation.getGraphicsStr(), nation.getLegend()));
 
-        // Send extras (with correct id)
-        extras.forEach((id, extra) -> server.sendExtrasInfoAll(id, extra.getName()));
+        // Send extras (with correct id, causes and graphic_str)
+        extras.forEach((id, extra) -> server.sendExtrasInfoAll(id, extra.getName(), extra.getCauses(), extra.getGraphicStr()));
 
         // Send terrains
         terrains.forEach((id, terrain) -> server.sendTerrainInfoAll(id, terrain.getName(), terrain.getGraphicsStr()));

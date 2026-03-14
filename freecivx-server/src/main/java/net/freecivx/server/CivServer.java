@@ -658,15 +658,23 @@ public class CivServer extends org.java_websocket.server.WebSocketServer {
         broadcast(msg);
     }
 
-    public void sendExtrasInfoAll(long id, String extra_name) {
+    public void sendExtrasInfoAll(long id, String extra_name, int causes, String graphicStr) {
+        JSONObject msg = buildExtraPacket(id, extra_name, causes, graphicStr);
+        broadcast(msg);
+    }
+
+    /** Builds a PACKET_RULESET_EXTRA message with all required fields. */
+    private JSONObject buildExtraPacket(long id, String extra_name, int causes, String graphicStr) {
         JSONObject msg = new JSONObject();
         msg.put("pid", Packets.PACKET_RULESET_EXTRA);
         msg.put("id", id);
         msg.put("name", extra_name);
-        msg.put("graphic_str", extra_name.toLowerCase());
+        msg.put("graphic_str", graphicStr != null ? graphicStr : extra_name.toLowerCase());
+        msg.put("graphic_alt", "-");
         msg.put("rule_name", extra_name);
-
-        broadcast(msg);
+        msg.put("causes", causes);
+        msg.put("rmcauses", 0);
+        return msg;
     }
 
     public void sendTileInfoAll(Tile tile) {
@@ -951,12 +959,7 @@ public class CivServer extends org.java_websocket.server.WebSocketServer {
 
         // Extras
         game.extras.forEach((id, extra) -> {
-            JSONObject msg = new JSONObject();
-            msg.put("pid", Packets.PACKET_RULESET_EXTRA);
-            msg.put("id", id);
-            msg.put("name", extra.getName());
-            msg.put("graphic_str", extra.getName().toLowerCase());
-            msg.put("rule_name", extra.getName());
+            JSONObject msg = buildExtraPacket(id, extra.getName(), extra.getCauses(), extra.getGraphicStr());
             ws.send(msg.toString());
         });
 

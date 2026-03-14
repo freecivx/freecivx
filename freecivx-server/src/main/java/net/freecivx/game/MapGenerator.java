@@ -27,20 +27,33 @@ public class MapGenerator {
 
     // **Extra IDs (bit positions in the tile extras bitvector)**
     // Must match the extras order in Game.initGame()
-    private static final int EXTRA_BIT_HUT = 8;
+    private static final int EXTRA_BIT_HUT         = 8;
+    // Resource extra bit positions (must match Game.initGame() extras 15-25)
+    private static final int EXTRA_BIT_CATTLE      = 15;
+    private static final int EXTRA_BIT_GAME        = 16;
+    private static final int EXTRA_BIT_WHEAT       = 17;
+    private static final int EXTRA_BIT_HORSES      = 18;
+    private static final int EXTRA_BIT_FOREST_GAME = 19;
+    private static final int EXTRA_BIT_COAL        = 20;
+    private static final int EXTRA_BIT_IRON        = 21;
+    private static final int EXTRA_BIT_GOLD        = 22;
+    private static final int EXTRA_BIT_OASIS       = 23;
+    private static final int EXTRA_BIT_FISH        = 24;
+    private static final int EXTRA_BIT_WHALES      = 25;
 
     // **Resource IDs** (0 = none; must match resource ruleset order)
-    private static final int RESOURCE_NONE      = 0;
-    private static final int RESOURCE_CATTLE    = 1;
-    private static final int RESOURCE_GAME      = 2;
-    private static final int RESOURCE_WHEAT     = 3;
-    private static final int RESOURCE_HORSES    = 4;
+    private static final int RESOURCE_NONE        = 0;
+    private static final int RESOURCE_CATTLE      = 1;
+    private static final int RESOURCE_GAME        = 2;
+    private static final int RESOURCE_WHEAT       = 3;
+    private static final int RESOURCE_HORSES      = 4;
     private static final int RESOURCE_FOREST_GAME = 5;
-    private static final int RESOURCE_COAL      = 6;
-    private static final int RESOURCE_IRON      = 7;
-    private static final int RESOURCE_GOLD      = 8;
-    private static final int RESOURCE_OASIS     = 9;
-    private static final int RESOURCE_FISH      = 10;
+    private static final int RESOURCE_COAL        = 6;
+    private static final int RESOURCE_IRON        = 7;
+    private static final int RESOURCE_GOLD        = 8;
+    private static final int RESOURCE_OASIS       = 9;
+    private static final int RESOURCE_FISH        = 10;
+    private static final int RESOURCE_WHALES      = 11;
 
     // Probability that a given land tile has a resource
     private static final double RESOURCE_PROBABILITY = 0.15;
@@ -217,6 +230,13 @@ public class MapGenerator {
                     extras |= (1 << EXTRA_BIT_HUT);
                 }
 
+                // Also encode the resource as an extra bit so the client's
+                // tile_resource() (which uses EC_RESOURCE extras) can find it.
+                int resourceBit = resourceToExtraBit(resource);
+                if (resourceBit >= 0) {
+                    extras |= (1 << resourceBit);
+                }
+
                 Tile tile = new Tile(index, 2, terrain, resource, extras, heightLevel, -1);
                 tiles.put(index, tile);
             }
@@ -238,8 +258,30 @@ public class MapGenerator {
             case TERRAIN_HILLS     -> random.nextBoolean() ? RESOURCE_COAL : RESOURCE_IRON;
             case TERRAIN_MOUNTAINS -> RESOURCE_GOLD;
             case TERRAIN_DESERT    -> RESOURCE_OASIS;
-            case TERRAIN_OCEAN, TERRAIN_COAST -> RESOURCE_FISH;
+            case TERRAIN_OCEAN, TERRAIN_COAST -> random.nextBoolean() ? RESOURCE_FISH : RESOURCE_WHALES;
             default -> RESOURCE_NONE;
+        };
+    }
+
+    /**
+     * Maps a resource ID to its corresponding extra bit position so the client
+     * can discover it via tile_resource() / EC_RESOURCE extras.
+     * Returns -1 for RESOURCE_NONE.
+     */
+    private int resourceToExtraBit(int resource) {
+        return switch (resource) {
+            case RESOURCE_CATTLE      -> EXTRA_BIT_CATTLE;
+            case RESOURCE_GAME        -> EXTRA_BIT_GAME;
+            case RESOURCE_WHEAT       -> EXTRA_BIT_WHEAT;
+            case RESOURCE_HORSES      -> EXTRA_BIT_HORSES;
+            case RESOURCE_FOREST_GAME -> EXTRA_BIT_FOREST_GAME;
+            case RESOURCE_COAL        -> EXTRA_BIT_COAL;
+            case RESOURCE_IRON        -> EXTRA_BIT_IRON;
+            case RESOURCE_GOLD        -> EXTRA_BIT_GOLD;
+            case RESOURCE_OASIS       -> EXTRA_BIT_OASIS;
+            case RESOURCE_FISH        -> EXTRA_BIT_FISH;
+            case RESOURCE_WHALES      -> EXTRA_BIT_WHALES;
+            default -> -1;
         };
     }
 }
