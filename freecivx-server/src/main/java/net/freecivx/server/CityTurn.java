@@ -24,6 +24,7 @@ import net.freecivx.game.Game;
 import net.freecivx.game.Government;
 import net.freecivx.game.Improvement;
 import net.freecivx.game.Player;
+import net.freecivx.game.Tile;
 import net.freecivx.game.Unit;
 import net.freecivx.game.UnitType;
 import java.util.ArrayList;
@@ -98,6 +99,53 @@ public class CityTurn {
     private static final int HAPPY_COST = 2;
 
     /**
+     * Activity code for a unit building a road.
+     * Used by {@link #processWorkerActivities} and {@link UnitTools}.
+     * Mirrors {@code ACTIVITY_ROAD} in the C Freeciv server's
+     * {@code common/unit.h}.
+     */
+    public static final int ACTIVITY_ROAD = 4;
+
+    /**
+     * Activity code for a unit building irrigation.
+     * Used by {@link #processWorkerActivities} and {@link UnitTools}.
+     * Mirrors {@code ACTIVITY_IRRIGATE} in the C Freeciv server's
+     * {@code common/unit.h}.
+     */
+    public static final int ACTIVITY_IRRIGATE = 5;
+
+    /**
+     * Activity code for a unit building a mine.
+     * Used by {@link #processWorkerActivities} and {@link UnitTools}.
+     * Mirrors {@code ACTIVITY_MINE} in the C Freeciv server's
+     * {@code common/unit.h}.
+     */
+    public static final int ACTIVITY_MINE = 7;
+
+    /** Number of turns a worker needs to complete a road. */
+    private static final int ROAD_TURNS = 2;
+    /** Number of turns a worker needs to complete an irrigation channel. */
+    private static final int IRRIGATE_TURNS = 5;
+    /** Number of turns a worker needs to complete a mine. */
+    private static final int MINE_TURNS = 5;
+
+    /**
+     * Tile extras bitvector index for Road.
+     * Matches extras entry 6 registered in {@code Game.initGame()}.
+     */
+    private static final int EXTRA_BIT_ROAD = 6;
+    /**
+     * Tile extras bitvector index for Irrigation.
+     * Matches extras entry 9 registered in {@code Game.initGame()}.
+     */
+    private static final int EXTRA_BIT_IRRIGATION = 9;
+    /**
+     * Tile extras bitvector index for Mine.
+     * Matches extras entry 1 registered in {@code Game.initGame()}.
+     */
+    private static final int EXTRA_BIT_MINE = 1;
+
+    /**
      * Returns the granary size (food needed to grow) for a city of the given size.
      * Mirrors {@code city_granary_size} in the C Freeciv server's {@code common/city.c}.
      * Uses the classic Freeciv ruleset defaults:
@@ -168,14 +216,26 @@ public class CityTurn {
             if (improvement != null) {
                 int cost = improvement.getBuildCost();
                 if (city.getShieldStock() >= cost) {
-                    city.addImprovement(improvId);
-                    city.setShieldStock(city.getShieldStock() - cost);
-                    Notify.notifyPlayer(game, game.getServer(),
-                            city.getOwner(),
-                            city.getName() + " has built " + improvement.getName() + ".");
-                    // Reset production to nothing after completion
-                    city.setProductionKind(0);
-                    city.setProductionValue(0);
+                    // Check technology prerequisite before completing construction.
+                    // Mirrors city_build_building() in the C Freeciv server's
+                    // server/citytools.c: an improvement cannot be finished unless
+                    // the player has the required technology.
+                    long techReq = improvement.getTechReqId();
+                    boolean techMet = (player == null || techReq < 0
+                            || player.hasTech(techReq));
+                    if (techMet) {
+                        city.addImprovement(improvId);
+                        city.setShieldStock(city.getShieldStock() - cost);
+                        Notify.notifyPlayer(game, game.getServer(),
+                                city.getOwner(),
+                                city.getName() + " has built " + improvement.getName() + ".");
+                        // Reset production to nothing after completion
+                        city.setProductionKind(0);
+                        city.setProductionValue(0);
+                    }
+                    // else: shields are ready but prerequisite tech not yet researched;
+                    // keep shields and production queued — completes automatically when
+                    // the technology is acquired.
                 }
             }
         }
@@ -284,6 +344,10 @@ public class CityTurn {
         // Mirrors unit_restore_hitpoints() in the C Freeciv server's unittools.c.
         restoreUnitHitpoints(game);
 
+        // Advance terrain improvement activities (road, mine, irrigation).
+        // Mirrors unit_activity_handling() in the C Freeciv server's unittools.c.
+        processWorkerActivities(game);
+
         // Snapshot city IDs to avoid concurrent-modification issues
         for (long cityId : new ArrayList<>(game.cities.keySet())) {
             cityGrowth(game, cityId);
@@ -334,6 +398,29 @@ public class CityTurn {
             }
 
             int newGold = player.getGold() + income - buildingUpkeep - unitUpkeep;
+
+            // Bankruptcy: if the player cannot cover upkeep costs, disband military
+            // units one by one until solvent (or none remain).  Mirrors the gold
+            // upkeep auto-disband logic in the C Freeciv server's cityturn.c
+            // (city_support → unit_gold_upkeep → auto_settler_do_goto_action).
+            if (newGold < 0) {
+                List<Unit> militaryUnits = new ArrayList<>();
+                for (Unit unit : game.units.values()) {
+                    if (unit.getOwner() != pid) continue;
+                    UnitType utype = game.unitTypes.get((long) unit.getType());
+                    if (utype != null && utype.getAttackStrength() > 0) {
+                        militaryUnits.add(unit);
+                    }
+                }
+                for (Unit toDisband : militaryUnits) {
+                    if (newGold >= 0) break;
+                    newGold += 1; // Each disbanded unit saves 1 gold of upkeep
+                    UnitTools.removeUnit(game, toDisband.getId());
+                    Notify.notifyPlayer(game, game.getServer(), pid,
+                            "Lack of funds! A military unit has been disbanded.");
+                }
+            }
+
             player.setGold(Math.max(0, newGold));
 
             // Update research progress (accumulates science bulbs, completes tech if reached).
@@ -356,6 +443,9 @@ public class CityTurn {
      *       ({@code effect_university}, value=150, requires both buildings)</li>
      * </ul>
      * Combined effect: Library alone = ×2; Library + University = ×3.5.
+     * Government corruption is also applied (same as for gold output), mirroring
+     * the C Freeciv server where all trade-derived output types are reduced by
+     * the government's corruption factor.  Courthouse (id 9) halves the penalty.
      *
      * @param game   the current game state
      * @param cityId the ID of the city to evaluate
@@ -382,7 +472,23 @@ public class CityTurn {
         }
         science = science * (100 + scienceBonus) / 100;
 
-        return science;
+        // Apply government corruption to science output.
+        // Mirrors the C Freeciv server where all trade output (gold, science,
+        // luxury) is reduced by the government's corruption factor before being
+        // split among the three output channels.  Courthouse (id 9) halves it.
+        Player player = game.players.get(city.getOwner());
+        if (player != null) {
+            Government gov = game.governments.get((long) player.getGovernmentId());
+            if (gov != null) {
+                int corruptionPct = gov.getCorruptionPct();
+                if (city.hasImprovement(IMPR_COURTHOUSE)) {
+                    corruptionPct /= 2;
+                }
+                science = science * (100 - corruptionPct) / 100;
+            }
+        }
+
+        return Math.max(0, science);
     }
 
     /**
@@ -656,34 +762,92 @@ public class CityTurn {
     }
 
     /**
-     * Calculates and applies corruption and production waste to a city.
-     * The amount depends on the current government type and any anti-corruption
-     * improvements.  Mirrors the corruption/waste calculation in the C Freeciv
-     * server's {@code cityturn.c}.
+     * Processes one turn of terrain improvement activity for all units currently
+     * engaged in building roads, irrigation channels, or mines.
+     * Each turn the unit's activity counter increments; when it reaches the
+     * required threshold the corresponding tile extra is applied and the unit
+     * returns to idle.  Mirrors {@code unit_activity_handling()} in the C Freeciv
+     * server's {@code server/unittools.c}.
      *
-     * @param game   the current game state
-     * @param cityId the ID of the city to evaluate
+     * <p>Improvement turn costs:
+     * <ul>
+     *   <li>Road ({@link #ACTIVITY_ROAD}): {@value #ROAD_TURNS} turns</li>
+     *   <li>Irrigation ({@link #ACTIVITY_IRRIGATE}): {@value #IRRIGATE_TURNS} turns</li>
+     *   <li>Mine ({@link #ACTIVITY_MINE}): {@value #MINE_TURNS} turns</li>
+     * </ul>
+     *
+     * @param game the current game state
      */
-    public static void citySpoilage(Game game, long cityId) {
-        City city = game.cities.get(cityId);
-        if (city == null) return;
+    public static void processWorkerActivities(Game game) {
+        for (Unit unit : new ArrayList<>(game.units.values())) {
+            int activity = unit.getActivity();
+            int requiredTurns = workerActivityTurns(activity);
+            if (requiredTurns <= 0) continue; // not a terrain improvement activity
 
-        Player player = game.players.get(city.getOwner());
-        if (player == null) return;
+            Tile tile = game.tiles.get(unit.getTile());
+            if (tile == null) continue;
 
-        Government gov = game.governments.get((long) player.getGovernmentId());
-        if (gov == null) return;
+            unit.setActivityCount(unit.getActivityCount() + 1);
 
-        int corruptionPct = gov.getCorruptionPct();
-        // Courthouse halves corruption
-        if (city.hasImprovement(IMPR_COURTHOUSE)) {
-            corruptionPct = corruptionPct / 2;
+            if (unit.getActivityCount() >= requiredTurns) {
+                int extraBit = workerActivityExtraBit(activity);
+                String extraName = workerActivityName(activity);
+
+                // Apply the tile improvement only if not already present
+                if (extraBit >= 0 && (tile.getExtras() & (1 << extraBit)) == 0) {
+                    tile.setExtras(tile.getExtras() | (1 << extraBit));
+                    game.getServer().sendTileInfoAll(tile);
+                    Notify.notifyPlayer(game, game.getServer(), unit.getOwner(),
+                            extraName + " has been completed.");
+                }
+                // Return the worker to idle and reset activity counter
+                unit.setActivity(0);
+                unit.setActivityCount(0);
+                game.getServer().sendUnitAll(unit);
+            }
         }
-        if (corruptionPct > 0) {
-            int tradeBase = city.getSize();
-            int corrupted = tradeBase * corruptionPct / 100;
-            System.out.println("City " + city.getName()
-                    + " loses " + corrupted + " trade to corruption (" + corruptionPct + "%)");
-        }
+    }
+
+    /**
+     * Returns the number of turns required to complete the given terrain
+     * improvement activity, or {@code 0} if the activity is not a worker
+     * terrain improvement.
+     *
+     * @param activity the unit activity code
+     * @return turns required, or 0 for non-worker activities
+     */
+    private static int workerActivityTurns(int activity) {
+        if (activity == ACTIVITY_ROAD)     return ROAD_TURNS;
+        if (activity == ACTIVITY_IRRIGATE) return IRRIGATE_TURNS;
+        if (activity == ACTIVITY_MINE)     return MINE_TURNS;
+        return 0;
+    }
+
+    /**
+     * Returns the tile extras bitvector index for the improvement produced by
+     * the given worker activity, or {@code -1} if not applicable.
+     *
+     * @param activity the unit activity code
+     * @return the extras bit index, or -1
+     */
+    private static int workerActivityExtraBit(int activity) {
+        if (activity == ACTIVITY_ROAD)     return EXTRA_BIT_ROAD;
+        if (activity == ACTIVITY_IRRIGATE) return EXTRA_BIT_IRRIGATION;
+        if (activity == ACTIVITY_MINE)     return EXTRA_BIT_MINE;
+        return -1;
+    }
+
+    /**
+     * Returns a human-readable name for the tile improvement produced by the
+     * given worker activity (used in player notifications).
+     *
+     * @param activity the unit activity code
+     * @return display name, or an empty string if not applicable
+     */
+    private static String workerActivityName(int activity) {
+        if (activity == ACTIVITY_ROAD)     return "Road";
+        if (activity == ACTIVITY_IRRIGATE) return "Irrigation";
+        if (activity == ACTIVITY_MINE)     return "Mine";
+        return "";
     }
 }

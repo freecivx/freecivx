@@ -82,6 +82,20 @@ public class UnitHand {
             game.changeUnitActivity(actorId, 3); // activity 3 = ACTIVITY_FORTIFIED
         } else if ("Pillage".equals(actionName)) {
             game.changeUnitActivity(actorId, 6); // activity 6 = ACTIVITY_PILLAGE
+        } else if ("Road".equals(actionName)) {
+            // Start building a road on the current tile.
+            // Mirrors the Road action handler in the C Freeciv server's unithand.c.
+            // CityTurn.processWorkerActivities() will advance and complete the work
+            // over ROAD_TURNS turns.
+            game.changeUnitActivity(actorId, CityTurn.ACTIVITY_ROAD);
+        } else if ("Irrigate".equals(actionName) || "Cultivate".equals(actionName)) {
+            // Start building an irrigation channel on the current tile.
+            // "Cultivate" is the Freeciv 3.x name for the irrigate action.
+            game.changeUnitActivity(actorId, CityTurn.ACTIVITY_IRRIGATE);
+        } else if ("Mine".equals(actionName) || "Plant".equals(actionName)) {
+            // Start building a mine on the current tile.
+            // "Plant" is the Freeciv 3.x name for the mine/forest-plant action.
+            game.changeUnitActivity(actorId, CityTurn.ACTIVITY_MINE);
         } else {
             // Dispatch to the generic action system
             UnitTools.sendUnitInfo(game, game.getServer(), connId, actorId);
