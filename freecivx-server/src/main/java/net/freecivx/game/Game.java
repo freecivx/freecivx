@@ -21,11 +21,10 @@
 package net.freecivx.game;
 
 import net.freecivx.server.CivServer;
+import net.freecivx.ai.AiPlayer;
 import org.json.JSONArray;
 
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Random;
 
@@ -42,14 +41,9 @@ public class Game {
     boolean gameStarted = false;
 
     private static final int MAX_START_POSITION_ATTEMPTS = 200;
-    private static final int AI_CITY_BUILD_CHANCE = 3;
-    private static final String[] AI_CITY_NAMES = {
-        "Rome", "Athens", "Cairo", "Babylon", "Carthage", "Persepolis",
-        "Thebes", "Memphis", "Nineveh", "Tyre", "Samarkand", "Antioch"
-    };
-    private int aiCityNameIndex = 0;
     private long lastActivityTime = System.currentTimeMillis();
     private Random random = new Random();
+    private AiPlayer aiPlayer;
 
     public WorldMap map;
     public Map<Long, Player> players = new HashMap<>();
@@ -68,6 +62,7 @@ public class Game {
 
     public Game(CivServer server) {
         this.server = server;
+        this.aiPlayer = new AiPlayer(this);
     }
 
     /**
@@ -302,8 +297,8 @@ public class Game {
             }
         });
 
-        // Run AI turns before broadcasting
-        runAiTurns();
+        // Run AI turns (executed in the dedicated AI thread)
+        aiPlayer.runAiTurns();
 
         server.sendGameInfoAll(year, turn, phase);
         server.sendMessageAll("Turn " + turn + " has started (Year " + (4000 + year * 20) + " BC).");
@@ -401,70 +396,6 @@ public class Game {
                 city.isOccupied(), city.getWalls(), city.isHappy(), city.isUnhappy(), "", city.getName(), 6, 0);
         server.sendUnitRemove(unit_id);
         units.remove(unit_id);
-    }
-
-    private void runAiTurns() {
-        List<Unit> unitsSnapshot = new ArrayList<>(units.values());
-        for (Unit unit : unitsSnapshot) {
-            Player owner = players.get(unit.getOwner());
-            if (owner == null || !owner.isAi()) continue;
-
-            UnitType utype = unitTypes.get((long) unit.getType());
-            if (utype == null) continue;
-
-            // Settlers: build a city if on a good tile with no existing city
-            if (unit.getType() == 0) { // Settlers
-                Tile tile = tiles.get(unit.getTile());
-                if (tile != null && tile.getTerrain() == 7 && tile.getWorked() < 0
-                        && units.containsKey(unit.getId())) {
-                    if (random.nextInt(AI_CITY_BUILD_CHANCE) == 0) { // 33% chance per turn to build city
-                        String cityName = AI_CITY_NAMES[aiCityNameIndex % AI_CITY_NAMES.length];
-                        aiCityNameIndex++;
-                        buildCity(unit.getId(), cityName, unit.getTile());
-                        continue;
-                    }
-                }
-            }
-
-            // Move unit randomly (while it has movement points)
-            int movesUsed = 0;
-            while (unit.getMovesleft() > 0 && movesUsed < utype.getMoveRate()) {
-                if (!moveUnitRandomly(unit, utype)) break;
-                movesUsed++;
-            }
-        }
-    }
-
-    private boolean moveUnitRandomly(Unit unit, UnitType utype) {
-        int[] shuffledDirs = {0, 1, 2, 3, 4, 5, 6, 7};
-        for (int i = shuffledDirs.length - 1; i > 0; i--) {
-            int j = random.nextInt(i + 1);
-            int tmp = shuffledDirs[i];
-            shuffledDirs[i] = shuffledDirs[j];
-            shuffledDirs[j] = tmp;
-        }
-        int[] DIR_DX = {-1, 0, 1, -1, 1, -1, 0, 1};
-        int[] DIR_DY = {-1, -1, -1, 0, 0, 1, 1, 1};
-
-        long currentTile = unit.getTile();
-        long x = currentTile % map.getXsize();
-        long y = currentTile / map.getXsize();
-
-        for (int dir : shuffledDirs) {
-            long nx = x + DIR_DX[dir];
-            long ny = y + DIR_DY[dir];
-            if (nx < 0 || nx >= map.getXsize() || ny < 0 || ny >= map.getYsize()) continue;
-            long newTileId = ny * map.getXsize() + nx;
-            Tile destTile = tiles.get(newTileId);
-            if (destTile == null) continue;
-            // Land units avoid ocean
-            if (utype.getDomain() == 0) {
-                int terrain = destTile.getTerrain();
-                if (terrain == 2 || terrain == 3) continue;
-            }
-            return moveUnit(unit.getId(), (int) newTileId, dir);
-        }
-        return false;
     }
 
     public void syncNewPlayer(long connId) {
