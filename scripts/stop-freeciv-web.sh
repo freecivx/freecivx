@@ -33,17 +33,17 @@ fi
 . ./dependency-services-stop.sh
 
 #3. publite-go
-ps aux | grep -ie publite-go | grep -v grep | awk '{print $2}' | xargs kill -9 || true
+ps aux | grep -ie publite-go | grep -v grep | awk '{print $2}' | xargs -r kill -9 || true
 killall -9 freeciv-web || true
 
 #4. freecivx-server (Java server started by publite-go)
-ps aux | grep -ie "freecivx-server" | grep -v grep | awk '{print $2}' | xargs kill -9 || true
+ps aux | grep -ie "freecivx-server" | grep -v grep | awk '{print $2}' | xargs -r kill -9 || true
 
 #5. freeciv-scores-go
-ps aux | grep -ie freeciv-scores-go | grep -v grep | awk '{print $2}' | xargs kill -9 || true
+ps aux | grep -ie freeciv-scores-go | grep -v grep | awk '{print $2}' | xargs -r kill -9 || true
 
 #6. websockify
-ps aux | grep -ie websockify | grep -v grep | awk '{print $2}' | xargs kill -9 || true
+ps aux | grep -ie websockify | grep -v grep | awk '{print $2}' | xargs -r kill -9 || true
 
 
 # Clean up server list in metaserver database.

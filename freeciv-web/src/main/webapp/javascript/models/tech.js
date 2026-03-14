@@ -82,6 +82,10 @@ var TECH_UNKNOWN = 0;
 var TECH_PREREQS_KNOWN = 1;
 var TECH_KNOWN = 2;
 
+/* Packet IDs for client→server research requests (matches packets.def). */
+var packet_player_research = 55;
+var packet_player_tech_goal = 56;
+
 var AR_ONE = 0;
 var AR_TWO = 1;
 var AR_ROOT = 2;

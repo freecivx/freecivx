@@ -221,11 +221,22 @@ public class CivServer extends org.java_websocket.server.WebSocketServer {
             PlrHand.handlePlayerRates(game, connId, json);
         }
 
-        // Handle player research change: client selects a new technology to research.
-        // Validates prerequisites before accepting.  Mirrors handle_player_research().
-        if (pid == Packets.PACKET_RESEARCH_INFO && json.has("researching")) {
-            int techId = json.optInt("researching");
-            PlrHand.handleResearchChange(game, connId, techId);
+        // Handle PACKET_PLAYER_RESEARCH (55): client selects a new technology to research.
+        // Validates prerequisites before accepting.  Mirrors handle_player_research() in plrhand.c.
+        if (pid == Packets.PACKET_PLAYER_RESEARCH) {
+            int techId = json.optInt("tech", -1);
+            if (techId >= 0) {
+                PlrHand.handleResearchChange(game, connId, techId);
+            }
+        }
+
+        // Handle PACKET_PLAYER_TECH_GOAL (56): client sets the long-term research goal.
+        // Mirrors handle_player_tech_goal() in plrhand.c.
+        if (pid == Packets.PACKET_PLAYER_TECH_GOAL) {
+            int techId = json.optInt("tech", -1);
+            if (techId >= 0) {
+                PlrHand.handleTechGoalChange(game, connId, techId);
+            }
         }
 
         if (pid == Packets.PACKET_CHAT_MSG_REQ) {
