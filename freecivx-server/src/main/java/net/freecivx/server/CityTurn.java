@@ -45,13 +45,22 @@ public class CityTurn {
     /**
      * Returns the granary size (food needed to grow) for a city of the given size.
      * Mirrors {@code city_granary_size} in the C Freeciv server's {@code common/city.c}.
-     * Classic formula: granary = city_size * 20.
+     * Uses the classic Freeciv ruleset defaults:
+     *   granary_food_ini[0] = 20 (base for size-1 city)
+     *   granary_food_inc    = 10 (additional food per extra citizen)
+     *   foodbox             = 100 (no scaling modifier)
+     * Formula: size=1 → 20, size>1 → 20 + 10*(size-1) = 10*size+10.
+     * This matches the non-linear C server formula and provides faster early
+     * city growth compared to the old linear (size*20) calculation.
      *
      * @param citySize the current population size of the city
      * @return the amount of food required to fill the granary and grow
      */
     public static int cityGranarySize(int citySize) {
-        return citySize * 20;
+        if (citySize <= 0) return 0;
+        // Mirrors city_granary_size() in C Freeciv server's common/city.c.
+        // RS_DEFAULT_GRANARY_FOOD_INI=20, RS_DEFAULT_GRANARY_FOOD_INC=10, foodbox=100.
+        return 10 * citySize + 10;
     }
 
     /**

@@ -53,8 +53,10 @@ public class Research {
 
     /**
      * Calculates the bulb cost for a player to research the specified technology.
-     * The cost scales with the number of technologies the player already knows
-     * and any research-speed bonuses from improvements or governments.
+     * The cost uses the technology's own ruleset cost as a base and scales
+     * gradually with the number of technologies the player has already researched.
+     * Mirrors the TECH_COST_CLASSIC style in the C Freeciv server's
+     * {@code common/research.c}: {@code cost = base * (1 + known / divisor)}.
      *
      * @param game     the current game state
      * @param playerId the ID of the player
@@ -69,8 +71,12 @@ public class Research {
         Technology tech = game.techs.get(techId);
         if (tech == null) return Integer.MAX_VALUE;
 
-        // Base cost scaled by number of techs already known
-        return DEFAULT_TECH_COST * (1 + game.techs.size() / 10);
+        // Use the tech's own ruleset cost as the base; fall back to DEFAULT_TECH_COST.
+        // Scale gradually with the number of techs the player already knows,
+        // mirroring TECH_COST_CLASSIC in the C server (divisor=10 matches classic feel).
+        int baseCost = tech.getCost() > 0 ? tech.getCost() : DEFAULT_TECH_COST;
+        int knownCount = player.getKnownTechs().size();
+        return baseCost + (baseCost * knownCount / 10);
     }
 
     /**
