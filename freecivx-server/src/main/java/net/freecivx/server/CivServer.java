@@ -627,21 +627,33 @@ public class CivServer extends org.java_websocket.server.WebSocketServer {
         msg.put("production_kind", production_kind);
         msg.put("production_value", production_value);
 
-        JSONArray pplHappyArray = new JSONArray();
-        pplHappyArray.put(1);
-        pplHappyArray.put(1);
-        pplHappyArray.put(2);
-        pplHappyArray.put(1);
-        pplHappyArray.put(1);
+        JSONArray pplArray = new JSONArray();
+        pplArray.put(1);
+        pplArray.put(1);
+        pplArray.put(2);
+        pplArray.put(1);
+        pplArray.put(1);
 
-        msg.put("ppl_happy", pplHappyArray);
-        msg.put("ppl_content", pplHappyArray);
-        msg.put("ppl_unhappy", pplHappyArray);
-        msg.put("ppl_angry", pplHappyArray);
-        msg.put("ppl_happy", pplHappyArray);
+        msg.put("ppl_happy", pplArray);
+        msg.put("ppl_content", pplArray);
+        msg.put("ppl_unhappy", pplArray);
+        msg.put("ppl_angry", pplArray);
 
-        msg.put("surplus", pplHappyArray);
-        msg.put("prod", pplHappyArray);
+        // prod/surplus arrays need 6 elements: O_FOOD=0, O_SHIELD=1, O_TRADE=2,
+        // O_GOLD=3, O_LUXURY=4, O_SCIENCE=5.  Using the same values as ppl but
+        // adding a 6th slot for science so city.prod[O_SCIENCE] is not undefined
+        // in the client's get_current_bulbs_output() function.
+        JSONArray prodArray = new JSONArray();
+        prodArray.put(1); // O_FOOD=0
+        prodArray.put(1); // O_SHIELD=1
+        prodArray.put(2); // O_TRADE=2
+        prodArray.put(1); // O_GOLD=3
+        prodArray.put(1); // O_LUXURY=4
+        prodArray.put(1); // O_SCIENCE=5
+
+        msg.put("surplus", prodArray);
+        msg.put("prod", prodArray);
+        msg.put("city_options", "");
         broadcast(msg);
     }
 
@@ -733,6 +745,8 @@ public class CivServer extends org.java_websocket.server.WebSocketServer {
             privateMsg.put("luxury", player.getLuxuryRate());
             privateMsg.put("science", player.getScienceRate());
             privateMsg.put("gold", player.getGold());
+            privateMsg.put("tech_upkeep", 0);
+            privateMsg.put("researching_cost", 0);
             ownerWs.send(privateMsg.toString());
         }
     }
@@ -1075,27 +1089,21 @@ public class CivServer extends org.java_websocket.server.WebSocketServer {
             ws.send(msg.toString());
         });
 
-        // Cities
+        // Cities – send PACKET_CITY_INFO first so the JS client creates a proper
+        // City instance (with an update() method) before PACKET_CITY_SHORT_INFO
+        // arrives. If short-info arrived first the client would store a plain
+        // object without update(), causing "cities[id].update is not a function".
         game.cities.forEach((id, city) -> {
-            JSONObject shortMsg = new JSONObject();
-            shortMsg.put("pid", Packets.PACKET_CITY_SHORT_INFO);
-            shortMsg.put("id", id);
-            shortMsg.put("tile", city.getTile());
-            shortMsg.put("owner", city.getOwner());
-            shortMsg.put("original", city.getOwner());
-            shortMsg.put("size", city.getSize());
-            shortMsg.put("style", city.getStyle());
-            shortMsg.put("capital", city.isCapital());
-            shortMsg.put("occupied", city.isOccupied());
-            shortMsg.put("walls", city.getWalls());
-            shortMsg.put("happy", city.isHappy());
-            shortMsg.put("unhappy", city.isUnhappy());
-            shortMsg.put("improvements", city.getImprovements());
-            shortMsg.put("name", city.getName());
-            ws.send(shortMsg.toString());
-
             JSONArray ppl = new JSONArray();
             ppl.put(1); ppl.put(1); ppl.put(2); ppl.put(1); ppl.put(1);
+            // prod/surplus need 6 elements (O_FOOD=0…O_SCIENCE=5); add science at [5].
+            JSONArray prod = new JSONArray();
+            prod.put(1); // O_FOOD=0
+            prod.put(1); // O_SHIELD=1
+            prod.put(2); // O_TRADE=2
+            prod.put(1); // O_GOLD=3
+            prod.put(1); // O_LUXURY=4
+            prod.put(1); // O_SCIENCE=5
             JSONObject fullMsg = new JSONObject();
             fullMsg.put("pid", Packets.PACKET_CITY_INFO);
             fullMsg.put("id", id);
@@ -1117,9 +1125,27 @@ public class CivServer extends org.java_websocket.server.WebSocketServer {
             fullMsg.put("ppl_content", ppl);
             fullMsg.put("ppl_unhappy", ppl);
             fullMsg.put("ppl_angry", ppl);
-            fullMsg.put("surplus", ppl);
-            fullMsg.put("prod", ppl);
+            fullMsg.put("surplus", prod);
+            fullMsg.put("prod", prod);
+            fullMsg.put("city_options", "");
             ws.send(fullMsg.toString());
+
+            JSONObject shortMsg = new JSONObject();
+            shortMsg.put("pid", Packets.PACKET_CITY_SHORT_INFO);
+            shortMsg.put("id", id);
+            shortMsg.put("tile", city.getTile());
+            shortMsg.put("owner", city.getOwner());
+            shortMsg.put("original", city.getOwner());
+            shortMsg.put("size", city.getSize());
+            shortMsg.put("style", city.getStyle());
+            shortMsg.put("capital", city.isCapital());
+            shortMsg.put("occupied", city.isOccupied());
+            shortMsg.put("walls", city.getWalls());
+            shortMsg.put("happy", city.isHappy());
+            shortMsg.put("unhappy", city.isUnhappy());
+            shortMsg.put("improvements", city.getImprovements());
+            shortMsg.put("name", city.getName());
+            ws.send(shortMsg.toString());
         });
 
         // Players
@@ -1147,6 +1173,8 @@ public class CivServer extends org.java_websocket.server.WebSocketServer {
                 msg.put("luxury", player.getLuxuryRate());
                 msg.put("science", player.getScienceRate());
                 msg.put("gold", player.getGold());
+                msg.put("tech_upkeep", 0);
+                msg.put("researching_cost", 0);
             }
             ws.send(msg.toString());
         });
