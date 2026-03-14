@@ -67,6 +67,7 @@ public class Packets {
     public static int PACKET_WEB_RULESET_UNIT_ADDITION = 260;
     public static int PACKET_WEB_GOTO_PATH_REQ = 287;
     public static int PACKET_WEB_GOTO_PATH = 288;
-
+    public static int PACKET_RULESET_ACTION = 246;
+    public static int PACKET_RULESET_ACTION_ENABLER = 235;
 
 }

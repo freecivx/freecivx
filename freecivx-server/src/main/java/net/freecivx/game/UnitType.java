@@ -30,10 +30,11 @@ public class UnitType {
     private int attackStrength;
     private int defenseStrength;
     private String utype_actions;
+    private int domain; // 0=land, 1=sea, 2=air
 
     // Constructor
     public UnitType(String name, String graphicsStr, int moveRate, int hp, int veteranLevels, String helptext, int attackStrength, int defenseStrength,
-                    String utype_actions) {
+                    String utype_actions, int domain) {
         this.name = name;
         this.graphicsStr = graphicsStr;
         this.moveRate = moveRate;
@@ -43,6 +44,7 @@ public class UnitType {
         this.attackStrength = attackStrength;
         this.defenseStrength = defenseStrength;
         this.utype_actions = utype_actions;
+        this.domain = domain;
     }
 
     // Getters
@@ -86,6 +88,14 @@ public class UnitType {
         this.utype_actions = utype_actions;
     }
 
+    public int getDomain() {
+        return domain;
+    }
+
+    public void setDomain(int domain) {
+        this.domain = domain;
+    }
+
     // Optional toString method for debugging
     @Override
     public String toString() {
@@ -98,6 +108,7 @@ public class UnitType {
                 ", helptext='" + helptext + '\'' +
                 ", attackStrength=" + attackStrength +
                 ", defenseStrength=" + defenseStrength +
+                ", domain=" + domain +
                 '}';
     }
 }
