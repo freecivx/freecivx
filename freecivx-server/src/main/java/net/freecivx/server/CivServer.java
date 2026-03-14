@@ -392,6 +392,20 @@ public class CivServer extends org.java_websocket.server.WebSocketServer {
         if (ws != null) ws.send(msg.toString());
     }
 
+    /**
+     * Sends a raw JSON packet directly to a single client without wrapping it
+     * in a PACKET_CHAT_MSG.  Use this for structured packets such as
+     * PACKET_CITY_NAME_SUGGESTION_INFO where the client needs to dispatch on
+     * the "pid" field itself.  The caller is responsible for providing a
+     * well-formed packet that includes the required "pid" field.
+     *
+     * @param connId the connection ID of the recipient
+     * @param packet the fully-formed packet as a JSONObject (must include "pid")
+     */
+    public void sendPacket(long connId, JSONObject packet) {
+        sendTo(connId, packet);
+    }
+
     public void sendMessageAll(String message) {
         JSONObject msg = new JSONObject();
         msg.put("pid", Packets.PACKET_CHAT_MSG);
