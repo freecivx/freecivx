@@ -96,9 +96,14 @@ public class TechTools {
         // Accumulate bulbs and check for completion
         int bulbs = player.getBulbsResearched() + scienceOutput;
         Technology tech = game.techs.get(techId);
-        int cost = (tech != null && tech.getCost() > 0)
+        // Use the technology's own ruleset cost (from tech.getCost()) as the base,
+        // scaled by the number of technologies the player already knows.
+        // Mirrors TECH_COST_CLASSIC in the C Freeciv server's common/research.c:
+        //   cost = baseCost * (1 + knownCount / divisor).
+        int baseCost = (tech != null && tech.getCost() > 0)
                 ? tech.getCost()
-                : net.freecivx.game.Research.DEFAULT_TECH_COST * (1 + player.getKnownTechs().size());
+                : net.freecivx.game.Research.DEFAULT_TECH_COST;
+        int cost = baseCost + (baseCost * player.getKnownTechs().size() / 10);
         if (bulbs >= cost) {
             // Technology complete: grant it and reset bulbs
             giveTechToPlayer(game, playerId, techId);

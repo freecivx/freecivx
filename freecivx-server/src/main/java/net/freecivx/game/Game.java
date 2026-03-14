@@ -371,6 +371,14 @@ public class Game {
             }
         }
 
+        // Zone of Control (ZOC) check: land military units cannot pass through enemy
+        // territory unless they are moving from or to a city, are non-military, or
+        // have a friendly unit adjacent to either the source or destination tile.
+        // Mirrors can_step_taken_wrt_to_zoc() in the C Freeciv server's movement.c.
+        if (utype != null && !Movement.canStepWrtZoc(unit, utype, unit.getTile(), (long) dest_tile,
+                units, unitTypes, cities, tiles, map)) {
+            return false;
+        }
         // Check for enemy units on the destination tile — trigger combat instead
         // of moving (mirrors unithand.c: moving onto an enemy initiates an attack).
         for (Unit other : units.values()) {

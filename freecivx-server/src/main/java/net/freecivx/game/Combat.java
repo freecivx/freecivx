@@ -160,8 +160,13 @@ public class Combat {
 
         // Effective defence strength (base + veteran + terrain + fortification)
         int defStr = unitDefenseStrength(defender, defenderType, defenderTile);
-        // Apply fortification bonus (+25% defence, matching C server POWER_BONUS_FACTOR)
-        defStr = defStr + (defStr * unitCombatModifier(defender, defenderType) / 4);
+        // Apply fortification bonus as a percentage: e.g. +25% for fortified units.
+        // unitCombatModifier() returns a percentage (25 = 25%), applied as
+        // defStr * (100 + bonus) / 100 — mirrors POWER_BONUS_FACTOR in common/combat.c.
+        int fortifyBonus = unitCombatModifier(defender, defenderType);
+        if (fortifyBonus > 0) {
+            defStr = defStr * (100 + fortifyBonus) / 100;
+        }
         // Apply extra defence bonus (e.g. city walls +50%); mirrors EFT_DEFEND_BONUS in C server
         if (defenderExtraDefBonus > 0) {
             defStr = defStr * (100 + defenderExtraDefBonus) / 100;
@@ -240,18 +245,20 @@ public class Combat {
     }
 
     /**
-     * Returns a combat modifier for a unit based on its current activity state.
-     * For example, a fortified unit receives a defence bonus; an unfortified
-     * or moving unit may receive a penalty.
+     * Returns a combat defence bonus percentage for a unit based on its current
+     * activity state.  A fortified unit receives a +25% defence bonus, mirroring
+     * the {@code EFT_DEFEND_BONUS} (POWER_BONUS_FACTOR) in the C Freeciv server.
+     * The returned value is applied as: {@code defStr * (100 + bonus) / 100}.
      *
      * @param unit     the unit to evaluate
      * @param unitType the type definition for the unit
-     * @return the modifier value (positive = bonus, negative = penalty)
+     * @return the defence bonus percentage (e.g. 25 = +25%), or 0 for no bonus
      */
     public static int unitCombatModifier(Unit unit, UnitType unitType) {
         if (unit == null) return 0;
-        // Activity 3 = ACTIVITY_FORTIFIED in the C server
-        if (unit.getActivity() == 3) return 1;
+        // Activity 3 = ACTIVITY_FORTIFIED in the C server: grants +25% defence bonus.
+        // Mirrors the fortification bonus from EFT_DEFEND_BONUS in common/combat.c.
+        if (unit.getActivity() == 3) return 25;
         return 0;
     }
 
