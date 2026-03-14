@@ -380,6 +380,38 @@ public class Game {
         units.put((long) units.size(), new Unit(units.size(), player.getPlayerNo(), startPos, 2, 0, 1, 1, 0, 3));
     }
 
+    /**
+     * Resolves an attack from one unit against another.
+     * Uses {@link Combat#resolveCombat} to determine the outcome; the loser
+     * is removed from the game and a {@code PACKET_UNIT_REMOVE} broadcast is sent.
+     *
+     * @param attackerId ID of the attacking unit
+     * @param defenderId ID of the defending unit
+     * @return {@code true} if the attacker wins (defender is destroyed)
+     */
+    public boolean attackUnit(long attackerId, long defenderId) {
+        Unit attacker = units.get(attackerId);
+        Unit defender = units.get(defenderId);
+        if (attacker == null || defender == null) return false;
+        if (!Combat.canUnitAttack(attacker, defender)) return false;
+
+        boolean attackerWins = Combat.resolveCombat(attacker, defender, map);
+
+        // Consume one move point for the attack
+        attacker.setMovesleft(Math.max(0, attacker.getMovesleft() - 1));
+
+        if (attackerWins) {
+            units.remove(defenderId);
+            server.sendUnitRemove(defenderId);
+            server.sendUnitAll(attacker);
+        } else {
+            units.remove(attackerId);
+            server.sendUnitRemove(attackerId);
+            server.sendUnitAll(defender);
+        }
+        return attackerWins;
+    }
+
     public void buildCity(long unit_id, String city_name, long tile_id) {
         Unit unit = units.get(unit_id);
         if (unit == null) return;
