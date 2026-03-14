@@ -734,9 +734,10 @@ public class Game {
         String yearStr = historicalYear > 0
                 ? historicalYear + " BC"
                 : Math.abs(historicalYear) + " AD";
-        server.sendMessageAll("Turn " + turn + " has started (Year " + yearStr + ").");
+        server.sendEndTurnAll();
         server.sendBeginTurnAll();
         server.sendStartPhaseAll();
+        server.sendMessageAll("Turn " + turn + " has started (Year " + yearStr + ").");
 
         // Re-arm the turn-timeout timer for the new turn.
         if (turnTimeout > 0) {

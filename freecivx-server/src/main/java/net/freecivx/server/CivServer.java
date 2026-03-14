@@ -448,6 +448,13 @@ public class CivServer extends org.java_websocket.server.WebSocketServer {
         if (ws != null) ws.send(msg.toString());
     }
 
+    public void sendEndTurnAll() {
+        JSONObject msg = new JSONObject();
+        msg.put("pid", Packets.PACKET_END_TURN);
+
+        broadcast(msg);
+    }
+
     public void sendBeginTurnAll() {
         JSONObject msg = new JSONObject();
         msg.put("pid", Packets.PACKET_BEGIN_TURN);
