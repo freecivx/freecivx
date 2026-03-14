@@ -1,0 +1,318 @@
+================================================================================
+FREECIV GAME MECHANICS - JAVA SERVER IMPLEMENTATION GUIDE
+================================================================================
+
+1. UNIT SYSTEM
+==============
+
+UNIT CLASSES (Templates for broad unit categories):
+  Land      - min_speed=1, TerrainSpeed, TerrainDefense, ZOC, CanOccupyCity
+  Sea       - min_speed=2, AttackNonNative (can attack from/to land)
+  Trireme   - min_speed=2, coastal only
+  Air       - min_speed=1, Unreachable, DoesntOccupyTile
+  Helicopter - min_speed=1, hp_loss_pct=10 (LOSES 10% HP/TURN OUTSIDE BASE!)
+  Missile   - min_speed=1, Unreachable, DoesntOccupyTile
+
+UNIT INSTANCE DATA:
+  struct unit {
+    UnitType type; Tile tile; Player owner; int hp; int veteran (0-3)
+    int moves_left; Activity activity; int activity_count
+    Unit transporter; List<Unit> transporting
+    bool has_orders; UnitOrder[] orders
+  }
+
+UNIT TYPE ATTRIBUTES:
+  attack, defense, firepower, hitpoints (combat stats)
+  move_rate (whole movement points per turn)
+  build_cost, pop_cost (production)
+  vision_radius_sq (sight range)
+  upkeep[shield, food, gold] (maintenance costs)
+  flags: Settlers, Diplomat, Unique, Marines, CityBuster, etc.
+
+VETERAN SYSTEM (4 levels):
+  Green → Veteran (150%) → Hardened (175%) → Elite (200%)
+  Affects: combat power multiplier, movement
+  Promotion: 50% chance in combat, decreases per level (33%, 20%, 0%)
+
+
+2. COMBAT SYSTEM
+================
+
+COMBAT CALCULATION:
+  POWER_FACTOR = 10 (internal precision multiplier)
+  
+  win_chance(attack_str, attack_hp, attack_firepower,
+             defense_str, defense_hp, defense_firepower)
+  
+  Attack Power = base_attack × veteran_power_factor
+  Defense Power = base_defense × terrain_bonus × fortify_bonus × veteran_factor
+                × city_walls_mult(3x) × other_effects
+  
+  Combat runs multiple rounds:
+  - Each round: both sides deal firepower damage
+  - Continues until one side reaches 0 HP or 50% HP (retreat)
+  - Firepower = minimum 1, removed per round from opponent HP
+
+COMBAT BONUSES (from ruleset):
+  DefenseMultiplierPct: defense × (1 + value/100)
+  DefenseDividerPct: defense / (1 + value/100)
+  LowFirepower: reduce defender firepower
+  CityDefensePct: city-specific defense bonus
+
+CRITICAL FLAGS:
+  Marines: attack from non-native tiles
+  CityBuster: double firepower vs cities
+  BadCityDefender: 1 firepower defending in city, attacker +1 firepower
+  BadWallAttacker: 1 firepower vs city walls
+  OneAttack: can attack once per turn only
+
+
+3. MOVEMENT SYSTEM
+===================
+
+FRACTIONAL MOVEMENT POINTS:
+  SINGLE_MOVE = move_fragments = 3 (by default)
+  1 whole movement point = 3 fragments
+  MAX_MOVE_FRAGS = 65535 (network limit)
+  
+  move_rate = whole movement points per turn
+  (internally tracked as fragments: move_rate × move_fragments)
+
+TERRAIN COSTS (in fragments):
+  Grassland/Plains: 1 fragment (1/3 of whole point)
+  Forest/Hills: 2 fragments (2/3 of whole point)
+  Mountain: 3 fragments (1 whole point)
+  Roads: 1 fragment (override terrain)
+
+MOVEMENT MODIFIERS:
+  DamageSlows: movement reduced as unit takes damage
+    At 50% HP: base × 0.5
+    At 25% HP: base × 0.25
+  
+  Veteran bonus: elite units get +1 movement (optional)
+
+ZONE OF CONTROL (ZOC):
+  ZOC flag on unit class means land units block movement
+  Cannot move through enemy ZOC without using all moves to stop
+  Air/missile ignore ZOC
+  Flag "IgZOC" on unit ignores ZOC
+  Flag "HasNoZOC" on unit creates no ZOC
+
+
+4. TECHNOLOGY TREE
+===================
+
+TECH STRUCTURE:
+  struct advance {
+    name, rule_name
+    advance *require[3]: require[0]=req1, require[1]=req2, require[2]=root_req
+    double cost (in bulbs/research points)
+    bv_tech_flags flags
+    int num_reqs (total prerequisites)
+  }
+
+REQUIREMENT TYPES:
+  req1, req2: both prerequisites must be known (null if not needed)
+  root_req: all child techs must have this tech known first
+  research_reqs: complex requirements (nation, government, etc.)
+
+TECH COST CALCULATION:
+  Style 1 - Civ1Civ2: Dynamic = base × sqrt(multiplier) × num_reqs
+  Style 2 - Classic+: Fixed from ruleset
+  Style 3 - Experimental+: Balanced dynamic calculation
+  
+  Research progress = accumulated city science
+  When progress >= cost: tech researched, progress resets
+
+TECH FLAGS:
+  Bonus_Tech: first player gets bonus tech
+  Bridge: enables bridge building
+  Build_Airborne: enables air unit construction (AI)
+  Claim_Ocean: non-adjacent ocean becomes territory
+
+
+5. CITY & BUILDING SYSTEM
+==========================
+
+CITY STRUCTURE:
+  struct city {
+    id, owner, tile (location)
+    size (population, 1-255)
+    food_stock, production_value (accumulation)
+    corruption (tax/resource loss %)
+    improvements: Map<Building, boolean>
+    trade_routes
+  }
+
+CITY RADIUS & WORKING:
+  Default radius²: 5 (2 tiles away)
+  Workable tiles: 1 (center) + 8 (ring1) + 16 (ring2) = 25 tiles
+  Citizens: work tiles for food/shields/trade OR become specialists
+  Specialists: Scientist (+science), Taxman (+gold), Entertainer (+happy)
+
+PRODUCTION SYSTEM:
+  production_value += city_shields_per_turn
+  When production_value >= build_cost: complete unit/building
+  Types: UNIT, NORMAL_IMPROVEMENT, WONDER
+
+BUILDING GENUS & TYPES:
+  GreatWonder: unique to game, major effects
+  SmallWonder: unique per player
+  Improvement: standard city building
+  Special: special buildings
+  Convert: gold conversion
+  
+  Properties: build_cost, upkeep (gold/turn), tech_req, obsolete_by, sabotage%
+
+EXAMPLE BUILDINGS:
+  Barracks: units build veteran (+1 level)
+  Harbor: sea trade routes
+  University: +science
+  Wall: 3× defense vs non-city-buster
+  Airport: air unit production, heals air units
+
+
+6. UNIT ACTIVITIES
+===================
+
+LONG-TERM ACTIVITIES (consume activity_count per turn):
+  IDLE, MINE (building mine), IRRIGATE (irrigation)
+  PILLAGE (destroy improvements), POLLAGE (clean pollution)
+  TRANSFORM (change terrain), BASE (military base)
+  GEN_ROAD (road), CONVERT (unit conversion)
+  CULTIVATE, PLANT, CLEAN (fallout)
+
+ACTIVITY PROGRESS:
+  activity_count = work done so far (in ACTIVITY_FACTOR units)
+  activity_target = what extra is being built/worked on
+  changed_from = previous activity (for resume without loss)
+  changed_from_count = progress on previous activity
+
+UNIT ORDERS SYSTEM:
+  has_orders: true/false
+  orders.list: array of UnitOrder structs
+  orders.repeat: path repeats when reaching end
+  orders.vigilant: clear orders if enemy spotted
+  
+  Order types: ORDER_MOVE, ORDER_ACTIVITY, ORDER_FULL_MP,
+               ORDER_ACTION_MOVE, ORDER_PERFORM_ACTION
+
+
+7. UPKEEP & MAINTENANCE
+========================
+
+UNIT UPKEEP (3 types):
+  upkeep[O_SHIELD]: production cost from city per turn
+  upkeep[O_FOOD]: food cost from city food production
+  upkeep[O_GOLD]: gold cost from treasury
+  
+  If city can't provide food upkeep: unit starves, city shrinks
+  Flag Shield2Gold: can convert shield upkeep to gold upkeep
+
+SPECIAL CASES:
+  Flag NoHome: no upkeep, no homecity required
+  Wonder units: often no upkeep while wonder active
+  Unique units: special upkeep rules
+
+BUILDING UPKEEP:
+  upkeep = gold cost per turn
+  Paid by city owner (deducted from treasury)
+
+
+8. DATA STRUCTURES FOR JAVA
+=============================
+
+RECOMMENDED CLASSES:
+
+class Unit {
+  UnitType type; Tile tile; Player owner; int id, homecity;
+  int hp, veteran, fuel, movesLeft;
+  Activity activity; int activityCount;
+  Unit transporter; List<Unit> transporting;
+  UnitOrder[] orders; boolean hasOrders;
+}
+
+class UnitType {
+  String name; UnitClass unitClass;
+  int attack, defense, firepower, hitpoints;
+  int moveRate, visionRadiusSq, buildCost, popCost;
+  int[] upkeep; // [shield, food, gold]
+  int[] veteranPowerFact; // [4]: 100, 150, 175, 200
+  Set<String> flags;
+  CombatBonus[] bonuses;
+}
+
+class City {
+  int id; Tile tile; Player owner; int size;
+  int foodStock, productionValue;
+  Production currentProduction; // what's being built
+  Map<Building, Boolean> improvements;
+}
+
+class Building {
+  String name; BuildingGenus genus;
+  int buildCost, upkeep; Advance[] requirements;
+  Set<String> flags;
+}
+
+class Advance {
+  String name; Advance[] requires; // [req1, req2, rootReq]
+  double cost; Set<String> flags;
+}
+
+class Tile {
+  int x, y; Terrain terrain; Set<Extra> extras;
+  Unit unit; City city;
+}
+
+
+9. CRITICAL CONSTANTS
+======================
+
+SINGLE_MOVE = 3              (whole point = 3 fragments)
+MAX_MOVE_FRAGS = 65535
+POWER_FACTOR = 10            (combat precision)
+MAX_CITY_SIZE = 255
+CITY_MAP_DEFAULT_RADIUS_SQ = 5
+MAX_NUM_ADVANCES = 250
+MAX_NUM_UNITS = 200
+MAX_NUM_BATTLEGROUPS = 4
+
+
+10. KEY IMPLEMENTATION POINTS
+==============================
+
+1. RULESET-DRIVEN: All mechanics from data files, not hardcoded
+   - Units, techs, buildings all defined in XML rulesets
+   - Must support dynamic ruleset loading
+   - Effects calculated from effects.ruleset
+
+2. MOVEMENT: Fractional tracking internally, whole points to client
+   - Store internally in fragments for precision
+   - Send whole movement points to client
+   - Terrain costs vary by unit type
+
+3. COMBAT: Probabilistic but deterministic
+   - Server calculates win probability
+   - Server executes combat with seeded RNG
+   - Outcomes reproducible for replays
+
+4. VETERAN: 4 levels with cumulative bonuses
+   - Affects combat power and potentially movement
+   - Promotion from combat experience or buildings
+   - Can be customized per unit type in ruleset
+
+5. UPKEEP: 3 independent types
+   - Shield, food, gold tracked separately
+   - Homecity must support upkeep or unit dies
+   - Can be converted (Shield2Gold flag)
+
+6. CITY PRODUCTION: Accumulation model
+   - Accumulate shields until reaching cost
+   - Production interruption possible
+   - Can purchase with gold to rush
+
+7. TURN PROCESSING ORDER:
+   Movement → Combat → Activities → Growth → Upkeep → Research → Diplomacy
+
+================================================================================
