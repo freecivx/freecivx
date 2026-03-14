@@ -392,14 +392,9 @@ public class CivServer extends org.java_websocket.server.WebSocketServer {
         if (ws != null) ws.send(msg.toString());
     }
 
-    /**
-     * Sends a raw JSON packet directly to a specific client connection.
-     * Use this instead of sendMessage() when the payload is already a
-     * well-formed Freeciv protocol packet (i.e. it has its own "pid" field).
-     * sendMessage() wraps its argument in a PACKET_CHAT_MSG, which is wrong
-     * for structured data packets.
-     */
-    public void sendPacketTo(long connId, JSONObject packet) {
+
+    public void sendPacket(long connId, JSONObject packet) {
+
         sendTo(connId, packet);
     }
 

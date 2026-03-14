@@ -53,7 +53,7 @@ public class CityHand {
         reply.put("pid", Packets.PACKET_CITY_NAME_SUGGESTION_INFO);
         reply.put("unit_id", unitId);
         reply.put("name", suggestedName != null ? suggestedName : "New City");
-        game.getServer().sendMessage(connId, reply.toString());
+        game.getServer().sendPacket(connId, reply);
     }
 
     /**
