@@ -154,7 +154,7 @@ public class TechTools {
         // sendMessage() wraps its argument in a PACKET_CHAT_MSG, which would
         // display the raw JSON in the game-messages window instead of routing
         // it to handle_research_info() on the client.
-        server.sendPacketTo(connId, msg);
+        server.sendPacket(connId, msg);
     }
 
     /**
