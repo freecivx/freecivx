@@ -275,11 +275,11 @@ public class Game {
         techs.put(24L, new Technology("Gunpowder",         "a.gunpowder",         "Gunpowder",         "Iron Working", "None",           80));
         techs.put(25L, new Technology("Feudalism",         "a.feudalism",         "Feudalism",         "Warrior Code", "Monarchy",       60));
 
-        governments.put(0L, new Government("Anarchy",   "Anarchy",   "Anarchy",   null,            30));
-        governments.put(1L, new Government("Despotism", "Despotism", "Despotism", null,            20));
-        governments.put(2L, new Government("Monarchy",  "Monarchy",  "Monarchy",  "Monarchy",      10));
-        governments.put(3L, new Government("Communism", "Communism", "Communism", "Communism",     15));
-        governments.put(4L, new Government("Republic",  "Republic",  "Republic",  "The Republic",   5));
+        governments.put(0L, new Government("Anarchy",   "Anarchy",   "Anarchy",   null,            25));
+        governments.put(1L, new Government("Despotism", "Despotism", "Despotism", null,            37));
+        governments.put(2L, new Government("Monarchy",  "Monarchy",  "Monarchy",  "Monarchy",      15));
+        governments.put(3L, new Government("Communism", "Communism", "Communism", "Communism",     20));
+        governments.put(4L, new Government("Republic",  "Republic",  "Republic",  "The Republic",  15));
         governments.put(5L, new Government("Democracy", "Democracy", "Democracy", "Democracy",      0));
 
         terrains.put(0L,  new Terrain("Arctic",       "",       0,   1));

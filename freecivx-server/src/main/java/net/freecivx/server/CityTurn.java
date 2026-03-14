@@ -263,10 +263,16 @@ public class CityTurn {
 
     /**
      * Calculates and returns the science (bulbs) produced by a city this turn.
-     * The value depends on the city's population and improvements:
-     * Library (id 3) adds 50% science bonus; University (id 13) adds another 50%.
-     * Mirrors the science output calculation ({@code O_SCIENCE}) in the C Freeciv
-     * server's {@code common/city.c}, incorporating EFT_SCIENCE_BONUS effects.
+     * The value depends on the city's population and improvements.
+     * Bonuses are applied additively (all percentage bonuses summed, then applied
+     * once), matching the Freeciv {@code Output_Bonus} stacking rule in
+     * {@code effects.ruleset}:
+     * <ul>
+     *   <li>Library (id 3): +100% science ({@code effect_library}, value=100)</li>
+     *   <li>Library + University (id 13): additional +150% science
+     *       ({@code effect_university}, value=150, requires both buildings)</li>
+     * </ul>
+     * Combined effect: Library alone = ×2; Library + University = ×3.5.
      *
      * @param game   the current game state
      * @param cityId the ID of the city to evaluate
@@ -278,22 +284,35 @@ public class CityTurn {
 
         // Base science: 1 bulb per population point
         int science = city.getSize();
-        // Library (id=3) gives +50% science bonus (mirrors EFT_SCIENCE_BONUS in C server).
+
+        // Apply Output_Bonus effects additively, matching the C Freeciv server.
+        // Library (effect_library): +100% science when Library is present.
+        // University (effect_university): +150% additional when BOTH Library and
+        // University are present. (Requires Library as a prerequisite.)
+        // Combined: Library alone = ×2; Library+University = ×(100+100+150)/100 = ×3.5.
+        int scienceBonus = 0;
         if (city.hasImprovement(3)) {
-            science = science * 3 / 2;
+            scienceBonus += 100; // Library: +100% (effect_library)
+            if (city.hasImprovement(13)) {
+                scienceBonus += 150; // University+Library: +150% additional (effect_university)
+            }
         }
-        // University (id=13) gives an additional +50% science bonus on top of Library.
-        // Together: size * 1.5 * 1.5 = size * 2.25 (same as C server stacking rule).
-        if (city.hasImprovement(13)) {
-            science = science * 3 / 2;
-        }
+        science = science * (100 + scienceBonus) / 100;
+
         return science;
     }
 
     /**
      * Calculates and returns the gold (tax) produced by a city this turn.
-     * The value depends on trade yields, improvements such as Marketplace (id 4)
-     * and Bank (id 5), and the player's tax rate.
+     * The value depends on trade yields, improvements, and the player's tax rate.
+     * Gold bonuses from Marketplace (id 4) and Bank (id 5) are applied
+     * <em>additively</em>, matching the {@code Output_Bonus} stacking rule in
+     * the C Freeciv server's {@code effects.ruleset}:
+     * <ul>
+     *   <li>Marketplace (effect_marketplace): +50% gold</li>
+     *   <li>Bank (effect_bank): +50% additional when Marketplace is also present</li>
+     * </ul>
+     * Combined: Marketplace alone = ×1.5; Marketplace + Bank = ×2.0.
      * Corruption (reduced by Courthouse, id 9) is also applied.
      *
      * @param game   the current game state
@@ -309,17 +328,19 @@ public class CityTurn {
 
         // Base trade: 1 trade per population (simplified)
         int trade = city.getSize();
-        // Marketplace (id=4) and Bank (id=5) apply multiplicative +50% trade bonuses
-        // that compound, matching the Freeciv EFT_TRADE_BONUS stack:
-        //   Marketplace alone: trade * 1.5
-        //   Bank alone: trade * 1.5
-        //   Both: trade * 1.5 * 1.5 = trade * 2.25
+
+        // Apply Output_Bonus effects additively, matching the C Freeciv server.
+        // Marketplace (effect_marketplace): +50% gold.
+        // Bank (effect_bank): +50% additional gold when Marketplace is also present.
+        // Combined: Marketplace alone = ×1.5; Marketplace+Bank = ×(100+50+50)/100 = ×2.0.
+        int goldBonus = 0;
         if (city.hasImprovement(4)) {
-            trade = trade * 3 / 2;
+            goldBonus += 50; // Marketplace: +50% (effect_marketplace)
+            if (city.hasImprovement(5)) {
+                goldBonus += 50; // Bank (requires Marketplace): +50% additional (effect_bank)
+            }
         }
-        if (city.hasImprovement(5)) {
-            trade = trade * 3 / 2;
-        }
+        trade = trade * (100 + goldBonus) / 100;
 
         // Apply corruption reduction (Courthouse halves corruption, mirrors C server)
         Government gov = game.governments.get((long) player.getGovernmentId());

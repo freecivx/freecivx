@@ -253,6 +253,9 @@ public class Ruleset {
      * Loads government type definitions from the specified classpath resource.
      * Parses every {@code [government_*]} section to extract name, graphic tag,
      * and the first technology prerequisite from the {@code reqs} table.
+     * Corruption percentages are assigned from the classic ruleset's
+     * {@code effects.ruleset} {@code Output_Waste} base values:
+     * Anarchy=25, Despotism=37, Monarchy=15, Communism=20, Republic=15, Democracy=0.
      *
      * @param path classpath-relative path to the governments ruleset file
      * @return {@code true} if the file was parsed without errors
@@ -268,7 +271,8 @@ public class Ruleset {
                 if (name.isEmpty()) continue;
                 String techReq = sec.getTechReq();
                 if (techReq.isEmpty()) techReq = null;
-                governments.add(new Government(name, name, name, techReq, 0));
+                int corruptionPct = corruptionForGov(name);
+                governments.add(new Government(name, name, name, techReq, corruptionPct));
             }
             System.out.println("Loaded " + governments.size() + " governments from " + path);
             return true;
@@ -276,6 +280,34 @@ public class Ruleset {
             System.err.println("Error loading governments from " + path + ": " + e.getMessage());
             return false;
         }
+    }
+
+    /**
+     * Returns the base corruption percentage for a government type, derived from
+     * the {@code Output_Waste} base values in the classic Freeciv
+     * {@code effects.ruleset}:
+     * <ul>
+     *   <li>Anarchy: 25</li>
+     *   <li>Despotism: 37</li>
+     *   <li>Monarchy: 15</li>
+     *   <li>Communism: 20</li>
+     *   <li>Republic: 15</li>
+     *   <li>Democracy: 0</li>
+     * </ul>
+     *
+     * @param govName the government name as loaded from the ruleset
+     * @return the base corruption percentage (0–100)
+     */
+    private static int corruptionForGov(String govName) {
+        if (govName == null) return 0;
+        return switch (govName.toLowerCase()) {
+            case "anarchy"   -> 25;
+            case "despotism" -> 37;
+            case "monarchy"  -> 15;
+            case "communism" -> 20;
+            case "republic"  -> 15;
+            default          ->  0; // Democracy and any unknown gov = no corruption
+        };
     }
 
     // -----------------------------------------------------------------------
