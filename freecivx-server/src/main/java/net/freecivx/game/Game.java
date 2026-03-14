@@ -296,7 +296,7 @@ public class Game {
 
         server.sendCalendarInfoAll();
         server.sendMapInfoAll(map.getXsize(), map.getYsize());
-        server.sendGameInfoAll(year, turn, phase);
+        server.sendGameInfoAll(year, turn, phase, turnTimeout);
         server.sendRulesetControl(improvements.size());
 
         // Send technologies with proper prerequisite data (research_reqs).
@@ -703,12 +703,16 @@ public class Game {
         year++;
         turn++;
 
-        // Reset movement points for all units
+        // Reset movement points for all units and broadcast the new state to clients
+        // so that the client UI immediately reflects the refreshed moves_left / done_moving
+        // values.  Without this broadcast the client would continue to display stale
+        // movement data until each unit was individually updated by another action.
         units.forEach((id, unit) -> {
             UnitType utype = unitTypes.get((long) unit.getType());
             if (utype != null) {
                 unit.setMovesleft(utype.getMoveRate());
                 unit.setDoneMoving(false);
+                server.sendUnitAll(unit);
             }
         });
 
@@ -723,7 +727,7 @@ public class Game {
         // Mirrors check_for_city_destruction() / kill_player() in C Freeciv server.
         checkPlayerElimination();
 
-        server.sendGameInfoAll(year, turn, phase);
+        server.sendGameInfoAll(year, turn, phase, turnTimeout);
         // Classic Freeciv: year 4000 BCE at turn 1, each turn advances 20 years.
         // Mirrors the calendar used in AutoGame.logTurnSummary().
         long historicalYear = 4000L - (year - 1) * 20L;

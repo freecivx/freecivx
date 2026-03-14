@@ -131,7 +131,7 @@ public class AutoGame {
 
             @Override public void sendStartPhaseAll() {}
 
-            @Override public void sendGameInfoAll(long year, long turn, long phase) {}
+            @Override public void sendGameInfoAll(long year, long turn, long phase, int timeout) {}
 
             @Override public void sendCalendarInfoAll() {}
 
