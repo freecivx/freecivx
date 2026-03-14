@@ -34,6 +34,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
 
 /**
  * The Game class
@@ -62,6 +66,40 @@ public class Game {
      * Default {@code -1} produces a unique random map each game.
      */
     private int mapSeed = -1;
+
+    /**
+     * Turn timeout in seconds.  When {@code > 0} a turn is automatically
+     * advanced after this many seconds even if not all human players have
+     * pressed end-turn.  {@code 0} (default) disables the timer.
+     * Mirrors the {@code timeout} setting in the C Freeciv server.
+     */
+    private int turnTimeout = 0;
+
+    /**
+     * Number of AI players to create when the game starts.
+     * Mirrors the {@code aifill} setting in the C Freeciv server.
+     * Default 4.
+     */
+    private int aifill = 4;
+
+    /**
+     * Starting gold awarded to every player when the game begins.
+     * Mirrors the {@code gold} setting in the C Freeciv server's
+     * game.settings (server_setting "gold").
+     * Default 50.
+     */
+    private int initialGold = 50;
+
+    /** Scheduler used to implement the per-turn {@link #turnTimeout}. */
+    private final ScheduledExecutorService scheduler =
+            Executors.newSingleThreadScheduledExecutor(r -> {
+                Thread t = new Thread(r, "turn-timeout");
+                t.setDaemon(true);
+                return t;
+            });
+
+    /** Currently pending timeout task; {@code null} when no timeout is active. */
+    private ScheduledFuture<?> turnTimeoutTask = null;
 
     public WorldMap map;
     public Map<Long, Player> players = new HashMap<>();
@@ -112,6 +150,83 @@ public class Game {
         this.mapSeed = seed;
         MapGenerator generator = new MapGenerator(map.getXsize(), map.getYsize(), seed);
         tiles = generator.generateMap();
+    }
+
+    /**
+     * Sets the per-turn timeout.  When {@code > 0} the turn is automatically
+     * advanced after this many seconds.  Set to {@code 0} to disable.
+     * Mirrors the {@code timeout} setting in the C Freeciv server.
+     *
+     * @param seconds timeout value in seconds (0 = disabled, max 500)
+     */
+    public void setTurnTimeout(int seconds) {
+        this.turnTimeout = seconds;
+        // Re-arm the timer for the current turn if the game is already running.
+        if (gameStarted) {
+            cancelTurnTimeout();
+            if (turnTimeout > 0) {
+                scheduleTurnTimeout();
+            }
+        }
+    }
+
+    /** Returns the current turn timeout in seconds (0 = disabled). */
+    public int getTurnTimeout() {
+        return turnTimeout;
+    }
+
+    /**
+     * Sets the number of AI players that will be created when the game starts.
+     * Has no effect once the game has started.
+     * Mirrors the {@code aifill} setting in the C Freeciv server.
+     *
+     * @param count number of AI players (0–9)
+     */
+    public void setAifill(int count) {
+        this.aifill = count;
+    }
+
+    /** Returns the configured aifill value. */
+    public int getAifill() {
+        return aifill;
+    }
+
+    /**
+     * Sets the starting gold that will be awarded to every player when the
+     * game begins.  Also immediately updates the gold of all existing players
+     * so the setting takes effect even if the game has already started.
+     * Mirrors the {@code gold} setting in the C Freeciv server.
+     *
+     * @param gold starting gold amount (0–50 000)
+     */
+    public void setInitialGold(int gold) {
+        this.initialGold = gold;
+        // Apply immediately to all existing players.
+        players.values().forEach(p -> p.setGold(gold));
+    }
+
+    /** Returns the configured initial gold value. */
+    public int getInitialGold() {
+        return initialGold;
+    }
+
+    /** Schedules a forced turn-end after {@link #turnTimeout} seconds. */
+    private synchronized void scheduleTurnTimeout() {
+        if (turnTimeout <= 0) return;
+        turnTimeoutTask = scheduler.schedule(() -> {
+            synchronized (Game.this) {
+                humanPlayersDone.clear();
+                turnDone();
+            }
+        }, turnTimeout, TimeUnit.SECONDS);
+    }
+
+    /** Cancels any pending turn-timeout task. */
+    private synchronized void cancelTurnTimeout() {
+        if (turnTimeoutTask != null) {
+            turnTimeoutTask.cancel(false);
+            turnTimeoutTask = null;
+        }
     }
 
     /**
@@ -234,14 +349,18 @@ public class Game {
 
         tiles.forEach((id, tile) -> server.sendTileInfoAll(tile));
 
-        // Create 4 AI players (aifill 5 = up to 5 total players including humans)
-        String[] aiNames = {"Caesar", "Alexander", "Napoleon", "Genghis"};
-        for (int i = 0; i < 4; i++) {
+        // Create AI players up to the configured aifill count.
+        // Mirrors the aifill setting in the C Freeciv server.
+        String[] aiNames = {"Caesar", "Alexander", "Napoleon", "Genghis",
+                             "Cleopatra", "Augustus", "Cyrus", "Ramesses", "Pericles"};
+        for (int i = 0; i < aifill; i++) {
             long aiId = 1000L + i;
-            Player aiPlayer = new Player(aiId, aiNames[i], "ai", i % nations.size());
+            Player aiPlayer = new Player(aiId, aiNames[i % aiNames.length], "ai", i % nations.size());
             aiPlayer.setAi(true);
             players.put(aiId, aiPlayer);
         }
+        // Apply starting gold to all players (mirrors the gold server setting).
+        players.values().forEach(p -> p.setGold(initialGold));
         players.forEach((id, iplayer) -> server.sendPlayerInfoAll(iplayer));
         players.forEach((id, iplayer) -> server.sendPlayerInfoAdditionAll(id, 0));
 
@@ -271,6 +390,11 @@ public class Game {
         server.sendBeginTurnAll();
 
         server.sendMessageAll("Welcome to the Freecivx game!");
+
+        // Start the per-turn timeout timer if configured.
+        if (turnTimeout > 0) {
+            scheduleTurnTimeout();
+        }
     }
 
 
@@ -570,6 +694,7 @@ public class Game {
 
         if (humanPlayersDone.size() >= humanAliveCount) {
             humanPlayersDone.clear();
+            cancelTurnTimeout();
             turnDone();
         }
     }
@@ -608,6 +733,11 @@ public class Game {
         server.sendMessageAll("Turn " + turn + " has started (Year " + yearStr + ").");
         server.sendBeginTurnAll();
         server.sendStartPhaseAll();
+
+        // Re-arm the turn-timeout timer for the new turn.
+        if (turnTimeout > 0) {
+            scheduleTurnTimeout();
+        }
     }
 
     public void changeUnitActivity(long unit_id, int activity) {
