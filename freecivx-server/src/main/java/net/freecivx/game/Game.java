@@ -399,12 +399,13 @@ public class Game {
         // Send city styles
         cityStyle.forEach((id, style) -> server.sendRulesetCityInfoAll(id, style.getName(), style.getName()));
 
-        // Send cities
+        // Send cities – CITY_INFO first so the client creates a proper City
+        // instance before the lightweight CITY_SHORT_INFO arrives.
         cities.forEach((id, city) -> {
-            server.sendCityShortInfoAll(id, city.getOwner(), city.getTile(), city.getSize(), city.getStyle(), city.isCapital(),
-                    city.isOccupied(), city.getWalls(), city.isHappy(), city.isUnhappy(), "", city.getName());
             server.sendCityInfoAll(id, city.getOwner(), city.getTile(), city.getSize(), city.getStyle(), city.isCapital(),
                     city.isOccupied(), city.getWalls(), city.isHappy(), city.isUnhappy(), "", city.getName(), 6, 0);
+            server.sendCityShortInfoAll(id, city.getOwner(), city.getTile(), city.getSize(), city.getStyle(), city.isCapital(),
+                    city.isOccupied(), city.getWalls(), city.isHappy(), city.isUnhappy(), "", city.getName());
         });
 
 
@@ -1004,11 +1005,11 @@ public class Game {
         tile.setWorked(id);
         server.sendTileInfoAll(tile);
 
-        server.sendCityShortInfoAll(id, city.getOwner(), city.getTile(), city.getSize(), city.getStyle(), city.isCapital(),
-                city.isOccupied(), city.getWalls(), city.isHappy(), city.isUnhappy(), "", city.getName());
-
         server.sendCityInfoAll(id, city.getOwner(), city.getTile(), city.getSize(), city.getStyle(), city.isCapital(),
                 city.isOccupied(), city.getWalls(), city.isHappy(), city.isUnhappy(), "", city.getName(), 6, 0);
+
+        server.sendCityShortInfoAll(id, city.getOwner(), city.getTile(), city.getSize(), city.getStyle(), city.isCapital(),
+                city.isOccupied(), city.getWalls(), city.isHappy(), city.isUnhappy(), "", city.getName());
         server.sendUnitRemove(unit_id);
         units.remove(unit_id);
     }
