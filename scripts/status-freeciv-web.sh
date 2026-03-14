@@ -115,10 +115,33 @@ checkWebURL "Tomcat DB connection" "http://localhost/game/list" --head
 
 checkWebURL "Pubstatus" "http://localhost:4002/pubstatus"
 
+checkPID "publite-go" "publite-go"
 checkPID "freeciv-web (spawned by publite-go)" "freeciv-web"
+checkPID "freeciv-scores-go" "freeciv-scores-go"
+checkPID "websockify" "websockify"
+
+checkWebURL "freecivx-server HTTP status" "http://localhost:7801/"
+
+checkWebSocket "freecivx-server WebSocket" "ws://localhost:7800/"
 
 checkWebURL "webclient.min.js generation" "http://localhost/javascript/webclient.min.js" --head
 checkWebURL "tileset generation" "http://localhost/tileset/freeciv-web-tileset-amplio2-0.png" --head
+
+if [[ "${verbose}" = true ]]; then
+  printf "\n--- Process summary ---\n"
+  printf "publite-go:        "; pgrep -a publite-go 2>/dev/null || echo "not running"
+  printf "freeciv-web:       "; pgrep -c freeciv-web 2>/dev/null && echo "instance(s)" || echo "not running"
+  printf "freecivx-server:   "; pgrep -af "freecivx-server" 2>/dev/null || echo "not running"
+  printf "freeciv-scores-go: "; pgrep -a freeciv-scores-go 2>/dev/null || echo "not running"
+  printf "websockify:        "; pgrep -a websockify 2>/dev/null || echo "not running"
+  printf "\n--- Recent publite-go log (last 10 lines) ---\n"
+  SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" >/dev/null && pwd)"
+  LOG="${SCRIPT_DIR}/../logs/publite-go.log"
+  if [[ -f "${LOG}" ]]; then tail -10 "${LOG}"; else echo "(log not found: ${LOG})"; fi
+  printf "\n--- Recent freecivx-server log (last 10 lines) ---\n"
+  FXLOG="${SCRIPT_DIR}/../logs/freecivx-server-7800.log"
+  if [[ -f "${FXLOG}" ]]; then tail -10 "${FXLOG}"; else echo "(log not found: ${FXLOG})"; fi
+fi
 
 printf "\n--------------------------------\n";
 echo "Check of FreecivWorld.net completed!"
