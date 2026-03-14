@@ -142,11 +142,19 @@ public class TechTools {
 
         JSONObject msg = new JSONObject();
         msg.put("pid", Packets.PACKET_RESEARCH_INFO);
+        // "id" is the field the JS client's handle_research_info() uses to index
+        // research_data[] and look up the player in players[].  It must equal
+        // playerno so the client can match the packet to the right player.
+        msg.put("id", player.getPlayerNo());
         msg.put("playerno", player.getPlayerNo());
         msg.put("bulbs_researched", player.getBulbsResearched());
         msg.put("techs_researched", player.getKnownTechs().size());
         msg.put("researching", player.getResearchingTech());
-        server.sendMessage(connId, msg.toString());
+        // Send the packet directly — do NOT use sendMessage() here because
+        // sendMessage() wraps its argument in a PACKET_CHAT_MSG, which would
+        // display the raw JSON in the game-messages window instead of routing
+        // it to handle_research_info() on the client.
+        server.sendPacketTo(connId, msg);
     }
 
     /**
