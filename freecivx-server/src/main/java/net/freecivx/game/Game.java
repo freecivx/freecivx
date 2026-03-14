@@ -65,6 +65,11 @@ public class Game {
         this.aiPlayer = new AiPlayer(this);
     }
 
+    /** Returns the {@link CivServer} instance this game is running on. */
+    public CivServer getServer() {
+        return server;
+    }
+
     /**
      * Initializes the game objects with default or predefined values.
      */

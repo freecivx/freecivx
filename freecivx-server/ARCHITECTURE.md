@@ -51,12 +51,73 @@ freecivx-server/
     ├── main/
     │   ├── java/net/freecivx/
     │   │   ├── main/        ← entry-point, HTTP status, metaserver publishing
-    │   │   ├── server/      ← WebSocket server + packet constants
-    │   │   ├── game/        ← all game-logic and data-model classes
-    │   │   ├── data/        ← ruleset file parser (SectionFile)
+    │   │   │   ├── Main.java
+    │   │   │   ├── HTTPStatusWebHandler.java
+    │   │   │   └── MetaserverClient.java
+    │   │   ├── server/      ← WebSocket server, packet constants, handlers & tools
+    │   │   │   ├── CivServer.java      ← core WebSocket server (mirrors srv_main.c / sernet.c)
+    │   │   │   ├── Packets.java        ← packet ID constants
+    │   │   │   ├── CityHand.java       ← city request handlers   (mirrors cityhand.c)
+    │   │   │   ├── UnitHand.java       ← unit request handlers   (mirrors unithand.c)
+    │   │   │   ├── GameHand.java       ← game-state handlers     (mirrors gamehand.c)
+    │   │   │   ├── PlrHand.java        ← player handlers         (mirrors plrhand.c)
+    │   │   │   ├── MapHand.java        ← map data handlers       (mirrors maphand.c)
+    │   │   │   ├── ConnectHand.java    ← connection/login handlers (mirrors connecthand.c)
+    │   │   │   ├── DiplHand.java       ← diplomacy handlers      (mirrors diplhand.c)
+    │   │   │   ├── CityTools.java      ← city utility functions  (mirrors citytools.c)
+    │   │   │   ├── UnitTools.java      ← unit utility functions  (mirrors unittools.c)
+    │   │   │   ├── TechTools.java      ← tech research utilities (mirrors techtools.c)
+    │   │   │   ├── CityTurn.java       ← per-turn city processing (mirrors cityturn.c)
+    │   │   │   └── Notify.java         ← notification system     (mirrors notify.c)
+    │   │   ├── game/        ← game-logic and data-model classes (mirrors freeciv/common/)
+    │   │   │   ├── Game.java           ← central game state      (mirrors game.c)
+    │   │   │   ├── Player.java         ← player data model       (mirrors player.c)
+    │   │   │   ├── Unit.java           ← unit instance           (mirrors unit.c)
+    │   │   │   ├── UnitType.java       ← unit type template      (mirrors unittype.c)
+    │   │   │   ├── City.java           ← city instance           (mirrors city.c)
+    │   │   │   ├── CityStyle.java      ← city style              (mirrors citystyle.c)
+    │   │   │   ├── Tile.java           ← map tile                (mirrors tile.c)
+    │   │   │   ├── WorldMap.java       ← map dimensions          (mirrors map.c)
+    │   │   │   ├── MapGenerator.java   ← procedural map gen      (mirrors generator/)
+    │   │   │   ├── PathFinder.java     ← goto pathfinding        (mirrors pf_tools.c)
+    │   │   │   ├── Terrain.java        ← terrain type            (mirrors terrain.c)
+    │   │   │   ├── Extra.java          ← tile extra (road/mine…) (mirrors extras.c)
+    │   │   │   ├── Government.java     ← government type         (mirrors government.c)
+    │   │   │   ├── Nation.java         ← nation definition       (mirrors nation.c)
+    │   │   │   ├── Technology.java     ← technology entry        (mirrors tech.c)
+    │   │   │   ├── Improvement.java    ← city building type      (mirrors improvement.c)
+    │   │   │   ├── Connection.java     ← connection struct       (mirrors connection.c)
+    │   │   │   ├── Movement.java       ← movement utilities      (mirrors movement.c)
+    │   │   │   ├── Combat.java         ← combat resolution       (mirrors combat.c)
+    │   │   │   ├── Effects.java        ← game effects system     (mirrors effects.c)
+    │   │   │   ├── Actions.java        ← action system           (mirrors actions.c)
+    │   │   │   └── Research.java       ← research/tech system    (mirrors research.c)
+    │   │   ├── data/        ← ruleset file parser + loader
+    │   │   │   ├── SectionFile.java    ← .ruleset file parser    (mirrors secfile.c)
+    │   │   │   ├── Section.java        ← single [section] block
+    │   │   │   └── Ruleset.java        ← ruleset loader/manager  (mirrors ruleset.c)
+    │   │   ├── ai/          ← AI decision-making               (mirrors freeciv/ai/)
+    │   │   │   └── AiPlayer.java
     │   │   └── log/         ← logging abstraction
+    │   │       ├── GameLogger.java
+    │   │       └── StdoutLogger.java
     │   └── resources/
-    │       └── english.ruleset   ← example nation ruleset file
+    │       ├── classic/          ← Freeciv classic ruleset (forked from freeciv/data/classic/)
+    │       │   ├── README.classic
+    │       │   ├── actions.ruleset
+    │       │   ├── buildings.ruleset
+    │       │   ├── cities.ruleset
+    │       │   ├── effects.ruleset
+    │       │   ├── game.ruleset
+    │       │   ├── governments.ruleset
+    │       │   ├── nations.ruleset
+    │       │   ├── parser.lua
+    │       │   ├── script.lua
+    │       │   ├── styles.ruleset
+    │       │   ├── techs.ruleset
+    │       │   ├── terrain.ruleset
+    │       │   └── units.ruleset
+    │       └── nation/           ← Nation rulesets (forked from freeciv/data/nation/, 563 files)
     └── test/
         └── java/net/freecivx/
             └── data/
@@ -186,6 +247,54 @@ The core WebSocket server. Extends `org.java_websocket.server.WebSocketServer`.
 #### `Packets.java`
 Constants for all packet IDs used by the server. Each constant is a `public static int`.  
 See §5 for the full table.
+
+#### `CityHand.java` *(mirrors `cityhand.c`)*
+Handles incoming city-related packets from clients: city name suggestion requests, city buy
+requests, city worker re-assignment, city renames, specialist changes, and worklist updates.
+
+#### `UnitHand.java` *(mirrors `unithand.c`)*
+Handles incoming unit-related packets: unit orders (move/goto), unit actions (found city, etc.),
+activity changes, load/unload requests, and unit upgrades.
+
+#### `GameHand.java` *(mirrors `gamehand.c`)*
+Handles game-state packets: player-ready signals, phase-done signals, and sends game info,
+calendar info, and player info to clients.
+
+#### `PlrHand.java` *(mirrors `plrhand.c`)*
+Handles player-related packets: government changes, research target changes, attribute blocks, and
+broadcasts updated player info to all clients.
+
+#### `MapHand.java` *(mirrors `maphand.c`)*
+Handles map data requests and sends tile / city-tile information to clients.  Implements map-ping
+responses and city visibility updates.
+
+#### `ConnectHand.java` *(mirrors `connecthand.c`)*
+Handles connection and login packets: server-join requests, reconnect requests, sends join-reply
+and game list packets, and sets up the connection/player state.
+
+#### `DiplHand.java` *(mirrors `diplhand.c`)*
+Handles diplomacy packets: meeting initiation, clause creation/removal, treaty acceptance, and
+pact cancellation between players.
+
+#### `CityTools.java` *(mirrors `citytools.c`)*
+Utility functions for city management used by handlers: create/remove cities, city growth,
+send city info packets to clients, suggest city names, and city–unit support bookkeeping.
+
+#### `UnitTools.java` *(mirrors `unittools.c`)*
+Utility functions for unit management: create/remove units, send unit info packets, refresh
+unit state, and compute move-start conditions.
+
+#### `TechTools.java` *(mirrors `techtools.c`)*
+Technology research utilities: give a tech to a player, update research progress, send research
+info packets, and check tech prerequisites.
+
+#### `CityTurn.java` *(mirrors `cityturn.c`)*
+Per-turn city processing: production completion, city growth, science/tax contributions, spoilage,
+and full update-all-cities pass at end of turn.
+
+#### `Notify.java` *(mirrors `notify.c`)*
+Notification system: send a message to one player, broadcast to all players, send event
+notifications with map coordinates, and notify all active connections.
 
 ---
 
@@ -376,6 +485,27 @@ City building type.
 #### `CityStyle.java`
 Holds a `name` string for a city style (European, Classical, Tropical, Asian).
 
+#### `Movement.java` *(mirrors `common/movement.c`)*
+Unit movement utilities: move rate, movement legality checks, per-tile move costs, direction
+from source to destination tile, and unit safety checks.
+
+#### `Combat.java` *(mirrors `common/combat.c`)*
+Combat resolution: attack/defense strength calculations, terrain defense bonuses, unit-vs-unit
+combat eligibility, and full combat simulation with HP reduction.
+
+#### `Effects.java` *(mirrors `common/effects.c`)*
+Game effects system: queries city, player, and tile effects contributed by improvements and
+governments (e.g. science bonus, tax bonus, happiness modifiers).
+
+#### `Actions.java` *(mirrors `common/actions.c`)*
+Action system: checks whether a specific action is enabled for a unit, retrieves the list of
+enabled actions for a unit, and executes unit and city actions such as founding a city or
+constructing an improvement.
+
+#### `Research.java` *(mirrors `common/research.c`)*
+Technology research system: returns a player's current research state, computes tech costs,
+checks tech prerequisites, counts available advances, and calculates research bonuses.
+
 ---
 
 ### net.freecivx.data
@@ -389,6 +519,11 @@ Used to load nation rulesets.
 #### `Section.java`
 Represents one `[section]` block from a ruleset file.  
 Holds a `Map<String, String>` of key-value pairs.
+
+#### `Ruleset.java` *(mirrors `server/ruleset.c`)*
+Ruleset loader and manager: loads the classic ruleset or a named ruleset from the bundled
+`resources/classic/` and `resources/nation/` directories, parses each `.ruleset` file via
+`SectionFile`, and exposes the loaded data for use by game initialisation.
 
 ---
 
@@ -541,8 +676,36 @@ Notable positions (0-indexed, MSB-first within each byte):
 
 ## 8. Ruleset Data
 
-All ruleset data is hardcoded in `Game.initGame()`. There is no external ruleset file loading for
-most data (only nation rulesets have a `SectionFile` parser).
+The server bundles the **Freeciv classic ruleset** (forked from the C Freeciv server) and all
+**nation rulesets** as resources under `src/main/resources/`.
+
+### Bundled Ruleset Files
+
+| Path | Contents |
+|---|---|
+| `classic/actions.ruleset` | Action definitions |
+| `classic/buildings.ruleset` | City building/improvement definitions |
+| `classic/cities.ruleset` | City rules and city-style definitions |
+| `classic/effects.ruleset` | Global and per-improvement effect definitions |
+| `classic/game.ruleset` | Core game settings and global rules |
+| `classic/governments.ruleset` | Government type definitions |
+| `classic/nations.ruleset` | Nation group settings and enabled nations |
+| `classic/techs.ruleset` | Technology tree definitions |
+| `classic/terrain.ruleset` | Terrain type definitions |
+| `classic/units.ruleset` | Unit type definitions |
+| `classic/styles.ruleset` | City / music style definitions |
+| `classic/parser.lua` | Lua ruleset parser |
+| `classic/script.lua` | Lua game script |
+| `nation/*.ruleset` | 563 individual nation definition files |
+
+These files are a fork of the upstream Freeciv classic ruleset and can be customised for
+FreecivWorld-specific gameplay changes.
+
+### In-memory Ruleset State
+
+The hardcoded initialisation in `Game.initGame()` currently takes precedence over the file-based
+rulesets. `Ruleset.java` provides the foundation to load data from the bundled `.ruleset` files
+and will eventually replace the hardcoded values.
 
 | Collection | Count | Key items |
 |---|---|---|
