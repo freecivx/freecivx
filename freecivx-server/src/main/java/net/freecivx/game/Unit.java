@@ -85,6 +85,10 @@ public class Unit {
         return veteran;
     }
 
+    public void setVeteran(int veteran) {
+        this.veteran = veteran;
+    }
+
     public int getHp() {
         return hp;
     }

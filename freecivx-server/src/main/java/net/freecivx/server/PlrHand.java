@@ -96,8 +96,8 @@ public class PlrHand {
 
     /**
      * Handles a client request to change the player's current research target.
-     * Updates the active research tech and broadcasts the new research state
-     * to the owning client.
+     * Validates that all prerequisite technologies are known before accepting
+     * the change.  Mirrors {@code handle_player_research} in the C Freeciv server.
      *
      * @param game   the current game state
      * @param connId the connection ID of the requesting player
@@ -110,6 +110,16 @@ public class PlrHand {
         Technology tech = game.techs.get((long) techId);
         if (tech == null) return;
 
+        // Validate prerequisites before accepting the research change.
+        // Mirrors can_player_learn_tech() in the C Freeciv server.
+        if (!TechTools.canPlayerResearch(game, connId, (long) techId)) {
+            Notify.notifyPlayer(game, game.getServer(), connId,
+                    "You cannot research " + tech.getName()
+                            + ". Prerequisites are not met.");
+            return;
+        }
+
+        player.setResearchingTech((long) techId);
         TechTools.sendResearchInfo(game, game.getServer(), connId, connId);
     }
 
@@ -125,5 +135,48 @@ public class PlrHand {
         // Attribute blocks are currently logged and discarded; future
         // implementations should persist them in the player's state.
         System.out.println("Received attribute block from connection " + connId);
+    }
+
+    /**
+     * Handles a PACKET_PLAYER_RATES packet, updating the player's science and
+     * tax rates.  The science rate must be between 0 and 100 inclusive and the
+     * sum of science, tax, and luxury rates must equal 100 (luxury is ignored in
+     * this simplified model).  Mirrors {@code handle_player_rates} in the C Freeciv
+     * server's {@code plrhand.c}.
+     * The client sends JSON fields: {@code tax}, {@code luxury}, {@code science}.
+     *
+     * @param game   the current game state
+     * @param connId the connection ID of the requesting player
+     * @param json   the parsed JSON packet from the client
+     */
+    public static void handlePlayerRates(Game game, long connId, JSONObject json) {
+        Player player = game.players.get(connId);
+        if (player == null) return;
+
+        int science = json.optInt("science", -1);
+        int tax     = json.optInt("tax",     -1);
+        int luxury  = json.optInt("luxury",   0);
+
+        // Require valid science rate; derive tax if not provided.
+        if (science < 0 || science > 100) {
+            Notify.notifyPlayer(game, game.getServer(), connId,
+                    "Invalid science rate: " + science + ". Must be 0-100.");
+            return;
+        }
+        if (tax < 0) {
+            tax = 100 - science - luxury;
+        }
+
+        // Validate total: tax + luxury + science must equal 100.
+        if (tax < 0 || tax > 100 || (science + tax + luxury) != 100) {
+            Notify.notifyPlayer(game, game.getServer(), connId,
+                    "Invalid tax rates: science=" + science + " tax=" + tax
+                            + " luxury=" + luxury + ". They must sum to 100.");
+            return;
+        }
+
+        player.setScienceRate(science);
+        TechTools.sendResearchInfo(game, game.getServer(), connId, connId);
+        game.getServer().sendPlayerInfoAll(player);
     }
 }
