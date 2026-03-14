@@ -54,6 +54,20 @@ public class Player {
     private int gold = 0;
     /** Percentage of trade output directed to science (0-100). */
     private int scienceRate = 50;
+    /**
+     * Percentage of trade output directed to luxury goods (0-100).
+     * Luxury goods make unhappy citizens content and content citizens happy.
+     * Mirrors {@code economic.luxury} in the C Freeciv player struct.
+     * Default 0: no luxury spending.
+     */
+    private int luxuryRate = 0;
+    /**
+     * Percentage of trade output directed to tax (gold) (0-100).
+     * Must equal {@code 100 - scienceRate - luxuryRate}.
+     * Mirrors {@code economic.tax} in the C Freeciv player struct.
+     * Default 50: matching the default scienceRate of 50 with no luxury.
+     */
+    private int taxRate = 50;
     /** ID of the player's current government form. */
     private int governmentId = 1; // 1 = Despotism by default
 
@@ -199,6 +213,31 @@ public class Player {
 
     public void setScienceRate(int scienceRate) {
         this.scienceRate = scienceRate;
+    }
+
+    /**
+     * Returns the percentage of trade directed to luxury goods (0-100).
+     * Luxury goods make unhappy citizens content and content citizens happy,
+     * mirroring the luxury output mechanics in the C Freeciv server.
+     */
+    public int getLuxuryRate() {
+        return luxuryRate;
+    }
+
+    public void setLuxuryRate(int luxuryRate) {
+        this.luxuryRate = luxuryRate;
+    }
+
+    /**
+     * Returns the percentage of trade directed to tax/gold (0-100).
+     * Equal to {@code 100 - scienceRate - luxuryRate}.
+     */
+    public int getTaxRate() {
+        return taxRate;
+    }
+
+    public void setTaxRate(int taxRate) {
+        this.taxRate = taxRate;
     }
 
     /** Returns the ID of this player's current government type. */

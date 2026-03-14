@@ -571,8 +571,8 @@ public class CivServer extends org.java_websocket.server.WebSocketServer {
         msg.put("real_embassy", embassies);
         msg.put("is_alive", player.isAlive());
 
-        msg.put("tax", 100 - player.getScienceRate());
-        msg.put("luxury", 0);
+        msg.put("tax", player.getTaxRate());
+        msg.put("luxury", player.getLuxuryRate());
         msg.put("science", player.getScienceRate());
         msg.put("gold", player.getGold());
 
@@ -981,8 +981,8 @@ public class CivServer extends org.java_websocket.server.WebSocketServer {
             JSONArray emb = new JSONArray(); emb.put(false); emb.put(false);
             msg.put("real_embassy", emb);
             msg.put("is_alive", player.isAlive());
-            msg.put("tax", 40); msg.put("luxury", 0);
-            msg.put("science", 60); msg.put("gold", 100);
+            msg.put("tax", player.getTaxRate()); msg.put("luxury", player.getLuxuryRate());
+            msg.put("science", player.getScienceRate()); msg.put("gold", player.getGold());
             ws.send(msg.toString());
         });
 
