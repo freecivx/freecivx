@@ -89,6 +89,10 @@ public class Unit {
         return hp;
     }
 
+    public void setHp(int hp) {
+        this.hp = hp;
+    }
+
     public int getActivity() {
         return activity;
     }
