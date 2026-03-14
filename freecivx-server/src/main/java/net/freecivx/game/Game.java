@@ -25,12 +25,15 @@ import net.freecivx.server.Notify;
 import net.freecivx.ai.AiPlayer;
 import net.freecivx.data.Ruleset;
 import org.json.JSONArray;
+import org.json.JSONObject;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
+import java.util.Set;
 
 /**
  * The Game class
@@ -49,6 +52,8 @@ public class Game {
     private Random random = new Random();
     private AiPlayer aiPlayer;
     private Ruleset ruleset = new Ruleset();
+    /** Tracks which human players have pressed end-turn this turn. */
+    private final Set<Long> humanPlayersDone = new HashSet<>();
 
     /**
      * Optional map generation seed.  When {@code >= 0} the same seed is
@@ -179,8 +184,31 @@ public class Game {
         server.sendGameInfoAll(year, turn, phase);
         server.sendRulesetControl(improvements.size());
 
-        // Send technologies
-        techs.forEach((id, tech) -> server.sendTechAll(id, -1, tech.getName(), new JSONArray(), tech.getGraphicsStr(), tech.getHelptext()));
+        // Send technologies with proper prerequisite data (research_reqs).
+        // VUT_ADVANCE=1 and REQ_RANGE_PLAYER=7 mirror the constants used in
+        // the JavaScript client (fc_types.js / requirements.js).
+        final int VUT_ADVANCE = 1;
+        final int REQ_RANGE_PLAYER = 7;
+        Map<String, Long> techNameToId = new HashMap<>();
+        techs.forEach((id, tech) -> techNameToId.put(tech.getName(), id));
+        techs.forEach((id, tech) -> {
+            JSONArray researchReqs = new JSONArray();
+            List<String> prereqNames = List.of(tech.getPrereq1(), tech.getPrereq2());
+            for (String prereqName : prereqNames) {
+                if (prereqName != null && !prereqName.equals("None")) {
+                    Long prereqId = techNameToId.get(prereqName);
+                    if (prereqId != null) {
+                        JSONObject req = new JSONObject();
+                        req.put("kind", VUT_ADVANCE);
+                        req.put("range", REQ_RANGE_PLAYER);
+                        req.put("present", true);
+                        req.put("value", prereqId);
+                        researchReqs.put(req);
+                    }
+                }
+            }
+            server.sendTechAll(id, -1, tech.getName(), researchReqs, tech.getGraphicsStr(), tech.getHelptext());
+        });
 
         // Send governments
         governments.forEach((id, gov) -> server.sendRuleseGovernmentAll(id, gov.getName(), gov.getRuleName(), gov.getHelptext()));
@@ -520,6 +548,30 @@ public class Game {
 
     public int getConnectedPlayerCount() {
         return connections.size();
+    }
+
+    /**
+     * Called when a human player presses the end-turn button.
+     * Advances the turn only when every living human player has ended their turn.
+     * AI players are excluded from this check because they run automatically
+     * inside {@link #turnDone()}.
+     *
+     * @param connId the connection ID of the player who pressed end-turn
+     */
+    public synchronized void playerEndTurn(long connId) {
+        Player player = players.get(connId);
+        if (player == null || player.isAi()) return;
+
+        humanPlayersDone.add(connId);
+
+        long humanAliveCount = players.values().stream()
+                .filter(p -> !p.isAi() && p.isAlive())
+                .count();
+
+        if (humanPlayersDone.size() >= humanAliveCount) {
+            humanPlayersDone.clear();
+            turnDone();
+        }
     }
 
     public void turnDone() {

@@ -37,6 +37,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 public class CivServer extends org.java_websocket.server.WebSocketServer {
 
+    private static final String SERVER_VERSION = "1.0";
+
     private static final int[] ACTION_RESULTS = {
         0,  0,  1,  1,  2,  2,  3,  3,  4,  4,
         5,  5,  6,  6,  7,  7,  8,  8,  9,  9,
@@ -110,7 +112,16 @@ public class CivServer extends org.java_websocket.server.WebSocketServer {
         conn.setAttachment(clientId); // Attach the client ID to the connection
         System.out.println("New connection (ID: " + clientId + "): " + conn.getRemoteSocketAddress());
 
-        sendMessage(clientId, "Your client ID is: " + clientId);
+        long humanCount = game.players.values().stream().filter(p -> !p.isAi()).count();
+        String welcomeMsg = String.format(
+                "Welcome to Freecivx server! " +
+                "Version: %s | Players connected: %d | " +
+                "Game started: %s | Your connection ID: %d",
+                SERVER_VERSION,
+                humanCount,
+                game.isGameStarted() ? "yes (turn " + game.turn + ")" : "no",
+                clientId);
+        sendMessage(clientId, welcomeMsg);
 
     }
 
@@ -152,7 +163,7 @@ public class CivServer extends org.java_websocket.server.WebSocketServer {
         }
 
         if (pid == Packets.PACKET_PLAYER_PHASE_DONE) {
-            game.turnDone();
+            game.playerEndTurn(connId);
         }
 
         if (pid == Packets.PACKET_UNIT_ORDERS) {
