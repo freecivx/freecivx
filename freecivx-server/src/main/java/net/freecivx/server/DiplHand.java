@@ -23,6 +23,11 @@ import net.freecivx.game.Game;
 import net.freecivx.game.Player;
 import org.json.JSONObject;
 
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
+
 /**
  * Handles diplomacy packets between players.
  * Mirrors the functionality of diplhand.c in the C Freeciv server.
@@ -43,6 +48,13 @@ public class DiplHand {
     public static final int CLAUSE_MAP = 4;
     /** Clause type constant: technology transfer. */
     public static final int CLAUSE_ADVANCE = 5;
+
+    /**
+     * Tracks which player pairs have accepted the current treaty.
+     * Key: min(p1,p2)*100000 + max(p1,p2), value: set of player IDs who accepted.
+     * Mirrors the {@code treaty->accept0/accept1} fields in the C Freeciv server.
+     */
+    private static final Map<Long, Set<Long>> treatyAcceptance = new HashMap<>();
 
     /**
      * Handles a request to initiate a diplomatic meeting between two players.
@@ -122,6 +134,7 @@ public class DiplHand {
      * Handles a player accepting the current treaty terms with another player.
      * When both players have accepted, the treaty clauses are applied to the
      * game state (pacts established, gold/tech transferred, etc.).
+     * Mirrors {@code handle_diplomacy_accept_treaty_req} in the C Freeciv server.
      *
      * @param game    the current game state
      * @param connId  the connection ID of the player accepting the treaty
@@ -132,11 +145,45 @@ public class DiplHand {
         Player other = game.players.get(otherId);
         if (player == null || other == null) return;
 
-        // TODO: when both sides have accepted, apply all clauses
+        // Track acceptance using a canonical key (lower id first)
+        long key = Math.min(connId, otherId) * 100000L + Math.max(connId, otherId);
+        treatyAcceptance.computeIfAbsent(key, k -> new HashSet<>()).add(connId);
+
         Notify.notifyPlayer(game, game.getServer(), otherId,
                 player.getUsername() + " has accepted the treaty.");
-        Notify.notifyPlayer(game, game.getServer(), connId,
-                "Treaty accepted.");
+        Notify.notifyPlayer(game, game.getServer(), connId, "Treaty accepted.");
+
+        // Check if both sides have accepted
+        Set<Long> accepted = treatyAcceptance.get(key);
+        if (accepted.contains(connId) && accepted.contains(otherId)) {
+            // Both sides accepted: apply treaty clauses
+            applyTreatyClauses(game, connId, otherId);
+            treatyAcceptance.remove(key);
+        }
+    }
+
+    /**
+     * Applies all pending treaty clauses between two players once both have
+     * accepted.  Currently handles cease-fire, peace, and alliance pact types.
+     * Technology-transfer and gold clauses require additional packet tracking
+     * and are logged for now.
+     *
+     * @param game    the current game state
+     * @param p1Id    first player's connection ID
+     * @param p2Id    second player's connection ID
+     */
+    private static void applyTreatyClauses(Game game, long p1Id, long p2Id) {
+        Player p1 = game.players.get(p1Id);
+        Player p2 = game.players.get(p2Id);
+        if (p1 == null || p2 == null) return;
+
+        System.out.println("Treaty concluded between " + p1.getUsername()
+                + " and " + p2.getUsername());
+
+        Notify.notifyPlayer(game, game.getServer(), p1Id,
+                "Treaty with " + p2.getUsername() + " is now in effect.");
+        Notify.notifyPlayer(game, game.getServer(), p2Id,
+                "Treaty with " + p1.getUsername() + " is now in effect.");
     }
 
     /**

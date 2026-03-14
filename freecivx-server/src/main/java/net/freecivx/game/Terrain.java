@@ -23,11 +23,19 @@ package net.freecivx.game;
 public class Terrain {
     private String name;          // Name of the terrain
     private String graphicsStr;   // String for terrain graphics or texture
+    private int defenseBonus;     // Percent added to unit defence on this terrain (e.g. 50 = +50%)
+    private int moveCost;         // Movement points required to enter (1 = standard)
 
-    // Constructor
+    // Constructor (backwards-compatible: no defence/move args defaults to 0/1)
     public Terrain(String name, String graphicsStr) {
+        this(name, graphicsStr, 0, 1);
+    }
+
+    public Terrain(String name, String graphicsStr, int defenseBonus, int moveCost) {
         this.name = name;
         this.graphicsStr = graphicsStr;
+        this.defenseBonus = defenseBonus;
+        this.moveCost = moveCost;
     }
 
     // Getter for name
@@ -50,9 +58,32 @@ public class Terrain {
         this.graphicsStr = graphicsStr;
     }
 
+    /**
+     * Returns the defence bonus provided by this terrain type, as a percentage
+     * (e.g. 50 means +50% defence).  Mirrors the {@code defense_bonus} field
+     * in the Freeciv terrain ruleset.
+     */
+    public int getDefenseBonus() {
+        return defenseBonus;
+    }
+
+    public void setDefenseBonus(int defenseBonus) {
+        this.defenseBonus = defenseBonus;
+    }
+
+    /** Returns the movement cost to enter this terrain in move fragments. */
+    public int getMoveCost() {
+        return moveCost;
+    }
+
+    public void setMoveCost(int moveCost) {
+        this.moveCost = moveCost;
+    }
+
     // Method to display terrain information
     @Override
     public String toString() {
-        return "Terrain{name='" + name + "', graphicsStr='" + graphicsStr + "'}";
+        return "Terrain{name='" + name + "', graphicsStr='" + graphicsStr
+                + "', defenseBonus=" + defenseBonus + "'}";
     }
 }

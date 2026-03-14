@@ -85,8 +85,7 @@ public class Research {
         Player player = game.players.get(playerId);
         if (player == null) return false;
 
-        // TODO: track known-tech set on Player
-        return false;
+        return player.hasTech(techId);
     }
 
     /**
@@ -102,24 +101,30 @@ public class Research {
     /**
      * Checks whether {@code techId} is a direct prerequisite needed to unlock
      * {@code advanceId}.
+     * Mirrors the {@code advance_required} lookup in the C Freeciv server's
+     * {@code common/tech.c}.
      *
      * @param game      the current game state
      * @param techId    the candidate prerequisite technology ID
      * @param advanceId the technology that may require {@code techId}
-     * @return {@code true} if {@code techId} is a prerequisite for {@code advanceId}
+     * @return {@code true} if {@code techId} is a direct prerequisite for {@code advanceId}
      */
     public static boolean isPrereqFor(Game game, long techId, long advanceId) {
-        if (!game.techs.containsKey(techId) || !game.techs.containsKey(advanceId)) {
-            return false;
-        }
-        // TODO: read prerequisite graph from ruleset data
-        return false;
+        Technology tech = game.techs.get(techId);
+        Technology advance = game.techs.get(advanceId);
+        if (tech == null || advance == null) return false;
+
+        // Check both prereq slots from the ruleset (req1, req2)
+        return tech.getName().equals(advance.getPrereq1())
+                || tech.getName().equals(advance.getPrereq2());
     }
 
     /**
      * Calculates a research-speed bonus (in percent) for the specified player
      * derived from city improvements (Library, University, Research Lab) and
      * government effects.
+     * Mirrors the science-output calculation in the C Freeciv server's city
+     * output system.
      *
      * @param game     the current game state
      * @param playerId the ID of the player
@@ -129,7 +134,12 @@ public class Research {
         Player player = game.players.get(playerId);
         if (player == null) return 0;
 
-        // TODO: sum science improvement effects across all player cities
-        return 0;
+        int bonus = 0;
+        // Library (id=3) gives +50% science per city; University (not in default set) +100%
+        for (City city : game.cities.values()) {
+            if (city.getOwner() != playerId) continue;
+            if (city.hasImprovement(3)) bonus += 50;  // Library
+        }
+        return bonus;
     }
 }

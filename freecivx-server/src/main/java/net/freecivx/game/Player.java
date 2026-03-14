@@ -20,7 +20,9 @@
 package net.freecivx.game;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 public class Player {
 
@@ -31,6 +33,22 @@ public class Player {
     private boolean is_alive = true;
     private boolean isAi = false;
     private List<Boolean> real_embassy = new ArrayList<Boolean>();
+
+    // Research state (mirrors player_research in C Freeciv server)
+    /** Set of technology IDs this player has already researched. */
+    private Set<Long> knownTechs = new HashSet<>();
+    /** Accumulated science bulbs towards the current research target. */
+    private int bulbsResearched = 0;
+    /** ID of the technology currently being researched; -1 = none chosen. */
+    private long researchingTech = -1L;
+
+    // Economic state
+    /** Player's current gold treasury. */
+    private int gold = 0;
+    /** Percentage of trade output directed to science (0-100). */
+    private int scienceRate = 50;
+    /** ID of the player's current government form. */
+    private int governmentId = 1; // 1 = Despotism by default
 
     // Constructor
     public Player(long connId, String username, String addr, int nation) {
@@ -99,6 +117,70 @@ public class Player {
 
     public void setReal_embassy(List<Boolean> real_embassy) {
         this.real_embassy = real_embassy;
+    }
+
+    // Research state accessors
+
+    /**
+     * Returns the set of technology IDs this player has researched.
+     * Mirrors the {@code inventions} array in the C Freeciv player_research struct.
+     */
+    public Set<Long> getKnownTechs() {
+        return knownTechs;
+    }
+
+    /** Returns {@code true} if this player knows the technology with the given ID. */
+    public boolean hasTech(long techId) {
+        return knownTechs.contains(techId);
+    }
+
+    /** Adds a technology to this player's known-technology set. */
+    public void addKnownTech(long techId) {
+        knownTechs.add(techId);
+    }
+
+    public int getBulbsResearched() {
+        return bulbsResearched;
+    }
+
+    public void setBulbsResearched(int bulbsResearched) {
+        this.bulbsResearched = bulbsResearched;
+    }
+
+    public long getResearchingTech() {
+        return researchingTech;
+    }
+
+    public void setResearchingTech(long researchingTech) {
+        this.researchingTech = researchingTech;
+    }
+
+    // Economic state accessors
+
+    public int getGold() {
+        return gold;
+    }
+
+    public void setGold(int gold) {
+        this.gold = gold;
+    }
+
+    /** Returns the percentage of trade directed to science (0-100). */
+    public int getScienceRate() {
+        return scienceRate;
+    }
+
+    public void setScienceRate(int scienceRate) {
+        this.scienceRate = scienceRate;
+    }
+
+    /** Returns the ID of this player's current government type. */
+    public int getGovernmentId() {
+        return governmentId;
+    }
+
+    public void setGovernmentId(int governmentId) {
+        this.governmentId = governmentId;
     }
 
     // Utility methods

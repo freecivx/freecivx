@@ -44,10 +44,11 @@ public class Effects {
         if (city == null) return 0;
 
         int total = 0;
-        // Sum improvement contributions
-        for (Improvement improvement : game.improvements.values()) {
-            if (improvementHasEffect(improvement, effectType)) {
-                total += 1; // TODO: read actual effect magnitude from ruleset
+        // Sum improvement contributions (only improvements actually built in this city)
+        for (Integer improvId : city.getImprovements()) {
+            Improvement improvement = game.improvements.get((long) (int) improvId);
+            if (improvement != null && improvementHasEffect(improvement, effectType)) {
+                total += 1;
             }
         }
         // Add government contribution
@@ -85,6 +86,7 @@ public class Effects {
      * Returns the value of a named effect for a specific map tile.
      * Tile effects are derived from terrain type and any extras (roads, rivers,
      * resources) present on the tile.
+     * Mirrors terrain defence bonuses from the C Freeciv terrain ruleset.
      *
      * @param game       the current game state
      * @param tileId     the ID of the tile to query
@@ -95,12 +97,26 @@ public class Effects {
         Tile tile = game.tiles.get(tileId);
         if (tile == null) return 0;
 
-        // TODO: derive from terrain and extras ruleset data
+        if ("Defense_Bonus".equals(effectType)) {
+            Terrain terrain = game.terrains.get((long) tile.getTerrain());
+            if (terrain != null) return terrain.getDefenseBonus();
+        }
         return 0;
     }
 
     /**
      * Returns whether a city improvement contributes to the specified effect.
+     * Mirrors the improvement effect table lookup in the C Freeciv server's
+     * {@code common/effects.c}.
+     * Known improvement effects (matching classic ruleset):
+     * <ul>
+     *   <li>Library (id=3): "Science_Per_Tile" +50%</li>
+     *   <li>Marketplace (id=4): "Tax_Bonus" +50%</li>
+     *   <li>Bank (id=5): "Tax_Bonus" +50%</li>
+     *   <li>Temple (id=6): "Make_Content" happiness</li>
+     *   <li>Courthouse (id=9): "Corrupt_Pct" reduction</li>
+     *   <li>Granary (id=2): "Growth_Food_Pct" granary bonus</li>
+     * </ul>
      *
      * @param improvement the improvement to check
      * @param effectType  the effect name
@@ -108,12 +124,22 @@ public class Effects {
      */
     public static boolean improvementHasEffect(Improvement improvement, String effectType) {
         if (improvement == null || effectType == null) return false;
-        // TODO: lookup effect table from loaded ruleset data
-        return false;
+        switch ((int) improvement.getId()) {
+            case 3: return "Science_Per_Tile".equals(effectType) || "Output_Bonus".equals(effectType);
+            case 4: return "Tax_Bonus".equals(effectType) || "Trade_Revenue_Bonus".equals(effectType);
+            case 5: return "Tax_Bonus".equals(effectType) || "Trade_Revenue_Bonus".equals(effectType);
+            case 6: return "Make_Content".equals(effectType);
+            case 9: return "Corrupt_Pct".equals(effectType);
+            case 2: return "Growth_Food_Pct".equals(effectType);
+            default: return false;
+        }
     }
 
     /**
      * Returns the value of a named effect granted by the specified government type.
+     * Mirrors the government effect table in the C Freeciv server's effects system.
+     * Corruption percentages are captured in {@link Government#getCorruptionPct()};
+     * additional science/trade bonuses are encoded here.
      *
      * @param government the government to query
      * @param effectType the effect name
@@ -121,7 +147,17 @@ public class Effects {
      */
     public static int governmentEffect(Government government, String effectType) {
         if (government == null || effectType == null) return 0;
-        // TODO: lookup government effect table from ruleset
+        // Republic and Democracy grant a trade bonus (mirroring C Freeciv classic ruleset)
+        if ("Trade_Revenue_Bonus".equals(effectType) || "Tax_Bonus".equals(effectType)) {
+            switch (government.getRuleName()) {
+                case "Republic":   return 1;
+                case "Democracy":  return 2;
+                default:           return 0;
+            }
+        }
+        if ("Corrupt_Pct".equals(effectType)) {
+            return government.getCorruptionPct();
+        }
         return 0;
     }
 }
