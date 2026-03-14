@@ -340,6 +340,15 @@ public class Game {
             }
         }
 
+        // Check for enemy units on the destination tile — trigger combat instead
+        // of moving (mirrors unithand.c: moving onto an enemy initiates an attack).
+        for (Unit other : units.values()) {
+            if (other.getTile() == dest_tile && other.getOwner() != unit.getOwner()) {
+                unit.setFacing(dir);
+                return attackUnit(unit_id, other.getId());
+            }
+        }
+
         unit.setTile(dest_tile);
         unit.setFacing(dir);
         unit.setMovesleft(Math.max(0, unit.getMovesleft() - 1));
@@ -387,8 +396,11 @@ public class Game {
 
     /**
      * Resolves an attack from one unit against another.
-     * Uses {@link Combat#resolveCombat} to determine the outcome; the loser
-     * is removed from the game and a {@code PACKET_UNIT_REMOVE} broadcast is sent.
+     * Uses {@link Combat#resolveCombat} to determine the outcome, applying
+     * unit-type attack/defence strengths and terrain bonuses (mirrors
+     * {@code do_unit_attack_tiles} in the C server's {@code server/unittools.c}).
+     * The loser is removed from the game and a {@code PACKET_UNIT_REMOVE}
+     * broadcast is sent; the winner's updated HP is broadcast to all clients.
      *
      * @param attackerId ID of the attacking unit
      * @param defenderId ID of the defending unit
@@ -400,7 +412,13 @@ public class Game {
         if (attacker == null || defender == null) return false;
         if (!Combat.canUnitAttack(attacker, defender)) return false;
 
-        boolean attackerWins = Combat.resolveCombat(attacker, defender, map);
+        UnitType attackerType = unitTypes.get((long) attacker.getType());
+        UnitType defenderType = unitTypes.get((long) defender.getType());
+        Tile defenderTile = tiles.get(defender.getTile());
+
+        boolean attackerWins = Combat.resolveCombat(attacker, attackerType,
+                                                    defender, defenderType,
+                                                    defenderTile);
 
         // Consume one move point for the attack
         attacker.setMovesleft(Math.max(0, attacker.getMovesleft() - 1));

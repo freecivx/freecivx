@@ -91,25 +91,43 @@ public class Combat {
 
     /**
      * Resolves a combat between two units using a probabilistic round-by-round
-     * model (each round the side with higher strength has a proportionally higher
-     * chance of dealing damage).  Modifies the HP of both units in place and
-     * returns {@code true} if the attacker wins.
+     * model that mirrors the C Freeciv server's {@code do_unit_attack_tiles}
+     * formula.  Each round the attacker wins with probability
+     * {@code atkStr / (atkStr + defStr)}; the loser loses 1 HP.  Combat ends
+     * when either unit reaches 0 HP.
      *
-     * @param attacker the attacking unit
-     * @param defender the defending unit
-     * @param worldMap the world map (used to look up tile terrain bonuses)
+     * <p>Attack and defence strengths are derived from the units' {@link UnitType}
+     * definitions (mirroring {@code base_get_attack_power} /
+     * {@code get_defense_power} in {@code common/combat.c}), not from the units'
+     * current HP.  Terrain and fortification bonuses are applied to defence.
+     *
+     * <p>Modifies the HP of both units in place.  The caller is responsible for
+     * removing any unit that reaches 0 HP from the game.
+     *
+     * @param attacker     the attacking unit
+     * @param attackerType the unit-type definition for the attacker
+     * @param defenderTile the tile the defender is standing on (for terrain bonus)
+     * @param defender     the defending unit
+     * @param defenderType the unit-type definition for the defender
      * @return {@code true} if the attacker wins (defender reaches 0 HP)
      */
-    public static boolean resolveCombat(Unit attacker, Unit defender, WorldMap worldMap) {
+    public static boolean resolveCombat(Unit attacker, UnitType attackerType,
+                                        Unit defender, UnitType defenderType,
+                                        Tile defenderTile) {
         if (attacker == null || defender == null) return false;
 
-        // Simplified combat: compare strengths and apply probabilistic damage.
-        // HP changes are tracked locally; caller is responsible for persisting
-        // the result (e.g. removing the unit if hpAtk or hpDef reaches 0).
-        int atkStr = attacker.getHp();
-        int defStr = defender.getHp();
-        int hpAtk = atkStr;
-        int hpDef = defStr;
+        // Effective attack strength (base + veteran bonus matching C server)
+        int atkStr = unitAttackStrength(attacker, attackerType, null);
+        if (atkStr <= 0) atkStr = 1; // ensure non-zero so units can fight
+
+        // Effective defence strength (base + veteran + terrain + fortification)
+        int defStr = unitDefenseStrength(defender, defenderType, defenderTile);
+        // Apply fortification bonus (+25% defence, matching C server POWER_BONUS_FACTOR)
+        defStr = defStr + (defStr * unitCombatModifier(defender, defenderType) / 4);
+        if (defStr <= 0) defStr = 1;
+
+        int hpAtk = attacker.getHp();
+        int hpDef = defender.getHp();
 
         while (hpAtk > 0 && hpDef > 0) {
             int total = atkStr + defStr;
@@ -120,6 +138,9 @@ public class Combat {
                 hpAtk = Math.max(0, hpAtk - COMBAT_ROUND_HP_LOSS);
             }
         }
+
+        attacker.setHp(hpAtk);
+        defender.setHp(hpDef);
         return hpDef <= 0;
     }
 

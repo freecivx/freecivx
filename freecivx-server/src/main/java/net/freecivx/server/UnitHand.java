@@ -56,8 +56,9 @@ public class UnitHand {
 
     /**
      * Handles a unit do-action packet from a client (e.g. found city, attack,
-     * establish embassy).  Looks up the action by name and applies it to the
-     * actor unit against the given target.
+     * establish embassy).  Dispatches to the appropriate handler based on
+     * the action name.  Mirrors the action-dispatch logic of
+     * {@code unithand.c:handle_unit_do_action} in the C Freeciv server.
      *
      * @param game       the current game state
      * @param connId     the connection ID of the requesting client
@@ -74,6 +75,13 @@ public class UnitHand {
 
         if ("Found City".equals(actionName)) {
             game.buildCity(actorId, "New City", targetId);
+        } else if ("Attack".equals(actionName) || "Suicide Attack".equals(actionName)) {
+            // targetId is the unit ID of the defending unit
+            game.attackUnit(actorId, targetId);
+        } else if ("Fortify".equals(actionName)) {
+            game.changeUnitActivity(actorId, 3); // activity 3 = ACTIVITY_FORTIFIED
+        } else if ("Pillage".equals(actionName)) {
+            game.changeUnitActivity(actorId, 6); // activity 6 = ACTIVITY_PILLAGE
         } else {
             // Dispatch to the generic action system
             UnitTools.sendUnitInfo(game, game.getServer(), connId, actorId);

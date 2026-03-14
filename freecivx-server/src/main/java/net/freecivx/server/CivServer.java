@@ -190,11 +190,10 @@ public class CivServer extends org.java_websocket.server.WebSocketServer {
         }
 
         if (pid == Packets.PACKET_UNIT_DO_ACTION) {
-            long unit_id = json.optInt("actor_id");
-            String name = json.optString("name");
-
-            long tile_id = json.optInt("target_id");
-            game.buildCity(unit_id, name, tile_id);
+            long actor_id = json.optInt("actor_id");
+            long target_id = json.optInt("target_id");
+            String actionName = json.optString("name");
+            UnitHand.handleUnitDoAction(game, connId, actor_id, target_id, actionName);
         }
 
         if (pid == Packets.PACKET_UNIT_CHANGE_ACTIVITY) {
