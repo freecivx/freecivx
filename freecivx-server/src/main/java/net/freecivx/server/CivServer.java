@@ -398,6 +398,10 @@ public class CivServer extends org.java_websocket.server.WebSocketServer {
         sendTo(connId, packet);
     }
 
+    public void broadcastPacket(JSONObject packet) {
+        broadcast(packet);
+    }
+
     public void sendMessageAll(String message) {
         JSONObject msg = new JSONObject();
         msg.put("pid", Packets.PACKET_CHAT_MSG);

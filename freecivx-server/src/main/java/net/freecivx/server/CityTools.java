@@ -72,7 +72,7 @@ public class CityTools {
         msg.put("tile", tileId);
         msg.put("name", name);
         msg.put("size", CITY_INITIAL_SIZE);
-        game.getServer().sendMessageAll(msg.toString());
+        game.getServer().broadcastPacket(msg);
 
         return city;
     }
@@ -93,7 +93,7 @@ public class CityTools {
         msg.put("pid", Packets.PACKET_CITY_INFO);
         msg.put("id", cityId);
         msg.put("remove", true);
-        game.getServer().sendMessageAll(msg.toString());
+        game.getServer().broadcastPacket(msg);
     }
 
     /**
@@ -113,9 +113,8 @@ public class CityTools {
     }
 
     /**
-     * Sends a PACKET_CITY_INFO packet for the specified city to a single client.
-     * Pass {@code connId = -1} to send only as a side-effect broadcast
-     * via {@link CivServer#sendMessageAll}.
+     * Sends a PACKET_CITY_INFO packet for the specified city to a single client
+     * or broadcasts it to all clients.
      *
      * @param game   the current game state
      * @param server the CivServer used to transmit the packet
@@ -138,9 +137,9 @@ public class CityTools {
         msg.put("production_value", city.getProductionValue());
 
         if (connId < 0) {
-            server.sendMessageAll(msg.toString());
+            server.broadcastPacket(msg);
         } else {
-            server.sendMessage(connId, msg.toString());
+            server.sendPacket(connId, msg);
         }
     }
 
