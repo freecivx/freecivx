@@ -210,6 +210,30 @@ public class Game {
         return initialGold;
     }
 
+    /**
+     * Converts the internal turn counter to the historical calendar year used
+     * by the Freeciv protocol and the JavaScript client.
+     * <p>
+     * Classic Freeciv starts at 4000 BC (year = -4000) and advances 20 years
+     * per turn.  The client's {@code handle_game_info()} / {@code get_year_string()}
+     * expects a <em>negative</em> value for BC years and a <em>non-negative</em>
+     * value for AD years, formatted together with the {@code calendar_info} labels.
+     * Year 0 is treated as 0 AD (matching the JS client's {@code >= 0} branch).
+     * <p>
+     * Formula: {@code historicalYear = year * 20 - 4000}
+     * <ul>
+     *   <li>turn 0 (game start)  → -4000 (4000 BC)</li>
+     *   <li>turn 1              → -3980 (3980 BC)</li>
+     *   <li>turn 200            →     0 (0 AD, calendar boundary)</li>
+     *   <li>turn 201            →    20 (20 AD)</li>
+     * </ul>
+     *
+     * @return the historical calendar year matching the current internal {@link #year}
+     */
+    public long getHistoricalYear() {
+        return year * 20L - 4000L;
+    }
+
     /** Schedules a forced turn-end after {@link #turnTimeout} seconds. */
     private synchronized void scheduleTurnTimeout() {
         if (turnTimeout <= 0) return;
@@ -296,7 +320,7 @@ public class Game {
 
         server.sendCalendarInfoAll();
         server.sendMapInfoAll(map.getXsize(), map.getYsize());
-        server.sendGameInfoAll(year, turn, phase, turnTimeout);
+        server.sendGameInfoAll(getHistoricalYear(), turn, phase, turnTimeout);
         server.sendRulesetControl(improvements.size());
 
         // Send technologies with proper prerequisite data (research_reqs).
@@ -727,13 +751,13 @@ public class Game {
         // Mirrors check_for_city_destruction() / kill_player() in C Freeciv server.
         checkPlayerElimination();
 
-        server.sendGameInfoAll(year, turn, phase, turnTimeout);
+        server.sendGameInfoAll(getHistoricalYear(), turn, phase, turnTimeout);
         // Classic Freeciv: year 4000 BCE at turn 1, each turn advances 20 years.
-        // Mirrors the calendar used in AutoGame.logTurnSummary().
-        long historicalYear = 4000L - (year - 1) * 20L;
-        String yearStr = historicalYear > 0
-                ? historicalYear + " BC"
-                : Math.abs(historicalYear) + " AD";
+        // getHistoricalYear() returns negative values for BC years and non-negative for AD.
+        long histYear = getHistoricalYear();
+        String yearStr = histYear < 0
+                ? Math.abs(histYear) + " BC"
+                : histYear + " AD";
         server.sendEndTurnAll();
         server.sendBeginTurnAll();
         server.sendStartPhaseAll();

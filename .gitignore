@@ -92,3 +92,7 @@ tomcat.8080
 # Node.js dependencies
 node_modules/
 package-lock.json
+
+# Generated JavaScript files (created by scripts/sync-js-hand.sh at build time)
+freeciv-web/src/main/webapp/javascript/packhand_gen.js
+freeciv-web/src/main/webapp/javascript/packets.js
