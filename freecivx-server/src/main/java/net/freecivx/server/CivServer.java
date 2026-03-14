@@ -175,13 +175,19 @@ public class CivServer extends org.java_websocket.server.WebSocketServer {
             JSONObject orders = json.optJSONArray("orders").getJSONObject(0);
             int order = orders.optInt("order");
             int dir = orders.optInt("dir");
-            if (order == ORDER_ACTION_MOVE) {
-                // One tile move.
-                game.moveUnit(unit_id, dest_tile, dir);
-            }
-            if (order == ORDER_MOVE) {
-                // GOTO.
-                game.moveUnit(unit_id, dest_tile, dir);
+            Unit orderUnit = game.units.get((long) unit_id);
+            if (orderUnit != null) {
+                Player orderPlayer = game.players.get(orderUnit.getOwner());
+                if (orderPlayer != null && orderPlayer.getConnectionId() == connId) {
+                    if (order == ORDER_ACTION_MOVE) {
+                        // One tile move.
+                        game.moveUnit(unit_id, dest_tile, dir);
+                    }
+                    if (order == ORDER_MOVE) {
+                        // GOTO.
+                        game.moveUnit(unit_id, dest_tile, dir);
+                    }
+                }
             }
         }
 
@@ -210,7 +216,13 @@ public class CivServer extends org.java_websocket.server.WebSocketServer {
         if (pid == Packets.PACKET_UNIT_CHANGE_ACTIVITY) {
             long unit_id = json.optInt("unit_id");
             int activity = json.optInt("activity");
-            game.changeUnitActivity(unit_id, activity);
+            Unit actUnit = game.units.get(unit_id);
+            if (actUnit != null) {
+                Player actPlayer = game.players.get(actUnit.getOwner());
+                if (actPlayer != null && actPlayer.getConnectionId() == connId) {
+                    game.changeUnitActivity(unit_id, activity);
+                }
+            }
         }
 
         // Handle PACKET_PLAYER_RATES: client sends new science/tax/luxury rates.
@@ -669,6 +681,7 @@ public class CivServer extends org.java_websocket.server.WebSocketServer {
     }
 
     public void sendPlayerInfoAll(Player player) {
+        // Public information broadcast to all connected clients
         JSONObject msg = new JSONObject();
         msg.put("pid", Packets.PACKET_PLAYER_INFO);
         msg.put("playerno", player.getPlayerNo());
@@ -676,8 +689,6 @@ public class CivServer extends org.java_websocket.server.WebSocketServer {
         msg.put("name", player.getUsername());
         msg.put("nation", player.getNation());
         msg.put("government", player.getGovernmentId());
-        msg.put("researching", player.getResearchingTech());
-        msg.put("bulbs_researched", player.getBulbsResearched());
         JSONArray inventions = new JSONArray();
         msg.put("inventions", inventions);
         JSONArray flags = new JSONArray();
@@ -695,12 +706,23 @@ public class CivServer extends org.java_websocket.server.WebSocketServer {
         msg.put("real_embassy", embassies);
         msg.put("is_alive", player.isAlive());
 
-        msg.put("tax", player.getTaxRate());
-        msg.put("luxury", player.getLuxuryRate());
-        msg.put("science", player.getScienceRate());
-        msg.put("gold", player.getGold());
-
         broadcast(msg);
+
+        // Private financial and research data sent only to the owning player
+        long ownerConnId = player.getConnectionId();
+        WebSocket ownerWs = clients.get(ownerConnId);
+        if (ownerWs != null) {
+            JSONObject privateMsg = new JSONObject();
+            privateMsg.put("pid", Packets.PACKET_PLAYER_INFO);
+            privateMsg.put("playerno", player.getPlayerNo());
+            privateMsg.put("researching", player.getResearchingTech());
+            privateMsg.put("bulbs_researched", player.getBulbsResearched());
+            privateMsg.put("tax", player.getTaxRate());
+            privateMsg.put("luxury", player.getLuxuryRate());
+            privateMsg.put("science", player.getScienceRate());
+            privateMsg.put("gold", player.getGold());
+            ownerWs.send(privateMsg.toString());
+        }
     }
 
     public void sendNationInfoAll(long id, String name, String adjective, String graphic_str, String legend) {
@@ -1105,8 +1127,13 @@ public class CivServer extends org.java_websocket.server.WebSocketServer {
             JSONArray emb = new JSONArray(); emb.put(false); emb.put(false);
             msg.put("real_embassy", emb);
             msg.put("is_alive", player.isAlive());
-            msg.put("tax", player.getTaxRate()); msg.put("luxury", player.getLuxuryRate());
-            msg.put("science", player.getScienceRate()); msg.put("gold", player.getGold());
+            // Private financial data is sent only to the owning player
+            if (player.getConnectionId() == connId) {
+                msg.put("tax", player.getTaxRate());
+                msg.put("luxury", player.getLuxuryRate());
+                msg.put("science", player.getScienceRate());
+                msg.put("gold", player.getGold());
+            }
             ws.send(msg.toString());
         });
 
