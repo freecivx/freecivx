@@ -26,7 +26,6 @@ import net.freecivx.game.Improvement;
 import net.freecivx.game.Player;
 import net.freecivx.game.Unit;
 import net.freecivx.game.UnitType;
-
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
@@ -57,6 +56,34 @@ public class CityTurn {
      * Value 5 → restore 1/5 (20%) of max HP per turn.
      */
     private static final int HP_RESTORE_DIVISOR = 5;
+
+    /**
+     * Improvement ID for Courthouse.  Halves corruption and production waste.
+     * Used in {@link #cityTaxContribution(Game, long)} and
+     * {@link #cityProduction(Game, long)}.
+     */
+    private static final int IMPR_COURTHOUSE    = 9;
+
+    /**
+     * Improvement ID for Temple.  Grants EFT_MAKE_CONTENT = 1 in the classic
+     * Freeciv {@code effects.ruleset}, making one unhappy citizen content.
+     * Used in {@link #updateCityHappiness(Game, long)}.
+     */
+    private static final int IMPR_TEMPLE     = 6;
+
+    /**
+     * Improvement ID for Colosseum.  Grants EFT_MAKE_CONTENT = 3 in the
+     * classic Freeciv {@code effects.ruleset}, making three unhappy citizens
+     * content.  Used in {@link #updateCityHappiness(Game, long)}.
+     */
+    private static final int IMPR_COLOSSEUM  = 11;
+
+    /**
+     * Improvement ID for Cathedral.  Grants EFT_MAKE_CONTENT = 3 in the
+     * classic Freeciv {@code effects.ruleset}, making three unhappy citizens
+     * content.  Used in {@link #updateCityHappiness(Game, long)}.
+     */
+    private static final int IMPR_CATHEDRAL  = 12;
 
     /**
      * Returns the granary size (food needed to grow) for a city of the given size.
@@ -97,6 +124,29 @@ public class CityTurn {
 
         // Accumulate shields: 1 shield per population point per turn (simplified)
         int shieldOutput = Math.max(1, city.getSize());
+
+        // Apply production waste (shields lost to inefficiency).
+        // Mirrors the waste calculation for shields in the C Freeciv server's
+        // cityturn.c.  The waste percentage mirrors corruption (same government
+        // factor) but is halved — waste is typically lower than gold corruption
+        // because it represents raw production loss rather than theft/bureaucracy.
+        Player player = game.players.get(city.getOwner());
+        if (player != null) {
+            Government gov = game.governments.get((long) player.getGovernmentId());
+            if (gov != null) {
+                int wastePct = gov.getCorruptionPct() / 2;
+                // Courthouse (id=9) also halves production waste, mirroring the
+                // C server's Courthouse effect on both corruption and waste.
+                if (city.hasImprovement(IMPR_COURTHOUSE)) {
+                    wastePct /= 2;
+                }
+                if (wastePct > 0) {
+                    int wasted = shieldOutput * wastePct / 100;
+                    shieldOutput = Math.max(1, shieldOutput - wasted);
+                }
+            }
+        }
+
         city.setShieldStock(city.getShieldStock() + shieldOutput);
 
         // productionKind 1 = improvement (building)
@@ -226,6 +276,7 @@ public class CityTurn {
         for (long cityId : new ArrayList<>(game.cities.keySet())) {
             cityGrowth(game, cityId);
             cityProduction(game, cityId);
+            updateCityHappiness(game, cityId);
         }
 
         // Aggregate per-player gold income from all their cities
@@ -366,7 +417,7 @@ public class CityTurn {
         Government gov = game.governments.get((long) player.getGovernmentId());
         if (gov != null) {
             int corruptionPct = gov.getCorruptionPct();
-            if (city.hasImprovement(9)) { // Courthouse
+            if (city.hasImprovement(IMPR_COURTHOUSE)) {
                 corruptionPct /= 2;
             }
             trade = trade * (100 - corruptionPct) / 100;
@@ -421,6 +472,106 @@ public class CityTurn {
     }
 
     /**
+     * Calculates and updates the happiness state of a city based on its size,
+     * government type, and happiness-producing buildings.
+     *
+     * <p>The calculation mirrors the core of {@code citizen_base_mood()} and
+     * {@code citizen_content_buildings()} in the C Freeciv server's
+     * {@code common/city.c}:
+     * <ol>
+     *   <li>A base number of unhappy citizens is derived from the city size and
+     *       the current government.  More permissive governments (Republic,
+     *       Democracy) tolerate larger populations before citizens become
+     *       unhappy.</li>
+     *   <li>The {@code EFT_MAKE_CONTENT} effect from buildings (Temple = 1,
+     *       Colosseum = 3, Cathedral = 3) converts unhappy citizens back to
+     *       content, mirroring {@code citizen_content_buildings()} in
+     *       {@code common/city.c}.</li>
+     *   <li>The city's {@code happy}/{@code unhappy} flags are updated to
+     *       reflect the final citizen counts, mirroring {@code city_happy()} and
+     *       {@code city_unhappy()} in the C server.</li>
+     * </ol>
+     *
+     * <p>If the happiness state changes the updated city info is broadcast to
+     * all clients and the owning player is notified.
+     *
+     * @param game   the current game state
+     * @param cityId the ID of the city to evaluate
+     */
+    public static void updateCityHappiness(Game game, long cityId) {
+        City city = game.cities.get(cityId);
+        if (city == null) return;
+
+        Player player = game.players.get(city.getOwner());
+        if (player == null) return;
+
+        // Determine the city-size threshold beyond which citizens become unhappy.
+        // Mirrors the government-specific base mood in citizen_base_mood() from
+        // common/city.c: more stable governments allow larger content populations.
+        //   Anarchy / Despotism : threshold 2  (cities with size > 2 get unhappy)
+        //   Monarchy / Communism: threshold 3
+        //   Republic            : threshold 4
+        //   Democracy           : threshold 5
+        int unhappyThreshold = 2; // default for Anarchy / Despotism
+        Government gov = game.governments.get((long) player.getGovernmentId());
+        if (gov != null) {
+            switch (gov.getRuleName()) {
+                case "Monarchy":  unhappyThreshold = 3; break;
+                case "Communism": unhappyThreshold = 3; break;
+                case "Republic":  unhappyThreshold = 4; break;
+                case "Democracy": unhappyThreshold = 5; break;
+                default: break; // Anarchy / Despotism: threshold = 2
+            }
+        }
+
+        // Base unhappy count: citizens above the threshold start dissatisfied.
+        // Mirrors the city-size-dependent unhappiness initialisation in
+        // citizen_base_mood() of the C Freeciv server.
+        int baseUnhappy = Math.max(0, city.getSize() - unhappyThreshold);
+
+        // Apply the EFT_MAKE_CONTENT effect from city improvements.
+        // Each point of make_content converts one unhappy citizen to content.
+        // Classic ruleset values (mirroring effects.ruleset):
+        //   Temple    (id=6):  EFT_MAKE_CONTENT = 1
+        //   Colosseum (id=11): EFT_MAKE_CONTENT = 3
+        //   Cathedral (id=12): EFT_MAKE_CONTENT = 3
+        // Mirrors citizen_content_buildings() in common/city.c.
+        int makeContent = 0;
+        if (city.hasImprovement(IMPR_TEMPLE))    makeContent += 1;
+        if (city.hasImprovement(IMPR_COLOSSEUM)) makeContent += 3;
+        if (city.hasImprovement(IMPR_CATHEDRAL)) makeContent += 3;
+
+        // Net unhappy citizens after applying building effects
+        int netUnhappy = Math.max(0, baseUnhappy - makeContent);
+
+        // Determine happiness flags.
+        // city_happy()  (C server): no angry, no unhappy, happy >= (size+1)/2
+        // city_unhappy()(C server): happy < unhappy + 2*angry
+        // Simplified: city is happy when no net unhappy citizens remain.
+        boolean wasHappy   = city.isHappy();
+        boolean wasUnhappy = city.isUnhappy();
+        boolean isHappy    = (netUnhappy == 0);
+        boolean isUnhappy  = (netUnhappy > 0);
+
+        city.setHappy(isHappy);
+        city.setUnhappy(isUnhappy);
+
+        // Notify the player when the happiness state changes
+        if (!wasUnhappy && isUnhappy) {
+            Notify.notifyPlayer(game, game.getServer(), city.getOwner(),
+                    city.getName() + " is in disorder!");
+        } else if (wasUnhappy && !isUnhappy) {
+            Notify.notifyPlayer(game, game.getServer(), city.getOwner(),
+                    "Order has been restored in " + city.getName() + ".");
+        }
+
+        // Broadcast the updated city state to all clients if anything changed
+        if (wasHappy != isHappy || wasUnhappy != isUnhappy) {
+            CityTools.sendCityInfo(game, game.getServer(), -1L, cityId);
+        }
+    }
+
+    /**
      * Calculates and applies corruption and production waste to a city.
      * The amount depends on the current government type and any anti-corruption
      * improvements.  Mirrors the corruption/waste calculation in the C Freeciv
@@ -440,8 +591,8 @@ public class CityTurn {
         if (gov == null) return;
 
         int corruptionPct = gov.getCorruptionPct();
-        // Courthouse (improvement id=9) halves corruption
-        if (city.hasImprovement(9)) {
+        // Courthouse halves corruption
+        if (city.hasImprovement(IMPR_COURTHOUSE)) {
             corruptionPct = corruptionPct / 2;
         }
         if (corruptionPct > 0) {

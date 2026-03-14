@@ -73,6 +73,11 @@ public class Unit {
         return type;
     }
 
+    /** Sets the unit type ID. Used when a unit is upgraded to a new type. */
+    public void setType(int type) {
+        this.type = type;
+    }
+
     public int getFacing() {
         return facing;
     }

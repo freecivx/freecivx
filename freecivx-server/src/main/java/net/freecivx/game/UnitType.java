@@ -38,6 +38,21 @@ public class UnitType {
      */
     private int cost;
 
+    /**
+     * ID of the unit type that this unit upgrades to when the player researches
+     * the appropriate technology.  {@code -1} means no upgrade is available.
+     * Mirrors the {@code obsolete_by} field in the Freeciv units ruleset and the
+     * {@code do_upgrade_effects()} upgrade chain in the C Freeciv server.
+     */
+    private int upgradesTo = -1;
+
+    /**
+     * Temporary storage for the {@code obsolete_by} unit type name read from the
+     * ruleset file.  Resolved to an integer ID in
+     * {@code Game.populateFromRuleset()} after all unit types are loaded.
+     */
+    private String obsoletedByName = null;
+
     // Constructor (backwards-compatible without cost)
     public UnitType(String name, String graphicsStr, int moveRate, int hp, int veteranLevels, String helptext, int attackStrength, int defenseStrength,
                     String utype_actions, int domain) {
@@ -119,6 +134,42 @@ public class UnitType {
 
     public void setCost(int cost) {
         this.cost = cost;
+    }
+
+    /**
+     * Returns the ID of the unit type this unit upgrades to upon tech research,
+     * or {@code -1} if no upgrade is available.
+     * Mirrors the {@code obsolete_by} field in the Freeciv units ruleset.
+     */
+    public int getUpgradesTo() {
+        return upgradesTo;
+    }
+
+    /**
+     * Sets the ID of the unit type this unit upgrades to.
+     *
+     * @param upgradesTo the target unit type ID, or {@code -1} for no upgrade
+     */
+    public void setUpgradesTo(int upgradesTo) {
+        this.upgradesTo = upgradesTo;
+    }
+
+    /**
+     * Returns the unresolved {@code obsolete_by} name read from the ruleset file,
+     * or {@code null} if not set.  Resolved to an integer ID during game
+     * initialisation.
+     */
+    public String getObsoletedByName() {
+        return obsoletedByName;
+    }
+
+    /**
+     * Sets the unresolved {@code obsolete_by} name from the ruleset file.
+     *
+     * @param obsoletedByName the unit type name string, or {@code null}
+     */
+    public void setObsoletedByName(String obsoletedByName) {
+        this.obsoletedByName = obsoletedByName;
     }
 
     // Optional toString method for debugging
