@@ -450,12 +450,14 @@ public class CivServer extends org.java_websocket.server.WebSocketServer {
         broadcast(msg);
     }
 
-    public void sendGameInfoAll(long year, long turn, long phase) {
+    public void sendGameInfoAll(long year, long turn, long phase, int timeout) {
         JSONObject msg = new JSONObject();
         msg.put("pid", Packets.PACKET_GAME_INFO);
         msg.put("year", year);
         msg.put("turn", turn);
         msg.put("phase", phase);
+        msg.put("timeout", timeout);
+        msg.put("first_timeout", -1);
 
         broadcast(msg);
     }

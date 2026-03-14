@@ -66,7 +66,7 @@ public class GameHand {
 
     /**
      * Sends a PACKET_GAME_INFO packet to a single client containing the
-     * current calendar year, turn number, and game phase.
+     * current calendar year, turn number, game phase, and turn timeout.
      *
      * @param game   the current game state
      * @param connId the connection ID of the recipient client
@@ -77,6 +77,8 @@ public class GameHand {
         msg.put("year", game.year);
         msg.put("turn", game.turn);
         msg.put("phase", game.phase);
+        msg.put("timeout", game.getTurnTimeout());
+        msg.put("first_timeout", -1);
         game.getServer().sendMessage(connId, msg.toString());
     }
 

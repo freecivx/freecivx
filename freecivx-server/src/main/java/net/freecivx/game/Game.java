@@ -296,7 +296,7 @@ public class Game {
 
         server.sendCalendarInfoAll();
         server.sendMapInfoAll(map.getXsize(), map.getYsize());
-        server.sendGameInfoAll(year, turn, phase);
+        server.sendGameInfoAll(year, turn, phase, turnTimeout);
         server.sendRulesetControl(improvements.size());
 
         // Send technologies with proper prerequisite data (research_reqs).
@@ -727,7 +727,7 @@ public class Game {
         // Mirrors check_for_city_destruction() / kill_player() in C Freeciv server.
         checkPlayerElimination();
 
-        server.sendGameInfoAll(year, turn, phase);
+        server.sendGameInfoAll(year, turn, phase, turnTimeout);
         // Classic Freeciv: year 4000 BCE at turn 1, each turn advances 20 years.
         // Mirrors the calendar used in AutoGame.logTurnSummary().
         long historicalYear = 4000L - (year - 1) * 20L;
