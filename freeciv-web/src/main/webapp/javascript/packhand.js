@@ -1328,9 +1328,8 @@ function recreate_old_tech_req(packet)
 function handle_ruleset_tech(packet)
 {
   packet['name'] = packet['name'].replace("?tech:", "");
-  techs[packet['id']] = new Tech(packet);
-
   recreate_old_tech_req(packet);
+  techs[packet['id']] = new Tech(packet);
 }
 
 /**************************************************************************

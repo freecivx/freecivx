@@ -29,6 +29,7 @@ class Tech {
     this.root_req = 0;
     this.research_reqs_count = 0;
     this.research_reqs = [];
+    this.req = [];  /* Reconstructed prerequisite IDs, populated by recreate_old_tech_req() */
     this.tclass = 0;
     this.removed = false;
     this.flags = 0;
