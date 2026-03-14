@@ -53,6 +53,57 @@ public class UnitType {
      */
     private String obsoletedByName = null;
 
+    /**
+     * Number of hitpoints removed from the loser per combat round won.
+     * Mirrors the {@code firepower} field in the Freeciv units ruleset.
+     * Most units have firepower=1; advanced units like Artillery/Fighter have
+     * firepower=2, meaning they inflict 2 HP damage per combat round they win.
+     */
+    private int firepower = 1;
+
+    /**
+     * Population cost: number of citizens removed from the building city when
+     * this unit type is produced.  Mirrors the {@code pop_cost} field in the
+     * Freeciv units ruleset.  Most units have pop_cost=0; Settlers have
+     * pop_cost=1 (they cost 1 citizen from the founding city).
+     */
+    private int popCost = 0;
+
+    /**
+     * Technology name required before this unit can be built.
+     * Mirrors the first {@code "Tech"} entry in the {@code reqs} table of the
+     * Freeciv units ruleset.  Resolved to {@link #techReqId} during game init
+     * by {@code Game.populateFromRuleset()}.  {@code null} means no prerequisite.
+     */
+    private String techReqName = null;
+
+    /**
+     * Resolved technology ID required to build this unit (-1 means none).
+     * Set from {@link #techReqName} by {@code Game.populateFromRuleset()} after
+     * all technologies are loaded.  Checked in {@code CityTurn.cityProduction()}
+     * to prevent early production of advanced units.
+     */
+    private long techReqId = -1L;
+
+    /**
+     * Whether this unit type has the {@code "Horse"} flag.
+     * Horse-flagged units (Horsemen, Chariot, Knights, Dragoons, Cavalry) suffer
+     * a halved attack value when attacking Pikemen (units with an anti-horse
+     * defense bonus).  Mirrors the {@code "Horse"} custom unit flag defined in
+     * the classic Freeciv units ruleset.
+     */
+    private boolean hasHorseFlag = false;
+
+    /**
+     * Anti-horse defense multiplier applied when this unit defends against a
+     * unit with the {@link #hasHorseFlag} flag.  A value of 1 means no bonus
+     * (default); a value of 2 means double defense (Pikemen bonus).
+     * Mirrors the {@code bonuses = { "Horse", "DefenseMultiplier", 1 }} entry in
+     * the classic Freeciv units ruleset for Pikemen.
+     * Formula: effectiveDefense = defenseStrength × antiHorseFactor.
+     */
+    private int antiHorseFactor = 1;
+
     // Constructor (backwards-compatible without cost)
     public UnitType(String name, String graphicsStr, int moveRate, int hp, int veteranLevels, String helptext, int attackStrength, int defenseStrength,
                     String utype_actions, int domain) {
@@ -172,6 +223,111 @@ public class UnitType {
         this.obsoletedByName = obsoletedByName;
     }
 
+    /**
+     * Returns the number of hitpoints removed per combat round won by this unit.
+     * Mirrors the {@code firepower} field in the Freeciv units ruleset.
+     */
+    public int getFirepower() {
+        return firepower;
+    }
+
+    /**
+     * Sets the firepower value (HP lost per combat round won).
+     *
+     * @param firepower at least 1
+     */
+    public void setFirepower(int firepower) {
+        this.firepower = Math.max(1, firepower);
+    }
+
+    /**
+     * Returns the population cost when building this unit type (mirrors
+     * {@code pop_cost} in the Freeciv units ruleset).
+     */
+    public int getPopCost() {
+        return popCost;
+    }
+
+    /**
+     * Sets the population cost for building this unit.
+     *
+     * @param popCost citizens removed from the city when the unit is built (≥ 0)
+     */
+    public void setPopCost(int popCost) {
+        this.popCost = Math.max(0, popCost);
+    }
+
+    /**
+     * Returns the unresolved technology name required to build this unit, or
+     * {@code null} if no tech is required.
+     */
+    public String getTechReqName() {
+        return techReqName;
+    }
+
+    /**
+     * Sets the unresolved technology prerequisite name from the ruleset file.
+     *
+     * @param techReqName the technology name, or {@code null} for no requirement
+     */
+    public void setTechReqName(String techReqName) {
+        this.techReqName = techReqName;
+    }
+
+    /**
+     * Returns the resolved technology ID required to build this unit, or
+     * {@code -1} if there is no prerequisite.
+     */
+    public long getTechReqId() {
+        return techReqId;
+    }
+
+    /**
+     * Sets the resolved technology ID required to build this unit.
+     *
+     * @param techReqId the technology ID, or {@code -1} for no requirement
+     */
+    public void setTechReqId(long techReqId) {
+        this.techReqId = techReqId;
+    }
+
+    /**
+     * Returns {@code true} if this unit type has the {@code "Horse"} flag,
+     * meaning it suffers a defense penalty when attacking Pikemen or other
+     * units with an anti-horse defense bonus.
+     */
+    public boolean hasHorseFlag() {
+        return hasHorseFlag;
+    }
+
+    /**
+     * Sets whether this unit type has the {@code "Horse"} flag.
+     *
+     * @param hasHorseFlag {@code true} if this is a horse-type unit
+     */
+    public void setHasHorseFlag(boolean hasHorseFlag) {
+        this.hasHorseFlag = hasHorseFlag;
+    }
+
+    /**
+     * Returns the anti-horse defense multiplier.  A value of 1 means no bonus;
+     * a value of 2 means double defense against horse-flagged attackers.
+     * Mirrors the {@code bonuses = { "Horse", "DefenseMultiplier", 1 }} entry
+     * in the Pikemen definition in the classic Freeciv units ruleset.
+     */
+    public int getAntiHorseFactor() {
+        return antiHorseFactor;
+    }
+
+    /**
+     * Sets the anti-horse defense multiplier.
+     *
+     * @param antiHorseFactor 1 for no bonus, 2 for double defense, etc.
+     */
+    public void setAntiHorseFactor(int antiHorseFactor) {
+        this.antiHorseFactor = Math.max(1, antiHorseFactor);
+    }
+
     // Optional toString method for debugging
     @Override
     public String toString() {
@@ -184,7 +340,9 @@ public class UnitType {
                 ", helptext='" + helptext + '\'' +
                 ", attackStrength=" + attackStrength +
                 ", defenseStrength=" + defenseStrength +
+                ", firepower=" + firepower +
                 ", cost=" + cost +
+                ", popCost=" + popCost +
                 ", domain=" + domain +
                 '}';
     }

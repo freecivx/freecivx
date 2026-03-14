@@ -128,19 +128,35 @@ public class Ruleset {
                 int    defense   = sec.getInt("defense", 1);
                 int    hp        = sec.getInt("hitpoints", 10);
                 int    moveRate  = sec.getInt("move_rate", 1);
+                int    firepower = sec.getInt("firepower", 1);
+                int    popCost   = sec.getInt("pop_cost", 0);
                 String unitClass = sec.get("class");
                 int    domain    = classToDomain(unitClass);
                 String flags     = sec.get("flags");
                 boolean isSettler = flags.contains("Settlers") || flags.contains("Cities");
+                boolean hasHorse  = flags.contains("Horse");
                 String actions = isSettler ? settlerActions : defaultActions;
                 UnitType ut = new UnitType(name, graphic, moveRate, hp, 1, name,
                         attack, defense, actions, domain, buildCost);
+                ut.setFirepower(firepower);
+                ut.setPopCost(popCost);
+                ut.setHasHorseFlag(hasHorse);
+                // Anti-horse defense multiplier: DefenseMultiplier=1 → factor=2 (double defense)
+                if (sec.antiHorseBonus > 0) {
+                    ut.setAntiHorseFactor(1 + sec.antiHorseBonus);
+                }
                 // Parse obsolete_by: the unit type name this unit upgrades to.
                 // Resolved to an integer ID in Game.populateFromRuleset().
                 // Mirrors the obsolete_by field in the C Freeciv units ruleset.
                 String obsoletedBy = sec.get("obsolete_by");
                 if (obsoletedBy != null && !obsoletedBy.isEmpty() && !"None".equals(obsoletedBy)) {
                     ut.setObsoletedByName(obsoletedBy);
+                }
+                // Parse tech requirement: the first Tech entry in the reqs table.
+                // Resolved to a tech ID in Game.populateFromRuleset().
+                String techReq = sec.getTechReq();
+                if (techReq != null && !techReq.isEmpty()) {
+                    ut.setTechReqName(techReq);
                 }
                 unitTypes.add(ut);
             }
@@ -336,12 +352,15 @@ public class Ruleset {
      * {@code .ruleset} file.  Stores plain key→value pairs extracted after
      * stripping {@code _(\"...\")} wrappers and surrounding quotes.
      * Also records the tech name from the first {@code "Tech"} row in any
-     * {@code reqs} table.
+     * {@code reqs} table, and the anti-horse defense multiplier from the
+     * {@code bonuses} table.
      */
     static class RuleSection {
         final String title;
         final Map<String, String> entries = new LinkedHashMap<>();
         String techReq = "";
+        /** Anti-horse defense multiplier bonus from the bonuses table (0 = none). */
+        int antiHorseBonus = 0;
 
         RuleSection(String title) {
             this.title = title;
@@ -442,6 +461,22 @@ public class Ruleset {
                                 if (current.techReq.isEmpty()) {
                                     current.techReq = stripQuotes(cells[1]);
                                 }
+                            }
+                        }
+                    }
+                    // Capture anti-horse defense bonus from the "bonuses" table.
+                    // Rows: "flag", "type", "value" — look for Horse/DefenseMultiplier entries.
+                    // Mirrors the Pikemen bonuses = { "Horse", "DefenseMultiplier", 1 } in
+                    // the classic Freeciv units ruleset.
+                    if ("bonuses".equals(pendingKey) && tableColumns != null && !tableColumns.isEmpty()) {
+                        String[] cells = splitCsv(line);
+                        if (cells.length >= 3) {
+                            String flag = stripQuotes(cells[0]);
+                            String type = stripQuotes(cells[1]);
+                            if ("Horse".equalsIgnoreCase(flag) && "DefenseMultiplier".equalsIgnoreCase(type)) {
+                                try {
+                                    current.antiHorseBonus += Integer.parseInt(cells[2].trim());
+                                } catch (NumberFormatException ignored) {}
                             }
                         }
                     }

@@ -321,6 +321,23 @@ public class Game {
             }
         }
 
+        // Resolve unit technology requirement names to IDs using the loaded tech map.
+        // Mirrors the req-resolution pass for unit types in the C Freeciv server's
+        // ruleset loading (server/ruleset.c: lookup_unit_type_ref).
+        Map<String, Long> techNameToId = new HashMap<>();
+        for (Map.Entry<Long, Technology> entry : techs.entrySet()) {
+            techNameToId.put(entry.getValue().getName().toLowerCase(), entry.getKey());
+        }
+        for (UnitType ut : unitTypes.values()) {
+            String reqName = ut.getTechReqName();
+            if (reqName != null && !reqName.isEmpty()) {
+                Long techId = techNameToId.get(reqName.toLowerCase());
+                if (techId != null) {
+                    ut.setTechReqId(techId);
+                }
+            }
+        }
+
         List<Improvement> rImprov = ruleset.getImprovements();
         for (int i = 0; i < rImprov.size(); i++) {
             improvements.put((long) i, rImprov.get(i));
@@ -384,25 +401,43 @@ public class Game {
 
         String defaultActions = "000000000000000000000000000010000000001110001000000000000011011111111001100011000000001100110000000000000000100100000000";
         String settlerActions = "000000000000000000000000000110000000001110001000000000000011011111111001100011000000001100110000000000000000100100000000";
-        unitTypes.put(0L,  new UnitType("Settlers",   "u.settlers",  1, 1,  1, "Settlers unit", 0, 1, settlerActions, 0, 40));
-        unitTypes.put(1L,  new UnitType("Workers",    "u.worker",    1, 1,  1, "Workers unit",  0, 1, settlerActions, 0, 30));
-        unitTypes.put(2L,  new UnitType("Explorer",   "u.explorer",  3, 1,  1, "Explorer unit", 0, 1, defaultActions, 0, 30));
+        // Unit definitions mirroring the classic Freeciv units ruleset:
+        // firepower=1 for all fallback units (most classic units); Settlers have pop_cost=1.
+        // Horse-flagged units: Horsemen, Chariot, Knight, Cavalry (they suffer 2× defense from Pikemen).
+        // Pikemen have antiHorseFactor=2 (double defense vs. Horse-flagged units).
+        unitTypes.put(0L,  new UnitType("Settlers",   "u.settlers",  1, 20, 1, "Settlers unit", 0, 1, settlerActions, 0, 40));
+        unitTypes.put(1L,  new UnitType("Workers",    "u.worker",    1, 20, 1, "Workers unit",  0, 1, settlerActions, 0, 30));
+        unitTypes.put(2L,  new UnitType("Explorer",   "u.explorer",  1, 1,  1, "Explorer unit", 0, 1, defaultActions, 0, 30));
         unitTypes.put(3L,  new UnitType("Warriors",   "u.warriors",  1, 10, 1, "Warriors",      1, 1, defaultActions, 0, 10));
-        unitTypes.put(4L,  new UnitType("Horsemen",   "u.horsemen",  3, 10, 1, "Horsemen",      2, 1, defaultActions, 0, 50));
+        unitTypes.put(4L,  new UnitType("Horsemen",   "u.horsemen",  2, 10, 1, "Horsemen",      2, 1, defaultActions, 0, 50));
         unitTypes.put(5L,  new UnitType("Archers",    "u.archers",   1, 10, 1, "Archers",       3, 2, defaultActions, 0, 30));
         unitTypes.put(6L,  new UnitType("Legion",     "u.legion",    1, 20, 1, "Legion",        3, 3, defaultActions, 0, 60));
         unitTypes.put(7L,  new UnitType("Pikemen",    "u.pikemen",   1, 10, 1, "Pikemen",       1, 2, defaultActions, 0, 30));
         unitTypes.put(8L,  new UnitType("Musketeers", "u.musketeers",1, 20, 1, "Musketeers",    5, 4, defaultActions, 0, 60));
         unitTypes.put(9L,  new UnitType("Catapult",   "u.catapult",  1, 10, 1, "Catapult",      6, 1, defaultActions, 0, 70));
-        unitTypes.put(10L, new UnitType("Chariot",    "u.chariot",   3, 10, 1, "Chariot",       3, 1, defaultActions, 0, 40));
-        unitTypes.put(11L, new UnitType("Knight",     "u.knights",   3, 20, 1, "Knight",        5, 2, defaultActions, 0, 70));
+        unitTypes.put(10L, new UnitType("Chariot",    "u.chariot",   2, 10, 1, "Chariot",       3, 1, defaultActions, 0, 40));
+        unitTypes.put(11L, new UnitType("Knight",     "u.knights",   2, 10, 1, "Knight",        4, 2, defaultActions, 0, 40));
         unitTypes.put(12L, new UnitType("Phalanx",    "u.phalanx",   1, 10, 1, "Phalanx",       2, 2, defaultActions, 0, 25));
         unitTypes.put(13L, new UnitType("Diplomat",   "u.diplomat",  2, 10, 1, "Diplomat",      0, 0, defaultActions, 0, 30));
-        unitTypes.put(14L, new UnitType("Cavalry",    "u.cavalry",   3, 20, 1, "Cavalry",       8, 3, defaultActions, 0, 80));
+        unitTypes.put(14L, new UnitType("Cavalry",    "u.cavalry",   2, 20, 1, "Cavalry",       8, 3, defaultActions, 0, 60));
         unitTypes.put(15L, new UnitType("Cannon",     "u.cannon",    1, 20, 1, "Cannon",        8, 1, defaultActions, 0, 80));
-        unitTypes.put(16L, new UnitType("Riflemen",   "u.riflemen",  1, 20, 1, "Riflemen",      5, 6, defaultActions, 0, 60));
+        unitTypes.put(16L, new UnitType("Riflemen",   "u.riflemen",  1, 20, 1, "Riflemen",      5, 4, defaultActions, 0, 60));
         unitTypes.put(17L, new UnitType("Trireme",    "u.trireme",   3, 10, 1, "Trireme",       1, 1, defaultActions, 1, 40));
         unitTypes.put(18L, new UnitType("Frigate",    "u.frigate",   4, 20, 1, "Frigate",       4, 2, defaultActions, 1, 50));
+
+        // Settlers cost 1 population from the city when built (mirrors pop_cost=1 in ruleset).
+        unitTypes.get(0L).setPopCost(1);
+
+        // Horse-flagged units: suffer 2× defense from Pikemen in combat.
+        // Mirrors the "Horse" flag in the classic Freeciv units ruleset.
+        unitTypes.get(4L).setHasHorseFlag(true);   // Horsemen
+        unitTypes.get(10L).setHasHorseFlag(true);  // Chariot
+        unitTypes.get(11L).setHasHorseFlag(true);  // Knight
+        unitTypes.get(14L).setHasHorseFlag(true);  // Cavalry
+
+        // Pikemen have double defense against Horse-flagged units.
+        // Mirrors bonuses = { "Horse", "DefenseMultiplier", 1 } in classic ruleset.
+        unitTypes.get(7L).setAntiHorseFactor(2);   // Pikemen
 
         // Unit upgrade chains for the fallback dataset.
         // Mirrors the obsolete_by field in the classic Freeciv units ruleset and
@@ -446,6 +481,33 @@ public class Game {
             }
         }
         return fallback;
+    }
+
+    /**
+     * Returns the max HP for a unit type, or a default value when the type is
+     * not found.  Used by {@link #spawnStartingUnits} to initialise units with
+     * the correct HP from the loaded ruleset.
+     *
+     * @param typeId     the unit type ID to look up
+     * @param defaultHp  the fallback HP value when the type is absent
+     * @return the unit type's max HP, or {@code defaultHp} if not found
+     */
+    private int unitTypeHp(int typeId, int defaultHp) {
+        UnitType ut = unitTypes.get((long) typeId);
+        return ut != null ? ut.getHp() : defaultHp;
+    }
+
+    /**
+     * Returns the move rate for a unit type, or a default value when the type is
+     * not found.  Used by {@link #spawnStartingUnits}.
+     *
+     * @param typeId       the unit type ID to look up
+     * @param defaultMove  the fallback move rate when the type is absent
+     * @return the unit type's move rate, or {@code defaultMove} if not found
+     */
+    private int unitTypeMoveRate(int typeId, int defaultMove) {
+        UnitType ut = unitTypes.get((long) typeId);
+        return ut != null ? ut.getMoveRate() : defaultMove;
     }
 
     public void updateLastActivity() {
@@ -611,20 +673,20 @@ public class Game {
         int horsemenId  = findUnitTypeId("Horsemen",  4);
         int engineersId = findUnitTypeId("Engineers", 2);
 
-        UnitType settlerType = unitTypes.get((long) settlersId);
-        int settlerMove = settlerType != null ? settlerType.getMoveRate() : 1;
-        UnitType workersType = unitTypes.get((long) workersId);
-        int workersMove = workersType != null ? workersType.getMoveRate() : 1;
-        UnitType horseType = unitTypes.get((long) horsemenId);
-        int horseMove = horseType != null ? horseType.getMoveRate() : 3;
-        UnitType engType = unitTypes.get((long) engineersId);
-        int engMove = engType != null ? engType.getMoveRate() : 1;
-
-        units.put((long) units.size(), new Unit(units.size(), player.getPlayerNo(), startPos, settlersId,  0, 1, 1,  0, settlerMove));
-        units.put((long) units.size(), new Unit(units.size(), player.getPlayerNo(), startPos, workersId,   0, 1, 1,  0, workersMove));
-        units.put((long) units.size(), new Unit(units.size(), player.getPlayerNo(), startPos, warriorsId,  0, 1, 10, 0, 1));
-        units.put((long) units.size(), new Unit(units.size(), player.getPlayerNo(), startPos, horsemenId,  0, 1, 10, 0, horseMove));
-        units.put((long) units.size(), new Unit(units.size(), player.getPlayerNo(), startPos, engineersId, 0, 1, 1,  0, engMove));
+        // Spawn starting units with HP and move rate read from the unit type
+        // definition.  Mirrors create_unit_full() in the C Freeciv server's
+        // server/unittools.c where punit->hp = utype->hp and punit->moves_left =
+        // utype->move_rate.
+        units.put((long) units.size(), new Unit(units.size(), player.getPlayerNo(), startPos,
+                settlersId,  0, 1, unitTypeHp(settlersId, 20),  0, unitTypeMoveRate(settlersId, 1)));
+        units.put((long) units.size(), new Unit(units.size(), player.getPlayerNo(), startPos,
+                workersId,   0, 1, unitTypeHp(workersId, 20),   0, unitTypeMoveRate(workersId, 1)));
+        units.put((long) units.size(), new Unit(units.size(), player.getPlayerNo(), startPos,
+                warriorsId,  0, 1, unitTypeHp(warriorsId, 10),  0, unitTypeMoveRate(warriorsId, 1)));
+        units.put((long) units.size(), new Unit(units.size(), player.getPlayerNo(), startPos,
+                horsemenId,  0, 1, unitTypeHp(horsemenId, 10),  0, unitTypeMoveRate(horsemenId, 2)));
+        units.put((long) units.size(), new Unit(units.size(), player.getPlayerNo(), startPos,
+                engineersId, 0, 1, unitTypeHp(engineersId, 20), 0, unitTypeMoveRate(engineersId, 1)));
     }
 
     /**

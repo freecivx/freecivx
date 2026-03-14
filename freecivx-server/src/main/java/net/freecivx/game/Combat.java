@@ -90,12 +90,14 @@ public class Combat {
      * Mirrors the {@code get_defense_power} function in the C Freeciv server's
      * {@code common/combat.c}: {@code defence * (100 + terrain_defense_bonus) / 100}.
      *
-     * @param unit     the defending unit
-     * @param unitType the type definition for the unit
-     * @param tile     the tile the unit is defending (applies terrain bonus)
+     * @param unit         the defending unit
+     * @param unitType     the type definition for the unit
+     * @param tile         the tile the unit is defending (applies terrain bonus)
+     * @param attackerType the unit type of the attacker, used to apply
+     *                     anti-horse defense bonuses (may be {@code null})
      * @return the computed defence strength value
      */
-    public static int unitDefenseStrength(Unit unit, UnitType unitType, Tile tile) {
+    public static int unitDefenseStrength(Unit unit, UnitType unitType, Tile tile, UnitType attackerType) {
         if (unit == null || unitType == null) return 0;
         int base = unitType.getDefenseStrength();
         int veteranBonus = (base / 2) * unit.getVeteran();
@@ -103,7 +105,28 @@ public class Combat {
         // Apply terrain bonus as a percentage multiplier (matching C server formula)
         int defense = base + veteranBonus;
         defense = defense * (100 + terrainBonus) / 100;
+        // Apply anti-horse defense bonus when the attacker has the "Horse" flag.
+        // Mirrors the bonuses table for Pikemen in the classic Freeciv units ruleset:
+        //   bonuses = { "Horse", "DefenseMultiplier", 1 } → defense × antiHorseFactor.
+        if (attackerType != null && attackerType.hasHorseFlag() && unitType.getAntiHorseFactor() > 1) {
+            defense = defense * unitType.getAntiHorseFactor();
+        }
         return defense;
+    }
+
+    /**
+     * Returns the effective defence strength of a unit on the given tile.
+     * Convenience overload without attacker type (no anti-horse check).
+     * Mirrors the {@code get_defense_power} function in the C Freeciv server's
+     * {@code common/combat.c}: {@code defence * (100 + terrain_defense_bonus) / 100}.
+     *
+     * @param unit     the defending unit
+     * @param unitType the type definition for the unit
+     * @param tile     the tile the unit is defending (applies terrain bonus)
+     * @return the computed defence strength value
+     */
+    public static int unitDefenseStrength(Unit unit, UnitType unitType, Tile tile) {
+        return unitDefenseStrength(unit, unitType, tile, null);
     }
 
     /**
@@ -158,8 +181,11 @@ public class Combat {
         int atkStr = unitAttackStrength(attacker, attackerType, null, attacker.getMovesleft());
         if (atkStr <= 0) atkStr = 1; // ensure non-zero so units can fight
 
-        // Effective defence strength (base + veteran + terrain + fortification)
-        int defStr = unitDefenseStrength(defender, defenderType, defenderTile);
+        // Effective defence strength (base + veteran + terrain + anti-horse bonus).
+        // Pass attackerType to unitDefenseStrength so that the anti-horse defense
+        // bonus (Pikemen vs. Horse-flagged units) is applied when relevant.
+        // Mirrors get_defense_power() with unit bonus modifiers in common/combat.c.
+        int defStr = unitDefenseStrength(defender, defenderType, defenderTile, attackerType);
         // Apply fortification bonus as a percentage: e.g. +25% for fortified units.
         // unitCombatModifier() returns a percentage (25 = 25%), applied as
         // defStr * (100 + bonus) / 100 — mirrors POWER_BONUS_FACTOR in common/combat.c.
@@ -173,6 +199,16 @@ public class Combat {
         }
         if (defStr <= 0) defStr = 1;
 
+        // Firepower values determine HP damage per combat round won.
+        // Mirrors the firepower field in the C Freeciv units ruleset:
+        // when the attacker wins a round, defender loses attacker's firepower HP;
+        // when defender wins, attacker loses defender's firepower HP.
+        // Most units have firepower=1; advanced units (Artillery, Fighter) have
+        // firepower=2, making them more decisive in prolonged combat.
+        // getFirepower() guarantees a minimum of 1, so no extra guard is needed.
+        int atkFirepower = (attackerType != null) ? attackerType.getFirepower() : 1;
+        int defFirepower = (defenderType != null) ? defenderType.getFirepower() : 1;
+
         int hpAtk = attacker.getHp();
         int hpDef = defender.getHp();
 
@@ -180,9 +216,11 @@ public class Combat {
             int total = atkStr + defStr;
             if (total <= 0) break;
             if (random.nextInt(total) < atkStr) {
-                hpDef = Math.max(0, hpDef - COMBAT_ROUND_HP_LOSS);
+                // Attacker wins this round: defender loses attacker's firepower HP
+                hpDef = Math.max(0, hpDef - atkFirepower);
             } else {
-                hpAtk = Math.max(0, hpAtk - COMBAT_ROUND_HP_LOSS);
+                // Defender wins this round: attacker loses defender's firepower HP
+                hpAtk = Math.max(0, hpAtk - defFirepower);
             }
         }
 
