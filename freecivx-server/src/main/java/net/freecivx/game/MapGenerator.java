@@ -25,6 +25,28 @@ public class MapGenerator {
     private static final int TERRAIN_SWAMP = 12;
     private static final int TERRAIN_TUNDRA = 13;
 
+    // **Extra IDs (bit positions in the tile extras bitvector)**
+    // Must match the extras order in Game.initGame()
+    private static final int EXTRA_BIT_HUT = 8;
+
+    // **Resource IDs** (0 = none; must match resource ruleset order)
+    private static final int RESOURCE_NONE      = 0;
+    private static final int RESOURCE_CATTLE    = 1;
+    private static final int RESOURCE_GAME      = 2;
+    private static final int RESOURCE_WHEAT     = 3;
+    private static final int RESOURCE_HORSES    = 4;
+    private static final int RESOURCE_FOREST_GAME = 5;
+    private static final int RESOURCE_COAL      = 6;
+    private static final int RESOURCE_IRON      = 7;
+    private static final int RESOURCE_GOLD      = 8;
+    private static final int RESOURCE_OASIS     = 9;
+    private static final int RESOURCE_FISH      = 10;
+
+    // Probability that a given land tile has a resource
+    private static final double RESOURCE_PROBABILITY = 0.15;
+    // Probability that a given land tile has a hut
+    private static final double HUT_PROBABILITY = 0.03;
+
     public MapGenerator(int width, int height) {
         this.width = width;
         this.height = height;
@@ -166,10 +188,39 @@ public class MapGenerator {
                     heightLevel = 400;
                 }
 
-                Tile tile = new Tile(index, 2, terrain, 1, 1, heightLevel, -1);
+                // Assign a tile resource based on terrain type (0 = none, positive = resource id)
+                int resource = assignResource(terrain);
+
+                // Assign extras bitvector - bit EXTRA_BIT_HUT (8) = Hut
+                int extras = 0;
+                boolean isLand = terrain != TERRAIN_OCEAN && terrain != TERRAIN_COAST && terrain != TERRAIN_LAKE;
+                if (isLand && random.nextDouble() < HUT_PROBABILITY) {
+                    extras |= (1 << EXTRA_BIT_HUT);
+                }
+
+                Tile tile = new Tile(index, 2, terrain, resource, extras, heightLevel, -1);
                 tiles.put(index, tile);
             }
         }
         return tiles;
+    }
+
+    /**
+     * Assigns a resource id to a tile based on its terrain type.
+     * Returns RESOURCE_NONE (0) if no resource is assigned.
+     * Resource IDs must match the order defined in Game.initGame().
+     */
+    private int assignResource(int terrain) {
+        if (random.nextDouble() > RESOURCE_PROBABILITY) return RESOURCE_NONE;
+        return switch (terrain) {
+            case TERRAIN_GRASSLAND -> random.nextBoolean() ? RESOURCE_CATTLE : RESOURCE_GAME;
+            case TERRAIN_PLAINS    -> random.nextBoolean() ? RESOURCE_WHEAT : RESOURCE_HORSES;
+            case TERRAIN_FOREST    -> RESOURCE_FOREST_GAME;
+            case TERRAIN_HILLS     -> random.nextBoolean() ? RESOURCE_COAL : RESOURCE_IRON;
+            case TERRAIN_MOUNTAINS -> RESOURCE_GOLD;
+            case TERRAIN_DESERT    -> RESOURCE_OASIS;
+            case TERRAIN_OCEAN, TERRAIN_COAST -> RESOURCE_FISH;
+            default -> RESOURCE_NONE;
+        };
     }
 }
