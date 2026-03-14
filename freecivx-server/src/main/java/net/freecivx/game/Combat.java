@@ -32,6 +32,12 @@ public class Combat {
     /** HP lost per combat round by the losing side. */
     public static final int COMBAT_ROUND_HP_LOSS = 1;
 
+    /**
+     * Probability (out of 100) that the winning unit gains a veteran level after
+     * combat.  Mirrors {@code maybe_make_veteran} in the C Freeciv server.
+     */
+    public static final int VETERAN_PROMOTION_CHANCE = 50;
+
     private static final Random random = new Random();
 
     /**
@@ -48,6 +54,33 @@ public class Combat {
         int base = unitType.getAttackStrength();
         // Veteran units gain a 50% attack bonus per level
         return base + (base / 2) * unit.getVeteran();
+    }
+
+    /**
+     * Returns the effective attack strength of a unit, applying the tired-attack
+     * penalty when the unit has fewer moves remaining than its full move rate.
+     * Mirrors {@code base_get_attack_power} in the C Freeciv server's
+     * {@code common/combat.c}: {@code power = power * moves_left / SINGLE_MOVE}
+     * when {@code is_tired_attack(moves_left)} is true.
+     *
+     * @param unit      the attacking unit
+     * @param unitType  the type definition for the unit
+     * @param tile      the tile the attacker is attacking from (may affect modifiers)
+     * @param movesLeft the number of move points the unit has remaining this turn
+     * @return the computed attack strength value (reduced if the unit is tired)
+     */
+    public static int unitAttackStrength(Unit unit, UnitType unitType, Tile tile, int movesLeft) {
+        if (unit == null || unitType == null) return 0;
+        int base = unitType.getAttackStrength();
+        int power = base + (base / 2) * unit.getVeteran();
+        // Tired-attack penalty: if the unit has fewer moves left than its full move
+        // rate (i.e. it has already moved this turn), reduce attack proportionally.
+        // Mirrors is_tired_attack() / base_get_attack_power() in the C server.
+        int moveRate = unitType.getMoveRate();
+        if (moveRate > 0 && movesLeft < moveRate) {
+            power = (power * Math.max(1, movesLeft)) / moveRate;
+        }
+        return Math.max(1, power); // ensure at least 1 so unit can always fight
     }
 
     /**
@@ -118,8 +151,11 @@ public class Combat {
                                         Tile defenderTile, int defenderExtraDefBonus) {
         if (attacker == null || defender == null) return false;
 
-        // Effective attack strength (base + veteran bonus matching C server)
-        int atkStr = unitAttackStrength(attacker, attackerType, null);
+        // Effective attack strength with tired-attack penalty: when the attacker
+        // has already used some move points this turn, its attack power is reduced
+        // proportionally.  Mirrors base_get_attack_power() / is_tired_attack() in
+        // the C Freeciv server's common/combat.c.
+        int atkStr = unitAttackStrength(attacker, attackerType, null, attacker.getMovesleft());
         if (atkStr <= 0) atkStr = 1; // ensure non-zero so units can fight
 
         // Effective defence strength (base + veteran + terrain + fortification)
@@ -217,5 +253,27 @@ public class Combat {
         // Activity 3 = ACTIVITY_FORTIFIED in the C server
         if (unit.getActivity() == 3) return 1;
         return 0;
+    }
+
+    /**
+     * Possibly promotes a unit to the next veteran level after combat.
+     * Each call has a {@link #VETERAN_PROMOTION_CHANCE}% probability of
+     * increasing the unit's veteran level by 1, up to the unit type's maximum
+     * veteran levels.  Mirrors {@code maybe_make_veteran} in the C Freeciv
+     * server's {@code server/unittools.c}.
+     *
+     * @param unit     the unit to potentially promote
+     * @param unitType the type definition for the unit (provides max veteran levels)
+     * @return {@code true} if the unit was promoted to a higher veteran level
+     */
+    public static boolean maybePromoteVeteran(Unit unit, UnitType unitType) {
+        if (unit == null || unitType == null) return false;
+        int maxVet = Math.max(1, unitType.getVeteranLevels()) - 1;
+        if (unit.getVeteran() >= maxVet) return false;
+        if (random.nextInt(100) < VETERAN_PROMOTION_CHANCE) {
+            unit.setVeteran(unit.getVeteran() + 1);
+            return true;
+        }
+        return false;
     }
 }

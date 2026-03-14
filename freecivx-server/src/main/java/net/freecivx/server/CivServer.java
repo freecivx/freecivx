@@ -202,6 +202,21 @@ public class CivServer extends org.java_websocket.server.WebSocketServer {
             game.changeUnitActivity(unit_id, activity);
         }
 
+        // Handle PACKET_PLAYER_RATES: client sends new science/tax/luxury rates.
+        // Validates that rates sum to 100 and updates the player's science rate,
+        // then broadcasts updated research info.  Mirrors handle_player_rates() in
+        // the C Freeciv server's plrhand.c.
+        if (pid == Packets.PACKET_PLAYER_RATES) {
+            PlrHand.handlePlayerRates(game, connId, json);
+        }
+
+        // Handle player research change: client selects a new technology to research.
+        // Validates prerequisites before accepting.  Mirrors handle_player_research().
+        if (pid == Packets.PACKET_RESEARCH_INFO && json.has("researching")) {
+            int techId = json.optInt("researching");
+            PlrHand.handleResearchChange(game, connId, techId);
+        }
+
         if (pid == Packets.PACKET_CHAT_MSG_REQ) {
             String message =  URLDecoder.decode(json.optString("message"), StandardCharsets.UTF_8);
             if (message.equalsIgnoreCase("/quit")) {

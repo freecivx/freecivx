@@ -357,13 +357,17 @@ public class Game {
         // Enforce movement limits
         if (unit.getMovesleft() <= 0) return false;
 
-        // Terrain check: land units cannot enter ocean tiles (terrain 2=Ocean, 3=Deep Ocean)
+        // Terrain check: land units cannot enter ocean tiles (terrain 2=Ocean, 3=Deep Ocean);
+        // sea units (domain=1) can only enter ocean tiles and cannot move onto land.
+        // Mirrors domain-based native-tile checks in the C Freeciv server's movement.c.
         UnitType utype = unitTypes.get((long) unit.getType());
-        if (utype != null && utype.getDomain() == 0) {
+        if (utype != null) {
             Tile destTile = tiles.get((long) dest_tile);
             if (destTile != null) {
                 int terrain = destTile.getTerrain();
-                if (terrain == 2 || terrain == 3) return false;
+                boolean isOcean = (terrain == 2 || terrain == 3);
+                if (utype.getDomain() == 0 && isOcean) return false; // land unit cannot enter ocean
+                if (utype.getDomain() == 1 && !isOcean) return false; // sea unit cannot enter land
             }
         }
 
@@ -470,10 +474,21 @@ public class Game {
         attacker.setMovesleft(Math.max(0, attacker.getMovesleft() - 1));
 
         if (attackerWins) {
+            // Winner may gain a veteran level — mirrors maybe_make_veteran() in C server.
+            boolean promoted = Combat.maybePromoteVeteran(attacker, attackerType);
             units.remove(defenderId);
             server.sendUnitRemove(defenderId);
             server.sendUnitAll(attacker);
+            if (promoted) {
+                server.sendMessage(attacker.getOwner(),
+                        unitTypes.get((long) attacker.getType()) != null
+                                ? unitTypes.get((long) attacker.getType()).getName() + " was promoted to veteran level "
+                                + attacker.getVeteran() + "."
+                                : "Unit was promoted.");
+            }
         } else {
+            // Defender survived; it may also gain a veteran level.
+            Combat.maybePromoteVeteran(defender, defenderType);
             units.remove(attackerId);
             server.sendUnitRemove(attackerId);
             server.sendUnitAll(defender);
