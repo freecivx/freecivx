@@ -273,6 +273,11 @@ public class CivServer extends org.java_websocket.server.WebSocketServer {
         return clients.size();
     }
 
+    /** Returns the {@link Game} instance managed by this server. */
+    public Game getGame() {
+        return game;
+    }
+
     public void resetGame() {
         game = new Game(this);
         game.initGame();
