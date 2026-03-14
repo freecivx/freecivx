@@ -29,6 +29,7 @@ import net.freecivx.game.Unit;
 import net.freecivx.game.UnitType;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
@@ -42,6 +43,13 @@ public class CityTurn {
 
     /** Minimum unit production cost in shields. */
     private static final int MIN_UNIT_COST = 10;
+
+    /**
+     * Fallback improvement ID for Granary.  Matches the hardcoded ID used in
+     * {@link net.freecivx.game.Effects} and the classic ruleset fallback in
+     * {@link net.freecivx.game.Game}.
+     */
+    private static final int IMPR_GRANARY = 2;
 
     /**
      * Improvement ID for Barracks.  Units in a city with Barracks restore to
