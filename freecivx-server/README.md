@@ -7,7 +7,6 @@
 License: GNU Affero General Public License
 
 ## Current state
-<img src="https://github.com/freecivx/freecivx/blob/main/doc/img/freecivx-java-logo.png" alt="FreecivX Java Logo" width="300"> <img src="https://github.com/freecivx/freecivx/blob/main/doc/img/freecivx-java-server.png" alt="FreecivX Java Logo" width="580">
  - Games can be started, there is now a real game state, units can move, and the end turn button works.
    
 
@@ -24,7 +23,7 @@ License: GNU Affero General Public License
   - Utilizes **virtual threads** for high concurrency and lightweight task management.
 - **Protocols**:
   - **WebSockets** for real-time communication.
-  - **JSON** or **Protocol Buffers** (Protobuf) for efficient data exchange.
+  - **JSON** for efficient data exchange.
 - **Security:** Java is significantly more secure than C.
 
 
