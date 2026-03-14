@@ -24,6 +24,8 @@ import net.freecivx.server.CivServer;
 import net.freecivx.server.Notify;
 import net.freecivx.ai.AiPlayer;
 import net.freecivx.data.Ruleset;
+import net.freecivx.data.ScenarioData;
+import net.freecivx.data.ScenarioLoader;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
@@ -306,6 +308,74 @@ public class Game {
         tiles = generator.generateMap();
     }
 
+    /**
+     * Replaces the current map with the terrain data from a Freeciv scenario
+     * savegame file.  Must be called after {@link #initGame()} (so that the
+     * terrain type table is already populated) and before {@link #startGame()}.
+     *
+     * <p>The scenario file is read from the classpath resource path
+     * {@code scenarios/<scenarioName>}, e.g. {@code scenarios/earth-small.sav}.
+     *
+     * @param scenarioName  filename of the scenario, e.g. {@code "earth-small.sav"}
+     * @return {@code true} if the scenario was loaded and the map updated;
+     *         {@code false} on any error (file not found, parse failure, etc.)
+     */
+    public boolean loadScenario(String scenarioName) {
+        ScenarioLoader loader = new ScenarioLoader();
+        ScenarioData scenarioData = loader.loadScenario("scenarios/" + scenarioName);
+        if (scenarioData == null) {
+            return false;
+        }
+        if (scenarioData.xsize <= 0 || scenarioData.ysize <= 0
+                || scenarioData.terrainRows == null) {
+            System.err.println("Invalid scenario data for: " + scenarioName);
+            return false;
+        }
+
+        // Build char → terrainId lookup using the game's already-loaded terrain map
+        Map<Character, Integer> charToTerrainId = new HashMap<>();
+        if (scenarioData.terrainIdentifiers != null) {
+            for (Map.Entry<Character, String> entry : scenarioData.terrainIdentifiers.entrySet()) {
+                String terrainName = entry.getValue();
+                for (Map.Entry<Long, Terrain> terrainEntry : terrains.entrySet()) {
+                    if (terrainEntry.getValue().getName().equalsIgnoreCase(terrainName)) {
+                        charToTerrainId.put(entry.getKey(), terrainEntry.getKey().intValue());
+                        break;
+                    }
+                }
+            }
+        }
+
+        // Determine the default terrain ID (Ocean) for unmapped characters
+        int defaultTerrainId = 2;
+        for (Map.Entry<Long, Terrain> e : terrains.entrySet()) {
+            if ("Ocean".equalsIgnoreCase(e.getValue().getName())) {
+                defaultTerrainId = e.getKey().intValue();
+                break;
+            }
+        }
+
+        // Update the map object with the scenario dimensions
+        map = new WorldMap(scenarioData.xsize, scenarioData.ysize);
+
+        // Build tile objects from the terrain rows
+        Map<Long, Tile> newTiles = new HashMap<>();
+        for (int y = 0; y < scenarioData.ysize; y++) {
+            String row = (y < scenarioData.terrainRows.length
+                    && scenarioData.terrainRows[y] != null)
+                    ? scenarioData.terrainRows[y] : "";
+            for (int x = 0; x < scenarioData.xsize; x++) {
+                char c = (x < row.length()) ? row.charAt(x) : ' ';
+                int terrainId = charToTerrainId.getOrDefault(c, defaultTerrainId);
+                long index = (long) y * scenarioData.xsize + x;
+                newTiles.put(index, new Tile(index, 0, terrainId, 0, 0, 0, -1));
+            }
+        }
+        tiles = newTiles;
+        System.out.println("Loaded scenario: " + scenarioName
+                + " (" + scenarioData.xsize + "x" + scenarioData.ysize + ")");
+        return true;
+    }
 
     /**
      * Starts a new game and sends the initialized game state to all players.
