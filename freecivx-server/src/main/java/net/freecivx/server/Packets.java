@@ -59,7 +59,9 @@ public class Packets {
     public static int PACKET_RULESET_CONTROL = 155;
     public static int PACKET_SERVER_SETTING_CONST = 165;
     public static int PACKET_SERVER_SETTING_BOOL = 166;
+    public static int PACKET_RULESET_BUILDING = 150;
     public static int PACKET_RULESET_EXTRA = 232;
+    public static int PACKET_UNIT_CHANGE_ACTIVITY = 222;
     public static int PACKET_WEB_PLAYER_INFO_ADDITION = 259;
     public static int PACKET_CALENDAR_INFO = 255;
     public static int PACKET_WEB_RULESET_UNIT_ADDITION = 260;

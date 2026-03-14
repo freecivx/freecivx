@@ -37,12 +37,14 @@ public class Game {
     long year = 0;
     long turn = 0;
     long phase = 0;
+    boolean gameStarted = false;
 
     public WorldMap map;
     public Map<Long, Player> players = new HashMap<>();
     public Map<Long, Unit> units = new HashMap<>();
     public Map<Long, City> cities = new HashMap<>();
     public Map<Long, Technology> techs = new HashMap<>();
+    public Map<Long, Improvement> improvements = new HashMap<>();
     public Map<Long, Terrain> terrains = new HashMap<>();
     public Map<Long, Tile> tiles = new HashMap<>();
     public Map<Long, Government> governments = new HashMap<>();
@@ -62,10 +64,20 @@ public class Game {
     public void initGame() {
         map = new WorldMap(45, 45);
 
-        // Initialize Technologies
+        // Initialize Technologies (10+)
         techs.put(0L, new Technology("Alphabet", "a.alphabet", "Alphabet"));
         techs.put(1L, new Technology("Mathematics", "a.mathematics", "Mathematics"));
         techs.put(2L, new Technology("The Republic", "a.the_republic", "The Republic"));
+        techs.put(3L, new Technology("Masonry", "a.masonry", "Masonry"));
+        techs.put(4L, new Technology("Bronze Working", "a.bronze_working", "Bronze Working"));
+        techs.put(5L, new Technology("Iron Working", "a.iron_working", "Iron Working"));
+        techs.put(6L, new Technology("The Wheel", "a.the_wheel", "The Wheel"));
+        techs.put(7L, new Technology("Writing", "a.writing", "Writing"));
+        techs.put(8L, new Technology("Code of Laws", "a.code_of_laws", "Code of Laws"));
+        techs.put(9L, new Technology("Horseback Riding", "a.horseback_riding", "Horseback Riding"));
+        techs.put(10L, new Technology("Pottery", "a.pottery", "Pottery"));
+        techs.put(11L, new Technology("Warrior Code", "a.warrior_code", "Warrior Code"));
+        techs.put(12L, new Technology("Map Making", "a.map_making", "Map Making"));
 
         // Initialize Governments
         governments.put(0L, new Government("Anarchy", "Anarchy", "Anarchy"));
@@ -116,17 +128,24 @@ public class Game {
         terrains.put(14L, new Terrain("Inaccessible", ""));
 
 
-        // Initialize UnitTypes
-        unitTypes.put(0L, new UnitType("Settlers", "u.settlers", 1, 1, 1, "Settlers unit", 0, 1,
-                "000000000000000000000000000110000000001110001000000000000011011111111001100011000000001100110000000000000000100100000000"));
-        unitTypes.put(1L, new UnitType("Workers", "u.worker", 1, 1, 1, "Workers unit", 0, 1,
-                "000000000000000000000000000010000000001110001000000000000011011111111001100011000000001100110000000000000000100100000000"));
-        unitTypes.put(2L, new UnitType("Explorer", "u.explorer", 3, 1, 1, "Explorer unit", 0, 1,
-                "000000000000000000000000000010000000001110001000000000000011011111111001100011000000001100110000000000000000100100000000"));
-        unitTypes.put(3L, new UnitType("Warriors", "u.warriors", 1, 1, 1, "Warriors", 1, 1,
-                "000000000000000000000000000010000000001110001000000000000011011111111001100011000000001100110000000000000000100100000000"));
-        unitTypes.put(4L, new UnitType("Horsemen", "u.horsemen", 3, 1, 1, "Horsemen", 2, 1,
-                "000000000000000000000000000010000000001110001000000000000011011111111001100011000000001100110000000000000000100100000000"));
+        // Initialize UnitTypes (10+)
+        // utype_actions: 120-bit binary string representing unit action availability flags.
+        // Each bit enables a specific unit action (e.g. move, build city, fortify, sentry, etc.).
+        // See freeciv/common/actions.h and the PACKET_WEB_RULESET_UNIT_ADDITION packet.
+        String defaultActions  = "000000000000000000000000000010000000001110001000000000000011011111111001100011000000001100110000000000000000100100000000";
+        String settlerActions  = "000000000000000000000000000110000000001110001000000000000011011111111001100011000000001100110000000000000000100100000000";
+        unitTypes.put(0L, new UnitType("Settlers", "u.settlers", 1, 1, 1, "Settlers unit", 0, 1, settlerActions));
+        unitTypes.put(1L, new UnitType("Workers", "u.worker", 1, 1, 1, "Workers unit", 0, 1, settlerActions));
+        unitTypes.put(2L, new UnitType("Explorer", "u.explorer", 3, 1, 1, "Explorer unit", 0, 1, defaultActions));
+        unitTypes.put(3L, new UnitType("Warriors", "u.warriors", 1, 10, 1, "Warriors", 1, 1, defaultActions));
+        unitTypes.put(4L, new UnitType("Horsemen", "u.horsemen", 3, 10, 1, "Horsemen", 2, 1, defaultActions));
+        unitTypes.put(5L, new UnitType("Archers", "u.archers", 1, 10, 1, "Archers", 3, 2, defaultActions));
+        unitTypes.put(6L, new UnitType("Legion", "u.legion", 1, 20, 1, "Legion", 3, 3, defaultActions));
+        unitTypes.put(7L, new UnitType("Pikemen", "u.pikemen", 1, 10, 1, "Pikemen", 1, 2, defaultActions));
+        unitTypes.put(8L, new UnitType("Musketeers", "u.musketeers", 1, 20, 1, "Musketeers", 5, 4, defaultActions));
+        unitTypes.put(9L, new UnitType("Catapult", "u.catapult", 1, 10, 1, "Catapult", 6, 1, defaultActions));
+        unitTypes.put(10L, new UnitType("Chariot", "u.chariot", 3, 10, 1, "Chariot", 3, 1, defaultActions));
+        unitTypes.put(11L, new UnitType("Knight", "u.knights", 3, 20, 1, "Knight", 5, 2, defaultActions));
 
 
 
@@ -136,6 +155,22 @@ public class Game {
         cityStyle.put(1L, new CityStyle("Classical"));
         cityStyle.put(2L, new CityStyle("Tropical"));
         cityStyle.put(3L, new CityStyle("Asian"));
+
+        // Initialize Improvements (city buildings) - 10+
+        // genus: 2 = Improvement, 1 = SmallWonder, 0 = GreatWonder
+        improvements.put(0L,  new Improvement(0,  "Palace",      "Palace",      "b.palace",      "b.fallback", 1, 100, 0, 0, "b_palace",      "b_fallback", "The Palace", -1));
+        improvements.put(1L,  new Improvement(1,  "Barracks",    "Barracks",    "b.barracks",    "b.fallback", 2,  40, 1, 0, "b_barracks",    "b_fallback", "The Barracks", 3));
+        improvements.put(2L,  new Improvement(2,  "Granary",     "Granary",     "b.granary",     "b.fallback", 2,  60, 1, 0, "b_granary",     "b_fallback", "The Granary", 10));
+        improvements.put(3L,  new Improvement(3,  "Library",     "Library",     "b.library",     "b.fallback", 2,  80, 1, 0, "b_library",     "b_fallback", "The Library", 7));
+        improvements.put(4L,  new Improvement(4,  "Marketplace", "Marketplace", "b.marketplace", "b.fallback", 2, 100, 1, 0, "b_marketplace", "b_fallback", "The Marketplace", 8));
+        improvements.put(5L,  new Improvement(5,  "Bank",        "Bank",        "b.bank",        "b.fallback", 2, 120, 2, 0, "b_bank",        "b_fallback", "The Bank", 1));
+        improvements.put(6L,  new Improvement(6,  "Temple",      "Temple",      "b.temple",      "b.fallback", 2,  30, 1, 0, "b_temple",      "b_fallback", "The Temple", 0));
+        improvements.put(7L,  new Improvement(7,  "City Walls",  "City_Walls",  "b.city_walls",  "b.fallback", 2,  60, 0, 0, "b_city_walls",  "b_fallback", "City Walls", 3));
+        improvements.put(8L,  new Improvement(8,  "Aqueduct",    "Aqueduct",    "b.aqueduct",    "b.fallback", 2, 120, 2, 0, "b_aqueduct",    "b_fallback", "The Aqueduct", 3));
+        improvements.put(9L,  new Improvement(9,  "Courthouse",  "Courthouse",  "b.courthouse",  "b.fallback", 2,  80, 1, 0, "b_courthouse",  "b_fallback", "The Courthouse", 8));
+        improvements.put(10L, new Improvement(10, "Harbor",      "Harbor",      "b.port",        "b.fallback", 2,  60, 1, 0, "b_harbor",      "b_fallback", "The Harbor", 12));
+        improvements.put(11L, new Improvement(11, "Colosseum",   "Colosseum",   "b.colosseum",   "b.fallback", 2, 100, 4, 0, "b_colosseum",   "b_fallback", "The Colosseum", 4));
+        improvements.put(12L, new Improvement(12, "Cathedral",   "Cathedral",   "b.cathedral",   "b.fallback", 2, 120, 3, 0, "b_cathedral",   "b_fallback", "The Cathedral", 6));
 
 
         MapGenerator generator = new MapGenerator(map.getXsize(), map.getYsize());
@@ -147,12 +182,17 @@ public class Game {
      * Starts a new game and sends the initialized game state to all players.
      */
     public void startGame() {
+        if (gameStarted) {
+            server.sendMessageAll("Game already started.");
+            return;
+        }
+        gameStarted = true;
         server.sendMessageAll("Starting new game.");
 
         server.sendCalendarInfoAll();
         server.sendMapInfoAll(map.getXsize(), map.getYsize());
         server.sendGameInfoAll(year, turn, phase);
-        server.sendRulesetControl();
+        server.sendRulesetControl(improvements.size());
 
         // Send technologies
         techs.forEach((id, tech) -> server.sendTechAll(id, -1, tech.getName(), new JSONArray(), tech.getGraphicsStr(), tech.getHelptext()));
@@ -163,8 +203,8 @@ public class Game {
         // Send nations
         nations.forEach((id, nation) -> server.sendNationInfoAll(id, nation.getName(), nation.getAdjective(), nation.getGraphicsStr(), nation.getLegend()));
 
-        // Send extras
-        extras.values().forEach(extra -> server.sendExtrasInfoAll(extra.getName()));
+        // Send extras (with correct id)
+        extras.forEach((id, extra) -> server.sendExtrasInfoAll(id, extra.getName()));
 
         // Send terrains
         terrains.forEach((id, terrain) -> server.sendTerrainInfoAll(id, terrain.getName(), terrain.getGraphicsStr()));
@@ -173,10 +213,10 @@ public class Game {
         unitTypes.forEach((id, unitType) -> server.sendRulesetUnitAll(id, unitType));
         unitTypes.forEach((id, unitType) -> server.sendRulesetUnitWebAdditionAll(id, unitType));
 
+        // Send improvements (buildings)
+        improvements.forEach((id, impr) -> server.sendRulesetBuildingAll(impr));
 
-
-        tiles.forEach((id, tile) -> server.sendTileInfoAll(tile)); // TODO: Send all tiles as one call.
-
+        tiles.forEach((id, tile) -> server.sendTileInfoAll(tile));
 
         // Initialize Units
         for (Player player : players.values()) {
@@ -227,6 +267,13 @@ public class Game {
         server.sendStartPhaseAll();
     }
 
+    public void changeUnitActivity(long unit_id, int activity) {
+        Unit unit = units.get(unit_id);
+        if (unit == null) return;
+        unit.setActivity(activity);
+        server.sendUnitAll(unit);
+    }
+
     public void moveUnit(long unit_id, int dest_tile, int dir) {
         Unit unit = units.get(unit_id);
         unit.setTile(dest_tile);
@@ -251,10 +298,12 @@ public class Game {
     }
 
     public void buildCity(long unit_id, String city_name, long tile_id) {
-
+        Unit unit = units.get(unit_id);
+        if (unit == null) return;
 
         long id = cities.size() + 1;
-        City city = new City(city_name, 0,  tile_id, 1, 1, false, false,
+        long owner = unit.getOwner();
+        City city = new City(city_name, owner, tile_id, 1, 1, false, false,
                 0, true, false, "", 6, 0);
         cities.put(id, city);
 

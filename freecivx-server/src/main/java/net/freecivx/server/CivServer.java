@@ -137,6 +137,12 @@ public class CivServer extends org.java_websocket.server.WebSocketServer {
             game.buildCity(unit_id, name, tile_id);
         }
 
+        if (pid == Packets.PACKET_UNIT_CHANGE_ACTIVITY) {
+            long unit_id = json.optInt("unit_id");
+            int activity = json.optInt("activity");
+            game.changeUnitActivity(unit_id, activity);
+        }
+
         if (pid == Packets.PACKET_CHAT_MSG_REQ) {
             String message =  URLDecoder.decode(json.optString("message"), StandardCharsets.UTF_8);
             if (message.equalsIgnoreCase("/quit")) {
@@ -419,12 +425,12 @@ public class CivServer extends org.java_websocket.server.WebSocketServer {
         }
     }
 
-    public void sendExtrasInfoAll(String extra_name) {
+    public void sendExtrasInfoAll(long id, String extra_name) {
         JSONObject msg = new JSONObject();
         msg.put("pid", Packets.PACKET_RULESET_EXTRA);
-        msg.put("id", 1);
+        msg.put("id", id);
         msg.put("name", extra_name);
-        msg.put("graphic_str", extra_name);
+        msg.put("graphic_str", extra_name.toLowerCase());
         msg.put("rule_name", extra_name);
 
         for (WebSocket conn : clients.values()) {
@@ -558,10 +564,48 @@ public class CivServer extends org.java_websocket.server.WebSocketServer {
         }
     }
 
-    public void sendRulesetControl() {
+    public void sendRulesetControl(int numImprovements) {
         JSONObject msg = new JSONObject();
         msg.put("pid", Packets.PACKET_RULESET_CONTROL);
-        msg.put("num_impr_types", 0); // Todo
+        msg.put("num_impr_types", numImprovements);
+
+        for (WebSocket conn : clients.values()) {
+            conn.send(msg.toString());
+        }
+    }
+
+    public void sendRulesetBuildingAll(Improvement impr) {
+        JSONObject msg = new JSONObject();
+        msg.put("pid", Packets.PACKET_RULESET_BUILDING);
+        msg.put("id", impr.getId());
+        msg.put("name", impr.getName());
+        msg.put("rule_name", impr.getRuleName());
+        msg.put("graphic_str", impr.getGraphicStr());
+        msg.put("graphic_alt", impr.getGraphicAlt());
+        msg.put("genus", impr.getGenus());
+        msg.put("build_cost", impr.getBuildCost());
+        msg.put("upkeep", impr.getUpkeep());
+        msg.put("sabotage", impr.getSabotage());
+        msg.put("soundtag", impr.getSoundtag());
+        msg.put("soundtag_alt", impr.getSoundtagAlt());
+        msg.put("helptext", impr.getHelptext());
+
+        // Build tech requirements array
+        JSONArray reqs = new JSONArray();
+        if (impr.getTechReqId() >= 0) {
+            JSONObject req = new JSONObject();
+            req.put("kind", 1);           // VUT_ADVANCE (technology)
+            req.put("value", impr.getTechReqId());
+            req.put("range", 2);          // REQ_RANGE_PLAYER
+            req.put("present", true);
+            req.put("survives", false);
+            reqs.put(req);
+        }
+        msg.put("reqs", reqs);
+        msg.put("reqs_count", reqs.length());
+        msg.put("obs_reqs", new JSONArray());
+        msg.put("obs_count", 0);
+        msg.put("flags", new JSONArray());
 
         for (WebSocket conn : clients.values()) {
             conn.send(msg.toString());
