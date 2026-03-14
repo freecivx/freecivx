@@ -58,6 +58,25 @@ public class MapGenerator {
     }
 
     /**
+     * Creates a map generator with an explicit seed for reproducible generation.
+     * Mirrors the {@code mapseed} setting in the C Freeciv server's autogame
+     * test script ({@code scripts/test-autogame.serv}).
+     *
+     * @param width  map width in tiles
+     * @param height map height in tiles
+     * @param seed   deterministic seed value (same seed produces identical maps)
+     */
+    public MapGenerator(int width, int height, int seed) {
+        this.width = width;
+        this.height = height;
+        this.seed = seed;
+        this.random = new Random(seed);
+        this.heightMap = new double[width][height];
+
+        generateHeightMap();
+    }
+
+    /**
      * **Generates a heightmap using Fractal Brownian Motion (fBM)**
      */
     private void generateHeightMap() {

@@ -21,10 +21,12 @@
 package net.freecivx.game;
 
 import net.freecivx.server.CivServer;
+import net.freecivx.server.Notify;
 import net.freecivx.ai.AiPlayer;
 import net.freecivx.data.Ruleset;
 import org.json.JSONArray;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -47,6 +49,14 @@ public class Game {
     private Random random = new Random();
     private AiPlayer aiPlayer;
     private Ruleset ruleset = new Ruleset();
+
+    /**
+     * Optional map generation seed.  When {@code >= 0} the same seed is
+     * passed to {@link MapGenerator} so that the generated map is identical
+     * across runs.  Mirrors the {@code mapseed} setting in the C Freeciv server.
+     * Default {@code -1} produces a unique random map each game.
+     */
+    private int mapSeed = -1;
 
     public WorldMap map;
     public Map<Long, Player> players = new HashMap<>();
@@ -71,6 +81,32 @@ public class Game {
     /** Returns the {@link CivServer} instance this game is running on. */
     public CivServer getServer() {
         return server;
+    }
+
+    /**
+     * Sets the map generation seed for reproducible map generation.
+     * Must be called before {@link #initGame()}.
+     * Mirrors the {@code mapseed} setting in the C Freeciv server test script.
+     *
+     * @param seed the seed value; use {@code -1} for a unique random map
+     */
+    public void setMapSeed(int seed) {
+        this.mapSeed = seed;
+    }
+
+    /**
+     * Regenerates the map tiles using the given seed.  Unlike
+     * {@link #setMapSeed(int)}, this method can be called <em>after</em>
+     * {@link #initGame()} to replace the map that was generated during init.
+     * Used by {@link net.freecivx.main.AutoGame} to apply a deterministic seed
+     * when the game server has already initialised.
+     *
+     * @param seed the deterministic seed value
+     */
+    public void reinitializeMap(int seed) {
+        this.mapSeed = seed;
+        MapGenerator generator = new MapGenerator(map.getXsize(), map.getYsize(), seed);
+        tiles = generator.generateMap();
     }
 
     /**
@@ -119,7 +155,10 @@ public class Game {
         cityStyle.put(2L, new CityStyle("Tropical"));
         cityStyle.put(3L, new CityStyle("Asian"));
 
-        MapGenerator generator = new MapGenerator(map.getXsize(), map.getYsize());
+        // Use a seeded generator when mapSeed >= 0 (mirrors "mapseed" in C server).
+        MapGenerator generator = mapSeed >= 0
+                ? new MapGenerator(map.getXsize(), map.getYsize(), mapSeed)
+                : new MapGenerator(map.getXsize(), map.getYsize());
         tiles = generator.generateMap();
     }
 
@@ -411,6 +450,10 @@ public class Game {
         // Run AI turns (executed in the dedicated AI thread)
         aiPlayer.runAiTurns();
 
+        // Check for and eliminate players who have no cities and no settlers.
+        // Mirrors check_for_city_destruction() / kill_player() in C Freeciv server.
+        checkPlayerElimination();
+
         server.sendGameInfoAll(year, turn, phase);
         server.sendMessageAll("Turn " + turn + " has started (Year " + (4000 + year * 20) + " BC).");
         server.sendBeginTurnAll();
@@ -575,6 +618,28 @@ public class Game {
             boolean promoted = Combat.maybePromoteVeteran(attacker, attackerType);
             units.remove(defenderId);
             server.sendUnitRemove(defenderId);
+
+            // City capture: if the defender was in an enemy city and no enemy units
+            // remain on that tile, the city is either captured or razed.
+            // Mirrors city_conquest() in the C Freeciv server's server/citytools.c.
+            if (defenderTile != null) {
+                long cityId = defenderTile.getWorked();
+                if (cityId > 0) {
+                    City defCity = cities.get(cityId);
+                    if (defCity != null && defCity.getOwner() != attacker.getOwner()) {
+                        // Check if any other enemy units remain on this tile
+                        final long defenderTileId = defender.getTile();
+                        final long cityOwner = defCity.getOwner();
+                        boolean noEnemyLeft = units.values().stream()
+                                .noneMatch(u -> u.getTile() == defenderTileId
+                                        && u.getOwner() == cityOwner);
+                        if (noEnemyLeft) {
+                            captureOrRazeCity(attacker, defCity, cityId, defenderTile);
+                        }
+                    }
+                }
+            }
+
             server.sendUnitAll(attacker);
             if (promoted) {
                 server.sendMessage(attacker.getOwner(),
@@ -634,5 +699,112 @@ public class Game {
 
         server.sendMessage(connId, "Welcome! The game is in progress (turn " + turn + ").");
         server.sendMessageAll(player.getUsername() + " has joined the game in progress.");
+    }
+
+    /**
+     * Handles city capture or razing after the last enemy defender is defeated.
+     * Mirrors {@code city_conquest()} / {@code city_transfer()} in the C Freeciv
+     * server's {@code server/citytools.c}.
+     * <ul>
+     *   <li>A city of size 1 is <b>razed</b> (removed from the game).</li>
+     *   <li>A larger city is <b>captured</b>: ownership is transferred to the
+     *       attacker's civilization and city size is reduced by 1.</li>
+     * </ul>
+     * The winning unit is moved onto the captured/razed tile after the event.
+     *
+     * @param attacker    the unit that won the decisive battle
+     * @param city        the enemy city on the defender's tile
+     * @param cityId      the city's key in {@code game.cities}
+     * @param cityTile    the tile the city occupies
+     */
+    private void captureOrRazeCity(Unit attacker, City city, long cityId, Tile cityTile) {
+        long oldOwner = city.getOwner();
+        long newOwner = attacker.getOwner();
+        String cityName = city.getName();
+
+        if (city.getSize() <= 1) {
+            // Raze: a 1-population city is destroyed upon capture.
+            // Mirrors city_reduce_size(pcity, 1, winner, "razed") in the C server.
+            cityTile.setWorked(-1);
+            server.sendTileInfoAll(cityTile);
+            // removeCity() removes from game.cities and sends remove packet to clients.
+            net.freecivx.server.CityTools.removeCity(this, cityId);
+            server.sendMessageAll(cityName + " has been razed!");
+            Notify.notifyPlayer(this, server, oldOwner,
+                    cityName + " has been razed by the enemy!");
+        } else {
+            // Capture: transfer ownership and reduce size by 1.
+            // Mirrors city_transfer() in server/citytools.c.
+            city.setOwner(newOwner);
+            city.setSize(city.getSize() - 1);
+            // Reset production queue (captured city has disrupted production)
+            city.setProductionKind(0);
+            city.setProductionValue(0);
+            server.sendCityInfoAll(cityId, city.getOwner(), city.getTile(),
+                    city.getSize(), city.getStyle(), city.isCapital(),
+                    city.isOccupied(), city.getWalls(), city.isHappy(),
+                    city.isUnhappy(), "", city.getName(),
+                    city.getProductionKind(), city.getProductionValue());
+            server.sendMessageAll(cityName + " has been captured!");
+            Notify.notifyPlayer(this, server, newOwner,
+                    "Our forces have captured " + cityName + "!");
+            Notify.notifyPlayer(this, server, oldOwner,
+                    cityName + " has been captured by the enemy!");
+        }
+
+        // Move the victorious attacker onto the conquered tile.
+        // Mirrors unit_move() after city_conquest() in the C Freeciv server.
+        attacker.setTile(cityTile.getIndex());
+        attacker.setMovesleft(0);
+    }
+
+    /**
+     * Checks all living players for elimination conditions and marks them dead
+     * when they have no cities and no units that can build a city (Settlers).
+     * Mirrors the {@code kill_player()} logic triggered from
+     * {@code check_for_city_destruction()} in the C Freeciv server.
+     *
+     * <p>Eliminated players have all their remaining units removed from the
+     * game and a broadcast is sent to all clients.
+     */
+    void checkPlayerElimination() {
+        List<Player> snapshot = new ArrayList<>(players.values());
+        for (Player player : snapshot) {
+            if (!player.isAlive()) continue;
+
+            long pid = player.getPlayerNo();
+
+            // Count cities owned by this player
+            long cityCount = cities.values().stream()
+                    .filter(c -> c.getOwner() == pid).count();
+            if (cityCount > 0) continue; // Still has cities – alive
+
+            // Check if player has any Settlers that could re-found a city.
+            // Mirrors the C server check for units with CAN_FOUND_CITY flag.
+            boolean hasSettlers = units.values().stream()
+                    .filter(u -> u.getOwner() == pid)
+                    .anyMatch(u -> {
+                        UnitType utype = unitTypes.get((long) u.getType());
+                        return utype != null
+                                && "Settlers".equalsIgnoreCase(utype.getName());
+                    });
+            if (hasSettlers) continue; // Can still refound – alive
+
+            // Player is eliminated
+            player.setAlive(false);
+            server.sendMessageAll(player.getUsername() + " has been eliminated!");
+
+            // Remove all of this player's remaining units
+            List<Long> idsToRemove = new ArrayList<>();
+            for (Map.Entry<Long, Unit> entry : units.entrySet()) {
+                if (entry.getValue().getOwner() == pid) {
+                    idsToRemove.add(entry.getKey());
+                }
+            }
+            for (long uid : idsToRemove) {
+                units.remove(uid);
+                server.sendUnitRemove(uid);
+            }
+        }
     }
 }
