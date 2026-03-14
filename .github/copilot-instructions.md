@@ -9,6 +9,7 @@ Freecivworld is the 3D version of Freeciv, with 2d map view and 3d map view.
 - `scripts/`: build/install/start/test utilities.
 - `config/` and `doc/`: configuration templates and documentation.
 - `freeciv-scores-go` elo scores process.
+- `freecivx-server` Freeciv Java server.
 
 ## Build & run
 - CI install step: `bash ./scripts/install/install.sh --mode=TEST_MYSQL`.
@@ -23,3 +24,4 @@ Put all copilot documentation files in the doc directory.
 - Use PRs only; no direct commits to main branches.
 - Run CodeQL security scan not needed for small javascript changes, to speed up dev process. :)
 - No need to check if fuctions are defined all the time.  typeof current_focus !== 'undefined'
+- When doing changes to the "Freeciv server", this means the freeciv directory. Do not modify "freecivx-server" unless directly told to.
