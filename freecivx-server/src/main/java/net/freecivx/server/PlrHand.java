@@ -23,6 +23,7 @@ import net.freecivx.game.Game;
 import net.freecivx.game.Government;
 import net.freecivx.game.Player;
 import net.freecivx.game.Technology;
+import org.json.JSONArray;
 import org.json.JSONObject;
 
 import java.util.Map;
@@ -89,7 +90,19 @@ public class PlrHand {
             msg.put("playerno", player.getPlayerNo());
             msg.put("name", player.getUsername());
             msg.put("nation", player.getNation());
+            msg.put("government", player.getGovernmentId());
             msg.put("is_alive", player.isAlive());
+            // The client BitVector constructor requires a non-null array of bytes.
+            // Two zero bytes provide a 16-bit all-false bit-vector, sufficient for
+            // the current maximum number of players.
+            JSONArray flags = new JSONArray();
+            flags.put(0);
+            flags.put(0);
+            msg.put("flags", flags);
+            JSONArray vis = new JSONArray();
+            vis.put(0);
+            vis.put(0);
+            msg.put("gives_shared_vision", vis);
             game.getServer().sendMessageAll(msg.toString());
         }
     }
