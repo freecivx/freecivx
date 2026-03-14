@@ -212,6 +212,34 @@ public class Game {
     }
 
     /**
+     * Initialises a headless auto-game with the specified number of AI players.
+     * Unlike {@link #startGame()}, this method does NOT broadcast any network
+     * packets, making it suitable for offline simulation via {@code AutoGame}.
+     *
+     * @param numAiPlayers number of AI-controlled civilisations to create (≥ 1)
+     */
+    public void startAutoGame(int numAiPlayers) {
+        if (gameStarted) return;
+        gameStarted = true;
+
+        String[] aiNames = {
+            "Caesar", "Alexander", "Napoleon", "Genghis", "Cleopatra",
+            "Augustus", "Cyrus", "Ramesses", "Pericles", "Montezuma"
+        };
+        for (int i = 0; i < numAiPlayers; i++) {
+            long aiId = 1000L + i;
+            Player aiPlayer = new Player(aiId, aiNames[i % aiNames.length], "ai", i % nations.size());
+            aiPlayer.setAi(true);
+            players.put(aiId, aiPlayer);
+        }
+
+        for (Player player : players.values()) {
+            long startPos = findStartPosition();
+            spawnStartingUnits(player, startPos);
+        }
+    }
+
+    /**
      * Converts the lists loaded by {@link Ruleset} into the game's ID-keyed
      * maps.  IDs are assigned sequentially in the order the entries appear in
      * the ruleset files.
