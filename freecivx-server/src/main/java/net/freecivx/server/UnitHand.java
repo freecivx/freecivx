@@ -19,10 +19,14 @@
 
 package net.freecivx.server;
 
+import net.freecivx.game.Actions;
 import net.freecivx.game.Game;
 import net.freecivx.game.Player;
 import net.freecivx.game.Unit;
 import org.json.JSONObject;
+
+import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
 
 /**
  * Handles incoming unit-related packets from clients.
@@ -56,48 +60,53 @@ public class UnitHand {
 
     /**
      * Handles a unit do-action packet from a client (e.g. found city, attack,
-     * establish embassy).  Dispatches to the appropriate handler based on
-     * the action name.  Mirrors the action-dispatch logic of
+     * establish embassy).  Dispatches to the appropriate handler based on the
+     * numeric action type.  Mirrors the action-dispatch logic of
      * {@code unithand.c:handle_unit_do_action} in the C Freeciv server.
      *
      * @param game       the current game state
      * @param connId     the connection ID of the requesting client
      * @param actorId    the ID of the unit performing the action
      * @param targetId   the ID of the target unit, city, or tile
-     * @param actionName the name of the action to perform
+     * @param actionType the numeric action type ID (see Actions.ACTION_* constants)
+     * @param name       optional name parameter (URL-encoded city name for ACTION_FOUND_CITY)
      */
-    public static void handleUnitDoAction(Game game, long connId, long actorId, long targetId, String actionName) {
+    public static void handleUnitDoAction(Game game, long connId, long actorId, long targetId, int actionType, String name) {
         Unit actor = game.units.get(actorId);
         if (actor == null) return;
 
         Player player = game.players.get(actor.getOwner());
         if (player == null || player.getConnectionId() != connId) return;
 
-        if ("Found City".equals(actionName)) {
-            game.buildCity(actorId, "New City", targetId);
-        } else if ("Attack".equals(actionName) || "Suicide Attack".equals(actionName)) {
+        if (actionType == Actions.ACTION_FOUND_CITY) {
+            String cityName = "New City";
+            if (name != null && !name.isEmpty()) {
+                try {
+                    cityName = URLDecoder.decode(name, StandardCharsets.UTF_8);
+                } catch (IllegalArgumentException e) {
+                    System.err.println("UnitHand: failed to URL-decode city name '" + name + "': " + e.getMessage());
+                    cityName = name;
+                }
+            }
+            game.buildCity(actorId, cityName, targetId);
+        } else if (actionType == Actions.ACTION_ATTACK) {
             // targetId is the unit ID of the defending unit
             game.attackUnit(actorId, targetId);
-        } else if ("Fortify".equals(actionName)) {
+        } else if (actionType == Actions.ACTION_FORTIFY) {
             game.changeUnitActivity(actorId, 3); // activity 3 = ACTIVITY_FORTIFIED
-        } else if ("Pillage".equals(actionName)) {
-            game.changeUnitActivity(actorId, 6); // activity 6 = ACTIVITY_PILLAGE
-        } else if ("Road".equals(actionName)) {
-            // Start building a road on the current tile.
-            // Mirrors the Road action handler in the C Freeciv server's unithand.c.
-            // CityTurn.processWorkerActivities() will advance and complete the work
-            // over ROAD_TURNS turns.
-            game.changeUnitActivity(actorId, CityTurn.ACTIVITY_ROAD);
-        } else if ("Irrigate".equals(actionName) || "Cultivate".equals(actionName)) {
-            // Start building an irrigation channel on the current tile.
-            // "Cultivate" is the Freeciv 3.x name for the irrigate action.
-            game.changeUnitActivity(actorId, CityTurn.ACTIVITY_IRRIGATE);
-        } else if ("Mine".equals(actionName) || "Plant".equals(actionName)) {
+        } else if (actionType == Actions.ACTION_MINE) {
             // Start building a mine on the current tile.
             // "Plant" is the Freeciv 3.x name for the mine/forest-plant action.
             game.changeUnitActivity(actorId, CityTurn.ACTIVITY_MINE);
+        } else if (actionType == Actions.ACTION_IRRIGATE) {
+            // Start building an irrigation channel on the current tile.
+            // "Cultivate" is the Freeciv 3.x name for the irrigate action.
+            game.changeUnitActivity(actorId, CityTurn.ACTIVITY_IRRIGATE);
+        } else if (actionType == Actions.ACTION_ROAD) {
+            // Start building a road on the current tile.
+            game.changeUnitActivity(actorId, CityTurn.ACTIVITY_ROAD);
         } else {
-            // Dispatch to the generic action system
+            // Unknown action: refresh the unit info for the client
             UnitTools.sendUnitInfo(game, game.getServer(), connId, actorId);
         }
     }
