@@ -31,10 +31,22 @@ public class UnitType {
     private int defenseStrength;
     private String utype_actions;
     private int domain; // 0=land, 1=sea, 2=air
+    /**
+     * Production cost in shields required to build this unit type in a city.
+     * Mirrors the {@code build_cost} field in the Freeciv units ruleset.
+     * A value of 0 means use the legacy formula (attack + defense) * hp / 2.
+     */
+    private int cost;
 
-    // Constructor
+    // Constructor (backwards-compatible without cost)
     public UnitType(String name, String graphicsStr, int moveRate, int hp, int veteranLevels, String helptext, int attackStrength, int defenseStrength,
                     String utype_actions, int domain) {
+        this(name, graphicsStr, moveRate, hp, veteranLevels, helptext, attackStrength, defenseStrength, utype_actions, domain, 0);
+    }
+
+    // Constructor with explicit production cost
+    public UnitType(String name, String graphicsStr, int moveRate, int hp, int veteranLevels, String helptext, int attackStrength, int defenseStrength,
+                    String utype_actions, int domain, int cost) {
         this.name = name;
         this.graphicsStr = graphicsStr;
         this.moveRate = moveRate;
@@ -45,6 +57,7 @@ public class UnitType {
         this.defenseStrength = defenseStrength;
         this.utype_actions = utype_actions;
         this.domain = domain;
+        this.cost = cost;
     }
 
     // Getters
@@ -96,6 +109,18 @@ public class UnitType {
         this.domain = domain;
     }
 
+    /**
+     * Returns the production cost in shields required to build this unit type.
+     * A value of 0 means use the legacy formula.
+     */
+    public int getCost() {
+        return cost;
+    }
+
+    public void setCost(int cost) {
+        this.cost = cost;
+    }
+
     // Optional toString method for debugging
     @Override
     public String toString() {
@@ -108,6 +133,7 @@ public class UnitType {
                 ", helptext='" + helptext + '\'' +
                 ", attackStrength=" + attackStrength +
                 ", defenseStrength=" + defenseStrength +
+                ", cost=" + cost +
                 ", domain=" + domain +
                 '}';
     }

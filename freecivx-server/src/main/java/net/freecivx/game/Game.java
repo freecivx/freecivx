@@ -93,6 +93,17 @@ public class Game {
         techs.put(13L, new Technology("Monarchy",          "a.monarchy",          "Monarchy",          "Code of Laws", "None",           60));
         techs.put(14L, new Technology("Democracy",         "a.democracy",         "Democracy",         "The Republic", "None",           80));
         techs.put(15L, new Technology("Communism",         "a.communism",         "Communism",         "Philosophy",   "None",           80));
+        // Additional techs to complete the prerequisite chains
+        techs.put(16L, new Technology("Philosophy",        "a.philosophy",        "Philosophy",        "Writing",      "None",           40));
+        techs.put(17L, new Technology("Mysticism",         "a.mysticism",         "Mysticism",         "None",         "None",           20));
+        techs.put(18L, new Technology("Ceremonial Burial", "a.ceremonial_burial", "Ceremonial Burial", "None",         "None",           20));
+        techs.put(19L, new Technology("Currency",          "a.currency",          "Currency",          "Bronze Working","None",          40));
+        techs.put(20L, new Technology("Trade",             "a.trade",             "Trade",             "Currency",     "Code of Laws",   60));
+        techs.put(21L, new Technology("Astronomy",         "a.astronomy",         "Astronomy",         "Mysticism",    "Mathematics",    60));
+        techs.put(22L, new Technology("Navigation",        "a.navigation",        "Navigation",        "Map Making",   "Astronomy",      80));
+        techs.put(23L, new Technology("University",        "a.university",        "University",        "Philosophy",   "Mathematics",   100));
+        techs.put(24L, new Technology("Gunpowder",         "a.gunpowder",         "Gunpowder",         "Iron Working", "None",           80));
+        techs.put(25L, new Technology("Feudalism",         "a.feudalism",         "Feudalism",         "Warrior Code", "Monarchy",       60));
 
         // Initialize Governments with tech prerequisites and corruption percentages
         // (mirrors classic ruleset: Anarchy/Despotism need no tech; others require specific advances)
@@ -151,18 +162,27 @@ public class Game {
         // See freeciv/common/actions.h and the PACKET_WEB_RULESET_UNIT_ADDITION packet.
         String defaultActions  = "000000000000000000000000000010000000001110001000000000000011011111111001100011000000001100110000000000000000100100000000";
         String settlerActions  = "000000000000000000000000000110000000001110001000000000000011011111111001100011000000001100110000000000000000100100000000";
-        unitTypes.put(0L, new UnitType("Settlers", "u.settlers", 1, 1, 1, "Settlers unit", 0, 1, settlerActions, 0));
-        unitTypes.put(1L, new UnitType("Workers", "u.worker", 1, 1, 1, "Workers unit", 0, 1, settlerActions, 0));
-        unitTypes.put(2L, new UnitType("Explorer", "u.explorer", 3, 1, 1, "Explorer unit", 0, 1, defaultActions, 0));
-        unitTypes.put(3L, new UnitType("Warriors", "u.warriors", 1, 10, 1, "Warriors", 1, 1, defaultActions, 0));
-        unitTypes.put(4L, new UnitType("Horsemen", "u.horsemen", 3, 10, 1, "Horsemen", 2, 1, defaultActions, 0));
-        unitTypes.put(5L, new UnitType("Archers", "u.archers", 1, 10, 1, "Archers", 3, 2, defaultActions, 0));
-        unitTypes.put(6L, new UnitType("Legion", "u.legion", 1, 20, 1, "Legion", 3, 3, defaultActions, 0));
-        unitTypes.put(7L, new UnitType("Pikemen", "u.pikemen", 1, 10, 1, "Pikemen", 1, 2, defaultActions, 0));
-        unitTypes.put(8L, new UnitType("Musketeers", "u.musketeers", 1, 20, 1, "Musketeers", 5, 4, defaultActions, 0));
-        unitTypes.put(9L, new UnitType("Catapult", "u.catapult", 1, 10, 1, "Catapult", 6, 1, defaultActions, 0));
-        unitTypes.put(10L, new UnitType("Chariot", "u.chariot", 3, 10, 1, "Chariot", 3, 1, defaultActions, 0));
-        unitTypes.put(11L, new UnitType("Knight", "u.knights", 3, 20, 1, "Knight", 5, 2, defaultActions, 0));
+        // Production costs mirror the classic Freeciv ruleset (build_cost field in units.ruleset).
+        unitTypes.put(0L,  new UnitType("Settlers",    "u.settlers",    1, 1,  1, "Settlers unit",  0, 1, settlerActions, 0, 40));
+        unitTypes.put(1L,  new UnitType("Workers",     "u.worker",      1, 1,  1, "Workers unit",   0, 1, settlerActions, 0, 30));
+        unitTypes.put(2L,  new UnitType("Explorer",    "u.explorer",    3, 1,  1, "Explorer unit",  0, 1, defaultActions, 0, 30));
+        unitTypes.put(3L,  new UnitType("Warriors",    "u.warriors",    1, 10, 1, "Warriors",       1, 1, defaultActions, 0, 10));
+        unitTypes.put(4L,  new UnitType("Horsemen",    "u.horsemen",    3, 10, 1, "Horsemen",       2, 1, defaultActions, 0, 50));
+        unitTypes.put(5L,  new UnitType("Archers",     "u.archers",     1, 10, 1, "Archers",        3, 2, defaultActions, 0, 30));
+        unitTypes.put(6L,  new UnitType("Legion",      "u.legion",      1, 20, 1, "Legion",         3, 3, defaultActions, 0, 60));
+        unitTypes.put(7L,  new UnitType("Pikemen",     "u.pikemen",     1, 10, 1, "Pikemen",        1, 2, defaultActions, 0, 30));
+        unitTypes.put(8L,  new UnitType("Musketeers",  "u.musketeers",  1, 20, 1, "Musketeers",     5, 4, defaultActions, 0, 60));
+        unitTypes.put(9L,  new UnitType("Catapult",    "u.catapult",    1, 10, 1, "Catapult",       6, 1, defaultActions, 0, 70));
+        unitTypes.put(10L, new UnitType("Chariot",     "u.chariot",     3, 10, 1, "Chariot",        3, 1, defaultActions, 0, 40));
+        unitTypes.put(11L, new UnitType("Knight",      "u.knights",     3, 20, 1, "Knight",         5, 2, defaultActions, 0, 70));
+        // Additional classic Freeciv unit types
+        unitTypes.put(12L, new UnitType("Phalanx",     "u.phalanx",     1, 10, 1, "Phalanx",        2, 2, defaultActions, 0, 25));
+        unitTypes.put(13L, new UnitType("Diplomat",    "u.diplomat",    2, 10, 1, "Diplomat",       0, 0, defaultActions, 0, 30));
+        unitTypes.put(14L, new UnitType("Cavalry",     "u.cavalry",     3, 20, 1, "Cavalry",        8, 3, defaultActions, 0, 80));
+        unitTypes.put(15L, new UnitType("Cannon",      "u.cannon",      1, 20, 1, "Cannon",         8, 1, defaultActions, 0, 80));
+        unitTypes.put(16L, new UnitType("Riflemen",    "u.riflemen",    1, 20, 1, "Riflemen",       5, 6, defaultActions, 0, 60));
+        unitTypes.put(17L, new UnitType("Trireme",     "u.trireme",     3, 10, 1, "Trireme",        1, 1, defaultActions, 1, 40));
+        unitTypes.put(18L, new UnitType("Frigate",     "u.frigate",     4, 20, 1, "Frigate",        4, 2, defaultActions, 1, 50));
 
 
 
@@ -188,6 +208,9 @@ public class Game {
         improvements.put(10L, new Improvement(10, "Harbor",      "Harbor",      "b.port",        "b.fallback", 2,  60, 1, 0, "b_harbor",      "b_fallback", "The Harbor", 12));
         improvements.put(11L, new Improvement(11, "Colosseum",   "Colosseum",   "b.colosseum",   "b.fallback", 2, 100, 4, 0, "b_colosseum",   "b_fallback", "The Colosseum", 4));
         improvements.put(12L, new Improvement(12, "Cathedral",   "Cathedral",   "b.cathedral",   "b.fallback", 2, 120, 3, 0, "b_cathedral",   "b_fallback", "The Cathedral", 6));
+        // University (id=13): gives +50% science on top of Library.
+        // Mirrors the University improvement in the classic Freeciv ruleset.
+        improvements.put(13L, new Improvement(13, "University",  "University",  "b.university",  "b.fallback", 2, 160, 3, 0, "b_university",  "b_fallback", "The University", 23));
 
 
         MapGenerator generator = new MapGenerator(map.getXsize(), map.getYsize());
@@ -353,9 +376,18 @@ public class Game {
             }
         }
 
+        // Calculate terrain-based movement cost.
+        // Mirrors tile_move_cost() in the C Freeciv server's common/movement.c:
+        // Mountains=3, Hills/Forest/Jungle/Swamp=2, others=1; roads reduce cost.
+        Tile srcTile = tiles.get(unit.getTile());
+        Tile destTileObj = tiles.get((long) dest_tile);
+        int moveCost = Movement.tileMoveCost(srcTile, destTileObj, unit, terrains);
+
         unit.setTile(dest_tile);
         unit.setFacing(dir);
-        unit.setMovesleft(Math.max(0, unit.getMovesleft() - 1));
+        // Deduct terrain cost; allow the move even if cost exceeds remaining moves
+        // (C server rule: a unit can always spend its last move to enter difficult terrain).
+        unit.setMovesleft(Math.max(0, unit.getMovesleft() - moveCost));
         server.sendUnitAll(unit);
         return true;
     }
@@ -420,9 +452,19 @@ public class Game {
         UnitType defenderType = unitTypes.get((long) defender.getType());
         Tile defenderTile = tiles.get(defender.getTile());
 
+        // Apply city walls defence bonus when the defender is garrisoned in a walled city.
+        // City walls give +50% defence bonus, mirroring EFT_DEFEND_BONUS in the C server.
+        int cityWallsBonus = 0;
+        if (defenderTile != null && defenderTile.getWorked() > 0) {
+            City defCity = cities.get(defenderTile.getWorked());
+            if (defCity != null && defCity.getWalls() > 0) {
+                cityWallsBonus = 50;
+            }
+        }
+
         boolean attackerWins = Combat.resolveCombat(attacker, attackerType,
                                                     defender, defenderType,
-                                                    defenderTile);
+                                                    defenderTile, cityWallsBonus);
 
         // Consume one move point for the attack
         attacker.setMovesleft(Math.max(0, attacker.getMovesleft() - 1));

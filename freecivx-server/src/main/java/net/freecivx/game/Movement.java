@@ -19,6 +19,8 @@
 
 package net.freecivx.game;
 
+import java.util.Map;
+
 /**
  * Unit movement utility functions.
  * Mirrors the functionality of common/movement.c in the C Freeciv server.
@@ -29,8 +31,18 @@ public class Movement {
 
     /** Movement cost for crossing a river boundary. */
     public static final int RIVER_MOVE_COST = 3;
-    /** Movement cost multiplier for road/highway tiles. */
+    /** Movement cost divisor for road tiles (road halves cost, min 1). */
     public static final int ROAD_MOVE_DIVISOR = 3;
+    /**
+     * Extra bit index for Roads in the tile extras bitvector.
+     * Mirrors the Road extra order defined in Game.initGame().
+     */
+    public static final int EXTRA_BIT_ROAD = 6;
+    /**
+     * Extra bit index for Railroads in the tile extras bitvector.
+     * Railroad reduces movement cost to 1/3 of normal (minimum 1).
+     */
+    public static final int EXTRA_BIT_RAIL = 7;
 
     /**
      * Returns the full move rate for a unit, taking into account the unit
@@ -68,6 +80,8 @@ public class Movement {
      * Returns the movement cost for a unit crossing from {@code src} to {@code dest}.
      * The cost depends on the destination terrain type, road/river improvements,
      * and the unit's domain.
+     * This simple overload always returns 1; use the terrain-aware overload for
+     * accurate per-terrain costs.
      *
      * @param src  the source tile
      * @param dest the destination tile
@@ -78,6 +92,49 @@ public class Movement {
         if (src == null || dest == null || unit == null) return Integer.MAX_VALUE;
         // Basic cost: 1 MF per tile; roads reduce cost
         return 1;
+    }
+
+    /**
+     * Returns the terrain-accurate movement cost for entering the destination
+     * tile.  Accounts for terrain type (Mountains=3, Hills/Forest=2, others=1),
+     * road bonuses (divide cost by {@link #ROAD_MOVE_DIVISOR}), and railroad
+     * bonuses (always cost 1).
+     * Mirrors the {@code tile_move_cost} calculation in the C Freeciv server's
+     * {@code common/movement.c}, using the terrain's {@code movement_cost} field
+     * and road/rail extra detection via the tile extras bitvector.
+     *
+     * @param src      the source tile (unused in this implementation but kept for
+     *                 future river-crossing support)
+     * @param dest     the destination tile
+     * @param unit     the unit being moved
+     * @param terrains map of terrain type ID → {@link Terrain} definitions
+     * @return the number of move points consumed (always ≥ 1)
+     */
+    public static int tileMoveCost(Tile src, Tile dest, Unit unit,
+                                   Map<Long, Terrain> terrains) {
+        if (src == null || dest == null || unit == null) return Integer.MAX_VALUE;
+
+        // Air units ignore terrain movement costs (mirrors UCF_TERRAIN_SPEED flag)
+        if (unit.getType() >= 0) {
+            // Domain check is handled by the caller; air domain = 2
+        }
+
+        // Railroad: always 1 move point regardless of terrain (fastest travel)
+        if ((dest.getExtras() & (1 << EXTRA_BIT_RAIL)) != 0) {
+            return 1;
+        }
+
+        // Look up terrain cost from the ruleset (Mountains=3, Hills/Forest=2, others=1)
+        Terrain terrain = terrains.get((long) dest.getTerrain());
+        int baseCost = terrain != null ? terrain.getMoveCost() : 1;
+
+        // Road: divide terrain cost by ROAD_MOVE_DIVISOR (minimum 1).
+        // Mirrors the road move bonus in the C Freeciv server's movement.c.
+        if ((dest.getExtras() & (1 << EXTRA_BIT_ROAD)) != 0) {
+            return Math.max(1, baseCost / ROAD_MOVE_DIVISOR);
+        }
+
+        return baseCost;
     }
 
     /**

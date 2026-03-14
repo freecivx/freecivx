@@ -41,6 +41,13 @@ public class Player {
     private int bulbsResearched = 0;
     /** ID of the technology currently being researched; -1 = none chosen. */
     private long researchingTech = -1L;
+    /**
+     * ID of the long-term technology the player is aiming to eventually reach.
+     * Mirrors {@code tech_goal} in the C Freeciv player_research struct.
+     * The AI and notifications use this to plan prerequisite research paths.
+     * -1 means no goal is set.
+     */
+    private long techGoal = -1L;
 
     // Economic state
     /** Player's current gold treasury. */
@@ -153,6 +160,26 @@ public class Player {
 
     public void setResearchingTech(long researchingTech) {
         this.researchingTech = researchingTech;
+    }
+
+    /**
+     * Returns the ID of the technology goal (the tech the player ultimately wants).
+     * Mirrors {@code tech_goal} in the C Freeciv player_research struct.
+     * Returns -1 if no goal has been set.
+     */
+    public long getTechGoal() {
+        return techGoal;
+    }
+
+    /**
+     * Sets the player's long-term technology goal.
+     * When the current research completes without a new target, the system
+     * can automatically select the next prerequisite towards this goal.
+     *
+     * @param techGoal ID of the desired technology, or -1 to clear
+     */
+    public void setTechGoal(long techGoal) {
+        this.techGoal = techGoal;
     }
 
     // Economic state accessors

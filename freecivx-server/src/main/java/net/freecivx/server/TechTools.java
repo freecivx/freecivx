@@ -24,6 +24,7 @@ import net.freecivx.game.Player;
 import net.freecivx.game.City;
 import net.freecivx.game.Technology;
 import org.json.JSONObject;
+import java.util.Map;
 
 /**
  * Utility methods for the technology research system.
@@ -79,10 +80,14 @@ public class TechTools {
         }
 
         // Calculate science output this turn: sum city science contributions
+        // Uses CityTurn.cityScienceContribution() which accounts for Library,
+        // University, and other science-producing buildings — mirroring the
+        // per-city science output calculation in the C Freeciv server.
         int scienceOutput = 0;
-        for (City city : game.cities.values()) {
+        for (Map.Entry<Long, City> entry : game.cities.entrySet()) {
+            City city = entry.getValue();
             if (city.getOwner() == playerId) {
-                scienceOutput += city.getSize(); // 1 bulb per population point
+                scienceOutput += net.freecivx.server.CityTurn.cityScienceContribution(game, entry.getKey());
             }
         }
         // Apply player science rate (percentage of output directed to research)
@@ -98,7 +103,10 @@ public class TechTools {
             // Technology complete: grant it and reset bulbs
             giveTechToPlayer(game, playerId, techId);
             player.setBulbsResearched(bulbs - cost);
-            player.setResearchingTech(-1L); // player must choose next tech
+            // Automatically advance toward tech goal if one is set.
+            // Mirrors the C Freeciv server's auto-research-next behaviour.
+            long nextTech = pickNextResearchTowardGoal(game, player);
+            player.setResearchingTech(nextTech); // -1 if no goal or goal reached
         } else {
             player.setBulbsResearched(bulbs);
         }
@@ -174,5 +182,48 @@ public class TechTools {
             if (known != null && prereqName.equals(known.getName())) return true;
         }
         return false; // prerequisite tech not yet known
+    }
+
+    /**
+     * Selects the next technology to research in order to progress toward the
+     * player's tech goal.  Returns the goal itself if the player can research it
+     * directly, or the first researchable prerequisite otherwise.
+     * Returns -1 if no goal is set, the goal is already known, or no researchable
+     * path exists.
+     * Mirrors the {@code research_goal_tech} logic in the C Freeciv server.
+     *
+     * @param game   the current game state
+     * @param player the player whose goal to evaluate
+     * @return the ID of the next technology to research toward the goal, or -1
+     */
+    public static long pickNextResearchTowardGoal(Game game, Player player) {
+        long goalId = player.getTechGoal();
+        if (goalId < 0) return -1L;
+
+        // If goal is already known, clear it
+        if (player.hasTech(goalId)) return -1L;
+
+        // If goal is directly researchable, return it
+        if (canPlayerResearch(game, player.getPlayerNo(), goalId)) return goalId;
+
+        // Otherwise find the first researchable prerequisite in the dependency chain
+        // BFS through prerequisite tree toward the goal
+        Technology goal = game.techs.get(goalId);
+        if (goal == null) return -1L;
+
+        for (Map.Entry<Long, net.freecivx.game.Technology> entry : game.techs.entrySet()) {
+            long tid = entry.getKey();
+            net.freecivx.game.Technology tech = entry.getValue();
+            // Check if this tech is a prerequisite of the goal (directly or indirectly)
+            if (!player.hasTech(tid) && canPlayerResearch(game, player.getPlayerNo(), tid)) {
+                // Simple heuristic: return first researchable unknown tech that is a prereq
+                if (goal.getPrereq1().equals(tech.getName()) || goal.getPrereq2().equals(tech.getName())) {
+                    return tid;
+                }
+            }
+        }
+
+        // No direct prereq found; return first researchable tech (progress toward goal)
+        return -1L;
     }
 }

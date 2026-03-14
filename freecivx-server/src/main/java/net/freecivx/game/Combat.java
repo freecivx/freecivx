@@ -104,16 +104,18 @@ public class Combat {
      * <p>Modifies the HP of both units in place.  The caller is responsible for
      * removing any unit that reaches 0 HP from the game.
      *
-     * @param attacker     the attacking unit
-     * @param attackerType the unit-type definition for the attacker
-     * @param defenderTile the tile the defender is standing on (for terrain bonus)
-     * @param defender     the defending unit
-     * @param defenderType the unit-type definition for the defender
+     * @param attacker              the attacking unit
+     * @param attackerType          the unit-type definition for the attacker
+     * @param defenderTile          the tile the defender is standing on (for terrain bonus)
+     * @param defender              the defending unit
+     * @param defenderType          the unit-type definition for the defender
+     * @param defenderExtraDefBonus additional defence bonus percentage (e.g. 50 for
+     *                              city walls); added on top of terrain and veteran bonuses
      * @return {@code true} if the attacker wins (defender reaches 0 HP)
      */
     public static boolean resolveCombat(Unit attacker, UnitType attackerType,
                                         Unit defender, UnitType defenderType,
-                                        Tile defenderTile) {
+                                        Tile defenderTile, int defenderExtraDefBonus) {
         if (attacker == null || defender == null) return false;
 
         // Effective attack strength (base + veteran bonus matching C server)
@@ -124,6 +126,10 @@ public class Combat {
         int defStr = unitDefenseStrength(defender, defenderType, defenderTile);
         // Apply fortification bonus (+25% defence, matching C server POWER_BONUS_FACTOR)
         defStr = defStr + (defStr * unitCombatModifier(defender, defenderType) / 4);
+        // Apply extra defence bonus (e.g. city walls +50%); mirrors EFT_DEFEND_BONUS in C server
+        if (defenderExtraDefBonus > 0) {
+            defStr = defStr * (100 + defenderExtraDefBonus) / 100;
+        }
         if (defStr <= 0) defStr = 1;
 
         int hpAtk = attacker.getHp();
@@ -142,6 +148,24 @@ public class Combat {
         attacker.setHp(hpAtk);
         defender.setHp(hpDef);
         return hpDef <= 0;
+    }
+
+    /**
+     * Convenience overload with no extra defence bonus.
+     * Equivalent to calling {@link #resolveCombat(Unit, UnitType, Unit, UnitType, Tile, int)}
+     * with {@code defenderExtraDefBonus = 0}.
+     *
+     * @param attacker     the attacking unit
+     * @param attackerType the unit-type definition for the attacker
+     * @param defenderTile the tile the defender is standing on (for terrain bonus)
+     * @param defender     the defending unit
+     * @param defenderType the unit-type definition for the defender
+     * @return {@code true} if the attacker wins (defender reaches 0 HP)
+     */
+    public static boolean resolveCombat(Unit attacker, UnitType attackerType,
+                                        Unit defender, UnitType defenderType,
+                                        Tile defenderTile) {
+        return resolveCombat(attacker, attackerType, defender, defenderType, defenderTile, 0);
     }
 
     /**
