@@ -407,4 +407,163 @@ public class MapGenerator {
             default -> -1;
         };
     }
+
+    /**
+     * Alternative map generator that places distinct island/continent land masses
+     * separated by ocean, then assigns terrain based on latitude.
+     *
+     * <p>This mirrors the spirit of the C Freeciv server's {@code MAPGEN_FRACTURE}
+     * (generator 5): large land masses with clear ocean gaps, latitude-driven
+     * climate zones (glaciers at poles, jungle near the equator).
+     *
+     * <p>The algorithm:
+     * <ol>
+     *   <li>Fill the map with ocean.</li>
+     *   <li>Place {@code NUM_BLOBS} seed points and grow each into a blob of land
+     *       using a probability that decreases with distance from the seed.</li>
+     *   <li>Convert ocean tiles adjacent to land into coast.</li>
+     *   <li>Assign latitude-appropriate terrain to every land tile.</li>
+     *   <li>Place resources, huts, and rivers as normal.</li>
+     * </ol>
+     *
+     * @return the generated tile map
+     */
+    public Map<Long, Tile> generateIslandMap() {
+        // Number of island blobs and their approximate radius
+        final int NUM_BLOBS = 15;
+        final int BLOB_RADIUS = 5;
+
+        // Phase 1: initialise everything as deep ocean
+        for (int y = 0; y < height; y++) {
+            for (int x = 0; x < width; x++) {
+                long index = (long) y * width + x;
+                tiles.put(index, new Tile(index, 2, TERRAIN_OCEAN, 0, 0, -200, -1));
+            }
+        }
+
+        // Phase 2: grow land blobs
+        boolean[][] isLand = new boolean[width][height];
+        int seedRangeX = Math.max(1, width - 6);
+        int seedRangeY = Math.max(1, height - 6);
+        for (int b = 0; b < NUM_BLOBS; b++) {
+            // Seed away from the map edges
+            int cx = 3 + random.nextInt(seedRangeX);
+            int cy = 3 + random.nextInt(seedRangeY);
+
+            // Expand outward; probability of adding a neighbour decreases with
+            // distance from the blob centre, producing natural coastlines.
+            List<int[]> blob = new ArrayList<>();
+            blob.add(new int[]{cx, cy});
+            isLand[cx][cy] = true;
+
+            int expansionSteps = BLOB_RADIUS * BLOB_RADIUS * 4;
+            final int[][] DIRS4 = {{0, 1}, {0, -1}, {1, 0}, {-1, 0}};
+            for (int step = 0; step < expansionSteps; step++) {
+                if (blob.isEmpty()) break;
+                int[] cell = blob.get(random.nextInt(blob.size()));
+                int[] dir = DIRS4[random.nextInt(4)];
+                int nx = cell[0] + dir[0];
+                int ny = cell[1] + dir[1];
+                if (nx < 0 || nx >= width || ny < 0 || ny >= height) continue;
+                if (isLand[nx][ny]) continue;
+                double dist = Math.sqrt((double)(nx - cx) * (nx - cx)
+                        + (double)(ny - cy) * (ny - cy));
+                if (random.nextDouble() < Math.exp(-dist / BLOB_RADIUS)) {
+                    isLand[nx][ny] = true;
+                    blob.add(new int[]{nx, ny});
+                }
+            }
+        }
+
+        // Phase 3: assign terrain to each tile
+        final int[][] ALL_DIRS = {{0,1},{0,-1},{1,0},{-1,0},{1,1},{1,-1},{-1,1},{-1,-1}};
+        for (int y = 0; y < height; y++) {
+            for (int x = 0; x < width; x++) {
+                long index = (long) y * width + x;
+
+                if (!isLand[x][y]) {
+                    // Coast if any of the 8 neighbours is land, otherwise ocean
+                    boolean adjLand = false;
+                    for (int[] d : ALL_DIRS) {
+                        int nx = x + d[0], ny = y + d[1];
+                        if (nx >= 0 && nx < width && ny >= 0 && ny < height && isLand[nx][ny]) {
+                            adjLand = true;
+                            break;
+                        }
+                    }
+                    int seaTerrain = adjLand ? TERRAIN_COAST : TERRAIN_OCEAN;
+                    int seaResource = assignResource(seaTerrain);
+                    int seaExtras = 0;
+                    int seaResBit = resourceToExtraBit(seaResource);
+                    if (seaResBit >= 0) seaExtras |= (1 << seaResBit);
+                    int seaHeight = adjLand ? -100 : -200;
+                    tiles.put(index, new Tile(index, 2, seaTerrain, seaResource, seaExtras, seaHeight, -1));
+                    continue;
+                }
+
+                // Latitude: 0.0 = equator, 1.0 = pole
+                double halfH = (height > 1) ? (height - 1) * 0.5 : 1.0;
+                double latitude = Math.abs(y - halfH) / halfH;
+                int terrain = assignLatitudeTerrain(latitude);
+
+                int resource = assignResource(terrain);
+                int extras = 0;
+                if (random.nextDouble() < HUT_PROBABILITY) {
+                    extras |= (1 << EXTRA_BIT_HUT);
+                }
+                int resourceBit = resourceToExtraBit(resource);
+                if (resourceBit >= 0) {
+                    extras |= (1 << resourceBit);
+                }
+
+                int heightLevel = switch (terrain) {
+                    case TERRAIN_MOUNTAINS -> 400;
+                    case TERRAIN_HILLS     -> 200;
+                    default                -> 100;
+                };
+                tiles.put(index, new Tile(index, 2, terrain, resource, extras, heightLevel, -1));
+            }
+        }
+
+        generateRivers();
+        return tiles;
+    }
+
+    /**
+     * Chooses a land terrain type based on latitude, mirroring the climate
+     * zones used by the C Freeciv server's temperature/humidity model.
+     *
+     * @param latitude 0.0 = equator, 1.0 = pole
+     * @return terrain type constant
+     */
+    private int assignLatitudeTerrain(double latitude) {
+        if (latitude > 0.80) {
+            // Polar: mostly glacier, some tundra
+            return random.nextDouble() < 0.65 ? TERRAIN_GLACIER : TERRAIN_TUNDRA;
+        } else if (latitude > 0.60) {
+            // Sub-polar: tundra, forest, mountains
+            double r = random.nextDouble();
+            if (r < 0.40) return TERRAIN_TUNDRA;
+            if (r < 0.65) return TERRAIN_FOREST;
+            if (r < 0.82) return TERRAIN_MOUNTAINS;
+            return TERRAIN_HILLS;
+        } else if (latitude > 0.35) {
+            // Temperate: mixed
+            double r = random.nextDouble();
+            if (r < 0.25) return TERRAIN_GRASSLAND;
+            if (r < 0.45) return TERRAIN_PLAINS;
+            if (r < 0.60) return TERRAIN_FOREST;
+            if (r < 0.73) return TERRAIN_HILLS;
+            if (r < 0.84) return TERRAIN_DESERT;
+            return TERRAIN_MOUNTAINS;
+        } else {
+            // Tropical / equatorial: jungle, grassland, swamp, desert
+            double r = random.nextDouble();
+            if (r < 0.35) return TERRAIN_JUNGLE;
+            if (r < 0.60) return TERRAIN_GRASSLAND;
+            if (r < 0.75) return TERRAIN_PLAINS;
+            if (r < 0.88) return TERRAIN_SWAMP;
+            return TERRAIN_DESERT;
+        }
+    }
 }

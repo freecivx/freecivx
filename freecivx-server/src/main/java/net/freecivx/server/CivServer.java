@@ -262,6 +262,7 @@ public class CivServer extends org.java_websocket.server.WebSocketServer impleme
                         /set timeout N  - Set turn timeout in seconds (0 = no timeout, max 500)
                         /set aifill N   - Set number of AI players (0-9, applied at game start)
                         /set gold N     - Set starting gold for all players (0-50000)
+                        /set generator N - Set map generator: 2 = fractal/fBM (default), 5 = island/continent
                         /help           - Show this help text
                         Available scenarios: africa-350x350-v1.0.sav, british-isles.sav, caribbean-500x250-v1.2.sav, earth-large.sav, earth-small.sav, europe.sav, france.sav, hagworld.sav, iberian-peninsula.sav, india-350x350-v1.2.sav, italy.sav, japan.sav, middleeast-350x350-v1.1.sav, north_america.sav, scandinavia-350x350-v1.0.sav, tutorial.sav
                         Game features: units move with movement limits, AI players included.
@@ -280,9 +281,10 @@ public class CivServer extends org.java_websocket.server.WebSocketServer impleme
      * Mirrors handle_stdin_input() / set_command() in the C Freeciv server's
      * sernet.c / settings.c.  Supported settings:
      * <ul>
-     *   <li>{@code timeout} – turn timeout in seconds (0 = no timeout, max 500)</li>
-     *   <li>{@code aifill}  – number of AI players to create at game start (0–9)</li>
-     *   <li>{@code gold}    – starting gold for every player (0–50 000)</li>
+     *   <li>{@code timeout}   – turn timeout in seconds (0 = no timeout, max 500)</li>
+     *   <li>{@code aifill}    – number of AI players to create at game start (0–9)</li>
+     *   <li>{@code gold}      – starting gold for every player (0–50 000)</li>
+     *   <li>{@code generator} – map generator: 2 = fractal/fBM (default), 5 = island/continent</li>
      * </ul>
      *
      * @param connId  the connection ID of the issuing client
@@ -330,6 +332,15 @@ public class CivServer extends org.java_websocket.server.WebSocketServer impleme
                 }
                 game.setInitialGold(value);
                 sendMessageAll("gold: starting gold set to " + value + ".");
+            }
+            case "generator" -> {
+                if (value != 2 && value != 5) {
+                    sendMessage(connId, "generator must be 2 (fractal, default) or 5 (island).");
+                    return;
+                }
+                game.setGenerator(value);
+                String genName = (value == 5) ? "island" : "fractal";
+                sendMessageAll("generator: set to " + value + " (" + genName + ").");
             }
             default -> sendMessage(connId, "Unknown setting '" + setting
                     + "'. Try /help for available settings.");
