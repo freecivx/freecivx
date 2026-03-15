@@ -236,9 +236,10 @@ public class CityTools {
         JSONArray canBuildUnit = buildBitvector(buildableUnits, maxUnitId + 1);
 
         // Build can_build_improvement bitvector: bit N is set when the city can
-        // still build improvement N (tech met, not already built, and building
-        // prerequisite satisfied).  Mirrors can_city_build_improvement_direct()
-        // in the C Freeciv server's common/city.c.
+        // still build improvement N (tech met, not already built, building
+        // prerequisite satisfied, and any terrain requirement met).
+        // Mirrors can_city_build_improvement_direct() in the C Freeciv server's
+        // common/city.c.
         int maxImprId = game.improvements.keySet().stream()
                 .mapToInt(Long::intValue).max().orElse(0);
         int[] buildableImprovements = game.improvements.entrySet().stream()
@@ -252,7 +253,10 @@ public class CityTools {
                     String reqBldgName = impr.getRequiredBuildingName();
                     boolean buildingPrereqMet = (reqBldgName == null || reqBldgName.isEmpty()
                             || CityTurn.cityHasImprovementByName(game, city, reqBldgName));
-                    return techMet && notBuilt && buildingPrereqMet;
+                    // Check coastal requirement (e.g. Harbor requires adjacent ocean tile).
+                    boolean coastalReqMet = (!impr.isRequiresCoastal()
+                            || isCityCoastal(game, city));
+                    return techMet && notBuilt && buildingPrereqMet && coastalReqMet;
                 })
                 .mapToInt(e -> e.getKey().intValue())
                 .toArray();
@@ -275,6 +279,41 @@ public class CityTools {
         } else {
             server.sendPacket(connId, msg);
         }
+    }
+
+    /**
+     * Returns {@code true} if the city's tile is adjacent to at least one ocean
+     * tile (terrain 2=Ocean or 3=Deep Ocean in the classic ruleset).
+     * Used to enforce the {@code TerrainClass=Oceanic/Adjacent} requirement
+     * for buildings such as Harbor, Coastal Defense, and Port Facility.
+     * Mirrors the {@code TerrainClass} check in the C Freeciv server's
+     * {@code can_city_build_improvement_direct()} in {@code common/city.c}.
+     *
+     * @param game the current game state
+     * @param city the city to test
+     * @return {@code true} if any tile adjacent to the city is ocean
+     */
+    static boolean isCityCoastal(Game game, City city) {
+        if (game.map == null) return false;
+        int xsize = game.map.getXsize();
+        int ysize = game.map.getYsize();
+        int cx = (int) (city.getTile() % xsize);
+        int cy = (int) (city.getTile() / xsize);
+        for (int dx = -1; dx <= 1; dx++) {
+            for (int dy = -1; dy <= 1; dy++) {
+                if (dx == 0 && dy == 0) continue;
+                int nx = (cx + dx + xsize) % xsize; // horizontal wrap
+                int ny = cy + dy;
+                if (ny < 0 || ny >= ysize) continue;
+                long adjTileId = (long) (ny * xsize + nx);
+                Tile adjTile = game.tiles.get(adjTileId);
+                if (adjTile != null) {
+                    int terrain = adjTile.getTerrain();
+                    if (terrain == 2 || terrain == 3) return true; // Ocean or Deep Ocean
+                }
+            }
+        }
+        return false;
     }
 
     /**

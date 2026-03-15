@@ -304,6 +304,11 @@ public class Ruleset {
                 if (!sec.reqBuildingName.isEmpty()) {
                     impr.setRequiredBuildingName(sec.reqBuildingName);
                 }
+                // Store the coastal requirement parsed from the reqs table.
+                // Mirrors "TerrainClass"/"Oceanic"/"Adjacent" rows (e.g. Harbor, Port Facility).
+                if (sec.reqCoastal) {
+                    impr.setRequiresCoastal(true);
+                }
                 improvements.add(impr);
                 id++;
             }
@@ -488,6 +493,13 @@ public class Ruleset {
          * Mirrors {@code can_city_build_improvement_direct()} in the C server.
          */
         String reqBuildingName = "";
+        /**
+         * Whether this section requires the city to be coastal
+         * ({@code "TerrainClass", "Oceanic", "Adjacent"} row in the reqs table).
+         * Mirrors the TerrainClass requirement in the C Freeciv server's
+         * {@code can_city_build_improvement_direct()} in {@code common/city.c}.
+         */
+        boolean reqCoastal = false;
         /** Anti-horse defense multiplier bonus from the bonuses table (0 = none). */
         int antiHorseBonus = 0;
 
@@ -598,6 +610,17 @@ public class Ruleset {
                                 String range = stripQuotes(cells[2]);
                                 if ("City".equalsIgnoreCase(range) && current.reqBuildingName.isEmpty()) {
                                     current.reqBuildingName = stripQuotes(cells[1]);
+                                }
+                            }
+                            // Capture coastal requirement: TerrainClass=Oceanic, range=Adjacent.
+                            // Mirrors the TerrainClass requirement check used by Harbor, Coastal
+                            // Defense, Port Facility, Offshore Platform, etc. in the C Freeciv
+                            // server's can_city_build_improvement_direct() in common/city.c.
+                            if ("TerrainClass".equalsIgnoreCase(type) && cells.length >= 3) {
+                                String name = stripQuotes(cells[1]);
+                                String range = stripQuotes(cells[2]);
+                                if ("Oceanic".equalsIgnoreCase(name) && "Adjacent".equalsIgnoreCase(range)) {
+                                    current.reqCoastal = true;
                                 }
                             }
                         }

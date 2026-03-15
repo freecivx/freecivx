@@ -57,6 +57,18 @@ public class Improvement {
      */
     private String requiredBuildingName = null;
 
+    /**
+     * Whether this improvement requires the city to be on a coastal tile
+     * (i.e. at least one adjacent tile must have ocean terrain).
+     * Parsed from {@code "TerrainClass", "Oceanic", "Adjacent"} rows in the
+     * buildings ruleset's {@code reqs} table.
+     * Examples: Harbor, Coastal Defense, Port Facility, Offshore Platform.
+     * Mirrors the {@code TerrainClass} requirement check in the C Freeciv
+     * server's {@code can_city_build_improvement_direct()} in
+     * {@code common/city.c}.
+     */
+    private boolean requiresCoastal = false;
+
     public Improvement(long id, String name, String ruleName, String graphicStr,
                        String graphicAlt, int genus, int buildCost, int upkeep,
                        int sabotage, String soundtag, String soundtagAlt,
@@ -120,6 +132,21 @@ public class Improvement {
      * @param buildingName the prerequisite building name, or {@code null} for none
      */
     public void setRequiredBuildingName(String buildingName) { this.requiredBuildingName = buildingName; }
+
+    /**
+     * Returns {@code true} if this improvement requires the city to be coastal
+     * (at least one adjacent tile must be ocean terrain).
+     */
+    public boolean isRequiresCoastal() { return requiresCoastal; }
+
+    /**
+     * Sets whether this improvement requires a coastal city.
+     * Called during ruleset loading when a {@code "TerrainClass", "Oceanic",
+     * "Adjacent"} entry is found in the {@code reqs} table.
+     *
+     * @param requiresCoastal {@code true} if a coastal city is required
+     */
+    public void setRequiresCoastal(boolean requiresCoastal) { this.requiresCoastal = requiresCoastal; }
 
     @Override
     public String toString() {
