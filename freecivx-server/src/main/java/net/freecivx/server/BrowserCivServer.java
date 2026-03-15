@@ -77,13 +77,25 @@ public class BrowserCivServer implements IGameServer {
     /**
      * Constructs a new browser-mode server, initialises the game and game
      * ruleset, and registers the JavaScript API via {@link #setupBrowserApi()}.
+     *
+     * <p>{@link #setupBrowserApi()} is called unconditionally even if
+     * {@link Game#initGame()} throws, so the client always receives the
+     * {@code window.freecivxSendPacket} registration and the
+     * {@code window.freecivxOnReady} callback fires regardless.
      */
     public BrowserCivServer() {
-        jsLog("[BrowserCivServer] Initialising game...");
+        jsLog("[BrowserCivServer] Initialising BrowserCivServer...");
         currentInstance = this;
         this.game = new Game(this);
-        this.game.initGame();
-        jsLog("[BrowserCivServer] Game initialised, registering JS API");
+        jsLog("[BrowserCivServer] Game object created, calling initGame()...");
+        try {
+            this.game.initGame();
+            jsLog("[BrowserCivServer] initGame() completed successfully");
+        } catch (Exception e) {
+            jsError("[BrowserCivServer] initGame() threw " + e.getClass().getName() + ": " + e.getMessage());
+            e.printStackTrace();
+        }
+        jsLog("[BrowserCivServer] Registering JS API via setupBrowserApi()...");
         setupBrowserApi();
     }
 
@@ -99,6 +111,10 @@ public class BrowserCivServer implements IGameServer {
     /** Writes a debug message to the browser console via {@code console.debug}. */
     @JSBody(params = {"msg"}, script = "console.debug(msg);")
     private static native void jsLog(String msg);
+
+    /** Writes an error message to the browser console via {@code console.error}. */
+    @JSBody(params = {"msg"}, script = "console.error(msg);")
+    private static native void jsError(String msg);
 
     /**
      * Dispatches a JSON-string packet to the JavaScript client by calling
@@ -125,14 +141,19 @@ public class BrowserCivServer implements IGameServer {
      * Called once from the constructor after the game is initialised.
      */
     @JSBody(script =
-        "console.info('[BrowserCivServer] window.freecivxSendPacket registered — server ready');" +
+        "console.info('[BrowserCivServer] setupBrowserApi() called — registering window.freecivxSendPacket');" +
         "window.freecivxSendPacket = function(json) {" +
+        "  console.debug('[BrowserCivServer] freecivxSendPacket called, routing to receivePacket');" +
         "  net_freecivx_server_BrowserCivServer.$receivePacket(json);" +
         "};" +
+        "console.info('[BrowserCivServer] window.freecivxSendPacket registered — server ready');" +
         "if (typeof window.freecivxOnReady === 'function') {" +
+        "  console.info('[BrowserCivServer] Calling window.freecivxOnReady() callback');" +
         "  var cb = window.freecivxOnReady;" +
         "  window.freecivxOnReady = null;" +
         "  cb();" +
+        "} else {" +
+        "  console.warn('[BrowserCivServer] window.freecivxOnReady is not defined — client fallback will handle startup');" +
         "}")
     private static native void setupBrowserApi();
 

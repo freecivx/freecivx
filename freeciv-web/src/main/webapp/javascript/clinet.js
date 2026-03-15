@@ -169,10 +169,21 @@ function start_teavm_single_player(player_username) {
         script.src = '/javascript/freecivx-server.js';
         script.onload = function() {
             console.debug("[TeaVM] Bundle script element loaded");
-            // If TeaVM ran synchronously, freecivxOnReady was already called (and
-            // cleared).  If TeaVM initialises asynchronously, the callback fires
-            // later when setupBrowserApi() runs; check_websocket_ready() will also
-            // poll every 50 ms as a fallback safety net.
+            if (typeof window.freecivxOnReady === 'function') {
+                // freecivxOnReady was NOT called during bundle execution (the
+                // bundle may initialise asynchronously, or main() threw before
+                // reaching setupBrowserApi()).  Clear the callback to prevent a
+                // double-fire if setupBrowserApi() runs later, and start the
+                // startup sequence now so check_websocket_ready() can poll
+                // every 50 ms until window.freecivxSendPacket is registered.
+                console.warn("[TeaVM] freecivxOnReady not called by bundle — starting fallback startup");
+                window.freecivxOnReady = null;
+                on_bundle_ready();
+            } else {
+                // Bundle called freecivxOnReady synchronously; on_bundle_ready()
+                // has already run.
+                console.debug("[TeaVM] Bundle initialised synchronously — startup already running");
+            }
         };
         script.onerror = function() {
             window.freecivxOnReady = null;
