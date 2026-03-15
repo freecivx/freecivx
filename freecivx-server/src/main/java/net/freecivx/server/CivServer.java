@@ -235,6 +235,15 @@ public class CivServer extends org.java_websocket.server.WebSocketServer {
         if (pid == Packets.PACKET_UNIT_CHANGE_ACTIVITY) {
             long unit_id = json.optInt("unit_id");
             int activity = json.optInt("activity");
+            // JS client sends ACTIVITY_GEN_ROAD = 13 for both road and railroad.
+            // Map to internal activity codes based on the target extra ID.
+            // extra ID 7 = Railroad (EXTRA_BIT_RAIL), otherwise treat as Road.
+            if (activity == 13) {
+                int targetExtra = json.optInt("target_extra", -1);
+                activity = (targetExtra == CityTurn.EXTRA_BIT_RAIL)
+                        ? CityTurn.ACTIVITY_RAILROAD
+                        : CityTurn.ACTIVITY_ROAD;
+            }
             Unit actUnit = game.units.get(unit_id);
             if (actUnit != null) {
                 Player actPlayer = game.players.get(actUnit.getOwner());
@@ -732,6 +741,7 @@ public class CivServer extends org.java_websocket.server.WebSocketServer {
         msg.put("extras", tile.getExtras());
         msg.put("height", tile.getHeight());
         msg.put("worked", tile.getWorked() >= 0 ? tile.getWorked() : JSONObject.NULL);
+        msg.put("owner", tile.getOwner() >= 0 ? tile.getOwner() : JSONObject.NULL);
 
         broadcast(msg);
     }

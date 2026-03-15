@@ -39,6 +39,13 @@ public class City {
     private int productionKind;
     private int productionValue;
     /**
+     * List of tile indices currently being worked by this city's citizens.
+     * The first entry is always the city centre tile; additional entries are
+     * assigned as the city grows.  Mirrors the worked-tile list maintained by
+     * the C Freeciv server's city struct.
+     */
+    private List<Long> workedTiles = new ArrayList<>();
+    /**
      * Accumulated production shields towards current build target.
      * Mirrors {@code shield_stock} in the C Freeciv city struct.
      */
@@ -167,6 +174,32 @@ public class City {
         if (!improvements.contains(improvementId)) {
             improvements.add(improvementId);
         }
+    }
+
+    /** Returns the list of tile indices currently worked by this city. */
+    public List<Long> getWorkedTiles() {
+        return workedTiles;
+    }
+
+    /**
+     * Registers a tile as being worked by this city.
+     * Does nothing if the tile is already in the list.
+     *
+     * @param tileId the index of the tile to mark as worked
+     */
+    public void addWorkedTile(long tileId) {
+        if (!workedTiles.contains(tileId)) {
+            workedTiles.add(tileId);
+        }
+    }
+
+    /**
+     * Removes a tile from this city's worked list.
+     *
+     * @param tileId the index of the tile to unmark
+     */
+    public void removeWorkedTile(long tileId) {
+        workedTiles.remove(Long.valueOf(tileId));
     }
 
     public int getProductionKind() {

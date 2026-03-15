@@ -151,18 +151,33 @@ public class CityTurn {
      */
     public static final int ACTIVITY_MINE = 7;
 
+    /**
+     * Activity code for a unit building a railroad.
+     * Requires an existing road on the tile (road must be built first).
+     * Mirrors the old {@code ACTIVITY_OLD_RAILROAD} (8) from the C Freeciv
+     * server's {@code common/unit.h}; used here as a simplified rail activity.
+     */
+    public static final int ACTIVITY_RAILROAD = 8;
+
     /** Number of turns a worker needs to complete a road. */
     private static final int ROAD_TURNS = 2;
     /** Number of turns a worker needs to complete an irrigation channel. */
     private static final int IRRIGATE_TURNS = 5;
     /** Number of turns a worker needs to complete a mine. */
     private static final int MINE_TURNS = 5;
+    /** Number of turns a worker needs to complete a railroad. */
+    private static final int RAILROAD_TURNS = 4;
 
     /**
      * Tile extras bitvector index for Road.
      * Matches extras entry 6 registered in {@code Game.initGame()}.
      */
     public static final int EXTRA_BIT_ROAD = 6;
+    /**
+     * Tile extras bitvector index for Railroad.
+     * Matches extras entry 7 registered in {@code Game.initGame()}.
+     */
+    public static final int EXTRA_BIT_RAIL = 7;
     /**
      * Tile extras bitvector index for Irrigation.
      * Matches extras entry 9 registered in {@code Game.initGame()}.
@@ -281,6 +296,106 @@ public class CityTurn {
         // Mirrors city_granary_size() in C Freeciv server's common/city.c.
         // RS_DEFAULT_GRANARY_FOOD_INI=20, RS_DEFAULT_GRANARY_FOOD_INC=10, foodbox=100.
         return 10 * citySize + 10;
+    }
+
+    /**
+     * Assigns the best available adjacent tile to be worked by the given city,
+     * called when the city gains a new citizen (growth).  The tile with the
+     * highest combined food+shield+trade output within the city's working radius
+     * (Chebyshev distance ≤ 2) is chosen, skipping tiles already worked by any
+     * city.  Mirrors {@code city_choose_tile_to_work()} / the auto-worked-tile
+     * selection in the C Freeciv server's {@code server/cityturn.c}.
+     *
+     * @param game   the current game state
+     * @param cityId the ID of the growing city
+     */
+    static void assignNextWorkedTile(Game game, long cityId) {
+        City city = game.cities.get(cityId);
+        if (city == null) return;
+
+        long centerTile = city.getTile();
+        long cx = centerTile % game.map.getXsize();
+        long cy = centerTile / game.map.getXsize();
+
+        // City radius: citizens can work tiles within Chebyshev distance 2.
+        final int CITY_RADIUS = 2;
+
+        int bestScore = -1;
+        Tile bestTile = null;
+
+        for (int dy = -CITY_RADIUS; dy <= CITY_RADIUS; dy++) {
+            for (int dx = -CITY_RADIUS; dx <= CITY_RADIUS; dx++) {
+                if (dx == 0 && dy == 0) continue; // center already worked
+                long nx = cx + dx;
+                long ny = cy + dy;
+                if (nx < 0 || nx >= game.map.getXsize()
+                        || ny < 0 || ny >= game.map.getYsize()) continue;
+                long tileId = ny * game.map.getXsize() + nx;
+                Tile t = game.tiles.get(tileId);
+                if (t == null || t.getWorked() >= 0) continue; // already worked by a city
+
+                int[] output = getTileOutput(game, t, false);
+                int score = output[0] + output[1] + output[2];
+                if (score > bestScore) {
+                    bestScore = score;
+                    bestTile = t;
+                }
+            }
+        }
+
+        if (bestTile != null) {
+            bestTile.setWorked(cityId);
+            city.addWorkedTile(bestTile.getIndex());
+            game.getServer().sendTileInfoAll(bestTile);
+        }
+    }
+
+    /**
+     * Recalculates national borders for all cities and updates tiles whose
+     * owner has changed.  Only tiles where the ownership changes are
+     * re-broadcast to clients.
+     *
+     * <p>Each city claims tiles within a radius based on city size:
+     * {@code radius = min(floor(sqrt(size)) + 1, 5)}.
+     * When two cities compete for the same tile, the one whose centre is
+     * closer (Chebyshev distance) wins.  Mirrors the high-level logic of
+     * {@code server/borders.c} in the C Freeciv server.
+     *
+     * @param game the current game state
+     */
+    public static void updateBorders(Game game) {
+        long mapWidth  = game.map.getXsize();
+        long mapHeight = game.map.getYsize();
+
+        for (Tile tile : game.tiles.values()) {
+            long tileId = tile.getIndex();
+            long tx = tileId % mapWidth;
+            long ty = tileId / mapWidth;
+
+            int bestOwner = -1;
+            long bestDist = (long) game.map.getXsize() + game.map.getYsize();
+
+            for (City city : game.cities.values()) {
+                long cityTile = city.getTile();
+                long cx = cityTile % mapWidth;
+                long cy = cityTile / mapWidth;
+
+                // Chebyshev distance between tile and city centre
+                long dist = Math.max(Math.abs(tx - cx), Math.abs(ty - cy));
+                // Border radius grows with city size (capped at 5)
+                int radius = Math.min((int) Math.sqrt(city.getSize()) + 1, 5);
+
+                if (dist <= radius && dist < bestDist) {
+                    bestDist = dist;
+                    bestOwner = (int) city.getOwner();
+                }
+            }
+
+            if (tile.getOwner() != bestOwner) {
+                tile.setOwner(bestOwner);
+                game.getServer().sendTileInfoAll(tile);
+            }
+        }
     }
 
     /**
@@ -583,6 +698,9 @@ public class CityTurn {
                 } else {
                     city.setFoodStock(0);
                 }
+                // Assign a new worked tile to the additional citizen.
+                // Mirrors city_choose_tile_to_work() in the C Freeciv server.
+                assignNextWorkedTile(game, cityId);
                 Notify.notifyPlayer(game, game.getServer(), city.getOwner(),
                         city.getName() + " has grown to size " + city.getSize() + ".");
             }
@@ -614,7 +732,7 @@ public class CityTurn {
         // Mirrors unit_restore_hitpoints() in the C Freeciv server's unittools.c.
         restoreUnitHitpoints(game);
 
-        // Advance terrain improvement activities (road, mine, irrigation).
+        // Advance terrain improvement activities (road, mine, irrigation, railroad).
         // Mirrors unit_activity_handling() in the C Freeciv server's unittools.c.
         processWorkerActivities(game);
 
@@ -627,6 +745,11 @@ public class CityTurn {
             // Mirrors check_pollution() in the C Freeciv server's cityturn.c.
             checkPollution(game, cityId);
         }
+
+        // Recalculate national borders after city growth/changes.
+        // Sends PACKET_TILE_INFO only for tiles whose owner changed.
+        // Mirrors server/borders.c in the C Freeciv server.
+        updateBorders(game);
 
         // Aggregate per-player gold income from all their cities
         Map<Long, Integer> playerGoldIncome = new HashMap<>();
@@ -1172,6 +1295,7 @@ public class CityTurn {
         if (activity == ACTIVITY_ROAD)     return ROAD_TURNS;
         if (activity == ACTIVITY_IRRIGATE) return IRRIGATE_TURNS;
         if (activity == ACTIVITY_MINE)     return MINE_TURNS;
+        if (activity == ACTIVITY_RAILROAD) return RAILROAD_TURNS;
         return 0;
     }
 
@@ -1186,6 +1310,7 @@ public class CityTurn {
         if (activity == ACTIVITY_ROAD)     return EXTRA_BIT_ROAD;
         if (activity == ACTIVITY_IRRIGATE) return EXTRA_BIT_IRRIGATION;
         if (activity == ACTIVITY_MINE)     return EXTRA_BIT_MINE;
+        if (activity == ACTIVITY_RAILROAD) return EXTRA_BIT_RAIL;
         return -1;
     }
 
@@ -1200,6 +1325,7 @@ public class CityTurn {
         if (activity == ACTIVITY_ROAD)     return "Road";
         if (activity == ACTIVITY_IRRIGATE) return "Irrigation";
         if (activity == ACTIVITY_MINE)     return "Mine";
+        if (activity == ACTIVITY_RAILROAD) return "Railroad";
         return "";
     }
 

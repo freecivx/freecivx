@@ -28,6 +28,8 @@ public class Tile {
     private int extras;
     private int height;
     private long worked = -1;
+    /** Player number that owns this tile (national border), or -1 for unowned. */
+    private int owner = -1;
 
     // Constructor to initialize a Tile with random values
     public Tile(long index, int known, int terrain, int resource, int extras, int height, long worked) {
@@ -96,6 +98,16 @@ public class Tile {
 
     public void setWorked(long worked) {
         this.worked = worked;
+    }
+
+    /** Returns the player number that owns this tile, or {@code -1} for unowned. */
+    public int getOwner() {
+        return owner;
+    }
+
+    /** Sets the player number that owns this tile; use {@code -1} for unowned. */
+    public void setOwner(int owner) {
+        this.owner = owner;
     }
 
     public long getX(long mapWidth) {
