@@ -29,6 +29,8 @@ import net.freecivx.game.Unit;
 import net.freecivx.game.UnitType;
 import net.freecivx.server.CityTurn;
 import net.freecivx.server.TechTools;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -55,6 +57,8 @@ import java.util.concurrent.Future;
  * </ul>
  */
 public class AiPlayer {
+
+    private static final Logger log = LoggerFactory.getLogger(AiPlayer.class);
 
     private final Game game;
     private final Random random = new Random();
@@ -164,8 +168,7 @@ public class AiPlayer {
         try {
             future.get();
         } catch (Exception e) {
-            System.err.println("AI turn error: " + e.getMessage());
-            e.printStackTrace();
+            log.error("AI turn error: {}", e.getMessage(), e);
         }
     }
 
@@ -316,7 +319,7 @@ public class AiPlayer {
             // Try to advance from Despotism (1) to Monarchy (2)
             if (player.hasTech(techMonarchy)) {
                 player.setGovernmentId(2); // Monarchy
-                System.out.println("Player " + player.getUsername() + " switched government: Despotism → Monarchy");
+                log.info("Player {} switched government: Despotism → Monarchy", player.getUsername());
                 game.getServer().sendPlayerInfoAll(player);
                 return;
             }
@@ -326,7 +329,7 @@ public class AiPlayer {
             // Try to advance from Monarchy (2) to Republic (4)
             if (player.hasTech(techTheRepublic)) {
                 player.setGovernmentId(4); // Republic
-                System.out.println("Player " + player.getUsername() + " switched government: Monarchy → Republic");
+                log.info("Player {} switched government: Monarchy → Republic", player.getUsername());
                 game.getServer().sendPlayerInfoAll(player);
                 return;
             }
@@ -336,7 +339,7 @@ public class AiPlayer {
             // Try to advance from Republic (4) to Democracy (5)
             if (player.hasTech(techDemocracy)) {
                 player.setGovernmentId(5); // Democracy
-                System.out.println("Player " + player.getUsername() + " switched government: Republic → Democracy");
+                log.info("Player {} switched government: Republic → Democracy", player.getUsername());
                 game.getServer().sendPlayerInfoAll(player);
             }
         }

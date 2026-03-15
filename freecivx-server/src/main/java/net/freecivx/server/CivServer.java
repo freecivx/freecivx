@@ -34,8 +34,12 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class CivServer extends org.java_websocket.server.WebSocketServer {
+
+    private static final Logger log = LoggerFactory.getLogger(CivServer.class);
 
     private static final String SERVER_VERSION = "1.0";
 
@@ -110,7 +114,7 @@ public class CivServer extends org.java_websocket.server.WebSocketServer {
         long clientId = (clientIdGenerator.getAndIncrement()) - 1;
         clients.put(clientId, conn);
         conn.setAttachment(clientId); // Attach the client ID to the connection
-        System.out.println("New connection (ID: " + clientId + "): " + conn.getRemoteSocketAddress());
+        log.info("New connection (ID: {}): {}", clientId, conn.getRemoteSocketAddress());
 
         long humanCount = game.players.values().stream().filter(p -> !p.isAi()).count();
         String welcomeMsg = String.format(
@@ -129,13 +133,13 @@ public class CivServer extends org.java_websocket.server.WebSocketServer {
     public void onClose(WebSocket conn, int code, String reason, boolean remote) {
         long clientId = conn.getAttachment();
         clients.remove(clientId);
-        System.out.println("Connection closed (ID: " + clientId + "): " + conn.getRemoteSocketAddress());
+        log.info("Connection closed (ID: {}): {}", clientId, conn.getRemoteSocketAddress());
 
     }
 
     @Override
     public void onMessage(WebSocket conn, String packet) {
-        System.out.println("Message received: " + packet);
+        log.debug("Message received: {}", packet);
         long connId = conn.getAttachment();
         lastActivityTime = System.currentTimeMillis();
         Connection connection = game.connections.get(connId);
@@ -378,22 +382,22 @@ public class CivServer extends org.java_websocket.server.WebSocketServer {
 
     @Override
     public void onError(WebSocket conn, Exception ex) {
-        System.err.println("WebSocket error: " + ex.getMessage());
+        log.error("WebSocket error: {}", ex.getMessage(), ex);
     }
 
     @Override
     public void onStart() {
-        System.out.println("WebSocket server started successfully.");
+        log.info("WebSocket server started successfully.");
     }
 
     @Override
     public void stop() throws InterruptedException {
-        System.out.println("Stopping WebSocket server...");
+        log.info("Stopping WebSocket server...");
         for (WebSocket conn : clients.values()) {
             conn.close(1001, "Server shutting down"); // Use close code 1001 (going away)
         }
         super.stop();
-        System.out.println("WebSocket server stopped.");
+        log.info("WebSocket server stopped.");
     }
 
     public WebSocket getClientById(long clientId) {

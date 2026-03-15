@@ -30,6 +30,8 @@ import org.json.JSONObject;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Utility methods for the technology research system.
@@ -38,6 +40,8 @@ import java.util.Map;
  * and broadcasting research state packets to clients.
  */
 public class TechTools {
+
+    private static final Logger log = LoggerFactory.getLogger(TechTools.class);
 
     /** Base research cost multiplier applied to each technology. */
     public static final int BASE_TECH_COST = 20;
@@ -61,7 +65,7 @@ public class TechTools {
 
         if (player.hasTech(techId)) return; // already known
         player.addKnownTech(techId);
-        System.out.println("Player " + player.getUsername() + " received tech: " + tech.getName());
+        log.info("Player {} received tech: {}", player.getUsername(), tech.getName());
         // Notify the player in-game that a new technology has been discovered.
         Notify.notifyPlayer(game, game.getServer(), playerId,
                 "You have discovered " + tech.getName() + "!");

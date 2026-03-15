@@ -22,6 +22,8 @@ package net.freecivx.server;
 import net.freecivx.game.Game;
 import net.freecivx.game.Player;
 import org.json.JSONObject;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.HashMap;
 import java.util.HashSet;
@@ -35,6 +37,8 @@ import java.util.Set;
  * clauses, accepting treaties, and cancelling existing pacts.
  */
 public class DiplHand {
+
+    private static final Logger log = LoggerFactory.getLogger(DiplHand.class);
 
     /** Clause type constant: cease-fire pact. */
     public static final int CLAUSE_CEASEFIRE = 0;
@@ -177,8 +181,7 @@ public class DiplHand {
         Player p2 = game.players.get(p2Id);
         if (p1 == null || p2 == null) return;
 
-        System.out.println("Treaty concluded between " + p1.getUsername()
-                + " and " + p2.getUsername());
+        log.info("Treaty concluded between {} and {}", p1.getUsername(), p2.getUsername());
 
         Notify.notifyPlayer(game, game.getServer(), p1Id,
                 "Treaty with " + p2.getUsername() + " is now in effect.");

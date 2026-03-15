@@ -25,6 +25,8 @@ import net.freecivx.game.Player;
 import net.freecivx.game.Technology;
 import org.json.JSONArray;
 import org.json.JSONObject;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.Map;
 
@@ -35,6 +37,8 @@ import java.util.Map;
  * attribute synchronisation.
  */
 public class PlrHand {
+
+    private static final Logger log = LoggerFactory.getLogger(PlrHand.class);
 
     /**
      * Handles a client request to change the player's government type.
@@ -186,7 +190,7 @@ public class PlrHand {
     public static void handlePlayerAttributeBlock(Game game, long connId) {
         // Attribute blocks are currently logged and discarded; future
         // implementations should persist them in the player's state.
-        System.out.println("Received attribute block from connection " + connId);
+        log.debug("Received attribute block from connection {}", connId);
     }
 
     /**
