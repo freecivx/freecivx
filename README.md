@@ -40,6 +40,10 @@ FreecivWorld.net consists of these components:
   multiple Freeciv server processes and checks capacity through the Metaserver. 
   Implemented in Go.
 
+* [freecivx-server](freecivx-server) - Freeciv Java server.
+
+  
+
 Freeciv 3D
 -------------
 Freeciv 3D is the 3D version using the Three.js 3D engine, which requires WebGPU support.
