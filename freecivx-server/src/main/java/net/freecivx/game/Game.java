@@ -22,6 +22,7 @@ package net.freecivx.game;
 
 import net.freecivx.server.CivServer;
 import net.freecivx.server.CityTools;
+import net.freecivx.server.CityTurn;
 import net.freecivx.server.Notify;
 import net.freecivx.ai.AiPlayer;
 import net.freecivx.data.Ruleset;
@@ -321,17 +322,19 @@ public class Game {
         // Resource extras (bits 15-25): EC_RESOURCE cause; graphic tags match the
         // classic Freeciv tileset (amplio2) so the 2D/3D map can draw them.
         // Bit positions must match MapGenerator.EXTRA_BIT_* constants.
-        extras.put(15L, new Extra("Cattle",      EC_RESOURCE, "ts.cattle"));
-        extras.put(16L, new Extra("Game",        EC_RESOURCE, "ts.game"));
-        extras.put(17L, new Extra("Wheat",       EC_RESOURCE, "ts.wheat"));
-        extras.put(18L, new Extra("Horses",      EC_RESOURCE, "ts.horses"));
-        extras.put(19L, new Extra("Forest_Game", EC_RESOURCE, "ts.forest_game"));
-        extras.put(20L, new Extra("Coal",        EC_RESOURCE, "ts.coal"));
-        extras.put(21L, new Extra("Iron",        EC_RESOURCE, "ts.iron"));
-        extras.put(22L, new Extra("Gold",        EC_RESOURCE, "ts.gold"));
-        extras.put(23L, new Extra("Oasis",       EC_RESOURCE, "ts.oasis"));
-        extras.put(24L, new Extra("Fish",        EC_RESOURCE, "ts.fish"));
-        extras.put(25L, new Extra("Whales",      EC_RESOURCE, "ts.whales"));
+        // Resource bonuses match the [resource_*] sections in terrain.ruleset:
+        //   foodBonus, shieldBonus, tradeBonus.
+        extras.put(15L, new Extra("Cattle",      EC_RESOURCE, "ts.cattle",    0, 3, 0));
+        extras.put(16L, new Extra("Game",        EC_RESOURCE, "ts.game",      2, 1, 0));
+        extras.put(17L, new Extra("Wheat",       EC_RESOURCE, "ts.wheat",     2, 0, 0));
+        extras.put(18L, new Extra("Horses",      EC_RESOURCE, "ts.horses",    0, 2, 0));
+        extras.put(19L, new Extra("Forest_Game", EC_RESOURCE, "ts.forest_game", 2, 1, 0));
+        extras.put(20L, new Extra("Coal",        EC_RESOURCE, "ts.coal",      0, 2, 0));
+        extras.put(21L, new Extra("Iron",        EC_RESOURCE, "ts.iron",      0, 3, 0));
+        extras.put(22L, new Extra("Gold",        EC_RESOURCE, "ts.gold",      0, 0, 6));
+        extras.put(23L, new Extra("Oasis",       EC_RESOURCE, "ts.oasis",     3, 0, 0));
+        extras.put(24L, new Extra("Fish",        EC_RESOURCE, "ts.fish",      2, 0, 0));
+        extras.put(25L, new Extra("Whales",      EC_RESOURCE, "ts.whales",    1, 1, 0));
 
         // City styles are always hardcoded
         cityStyle.put(0L, new CityStyle("European"));
@@ -667,21 +670,21 @@ public class Game {
         governments.put(4L, new Government("Republic",  "Republic",  "Republic",  "The Republic",  15));
         governments.put(5L, new Government("Democracy", "Democracy", "Democracy", "Democracy",      0));
 
-        terrains.put(0L,  new Terrain("Arctic",       "",       0,   1));
-        terrains.put(1L,  new Terrain("Lake",         "lake",   0,   1));
-        terrains.put(2L,  new Terrain("Ocean",        "floor",  0,   1));
-        terrains.put(3L,  new Terrain("Deep Ocean",   "coast",  0,   1));
-        terrains.put(4L,  new Terrain("Glacier",      "",       0,   2));
-        terrains.put(5L,  new Terrain("Desert",       "",       0,   1));
-        terrains.put(6L,  new Terrain("Forest",       "",      50,   2));
-        terrains.put(7L,  new Terrain("Grassland",    "",       0,   1));
-        terrains.put(8L,  new Terrain("Hills",        "",     100,   2));
-        terrains.put(9L,  new Terrain("Jungle",       "",      50,   2));
-        terrains.put(10L, new Terrain("Mountains",    "",     200,   3));
-        terrains.put(11L, new Terrain("Plains",       "",       0,   1));
-        terrains.put(12L, new Terrain("Swamp",        "",      50,   2));
-        terrains.put(13L, new Terrain("Tundra",       "",       0,   1));
-        terrains.put(14L, new Terrain("Inaccessible", "",       0,  99));
+        terrains.put(0L,  new Terrain("Arctic",       "",       0,   1,   0, 0, 0,  0, 1, false));
+        terrains.put(1L,  new Terrain("Lake",         "lake",   0,   1,   1, 0, 2,  0, 0, false));
+        terrains.put(2L,  new Terrain("Ocean",        "floor",  0,   1,   1, 0, 2,  0, 0, false));
+        terrains.put(3L,  new Terrain("Deep Ocean",   "coast",  0,   1,   1, 0, 2,  0, 0, false));
+        terrains.put(4L,  new Terrain("Glacier",      "",       0,   2,   0, 0, 0,  0, 1, false));
+        terrains.put(5L,  new Terrain("Desert",       "",       0,   1,   0, 1, 0,  1, 1, true));
+        terrains.put(6L,  new Terrain("Forest",       "",      50,   2,   1, 2, 0,  0, 0, false));
+        terrains.put(7L,  new Terrain("Grassland",    "",       0,   1,   2, 0, 0,  1, 0, true));
+        terrains.put(8L,  new Terrain("Hills",        "",     100,   2,   1, 0, 0,  1, 3, false));
+        terrains.put(9L,  new Terrain("Jungle",       "",      50,   2,   1, 0, 0,  0, 0, false));
+        terrains.put(10L, new Terrain("Mountains",    "",     200,   3,   0, 1, 0,  0, 1, false));
+        terrains.put(11L, new Terrain("Plains",       "",       0,   1,   1, 1, 0,  1, 0, true));
+        terrains.put(12L, new Terrain("Swamp",        "",      50,   2,   1, 0, 0,  0, 0, false));
+        terrains.put(13L, new Terrain("Tundra",       "",       0,   1,   1, 0, 0,  1, 0, false));
+        terrains.put(14L, new Terrain("Inaccessible", "",       0,  99,   0, 0, 0,  0, 0, false));
 
         String defaultActions = "000000000000000000000000000010000000001110001000000000000011011111111001100011000000001100110000000000000000100100000000";
         String settlerActions = "000000000000000000000000000110000000001110001000000000000011011111111001100011000000001100110000000000000000100100000000";
@@ -1111,6 +1114,11 @@ public class Game {
 
         Tile tile = tiles.get(tile_id);
         tile.setWorked(id);
+        // Auto-place a road on the city-center tile, mirroring the
+        // AutoOnCityCenter flag in the classic Freeciv terrain.ruleset.
+        // This ensures cities immediately benefit from road trade bonuses,
+        // just as they do in the C Freeciv server.
+        tile.setExtras(tile.getExtras() | (1 << CityTurn.EXTRA_BIT_ROAD));
         server.sendTileInfoAll(tile);
 
         CityTools.sendCityInfo(this, server, -1L, id);

@@ -68,6 +68,10 @@ public class CityTools {
                 0, game.cities.isEmpty(), false, 0, false, false, "", 0, 0);
         game.cities.put(cityId, city);
 
+        // Auto-place a road on the city-center tile, mirroring the
+        // AutoOnCityCenter flag in the classic Freeciv terrain.ruleset.
+        tile.setExtras(tile.getExtras() | (1 << CityTurn.EXTRA_BIT_ROAD));
+
         JSONObject msg = new JSONObject();
         msg.put("pid", Packets.PACKET_CITY_INFO);
         msg.put("id", cityId);

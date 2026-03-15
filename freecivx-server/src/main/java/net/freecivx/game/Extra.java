@@ -34,6 +34,16 @@ public class Extra {
      */
     private String graphicStr;
 
+    /**
+     * Output bonuses for resource extras.  These match the food/shield/trade bonus
+     * values in the {@code [resource_*]} sections of terrain.ruleset.
+     * Non-resource extras (roads, mines, irrigation, etc.) always have 0 here since
+     * their contribution is handled separately via terrain improvement logic.
+     */
+    private int foodBonus;
+    private int shieldBonus;
+    private int tradeBonus;
+
     /** Constructor for extras without a specific cause (e.g. River). */
     public Extra(String name) {
         this(name, 0, null);
@@ -50,6 +60,26 @@ public class Extra {
         this.name = name;
         this.causes = causes;
         this.graphicStr = graphicStr;
+    }
+
+    /**
+     * Constructor for resource extras that carry output bonuses.
+     *
+     * @param name        ruleset name of the resource extra
+     * @param causes      EC_* bitvector (typically EC_RESOURCE = 256)
+     * @param graphicStr  tileset graphic tag
+     * @param foodBonus   food bonus granted by this resource
+     * @param shieldBonus shield bonus granted by this resource
+     * @param tradeBonus  trade bonus granted by this resource
+     */
+    public Extra(String name, int causes, String graphicStr,
+                 int foodBonus, int shieldBonus, int tradeBonus) {
+        this.name = name;
+        this.causes = causes;
+        this.graphicStr = graphicStr;
+        this.foodBonus = foodBonus;
+        this.shieldBonus = shieldBonus;
+        this.tradeBonus = tradeBonus;
     }
 
     // Getters
@@ -81,6 +111,27 @@ public class Extra {
     public void setGraphicStr(String graphicStr) {
         this.graphicStr = graphicStr;
     }
+
+    /**
+     * Returns the food output bonus this resource provides when present on a tile.
+     * Mirrors the {@code food} field in the {@code [resource_*]} sections of terrain.ruleset.
+     */
+    public int getFoodBonus() { return foodBonus; }
+    public void setFoodBonus(int foodBonus) { this.foodBonus = foodBonus; }
+
+    /**
+     * Returns the shield output bonus this resource provides when present on a tile.
+     * Mirrors the {@code shield} field in the {@code [resource_*]} sections of terrain.ruleset.
+     */
+    public int getShieldBonus() { return shieldBonus; }
+    public void setShieldBonus(int shieldBonus) { this.shieldBonus = shieldBonus; }
+
+    /**
+     * Returns the trade output bonus this resource provides when present on a tile.
+     * Mirrors the {@code trade} field in the {@code [resource_*]} sections of terrain.ruleset.
+     */
+    public int getTradeBonus() { return tradeBonus; }
+    public void setTradeBonus(int tradeBonus) { this.tradeBonus = tradeBonus; }
 
     @Override
     public String toString() {
