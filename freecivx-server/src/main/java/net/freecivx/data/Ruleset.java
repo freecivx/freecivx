@@ -342,7 +342,8 @@ public class Ruleset {
     /**
      * Loads terrain type definitions from the specified classpath resource.
      * Parses every {@code [terrain_*]} section to extract name, graphic tag,
-     * movement cost, and defence bonus.
+     * movement cost, defence bonus, and tile output values (food, shield, trade,
+     * irrigation food bonus, mining shield bonus, road trade bonus).
      *
      * @param path classpath-relative path to the terrain ruleset file
      * @return {@code true} if the file was parsed without errors
@@ -359,7 +360,17 @@ public class Ruleset {
                 String graphic    = sec.get("graphic");
                 int    moveCost   = sec.getInt("movement_cost", 1);
                 int    defBonus   = sec.getInt("defense_bonus", 0);
-                terrains.add(new Terrain(name, graphic, defBonus, moveCost));
+                int    food       = sec.getInt("food", 0);
+                int    shield     = sec.getInt("shield", 0);
+                int    trade      = sec.getInt("trade", 0);
+                int    irrigFood  = sec.getInt("irrigation_food_incr", 0);
+                int    mineShield = sec.getInt("mining_shield_incr", 0);
+                // road_trade_incr_pct > 0 means the road gives +1 trade on this terrain
+                // (e.g. Grassland, Plains, Desert in the classic ruleset).
+                int    roadTradePct = sec.getInt("road_trade_incr_pct", 0);
+                int    roadTrade  = roadTradePct > 0 ? 1 : 0;
+                terrains.add(new Terrain(name, graphic, defBonus, moveCost,
+                        food, shield, trade, irrigFood, mineShield, roadTrade));
             }
             log.info("Loaded {} terrains from {}", terrains.size(), path);
             return true;

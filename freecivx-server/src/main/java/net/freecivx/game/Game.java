@@ -671,21 +671,25 @@ public class Game {
         governments.put(4L, new Government("Republic",  "Republic",  "Republic",  "The Republic",  15));
         governments.put(5L, new Government("Democracy", "Democracy", "Democracy", "Democracy",      0));
 
-        terrains.put(0L,  new Terrain("Arctic",       "",       0,   1));
-        terrains.put(1L,  new Terrain("Lake",         "lake",   0,   1));
-        terrains.put(2L,  new Terrain("Ocean",        "floor",  0,   1));
-        terrains.put(3L,  new Terrain("Deep Ocean",   "coast",  0,   1));
-        terrains.put(4L,  new Terrain("Glacier",      "",       0,   2));
-        terrains.put(5L,  new Terrain("Desert",       "",       0,   1));
-        terrains.put(6L,  new Terrain("Forest",       "",      50,   2));
-        terrains.put(7L,  new Terrain("Grassland",    "",       0,   1));
-        terrains.put(8L,  new Terrain("Hills",        "",     100,   2));
-        terrains.put(9L,  new Terrain("Jungle",       "",      50,   2));
-        terrains.put(10L, new Terrain("Mountains",    "",     200,   3));
-        terrains.put(11L, new Terrain("Plains",       "",       0,   1));
-        terrains.put(12L, new Terrain("Swamp",        "",      50,   2));
-        terrains.put(13L, new Terrain("Tundra",       "",       0,   1));
-        terrains.put(14L, new Terrain("Inaccessible", "",       0,  99));
+        // Terrain types with food/shield/trade output values from the classic Freeciv ruleset.
+        // Format: new Terrain(name, graphic, defenseBonus, moveCost, food, shield, trade,
+        //                     irrigationFoodBonus, miningShieldBonus, roadTradeBonus)
+        // roadTradeBonus=1 for terrains with road_trade_incr_pct=100 (Desert, Grassland, Plains).
+        terrains.put(0L,  new Terrain("Arctic",       "",       0,   1, 0, 0, 0, 0, 0, 0));
+        terrains.put(1L,  new Terrain("Lake",         "lake",   0,   1, 1, 0, 2, 0, 0, 0));
+        terrains.put(2L,  new Terrain("Ocean",        "floor",  0,   1, 1, 0, 2, 0, 0, 0));
+        terrains.put(3L,  new Terrain("Deep Ocean",   "coast",  0,   1, 1, 0, 2, 0, 0, 0));
+        terrains.put(4L,  new Terrain("Glacier",      "",       0,   2, 0, 0, 0, 0, 1, 0));
+        terrains.put(5L,  new Terrain("Desert",       "",       0,   1, 0, 1, 0, 1, 1, 1));
+        terrains.put(6L,  new Terrain("Forest",       "",      50,   2, 1, 2, 0, 0, 0, 0));
+        terrains.put(7L,  new Terrain("Grassland",    "",       0,   1, 2, 0, 0, 1, 0, 1));
+        terrains.put(8L,  new Terrain("Hills",        "",     100,   2, 1, 0, 0, 1, 3, 0));
+        terrains.put(9L,  new Terrain("Jungle",       "",      50,   2, 1, 0, 0, 0, 0, 0));
+        terrains.put(10L, new Terrain("Mountains",    "",     200,   3, 0, 1, 0, 0, 1, 0));
+        terrains.put(11L, new Terrain("Plains",       "",       0,   1, 1, 1, 0, 1, 0, 1));
+        terrains.put(12L, new Terrain("Swamp",        "",      50,   2, 1, 0, 0, 0, 0, 0));
+        terrains.put(13L, new Terrain("Tundra",       "",       0,   1, 1, 0, 0, 1, 0, 0));
+        terrains.put(14L, new Terrain("Inaccessible", "",       0,  99, 0, 0, 0, 0, 0, 0));
 
         String defaultActions = "000000000000000000000000000010000000001110001000000000000011011111111001100011000000001100110000000000000000100100000000";
         String settlerActions = "000000000000000000000000000110000000001110001000000000000011011111111001100011000000001100110000000000000000100100000000";
@@ -1126,6 +1130,12 @@ public class Game {
 
         Tile tile = tiles.get(tile_id);
         tile.setWorked(id);
+
+        // Classic Freeciv: city centre tiles automatically get a road
+        // (extra_road flag "AutoOnCityCenter" in terrain.ruleset).
+        // This gives the city its road-based trade bonus immediately on founding.
+        tile.setExtras(tile.getExtras() | (1 << net.freecivx.server.CityTurn.EXTRA_BIT_ROAD));
+
         server.sendTileInfoAll(tile);
 
         CityTools.sendCityInfo(this, server, -1L, id);

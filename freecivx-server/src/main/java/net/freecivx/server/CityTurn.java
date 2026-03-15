@@ -25,6 +25,7 @@ import net.freecivx.game.Government;
 import net.freecivx.game.Improvement;
 import net.freecivx.game.Player;
 import net.freecivx.game.Technology;
+import net.freecivx.game.Terrain;
 import net.freecivx.game.Tile;
 import net.freecivx.game.Unit;
 import net.freecivx.game.UnitType;
@@ -183,6 +184,67 @@ public class CityTurn {
     private static final int CITY_CENTRE_TRADE_BONUS = 1;
 
     /**
+     * Computes the food, shield, and trade output of a single tile.
+     * Takes into account terrain base values, tile extras (road, irrigation, mine),
+     * and the city-centre bonus when applicable.
+     *
+     * <p>Mirrors {@code city_tile_output()} in the C Freeciv server's
+     * {@code common/city.c}:
+     * <ul>
+     *   <li>Base output from terrain type ({@code food}, {@code shield}, {@code trade}
+     *       fields in {@code terrain.ruleset}).</li>
+     *   <li>Irrigation extra adds {@code irrigation_food_incr} food bonus.</li>
+     *   <li>Mine extra adds {@code mining_shield_incr} shield bonus.</li>
+     *   <li>Road extra adds 1 trade when the terrain has
+     *       {@code road_trade_incr_pct > 0} (Desert, Grassland, Plains in classic
+     *       ruleset).</li>
+     *   <li>City-centre tile gets +1 food, +1 shield, +1 trade bonus
+     *       ({@code EFT_CITY_VISION_RADIUS_SQ} / city-centre rule in C server).</li>
+     * </ul>
+     *
+     * @param game         the current game state
+     * @param tile         the tile to evaluate; {@code null} returns {0,0,0}
+     * @param isCityCenter {@code true} to apply the +1/+1/+1 city-centre bonus
+     * @return int[3] = {food, shield, trade}; all values ≥ 0
+     */
+    public static int[] getTileOutput(Game game, Tile tile, boolean isCityCenter) {
+        if (tile == null) return new int[]{0, 0, 0};
+
+        Terrain terrain = game.terrains.get((long) tile.getTerrain());
+        int food = 0, shield = 0, trade = 0;
+        if (terrain != null) {
+            food   = terrain.getFood();
+            shield = terrain.getShield();
+            trade  = terrain.getTrade();
+
+            int extras = tile.getExtras();
+            // Road trade bonus (Grassland/Plains/Desert in classic ruleset get +1 trade with road).
+            if ((extras & (1 << EXTRA_BIT_ROAD)) != 0) {
+                trade += terrain.getRoadTradeBonus();
+            }
+            // Irrigation food bonus
+            if ((extras & (1 << EXTRA_BIT_IRRIGATION)) != 0) {
+                food += terrain.getIrrigationFoodBonus();
+            }
+            // Mine shield bonus
+            if ((extras & (1 << EXTRA_BIT_MINE)) != 0) {
+                shield += terrain.getMiningShieldBonus();
+            }
+        }
+
+        // City-centre tile receives +1 food, +1 shield, +1 trade bonus.
+        // Mirrors the city-centre bonus in the C Freeciv server (common/city.c).
+        if (isCityCenter) {
+            food   += 1;
+            shield += 1;
+            trade  += 1;
+        }
+
+        return new int[]{Math.max(0, food), Math.max(0, shield), Math.max(0, trade)};
+    }
+
+
+    /**
      * Returns the granary size (food needed to grow) for a city of the given size.
      * Mirrors {@code city_granary_size} in the C Freeciv server's {@code common/city.c}.
      * Uses the classic Freeciv ruleset defaults:
@@ -233,6 +295,10 @@ public class CityTurn {
      * (productionKind 1), mirroring {@code city_distribute_surplus_shields} and
      * {@code city_build_unit} / {@code city_build_building} in the C Freeciv server.
      *
+     * <p>Shield output is computed from the city's centre tile using
+     * {@link #getTileOutput}, so productive terrain types (Forest = 3 shields/turn,
+     * Plains = 2 shields/turn) build improvements faster than barren terrain.
+     *
      * @param game   the current game state
      * @param cityId the ID of the city whose production is being processed
      */
@@ -240,8 +306,16 @@ public class CityTurn {
         City city = game.cities.get(cityId);
         if (city == null) return;
 
-        // Accumulate shields: 1 shield per population point per turn (simplified)
-        int shieldOutput = Math.max(1, city.getSize());
+        // Shield output: base from the city's centre tile (terrain + extras + city-centre bonus),
+        // plus 1 shield per additional citizen (workers beyond the founder contribute).
+        // Mirrors shield output from worked tiles in the C Freeciv server.
+        Tile centerTile = game.tiles.get(city.getTile());
+        int[] centerOutput = getTileOutput(game, centerTile, true /* city center */);
+        // Additional workers (size-1 citizens) each contribute the centre terrain's shield value.
+        int additionalShields = (city.getSize() > 1)
+                ? (city.getSize() - 1) * Math.max(0, centerOutput[1])
+                : 0;
+        int shieldOutput = Math.max(1, centerOutput[1] + additionalShields);
 
         // Apply production waste (shields lost to inefficiency).
         // Mirrors the waste calculation for shields in the C Freeciv server's
@@ -373,6 +447,11 @@ public class CityTurn {
      * Cities above size 8 require an Aqueduct (improvement id 8) to grow further.
      * If food_stock drops below zero the city shrinks by one (starvation).
      *
+     * <p>Food surplus per turn is computed from the city's centre tile using
+     * {@link #getTileOutput}, so cities on fertile terrain (Grassland = 3 food/turn)
+     * grow faster than those on poor terrain (Desert = 1 food/turn).  This mirrors
+     * the terrain-based food output in the C Freeciv server.
+     *
      * @param game   the current game state
      * @param cityId the ID of the city to process for growth
      */
@@ -380,11 +459,17 @@ public class CityTurn {
         City city = game.cities.get(cityId);
         if (city == null) return;
 
-        // Food surplus per turn: base 2 (grassland city center) + 1 per Granary
-        // Mirrors food surplus[O_FOOD] calculation in C server (simplified).
+        // Food surplus per turn: from the city's centre tile (terrain + extras + city-centre bonus).
+        // Mirrors food surplus[O_FOOD] from city_tile_output() in the C Freeciv server.
+        // Using the centre tile as a proxy for all worked tiles keeps the calculation
+        // simple while correctly reflecting terrain type (Grassland > Plains > Desert).
+        Tile centerTile = game.tiles.get(city.getTile());
+        int[] centerOutput = getTileOutput(game, centerTile, true /* city center */);
+        int foodSurplus = Math.max(1, centerOutput[0]);
+
         int granaryImprId = findImprId(game, "Granary", IMPR_GRANARY);
-        int foodSurplus = 2;
-        if (city.hasImprovement(granaryImprId)) { // Granary doubles food retention and adds output
+        if (city.hasImprovement(granaryImprId)) {
+            // Granary adds 1 food surplus per turn (models the storage efficiency effect).
             foodSurplus += 1;
         }
 
@@ -534,8 +619,47 @@ public class CityTurn {
     }
 
     /**
+     * Computes the base trade output of a city before any economic building
+     * bonuses, corruption, or rate splits.
+     *
+     * <p>Trade is derived from the city's centre tile using
+     * {@link #getTileOutput}: terrain base trade + road trade bonus when the
+     * tile has a road extra.  All citizens (size workers) contribute the same
+     * per-tile trade value, plus the fixed city-centre bonus
+     * ({@link #CITY_CENTRE_TRADE_BONUS}).  This ensures that:
+     * <ul>
+     *   <li>Grassland/Plains/Desert cities with roads produce the same trade
+     *       as the old {@code city.getSize() + 1} formula, keeping balance.</li>
+     *   <li>Cities on terrain without a road trade bonus (Forest, Hills, …)
+     *       produce less trade, accurately reflecting the classic Freeciv
+     *       ruleset where roads are required for most trade income.</li>
+     * </ul>
+     *
+     * @param game   the current game state
+     * @param cityId the ID of the city to evaluate
+     * @return raw trade output (before building bonuses and corruption)
+     */
+    private static int cityTradeBase(Game game, long cityId) {
+        City city = game.cities.get(cityId);
+        if (city == null) return 1;
+
+        Tile centerTile = game.tiles.get(city.getTile());
+        int[] centerOutput = getTileOutput(game, centerTile, true /* city center */);
+        int tradePerTile = centerOutput[2]; // [2] = trade
+
+        // All city.getSize() citizens contribute tradePerTile each; add city-centre bonus.
+        // For a Grassland city with a road (tradePerTile = 0+1+1 = 2 including city-centre bonus):
+        //   size=1 → 2; size=2 → 3; matches old formula size+1 when tradePerTile=1 per citizen.
+        // The city-centre bonus is already included in centerOutput[2], so only
+        // the (size-1) additional workers contribute their tile trade on top.
+        return Math.max(CITY_CENTRE_TRADE_BONUS,
+                tradePerTile + (city.getSize() > 1 ? (city.getSize() - 1) * Math.max(0, tradePerTile - 1) : 0));
+    }
+
+
+    /**
      * Calculates and returns the science (bulbs) produced by a city this turn.
-     * The value depends on the city's population and improvements.
+     * The value depends on the city's trade output, population and improvements.
      * Bonuses are applied additively (all percentage bonuses summed, then applied
      * once), matching the Freeciv {@code Output_Bonus} stacking rule in
      * {@code effects.ruleset}:
@@ -557,11 +681,12 @@ public class CityTurn {
         City city = game.cities.get(cityId);
         if (city == null) return 0;
 
-        // Base science: 1 bulb per population point.
-        // Add CITY_CENTRE_TRADE_BONUS so that even a size-1 city has a minimum
-        // city-centre contribution.  This prevents the Despotism corruption (37 %)
-        // from rounding the entire output to 0 via integer division.
-        int science = city.getSize() + CITY_CENTRE_TRADE_BONUS;
+        // Base science = city trade output × player science rate.
+        // Uses terrain-based trade (road bonus on Grassland/Plains/Desert) so that
+        // cities on fertile land with roads produce more science than cities on
+        // unimproved terrain.  Mirrors the C server where science is a fraction of
+        // the city's net trade output.
+        int science = cityTradeBase(game, cityId);
 
         // Apply Output_Bonus effects additively, matching the C Freeciv server.
         // Library (effect_library): +100% science when Library is present.
@@ -626,12 +751,9 @@ public class CityTurn {
         Player player = game.players.get(city.getOwner());
         if (player == null) return 0;
 
-        // Base trade: 1 trade per population plus a city-centre bonus.
-        // The CITY_CENTRE_TRADE_BONUS represents the trade produced by the city
-        // centre tile itself, independent of population.  This prevents the high
-        // Despotism corruption (37 %) from rounding sequential integer divisions
-        // to zero for small cities.
-        int trade = city.getSize() + CITY_CENTRE_TRADE_BONUS;
+        // Base trade: terrain-aware trade from the city's worked tiles.
+        // Mirrors city trade output from city_tile_output() in the C server.
+        int trade = cityTradeBase(game, cityId);
 
         // Apply Output_Bonus effects additively, matching the C Freeciv server.
         // Marketplace (effect_marketplace): +50% gold.
@@ -693,8 +815,8 @@ public class CityTurn {
 
         if (player.getLuxuryRate() == 0) return 0;
 
-        // Base trade: 1 trade per population plus city-centre bonus (same as cityTaxContribution).
-        int trade = city.getSize() + CITY_CENTRE_TRADE_BONUS;
+        // Base trade: terrain-aware (same source as cityTaxContribution).
+        int trade = cityTradeBase(game, cityId);
 
         // Apply trade bonuses from Marketplace and Bank (same as tax).
         // Ceiling division avoids rounding small city outputs to zero.
@@ -1011,12 +1133,14 @@ public class CityTurn {
         //   pop  = city_size * (100 + EFT_POLLU_POP_PCT) / 100       (one per citizen)
         //   mod  = game.info.base_pollution                           (-20 by default)
         //   total = max(0, prod + pop + mod)
-        // Simplification: we use city size as the shield estimate because the Java
-        // server does not yet track per-tile shield yields.  The C server uses the
-        // actual per-tile production; this approximation is intentionally conservative
-        // (same value for both prod and pop terms) to avoid over-polluting in the
-        // simplified server model.
-        int shieldOutput = Math.max(1, city.getSize()); // simplified: 1 shield/pop
+        // Use terrain-based shield output from the city centre tile for the shield estimate.
+        Tile centerTile = game.tiles.get(city.getTile());
+        int[] centerOutput = getTileOutput(game, centerTile, true /* city center */);
+        // Additional citizens produce shields similar to the centre tile's terrain.
+        int additionalShields = (city.getSize() > 1)
+                ? (city.getSize() - 1) * Math.max(0, centerOutput[1])
+                : 0;
+        int shieldOutput = Math.max(1, centerOutput[1] + additionalShields);
         int pollution = Math.max(0, shieldOutput + city.getSize() - BASE_POLLUTION);
         if (pollution == 0) return;
 
