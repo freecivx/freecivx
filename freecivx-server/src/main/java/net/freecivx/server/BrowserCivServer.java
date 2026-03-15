@@ -114,12 +114,19 @@ public class BrowserCivServer implements IGameServer {
     /**
      * Registers {@code window.freecivxSendPacket(json)} so that the
      * JavaScript client can forward outgoing packets to this server instance.
+     * Also invokes {@code window.freecivxOnReady()} (if defined) to signal
+     * that the server is ready to receive packets.
      * Called once from the constructor after the game is initialised.
      */
     @JSBody(script =
         "window.freecivxSendPacket = function(json) {" +
         "  net_freecivx_server_BrowserCivServer.$receivePacket(json);" +
-        "};")
+        "};" +
+        "if (typeof window.freecivxOnReady === 'function') {" +
+        "  var cb = window.freecivxOnReady;" +
+        "  window.freecivxOnReady = null;" +
+        "  cb();" +
+        "}")
     private static native void setupBrowserApi();
 
     // =========================================================================

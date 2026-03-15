@@ -103,7 +103,8 @@ function teavm_mode_init() {
         }
     };
 
-    // Trigger the normal login sequence immediately (no WebSocket handshake).
+    // Trigger the normal login sequence.  check_websocket_ready() will poll
+    // until window.freecivxSendPacket is registered by setupBrowserApi().
     check_websocket_ready();
     load_game_check();
 }
@@ -147,12 +148,25 @@ function start_teavm_single_player(player_username) {
         // Bundle already loaded (e.g. page reuse); start immediately.
         on_bundle_ready();
     } else {
+        // Set the ready callback that BrowserCivServer.setupBrowserApi() will invoke
+        // once the TeaVM server has finished initialising (which may be asynchronous).
+        window.freecivxOnReady = function() {
+            window.freecivxOnReady = null;
+            on_bundle_ready();
+        };
+
         // Dynamically load the TeaVM bundle.  The bundle's main() creates a
-        // BrowserCivServer instance and registers window.freecivxSendPacket.
+        // BrowserCivServer instance and calls window.freecivxOnReady when ready.
         var script = document.createElement('script');
         script.src = '/javascript/freecivx-server.js';
-        script.onload = on_bundle_ready;
+        script.onload = function() {
+            // If TeaVM ran synchronously, freecivxOnReady was already called (and
+            // cleared).  If TeaVM initialises asynchronously, the callback fires
+            // later when setupBrowserApi() runs; check_websocket_ready() will also
+            // poll every 50 ms as a fallback safety net.
+        };
         script.onerror = function() {
+            window.freecivxOnReady = null;
             console.error('Failed to load TeaVM bundle from /javascript/freecivx-server.js');
             show_dialog_message("Error", "The in-browser server could not be loaded. "
                 + "Please try again or use the standard single-player mode.");
@@ -265,6 +279,12 @@ function handleWebSocketError(evt) {
 ****************************************************************************/
 function check_websocket_ready()
 {
+  if (teavm_mode && typeof window.freecivxSendPacket !== 'function') {
+    // TeaVM server not yet initialised (bundle still loading or main() pending).
+    setTimeout(check_websocket_ready, 50);
+    return;
+  }
+
   if (teavm_mode || (ws != null && ws.readyState === 1)) {
 
     var login_message = {"pid":4, "username" : username,
