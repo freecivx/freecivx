@@ -77,13 +77,13 @@ public class Game {
     /**
      * Map generator algorithm to use.
      * <ul>
-     *   <li>2 – Fractal/fBM (default, same as the current built-in generator)</li>
+     *   <li>2 – Fractal/fBM</li>
      *   <li>5 – Island/continent style with latitude-based terrain distribution,
-     *           mirroring the spirit of the C Freeciv server's MAPGEN_FRACTURE</li>
+     *           mirroring the spirit of the C Freeciv server's MAPGEN_FRACTURE (default)</li>
      * </ul>
      * Mirrors the {@code generator} setting in the C Freeciv server.
      */
-    private int generator = 2;
+    private int generator = 5;
 
     /**
      * Turn timeout in seconds.  When {@code > 0} a turn is automatically
