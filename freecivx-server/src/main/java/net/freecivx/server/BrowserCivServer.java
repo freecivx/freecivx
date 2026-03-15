@@ -30,7 +30,8 @@ import net.freecivx.game.UnitType;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.teavm.jso.JSBody;
-import org.teavm.jso.JSExport;
+import org.teavm.jso.JSFunctor;
+import org.teavm.jso.JSObject;
 
 /**
  * TeaVM/browser implementation of {@link IGameServer}.
@@ -45,9 +46,10 @@ import org.teavm.jso.JSExport;
  *       JavaScript function {@code window.freecivxOnPacket(packetObject)}.  The
  *       freeciv-web client should assign that function before the TeaVM module
  *       starts.</li>
- *   <li><b>Incoming</b> (client → server): the JavaScript side calls the exported
- *       {@link #receivePacket(String)} function with a JSON-string representation
- *       of the packet.</li>
+ *   <li><b>Incoming</b> (client → server): the JavaScript side calls
+ *       {@code window.freecivxSendPacket(json)}, which is registered by
+ *       {@link #setupBrowserApi(PacketReceiver)} as a direct Java callback —
+ *       no TeaVM-mangled name needed.</li>
  * </ul>
  *
  * <p>JavaScript integration example:
@@ -57,9 +59,9 @@ import org.teavm.jso.JSExport;
  *     client_handle_packet([packet]);
  * };
  *
- * // After the module has started, forward client packets to the server:
+ * // After the module has started, window.freecivxSendPacket is available:
  * function send_request(json) {
- *     BrowserCivServer_receivePacket(json);
+ *     window.freecivxSendPacket(json);
  * }
  * }</pre>
  */
@@ -71,15 +73,27 @@ public class BrowserCivServer implements IGameServer {
     /** The game instance managed by this browser server. */
     private final Game game;
 
-    /** Singleton instance used by the static {@link #receivePacket(String)} export. */
-    private static BrowserCivServer currentInstance;
+    /**
+     * TeaVM {@link JSFunctor} interface for the JS→Java packet bridge.
+     *
+     * <p>An instance of this interface is compiled by TeaVM into a plain
+     * JavaScript function; the surrounding page stores it as
+     * {@code window.freecivxSendPacket}.  Using a functor avoids referencing
+     * any TeaVM-mangled class name (e.g. the {@code $}-prefixed static exports
+     * that conflict with jQuery's global {@code $}).
+     */
+    @JSFunctor
+    private interface PacketReceiver extends JSObject {
+        void receive(String json);
+    }
 
     /**
      * Constructs a new browser-mode server, initialises the game and game
-     * ruleset, and registers the JavaScript API via {@link #setupBrowserApi()}.
+     * ruleset, and registers the JavaScript API via
+     * {@link #setupBrowserApi(PacketReceiver)}.
      *
-     * <p>{@link #setupBrowserApi()} is called in a {@code finally} block so
-     * that {@code window.freecivxSendPacket} and the
+     * <p>{@link #setupBrowserApi(PacketReceiver)} is called in a {@code finally}
+     * block so that {@code window.freecivxSendPacket} and the
      * {@code window.freecivxOnReady} callback are always registered, even when
      * {@link Game} construction or {@link Game#initGame()} throws.  This
      * prevents the client from polling for {@code freecivxSendPacket}
@@ -87,7 +101,6 @@ public class BrowserCivServer implements IGameServer {
      */
     public BrowserCivServer() {
         jsLog("[BrowserCivServer] Initialising BrowserCivServer...");
-        currentInstance = this;
         Game g = null;
         try {
             g = new Game(this);
@@ -100,7 +113,7 @@ public class BrowserCivServer implements IGameServer {
         } finally {
             this.game = g;
             jsLog("[BrowserCivServer] Registering JS API via setupBrowserApi()...");
-            setupBrowserApi();
+            setupBrowserApi(json -> handlePacket(SINGLE_CONN_ID, json));
         }
     }
 
@@ -139,51 +152,25 @@ public class BrowserCivServer implements IGameServer {
     private static native void dispatchToClient(String json);
 
     /**
-     * Registers {@code window.freecivxSendPacket(json)} so that the
-     * JavaScript client can forward outgoing packets to this server instance.
-     * Also invokes {@code window.freecivxOnReady()} (if defined) to signal
-     * that the server is ready to receive packets.
-     * Called once from the constructor after the game is initialised.
+     * Registers {@code window.freecivxSendPacket} as the given
+     * {@link PacketReceiver} functor so the JavaScript client can forward
+     * incoming packets to this server instance.  Also invokes
+     * {@code window.freecivxOnReady()} (if defined) to signal that the server
+     * is ready to receive packets.
+     *
+     * <p>Using a {@link PacketReceiver} functor avoids hardcoding the
+     * TeaVM-mangled {@code $}-prefixed static-export name
+     * ({@code net_freecivx_server_BrowserCivServer.$receivePacket}) that
+     * conflicts with jQuery's global {@code $} variable.
      */
-    @JSBody(script =
-        "console.info('[BrowserCivServer] setupBrowserApi() called — registering window.freecivxSendPacket');" +
-        "window.freecivxSendPacket = function(json) {" +
-        "  console.debug('[BrowserCivServer] freecivxSendPacket called, routing to receivePacket');" +
-        "  net_freecivx_server_BrowserCivServer.$receivePacket(json);" +
-        "};" +
-        "console.info('[BrowserCivServer] window.freecivxSendPacket registered — server ready');" +
+    @JSBody(params = {"receiver"}, script =
+        "window.freecivxSendPacket = receiver;" +
         "if (typeof window.freecivxOnReady === 'function') {" +
-        "  console.info('[BrowserCivServer] Calling window.freecivxOnReady() callback');" +
         "  var cb = window.freecivxOnReady;" +
         "  window.freecivxOnReady = null;" +
         "  cb();" +
-        "} else {" +
-        "  console.warn('[BrowserCivServer] window.freecivxOnReady is not defined — client fallback will handle startup');" +
         "}")
-    private static native void setupBrowserApi();
-
-    // =========================================================================
-    // JavaScript bridge – incoming (JS → Java)
-    // =========================================================================
-
-    /**
-     * Receives a JSON packet from the JavaScript client and routes it through
-     * the game logic.  Mirrors {@code CivServer.onMessage()} but operates
-     * in a single-connection in-process context.
-     *
-     * <p>This method is exported to JavaScript as
-     * {@code net_freecivx_server_BrowserCivServer.$receivePacket(json)}.
-     *
-     * @param packet JSON-serialised packet string sent by the client
-     */
-    @JSExport
-    public static void receivePacket(String packet) {
-        if (currentInstance == null) {
-            jsLog("[BrowserCivServer] receivePacket called but server not initialised");
-            return;
-        }
-        currentInstance.handlePacket(SINGLE_CONN_ID, packet);
-    }
+    private static native void setupBrowserApi(PacketReceiver receiver);
 
     // =========================================================================
     // Packet handler (mirrors CivServer.onMessage)
