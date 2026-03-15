@@ -108,7 +108,7 @@ public class UnitTools {
      * @param connId the connection ID of the recipient client
      * @param unitId the ID of the unit whose info is to be sent
      */
-    public static void sendUnitInfo(Game game, CivServer server, long connId, long unitId) {
+    public static void sendUnitInfo(Game game, IGameServer server, long connId, long unitId) {
         Unit unit = game.units.get(unitId);
         if (unit == null) return;
 
@@ -135,7 +135,7 @@ public class UnitTools {
      * @param server the CivServer used to transmit packets
      * @param connId the connection ID of the recipient client
      */
-    public static void sendAllUnitInfo(Game game, CivServer server, long connId) {
+    public static void sendAllUnitInfo(Game game, IGameServer server, long connId) {
         for (long unitId : game.units.keySet()) {
             sendUnitInfo(game, server, connId, unitId);
         }

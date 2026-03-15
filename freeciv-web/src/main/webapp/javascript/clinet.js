@@ -32,11 +32,26 @@ var ping_timer = null;
 let incomplete_messages_from_server_buffer = "";
 var freecivx_server = true;
 
+/**
+ * Set to true when the freecivx-server runs in-process as a TeaVM/JavaScript
+ * module rather than a remote WebSocket server.  In this mode all packets are
+ * exchanged through window.freecivxSendPacket() / window.freecivxOnPacket()
+ * instead of a WebSocket connection.
+ */
+var teavm_mode = false;
+
 /****************************************************************************
   Initialized the Network communication, by requesting a valid server port.
+  If the URL contains ?mode=teavm the in-process TeaVM server is used instead
+  of a remote WebSocket connection.
 ****************************************************************************/
 function network_init()
 {
+  if ($.getUrlVar('mode') === 'teavm') {
+    teavm_mode_init();
+    return;
+  }
+
   var civclient_request_url = "/civclientlauncher";
   if ($.getUrlVar('action') != null) civclient_request_url += "?action=" + $.getUrlVar('action');
   if ($.getUrlVar('action') == null && $.getUrlVar('civserverport') != null) civclient_request_url += "?";
@@ -61,6 +76,36 @@ function network_init()
 		+ textStatus + " " + errorThrown + " " + request.getResponseHeader('result'));
    }
   });
+}
+
+/****************************************************************************
+  Initialises the TeaVM in-process server mode.
+
+  In this mode the freecivx-server runs as a compiled-to-JavaScript TeaVM
+  module in the same browser tab.  Packet I/O bypasses WebSocket entirely:
+  outgoing packets are forwarded through window.freecivxSendPacket() and
+  incoming packets arrive via the window.freecivxOnPacket callback.
+
+  To activate this mode load the page with ?mode=teavm in the URL and ensure
+  the TeaVM JavaScript bundle (classes.js or similar) is loaded beforehand.
+****************************************************************************/
+function teavm_mode_init() {
+    teavm_mode = true;
+    freecivx_server = true;
+
+    // Register the callback that the TeaVM server will invoke for every
+    // outgoing packet it wants to deliver to this client.
+    window.freecivxOnPacket = function(packet) {
+        try {
+            client_handle_packet([packet]);
+        } catch (e) {
+            console.error("freecivxOnPacket error", e);
+        }
+    };
+
+    // Trigger the normal login sequence immediately (no WebSocket handshake).
+    check_websocket_ready();
+    load_game_check();
 }
 
 /****************************************************************************
@@ -162,10 +207,11 @@ function handleWebSocketError(evt) {
 /****************************************************************************
   When the WebSocket connection is open and ready to communicate, then
   send the first login message to the server.
+  In TeaVM mode the check is bypassed since there is no WebSocket.
 ****************************************************************************/
 function check_websocket_ready()
 {
-  if (ws != null && ws.readyState === 1) {
+  if (teavm_mode || (ws != null && ws.readyState === 1)) {
 
     var login_message = {"pid":4, "username" : username,
     "capability": freeciv_version, "version_label": "-dev",
@@ -174,7 +220,9 @@ function check_websocket_ready()
     send_request(JSON.stringify(login_message));
 
     /* The connection is now up. Verify that it remains alive. */
-    ping_timer = setInterval(ping_check, pingtime_check);
+    if (!teavm_mode) {
+      ping_timer = setInterval(ping_check, pingtime_check);
+    }
 
     $.unblockUI();
   } else {
@@ -193,8 +241,18 @@ function network_stop()
 
 /****************************************************************************
   Sends a request to the server, with a JSON packet.
+  In TeaVM mode the packet is forwarded directly to the in-process server.
 ****************************************************************************/
 function send_request(packet_payload) {
+    if (teavm_mode) {
+        if (typeof window.freecivxSendPacket === 'function') {
+            window.freecivxSendPacket(packet_payload);
+        } else {
+            console.error("freecivxSendPacket not available — is the TeaVM bundle loaded?");
+        }
+        return;
+    }
+
     if (ws == null || ws.readyState !== WebSocket.OPEN) {
         console.error("WebSocket is not open. ReadyState:", ws ? ws.readyState : 'WebSocket not initialized');
         return;

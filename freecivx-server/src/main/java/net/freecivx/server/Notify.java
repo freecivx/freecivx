@@ -39,7 +39,7 @@ public class Notify {
      * @param playerId the ID of the player to notify
      * @param message  the notification text to display
      */
-    public static void notifyPlayer(Game game, CivServer server, long playerId, String message) {
+    public static void notifyPlayer(Game game, IGameServer server, long playerId, String message) {
         Player player = game.players.get(playerId);
         if (player == null) return;
         server.sendMessage(player.getConnectionId(), message);
@@ -52,7 +52,7 @@ public class Notify {
      * @param server  the CivServer used to transmit the message
      * @param message the notification text to broadcast
      */
-    public static void notifyAllPlayers(Game game, CivServer server, String message) {
+    public static void notifyAllPlayers(Game game, IGameServer server, String message) {
         server.sendMessageAll(message);
     }
 
@@ -63,7 +63,7 @@ public class Notify {
      * or animation at the specified location.
      *
      * @param game      the current game state
-     * @param server    the CivServer used to transmit the message
+     * @param server    the IGameServer used to transmit the message
      * @param playerId  the ID of the player to notify
      * @param x         the x map-coordinate of the event
      * @param y         the y map-coordinate of the event
@@ -71,7 +71,7 @@ public class Notify {
      *                  in the C Freeciv server's events.h)
      * @param message   the notification text to display
      */
-    public static void notifyEvent(Game game, CivServer server, long playerId,
+    public static void notifyEvent(Game game, IGameServer server, long playerId,
                                    int x, int y, int eventType, String message) {
         Player player = game.players.get(playerId);
         if (player == null) return;
@@ -84,10 +84,10 @@ public class Notify {
      * or server maintenance messages.
      *
      * @param game    the current game state
-     * @param server  the CivServer used to transmit the message
+     * @param server  the IGameServer used to transmit the message
      * @param message the notification text to broadcast
      */
-    public static void notifyConnections(Game game, CivServer server, String message) {
+    public static void notifyConnections(Game game, IGameServer server, String message) {
         server.sendMessageAll(message);
     }
 }

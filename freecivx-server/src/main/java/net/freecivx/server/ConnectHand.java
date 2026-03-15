@@ -42,7 +42,7 @@ public class ConnectHand {
      * @param connId   the connection ID assigned to this client
      * @param username the username provided by the client (may be sanitised)
      */
-    public static void handleServerJoinReq(Game game, CivServer server, long connId, String username) {
+    public static void handleServerJoinReq(Game game, IGameServer server, long connId, String username) {
         if (username == null || username.isBlank()) {
             sendServerJoinReply(server, connId, false);
             return;
@@ -64,7 +64,7 @@ public class ConnectHand {
      * @param server the CivServer instance used to send replies
      * @param connId the connection ID of the reconnecting client
      */
-    public static void handleServerReconnectReq(Game game, CivServer server, long connId) {
+    public static void handleServerReconnectReq(Game game, IGameServer server, long connId) {
         if (game.isGameStarted()) {
             game.syncNewPlayer(connId);
         } else {
@@ -80,7 +80,7 @@ public class ConnectHand {
      * @param connId   the connection ID of the client
      * @param canJoin  {@code true} if the client is allowed to join
      */
-    public static void sendServerJoinReply(CivServer server, long connId, boolean canJoin) {
+    public static void sendServerJoinReply(IGameServer server, long connId, boolean canJoin) {
         JSONObject reply = new JSONObject();
         reply.put("pid", Packets.PACKET_SERVER_JOIN_REPLY);
         reply.put("you_can_join", canJoin);
@@ -97,7 +97,7 @@ public class ConnectHand {
      * @param server the CivServer instance used to send messages
      * @param connId the connection ID of the recipient client
      */
-    public static void sendGameList(Game game, CivServer server, long connId) {
+    public static void sendGameList(Game game, IGameServer server, long connId) {
         for (Player player : game.players.values()) {
             JSONObject msg = new JSONObject();
             msg.put("pid", Packets.PACKET_PLAYER_INFO);

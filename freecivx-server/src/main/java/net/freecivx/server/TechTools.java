@@ -158,7 +158,7 @@ public class TechTools {
      * @param connId   the connection ID of the recipient client
      * @param playerId the ID of the player whose research info should be sent
      */
-    public static void sendResearchInfo(Game game, CivServer server, long connId, long playerId) {
+    public static void sendResearchInfo(Game game, IGameServer server, long connId, long playerId) {
         Player player = game.players.get(playerId);
         if (player == null) return;
 

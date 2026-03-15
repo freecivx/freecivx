@@ -130,7 +130,7 @@ public class CityTools {
      * @param connId the connection ID of the recipient; {@code -1} to broadcast to all
      * @param cityId the ID of the city whose info is to be sent
      */
-    public static void sendCityInfo(Game game, CivServer server, long connId, long cityId) {
+    public static void sendCityInfo(Game game, IGameServer server, long connId, long cityId) {
         City city = game.cities.get(cityId);
         if (city == null) return;
 
@@ -197,7 +197,7 @@ public class CityTools {
      * @param connId the connection ID of the recipient; {@code -1} to broadcast to all
      * @param cityId the ID of the city
      */
-    public static void sendWebCityInfoAddition(Game game, CivServer server,
+    public static void sendWebCityInfoAddition(Game game, IGameServer server,
                                                long connId, long cityId) {
         City city = game.cities.get(cityId);
         if (city == null) return;
