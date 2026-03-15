@@ -127,19 +127,20 @@ public class AiPlayer {
     // Technology IDs — resolved at runtime by name in resolveGameIds() because IDs
     // differ between the loaded ruleset (alphabetical order) and the hardcoded fallback.
     // Fallback values match populateFallback() in Game.java.
-    private long techAlphabet        =  0L;
-    private long techMathematics     =  1L;
-    private long techTheRepublic     =  2L;
-    private long techMasonry         =  3L;
-    private long techBronzeWorking   =  4L;
-    private long techIronWorking     =  5L;
-    private long techWriting         =  7L;
-    private long techCodeOfLaws      =  8L;
-    private long techHorsebackRiding =  9L;
-    private long techPottery         = 10L;
-    private long techWarriorCode     = 11L;
-    private long techMonarchy        = 13L;
-    private long techDemocracy       = 14L;
+    private long techAlphabet           =  0L;
+    private long techMathematics        =  1L;
+    private long techTheRepublic        =  2L;
+    private long techMasonry            =  3L;
+    private long techBronzeWorking      =  4L;
+    private long techIronWorking        =  5L;
+    private long techWriting            =  7L;
+    private long techCodeOfLaws         =  8L;
+    private long techHorsebackRiding    =  9L;
+    private long techPottery            = 10L;
+    private long techWarriorCode        = 11L;
+    private long techCeremonialBurial   = 12L;
+    private long techMonarchy           = 13L;
+    private long techDemocracy          = 14L;
 
     private static final int[] DIR_DX = {-1, 0, 1, -1, 1, -1, 0, 1};
     private static final int[] DIR_DY = {-1, -1, -1, 0, 0, 1, 1, 1};
@@ -265,11 +266,12 @@ public class AiPlayer {
                 case "Iron Working":      techIronWorking     = id; break;
                 case "Writing":           techWriting         = id; break;
                 case "Code of Laws":      techCodeOfLaws      = id; break;
-                case "Horseback Riding":  techHorsebackRiding = id; break;
-                case "Pottery":           techPottery         = id; break;
-                case "Warrior Code":      techWarriorCode     = id; break;
-                case "Monarchy":          techMonarchy        = id; break;
-                case "Democracy":         techDemocracy       = id; break;
+                case "Horseback Riding":   techHorsebackRiding   = id; break;
+                case "Pottery":            techPottery           = id; break;
+                case "Warrior Code":       techWarriorCode       = id; break;
+                case "Ceremonial Burial":  techCeremonialBurial  = id; break;
+                case "Monarchy":           techMonarchy          = id; break;
+                case "Democracy":          techDemocracy         = id; break;
                 default: break;
             }
         }
@@ -314,6 +316,7 @@ public class AiPlayer {
             // Try to advance from Despotism (1) to Monarchy (2)
             if (player.hasTech(techMonarchy)) {
                 player.setGovernmentId(2); // Monarchy
+                System.out.println("Player " + player.getUsername() + " switched government: Despotism → Monarchy");
                 game.getServer().sendPlayerInfoAll(player);
                 return;
             }
@@ -323,6 +326,7 @@ public class AiPlayer {
             // Try to advance from Monarchy (2) to Republic (4)
             if (player.hasTech(techTheRepublic)) {
                 player.setGovernmentId(4); // Republic
+                System.out.println("Player " + player.getUsername() + " switched government: Monarchy → Republic");
                 game.getServer().sendPlayerInfoAll(player);
                 return;
             }
@@ -332,6 +336,7 @@ public class AiPlayer {
             // Try to advance from Republic (4) to Democracy (5)
             if (player.hasTech(techDemocracy)) {
                 player.setGovernmentId(5); // Democracy
+                System.out.println("Player " + player.getUsername() + " switched government: Republic → Democracy");
                 game.getServer().sendPlayerInfoAll(player);
             }
         }
@@ -365,7 +370,9 @@ public class AiPlayer {
      *   <li>Masonry → Barracks and City Walls (defence)</li>
      *   <li>Alphabet → Temple (happiness) and many prerequisites</li>
      *   <li>Writing → Library (science bonus)</li>
-     *   <li>Code of Laws → Marketplace (trade bonus)</li>
+     *   <li>Code of Laws → Marketplace (trade bonus) and Monarchy prerequisite</li>
+     *   <li>Ceremonial Burial → Temple (happiness) and Monarchy prerequisite</li>
+     *   <li>Monarchy → better government (less corruption) once both prerequisites met</li>
      *   <li>Horseback Riding → Horsemen (mobile military)</li>
      *   <li>Mathematics / Iron Working / The Republic → late-game benefits</li>
      * </ol>
@@ -377,19 +384,20 @@ public class AiPlayer {
         if (player.getResearchingTech() >= 0) return; // Already researching
 
         long[] priorityTechs = {
-            techPottery,          // Granary → faster city growth
-            techBronzeWorking,    // Military prerequisite chain
-            techWarriorCode,      // Better warriors
-            techMasonry,          // Barracks + City Walls
-            techAlphabet,         // Temple (happiness) + many prerequisites
-            techWriting,          // Library → science bonus
-            techCodeOfLaws,       // Marketplace + Monarchy prerequisite
-            techMonarchy,         // Better government (less corruption)
-            techHorsebackRiding,  // Horsemen (fast military)
-            techMathematics,      // Bank prerequisite
-            techIronWorking,      // Legion (strong military)
-            techTheRepublic,      // Republic government
-            techDemocracy,        // Democracy government (zero corruption)
+            techPottery,              // Granary → faster city growth
+            techBronzeWorking,        // Military prerequisite chain
+            techWarriorCode,          // Better warriors
+            techMasonry,              // Barracks + City Walls
+            techAlphabet,             // Temple (happiness) + many prerequisites
+            techWriting,              // Library → science bonus
+            techCodeOfLaws,           // Marketplace + Monarchy prerequisite
+            techCeremonialBurial,     // Monarchy prerequisite (req1 of Monarchy in classic ruleset)
+            techMonarchy,             // Better government (less corruption)
+            techHorsebackRiding,      // Horsemen (fast military)
+            techMathematics,          // Bank prerequisite
+            techIronWorking,          // Legion (strong military)
+            techTheRepublic,          // Republic government
+            techDemocracy,            // Democracy government (zero corruption)
         };
 
         for (long techId : priorityTechs) {
