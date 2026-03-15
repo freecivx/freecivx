@@ -494,7 +494,7 @@ public class AiPlayer {
         // military campaigns.
         if (!city.hasImprovement(imprBarracks)) {
             Improvement barracks = game.improvements.get((long) imprBarracks);
-            if (barracks != null && canBuildImprovement(owner, barracks)) {
+            if (barracks != null && canBuildImprovement(owner, city, barracks)) {
                 city.setProductionKind(1);
                 city.setProductionValue(imprBarracks);
                 return;
@@ -520,7 +520,7 @@ public class AiPlayer {
         // Priority 4: Granary for sustained food growth (Pottery required)
         if (!city.hasImprovement(imprGranary)) {
             Improvement granary = game.improvements.get((long) imprGranary);
-            if (granary != null && canBuildImprovement(owner, granary)) {
+            if (granary != null && canBuildImprovement(owner, city, granary)) {
                 city.setProductionKind(1);
                 city.setProductionValue(imprGranary);
                 return;
@@ -537,7 +537,7 @@ public class AiPlayer {
         // Priority 6: Library for science output (Writing required)
         if (!city.hasImprovement(imprLibrary) && city.getSize() >= 2) {
             Improvement library = game.improvements.get((long) imprLibrary);
-            if (library != null && canBuildImprovement(owner, library)) {
+            if (library != null && canBuildImprovement(owner, city, library)) {
                 city.setProductionKind(1);
                 city.setProductionValue(imprLibrary);
                 return;
@@ -547,7 +547,7 @@ public class AiPlayer {
         // Priority 7: Marketplace for trade income (Code of Laws required)
         if (!city.hasImprovement(imprMarketplace) && city.getSize() >= 3) {
             Improvement marketplace = game.improvements.get((long) imprMarketplace);
-            if (marketplace != null && canBuildImprovement(owner, marketplace)) {
+            if (marketplace != null && canBuildImprovement(owner, city, marketplace)) {
                 city.setProductionKind(1);
                 city.setProductionValue(imprMarketplace);
                 return;
@@ -557,7 +557,7 @@ public class AiPlayer {
         // Priority 8: City Walls for passive defence (Masonry required)
         if (!city.hasImprovement(imprCityWalls)) {
             Improvement walls = game.improvements.get((long) imprCityWalls);
-            if (walls != null && canBuildImprovement(owner, walls)) {
+            if (walls != null && canBuildImprovement(owner, city, walls)) {
                 city.setProductionKind(1);
                 city.setProductionValue(imprCityWalls);
                 return;
@@ -570,10 +570,31 @@ public class AiPlayer {
     }
 
     /**
+     * Returns {@code true} if the player has the prerequisite technology and
+     * any required city-building improvement to build the given improvement in
+     * the specified city.  Mirrors {@code can_city_build_improvement_direct()}
+     * in the C Freeciv server's {@code common/city.c}.
+     *
+     * @param player the building player
+     * @param city   the city where the improvement would be built
+     * @param impr   the improvement type to test
+     */
+    private boolean canBuildImprovement(Player player, City city, Improvement impr) {
+        long techReq = impr.getTechReqId();
+        if (techReq >= 0 && !player.hasTech(techReq)) return false;
+        // Check city-building prerequisite (e.g. Cathedral requires Temple).
+        String reqBldgName = impr.getRequiredBuildingName();
+        if (reqBldgName != null && !reqBldgName.isEmpty()
+                && !net.freecivx.server.CityTurn.cityHasImprovementByName(game, city, reqBldgName)) {
+            return false;
+        }
+        return true;
+    }
+
+    /**
      * Returns {@code true} if the player has the prerequisite technology to
-     * build the given improvement.  Mirrors
-     * {@code can_city_build_improvement_direct()} in the C Freeciv server's
-     * {@code common/city.c}.
+     * build the given improvement (no city-context check).
+     * Used for player-level tech checks only.
      */
     private boolean canBuildImprovement(Player player, Improvement impr) {
         long techReq = impr.getTechReqId();

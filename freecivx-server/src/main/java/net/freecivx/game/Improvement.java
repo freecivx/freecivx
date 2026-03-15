@@ -47,6 +47,16 @@ public class Improvement {
      */
     private String obsoletedByTechName = null;
 
+    /**
+     * Name of the city improvement that must already be present in the city
+     * before this improvement can be built.  {@code null} means no building
+     * prerequisite.  Parsed from the first {@code "Building"} / {@code "City"}
+     * row of the {@code reqs} table in the buildings ruleset.
+     * Mirrors {@code can_city_build_improvement_direct()} in the C Freeciv
+     * server's {@code common/city.c}.
+     */
+    private String requiredBuildingName = null;
+
     public Improvement(long id, String name, String ruleName, String graphicStr,
                        String graphicAlt, int genus, int buildCost, int upkeep,
                        int sabotage, String soundtag, String soundtagAlt,
@@ -93,6 +103,23 @@ public class Improvement {
      * @param techName the technology name, or {@code null} for none
      */
     public void setObsoletedByTechName(String techName) { this.obsoletedByTechName = techName; }
+
+    /**
+     * Returns the name of the city improvement that must be present in a city
+     * before this improvement can be built, or {@code null} if none is required.
+     * Mirrors the {@code "Building"/"City"} requirement rows from the C Freeciv
+     * server's buildings ruleset.
+     */
+    public String getRequiredBuildingName() { return requiredBuildingName; }
+
+    /**
+     * Sets the required building prerequisite name.
+     * Called during ruleset loading when a {@code "Building"} / {@code "City"}
+     * entry is found in the {@code reqs} table.
+     *
+     * @param buildingName the prerequisite building name, or {@code null} for none
+     */
+    public void setRequiredBuildingName(String buildingName) { this.requiredBuildingName = buildingName; }
 
     @Override
     public String toString() {

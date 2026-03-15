@@ -298,6 +298,12 @@ public class Ruleset {
                 if (!sec.obsoleteTechName.isEmpty()) {
                     impr.setObsoletedByTechName(sec.obsoleteTechName);
                 }
+                // Store the city-building prerequisite parsed from the reqs table.
+                // Mirrors "Building"/"City" requirement rows in the C Freeciv server's
+                // buildings ruleset (e.g. Cathedral requires Temple, Bank requires Marketplace).
+                if (!sec.reqBuildingName.isEmpty()) {
+                    impr.setRequiredBuildingName(sec.reqBuildingName);
+                }
                 improvements.add(impr);
                 id++;
             }
@@ -475,6 +481,13 @@ public class Ruleset {
          * this building for its owner.
          */
         String obsoleteTechName = "";
+        /**
+         * Name of the city improvement required before this one can be built,
+         * parsed from the first {@code "Building"} / {@code "City"} row of the
+         * {@code reqs} table.  Empty string means no building prerequisite.
+         * Mirrors {@code can_city_build_improvement_direct()} in the C server.
+         */
+        String reqBuildingName = "";
         /** Anti-horse defense multiplier bonus from the bonuses table (0 = none). */
         int antiHorseBonus = 0;
 
@@ -576,6 +589,15 @@ public class Ruleset {
                             if ("Tech".equalsIgnoreCase(type)) {
                                 if (current.techReq.isEmpty()) {
                                     current.techReq = stripQuotes(cells[1]);
+                                }
+                            }
+                            // Also capture the first city-scoped Building requirement.
+                            // Mirrors "Building"/"City" rows in the C Freeciv buildings ruleset
+                            // (e.g. Cathedral requires Temple, Bank requires Marketplace).
+                            if ("Building".equalsIgnoreCase(type) && cells.length >= 3) {
+                                String range = stripQuotes(cells[2]);
+                                if ("City".equalsIgnoreCase(range) && current.reqBuildingName.isEmpty()) {
+                                    current.reqBuildingName = stripQuotes(cells[1]);
                                 }
                             }
                         }

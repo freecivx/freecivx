@@ -47,6 +47,24 @@ public class CityTurn {
     /** Minimum unit production cost in shields. */
     private static final int MIN_UNIT_COST = 10;
 
+    // -------------------------------------------------------------------------
+    // Government IDs (index in the governments map, matching governments.ruleset
+    // load order: Anarchy=0, Despotism=1, Monarchy=2, Communism=3, Republic=4,
+    // Democracy=5).  Mirrors GOV_* macros in the C Freeciv server's government.h.
+    // -------------------------------------------------------------------------
+    private static final int GOV_ANARCHY   = 0;
+    private static final int GOV_DESPOTISM = 1;
+    private static final int GOV_MONARCHY  = 2;
+    private static final int GOV_COMMUNISM = 3;
+
+    /**
+     * Number of military units whose gold upkeep is covered "for free" per city
+     * for governments that support shield-upkeep units (Anarchy, Despotism,
+     * Monarchy, Communism).  Mirrors {@code Unit_Upkeep_Free_Per_City = 3} in
+     * the classic effects.ruleset ({@code effect_upkeep_free_units_*}).
+     */
+    private static final int FREE_UNITS_PER_CITY = 3;
+
     /**
      * Fallback improvement ID for Granary.  Matches the hardcoded ID used in
      * {@link net.freecivx.game.Effects} and the classic ruleset fallback in
@@ -287,6 +305,23 @@ public class CityTurn {
     }
 
     /**
+     * Returns {@code true} if the given city has a built improvement whose
+     * name matches {@code name} (case-insensitive).  Used to enforce city
+     * building prerequisites, mirroring the {@code "Building"/"City"} requirement
+     * check in {@code can_city_build_improvement_direct()} in the C Freeciv server.
+     *
+     * @param game   current game state
+     * @param city   the city to inspect
+     * @param name   the improvement name to look for (e.g. {@code "Temple"})
+     * @return {@code true} when the city already contains the named improvement
+     */
+    public static boolean cityHasImprovementByName(Game game, City city, String name) {
+        int id = findImprId(game, name, -1);
+        if (id < 0) return false; // unknown building name — treat as not required
+        return city.hasImprovement(id);
+    }
+
+    /**
      * Computes the total shield (production) output for a city based on its
      * centre tile output and city size.
      *
@@ -375,7 +410,21 @@ public class CityTurn {
                     long techReq = improvement.getTechReqId();
                     boolean techMet = (player == null || techReq < 0
                             || player.hasTech(techReq));
-                    if (techMet) {
+                    // Check city building prerequisite before completing construction.
+                    // Mirrors the "Building"/"City" requirement check in
+                    // can_city_build_improvement_direct() in the C Freeciv server.
+                    // For example, Cathedral requires Temple; Bank requires Marketplace.
+                    boolean buildingPrereqMet = true;
+                    String reqBldgName = improvement.getRequiredBuildingName();
+                    if (reqBldgName != null && !reqBldgName.isEmpty()) {
+                        buildingPrereqMet = cityHasImprovementByName(game, city, reqBldgName);
+                        if (!buildingPrereqMet) {
+                            Notify.notifyPlayer(game, game.getServer(), city.getOwner(),
+                                    city.getName() + " cannot build " + improvement.getName()
+                                    + ": requires " + reqBldgName + " first.");
+                        }
+                    }
+                    if (techMet && buildingPrereqMet) {
                         city.addImprovement(improvId);
                         city.setShieldStock(city.getShieldStock() - cost);
                         Notify.notifyPlayer(game, game.getServer(),
@@ -385,9 +434,9 @@ public class CityTurn {
                         city.setProductionKind(0);
                         city.setProductionValue(-1);
                     }
-                    // else: shields are ready but prerequisite tech not yet researched;
+                    // else: shields are ready but prerequisite tech/building not yet met;
                     // keep shields and production queued — completes automatically when
-                    // the technology is acquired.
+                    // the prerequisite is satisfied.
                 }
             }
         }
@@ -497,9 +546,27 @@ public class CityTurn {
 
         if (city.getFoodStock() >= granarySize) {
             // Cities above size 8 require an Aqueduct to grow further.
-            // Mirrors city_can_grow_to() check in C Freeciv server.
-            int aqueductId = findImprId(game, "Aqueduct", 8);
-            if (city.getSize() >= 8 && !city.hasImprovement(aqueductId)) {
+            // Cities above size 12 require both an Aqueduct and a Sewer System.
+            // Mirrors city_can_grow_to() / effect_aqueduct and effect_sewer_system
+            // in the C Freeciv server's common/city.c and effects.ruleset.
+            int aqueductId  = findImprId(game, "Aqueduct",     8);
+            int sewerSysId  = findImprId(game, "Sewer System", -1);
+            boolean hasAqueduct  = city.hasImprovement(aqueductId);
+            boolean hasSewerSys  = sewerSysId >= 0 && city.hasImprovement(sewerSysId);
+
+            if (city.getSize() >= 12 && !(hasAqueduct && hasSewerSys)) {
+                // Cannot grow beyond size 12 without both Aqueduct and Sewer System.
+                city.setFoodStock(granarySize);
+                if (!hasAqueduct) {
+                    Notify.notifyPlayer(game, game.getServer(), city.getOwner(),
+                            city.getName() + " needs an Aqueduct to grow beyond size "
+                                    + city.getSize() + ".");
+                } else {
+                    Notify.notifyPlayer(game, game.getServer(), city.getOwner(),
+                            city.getName() + " needs a Sewer System to grow beyond size "
+                                    + city.getSize() + ".");
+                }
+            } else if (city.getSize() >= 8 && !hasAqueduct) {
                 // Cap food stock at granary size; cannot grow without Aqueduct
                 city.setFoodStock(granarySize);
                 Notify.notifyPlayer(game, game.getServer(), city.getOwner(),
@@ -592,14 +659,29 @@ public class CityTurn {
                 }
             }
 
-            // Deduct unit upkeep: 1 gold per military unit per turn (simplified).
-            // Mirrors gold upkeep handling in the C Freeciv server's cityturn.c.
+            // Deduct unit upkeep: military units cost 1 gold per turn.
+            // Governments with Unit_Upkeep_Free_Per_City=3 (Anarchy, Despotism,
+            // Monarchy, Communism) exempt the first (FREE_UNITS_PER_CITY × numCities)
+            // military units from gold upkeep — they are supported by city shields instead.
+            // Mirrors the unit_gold_upkeep() / Unit_Upkeep_Free_Per_City effect
+            // in the C Freeciv server's cityturn.c and classic effects.ruleset.
+            int govId = player.getGovernmentId();
+            boolean hasFreeUnits = (govId == GOV_ANARCHY || govId == GOV_DESPOTISM
+                    || govId == GOV_MONARCHY || govId == GOV_COMMUNISM);
+            long numCities = game.cities.values().stream()
+                    .filter(c -> c.getOwner() == pid).count();
+            int freeUnitAllowance = hasFreeUnits ? (int) (FREE_UNITS_PER_CITY * numCities) : 0;
+
             int unitUpkeep = 0;
             for (Unit unit : new ArrayList<>(game.units.values())) {
                 if (unit.getOwner() != pid) continue;
                 UnitType utype = game.unitTypes.get((long) unit.getType());
                 if (utype != null && utype.getAttackStrength() > 0) {
-                    unitUpkeep++;
+                    if (freeUnitAllowance > 0) {
+                        freeUnitAllowance--; // this unit is covered by city shields
+                    } else {
+                        unitUpkeep++;        // excess units cost 1 gold each
+                    }
                 }
             }
 
