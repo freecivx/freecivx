@@ -21,6 +21,7 @@ package net.freecivx.ai;
 
 import net.freecivx.game.City;
 import net.freecivx.game.Game;
+import net.freecivx.game.Government;
 import net.freecivx.game.Improvement;
 import net.freecivx.game.Player;
 import net.freecivx.game.Technology;
@@ -137,6 +138,7 @@ public class AiPlayer {
     private int imprColosseum   = -1; // Happiness (Construction tech required)
     private int imprUniversity  = -1; // Science × 2 (University tech, Library prereq)
     private int imprBank        = -1; // Gold × 1.5 (Banking tech, Marketplace prereq)
+    private int imprCourthouse  =  9; // Reduces corruption (Code of Laws required)
 
     // Unit-type IDs — Settlers and Workers are always 0 and 1 in both the classic
     // ruleset and the hardcoded fallback.  Warriors are always 3.  Advanced units
@@ -210,6 +212,10 @@ public class AiPlayer {
         // Phase 0: Manage government evolution when better governments are available.
         // Mirrors dai_manage_government() in ai/default/daicity.c.
         manageAiGovernments();
+
+        // Phase 0b: Adjust tax/science/luxury rates to maintain a positive gold balance
+        // while maximising research speed.  Mirrors dai_manage_taxes() in aihand.c.
+        manageAiTaxRates();
 
         // Phase 1: Choose research goals for AI players (inspired by aitech.c).
         pickResearchGoals();
@@ -298,6 +304,7 @@ public class AiPlayer {
                 case "Colosseum":   imprColosseum   = id; break;
                 case "University":  imprUniversity  = id; break;
                 case "Bank":        imprBank        = id; break;
+                case "Courthouse":  imprCourthouse  = id; break;
                 default: break;
             }
         }
@@ -411,6 +418,193 @@ public class AiPlayer {
                 game.getServer().sendPlayerInfoAll(player);
             }
         }
+    }
+
+    // =========================================================================
+    // Tax rate management (inspired by dai_manage_taxes() in aihand.c)
+    // =========================================================================
+
+    /**
+     * Adjusts the tax/science/luxury rates of every AI player to maintain a
+     * positive gold balance while maximising research speed.  Inspired by
+     * {@code dai_manage_taxes()} in the C Freeciv server's
+     * {@code ai/default/aihand.c}.
+     *
+     * <p>Algorithm (simplified version of the C server logic):
+     * <ol>
+     *   <li>Estimate net gold income: sum of city tax contributions minus
+     *       building upkeep and military unit upkeep.</li>
+     *   <li>If gold is critically low (below a reserve threshold) <em>and</em>
+     *       the estimated income is negative, increase the tax rate by 10 pp
+     *       (reduce science by 10 pp) to recover the treasury.  Mirrors the
+     *       gold-reserve check in {@code dai_gold_reserve()} in
+     *       {@code ai/default/aihand.c}.</li>
+     *   <li>If gold is comfortable and income is positive, decrease the tax
+     *       rate by 10 pp (increase science by 10 pp) to accelerate research,
+     *       up to a maximum science rate of {@value #MAX_AI_SCIENCE_RATE}.</li>
+     *   <li>Luxury is held at zero unless unhappy cities remain after the
+     *       happiness buildings (Temple, Colosseum) cannot satisfy citizens.
+     *       In that case a small luxury allocation (10 pp) is added to keep
+     *       citizens content, mirroring the luxury check in daicity.c.</li>
+     * </ol>
+     *
+     * <p>All rates are clamped to multiples of 10 so they are valid for the
+     * server-side rate slider (the classic Freeciv client only allows multiples
+     * of 10 in tax rates).  Mirrors the {@code RATE_REMAINS} / 10-step
+     * iteration in {@code dai_manage_taxes()}.
+     */
+    private void manageAiTaxRates() {
+        for (Player player : new ArrayList<>(game.players.values())) {
+            if (!player.isAi() || !player.isAlive()) continue;
+            adjustTaxRatesForPlayer(player);
+        }
+    }
+
+    /**
+     * Computes and applies the optimal tax/science/luxury rates for one AI
+     * player.  Called from {@link #manageAiTaxRates()}.
+     *
+     * @param player the AI player whose rates should be adjusted
+     */
+    private void adjustTaxRatesForPlayer(Player player) {
+        long pid = player.getPlayerNo();
+
+        // --- Estimate gross gold income from cities this turn ---
+        int estimatedGoldIncome = 0;
+        for (Map.Entry<Long, City> entry : game.cities.entrySet()) {
+            if (entry.getValue().getOwner() == pid) {
+                estimatedGoldIncome += net.freecivx.server.CityTurn
+                        .cityTaxContribution(game, entry.getKey());
+            }
+        }
+
+        // --- Estimate upkeep (mirrors city_support() / unit_gold_upkeep()) ---
+        int buildingUpkeep = 0;
+        int militaryUnits  = 0;
+        long numCities = 0;
+        for (Map.Entry<Long, City> entry : game.cities.entrySet()) {
+            City city = entry.getValue();
+            if (city.getOwner() != pid) continue;
+            numCities++;
+            for (int improvId : city.getImprovements()) {
+                Improvement impr = game.improvements.get((long) improvId);
+                if (impr != null) buildingUpkeep += impr.getUpkeep();
+            }
+        }
+        for (Unit unit : game.units.values()) {
+            if (unit.getOwner() != pid) continue;
+            UnitType utype = game.unitTypes.get((long) unit.getType());
+            if (utype != null && utype.getAttackStrength() > 0) militaryUnits++;
+        }
+        // Classic Freeciv: governments that support units for free in cities
+        // (Anarchy/Despotism/Monarchy/Communism) provide 1 free unit per city.
+        int govId = player.getGovernmentId();
+        boolean hasFreeUnits = govGrantsFreeUnits(govId);
+        int freeUnits = hasFreeUnits ? (int) (AI_FREE_UNITS_PER_CITY * numCities) : 0;
+        int paidMilitaryUnits = Math.max(0, militaryUnits - freeUnits);
+        int totalExpenses = buildingUpkeep + paidMilitaryUnits;
+
+        int netIncome   = estimatedGoldIncome - totalExpenses;
+        int currentGold = player.getGold();
+
+        // Gold reserve heuristic: keep at least 2 turns of expenses in the
+        // treasury.  Mirrors dai_gold_reserve() in ai/default/aihand.c.
+        int goldReserve = Math.max(AI_GOLD_RESERVE_MIN, totalExpenses * AI_GOLD_RESERVE_EXPENSE_MULTIPLIER);
+
+        int sciRate = player.getScienceRate();
+        int taxRate = player.getTaxRate();
+        int luxRate = player.getLuxuryRate();
+
+        // --- Luxury adjustment ---
+        // Give a small luxury allocation when any of the player's cities are
+        // unhappy.  Remove luxury if all cities are content.
+        boolean hasUnhappyCities = game.cities.values().stream()
+                .anyMatch(c -> c.getOwner() == pid && c.isUnhappy());
+        if (hasUnhappyCities && luxRate < 20 && sciRate > 10) {
+            // Add 10 pp luxury taken from science
+            luxRate += 10;
+            sciRate -= 10;
+        } else if (!hasUnhappyCities && luxRate > 0) {
+            // Reclaim luxury allocation for science/tax
+            sciRate += luxRate;
+            luxRate  = 0;
+        }
+
+        // --- Gold adjustment ---
+        // If running out of gold: increase tax rate (decrease science).
+        if (currentGold < goldReserve && netIncome < 0 && sciRate > 20) {
+            taxRate += 10;
+            sciRate -= 10;
+            log.debug("Player {} raising tax to {}% (gold={}, netIncome={})",
+                    player.getUsername(), taxRate, currentGold, netIncome);
+        }
+        // If flush with cash and income is positive: decrease tax (increase science).
+        else if (currentGold >= goldReserve * 2 && netIncome > 0 && sciRate < MAX_AI_SCIENCE_RATE) {
+            taxRate -= 10;
+            sciRate += 10;
+            log.debug("Player {} lowering tax to {}% (gold={}, netIncome={})",
+                    player.getUsername(), taxRate, currentGold, netIncome);
+        }
+
+        // Clamp all rates to [0,100] in multiples of 10 with the three summing to 100.
+        sciRate = Math.max(0, Math.min(MAX_AI_SCIENCE_RATE, (sciRate / 10) * 10));
+        luxRate = Math.max(0, Math.min(MAX_AI_LUXURY_RATE, (luxRate / 10) * 10));
+        taxRate = 100 - sciRate - luxRate;
+        // Guard against rounding drift
+        if (taxRate < 0) { sciRate += taxRate; taxRate = 0; }
+
+        if (sciRate != player.getScienceRate()
+                || taxRate != player.getTaxRate()
+                || luxRate != player.getLuxuryRate()) {
+            player.setScienceRate(sciRate);
+            player.setTaxRate(taxRate);
+            player.setLuxuryRate(luxRate);
+        }
+    }
+
+    /** Maximum science rate the AI will ever set (percentage).
+     *  Mirrors the maxrate cap in dai_manage_taxes() (default 100 for AI). */
+    private static final int MAX_AI_SCIENCE_RATE = 80;
+
+    /** Maximum luxury rate the AI will ever set (percentage).
+     *  A small luxury allocation satisfies most unhappy citizens without
+     *  sacrificing too much science.  Mirrors the luxury-minimum calculation
+     *  in dai_manage_taxes() in ai/default/aihand.c. */
+    private static final int MAX_AI_LUXURY_RATE = 20;
+
+    /** Minimum gold reserve target (absolute floor, in gold units).
+     *  Mirrors AI_GOLD_RESERVE_MIN_TURNS × typical expenses in aihand.c. */
+    private static final int AI_GOLD_RESERVE_MIN = 20;
+
+    /** Number of turns of expenses that define the gold reserve.
+     *  Mirrors AI_GOLD_RESERVE_MIN_TURNS in ai/default/aihand.c. */
+    private static final int AI_GOLD_RESERVE_EXPENSE_MULTIPLIER = 2;
+
+    /** Number of military units supported for free per city by certain governments
+     *  (Anarchy, Despotism, Monarchy, Communism) in the classic Freeciv ruleset.
+     *  Mirrors the Unit_Upkeep_Free_Per_City effect in classic effects.ruleset and
+     *  the FREE_UNITS_PER_CITY constant used in CityTurn. */
+    private static final int AI_FREE_UNITS_PER_CITY = 3;
+
+    /**
+     * Returns {@code true} if the given government grants free unit support
+     * (Unit_Upkeep_Free_Per_City > 0) in the classic Freeciv ruleset.
+     *
+     * <p>In the classic ruleset the first four governments (IDs 0–3: Anarchy,
+     * Despotism, Monarchy, Communism) each support
+     * {@link #AI_FREE_UNITS_PER_CITY} military units per city for free.
+     * Republic (4) and Democracy (5) require gold for every military unit.
+     * Using a method rather than a bare ID comparison makes the intent clear
+     * and mirrors the Unit_Upkeep_Free_Per_City effect look-up in the C Freeciv
+     * server's {@code common/effects.c}.
+     *
+     * @param govId the player's current government ID
+     * @return {@code true} if the government provides free unit support per city
+     */
+    private static boolean govGrantsFreeUnits(int govId) {
+        // IDs 0–3: Anarchy, Despotism, Monarchy, Communism — all grant free units.
+        // IDs 4–5: Republic, Democracy — no free units.
+        return govId <= 3;
     }
 
     // =========================================================================
@@ -774,7 +968,25 @@ public class AiPlayer {
             }
         }
 
-        // Priority 14: City Walls for passive defence (Masonry required)
+        // Priority 14: Courthouse to reduce corruption in governments that suffer from it.
+        // Only useful when the player is under Despotism, Monarchy, or Communism (which
+        // have non-zero corruption percentages in the classic ruleset).  Mirrors
+        // dai_city_choose_build() in daicity.c which evaluates corruption-reducing buildings
+        // for empires with more than 2 cities — larger empires have more to gain from
+        // reducing corruption at distant cities.
+        if (!city.hasImprovement(imprCourthouse) && imprCourthouse >= 0 && myCityCount >= 3) {
+            Government gov = game.governments.get((long) owner.getGovernmentId());
+            if (gov != null && gov.getCorruptionPct() > 0) {
+                Improvement courthouse = game.improvements.get((long) imprCourthouse);
+                if (courthouse != null && canBuildImprovement(owner, city, courthouse)) {
+                    city.setProductionKind(1);
+                    city.setProductionValue(imprCourthouse);
+                    return;
+                }
+            }
+        }
+
+        // Priority 15: City Walls for passive defence (Masonry required)
         if (!city.hasImprovement(imprCityWalls)) {
             Improvement walls = game.improvements.get((long) imprCityWalls);
             if (walls != null && canBuildImprovement(owner, city, walls)) {
