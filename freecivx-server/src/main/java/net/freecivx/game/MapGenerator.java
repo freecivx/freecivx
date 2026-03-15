@@ -26,37 +26,51 @@ public class MapGenerator {
     private static final int TERRAIN_DESERT = 5;
     private static final int TERRAIN_SWAMP = 12;
     private static final int TERRAIN_TUNDRA = 13;
+    private static final int TERRAIN_JUNGLE = 9;
+    private static final int TERRAIN_GLACIER = 4;
 
     // **Extra IDs (bit positions in the tile extras bitvector)**
     // Must match the extras order in Game.initGame()
     private static final int EXTRA_BIT_RIVER      = 0;
     private static final int EXTRA_BIT_HUT         = 8;
-    // Resource extra bit positions (must match Game.initGame() extras 15-25)
+    // Resource extra bit positions (bits 15-31, must match Game.initGame() extras).
     private static final int EXTRA_BIT_CATTLE      = 15;
     private static final int EXTRA_BIT_GAME        = 16;
     private static final int EXTRA_BIT_WHEAT       = 17;
-    private static final int EXTRA_BIT_HORSES      = 18;
-    private static final int EXTRA_BIT_FOREST_GAME = 19;
+    private static final int EXTRA_BIT_BUFFALO     = 18;
+    private static final int EXTRA_BIT_PHEASANT    = 19;
     private static final int EXTRA_BIT_COAL        = 20;
     private static final int EXTRA_BIT_IRON        = 21;
     private static final int EXTRA_BIT_GOLD        = 22;
     private static final int EXTRA_BIT_OASIS       = 23;
     private static final int EXTRA_BIT_FISH        = 24;
     private static final int EXTRA_BIT_WHALES      = 25;
+    private static final int EXTRA_BIT_SILK        = 26;
+    private static final int EXTRA_BIT_FRUIT       = 27;
+    private static final int EXTRA_BIT_GEMS        = 28;
+    private static final int EXTRA_BIT_IVORY       = 29;
+    private static final int EXTRA_BIT_OIL         = 30;
+    private static final int EXTRA_BIT_WINE        = 31;
 
     // **Resource IDs** (0 = none; must match resource ruleset order)
     private static final int RESOURCE_NONE        = 0;
     private static final int RESOURCE_CATTLE      = 1;
     private static final int RESOURCE_GAME        = 2;
     private static final int RESOURCE_WHEAT       = 3;
-    private static final int RESOURCE_HORSES      = 4;
-    private static final int RESOURCE_FOREST_GAME = 5;
+    private static final int RESOURCE_BUFFALO     = 4;
+    private static final int RESOURCE_PHEASANT    = 5;
     private static final int RESOURCE_COAL        = 6;
     private static final int RESOURCE_IRON        = 7;
     private static final int RESOURCE_GOLD        = 8;
     private static final int RESOURCE_OASIS       = 9;
     private static final int RESOURCE_FISH        = 10;
     private static final int RESOURCE_WHALES      = 11;
+    private static final int RESOURCE_SILK        = 12;
+    private static final int RESOURCE_FRUIT       = 13;
+    private static final int RESOURCE_GEMS        = 14;
+    private static final int RESOURCE_IVORY       = 15;
+    private static final int RESOURCE_OIL         = 16;
+    private static final int RESOURCE_WINE        = 17;
 
     // Probability that a given land tile has a resource
     private static final double RESOURCE_PROBABILITY = 0.15;
@@ -210,20 +224,34 @@ public class MapGenerator {
                 } else if (elevation < -0.2) {  // **Coastline**
                     terrain = TERRAIN_COAST;
                     heightLevel = -100;
-                } else if (elevation < 0.2) {  // **Plains and grasslands**
-                    terrain = (random.nextDouble() < 0.5) ? TERRAIN_GRASSLAND : TERRAIN_PLAINS;
-                    heightLevel = 100;
-                } else if (elevation < 0.5) {  // **Forests, hills, deserts**
-                    if (random.nextDouble() < 0.3) {
-                        terrain = TERRAIN_FOREST;
-                    } else if (random.nextDouble() < 0.6) {
-                        terrain = TERRAIN_HILLS;
+                } else if (elevation < 0.2) {  // **Low-lying land: plains, jungle, swamp**
+                    double r = random.nextDouble();
+                    if (r < 0.38) {
+                        terrain = TERRAIN_GRASSLAND;
+                    } else if (r < 0.72) {
+                        terrain = TERRAIN_PLAINS;
+                    } else if (r < 0.87) {
+                        terrain = TERRAIN_JUNGLE;
                     } else {
+                        terrain = TERRAIN_SWAMP;
+                    }
+                    heightLevel = 100;
+                } else if (elevation < 0.5) {  // **Mid-elevation: forests, hills, desert, tundra**
+                    double r = random.nextDouble();
+                    if (r < 0.28) {
+                        terrain = TERRAIN_FOREST;
+                    } else if (r < 0.52) {
+                        terrain = TERRAIN_HILLS;
+                    } else if (r < 0.72) {
                         terrain = TERRAIN_DESERT;
+                    } else if (r < 0.88) {
+                        terrain = TERRAIN_TUNDRA;
+                    } else {
+                        terrain = TERRAIN_SWAMP;
                     }
                     heightLevel = 200;
-                } else {  // **Mountains**
-                    terrain = TERRAIN_MOUNTAINS;
+                } else {  // **High elevation: mountains and glaciers**
+                    terrain = (random.nextDouble() < 0.25) ? TERRAIN_GLACIER : TERRAIN_MOUNTAINS;
                     heightLevel = 400;
                 }
 
@@ -331,17 +359,22 @@ public class MapGenerator {
     /**
      * Assigns a resource id to a tile based on its terrain type.
      * Returns RESOURCE_NONE (0) if no resource is assigned.
-     * Resource IDs must match the order defined in Game.initGame().
+     * Resource assignments match the classic Freeciv terrain.ruleset.
      */
     private int assignResource(int terrain) {
         if (random.nextDouble() > RESOURCE_PROBABILITY) return RESOURCE_NONE;
         return switch (terrain) {
-            case TERRAIN_GRASSLAND -> random.nextBoolean() ? RESOURCE_CATTLE : RESOURCE_GAME;
-            case TERRAIN_PLAINS    -> random.nextBoolean() ? RESOURCE_WHEAT : RESOURCE_HORSES;
-            case TERRAIN_FOREST    -> RESOURCE_FOREST_GAME;
-            case TERRAIN_HILLS     -> random.nextBoolean() ? RESOURCE_COAL : RESOURCE_IRON;
-            case TERRAIN_MOUNTAINS -> RESOURCE_GOLD;
-            case TERRAIN_DESERT    -> RESOURCE_OASIS;
+            case TERRAIN_PLAINS    -> {
+                double r = random.nextDouble();
+                yield r < 0.33 ? RESOURCE_BUFFALO : r < 0.66 ? RESOURCE_CATTLE : RESOURCE_WHEAT;
+            }
+            case TERRAIN_FOREST    -> random.nextBoolean() ? RESOURCE_PHEASANT : RESOURCE_SILK;
+            case TERRAIN_HILLS     -> random.nextBoolean() ? RESOURCE_COAL : RESOURCE_WINE;
+            case TERRAIN_MOUNTAINS -> random.nextBoolean() ? RESOURCE_GOLD : RESOURCE_IRON;
+            case TERRAIN_DESERT    -> random.nextBoolean() ? RESOURCE_OASIS : RESOURCE_OIL;
+            case TERRAIN_GLACIER   -> random.nextBoolean() ? RESOURCE_IVORY : RESOURCE_OIL;
+            case TERRAIN_TUNDRA    -> RESOURCE_GAME;
+            case TERRAIN_JUNGLE    -> random.nextBoolean() ? RESOURCE_FRUIT : RESOURCE_GEMS;
             case TERRAIN_OCEAN, TERRAIN_COAST -> random.nextBoolean() ? RESOURCE_FISH : RESOURCE_WHALES;
             default -> RESOURCE_NONE;
         };
@@ -354,17 +387,23 @@ public class MapGenerator {
      */
     private int resourceToExtraBit(int resource) {
         return switch (resource) {
-            case RESOURCE_CATTLE      -> EXTRA_BIT_CATTLE;
-            case RESOURCE_GAME        -> EXTRA_BIT_GAME;
-            case RESOURCE_WHEAT       -> EXTRA_BIT_WHEAT;
-            case RESOURCE_HORSES      -> EXTRA_BIT_HORSES;
-            case RESOURCE_FOREST_GAME -> EXTRA_BIT_FOREST_GAME;
-            case RESOURCE_COAL        -> EXTRA_BIT_COAL;
-            case RESOURCE_IRON        -> EXTRA_BIT_IRON;
-            case RESOURCE_GOLD        -> EXTRA_BIT_GOLD;
-            case RESOURCE_OASIS       -> EXTRA_BIT_OASIS;
-            case RESOURCE_FISH        -> EXTRA_BIT_FISH;
-            case RESOURCE_WHALES      -> EXTRA_BIT_WHALES;
+            case RESOURCE_CATTLE   -> EXTRA_BIT_CATTLE;
+            case RESOURCE_GAME     -> EXTRA_BIT_GAME;
+            case RESOURCE_WHEAT    -> EXTRA_BIT_WHEAT;
+            case RESOURCE_BUFFALO  -> EXTRA_BIT_BUFFALO;
+            case RESOURCE_PHEASANT -> EXTRA_BIT_PHEASANT;
+            case RESOURCE_COAL     -> EXTRA_BIT_COAL;
+            case RESOURCE_IRON     -> EXTRA_BIT_IRON;
+            case RESOURCE_GOLD     -> EXTRA_BIT_GOLD;
+            case RESOURCE_OASIS    -> EXTRA_BIT_OASIS;
+            case RESOURCE_FISH     -> EXTRA_BIT_FISH;
+            case RESOURCE_WHALES   -> EXTRA_BIT_WHALES;
+            case RESOURCE_SILK     -> EXTRA_BIT_SILK;
+            case RESOURCE_FRUIT    -> EXTRA_BIT_FRUIT;
+            case RESOURCE_GEMS     -> EXTRA_BIT_GEMS;
+            case RESOURCE_IVORY    -> EXTRA_BIT_IVORY;
+            case RESOURCE_OIL      -> EXTRA_BIT_OIL;
+            case RESOURCE_WINE     -> EXTRA_BIT_WINE;
             default -> -1;
         };
     }

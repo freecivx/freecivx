@@ -685,7 +685,7 @@ public class CivServer extends org.java_websocket.server.WebSocketServer impleme
         msg.put("known", tile.getKnown());
         msg.put("terrain", tile.getTerrain());
         msg.put("resource", tile.getResource());
-        msg.put("extras", tile.getExtras());
+        msg.put("extras", MapHand.extrasToByteArray(tile.getExtras()));
         msg.put("height", tile.getHeight());
         msg.put("worked", tile.getWorked() >= 0 ? tile.getWorked() : JSONObject.NULL);
         msg.put("owner", tile.getOwner() >= 0 ? tile.getOwner() : JSONObject.NULL);
@@ -1067,7 +1067,7 @@ public class CivServer extends org.java_websocket.server.WebSocketServer impleme
             msg.put("known", tile.getKnown());
             msg.put("terrain", tile.getTerrain());
             msg.put("resource", tile.getResource());
-            msg.put("extras", tile.getExtras());
+            msg.put("extras", MapHand.extrasToByteArray(tile.getExtras()));
             msg.put("height", tile.getHeight());
             msg.put("worked", tile.getWorked() >= 0 ? tile.getWorked() : JSONObject.NULL);
             ws.send(msg.toString());

@@ -29,6 +29,7 @@ import net.freecivx.game.Terrain;
 import net.freecivx.game.Tile;
 import net.freecivx.game.Unit;
 import net.freecivx.game.UnitType;
+import net.freecivx.game.Extra;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -218,8 +219,8 @@ public class CityTurn {
 
     /**
      * Computes the food, shield, and trade output of a single tile.
-     * Takes into account terrain base values, tile extras (road, irrigation, mine),
-     * and the city-centre bonus when applicable.
+     * Takes into account terrain base values, tile extras (road, irrigation, mine,
+     * and resource extras), and the city-centre bonus when applicable.
      *
      * <p>Mirrors {@code city_tile_output()} in the C Freeciv server's
      * {@code common/city.c}:
@@ -231,6 +232,8 @@ public class CityTurn {
      *   <li>Road extra adds 1 trade when the terrain has
      *       {@code road_trade_incr_pct > 0} (Desert, Grassland, Plains in classic
      *       ruleset).</li>
+     *   <li>Resource extra (EC_RESOURCE cause) adds the extra's food/shield/trade
+     *       bonuses from {@code [resource_*]} in {@code terrain.ruleset}.</li>
      *   <li>City-centre tile gets +1 food, +1 shield, +1 trade bonus
      *       ({@code EFT_CITY_VISION_RADIUS_SQ} / city-centre rule in C server).</li>
      * </ul>
@@ -262,6 +265,18 @@ public class CityTurn {
             // Mine shield bonus
             if ((extras & (1 << EXTRA_BIT_MINE)) != 0) {
                 shield += terrain.getMiningShieldBonus();
+            }
+            // Resource extra bonus: resource extras occupy bits 15-31; iterate only
+            // over that range to apply food/shield/trade bonuses from terrain.ruleset.
+            for (int bitPos = 15; bitPos < 32; bitPos++) {
+                if ((extras & (1 << bitPos)) != 0) {
+                    Extra extra = game.extras.get((long) bitPos);
+                    if (extra != null) {
+                        food   += extra.getFoodBonus();
+                        shield += extra.getShieldBonus();
+                        trade  += extra.getTradeBonus();
+                    }
+                }
             }
         }
 
