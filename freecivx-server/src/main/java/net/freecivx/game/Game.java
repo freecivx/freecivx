@@ -64,6 +64,15 @@ public class Game {
     private final Set<Long> humanPlayersDone = new HashSet<>();
 
     /**
+     * Direction delta arrays used for goto path execution.
+     * Indices 0-7 match the PathFinder direction encoding:
+     * 0=NW(-1,-1), 1=N(0,-1), 2=NE(1,-1), 3=W(-1,0),
+     * 4=E(1,0), 5=SW(-1,1), 6=S(0,1), 7=SE(1,1).
+     */
+    static final int[] GOTO_DIR_DX = {-1, 0, 1, -1, 1, -1, 0, 1};
+    static final int[] GOTO_DIR_DY = {-1, -1, -1, 0, 0, 1, 1, 1};
+
+    /**
      * Optional map generation seed.  When {@code >= 0} the same seed is
      * passed to {@link MapGenerator} so that the generated map is identical
      * across runs.  Mirrors the {@code mapseed} setting in the C Freeciv server.
@@ -907,6 +916,20 @@ public class Game {
             }
         });
 
+        // Continue executing pending goto paths for human-player units now that
+        // movement points have been restored.  AI units manage their own movement
+        // inside runAiTurns() and do not use the gotoPath queue.
+        // Mirrors the server-side order execution loop in C Freeciv's
+        // server/unittools.c::execute_unit_orders().
+        units.forEach((id, unit) -> {
+            if (!unit.getGotoPath().isEmpty()) {
+                Player owner = players.get(unit.getOwner());
+                if (owner != null && !owner.isAi()) {
+                    executeGotoPath(unit);
+                }
+            }
+        });
+
         // Process end-of-turn city updates: growth, production, economy, research.
         // Mirrors update_city_activities() in the C Freeciv server's cityturn.c.
         net.freecivx.server.CityTurn.updateAllCities(this);
@@ -952,7 +975,66 @@ public class Game {
         // activity changes.  Mirrors unit_activity_handling() in the C server
         // where any new order resets the activity work done so far.
         unit.setActivityCount(0);
+        // Changing the unit's activity cancels any pending goto path.
+        unit.getGotoPath().clear();
         VisibilityHandler.sendUnitToVisiblePlayers(this, unit);
+    }
+
+    /**
+     * Computes the tile ID that is one step in the given direction from
+     * {@code fromTile}, wrapping horizontally on cylindrical maps.
+     * Direction indices use PathFinder encoding (0=NW … 7=SE).
+     *
+     * @param fromTile source tile index
+     * @param dir      direction index (0-7)
+     * @return the neighbouring tile index, or {@code -1} if out of bounds
+     */
+    public int nextTileInDirection(long fromTile, int dir) {
+        if (map == null || dir < 0 || dir > 7) return -1;
+        int xsize = map.getXsize();
+        int ysize = map.getYsize();
+        int x = (int)(fromTile % xsize);
+        int y = (int)(fromTile / xsize);
+        int nx = ((x + GOTO_DIR_DX[dir]) % xsize + xsize) % xsize;
+        int ny = y + GOTO_DIR_DY[dir];
+        if (ny < 0 || ny >= ysize) return -1;
+        return ny * xsize + nx;
+    }
+
+    /**
+     * Executes the unit's pending goto path for the current turn, moving as
+     * far as possible given the unit's remaining movement points.  Steps that
+     * cannot be executed (blocked terrain, enemy unit, etc.) cause the path to
+     * be cleared so the unit stops cleanly.
+     *
+     * <p>Mirrors the server-side order execution in {@code unithand.c /
+     * server/unittools.c} in the C Freeciv server where a unit with pending
+     * orders moves each turn until the orders list is exhausted or blocked.
+     *
+     * @param unit the unit to advance along its goto path
+     */
+    public void executeGotoPath(Unit unit) {
+        List<Integer> path = unit.getGotoPath();
+        while (!path.isEmpty() && unit.getMovesleft() > 0) {
+            int dir = path.get(0);
+            int nextTile = nextTileInDirection(unit.getTile(), dir);
+            if (nextTile < 0) {
+                // Direction leads off the map edge — cancel the goto.
+                path.clear();
+                return;
+            }
+            boolean moved = moveUnit(unit.getId(), nextTile, dir);
+            if (moved) {
+                path.remove(0);
+            } else {
+                // Movement was blocked (terrain, ZOC, enemy) — cancel the goto
+                // so the unit does not endlessly retry the same blocked step.
+                log.debug("Goto path cancelled for unit {} at tile {}: movement blocked",
+                        unit.getId(), unit.getTile());
+                path.clear();
+                return;
+            }
+        }
     }
 
     public boolean moveUnit(long unit_id, int dest_tile, int dir) {
