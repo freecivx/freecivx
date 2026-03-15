@@ -196,6 +196,24 @@ public class CivServer extends org.java_websocket.server.WebSocketServer {
             CityHand.handleCityNameSuggestionReq(game, connId, unit_id);
         }
 
+        // Handle PACKET_CITY_CHANGE (35): client selects new production for a city.
+        // The packet carries production_kind (VUT_UTYPE=6 or VUT_IMPROVEMENT=3)
+        // and production_value (unit type ID or improvement ID).
+        // Mirrors handle_city_change() in the C Freeciv server's cityhand.c.
+        if (pid == Packets.PACKET_CITY_CHANGE) {
+            int city_id = json.optInt("city_id");
+            int production_kind = json.optInt("production_kind");
+            int production_value = json.optInt("production_value");
+            CityHand.handleCityChangeProductionRequest(game, connId, city_id,
+                    production_kind, production_value);
+        }
+
+        // Handle PACKET_CITY_BUY (34): client requests instant-buy of current production.
+        if (pid == Packets.PACKET_CITY_BUY) {
+            int city_id = json.optInt("city_id");
+            CityHand.handleCityBuyRequest(game, connId, city_id);
+        }
+
         if (pid == Packets.PACKET_WEB_GOTO_PATH_REQ) {
             PathFinder pf = new PathFinder(game);
             JSONObject gotoPacket = pf.processMove(json);
@@ -1120,42 +1138,17 @@ public class CivServer extends org.java_websocket.server.WebSocketServer {
         // City instance (with an update() method) before PACKET_CITY_SHORT_INFO
         // arrives. If short-info arrived first the client would store a plain
         // object without update(), causing "cities[id].update is not a function".
+        // Also send PACKET_WEB_CITY_INFO_ADDITION so the city dialog shows
+        // the correct list of buildable units and improvements.
         game.cities.forEach((id, city) -> {
-            JSONArray ppl = new JSONArray();
-            ppl.put(1); ppl.put(1); ppl.put(2); ppl.put(1); ppl.put(1);
-            // prod/surplus need 6 elements (O_FOOD=0…O_SCIENCE=5); add science at [5].
-            JSONArray prod = new JSONArray();
-            prod.put(1); // O_FOOD=0
-            prod.put(1); // O_SHIELD=1
-            prod.put(2); // O_TRADE=2
-            prod.put(1); // O_GOLD=3
-            prod.put(1); // O_LUXURY=4
-            prod.put(1); // O_SCIENCE=5
-            JSONObject fullMsg = new JSONObject();
-            fullMsg.put("pid", Packets.PACKET_CITY_INFO);
-            fullMsg.put("id", id);
-            fullMsg.put("tile", city.getTile());
-            fullMsg.put("owner", city.getOwner());
-            fullMsg.put("original", city.getOwner());
-            fullMsg.put("size", city.getSize());
-            fullMsg.put("style", city.getStyle());
-            fullMsg.put("capital", city.isCapital());
-            fullMsg.put("occupied", city.isOccupied());
-            fullMsg.put("walls", city.getWalls());
-            fullMsg.put("happy", city.isHappy());
-            fullMsg.put("unhappy", city.isUnhappy());
-            fullMsg.put("improvements", city.getImprovements());
-            fullMsg.put("name", city.getName());
-            fullMsg.put("production_kind", city.getProductionKind());
-            fullMsg.put("production_value", city.getProductionValue());
-            fullMsg.put("ppl_happy", ppl);
-            fullMsg.put("ppl_content", ppl);
-            fullMsg.put("ppl_unhappy", ppl);
-            fullMsg.put("ppl_angry", ppl);
-            fullMsg.put("surplus", prod);
-            fullMsg.put("prod", prod);
-            fullMsg.put("city_options", "");
-            ws.send(fullMsg.toString());
+            // Send full city info + web addition via CityTools (handles bitvectors,
+            // shield_stock, food_stock, can_build_unit, can_build_improvement).
+            CityTools.sendCityInfo(game, this, connId, id);
+
+            // Build improvements bitvector for the short-info packet.
+            JSONArray improvBits = CityTools.buildBitvector(
+                    city.getImprovements().stream().mapToInt(Integer::intValue).toArray(),
+                    game.improvements.size());
 
             JSONObject shortMsg = new JSONObject();
             shortMsg.put("pid", Packets.PACKET_CITY_SHORT_INFO);
@@ -1170,7 +1163,7 @@ public class CivServer extends org.java_websocket.server.WebSocketServer {
             shortMsg.put("walls", city.getWalls());
             shortMsg.put("happy", city.isHappy());
             shortMsg.put("unhappy", city.isUnhappy());
-            shortMsg.put("improvements", city.getImprovements());
+            shortMsg.put("improvements", improvBits);
             shortMsg.put("name", city.getName());
             ws.send(shortMsg.toString());
         });

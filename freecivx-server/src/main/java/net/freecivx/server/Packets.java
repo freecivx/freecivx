@@ -31,8 +31,11 @@ public class Packets {
     public static int PACKET_CHAT_MSG_REQ = 26;
     public static int PACKET_CITY_INFO = 31;
     public static int PACKET_CITY_SHORT_INFO = 32;
+    public static int PACKET_CITY_BUY = 34;
+    public static int PACKET_CITY_CHANGE = 35;
     public static int PACKET_CITY_NAME_SUGGESTION_REQ = 43;
     public static int PACKET_CITY_NAME_SUGGESTION_INFO = 44;
+    public static int PACKET_WEB_CITY_INFO_ADDITION = 256;
 
     public static int PACKET_PLAYER_INFO = 51;
     public static int PACKET_PLAYER_PHASE_DONE = 52;
