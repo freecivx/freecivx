@@ -162,7 +162,7 @@ public class AutoGame {
                     String improvements, String name,
                     int productionKind, int productionValue) {}
 
-            @Override public void sendExtrasInfoAll(long id, String extraName) {}
+            @Override public void sendExtrasInfoAll(long id, String extraName, int causes, String graphicStr) {}
 
             @Override public void sendTileInfoAll(Tile tile) {}
 
