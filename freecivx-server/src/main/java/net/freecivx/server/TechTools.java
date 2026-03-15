@@ -113,8 +113,10 @@ public class TechTools {
                 scienceOutput += net.freecivx.server.CityTurn.cityScienceContribution(game, entry.getKey());
             }
         }
-        // Apply player science rate (percentage of output directed to research)
-        scienceOutput = scienceOutput * player.getScienceRate() / 100;
+        // Apply player science rate (percentage of output directed to research).
+        // Use ceiling division to prevent the combined rounding of cityScienceContribution
+        // and the scienceRate step from reducing the output to zero for small cities.
+        scienceOutput = (scienceOutput * player.getScienceRate() + 99) / 100;
 
         // Accumulate bulbs and check for completion
         int bulbs = player.getBulbsResearched() + scienceOutput;

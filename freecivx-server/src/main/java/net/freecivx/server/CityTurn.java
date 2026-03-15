@@ -171,6 +171,18 @@ public class CityTurn {
     private static final int BASE_POLLUTION = 20;
 
     /**
+     * Minimum trade output of a city centre tile, added to the population-based
+     * trade value before corruption and rate splits are applied.
+     * Represents the trade that the city centre tile itself produces regardless
+     * of population size.  Without this constant, sequential integer percentage
+     * multiplications (corruption %, tax rate %) truncate size-1 city output to
+     * zero under high-corruption governments such as Despotism (37 %).
+     * Value 1 mirrors the trade produced by a typical city centre tile in the
+     * classic Freeciv ruleset (Grassland city = 1 trade from the centre tile).
+     */
+    private static final int CITY_CENTRE_TRADE_BONUS = 1;
+
+    /**
      * Returns the granary size (food needed to grow) for a city of the given size.
      * Mirrors {@code city_granary_size} in the C Freeciv server's {@code common/city.c}.
      * Uses the classic Freeciv ruleset defaults:
@@ -542,14 +554,19 @@ public class CityTurn {
         City city = game.cities.get(cityId);
         if (city == null) return 0;
 
-        // Base science: 1 bulb per population point
-        int science = city.getSize();
+        // Base science: 1 bulb per population point.
+        // Add CITY_CENTRE_TRADE_BONUS so that even a size-1 city has a minimum
+        // city-centre contribution.  This prevents the Despotism corruption (37 %)
+        // from rounding the entire output to 0 via integer division.
+        int science = city.getSize() + CITY_CENTRE_TRADE_BONUS;
 
         // Apply Output_Bonus effects additively, matching the C Freeciv server.
         // Library (effect_library): +100% science when Library is present.
         // University (effect_university): +150% additional when BOTH Library and
         // University are present. (Requires Library as a prerequisite.)
         // Combined: Library alone = ×2; Library+University = ×(100+100+150)/100 = ×3.5.
+        // Use ceiling division ((a * b + 99) / 100) to avoid small values rounding
+        // to zero when multiple percentage steps are applied in sequence.
         int libraryId    = findImprId(game, "Library",    3);
         int universityId = findImprId(game, "University", 13);
         int scienceBonus = 0;
@@ -559,12 +576,13 @@ public class CityTurn {
                 scienceBonus += 150; // University+Library: +150% additional (effect_university)
             }
         }
-        science = science * (100 + scienceBonus) / 100;
+        science = (science * (100 + scienceBonus) + 99) / 100;
 
         // Apply government corruption to science output.
         // Mirrors the C Freeciv server where all trade output (gold, science,
         // luxury) is reduced by the government's corruption factor before being
         // split among the three output channels.  Courthouse halves it.
+        // Use ceiling division so that even the first bulb is not rounded away.
         Player player = game.players.get(city.getOwner());
         if (player != null) {
             Government gov = game.governments.get((long) player.getGovernmentId());
@@ -574,7 +592,7 @@ public class CityTurn {
                 if (city.hasImprovement(courthouseId)) {
                     corruptionPct /= 2;
                 }
-                science = science * (100 - corruptionPct) / 100;
+                science = (science * (100 - corruptionPct) + 99) / 100;
             }
         }
 
@@ -605,13 +623,18 @@ public class CityTurn {
         Player player = game.players.get(city.getOwner());
         if (player == null) return 0;
 
-        // Base trade: 1 trade per population (simplified)
-        int trade = city.getSize();
+        // Base trade: 1 trade per population plus a city-centre bonus.
+        // The CITY_CENTRE_TRADE_BONUS represents the trade produced by the city
+        // centre tile itself, independent of population.  This prevents the high
+        // Despotism corruption (37 %) from rounding sequential integer divisions
+        // to zero for small cities.
+        int trade = city.getSize() + CITY_CENTRE_TRADE_BONUS;
 
         // Apply Output_Bonus effects additively, matching the C Freeciv server.
         // Marketplace (effect_marketplace): +50% gold.
         // Bank (effect_bank): +50% additional gold when Marketplace is also present.
         // Combined: Marketplace alone = ×1.5; Marketplace+Bank = ×(100+50+50)/100 = ×2.0.
+        // Ceiling division avoids rounding small city outputs to zero.
         int marketplaceId = findImprId(game, "Marketplace", 4);
         int bankId        = findImprId(game, "Bank",        5);
         int goldBonus = 0;
@@ -621,7 +644,7 @@ public class CityTurn {
                 goldBonus += 50; // Bank (requires Marketplace): +50% additional (effect_bank)
             }
         }
-        trade = trade * (100 + goldBonus) / 100;
+        trade = (trade * (100 + goldBonus) + 99) / 100;
 
         // Apply corruption reduction (Courthouse halves corruption, mirrors C server)
         Government gov = game.governments.get((long) player.getGovernmentId());
@@ -631,13 +654,14 @@ public class CityTurn {
             if (city.hasImprovement(courthouseId)) {
                 corruptionPct /= 2;
             }
-            trade = trade * (100 - corruptionPct) / 100;
+            trade = (trade * (100 - corruptionPct) + 99) / 100;
         }
 
         // Tax rate: use the stored tax rate (= 100 - scienceRate - luxuryRate).
         // This ensures that luxury spending reduces gold income correctly.
         // Mirrors the economic split in the C Freeciv server (economic.tax).
-        return trade * player.getTaxRate() / 100;
+        // Ceiling division preserves at least 1 gold when the taxRate is > 0.
+        return (trade * player.getTaxRate() + 99) / 100;
     }
 
     /**
@@ -666,10 +690,11 @@ public class CityTurn {
 
         if (player.getLuxuryRate() == 0) return 0;
 
-        // Base trade: 1 trade per population (same base as cityTaxContribution)
-        int trade = city.getSize();
+        // Base trade: 1 trade per population plus city-centre bonus (same as cityTaxContribution).
+        int trade = city.getSize() + CITY_CENTRE_TRADE_BONUS;
 
         // Apply trade bonuses from Marketplace and Bank (same as tax).
+        // Ceiling division avoids rounding small city outputs to zero.
         int tradeBonus = 0;
         int marketplaceId = findImprId(game, "Marketplace", 4);
         int bankId        = findImprId(game, "Bank",        5);
@@ -679,7 +704,7 @@ public class CityTurn {
                 tradeBonus += 50; // Bank (requires Marketplace): +50% additional
             }
         }
-        trade = trade * (100 + tradeBonus) / 100;
+        trade = (trade * (100 + tradeBonus) + 99) / 100;
 
         // Apply corruption (reduces effective trade before the rate split).
         Government gov = game.governments.get((long) player.getGovernmentId());
@@ -689,10 +714,10 @@ public class CityTurn {
             if (city.hasImprovement(courthouseId)) {
                 corruptionPct /= 2;
             }
-            trade = trade * (100 - corruptionPct) / 100;
+            trade = (trade * (100 - corruptionPct) + 99) / 100;
         }
 
-        return trade * player.getLuxuryRate() / 100;
+        return (trade * player.getLuxuryRate() + 99) / 100;
     }
 
     /**
