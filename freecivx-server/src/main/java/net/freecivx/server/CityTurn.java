@@ -288,9 +288,9 @@ public class CityTurn {
                         Notify.notifyPlayer(game, game.getServer(),
                                 city.getOwner(),
                                 city.getName() + " has built " + improvement.getName() + ".");
-                        // Reset production to nothing after completion
+                        // Reset production to nothing after completion (-1 = no production)
                         city.setProductionKind(0);
-                        city.setProductionValue(0);
+                        city.setProductionValue(-1);
                     }
                     // else: shields are ready but prerequisite tech not yet researched;
                     // keep shields and production queued — completes automatically when
@@ -299,9 +299,9 @@ public class CityTurn {
             }
         }
 
-        // productionKind 0 = unit production
+        // productionKind 0 = unit production; productionValue -1 means nothing queued.
         // Mirrors city_build_unit() in the C Freeciv server's citytools.c.
-        if (city.getProductionKind() == 0 && city.getProductionValue() > 0) {
+        if (city.getProductionKind() == 0 && city.getProductionValue() >= 0) {
             int unitTypeId = city.getProductionValue();
             UnitType unitType = game.unitTypes.get((long) unitTypeId);
             if (unitType != null) {
@@ -355,7 +355,10 @@ public class CityTurn {
                     Notify.notifyPlayer(game, game.getServer(),
                             city.getOwner(),
                             city.getName() + " has built " + unitType.getName() + ".");
-                    // Keep producing same unit type; player can change manually
+                    // Reset production so AI/player can choose what to build next.
+                    // Mirrors the C server behaviour where the production queue is
+                    // cleared after a unit is completed unless the player repeats it.
+                    city.setProductionValue(-1);
                 }
             }
         }

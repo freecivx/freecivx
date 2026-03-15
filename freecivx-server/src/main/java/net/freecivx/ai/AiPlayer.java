@@ -440,7 +440,7 @@ public class AiPlayer {
      * </ol>
      *
      * <p>Production is only changed when the slot is empty
-     * ({@code productionKind == 0 && productionValue == 0}), which is the
+     * ({@code productionKind == 0 && productionValue == -1}), which is the
      * state {@link net.freecivx.server.CityTurn#cityProduction} sets after an
      * improvement completes.
      *
@@ -449,8 +449,8 @@ public class AiPlayer {
      * @param owner  the AI player who owns the city
      */
     private void manageAiCity(City city, long cityId, Player owner) {
-        // Only fill an empty production slot; do not override in-progress work.
-        if (city.getProductionKind() != 0 || city.getProductionValue() != 0) return;
+        // Only fill an empty production slot (-1 = nothing queued); do not override in-progress work.
+        if (city.getProductionKind() != 0 || city.getProductionValue() != -1) return;
 
         long ownerId = city.getOwner();
         int defenders = countUnitsOnTile(city.getTile(), ownerId);
