@@ -1042,6 +1042,15 @@ public class Game {
 
         UnitType attackerType = unitTypes.get((long) attacker.getType());
         UnitType defenderType = unitTypes.get((long) defender.getType());
+
+        // Non-military units (Workers, Engineers, Diplomats, etc.) cannot initiate
+        // combat.  Mirrors is_military_unit() in the C Freeciv server's common/unit.c:
+        // a unit with attack_strength=0 or the NonMil flag is never a military unit.
+        if (attackerType != null
+                && (attackerType.getAttackStrength() == 0 || attackerType.isNonMilitary())) {
+            return false;
+        }
+
         Tile defenderTile = tiles.get(defender.getTile());
 
         // Apply city walls defence bonus when the defender is garrisoned in a walled city.

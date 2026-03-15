@@ -104,6 +104,26 @@ public class UnitType {
      */
     private int antiHorseFactor = 1;
 
+    /**
+     * Whether this unit type is a non-military (civilian) unit.
+     * Set when the ruleset {@code flags} field contains {@code "NonMil"}.
+     * Non-military units (Workers, Engineers, Diplomats, etc.) cannot
+     * initiate combat — mirroring {@code is_military_unit()} in the C
+     * Freeciv server's {@code common/unit.c}.
+     */
+    private boolean nonMilitary = false;
+
+    /**
+     * Whether this unit type can build terrain improvements (roads, irrigation,
+     * mines) and found cities.  Set when the ruleset {@code flags} field
+     * contains {@code "Settlers"} or {@code "Cities"}.  True for Workers and
+     * Engineers (but NOT for Diplomats/Spies, which also have {@code NonMil}
+     * but neither the {@code "Settlers"} nor the {@code "Cities"} flag).
+     * Mirrors the {@code UnitClass} "TerrainChangeSpeed" / "Settlers" flag in
+     * the C Freeciv server's {@code units.ruleset}.
+     */
+    private boolean hasSettlersFlag = false;
+
     // Constructor (backwards-compatible without cost)
     public UnitType(String name, String graphicsStr, int moveRate, int hp, int veteranLevels, String helptext, int attackStrength, int defenseStrength,
                     String utype_actions, int domain) {
@@ -326,6 +346,50 @@ public class UnitType {
      */
     public void setAntiHorseFactor(int antiHorseFactor) {
         this.antiHorseFactor = Math.max(1, antiHorseFactor);
+    }
+
+    /**
+     * Returns {@code true} if this is a non-military (civilian) unit.
+     * Non-military units cannot initiate combat.  Mirrors
+     * {@code is_military_unit()} returning {@code false} in the C Freeciv
+     * server's {@code common/unit.c} for units with the {@code "NonMil"} flag.
+     */
+    public boolean isNonMilitary() {
+        return nonMilitary;
+    }
+
+    /**
+     * Sets whether this unit type is non-military (civilian).
+     * Should be {@code true} when the ruleset {@code flags} field contains
+     * {@code "NonMil"} (Workers, Engineers, Diplomats, etc.).
+     *
+     * @param nonMilitary {@code true} for civilian units that cannot attack
+     */
+    public void setNonMilitary(boolean nonMilitary) {
+        this.nonMilitary = nonMilitary;
+    }
+
+    /**
+     * Returns {@code true} if this unit type has the {@code "Settlers"} or
+     * {@code "Cities"} flag, meaning it can build terrain improvements and
+     * found cities.  True for Workers and Engineers; false for Diplomats and
+     * Spies even though those are also non-military.  Mirrors the
+     * {@code "Settlers"} / {@code "Cities"} flags in the classic Freeciv
+     * units ruleset.
+     */
+    public boolean hasSettlersFlag() {
+        return hasSettlersFlag;
+    }
+
+    /**
+     * Sets whether this unit type has the {@code "Settlers"} or
+     * {@code "Cities"} flag (parsed from the ruleset).
+     * Should be {@code true} for Workers, Engineers, and Settlers.
+     *
+     * @param hasSettlersFlag {@code true} if this unit can build terrain improvements
+     */
+    public void setHasSettlersFlag(boolean hasSettlersFlag) {
+        this.hasSettlersFlag = hasSettlersFlag;
     }
 
     // Optional toString method for debugging
