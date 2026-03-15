@@ -1104,9 +1104,9 @@ public class Game {
 
         long id = cities.size() + 1;
         long owner = unit.getOwner();
-        // productionKind=0 (unit), productionValue=0 (no production yet)
+        // productionKind=0 (unit), productionValue=-1 (no production yet)
         City city = new City(city_name, owner, tile_id, 1, 1, false, false,
-                0, true, false, "", 0, 0);
+                0, true, false, "", 0, -1);
         cities.put(id, city);
 
         Tile tile = tiles.get(tile_id);
@@ -1176,7 +1176,7 @@ public class Game {
             city.setSize(city.getSize() - 1);
             // Reset production queue (captured city has disrupted production)
             city.setProductionKind(0);
-            city.setProductionValue(0);
+            city.setProductionValue(-1);
             city.setShieldStock(0);
             CityTools.sendCityInfo(this, server, -1L, cityId);
             server.sendMessageAll(cityName + " has been captured!");

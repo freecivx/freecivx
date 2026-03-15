@@ -158,7 +158,8 @@ public class CityTools {
         msg.put("unhappy", city.isUnhappy());
         msg.put("improvements", improvBits);
         msg.put("production_kind", city.getProductionKind());
-        msg.put("production_value", city.getProductionValue());
+        // Translate -1 (internal "nothing queued" sentinel) to 0 for the network protocol.
+        msg.put("production_value", Math.max(0, city.getProductionValue()));
         msg.put("shield_stock", city.getShieldStock());
         msg.put("food_stock", city.getFoodStock());
         msg.put("ppl_happy", ppl);
