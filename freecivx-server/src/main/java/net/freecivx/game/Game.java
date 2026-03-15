@@ -903,6 +903,35 @@ public class Game {
         // Enforce movement limits
         if (unit.getMovesleft() <= 0) return false;
 
+        // Validate that the destination is exactly one tile (adjacent) from the unit's
+        // current position.  This prevents GOTO or client exploits from teleporting a
+        // unit many tiles in a single order — each call to moveUnit() covers one step.
+        // Mirrors the adjacency requirement in the C Freeciv server's unithand.c.
+        if (map != null) {
+            int xsize = map.getXsize();
+            int sx = (int) (unit.getTile() % xsize);
+            int sy = (int) (unit.getTile() / xsize);
+            int dx = dest_tile % xsize;
+            int dy = dest_tile / xsize;
+            // Reject same-tile moves before checking adjacency distance.
+            if (dx == sx && dy == sy) return false;
+            int rawDx = Math.abs(dx - sx);
+            int wrappedDx = Math.min(rawDx, xsize - rawDx); // handle east-west map wrap
+            int rawDy = Math.abs(dy - sy);
+            if (wrappedDx > 1 || rawDy > 1) {
+                return false; // destination is more than one tile away
+            }
+        }
+
+        // Always compute the facing direction server-side from the actual tile delta,
+        // overriding whatever direction the client provided.  This fixes cases where
+        // GOTO orders carry a stale or incorrect dir value.
+        // Mirrors the direction calculation in the C Freeciv server's unithand.c.
+        int calculatedDir = Movement.unitFacing((int) unit.getTile(), dest_tile, map);
+        if (calculatedDir >= 0) {
+            dir = calculatedDir;
+        }
+
         // Terrain check: land units cannot enter ocean tiles (terrain 2=Ocean, 3=Deep Ocean);
         // sea units (domain=1) can only enter ocean tiles and cannot move onto land.
         // Mirrors domain-based native-tile checks in the C Freeciv server's movement.c.
