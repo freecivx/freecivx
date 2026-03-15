@@ -21,6 +21,7 @@ package net.freecivx.server;
 
 import net.freecivx.game.City;
 import net.freecivx.game.Game;
+import net.freecivx.game.Player;
 import net.freecivx.game.Tile;
 import net.freecivx.game.WorldMap;
 import org.json.JSONArray;
@@ -36,7 +37,8 @@ public class MapHand {
 
     /**
      * Sends a PACKET_TILE_INFO packet for a single tile to the specified client.
-     * Includes terrain, resource, extras, height, and known/fog-of-war status.
+     * The {@code known} field is computed from the player's per-player visibility
+     * sets (explored / visible) so each player receives correct fog-of-war data.
      *
      * @param game   the current game state
      * @param connId the connection ID of the recipient client
@@ -46,17 +48,22 @@ public class MapHand {
         Tile tile = game.tiles.get(tileId);
         if (tile == null) return;
 
+        Player player = game.players.get(connId);
+        int known = (player != null)
+                ? VisibilityHandler.getKnownForPlayer(player, tileId)
+                : tile.getKnown();
+
         JSONObject msg = new JSONObject();
         msg.put("pid", Packets.PACKET_TILE_INFO);
         msg.put("tile", tile.getIndex());
         msg.put("terrain", tile.getTerrain());
         msg.put("resource", tile.getResource());
         msg.put("extras", extrasToByteArray(tile.getExtras()));
-        msg.put("known", tile.getKnown());
+        msg.put("known", known);
         msg.put("height", tile.getHeight());
         msg.put("worked", tile.getWorked() >= 0 ? tile.getWorked() : JSONObject.NULL);
         msg.put("owner", tile.getOwner() >= 0 ? tile.getOwner() : JSONObject.NULL);
-        game.getServer().sendMessage(connId, msg.toString());
+        game.getServer().sendPacket(connId, msg);
     }
 
     /**

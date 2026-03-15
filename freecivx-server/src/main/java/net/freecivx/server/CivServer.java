@@ -690,18 +690,14 @@ public class CivServer extends org.java_websocket.server.WebSocketServer impleme
     }
 
     public void sendTileInfoAll(Tile tile) {
-        JSONObject msg = new JSONObject();
-        msg.put("pid", Packets.PACKET_TILE_INFO);
-        msg.put("tile", tile.getIndex());
-        msg.put("known", tile.getKnown());
-        msg.put("terrain", tile.getTerrain());
-        msg.put("resource", tile.getResource());
-        msg.put("extras", MapHand.extrasToByteArray(tile.getExtras()));
-        msg.put("height", tile.getHeight());
-        msg.put("worked", tile.getWorked() >= 0 ? tile.getWorked() : JSONObject.NULL);
-        msg.put("owner", tile.getOwner() >= 0 ? tile.getOwner() : JSONObject.NULL);
-
-        broadcast(msg);
+        // Send per-player tile info so each client receives the correct fog-of-war
+        // known status (TILE_UNKNOWN / TILE_KNOWN_UNSEEN / TILE_KNOWN_SEEN).
+        // Only human players with an active connection are targeted.
+        for (net.freecivx.game.Player player : game.players.values()) {
+            if (player.isAi()) continue;
+            int known = VisibilityHandler.getKnownForPlayer(player, tile.getIndex());
+            VisibilityHandler.sendTileToPlayer(game, player.getConnectionId(), tile.getIndex(), known);
+        }
     }
 
     public void sendConnInfoAll(long id, String username, String address, long player_num) {
@@ -1070,12 +1066,16 @@ public class CivServer extends org.java_websocket.server.WebSocketServer impleme
             ws.send(msg.toString());
         }
 
-        // Tiles
+        // Tiles – send with per-player fog-of-war known status
+        net.freecivx.game.Player joiningPlayer = game.players.get(connId);
         game.tiles.forEach((id, tile) -> {
+            int known = (joiningPlayer != null)
+                    ? VisibilityHandler.getKnownForPlayer(joiningPlayer, tile.getIndex())
+                    : tile.getKnown();
             JSONObject msg = new JSONObject();
             msg.put("pid", Packets.PACKET_TILE_INFO);
             msg.put("tile", tile.getIndex());
-            msg.put("known", tile.getKnown());
+            msg.put("known", known);
             msg.put("terrain", tile.getTerrain());
             msg.put("resource", tile.getResource());
             msg.put("extras", MapHand.extrasToByteArray(tile.getExtras()));
