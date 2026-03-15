@@ -26,4 +26,5 @@ Put all copilot documentation files in the doc directory.
 - No need to check if fuctions are defined all the time.  typeof current_focus !== 'undefined'
 - When doing changes to the "Freeciv server", this means the freeciv directory. Do not modify "freecivx-server" unless directly told to.
 - do not create java tests for freecivx-server
-- don't change Java version requirement 
+- don't change Java version requirement
+- don't run CodeQL check, it takes took long
