@@ -20,12 +20,16 @@
 
 package net.freecivx.game;
 
+import java.util.ArrayList;
+import java.util.List;
+
 public class Nation {
 
     private String name;
     private String adjective;
     private String graphicsStr;
     private String legend;
+    private List<String> cityNames = new ArrayList<>();
 
     // Constructor
     public Nation(String name, String adjective, String graphicsStr, String legend) {
@@ -71,6 +75,14 @@ public class Nation {
     // Setter for legend
     public void setLegend(String legend) {
         this.legend = legend;
+    }
+
+    public List<String> getCityNames() {
+        return cityNames;
+    }
+
+    public void setCityNames(List<String> cityNames) {
+        this.cityNames = cityNames != null ? cityNames : new ArrayList<>();
     }
 
     // Override toString for easier debugging

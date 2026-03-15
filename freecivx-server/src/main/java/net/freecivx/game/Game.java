@@ -275,10 +275,17 @@ public class Game {
             populateFallback();
         }
 
-        // Nations and extras are always hardcoded (not loaded from ruleset files)
-        nations.put(0L, new Nation("Soviet Union", "Soviet", "soviet", "The Soviets!"));
-        nations.put(1L, new Nation("France", "French", "france", "Vive La France!"));
-        nations.put(2L, new Nation("Germany", "German", "germany", "Deutschland"));
+        // Nations and extras are always hardcoded (not loaded from ruleset files).
+        // City names are loaded from the matching nation/*.ruleset resource file.
+        Nation nationSoviet  = new Nation("Soviet Union", "Soviet", "soviet",  "The Soviets!");
+        Nation nationFrance  = new Nation("France",       "French", "france",  "Vive La France!");
+        Nation nationGermany = new Nation("Germany",      "German", "germany", "Deutschland");
+        nationSoviet .setCityNames(ruleset.loadNationCityNames("soviet"));
+        nationFrance .setCityNames(ruleset.loadNationCityNames("french"));
+        nationGermany.setCityNames(ruleset.loadNationCityNames("german"));
+        nations.put(0L, nationSoviet);
+        nations.put(1L, nationFrance);
+        nations.put(2L, nationGermany);
 
         // EC_* cause bit values (matching fc_types.js / common/fc_types.h):
         //   EC_IRRIGATION=0 → 1, EC_MINE=1 → 2, EC_ROAD=2 → 4, EC_BASE=3 → 8,
