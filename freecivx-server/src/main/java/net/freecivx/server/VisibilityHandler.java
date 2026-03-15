@@ -143,6 +143,39 @@ public class VisibilityHandler {
     }
 
     /**
+     * Reveals the entire map to all human players by sending every tile as
+     * {@link #TILE_KNOWN_SEEN}, updating each player's explored and visible
+     * tile sets accordingly.  Also sends all foreign units and cities on
+     * newly revealed tiles so the client displays complete information.
+     *
+     * <p>Called when the game ends (e.g. turn limit reached) to show the full
+     * map to everyone, mirroring the C Freeciv server's
+     * {@code map_know_and_see_all()} in {@code maphand.c}.
+     *
+     * @param game the current game state
+     */
+    public static void revealMapToAll(Game game) {
+        if (game.map == null) return;
+        int xsize = game.map.getXsize();
+        int ysize = game.map.getYsize();
+        long totalTiles = (long) xsize * ysize;
+
+        for (Player player : game.players.values()) {
+            if (player.isAi()) continue;
+
+            long connId = player.getConnectionId();
+            long ownPlayerId = player.getPlayerNo();
+
+            for (long tileId = 0; tileId < totalTiles; tileId++) {
+                player.getExploredTiles().add(tileId);
+                player.getVisibleTiles().add(tileId);
+                sendTileToPlayer(game, connId, tileId, TILE_KNOWN_SEEN);
+                sendForeignEntitiesOnTile(game, connId, ownPlayerId, tileId);
+            }
+        }
+    }
+
+    /**
      * Recomputes the player's field of view, updates their explored and
      * visible tile sets, and sends {@code PACKET_TILE_INFO} packets to the
      * player's client for every tile whose known status has changed.

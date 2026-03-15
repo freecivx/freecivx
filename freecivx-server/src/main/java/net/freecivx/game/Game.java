@@ -115,6 +115,14 @@ public class Game {
     private int initialGold = 50;
 
     /**
+     * Maximum turn number.  When {@code > 0} the game ends automatically at
+     * the start of this turn (after incrementing the counter).
+     * {@code 0} (default) disables the limit.
+     * Mirrors the {@code endturn} setting in the C Freeciv server.
+     */
+    private int endTurn = 0;
+
+    /**
      * Turn timer used to implement the per-turn {@link #turnTimeout}.
      * Injected by the server via {@link #setTurnTimer(TurnTimer)};
      * {@code null} in browser/TeaVM mode where threading is unavailable.
@@ -248,6 +256,23 @@ public class Game {
     /** Returns the configured initial gold value. */
     public int getInitialGold() {
         return initialGold;
+    }
+
+    /**
+     * Sets the turn at which the game automatically ends.
+     * When {@code > 0} the game ends at the start of the given turn after
+     * the turn counter is incremented.  Set to {@code 0} to disable.
+     * Mirrors the {@code endturn} setting in the C Freeciv server.
+     *
+     * @param turn maximum turn number (0 = disabled, max 32767)
+     */
+    public void setEndTurn(int turn) {
+        this.endTurn = turn;
+    }
+
+    /** Returns the configured end-turn limit (0 = disabled). */
+    public int getEndTurn() {
+        return endTurn;
     }
 
     /**
@@ -965,6 +990,23 @@ public class Game {
         if (turnTimeout > 0) {
             scheduleTurnTimeout();
         }
+
+        // Check the end-turn limit after all other processing is complete.
+        if (endTurn > 0 && turn >= endTurn) {
+            endGame();
+        }
+    }
+
+    /**
+     * Ends the game when the turn limit is reached.
+     * Reveals the entire map to all human players and broadcasts a game-over
+     * message.  Mirrors the {@code end_turn} / {@code check_for_game_over()}
+     * logic in the C Freeciv server's {@code server/srv_main.c}.
+     */
+    public void endGame() {
+        log.info("Game over: turn limit {} reached at turn {}.", endTurn, turn);
+        server.sendMessageAll("Game over! The turn limit of " + endTurn + " has been reached.");
+        net.freecivx.server.VisibilityHandler.revealMapToAll(this);
     }
 
     public void changeUnitActivity(long unit_id, int activity) {

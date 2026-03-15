@@ -324,6 +324,7 @@ public class CivServer extends org.java_websocket.server.WebSocketServer impleme
                         /set aifill N   - Set number of AI players (0-9, applied at game start)
                         /set gold N     - Set starting gold for all players (0-50000)
                         /set generator N - Set map generator: 2 = fractal/fBM (default), 5 = island/continent
+                        /set endturn N  - Set turn at which the game ends and reveals the whole map (0 = disabled)
                         /help           - Show this help text
                         Available scenarios: africa-350x350-v1.0.sav, british-isles.sav, caribbean-500x250-v1.2.sav, earth-large.sav, earth-small.sav, europe.sav, france.sav, hagworld.sav, iberian-peninsula.sav, india-350x350-v1.2.sav, italy.sav, japan.sav, middleeast-350x350-v1.1.sav, north_america.sav, scandinavia-350x350-v1.0.sav, tutorial.sav
                         Game features: units move with movement limits, AI players included.
@@ -346,6 +347,7 @@ public class CivServer extends org.java_websocket.server.WebSocketServer impleme
      *   <li>{@code aifill}    – number of AI players to create at game start (0–9)</li>
      *   <li>{@code gold}      – starting gold for every player (0–50 000)</li>
      *   <li>{@code generator} – map generator: 2 = fractal/fBM (default), 5 = island/continent</li>
+     *   <li>{@code endturn}   – turn at which the game ends automatically (0 = disabled, max 32767)</li>
      * </ul>
      *
      * @param connId  the connection ID of the issuing client
@@ -402,6 +404,17 @@ public class CivServer extends org.java_websocket.server.WebSocketServer impleme
                 game.setGenerator(value);
                 String genName = (value == 5) ? "island" : "fractal";
                 sendMessageAll("generator: set to " + value + " (" + genName + ").");
+            }
+            case "endturn" -> {
+                if (value < 0 || value > 32767) {
+                    sendMessage(connId, "endturn must be between 0 and 32767 (0 = disabled).");
+                    return;
+                }
+                game.setEndTurn(value);
+                String msg = value == 0
+                        ? "endturn: disabled (game will not end automatically)."
+                        : "endturn: game will end at turn " + value + ".";
+                sendMessageAll(msg);
             }
             default -> sendMessage(connId, "Unknown setting '" + setting
                     + "'. Try /help for available settings.");
