@@ -236,7 +236,9 @@ public class CityTools {
         JSONArray canBuildUnit = buildBitvector(buildableUnits, maxUnitId + 1);
 
         // Build can_build_improvement bitvector: bit N is set when the city can
-        // still build improvement N (tech met and not already built).
+        // still build improvement N (tech met, not already built, and building
+        // prerequisite satisfied).  Mirrors can_city_build_improvement_direct()
+        // in the C Freeciv server's common/city.c.
         int maxImprId = game.improvements.keySet().stream()
                 .mapToInt(Long::intValue).max().orElse(0);
         int[] buildableImprovements = game.improvements.entrySet().stream()
@@ -246,7 +248,11 @@ public class CityTools {
                     boolean techMet = (player == null || techReq < 0
                             || player.hasTech(techReq));
                     boolean notBuilt = !city.hasImprovement(e.getKey().intValue());
-                    return techMet && notBuilt;
+                    // Check city-building prerequisite (e.g. Cathedral requires Temple).
+                    String reqBldgName = impr.getRequiredBuildingName();
+                    boolean buildingPrereqMet = (reqBldgName == null || reqBldgName.isEmpty()
+                            || CityTurn.cityHasImprovementByName(game, city, reqBldgName));
+                    return techMet && notBuilt && buildingPrereqMet;
                 })
                 .mapToInt(e -> e.getKey().intValue())
                 .toArray();
