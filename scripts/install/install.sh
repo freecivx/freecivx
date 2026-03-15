@@ -333,6 +333,10 @@ echo "==== Building freecivx-server ===="
 (cd "${basedir}"/freecivx-server && mvn -q package -DskipTests) || \
   handle_error 8 "Failed to build freecivx-server"
 
+echo "==== Building freecivx-server TeaVM bundle ===="
+(cd "${basedir}"/freecivx-server && mvn -q package -P teavm -DskipTests) || \
+  handle_error 8 "Failed to build freecivx-server TeaVM bundle"
+
 echo "==== Setting up nginx ===="
 stop_svc nginx
 sudo rm -f /etc/nginx/sites-enabled/default
