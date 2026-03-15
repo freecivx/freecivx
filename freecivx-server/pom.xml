@@ -256,6 +256,22 @@
               <skip>true</skip>
             </configuration>
           </plugin>
+          <!-- Skip the thin-JAR packaging step in the TeaVM build.
+               The TeaVM build produces JavaScript, not a runnable JAR.
+               Without this, the maven-jar-plugin would create
+               freecivx-server-1.0.jar (thin JAR, no deps) which would
+               overwrite the fat JAR produced by a prior normal build,
+               causing NoClassDefFoundError at runtime. -->
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-jar-plugin</artifactId>
+            <executions>
+              <execution>
+                <id>default-jar</id>
+                <phase>none</phase>
+              </execution>
+            </executions>
+          </plugin>
           <plugin>
             <groupId>org.teavm</groupId>
             <artifactId>teavm-maven-plugin</artifactId>
