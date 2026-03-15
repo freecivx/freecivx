@@ -23,6 +23,7 @@ package net.freecivx.game;
 import net.freecivx.server.IGameServer;
 import net.freecivx.server.CityTools;
 import net.freecivx.server.Notify;
+import net.freecivx.server.Packets;
 import net.freecivx.server.VisibilityHandler;
 import net.freecivx.ai.AiPlayer;
 import net.freecivx.data.Ruleset;
@@ -34,10 +35,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
+import java.util.ArrayDeque;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Queue;
 import java.util.Random;
 import java.util.Set;
 
@@ -947,11 +950,16 @@ public class Game {
         // Mirrors the server-side order execution loop in C Freeciv's
         // server/unittools.c::execute_unit_orders().
         units.forEach((id, unit) -> {
+            Player owner = players.get(unit.getOwner());
+            if (owner == null || owner.isAi()) return;
+            // Auto-explore: compute next step toward the nearest unexplored tile
+            // before executing the path, so the goto path is always fresh.
+            if (unit.getSsa_controller() == Packets.SSA_AUTOEXPLORE) {
+                UnitType utype = unitTypes.get((long) unit.getType());
+                autoExploreUnit(unit, utype);
+            }
             if (!unit.getGotoPath().isEmpty()) {
-                Player owner = players.get(unit.getOwner());
-                if (owner != null && !owner.isAi()) {
-                    executeGotoPath(unit);
-                }
+                executeGotoPath(unit);
             }
         });
 
@@ -1022,6 +1030,116 @@ public class Game {
         VisibilityHandler.sendUnitToVisiblePlayers(this, unit);
     }
 
+    /**
+     * Sets the server-side agent controller for a unit and notifies the
+     * owning client.  When {@code agent} is {@link Packets#SSA_AUTOEXPLORE}
+     * the unit will automatically explore toward unknown tiles each turn.
+     * Setting {@code agent} to {@link Packets#SSA_NONE} cancels automation.
+     *
+     * <p>Mirrors {@code unit_server_side_agent_set()} in the C Freeciv
+     * server's {@code server/unithand.c}.
+     *
+     * @param unit_id the ID of the unit to update
+     * @param agent   the new {@code SSA_*} agent value
+     */
+    public void setUnitSsaController(long unit_id, int agent) {
+        Unit unit = units.get(unit_id);
+        if (unit == null) return;
+        unit.setSsa_controller(agent);
+        // Cancel any pending manual goto so the new auto-explore direction
+        // takes effect from the start of the next turn.
+        unit.getGotoPath().clear();
+        VisibilityHandler.sendUnitToVisiblePlayers(this, unit);
+    }
+
+    /**
+     * Computes and queues one turn's worth of movement for an auto-exploring
+     * unit toward the nearest tile that the owning player has not yet seen.
+     * Uses a breadth-first search (BFS) from the unit's current tile to find
+     * the closest unexplored tile, then reconstructs the first step of that
+     * path and stores it as the unit's goto path so that
+     * {@link #executeGotoPath(Unit)} will carry the unit there.
+     *
+     * <p>If the entire map is already explored (no {@code TILE_UNKNOWN}
+     * tiles remain adjacent to explored territory) the unit's
+     * {@code ssa_controller} is reset to {@link Packets#SSA_NONE} and the
+     * unit stops.  This mirrors the C Freeciv server behaviour where
+     * {@code auto_explore_land_modifier()} stops the unit when no unexplored
+     * tiles remain reachable.
+     *
+     * @param unit  the auto-exploring unit
+     * @param utype the unit type (used for domain / terrain checks)
+     */
+    public void autoExploreUnit(Unit unit, UnitType utype) {
+        if (map == null) return;
+        Player owner = players.get(unit.getOwner());
+        if (owner == null) return;
+
+        // BFS: each entry is [tileId, firstDir] where firstDir is the
+        // direction taken from the unit's starting tile to reach this tile.
+        Queue<long[]> queue = new ArrayDeque<>();
+        Set<Long> visited = new HashSet<>();
+
+        long startTile = unit.getTile();
+        visited.add(startTile);
+
+        // Seed the queue with all valid first steps from the unit's tile.
+        for (int dir = 0; dir < 8; dir++) {
+            int neighborId = nextTileInDirection(startTile, dir);
+            if (neighborId < 0) continue;
+            Tile neighborTile = tiles.get((long) neighborId);
+            if (neighborTile == null) continue;
+
+            // Domain check: land units skip ocean tiles (terrain 2=Ocean, 3=Deep Ocean);
+            // sea units skip land.
+            int terrain = neighborTile.getTerrain();
+            boolean isOcean = (terrain == 2 || terrain == 3);
+            if (utype != null && utype.getDomain() == 0 && isOcean) continue;
+            if (utype != null && utype.getDomain() == 1 && !isOcean) continue;
+
+            if (!visited.contains((long) neighborId)) {
+                visited.add((long) neighborId);
+                queue.add(new long[]{neighborId, dir});
+            }
+        }
+
+        // BFS expansion – find the nearest unexplored tile.
+        while (!queue.isEmpty()) {
+            long[] current = queue.poll();
+            long tileId = current[0];
+            int firstDir = (int) current[1];
+
+            int known = VisibilityHandler.getKnownForPlayer(owner, tileId);
+            if (known == VisibilityHandler.TILE_UNKNOWN) {
+                // Found an unexplored tile – queue a one-step goto toward it.
+                unit.getGotoPath().clear();
+                unit.getGotoPath().add(firstDir);
+                return;
+            }
+
+            // Continue BFS through known tiles to reach unexplored territory.
+            for (int dir = 0; dir < 8; dir++) {
+                int nextId = nextTileInDirection(tileId, dir);
+                if (nextId < 0) continue;
+                if (visited.contains((long) nextId)) continue;
+                Tile nextTile = tiles.get((long) nextId);
+                if (nextTile == null) continue;
+
+                int terrain = nextTile.getTerrain();
+                boolean isOcean = (terrain == 2 || terrain == 3);
+                if (utype != null && utype.getDomain() == 0 && isOcean) continue;
+                if (utype != null && utype.getDomain() == 1 && !isOcean) continue;
+
+                visited.add((long) nextId);
+                queue.add(new long[]{nextId, firstDir});
+            }
+        }
+
+        // No unexplored tile found – the map is fully explored.  Stop the
+        // auto-explore mode so the unit is returned to player control.
+        unit.setSsa_controller(Packets.SSA_NONE);
+        VisibilityHandler.sendUnitToVisiblePlayers(this, unit);
+    }
     /**
      * Computes the tile ID that is one step in the given direction from
      * {@code fromTile}, wrapping horizontally on cylindrical maps.

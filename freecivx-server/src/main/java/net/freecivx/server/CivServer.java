@@ -261,6 +261,22 @@ public class CivServer extends org.java_websocket.server.WebSocketServer impleme
             }
         }
 
+        // Handle PACKET_UNIT_SERVER_SIDE_AGENT_SET (74): client requests the server
+        // to manage the unit automatically (e.g. SSA_AUTOEXPLORE = 2 for the 'X'
+        // keyboard shortcut).  Mirrors handle_unit_server_side_agent_set() in the
+        // C Freeciv server's unithand.c.
+        if (pid == Packets.PACKET_UNIT_SERVER_SIDE_AGENT_SET) {
+            long unit_id = json.optInt("unit_id");
+            int agent = json.optInt("agent", Packets.SSA_NONE);
+            Unit ssaUnit = game.units.get(unit_id);
+            if (ssaUnit != null) {
+                Player ssaPlayer = game.players.get(ssaUnit.getOwner());
+                if (ssaPlayer != null && ssaPlayer.getConnectionId() == connId) {
+                    game.setUnitSsaController(unit_id, agent);
+                }
+            }
+        }
+
         // Handle PACKET_PLAYER_RATES: client sends new science/tax/luxury rates.
         // Validates that rates sum to 100 and updates the player's science rate,
         // then broadcasts updated research info.  Mirrors handle_player_rates() in
