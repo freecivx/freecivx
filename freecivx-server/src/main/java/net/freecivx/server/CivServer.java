@@ -33,6 +33,10 @@ import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -46,12 +50,40 @@ public class CivServer extends org.java_websocket.server.WebSocketServer impleme
     private final ConcurrentHashMap<Long, WebSocket> clients = new ConcurrentHashMap<>();
     private final AtomicInteger clientIdGenerator = new AtomicInteger(1);
     private long lastActivityTime = System.currentTimeMillis();
+    private final net.freecivx.game.TurnTimer turnTimer = createTurnTimer();
     Game game = null;
+
+    /** Creates the server-side {@link net.freecivx.game.TurnTimer} backed by a single-threaded scheduler. */
+    private static net.freecivx.game.TurnTimer createTurnTimer() {
+        ScheduledExecutorService sched = Executors.newSingleThreadScheduledExecutor(r -> {
+            Thread t = new Thread(r, "turn-timeout");
+            t.setDaemon(true);
+            return t;
+        });
+        return new net.freecivx.game.TurnTimer() {
+            private ScheduledFuture<?> pending = null;
+
+            @Override
+            public synchronized void schedule(Runnable task, int delaySeconds) {
+                if (pending != null) pending.cancel(false);
+                pending = sched.schedule(task, delaySeconds, TimeUnit.SECONDS);
+            }
+
+            @Override
+            public synchronized void cancel() {
+                if (pending != null) {
+                    pending.cancel(false);
+                    pending = null;
+                }
+            }
+        };
+    }
 
     public CivServer(InetSocketAddress address) {
         super(address);
         this.setReuseAddr(true);
         game = new Game(this);
+        game.setTurnTimer(turnTimer);
         game.initGame();
 
     }
@@ -397,6 +429,7 @@ public class CivServer extends org.java_websocket.server.WebSocketServer impleme
 
     public void resetGame() {
         game = new Game(this);
+        game.setTurnTimer(turnTimer);
         game.initGame();
         sendMessageAll("Server has been reset after 24 hours of inactivity.");
     }

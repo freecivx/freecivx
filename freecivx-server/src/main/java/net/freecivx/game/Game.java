@@ -40,10 +40,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.TimeUnit;
 
 /**
  * The Game class
@@ -109,16 +105,12 @@ public class Game {
      */
     private int initialGold = 50;
 
-    /** Scheduler used to implement the per-turn {@link #turnTimeout}. */
-    private final ScheduledExecutorService scheduler =
-            Executors.newSingleThreadScheduledExecutor(r -> {
-                Thread t = new Thread(r, "turn-timeout");
-                t.setDaemon(true);
-                return t;
-            });
-
-    /** Currently pending timeout task; {@code null} when no timeout is active. */
-    private ScheduledFuture<?> turnTimeoutTask = null;
+    /**
+     * Turn timer used to implement the per-turn {@link #turnTimeout}.
+     * Injected by the server via {@link #setTurnTimer(TurnTimer)};
+     * {@code null} in browser/TeaVM mode where threading is unavailable.
+     */
+    private TurnTimer turnTimer = null;
 
     public WorldMap map;
     public Map<Long, Player> players = new HashMap<>();
@@ -273,22 +265,33 @@ public class Game {
         return year * 20L - 4000L;
     }
 
+    /**
+     * Injects the {@link TurnTimer} used for turn-timeout enforcement.
+     * Must be called before the game starts if {@link #setTurnTimeout(int)} is
+     * configured with a non-zero value.  Not needed in browser/TeaVM mode where
+     * threading is unavailable and turn timeouts are not supported.
+     *
+     * @param turnTimer the timer implementation to use for scheduling
+     */
+    public void setTurnTimer(TurnTimer turnTimer) {
+        this.turnTimer = turnTimer;
+    }
+
     /** Schedules a forced turn-end after {@link #turnTimeout} seconds. */
     private synchronized void scheduleTurnTimeout() {
-        if (turnTimeout <= 0) return;
-        turnTimeoutTask = scheduler.schedule(() -> {
+        if (turnTimeout <= 0 || turnTimer == null) return;
+        turnTimer.schedule(() -> {
             synchronized (Game.this) {
                 humanPlayersDone.clear();
                 turnDone();
             }
-        }, turnTimeout, TimeUnit.SECONDS);
+        }, turnTimeout);
     }
 
     /** Cancels any pending turn-timeout task. */
     private synchronized void cancelTurnTimeout() {
-        if (turnTimeoutTask != null) {
-            turnTimeoutTask.cancel(false);
-            turnTimeoutTask = null;
+        if (turnTimer != null) {
+            turnTimer.cancel();
         }
     }
 
