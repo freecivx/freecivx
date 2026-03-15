@@ -122,11 +122,21 @@ public class AiPlayer {
     private int imprLibrary     = 3;
     private int imprMarketplace = 4;
     private int imprCityWalls   = 7;
+    private int imprTemple      = 5;
 
-    // Unit-type IDs — must match the constants initialised in Game.initGame().
+    // Unit-type IDs — Settlers and Workers are always 0 and 1 in both the classic
+    // ruleset and the hardcoded fallback.  Warriors are always 3.  Advanced units
+    // (Phalanx, Archers, Legion, Pikemen, Horsemen) differ between the two systems
+    // and are resolved by name in resolveGameIds().  Fallback values match
+    // Game.populateFallback().
     private static final int UNIT_SETTLERS = 0;
     private static final int UNIT_WORKERS  = 1;
     private static final int UNIT_WARRIORS = 3;
+    private int unitPhalanx  = 12; // Bronze Working — best early defender (1 atk / 2 def)
+    private int unitArchers  =  5; // Warrior Code — strong attacker (3 atk / 2 def)
+    private int unitLegion   =  6; // Iron Working  — best early all-rounder (4 atk / 2 def)
+    private int unitPikemen  =  7; // Feudalism      — anti-horse specialist (1 atk / 2 def + 2× vs Horse)
+    private int unitHorsemen =  4; // Horseback Riding — fast raider (2 atk / 1 def, 2 move)
 
     // Technology IDs — resolved at runtime by name in resolveGameIds() because IDs
     // differ between the loaded ruleset (alphabetical order) and the hardcoded fallback.
@@ -145,6 +155,7 @@ public class AiPlayer {
     private long techCeremonialBurial   = 12L;
     private long techMonarchy           = 13L;
     private long techDemocracy          = 14L;
+    private long techFeudalism         = 15L; // Pikemen (anti-horse); req: Warrior Code + Monarchy
 
     private static final int[] DIR_DX = {-1, 0, 1, -1, 1, -1, 0, 1};
     private static final int[] DIR_DY = {-1, -1, -1, 0, 0, 1, 1, 1};
@@ -244,10 +255,10 @@ public class AiPlayer {
     // =========================================================================
 
     /**
-     * Resolves improvement and technology IDs from the loaded game data by name.
-     * This is necessary because IDs are assigned in the order buildings/techs
-     * appear in the ruleset file (alphabetical), which differs from the hardcoded
-     * fallback in {@code Game.populateFallback()}.
+     * Resolves improvement, unit-type, and technology IDs from the loaded game
+     * data by name.  This is necessary because IDs are assigned in the order
+     * buildings/techs/units appear in the ruleset file, which differs from the
+     * hardcoded fallback in {@code Game.populateFallback()}.
      *
      * <p>Runs only once: IDs are stable for the lifetime of the game since the
      * ruleset is loaded once at startup.  Mirrors the name-based lookup pass in
@@ -266,6 +277,7 @@ public class AiPlayer {
                 case "Library":     imprLibrary     = id; break;
                 case "Marketplace": imprMarketplace = id; break;
                 case "City Walls":  imprCityWalls   = id; break;
+                case "Temple":      imprTemple      = id; break;
                 default: break;
             }
         }
@@ -273,20 +285,37 @@ public class AiPlayer {
             String n = e.getValue().getName();
             long id = e.getKey();
             switch (n) {
-                case "Alphabet":          techAlphabet        = id; break;
-                case "Mathematics":       techMathematics     = id; break;
-                case "The Republic":      techTheRepublic     = id; break;
-                case "Masonry":           techMasonry         = id; break;
-                case "Bronze Working":    techBronzeWorking   = id; break;
-                case "Iron Working":      techIronWorking     = id; break;
-                case "Writing":           techWriting         = id; break;
-                case "Code of Laws":      techCodeOfLaws      = id; break;
-                case "Horseback Riding":   techHorsebackRiding   = id; break;
-                case "Pottery":            techPottery           = id; break;
-                case "Warrior Code":       techWarriorCode       = id; break;
-                case "Ceremonial Burial":  techCeremonialBurial  = id; break;
-                case "Monarchy":           techMonarchy          = id; break;
-                case "Democracy":          techDemocracy         = id; break;
+                case "Alphabet":          techAlphabet          = id; break;
+                case "Mathematics":       techMathematics       = id; break;
+                case "The Republic":      techTheRepublic       = id; break;
+                case "Masonry":           techMasonry           = id; break;
+                case "Bronze Working":    techBronzeWorking     = id; break;
+                case "Iron Working":      techIronWorking       = id; break;
+                case "Writing":           techWriting           = id; break;
+                case "Code of Laws":      techCodeOfLaws        = id; break;
+                case "Horseback Riding":  techHorsebackRiding   = id; break;
+                case "Pottery":           techPottery           = id; break;
+                case "Warrior Code":      techWarriorCode       = id; break;
+                case "Ceremonial Burial": techCeremonialBurial  = id; break;
+                case "Monarchy":          techMonarchy          = id; break;
+                case "Democracy":         techDemocracy         = id; break;
+                case "Feudalism":         techFeudalism        = id; break;
+                default: break;
+            }
+        }
+        // Resolve advanced unit type IDs — these vary between the ruleset order
+        // (Settlers=0, Workers=1, Engineers=2, Warriors=3, Phalanx=4, …) and the
+        // hardcoded fallback (Settlers=0, Workers=1, Explorer=2, Warriors=3,
+        // Horsemen=4, Phalanx=12, …).
+        for (Map.Entry<Long, UnitType> e : game.unitTypes.entrySet()) {
+            String n = e.getValue().getName();
+            int id = e.getKey().intValue();
+            switch (n) {
+                case "Phalanx":  unitPhalanx  = id; break;
+                case "Archers":  unitArchers  = id; break;
+                case "Legion":   unitLegion   = id; break;
+                case "Pikemen":  unitPikemen  = id; break;
+                case "Horsemen": unitHorsemen = id; break;
                 default: break;
             }
         }
@@ -380,16 +409,18 @@ public class AiPlayer {
      * C server's {@code dai_select_tech()} in {@code ai/default/aitech.c}:
      * <ol>
      *   <li>Pottery → enables Granary (food growth)</li>
-     *   <li>Bronze Working → military prerequisite chain</li>
-     *   <li>Warrior Code → better early warriors</li>
+     *   <li>Bronze Working → Phalanx (better defender) and military chain</li>
+     *   <li>Warrior Code → Archers (strong attacker) and Feudalism prereq</li>
      *   <li>Masonry → Barracks and City Walls (defence)</li>
      *   <li>Alphabet → Temple (happiness) and many prerequisites</li>
      *   <li>Writing → Library (science bonus)</li>
      *   <li>Code of Laws → Marketplace (trade bonus) and Monarchy prerequisite</li>
      *   <li>Ceremonial Burial → Temple (happiness) and Monarchy prerequisite</li>
      *   <li>Monarchy → better government (less corruption) once both prerequisites met</li>
+     *   <li>Feudalism → Pikemen (anti-horse unit, 2× defence vs Horse units)</li>
      *   <li>Horseback Riding → Horsemen (mobile military)</li>
-     *   <li>Mathematics / Iron Working / The Republic → late-game benefits</li>
+     *   <li>Iron Working → Legion (best early all-rounder: 4 atk / 2 def)</li>
+     *   <li>Mathematics / The Republic / Democracy → late-game benefits</li>
      * </ol>
      *
      * @param player   the AI player
@@ -400,17 +431,18 @@ public class AiPlayer {
 
         long[] priorityTechs = {
             techPottery,              // Granary → faster city growth
-            techBronzeWorking,        // Military prerequisite chain
-            techWarriorCode,          // Better warriors
+            techBronzeWorking,        // Phalanx + military prerequisite chain
+            techWarriorCode,          // Archers (strong attacker) + Feudalism prereq
             techMasonry,              // Barracks + City Walls
             techAlphabet,             // Temple (happiness) + many prerequisites
             techWriting,              // Library → science bonus
             techCodeOfLaws,           // Marketplace + Monarchy prerequisite
-            techCeremonialBurial,     // Monarchy prerequisite (req1 of Monarchy in classic ruleset)
+            techCeremonialBurial,     // Temple + Monarchy prerequisite
             techMonarchy,             // Better government (less corruption)
+            techFeudalism,           // Pikemen — 2× defence vs Horse units
             techHorsebackRiding,      // Horsemen (fast military)
+            techIronWorking,          // Legion — 4 atk / 2 def, best early unit
             techMathematics,          // Bank prerequisite
-            techIronWorking,          // Legion (strong military)
             techTheRepublic,          // Republic government
             techDemocracy,            // Democracy government (zero corruption)
         };
@@ -453,15 +485,18 @@ public class AiPlayer {
      * Chooses what to build in a single AI city based on strategic priorities.
      * Inspired by {@code dai_city_choose_build()} in {@code ai/default/daicity.c}:
      * <ol>
-     *   <li>Produce Warriors when the city is undefended or threatened.</li>
+     *   <li>Produce best available defender when the city is undefended or threatened.</li>
      *   <li>Build a Barracks for veteran units and fast healing (no tech required).</li>
      *   <li>Produce Settlers immediately when the empire has only 1 city (early expansion).</li>
      *   <li>Build a Granary for sustained food growth (Pottery required).</li>
      *   <li>Produce more Settlers when the empire still has fewer than 4 cities.</li>
+     *   <li>Build a Temple for citizen happiness (Ceremonial Burial required).</li>
+     *   <li>Produce a Worker for terrain improvements (when city count ≥ 2, size ≥ 3,
+     *       and workers are below one per city).</li>
      *   <li>Build a Library for science output (Writing required).</li>
      *   <li>Build a Marketplace for gold income (Code of Laws required).</li>
      *   <li>Build City Walls for passive defence (Masonry required).</li>
-     *   <li>Default: produce Warriors.</li>
+     *   <li>Default: produce the best available defender.</li>
      * </ol>
      *
      * <p>Production is only changed when the slot is empty
@@ -481,10 +516,15 @@ public class AiPlayer {
         int defenders = countUnitsOnTile(city.getTile(), ownerId);
         boolean enemyNearby = hasEnemiesNearCity(city);
 
-        // Priority 1: Defend the city (from daimilitary.c danger assessment)
+        // Pick the best military unit this player can currently build.
+        int bestDefender = bestAvailableDefender(owner);
+
+        // Priority 1: Defend the city (from daimilitary.c danger assessment).
+        // Use the best available unit — Phalanx (Bronze Working), Archers (Warrior Code),
+        // Legion (Iron Working) or Warriors as a fallback.
         if (defenders == 0 || (enemyNearby && defenders < 2)) {
             city.setProductionKind(0);
-            city.setProductionValue(UNIT_WARRIORS);
+            city.setProductionValue(bestDefender);
             return;
         }
 
@@ -534,7 +574,35 @@ public class AiPlayer {
             return;
         }
 
-        // Priority 6: Library for science output (Writing required)
+        // Priority 6: Temple for citizen happiness (Ceremonial Burial required).
+        // Mirrors the C Freeciv AI prioritising temples early to keep citizens content
+        // so more of the city's output can be used for production (dai_city_choose_build
+        // in daicity.c ranks temples highly for unhappy cities).
+        if (!city.hasImprovement(imprTemple)) {
+            Improvement temple = game.improvements.get((long) imprTemple);
+            if (temple != null && canBuildImprovement(owner, city, temple)) {
+                city.setProductionKind(1);
+                city.setProductionValue(imprTemple);
+                return;
+            }
+        }
+
+        // Priority 7: Workers for terrain improvements (roads, irrigation, mines).
+        // Keep at most one Worker per city; any more and returns diminish quickly.
+        // A city must be at least size 3 so building a Worker (pop_cost=0) doesn't
+        // leave it at minimum population.  Mirrors the auto-settler management in
+        // autosettlers.c / daisettler.c where Workers continuously improve tiles
+        // to boost output for nearby cities.
+        if (myCityCount >= 2 && city.getSize() >= 3) {
+            int myWorkers = countUnitsOfType(ownerId, UNIT_WORKERS);
+            if (myWorkers < myCityCount) {
+                city.setProductionKind(0);
+                city.setProductionValue(UNIT_WORKERS);
+                return;
+            }
+        }
+
+        // Priority 8: Library for science output (Writing required)
         if (!city.hasImprovement(imprLibrary) && city.getSize() >= 2) {
             Improvement library = game.improvements.get((long) imprLibrary);
             if (library != null && canBuildImprovement(owner, city, library)) {
@@ -544,7 +612,7 @@ public class AiPlayer {
             }
         }
 
-        // Priority 7: Marketplace for trade income (Code of Laws required)
+        // Priority 9: Marketplace for trade income (Code of Laws required)
         if (!city.hasImprovement(imprMarketplace) && city.getSize() >= 3) {
             Improvement marketplace = game.improvements.get((long) imprMarketplace);
             if (marketplace != null && canBuildImprovement(owner, city, marketplace)) {
@@ -554,7 +622,7 @@ public class AiPlayer {
             }
         }
 
-        // Priority 8: City Walls for passive defence (Masonry required)
+        // Priority 10: City Walls for passive defence (Masonry required)
         if (!city.hasImprovement(imprCityWalls)) {
             Improvement walls = game.improvements.get((long) imprCityWalls);
             if (walls != null && canBuildImprovement(owner, city, walls)) {
@@ -564,10 +632,11 @@ public class AiPlayer {
             }
         }
 
-        // Default: produce Warriors for army expansion
+        // Default: produce the best available military unit for army expansion
         city.setProductionKind(0);
-        city.setProductionValue(UNIT_WARRIORS);
+        city.setProductionValue(bestDefender);
     }
+
 
     /**
      * Returns {@code true} if the player has the prerequisite technology and
@@ -613,6 +682,44 @@ public class AiPlayer {
             if (u.getTile() == tileId && u.getOwner() == ownerId) count++;
         }
         return count;
+    }
+
+    /**
+     * Returns the number of units of the given type belonging to
+     * {@code ownerId}.  Used to cap Worker production to a reasonable number
+     * relative to the empire's city count.
+     */
+    private int countUnitsOfType(long ownerId, int unitType) {
+        int count = 0;
+        for (Unit u : game.units.values()) {
+            if (u.getOwner() == ownerId && u.getType() == unitType) count++;
+        }
+        return count;
+    }
+
+    /**
+     * Returns the best available military defender the player can build given
+     * their current technology.  Mirrors the unit-selection logic in
+     * {@code dai_build_adv_adjust_tech()} ({@code ai/default/daibuild.c}):
+     * prefer the unit with the best defence value for which the required tech
+     * is already known.
+     *
+     * <p>Priority (classic Freeciv early game):
+     * <ol>
+     *   <li>Legion (Iron Working) — 4 atk / 2 def, best early all-rounder</li>
+     *   <li>Archers (Warrior Code) — 3 atk / 2 def, strong attacker</li>
+     *   <li>Phalanx (Bronze Working) — 1 atk / 2 def, best pure defender</li>
+     *   <li>Warriors (none) — 1 atk / 1 def, always buildable</li>
+     * </ol>
+     *
+     * @param player the AI player
+     * @return the unit-type ID of the best available defender
+     */
+    private int bestAvailableDefender(Player player) {
+        if (player.hasTech(techIronWorking))   return unitLegion;
+        if (player.hasTech(techWarriorCode))   return unitArchers;
+        if (player.hasTech(techBronzeWorking)) return unitPhalanx;
+        return UNIT_WARRIORS;
     }
 
     /**
