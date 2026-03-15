@@ -71,6 +71,11 @@ public class Player {
     /** ID of the player's current government form. */
     private int governmentId = 1; // 1 = Despotism by default
 
+    /** True when the player has ended their phase (turn) for the current game turn. */
+    private boolean phaseDone = false;
+    /** Number of consecutive turns the player has been idle (no actions taken). */
+    private int nturnsIdle = 0;
+
     // Constructor
     public Player(long connId, String username, String addr, int nation) {
         this.connectionId = connId;
@@ -247,6 +252,30 @@ public class Player {
 
     public void setGovernmentId(int governmentId) {
         this.governmentId = governmentId;
+    }
+
+    /**
+     * Returns {@code true} if the player has completed their phase (turn) this game turn.
+     * Mirrors {@code phase_done} in the C Freeciv player struct.
+     */
+    public boolean isPhaseDone() {
+        return phaseDone;
+    }
+
+    public void setPhaseDone(boolean phaseDone) {
+        this.phaseDone = phaseDone;
+    }
+
+    /**
+     * Returns the number of consecutive turns the player has been idle.
+     * Mirrors {@code nturns_idle} in the C Freeciv player struct.
+     */
+    public int getNturnsIdle() {
+        return nturnsIdle;
+    }
+
+    public void setNturnsIdle(int nturnsIdle) {
+        this.nturnsIdle = nturnsIdle;
     }
 
     // Utility methods

@@ -769,8 +769,9 @@ public class CivServer extends org.java_websocket.server.WebSocketServer {
         msg.put("government", player.getGovernmentId());
         JSONArray inventions = new JSONArray();
         msg.put("inventions", inventions);
+        // flags bitvector: bit 0 = PLRF_AI
         JSONArray flags = new JSONArray();
-        flags.put(0);
+        flags.put(player.isAi() ? 1 : 0);
         flags.put(0);
         msg.put("flags", flags);
         JSONArray vis = new JSONArray();
@@ -783,10 +784,14 @@ public class CivServer extends org.java_websocket.server.WebSocketServer {
         embassies.put(false);
         msg.put("real_embassy", embassies);
         msg.put("is_alive", player.isAlive());
+        msg.put("phase_done", player.isPhaseDone());
+        msg.put("nturns_idle", player.getNturnsIdle());
 
         broadcast(msg);
 
-        // Private financial and research data sent only to the owning player
+        // Private financial and research data sent only to the owning player.
+        // Must also re-send flags and gives_shared_vision so that handle_player_info()
+        // in packhand.js does not overwrite them with BitVector(undefined).
         long ownerConnId = player.getConnectionId();
         WebSocket ownerWs = clients.get(ownerConnId);
         if (ownerWs != null) {
@@ -801,6 +806,16 @@ public class CivServer extends org.java_websocket.server.WebSocketServer {
             privateMsg.put("gold", player.getGold());
             privateMsg.put("tech_upkeep", 0);
             privateMsg.put("researching_cost", 0);
+            // Repeat flags and gives_shared_vision so packhand.js does not
+            // replace the valid public BitVectors with BitVector(undefined).
+            JSONArray privateFlags = new JSONArray();
+            privateFlags.put(player.isAi() ? 1 : 0);
+            privateFlags.put(0);
+            privateMsg.put("flags", privateFlags);
+            JSONArray privateVis = new JSONArray();
+            privateVis.put(0);
+            privateVis.put(0);
+            privateMsg.put("gives_shared_vision", privateVis);
             ownerWs.send(privateMsg.toString());
         }
     }
