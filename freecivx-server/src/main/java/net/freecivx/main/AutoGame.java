@@ -162,7 +162,7 @@ public class AutoGame {
                     String improvements, String name,
                     int productionKind, int productionValue) {}
 
-            @Override public void sendExtrasInfoAll(long id, String extraName) {}
+            @Override public void sendExtrasInfoAll(long id, String extraName, int causes, String graphicStr) {}
 
             @Override public void sendTileInfoAll(Tile tile) {}
 
@@ -215,6 +215,7 @@ public class AutoGame {
             game.turnDone();
             if (t == 1 || t % 10 == 0) {
                 logTurnSummary(t);
+                logPerPlayerResearch(t);
             }
             // Stop early if all players but one are eliminated
             long alivePlayers = game.players.values().stream()
@@ -248,11 +249,36 @@ public class AutoGame {
                 .orElse(null);
         String leaderInfo = leader != null
                 ? " | Leader: " + leader.getUsername()
-                        + " (" + countCities(leader) + " cities)"
+                        + " (" + countCities(leader) + " cities, "
+                        + leader.getKnownTechs().size() + " techs, "
+                        + leader.getGold() + " gold)"
                 : "";
         System.out.printf("Turn %3d (%s) | Alive: %d/%d | Units: %3d | Cities: %3d%s%n",
                 turn, yearStr, alivePlayers, game.players.size(),
                 game.units.size(), game.cities.size(), leaderInfo);
+    }
+
+    /**
+     * Prints a one-line research-progress summary for every living player.
+     * Shown every 10 turns so research bottlenecks are easy to spot.
+     */
+    private void logPerPlayerResearch(int turn) {
+        for (Player p : game.players.values().stream()
+                .filter(Player::isAlive)
+                .sorted((a, b) -> a.getUsername().compareTo(b.getUsername()))
+                .collect(java.util.stream.Collectors.toList())) {
+            long techId = p.getResearchingTech();
+            String researchStr;
+            if (techId < 0) {
+                researchStr = "(idle)";
+            } else {
+                net.freecivx.game.Technology tech = game.techs.get(techId);
+                researchStr = (tech != null ? tech.getName() : "Tech#" + techId)
+                        + " " + p.getBulbsResearched() + "/" + (tech != null ? tech.getCost() : "?") + " bulbs";
+            }
+            System.out.printf("  [T%3d] %-14s | Techs: %2d | Researching: %s%n",
+                    turn, p.getUsername(), p.getKnownTechs().size(), researchStr);
+        }
     }
 
     /** Prints a per-civilisation report after the last turn. */

@@ -936,8 +936,11 @@ public class AiPlayer {
     // =========================================================================
 
     /**
-     * Looks for an enemy unit on a tile adjacent to {@code unit} and attacks
-     * it if one is found.
+     * Looks for an enemy <em>military</em> unit on a tile adjacent to {@code unit}
+     * and attacks it if one is found.  Civilian units (Settlers, Workers and any
+     * other unit with zero attack strength) are intentionally skipped: attacking
+     * defenceless units wastes move points and prevents settlers from founding
+     * cities, stalling the opponent's expansion rather than defeating them.
      *
      * @return {@code true} if an attack was initiated
      */
@@ -952,10 +955,13 @@ public class AiPlayer {
             long neighborTileId = ny * game.map.getXsize() + nx;
 
             for (Unit other : new ArrayList<>(game.units.values())) {
-                if (other.getTile() == neighborTileId && other.getOwner() != owner.getPlayerNo()) {
-                    game.attackUnit(unit.getId(), other.getId());
-                    return true;
-                }
+                if (other.getTile() != neighborTileId) continue;
+                if (other.getOwner() == owner.getPlayerNo()) continue;
+                // Skip civilian units (Settlers, Workers, etc.) – only attack military units.
+                UnitType otherType = game.unitTypes.get((long) other.getType());
+                if (otherType == null || otherType.getAttackStrength() == 0) continue;
+                game.attackUnit(unit.getId(), other.getId());
+                return true;
             }
         }
         return false;
