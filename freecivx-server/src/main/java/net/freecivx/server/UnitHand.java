@@ -24,6 +24,8 @@ import net.freecivx.game.Game;
 import net.freecivx.game.Player;
 import net.freecivx.game.Unit;
 import org.json.JSONObject;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
@@ -35,6 +37,8 @@ import java.nio.charset.StandardCharsets;
  * changes, and transport operations.
  */
 public class UnitHand {
+
+    private static final Logger log = LoggerFactory.getLogger(UnitHand.class);
 
     /**
      * Handles a unit movement/order packet from a client.
@@ -84,7 +88,7 @@ public class UnitHand {
                 try {
                     cityName = URLDecoder.decode(name, StandardCharsets.UTF_8);
                 } catch (IllegalArgumentException e) {
-                    System.err.println("UnitHand: failed to URL-decode city name '" + name + "': " + e.getMessage());
+                    log.warn("UnitHand: failed to URL-decode city name '{}': {}", name, e.getMessage());
                     cityName = name;
                 }
             }

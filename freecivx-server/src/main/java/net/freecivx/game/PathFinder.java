@@ -3,6 +3,8 @@ package net.freecivx.game;
 import net.freecivx.server.Packets;
 import org.json.JSONArray;
 import org.json.JSONObject;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -18,6 +20,7 @@ import java.util.PriorityQueue;
  * Mirrors the behaviour of {@code common/pf_tools.c} in the C Freeciv server.
  */
 public class PathFinder {
+    private static final Logger log = LoggerFactory.getLogger(PathFinder.class);
     private final Game game;
 
     /** Direction deltas: NW, N, NE, W, E, SW, S, SE (indices 0-7). */
@@ -51,7 +54,7 @@ public class PathFinder {
         UnitType utype = game.unitTypes.get((long) unit.getType());
         int domain = utype != null ? utype.getDomain() : 0;
         if (utype == null) {
-            System.err.println("PathFinder: unit type " + unit.getType() + " not found; defaulting to land domain");
+            log.warn("PathFinder: unit type {} not found; defaulting to land domain", unit.getType());
         }
 
         List<Integer> dirs = findPath(unit.getTile(), destinationTileId, domain);

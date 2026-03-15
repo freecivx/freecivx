@@ -34,6 +34,8 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Loads and manages ruleset data from {@code .ruleset} configuration files.
@@ -52,6 +54,8 @@ import java.util.Map;
  * </ul>
  */
 public class Ruleset {
+
+    private static final Logger log = LoggerFactory.getLogger(Ruleset.class);
 
     private String rulesetName;
     private boolean loaded = false;
@@ -156,7 +160,7 @@ public class Ruleset {
                 }
             }
         } catch (IOException e) {
-            System.err.println("Error reading nation city names from " + path + ": " + e.getMessage());
+            log.error("Error reading nation city names from {}: {}", path, e.getMessage());
         }
         return cityNames;
     }
@@ -246,10 +250,10 @@ public class Ruleset {
                 }
                 unitTypes.add(ut);
             }
-            System.out.println("Loaded " + unitTypes.size() + " unit types from " + path);
+            log.info("Loaded {} unit types from {}", unitTypes.size(), path);
             return true;
         } catch (IOException e) {
-            System.err.println("Error loading units from " + path + ": " + e.getMessage());
+            log.error("Error loading units from {}: {}", path, e.getMessage());
             return false;
         }
     }
@@ -294,10 +298,10 @@ public class Ruleset {
                 improvements.add(impr);
                 id++;
             }
-            System.out.println("Loaded " + improvements.size() + " buildings from " + path);
+            log.info("Loaded {} buildings from {}", improvements.size(), path);
             return true;
         } catch (IOException e) {
-            System.err.println("Error loading buildings from " + path + ": " + e.getMessage());
+            log.error("Error loading buildings from {}: {}", path, e.getMessage());
             return false;
         }
     }
@@ -327,10 +331,10 @@ public class Ruleset {
                 if (req2.isEmpty()) req2 = "None";
                 technologies.add(new Technology(name, graphic, name, req1, req2, cost));
             }
-            System.out.println("Loaded " + technologies.size() + " technologies from " + path);
+            log.info("Loaded {} technologies from {}", technologies.size(), path);
             return true;
         } catch (IOException e) {
-            System.err.println("Error loading technologies from " + path + ": " + e.getMessage());
+            log.error("Error loading technologies from {}: {}", path, e.getMessage());
             return false;
         }
     }
@@ -357,10 +361,10 @@ public class Ruleset {
                 int    defBonus   = sec.getInt("defense_bonus", 0);
                 terrains.add(new Terrain(name, graphic, defBonus, moveCost));
             }
-            System.out.println("Loaded " + terrains.size() + " terrains from " + path);
+            log.info("Loaded {} terrains from {}", terrains.size(), path);
             return true;
         } catch (IOException e) {
-            System.err.println("Error loading terrains from " + path + ": " + e.getMessage());
+            log.error("Error loading terrains from {}: {}", path, e.getMessage());
             return false;
         }
     }
@@ -390,10 +394,10 @@ public class Ruleset {
                 int corruptionPct = corruptionForGov(name);
                 governments.add(new Government(name, name, name, techReq, corruptionPct));
             }
-            System.out.println("Loaded " + governments.size() + " governments from " + path);
+            log.info("Loaded {} governments from {}", governments.size(), path);
             return true;
         } catch (IOException e) {
-            System.err.println("Error loading governments from " + path + ": " + e.getMessage());
+            log.error("Error loading governments from {}: {}", path, e.getMessage());
             return false;
         }
     }
@@ -434,7 +438,7 @@ public class Ruleset {
     private InputStream openResource(String path) {
         InputStream is = getClass().getClassLoader().getResourceAsStream(path);
         if (is == null) {
-            System.err.println("Ruleset resource not found: " + path);
+            log.error("Ruleset resource not found: {}", path);
         }
         return is;
     }

@@ -29,6 +29,8 @@ import net.freecivx.game.Unit;
 import net.freecivx.game.UnitType;
 import org.json.JSONArray;
 import org.json.JSONObject;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -39,6 +41,8 @@ import java.util.concurrent.atomic.AtomicLong;
  * growth, sending city packets to clients, and supporting unit maintenance.
  */
 public class CityTools {
+
+    private static final Logger log = LoggerFactory.getLogger(CityTools.class);
 
     private static final AtomicLong cityIdCounter = new AtomicLong(1);
 
@@ -349,6 +353,6 @@ public class CityTools {
         if (city == null || unit == null) return;
 
         // Future implementation: track home city on Unit and pay upkeep
-        System.out.println("City " + cityId + " supports unit " + unitId);
+        log.debug("City {} supports unit {}", cityId, unitId);
     }
 }

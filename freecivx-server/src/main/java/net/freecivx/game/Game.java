@@ -29,6 +29,8 @@ import net.freecivx.data.ScenarioData;
 import net.freecivx.data.ScenarioLoader;
 import org.json.JSONArray;
 import org.json.JSONObject;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -46,6 +48,8 @@ import java.util.concurrent.TimeUnit;
  * The Game class
  */
 public class Game {
+
+    private static final Logger log = LoggerFactory.getLogger(Game.class);
 
     CivServer server;
 
@@ -271,7 +275,7 @@ public class Game {
         if (rulesetOk) {
             populateFromRuleset();
         } else {
-            System.err.println("Ruleset loading failed – falling back to hardcoded data.");
+            log.error("Ruleset loading failed – falling back to hardcoded data.");
             populateFallback();
         }
 
@@ -366,7 +370,7 @@ public class Game {
         }
         if (scenarioData.xsize <= 0 || scenarioData.ysize <= 0
                 || scenarioData.terrainRows == null) {
-            System.err.println("Invalid scenario data for: " + scenarioName);
+            log.error("Invalid scenario data for: {}", scenarioName);
             return false;
         }
 
@@ -410,8 +414,8 @@ public class Game {
             }
         }
         tiles = newTiles;
-        System.out.println("Loaded scenario: " + scenarioName
-                + " (" + scenarioData.xsize + "x" + scenarioData.ysize + ")");
+        log.info("Loaded scenario: {} ({}x{})", scenarioName,
+                scenarioData.xsize, scenarioData.ysize);
         return true;
     }
 
@@ -1057,9 +1061,9 @@ public class Game {
         Player defenderOwner = players.get(defender.getOwner());
         String atkOwnerName = attackerOwner != null ? attackerOwner.getUsername() : "?";
         String defOwnerName = defenderOwner != null ? defenderOwner.getUsername() : "?";
-        System.out.println("Combat: " + atkOwnerName + "'s " + attackerName
-                + " attacks " + defOwnerName + "'s " + defenderName
-                + " → " + (attackerWins ? atkOwnerName + " wins" : defOwnerName + " wins"));
+        log.info("Combat: {}'s {} attacks {}'s {} → {}",
+                atkOwnerName, attackerName, defOwnerName, defenderName,
+                attackerWins ? atkOwnerName + " wins" : defOwnerName + " wins");
 
         // Consume one move point for the attack
         attacker.setMovesleft(Math.max(0, attacker.getMovesleft() - 1));
@@ -1178,8 +1182,7 @@ public class Game {
             // removeCity() removes from game.cities and sends remove packet to clients.
             net.freecivx.server.CityTools.removeCity(this, cityId);
             server.sendMessageAll(cityName + " has been razed!");
-            System.out.println("City razed: " + cityName
-                    + " (owner: " + getPlayerName(oldOwner) + ")");
+            log.info("City razed: {} (owner: {})", cityName, getPlayerName(oldOwner));
             Notify.notifyPlayer(this, server, oldOwner,
                     cityName + " has been razed by the enemy!");
         } else {
@@ -1193,9 +1196,8 @@ public class Game {
             city.setShieldStock(0);
             CityTools.sendCityInfo(this, server, -1L, cityId);
             server.sendMessageAll(cityName + " has been captured!");
-            System.out.println("City captured: " + cityName
-                    + " by " + getPlayerName(newOwner)
-                    + " from " + getPlayerName(oldOwner));
+            log.info("City captured: {} by {} from {}", cityName,
+                    getPlayerName(newOwner), getPlayerName(oldOwner));
             Notify.notifyPlayer(this, server, newOwner,
                     "Our forces have captured " + cityName + "!");
             Notify.notifyPlayer(this, server, oldOwner,
@@ -1248,7 +1250,7 @@ public class Game {
 
             // Player is eliminated
             player.setAlive(false);
-            System.out.println("Player eliminated: " + player.getUsername());
+            log.info("Player eliminated: {}", player.getUsername());
             server.sendMessageAll(player.getUsername() + " has been eliminated!");
 
             // Remove all of this player's remaining units

@@ -28,9 +28,13 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 import net.freecivx.server.CivServer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 
 public class Main {
+
+    private static final Logger log = LoggerFactory.getLogger(Main.class);
 
     public static void main(String[] args) {
         int port = 7800; // Default port
@@ -39,25 +43,25 @@ public class Main {
             try {
                 port = Integer.parseInt(args[0]);
             } catch (NumberFormatException e) {
-                System.err.println("Invalid port number: " + args[0]);
+                log.error("Invalid port number: {}", args[0]);
                 System.exit(1);
                 return;
             }
         }
 
-        System.out.println("This is the server for Freecivx on port " + port + ". You can learn a lot about Freecivx at https://www.FreecivWorld.net/");
+        log.info("This is the server for Freecivx on port {}. You can learn a lot about Freecivx at https://www.FreecivWorld.net/", port);
 
         try {
             // Create HTTP server
             HttpServer httpServer = HttpServer.create(new InetSocketAddress(port + 1), 0);
             httpServer.createContext("/", new HTTPStatusWebHandler());
             httpServer.setExecutor(Executors.newCachedThreadPool());
-            System.out.println("HTTP server started on port: " + (port + 1));
+            log.info("HTTP server started on port: {}", port + 1);
 
             // Start WebSocket server
             CivServer wsServer = new CivServer(new InetSocketAddress(port));
             wsServer.start();
-            System.out.println("WebSocket server started on port: " + port);
+            log.info("WebSocket server started on port: {}", port);
 
             // Idle restart: reset game if no players for 24 hours
             final long IDLE_RESET_MS = TimeUnit.HOURS.toMillis(24);
@@ -67,12 +71,12 @@ public class Main {
                     if (wsServer.getConnectedClientCount() == 0) {
                         long idleMs = System.currentTimeMillis() - wsServer.getLastActivityTime();
                         if (idleMs > IDLE_RESET_MS) {
-                            System.out.println("No players for 24h, resetting game...");
+                            log.info("No players for 24h, resetting game...");
                             wsServer.resetGame();
                         }
                     }
                 } catch (Exception e) {
-                    System.err.println("Idle-restart check error: " + e.getMessage());
+                    log.error("Idle-restart check error: {}", e.getMessage());
                 }
             }, 1, 1, TimeUnit.HOURS);
 
@@ -83,7 +87,7 @@ public class Main {
             MetaserverClient.publishToMetaserver(port);
 
         } catch (IOException e) {
-            System.err.println("Failed to start the server: " + e.getMessage());
+            log.error("Failed to start the server: {}", e.getMessage());
             System.exit(1);
         }
     }

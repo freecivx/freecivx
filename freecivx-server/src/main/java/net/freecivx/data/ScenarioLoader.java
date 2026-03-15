@@ -29,6 +29,8 @@ import java.util.Map;
 import java.util.TreeMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Loads and parses Freeciv scenario savegame ({@code .sav}) files from
@@ -46,6 +48,8 @@ import java.util.regex.Pattern;
  */
 public class ScenarioLoader {
 
+    private static final Logger log = LoggerFactory.getLogger(ScenarioLoader.class);
+
     private static final Pattern TERRAIN_ROW_PATTERN =
             Pattern.compile("^t(\\d{4})=\"(.*)\"$");
 
@@ -59,14 +63,14 @@ public class ScenarioLoader {
     public ScenarioData loadScenario(String resourcePath) {
         InputStream is = getClass().getClassLoader().getResourceAsStream(resourcePath);
         if (is == null) {
-            System.err.println("Scenario not found on classpath: " + resourcePath);
+            log.error("Scenario not found on classpath: {}", resourcePath);
             return null;
         }
         try (BufferedReader reader =
                      new BufferedReader(new InputStreamReader(is, StandardCharsets.UTF_8))) {
             return parse(resourcePath, reader);
         } catch (IOException e) {
-            System.err.println("Error reading scenario " + resourcePath + ": " + e.getMessage());
+            log.error("Error reading scenario {}: {}", resourcePath, e.getMessage());
             return null;
         }
     }
@@ -147,7 +151,7 @@ public class ScenarioLoader {
 
         // Validate that we got something useful
         if (terrainRowMap.isEmpty()) {
-            System.err.println("Scenario " + resourcePath + ": no terrain rows found.");
+            log.error("Scenario {}: no terrain rows found.", resourcePath);
             return null;
         }
         // Infer dimensions if not explicitly found in settings
@@ -168,8 +172,7 @@ public class ScenarioLoader {
         }
         data.terrainIdentifiers = terrainIdents;
 
-        System.out.println("Parsed scenario: " + resourcePath
-                + " (" + data.xsize + "x" + data.ysize + ")");
+        log.info("Parsed scenario: {} ({}x{})", resourcePath, data.xsize, data.ysize);
         return data;
     }
 

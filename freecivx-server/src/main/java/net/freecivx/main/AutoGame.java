@@ -27,6 +27,8 @@ import net.freecivx.game.Unit;
 import net.freecivx.game.UnitType;
 import net.freecivx.server.CivServer;
 import org.json.JSONArray;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.net.InetSocketAddress;
 
@@ -53,6 +55,8 @@ import java.net.InetSocketAddress;
  * </ul>
  */
 public class AutoGame {
+
+    private static final Logger log = LoggerFactory.getLogger(AutoGame.class);
 
     /** Default number of AI civilisations. */
     public static final int DEFAULT_AI_PLAYERS = 5;
@@ -200,16 +204,13 @@ public class AutoGame {
      * every 10 turns and a final per-civilisation summary at the end.
      */
     public void run() {
-        System.out.println("=== AutoGame: " + numAiPlayers + " AI players, "
-                + numTurns + " turns ===");
+        log.info("=== AutoGame: {} AI players, {} turns ===", numAiPlayers, numTurns);
 
         game.startAutoGame(numAiPlayers);
 
-        System.out.println("Game initialised. "
-                + "Players: " + game.players.size()
-                + " | Units: " + game.units.size()
-                + " | Map: " + game.map.getXsize() + "x" + game.map.getYsize());
-        System.out.println();
+        log.info("Game initialised. Players: {} | Units: {} | Map: {}x{}",
+                game.players.size(), game.units.size(),
+                game.map.getXsize(), game.map.getYsize());
 
         for (int t = 1; t <= numTurns; t++) {
             game.turnDone();
@@ -221,13 +222,12 @@ public class AutoGame {
             long alivePlayers = game.players.values().stream()
                     .filter(Player::isAlive).count();
             if (alivePlayers <= 1 && t > 1) {
-                System.out.printf("%nGame ended early: only %d civilisation(s) remaining after turn %d.%n",
+                log.info("Game ended early: only {} civilisation(s) remaining after turn {}.",
                         alivePlayers, t);
                 break;
             }
         }
 
-        System.out.println();
         logFinalSummary();
     }
 
@@ -253,7 +253,7 @@ public class AutoGame {
                         + leader.getKnownTechs().size() + " techs, "
                         + leader.getGold() + " gold)"
                 : "";
-        System.out.printf("Turn %3d (%s) | Alive: %d/%d | Units: %3d | Cities: %3d%s%n",
+        log.info("Turn {} ({}) | Alive: {}/{} | Units: {} | Cities: {}{}",
                 turn, yearStr, alivePlayers, game.players.size(),
                 game.units.size(), game.cities.size(), leaderInfo);
     }
@@ -280,8 +280,7 @@ public class AutoGame {
             String govName = game.governments.containsKey((long) govId)
                     ? game.governments.get((long) govId).getName()
                     : "Gov" + govId;
-            System.out.printf("  %-14s | Cities: %2d | Gold: %4d | Gov: %-12s"
-                            + " | Techs: %2d | Research: %s%n",
+            log.info("  {}: Cities: {} | Gold: {} | Gov: {} | Techs: {} | Research: {}",
                     p.getUsername(), countCities(p), p.getGold(), govName,
                     p.getKnownTechs().size(), researchStr);
         }
@@ -289,7 +288,7 @@ public class AutoGame {
 
     /** Prints a per-civilisation report after the last turn. */
     private void logFinalSummary() {
-        System.out.println("=== Final Summary after " + game.turn + " turns ===");
+        log.info("=== Final Summary after {} turns ===", game.turn);
         game.players.values().stream()
                 .sorted((a, b) -> Long.compare(computeScore(b), computeScore(a)))
                 .forEach(p -> {
@@ -307,13 +306,12 @@ public class AutoGame {
                             .map(c -> String.valueOf(c.getSize()))
                             .collect(java.util.stream.Collectors.joining(","));
                     String cityDisplay = citySizes.isEmpty() ? "-" : citySizes;
-                    System.out.printf("  %-14s | Cities: %2d [%s] | Units: %2d"
-                                    + " | Techs: %2d | Gold: %4d | Gov: %-12s | Score: %4d | %s%n",
+                    log.info("  {} | Cities: {} [{}] | Units: {} | Techs: {} | Gold: {} | Gov: {} | Score: {} | {}",
                             p.getUsername(), cityCount, cityDisplay,
                             unitCount, p.getKnownTechs().size(), p.getGold(),
                             govName, score, status);
                 });
-        System.out.println("=== End of AutoGame ===");
+        log.info("=== End of AutoGame ===");
     }
 
     /**
