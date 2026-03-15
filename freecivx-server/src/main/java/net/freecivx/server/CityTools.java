@@ -294,8 +294,10 @@ public class CityTools {
 
     /**
      * Suggests a city name appropriate for the given player's nation.
-     * Returns a name from the nation's city-name list that has not yet been used,
-     * or a generic fallback name if all nation names are taken.
+     * Iterates through the nation's ordered city-name list (loaded from the
+     * nation ruleset file) and returns the first name that has not yet been
+     * used by any city in the game.  Falls back to a generic "City no. N"
+     * pattern (matching the C server's fallback) if all nation names are taken.
      *
      * @param game     the current game state
      * @param playerId the ID of the player for whom to suggest a name
@@ -305,15 +307,31 @@ public class CityTools {
         Player player = game.players.get(playerId);
         if (player == null) return "New City";
 
-        Nation nation = game.nations.get((long) player.getNation());
-        if (nation != null && nation.getName() != null) {
-            // Use the nation's capital name as a suggestion if not already taken
-            String candidate = nation.getName() + " City";
-            boolean taken = game.cities.values().stream()
-                    .anyMatch(c -> c.getName().equals(candidate));
-            if (!taken) return candidate;
+        // Build set of already-used city names for fast lookup.
+        java.util.Set<String> usedNames = new java.util.HashSet<>();
+        for (City c : game.cities.values()) {
+            usedNames.add(c.getName());
         }
-        return "City " + (game.cities.size() + 1);
+
+        Nation nation = game.nations.get((long) player.getNation());
+        if (nation != null) {
+            for (String candidate : nation.getCityNames()) {
+                if (!usedNames.contains(candidate)) {
+                    return candidate;
+                }
+            }
+        }
+
+        // Fallback: "City no. N" (mirrors the C server fallback).
+        // Iterate until we find an unused name; the map can never have more
+        // cities than tiles, so this will always terminate.
+        for (int i = 1; i > 0; i++) {
+            String fallback = "City no. " + i;
+            if (!usedNames.contains(fallback)) {
+                return fallback;
+            }
+        }
+        return "New City";
     }
 
     /**

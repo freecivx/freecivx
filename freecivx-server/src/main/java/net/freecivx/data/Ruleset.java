@@ -101,6 +101,92 @@ public class Ruleset {
     }
 
     /**
+     * Loads the ordered list of city names for a nation from its individual
+     * ruleset file located at {@code nation/<nationKey>.ruleset} on the
+     * classpath.  Terrain hints (e.g. {@code "(river)"}, {@code "(ocean)"})
+     * are stripped so that only the bare city name is returned.
+     *
+     * <p>Mirrors the C server's {@code nation_cities()} data populated by
+     * {@code load_ruleset_nations()} in {@code server/ruleset.c}.
+     *
+     * @param nationKey lowercase nation ruleset file base name, e.g.
+     *                  {@code "french"}, {@code "soviet"}, {@code "german"}
+     * @return ordered list of city names; empty if the file cannot be found
+     */
+    public List<String> loadNationCityNames(String nationKey) {
+        String path = "nation/" + nationKey + ".ruleset";
+        InputStream is = openResource(path);
+        if (is == null) return new ArrayList<>();
+
+        List<String> cityNames = new ArrayList<>();
+        try (BufferedReader reader = new BufferedReader(new InputStreamReader(is, "UTF-8"))) {
+            boolean inCities = false;
+            String line;
+            while ((line = reader.readLine()) != null) {
+                line = stripComment(line).trim();
+                if (line.isEmpty()) continue;
+
+                // A new section header always ends the cities block.
+                if (line.startsWith("[") && line.endsWith("]")) {
+                    if (inCities) break;
+                    continue;
+                }
+
+                if (!inCities) {
+                    if (line.startsWith("cities")) {
+                        int eq = line.indexOf('=');
+                        if (eq >= 0) {
+                            inCities = true;
+                            String rest = line.substring(eq + 1).trim();
+                            if (!rest.isEmpty()) {
+                                extractCityNamesFromLine(rest, cityNames);
+                            }
+                        }
+                    }
+                } else {
+                    // End the cities block when we encounter a new key assignment.
+                    // A key-value line starts with a word followed by optional spaces
+                    // and then '=', before any opening quote character.
+                    int eqPos    = line.indexOf('=');
+                    int quotePos = line.indexOf('"');
+                    if (eqPos >= 0 && (quotePos < 0 || eqPos < quotePos)) {
+                        break;
+                    }
+                    extractCityNamesFromLine(line, cityNames);
+                }
+            }
+        } catch (IOException e) {
+            System.err.println("Error reading nation city names from " + path + ": " + e.getMessage());
+        }
+        return cityNames;
+    }
+
+    /**
+     * Extracts all quoted city names from a single ruleset line, stripping
+     * terrain hints enclosed in parentheses.
+     * Example: {@code "Lyon (river)",} → adds {@code "Lyon"}.
+     */
+    private void extractCityNamesFromLine(String line, List<String> cityNames) {
+        int pos = 0;
+        while (pos < line.length()) {
+            int start = line.indexOf('"', pos);
+            if (start < 0) break;
+            int end = line.indexOf('"', start + 1);
+            if (end < 0) break;
+            String name = line.substring(start + 1, end);
+            // Strip terrain hints: "Lyon (river)" -> "Lyon"
+            int parenIdx = name.indexOf('(');
+            if (parenIdx >= 0) {
+                name = name.substring(0, parenIdx).trim();
+            }
+            if (!name.isEmpty()) {
+                cityNames.add(name);
+            }
+            pos = end + 1;
+        }
+    }
+
+    /**
      * Loads unit type definitions from the specified classpath resource.
      * Parses every {@code [unit_*]} section to extract name, graphic,
      * build cost, attack/defence strengths, hit points, move rate, and
