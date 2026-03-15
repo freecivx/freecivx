@@ -1,7 +1,8 @@
 /**
- * TeaVM no-op stub for org.slf4j.Logger.
- * Replaces the real SLF4J Logger interface in the browser/TeaVM build to avoid
- * pulling in java.util.concurrent classes that are absent from TeaVM's classlib.
+ * TeaVM stub for org.slf4j.Logger.
+ * Replaces the real SLF4J Logger interface in the browser/TeaVM build.
+ * Instances are created by {@link LoggerFactory} and delegate to
+ * {@code java.util.logging.Logger}, which TeaVM maps to the browser console.
  */
 package org.slf4j;
 

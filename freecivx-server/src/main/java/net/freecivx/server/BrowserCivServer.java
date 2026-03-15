@@ -78,25 +78,30 @@ public class BrowserCivServer implements IGameServer {
      * Constructs a new browser-mode server, initialises the game and game
      * ruleset, and registers the JavaScript API via {@link #setupBrowserApi()}.
      *
-     * <p>{@link #setupBrowserApi()} is called unconditionally even if
-     * {@link Game#initGame()} throws, so the client always receives the
-     * {@code window.freecivxSendPacket} registration and the
-     * {@code window.freecivxOnReady} callback fires regardless.
+     * <p>{@link #setupBrowserApi()} is called in a {@code finally} block so
+     * that {@code window.freecivxSendPacket} and the
+     * {@code window.freecivxOnReady} callback are always registered, even when
+     * {@link Game} construction or {@link Game#initGame()} throws.  This
+     * prevents the client from polling for {@code freecivxSendPacket}
+     * indefinitely when initialisation fails.
      */
     public BrowserCivServer() {
         jsLog("[BrowserCivServer] Initialising BrowserCivServer...");
         currentInstance = this;
-        this.game = new Game(this);
-        jsLog("[BrowserCivServer] Game object created, calling initGame()...");
+        Game g = null;
         try {
-            this.game.initGame();
+            g = new Game(this);
+            jsLog("[BrowserCivServer] Game object created, calling initGame()...");
+            g.initGame();
             jsLog("[BrowserCivServer] initGame() completed successfully");
         } catch (Exception e) {
-            jsError("[BrowserCivServer] initGame() threw " + e.getClass().getName() + ": " + e.getMessage());
+            jsError("[BrowserCivServer] Initialisation threw " + e.getClass().getName() + ": " + e.getMessage());
             e.printStackTrace();
+        } finally {
+            this.game = g;
+            jsLog("[BrowserCivServer] Registering JS API via setupBrowserApi()...");
+            setupBrowserApi();
         }
-        jsLog("[BrowserCivServer] Registering JS API via setupBrowserApi()...");
-        setupBrowserApi();
     }
 
     /** Returns the {@link Game} instance managed by this server. */
@@ -192,6 +197,10 @@ public class BrowserCivServer implements IGameServer {
      * @param rawPacket the JSON-string representation of the packet
      */
     public void handlePacket(long connId, String rawPacket) {
+        if (game == null) {
+            jsError("[BrowserCivServer] handlePacket called but game not initialised — ignoring packet");
+            return;
+        }
         JSONObject json = new JSONObject(rawPacket);
         int pid = json.optInt("pid");
 
