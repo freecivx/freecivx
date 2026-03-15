@@ -58,8 +58,13 @@ public class TeaVMMain {
      * @param args command-line arguments (unused in the browser environment)
      */
     public static void main(String[] args) {
-        System.out.println("[TeaVM] FreecivX server starting...");
-        new BrowserCivServer();
-        System.out.println("[TeaVM] FreecivX server ready — window.freecivxSendPacket available");
+        System.out.println("[TeaVM] FreecivX server starting (TeaVM main() invoked)...");
+        try {
+            new BrowserCivServer();
+            System.out.println("[TeaVM] FreecivX server ready — window.freecivxSendPacket available");
+        } catch (Exception e) {
+            System.err.println("[TeaVM] FATAL: BrowserCivServer constructor threw: " + e.getMessage());
+            e.printStackTrace();
+        }
     }
 }
