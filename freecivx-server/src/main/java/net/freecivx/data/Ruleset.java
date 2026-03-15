@@ -220,6 +220,7 @@ public class Ruleset {
                 int    moveRate  = sec.getInt("move_rate", 1);
                 int    firepower = sec.getInt("firepower", 1);
                 int    popCost   = sec.getInt("pop_cost", 0);
+                int    visionRadiusSq = sec.getInt("vision_radius_sq", 2);
                 String unitClass = sec.get("class");
                 int    domain    = classToDomain(unitClass);
                 String flags     = sec.get("flags");
@@ -234,6 +235,7 @@ public class Ruleset {
                 ut.setHasHorseFlag(hasHorse);
                 ut.setNonMilitary(isNonMil);
                 ut.setHasSettlersFlag(isSettler);
+                ut.setVisionRadiusSq(visionRadiusSq);
                 // Anti-horse defense multiplier: DefenseMultiplier=1 → factor=2 (double defense)
                 if (sec.antiHorseBonus > 0) {
                     ut.setAntiHorseFactor(1 + sec.antiHorseBonus);
