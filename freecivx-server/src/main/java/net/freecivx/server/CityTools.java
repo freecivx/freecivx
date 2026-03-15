@@ -50,6 +50,18 @@ public class CityTools {
     public static final int CITY_INITIAL_SIZE = 1;
 
     /**
+     * Food consumed per citizen per turn (classic ruleset: RS_DEFAULT_FOOD_COST=2).
+     * Mirrors {@code game.info.food_cost} in the C Freeciv server.
+     */
+    static final int FOOD_UPKEEP_PER_CITIZEN = 2;
+
+    /**
+     * Shield upkeep per improvement per turn (classic ruleset: 1 shield/turn per building).
+     * Mirrors the base upkeep in the C Freeciv server's effects.ruleset.
+     */
+    static final int SHIELD_UPKEEP_PER_IMPROVEMENT = 1;
+
+    /**
      * Creates a new city for the given player on the specified tile.
      * Assigns a unique city ID, adds the city to the game state, and
      * broadcasts the new city info to all clients.
@@ -141,10 +153,47 @@ public class CityTools {
         JSONArray improvBits = buildBitvector(city.getImprovements().stream()
                 .mapToInt(Integer::intValue).toArray(), game.improvements.size());
 
+        // Compute real city output values from game state.
+        // prod[O_FOOD=0]    – food produced this turn by worked tiles
+        // prod[O_SHIELD=1]  – shields produced this turn by worked tiles
+        // prod[O_TRADE=2]   – trade arrows produced this turn by worked tiles
+        // prod[O_GOLD=3]    – gold (tax) produced this turn
+        // prod[O_LUXURY=4]  – luxury goods produced this turn
+        // prod[O_SCIENCE=5] – science bulbs produced this turn
+        int[] tileOutput = computeCityTileOutput(game, city);
+        int foodProd    = tileOutput[0];
+        int shieldProd  = tileOutput[1];
+        int tradeProd   = tileOutput[2];
+        int goldProd    = CityTurn.cityTaxContribution(game, cityId);
+        int luxuryProd  = CityTurn.cityLuxuryContribution(game, cityId);
+        int scienceProd = CityTurn.cityScienceContribution(game, cityId);
+
+        // surplus[O_FOOD]   = food – (size × FOOD_UPKEEP_PER_CITIZEN)
+        // surplus[O_SHIELD] = shields – (improvements × SHIELD_UPKEEP_PER_IMPROVEMENT)
+        // surplus[O_TRADE … O_SCIENCE] = same as prod (no upkeep)
+        int foodUpkeep   = city.getSize() * FOOD_UPKEEP_PER_CITIZEN;
+        int shieldUpkeep = city.getImprovements().size() * SHIELD_UPKEEP_PER_IMPROVEMENT;
+        int foodSurplus    = foodProd - foodUpkeep;
+        int shieldSurplus  = shieldProd - shieldUpkeep;
+
+        JSONArray prod = new JSONArray();
+        prod.put(foodProd);
+        prod.put(shieldProd);
+        prod.put(tradeProd);
+        prod.put(goldProd);
+        prod.put(luxuryProd);
+        prod.put(scienceProd);
+
+        JSONArray surplus = new JSONArray();
+        surplus.put(foodSurplus);
+        surplus.put(shieldSurplus);
+        surplus.put(tradeProd);
+        surplus.put(goldProd);
+        surplus.put(luxuryProd);
+        surplus.put(scienceProd);
+
         JSONArray ppl = new JSONArray();
         ppl.put(1); ppl.put(1); ppl.put(2); ppl.put(1); ppl.put(1);
-        JSONArray prod = new JSONArray();
-        prod.put(1); prod.put(1); prod.put(2); prod.put(1); prod.put(1); prod.put(1);
 
         JSONObject msg = new JSONObject();
         msg.put("pid", Packets.PACKET_CITY_INFO);
@@ -170,7 +219,7 @@ public class CityTools {
         msg.put("ppl_content", ppl);
         msg.put("ppl_unhappy", ppl);
         msg.put("ppl_angry", ppl);
-        msg.put("surplus", prod);
+        msg.put("surplus", surplus);
         msg.put("prod", prod);
         msg.put("city_options", "");
 
@@ -183,6 +232,41 @@ public class CityTools {
         // Send the web city info addition packet so the city dialog shows
         // the correct list of available production choices.
         sendWebCityInfoAddition(game, server, connId, cityId);
+    }
+
+    /**
+     * Computes the total food, shield and trade output of a city by summing
+     * {@link CityTurn#getTileOutput} over all worked tiles.  The city-centre tile
+     * is always worked first; additional tiles are those recorded in
+     * {@link City#getWorkedTiles()}.
+     *
+     * @param game the current game state
+     * @param city the city to evaluate
+     * @return {@code int[]{food, shield, trade}} produced by the city this turn
+     */
+    static int[] computeCityTileOutput(Game game, City city) {
+        int food = 0, shield = 0, trade = 0;
+        java.util.List<Long> worked = city.getWorkedTiles();
+        if (worked.isEmpty()) {
+            // Fallback: use centre tile only (no worked tiles assigned yet, e.g. city just founded)
+            Tile centre = game.tiles.get(city.getTile());
+            if (centre != null) {
+                int[] out = CityTurn.getTileOutput(game, centre, true);
+                return new int[]{out[0], out[1], out[2]};
+            }
+            // No tile data available; return the minimum viable output (1 food to prevent starvation)
+            return new int[]{FOOD_UPKEEP_PER_CITIZEN, 0, 0};
+        }
+        for (int i = 0; i < worked.size(); i++) {
+            Tile t = game.tiles.get(worked.get(i));
+            if (t == null) continue;
+            boolean isCentre = (i == 0);
+            int[] out = CityTurn.getTileOutput(game, t, isCentre);
+            food   += out[0];
+            shield += out[1];
+            trade  += out[2];
+        }
+        return new int[]{food, shield, trade};
     }
 
     /**
