@@ -155,20 +155,38 @@ public class CivServer extends org.java_websocket.server.WebSocketServer impleme
             var ORDER_ACTION_MOVE = 3;
             int unit_id = json.optInt("unit_id");
             int dest_tile = json.optInt("dest_tile");
-            JSONObject orders = json.optJSONArray("orders").getJSONObject(0);
-            int order = orders.optInt("order");
-            int dir = orders.optInt("dir");
+            JSONArray ordersArray = json.optJSONArray("orders");
             Unit orderUnit = game.units.get((long) unit_id);
-            if (orderUnit != null) {
+            if (orderUnit != null && ordersArray != null && ordersArray.length() > 0) {
                 Player orderPlayer = game.players.get(orderUnit.getOwner());
                 if (orderPlayer != null && orderPlayer.getConnectionId() == connId) {
-                    if (order == ORDER_ACTION_MOVE) {
-                        // One tile move.
+                    JSONObject firstOrder = ordersArray.getJSONObject(0);
+                    int order = firstOrder.optInt("order");
+                    int dir = firstOrder.optInt("dir");
+
+                    if (order == ORDER_ACTION_MOVE && ordersArray.length() == 1) {
+                        // Simple single-tile move: clear any pending goto and move one step.
+                        orderUnit.getGotoPath().clear();
                         game.moveUnit(unit_id, dest_tile, dir);
-                    }
-                    if (order == ORDER_MOVE) {
-                        // GOTO.
-                        game.moveUnit(unit_id, dest_tile, dir);
+                    } else {
+                        // Multi-step goto (or a single ORDER_MOVE step): collect all
+                        // direction indices from the orders array and store them as the
+                        // unit's goto path.  The server then executes as many steps as
+                        // the unit's current movement points allow, and the remainder is
+                        // stored for automatic continuation on the next turn.
+                        // Mirrors the unit_orders queue handling in the C Freeciv server's
+                        // unithand.c / server/unittools.c.
+                        List<Integer> gotoPath = new java.util.ArrayList<>();
+                        for (int i = 0; i < ordersArray.length(); i++) {
+                            JSONObject o = ordersArray.getJSONObject(i);
+                            int stepOrder = o.optInt("order");
+                            int stepDir   = o.optInt("dir");
+                            if (stepOrder == ORDER_MOVE || stepOrder == ORDER_ACTION_MOVE) {
+                                gotoPath.add(stepDir);
+                            }
+                        }
+                        orderUnit.setGotoPath(gotoPath);
+                        game.executeGotoPath(orderUnit);
                     }
                 }
             }

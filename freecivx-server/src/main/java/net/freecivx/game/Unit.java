@@ -20,6 +20,9 @@
 
 package net.freecivx.game;
 
+import java.util.ArrayList;
+import java.util.List;
+
 public class Unit {
 
     private long id;
@@ -41,6 +44,16 @@ public class Unit {
      * or the unit moves.
      */
     private int activityCount = 0;
+
+    /**
+     * Remaining goto path for this unit as a list of direction indices (0-7,
+     * matching PathFinder direction encoding: 0=NW, 1=N, 2=NE, 3=W, 4=E,
+     * 5=SW, 6=S, 7=SE).  When non-empty the server will continue executing
+     * the path at the start of each new turn until the list is exhausted or
+     * movement is blocked.  Mirrors the unit_order queue in the C Freeciv
+     * server's unit struct.
+     */
+    private List<Integer> gotoPath = new ArrayList<>();
 
     // Constructor
     public Unit(long id, long owner, long tile, int type, int facing, int veteran, int hp, int activity, int movesleft) {
@@ -158,6 +171,22 @@ public class Unit {
     /** Sets the terrain improvement activity progress counter. */
     public void setActivityCount(int activityCount) {
         this.activityCount = activityCount;
+    }
+
+    /**
+     * Returns the remaining goto path as a mutable list of direction indices.
+     * An empty list means the unit has no pending goto orders.
+     */
+    public List<Integer> getGotoPath() {
+        return gotoPath;
+    }
+
+    /**
+     * Replaces the unit's pending goto path with the given direction list.
+     * Pass an empty list (or {@code new ArrayList<>()}) to cancel the goto.
+     */
+    public void setGotoPath(List<Integer> gotoPath) {
+        this.gotoPath = gotoPath != null ? gotoPath : new ArrayList<>();
     }
 
     // Optional toString method for debugging
