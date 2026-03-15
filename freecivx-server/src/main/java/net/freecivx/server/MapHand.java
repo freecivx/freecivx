@@ -36,6 +36,46 @@ import org.json.JSONObject;
 public class MapHand {
 
     /**
+     * Builds a {@code PACKET_TILE_INFO} JSON object for the given tile and known
+     * status.  When {@code known} is {@link VisibilityHandler#TILE_UNKNOWN}, all
+     * sensitive tile fields (terrain, height, extras, etc.) are masked to neutral
+     * values so the client renders the tile as solid black rather than leaking
+     * real terrain information.
+     *
+     * @param tile  the tile to serialise
+     * @param known the known status ({@code TILE_UNKNOWN}, {@code TILE_KNOWN_UNSEEN},
+     *              or {@code TILE_KNOWN_SEEN})
+     * @return a ready-to-send JSON packet
+     */
+    public static JSONObject buildTileInfoPacket(Tile tile, int known) {
+        JSONObject msg = new JSONObject();
+        msg.put("pid", Packets.PACKET_TILE_INFO);
+        msg.put("tile", tile.getIndex());
+        msg.put("known", known);
+
+        if (known == VisibilityHandler.TILE_UNKNOWN) {
+            // Mask real tile data for unknown tiles so the client renders them as
+            // solid black. Sending real terrain/height data would cause the shader
+            // to override visibility and show unknown tiles as fogged terrain.
+            msg.put("terrain", 0);
+            msg.put("resource", -1);
+            msg.put("extras", extrasToByteArray(0));
+            msg.put("height", 0);
+            msg.put("worked", JSONObject.NULL);
+            msg.put("owner", JSONObject.NULL);
+        } else {
+            msg.put("terrain", tile.getTerrain());
+            msg.put("resource", tile.getResource());
+            msg.put("extras", extrasToByteArray(tile.getExtras()));
+            msg.put("height", tile.getHeight());
+            msg.put("worked", tile.getWorked() >= 0 ? tile.getWorked() : JSONObject.NULL);
+            msg.put("owner", tile.getOwner() >= 0 ? tile.getOwner() : JSONObject.NULL);
+        }
+
+        return msg;
+    }
+
+    /**
      * Sends a PACKET_TILE_INFO packet for a single tile to the specified client.
      * The {@code known} field is computed from the player's per-player visibility
      * sets (explored / visible) so each player receives correct fog-of-war data.
@@ -53,17 +93,7 @@ public class MapHand {
                 ? VisibilityHandler.getKnownForPlayer(player, tileId)
                 : tile.getKnown();
 
-        JSONObject msg = new JSONObject();
-        msg.put("pid", Packets.PACKET_TILE_INFO);
-        msg.put("tile", tile.getIndex());
-        msg.put("terrain", tile.getTerrain());
-        msg.put("resource", tile.getResource());
-        msg.put("extras", extrasToByteArray(tile.getExtras()));
-        msg.put("known", known);
-        msg.put("height", tile.getHeight());
-        msg.put("worked", tile.getWorked() >= 0 ? tile.getWorked() : JSONObject.NULL);
-        msg.put("owner", tile.getOwner() >= 0 ? tile.getOwner() : JSONObject.NULL);
-        game.getServer().sendPacket(connId, msg);
+        game.getServer().sendPacket(connId, buildTileInfoPacket(tile, known));
     }
 
     /**

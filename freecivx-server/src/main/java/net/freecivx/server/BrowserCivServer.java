@@ -584,17 +584,7 @@ public class BrowserCivServer implements IGameServer {
                 break;
             }
         }
-        JSONObject msg = new JSONObject();
-        msg.put("pid", Packets.PACKET_TILE_INFO);
-        msg.put("tile", tile.getIndex());
-        msg.put("known", known);
-        msg.put("terrain", tile.getTerrain());
-        msg.put("resource", tile.getResource());
-        msg.put("extras", MapHand.extrasToByteArray(tile.getExtras()));
-        msg.put("height", tile.getHeight());
-        msg.put("worked", tile.getWorked() >= 0 ? tile.getWorked() : JSONObject.NULL);
-        msg.put("owner", tile.getOwner() >= 0 ? tile.getOwner() : JSONObject.NULL);
-        dispatchToClient(msg.toString());
+        dispatchToClient(MapHand.buildTileInfoPacket(tile, known).toString());
     }
 
     @Override
