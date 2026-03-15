@@ -148,19 +148,58 @@ public class CityHand {
     }
 
     /**
-     * Handles a client request to change the worklist (production queue) of a city.
-     * Updates the city's production queue and notifies the owning client.
+     * Handles a PACKET_CITY_WORKLIST request from the client.
+     * Parses the JSON worklist array, translates each item from Freeciv
+     * Universal Value Type constants to internal representation, stores it
+     * on the city, and sends the updated city info back to the requesting
+     * client.  Mirrors {@code handle_city_worklist()} in the C Freeciv
+     * server's {@code cityhand.c}.
      *
-     * @param game   the current game state
-     * @param connId the connection ID of the requesting client
-     * @param cityId the ID of the city whose worklist is being changed
+     * <p>Each element of {@code worklist} must be a JSON object with fields:
+     * <ul>
+     *   <li>{@code kind}  – {@code VUT_UTYPE=6} for a unit type or
+     *       {@code VUT_IMPROVEMENT=3} for an improvement</li>
+     *   <li>{@code value} – the ID of the unit type or improvement</li>
+     * </ul>
+     *
+     * @param game     the current game state
+     * @param connId   the connection ID of the requesting client
+     * @param cityId   the ID of the city whose worklist is being changed
+     * @param worklist the JSON array of production targets from the client
      */
-    public static void handleCityChangeWorklistRequest(Game game, long connId, int cityId) {
+    public static void handleCityWorklistRequest(Game game, long connId,
+                                                 int cityId,
+                                                 org.json.JSONArray worklist) {
         City city = game.cities.get((long) cityId);
         if (city == null) return;
 
         Player player = game.players.get(city.getOwner());
         if (player == null || player.getConnectionId() != connId) return;
+
+        final int VUT_UTYPE       = Packets.VUT_UTYPE;
+        final int VUT_IMPROVEMENT = Packets.VUT_IMPROVEMENT;
+
+        java.util.List<int[]> newWorklist = new java.util.ArrayList<>();
+        for (int i = 0; i < worklist.length(); i++) {
+            org.json.JSONObject item = worklist.optJSONObject(i);
+            if (item == null) continue;
+            int kind  = item.optInt("kind",  -1);
+            int value = item.optInt("value", -1);
+            if (value < 0) continue;
+
+            int internalKind;
+            if (kind == VUT_UTYPE) {
+                internalKind = 0;
+                if (game.unitTypes.get((long) value) == null) continue;
+            } else if (kind == VUT_IMPROVEMENT) {
+                internalKind = 1;
+                if (game.improvements.get((long) value) == null) continue;
+            } else {
+                continue; // unknown kind – skip
+            }
+            newWorklist.add(new int[]{internalKind, value});
+        }
+        city.setWorklist(newWorklist);
 
         CityTools.sendCityInfo(game, game.getServer(), connId, cityId);
     }
@@ -194,8 +233,8 @@ public class CityHand {
 
         // VUT_UTYPE = 6 in the Freeciv universal-value-type enum (fc_types.js)
         // VUT_IMPROVEMENT = 3
-        final int VUT_UTYPE        = 6;
-        final int VUT_IMPROVEMENT  = 3;
+        final int VUT_UTYPE        = Packets.VUT_UTYPE;
+        final int VUT_IMPROVEMENT  = Packets.VUT_IMPROVEMENT;
 
         int internalKind;
         if (productionKind == VUT_UTYPE) {

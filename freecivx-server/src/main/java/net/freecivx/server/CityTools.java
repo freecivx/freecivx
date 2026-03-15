@@ -195,6 +195,24 @@ public class CityTools {
         JSONArray ppl = new JSONArray();
         ppl.put(1); ppl.put(1); ppl.put(2); ppl.put(1); ppl.put(1);
 
+        // Translate internal production kind to Freeciv Universal Value Type constants
+        // used by the network protocol.  The server stores kind as 0 (unit) or 1
+        // (improvement) internally; the client expects VUT_UTYPE=6 or VUT_IMPROVEMENT=3.
+        // Mirrors the universals_n enum in the C Freeciv source (fc_types.h).
+        int networkProductionKind = (city.getProductionKind() == 0)
+                ? Packets.VUT_UTYPE : Packets.VUT_IMPROVEMENT;
+
+        // Build the worklist JSON array.  Each item is translated from the internal
+        // representation ({kind: 0/1, value: id}) to the VUT constants expected by
+        // the client ({kind: 6 or 3, value: id}).
+        JSONArray worklistArr = new JSONArray();
+        for (int[] item : city.getWorklist()) {
+            JSONObject wItem = new JSONObject();
+            wItem.put("kind",  (item[0] == 0) ? Packets.VUT_UTYPE : Packets.VUT_IMPROVEMENT);
+            wItem.put("value", item[1]);
+            worklistArr.put(wItem);
+        }
+
         JSONObject msg = new JSONObject();
         msg.put("pid", Packets.PACKET_CITY_INFO);
         msg.put("id", cityId);
@@ -210,7 +228,7 @@ public class CityTools {
         msg.put("happy", city.isHappy());
         msg.put("unhappy", city.isUnhappy());
         msg.put("improvements", improvBits);
-        msg.put("production_kind", city.getProductionKind());
+        msg.put("production_kind", networkProductionKind);
         // Translate -1 (internal "nothing queued" sentinel) to 0 for the network protocol.
         msg.put("production_value", Math.max(0, city.getProductionValue()));
         msg.put("shield_stock", city.getShieldStock());
@@ -221,6 +239,7 @@ public class CityTools {
         msg.put("ppl_angry", ppl);
         msg.put("surplus", surplus);
         msg.put("prod", prod);
+        msg.put("worklist", worklistArr);
         msg.put("city_options", "");
 
         if (connId < 0) {

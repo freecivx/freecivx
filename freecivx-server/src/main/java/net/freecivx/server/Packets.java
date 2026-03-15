@@ -33,6 +33,12 @@ public class Packets {
     public static int PACKET_CITY_SHORT_INFO = 32;
     public static int PACKET_CITY_BUY = 34;
     public static int PACKET_CITY_CHANGE = 35;
+    public static int PACKET_CITY_WORKLIST = 36;
+
+    // Freeciv Universal Value Type (universals_n) constants used in production packets.
+    // These are the values the JS client sends and expects; they come from fc_types.h.
+    public static final int VUT_IMPROVEMENT = 3;
+    public static final int VUT_UTYPE       = 6;
     public static int PACKET_CITY_NAME_SUGGESTION_REQ = 43;
     public static int PACKET_CITY_NAME_SUGGESTION_INFO = 44;
     public static int PACKET_WEB_CITY_INFO_ADDITION = 256;

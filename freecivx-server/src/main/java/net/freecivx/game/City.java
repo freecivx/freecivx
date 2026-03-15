@@ -46,6 +46,16 @@ public class City {
      */
     private List<Long> workedTiles = new ArrayList<>();
     /**
+     * Production worklist: a queue of future production targets for this city.
+     * Each element is a two-element {@code int[]} where {@code [0]} is the
+     * internal production kind (0=unit, 1=improvement) and {@code [1]} is the
+     * production target ID.  When the current production is completed the first
+     * item in this list is promoted to become the active production target.
+     * Mirrors the {@code worklist} field in the C Freeciv city struct.
+     */
+    private List<int[]> worklist = new ArrayList<>();
+
+    /**
      * Accumulated production shields towards current build target.
      * Mirrors {@code shield_stock} in the C Freeciv city struct.
      */
@@ -200,6 +210,27 @@ public class City {
      */
     public void removeWorkedTile(long tileId) {
         workedTiles.remove(Long.valueOf(tileId));
+    }
+
+    /**
+     * Returns the production worklist for this city.
+     * Each element is {@code int[]{internalKind, productionValue}} where
+     * {@code internalKind} is 0 for a unit type and 1 for an improvement.
+     *
+     * @return the mutable worklist; never {@code null}
+     */
+    public List<int[]> getWorklist() {
+        return worklist;
+    }
+
+    /**
+     * Replaces the production worklist with the given list.
+     *
+     * @param worklist the new worklist; must not be {@code null}
+     * @throws NullPointerException if {@code worklist} is {@code null}
+     */
+    public void setWorklist(List<int[]> worklist) {
+        this.worklist = java.util.Objects.requireNonNull(worklist, "worklist");
     }
 
     public int getProductionKind() {
