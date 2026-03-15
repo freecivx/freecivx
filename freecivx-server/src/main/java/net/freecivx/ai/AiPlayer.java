@@ -96,6 +96,19 @@ public class AiPlayer {
     // Minimum tile-founding score to build immediately on the current tile
     private static final int SETTLER_FOUND_SCORE = 2;
 
+    // Danger score threshold above which a city is considered in grave danger
+    // and triggers an emergency production override regardless of the current
+    // build queue.  Mirrors city_data->grave_danger in daimilitary.c.
+    private static final int GRAVE_DANGER_THRESHOLD = 15;
+
+    // Maximum distance (Manhattan) at which enemy units contribute to a city's
+    // danger score.  Mirrors ASSESS_DANGER_MAX_DISTANCE in daimilitary.c.
+    private static final int ASSESS_DANGER_MAX_DISTANCE = 6;
+
+    // Distance within which enemy military units make a settler tile "unsafe",
+    // mirroring adv_settler_safe_tile() radius in daisettler.c.
+    private static final int SETTLER_SAFE_DISTANCE = 2;
+
     private static final String[] AI_CITY_NAMES = {
         "Rome", "Athens", "Cairo", "Babylon", "Carthage", "Persepolis",
         "Thebes", "Memphis", "Nineveh", "Tyre", "Samarkand", "Antioch",
@@ -527,7 +540,15 @@ public class AiPlayer {
      * Chooses what to build in a single AI city based on strategic priorities.
      * Inspired by {@code dai_city_choose_build()} in {@code ai/default/daicity.c}:
      * <ol>
-     *   <li>Produce best available defender when the city is undefended or threatened.</li>
+     *   <li><b>Emergency defense override</b>: when the danger score reaches
+     *       {@link #GRAVE_DANGER_THRESHOLD} and the city has no garrison, interrupt
+     *       any ongoing production and queue the best available defender immediately.
+     *       Mirrors {@code city_data->grave_danger} handling in daimilitary.c.</li>
+     *   <li>Produce best available defender when the city is undefended or under
+     *       any measurable threat (danger score > 0).</li>
+     *   <li><b>Happiness emergency</b>: when the city is unhappy, build a Temple or
+     *       Colosseum before expansion.  Mirrors the C AI's unhappy-city priority in
+     *       daicity.c citizen management.</li>
      *   <li>Build a Barracks for veteran units and fast healing (no tech required).</li>
      *   <li>Produce Settlers immediately when the empire has only 1 city (early expansion),
      *       provided the city has a food surplus to survive the population cost.</li>
@@ -549,7 +570,7 @@ public class AiPlayer {
      *   <li>Default: produce the best available offensive unit for army expansion.</li>
      * </ol>
      *
-     * <p>Production is only changed when the slot is empty
+     * <p>Non-emergency production decisions are only made when the slot is empty
      * ({@code productionKind == 0 && productionValue == -1}), which is the
      * state {@link net.freecivx.server.CityTurn#cityProduction} sets after an
      * improvement completes.
@@ -559,23 +580,60 @@ public class AiPlayer {
      * @param owner  the AI player who owns the city
      */
     private void manageAiCity(City city, long cityId, Player owner) {
-        // Only fill an empty production slot (-1 = nothing queued); do not override in-progress work.
-        if (city.getProductionKind() != 0 || city.getProductionValue() != -1) return;
-
         long ownerId = city.getOwner();
         int defenders = countUnitsOnTile(city.getTile(), ownerId);
-        boolean enemyNearby = hasEnemiesNearCity(city);
+        int dangerScore = assessCityDanger(city);
 
         // Pick the best military unit this player can currently build.
         int bestDefender = bestAvailableDefender(owner);
 
-        // Priority 1: Defend the city (from daimilitary.c danger assessment).
-        // Use the best available unit — Phalanx (Bronze Working), Archers (Warrior Code),
-        // Legion (Iron Working) or Warriors as a fallback.
-        if (defenders == 0 || (enemyNearby && defenders < 2)) {
+        // Emergency defense: grave danger with no garrison overrides any in-progress
+        // production to immediately queue a defender.  Mirrors the C Freeciv AI in
+        // daimilitary.c where assess_danger() sets city_data->grave_danger and the
+        // city production loop forces a defender build regardless of other priorities.
+        if (dangerScore >= GRAVE_DANGER_THRESHOLD && defenders == 0) {
             city.setProductionKind(0);
             city.setProductionValue(bestDefender);
             return;
+        }
+
+        // For non-emergency decisions, only fill an empty production slot
+        // (-1 = nothing queued); do not override in-progress work.
+        if (city.getProductionKind() != 0 || city.getProductionValue() != -1) return;
+
+        // Priority 1: Defend the city (from daimilitary.c danger assessment).
+        // Use the best available unit — Phalanx (Bronze Working), Archers (Warrior Code),
+        // Legion (Iron Working) or Warriors as a fallback.
+        // Give one defender to ungarrisoned cities; add a second when the city is
+        // under significant threat (mirrors the garrison-size logic in daimilitary.c
+        // where cities with danger > 0 are given at least two garrison units).
+        if (defenders == 0 || (dangerScore > 0 && defenders < 2)) {
+            city.setProductionKind(0);
+            city.setProductionValue(bestDefender);
+            return;
+        }
+
+        // Priority 1.5: Happiness emergency — when the city is unhappy, build
+        // a happiness building before anything else (except defense).  Mirrors the
+        // C Freeciv AI which checks city->ppl_unhappy > 0 and raises the priority
+        // of Temple and Colosseum for unhappy cities (daicity.c citizen handling).
+        if (city.isUnhappy()) {
+            if (!city.hasImprovement(imprTemple)) {
+                Improvement temple = game.improvements.get((long) imprTemple);
+                if (temple != null && canBuildImprovement(owner, city, temple)) {
+                    city.setProductionKind(1);
+                    city.setProductionValue(imprTemple);
+                    return;
+                }
+            }
+            if (!city.hasImprovement(imprColosseum) && imprColosseum >= 0) {
+                Improvement colosseum = game.improvements.get((long) imprColosseum);
+                if (colosseum != null && canBuildImprovement(owner, city, colosseum)) {
+                    city.setProductionKind(1);
+                    city.setProductionValue(imprColosseum);
+                    return;
+                }
+            }
         }
 
         // Priority 2: Barracks for fast unit healing (no tech required).
@@ -857,20 +915,69 @@ public class AiPlayer {
     }
 
     /**
-     * Returns {@code true} if there is at least one enemy unit within a small
-     * search radius of the given city.  Used for threat detection in
-     * {@link #manageAiCity}, mirroring {@code assess_danger()} in
-     * {@code ai/default/daimilitary.c}.
+     * Computes a numeric danger score for a city by summing enemy military unit
+     * attack strength weighted by proximity.  Units closer to the city
+     * contribute more to the score.  Only enemy units with positive attack
+     * strength (i.e. military units, not Settlers or Workers) within
+     * {@link #ASSESS_DANGER_MAX_DISTANCE} tiles are considered.
+     *
+     * <p>Danger formula (mirrors assess_danger() in daimilitary.c):
+     * <pre>
+     *   danger += attack_strength × (MAX_DIST + 1 − distance)
+     * </pre>
+     * Returns 0 when the city is completely safe.  Values ≥
+     * {@link #GRAVE_DANGER_THRESHOLD} indicate imminent threat and trigger an
+     * emergency production override in {@link #manageAiCity}.
+     *
+     * @param city the city to evaluate
+     * @return non-negative danger score; 0 = no threat
      */
-    private boolean hasEnemiesNearCity(City city) {
+    private int assessCityDanger(City city) {
         long cx = city.getTile() % game.map.getXsize();
         long cy = city.getTile() / game.map.getXsize();
         long ownerId = city.getOwner();
+        int dangerScore = 0;
+
         for (Unit u : game.units.values()) {
             if (u.getOwner() == ownerId) continue;
+            UnitType utype = game.unitTypes.get((long) u.getType());
+            if (utype == null || utype.getAttackStrength() == 0) continue;
+
             long ux = u.getTile() % game.map.getXsize();
             long uy = u.getTile() / game.map.getXsize();
-            if (Math.abs(ux - cx) + Math.abs(uy - cy) <= 4) return true;
+            long dist = Math.abs(ux - cx) + Math.abs(uy - cy);
+            if (dist > ASSESS_DANGER_MAX_DISTANCE) continue;
+
+            // Closer units contribute more: attack × (MAX_DIST + 1 − distance).
+            dangerScore += utype.getAttackStrength() * (ASSESS_DANGER_MAX_DISTANCE + 1 - dist);
+        }
+        return dangerScore;
+    }
+
+    /**
+     * Returns {@code true} if any enemy military unit is within
+     * {@link #SETTLER_SAFE_DISTANCE} tiles of the settler.  Used to prevent
+     * settlers from wandering into enemy-controlled territory without a
+     * military escort, mirroring {@code adv_settler_safe_tile()} in
+     * {@code ai/default/daisettler.c}.
+     *
+     * <p>Only units with positive attack strength are considered (Workers and
+     * Settlers are harmless and thus ignored).
+     *
+     * @param settler the settler unit to check
+     * @return {@code true} if the settler's current tile is unsafe
+     */
+    private boolean isSettlerUnsafe(Unit settler) {
+        long sx = settler.getTile() % game.map.getXsize();
+        long sy = settler.getTile() / game.map.getXsize();
+        long ownerId = settler.getOwner();
+        for (Unit u : game.units.values()) {
+            if (u.getOwner() == ownerId) continue;
+            UnitType utype = game.unitTypes.get((long) u.getType());
+            if (utype == null || utype.getAttackStrength() == 0) continue;
+            long ux = u.getTile() % game.map.getXsize();
+            long uy = u.getTile() / game.map.getXsize();
+            if (Math.abs(ux - sx) + Math.abs(uy - sy) <= SETTLER_SAFE_DISTANCE) return true;
         }
         return false;
     }
@@ -958,11 +1065,20 @@ public class AiPlayer {
 
         // Move toward the best candidate tile, caching the target across turns.
         if (target == null) {
-            long found = findBestCitySpot(unit.getTile());
+            long found = findBestCitySpot(unit.getTile(), unit.getOwner());
             if (found >= 0) {
                 unitTargets.put(unitId, found);
                 target = found;
             }
+        }
+
+        // Safety check: do not move into enemy-controlled territory without a
+        // military escort.  Mirrors adv_settler_safe_tile() in daisettler.c which
+        // cancels settler movement when enemies are adjacent.  We still allow
+        // founding a city on the current tile (done above) so a settler that reaches
+        // its target despite threat can still found immediately.
+        if (isSettlerUnsafe(unit)) {
+            return; // Wait for danger to pass
         }
 
         if (target != null && target >= 0) {
@@ -1053,6 +1169,31 @@ public class AiPlayer {
     }
 
     /**
+     * Returns {@code true} if any <em>enemy</em> military unit is within
+     * {@link #SETTLER_SAFE_DISTANCE} tiles of the given tile.  Used to filter
+     * out dangerous city sites in {@link #findBestCitySpot}, mirroring the
+     * {@code adv_danger_at()} check in {@code city_desirability()} in
+     * {@code ai/default/daisettler.c} which rejects tiles guarded by enemies.
+     *
+     * @param tileId  the map tile to test
+     * @param ownerId the player ID whose enemies to check (own units are safe)
+     * @return {@code true} if an enemy military unit is dangerously close
+     */
+    private boolean isTileThreatenedByEnemy(long tileId, long ownerId) {
+        long tx = tileId % game.map.getXsize();
+        long ty = tileId / game.map.getXsize();
+        for (Unit u : game.units.values()) {
+            if (u.getOwner() == ownerId) continue; // skip own units
+            UnitType utype = game.unitTypes.get((long) u.getType());
+            if (utype == null || utype.getAttackStrength() == 0) continue;
+            long ux = u.getTile() % game.map.getXsize();
+            long uy = u.getTile() / game.map.getXsize();
+            if (Math.abs(ux - tx) + Math.abs(uy - ty) <= SETTLER_SAFE_DISTANCE) return true;
+        }
+        return false;
+    }
+
+    /**
      * Finds the highest-scored unoccupied tile within
      * {@link #SETTLER_SEARCH_RADIUS} that is not too close to an existing city
      * and has a center-tile score of at least {@link #SETTLER_FOUND_SCORE}.
@@ -1063,9 +1204,10 @@ public class AiPlayer {
      * {@code ai/default/daisettler.c}.
      *
      * @param fromTile the settler's current tile ID
+     * @param ownerId  the settling player's ID (used to identify enemy units)
      * @return the best candidate tile ID, or {@code -1} if none is found
      */
-    private long findBestCitySpot(long fromTile) {
+    private long findBestCitySpot(long fromTile, long ownerId) {
         long x = fromTile % game.map.getXsize();
         long y = fromTile / game.map.getXsize();
         long bestTile = -1;
@@ -1090,6 +1232,12 @@ public class AiPlayer {
                 // can found here on arrival (mirrors SETTLER_FOUND_SCORE check in
                 // handleSettler).
                 if (tileSettlerScore(tile) < SETTLER_FOUND_SCORE) continue;
+
+                // Skip sites that are within striking distance of enemy units.
+                // Mirrors city_desirability() in daisettler.c which calls
+                // adv_danger_at() and returns NULL for dangerous tiles, preventing
+                // the AI from sending settlers into contested territory.
+                if (isTileThreatenedByEnemy(tileId, ownerId)) continue;
 
                 // Rank by total output across the full city radius (mirrors the
                 // city_desirability() multi-tile evaluation in daisettler.c).
@@ -1210,8 +1358,11 @@ public class AiPlayer {
      * Chebyshev distance) are preferred because improvements there directly
      * boost city output — mirrors the {@code auto_settler_findwork} heuristic in
      * {@code server/settlers.c} which scores improvement candidates by how much
-     * they benefit the closest city.  Among tiles of equal city-proximity the
-     * nearest tile to the worker wins (minimises travel time).
+     * they benefit the closest city.  Within the city-radius preference, tiles
+     * are further ranked by the expected output gain from the improvement (using
+     * actual terrain bonus values from {@link net.freecivx.game.Terrain}), so
+     * high-yield improvements are preferred over low-yield ones regardless of
+     * travel distance.  Remaining ties go to the nearest tile.
      *
      * @param fromTile the worker's current tile ID
      * @return the tile ID of the best improvement target, or {@code -1}
@@ -1268,12 +1419,32 @@ public class AiPlayer {
                     }
                 }
 
+                // Improvement value: estimate expected output gain from the best
+                // applicable improvement.  Higher-yield improvements are preferred
+                // over lower-yield ones when city proximity is equal.  Mirrors the
+                // auto_settler_findwork() scoring in settlers.c which uses the
+                // actual output delta of each improvement action.
+                int improvementValue = 0;
+                net.freecivx.game.Terrain terrainObj = game.terrains.get((long) t);
+                int irrigBonus  = (terrainObj != null) ? terrainObj.getIrrigationFoodBonus()  : 1;
+                int mineBonus   = (terrainObj != null) ? terrainObj.getMiningShieldBonus()     : 1;
+                int roadBonus   = (terrainObj != null) ? terrainObj.getRoadTradeBonus()        : 1;
+                if (irrigationUseful) {
+                    // Irrigation adds food — weight food 2× (same as settler scoring).
+                    improvementValue = irrigBonus * 2;
+                } else if (mineUseful) {
+                    improvementValue = mineBonus;
+                } else if (roadMissing) {
+                    // Roads provide a trade bonus on most terrains.
+                    improvementValue = Math.max(1, roadBonus);
+                } else if (railMissing) {
+                    improvementValue = 1; // Railroad: movement + modest trade bonus
+                }
+
                 long dist = Math.abs(tx - x) + Math.abs(ty - y);
-                // Score = city proximity bonus (0 or 100) – travel distance.
-                // This ensures in-radius tiles always beat out-of-radius tiles
-                // regardless of distance, while ties within each category go to
-                // the closer tile.
-                int score = cityProximityBonus - (int) dist;
+                // Score = city proximity bonus (0 or 100) + improvement value – travel distance.
+                // In-radius tiles with high-yield improvements beat remote low-yield ones.
+                int score = cityProximityBonus + improvementValue * 5 - (int) dist;
                 if (score > bestScore || (score == bestScore && dist < bestDist)) {
                     bestScore = score;
                     bestDist = dist;
