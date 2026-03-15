@@ -985,7 +985,7 @@ function show_intro_dialog(title, message) {
 				  icon: "ui-icon-play"
 			  },
 			  {
-				  text : "Single Player (TeaVM)",
+				  text : "Single Player (Local)",
 				  id : "teavm_start_button",
 				  click : function() {
                     var check_username = $("#username_req").val();
