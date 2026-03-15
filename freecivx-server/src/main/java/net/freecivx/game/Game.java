@@ -21,6 +21,7 @@
 package net.freecivx.game;
 
 import net.freecivx.server.CivServer;
+import net.freecivx.server.CityTools;
 import net.freecivx.server.Notify;
 import net.freecivx.ai.AiPlayer;
 import net.freecivx.data.Ruleset;
@@ -501,11 +502,10 @@ public class Game {
 
         // Send cities – CITY_INFO first so the client creates a proper City
         // instance before the lightweight CITY_SHORT_INFO arrives.
+        // CityTools.sendCityInfo also sends PACKET_WEB_CITY_INFO_ADDITION with
+        // can_build_unit / can_build_improvement bitvectors for the city dialog.
         cities.forEach((id, city) -> {
-            server.sendCityInfoAll(id, city.getOwner(), city.getTile(), city.getSize(), city.getStyle(), city.isCapital(),
-                    city.isOccupied(), city.getWalls(), city.isHappy(), city.isUnhappy(), "", city.getName(), 6, 0);
-            server.sendCityShortInfoAll(id, city.getOwner(), city.getTile(), city.getSize(), city.getStyle(), city.isCapital(),
-                    city.isOccupied(), city.getWalls(), city.isHappy(), city.isUnhappy(), "", city.getName());
+            CityTools.sendCityInfo(this, server, -1L, id);
         });
 
 
@@ -1097,19 +1097,16 @@ public class Game {
 
         long id = cities.size() + 1;
         long owner = unit.getOwner();
+        // productionKind=0 (unit), productionValue=0 (no production yet)
         City city = new City(city_name, owner, tile_id, 1, 1, false, false,
-                0, true, false, "", 6, 0);
+                0, true, false, "", 0, 0);
         cities.put(id, city);
 
         Tile tile = tiles.get(tile_id);
         tile.setWorked(id);
         server.sendTileInfoAll(tile);
 
-        server.sendCityInfoAll(id, city.getOwner(), city.getTile(), city.getSize(), city.getStyle(), city.isCapital(),
-                city.isOccupied(), city.getWalls(), city.isHappy(), city.isUnhappy(), "", city.getName(), 6, 0);
-
-        server.sendCityShortInfoAll(id, city.getOwner(), city.getTile(), city.getSize(), city.getStyle(), city.isCapital(),
-                city.isOccupied(), city.getWalls(), city.isHappy(), city.isUnhappy(), "", city.getName());
+        CityTools.sendCityInfo(this, server, -1L, id);
         server.sendUnitRemove(unit_id);
         units.remove(unit_id);
     }
@@ -1173,11 +1170,8 @@ public class Game {
             // Reset production queue (captured city has disrupted production)
             city.setProductionKind(0);
             city.setProductionValue(0);
-            server.sendCityInfoAll(cityId, city.getOwner(), city.getTile(),
-                    city.getSize(), city.getStyle(), city.isCapital(),
-                    city.isOccupied(), city.getWalls(), city.isHappy(),
-                    city.isUnhappy(), "", city.getName(),
-                    city.getProductionKind(), city.getProductionValue());
+            city.setShieldStock(0);
+            CityTools.sendCityInfo(this, server, -1L, cityId);
             server.sendMessageAll(cityName + " has been captured!");
             Notify.notifyPlayer(this, server, newOwner,
                     "Our forces have captured " + cityName + "!");

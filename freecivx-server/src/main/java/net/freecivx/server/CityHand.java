@@ -164,4 +164,64 @@ public class CityHand {
 
         CityTools.sendCityInfo(game, game.getServer(), connId, cityId);
     }
+
+    /**
+     * Handles a PACKET_CITY_CHANGE request from the client.
+     * The client sends the desired production using the Freeciv Universal Value
+     * Type constants: {@code VUT_UTYPE = 6} for a unit type and
+     * {@code VUT_IMPROVEMENT = 3} for an improvement (building).
+     * These are translated to the internal {@code productionKind} values:
+     * {@code 0} for units and {@code 1} for improvements.
+     * The accumulated shield stock is reset to zero when the production target
+     * changes, mirroring {@code choose_production()} in the C Freeciv server's
+     * {@code server/citytools.c}.
+     *
+     * @param game            the current game state
+     * @param connId          the connection ID of the requesting client
+     * @param cityId          the ID of the city whose production is changing
+     * @param productionKind  the universal type (VUT_UTYPE=6 or VUT_IMPROVEMENT=3)
+     * @param productionValue the ID of the unit type or improvement to produce
+     */
+    public static void handleCityChangeProductionRequest(Game game, long connId,
+                                                         int cityId,
+                                                         int productionKind,
+                                                         int productionValue) {
+        City city = game.cities.get((long) cityId);
+        if (city == null) return;
+
+        Player player = game.players.get(city.getOwner());
+        if (player == null || player.getConnectionId() != connId) return;
+
+        // VUT_UTYPE = 6 in the Freeciv universal-value-type enum (fc_types.js)
+        // VUT_IMPROVEMENT = 3
+        final int VUT_UTYPE        = 6;
+        final int VUT_IMPROVEMENT  = 3;
+
+        int internalKind;
+        if (productionKind == VUT_UTYPE) {
+            internalKind = 0; // unit
+        } else if (productionKind == VUT_IMPROVEMENT) {
+            internalKind = 1; // improvement
+        } else {
+            // Unknown kind; ignore.
+            return;
+        }
+
+        // Validate that the requested target exists.
+        if (internalKind == 0) {
+            if (game.unitTypes.get((long) productionValue) == null) return;
+        } else {
+            if (game.improvements.get((long) productionValue) == null) return;
+        }
+
+        // Only reset shield stock when the production target actually changes.
+        if (city.getProductionKind() != internalKind
+                || city.getProductionValue() != productionValue) {
+            city.setProductionKind(internalKind);
+            city.setProductionValue(productionValue);
+            city.setShieldStock(0);
+        }
+
+        CityTools.sendCityInfo(game, game.getServer(), -1L, cityId);
+    }
 }

@@ -21,10 +21,13 @@ package net.freecivx.server;
 
 import net.freecivx.game.City;
 import net.freecivx.game.Game;
+import net.freecivx.game.Improvement;
 import net.freecivx.game.Nation;
 import net.freecivx.game.Player;
 import net.freecivx.game.Tile;
 import net.freecivx.game.Unit;
+import net.freecivx.game.UnitType;
+import org.json.JSONArray;
 import org.json.JSONObject;
 
 import java.util.concurrent.atomic.AtomicLong;
@@ -114,7 +117,9 @@ public class CityTools {
 
     /**
      * Sends a PACKET_CITY_INFO packet for the specified city to a single client
-     * or broadcasts it to all clients.
+     * or broadcasts it to all clients, followed by a PACKET_WEB_CITY_INFO_ADDITION
+     * packet that includes the can_build_unit and can_build_improvement bitvectors
+     * so the city dialog can show the correct production choices.
      *
      * @param game   the current game state
      * @param server the CivServer used to transmit the packet
@@ -125,22 +130,166 @@ public class CityTools {
         City city = game.cities.get(cityId);
         if (city == null) return;
 
+        // Build improvements bitvector: bit N is set if improvement N is built.
+        // The JS client decodes this as a BitVector where isSet(id) returns true
+        // when the city has that improvement.  Improvements list IDs are the
+        // ruleset-order IDs so each ID maps directly to a bit position.
+        JSONArray improvBits = buildBitvector(city.getImprovements().stream()
+                .mapToInt(Integer::intValue).toArray(), game.improvements.size());
+
+        JSONArray ppl = new JSONArray();
+        ppl.put(1); ppl.put(1); ppl.put(2); ppl.put(1); ppl.put(1);
+        JSONArray prod = new JSONArray();
+        prod.put(1); prod.put(1); prod.put(2); prod.put(1); prod.put(1); prod.put(1);
+
         JSONObject msg = new JSONObject();
         msg.put("pid", Packets.PACKET_CITY_INFO);
         msg.put("id", cityId);
         msg.put("owner", city.getOwner());
         msg.put("tile", city.getTile());
+        msg.put("original", city.getOwner());
         msg.put("name", city.getName());
         msg.put("size", city.getSize());
+        msg.put("style", city.getStyle());
         msg.put("capital", city.isCapital());
+        msg.put("occupied", city.isOccupied());
+        msg.put("walls", city.getWalls());
+        msg.put("happy", city.isHappy());
+        msg.put("unhappy", city.isUnhappy());
+        msg.put("improvements", improvBits);
         msg.put("production_kind", city.getProductionKind());
         msg.put("production_value", city.getProductionValue());
+        msg.put("shield_stock", city.getShieldStock());
+        msg.put("food_stock", city.getFoodStock());
+        msg.put("ppl_happy", ppl);
+        msg.put("ppl_content", ppl);
+        msg.put("ppl_unhappy", ppl);
+        msg.put("ppl_angry", ppl);
+        msg.put("surplus", prod);
+        msg.put("prod", prod);
+        msg.put("city_options", "");
 
         if (connId < 0) {
             server.broadcastPacket(msg);
         } else {
             server.sendPacket(connId, msg);
         }
+
+        // Send the web city info addition packet so the city dialog shows
+        // the correct list of available production choices.
+        sendWebCityInfoAddition(game, server, connId, cityId);
+    }
+
+    /**
+     * Sends a PACKET_WEB_CITY_INFO_ADDITION packet for the given city.
+     * This follow-up packet provides the {@code can_build_unit} and
+     * {@code can_build_improvement} bitvectors that the city dialog uses to
+     * populate the production choice list.  Only units/improvements whose
+     * tech prerequisites are met by the city owner are marked as buildable.
+     *
+     * @param game   the current game state
+     * @param server the CivServer used to transmit the packet
+     * @param connId the connection ID of the recipient; {@code -1} to broadcast to all
+     * @param cityId the ID of the city
+     */
+    public static void sendWebCityInfoAddition(Game game, CivServer server,
+                                               long connId, long cityId) {
+        City city = game.cities.get(cityId);
+        if (city == null) return;
+
+        Player player = game.players.get(city.getOwner());
+
+        // Build can_build_unit bitvector: bit N is set when unit type N is
+        // buildable by the city owner (tech prerequisite met).
+        // Obsolete units (those that have been upgraded away) are excluded if
+        // the player already has the technology for the upgraded replacement.
+        int maxUnitId = game.unitTypes.keySet().stream()
+                .mapToInt(Long::intValue).max().orElse(0);
+        int[] buildableUnits = game.unitTypes.entrySet().stream()
+                .filter(e -> {
+                    UnitType ut = e.getValue();
+                    long techReq = ut.getTechReqId();
+                    boolean techMet = (player == null || techReq < 0
+                            || player.hasTech(techReq));
+                    // Exclude units that are obsoleted by an upgrade the player has.
+                    boolean notObsolete = true;
+                    int upgradesTo = ut.getUpgradesTo();
+                    if (upgradesTo >= 0) {
+                        UnitType upgrade = game.unitTypes.get((long) upgradesTo);
+                        if (upgrade != null) {
+                            long upgTech = upgrade.getTechReqId();
+                            if (player != null && upgTech >= 0
+                                    && player.hasTech(upgTech)) {
+                                notObsolete = false;
+                            }
+                        }
+                    }
+                    return techMet && notObsolete;
+                })
+                .mapToInt(e -> e.getKey().intValue())
+                .toArray();
+        JSONArray canBuildUnit = buildBitvector(buildableUnits, maxUnitId + 1);
+
+        // Build can_build_improvement bitvector: bit N is set when the city can
+        // still build improvement N (tech met and not already built).
+        int maxImprId = game.improvements.keySet().stream()
+                .mapToInt(Long::intValue).max().orElse(0);
+        int[] buildableImprovements = game.improvements.entrySet().stream()
+                .filter(e -> {
+                    Improvement impr = e.getValue();
+                    long techReq = impr.getTechReqId();
+                    boolean techMet = (player == null || techReq < 0
+                            || player.hasTech(techReq));
+                    boolean notBuilt = !city.hasImprovement(e.getKey().intValue());
+                    return techMet && notBuilt;
+                })
+                .mapToInt(e -> e.getKey().intValue())
+                .toArray();
+        JSONArray canBuildImpr = buildBitvector(buildableImprovements, maxImprId + 1);
+
+        // Granary size for city_info_addition
+        int granarySize = CityTurn.cityGranarySize(city.getSize());
+
+        JSONObject msg = new JSONObject();
+        msg.put("pid", Packets.PACKET_WEB_CITY_INFO_ADDITION);
+        msg.put("id", cityId);
+        msg.put("can_build_unit", canBuildUnit);
+        msg.put("can_build_improvement", canBuildImpr);
+        msg.put("granary_size", granarySize);
+        msg.put("granary_turns", 0);
+        msg.put("cma_enabled", false);
+
+        if (connId < 0) {
+            server.broadcastPacket(msg);
+        } else {
+            server.sendPacket(connId, msg);
+        }
+    }
+
+    /**
+     * Builds a bit-vector byte array from a list of set bit positions.
+     * The returned JSONArray encodes each byte of the bitvector as an integer
+     * (0–255).  The array is sized to hold at least {@code numBits} bits.
+     * This matches the format expected by the client-side {@code BitVector}
+     * class in {@code bitvector.js}.
+     *
+     * @param setBits array of bit positions that should be set to 1
+     * @param numBits minimum number of bits the bitvector must cover
+     * @return a JSONArray of bytes representing the bitvector
+     */
+    static JSONArray buildBitvector(int[] setBits, int numBits) {
+        int numBytes = Math.max(1, (numBits + 7) / 8);
+        byte[] bytes = new byte[numBytes];
+        for (int bit : setBits) {
+            if (bit >= 0 && bit < numBits) {
+                bytes[bit / 8] |= (byte) (1 << (bit % 8));
+            }
+        }
+        JSONArray arr = new JSONArray();
+        for (byte b : bytes) {
+            arr.put(b & 0xFF); // unsigned byte
+        }
+        return arr;
     }
 
     /**

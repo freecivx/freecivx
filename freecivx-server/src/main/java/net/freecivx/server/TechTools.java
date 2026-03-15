@@ -67,6 +67,15 @@ public class TechTools {
         // Remove buildings that are now obsolete due to the newly acquired technology.
         // Mirrors remove_obsolete_buildings_city() in the C Freeciv server's cityturn.c.
         CityTurn.removeObsoleteBuildingsForPlayer(game, playerId);
+        // Refresh city info so the city dialog's can_build lists reflect the
+        // newly unlocked units and improvements.  Only the player's own cities
+        // are refreshed since only they are affected by the tech change.
+        for (Map.Entry<Long, City> entry : game.cities.entrySet()) {
+            if (entry.getValue().getOwner() == playerId) {
+                CityTools.sendWebCityInfoAddition(game, game.getServer(),
+                        player.getConnectionId(), entry.getKey());
+            }
+        }
         sendResearchInfo(game, game.getServer(), player.getConnectionId(), playerId);
     }
 
