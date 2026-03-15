@@ -62,7 +62,7 @@ public class AutoGame {
     public static final int DEFAULT_AI_PLAYERS = 5;
 
     /** Default number of turns to simulate. */
-    public static final int DEFAULT_TURNS = 100;
+    public static final int DEFAULT_TURNS = 200;
 
     /**
      * Number of AI-controlled civilisations to create.
@@ -237,11 +237,18 @@ public class AutoGame {
                 .filter(Player::isAlive).count();
         long year = game.year;
         // Classic Freeciv: turn 1 = 4000 BCE, each turn advances 20 years.
-        // historicalYear < 0 means BCE, > 0 means CE.
+        // historicalYear > 0 means BCE, < 0 means CE; 0 is treated as 1 CE
+        // because the historical calendar has no year 0.
         long historicalYear = 4000L - (year - 1) * 20L;
         String yearStr = historicalYear > 0
                 ? historicalYear + " BCE"
-                : Math.abs(historicalYear) + " CE";
+                : (1 - historicalYear) + " CE";
+        // Count active settlers so expansion bottlenecks are visible in the log.
+        long settlerCount = game.units.values().stream()
+                .filter(u -> {
+                    net.freecivx.game.UnitType ut = game.unitTypes.get((long) u.getType());
+                    return ut != null && "Settlers".equalsIgnoreCase(ut.getName());
+                }).count();
         // Find the leading civilisation by score for the turn summary.
         Player leader = game.players.values().stream()
                 .filter(Player::isAlive)
@@ -253,9 +260,9 @@ public class AutoGame {
                         + leader.getKnownTechs().size() + " techs, "
                         + leader.getGold() + " gold)"
                 : "";
-        log.info("Turn {} ({}) | Alive: {}/{} | Units: {} | Cities: {}{}",
+        log.info("Turn {} ({}) | Alive: {}/{} | Units: {} (settlers: {}) | Cities: {}{}",
                 turn, yearStr, alivePlayers, game.players.size(),
-                game.units.size(), game.cities.size(), leaderInfo);
+                game.units.size(), settlerCount, game.cities.size(), leaderInfo);
     }
 
     /**

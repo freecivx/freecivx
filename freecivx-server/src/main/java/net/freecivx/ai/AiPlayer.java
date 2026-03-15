@@ -442,8 +442,10 @@ public class AiPlayer {
      * Inspired by {@code dai_city_choose_build()} in {@code ai/default/daicity.c}:
      * <ol>
      *   <li>Produce Warriors when the city is undefended or threatened.</li>
+     *   <li>Build a Barracks for veteran units and fast healing (no tech required).</li>
+     *   <li>Produce Settlers immediately when the empire has only 1 city (early expansion).</li>
      *   <li>Build a Granary for sustained food growth (Pottery required).</li>
-     *   <li>Produce Settlers when the empire is small (at most three cities).</li>
+     *   <li>Produce more Settlers when the empire still has fewer than 4 cities.</li>
      *   <li>Build a Library for science output (Writing required).</li>
      *   <li>Build a Marketplace for gold income (Code of Laws required).</li>
      *   <li>Build City Walls for passive defence (Masonry required).</li>
@@ -487,7 +489,23 @@ public class AiPlayer {
             }
         }
 
-        // Priority 3: Granary for sustained food growth (Pottery required)
+        // Compute empire city count once; used by both the early-expansion
+        // and later-expansion settler priorities below.
+        long myCityCount = game.cities.values().stream()
+                .filter(c -> c.getOwner() == ownerId).count();
+
+        // Priority 3: Early expansion – produce Settlers before Granary when the empire is
+        // very small (just 1 city).  Mirrors the C Freeciv default AI behaviour where
+        // expansion is the top strategic goal in the early game (dai_manage_cities /
+        // dai_settler_manage in daicity.c / daisettler.c).  A city must be at least
+        // size 2 so the pop_cost=1 of Settlers does not destroy the last citizen.
+        if (myCityCount < 2 && city.getSize() >= 2) {
+            city.setProductionKind(0);
+            city.setProductionValue(UNIT_SETTLERS);
+            return;
+        }
+
+        // Priority 4: Granary for sustained food growth (Pottery required)
         if (!city.hasImprovement(imprGranary)) {
             Improvement granary = game.improvements.get((long) imprGranary);
             if (granary != null && canBuildImprovement(owner, granary)) {
@@ -497,16 +515,14 @@ public class AiPlayer {
             }
         }
 
-        // Priority 4: Settlers to expand the empire when it is still small
-        long myCityCount = game.cities.values().stream()
-                .filter(c -> c.getOwner() == ownerId).count();
+        // Priority 5: Settlers to continue expanding the empire (up to 4 cities)
         if (myCityCount < 4 && city.getSize() >= 2) {
             city.setProductionKind(0);
             city.setProductionValue(UNIT_SETTLERS);
             return;
         }
 
-        // Priority 5: Library for science output (Writing required)
+        // Priority 6: Library for science output (Writing required)
         if (!city.hasImprovement(imprLibrary) && city.getSize() >= 2) {
             Improvement library = game.improvements.get((long) imprLibrary);
             if (library != null && canBuildImprovement(owner, library)) {
@@ -516,7 +532,7 @@ public class AiPlayer {
             }
         }
 
-        // Priority 6: Marketplace for trade income (Code of Laws required)
+        // Priority 7: Marketplace for trade income (Code of Laws required)
         if (!city.hasImprovement(imprMarketplace) && city.getSize() >= 3) {
             Improvement marketplace = game.improvements.get((long) imprMarketplace);
             if (marketplace != null && canBuildImprovement(owner, marketplace)) {
@@ -526,7 +542,7 @@ public class AiPlayer {
             }
         }
 
-        // Priority 7: City Walls for passive defence (Masonry required)
+        // Priority 8: City Walls for passive defence (Masonry required)
         if (!city.hasImprovement(imprCityWalls)) {
             Improvement walls = game.improvements.get((long) imprCityWalls);
             if (walls != null && canBuildImprovement(owner, walls)) {
@@ -604,12 +620,14 @@ public class AiPlayer {
     private void handleSettler(Unit unit, UnitType utype) {
         long unitId = unit.getId();
 
-        // Evict a stale target if the tile has since been claimed or is gone.
+        // Evict a stale target if the tile has since been claimed, is gone, or is
+        // now too close to a city that was founded after the target was selected.
         Long target = unitTargets.get(unitId);
         if (target != null) {
             Tile t = game.tiles.get(target);
             if (t == null || t.getWorked() >= 0
-                    || !CITY_SUITABLE_TERRAINS.contains(t.getTerrain())) {
+                    || !CITY_SUITABLE_TERRAINS.contains(t.getTerrain())
+                    || tooCloseToExistingCity(target)) {
                 unitTargets.remove(unitId);
                 target = null;
             }
@@ -689,7 +707,9 @@ public class AiPlayer {
 
     /**
      * Finds the highest-scored unoccupied tile within
-     * {@link #SETTLER_SEARCH_RADIUS} that is not too close to an existing city.
+     * {@link #SETTLER_SEARCH_RADIUS} that is not too close to an existing city
+     * and has a terrain score of at least {@link #SETTLER_FOUND_SCORE} so the
+     * settler can found a city immediately upon arrival.
      * Ties are broken by preferring the closer tile.  Mirrors
      * {@code find_best_city_placement()} in {@code ai/default/daisettler.c}.
      *
@@ -718,6 +738,10 @@ public class AiPlayer {
                 if (tooCloseToExistingCity(tileId)) continue;
 
                 int score = tileSettlerScore(tile);
+                // Skip tiles that are too poor to actually found on (mirrors the
+                // SETTLER_FOUND_SCORE threshold in handleSettler so the settler
+                // will not navigate to a tile it cannot settle on arrival).
+                if (score < SETTLER_FOUND_SCORE) continue;
                 long dist = Math.abs(tx - x) + Math.abs(ty - y);
                 // Prefer higher score; break ties by proximity
                 if (score > bestScore || (score == bestScore && dist < bestDist)) {
