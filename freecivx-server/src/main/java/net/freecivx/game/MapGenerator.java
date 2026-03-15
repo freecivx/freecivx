@@ -1,6 +1,8 @@
 package net.freecivx.game;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Random;
 
@@ -27,6 +29,7 @@ public class MapGenerator {
 
     // **Extra IDs (bit positions in the tile extras bitvector)**
     // Must match the extras order in Game.initGame()
+    private static final int EXTRA_BIT_RIVER      = 0;
     private static final int EXTRA_BIT_HUT         = 8;
     // Resource extra bit positions (must match Game.initGame() extras 15-25)
     private static final int EXTRA_BIT_CATTLE      = 15;
@@ -59,6 +62,10 @@ public class MapGenerator {
     private static final double RESOURCE_PROBABILITY = 0.15;
     // Probability that a given land tile has a hut
     private static final double HUT_PROBABILITY = 0.03;
+    // Number of river sources to generate (roughly 1 river per 200 land tiles)
+    private static final int RIVER_SOURCE_COUNT = 10;
+    // Maximum number of steps a river takes before stopping
+    private static final int RIVER_MAX_STEPS = 20;
 
     public MapGenerator(int width, int height) {
         this.width = width;
@@ -241,7 +248,84 @@ public class MapGenerator {
                 tiles.put(index, tile);
             }
         }
+
+        generateRivers();
+
         return tiles;
+    }
+
+    /**
+     * Generates rivers on the map by tracing paths from high-elevation land
+     * tiles (mountains and hills) downhill toward the coast.
+     *
+     * <p>Each river starts at a randomly chosen mountain or hill tile and
+     * follows the path of steepest descent (using the heightmap), marking
+     * each visited land tile with the {@link #EXTRA_BIT_RIVER} extra bit.
+     * Rivers stop when they reach ocean/coast or when the maximum step count
+     * is exceeded.  Mirrors the general spirit of {@code river_generate()} in
+     * the C Freeciv server's {@code server/generator/mapgen.c}.
+     */
+    private void generateRivers() {
+        // Cardinal directions for river flow (N, S, W, E)
+        final int[][] DIRS = {{0, -1}, {0, 1}, {-1, 0}, {1, 0}};
+
+        // Collect candidate river source tiles (mountains and hills)
+        List<long[]> candidates = new ArrayList<>();
+        for (int y = 0; y < height; y++) {
+            for (int x = 0; x < width; x++) {
+                long index = (long) y * width + x;
+                Tile tile = tiles.get(index);
+                if (tile == null) continue;
+                int t = tile.getTerrain();
+                if (t == TERRAIN_MOUNTAINS || t == TERRAIN_HILLS) {
+                    candidates.add(new long[]{x, y, index});
+                }
+            }
+        }
+        if (candidates.isEmpty()) return;
+
+        for (int r = 0; r < RIVER_SOURCE_COUNT; r++) {
+            long[] src = candidates.get(random.nextInt(candidates.size()));
+            int cx = (int) src[0];
+            int cy = (int) src[1];
+
+            for (int step = 0; step < RIVER_MAX_STEPS; step++) {
+                long idx = (long) cy * width + cx;
+                Tile cur = tiles.get(idx);
+                if (cur == null) break;
+
+                int terrain = cur.getTerrain();
+                // Rivers flow on land only; stop at ocean or coast
+                if (terrain == TERRAIN_OCEAN || terrain == TERRAIN_COAST
+                        || terrain == TERRAIN_LAKE) break;
+
+                // Mark this tile as having a river
+                cur.setExtras(cur.getExtras() | (1 << EXTRA_BIT_RIVER));
+
+                // Find the lowest adjacent tile (steepest descent)
+                double minHeight = heightMap[cx][cy];
+                int bestDx = 0;
+                int bestDy = 0;
+                boolean foundLower = false;
+
+                for (int[] d : DIRS) {
+                    int nx = cx + d[0];
+                    int ny = cy + d[1];
+                    if (nx < 0 || nx >= width || ny < 0 || ny >= height) continue;
+                    double nh = heightMap[nx][ny];
+                    if (nh < minHeight) {
+                        minHeight = nh;
+                        bestDx = d[0];
+                        bestDy = d[1];
+                        foundLower = true;
+                    }
+                }
+
+                if (!foundLower) break; // at a local minimum — stop the river
+                cx += bestDx;
+                cy += bestDy;
+            }
+        }
     }
 
     /**

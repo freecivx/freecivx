@@ -822,7 +822,8 @@ public class AiPlayer {
         int activity = unit.getActivity();
         if (activity == CityTurn.ACTIVITY_ROAD
                 || activity == CityTurn.ACTIVITY_IRRIGATE
-                || activity == CityTurn.ACTIVITY_MINE) {
+                || activity == CityTurn.ACTIVITY_MINE
+                || activity == CityTurn.ACTIVITY_RAILROAD) {
             return; // Let the current task complete
         }
 
@@ -848,7 +849,17 @@ public class AiPlayer {
             return;
         }
 
-        // Priority 2: Irrigate Grassland or Plains to boost food output.
+        // Priority 2: Upgrade road to railroad if none exists.
+        // Railroads further halve movement cost and boost trade output.
+        boolean hasRail = (currentTile.getExtras()
+                & (1 << CityTurn.EXTRA_BIT_RAIL)) != 0;
+        if (!hasRail) {
+            game.changeUnitActivity(unit.getId(),
+                    CityTurn.ACTIVITY_RAILROAD);
+            return;
+        }
+
+        // Priority 3: Irrigate Grassland or Plains to boost food output.
         boolean hasIrrigation = (currentTile.getExtras()
                 & (1 << CityTurn.EXTRA_BIT_IRRIGATION)) != 0;
         if (!hasIrrigation
@@ -858,7 +869,7 @@ public class AiPlayer {
             return;
         }
 
-        // Priority 3: Mine Hills to boost production output.
+        // Priority 4: Mine Hills to boost production output.
         boolean hasMine = (currentTile.getExtras()
                 & (1 << CityTurn.EXTRA_BIT_MINE)) != 0;
         if (!hasMine && terrain == TERRAIN_HILLS) {
@@ -908,12 +919,14 @@ public class AiPlayer {
 
                 int extras = tile.getExtras();
                 boolean roadMissing = (extras & (1 << CityTurn.EXTRA_BIT_ROAD)) == 0;
+                boolean railMissing = !roadMissing
+                        && (extras & (1 << CityTurn.EXTRA_BIT_RAIL)) == 0;
                 boolean irrigationUseful = (t == TERRAIN_GRASSLAND || t == TERRAIN_PLAINS)
                         && (extras & (1 << CityTurn.EXTRA_BIT_IRRIGATION)) == 0;
                 boolean mineUseful = (t == TERRAIN_HILLS)
                         && (extras & (1 << CityTurn.EXTRA_BIT_MINE)) == 0;
 
-                if (!roadMissing && !irrigationUseful && !mineUseful) continue;
+                if (!roadMissing && !railMissing && !irrigationUseful && !mineUseful) continue;
 
                 long dist = Math.abs(tx - x) + Math.abs(ty - y);
                 if (dist < bestDist) {

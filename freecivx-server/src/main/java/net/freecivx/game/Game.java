@@ -1139,6 +1139,8 @@ public class Game {
 
         Tile tile = tiles.get(tile_id);
         tile.setWorked(id);
+        // Register the city centre as the first worked tile.
+        city.addWorkedTile(tile_id);
 
         // Classic Freeciv: city centre tiles automatically get a road
         // (extra_road flag "AutoOnCityCenter" in terrain.ruleset).
@@ -1146,6 +1148,9 @@ public class Game {
         tile.setExtras(tile.getExtras() | (1 << net.freecivx.server.CityTurn.EXTRA_BIT_ROAD));
 
         server.sendTileInfoAll(tile);
+
+        // Update national borders to include this city's territory.
+        net.freecivx.server.CityTurn.updateBorders(this);
 
         CityTools.sendCityInfo(this, server, -1L, id);
         server.sendUnitRemove(unit_id);
@@ -1196,10 +1201,20 @@ public class Game {
         if (city.getSize() <= 1) {
             // Raze: a 1-population city is destroyed upon capture.
             // Mirrors city_reduce_size(pcity, 1, winner, "razed") in the C server.
+            // Clear worked status on all tiles this city was working.
+            for (long workedTileId : city.getWorkedTiles()) {
+                Tile wt = tiles.get(workedTileId);
+                if (wt != null) {
+                    wt.setWorked(-1);
+                    server.sendTileInfoAll(wt);
+                }
+            }
             cityTile.setWorked(-1);
             server.sendTileInfoAll(cityTile);
             // removeCity() removes from game.cities and sends remove packet to clients.
             net.freecivx.server.CityTools.removeCity(this, cityId);
+            // Recalculate borders after city removal
+            net.freecivx.server.CityTurn.updateBorders(this);
             server.sendMessageAll(cityName + " has been razed!");
             log.info("City razed: {} (owner: {})", cityName, getPlayerName(oldOwner));
             Notify.notifyPlayer(this, server, oldOwner,
@@ -1214,6 +1229,8 @@ public class Game {
             city.setProductionValue(-1);
             city.setShieldStock(0);
             CityTools.sendCityInfo(this, server, -1L, cityId);
+            // Recalculate borders after ownership change
+            net.freecivx.server.CityTurn.updateBorders(this);
             server.sendMessageAll(cityName + " has been captured!");
             log.info("City captured: {} by {} from {}", cityName,
                     getPlayerName(newOwner), getPlayerName(oldOwner));
