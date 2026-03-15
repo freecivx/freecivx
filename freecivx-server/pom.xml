@@ -61,6 +61,16 @@
       <artifactId>commons-lang3</artifactId>
       <version>${org-apache-commons.version}</version>
     </dependency>
+    <!-- TeaVM JSO: compile-time annotations (@JSBody, @JSExport) for the
+         browser build.  Provided scope ensures it is never packaged into the
+         regular JAR; it is only needed during compilation and is re-supplied
+         at runtime by the TeaVM toolchain. -->
+    <dependency>
+      <groupId>org.teavm</groupId>
+      <artifactId>teavm-jso</artifactId>
+      <version>${teavm.version}</version>
+      <scope>provided</scope>
+    </dependency>
     <!-- Test dependencies -->
     <dependency>
       <groupId>org.junit.jupiter</groupId>
@@ -160,6 +170,13 @@
           <groupId>org.teavm</groupId>
           <artifactId>teavm-interop</artifactId>
           <version>${teavm.version}</version>
+        </dependency>
+        <!-- TeaVM JSO: @JSBody and @JSExport for JavaScript interop -->
+        <dependency>
+          <groupId>org.teavm</groupId>
+          <artifactId>teavm-jso</artifactId>
+          <version>${teavm.version}</version>
+          <scope>provided</scope>
         </dependency>
       </dependencies>
       <build>

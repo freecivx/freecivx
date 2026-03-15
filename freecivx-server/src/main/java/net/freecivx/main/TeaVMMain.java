@@ -19,6 +19,8 @@
 
 package net.freecivx.main;
 
+import net.freecivx.server.BrowserCivServer;
+
 /**
  * Entry point for the TeaVM build of freecivx-server.
  *
@@ -28,18 +30,37 @@ package net.freecivx.main;
  *
  * <p>Unlike the standard {@link Main} class, this entry point avoids
  * server-side Java APIs (HTTP server, Java-WebSocket) that are not supported
- * by TeaVM and instead relies on native JavaScript networking.
+ * by TeaVM and instead relies on native JavaScript networking provided by
+ * {@link BrowserCivServer}.
+ *
+ * <h2>JavaScript integration</h2>
+ * <p>Before the TeaVM module is loaded, the surrounding page must define
+ * {@code window.freecivxOnPacket} to receive packets from the game server:
+ * <pre>{@code
+ * window.freecivxOnPacket = function(packet) {
+ *     client_handle_packet([packet]);
+ * };
+ * }</pre>
+ * <p>Once the module has started, the page can forward packets to the server:
+ * <pre>{@code
+ * // send_request is the freeciv-web client's outgoing packet dispatcher
+ * function send_request(json) {
+ *     window.freecivxSendPacket(json);
+ * }
+ * }</pre>
  */
 public class TeaVMMain {
 
     /**
-     * TeaVM entry point. Initialises the game logic for the JavaScript build.
+     * TeaVM entry point.  Creates a {@link BrowserCivServer}, initialises the
+     * game and registers the JavaScript API ({@code window.freecivxSendPacket}).
      *
-     * @param args command-line arguments (unused in the JavaScript environment)
+     * @param args command-line arguments (unused in the browser environment)
      */
     public static void main(String[] args) {
-        // TeaVM entry point — networking is provided by the surrounding
-        // JavaScript environment rather than Java server libraries.
         System.out.println("FreecivX server (TeaVM/JavaScript build) starting...");
+        new BrowserCivServer();
+        System.out.println("FreecivX server ready. "
+                + "Call window.freecivxSendPacket(json) to interact.");
     }
 }

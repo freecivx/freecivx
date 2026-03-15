@@ -20,7 +20,7 @@
 
 package net.freecivx.game;
 
-import net.freecivx.server.CivServer;
+import net.freecivx.server.IGameServer;
 import net.freecivx.server.CityTools;
 import net.freecivx.server.Notify;
 import net.freecivx.ai.AiPlayer;
@@ -51,7 +51,7 @@ public class Game {
 
     private static final Logger log = LoggerFactory.getLogger(Game.class);
 
-    CivServer server;
+    IGameServer server;
 
     public long year = 0;
     public long turn = 0;
@@ -123,13 +123,13 @@ public class Game {
     public Map<Long, CityStyle> cityStyle = new HashMap<>();
     public Map<Long, Connection> connections = new HashMap<>();
 
-    public Game(CivServer server) {
+    public Game(IGameServer server) {
         this.server = server;
         this.aiPlayer = new AiPlayer(this);
     }
 
-    /** Returns the {@link CivServer} instance this game is running on. */
-    public CivServer getServer() {
+    /** Returns the {@link IGameServer} instance this game is running on. */
+    public IGameServer getServer() {
         return server;
     }
 

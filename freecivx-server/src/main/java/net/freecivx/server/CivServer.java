@@ -37,7 +37,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class CivServer extends org.java_websocket.server.WebSocketServer {
+public class CivServer extends org.java_websocket.server.WebSocketServer implements IGameServer {
 
     private static final Logger log = LoggerFactory.getLogger(CivServer.class);
 
