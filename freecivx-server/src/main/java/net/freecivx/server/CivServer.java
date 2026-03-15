@@ -159,6 +159,17 @@ public class CivServer extends org.java_websocket.server.WebSocketServer impleme
                     production_kind, production_value);
         }
 
+        // Handle PACKET_CITY_WORKLIST (36): client sets the production queue for a city.
+        // The packet carries city_id and a worklist array of {kind, value} objects,
+        // where kind uses VUT constants (VUT_UTYPE=6 or VUT_IMPROVEMENT=3).
+        // Mirrors handle_city_worklist() in the C Freeciv server's cityhand.c.
+        if (pid == Packets.PACKET_CITY_WORKLIST) {
+            int city_id = json.optInt("city_id");
+            JSONArray worklist = json.optJSONArray("worklist");
+            if (worklist == null) worklist = new JSONArray();
+            CityHand.handleCityWorklistRequest(game, connId, city_id, worklist);
+        }
+
         // Handle PACKET_CITY_BUY (34): client requests instant-buy of current production.
         if (pid == Packets.PACKET_CITY_BUY) {
             int city_id = json.optInt("city_id");
