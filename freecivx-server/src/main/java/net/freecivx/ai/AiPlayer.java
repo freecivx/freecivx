@@ -124,6 +124,10 @@ public class AiPlayer {
     private int imprCityWalls   = 7;
     private int imprTemple      = 5;
     private int imprAqueduct    = 8; // Allows cities to grow beyond size 8
+    // Mid/late-game buildings — mirrors dai_city_choose_build() priorities in daicity.c
+    private int imprColosseum   = -1; // Happiness (Construction tech required)
+    private int imprUniversity  = -1; // Science × 2 (University tech, Library prereq)
+    private int imprBank        = -1; // Gold × 1.5 (Banking tech, Marketplace prereq)
 
     // Unit-type IDs — Settlers and Workers are always 0 and 1 in both the classic
     // ruleset and the hardcoded fallback.  Warriors are always 3.  Advanced units
@@ -157,6 +161,16 @@ public class AiPlayer {
     private long techMonarchy           = 13L;
     private long techDemocracy          = 14L;
     private long techFeudalism         = 15L; // Pikemen (anti-horse); req: Warrior Code + Monarchy
+    // Additional mid-game technology IDs — missing from original list but required
+    // for important buildings (Aqueduct, Colosseum, Bank, University).
+    // Resolved at runtime; -1 until resolveGameIds() runs.
+    private long techCurrency     = -1L; // req: Bronze Working — unlocks Construction
+    private long techConstruction = -1L; // req: Masonry + Currency — unlocks Aqueduct, Colosseum
+    private long techMysticism    = -1L; // req: Ceremonial Burial — Philosophy prereq
+    private long techLiteracy     = -1L; // req: Writing + Code of Laws — Philosophy, University prereq
+    private long techTrade        = -1L; // req: Currency + Code of Laws — Banking prereq
+    private long techBanking      = -1L; // req: Trade + The Republic — unlocks Bank
+    private long techUniversity   = -1L; // req: Mathematics + Philosophy — unlocks University building
 
     private static final int[] DIR_DX = {-1, 0, 1, -1, 1, -1, 0, 1};
     private static final int[] DIR_DY = {-1, -1, -1, 0, 0, 1, 1, 1};
@@ -280,6 +294,9 @@ public class AiPlayer {
                 case "City Walls":  imprCityWalls   = id; break;
                 case "Temple":      imprTemple      = id; break;
                 case "Aqueduct":    imprAqueduct    = id; break;
+                case "Colosseum":   imprColosseum   = id; break;
+                case "University":  imprUniversity  = id; break;
+                case "Bank":        imprBank        = id; break;
                 default: break;
             }
         }
@@ -302,6 +319,13 @@ public class AiPlayer {
                 case "Monarchy":          techMonarchy          = id; break;
                 case "Democracy":         techDemocracy         = id; break;
                 case "Feudalism":         techFeudalism        = id; break;
+                case "Currency":          techCurrency          = id; break;
+                case "Construction":      techConstruction      = id; break;
+                case "Mysticism":         techMysticism         = id; break;
+                case "Literacy":          techLiteracy          = id; break;
+                case "Trade":             techTrade             = id; break;
+                case "Banking":           techBanking           = id; break;
+                case "University":        techUniversity        = id; break;
                 default: break;
             }
         }
@@ -412,17 +436,26 @@ public class AiPlayer {
      * <ol>
      *   <li>Pottery → enables Granary (food growth)</li>
      *   <li>Bronze Working → Phalanx (better defender) and military chain</li>
+     *   <li>Currency → prerequisite for Construction (Aqueduct, Colosseum chain)</li>
      *   <li>Warrior Code → Archers (strong attacker) and Feudalism prereq</li>
-     *   <li>Masonry → Barracks and City Walls (defence)</li>
+     *   <li>Masonry → Barracks and City Walls (defence) and Construction prereq</li>
+     *   <li>Construction → Aqueduct (city growth beyond size 8), Colosseum (happiness)</li>
      *   <li>Alphabet → Temple (happiness) and many prerequisites</li>
-     *   <li>Writing → Library (science bonus)</li>
-     *   <li>Code of Laws → Marketplace (trade bonus) and Monarchy prerequisite</li>
+     *   <li>Writing → Library (science bonus) and Literacy prereq</li>
+     *   <li>Code of Laws → Marketplace (trade bonus) and Monarchy/Literacy prerequisite</li>
+     *   <li>Literacy → prerequisite for Philosophy → University</li>
      *   <li>Ceremonial Burial → Temple (happiness) and Monarchy prerequisite</li>
+     *   <li>Mysticism → prerequisite for Philosophy → University</li>
      *   <li>Monarchy → better government (less corruption) once both prerequisites met</li>
      *   <li>Feudalism → Pikemen (anti-horse unit, 2× defence vs Horse units)</li>
-     *   <li>Horseback Riding → Horsemen (mobile military)</li>
+     *   <li>Horseback Riding → Horsemen (fast raider, 2 move)</li>
      *   <li>Iron Working → Legion (best early all-rounder: 4 atk / 2 def)</li>
-     *   <li>Mathematics / The Republic / Democracy → late-game benefits</li>
+     *   <li>Mathematics → University tech prerequisite</li>
+     *   <li>Trade → prerequisite for Banking</li>
+     *   <li>The Republic → Republic government and Banking prerequisite</li>
+     *   <li>Banking → Bank building (gold income ×1.5)</li>
+     *   <li>University tech → University building (science ×2)</li>
+     *   <li>Democracy → Democracy government (zero corruption)</li>
      * </ol>
      *
      * @param player   the AI player
@@ -434,18 +467,25 @@ public class AiPlayer {
         long[] priorityTechs = {
             techPottery,              // Granary → faster city growth
             techBronzeWorking,        // Phalanx + military prerequisite chain
+            techCurrency,             // Construction prerequisite (Aqueduct/Colosseum chain)
             techWarriorCode,          // Archers (strong attacker) + Feudalism prereq
-            techMasonry,              // Barracks + City Walls
+            techMasonry,              // Barracks + City Walls + Construction prereq
+            techConstruction,         // Aqueduct (growth >8) + Colosseum (happiness)
             techAlphabet,             // Temple (happiness) + many prerequisites
-            techWriting,              // Library → science bonus
-            techCodeOfLaws,           // Marketplace + Monarchy prerequisite
+            techWriting,              // Library → science bonus + Literacy prereq
+            techCodeOfLaws,           // Marketplace + Monarchy/Literacy prerequisite
+            techLiteracy,             // Philosophy prereq → University chain
             techCeremonialBurial,     // Temple + Monarchy prerequisite
+            techMysticism,            // Philosophy prereq → University chain
             techMonarchy,             // Better government (less corruption)
-            techFeudalism,           // Pikemen — 2× defence vs Horse units
-            techHorsebackRiding,      // Horsemen (fast military)
+            techFeudalism,            // Pikemen — 2× defence vs Horse units
+            techHorsebackRiding,      // Horsemen (fast raider, 2 move)
             techIronWorking,          // Legion — 4 atk / 2 def, best early unit
-            techMathematics,          // Bank prerequisite
+            techMathematics,          // University tech prerequisite
+            techTrade,                // Banking prerequisite
             techTheRepublic,          // Republic government
+            techBanking,              // Bank — gold income ×1.5
+            techUniversity,           // University building — science ×2
             techDemocracy,            // Democracy government (zero corruption)
         };
 
@@ -498,11 +538,15 @@ public class AiPlayer {
      *   <li>Produce a Worker for terrain improvements (when city count ≥ 2, size ≥ 3,
      *       and workers are below one per city).</li>
      *   <li>Build a Library for science output (Writing required).</li>
+     *   <li>Build a University for science bonus (University tech + Library required).</li>
      *   <li>Build an Aqueduct when the city is approaching size 8 so it can continue
      *       growing (Construction tech required).</li>
+     *   <li>Build a Colosseum for citizen happiness in larger cities
+     *       (Construction tech required).</li>
      *   <li>Build a Marketplace for gold income (Code of Laws required).</li>
+     *   <li>Build a Bank for additional gold income (Banking tech + Marketplace required).</li>
      *   <li>Build City Walls for passive defence (Masonry required).</li>
-     *   <li>Default: produce the best available defender.</li>
+     *   <li>Default: produce the best available offensive unit for army expansion.</li>
      * </ol>
      *
      * <p>Production is only changed when the slot is empty
@@ -575,9 +619,13 @@ public class AiPlayer {
             }
         }
 
-        // Priority 5: Settlers to continue expanding the empire (up to 4 cities).
-        // Require a food surplus so the city won't stagnate after paying pop_cost=1.
-        if (myCityCount < 4 && city.getSize() >= 2 && cityHasFoodSurplus(city)) {
+        // Priority 5: Settlers to continue expanding the empire.
+        // Mirrors the C Freeciv AI which expands aggressively as long as good land
+        // is available (daisettler.c / daicity.c — no hard city cap in the C AI).
+        // The food-surplus check prevents starvation, and the settler AI itself
+        // will halt expansion when no good city sites remain.
+        // Require food surplus so the city won't stagnate after paying pop_cost=1.
+        if (myCityCount < 8 && city.getSize() >= 2 && cityHasFoodSurplus(city)) {
             city.setProductionKind(0);
             city.setProductionValue(UNIT_SETTLERS);
             return;
@@ -621,7 +669,19 @@ public class AiPlayer {
             }
         }
 
-        // Priority 9: Aqueduct to allow city growth beyond size 8.
+        // Priority 9: University for science bonus (University tech + Library prereq).
+        // Mirrors daicity.c which prioritises science buildings to accelerate the
+        // tech tree; University doubles science output from a city.
+        if (!city.hasImprovement(imprUniversity) && imprUniversity >= 0 && city.getSize() >= 3) {
+            Improvement university = game.improvements.get((long) imprUniversity);
+            if (university != null && canBuildImprovement(owner, city, university)) {
+                city.setProductionKind(1);
+                city.setProductionValue(imprUniversity);
+                return;
+            }
+        }
+
+        // Priority 10: Aqueduct to allow city growth beyond size 8.
         // Cities approaching size 8 should pre-emptively build the Aqueduct so
         // growth is never blocked.  Mirrors the size-limit check in
         // CityTurn.cityGrowth() which halts growth at size 8 without an Aqueduct.
@@ -634,7 +694,20 @@ public class AiPlayer {
             }
         }
 
-        // Priority 10: Marketplace for trade income (Code of Laws required)
+        // Priority 11: Colosseum for citizen happiness in larger cities
+        // (Construction tech required).  Mirrors daicity.c where happiness buildings
+        // are ranked highly for larger cities — each unhappy citizen costs a unit
+        // of production, so the Colosseum pays for itself quickly in large cities.
+        if (!city.hasImprovement(imprColosseum) && imprColosseum >= 0 && city.getSize() >= 5) {
+            Improvement colosseum = game.improvements.get((long) imprColosseum);
+            if (colosseum != null && canBuildImprovement(owner, city, colosseum)) {
+                city.setProductionKind(1);
+                city.setProductionValue(imprColosseum);
+                return;
+            }
+        }
+
+        // Priority 12: Marketplace for trade income (Code of Laws required)
         if (!city.hasImprovement(imprMarketplace) && city.getSize() >= 3) {
             Improvement marketplace = game.improvements.get((long) imprMarketplace);
             if (marketplace != null && canBuildImprovement(owner, city, marketplace)) {
@@ -644,7 +717,18 @@ public class AiPlayer {
             }
         }
 
-        // Priority 11: City Walls for passive defence (Masonry required)
+        // Priority 13: Bank for additional gold income (Banking tech + Marketplace prereq).
+        // Mirrors daicity.c which ranks Banks highly for cities with good trade output.
+        if (!city.hasImprovement(imprBank) && imprBank >= 0 && city.getSize() >= 3) {
+            Improvement bank = game.improvements.get((long) imprBank);
+            if (bank != null && canBuildImprovement(owner, city, bank)) {
+                city.setProductionKind(1);
+                city.setProductionValue(imprBank);
+                return;
+            }
+        }
+
+        // Priority 14: City Walls for passive defence (Masonry required)
         if (!city.hasImprovement(imprCityWalls)) {
             Improvement walls = game.improvements.get((long) imprCityWalls);
             if (walls != null && canBuildImprovement(owner, city, walls)) {
@@ -654,9 +738,12 @@ public class AiPlayer {
             }
         }
 
-        // Default: produce the best available military unit for army expansion
+        // Default: produce the best available offensive unit for army expansion.
+        // Mirrors dai_choose_attacker() in ai/default/daimilitary.c — when the
+        // empire is secure, build mobile offensive units (Horsemen) rather than
+        // pure defenders so the AI can raid and capture undefended enemy cities.
         city.setProductionKind(0);
-        city.setProductionValue(bestDefender);
+        city.setProductionValue(bestAvailableAttacker(owner));
     }
 
 
@@ -741,6 +828,31 @@ public class AiPlayer {
         if (player.hasTech(techIronWorking))   return unitLegion;
         if (player.hasTech(techWarriorCode))   return unitArchers;
         if (player.hasTech(techBronzeWorking)) return unitPhalanx;
+        return UNIT_WARRIORS;
+    }
+
+    /**
+     * Returns the best available offensive unit the player can build given
+     * their current technology.  Mirrors {@code dai_choose_attacker()} in
+     * {@code ai/default/daimilitary.c}: when the empire is secure and units
+     * are being built for expansion/raiding, prefer fast mobile units and
+     * high-attack units over pure defenders.
+     *
+     * <p>Priority (classic Freeciv early game):
+     * <ol>
+     *   <li>Horsemen (Horseback Riding) — 2 atk / 1 def / 2 move, best raider</li>
+     *   <li>Legion (Iron Working) — 4 atk / 2 def / 1 move, strongest attacker</li>
+     *   <li>Archers (Warrior Code) — 3 atk / 2 def / 1 move, strong attacker</li>
+     *   <li>Warriors (none) — 1 atk / 1 def / 1 move, always buildable</li>
+     * </ol>
+     *
+     * @param player the AI player
+     * @return the unit-type ID of the best available attacker
+     */
+    private int bestAvailableAttacker(Player player) {
+        if (player.hasTech(techHorsebackRiding)) return unitHorsemen;
+        if (player.hasTech(techIronWorking))     return unitLegion;
+        if (player.hasTech(techWarriorCode))     return unitArchers;
         return UNIT_WARRIORS;
     }
 
@@ -885,6 +997,45 @@ public class AiPlayer {
     }
 
     /**
+     * Scores a potential city site by summing the terrain output of all land
+     * tiles within the city's working radius (2 tiles Chebyshev distance from
+     * the center).  Mirrors {@code city_desirability()} in
+     * {@code ai/default/daisettler.c} which evaluates the full city radius —
+     * not just the center tile — to identify sites with a rich surrounding area.
+     *
+     * <p>Ocean tiles within the radius are skipped (they cannot be worked by
+     * land cities in the classic ruleset).  The center tile's score is counted
+     * separately and contributes the most value.
+     *
+     * @param tileId the candidate city center tile
+     * @return sum of {@link #tileSettlerScore} across all usable tiles in the radius
+     */
+    private int cityRadiusScore(long tileId) {
+        Tile centerTile = game.tiles.get(tileId);
+        if (centerTile == null) return 0;
+        int total = tileSettlerScore(centerTile);
+
+        long cx = tileId % game.map.getXsize();
+        long cy = tileId / game.map.getXsize();
+        for (int dy = -2; dy <= 2; dy++) {
+            for (int dx = -2; dx <= 2; dx++) {
+                if (dx == 0 && dy == 0) continue; // center already counted
+                if (Math.max(Math.abs(dx), Math.abs(dy)) > 2) continue; // outside radius 2
+                long nx = cx + dx;
+                long ny = cy + dy;
+                if (nx < 0 || nx >= game.map.getXsize()
+                        || ny < 0 || ny >= game.map.getYsize()) continue;
+                Tile t = game.tiles.get(ny * game.map.getXsize() + nx);
+                if (t == null) continue;
+                int terrain = t.getTerrain();
+                if (terrain == TERRAIN_OCEAN || terrain == TERRAIN_DEEP_OCEAN) continue;
+                total += tileSettlerScore(t);
+            }
+        }
+        return total;
+    }
+
+    /**
      * Returns {@code true} if {@code tileId} is within
      * {@link #MIN_CITY_SEPARATION} tiles (Manhattan distance) of any existing
      * city.  Prevents building cities too close together, mirroring the
@@ -904,10 +1055,12 @@ public class AiPlayer {
     /**
      * Finds the highest-scored unoccupied tile within
      * {@link #SETTLER_SEARCH_RADIUS} that is not too close to an existing city
-     * and has a terrain score of at least {@link #SETTLER_FOUND_SCORE} so the
-     * settler can found a city immediately upon arrival.
-     * Ties are broken by preferring the closer tile.  Mirrors
-     * {@code find_best_city_placement()} in {@code ai/default/daisettler.c}.
+     * and has a center-tile score of at least {@link #SETTLER_FOUND_SCORE}.
+     * Sites are ranked by {@link #cityRadiusScore} — the sum of terrain output
+     * across the full city working radius — so the AI prefers sites surrounded
+     * by productive land rather than just a single fertile tile.  Ties are
+     * broken by proximity.  Mirrors {@code find_best_city_placement()} in
+     * {@code ai/default/daisettler.c}.
      *
      * @param fromTile the settler's current tile ID
      * @return the best candidate tile ID, or {@code -1} if none is found
@@ -933,13 +1086,16 @@ public class AiPlayer {
                 if (tile.getWorked() >= 0) continue; // already a city
                 if (tooCloseToExistingCity(tileId)) continue;
 
-                int score = tileSettlerScore(tile);
-                // Skip tiles that are too poor to actually found on (mirrors the
-                // SETTLER_FOUND_SCORE threshold in handleSettler so the settler
-                // will not navigate to a tile it cannot settle on arrival).
-                if (score < SETTLER_FOUND_SCORE) continue;
+                // Center tile must be at least minimally fertile so the settler
+                // can found here on arrival (mirrors SETTLER_FOUND_SCORE check in
+                // handleSettler).
+                if (tileSettlerScore(tile) < SETTLER_FOUND_SCORE) continue;
+
+                // Rank by total output across the full city radius (mirrors the
+                // city_desirability() multi-tile evaluation in daisettler.c).
+                int score = cityRadiusScore(tileId);
                 long dist = Math.abs(tx - x) + Math.abs(ty - y);
-                // Prefer higher score; break ties by proximity
+                // Prefer higher radius score; break ties by proximity
                 if (score > bestScore || (score == bestScore && dist < bestDist)) {
                     bestScore = score;
                     bestDist = dist;
