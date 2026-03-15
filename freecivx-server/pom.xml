@@ -198,13 +198,15 @@
           <groupId>org.slf4j</groupId>
           <artifactId>slf4j-api</artifactId>
           <version>${org-slf4j.version}</version>
-          <scope>provided</scope>
+          <!-- test scope: excluded from TeaVM's classpath; the no-op stubs in
+               src/main/java-teavm/org/slf4j/ are compiled instead. -->
+          <scope>test</scope>
         </dependency>
         <dependency>
           <groupId>org.slf4j</groupId>
           <artifactId>slf4j-simple</artifactId>
           <version>${org-slf4j.version}</version>
-          <scope>provided</scope>
+          <scope>test</scope>
         </dependency>
         <dependency>
           <groupId>org.apache.commons</groupId>
@@ -221,6 +223,30 @@
       </dependencies>
       <build>
         <plugins>
+          <!-- Add the TeaVM-specific source directory that contains SLF4J no-op
+               stubs and other browser-only replacements. Classes compiled from
+               this directory shadow their counterparts from third-party JARs so
+               that java.util.concurrent classes absent from TeaVM's classlib are
+               never pulled into the compiled JavaScript bundle. -->
+          <plugin>
+            <groupId>org.codehaus.mojo</groupId>
+            <artifactId>build-helper-maven-plugin</artifactId>
+            <version>3.3.0</version>
+            <executions>
+              <execution>
+                <id>add-teavm-sources</id>
+                <phase>generate-sources</phase>
+                <goals>
+                  <goal>add-source</goal>
+                </goals>
+                <configuration>
+                  <sources>
+                    <source>${project.basedir}/src/main/java-teavm</source>
+                  </sources>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
           <!-- Skip the fat-JAR shading step in the TeaVM build: the output is
                JavaScript (target/javascript/classes.js), not a JAR. -->
           <plugin>

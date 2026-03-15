@@ -39,9 +39,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
 
 /**
  * AiPlayer handles all AI decision-making for computer-controlled players.
@@ -62,7 +59,6 @@ public class AiPlayer {
 
     private final Game game;
     private final Random random = new Random();
-    private final ExecutorService executor;
 
     // Per-unit persistent target tile IDs (inspired by daiunit.c unit-task system).
     // Storing targets across turns prevents units from changing goals every turn.
@@ -190,22 +186,14 @@ public class AiPlayer {
 
     public AiPlayer(Game game) {
         this.game = game;
-        this.executor = Executors.newSingleThreadExecutor(r -> {
-            Thread t = new Thread(r, "freecivx-ai");
-            t.setDaemon(true);
-            return t;
-        });
     }
 
     /**
-     * Submits AI turn processing to the dedicated AI thread and waits for
-     * completion before returning, so that game-state broadcasts happen only
-     * after every AI unit has acted.
+     * Executes all AI actions for the current turn synchronously.
      */
     public void runAiTurns() {
-        Future<?> future = executor.submit(this::executeAiTurns);
         try {
-            future.get();
+            executeAiTurns();
         } catch (Exception e) {
             log.error("AI turn error: {}", e.getMessage(), e);
         }
@@ -1744,10 +1732,8 @@ public class AiPlayer {
     }
 
     /**
-     * Shuts down the AI executor service. Should be called when the game ends
-     * or the server stops.
+     * No-op shutdown method kept for API compatibility.
      */
     public void shutdown() {
-        executor.shutdown();
     }
 }

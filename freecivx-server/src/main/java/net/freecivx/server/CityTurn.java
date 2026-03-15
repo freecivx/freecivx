@@ -773,7 +773,7 @@ public class CityTurn {
             if (city == null) continue;
             long ownerId = city.getOwner();
             int gold = cityTaxContribution(game, cityId);
-            playerGoldIncome.merge(ownerId, gold, Integer::sum);
+            playerGoldIncome.merge(ownerId, gold, (a, b) -> a + b);
         }
 
         // Update each player's gold, deducting building and unit upkeep,
