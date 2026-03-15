@@ -249,6 +249,10 @@ public class AutoGame {
                     net.freecivx.game.UnitType ut = game.unitTypes.get((long) u.getType());
                     return ut != null && "Settlers".equalsIgnoreCase(ut.getName());
                 }).count();
+        // Total population across all cities (global metric, mirroring the
+        // world-population display in the C server's score.c).
+        long totalPop = game.cities.values().stream()
+                .mapToLong(net.freecivx.game.City::getSize).sum();
         // Find the leading civilisation by score for the turn summary.
         Player leader = game.players.values().stream()
                 .filter(Player::isAlive)
@@ -260,9 +264,9 @@ public class AutoGame {
                         + leader.getKnownTechs().size() + " techs, "
                         + leader.getGold() + " gold)"
                 : "";
-        log.info("Turn {} ({}) | Alive: {}/{} | Units: {} (settlers: {}) | Cities: {}{}",
+        log.info("Turn {} ({}) | Alive: {}/{} | Pop: {} | Units: {} (settlers: {}) | Cities: {}{}",
                 turn, yearStr, alivePlayers, game.players.size(),
-                game.units.size(), settlerCount, game.cities.size(), leaderInfo);
+                totalPop, game.units.size(), settlerCount, game.cities.size(), leaderInfo);
     }
 
     /**
@@ -315,6 +319,9 @@ public class AutoGame {
                 .forEach(p -> {
                     long unitCount = countUnits(p);
                     long cityCount = countCities(p);
+                    long totalPop = game.cities.values().stream()
+                            .filter(c -> c.getOwner() == p.getPlayerNo())
+                            .mapToLong(net.freecivx.game.City::getSize).sum();
                     long score = computeScore(p);
                     String status = p.isAlive() ? "alive" : "eliminated";
                     int govId = p.getGovernmentId();
@@ -327,8 +334,8 @@ public class AutoGame {
                             .map(c -> String.valueOf(c.getSize()))
                             .collect(java.util.stream.Collectors.joining(","));
                     String cityDisplay = citySizes.isEmpty() ? "-" : citySizes;
-                    log.info("  {} | Cities: {} [{}] | Units: {} | Techs: {} | Gold: {} | Gov: {} | Score: {} | {}",
-                            p.getUsername(), cityCount, cityDisplay,
+                    log.info("  {} | Cities: {} [{}] | Pop: {} | Units: {} | Techs: {} | Gold: {} | Gov: {} | Score: {} | {}",
+                            p.getUsername(), cityCount, cityDisplay, totalPop,
                             unitCount, p.getKnownTechs().size(), p.getGold(),
                             govName, score, status);
                 });

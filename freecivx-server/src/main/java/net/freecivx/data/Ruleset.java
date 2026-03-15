@@ -225,12 +225,15 @@ public class Ruleset {
                 String flags     = sec.get("flags");
                 boolean isSettler = flags.contains("Settlers") || flags.contains("Cities");
                 boolean hasHorse  = flags.contains("Horse");
+                boolean isNonMil  = flags.contains("NonMil");
                 String actions = isSettler ? settlerActions : defaultActions;
                 UnitType ut = new UnitType(name, graphic, moveRate, hp, 1, name,
                         attack, defense, actions, domain, buildCost);
                 ut.setFirepower(firepower);
                 ut.setPopCost(popCost);
                 ut.setHasHorseFlag(hasHorse);
+                ut.setNonMilitary(isNonMil);
+                ut.setHasSettlersFlag(isSettler);
                 // Anti-horse defense multiplier: DefenseMultiplier=1 → factor=2 (double defense)
                 if (sec.antiHorseBonus > 0) {
                     ut.setAntiHorseFactor(1 + sec.antiHorseBonus);

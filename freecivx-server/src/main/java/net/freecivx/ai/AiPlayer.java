@@ -212,6 +212,18 @@ public class AiPlayer {
                 continue;
             }
 
+            // Non-military land units with no attack (Engineers, etc.): treat as
+            // workers and build terrain improvements.  Mirrors the C Freeciv server's
+            // autosettlers.c behaviour where Engineers are driven by the same
+            // auto-settler logic as Workers.  Uses the hasSettlersFlag (parsed from
+            // the classic ruleset "Settlers" unit flag) so only terrain-improvement
+            // units are routed here, not Diplomats or Spies which share the NonMil
+            // flag but have different roles.
+            if (utype.hasSettlersFlag() && utype.getAttackStrength() == 0) {
+                handleWorker(unit, utype);
+                continue;
+            }
+
             // Military units: defend cities first, then attack enemies
             if (utype.getAttackStrength() > 0) {
                 handleMilitaryUnit(unit, utype, owner);

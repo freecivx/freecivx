@@ -179,7 +179,12 @@ public class Combat {
         // proportionally.  Mirrors base_get_attack_power() / is_tired_attack() in
         // the C Freeciv server's common/combat.c.
         int atkStr = unitAttackStrength(attacker, attackerType, null, attacker.getMovesleft());
-        if (atkStr <= 0) atkStr = 1; // ensure non-zero so units can fight
+        // A unit with zero base attack strength cannot win combat — the defender
+        // always survives.  Mirrors the C server where can_unit_attack_tile()
+        // returns FALSE for units with attack_strength=0 (is_military_unit()=false).
+        // Game.attackUnit() already guards against this, but this check makes
+        // resolveCombat() safe to call in isolation without that pre-condition.
+        if (atkStr <= 0) return false;
 
         // Effective defence strength (base + veteran + terrain + anti-horse bonus).
         // Pass attackerType to unitDefenseStrength so that the anti-horse defense
