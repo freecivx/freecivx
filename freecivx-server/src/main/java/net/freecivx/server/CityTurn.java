@@ -287,6 +287,29 @@ public class CityTurn {
     }
 
     /**
+     * Computes the total shield (production) output for a city based on its
+     * centre tile output and city size.
+     *
+     * <p>The city centre tile contributes its terrain-based shields (including the
+     * city-centre +1 bonus).  Each additional citizen beyond the founder works a
+     * tile of the same terrain, contributing the terrain's base shield value.
+     * The result is always at least 1 shield per turn.
+     *
+     * @param city         the city whose shield output is needed
+     * @param centerOutput the pre-computed tile output for the city's centre tile
+     *                     (as returned by {@link #getTileOutput} with
+     *                     {@code isCityCenter=true})
+     * @return shield output per turn (≥ 1)
+     */
+    private static int computeCityShieldOutput(City city, int[] centerOutput) {
+        int additionalShields = (city.getSize() > 1)
+                ? (city.getSize() - 1) * Math.max(0, centerOutput[1])
+                : 0;
+        return Math.max(1, centerOutput[1] + additionalShields);
+    }
+
+
+    /**
      * Processes the production queue for a city.
      * Adds the city's shields output to the current production item's progress.
      * If the item is complete the product (unit or improvement) is created and
@@ -307,15 +330,11 @@ public class CityTurn {
         if (city == null) return;
 
         // Shield output: base from the city's centre tile (terrain + extras + city-centre bonus),
-        // plus 1 shield per additional citizen (workers beyond the founder contribute).
+        // plus terrain shields per additional citizen (workers beyond the founder).
         // Mirrors shield output from worked tiles in the C Freeciv server.
         Tile centerTile = game.tiles.get(city.getTile());
         int[] centerOutput = getTileOutput(game, centerTile, true /* city center */);
-        // Additional workers (size-1 citizens) each contribute the centre terrain's shield value.
-        int additionalShields = (city.getSize() > 1)
-                ? (city.getSize() - 1) * Math.max(0, centerOutput[1])
-                : 0;
-        int shieldOutput = Math.max(1, centerOutput[1] + additionalShields);
+        int shieldOutput = computeCityShieldOutput(city, centerOutput);
 
         // Apply production waste (shields lost to inefficiency).
         // Mirrors the waste calculation for shields in the C Freeciv server's
@@ -645,15 +664,15 @@ public class CityTurn {
 
         Tile centerTile = game.tiles.get(city.getTile());
         int[] centerOutput = getTileOutput(game, centerTile, true /* city center */);
-        int tradePerTile = centerOutput[2]; // [2] = trade
+        int tradePerTile = centerOutput[2]; // includes city-centre bonus (+1)
 
-        // All city.getSize() citizens contribute tradePerTile each; add city-centre bonus.
-        // For a Grassland city with a road (tradePerTile = 0+1+1 = 2 including city-centre bonus):
-        //   size=1 → 2; size=2 → 3; matches old formula size+1 when tradePerTile=1 per citizen.
-        // The city-centre bonus is already included in centerOutput[2], so only
-        // the (size-1) additional workers contribute their tile trade on top.
-        return Math.max(CITY_CENTRE_TRADE_BONUS,
-                tradePerTile + (city.getSize() > 1 ? (city.getSize() - 1) * Math.max(0, tradePerTile - 1) : 0));
+        // The city-centre tile contributes tradePerTile; each additional worker
+        // (size-1 of them) contributes one tile's trade without the centre bonus.
+        // workerTrade = max(0, tradePerTile - 1) removes the city-centre +1
+        // that was already counted for the centre tile only.
+        int workerTrade = Math.max(0, tradePerTile - 1);
+        int additionalWorkerTrade = (city.getSize() - 1) * workerTrade;
+        return Math.max(CITY_CENTRE_TRADE_BONUS, tradePerTile + additionalWorkerTrade);
     }
 
 
@@ -1136,11 +1155,7 @@ public class CityTurn {
         // Use terrain-based shield output from the city centre tile for the shield estimate.
         Tile centerTile = game.tiles.get(city.getTile());
         int[] centerOutput = getTileOutput(game, centerTile, true /* city center */);
-        // Additional citizens produce shields similar to the centre tile's terrain.
-        int additionalShields = (city.getSize() > 1)
-                ? (city.getSize() - 1) * Math.max(0, centerOutput[1])
-                : 0;
-        int shieldOutput = Math.max(1, centerOutput[1] + additionalShields);
+        int shieldOutput = computeCityShieldOutput(city, centerOutput);
         int pollution = Math.max(0, shieldOutput + city.getSize() - BASE_POLLUTION);
         if (pollution == 0) return;
 
