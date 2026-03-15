@@ -667,25 +667,27 @@ public class AiPlayer {
     }
 
     /**
-     * Scores a tile's suitability for city founding based on terrain type.
-     * Grassland and Plains score highest (best food + production balance),
-     * Desert and Tundra the lowest.  Mirrors the simplified food/shield/trade
-     * evaluation in {@code city_desirability()} ({@code ai/default/daisettler.c}).
+     * Scores a tile's suitability for city founding based on terrain output.
+     * Uses actual terrain food and shield values (from {@link net.freecivx.game.Terrain})
+     * to score tiles, so the AI correctly prefers Grassland (food=2) over Plains
+     * (food=1, shield=1) and Plains over Desert (food=0).  Mirrors the food/shield
+     * weighting in {@code city_desirability()} ({@code ai/default/daisettler.c}):
+     * food is weighted 2× because a food surplus is critical for growth, while
+     * shields and trade bonuses provide secondary value.
      *
      * @param tile the tile to evaluate
      * @return a non-negative integer; higher is better
      */
     private int tileSettlerScore(Tile tile) {
-        switch (tile.getTerrain()) {
-            case TERRAIN_GRASSLAND: return 3; // high food
-            case TERRAIN_PLAINS:    return 3; // balanced food + production
-            case TERRAIN_HILLS:     return 2; // good production
-            case TERRAIN_FOREST:    return 2; // production
-            case TERRAIN_JUNGLE:    return 2; // food (but requires clearing)
-            case TERRAIN_DESERT:    return 1; // minimal yields
-            case TERRAIN_TUNDRA:    return 1; // minimal yields
-            default:                return 0; // Ocean / impassable
-        }
+        net.freecivx.game.Terrain terrain = game.terrains.get((long) tile.getTerrain());
+        if (terrain == null) return 0;
+        // Food weighted 2× (critical for city growth), shield and best-case improvements secondary.
+        // Road trade bonus counts as 1 extra point (trade potential once road is built).
+        int score = terrain.getFood() * 2
+                + terrain.getShield()
+                + terrain.getRoadTradeBonus()
+                + Math.max(terrain.getIrrigationFoodBonus(), terrain.getMiningShieldBonus());
+        return Math.max(0, score);
     }
 
     /**

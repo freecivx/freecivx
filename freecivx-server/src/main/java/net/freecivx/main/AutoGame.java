@@ -287,9 +287,23 @@ public class AutoGame {
             String govName = game.governments.containsKey((long) govId)
                     ? game.governments.get((long) govId).getName()
                     : "Gov" + govId;
-            log.info("  {}: Cities: {} | Gold: {} | Gov: {} | Techs: {} | Research: {}",
+            // Log tile output for the player's first city to show terrain-aware production.
+            String tileOutputStr = game.cities.entrySet().stream()
+                    .filter(e -> e.getValue().getOwner() == p.getPlayerNo())
+                    .findFirst()
+                    .map(e -> {
+                        net.freecivx.game.Tile t = game.tiles.get(e.getValue().getTile());
+                        int[] out = net.freecivx.server.CityTurn.getTileOutput(game, t, true);
+                        net.freecivx.game.Terrain terrain = t != null
+                                ? game.terrains.get((long) t.getTerrain()) : null;
+                        String terrainName = terrain != null ? terrain.getName() : "?";
+                        return e.getValue().getName() + " [" + terrainName
+                                + "] food=" + out[0] + " shields=" + out[1] + " trade=" + out[2];
+                    })
+                    .orElse("(no cities)");
+            log.info("  {}: Cities: {} | Gold: {} | Gov: {} | Techs: {} | Research: {} | Capital: {}",
                     p.getUsername(), countCities(p), p.getGold(), govName,
-                    p.getKnownTechs().size(), researchStr);
+                    p.getKnownTechs().size(), researchStr, tileOutputStr);
         }
     }
 
