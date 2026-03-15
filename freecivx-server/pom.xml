@@ -21,6 +21,7 @@
     <org-apache-http.version>5.6</org-apache-http.version>
     <org-slf4j.version>2.0.17</org-slf4j.version>
     <org-apache-commons.version>3.20.0</org-apache-commons.version>
+    <teavm.version>0.13.1</teavm.version>
     <!-- Test versions -->
     <junit.version>6.0.1</junit.version>
     <mockito.version>5.2.0</mockito.version>
@@ -139,4 +140,55 @@
       </plugin>
     </plugins>
   </build>
+
+  <profiles>
+    <!-- Build freecivx-server to JavaScript using TeaVM.
+         Run with: mvn package -P teavm
+         Output: target/javascript/classes.js -->
+    <profile>
+      <id>teavm</id>
+      <dependencies>
+        <!-- TeaVM class library replaces standard Java APIs at compile time -->
+        <dependency>
+          <groupId>org.teavm</groupId>
+          <artifactId>teavm-classlib</artifactId>
+          <version>${teavm.version}</version>
+          <scope>provided</scope>
+        </dependency>
+        <!-- TeaVM JavaScript interop annotations -->
+        <dependency>
+          <groupId>org.teavm</groupId>
+          <artifactId>teavm-interop</artifactId>
+          <version>${teavm.version}</version>
+        </dependency>
+      </dependencies>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.teavm</groupId>
+            <artifactId>teavm-maven-plugin</artifactId>
+            <version>${teavm.version}</version>
+            <executions>
+              <execution>
+                <id>teavm-compile</id>
+                <phase>package</phase>
+                <goals>
+                  <goal>compile</goal>
+                </goals>
+                <configuration>
+                  <mainClass>net.freecivx.main.TeaVMMain</mainClass>
+                  <targetType>JAVASCRIPT</targetType>
+                  <outdir>${project.build.directory}/javascript</outdir>
+                  <minifying>false</minifying>
+                  <sourceMapsGenerated>true</sourceMapsGenerated>
+                  <debugInformationGenerated>false</debugInformationGenerated>
+                  <optimizationLevel>SIMPLE</optimizationLevel>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+  </profiles>
 </project>
