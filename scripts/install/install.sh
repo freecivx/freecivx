@@ -334,7 +334,7 @@ cd "${basedir}"/freeciv-web && \
   handle_error 7 "Failed to build freeciv-web server"
 
 echo "==== Building freecivx-server ===="
-(cd "${basedir}"/freecivx-server && mvn -q package -DskipTests) || \
+(cd "${basedir}"/freecivx-server && mvn clean && mvn -q package -DskipTests) || \
   handle_error 8 "Failed to build freecivx-server"
 
 
