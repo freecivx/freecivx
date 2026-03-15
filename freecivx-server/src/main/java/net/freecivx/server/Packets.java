@@ -53,7 +53,14 @@ public class Packets {
     public static int PACKET_UNIT_INFO = 63;
     public static int PACKET_UNIT_SHORT_INFO = 64;
     public static int PACKET_UNIT_ORDERS = 73;
+    public static int PACKET_UNIT_SERVER_SIDE_AGENT_SET = 74;
     public static int PACKET_UNIT_DO_ACTION = 84;
+
+    // Server-side agent (SSA) constants – mirrors the server_side_agent enum in
+    // the C Freeciv server's common/unit.h.
+    public static final int SSA_NONE        = 0;
+    public static final int SSA_AUTOSETTLER = 1;
+    public static final int SSA_AUTOEXPLORE = 2;
     public static int PACKET_CONN_PING = 88;
     public static int PACKET_CONN_PONG = 89;
     public static int PACKET_CONN_INFO = 115;
