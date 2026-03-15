@@ -40,6 +40,9 @@ var freecivx_server = true;
  */
 var teavm_mode = false;
 
+/** True while check_websocket_ready() is polling for the TeaVM server to initialise. */
+var teavm_server_waiting = false;
+
 /****************************************************************************
   Initialized the Network communication, by requesting a valid server port.
   If the URL contains ?mode=teavm the in-process TeaVM server is used instead
@@ -90,6 +93,7 @@ function network_init()
   the TeaVM JavaScript bundle (classes.js or similar) is loaded beforehand.
 ****************************************************************************/
 function teavm_mode_init() {
+    console.info("[TeaVM] Initialising in-process server mode (?mode=teavm)");
     teavm_mode = true;
     freecivx_server = true;
 
@@ -99,7 +103,7 @@ function teavm_mode_init() {
         try {
             client_handle_packet([packet]);
         } catch (e) {
-            console.error("freecivxOnPacket error", e);
+            console.error("[TeaVM] freecivxOnPacket error", e);
         }
     };
 
@@ -124,6 +128,7 @@ function teavm_mode_init() {
   @param {string} player_username  The username entered in the intro dialog.
 ****************************************************************************/
 function start_teavm_single_player(player_username) {
+    console.info("[TeaVM] start_teavm_single_player:", player_username);
     username = player_username;
     teavm_mode = true;
     freecivx_server = true;
@@ -134,18 +139,20 @@ function start_teavm_single_player(player_username) {
         try {
             client_handle_packet([packet]);
         } catch (e) {
-            console.error("freecivxOnPacket error", e);
+            console.error("[TeaVM] freecivxOnPacket error", e);
         }
     };
 
     function on_bundle_ready() {
         // Trigger the normal login sequence (no WebSocket handshake needed).
+        console.info("[TeaVM] Server ready — starting login sequence");
         check_websocket_ready();
         load_game_check();
     }
 
     if (typeof window.freecivxSendPacket === 'function') {
         // Bundle already loaded (e.g. page reuse); start immediately.
+        console.debug("[TeaVM] Bundle already loaded, starting immediately");
         on_bundle_ready();
     } else {
         // Set the ready callback that BrowserCivServer.setupBrowserApi() will invoke
@@ -157,9 +164,11 @@ function start_teavm_single_player(player_username) {
 
         // Dynamically load the TeaVM bundle.  The bundle's main() creates a
         // BrowserCivServer instance and calls window.freecivxOnReady when ready.
+        console.info("[TeaVM] Loading /javascript/freecivx-server.js ...");
         var script = document.createElement('script');
         script.src = '/javascript/freecivx-server.js';
         script.onload = function() {
+            console.debug("[TeaVM] Bundle script element loaded");
             // If TeaVM ran synchronously, freecivxOnReady was already called (and
             // cleared).  If TeaVM initialises asynchronously, the callback fires
             // later when setupBrowserApi() runs; check_websocket_ready() will also
@@ -167,7 +176,7 @@ function start_teavm_single_player(player_username) {
         };
         script.onerror = function() {
             window.freecivxOnReady = null;
-            console.error('Failed to load TeaVM bundle from /javascript/freecivx-server.js');
+            console.error('[TeaVM] Failed to load bundle from /javascript/freecivx-server.js');
             show_dialog_message("Error", "The in-browser server could not be loaded. "
                 + "Please try again or use the standard single-player mode.");
             teavm_mode = false;
@@ -281,8 +290,15 @@ function check_websocket_ready()
 {
   if (teavm_mode && typeof window.freecivxSendPacket !== 'function') {
     // TeaVM server not yet initialised (bundle still loading or main() pending).
+    if (!teavm_server_waiting) {
+      console.debug("[TeaVM] Waiting for freecivxSendPacket to be registered...");
+      teavm_server_waiting = true;
+    }
     setTimeout(check_websocket_ready, 50);
     return;
+  }
+  if (teavm_mode) {
+    teavm_server_waiting = false;
   }
 
   if (teavm_mode || (ws != null && ws.readyState === 1)) {
@@ -320,9 +336,10 @@ function network_stop()
 function send_request(packet_payload) {
     if (teavm_mode) {
         if (typeof window.freecivxSendPacket === 'function') {
+            console.debug("[TeaVM] send_request pid=" + JSON.parse(packet_payload).pid);
             window.freecivxSendPacket(packet_payload);
         } else {
-            console.error("freecivxSendPacket not available — is the TeaVM bundle loaded?");
+            console.error("[TeaVM] freecivxSendPacket not available — is the TeaVM bundle loaded?");
         }
         return;
     }

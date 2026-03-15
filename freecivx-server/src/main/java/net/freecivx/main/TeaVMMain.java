@@ -58,9 +58,8 @@ public class TeaVMMain {
      * @param args command-line arguments (unused in the browser environment)
      */
     public static void main(String[] args) {
-        System.out.println("FreecivX server (TeaVM/JavaScript build) starting...");
+        System.out.println("[TeaVM] FreecivX server starting...");
         new BrowserCivServer();
-        System.out.println("FreecivX server ready. "
-                + "Call window.freecivxSendPacket(json) to interact.");
+        System.out.println("[TeaVM] FreecivX server ready — window.freecivxSendPacket available");
     }
 }

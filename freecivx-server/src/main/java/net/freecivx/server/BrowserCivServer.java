@@ -79,9 +79,11 @@ public class BrowserCivServer implements IGameServer {
      * ruleset, and registers the JavaScript API via {@link #setupBrowserApi()}.
      */
     public BrowserCivServer() {
+        jsLog("[BrowserCivServer] Initialising game...");
         currentInstance = this;
         this.game = new Game(this);
         this.game.initGame();
+        jsLog("[BrowserCivServer] Game initialised, registering JS API");
         setupBrowserApi();
     }
 
@@ -93,6 +95,10 @@ public class BrowserCivServer implements IGameServer {
     // =========================================================================
     // JavaScript bridge – outgoing (Java → JS)
     // =========================================================================
+
+    /** Writes a debug message to the browser console via {@code console.debug}. */
+    @JSBody(params = {"msg"}, script = "console.debug(msg);")
+    private static native void jsLog(String msg);
 
     /**
      * Dispatches a JSON-string packet to the JavaScript client by calling
@@ -106,7 +112,7 @@ public class BrowserCivServer implements IGameServer {
         "  try {" +
         "    window.freecivxOnPacket(JSON.parse(json));" +
         "  } catch(e) {" +
-        "    console.error('freecivxOnPacket error', e);" +
+        "    console.error('[BrowserCivServer] freecivxOnPacket error', e);" +
         "  }" +
         "}")
     private static native void dispatchToClient(String json);
@@ -119,6 +125,7 @@ public class BrowserCivServer implements IGameServer {
      * Called once from the constructor after the game is initialised.
      */
     @JSBody(script =
+        "console.info('[BrowserCivServer] window.freecivxSendPacket registered — server ready');" +
         "window.freecivxSendPacket = function(json) {" +
         "  net_freecivx_server_BrowserCivServer.$receivePacket(json);" +
         "};" +
@@ -145,7 +152,10 @@ public class BrowserCivServer implements IGameServer {
      */
     @JSExport
     public static void receivePacket(String packet) {
-        if (currentInstance == null) return;
+        if (currentInstance == null) {
+            jsLog("[BrowserCivServer] receivePacket called but server not initialised");
+            return;
+        }
         currentInstance.handlePacket(SINGLE_CONN_ID, packet);
     }
 
@@ -164,8 +174,11 @@ public class BrowserCivServer implements IGameServer {
         JSONObject json = new JSONObject(rawPacket);
         int pid = json.optInt("pid");
 
+        jsLog("[BrowserCivServer] handlePacket pid=" + pid);
+
         if (pid == Packets.PACKET_SERVER_JOIN_REQ) {
             String username = json.optString("username", "Player");
+            jsLog("[BrowserCivServer] JOIN_REQ user=" + username);
             JSONObject reply = new JSONObject();
             reply.put("pid", Packets.PACKET_SERVER_JOIN_REPLY);
             reply.put("you_can_join", true);
@@ -176,6 +189,7 @@ public class BrowserCivServer implements IGameServer {
         }
 
         if (pid == Packets.PACKET_PLAYER_READY) {
+            jsLog("[BrowserCivServer] PLAYER_READY gameStarted=" + game.isGameStarted());
             if (game.isGameStarted()) {
                 game.syncNewPlayer(connId);
             } else {
@@ -184,6 +198,7 @@ public class BrowserCivServer implements IGameServer {
         }
 
         if (pid == Packets.PACKET_PLAYER_PHASE_DONE) {
+            jsLog("[BrowserCivServer] PLAYER_PHASE_DONE");
             game.playerEndTurn(connId);
         }
 
