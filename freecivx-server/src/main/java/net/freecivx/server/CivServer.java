@@ -303,6 +303,15 @@ public class CivServer extends org.java_websocket.server.WebSocketServer impleme
             }
         }
 
+        // Handle PACKET_PLAYER_CHANGE_GOVERNMENT (54): client requests a government change.
+        // Mirrors handle_player_change_government() in plrhand.c.
+        if (pid == Packets.PACKET_PLAYER_CHANGE_GOVERNMENT) {
+            int govId = json.optInt("government", -1);
+            if (govId >= 0) {
+                PlrHand.handlePlayerChangeGovernment(game, connId, govId);
+            }
+        }
+
         if (pid == Packets.PACKET_CHAT_MSG_REQ) {
             String message =  URLDecoder.decode(json.optString("message"), StandardCharsets.UTF_8);
             if (message.equalsIgnoreCase("/quit")) {
