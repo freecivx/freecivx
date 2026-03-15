@@ -25,6 +25,7 @@ import net.freecivx.game.City;
 import net.freecivx.game.Technology;
 import net.freecivx.game.Unit;
 import net.freecivx.game.UnitType;
+import org.json.JSONArray;
 import org.json.JSONObject;
 import java.util.ArrayList;
 import java.util.List;
@@ -61,6 +62,9 @@ public class TechTools {
         if (player.hasTech(techId)) return; // already known
         player.addKnownTech(techId);
         System.out.println("Player " + player.getUsername() + " received tech: " + tech.getName());
+        // Notify the player in-game that a new technology has been discovered.
+        Notify.notifyPlayer(game, game.getServer(), playerId,
+                "You have discovered " + tech.getName() + "!");
         // Auto-upgrade units that are made obsolete by the newly acquired technology.
         // Mirrors do_upgrade_effects() in the C Freeciv server's server/unittools.c.
         doUpgradeEffects(game, playerId);
@@ -152,6 +156,46 @@ public class TechTools {
         Player player = game.players.get(playerId);
         if (player == null) return;
 
+        // Build the inventions array expected by the JS client's handle_research_info().
+        // Index = tech ID, value = TECH_UNKNOWN(0) / TECH_PREREQS_KNOWN(1) / TECH_KNOWN(2).
+        // TECH_PREREQS_KNOWN means all prerequisites are known (the tech is directly
+        // researchable).  Mirrors the advance_state enumeration in the C Freeciv server.
+        int maxTechId = 0;
+        for (long tid : game.techs.keySet()) {
+            if (tid > maxTechId) maxTechId = (int) tid;
+        }
+        JSONArray inventions = new JSONArray();
+        for (int i = 0; i <= maxTechId; i++) {
+            inventions.put(0); // initialise all slots to TECH_UNKNOWN
+        }
+        for (Map.Entry<Long, Technology> entry : game.techs.entrySet()) {
+            int idx = entry.getKey().intValue();
+            if (idx < 0 || idx > maxTechId) continue;
+            if (player.hasTech(entry.getKey())) {
+                inventions.put(idx, 2); // TECH_KNOWN
+            } else if (canPlayerResearch(game, playerId, entry.getKey())) {
+                inventions.put(idx, 1); // TECH_PREREQS_KNOWN
+            }
+            // else: remains 0 = TECH_UNKNOWN
+        }
+
+        // Cost to complete the technology currently being researched.
+        // Used by the client to render the science-progress bar and estimate turns.
+        long researchingTechId = player.getResearchingTech();
+        int researchingCost = researchingTechId >= 0
+                ? net.freecivx.game.Research.researchTechCost(game, playerId, researchingTechId)
+                : 0;
+
+        // Total bulb production this turn (after science-rate scaling).
+        // Used by the client to display "N turns to complete" estimates.
+        int totalBulbsProd = 0;
+        for (Map.Entry<Long, City> entry : game.cities.entrySet()) {
+            if (entry.getValue().getOwner() == playerId) {
+                totalBulbsProd += net.freecivx.server.CityTurn.cityScienceContribution(game, entry.getKey());
+            }
+        }
+        totalBulbsProd = totalBulbsProd * player.getScienceRate() / 100;
+
         JSONObject msg = new JSONObject();
         msg.put("pid", Packets.PACKET_RESEARCH_INFO);
         // "id" is the field the JS client's handle_research_info() uses to index
@@ -162,6 +206,10 @@ public class TechTools {
         msg.put("bulbs_researched", player.getBulbsResearched());
         msg.put("techs_researched", player.getKnownTechs().size());
         msg.put("researching", player.getResearchingTech());
+        msg.put("researching_cost", researchingCost);
+        msg.put("total_bulbs_prod", totalBulbsProd);
+        msg.put("tech_upkeep", 0); // no tech upkeep in this implementation
+        msg.put("inventions", inventions);
         // Send the packet directly — do NOT use sendMessage() here because
         // sendMessage() wraps its argument in a PACKET_CHAT_MSG, which would
         // display the raw JSON in the game-messages window instead of routing
