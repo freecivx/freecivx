@@ -1095,22 +1095,13 @@ public class CivServer extends org.java_websocket.server.WebSocketServer impleme
             ws.send(msg.toString());
         });
 
-        // Units
+        // Units – send only units visible to this player (own units or on a visible tile)
         game.units.forEach((id, unit) -> {
-            JSONObject msg = new JSONObject();
-            msg.put("pid", Packets.PACKET_UNIT_SHORT_INFO);
-            msg.put("id", unit.getId());
-            msg.put("owner", unit.getOwner());
-            msg.put("tile", unit.getTile());
-            msg.put("type", unit.getType());
-            msg.put("facing", unit.getFacing());
-            msg.put("veteran", unit.getVeteran());
-            msg.put("hp", unit.getHp());
-            msg.put("activity", unit.getActivity());
-            msg.put("movesleft", unit.getMovesleft());
-            msg.put("done_moving", unit.isDoneMoving());
-            msg.put("transported", unit.isTransported());
-            msg.put("ssa_controller", unit.getSsa_controller());
+            boolean canSee = joiningPlayer != null
+                    && (joiningPlayer.getPlayerNo() == unit.getOwner()
+                        || joiningPlayer.getVisibleTiles().contains(unit.getTile()));
+            if (!canSee) return;
+            JSONObject msg = VisibilityHandler.buildUnitShortInfoPacket(unit);
             ws.send(msg.toString());
         });
 
@@ -1130,7 +1121,13 @@ public class CivServer extends org.java_websocket.server.WebSocketServer impleme
         // object without update(), causing "cities[id].update is not a function".
         // Also send PACKET_WEB_CITY_INFO_ADDITION so the city dialog shows
         // the correct list of buildable units and improvements.
+        // Only send cities the joining player can see (own city or visible tile).
         game.cities.forEach((id, city) -> {
+            boolean canSee = joiningPlayer != null
+                    && (joiningPlayer.getPlayerNo() == city.getOwner()
+                        || joiningPlayer.getVisibleTiles().contains(city.getTile()));
+            if (!canSee) return;
+
             // Send full city info + web addition via CityTools (handles bitvectors,
             // shield_stock, food_stock, can_build_unit, can_build_improvement).
             CityTools.sendCityInfo(game, this, connId, id);

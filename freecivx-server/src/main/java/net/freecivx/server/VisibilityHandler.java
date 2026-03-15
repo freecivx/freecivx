@@ -28,6 +28,7 @@ import net.freecivx.game.UnitType;
 import org.json.JSONObject;
 
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -175,15 +176,65 @@ public class VisibilityHandler {
         player.setVisibleTiles(newVisible);
 
         long connId = player.getConnectionId();
+        long ownPlayerId = player.getPlayerNo();
 
-        // Inform the client about newly revealed tiles
+        // Inform the client about newly revealed tiles and any foreign
+        // units/cities that are now visible on those tiles.
         for (long tileId : newlySeen) {
             sendTileToPlayer(game, connId, tileId, TILE_KNOWN_SEEN);
+            sendForeignEntitiesOnTile(game, connId, ownPlayerId, tileId);
         }
 
-        // Inform the client about tiles that have become fogged
+        // Inform the client about tiles that have become fogged and remove
+        // any foreign units/cities that are no longer visible.
         for (long tileId : lostSight) {
             sendTileToPlayer(game, connId, tileId, TILE_KNOWN_UNSEEN);
+            removeForeignEntitiesFromTile(game, connId, ownPlayerId, tileId);
+        }
+    }
+
+    /**
+     * Sends a unit to all human players who can currently see the unit's tile,
+     * plus always to the unit's owner.  Replaces unconditional broadcasts so
+     * that players never receive information about foreign units on tiles they
+     * cannot see.
+     *
+     * @param game the current game state
+     * @param unit the unit to distribute
+     */
+    public static void sendUnitToVisiblePlayers(Game game, Unit unit) {
+        JSONObject msg = buildUnitShortInfoPacket(unit);
+        long unitTile = unit.getTile();
+        long ownerPlayerId = unit.getOwner();
+        for (Player p : game.players.values()) {
+            if (p.isAi()) continue;
+            if (p.getPlayerNo() == ownerPlayerId
+                    || p.getVisibleTiles().contains(unitTile)) {
+                game.getServer().sendPacket(p.getConnectionId(), msg);
+            }
+        }
+    }
+
+    /**
+     * Sends city information to all human players who can currently see the
+     * city's tile, plus always to the city's owner.  Replaces unconditional
+     * broadcasts so that players never receive information about foreign cities
+     * on tiles they cannot see.
+     *
+     * @param game   the current game state
+     * @param cityId the ID of the city to distribute
+     */
+    public static void sendCityToVisiblePlayers(Game game, long cityId) {
+        City city = game.cities.get(cityId);
+        if (city == null) return;
+        long cityTile = city.getTile();
+        long ownerPlayerId = city.getOwner();
+        for (Player p : game.players.values()) {
+            if (p.isAi()) continue;
+            if (p.getPlayerNo() == ownerPlayerId
+                    || p.getVisibleTiles().contains(cityTile)) {
+                CityTools.sendCityInfo(game, game.getServer(), p.getConnectionId(), cityId);
+            }
         }
     }
 
@@ -218,6 +269,85 @@ public class VisibilityHandler {
     // -------------------------------------------------------------------------
     // Private helpers
     // -------------------------------------------------------------------------
+
+    /**
+     * Sends {@code PACKET_UNIT_SHORT_INFO} and city-info packets to {@code connId}
+     * for every foreign unit and city currently standing on {@code tileId}.
+     * Called when a tile enters the player's field of view.
+     *
+     * @param game        the current game state
+     * @param connId      the connection to send to
+     * @param ownPlayerId the observing player's ID (used to skip own entities)
+     * @param tileId      the newly visible tile
+     */
+    private static void sendForeignEntitiesOnTile(Game game, long connId,
+                                                   long ownPlayerId, long tileId) {
+        for (Unit unit : game.units.values()) {
+            if (unit.getTile() == tileId && unit.getOwner() != ownPlayerId) {
+                game.getServer().sendPacket(connId, buildUnitShortInfoPacket(unit));
+            }
+        }
+        for (Map.Entry<Long, City> entry : game.cities.entrySet()) {
+            City city = entry.getValue();
+            if (city.getTile() == tileId && city.getOwner() != ownPlayerId) {
+                CityTools.sendCityInfo(game, game.getServer(), connId, entry.getKey());
+            }
+        }
+    }
+
+    /**
+     * Sends {@code PACKET_UNIT_REMOVE} and city-remove packets to {@code connId}
+     * for every foreign unit and city currently standing on {@code tileId}.
+     * Called when a tile leaves the player's field of view (becomes fogged).
+     *
+     * @param game        the current game state
+     * @param connId      the connection to send to
+     * @param ownPlayerId the observing player's ID (used to skip own entities)
+     * @param tileId      the newly fogged tile
+     */
+    private static void removeForeignEntitiesFromTile(Game game, long connId,
+                                                       long ownPlayerId, long tileId) {
+        for (Unit unit : game.units.values()) {
+            if (unit.getTile() == tileId && unit.getOwner() != ownPlayerId) {
+                JSONObject msg = new JSONObject();
+                msg.put("pid", Packets.PACKET_UNIT_REMOVE);
+                msg.put("unit_id", unit.getId());
+                game.getServer().sendPacket(connId, msg);
+            }
+        }
+        for (Map.Entry<Long, City> entry : game.cities.entrySet()) {
+            City city = entry.getValue();
+            if (city.getTile() == tileId && city.getOwner() != ownPlayerId) {
+                CityTools.removeCityFromPlayer(game, game.getServer(), connId, entry.getKey());
+            }
+        }
+    }
+
+    /**
+     * Builds a {@code PACKET_UNIT_SHORT_INFO} JSON packet for the given unit
+     * without sending it.  Used by both {@link #sendUnitToVisiblePlayers} and
+     * {@link #sendForeignEntitiesOnTile}.
+     *
+     * @param unit the unit to serialise
+     * @return the JSON packet ready to be dispatched
+     */
+    static JSONObject buildUnitShortInfoPacket(Unit unit) {
+        JSONObject msg = new JSONObject();
+        msg.put("pid", Packets.PACKET_UNIT_SHORT_INFO);
+        msg.put("id", unit.getId());
+        msg.put("owner", unit.getOwner());
+        msg.put("tile", unit.getTile());
+        msg.put("type", unit.getType());
+        msg.put("facing", unit.getFacing());
+        msg.put("veteran", unit.getVeteran());
+        msg.put("hp", unit.getHp());
+        msg.put("activity", unit.getActivity());
+        msg.put("movesleft", unit.getMovesleft());
+        msg.put("done_moving", unit.isDoneMoving());
+        msg.put("transported", unit.isTransported());
+        msg.put("ssa_controller", unit.getSsa_controller());
+        return msg;
+    }
 
     /**
      * Adds every tile within Euclidean distance squared {@code radiusSq} of
