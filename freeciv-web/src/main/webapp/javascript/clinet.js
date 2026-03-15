@@ -109,6 +109,60 @@ function teavm_mode_init() {
 }
 
 /****************************************************************************
+  Starts a single-player game using the freecivx-server TeaVM bundle.
+
+  This function is called when the user clicks the "Single Player (TeaVM)"
+  button in the intro dialog.  It loads the TeaVM JavaScript bundle
+  dynamically (if not already present), activates in-process packet routing,
+  and begins the normal pregame login sequence so the player lands on the
+  pregame screen – exactly like a standard single-player C-server game.
+
+  Side effects: sets the global variables username, teavm_mode,
+  freecivx_server, and window.freecivxOnPacket.
+
+  @param {string} player_username  The username entered in the intro dialog.
+****************************************************************************/
+function start_teavm_single_player(player_username) {
+    username = player_username;
+    teavm_mode = true;
+    freecivx_server = true;
+
+    // Register the incoming-packet callback before the bundle is loaded so
+    // that any packets dispatched during initialisation are not lost.
+    window.freecivxOnPacket = function(packet) {
+        try {
+            client_handle_packet([packet]);
+        } catch (e) {
+            console.error("freecivxOnPacket error", e);
+        }
+    };
+
+    function on_bundle_ready() {
+        // Trigger the normal login sequence (no WebSocket handshake needed).
+        check_websocket_ready();
+        load_game_check();
+    }
+
+    if (typeof window.freecivxSendPacket === 'function') {
+        // Bundle already loaded (e.g. page reuse); start immediately.
+        on_bundle_ready();
+    } else {
+        // Dynamically load the TeaVM bundle.  The bundle's main() creates a
+        // BrowserCivServer instance and registers window.freecivxSendPacket.
+        var script = document.createElement('script');
+        script.src = '/javascript/freecivx-server.js';
+        script.onload = on_bundle_ready;
+        script.onerror = function() {
+            console.error('Failed to load TeaVM bundle from /javascript/freecivx-server.js');
+            show_dialog_message("Error", "The in-browser server could not be loaded. "
+                + "Please try again or use the standard single-player mode.");
+            teavm_mode = false;
+        };
+        document.head.appendChild(script);
+    }
+}
+
+/****************************************************************************
   Initialized the WebSocket connection.
 ****************************************************************************/
 function websocket_init() {

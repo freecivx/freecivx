@@ -985,6 +985,29 @@ function show_intro_dialog(title, message) {
 				  icon: "ui-icon-play"
 			  },
 			  {
+				  text : "Single Player (TeaVM)",
+				  id : "teavm_start_button",
+				  click : function() {
+                    var check_username = $("#username_req").val();
+                    if (check_username == null || check_username.length == 0) {
+                      $("#login_process").text("Please enter a player name.");
+                      return;
+                    }
+                    if (is_touch_device()) {
+                      if (document.fullscreenEnabled && !document.fullscreenElement) {
+                        document.documentElement.requestFullscreen().catch(function(err) {
+                          console.error('Error entering fullscreen:', err);
+                        });
+                      }
+                    }
+                    dialog_close_trigger = "button";
+                    $("#dialog").dialog('close');
+                    $("#fciv-intro").hide();
+                    start_teavm_single_player(check_username);
+                  },
+                  icon: "ui-icon-play"
+			  },
+			  {
 				  text : join_game_customize_text,
 				  click : function() {
                     if (is_touch_device()) {
@@ -1028,6 +1051,7 @@ function show_intro_dialog(title, message) {
   if (($.getUrlVar('action') == "multi")
          && $.getUrlVar('load') != "tutorial") {
     $(".ui-dialog-buttonset button").first().hide();
+    $("#teavm_start_button").hide();
   }
 
   $("#dialog").dialog('open');
@@ -1042,6 +1066,7 @@ function show_intro_dialog(title, message) {
 
   if ($.getUrlVar('action') == "observe") {
     $(".ui-dialog-buttonset button").first().remove();
+    $("#teavm_start_button").remove();
     $(".ui-dialog-buttonset button").first().button("option", "label", "Observe Game");
   }
 
