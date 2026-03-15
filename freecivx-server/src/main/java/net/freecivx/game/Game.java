@@ -1050,6 +1050,17 @@ public class Game {
                                                     defender, defenderType,
                                                     defenderTile, cityWallsBonus);
 
+        // Log combat outcome
+        String attackerName = attackerType != null ? attackerType.getName() : "Unit";
+        String defenderName = defenderType != null ? defenderType.getName() : "Unit";
+        Player attackerOwner = players.get(attacker.getOwner());
+        Player defenderOwner = players.get(defender.getOwner());
+        String atkOwnerName = attackerOwner != null ? attackerOwner.getUsername() : "?";
+        String defOwnerName = defenderOwner != null ? defenderOwner.getUsername() : "?";
+        System.out.println("Combat: " + atkOwnerName + "'s " + attackerName
+                + " attacks " + defOwnerName + "'s " + defenderName
+                + " → " + (attackerWins ? atkOwnerName + " wins" : defOwnerName + " wins"));
+
         // Consume one move point for the attack
         attacker.setMovesleft(Math.max(0, attacker.getMovesleft() - 1));
 
@@ -1167,6 +1178,8 @@ public class Game {
             // removeCity() removes from game.cities and sends remove packet to clients.
             net.freecivx.server.CityTools.removeCity(this, cityId);
             server.sendMessageAll(cityName + " has been razed!");
+            System.out.println("City razed: " + cityName
+                    + " (owner: " + getPlayerName(oldOwner) + ")");
             Notify.notifyPlayer(this, server, oldOwner,
                     cityName + " has been razed by the enemy!");
         } else {
@@ -1180,6 +1193,9 @@ public class Game {
             city.setShieldStock(0);
             CityTools.sendCityInfo(this, server, -1L, cityId);
             server.sendMessageAll(cityName + " has been captured!");
+            System.out.println("City captured: " + cityName
+                    + " by " + getPlayerName(newOwner)
+                    + " from " + getPlayerName(oldOwner));
             Notify.notifyPlayer(this, server, newOwner,
                     "Our forces have captured " + cityName + "!");
             Notify.notifyPlayer(this, server, oldOwner,
@@ -1190,6 +1206,12 @@ public class Game {
         // Mirrors unit_move() after city_conquest() in the C Freeciv server.
         attacker.setTile(cityTile.getIndex());
         attacker.setMovesleft(0);
+    }
+
+    /** Returns the username of the player with the given ID, or "?" if not found. */
+    private String getPlayerName(long playerId) {
+        Player p = players.get(playerId);
+        return p != null ? p.getUsername() : "?";
     }
 
     /**
@@ -1226,6 +1248,7 @@ public class Game {
 
             // Player is eliminated
             player.setAlive(false);
+            System.out.println("Player eliminated: " + player.getUsername());
             server.sendMessageAll(player.getUsername() + " has been eliminated!");
 
             // Remove all of this player's remaining units
