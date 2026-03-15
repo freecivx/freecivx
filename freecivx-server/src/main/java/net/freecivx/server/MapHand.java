@@ -54,6 +54,8 @@ public class MapHand {
         msg.put("extras", extrasToByteArray(tile.getExtras()));
         msg.put("known", tile.getKnown());
         msg.put("height", tile.getHeight());
+        msg.put("worked", tile.getWorked() >= 0 ? tile.getWorked() : JSONObject.NULL);
+        msg.put("owner", tile.getOwner() >= 0 ? tile.getOwner() : JSONObject.NULL);
         game.getServer().sendMessage(connId, msg.toString());
     }
 
