@@ -253,17 +253,7 @@ public class VisibilityHandler {
         Tile tile = game.tiles.get(tileId);
         if (tile == null) return;
 
-        JSONObject msg = new JSONObject();
-        msg.put("pid", Packets.PACKET_TILE_INFO);
-        msg.put("tile", tile.getIndex());
-        msg.put("terrain", tile.getTerrain());
-        msg.put("resource", tile.getResource());
-        msg.put("extras", MapHand.extrasToByteArray(tile.getExtras()));
-        msg.put("known", known);
-        msg.put("height", tile.getHeight());
-        msg.put("worked", tile.getWorked() >= 0 ? tile.getWorked() : JSONObject.NULL);
-        msg.put("owner", tile.getOwner() >= 0 ? tile.getOwner() : JSONObject.NULL);
-        game.getServer().sendPacket(connId, msg);
+        game.getServer().sendPacket(connId, MapHand.buildTileInfoPacket(tile, known));
     }
 
     // -------------------------------------------------------------------------
