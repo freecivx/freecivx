@@ -545,12 +545,11 @@ public class Game {
             long startPos = findStartPosition();
             spawnStartingUnits(player, startPos);
         }
-        // Send units
-        units.forEach((id, unit) -> server.sendUnitAll(unit));
 
         // Compute initial visibility for all human players and push TILE_KNOWN_SEEN
-        // packets for their starting positions.  This is called after units are spawned
-        // so the vision sets can be built from actual unit positions.
+        // packets for their starting positions.  Done before unit/city sending so that
+        // visibleTiles is populated and sendUnitToVisiblePlayers/sendCityToVisiblePlayers
+        // can correctly filter which players receive each entity.
         players.values().stream()
                 .filter(p -> !p.isAi())
                 .forEach(p -> VisibilityHandler.updateAndSendVisibility(p, this));
@@ -558,13 +557,17 @@ public class Game {
         // Send city styles
         cityStyle.forEach((id, style) -> server.sendRulesetCityInfoAll(id, style.getName(), style.getName()));
 
+        // Send units only to players who can currently see the unit's tile, plus
+        // always to the unit's owner.  Replaces the unconditional broadcast so that
+        // players never see foreign units on tiles they have not explored.
+        units.forEach((id, unit) -> VisibilityHandler.sendUnitToVisiblePlayers(this, unit));
+
         // Send cities – CITY_INFO first so the client creates a proper City
         // instance before the lightweight CITY_SHORT_INFO arrives.
         // CityTools.sendCityInfo also sends PACKET_WEB_CITY_INFO_ADDITION with
         // can_build_unit / can_build_improvement bitvectors for the city dialog.
-        cities.forEach((id, city) -> {
-            CityTools.sendCityInfo(this, server, -1L, id);
-        });
+        // Only sent to the city owner and players who can see the city's tile.
+        cities.forEach((id, city) -> VisibilityHandler.sendCityToVisiblePlayers(this, id));
 
 
         server.sendBordersServerSettingsAll();
@@ -890,16 +893,14 @@ public class Game {
         year++;
         turn++;
 
-        // Reset movement points for all units and broadcast the new state to clients
-        // so that the client UI immediately reflects the refreshed moves_left / done_moving
-        // values.  Without this broadcast the client would continue to display stale
-        // movement data until each unit was individually updated by another action.
+        // Reset movement points for all units and send the new state only to
+        // players who can see the unit's tile, so that fog-of-war is respected.
         units.forEach((id, unit) -> {
             UnitType utype = unitTypes.get((long) unit.getType());
             if (utype != null) {
                 unit.setMovesleft(utype.getMoveRate());
                 unit.setDoneMoving(false);
-                server.sendUnitAll(unit);
+                VisibilityHandler.sendUnitToVisiblePlayers(this, unit);
             }
         });
 
@@ -948,7 +949,7 @@ public class Game {
         // activity changes.  Mirrors unit_activity_handling() in the C server
         // where any new order resets the activity work done so far.
         unit.setActivityCount(0);
-        server.sendUnitAll(unit);
+        VisibilityHandler.sendUnitToVisiblePlayers(this, unit);
     }
 
     public boolean moveUnit(long unit_id, int dest_tile, int dir) {
@@ -1049,7 +1050,7 @@ public class Game {
             enterHut(unit, destTileObj);
         }
 
-        server.sendUnitAll(unit);
+        VisibilityHandler.sendUnitToVisiblePlayers(this, unit);
 
         // Update the owning player's fog-of-war after the move so tiles
         // newly entered enter TILE_KNOWN_SEEN and tiles left become TILE_KNOWN_UNSEEN.
@@ -1208,7 +1209,7 @@ public class Game {
                 }
             }
 
-            server.sendUnitAll(attacker);
+            VisibilityHandler.sendUnitToVisiblePlayers(this, attacker);
             if (promoted) {
                 server.sendMessage(attacker.getOwner(),
                         unitTypes.get((long) attacker.getType()) != null
@@ -1221,7 +1222,7 @@ public class Game {
             Combat.maybePromoteVeteran(defender, defenderType);
             units.remove(attackerId);
             server.sendUnitRemove(attackerId);
-            server.sendUnitAll(defender);
+            VisibilityHandler.sendUnitToVisiblePlayers(this, defender);
 
             // Notify both players of the combat outcome.
             // Mirrors notify_player() calls in unithand.c (E_UNIT_LOST_ATT / E_UNIT_WIN_DEF).
@@ -1259,7 +1260,10 @@ public class Game {
         // Update national borders to include this city's territory.
         net.freecivx.server.CityTurn.updateBorders(this);
 
-        CityTools.sendCityInfo(this, server, -1L, id);
+        // Send the new city to all players who can currently see the tile.
+        // The city owner can always see their own city; other players see it
+        // only if it is within their field of view.
+        VisibilityHandler.sendCityToVisiblePlayers(this, id);
 
         // Notify the founding player — mirrors notify_player(E_CITY_BUILD) in
         // the C Freeciv server's server/citytools.c: "You have founded %s."
@@ -1295,10 +1299,12 @@ public class Game {
         // Send full current game state to just this player
         server.sendGameStateTo(connId);
 
-        // Broadcast the new player's units to all existing players
+        // Send the new player's units to players who can see the tile.
+        // Using sendUnitToVisiblePlayers ensures that existing players only see
+        // the new player's units if the units are in their field of view.
         units.values().stream()
                 .filter(u -> u.getOwner() == player.getPlayerNo())
-                .forEach(u -> server.sendUnitAll(u));
+                .forEach(u -> VisibilityHandler.sendUnitToVisiblePlayers(this, u));
 
         server.sendMessage(connId, "Welcome! The game is in progress (turn " + turn + ").");
         server.sendMessageAll(player.getUsername() + " has joined the game in progress.");
@@ -1355,7 +1361,7 @@ public class Game {
             city.setProductionKind(0);
             city.setProductionValue(-1);
             city.setShieldStock(0);
-            CityTools.sendCityInfo(this, server, -1L, cityId);
+            VisibilityHandler.sendCityToVisiblePlayers(this, cityId);
             // Recalculate borders after ownership change
             net.freecivx.server.CityTurn.updateBorders(this);
             server.sendMessageAll(cityName + " has been captured!");

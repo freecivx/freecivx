@@ -584,7 +584,7 @@ public class CityTurn {
                 long unitTechReq = unitType.getTechReqId();
                 if (player != null && unitTechReq >= 0 && !player.hasTech(unitTechReq)) {
                     // Tech prerequisite not yet met; keep shields and wait for the tech.
-                    CityTools.sendCityInfo(game, game.getServer(), -1L, cityId);
+                    VisibilityHandler.sendCityToVisiblePlayers(game, cityId);
                     return;
                 }
 
@@ -608,7 +608,7 @@ public class CityTurn {
                     if (popCost > 0 && city.getSize() <= popCost) {
                         // Cannot build: city too small to afford the population cost.
                         // Keep shields; player must grow the city first.
-                        CityTools.sendCityInfo(game, game.getServer(), -1L, cityId);
+                        VisibilityHandler.sendCityToVisiblePlayers(game, cityId);
                         return;
                     }
 
@@ -635,7 +635,7 @@ public class CityTurn {
             }
         }
 
-        CityTools.sendCityInfo(game, game.getServer(), -1L, cityId);
+        VisibilityHandler.sendCityToVisiblePlayers(game, cityId);
     }
 
     /**
@@ -730,7 +730,7 @@ public class CityTurn {
             city.setFoodStock(0);
         }
 
-        CityTools.sendCityInfo(game, game.getServer(), -1L, cityId);
+        VisibilityHandler.sendCityToVisiblePlayers(game, cityId);
     }
 
     /**
@@ -1247,7 +1247,7 @@ public class CityTurn {
 
         // Broadcast the updated city state to all clients if anything changed
         if (wasHappy != isHappy || wasUnhappy != isUnhappy) {
-            CityTools.sendCityInfo(game, game.getServer(), -1L, cityId);
+            VisibilityHandler.sendCityToVisiblePlayers(game, cityId);
         }
     }
 
@@ -1293,7 +1293,7 @@ public class CityTurn {
                 // Return the worker to idle and reset activity counter
                 unit.setActivity(0);
                 unit.setActivityCount(0);
-                game.getServer().sendUnitAll(unit);
+                VisibilityHandler.sendUnitToVisiblePlayers(game, unit);
             }
         }
     }
@@ -1486,7 +1486,7 @@ public class CityTurn {
             }
 
             if (!toRemove.isEmpty()) {
-                CityTools.sendCityInfo(game, game.getServer(), -1L, cityId);
+                VisibilityHandler.sendCityToVisiblePlayers(game, cityId);
             }
         }
 

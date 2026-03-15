@@ -116,6 +116,28 @@ public class CityTools {
     }
 
     /**
+     * Sends a city-remove packet for the given city to a single client connection.
+     * Used when a city's tile leaves the observing player's field of view so that
+     * the client can hide the city until it becomes visible again.
+     *
+     * <p>This method does <em>not</em> remove the city from the server game state;
+     * use {@link #removeCity} for that.
+     *
+     * @param game   the current game state
+     * @param server the server used to transmit the packet
+     * @param connId the connection ID of the recipient
+     * @param cityId the ID of the city to remove from the client's view
+     */
+    public static void removeCityFromPlayer(Game game, IGameServer server, long connId, long cityId) {
+        JSONObject msg = new JSONObject();
+        msg.put("pid", Packets.PACKET_CITY_INFO);
+        msg.put("id", cityId);
+        msg.put("remove", true);
+        server.sendPacket(connId, msg);
+    }
+
+
+    /**
      * Processes population growth for a city at end of turn.
      * Increases the city's size by one and recalculates tile yields.
      * Does nothing if the city does not exist.
@@ -128,7 +150,7 @@ public class CityTools {
         if (city == null) return;
 
         city.setSize(city.getSize() + 1);
-        sendCityInfo(game, game.getServer(), -1L, cityId);
+        VisibilityHandler.sendCityToVisiblePlayers(game, cityId);
     }
 
     /**
