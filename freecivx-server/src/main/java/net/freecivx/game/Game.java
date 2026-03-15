@@ -75,6 +75,17 @@ public class Game {
     private int mapSeed = -1;
 
     /**
+     * Map generator algorithm to use.
+     * <ul>
+     *   <li>2 – Fractal/fBM (default, same as the current built-in generator)</li>
+     *   <li>5 – Island/continent style with latitude-based terrain distribution,
+     *           mirroring the spirit of the C Freeciv server's MAPGEN_FRACTURE</li>
+     * </ul>
+     * Mirrors the {@code generator} setting in the C Freeciv server.
+     */
+    private int generator = 2;
+
+    /**
      * Turn timeout in seconds.  When {@code > 0} a turn is automatically
      * advanced after this many seconds even if not all human players have
      * pressed end-turn.  {@code 0} (default) disables the timer.
@@ -145,6 +156,26 @@ public class Game {
     }
 
     /**
+     * Sets the map generator algorithm.
+     * <ul>
+     *   <li>2 – Fractal/fBM (default)</li>
+     *   <li>5 – Island/continent style with latitude-based terrain</li>
+     * </ul>
+     * Must be called before {@link #initGame()}.
+     * Mirrors the {@code generator} setting in the C Freeciv server.
+     *
+     * @param generator generator type (2 or 5)
+     */
+    public void setGenerator(int generator) {
+        this.generator = generator;
+    }
+
+    /** Returns the configured map generator type. */
+    public int getGenerator() {
+        return generator;
+    }
+
+    /**
      * Regenerates the map tiles using the given seed.  Unlike
      * {@link #setMapSeed(int)}, this method can be called <em>after</em>
      * {@link #initGame()} to replace the map that was generated during init.
@@ -155,8 +186,8 @@ public class Game {
      */
     public void reinitializeMap(int seed) {
         this.mapSeed = seed;
-        MapGenerator generator = new MapGenerator(map.getXsize(), map.getYsize(), seed);
-        tiles = generator.generateMap();
+        MapGenerator mapGen = new MapGenerator(map.getXsize(), map.getYsize(), seed);
+        tiles = (generator == 5) ? mapGen.generateIslandMap() : mapGen.generateMap();
     }
 
     /**
@@ -352,10 +383,10 @@ public class Game {
         cityStyle.put(3L, new CityStyle("Asian"));
 
         // Use a seeded generator when mapSeed >= 0 (mirrors "mapseed" in C server).
-        MapGenerator generator = mapSeed >= 0
+        MapGenerator mapGen = mapSeed >= 0
                 ? new MapGenerator(map.getXsize(), map.getYsize(), mapSeed)
                 : new MapGenerator(map.getXsize(), map.getYsize());
-        tiles = generator.generateMap();
+        tiles = (generator == 5) ? mapGen.generateIslandMap() : mapGen.generateMap();
     }
 
     /**
