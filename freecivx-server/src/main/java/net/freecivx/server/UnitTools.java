@@ -77,7 +77,7 @@ public class UnitTools {
         msg.put("type", unitTypeId);
         msg.put("hp", hp);
         msg.put("movesleft", moveRate);
-        game.getServer().sendMessageAll(msg.toString());
+        game.getServer().broadcastPacket(msg);
 
         return unit;
     }
@@ -97,7 +97,7 @@ public class UnitTools {
         JSONObject msg = new JSONObject();
         msg.put("pid", Packets.PACKET_UNIT_REMOVE);
         msg.put("unit_id", unitId);
-        game.getServer().sendMessageAll(msg.toString());
+        game.getServer().broadcastPacket(msg);
     }
 
     /**
@@ -176,6 +176,6 @@ public class UnitTools {
         msg.put("id", unitId);
         msg.put("activity", unit.getActivity());
         msg.put("movesleft", unit.getMovesleft());
-        game.getServer().sendMessageAll(msg.toString());
+        game.getServer().broadcastPacket(msg);
     }
 }

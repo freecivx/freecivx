@@ -96,18 +96,18 @@ public class PlrHand {
             msg.put("nation", player.getNation());
             msg.put("government", player.getGovernmentId());
             msg.put("is_alive", player.isAlive());
-            // The client BitVector constructor requires a non-null array of bytes.
-            // Two zero bytes provide a 16-bit all-false bit-vector, sufficient for
-            // the current maximum number of players.
+            // flags bitvector: bit 0 = PLRF_AI
             JSONArray flags = new JSONArray();
-            flags.put(0);
+            flags.put(player.isAi() ? 1 : 0);
             flags.put(0);
             msg.put("flags", flags);
             JSONArray vis = new JSONArray();
             vis.put(0);
             vis.put(0);
             msg.put("gives_shared_vision", vis);
-            game.getServer().sendMessageAll(msg.toString());
+            msg.put("phase_done", player.isPhaseDone());
+            msg.put("nturns_idle", player.getNturnsIdle());
+            game.getServer().broadcastPacket(msg);
         }
     }
 

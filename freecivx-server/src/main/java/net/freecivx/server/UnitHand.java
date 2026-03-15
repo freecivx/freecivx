@@ -159,7 +159,7 @@ public class UnitHand {
         msg.put("id", unitId);
         msg.put("transported", true);
         msg.put("transported_by", transportId);
-        game.getServer().sendMessageAll(msg.toString());
+        game.getServer().broadcastPacket(msg);
     }
 
     /**
@@ -186,6 +186,6 @@ public class UnitHand {
         msg.put("pid", Packets.PACKET_UNIT_INFO);
         msg.put("id", unitId);
         msg.put("transported", false);
-        game.getServer().sendMessageAll(msg.toString());
+        game.getServer().broadcastPacket(msg);
     }
 }

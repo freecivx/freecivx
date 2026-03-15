@@ -124,7 +124,7 @@ public class CityHand {
         msg.put("pid", Packets.PACKET_CITY_INFO);
         msg.put("id", cityId);
         msg.put("name", city.getName());
-        game.getServer().sendMessageAll(msg.toString());
+        game.getServer().broadcastPacket(msg);
     }
 
     /**
