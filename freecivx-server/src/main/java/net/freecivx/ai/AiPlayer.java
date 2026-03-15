@@ -123,6 +123,7 @@ public class AiPlayer {
     private int imprMarketplace = 4;
     private int imprCityWalls   = 7;
     private int imprTemple      = 5;
+    private int imprAqueduct    = 8; // Allows cities to grow beyond size 8
 
     // Unit-type IDs — Settlers and Workers are always 0 and 1 in both the classic
     // ruleset and the hardcoded fallback.  Warriors are always 3.  Advanced units
@@ -278,6 +279,7 @@ public class AiPlayer {
                 case "Marketplace": imprMarketplace = id; break;
                 case "City Walls":  imprCityWalls   = id; break;
                 case "Temple":      imprTemple      = id; break;
+                case "Aqueduct":    imprAqueduct    = id; break;
                 default: break;
             }
         }
@@ -487,13 +489,17 @@ public class AiPlayer {
      * <ol>
      *   <li>Produce best available defender when the city is undefended or threatened.</li>
      *   <li>Build a Barracks for veteran units and fast healing (no tech required).</li>
-     *   <li>Produce Settlers immediately when the empire has only 1 city (early expansion).</li>
+     *   <li>Produce Settlers immediately when the empire has only 1 city (early expansion),
+     *       provided the city has a food surplus to survive the population cost.</li>
      *   <li>Build a Granary for sustained food growth (Pottery required).</li>
-     *   <li>Produce more Settlers when the empire still has fewer than 4 cities.</li>
+     *   <li>Produce more Settlers when the empire still has fewer than 4 cities and the
+     *       city has a food surplus.</li>
      *   <li>Build a Temple for citizen happiness (Ceremonial Burial required).</li>
      *   <li>Produce a Worker for terrain improvements (when city count ≥ 2, size ≥ 3,
      *       and workers are below one per city).</li>
      *   <li>Build a Library for science output (Writing required).</li>
+     *   <li>Build an Aqueduct when the city is approaching size 8 so it can continue
+     *       growing (Construction tech required).</li>
      *   <li>Build a Marketplace for gold income (Code of Laws required).</li>
      *   <li>Build City Walls for passive defence (Masonry required).</li>
      *   <li>Default: produce the best available defender.</li>
@@ -551,7 +557,9 @@ public class AiPlayer {
         // expansion is the top strategic goal in the early game (dai_manage_cities /
         // dai_settler_manage in daicity.c / daisettler.c).  A city must be at least
         // size 2 so the pop_cost=1 of Settlers does not destroy the last citizen.
-        if (myCityCount < 2 && city.getSize() >= 2) {
+        // Also require a positive food surplus so the city won't starve after paying
+        // the population cost — mirrors the food-loss calculation in daicity.c.
+        if (myCityCount < 2 && city.getSize() >= 2 && cityHasFoodSurplus(city)) {
             city.setProductionKind(0);
             city.setProductionValue(UNIT_SETTLERS);
             return;
@@ -567,8 +575,9 @@ public class AiPlayer {
             }
         }
 
-        // Priority 5: Settlers to continue expanding the empire (up to 4 cities)
-        if (myCityCount < 4 && city.getSize() >= 2) {
+        // Priority 5: Settlers to continue expanding the empire (up to 4 cities).
+        // Require a food surplus so the city won't stagnate after paying pop_cost=1.
+        if (myCityCount < 4 && city.getSize() >= 2 && cityHasFoodSurplus(city)) {
             city.setProductionKind(0);
             city.setProductionValue(UNIT_SETTLERS);
             return;
@@ -612,7 +621,20 @@ public class AiPlayer {
             }
         }
 
-        // Priority 9: Marketplace for trade income (Code of Laws required)
+        // Priority 9: Aqueduct to allow city growth beyond size 8.
+        // Cities approaching size 8 should pre-emptively build the Aqueduct so
+        // growth is never blocked.  Mirrors the size-limit check in
+        // CityTurn.cityGrowth() which halts growth at size 8 without an Aqueduct.
+        if (!city.hasImprovement(imprAqueduct) && city.getSize() >= 6) {
+            Improvement aqueduct = game.improvements.get((long) imprAqueduct);
+            if (aqueduct != null && canBuildImprovement(owner, city, aqueduct)) {
+                city.setProductionKind(1);
+                city.setProductionValue(imprAqueduct);
+                return;
+            }
+        }
+
+        // Priority 10: Marketplace for trade income (Code of Laws required)
         if (!city.hasImprovement(imprMarketplace) && city.getSize() >= 3) {
             Improvement marketplace = game.improvements.get((long) imprMarketplace);
             if (marketplace != null && canBuildImprovement(owner, city, marketplace)) {
@@ -622,7 +644,7 @@ public class AiPlayer {
             }
         }
 
-        // Priority 10: City Walls for passive defence (Masonry required)
+        // Priority 11: City Walls for passive defence (Masonry required)
         if (!city.hasImprovement(imprCityWalls)) {
             Improvement walls = game.improvements.get((long) imprCityWalls);
             if (walls != null && canBuildImprovement(owner, city, walls)) {
@@ -739,6 +761,38 @@ public class AiPlayer {
             if (Math.abs(ux - cx) + Math.abs(uy - cy) <= 4) return true;
         }
         return false;
+    }
+
+    /**
+     * Returns {@code true} if the city produces more food than its citizens
+     * consume (positive food surplus).  Used to gate Settler production so the
+     * AI does not build a Settler when doing so would starve the city after the
+     * pop_cost=1 is paid.  Mirrors the food-loss calculation in
+     * {@code daicity.c} ({@code settler_evals_food_loss}).
+     *
+     * <p>Food surplus is approximated as: sum of food from all worked tiles
+     * (using {@link net.freecivx.server.CityTurn#getTileOutput}) minus
+     * {@code city.size × FOOD_UPKEEP_PER_CITIZEN} (2 food per citizen per turn).
+     *
+     * @param city the city to evaluate
+     * @return {@code true} when the city's food output exceeds its upkeep
+     */
+    private boolean cityHasFoodSurplus(City city) {
+        Tile centerTile = game.tiles.get(city.getTile());
+        if (centerTile == null) return false;
+
+        // Sum food output from the city-centre tile plus all worked tiles.
+        int totalFood = CityTurn.getTileOutput(game, centerTile, true)[0];
+        for (Long workedTileId : city.getWorkedTiles()) {
+            Tile t = game.tiles.get(workedTileId);
+            if (t != null) {
+                totalFood += CityTurn.getTileOutput(game, t, false)[0];
+            }
+        }
+
+        // Each citizen consumes 2 food per turn (FOOD_UPKEEP_PER_CITIZEN = 2).
+        int foodUpkeep = city.getSize() * 2;
+        return totalFood > foodUpkeep;
     }
 
     // =========================================================================
@@ -995,18 +1049,27 @@ public class AiPlayer {
     }
 
     /**
-     * Finds the nearest land tile within a search radius that would benefit from
-     * a terrain improvement.  Returns the best candidate tile ID, or {@code -1}
-     * if all nearby tiles are already improved or unsuitable.
+     * Finds the best land tile within a search radius that would benefit from
+     * a terrain improvement.  Tiles within a city's working radius (3 tiles
+     * Chebyshev distance) are preferred because improvements there directly
+     * boost city output — mirrors the {@code auto_settler_findwork} heuristic in
+     * {@code server/settlers.c} which scores improvement candidates by how much
+     * they benefit the closest city.  Among tiles of equal city-proximity the
+     * nearest tile to the worker wins (minimises travel time).
      *
      * @param fromTile the worker's current tile ID
      * @return the tile ID of the best improvement target, or {@code -1}
      */
     private long findBestWorkerTarget(long fromTile) {
         final int WORKER_SEARCH_RADIUS = 8;
+        // City working radius (Chebyshev distance); tiles closer than this to a
+        // friendly city yield direct output gains when improved.
+        final int CITY_WORK_RADIUS = 3;
         long x = fromTile % game.map.getXsize();
         long y = fromTile / game.map.getXsize();
         long bestTile = -1;
+        // Composite score: higher is better (in-city-radius tiles score higher)
+        int bestScore = Integer.MIN_VALUE;
         long bestDist = Long.MAX_VALUE;
 
         long minY = Math.max(0, y - WORKER_SEARCH_RADIUS);
@@ -1035,8 +1098,28 @@ public class AiPlayer {
 
                 if (!roadMissing && !railMissing && !irrigationUseful && !mineUseful) continue;
 
+                // Bonus if this tile is within the working radius of a friendly city.
+                // Improvements here have an immediate payoff every turn the city works
+                // that tile, so they are strongly preferred over remote improvements.
+                int cityProximityBonus = 0;
+                for (City city : game.cities.values()) {
+                    long cx = city.getTile() % game.map.getXsize();
+                    long cy = city.getTile() / game.map.getXsize();
+                    long chebyshev = Math.max(Math.abs(tx - cx), Math.abs(ty - cy));
+                    if (chebyshev <= CITY_WORK_RADIUS) {
+                        cityProximityBonus = 100; // strongly prefer in-radius tiles
+                        break;
+                    }
+                }
+
                 long dist = Math.abs(tx - x) + Math.abs(ty - y);
-                if (dist < bestDist) {
+                // Score = city proximity bonus (0 or 100) – travel distance.
+                // This ensures in-radius tiles always beat out-of-radius tiles
+                // regardless of distance, while ties within each category go to
+                // the closer tile.
+                int score = cityProximityBonus - (int) dist;
+                if (score > bestScore || (score == bestScore && dist < bestDist)) {
+                    bestScore = score;
                     bestDist = dist;
                     bestTile = tileId;
                 }
@@ -1054,6 +1137,13 @@ public class AiPlayer {
      * before hunting enemies.  Mirrors the city-garrison and danger-assessment
      * logic in {@code ai/default/daimilitary.c} and the persistent unit-task
      * assignment in {@code ai/default/daiunit.c}.
+     *
+     * <p>When all friendly cities are garrisoned the unit advances toward the
+     * nearest strategic target — preferring undefended enemy cities (which can
+     * be captured without combat) over defended cities and roaming units.
+     * Mirrors the offensive logic in {@code dai_military_attack()} in
+     * {@code ai/default/daimilitary.c} where the AI advances on enemy cities
+     * once its own empire is secure.
      */
     private void handleMilitaryUnit(Unit unit, UnitType utype, Player owner) {
         long unitId = unit.getId();
@@ -1086,10 +1176,13 @@ public class AiPlayer {
                     if (!moveUnitToward(unit, utype, defenseTarget)) break;
                 }
             } else {
-                // No defence assignment: advance toward nearest enemy
-                long enemyTile = findNearestEnemyTile(unit.getTile(), ownerId);
-                if (enemyTile >= 0) {
-                    if (!moveUnitToward(unit, utype, enemyTile)) break;
+                // No defence assignment: advance toward the nearest strategic
+                // target.  Prefer undefended enemy cities (free capture) over
+                // defended positions and roaming units.  Mirrors the offensive
+                // targeting in dai_military_attack() (daiunit.c / daimilitary.c).
+                long offensiveTarget = findNearestOffensiveTarget(unit.getTile(), ownerId);
+                if (offensiveTarget >= 0) {
+                    if (!moveUnitToward(unit, utype, offensiveTarget)) break;
                 } else {
                     if (!moveUnitRandomly(unit, utype)) break;
                 }
@@ -1177,6 +1270,76 @@ public class AiPlayer {
             }
         }
         return bestTile;
+    }
+
+    /**
+     * Returns the tile ID of the best offensive target for a military unit.
+     * Prefers undefended enemy cities (which can be captured by simply moving
+     * onto the tile) over defended cities and roaming enemy units.  Mirrors the
+     * target-selection heuristic in {@code dai_military_attack()} and
+     * {@code find_city_want()} in {@code ai/default/daimilitary.c}, where the
+     * C AI specifically looks for undefended or weakly-defended enemy cities
+     * before hunting roaming military units.
+     *
+     * <p>Priority:
+     * <ol>
+     *   <li>Nearest undefended enemy city (no enemy units on its tile) — best target</li>
+     *   <li>Nearest enemy city (defended) — secondary target</li>
+     *   <li>Nearest enemy unit — fallback when no enemy city is reachable</li>
+     * </ol>
+     *
+     * @param fromTile the attacker's current tile ID
+     * @param ownerId  the attacker's player ID
+     * @return the tile ID of the best offensive target, or {@code -1} if none found
+     */
+    private long findNearestOffensiveTarget(long fromTile, long ownerId) {
+        long x = fromTile % game.map.getXsize();
+        long y = fromTile / game.map.getXsize();
+
+        long bestUndefCityTile = -1;
+        long bestUndefCityDist = Long.MAX_VALUE;
+        long bestDefCityTile = -1;
+        long bestDefCityDist = Long.MAX_VALUE;
+
+        for (City city : game.cities.values()) {
+            if (city.getOwner() == ownerId) continue; // skip own cities
+            long cx = city.getTile() % game.map.getXsize();
+            long cy = city.getTile() / game.map.getXsize();
+            long dist = Math.abs(cx - x) + Math.abs(cy - y);
+
+            // Check whether the enemy city is defended by its owner's units.
+            // A city is considered defended when the city owner has at least one
+            // unit on the tile.  This correctly handles multi-player scenarios where
+            // a third-party unit on the tile should not be counted as a defender of
+            // the city's owner — mirrors the garrison-count logic in daimilitary.c.
+            boolean defended = false;
+            long cityOwner = city.getOwner();
+            for (Unit u : game.units.values()) {
+                if (u.getTile() == city.getTile() && u.getOwner() == cityOwner) {
+                    defended = true;
+                    break;
+                }
+            }
+
+            if (!defended) {
+                if (dist < bestUndefCityDist) {
+                    bestUndefCityDist = dist;
+                    bestUndefCityTile = city.getTile();
+                }
+            } else {
+                if (dist < bestDefCityDist) {
+                    bestDefCityDist = dist;
+                    bestDefCityTile = city.getTile();
+                }
+            }
+        }
+
+        // Prefer undefended enemy cities
+        if (bestUndefCityTile >= 0) return bestUndefCityTile;
+        // Fall back to defended enemy cities
+        if (bestDefCityTile >= 0) return bestDefCityTile;
+        // Last resort: find nearest enemy unit
+        return findNearestEnemyTile(fromTile, ownerId);
     }
 
     /**
