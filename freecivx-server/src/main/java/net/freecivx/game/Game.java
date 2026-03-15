@@ -23,6 +23,7 @@ package net.freecivx.game;
 import net.freecivx.server.IGameServer;
 import net.freecivx.server.CityTools;
 import net.freecivx.server.Notify;
+import net.freecivx.server.VisibilityHandler;
 import net.freecivx.ai.AiPlayer;
 import net.freecivx.data.Ruleset;
 import net.freecivx.data.ScenarioData;
@@ -547,6 +548,13 @@ public class Game {
         // Send units
         units.forEach((id, unit) -> server.sendUnitAll(unit));
 
+        // Compute initial visibility for all human players and push TILE_KNOWN_SEEN
+        // packets for their starting positions.  This is called after units are spawned
+        // so the vision sets can be built from actual unit positions.
+        players.values().stream()
+                .filter(p -> !p.isAi())
+                .forEach(p -> VisibilityHandler.updateAndSendVisibility(p, this));
+
         // Send city styles
         cityStyle.forEach((id, style) -> server.sendRulesetCityInfoAll(id, style.getName(), style.getName()));
 
@@ -918,6 +926,14 @@ public class Game {
         server.sendStartPhaseAll();
         server.sendMessageAll("Turn " + turn + " has started (Year " + yearStr + ").");
 
+        // Refresh fog of war for all human players at the start of each new turn.
+        // This catches any visibility changes caused by city growth (new worked
+        // tiles), border updates, or other end-of-turn effects.
+        // Mirrors update_player_visibility() called at turn start in C Freeciv.
+        players.values().stream()
+                .filter(p -> !p.isAi() && p.isAlive())
+                .forEach(p -> VisibilityHandler.updateAndSendVisibility(p, this));
+
         // Re-arm the turn-timeout timer for the new turn.
         if (turnTimeout > 0) {
             scheduleTurnTimeout();
@@ -1034,6 +1050,15 @@ public class Game {
         }
 
         server.sendUnitAll(unit);
+
+        // Update the owning player's fog-of-war after the move so tiles
+        // newly entered enter TILE_KNOWN_SEEN and tiles left become TILE_KNOWN_UNSEEN.
+        // Mirrors update_player_visibility() called from unithand.c in C Freeciv.
+        Player movingPlayer = players.get(unit.getOwner());
+        if (movingPlayer != null && !movingPlayer.isAi()) {
+            VisibilityHandler.updateAndSendVisibility(movingPlayer, this);
+        }
+
         return true;
     }
 
@@ -1242,6 +1267,15 @@ public class Game {
 
         server.sendUnitRemove(unit_id);
         units.remove(unit_id);
+
+        // A newly founded city expands the player's vision radius to 2 tiles.
+        // Refresh visibility so the surrounding area becomes visible immediately.
+        // Mirrors the C Freeciv server calling update_player_visibility() after
+        // city_build_do_it() in cityhand.c.
+        Player cityOwner = players.get(owner);
+        if (cityOwner != null && !cityOwner.isAi()) {
+            VisibilityHandler.updateAndSendVisibility(cityOwner, this);
+        }
     }
 
     public void syncNewPlayer(long connId) {
@@ -1251,6 +1285,12 @@ public class Game {
         // Spawn starting units for the late joiner
         long startPos = findStartPosition();
         spawnStartingUnits(player, startPos);
+
+        // Compute the late-joiner's visibility BEFORE sendGameStateTo so the
+        // tile packets sent there already carry correct known values.
+        if (!player.isAi()) {
+            VisibilityHandler.updateAndSendVisibility(player, this);
+        }
 
         // Send full current game state to just this player
         server.sendGameStateTo(connId);

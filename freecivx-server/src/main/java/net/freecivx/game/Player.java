@@ -71,6 +71,22 @@ public class Player {
     /** ID of the player's current government form. */
     private int governmentId = 1; // 1 = Despotism by default
 
+    /**
+     * Set of tile IDs that this player has ever seen.
+     * A tile stays in this set even after it leaves the player's current field of
+     * view (it is then rendered as TILE_KNOWN_UNSEEN / fogged).
+     * Mirrors the per-player explored-tiles tracking in the C Freeciv server's
+     * {@code maphand.c}.
+     */
+    private Set<Long> exploredTiles = new HashSet<>();
+
+    /**
+     * Set of tile IDs that this player can currently see (within the vision
+     * radius of one of their units or cities).
+     * Mirrors TILE_KNOWN_SEEN in the C Freeciv server.
+     */
+    private Set<Long> visibleTiles = new HashSet<>();
+
     /** True when the player has ended their phase (turn) for the current game turn. */
     private boolean phaseDone = false;
     /** Number of consecutive turns the player has been idle (no actions taken). */
@@ -252,6 +268,28 @@ public class Player {
 
     public void setGovernmentId(int governmentId) {
         this.governmentId = governmentId;
+    }
+
+    /**
+     * Returns the set of tile IDs this player has ever explored.
+     * Tiles in this set but not in {@link #getVisibleTiles()} are shown as
+     * fogged (TILE_KNOWN_UNSEEN).
+     */
+    public Set<Long> getExploredTiles() {
+        return exploredTiles;
+    }
+
+    /**
+     * Returns the set of tile IDs currently visible to this player
+     * (TILE_KNOWN_SEEN).  Updated whenever a unit or city changes position.
+     */
+    public Set<Long> getVisibleTiles() {
+        return visibleTiles;
+    }
+
+    /** Replaces the currently-visible tile set with a new computed set. */
+    public void setVisibleTiles(Set<Long> visibleTiles) {
+        this.visibleTiles = visibleTiles;
     }
 
     /**

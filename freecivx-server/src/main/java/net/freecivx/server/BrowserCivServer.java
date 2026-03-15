@@ -537,10 +537,18 @@ public class BrowserCivServer implements IGameServer {
 
     @Override
     public void sendTileInfoAll(Tile tile) {
+        // Determine known status for the single human player in browser mode.
+        int known = tile.getKnown();
+        for (net.freecivx.game.Player player : game.players.values()) {
+            if (!player.isAi()) {
+                known = VisibilityHandler.getKnownForPlayer(player, tile.getIndex());
+                break;
+            }
+        }
         JSONObject msg = new JSONObject();
         msg.put("pid", Packets.PACKET_TILE_INFO);
         msg.put("tile", tile.getIndex());
-        msg.put("known", tile.getKnown());
+        msg.put("known", known);
         msg.put("terrain", tile.getTerrain());
         msg.put("resource", tile.getResource());
         msg.put("extras", MapHand.extrasToByteArray(tile.getExtras()));
