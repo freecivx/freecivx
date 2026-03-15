@@ -178,9 +178,57 @@
           <version>${teavm.version}</version>
           <scope>provided</scope>
         </dependency>
+        <!-- Server-side-only libraries: keep on the javac classpath (provided)
+             but exclude from the JavaScript output. TeaVM compiles only
+             reachable code, so these are not needed in the browser bundle. -->
+        <dependency>
+          <groupId>org.java-websocket</groupId>
+          <artifactId>Java-WebSocket</artifactId>
+          <version>${org-java-websocket.version}</version>
+          <scope>provided</scope>
+        </dependency>
+        <dependency>
+          <groupId>org.apache.httpcomponents.client5</groupId>
+          <artifactId>httpclient5</artifactId>
+          <version>${org-apache-http.version}</version>
+          <scope>provided</scope>
+        </dependency>
+        <dependency>
+          <groupId>org.slf4j</groupId>
+          <artifactId>slf4j-api</artifactId>
+          <version>${org-slf4j.version}</version>
+          <scope>provided</scope>
+        </dependency>
+        <dependency>
+          <groupId>org.slf4j</groupId>
+          <artifactId>slf4j-simple</artifactId>
+          <version>${org-slf4j.version}</version>
+          <scope>provided</scope>
+        </dependency>
+        <dependency>
+          <groupId>org.apache.commons</groupId>
+          <artifactId>commons-lang3</artifactId>
+          <version>${org-apache-commons.version}</version>
+          <scope>provided</scope>
+        </dependency>
+        <dependency>
+          <groupId>org.apache.commons</groupId>
+          <artifactId>commons-text</artifactId>
+          <version>1.15.0</version>
+          <scope>provided</scope>
+        </dependency>
       </dependencies>
       <build>
         <plugins>
+          <!-- Skip the fat-JAR shading step in the TeaVM build: the output is
+               JavaScript (target/javascript/classes.js), not a JAR. -->
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-shade-plugin</artifactId>
+            <configuration>
+              <skip>true</skip>
+            </configuration>
+          </plugin>
           <plugin>
             <groupId>org.teavm</groupId>
             <artifactId>teavm-maven-plugin</artifactId>

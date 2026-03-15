@@ -627,9 +627,7 @@ public class BrowserCivServer implements IGameServer {
 
     @Override
     public void sendPlayerInfoAll(Player player) {
-        // In browser mode the browser IS the only player, so we send the full
-        // public+private data in a single packet rather than splitting as the
-        // WebSocket server does for per-connection privacy.
+        // Public info broadcast to all clients (mirrors CivServer).
         JSONObject msg = new JSONObject();
         msg.put("pid", Packets.PACKET_PLAYER_INFO);
         msg.put("playerno", player.getPlayerNo());
@@ -637,14 +635,6 @@ public class BrowserCivServer implements IGameServer {
         msg.put("name", player.getUsername());
         msg.put("nation", player.getNation());
         msg.put("government", player.getGovernmentId());
-        msg.put("researching", player.getResearchingTech());
-        msg.put("bulbs_researched", player.getBulbsResearched());
-        msg.put("tax", player.getTaxRate());
-        msg.put("luxury", player.getLuxuryRate());
-        msg.put("science", player.getScienceRate());
-        msg.put("gold", player.getGold());
-        msg.put("tech_upkeep", 0);
-        msg.put("researching_cost", 0);
         msg.put("inventions", new JSONArray());
         JSONArray flags = new JSONArray();
         flags.put(player.isAi() ? 1 : 0);
@@ -660,6 +650,41 @@ public class BrowserCivServer implements IGameServer {
         msg.put("phase_done", player.isPhaseDone());
         msg.put("nturns_idle", player.getNturnsIdle());
         dispatchToClient(msg.toString());
+
+        // In browser mode the browser IS the only (human) player, so also
+        // send private financial data and the full research state.
+        // AI players have no connection, so skip them.
+        if (!player.isAi()) {
+            JSONObject privateMsg = new JSONObject();
+            privateMsg.put("pid", Packets.PACKET_PLAYER_INFO);
+            privateMsg.put("playerno", player.getPlayerNo());
+            privateMsg.put("researching", player.getResearchingTech());
+            privateMsg.put("bulbs_researched", player.getBulbsResearched());
+            privateMsg.put("tax", player.getTaxRate());
+            privateMsg.put("luxury", player.getLuxuryRate());
+            privateMsg.put("science", player.getScienceRate());
+            privateMsg.put("gold", player.getGold());
+            privateMsg.put("tech_upkeep", 0);
+            privateMsg.put("researching_cost", 0);
+            // Repeat flags and gives_shared_vision so packhand.js does not
+            // replace the valid public BitVectors with BitVector(undefined).
+            JSONArray privateFlags = new JSONArray();
+            privateFlags.put(player.isAi() ? 1 : 0);
+            privateFlags.put(0);
+            privateMsg.put("flags", privateFlags);
+            JSONArray privateVis = new JSONArray();
+            privateVis.put(0);
+            privateVis.put(0);
+            privateMsg.put("gives_shared_vision", privateVis);
+            dispatchToClient(privateMsg.toString());
+
+            // Send the full research state (inventions bitvector, researching
+            // cost, total bulb production) as a separate PACKET_RESEARCH_INFO.
+            // This ensures the client's science advisor and tech tree reflect
+            // the player's actual known technologies rather than an empty list.
+            TechTools.sendResearchInfo(game, this, player.getConnectionId(),
+                    player.getPlayerNo());
+        }
     }
 
     @Override
