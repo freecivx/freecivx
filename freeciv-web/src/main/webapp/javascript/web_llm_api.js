@@ -69,7 +69,7 @@ async function init_webllm_engine() {
     
     // Dynamically import web-llm from CDN
     console.log("[WebLLM] Importing web-llm from CDN...");
-    const webllm = await import('https://esm.run/@mlc-ai/web-llm@0.2.81');
+    const webllm = await import('https://esm.run/@mlc-ai/web-llm@0.2.82');
     
     console.log("[WebLLM] Module imported, creating engine...");
     update_command_center_status("<i class='fa fa-spinner fa-spin'></i> Downloading AI model...");
