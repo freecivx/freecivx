@@ -24,6 +24,7 @@ import net.freecivx.game.Game;
 import net.freecivx.game.Player;
 import net.freecivx.game.Tile;
 import net.freecivx.game.Unit;
+import net.freecivx.game.UnitType;
 import org.json.JSONObject;
 
 import java.util.HashSet;
@@ -63,18 +64,20 @@ public class VisibilityHandler {
     public static final int TILE_KNOWN_SEEN = 2;
 
     /**
-     * Chebyshev vision radius for a standard land unit.
-     * Mirrors {@code unit_vision_range()} returning 1 for most units in the C server.
+     * Default unit vision radius squared, used when no unit-type data is
+     * available.  Matches {@code vision_radius_sq = 2} for most land units in
+     * the classic Freeciv ruleset (covers a 3×3 tile area).
      */
-    static final int DEFAULT_VISION_RADIUS = 1;
+    static final int DEFAULT_VISION_RADIUS_SQ = 2;
 
     /**
-     * Chebyshev vision radius for a city.
-     * Cities see the same 5×5 workable-tile area (radius 2) that their
-     * citizens can work, mirroring city_map_radius_sq_get() == 5 in the C
-     * Freeciv server.
+     * City vision radius squared.
+     * Mirrors {@code City_Vision_Radius_Sq = 5} from {@code effects.ruleset},
+     * which equals {@code CITY_MAP_DEFAULT_RADIUS_SQ} in the C Freeciv server.
+     * A tile at (dx, dy) is within city vision if dx² + dy² ≤ 5, producing a
+     * diamond-shaped area of 21 tiles.
      */
-    static final int CITY_VISION_RADIUS = 2;
+    static final int CITY_VISION_RADIUS_SQ = 5;
 
     /**
      * Returns the tile visibility status for a specific player without modifying any state.
@@ -100,8 +103,10 @@ public class VisibilityHandler {
 
     /**
      * Computes the complete set of tiles currently visible to {@code player}
-     * based on all their units (vision radius {@value #DEFAULT_VISION_RADIUS})
-     * and cities (vision radius {@value #CITY_VISION_RADIUS}).
+     * based on all their units (per-unit-type {@code vision_radius_sq} from the
+     * ruleset) and cities (vision radius squared {@value #CITY_VISION_RADIUS_SQ}).
+     * Uses Euclidean distance squared to match the C Freeciv server
+     * ({@code real_map_distance_sq()} in {@code common/map.c}).
      * Map wrapping on the X axis is handled correctly.
      *
      * @param player the player whose field of view is computed
@@ -117,17 +122,19 @@ public class VisibilityHandler {
         long totalTiles = (long) xsize * ysize;
         long playerId = player.getPlayerNo();
 
-        // Units: vision radius 1
+        // Units: use per-unit-type vision_radius_sq from the ruleset
         for (Unit unit : game.units.values()) {
             if (unit.getOwner() != playerId) continue;
-            addVisibleArea(visible, unit.getTile(), DEFAULT_VISION_RADIUS,
+            UnitType utype = game.unitTypes.get((long) unit.getType());
+            int radiusSq = (utype != null) ? utype.getVisionRadiusSq() : DEFAULT_VISION_RADIUS_SQ;
+            addVisibleArea(visible, unit.getTile(), radiusSq,
                     xsize, ysize, totalTiles);
         }
 
-        // Cities: vision radius 2
+        // Cities: vision_radius_sq = 5 (City_Vision_Radius_Sq from effects.ruleset)
         for (City city : game.cities.values()) {
             if (city.getOwner() != playerId) continue;
-            addVisibleArea(visible, city.getTile(), CITY_VISION_RADIUS,
+            addVisibleArea(visible, city.getTile(), CITY_VISION_RADIUS_SQ,
                     xsize, ysize, totalTiles);
         }
 
@@ -213,18 +220,23 @@ public class VisibilityHandler {
     // -------------------------------------------------------------------------
 
     /**
-     * Adds every tile within Chebyshev {@code radius} of {@code centerTile}
-     * to {@code visible}, handling X-axis map wrapping.
+     * Adds every tile within Euclidean distance squared {@code radiusSq} of
+     * {@code centerTile} to {@code visible}, handling X-axis map wrapping.
+     * A tile at offset (dx, dy) is included if dx² + dy² ≤ radiusSq,
+     * mirroring the {@code real_map_distance_sq()} check in the C Freeciv
+     * server's {@code common/map.c}.
      */
     private static void addVisibleArea(Set<Long> visible, long centerTile,
-                                        int radius, int xsize, int ysize,
+                                        int radiusSq, int xsize, int ysize,
                                         long totalTiles) {
         int cx = (int) (centerTile % xsize);
         int cy = (int) (centerTile / xsize);
-        for (int dy = -radius; dy <= radius; dy++) {
+        int maxR = (int) Math.sqrt(radiusSq);
+        for (int dy = -maxR; dy <= maxR; dy++) {
             int ny = cy + dy;
             if (ny < 0 || ny >= ysize) continue;
-            for (int dx = -radius; dx <= radius; dx++) {
+            for (int dx = -maxR; dx <= maxR; dx++) {
+                if (dx * dx + dy * dy > radiusSq) continue;
                 // Wrap X coordinate (east-west map wrapping)
                 int nx = ((cx + dx) % xsize + xsize) % xsize;
                 long tileId = (long) ny * xsize + nx;

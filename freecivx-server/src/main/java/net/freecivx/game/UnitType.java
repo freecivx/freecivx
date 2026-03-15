@@ -105,6 +105,16 @@ public class UnitType {
     private int antiHorseFactor = 1;
 
     /**
+     * Vision radius squared for this unit type, as read from the
+     * {@code vision_radius_sq} field in the Freeciv units ruleset.
+     * A tile at offset (dx, dy) is visible if dx² + dy² ≤ visionRadiusSq,
+     * mirroring the Euclidean-distance-squared check used by the C Freeciv
+     * server ({@code real_map_distance_sq()} in {@code common/map.c}).
+     * The classic default value of 2 equals Chebyshev radius 1 (3×3 area).
+     */
+    private int visionRadiusSq = 2;
+
+    /**
      * Whether this unit type is a non-military (civilian) unit.
      * Set when the ruleset {@code flags} field contains {@code "NonMil"}.
      * Non-military units (Workers, Engineers, Diplomats, etc.) cannot
@@ -390,6 +400,24 @@ public class UnitType {
      */
     public void setHasSettlersFlag(boolean hasSettlersFlag) {
         this.hasSettlersFlag = hasSettlersFlag;
+    }
+
+    /**
+     * Returns the vision radius squared for this unit type.
+     * A tile at offset (dx, dy) is within vision if dx² + dy² ≤ this value.
+     * Mirrors {@code vision_radius_sq} in the Freeciv units ruleset.
+     */
+    public int getVisionRadiusSq() {
+        return visionRadiusSq;
+    }
+
+    /**
+     * Sets the vision radius squared for this unit type.
+     *
+     * @param visionRadiusSq the Euclidean-distance-squared vision range (≥ 1)
+     */
+    public void setVisionRadiusSq(int visionRadiusSq) {
+        this.visionRadiusSq = Math.max(1, visionRadiusSq);
     }
 
     // Optional toString method for debugging
