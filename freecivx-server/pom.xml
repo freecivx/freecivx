@@ -154,7 +154,8 @@
   <profiles>
     <!-- Build freecivx-server to JavaScript using TeaVM.
          Run with: mvn package -P teavm
-         Output: target/javascript/classes.js -->
+         Output: target/javascript/classes.js and
+                 ../freeciv-web/src/main/webapp/javascript/freecivx-server.js -->
     <profile>
       <id>teavm</id>
       <dependencies>
@@ -248,6 +249,55 @@
                   <sourceMapsGenerated>true</sourceMapsGenerated>
                   <debugInformationGenerated>false</debugInformationGenerated>
                   <optimizationLevel>SIMPLE</optimizationLevel>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
+          <!-- Copy the compiled TeaVM bundle to the freeciv-web webapp so it
+               can be served at /javascript/freecivx-server.js. -->
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-resources-plugin</artifactId>
+            <executions>
+              <execution>
+                <id>copy-teavm-bundle</id>
+                <phase>package</phase>
+                <goals>
+                  <goal>copy-resources</goal>
+                </goals>
+                <configuration>
+                  <outputDirectory>${project.basedir}/../freeciv-web/src/main/webapp/javascript</outputDirectory>
+                  <resources>
+                    <resource>
+                      <directory>${project.build.directory}/javascript</directory>
+                      <includes>
+                        <include>classes.js</include>
+                      </includes>
+                    </resource>
+                  </resources>
+                  <overwrite>true</overwrite>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
+          <!-- Rename classes.js → freecivx-server.js in the webapp directory. -->
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-antrun-plugin</artifactId>
+            <version>3.1.0</version>
+            <executions>
+              <execution>
+                <id>rename-teavm-bundle</id>
+                <phase>package</phase>
+                <goals>
+                  <goal>run</goal>
+                </goals>
+                <configuration>
+                  <target>
+                    <move file="${project.basedir}/../freeciv-web/src/main/webapp/javascript/classes.js"
+                          tofile="${project.basedir}/../freeciv-web/src/main/webapp/javascript/freecivx-server.js"
+                          overwrite="true" failonerror="false" />
+                  </target>
                 </configuration>
               </execution>
             </executions>
