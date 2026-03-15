@@ -1124,6 +1124,13 @@ public class Game {
             units.remove(defenderId);
             server.sendUnitRemove(defenderId);
 
+            // Notify both players of the combat outcome.
+            // Mirrors notify_player() calls in unithand.c (E_UNIT_WIN_ATT / E_UNIT_LOST_DEF).
+            Notify.notifyPlayer(this, server, attacker.getOwner(),
+                    "Your " + attackerName + " defeated the enemy " + defenderName + ".");
+            Notify.notifyPlayer(this, server, defender.getOwner(),
+                    "Your " + defenderName + " was defeated by the enemy " + attackerName + ".");
+
             // City capture: if the defender was in an enemy city and no enemy units
             // remain on that tile, the city is either captured or razed.
             // Mirrors city_conquest() in the C Freeciv server's server/citytools.c.
@@ -1159,6 +1166,13 @@ public class Game {
             units.remove(attackerId);
             server.sendUnitRemove(attackerId);
             server.sendUnitAll(defender);
+
+            // Notify both players of the combat outcome.
+            // Mirrors notify_player() calls in unithand.c (E_UNIT_LOST_ATT / E_UNIT_WIN_DEF).
+            Notify.notifyPlayer(this, server, attacker.getOwner(),
+                    "Your attacking " + attackerName + " was defeated by the enemy " + defenderName + ".");
+            Notify.notifyPlayer(this, server, defender.getOwner(),
+                    "Your " + defenderName + " successfully defended against the enemy " + attackerName + ".");
         }
         return attackerWins;
     }
@@ -1190,6 +1204,11 @@ public class Game {
         net.freecivx.server.CityTurn.updateBorders(this);
 
         CityTools.sendCityInfo(this, server, -1L, id);
+
+        // Notify the founding player — mirrors notify_player(E_CITY_BUILD) in
+        // the C Freeciv server's server/citytools.c: "You have founded %s."
+        Notify.notifyPlayer(this, server, owner, "You have founded " + city_name + ".");
+
         server.sendUnitRemove(unit_id);
         units.remove(unit_id);
     }
