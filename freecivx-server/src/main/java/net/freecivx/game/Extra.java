@@ -34,6 +34,16 @@ public class Extra {
      */
     private String graphicStr;
 
+    /**
+     * Resource yield bonuses applied to a tile's output when this extra is
+     * present.  Mirrors the {@code food}/{@code shield}/{@code trade} fields in
+     * the {@code [resource_*]} sections of {@code terrain.ruleset}.
+     * Only meaningful for EC_RESOURCE extras; 0 for infrastructure extras.
+     */
+    private int foodBonus;
+    private int shieldBonus;
+    private int tradeBonus;
+
     /** Constructor for extras without a specific cause (e.g. River). */
     public Extra(String name) {
         this(name, 0, null);
@@ -47,9 +57,26 @@ public class Extra {
      * @param graphicStr tileset graphic tag, or {@code null} to use {@code name.toLowerCase()}
      */
     public Extra(String name, int causes, String graphicStr) {
+        this(name, causes, graphicStr, 0, 0, 0);
+    }
+
+    /**
+     * Full constructor including resource yield bonuses.
+     *
+     * @param name        ruleset name of the extra
+     * @param causes      EC_* bitvector (0 if none)
+     * @param graphicStr  tileset graphic tag, or {@code null} to use {@code name.toLowerCase()}
+     * @param foodBonus   food yield bonus from terrain.ruleset [resource_*].food
+     * @param shieldBonus shield yield bonus from terrain.ruleset [resource_*].shield
+     * @param tradeBonus  trade yield bonus from terrain.ruleset [resource_*].trade
+     */
+    public Extra(String name, int causes, String graphicStr, int foodBonus, int shieldBonus, int tradeBonus) {
         this.name = name;
         this.causes = causes;
         this.graphicStr = graphicStr;
+        this.foodBonus = foodBonus;
+        this.shieldBonus = shieldBonus;
+        this.tradeBonus = tradeBonus;
     }
 
     // Getters
@@ -67,6 +94,21 @@ public class Extra {
      */
     public String getGraphicStr() {
         return graphicStr != null ? graphicStr : name.toLowerCase();
+    }
+
+    /** Food yield bonus when this resource extra is present on a tile. */
+    public int getFoodBonus() {
+        return foodBonus;
+    }
+
+    /** Shield yield bonus when this resource extra is present on a tile. */
+    public int getShieldBonus() {
+        return shieldBonus;
+    }
+
+    /** Trade yield bonus when this resource extra is present on a tile. */
+    public int getTradeBonus() {
+        return tradeBonus;
     }
 
     // Setters

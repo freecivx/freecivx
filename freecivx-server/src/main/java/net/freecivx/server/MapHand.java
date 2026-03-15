@@ -23,6 +23,7 @@ import net.freecivx.game.City;
 import net.freecivx.game.Game;
 import net.freecivx.game.Tile;
 import net.freecivx.game.WorldMap;
+import org.json.JSONArray;
 import org.json.JSONObject;
 
 /**
@@ -50,10 +51,29 @@ public class MapHand {
         msg.put("tile", tile.getIndex());
         msg.put("terrain", tile.getTerrain());
         msg.put("resource", tile.getResource());
-        msg.put("extras", tile.getExtras());
+        msg.put("extras", extrasToByteArray(tile.getExtras()));
         msg.put("known", tile.getKnown());
         msg.put("height", tile.getHeight());
         game.getServer().sendMessage(connId, msg.toString());
+    }
+
+    /**
+     * Converts an extras bitvector (int) to a 4-byte JSON array matching the
+     * format expected by the client's {@code BitVector} class.
+     * The C Freeciv server sends {@code BV_EXTRAS} as a byte array; this method
+     * produces the same encoding so {@code tile.extras.isSet(bitNum)} works
+     * correctly for bits 0–31.
+     *
+     * @param extras the extras bitvector
+     * @return a JSONArray of 4 bytes (little-endian)
+     */
+    public static JSONArray extrasToByteArray(int extras) {
+        JSONArray arr = new JSONArray();
+        arr.put(extras & 0xFF);
+        arr.put((extras >> 8) & 0xFF);
+        arr.put((extras >> 16) & 0xFF);
+        arr.put((extras >> 24) & 0xFF);
+        return arr;
     }
 
     /**

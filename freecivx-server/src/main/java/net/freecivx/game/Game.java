@@ -322,20 +322,28 @@ public class Game {
         extras.put(13L, new Extra("Airport",     0,            null));
         extras.put(14L, new Extra("Fortress",    EC_BASE,      null));
 
-        // Resource extras (bits 15-25): EC_RESOURCE cause; graphic tags match the
+        // Resource extras (bits 15-31): EC_RESOURCE cause; graphic tags match the
         // classic Freeciv tileset (amplio2) so the 2D/3D map can draw them.
         // Bit positions must match MapGenerator.EXTRA_BIT_* constants.
-        extras.put(15L, new Extra("Cattle",      EC_RESOURCE, "ts.cattle"));
-        extras.put(16L, new Extra("Game",        EC_RESOURCE, "ts.game"));
-        extras.put(17L, new Extra("Wheat",       EC_RESOURCE, "ts.wheat"));
-        extras.put(18L, new Extra("Horses",      EC_RESOURCE, "ts.horses"));
-        extras.put(19L, new Extra("Forest_Game", EC_RESOURCE, "ts.forest_game"));
-        extras.put(20L, new Extra("Coal",        EC_RESOURCE, "ts.coal"));
-        extras.put(21L, new Extra("Iron",        EC_RESOURCE, "ts.iron"));
-        extras.put(22L, new Extra("Gold",        EC_RESOURCE, "ts.gold"));
-        extras.put(23L, new Extra("Oasis",       EC_RESOURCE, "ts.oasis"));
-        extras.put(24L, new Extra("Fish",        EC_RESOURCE, "ts.fish"));
-        extras.put(25L, new Extra("Whales",      EC_RESOURCE, "ts.whales"));
+        // Resource yield bonuses (food/shield/trade) match [resource_*] in terrain.ruleset.
+        extras.put(15L, new Extra("Cattle",   EC_RESOURCE, "ts.cattle",        0, 3, 0));
+        extras.put(16L, new Extra("Game",     EC_RESOURCE, "ts.game",           2, 1, 0));
+        extras.put(17L, new Extra("Wheat",    EC_RESOURCE, "ts.wheat",          2, 0, 0));
+        extras.put(18L, new Extra("Buffalo",  EC_RESOURCE, "ts.buffalo",        0, 2, 0));
+        extras.put(19L, new Extra("Pheasant", EC_RESOURCE, "ts.pheasant",       2, 0, 0));
+        extras.put(20L, new Extra("Coal",     EC_RESOURCE, "ts.coal",           0, 2, 0));
+        extras.put(21L, new Extra("Iron",     EC_RESOURCE, "ts.iron",           0, 3, 0));
+        extras.put(22L, new Extra("Gold",     EC_RESOURCE, "ts.gold",           0, 0, 6));
+        extras.put(23L, new Extra("Oasis",    EC_RESOURCE, "ts.oasis",          3, 0, 0));
+        extras.put(24L, new Extra("Fish",     EC_RESOURCE, "ts.fish",           2, 0, 0));
+        extras.put(25L, new Extra("Whales",   EC_RESOURCE, "ts.whales",         1, 1, 0));
+        // Additional resource extras (bits 26-31) covering the full classic ruleset.
+        extras.put(26L, new Extra("Silk",     EC_RESOURCE, "ts.silk",           0, 0, 3));
+        extras.put(27L, new Extra("Fruit",    EC_RESOURCE, "ts.fruit",          3, 0, 1));
+        extras.put(28L, new Extra("Gems",     EC_RESOURCE, "ts.gems",           0, 0, 4));
+        extras.put(29L, new Extra("Ivory",    EC_RESOURCE, "ts.arctic_ivory",   1, 1, 4));
+        extras.put(30L, new Extra("Oil",      EC_RESOURCE, "ts.oil",            0, 3, 0));
+        extras.put(31L, new Extra("Wine",     EC_RESOURCE, "ts.wine",           0, 0, 4));
 
         // City styles are always hardcoded
         cityStyle.put(0L, new CityStyle("European"));
