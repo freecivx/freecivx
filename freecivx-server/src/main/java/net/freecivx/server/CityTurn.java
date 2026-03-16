@@ -1268,6 +1268,96 @@ public class CityTurn {
     }
 
     /**
+     * Returns the minimum luxury rate (as a multiple of 10, between 0 and 100)
+     * that would keep every city owned by {@code playerId} content (i.e. no net
+     * unhappy citizens after government threshold and building effects).
+     *
+     * <p>For each city the method computes the net unhappy count ignoring luxury
+     * (government threshold + building make_content), then derives the luxury
+     * rate at which the city's trade output would generate enough luxury points
+     * to cover all unhappy citizens.  The maximum required rate across all cities
+     * is returned.
+     *
+     * <p>Uses {@link #cityTradeBase} as a conservative trade estimate (ignores
+     * Marketplace/Bank building bonuses), so the returned rate may be slightly
+     * higher than strictly necessary, erring on the side of keeping cities
+     * content.  Mirrors the city-mood scan in {@code dai_manage_taxes()} in
+     * {@code ai/default/aihand.c}.
+     *
+     * @param game     the current game state
+     * @param playerId the player whose cities are evaluated
+     * @return minimum luxury rate in [0, 100] rounded up to the nearest 10
+     */
+    public static int computeRequiredLuxuryRate(Game game, long playerId) {
+        Player player = game.players.get(playerId);
+        if (player == null) return 0;
+
+        Government gov = game.governments.get((long) player.getGovernmentId());
+
+        // Government-specific unhappy threshold (mirrors updateCityHappiness)
+        int unhappyThreshold = 2;
+        if (gov != null) {
+            switch (gov.getRuleName()) {
+                case "Monarchy":  unhappyThreshold = 3; break;
+                case "Communism": unhappyThreshold = 3; break;
+                case "Republic":  unhappyThreshold = 4; break;
+                case "Democracy": unhappyThreshold = 5; break;
+                default: break;
+            }
+        }
+
+        int templeId        = findImprId(game, "Temple",         IMPR_TEMPLE);
+        int colosseumId     = findImprId(game, "Colosseum",      IMPR_COLOSSEUM);
+        int cathedralId     = findImprId(game, "Cathedral",      IMPR_CATHEDRAL);
+        int policeStationId = findImprId(game, "Police Station", IMPR_POLICE_STATION);
+
+        int requiredRate = 0;
+
+        for (Map.Entry<Long, City> entry : game.cities.entrySet()) {
+            City city = entry.getValue();
+            if (city.getOwner() != playerId) continue;
+
+            int baseUnhappy = Math.max(0, city.getSize() - unhappyThreshold);
+            if (baseUnhappy == 0) continue;
+
+            // Building make_content (mirrors updateCityHappiness)
+            int makeContent = 0;
+            if (city.hasImprovement(templeId))    makeContent += 1;
+            if (city.hasImprovement(colosseumId)) makeContent += 3;
+            if (city.hasImprovement(cathedralId)) makeContent += 3;
+            if (gov != null && city.hasImprovement(policeStationId)) {
+                String govName = gov.getRuleName();
+                if ("Democracy".equals(govName))      makeContent += 2;
+                else if ("Republic".equals(govName))  makeContent += 1;
+            }
+
+            int netUnhappy = Math.max(0, baseUnhappy - makeContent);
+            if (netUnhappy == 0) continue;
+
+            // Luxury needed to neutralise all unhappy citizens.
+            // Each HAPPY_COST luxury points covers one unhappy citizen.
+            int luxuryNeeded = netUnhappy * HAPPY_COST;
+
+            // Estimate city trade (conservative: no Marketplace/Bank bonus)
+            int trade = cityTradeBase(game, entry.getKey());
+            if (trade <= 0) {
+                // No trade output – luxury cannot help this city regardless of
+                // the rate; skip it (the AI should address revolt via buildings).
+                continue;
+            }
+
+            // Minimum rate such that ceil(trade * rate / 100) >= luxuryNeeded:
+            //   rate >= luxuryNeeded * 100 / trade  (ceiling division)
+            int rateForCity = (luxuryNeeded * 100 + trade - 1) / trade;
+            // Round up to next multiple of 10 (rates must be multiples of 10)
+            rateForCity = ((rateForCity + 9) / 10) * 10;
+            requiredRate = Math.max(requiredRate, rateForCity);
+        }
+
+        return Math.min(100, requiredRate);
+    }
+
+    /**
      * Calculates and updates the happiness state of a city based on its size,
      * government type, happiness-producing buildings, and luxury goods output.
      *

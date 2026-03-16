@@ -532,18 +532,32 @@ public class AiPlayer {
         int luxRate = player.getLuxuryRate();
 
         // --- Luxury adjustment ---
-        // Give a small luxury allocation when any of the player's cities are
-        // unhappy.  Remove luxury if all cities are content.
-        boolean hasUnhappyCities = game.cities.values().stream()
-                .anyMatch(c -> c.getOwner() == pid && c.isUnhappy());
-        if (hasUnhappyCities && luxRate < 20 && sciRate > 10) {
-            // Add 10 pp luxury taken from science
-            luxRate += 10;
-            sciRate -= 10;
-        } else if (!hasUnhappyCities && luxRate > 0) {
-            // Reclaim luxury allocation for science/tax
-            sciRate += luxRate;
-            luxRate  = 0;
+        // Calculate the minimum luxury rate needed to keep all cities content,
+        // then move the current rate towards that target one step (10 pp) per
+        // turn.  This mirrors the city-mood scan in dai_manage_taxes() in
+        // ai/default/aihand.c and prevents oscillation caused by removing all
+        // luxury in a single turn.
+        int requiredLuxRate = CityTurn.computeRequiredLuxuryRate(game, pid);
+        requiredLuxRate = Math.min(requiredLuxRate, MAX_AI_LUXURY_RATE);
+
+        if (luxRate < requiredLuxRate) {
+            // Raise luxury by 10 pp per turn: take from science first, then tax.
+            // Keep a minimum 10 pp floor in the donor rate so the AI always
+            // retains a small science/tax allocation after the transfer.
+            int increase = Math.min(10, requiredLuxRate - luxRate);
+            if (sciRate >= increase + 10) {
+                sciRate -= increase;
+            } else if (taxRate >= increase + 10) {
+                taxRate -= increase;
+            } else {
+                increase = 0; // cannot raise luxury without breaking other rates
+            }
+            luxRate += increase;
+        } else if (luxRate > requiredLuxRate) {
+            // Gradually return excess luxury to science (10 pp per turn)
+            int decrease = Math.min(10, luxRate - requiredLuxRate);
+            luxRate  -= decrease;
+            sciRate  += decrease;
         }
 
         // --- Gold adjustment ---
@@ -583,10 +597,11 @@ public class AiPlayer {
     private static final int MAX_AI_SCIENCE_RATE = 80;
 
     /** Maximum luxury rate the AI will ever set (percentage).
-     *  A small luxury allocation satisfies most unhappy citizens without
-     *  sacrificing too much science.  Mirrors the luxury-minimum calculation
-     *  in dai_manage_taxes() in ai/default/aihand.c. */
-    private static final int MAX_AI_LUXURY_RATE = 20;
+     *  The AI may raise luxury up to this cap to prevent cities from falling
+     *  into revolt.  A higher cap allows the AI to satisfy larger cities that
+     *  lack happiness buildings.  Mirrors the luxury-minimum calculation in
+     *  dai_manage_taxes() in ai/default/aihand.c. */
+    private static final int MAX_AI_LUXURY_RATE = 50;
 
     /** Minimum gold reserve target (absolute floor, in gold units).
      *  Mirrors AI_GOLD_RESERVE_MIN_TURNS × typical expenses in aihand.c. */
