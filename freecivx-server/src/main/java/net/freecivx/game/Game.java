@@ -128,7 +128,7 @@ public class Game {
     /**
      * Turn timer used to implement the per-turn {@link #turnTimeout}.
      * Injected by the server via {@link #setTurnTimer(TurnTimer)};
-     * {@code null} in browser/TeaVM mode where threading is unavailable.
+     * {@code null} when turn timeouts are not needed.
      */
     private TurnTimer turnTimer = null;
 
@@ -305,8 +305,7 @@ public class Game {
     /**
      * Injects the {@link TurnTimer} used for turn-timeout enforcement.
      * Must be called before the game starts if {@link #setTurnTimeout(int)} is
-     * configured with a non-zero value.  Not needed in browser/TeaVM mode where
-     * threading is unavailable and turn timeouts are not supported.
+     * configured with a non-zero value.
      *
      * @param turnTimer the timer implementation to use for scheduling
      */

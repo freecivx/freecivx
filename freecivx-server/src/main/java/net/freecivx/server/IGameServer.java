@@ -31,8 +31,7 @@ import org.json.JSONObject;
  * Transport-independent server interface consumed by the game logic.
  *
  * <p>{@link CivServer} provides the production implementation backed by a
- * real WebSocket server.  {@link BrowserCivServer} provides the TeaVM/browser
- * implementation that calls back into the surrounding JavaScript environment.
+ * real WebSocket server.
  *
  * <p>All methods that send data to connected clients are declared here so that
  * {@link net.freecivx.game.Game}, {@link Notify} and the various handler

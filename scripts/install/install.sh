@@ -325,10 +325,6 @@ bash "${basedir}"/scripts/sync-js-hand.sh \
   -d "${TOMCAT_HOME}/webapps/data" || \
   handle_error 6 "Failed to synchronize freeciv project"
 
-echo "==== Building freecivx-server TeaVM bundle ===="
-(cd "${basedir}"/freecivx-server && mvn -q package -P teavm -DskipTests) || \
-  handle_error 8 "Failed to build freecivx-server TeaVM bundle"
-
 cd "${basedir}"/freeciv-web && \
   bash ./build.sh -B || \
   handle_error 7 "Failed to build freeciv-web server"
