@@ -295,6 +295,11 @@ public class Ruleset {
                         genus, buildCost, upkeep, sabotage,
                         "b_" + sec.title.replace("building_", ""),
                         "b_fallback", name, -1);
+                // Store the tech requirement name so Game.populateFromRuleset() can
+                // resolve it to an ID after all technologies have been loaded.
+                if (!sec.techReq.isEmpty()) {
+                    impr.setTechReqName(sec.techReq);
+                }
                 // Store the obsolete-by tech name parsed from the obsolete_by table.
                 // Resolved to a player-level check in CityTurn.removeObsoleteBuildingsForPlayer().
                 if (!sec.obsoleteTechName.isEmpty()) {
@@ -448,12 +453,13 @@ public class Ruleset {
     private static int corruptionForGov(String govName) {
         if (govName == null) return 0;
         return switch (govName.toLowerCase()) {
-            case "anarchy"   -> 25;
-            case "despotism" -> 37;
-            case "monarchy"  -> 15;
-            case "communism" -> 20;
-            case "republic"  -> 15;
-            default          ->  0; // Democracy and any unknown gov = no corruption
+            case "anarchy"         -> 25;
+            case "despotism"       -> 37;
+            case "monarchy"        -> 15;
+            case "communism"       -> 20;
+            case "republic"        -> 15;
+            case "fundamentalism"  -> 15;
+            default                ->  0; // Democracy and any unknown gov = no corruption
         };
     }
 

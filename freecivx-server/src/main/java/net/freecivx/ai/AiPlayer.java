@@ -140,70 +140,62 @@ public class AiPlayer {
     private static final int TERRAIN_DEEP_OCEAN = 3;
 
     // Improvement IDs — resolved at runtime by name in resolveGameIds() because IDs
-    // differ between the loaded ruleset (alphabetical order) and the hardcoded fallback.
-    // Fallback values match populateFallback() in Game.java.
-    private int imprBarracks      = 1;
-    private int imprGranary       = 2;
-    private int imprLibrary       = 3;
-    private int imprMarketplace   = 4;
-    private int imprCityWalls     = 7;
-    private int imprTemple        = 5;
-    private int imprAqueduct      = 8; // Allows cities to grow beyond size 8
+    // are assigned in the order buildings appear in the ruleset file.
+    // Initial values of -1 (unknown) are overwritten on the first AI turn.
+    private int imprBarracks      = -1;
+    private int imprGranary       = -1;
+    private int imprLibrary       = -1;
+    private int imprMarketplace   = -1;
+    private int imprCityWalls     = -1;
+    private int imprTemple        = -1;
+    private int imprAqueduct      = -1; // Allows cities to grow beyond size 8
     // Mid/late-game buildings — mirrors dai_city_choose_build() priorities in daicity.c
     private int imprColosseum     = -1; // Happiness (Construction tech required)
     private int imprUniversity    = -1; // Science × 2 (University tech, Library prereq)
     private int imprBank          = -1; // Gold × 1.5 (Banking tech, Marketplace prereq)
-    private int imprCourthouse    =  9; // Reduces corruption (Code of Laws required)
-    // Late-game production and economy buildings — match populateFallback() IDs in Game.java
-    private int imprFactory       = 14; // Shields +50% (Industrialization tech)
-    private int imprResearchLab   = 16; // Science +200% with Library+University (Computers tech)
-    private int imprStockExchange = 17; // Gold+Luxury +50% when Bank present (Economics tech)
+    private int imprCourthouse    = -1; // Reduces corruption (Code of Laws required)
+    // Late-game production and economy buildings
+    private int imprFactory       = -1; // Shields +50% (Industrialization tech)
+    private int imprResearchLab   = -1; // Science +200% with Library+University (Computers tech)
+    private int imprStockExchange = -1; // Gold+Luxury +50% when Bank present (Economics tech)
 
-    // Unit-type IDs — Settlers and Workers are always 0 and 1 in both the classic
-    // ruleset and the hardcoded fallback.  Warriors are always 3.  Advanced units
-    // (Phalanx, Archers, Legion, Pikemen, Horsemen) differ between the two systems
-    // and are resolved by name in resolveGameIds().  Fallback values match
-    // Game.populateFallback().
+    // Unit-type IDs — resolved at runtime by name in resolveGameIds().
+    // Initial values of -1 are overwritten on the first AI turn.
     private static final int UNIT_SETTLERS = 0;
     private static final int UNIT_WORKERS  = 1;
     private static final int UNIT_WARRIORS = 3;
-    private int unitPhalanx  = 12; // Bronze Working — best early defender (1 atk / 2 def)
-    private int unitArchers  =  5; // Warrior Code — strong attacker (3 atk / 2 def)
-    private int unitLegion   =  6; // Iron Working  — best early all-rounder (4 atk / 2 def)
-    private int unitPikemen  =  7; // Feudalism      — anti-horse specialist (1 atk / 2 def + 2× vs Horse)
-    private int unitHorsemen =  4; // Horseback Riding — fast raider (2 atk / 1 def, 2 move)
+    private int unitPhalanx  = -1; // Bronze Working — best early defender
+    private int unitArchers  = -1; // Warrior Code — strong attacker
+    private int unitLegion   = -1; // Iron Working  — best early all-rounder
+    private int unitPikemen  = -1; // Feudalism      — anti-horse specialist
+    private int unitHorsemen = -1; // Horseback Riding — fast raider
 
-    // Technology IDs — resolved at runtime by name in resolveGameIds() because IDs
-    // differ between the loaded ruleset (alphabetical order) and the hardcoded fallback.
-    // Fallback values match populateFallback() in Game.java.
-    private long techAlphabet           =  0L;
-    private long techMathematics        =  1L;
-    private long techTheRepublic        =  2L;
-    private long techMasonry            =  3L;
-    private long techBronzeWorking      =  4L;
-    private long techIronWorking        =  5L;
-    private long techWriting            =  7L;
-    private long techCodeOfLaws         =  8L;
-    private long techHorsebackRiding    =  9L;
-    private long techPottery            = 10L;
-    private long techWarriorCode        = 11L;
-    private long techCeremonialBurial   = 12L;
-    private long techMonarchy           = 13L;
-    private long techDemocracy          = 14L;
-    private long techFeudalism         = 15L; // Pikemen (anti-horse); req: Warrior Code + Monarchy
-    // Additional mid-game technology IDs — missing from original list but required
-    // for important buildings (Aqueduct, Colosseum, Bank, University).
-    // Resolved at runtime; -1 until resolveGameIds() runs.
-    private long techCurrency         = -1L; // req: Bronze Working — unlocks Construction
-    private long techConstruction     = -1L; // req: Masonry + Currency — unlocks Aqueduct, Colosseum
-    private long techMysticism        = -1L; // req: Ceremonial Burial — Philosophy prereq
-    private long techLiteracy         = -1L; // req: Writing + Code of Laws — Philosophy, University prereq
-    private long techTrade            = -1L; // req: Currency + Code of Laws — Banking prereq
-    private long techBanking          = -1L; // req: Trade + The Republic — unlocks Bank
-    private long techUniversity       = -1L; // req: Mathematics + Philosophy — unlocks University building
-    // Late-game technology IDs for new buildings.  Resolved at runtime.
-    private long techIndustrialization = -1L; // req: Gunpowder + Trade — Factory
-    private long techEconomics         = -1L; // req: Trade + University — Stock Exchange
+    // Technology IDs — resolved at runtime by name in resolveGameIds().
+    // Initial values of -1 are overwritten on the first AI turn.
+    private long techAlphabet           = -1L;
+    private long techMathematics        = -1L;
+    private long techTheRepublic        = -1L;
+    private long techMasonry            = -1L;
+    private long techBronzeWorking      = -1L;
+    private long techIronWorking        = -1L;
+    private long techWriting            = -1L;
+    private long techCodeOfLaws         = -1L;
+    private long techHorsebackRiding    = -1L;
+    private long techPottery            = -1L;
+    private long techWarriorCode        = -1L;
+    private long techCeremonialBurial   = -1L;
+    private long techMonarchy           = -1L;
+    private long techDemocracy          = -1L;
+    private long techFeudalism          = -1L; // Pikemen (anti-horse); req: Warrior Code + Monarchy
+    private long techCurrency           = -1L; // req: Bronze Working — unlocks Construction
+    private long techConstruction       = -1L; // req: Masonry + Currency — unlocks Aqueduct, Colosseum
+    private long techMysticism          = -1L; // req: Ceremonial Burial — Philosophy prereq
+    private long techLiteracy           = -1L; // req: Writing + Code of Laws — Philosophy, University prereq
+    private long techTrade              = -1L; // req: Currency + Code of Laws — Banking prereq
+    private long techBanking            = -1L; // req: Trade + The Republic — unlocks Bank
+    private long techUniversity         = -1L; // req: Mathematics + Philosophy — unlocks University building
+    private long techIndustrialization  = -1L; // req: Gunpowder + Trade — Factory
+    private long techEconomics          = -1L; // req: Trade + University — Stock Exchange
 
     private static final int[] DIR_DX = {-1, 0, 1, -1, 1, -1, 0, 1};
     private static final int[] DIR_DY = {-1, -1, -1, 0, 0, 1, 1, 1};
@@ -301,8 +293,7 @@ public class AiPlayer {
     /**
      * Resolves improvement, unit-type, and technology IDs from the loaded game
      * data by name.  This is necessary because IDs are assigned in the order
-     * buildings/techs/units appear in the ruleset file, which differs from the
-     * hardcoded fallback in {@code Game.populateFallback()}.
+     * buildings/techs/units appear in the ruleset file.
      *
      * <p>Runs only once: IDs are stable for the lifetime of the game since the
      * ruleset is loaded once at startup.  Mirrors the name-based lookup pass in
@@ -364,10 +355,8 @@ public class AiPlayer {
                 default: break;
             }
         }
-        // Resolve advanced unit type IDs — these vary between the ruleset order
-        // (Settlers=0, Workers=1, Engineers=2, Warriors=3, Phalanx=4, …) and the
-        // hardcoded fallback (Settlers=0, Workers=1, Explorer=2, Warriors=3,
-        // Horsemen=4, Phalanx=12, …).
+        // Resolve advanced unit type IDs — these vary between ruleset files
+        // (Settlers=0, Workers=1, Engineers=2, Warriors=3, Phalanx=4, …).
         for (Map.Entry<Long, UnitType> e : game.unitTypes.entrySet()) {
             String n = e.getValue().getName();
             int id = e.getKey().intValue();
