@@ -65,6 +65,20 @@ public class AiPlayer {
     // Storing targets across turns prevents units from changing goals every turn.
     private final Map<Long, Long> unitTargets = new HashMap<>();
 
+    // Per-unit consecutive-turns-stuck counter.
+    // When a settler (or other unit) fails to make progress toward its target for
+    // SETTLER_STUCK_TURNS consecutive turns, the target is evicted so the unit
+    // searches for a new, hopefully reachable, destination.
+    // Mirrors the "turns to go" reachability check in the C Freeciv server's
+    // daisettler.c where a settler gives up on a site it cannot reach in time.
+    private final Map<Long, Integer> unitStuckTurns = new HashMap<>();
+
+    // Maximum consecutive turns a settler may fail to move toward its target
+    // before the target is considered unreachable and cleared.
+    // A value of 5 is sufficient to survive temporary obstacles (e.g. enemy units
+    // blocking a corridor) while quickly releasing targets on the far side of water.
+    private static final int SETTLER_STUCK_TURNS = 5;
+
     // Flag to ensure improvement and technology IDs are resolved only once.
     // IDs are assigned when the game starts and never change, so a single
     // resolution pass is sufficient.
@@ -117,6 +131,7 @@ public class AiPlayer {
     private static final int TERRAIN_GRASSLAND = 7;
     private static final int TERRAIN_PLAINS    = 11;
     private static final int TERRAIN_HILLS     = 8;
+    private static final int TERRAIN_MOUNTAINS = 10;
     private static final int TERRAIN_FOREST    = 6;
     private static final int TERRAIN_JUNGLE    = 9;
     private static final int TERRAIN_DESERT    = 5;
@@ -1233,15 +1248,22 @@ public class AiPlayer {
     private void handleSettler(Unit unit, UnitType utype) {
         long unitId = unit.getId();
 
-        // Evict a stale target if the tile has since been claimed, is gone, or is
-        // now too close to a city that was founded after the target was selected.
+        // Evict a stale target if the tile has since been claimed, is gone, too
+        // close to an existing city, or the settler has been unable to reach it
+        // for SETTLER_STUCK_TURNS consecutive turns (unreachable across water, etc.).
+        // The stuck-turn check mirrors the "turns to go" reachability guard in the
+        // C Freeciv server's daisettler.c where a settler abandons a site it
+        // cannot reach within a reasonable timeframe.
         Long target = unitTargets.get(unitId);
         if (target != null) {
             Tile t = game.tiles.get(target);
+            int stuck = unitStuckTurns.getOrDefault(unitId, 0);
             if (t == null || t.getWorked() >= 0
                     || !CITY_SUITABLE_TERRAINS.contains(t.getTerrain())
-                    || tooCloseToExistingCity(target)) {
+                    || tooCloseToExistingCity(target)
+                    || stuck >= SETTLER_STUCK_TURNS) {
                 unitTargets.remove(unitId);
+                unitStuckTurns.remove(unitId);
                 target = null;
             }
         }
@@ -1260,6 +1282,7 @@ public class AiPlayer {
             aiCityNameIndex++;
             game.buildCity(unit.getId(), cityName, unit.getTile());
             unitTargets.remove(unitId);
+            unitStuckTurns.remove(unitId);
             return;
         }
 
@@ -1268,6 +1291,7 @@ public class AiPlayer {
             long found = findBestCitySpot(unit.getTile(), unit.getOwner());
             if (found >= 0) {
                 unitTargets.put(unitId, found);
+                unitStuckTurns.remove(unitId);
                 target = found;
             }
         }
@@ -1282,7 +1306,16 @@ public class AiPlayer {
         }
 
         if (target != null && target >= 0) {
-            moveUnitToward(unit, utype, target);
+            boolean moved = moveUnitToward(unit, utype, target);
+            if (moved) {
+                // Progress made — reset the stuck counter.
+                unitStuckTurns.remove(unitId);
+            } else {
+                // No progress this turn — increment the stuck counter.
+                // When it reaches SETTLER_STUCK_TURNS the target will be evicted
+                // on the next call so the settler searches for a new destination.
+                unitStuckTurns.merge(unitId, 1, Integer::sum);
+            }
         } else {
             moveUnitRandomly(unit, utype);
         }
@@ -1534,10 +1567,15 @@ public class AiPlayer {
             return;
         }
 
-        // Priority 4: Mine Hills to boost production output.
+        // Priority 4: Mine Hills or Mountains to boost production output.
+        // Hills give the highest mining bonus (+3 shields in classic ruleset),
+        // while Mountains also benefit from mining (+1 shield).  Both are worth
+        // improving.  Mirrors the C Freeciv server's auto_settler logic which
+        // evaluates terrain mining bonuses and mines any terrain where
+        // mining_shield_incr > 0.
         boolean hasMine = (currentTile.getExtras()
                 & (1 << CityTurn.EXTRA_BIT_MINE)) != 0;
-        if (!hasMine && terrain == TERRAIN_HILLS) {
+        if (!hasMine && (terrain == TERRAIN_HILLS || terrain == TERRAIN_MOUNTAINS)) {
             game.changeUnitActivity(unit.getId(),
                     CityTurn.ACTIVITY_MINE);
             return;
@@ -1600,7 +1638,10 @@ public class AiPlayer {
                         && (extras & (1 << CityTurn.EXTRA_BIT_RAIL)) == 0;
                 boolean irrigationUseful = (t == TERRAIN_GRASSLAND || t == TERRAIN_PLAINS)
                         && (extras & (1 << CityTurn.EXTRA_BIT_IRRIGATION)) == 0;
-                boolean mineUseful = (t == TERRAIN_HILLS)
+                // Mine Hills (miningShieldBonus=3) or Mountains (miningShieldBonus=1)
+                // when not already mined.  Mirrors the C server's auto_settler_findwork()
+                // which evaluates mining_shield_incr > 0 for any terrain.
+                boolean mineUseful = (t == TERRAIN_HILLS || t == TERRAIN_MOUNTAINS)
                         && (extras & (1 << CityTurn.EXTRA_BIT_MINE)) == 0;
 
                 if (!roadMissing && !railMissing && !irrigationUseful && !mineUseful) continue;
@@ -1671,6 +1712,13 @@ public class AiPlayer {
      * Mirrors the offensive logic in {@code dai_military_attack()} in
      * {@code ai/default/daimilitary.c} where the AI advances on enemy cities
      * once its own empire is secure.
+     *
+     * <p>A unit that stays in a city to garrison it is switched to
+     * {@code ACTIVITY_FORTIFIED} (activity=3) after reaching its post, matching
+     * the C Freeciv server's {@code daiunit.c} behaviour where AIUNIT_DEFEND_HOME
+     * units call {@code unit_activity_handling(punit, ACTIVITY_FORTIFYING)} once
+     * they are in place.  Fortified units receive a +50% defence bonus (mirrors
+     * {@code Fortify_Defense_Bonus = 50} in classic {@code effects.ruleset}).
      */
     private void handleMilitaryUnit(Unit unit, UnitType utype, Player owner) {
         long unitId = unit.getId();
@@ -1697,7 +1745,14 @@ public class AiPlayer {
                         unitTargets.remove(unitId);
                         defenseTarget = null;
                     } else {
-                        break; // Stay put – we are the sole defender
+                        // Stay put – we are the sole defender.  Switch to FORTIFY
+                        // so the unit gets the +50% defence bonus while on guard duty.
+                        // Mirrors the AIUNIT_DEFEND_HOME → ACTIVITY_FORTIFYING path
+                        // in daiunit.c (see dai_manage_unit()).
+                        if (unit.getActivity() != CityTurn.ACTIVITY_FORTIFIED) {
+                            game.changeUnitActivity(unitId, CityTurn.ACTIVITY_FORTIFIED);
+                        }
+                        break;
                     }
                 } else {
                     if (!moveUnitToward(unit, utype, defenseTarget)) break;
