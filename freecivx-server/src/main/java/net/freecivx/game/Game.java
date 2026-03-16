@@ -760,13 +760,36 @@ public class Game {
         techs.put(28L, new Technology("Economics",         "a.economics",          "Economics",         "Trade",        "University",    100));
         techs.put(29L, new Technology("Sanitation",        "a.sanitation",         "Sanitation",        "Masonry",      "Mathematics",    60));
         techs.put(30L, new Technology("Computers",         "a.computers",          "Computers",         "Industrialization", "Mathematics", 160));
+        // Mid-game technologies missing from the original fallback but required for
+        // unit production (Phalanx→Bronze Working, Archers→Warrior Code, etc.),
+        // key buildings (Aqueduct/Colosseum→Construction, Bank→Banking,
+        // Cathedral→Theology), governments (Fundamentalism→Theology), and
+        // the naval unit chain (Galleon→Navigation/Magnetism).
+        // Prerequisites mirror the classic Freeciv civ2civ3 tech tree.
+        techs.put(31L, new Technology("Construction",  "a.construction",  "Construction",  "Masonry",          "Iron Working",    60));
+        techs.put(32L, new Technology("Literacy",      "a.literacy",      "Literacy",      "Writing",          "Code of Laws",    60));
+        techs.put(33L, new Technology("Banking",       "a.banking",       "Banking",       "Trade",            "The Republic",    80));
+        techs.put(34L, new Technology("Chivalry",      "a.chivalry",      "Chivalry",      "Feudalism",        "Horseback Riding", 60));
+        techs.put(35L, new Technology("Leadership",    "a.leadership",    "Leadership",    "Chivalry",         "Gunpowder",       80));
+        techs.put(36L, new Technology("Metallurgy",    "a.metallurgy",    "Metallurgy",    "Gunpowder",        "Mathematics",     80));
+        techs.put(37L, new Technology("Conscription",  "a.conscription",  "Conscription",  "Democracy",        "Metallurgy",     100));
+        techs.put(38L, new Technology("Tactics",       "a.tactics",       "Tactics",       "Conscription",     "Leadership",     100));
+        techs.put(39L, new Technology("Theology",      "a.theology",      "Theology",      "Philosophy",       "Mysticism",       80));
+        techs.put(40L, new Technology("Magnetism",     "a.magnetism",     "Magnetism",     "Astronomy",        "Map Making",      80));
+        techs.put(41L, new Technology("Steam Engine",  "a.steam_engine",  "Steam Engine",  "Industrialization","Navigation",     120));
+        techs.put(42L, new Technology("Steel",         "a.steel",         "Steel",         "Industrialization","Iron Working",   140));
 
-        governments.put(0L, new Government("Anarchy",   "Anarchy",   "Anarchy",   null,            25));
-        governments.put(1L, new Government("Despotism", "Despotism", "Despotism", null,            37));
-        governments.put(2L, new Government("Monarchy",  "Monarchy",  "Monarchy",  "Monarchy",      15));
-        governments.put(3L, new Government("Communism", "Communism", "Communism", "Communism",     20));
-        governments.put(4L, new Government("Republic",  "Republic",  "Republic",  "The Republic",  15));
-        governments.put(5L, new Government("Democracy", "Democracy", "Democracy", "Democracy",      0));
+        // Governments mirror the classic Freeciv civ2civ3 governments.ruleset.
+        // corruptionPct values approximate the distance-based corruption in the C server.
+        governments.put(0L, new Government("Anarchy",          "Anarchy",          "Anarchy",          null,              25));
+        governments.put(1L, new Government("Despotism",        "Despotism",        "Despotism",        null,              37));
+        governments.put(2L, new Government("Monarchy",         "Monarchy",         "Monarchy",         "Monarchy",        15));
+        governments.put(3L, new Government("Communism",        "Communism",        "Communism",        "Communism",       20));
+        governments.put(4L, new Government("Republic",         "Republic",         "Republic",         "The Republic",    15));
+        governments.put(5L, new Government("Democracy",        "Democracy",        "Democracy",        "Democracy",        0));
+        // Fundamentalism: requires Theology; low corruption (15%), but -50% science output.
+        // Mirrors the Fundamentalism government in the classic Freeciv civ2civ3 ruleset.
+        governments.put(6L, new Government("Fundamentalism",   "Fundamentalism",   "Fundamentalism",   "Theology",        15));
 
         // Terrain types with food/shield/trade output values from the classic Freeciv ruleset.
         // Format: new Terrain(name, graphic, defenseBonus, moveCost, food, shield, trade,
@@ -790,29 +813,46 @@ public class Game {
 
         String defaultActions = "000000000000000000000000000010000000001110001000000000000011011111111001100011000000001100110000000000000000100100000000";
         String settlerActions = "000000000000000000000000000110000000001110001000000000000011011111111001100011000000001100110000000000000000100100000000";
-        // Unit definitions mirroring the classic Freeciv units ruleset:
-        // firepower=1 for all fallback units (most classic units); Settlers have pop_cost=1.
+        // Unit definitions mirroring the classic Freeciv civ2civ3 units ruleset.
+        // Stats corrected to match ruleset values: attack/defense/hp/cost/moves.
+        // Tech IDs reference the fallback techs map above (e.g. Bronze Working=4, Warrior Code=11).
         // Horse-flagged units: Horsemen, Chariot, Knight, Cavalry (they suffer 2× defense from Pikemen).
         // Pikemen have antiHorseFactor=2 (double defense vs. Horse-flagged units).
-        unitTypes.put(0L,  new UnitType("Settlers",   "u.settlers",  1, 20, 1, "Settlers unit", 0, 1, settlerActions, 0, 40));
-        unitTypes.put(1L,  new UnitType("Workers",    "u.worker",    1, 20, 1, "Workers unit",  0, 1, settlerActions, 0, 30));
-        unitTypes.put(2L,  new UnitType("Explorer",   "u.explorer",  1, 1,  1, "Explorer unit", 0, 1, defaultActions, 0, 30));
+        unitTypes.put(0L,  new UnitType("Settlers",   "u.settlers",  1, 20, 1, "Settlers unit", 0, 1, settlerActions, 0, 30));
+        unitTypes.put(1L,  new UnitType("Workers",    "u.worker",    1, 10, 1, "Workers unit",  0, 1, settlerActions, 0, 20));
+        unitTypes.put(2L,  new UnitType("Explorer",   "u.explorer",  1,  1, 1, "Explorer unit", 0, 1, defaultActions, 0, 30));
         unitTypes.put(3L,  new UnitType("Warriors",   "u.warriors",  1, 10, 1, "Warriors",      1, 1, defaultActions, 0, 10));
-        unitTypes.put(4L,  new UnitType("Horsemen",   "u.horsemen",  2, 10, 1, "Horsemen",      2, 1, defaultActions, 0, 50));
-        unitTypes.put(5L,  new UnitType("Archers",    "u.archers",   1, 10, 1, "Archers",       3, 2, defaultActions, 0, 30));
-        unitTypes.put(6L,  new UnitType("Legion",     "u.legion",    1, 20, 1, "Legion",        3, 3, defaultActions, 0, 60));
-        unitTypes.put(7L,  new UnitType("Pikemen",    "u.pikemen",   1, 10, 1, "Pikemen",       1, 2, defaultActions, 0, 30));
-        unitTypes.put(8L,  new UnitType("Musketeers", "u.musketeers",1, 20, 1, "Musketeers",    5, 4, defaultActions, 0, 60));
-        unitTypes.put(9L,  new UnitType("Catapult",   "u.catapult",  1, 10, 1, "Catapult",      6, 1, defaultActions, 0, 70));
-        unitTypes.put(10L, new UnitType("Chariot",    "u.chariot",   2, 10, 1, "Chariot",       3, 1, defaultActions, 0, 40));
-        unitTypes.put(11L, new UnitType("Knight",     "u.knights",   2, 10, 1, "Knight",        4, 2, defaultActions, 0, 40));
-        unitTypes.put(12L, new UnitType("Phalanx",    "u.phalanx",   1, 10, 1, "Phalanx",       2, 2, defaultActions, 0, 25));
+        // Horsemen: attack=2, defense=1, moves=2 — fast raider (Horseback Riding tech)
+        unitTypes.put(4L,  new UnitType("Horsemen",   "u.horsemen",  2, 10, 1, "Horsemen",      2, 1, defaultActions, 0, 20));
+        // Archers: attack=3, defense=1 (not 2) per classic ruleset (Warrior Code tech)
+        unitTypes.put(5L,  new UnitType("Archers",    "u.archers",   1, 10, 1, "Archers",       3, 1, defaultActions, 0, 20));
+        // Legion: attack=4, defense=2, hp=10 per classic ruleset (Iron Working tech)
+        unitTypes.put(6L,  new UnitType("Legion",     "u.legion",    1, 10, 1, "Legion",        4, 2, defaultActions, 0, 30));
+        unitTypes.put(7L,  new UnitType("Pikemen",    "u.pikemen",   1, 10, 1, "Pikemen",       2, 3, defaultActions, 0, 30));
+        // Musketeers: attack=3, defense=3 per classic ruleset (Gunpowder tech)
+        unitTypes.put(8L,  new UnitType("Musketeers", "u.musketeers",1, 20, 1, "Musketeers",    3, 3, defaultActions, 0, 40));
+        // Catapult: attack=6, defense=1 (Mathematics tech)
+        unitTypes.put(9L,  new UnitType("Catapult",   "u.catapult",  1, 10, 1, "Catapult",      6, 1, defaultActions, 0, 40));
+        // Chariot: attack=4 (not 3) per classic ruleset, moves=2 (The Wheel tech)
+        unitTypes.put(10L, new UnitType("Chariot",    "u.chariot",   2, 10, 1, "Chariot",       4, 1, defaultActions, 0, 30));
+        // Knight: attack=4, defense=3 (not 2) per classic ruleset (Chivalry tech)
+        unitTypes.put(11L, new UnitType("Knight",     "u.knights",   2, 10, 1, "Knight",        4, 3, defaultActions, 0, 40));
+        // Phalanx: attack=1 (not 2) per classic ruleset (Bronze Working tech)
+        unitTypes.put(12L, new UnitType("Phalanx",    "u.phalanx",   1, 10, 1, "Phalanx",       1, 2, defaultActions, 0, 20));
         unitTypes.put(13L, new UnitType("Diplomat",   "u.diplomat",  2, 10, 1, "Diplomat",      0, 0, defaultActions, 0, 30));
+        // Cavalry: attack=8, defense=3, moves=2 (Tactics tech)
         unitTypes.put(14L, new UnitType("Cavalry",    "u.cavalry",   2, 20, 1, "Cavalry",       8, 3, defaultActions, 0, 60));
-        unitTypes.put(15L, new UnitType("Cannon",     "u.cannon",    1, 20, 1, "Cannon",        8, 1, defaultActions, 0, 80));
-        unitTypes.put(16L, new UnitType("Riflemen",   "u.riflemen",  1, 20, 1, "Riflemen",      5, 4, defaultActions, 0, 60));
+        // Cannon: attack=8, defense=1, hp=20 (Metallurgy tech)
+        unitTypes.put(15L, new UnitType("Cannon",     "u.cannon",    1, 20, 1, "Cannon",        8, 1, defaultActions, 0, 50));
+        // Riflemen: attack=5, defense=4 (Conscription tech)
+        unitTypes.put(16L, new UnitType("Riflemen",   "u.riflemen",  1, 20, 1, "Riflemen",      5, 4, defaultActions, 0, 50));
+        // Trireme: sea unit (Map Making tech)
         unitTypes.put(17L, new UnitType("Trireme",    "u.trireme",   3, 10, 1, "Trireme",       1, 1, defaultActions, 1, 40));
-        unitTypes.put(18L, new UnitType("Frigate",    "u.frigate",   4, 20, 1, "Frigate",       4, 2, defaultActions, 1, 50));
+        // Frigate: sea combat (Navigation tech)
+        unitTypes.put(18L, new UnitType("Frigate",    "u.frigate",   4, 20, 1, "Frigate",       3, 2, defaultActions, 1, 40));
+        // Galleon: sea transport (Navigation tech); no attack, moderate defense.
+        // Mirrors the Galleon in the classic Freeciv civ2civ3 units ruleset.
+        unitTypes.put(19L, new UnitType("Galleon",    "u.galleon",   4, 20, 1, "Galleon",       0, 2, defaultActions, 1, 40));
 
         // Settlers cost 1 population from the city when built (mirrors pop_cost=1 in ruleset).
         unitTypes.get(0L).setPopCost(1);
@@ -828,6 +868,17 @@ public class Game {
         // Mirrors bonuses = { "Horse", "DefenseMultiplier", 1 } in classic ruleset.
         unitTypes.get(7L).setAntiHorseFactor(2);   // Pikemen
 
+        // Non-military flag for civilian units: cannot initiate combat.
+        // Mirrors the "NonMil" flag in the Freeciv units ruleset.
+        unitTypes.get(0L).setNonMilitary(true);  // Settlers
+        unitTypes.get(1L).setNonMilitary(true);  // Workers
+        unitTypes.get(2L).setNonMilitary(true);  // Explorer
+        unitTypes.get(13L).setNonMilitary(true); // Diplomat
+
+        // Settlers flag: can build terrain improvements and found cities.
+        unitTypes.get(0L).setHasSettlersFlag(true);  // Settlers
+        unitTypes.get(1L).setHasSettlersFlag(true);  // Workers
+
         // Unit upgrade chains for the fallback dataset.
         // Mirrors the obsolete_by field in the classic Freeciv units ruleset and
         // the do_upgrade_effects() upgrade chain in the C Freeciv server.
@@ -838,8 +889,30 @@ public class Game {
         unitTypes.get(7L).setUpgradesTo(16);  // Pikemen    → Riflemen
         unitTypes.get(9L).setUpgradesTo(15);  // Catapult   → Cannon
         unitTypes.get(10L).setUpgradesTo(14); // Chariot    → Cavalry
+        unitTypes.get(11L).setUpgradesTo(14); // Knight     → Cavalry
         unitTypes.get(12L).setUpgradesTo(8);  // Phalanx    → Musketeers
         unitTypes.get(17L).setUpgradesTo(18); // Trireme    → Frigate
+
+        // Technology requirements for fallback units.
+        // IDs reference the techs.put() calls in this method above.
+        // Mirrors the "Tech" reqs in the classic Freeciv civ2civ3 units ruleset.
+        // Warriors (ID 3): no tech required — starting unit.
+        unitTypes.get(4L).setTechReqId(9L);   // Horsemen    → Horseback Riding (9)
+        unitTypes.get(5L).setTechReqId(11L);  // Archers     → Warrior Code (11)
+        unitTypes.get(6L).setTechReqId(5L);   // Legion      → Iron Working (5)
+        unitTypes.get(7L).setTechReqId(25L);  // Pikemen     → Feudalism (25)
+        unitTypes.get(8L).setTechReqId(24L);  // Musketeers  → Gunpowder (24)
+        unitTypes.get(9L).setTechReqId(1L);   // Catapult    → Mathematics (1)
+        unitTypes.get(10L).setTechReqId(6L);  // Chariot     → The Wheel (6)
+        unitTypes.get(11L).setTechReqId(34L); // Knight      → Chivalry (34)
+        unitTypes.get(12L).setTechReqId(4L);  // Phalanx     → Bronze Working (4)
+        unitTypes.get(13L).setTechReqId(7L);  // Diplomat    → Writing (7)
+        unitTypes.get(14L).setTechReqId(38L); // Cavalry     → Tactics (38)
+        unitTypes.get(15L).setTechReqId(36L); // Cannon      → Metallurgy (36)
+        unitTypes.get(16L).setTechReqId(37L); // Riflemen    → Conscription (37)
+        unitTypes.get(17L).setTechReqId(12L); // Trireme     → Map Making (12)
+        unitTypes.get(18L).setTechReqId(22L); // Frigate     → Navigation (22)
+        unitTypes.get(19L).setTechReqId(22L); // Galleon     → Navigation (22)
 
         improvements.put(0L,  new Improvement(0,  "Palace",      "Palace",      "b.palace",      "b.fallback", 1, 100, 0, 0, "b_palace",      "b_fallback", "The Palace",      -1));
         improvements.put(1L,  new Improvement(1,  "Barracks",    "Barracks",    "b.barracks",    "b.fallback", 2,  40, 1, 0, "b_barracks",    "b_fallback", "The Barracks",    -1));
