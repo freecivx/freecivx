@@ -272,69 +272,96 @@ function update_tech_tree()
       var dx = Math.floor(reqtree[rid+'']['x'] * tech_xscale);  //scale in X direction.
       var dy = reqtree[rid+'']['y'];
 
-      // Color edges by type, mirroring reqtree.c edge type classification:
-      //   KNOWN_EDGE: both techs known     -> dark gray, thin
-      //   ACTIVE_EDGE: currently researching -> gold, thick
-      //   GOAL_EDGE: on path to research goal -> sky blue
-      //   READY_EDGE: prereq known, can research -> green
-      //   Normal: unknown prereq chain       -> muted blue-gray
+      // Color edges by type (mirrors reqtree.c edge type classification):
+      //   KNOWN_EDGE:  both techs known       -> medium gray
+      //   ACTIVE_EDGE: currently researching  -> vivid orange, thick
+      //   GOAL_EDGE:   on path to goal        -> bright blue
+      //   READY_EDGE:  prereq known, researchable -> vivid green
+      //   Normal:      unknown prereq chain   -> blue-gray
       var req_known = tech_known(techs[rid]['rule_name']);
       var child_known = tech_known(ptech['rule_name']);
       var is_researching = (client.conn.playing['researching'] == ptech['id']);
       var is_goal_path = is_tech_req_for_goal(ptech['id'], client.conn.playing['tech_goal']);
 
+      var edge_color, edge_width;
       if (req_known && child_known) {
-        // KNOWN_EDGE: both techs known - dark gray, thin line
-        tech_canvas_ctx.strokeStyle = 'rgba(80, 80, 80, 0.9)';
-        tech_canvas_ctx.lineWidth = 1;
+        // KNOWN_EDGE: both techs known - medium gray
+        edge_color = 'rgba(150, 150, 150, 0.9)';
+        edge_width = 1.5;
       } else if (is_researching) {
-        // ACTIVE_EDGE: currently being researched - bright gold
-        tech_canvas_ctx.strokeStyle = 'rgba(255, 200, 50, 1.0)';
-        tech_canvas_ctx.lineWidth = 3;
+        // ACTIVE_EDGE: currently being researched - vivid orange
+        edge_color = 'rgba(255, 140, 0, 1.0)';
+        edge_width = 3;
       } else if (is_goal_path) {
-        // GOAL_EDGE: on the path to the research goal - sky blue
-        tech_canvas_ctx.strokeStyle = 'rgba(100, 180, 255, 0.9)';
-        tech_canvas_ctx.lineWidth = 2;
+        // GOAL_EDGE: on the path to the research goal - bright blue
+        edge_color = 'rgba(0, 160, 255, 1.0)';
+        edge_width = 2.5;
       } else if (req_known) {
-        // READY_EDGE: prerequisite known, child can be researched - bright green
-        tech_canvas_ctx.strokeStyle = 'rgba(100, 210, 80, 0.85)';
-        tech_canvas_ctx.lineWidth = 2;
+        // READY_EDGE: prerequisite known, child can be researched - vivid green
+        edge_color = 'rgba(50, 220, 50, 1.0)';
+        edge_width = 2.5;
       } else {
-        // Normal unresearched edge - muted blue-gray
-        tech_canvas_ctx.strokeStyle = 'rgba(80, 100, 140, 0.7)';
-        tech_canvas_ctx.lineWidth = 1;
+        // Normal unresearched edge - blue-gray
+        edge_color = 'rgba(110, 130, 180, 0.85)';
+        edge_width = 1.5;
       }
+      tech_canvas_ctx.strokeStyle = edge_color;
+      tech_canvas_ctx.fillStyle = edge_color;
+      tech_canvas_ctx.lineWidth = edge_width;
+      tech_canvas_ctx.lineCap = 'round';
+      tech_canvas_ctx.lineJoin = 'round';
 
       var node_offset = 3;
-      // Multi-segment orthogonal routing prevents lines from crossing through
-      // technology boxes. Route: child-left → (horizontal) → bend → (vertical) → (horizontal) → parent-right
       var child_x = sx;
       var child_y = sy + hy;
       var parent_x = dx + hx + node_offset + 1;
       var parent_y = dy + hy;
-      // Place the vertical bend midway between parent's right edge and child's left edge
-      var bend_x = Math.floor((child_x + parent_x) / 2);
+
+      // Route the vertical segment in the first column gap after the parent box.
+      // Gap between adjacent columns ≈ reqtree_xwidth * tech_xscale - (tech_item_width + node_offset + 1)
+      //   = 330 * 1.2 - 212 = 184 px.  Half of that = 92 px.
+      // Using a fixed 92 px offset keeps the bend inside that first gap even when
+      // the child is many columns away, preventing the vertical segment from
+      // passing through intermediate technology boxes.
+      var CURVE_RADIUS = 12;
+      var bend_x = parent_x + 92;
+      // Safety clamp: the horizontal leg from child_x to the bend needs at least
+      // CURVE_RADIUS px of straight run before the curve starts, so bend_x must stay
+      // at least CURVE_RADIUS below child_x.  Use 3× as a comfortable margin that
+      // also prevents degenerate curves when the two techs are very close.
+      if (bend_x > child_x - CURVE_RADIUS * 3) {
+        bend_x = Math.floor((child_x + parent_x) / 2);
+      }
 
       tech_canvas_ctx.beginPath();
-      if (sy == dy) {
+      if (sy === dy) {
         // Same row: simple horizontal line
         tech_canvas_ctx.moveTo(child_x, child_y);
         tech_canvas_ctx.lineTo(parent_x, parent_y);
       } else {
-        // Different rows: three-segment routing (horizontal, vertical, horizontal)
+        // Different rows: 3-segment routing with smooth quadratic Bézier curves.
+        // Path: child-left → horizontal → smooth corner → vertical → smooth corner → horizontal → parent-right
+        var vert_dir = parent_y > child_y ? 1 : -1;
+        // Corner at the child end: horizontal run meets the vertical segment
+        var c1_ctrl_x = bend_x, c1_ctrl_y = child_y;
+        var c1_end_x  = bend_x, c1_end_y  = child_y + vert_dir * CURVE_RADIUS;
+        // Corner at the parent end: vertical segment meets the horizontal run to parent
+        var c2_ctrl_x = bend_x, c2_ctrl_y = parent_y;
+        var c2_end_x  = bend_x - CURVE_RADIUS, c2_end_y  = parent_y;
         tech_canvas_ctx.moveTo(child_x, child_y);
-        tech_canvas_ctx.lineTo(bend_x, child_y);
-        tech_canvas_ctx.lineTo(bend_x, parent_y);
+        tech_canvas_ctx.lineTo(bend_x + CURVE_RADIUS, child_y);
+        tech_canvas_ctx.quadraticCurveTo(c1_ctrl_x, c1_ctrl_y, c1_end_x, c1_end_y);
+        tech_canvas_ctx.lineTo(bend_x, parent_y - vert_dir * CURVE_RADIUS);
+        tech_canvas_ctx.quadraticCurveTo(c2_ctrl_x, c2_ctrl_y, c2_end_x, c2_end_y);
         tech_canvas_ctx.lineTo(parent_x, parent_y);
       }
       tech_canvas_ctx.stroke();
 
-      // Draw a junction dot at the parent connection point to indicate which tech is the prerequisite
-      var radius = 2;
-      tech_canvas_ctx.lineWidth = 4;
+      // Filled junction dot at the parent connection point
+      var radius = 3;
       tech_canvas_ctx.beginPath();
       tech_canvas_ctx.arc(parent_x, parent_y, radius, 0, 2 * Math.PI, false);
-      tech_canvas_ctx.stroke();
+      tech_canvas_ctx.fill();
     }
 
   }

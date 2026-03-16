@@ -24,9 +24,9 @@
         <div style="background-color: rgb(161, 200, 131); color: black;  float: left;  padding: 2px;  margin: 1px;"><b>Current research</b></div>
         <div style="background-color: rgb(61, 95, 130); color: white;  float: left;  padding: 2px;  margin: 1px;">Unknown tech</div>
         <div style="background-color: rgb(111, 141, 180); color: black;  float: left;  padding: 2px;  margin: 1px;"><b>Research goal</b></div>
-        <div style="border-left: 4px solid rgba(255,200,50,1.0); float: left; color: white; padding: 2px 2px 2px 5px; margin: 1px;">Active line</div>
-        <div style="border-left: 4px solid rgba(100,180,255,0.9); float: left; color: white; padding: 2px 2px 2px 5px; margin: 1px;">Goal path line</div>
-        <div style="border-left: 4px solid rgba(100,210,80,0.85); float: left; color: white; padding: 2px 2px 2px 5px; margin: 1px;">Ready line</div>
+        <div style="border-left: 4px solid rgba(255,140,0,1.0); float: left; color: white; padding: 2px 2px 2px 5px; margin: 1px;">Active line</div>
+        <div style="border-left: 4px solid rgba(0,160,255,1.0); float: left; color: white; padding: 2px 2px 2px 5px; margin: 1px;">Goal path line</div>
+        <div style="border-left: 4px solid rgba(50,220,50,1.0); float: left; color: white; padding: 2px 2px 2px 5px; margin: 1px;">Ready line</div>
       </div>
 
     </div>
