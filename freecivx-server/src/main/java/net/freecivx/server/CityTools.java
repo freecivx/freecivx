@@ -214,8 +214,30 @@ public class CityTools {
         surplus.put(luxuryProd);
         surplus.put(scienceProd);
 
-        JSONArray ppl = new JSONArray();
-        ppl.put(1); ppl.put(1); ppl.put(2); ppl.put(1); ppl.put(1);
+        // Build per-type people arrays for all 6 feeling stages (FEELING_BASE=0 …
+        // FEELING_FINAL=5).  The client's city_unhappy() / city_happy() functions
+        // read index 5 (FEELING_FINAL); sending only 5 elements causes a
+        // "Cannot read properties of undefined (reading '5')" crash.
+        // Indices 0–4 are intermediate stages; use 0 as a safe placeholder.
+        // Index 5 is derived from the city's computed happy/unhappy state.
+        int citySize       = city.getSize();
+        boolean cityHappy   = city.isHappy();
+        boolean cityUnhappy = city.isUnhappy();
+
+        JSONArray pplHappy = new JSONArray();
+        for (int i = 0; i < 5; i++) pplHappy.put(0);
+        pplHappy.put(cityHappy ? citySize : 0);
+
+        JSONArray pplContent = new JSONArray();
+        for (int i = 0; i < 5; i++) pplContent.put(citySize);
+        pplContent.put((!cityHappy && !cityUnhappy) ? citySize : 0);
+
+        JSONArray pplUnhappy = new JSONArray();
+        for (int i = 0; i < 5; i++) pplUnhappy.put(0);
+        pplUnhappy.put(cityUnhappy ? 1 : 0);
+
+        JSONArray pplAngry = new JSONArray();
+        for (int i = 0; i < 6; i++) pplAngry.put(0);
 
         // Translate internal production kind to Freeciv Universal Value Type constants
         // used by the network protocol.  The server stores kind as 0 (unit) or 1
@@ -255,10 +277,10 @@ public class CityTools {
         msg.put("production_value", Math.max(0, city.getProductionValue()));
         msg.put("shield_stock", city.getShieldStock());
         msg.put("food_stock", city.getFoodStock());
-        msg.put("ppl_happy", ppl);
-        msg.put("ppl_content", ppl);
-        msg.put("ppl_unhappy", ppl);
-        msg.put("ppl_angry", ppl);
+        msg.put("ppl_happy", pplHappy);
+        msg.put("ppl_content", pplContent);
+        msg.put("ppl_unhappy", pplUnhappy);
+        msg.put("ppl_angry", pplAngry);
         msg.put("surplus", surplus);
         msg.put("prod", prod);
         msg.put("worklist", worklistArr);
