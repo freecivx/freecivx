@@ -1198,22 +1198,15 @@ public class CivServer extends org.java_websocket.server.WebSocketServer impleme
             ws.send(msg.toString());
         }
 
-        // Tiles – send with per-player fog-of-war known status
+        // Tiles – send with per-player fog-of-war known status.
+        // Use buildTileInfoPacket so that the owner (national border) field is
+        // included for known/seen tiles and masked to null for unknown tiles.
         net.freecivx.game.Player joiningPlayer = game.players.get(connId);
         game.tiles.forEach((id, tile) -> {
             int known = (joiningPlayer != null)
                     ? VisibilityHandler.getKnownForPlayer(joiningPlayer, tile.getIndex())
                     : tile.getKnown();
-            JSONObject msg = new JSONObject();
-            msg.put("pid", Packets.PACKET_TILE_INFO);
-            msg.put("tile", tile.getIndex());
-            msg.put("known", known);
-            msg.put("terrain", tile.getTerrain());
-            msg.put("resource", tile.getResource());
-            msg.put("extras", MapHand.extrasToByteArray(tile.getExtras()));
-            msg.put("height", tile.getHeight());
-            msg.put("worked", tile.getWorked() >= 0 ? tile.getWorked() : JSONObject.NULL);
-            ws.send(msg.toString());
+            ws.send(MapHand.buildTileInfoPacket(tile, known).toString());
         });
 
         // Units – send only units visible to this player (own units or on a visible tile)
