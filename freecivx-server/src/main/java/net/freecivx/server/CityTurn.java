@@ -67,9 +67,9 @@ public class CityTurn {
     private static final int FREE_UNITS_PER_CITY = 3;
 
     /**
-     * Fallback improvement ID for Granary.  Matches the hardcoded ID used in
-     * {@link net.freecivx.game.Effects} and the classic ruleset fallback in
-     * {@link net.freecivx.game.Game}.
+     * Default improvement ID for Granary used as a fallback in
+     * {@link #findImprId} when the name lookup fails.  The actual ID is
+     * always resolved by name from the loaded ruleset at runtime.
      */
     private static final int IMPR_GRANARY = 2;
 
@@ -470,8 +470,8 @@ public class CityTurn {
 
     /**
      * Finds a city improvement's numeric ID by its display name.
-     * This is necessary because improvement IDs differ between the loaded
-     * ruleset (alphabetical order) and the hardcoded fallback dataset.
+     * This is necessary because improvement IDs are assigned in the order
+     * buildings appear in the loaded ruleset file.
      * Mirrors the name-based building lookup in the C Freeciv server's
      * {@code server/ruleset.c}.
      *

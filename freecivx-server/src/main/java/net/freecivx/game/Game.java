@@ -334,21 +334,19 @@ public class Game {
     /**
      * Initializes the game objects.  Game rules (unit types, technologies,
      * buildings, terrain, governments) are loaded from the classic ruleset
-     * files bundled as classpath resources.  If ruleset loading fails the
-     * game falls back to a minimal hardcoded dataset so the server remains
-     * playable.
+     * files bundled as classpath resources.  Throws {@link IllegalStateException}
+     * if the ruleset cannot be loaded — the server cannot run without it.
      */
     public void initGame() {
         map = new WorldMap(45, 45);
 
         // --- Load ruleset from classpath resources ---
         boolean rulesetOk = ruleset.loadRuleset("classic");
-        if (rulesetOk) {
-            populateFromRuleset();
-        } else {
-            log.error("Ruleset loading failed – falling back to hardcoded data.");
-            populateFallback();
+        if (!rulesetOk) {
+            throw new IllegalStateException(
+                "Ruleset loading failed: cannot start server without valid game data.");
         }
+        populateFromRuleset();
 
         // Nations and extras are always hardcoded (not loaded from ruleset files).
         // City names are loaded from the matching nation/*.ruleset resource file.
@@ -719,164 +717,20 @@ public class Game {
         for (int i = 0; i < rImprov.size(); i++) {
             improvements.put((long) i, rImprov.get(i));
         }
-    }
 
-    /**
-     * Populates game data from hardcoded defaults when ruleset loading fails.
-     * Mirrors the classic Freeciv ruleset values.
-     */
-    private void populateFallback() {
-        techs.put(0L,  new Technology("Alphabet",          "a.alphabet",          "Alphabet",          "None",         "None",           20));
-        techs.put(1L,  new Technology("Mathematics",       "a.mathematics",       "Mathematics",       "Alphabet",     "None",           40));
-        techs.put(2L,  new Technology("The Republic",      "a.the_republic",      "The Republic",      "Code of Laws", "None",           60));
-        techs.put(3L,  new Technology("Masonry",           "a.masonry",           "Masonry",           "None",         "None",           20));
-        techs.put(4L,  new Technology("Bronze Working",    "a.bronze_working",    "Bronze Working",    "None",         "None",           20));
-        techs.put(5L,  new Technology("Iron Working",      "a.iron_working",      "Iron Working",      "Bronze Working","None",          40));
-        techs.put(6L,  new Technology("The Wheel",         "a.the_wheel",         "The Wheel",         "None",         "None",           20));
-        techs.put(7L,  new Technology("Writing",           "a.writing",           "Writing",           "Alphabet",     "None",           40));
-        techs.put(8L,  new Technology("Code of Laws",      "a.code_of_laws",      "Code of Laws",      "Alphabet",     "None",           40));
-        techs.put(9L,  new Technology("Horseback Riding",  "a.horseback_riding",  "Horseback Riding",  "None",         "None",           20));
-        techs.put(10L, new Technology("Pottery",           "a.pottery",           "Pottery",           "None",         "None",           20));
-        techs.put(11L, new Technology("Warrior Code",      "a.warrior_code",      "Warrior Code",      "None",         "None",           20));
-        techs.put(12L, new Technology("Map Making",        "a.map_making",        "Map Making",        "Alphabet",     "None",           40));
-        techs.put(13L, new Technology("Monarchy",          "a.monarchy",          "Monarchy",          "Code of Laws", "None",           60));
-        techs.put(14L, new Technology("Democracy",         "a.democracy",         "Democracy",         "The Republic", "None",           80));
-        techs.put(15L, new Technology("Communism",         "a.communism",         "Communism",         "Philosophy",   "None",           80));
-        techs.put(16L, new Technology("Philosophy",        "a.philosophy",        "Philosophy",        "Writing",      "None",           40));
-        techs.put(17L, new Technology("Mysticism",         "a.mysticism",         "Mysticism",         "None",         "None",           20));
-        techs.put(18L, new Technology("Ceremonial Burial", "a.ceremonial_burial", "Ceremonial Burial", "None",         "None",           20));
-        techs.put(19L, new Technology("Currency",          "a.currency",          "Currency",          "Bronze Working","None",          40));
-        techs.put(20L, new Technology("Trade",             "a.trade",             "Trade",             "Currency",     "Code of Laws",   60));
-        techs.put(21L, new Technology("Astronomy",         "a.astronomy",         "Astronomy",         "Mysticism",    "Mathematics",    60));
-        techs.put(22L, new Technology("Navigation",        "a.navigation",        "Navigation",        "Map Making",   "Astronomy",      80));
-        techs.put(23L, new Technology("University",        "a.university",        "University",        "Philosophy",   "Mathematics",   100));
-        techs.put(24L, new Technology("Gunpowder",         "a.gunpowder",         "Gunpowder",         "Iron Working", "None",           80));
-        techs.put(25L, new Technology("Feudalism",         "a.feudalism",         "Feudalism",         "Warrior Code", "Monarchy",       60));
-        // Late-game technologies required by Factory, Mfg. Plant, Research Lab,
-        // Stock Exchange, Police Station, and Sewer System improvements.
-        // Prerequisites mirror the classic Freeciv tech tree.
-        techs.put(26L, new Technology("Industrialization", "a.industrialization",  "Industrialization", "Gunpowder",    "Trade",         120));
-        techs.put(27L, new Technology("Plastics",          "a.plastics",           "Plastics",          "Industrialization", "None",     160));
-        techs.put(28L, new Technology("Economics",         "a.economics",          "Economics",         "Trade",        "University",    100));
-        techs.put(29L, new Technology("Sanitation",        "a.sanitation",         "Sanitation",        "Masonry",      "Mathematics",    60));
-        techs.put(30L, new Technology("Computers",         "a.computers",          "Computers",         "Industrialization", "Mathematics", 160));
-
-        governments.put(0L, new Government("Anarchy",   "Anarchy",   "Anarchy",   null,            25));
-        governments.put(1L, new Government("Despotism", "Despotism", "Despotism", null,            37));
-        governments.put(2L, new Government("Monarchy",  "Monarchy",  "Monarchy",  "Monarchy",      15));
-        governments.put(3L, new Government("Communism", "Communism", "Communism", "Communism",     20));
-        governments.put(4L, new Government("Republic",  "Republic",  "Republic",  "The Republic",  15));
-        governments.put(5L, new Government("Democracy", "Democracy", "Democracy", "Democracy",      0));
-
-        // Terrain types with food/shield/trade output values from the classic Freeciv ruleset.
-        // Format: new Terrain(name, graphic, defenseBonus, moveCost, food, shield, trade,
-        //                     irrigationFoodBonus, miningShieldBonus, roadTradeBonus)
-        // roadTradeBonus=1 for terrains with road_trade_incr_pct=100 (Desert, Grassland, Plains).
-        terrains.put(0L,  new Terrain("Arctic",       "",       0,   1, 0, 0, 0, 0, 0, 0));
-        terrains.put(1L,  new Terrain("Lake",         "lake",   0,   1, 1, 0, 2, 0, 0, 0));
-        terrains.put(2L,  new Terrain("Ocean",        "floor",  0,   1, 1, 0, 2, 0, 0, 0));
-        terrains.put(3L,  new Terrain("Deep Ocean",   "coast",  0,   1, 1, 0, 2, 0, 0, 0));
-        terrains.put(4L,  new Terrain("Glacier",      "",       0,   2, 0, 0, 0, 0, 1, 0));
-        terrains.put(5L,  new Terrain("Desert",       "",       0,   1, 0, 1, 0, 1, 1, 1));
-        terrains.put(6L,  new Terrain("Forest",       "",      50,   2, 1, 2, 0, 0, 0, 0));
-        terrains.put(7L,  new Terrain("Grassland",    "",       0,   1, 2, 0, 0, 1, 0, 1));
-        terrains.put(8L,  new Terrain("Hills",        "",     100,   2, 1, 0, 0, 1, 3, 0));
-        terrains.put(9L,  new Terrain("Jungle",       "",      50,   2, 1, 0, 0, 0, 0, 0));
-        terrains.put(10L, new Terrain("Mountains",    "",     200,   3, 0, 1, 0, 0, 1, 0));
-        terrains.put(11L, new Terrain("Plains",       "",       0,   1, 1, 1, 0, 1, 0, 1));
-        terrains.put(12L, new Terrain("Swamp",        "",      50,   2, 1, 0, 0, 0, 0, 0));
-        terrains.put(13L, new Terrain("Tundra",       "",       0,   1, 1, 0, 0, 1, 0, 0));
-        terrains.put(14L, new Terrain("Inaccessible", "",       0,  99, 0, 0, 0, 0, 0, 0));
-
-        String defaultActions = "000000000000000000000000000010000000001110001000000000000011011111111001100011000000001100110000000000000000100100000000";
-        String settlerActions = "000000000000000000000000000110000000001110001000000000000011011111111001100011000000001100110000000000000000100100000000";
-        // Unit definitions mirroring the classic Freeciv units ruleset:
-        // firepower=1 for all fallback units (most classic units); Settlers have pop_cost=1.
-        // Horse-flagged units: Horsemen, Chariot, Knight, Cavalry (they suffer 2× defense from Pikemen).
-        // Pikemen have antiHorseFactor=2 (double defense vs. Horse-flagged units).
-        unitTypes.put(0L,  new UnitType("Settlers",   "u.settlers",  1, 20, 1, "Settlers unit", 0, 1, settlerActions, 0, 40));
-        unitTypes.put(1L,  new UnitType("Workers",    "u.worker",    1, 20, 1, "Workers unit",  0, 1, settlerActions, 0, 30));
-        unitTypes.put(2L,  new UnitType("Explorer",   "u.explorer",  1, 1,  1, "Explorer unit", 0, 1, defaultActions, 0, 30));
-        unitTypes.put(3L,  new UnitType("Warriors",   "u.warriors",  1, 10, 1, "Warriors",      1, 1, defaultActions, 0, 10));
-        unitTypes.put(4L,  new UnitType("Horsemen",   "u.horsemen",  2, 10, 1, "Horsemen",      2, 1, defaultActions, 0, 50));
-        unitTypes.put(5L,  new UnitType("Archers",    "u.archers",   1, 10, 1, "Archers",       3, 2, defaultActions, 0, 30));
-        unitTypes.put(6L,  new UnitType("Legion",     "u.legion",    1, 20, 1, "Legion",        3, 3, defaultActions, 0, 60));
-        unitTypes.put(7L,  new UnitType("Pikemen",    "u.pikemen",   1, 10, 1, "Pikemen",       1, 2, defaultActions, 0, 30));
-        unitTypes.put(8L,  new UnitType("Musketeers", "u.musketeers",1, 20, 1, "Musketeers",    5, 4, defaultActions, 0, 60));
-        unitTypes.put(9L,  new UnitType("Catapult",   "u.catapult",  1, 10, 1, "Catapult",      6, 1, defaultActions, 0, 70));
-        unitTypes.put(10L, new UnitType("Chariot",    "u.chariot",   2, 10, 1, "Chariot",       3, 1, defaultActions, 0, 40));
-        unitTypes.put(11L, new UnitType("Knight",     "u.knights",   2, 10, 1, "Knight",        4, 2, defaultActions, 0, 40));
-        unitTypes.put(12L, new UnitType("Phalanx",    "u.phalanx",   1, 10, 1, "Phalanx",       2, 2, defaultActions, 0, 25));
-        unitTypes.put(13L, new UnitType("Diplomat",   "u.diplomat",  2, 10, 1, "Diplomat",      0, 0, defaultActions, 0, 30));
-        unitTypes.put(14L, new UnitType("Cavalry",    "u.cavalry",   2, 20, 1, "Cavalry",       8, 3, defaultActions, 0, 60));
-        unitTypes.put(15L, new UnitType("Cannon",     "u.cannon",    1, 20, 1, "Cannon",        8, 1, defaultActions, 0, 80));
-        unitTypes.put(16L, new UnitType("Riflemen",   "u.riflemen",  1, 20, 1, "Riflemen",      5, 4, defaultActions, 0, 60));
-        unitTypes.put(17L, new UnitType("Trireme",    "u.trireme",   3, 10, 1, "Trireme",       1, 1, defaultActions, 1, 40));
-        unitTypes.put(18L, new UnitType("Frigate",    "u.frigate",   4, 20, 1, "Frigate",       4, 2, defaultActions, 1, 50));
-
-        // Settlers cost 1 population from the city when built (mirrors pop_cost=1 in ruleset).
-        unitTypes.get(0L).setPopCost(1);
-
-        // Horse-flagged units: suffer 2× defense from Pikemen in combat.
-        // Mirrors the "Horse" flag in the classic Freeciv units ruleset.
-        unitTypes.get(4L).setHasHorseFlag(true);   // Horsemen
-        unitTypes.get(10L).setHasHorseFlag(true);  // Chariot
-        unitTypes.get(11L).setHasHorseFlag(true);  // Knight
-        unitTypes.get(14L).setHasHorseFlag(true);  // Cavalry
-
-        // Pikemen have double defense against Horse-flagged units.
-        // Mirrors bonuses = { "Horse", "DefenseMultiplier", 1 } in classic ruleset.
-        unitTypes.get(7L).setAntiHorseFactor(2);   // Pikemen
-
-        // Unit upgrade chains for the fallback dataset.
-        // Mirrors the obsolete_by field in the classic Freeciv units ruleset and
-        // the do_upgrade_effects() upgrade chain in the C Freeciv server.
-        // Format: source unit ID → target unit ID.
-        unitTypes.get(3L).setUpgradesTo(8);   // Warriors   → Musketeers
-        unitTypes.get(4L).setUpgradesTo(11);  // Horsemen   → Knight
-        unitTypes.get(5L).setUpgradesTo(8);   // Archers    → Musketeers
-        unitTypes.get(7L).setUpgradesTo(16);  // Pikemen    → Riflemen
-        unitTypes.get(9L).setUpgradesTo(15);  // Catapult   → Cannon
-        unitTypes.get(10L).setUpgradesTo(14); // Chariot    → Cavalry
-        unitTypes.get(12L).setUpgradesTo(8);  // Phalanx    → Musketeers
-        unitTypes.get(17L).setUpgradesTo(18); // Trireme    → Frigate
-
-        improvements.put(0L,  new Improvement(0,  "Palace",      "Palace",      "b.palace",      "b.fallback", 1, 100, 0, 0, "b_palace",      "b_fallback", "The Palace",      -1));
-        improvements.put(1L,  new Improvement(1,  "Barracks",    "Barracks",    "b.barracks",    "b.fallback", 2,  40, 1, 0, "b_barracks",    "b_fallback", "The Barracks",    -1));
-        improvements.put(2L,  new Improvement(2,  "Granary",     "Granary",     "b.granary",     "b.fallback", 2,  60, 1, 0, "b_granary",     "b_fallback", "The Granary",     10));
-        improvements.put(3L,  new Improvement(3,  "Library",     "Library",     "b.library",     "b.fallback", 2,  80, 1, 0, "b_library",     "b_fallback", "The Library",      7));
-        improvements.put(4L,  new Improvement(4,  "Marketplace", "Marketplace", "b.marketplace", "b.fallback", 2, 100, 1, 0, "b_marketplace", "b_fallback", "The Marketplace",  8));
-        improvements.put(5L,  new Improvement(5,  "Bank",        "Bank",        "b.bank",        "b.fallback", 2, 120, 2, 0, "b_bank",        "b_fallback", "The Bank",         1));
-        improvements.put(6L,  new Improvement(6,  "Temple",      "Temple",      "b.temple",      "b.fallback", 2,  30, 1, 0, "b_temple",      "b_fallback", "The Temple",       0));
-        improvements.put(7L,  new Improvement(7,  "City Walls",  "City_Walls",  "b.city_walls",  "b.fallback", 2,  60, 0, 0, "b_city_walls",  "b_fallback", "City Walls",       3));
-        improvements.put(8L,  new Improvement(8,  "Aqueduct",    "Aqueduct",    "b.aqueduct",    "b.fallback", 2, 120, 2, 0, "b_aqueduct",    "b_fallback", "The Aqueduct",     3));
-        improvements.put(9L,  new Improvement(9,  "Courthouse",  "Courthouse",  "b.courthouse",  "b.fallback", 2,  80, 1, 0, "b_courthouse",  "b_fallback", "The Courthouse",   8));
-        improvements.put(10L, new Improvement(10, "Harbor",      "Harbor",      "b.port",        "b.fallback", 2,  60, 1, 0, "b_harbor",      "b_fallback", "The Harbor",      12));
-        improvements.put(11L, new Improvement(11, "Colosseum",   "Colosseum",   "b.colosseum",   "b.fallback", 2, 100, 4, 0, "b_colosseum",   "b_fallback", "The Colosseum",    4));
-        improvements.put(12L, new Improvement(12, "Cathedral",   "Cathedral",   "b.cathedral",   "b.fallback", 2, 120, 3, 0, "b_cathedral",   "b_fallback", "The Cathedral",    6));
-        improvements.put(13L, new Improvement(13, "University",      "University",      "b.university",       "b.fallback", 2, 160, 3, 0, "b_university",       "b_fallback", "The University",     23));
-        // Late-game improvements from classic Freeciv ruleset:
-        // Factory and Mfg. Plant boost shield production; Research Lab boosts science;
-        // Stock Exchange boosts gold and luxury; Police Station improves happiness;
-        // Sewer System allows cities to grow beyond size 12.
-        Improvement factory = new Improvement(14, "Factory",      "Factory",      "b.factory",      "b.fallback", 2, 200, 4, 0, "b_factory",      "b_fallback", "The Factory",     26);
-        improvements.put(14L, factory);
-        Improvement mfgPlant = new Improvement(15, "Mfg. Plant",  "Mfg_Plant",    "b.mfg_plant",    "b.fallback", 2, 280, 6, 0, "b_mfg_plant",    "b_fallback", "Mfg. Plant",      27);
-        mfgPlant.setRequiredBuildingName("Factory");
-        improvements.put(15L, mfgPlant);
-        Improvement researchLab = new Improvement(16, "Research Lab", "Research_Lab", "b.research_lab", "b.fallback", 2, 120, 3, 0, "b_research_lab", "b_fallback", "Research Lab",    30);
-        researchLab.setRequiredBuildingName("University");
-        improvements.put(16L, researchLab);
-        Improvement stockExchange = new Improvement(17, "Stock Exchange", "Stock_Exchange", "b.stock_exchange", "b.fallback", 2, 120, 2, 0, "b_stock_exchange", "b_fallback", "Stock Exchange",  28);
-        stockExchange.setRequiredBuildingName("Bank");
-        improvements.put(17L, stockExchange);
-        // Police Station: reduces military-caused unhappiness in Republic/Democracy.
-        // Mirrors effect_police_station in classic effects.ruleset (Make_Content_Mil = 1 for
-        // Republic, 2 for Democracy).  Requires Communism technology.
-        improvements.put(18L, new Improvement(18, "Police Station", "Police_Station", "b.police_station", "b.fallback", 2,  50, 2, 0, "b_police_station", "b_fallback", "Police Station",  15));
-        // Sewer System: allows city growth beyond size 12 (together with Aqueduct).
-        // Referenced by cityGrowth() in CityTurn.java; requires Sanitation technology.
-        improvements.put(19L, new Improvement(19, "Sewer System",   "Sewer_System",   "b.sewer_system",   "b.fallback", 2,  80, 2, 0, "b_sewer_system",   "b_fallback", "Sewer System",    29));
+        // Resolve improvement technology requirement names to IDs using the loaded tech map.
+        // Mirrors the same req-resolution done for unit types above.
+        // Buildings have techReqId=-1 from the parser since technologies are loaded
+        // separately; this pass converts the stored techReqName strings to numeric IDs.
+        for (Improvement impr : improvements.values()) {
+            String reqName = impr.getTechReqName();
+            if (reqName != null && !reqName.isEmpty()) {
+                Long techId = techNameToId.get(reqName.toLowerCase());
+                if (techId != null) {
+                    impr.setTechReqId(techId);
+                }
+            }
+        }
     }
 
     /**

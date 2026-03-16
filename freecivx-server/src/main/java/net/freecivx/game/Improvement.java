@@ -39,6 +39,17 @@ public class Improvement {
     private long techReqId;   // Technology required to build (-1 = none)
 
     /**
+     * Unresolved technology name required to build this improvement, parsed from
+     * the first {@code "Tech"} row in the {@code reqs} table of the buildings
+     * ruleset.  {@code null} means no prerequisite.  Resolved to
+     * {@link #techReqId} by {@code Game.populateFromRuleset()} after all
+     * technologies have been loaded.
+     * Mirrors the {@code "Tech"} req check in {@code can_city_build_improvement_direct()}
+     * in the C Freeciv server's {@code common/city.c}.
+     */
+    private String techReqName = null;
+
+    /**
      * Name of the technology that makes this improvement obsolete, as read from
      * the {@code obsolete_by} table in the buildings ruleset.  {@code null} means
      * the building never becomes obsolete via technology.
@@ -101,6 +112,28 @@ public class Improvement {
     public String getSoundtagAlt() { return soundtagAlt; }
     public String getHelptext() { return helptext; }
     public long getTechReqId() { return techReqId; }
+
+    /**
+     * Returns the unresolved technology name required to build this improvement,
+     * or {@code null} if there is no prerequisite.  Set during ruleset loading;
+     * resolved to {@link #techReqId} by {@code Game.populateFromRuleset()}.
+     */
+    public String getTechReqName() { return techReqName; }
+
+    /**
+     * Sets the unresolved technology prerequisite name from the ruleset.
+     *
+     * @param techReqName the technology name, or {@code null} for no requirement
+     */
+    public void setTechReqName(String techReqName) { this.techReqName = techReqName; }
+
+    /**
+     * Sets the resolved technology ID required to build this improvement.
+     * Called by {@code Game.populateFromRuleset()} after all technologies are loaded.
+     *
+     * @param techReqId the technology ID, or {@code -1} for no requirement
+     */
+    public void setTechReqId(long techReqId) { this.techReqId = techReqId; }
 
     /**
      * Returns the name of the technology that makes this improvement obsolete,
