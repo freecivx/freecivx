@@ -348,23 +348,10 @@ public class Game {
         }
         populateFromRuleset();
 
-        // --- Nations: loaded from ruleset nation files via nation-index.txt ---
+        // --- Nations: auto-discovered via *include directives in nations.ruleset ---
         List<Nation> rNations = ruleset.getNations();
-        if (rNations.isEmpty()) {
-            // Fallback: load the three founding nations so the game can still start.
-            Nation nationSoviet  = new Nation("Soviet Union", "Soviet", "soviet",  "");
-            Nation nationFrance  = new Nation("France",       "French", "france",  "");
-            Nation nationGermany = new Nation("Germany",      "German", "germany", "");
-            nationSoviet .setCityNames(ruleset.loadNationCityNames("soviet"));
-            nationFrance .setCityNames(ruleset.loadNationCityNames("french"));
-            nationGermany.setCityNames(ruleset.loadNationCityNames("german"));
-            nations.put(0L, nationSoviet);
-            nations.put(1L, nationFrance);
-            nations.put(2L, nationGermany);
-        } else {
-            for (int i = 0; i < rNations.size(); i++) {
-                nations.put((long) i, rNations.get(i));
-            }
+        for (int i = 0; i < rNations.size(); i++) {
+            nations.put((long) i, rNations.get(i));
         }
 
         // --- Extras: bit positions fixed by MapGenerator/client protocol; data from ruleset ---

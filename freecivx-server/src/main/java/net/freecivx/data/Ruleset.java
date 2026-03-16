@@ -100,47 +100,23 @@ public class Ruleset {
     }
 
     /**
-     * Loads nation definitions from the nation index file and individual
-     * nation ruleset files.  The index file lists one nation key per line
-     * (e.g. {@code french}, {@code german}).  Each key is resolved to
-     * {@code nation/<key>.ruleset} on the classpath and parsed for the
-     * nation's display name, adjective, flag graphic, and legend.
-     * City names are loaded lazily later via {@link #loadNationCityNames}.
+     * Loads nation definitions by following {@code *include} directives in
+     * the nations ruleset file (e.g. {@code classic/nations.ruleset}) and any
+     * files it transitively includes (e.g. {@code default/nationlist.ruleset}).
+     * Each {@code *include "nation/<key>.ruleset"} directive is used to derive
+     * the nation key, which is then resolved to an individual nation file and
+     * parsed for the nation's display name, adjective, flag graphic, and legend.
+     * City names are loaded at the same time via {@link #loadNationCityNames}.
      *
      * <p>Mirrors {@code load_ruleset_nations()} in the C Freeciv server.
      *
      * @param path classpath-relative path to the nations ruleset file
-     *             (used only to derive the ruleset base path; the actual
-     *             nation data comes from the index + individual files)
+     *             (e.g. {@code classic/nations.ruleset})
      * @return {@code true} always (nation loading failures are non-fatal)
      */
     public boolean loadNations(String path) {
-        // Derive the ruleset directory from the path (e.g. "classic/").
-        String basePath = "";
-        int slash = path.lastIndexOf('/');
-        if (slash >= 0) {
-            basePath = path.substring(0, slash + 1);
-        }
-        // The nation index file lists one nation key per line.
-        String indexPath = basePath + "nation-index.txt";
-        InputStream indexIs = openResource(indexPath);
-        if (indexIs == null) {
-            log.warn("Nation index not found at {}; no nations loaded.", indexPath);
-            return true;
-        }
         List<String> keys = new ArrayList<>();
-        try (BufferedReader r = new BufferedReader(new InputStreamReader(indexIs, "UTF-8"))) {
-            String line;
-            while ((line = r.readLine()) != null) {
-                line = line.trim();
-                if (!line.isEmpty() && !line.startsWith(";") && !line.startsWith("#")) {
-                    keys.add(line);
-                }
-            }
-        } catch (IOException e) {
-            log.error("Error reading nation index {}: {}", indexPath, e.getMessage());
-            return true;
-        }
+        collectNationKeysFromFile(path, keys);
         for (String key : keys) {
             Nation n = loadNationFromFile(key);
             if (n != null) {
@@ -148,8 +124,50 @@ public class Ruleset {
                 nations.add(n);
             }
         }
-        log.info("Loaded {} nations from index {}", nations.size(), indexPath);
+        log.info("Loaded {} nations from {}", nations.size(), path);
         return true;
+    }
+
+    /**
+     * Collects nation keys by scanning a ruleset file for {@code *include}
+     * directives.  Includes referencing {@code nation/<key>.ruleset} yield the
+     * nation key directly; other includes are followed recursively so that
+     * files such as {@code default/nationlist.ruleset} are also scanned.
+     * Included files that are not present on the classpath are silently skipped
+     * (they are treated as optional overrides).
+     *
+     * @param path classpath-relative path to the file to scan
+     * @param keys list to append discovered nation keys to
+     */
+    private void collectNationKeysFromFile(String path, List<String> keys) {
+        InputStream is = openResourceOptional(path);
+        if (is == null) {
+            log.debug("Nation include not found (skipped): {}", path);
+            return;
+        }
+        try (BufferedReader r = new BufferedReader(new InputStreamReader(is, "UTF-8"))) {
+            String line;
+            while ((line = r.readLine()) != null) {
+                line = line.trim();
+                if (!line.startsWith("*include")) continue;
+                // Extract the quoted path: *include "some/path.ruleset"
+                int q1 = line.indexOf('"');
+                int q2 = line.lastIndexOf('"');
+                if (q1 < 0 || q2 <= q1) continue;
+                String included = line.substring(q1 + 1, q2);
+                if (included.startsWith("nation/") && included.endsWith(".ruleset")) {
+                    // Extract the nation key from "nation/<key>.ruleset"
+                    String key = included.substring("nation/".length(),
+                            included.length() - ".ruleset".length());
+                    keys.add(key);
+                } else {
+                    // Recursively follow other includes (e.g. default/nationlist.ruleset)
+                    collectNationKeysFromFile(included, keys);
+                }
+            }
+        } catch (IOException e) {
+            log.error("Error reading nations file {}: {}", path, e.getMessage());
+        }
     }
 
     /**
@@ -724,6 +742,11 @@ public class Ruleset {
             log.error("Ruleset resource not found: {}", path);
         }
         return is;
+    }
+
+    /** Opens a classpath resource silently; returns {@code null} if not found (no error logged). */
+    private InputStream openResourceOptional(String path) {
+        return getClass().getClassLoader().getResourceAsStream(path);
     }
 
     /**
