@@ -19,6 +19,8 @@
 
 package net.freecivx.data;
 
+import net.freecivx.game.CityStyle;
+import net.freecivx.game.Extra;
 import net.freecivx.game.Government;
 import net.freecivx.game.Improvement;
 import net.freecivx.game.Nation;
@@ -31,6 +33,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -66,6 +69,8 @@ public class Ruleset {
     private List<Terrain> terrains = new ArrayList<>();
     private List<Government> governments = new ArrayList<>();
     private List<Nation> nations = new ArrayList<>();
+    private List<Extra> extras = new ArrayList<>();
+    private List<CityStyle> cityStyles = new ArrayList<>();
 
     /**
      * Loads the complete ruleset with the given name from classpath resources.
@@ -85,23 +90,127 @@ public class Ruleset {
         ok &= loadBuildings(basePath + "buildings.ruleset");
         ok &= loadTechnologies(basePath + "techs.ruleset");
         ok &= loadTerrains(basePath + "terrain.ruleset");
+        ok &= loadExtras(basePath + "terrain.ruleset");
         ok &= loadGovernments(basePath + "governments.ruleset");
         ok &= loadNations(basePath + "nations.ruleset");
+        ok &= loadCityStyles(basePath + "styles.ruleset");
 
         this.loaded = ok;
         return ok;
     }
 
     /**
-     * Loads nation definitions from the specified ruleset resource path.
-     * Nations are kept as stubs since the full nation list is managed
-     * separately via nation/*.ruleset files.
+     * Loads nation definitions from the nation index file and individual
+     * nation ruleset files.  The index file lists one nation key per line
+     * (e.g. {@code french}, {@code german}).  Each key is resolved to
+     * {@code nation/<key>.ruleset} on the classpath and parsed for the
+     * nation's display name, adjective, flag graphic, and legend.
+     * City names are loaded lazily later via {@link #loadNationCityNames}.
+     *
+     * <p>Mirrors {@code load_ruleset_nations()} in the C Freeciv server.
      *
      * @param path classpath-relative path to the nations ruleset file
-     * @return {@code true} always (nations are optional)
+     *             (used only to derive the ruleset base path; the actual
+     *             nation data comes from the index + individual files)
+     * @return {@code true} always (nation loading failures are non-fatal)
      */
     public boolean loadNations(String path) {
+        // Derive the ruleset directory from the path (e.g. "classic/").
+        String basePath = "";
+        int slash = path.lastIndexOf('/');
+        if (slash >= 0) {
+            basePath = path.substring(0, slash + 1);
+        }
+        // The nation index file lists one nation key per line.
+        String indexPath = basePath + "nation-index.txt";
+        InputStream indexIs = openResource(indexPath);
+        if (indexIs == null) {
+            log.warn("Nation index not found at {}; no nations loaded.", indexPath);
+            return true;
+        }
+        List<String> keys = new ArrayList<>();
+        try (BufferedReader r = new BufferedReader(new InputStreamReader(indexIs, "UTF-8"))) {
+            String line;
+            while ((line = r.readLine()) != null) {
+                line = line.trim();
+                if (!line.isEmpty() && !line.startsWith(";") && !line.startsWith("#")) {
+                    keys.add(line);
+                }
+            }
+        } catch (IOException e) {
+            log.error("Error reading nation index {}: {}", indexPath, e.getMessage());
+            return true;
+        }
+        for (String key : keys) {
+            Nation n = loadNationFromFile(key);
+            if (n != null) {
+                n.setCityNames(loadNationCityNames(key));
+                nations.add(n);
+            }
+        }
+        log.info("Loaded {} nations from index {}", nations.size(), indexPath);
         return true;
+    }
+
+    /**
+     * Parses a single nation file ({@code nation/<key>.ruleset}) to extract
+     * the nation's display name, adjective, flag graphic, and legend.
+     *
+     * @param key lowercase nation key (e.g. {@code "french"})
+     * @return a populated {@link Nation}, or {@code null} on failure
+     */
+    private Nation loadNationFromFile(String key) {
+        String path = "nation/" + key + ".ruleset";
+        InputStream is = openResource(path);
+        if (is == null) {
+            log.warn("Nation file not found: {}", path);
+            return null;
+        }
+        String name = "";
+        String plural = "";
+        String flag = key;
+        String legend = "";
+        try (BufferedReader reader = new BufferedReader(new InputStreamReader(is, "UTF-8"))) {
+            boolean inLegend = false;
+            String line;
+            while ((line = reader.readLine()) != null) {
+                // Handle backslash line continuation for legend etc.
+                while (line.endsWith("\\")) {
+                    String next = reader.readLine();
+                    if (next == null) break;
+                    line = line.substring(0, line.length() - 1) + " " + next;
+                }
+                line = stripComment(line).trim();
+                if (line.isEmpty()) continue;
+                if (line.startsWith("[") && line.endsWith("]")) {
+                    inLegend = false;
+                    continue;
+                }
+                int eq = line.indexOf('=');
+                if (eq < 0) continue;
+                String k = line.substring(0, eq).trim();
+                String v = extractValue(line.substring(eq + 1).trim());
+                if ("name".equals(k) && name.isEmpty()) {
+                    name = v;
+                } else if ("plural".equals(k) && plural.isEmpty()) {
+                    plural = v;
+                } else if ("flag".equals(k) && flag.equals(key)) {
+                    flag = v;
+                } else if ("legend".equals(k) && legend.isEmpty()) {
+                    legend = v;
+                }
+            }
+        } catch (IOException e) {
+            log.error("Error reading nation file {}: {}", path, e.getMessage());
+            return null;
+        }
+        if (name.isEmpty()) {
+            // Capitalise the key as a fallback display name.
+            name = key.substring(0, 1).toUpperCase() + key.substring(1);
+        }
+        // Use the plural form as the adjective (e.g. "French"), falling back to name.
+        String adjective = plural.isEmpty() ? name : plural;
+        return new Nation(name, adjective, flag, legend);
     }
 
     /**
@@ -461,6 +570,147 @@ public class Ruleset {
             case "fundamentalism"  -> 15;
             default                ->  0; // Democracy and any unknown gov = no corruption
         };
+    }
+
+    /**
+     * Loads extra type definitions (infrastructure and resources) from the
+     * terrain ruleset file.  Parses {@code [extra_*]} sections for name,
+     * causes, and graphic tag, and {@code [resource_*]} sections for the
+     * food/shield/trade yield bonuses.
+     *
+     * <p>The returned {@link Extra} list preserves the declaration order from
+     * the ruleset file, which determines each extra's bit-position in the tile
+     * extras bitvector.  Resource yield data is joined by matching the
+     * {@code [resource_*].extra} field to the corresponding extra name.
+     *
+     * <p>Mirrors {@code load_ruleset_terrain()} / extra loading in the C Freeciv
+     * server.
+     *
+     * @param path classpath-relative path to the terrain ruleset file
+     * @return {@code true} if the file was parsed without errors
+     */
+    public boolean loadExtras(String path) {
+        InputStream is = openResource(path);
+        if (is == null) return false;
+        try {
+            List<RuleSection> sections = parseSections(is);
+
+            // First pass: collect extra definitions in order.
+            // Use rule_name when present (e.g. Hut / Railroad), else fall back
+            // to the display name extracted by the parser.
+            List<Extra> rawExtras = new ArrayList<>();
+            for (RuleSection sec : sections) {
+                if (!sec.title.startsWith("extra_")) continue;
+                String name     = sec.get("name");
+                String ruleName = sec.get("rule_name");
+                // Prefer rule_name as the canonical key (matches how C server uses it).
+                String key = ruleName.isEmpty() ? name : ruleName;
+                if (key.isEmpty()) continue;
+                String causesStr = sec.get("causes");
+                int    causes    = causesToBits(causesStr);
+                String graphic   = sec.get("graphic");
+                if (graphic.isEmpty()) graphic = null;
+                rawExtras.add(new Extra(key, causes, graphic));
+            }
+
+            // Second pass: collect resource yield bonuses keyed by the extra name
+            // they modify (the "extra" field in [resource_*] sections).
+            Map<String, int[]> resourceYields = new HashMap<>();
+            for (RuleSection sec : sections) {
+                if (!sec.title.startsWith("resource_")) continue;
+                String extraName = sec.get("extra");
+                if (extraName.isEmpty()) continue;
+                int food   = sec.getInt("food",   0);
+                int shield = sec.getInt("shield", 0);
+                int trade  = sec.getInt("trade",  0);
+                resourceYields.put(extraName.toLowerCase(), new int[]{food, shield, trade});
+            }
+
+            // Third pass: attach yield bonuses to extras that have a matching resource.
+            for (Extra extra : rawExtras) {
+                int[] yields = resourceYields.get(extra.getName().toLowerCase());
+                if (yields != null) {
+                    Extra withYields = new Extra(extra.getName(), extra.getCauses(),
+                            extra.getGraphicStr().equals(extra.getName().toLowerCase()) ? null : extra.getGraphicStr(),
+                            yields[0], yields[1], yields[2]);
+                    extras.add(withYields);
+                } else {
+                    extras.add(extra);
+                }
+            }
+            log.info("Loaded {} extras from {}", extras.size(), path);
+            return true;
+        } catch (IOException e) {
+            log.error("Error loading extras from {}: {}", path, e.getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Maps the {@code causes} string from an {@code [extra_*]} section to the
+     * EC_* bitvector used internally.  Mirrors the EC_* constants in the C
+     * Freeciv server's {@code common/fc_types.h} and the client's
+     * {@code fc_types.js}.
+     *
+     * <ul>
+     *   <li>Irrigation → EC_IRRIGATION = 1</li>
+     *   <li>Mine       → EC_MINE       = 2</li>
+     *   <li>Road       → EC_ROAD       = 4</li>
+     *   <li>Base       → EC_BASE       = 8</li>
+     *   <li>Pollution  → EC_POLLUTION  = 16</li>
+     *   <li>Fallout    → EC_FALLOUT    = 32</li>
+     *   <li>Hut        → EC_HUT        = 64</li>
+     *   <li>Appearance → EC_APPEARANCE = 128</li>
+     *   <li>Resource   → EC_RESOURCE   = 256</li>
+     * </ul>
+     */
+    private static int causesToBits(String causes) {
+        if (causes == null || causes.isEmpty()) return 0;
+        int bits = 0;
+        for (String cause : causes.split(",")) {
+            bits |= switch (cause.trim().toLowerCase()) {
+                case "irrigation" -> 1;
+                case "mine"       -> 2;
+                case "road"       -> 4;
+                case "base"       -> 8;
+                case "pollution"  -> 16;
+                case "fallout"    -> 32;
+                case "hut"        -> 64;
+                case "appearance" -> 128;
+                case "resource"   -> 256;
+                default           -> 0;
+            };
+        }
+        return bits;
+    }
+
+    /**
+     * Loads city style definitions from the styles ruleset file.  Parses
+     * every {@code [citystyle_*]} section to extract the display name.
+     *
+     * <p>Mirrors the city-style loading in the C Freeciv server's
+     * {@code load_ruleset_styles()}.
+     *
+     * @param path classpath-relative path to the styles ruleset file
+     * @return {@code true} if the file was parsed without errors
+     */
+    public boolean loadCityStyles(String path) {
+        InputStream is = openResource(path);
+        if (is == null) return false;
+        try {
+            List<RuleSection> sections = parseSections(is);
+            for (RuleSection sec : sections) {
+                if (!sec.title.startsWith("citystyle_")) continue;
+                String name = sec.get("name");
+                if (name.isEmpty()) continue;
+                cityStyles.add(new CityStyle(name));
+            }
+            log.info("Loaded {} city styles from {}", cityStyles.size(), path);
+            return true;
+        } catch (IOException e) {
+            log.error("Error loading city styles from {}: {}", path, e.getMessage());
+            return false;
+        }
     }
 
     // -----------------------------------------------------------------------
@@ -869,4 +1119,10 @@ public class Ruleset {
 
     /** @return the list of nation definitions loaded from the ruleset */
     public List<Nation> getNations() { return nations; }
+
+    /** @return the list of extra type definitions loaded from the terrain ruleset */
+    public List<Extra> getExtras() { return extras; }
+
+    /** @return the list of city style definitions loaded from the styles ruleset */
+    public List<CityStyle> getCityStyles() { return cityStyles; }
 }
