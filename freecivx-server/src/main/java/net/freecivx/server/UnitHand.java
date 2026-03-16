@@ -97,7 +97,7 @@ public class UnitHand {
             // targetId is the unit ID of the defending unit
             game.attackUnit(actorId, targetId);
         } else if (actionType == Actions.ACTION_FORTIFY) {
-            game.changeUnitActivity(actorId, 3); // activity 3 = ACTIVITY_FORTIFIED
+            game.changeUnitActivity(actorId, CityTurn.ACTIVITY_FORTIFIED);
         } else if (actionType == Actions.ACTION_MINE) {
             // Start building a mine on the current tile.
             // "Plant" is the Freeciv 3.x name for the mine/forest-plant action.

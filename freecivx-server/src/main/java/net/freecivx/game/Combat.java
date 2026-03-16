@@ -300,7 +300,7 @@ public class Combat {
      */
     public static int unitCombatModifier(Unit unit, UnitType unitType) {
         if (unit == null) return 0;
-        // ACTIVITY_FORTIFIED = 3: grants +50% defence bonus.
+        // ACTIVITY_FORTIFIED = 4: grants +50% defence bonus.
         // Mirrors effect_fortified: Fortify_Defense_Bonus = 50 in classic effects.ruleset.
         if (unit.getActivity() == net.freecivx.server.CityTurn.ACTIVITY_FORTIFIED) return 50;
         return 0;
