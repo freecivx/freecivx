@@ -740,17 +740,28 @@ public class CivServer extends org.java_websocket.server.WebSocketServer impleme
         msg.put("production_kind", production_kind);
         msg.put("production_value", production_value);
 
-        JSONArray pplArray = new JSONArray();
-        pplArray.put(1);
-        pplArray.put(1);
-        pplArray.put(2);
-        pplArray.put(1);
-        pplArray.put(1);
+        // Build per-type people arrays for all 6 feeling stages (FEELING_BASE=0 …
+        // FEELING_FINAL=5).  The client's city_unhappy() reads index 5; sending
+        // only 5 elements causes a crash.  Index 5 is derived from happy/unhappy.
+        JSONArray pplHappyArr = new JSONArray();
+        for (int i = 0; i < 5; i++) pplHappyArr.put(0);
+        pplHappyArr.put(happy ? size : 0);
 
-        msg.put("ppl_happy", pplArray);
-        msg.put("ppl_content", pplArray);
-        msg.put("ppl_unhappy", pplArray);
-        msg.put("ppl_angry", pplArray);
+        JSONArray pplContentArr = new JSONArray();
+        for (int i = 0; i < 5; i++) pplContentArr.put(size);
+        pplContentArr.put((!happy && !unhappy) ? size : 0);
+
+        JSONArray pplUnhappyArr = new JSONArray();
+        for (int i = 0; i < 5; i++) pplUnhappyArr.put(0);
+        pplUnhappyArr.put(unhappy ? 1 : 0);
+
+        JSONArray pplAngryArr = new JSONArray();
+        for (int i = 0; i < 6; i++) pplAngryArr.put(0);
+
+        msg.put("ppl_happy", pplHappyArr);
+        msg.put("ppl_content", pplContentArr);
+        msg.put("ppl_unhappy", pplUnhappyArr);
+        msg.put("ppl_angry", pplAngryArr);
 
         // prod/surplus arrays need 6 elements: O_FOOD=0, O_SHIELD=1, O_TRADE=2,
         // O_GOLD=3, O_LUXURY=4, O_SCIENCE=5.  Using the same values as ppl but
