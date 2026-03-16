@@ -375,7 +375,9 @@ public class MapGenerator {
             case TERRAIN_GLACIER   -> random.nextBoolean() ? RESOURCE_IVORY : RESOURCE_OIL;
             case TERRAIN_TUNDRA    -> RESOURCE_GAME;
             case TERRAIN_JUNGLE    -> random.nextBoolean() ? RESOURCE_FRUIT : RESOURCE_GEMS;
-            case TERRAIN_OCEAN, TERRAIN_COAST -> random.nextBoolean() ? RESOURCE_FISH : RESOURCE_WHALES;
+            // Fish and whales only appear in ocean waters close to land (coast tiles).
+            // Deep ocean tiles remain barren.
+            case TERRAIN_COAST -> random.nextBoolean() ? RESOURCE_FISH : RESOURCE_WHALES;
             default -> RESOURCE_NONE;
         };
     }
@@ -420,7 +422,8 @@ public class MapGenerator {
      * <ol>
      *   <li>Fill the map with ocean.</li>
      *   <li>Place {@code NUM_BLOBS} seed points and grow each into a blob of land
-     *       using a probability that decreases with distance from the seed.</li>
+     *       using a probability that decreases with distance from the seed.
+     *       Each island grows to a target tile count so islands are fairly sized.</li>
      *   <li>Convert ocean tiles adjacent to land into coast.</li>
      *   <li>Assign latitude-appropriate terrain to every land tile.</li>
      *   <li>Place resources, huts, and rivers as normal.</li>
@@ -429,9 +432,13 @@ public class MapGenerator {
      * @return the generated tile map
      */
     public Map<Long, Tile> generateIslandMap() {
-        // Number of island blobs and their approximate radius
-        final int NUM_BLOBS = 15;
+        // Number of island blobs and their approximate compactness radius
+        final int NUM_BLOBS = 25;
         final int BLOB_RADIUS = 5;
+        // Each island grows to a target tile count within this range, ensuring
+        // islands are fairly sized relative to each other.
+        final int MIN_ISLAND_TILES = 15;
+        final int MAX_ISLAND_TILES = 40;
 
         // Phase 1: initialise everything as deep ocean
         for (int y = 0; y < height; y++) {
@@ -445,21 +452,27 @@ public class MapGenerator {
         boolean[][] isLand = new boolean[width][height];
         int seedRangeX = Math.max(1, width - 6);
         int seedRangeY = Math.max(1, height - 6);
+        final int[][] DIRS4 = {{0, 1}, {0, -1}, {1, 0}, {-1, 0}};
         for (int b = 0; b < NUM_BLOBS; b++) {
             // Seed away from the map edges
             int cx = 3 + random.nextInt(seedRangeX);
             int cy = 3 + random.nextInt(seedRangeY);
+
+            // Each island grows to a random target size within the fair-size range.
+            int targetTileCount = MIN_ISLAND_TILES
+                    + random.nextInt(MAX_ISLAND_TILES - MIN_ISLAND_TILES + 1);
+            int maxAttempts = targetTileCount * 20; // Safety cap on iterations
 
             // Expand outward; probability of adding a neighbour decreases with
             // distance from the blob centre, producing natural coastlines.
             List<int[]> blob = new ArrayList<>();
             blob.add(new int[]{cx, cy});
             isLand[cx][cy] = true;
+            int tilesAdded = 1;
+            int attempts = 0;
 
-            int expansionSteps = BLOB_RADIUS * BLOB_RADIUS * 4;
-            final int[][] DIRS4 = {{0, 1}, {0, -1}, {1, 0}, {-1, 0}};
-            for (int step = 0; step < expansionSteps; step++) {
-                if (blob.isEmpty()) break;
+            while (tilesAdded < targetTileCount && attempts < maxAttempts && !blob.isEmpty()) {
+                attempts++;
                 int[] cell = blob.get(random.nextInt(blob.size()));
                 int[] dir = DIRS4[random.nextInt(4)];
                 int nx = cell[0] + dir[0];
@@ -471,6 +484,7 @@ public class MapGenerator {
                 if (random.nextDouble() < Math.exp(-dist / BLOB_RADIUS)) {
                     isLand[nx][ny] = true;
                     blob.add(new int[]{nx, ny});
+                    tilesAdded++;
                 }
             }
         }
