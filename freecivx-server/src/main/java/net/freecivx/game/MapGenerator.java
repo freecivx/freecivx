@@ -218,10 +218,10 @@ public class MapGenerator {
                 int terrain;
                 int heightLevel;
 
-                if (elevation < -0.72) {  // **Deep ocean**
+                if (elevation < -0.82) {  // **Deep ocean**
                     terrain = TERRAIN_OCEAN;
                     heightLevel = -200;
-                } else if (elevation < -0.56) {  // **Coastline**
+                } else if (elevation < -0.66) {  // **Coastline**
                     terrain = TERRAIN_COAST;
                     heightLevel = -100;
                 } else if (elevation < 0.2) {  // **Low-lying land: plains, jungle, swamp**
@@ -433,12 +433,12 @@ public class MapGenerator {
      */
     public Map<Long, Tile> generateIslandMap() {
         // Number of island blobs and their approximate compactness radius
-        final int NUM_BLOBS = 25;
+        final int NUM_BLOBS = 30;
         final int BLOB_RADIUS = 5;
         // Each island grows to a target tile count within this range, ensuring
         // islands are fairly sized relative to each other.
-        final int MIN_ISLAND_TILES = 15;
-        final int MAX_ISLAND_TILES = 40;
+        final int MIN_ISLAND_TILES = 18;
+        final int MAX_ISLAND_TILES = 48;
 
         // Phase 1: initialise everything as deep ocean
         for (int y = 0; y < height; y++) {
