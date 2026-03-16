@@ -218,10 +218,10 @@ public class MapGenerator {
                 int terrain;
                 int heightLevel;
 
-                if (elevation < -0.5) {  // **Deep ocean**
+                if (elevation < -0.72) {  // **Deep ocean**
                     terrain = TERRAIN_OCEAN;
                     heightLevel = -200;
-                } else if (elevation < -0.2) {  // **Coastline**
+                } else if (elevation < -0.56) {  // **Coastline**
                     terrain = TERRAIN_COAST;
                     heightLevel = -100;
                 } else if (elevation < 0.2) {  // **Low-lying land: plains, jungle, swamp**
