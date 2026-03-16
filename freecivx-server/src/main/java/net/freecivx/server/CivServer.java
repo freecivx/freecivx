@@ -784,9 +784,30 @@ public class CivServer extends org.java_websocket.server.WebSocketServer impleme
         msg.put("graphic_str", graphicStr != null ? graphicStr : extra_name.toLowerCase());
         msg.put("graphic_alt", "-");
         msg.put("rule_name", extra_name);
-        msg.put("causes", causes);
-        msg.put("rmcauses", 0);
+        // Send causes and rmcauses as byte arrays to match the C Freeciv server's
+        // BV_CAUSES bitvector format. The JavaScript client wraps them with
+        // new BitVector(packet['causes']), which expects an array of bytes.
+        // EC_RESOURCE = 8 (bit 8) requires 2 bytes (ceil(9/8) = 2).
+        msg.put("causes", causesToByteArray(causes));
+        msg.put("rmcauses", causesToByteArray(0));
         return msg;
+    }
+
+    /**
+     * Converts a causes bitvector (int) to a 2-byte JSON array matching the
+     * C Freeciv server's {@code BV_CAUSES} format.
+     * The JavaScript client wraps it with {@code new BitVector(packet['causes'])},
+     * which expects an array of bytes, not a raw integer.
+     * EC_RESOURCE = 8 is in bit 8, which resides in byte 1 of a 2-byte array.
+     *
+     * @param causes the causes bitvector
+     * @return a JSONArray of 2 bytes (little-endian)
+     */
+    private static JSONArray causesToByteArray(int causes) {
+        JSONArray arr = new JSONArray();
+        arr.put(causes & 0xFF);
+        arr.put((causes >> 8) & 0xFF);
+        return arr;
     }
 
     public void sendTileInfoAll(Tile tile) {

@@ -670,16 +670,20 @@ public class Ruleset {
      * Freeciv server's {@code common/fc_types.h} and the client's
      * {@code fc_types.js}.
      *
+     * <p>These are <em>bit values</em> (1 &lt;&lt; bit_index), not bit indices.
+     * In JavaScript, EC_* constants are bit indices (e.g. EC_RESOURCE = 8);
+     * the corresponding bit value here is 256 (= 1 &lt;&lt; 8).</p>
+     *
      * <ul>
-     *   <li>Irrigation → EC_IRRIGATION = 1</li>
-     *   <li>Mine       → EC_MINE       = 2</li>
-     *   <li>Road       → EC_ROAD       = 4</li>
-     *   <li>Base       → EC_BASE       = 8</li>
-     *   <li>Pollution  → EC_POLLUTION  = 16</li>
-     *   <li>Fallout    → EC_FALLOUT    = 32</li>
-     *   <li>Hut        → EC_HUT        = 64</li>
-     *   <li>Appearance → EC_APPEARANCE = 128</li>
-     *   <li>Resource   → EC_RESOURCE   = 256</li>
+     *   <li>Irrigation → bit 0  → value 1</li>
+     *   <li>Mine       → bit 1  → value 2</li>
+     *   <li>Road       → bit 2  → value 4   (EC_ROAD = 2)</li>
+     *   <li>Base       → bit 3  → value 8   (EC_BASE = 3)</li>
+     *   <li>Pollution  → bit 4  → value 16</li>
+     *   <li>Fallout    → bit 5  → value 32</li>
+     *   <li>Hut        → bit 6  → value 64  (EC_HUT = 6)</li>
+     *   <li>Appearance → bit 7  → value 128</li>
+     *   <li>Resource   → bit 8  → value 256 (EC_RESOURCE = 8)</li>
      * </ul>
      */
     private static int causesToBits(String causes) {

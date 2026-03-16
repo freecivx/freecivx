@@ -97,14 +97,16 @@ public class MapHand {
     }
 
     /**
-     * Converts an extras bitvector (int) to a 4-byte JSON array matching the
+     * Converts an extras bitvector (int) to a 16-byte JSON array matching the
      * format expected by the client's {@code BitVector} class.
-     * The C Freeciv server sends {@code BV_EXTRAS} as a byte array; this method
+     * The C Freeciv server sends {@code BV_EXTRAS} as a 16-byte array because
+     * {@code MAX_EXTRA_TYPES = 128} (128 bits = 16 bytes). The JavaScript client
+     * expects {@code tile.extras.raw} to be an {@code Array(16)}, so this method
      * produces the same encoding so {@code tile.extras.isSet(bitNum)} works
-     * correctly for bits 0–31.
+     * correctly for bits 0–127.
      *
-     * @param extras the extras bitvector
-     * @return a JSONArray of 4 bytes (little-endian)
+     * @param extras the extras bitvector (bits 0–31 used; bits 32–127 are zero)
+     * @return a JSONArray of 16 bytes (little-endian)
      */
     public static JSONArray extrasToByteArray(int extras) {
         JSONArray arr = new JSONArray();
@@ -112,6 +114,10 @@ public class MapHand {
         arr.put((extras >> 8) & 0xFF);
         arr.put((extras >> 16) & 0xFF);
         arr.put((extras >> 24) & 0xFF);
+        // Pad to 16 bytes to match C Freeciv server BV_EXTRAS (MAX_EXTRA_TYPES=128 bits)
+        for (int i = 4; i < 16; i++) {
+            arr.put(0);
+        }
         return arr;
     }
 
