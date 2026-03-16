@@ -424,38 +424,75 @@ public class CityTurn {
      * owner has changed.  Only tiles where the ownership changes are
      * re-broadcast to clients.
      *
-     * <p>Each city claims tiles within a radius based on city size:
-     * {@code radius = min(floor(sqrt(size)) + 1, 5)}.
-     * When two cities compete for the same tile, the one whose centre is
-     * closer (Chebyshev distance) wins.  Mirrors the high-level logic of
-     * {@code server/borders.c} in the C Freeciv server.
+     * <p>Mirrors {@code common/borders.c} and {@code server/maphand.c} from
+     * the C Freeciv server:
+     * <ul>
+     *   <li>Border radius (squared): {@code border_city_radius_sq(17) +
+     *       min(city_size, CITY_MAP_MAX_RADIUS_SQ(26)) * border_size_effect(1)}</li>
+     *   <li>Border strength at a tile: {@code (city_size + 2)^2 / sq_dist}
+     *       — the city with the highest strength claims the tile; ties go to
+     *       the current claimer (older city wins).</li>
+     *   <li>Squared Euclidean distance with horizontal (cylindrical) map
+     *       wrapping mirrors {@code sq_map_distance()} in the C server.</li>
+     * </ul>
      *
      * @param game the current game state
      */
     public static void updateBorders(Game game) {
-        long mapWidth  = game.map.getXsize();
-        long mapHeight = game.map.getYsize();
+        int mapWidth  = game.map.getXsize();
+
+        // Default ruleset constants (common/game.h)
+        // RS_DEFAULT_BORDER_RADIUS_SQ_CITY = 17 (city radius 4)
+        // RS_DEFAULT_BORDER_SIZE_EFFECT    = 1
+        // CITY_MAP_MAX_RADIUS_SQ           = 5*5+1 = 26
+        final int BORDER_CITY_RADIUS_SQ = 17;
+        final int BORDER_SIZE_EFFECT    = 1;
+        final int CITY_MAP_MAX_RADIUS_SQ = 26;
 
         for (Tile tile : game.tiles.values()) {
             long tileId = tile.getIndex();
-            long tx = tileId % mapWidth;
-            long ty = tileId / mapWidth;
+            int tx = (int)(tileId % mapWidth);
+            int ty = (int)(tileId / mapWidth);
 
             int bestOwner = -1;
-            long bestDist = (long) game.map.getXsize() + game.map.getYsize();
+            long bestStrength = 0;  // 0 means unclaimed
 
             for (City city : game.cities.values()) {
                 long cityTile = city.getTile();
-                long cx = cityTile % mapWidth;
-                long cy = cityTile / mapWidth;
+                int cx = (int)(cityTile % mapWidth);
+                int cy = (int)(cityTile / mapWidth);
 
-                // Chebyshev distance between tile and city centre
-                long dist = Math.max(Math.abs(tx - cx), Math.abs(ty - cy));
-                // Border radius grows with city size (capped at 5)
-                int radius = Math.min((int) Math.sqrt(city.getSize()) + 1, 5);
+                // Squared Euclidean distance with horizontal cylindrical wrap
+                // (mirrors sq_map_distance() in the C server).
+                // Cast to long before subtraction to avoid int overflow.
+                long rawDx = Math.abs((long) tx - cx);
+                long wrappedDx = Math.min(rawDx, mapWidth - rawDx);
+                long dy = (long) ty - cy;
+                long sqDist = wrappedDx * wrappedDx + dy * dy;
 
-                if (dist <= radius && dist < bestDist) {
-                    bestDist = dist;
+                // Border radius (squared) grows with city size, capped at CITY_MAP_MAX_RADIUS_SQ
+                int citySize = city.getSize();
+                int radiusSq = BORDER_CITY_RADIUS_SQ
+                        + Math.min(citySize, CITY_MAP_MAX_RADIUS_SQ) * BORDER_SIZE_EFFECT;
+
+                if (sqDist > radiusSq) {
+                    continue;  // Tile is outside this city's border radius
+                }
+
+                // Border strength = (city_size + 2)^2 / sq_dist
+                // (mirrors tile_border_strength() in common/borders.c)
+                long strength;
+                if (sqDist == 0) {
+                    // City centre: infinite strength (always claimed by its city)
+                    strength = Long.MAX_VALUE;
+                } else {
+                    long baseBorderStrength = citySize + 2;
+                    strength = baseBorderStrength * baseBorderStrength / sqDist;
+                }
+
+                // Stronger city wins; ties keep existing claimer (bestOwner)
+                if (strength > bestStrength) {
+                    bestStrength = strength;
                     bestOwner = (int) city.getOwner();
                 }
             }
