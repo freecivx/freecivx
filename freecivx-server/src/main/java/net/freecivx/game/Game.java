@@ -338,7 +338,7 @@ public class Game {
      * if the ruleset cannot be loaded — the server cannot run without it.
      */
     public void initGame() {
-        map = new WorldMap(45, 45);
+        map = new WorldMap(65, 65);
 
         // --- Load ruleset from classpath resources ---
         boolean rulesetOk = ruleset.loadRuleset("classic");
