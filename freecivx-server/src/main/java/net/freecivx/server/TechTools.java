@@ -27,9 +27,13 @@ import net.freecivx.game.Unit;
 import net.freecivx.game.UnitType;
 import org.json.JSONArray;
 import org.json.JSONObject;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Queue;
+import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -273,10 +277,16 @@ public class TechTools {
     /**
      * Selects the next technology to research in order to progress toward the
      * player's tech goal.  Returns the goal itself if the player can research it
-     * directly, or the first researchable prerequisite otherwise.
+     * directly, or the nearest researchable prerequisite otherwise (found via a
+     * breadth-first search through the prerequisite dependency tree).
      * Returns -1 if no goal is set, the goal is already known, or no researchable
      * path exists.
-     * Mirrors the {@code research_goal_tech} logic in the C Freeciv server.
+     *
+     * <p>Mirrors the {@code research_goal_tech()} logic in the C Freeciv server's
+     * {@code common/research.c}: the server walks the prerequisite tree of the
+     * goal technology and returns the first researchable step, ensuring the AI
+     * always makes progress rather than stalling because a deep prerequisite was
+     * missed.
      *
      * @param game   the current game state
      * @param player the player whose goal to evaluate
@@ -292,24 +302,47 @@ public class TechTools {
         // If goal is directly researchable, return it
         if (canPlayerResearch(game, player.getPlayerNo(), goalId)) return goalId;
 
-        // Otherwise find the first researchable prerequisite in the dependency chain
-        // BFS through prerequisite tree toward the goal
-        Technology goal = game.techs.get(goalId);
-        if (goal == null) return -1L;
+        // BFS through the prerequisite dependency tree starting from the goal.
+        // Build a name→id map once for efficient lookups.
+        Map<String, Long> nameToId = new java.util.HashMap<>();
+        for (Map.Entry<Long, Technology> e : game.techs.entrySet()) {
+            nameToId.put(e.getValue().getName(), e.getKey());
+        }
 
-        for (Map.Entry<Long, net.freecivx.game.Technology> entry : game.techs.entrySet()) {
-            long tid = entry.getKey();
-            net.freecivx.game.Technology tech = entry.getValue();
-            // Check if this tech is a prerequisite of the goal (directly or indirectly)
-            if (!player.hasTech(tid) && canPlayerResearch(game, player.getPlayerNo(), tid)) {
-                // Simple heuristic: return first researchable unknown tech that is a prereq
-                if (goal.getPrereq1().equals(tech.getName()) || goal.getPrereq2().equals(tech.getName())) {
-                    return tid;
+        // BFS: process each tech's prerequisites until we find a researchable one.
+        // The queue holds tech IDs whose prerequisites we still need to explore.
+        Queue<Long> queue = new ArrayDeque<>();
+        Set<Long> visited = new HashSet<>();
+        queue.add(goalId);
+        visited.add(goalId);
+
+        while (!queue.isEmpty()) {
+            long current = queue.poll();
+            Technology tech = game.techs.get(current);
+            if (tech == null) continue;
+
+            // Examine both prerequisite slots
+            for (String prereqName : new String[]{ tech.getPrereq1(), tech.getPrereq2() }) {
+                if (prereqName == null || prereqName.isEmpty()
+                        || "None".equals(prereqName) || "Never".equals(prereqName)) {
+                    continue;
                 }
+                Long prereqId = nameToId.get(prereqName);
+                if (prereqId == null) continue;
+                if (player.hasTech(prereqId)) continue; // already known – skip
+                if (visited.contains(prereqId)) continue;
+                visited.add(prereqId);
+
+                // If this prerequisite is directly researchable, return it
+                if (canPlayerResearch(game, player.getPlayerNo(), prereqId)) {
+                    return prereqId;
+                }
+                // Otherwise, recurse into its own prerequisites
+                queue.add(prereqId);
             }
         }
 
-        // No direct prereq found; return first researchable tech (progress toward goal)
+        // No researchable path found toward the goal
         return -1L;
     }
 

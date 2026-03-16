@@ -1276,12 +1276,16 @@ public class Game {
         // (C server rule: a unit can always spend its last move to enter difficult terrain).
         unit.setMovesleft(Math.max(0, unit.getMovesleft() - moveCost));
 
-        // Moving cancels any in-progress terrain improvement activity.
-        // Mirrors the C Freeciv server's behaviour where a unit order (move)
-        // interrupts any ongoing unit_activity (road, mine, irrigate).
+        // Moving cancels any in-progress terrain improvement activity and any
+        // fortification status.  Mirrors the C Freeciv server's behaviour where
+        // a unit order (move) calls unit_activity_handling(punit, ACTIVITY_IDLE)
+        // which resets both activity and activity_count regardless of the
+        // current state — fortified units are un-fortified when they move.
         if (unit.getActivity() == net.freecivx.server.CityTurn.ACTIVITY_ROAD
                 || unit.getActivity() == net.freecivx.server.CityTurn.ACTIVITY_IRRIGATE
-                || unit.getActivity() == net.freecivx.server.CityTurn.ACTIVITY_MINE) {
+                || unit.getActivity() == net.freecivx.server.CityTurn.ACTIVITY_MINE
+                || unit.getActivity() == net.freecivx.server.CityTurn.ACTIVITY_FORTIFIED
+                || unit.getActivity() == net.freecivx.server.CityTurn.ACTIVITY_RAILROAD) {
             unit.setActivity(0);
             unit.setActivityCount(0);
         }
@@ -1416,8 +1420,15 @@ public class Game {
                 atkOwnerName, attackerName, defOwnerName, defenderName,
                 attackerWins ? atkOwnerName + " wins" : defOwnerName + " wins");
 
-        // Consume one move point for the attack
+        // Consume one move point for the attack.
+        // Attacking also breaks any fortification status, mirroring the
+        // C Freeciv server's behaviour where unit_activity_handling(ACTIVITY_IDLE)
+        // is called whenever a unit receives a new order (attack or move).
         attacker.setMovesleft(Math.max(0, attacker.getMovesleft() - 1));
+        if (attacker.getActivity() == net.freecivx.server.CityTurn.ACTIVITY_FORTIFIED) {
+            attacker.setActivity(0);
+            attacker.setActivityCount(0);
+        }
 
         if (attackerWins) {
             // Winner may gain a veteran level — mirrors maybe_make_veteran() in C server.

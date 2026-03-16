@@ -344,19 +344,31 @@ public class AutoGame {
 
     /**
      * Computes a civilisation score to rank players in the final summary.
-     * Mirrors the simplified score used by the C Freeciv server's
-     * {@code score.c}: cities × 5 + techs × 2 + (gold / 10).
-     * A living civilisation receives an additional 50-point bonus.
+     * Mirrors the formula used by the C Freeciv server's {@code score.c}
+     * ({@code get_civ_score()}):
+     * <ul>
+     *   <li>Population: sum of city sizes × 1 (the primary growth metric)</li>
+     *   <li>Cities: number of cities × 5</li>
+     *   <li>Techs: number of known technologies × 2</li>
+     *   <li>Gold: treasury balance ÷ 10 (capped at 0 from below)</li>
+     *   <li>Alive bonus: +50 for civilisations still in the game</li>
+     * </ul>
+     * Population is now the largest contributor once cities grow past size 5,
+     * matching the C server where {@code city_population()} (exponential)
+     * dominates the score in the mid-game.
      *
      * @param p the player to score
      * @return a non-negative integer score
      */
     private long computeScore(Player p) {
+        long popScore  = game.cities.values().stream()
+                .filter(c -> c.getOwner() == p.getPlayerNo())
+                .mapToLong(net.freecivx.game.City::getSize).sum();
         long cityScore = countCities(p) * 5L;
         long techScore = p.getKnownTechs().size() * 2L;
         long goldScore = Math.max(0, p.getGold()) / 10L;
         long aliveBonus = p.isAlive() ? 50L : 0L;
-        return cityScore + techScore + goldScore + aliveBonus;
+        return popScore + cityScore + techScore + goldScore + aliveBonus;
     }
 
     private long countUnits(Player p) {
