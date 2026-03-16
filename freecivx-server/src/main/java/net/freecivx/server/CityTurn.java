@@ -117,6 +117,49 @@ public class CityTurn {
     private static final int IMPR_CATHEDRAL  = 12;
 
     /**
+     * Fallback improvement ID for Factory.
+     * Grants EFT_OUTPUT_BONUS = 50 (shield) in the classic Freeciv
+     * {@code effects.ruleset}, increasing shield production by 50%.
+     * Requires Industrialization technology.
+     */
+    private static final int IMPR_FACTORY       = 14;
+
+    /**
+     * Fallback improvement ID for Mfg. Plant (Manufacturing Plant).
+     * Grants an additional EFT_OUTPUT_BONUS = 50 (shield) when a Factory is
+     * also present, for a total +100% shield bonus with both buildings.
+     * Requires Plastics technology and Factory as a building prerequisite.
+     */
+    private static final int IMPR_MFG_PLANT     = 15;
+
+    /**
+     * Fallback improvement ID for Research Lab.
+     * Grants EFT_OUTPUT_BONUS = 100 (science) when Library is present, and
+     * an additional +100% when University is present (total +200% with both).
+     * Requires Computers technology and University as a building prerequisite.
+     */
+    private static final int IMPR_RESEARCH_LAB  = 16;
+
+    /**
+     * Fallback improvement ID for Stock Exchange.
+     * Grants EFT_OUTPUT_BONUS = 50 (gold) and EFT_OUTPUT_BONUS = 50 (luxury)
+     * when Bank is present, for a total of ×2.5 gold/luxury with Marketplace +
+     * Bank + Stock Exchange.  Requires Economics technology and Bank as
+     * a building prerequisite.
+     */
+    private static final int IMPR_STOCK_EXCHANGE = 17;
+
+    /**
+     * Fallback improvement ID for Police Station.
+     * Grants EFT_MAKE_CONTENT_MIL in the classic Freeciv {@code effects.ruleset}:
+     * 1 military-caused-unhappy citizen becomes content under Republic, 2 under
+     * Democracy.  Implemented here as general make_content since military
+     * unhappiness is not tracked separately.
+     * Requires Communism technology.
+     */
+    private static final int IMPR_POLICE_STATION = 18;
+
+    /**
      * Luxury goods cost per citizen mood upgrade.
      * Mirrors {@code RS_DEFAULT_HAPPY_COST = 2} in the C Freeciv server's
      * {@code common/game.h} and the classic {@code game.ruleset}.
@@ -536,6 +579,24 @@ public class CityTurn {
             }
         }
 
+        // Apply Factory and Mfg. Plant production bonuses.
+        // Mirrors effect_factory (+50% shields) and effect_mfg_plant (+50% additional
+        // shields when Factory is present) in the classic Freeciv effects.ruleset.
+        // Combined: Factory alone = ×1.5; Factory + Mfg. Plant = ×2.0.
+        // Ceiling division preserves fractional shield output for small cities.
+        int factoryId  = findImprId(game, "Factory",   IMPR_FACTORY);
+        int mfgPlantId = findImprId(game, "Mfg. Plant", IMPR_MFG_PLANT);
+        int shieldBonus = 0;
+        if (city.hasImprovement(factoryId)) {
+            shieldBonus += 50; // Factory: +50% (effect_factory)
+            if (city.hasImprovement(mfgPlantId)) {
+                shieldBonus += 50; // Mfg. Plant (requires Factory): +50% additional (effect_mfg_plant)
+            }
+        }
+        if (shieldBonus > 0) {
+            shieldOutput = (shieldOutput * (100 + shieldBonus) + 99) / 100;
+        }
+
         city.setShieldStock(city.getShieldStock() + shieldOutput);
 
         // productionKind 1 = improvement (building)
@@ -943,16 +1004,31 @@ public class CityTurn {
         // Library (effect_library): +100% science when Library is present.
         // University (effect_university): +150% additional when BOTH Library and
         // University are present. (Requires Library as a prerequisite.)
-        // Combined: Library alone = ×2; Library+University = ×(100+100+150)/100 = ×3.5.
+        // Research Lab (effect_research_lab): +100% additional when Library+ResearchLab,
+        // and another +100% when University+ResearchLab are present.
+        // Combined: Library = ×2; Library+University = ×3.5;
+        //           Library+University+ResearchLab = ×3.5 + 200% = ×5.5.
         // Use ceiling division ((a * b + 99) / 100) to avoid small values rounding
         // to zero when multiple percentage steps are applied in sequence.
-        int libraryId    = findImprId(game, "Library",    3);
-        int universityId = findImprId(game, "University", 13);
+        int libraryId      = findImprId(game, "Library",      3);
+        int universityId   = findImprId(game, "University",  13);
+        int researchLabId  = findImprId(game, "Research Lab", IMPR_RESEARCH_LAB);
         int scienceBonus = 0;
         if (city.hasImprovement(libraryId)) {
             scienceBonus += 100; // Library: +100% (effect_library)
             if (city.hasImprovement(universityId)) {
                 scienceBonus += 150; // University+Library: +150% additional (effect_university)
+            }
+        }
+        // Research Lab: +100% per each of Library and University when Research Lab
+        // and the respective building are both present.  Mirrors effect_research_lab and
+        // effect_research_lab_1 in the classic Freeciv effects.ruleset.
+        if (city.hasImprovement(researchLabId)) {
+            if (city.hasImprovement(libraryId)) {
+                scienceBonus += 100; // Research Lab + Library: +100% (effect_research_lab)
+            }
+            if (city.hasImprovement(universityId)) {
+                scienceBonus += 100; // Research Lab + University: +100% (effect_research_lab_1)
             }
         }
         science = (science * (100 + scienceBonus) + 99) / 100;
@@ -1009,15 +1085,21 @@ public class CityTurn {
         // Apply Output_Bonus effects additively, matching the C Freeciv server.
         // Marketplace (effect_marketplace): +50% gold.
         // Bank (effect_bank): +50% additional gold when Marketplace is also present.
-        // Combined: Marketplace alone = ×1.5; Marketplace+Bank = ×(100+50+50)/100 = ×2.0.
+        // Stock Exchange (effect_stock_exchange): +50% additional gold when Bank is present.
+        // Combined: Marketplace = ×1.5; Marketplace+Bank = ×2.0;
+        //           Marketplace+Bank+StockExchange = ×2.5.
         // Ceiling division avoids rounding small city outputs to zero.
-        int marketplaceId = findImprId(game, "Marketplace", 4);
-        int bankId        = findImprId(game, "Bank",        5);
+        int marketplaceId    = findImprId(game, "Marketplace",    4);
+        int bankId           = findImprId(game, "Bank",           5);
+        int stockExchangeId  = findImprId(game, "Stock Exchange", IMPR_STOCK_EXCHANGE);
         int goldBonus = 0;
         if (city.hasImprovement(marketplaceId)) {
             goldBonus += 50; // Marketplace: +50% (effect_marketplace)
             if (city.hasImprovement(bankId)) {
                 goldBonus += 50; // Bank (requires Marketplace): +50% additional (effect_bank)
+                if (city.hasImprovement(stockExchangeId)) {
+                    goldBonus += 50; // Stock Exchange (requires Bank): +50% additional (effect_stock_exchange)
+                }
             }
         }
         trade = (trade * (100 + goldBonus) + 99) / 100;
@@ -1069,15 +1151,24 @@ public class CityTurn {
         // Base trade: terrain-aware (same source as cityTaxContribution).
         int trade = cityTradeBase(game, cityId);
 
-        // Apply trade bonuses from Marketplace and Bank (same as tax).
+        // Apply trade bonuses from Marketplace, Bank, and Stock Exchange.
+        // Mirrors effect_marketplace_1 (+50% luxury), effect_bank_1 (+50% luxury when
+        // Marketplace present), and effect_stock_exchange_1 (+50% luxury when Bank present)
+        // in the classic Freeciv effects.ruleset.
+        // Combined: Marketplace = ×1.5; Marketplace+Bank = ×2.0;
+        //           Marketplace+Bank+StockExchange = ×2.5.
         // Ceiling division avoids rounding small city outputs to zero.
         int tradeBonus = 0;
-        int marketplaceId = findImprId(game, "Marketplace", 4);
-        int bankId        = findImprId(game, "Bank",        5);
+        int marketplaceId   = findImprId(game, "Marketplace",    4);
+        int bankId          = findImprId(game, "Bank",           5);
+        int stockExchangeId = findImprId(game, "Stock Exchange", IMPR_STOCK_EXCHANGE);
         if (city.hasImprovement(marketplaceId)) {
-            tradeBonus += 50; // Marketplace: +50%
+            tradeBonus += 50; // Marketplace: +50% (effect_marketplace_1)
             if (city.hasImprovement(bankId)) {
-                tradeBonus += 50; // Bank (requires Marketplace): +50% additional
+                tradeBonus += 50; // Bank (requires Marketplace): +50% additional (effect_bank_1)
+                if (city.hasImprovement(stockExchangeId)) {
+                    tradeBonus += 50; // Stock Exchange (requires Bank): +50% additional (effect_stock_exchange_1)
+                }
             }
         }
         trade = (trade * (100 + tradeBonus) + 99) / 100;
@@ -1208,17 +1299,31 @@ public class CityTurn {
         // Apply the EFT_MAKE_CONTENT effect from city improvements.
         // Each point of make_content converts one unhappy citizen to content.
         // Classic ruleset values (mirroring effects.ruleset):
-        //   Temple    (id=6):  EFT_MAKE_CONTENT = 1
-        //   Colosseum (id=11): EFT_MAKE_CONTENT = 3
-        //   Cathedral (id=12): EFT_MAKE_CONTENT = 3
+        //   Temple         (id=6):  EFT_MAKE_CONTENT = 1
+        //   Colosseum      (id=11): EFT_MAKE_CONTENT = 3
+        //   Cathedral      (id=12): EFT_MAKE_CONTENT = 3
+        //   Police Station (id=18): EFT_MAKE_CONTENT_MIL = 1 (Republic) / 2 (Democracy)
         // Mirrors citizen_content_buildings() in common/city.c.
-        int templeId    = findImprId(game, "Temple",    IMPR_TEMPLE);
-        int colosseumId = findImprId(game, "Colosseum", IMPR_COLOSSEUM);
-        int cathedralId = findImprId(game, "Cathedral", IMPR_CATHEDRAL);
+        int templeId         = findImprId(game, "Temple",          IMPR_TEMPLE);
+        int colosseumId      = findImprId(game, "Colosseum",       IMPR_COLOSSEUM);
+        int cathedralId      = findImprId(game, "Cathedral",       IMPR_CATHEDRAL);
+        int policeStationId  = findImprId(game, "Police Station",  IMPR_POLICE_STATION);
         int makeContent = 0;
         if (city.hasImprovement(templeId))    makeContent += 1;
         if (city.hasImprovement(colosseumId)) makeContent += 3;
         if (city.hasImprovement(cathedralId)) makeContent += 3;
+        // Police Station: Make_Content_Mil — reduces military-caused unhappiness.
+        // Republic: +1, Democracy: +2 (mirrors effect_police_station[_1] in
+        // classic effects.ruleset).  Applied here as general make_content since
+        // this implementation does not track military unhappiness separately.
+        if (gov != null && city.hasImprovement(policeStationId)) {
+            String govName = gov.getRuleName();
+            if ("Democracy".equals(govName)) {
+                makeContent += 2;
+            } else if ("Republic".equals(govName)) {
+                makeContent += 1;
+            }
+        }
 
         // Net unhappy citizens after applying building effects
         int netUnhappy = Math.max(0, baseUnhappy - makeContent);
