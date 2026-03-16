@@ -59,6 +59,14 @@ public class Game {
     boolean gameStarted = false;
 
     private static final int MAX_START_POSITION_ATTEMPTS = 200;
+    /**
+     * Base player-number for AI players.  All AI IDs are {@code AI_PLAYER_ID_BASE + i}
+     * (e.g. 100, 101, …) which keeps them well below 255 – the upper limit checked by
+     * the JavaScript border renderer in {@code borders.js}.  Human players receive
+     * sequential connection IDs starting at 0 from the WebSocket server, so the range
+     * 100–108 (max aifill = 9) avoids any conflict.
+     */
+    private static final long AI_PLAYER_ID_BASE = 100L;
     private long lastActivityTime = System.currentTimeMillis();
     private Random random = new Random();
     private AiPlayer aiPlayer;
@@ -573,8 +581,12 @@ public class Game {
         // Mirrors the aifill setting in the C Freeciv server.
         String[] aiNames = {"Caesar", "Alexander", "Napoleon", "Genghis",
                              "Cleopatra", "Augustus", "Cyrus", "Ramesses", "Pericles"};
+        // AI player IDs must stay below 255 so the JavaScript border renderer
+        // (which checks ptile['owner'] < 255) can display their national borders.
+        // Use AI_PLAYER_ID_BASE + i to leave room for human players (connIds 0–99)
+        // while still fitting within the 0–254 safe range for up to 9 AI players.
         for (int i = 0; i < aifill; i++) {
-            long aiId = 1000L + i;
+            long aiId = AI_PLAYER_ID_BASE + i;
             Player aiPlayer = new Player(aiId, aiNames[i % aiNames.length], "ai", i % nations.size());
             aiPlayer.setAi(true);
             players.put(aiId, aiPlayer);
@@ -648,7 +660,7 @@ public class Game {
             "Augustus", "Cyrus", "Ramesses", "Pericles", "Montezuma"
         };
         for (int i = 0; i < numAiPlayers; i++) {
-            long aiId = 1000L + i;
+            long aiId = AI_PLAYER_ID_BASE + i;
             Player aiPlayer = new Player(aiId, aiNames[i % aiNames.length], "ai", i % nations.size());
             aiPlayer.setAi(true);
             players.put(aiId, aiPlayer);
