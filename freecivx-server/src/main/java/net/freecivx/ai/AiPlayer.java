@@ -142,18 +142,22 @@ public class AiPlayer {
     // Improvement IDs — resolved at runtime by name in resolveGameIds() because IDs
     // differ between the loaded ruleset (alphabetical order) and the hardcoded fallback.
     // Fallback values match populateFallback() in Game.java.
-    private int imprBarracks    = 1;
-    private int imprGranary     = 2;
-    private int imprLibrary     = 3;
-    private int imprMarketplace = 4;
-    private int imprCityWalls   = 7;
-    private int imprTemple      = 5;
-    private int imprAqueduct    = 8; // Allows cities to grow beyond size 8
+    private int imprBarracks      = 1;
+    private int imprGranary       = 2;
+    private int imprLibrary       = 3;
+    private int imprMarketplace   = 4;
+    private int imprCityWalls     = 7;
+    private int imprTemple        = 5;
+    private int imprAqueduct      = 8; // Allows cities to grow beyond size 8
     // Mid/late-game buildings — mirrors dai_city_choose_build() priorities in daicity.c
-    private int imprColosseum   = -1; // Happiness (Construction tech required)
-    private int imprUniversity  = -1; // Science × 2 (University tech, Library prereq)
-    private int imprBank        = -1; // Gold × 1.5 (Banking tech, Marketplace prereq)
-    private int imprCourthouse  =  9; // Reduces corruption (Code of Laws required)
+    private int imprColosseum     = -1; // Happiness (Construction tech required)
+    private int imprUniversity    = -1; // Science × 2 (University tech, Library prereq)
+    private int imprBank          = -1; // Gold × 1.5 (Banking tech, Marketplace prereq)
+    private int imprCourthouse    =  9; // Reduces corruption (Code of Laws required)
+    // Late-game production and economy buildings — match populateFallback() IDs in Game.java
+    private int imprFactory       = 14; // Shields +50% (Industrialization tech)
+    private int imprResearchLab   = 16; // Science +200% with Library+University (Computers tech)
+    private int imprStockExchange = 17; // Gold+Luxury +50% when Bank present (Economics tech)
 
     // Unit-type IDs — Settlers and Workers are always 0 and 1 in both the classic
     // ruleset and the hardcoded fallback.  Warriors are always 3.  Advanced units
@@ -190,13 +194,16 @@ public class AiPlayer {
     // Additional mid-game technology IDs — missing from original list but required
     // for important buildings (Aqueduct, Colosseum, Bank, University).
     // Resolved at runtime; -1 until resolveGameIds() runs.
-    private long techCurrency     = -1L; // req: Bronze Working — unlocks Construction
-    private long techConstruction = -1L; // req: Masonry + Currency — unlocks Aqueduct, Colosseum
-    private long techMysticism    = -1L; // req: Ceremonial Burial — Philosophy prereq
-    private long techLiteracy     = -1L; // req: Writing + Code of Laws — Philosophy, University prereq
-    private long techTrade        = -1L; // req: Currency + Code of Laws — Banking prereq
-    private long techBanking      = -1L; // req: Trade + The Republic — unlocks Bank
-    private long techUniversity   = -1L; // req: Mathematics + Philosophy — unlocks University building
+    private long techCurrency         = -1L; // req: Bronze Working — unlocks Construction
+    private long techConstruction     = -1L; // req: Masonry + Currency — unlocks Aqueduct, Colosseum
+    private long techMysticism        = -1L; // req: Ceremonial Burial — Philosophy prereq
+    private long techLiteracy         = -1L; // req: Writing + Code of Laws — Philosophy, University prereq
+    private long techTrade            = -1L; // req: Currency + Code of Laws — Banking prereq
+    private long techBanking          = -1L; // req: Trade + The Republic — unlocks Bank
+    private long techUniversity       = -1L; // req: Mathematics + Philosophy — unlocks University building
+    // Late-game technology IDs for new buildings.  Resolved at runtime.
+    private long techIndustrialization = -1L; // req: Gunpowder + Trade — Factory
+    private long techEconomics         = -1L; // req: Trade + University — Stock Exchange
 
     private static final int[] DIR_DX = {-1, 0, 1, -1, 1, -1, 0, 1};
     private static final int[] DIR_DY = {-1, -1, -1, 0, 0, 1, 1, 1};
@@ -309,17 +316,20 @@ public class AiPlayer {
             String n = e.getValue().getName();
             int id = e.getKey().intValue();
             switch (n) {
-                case "Barracks":    imprBarracks    = id; break;
-                case "Granary":     imprGranary     = id; break;
-                case "Library":     imprLibrary     = id; break;
-                case "Marketplace": imprMarketplace = id; break;
-                case "City Walls":  imprCityWalls   = id; break;
-                case "Temple":      imprTemple      = id; break;
-                case "Aqueduct":    imprAqueduct    = id; break;
-                case "Colosseum":   imprColosseum   = id; break;
-                case "University":  imprUniversity  = id; break;
-                case "Bank":        imprBank        = id; break;
-                case "Courthouse":  imprCourthouse  = id; break;
+                case "Barracks":       imprBarracks      = id; break;
+                case "Granary":        imprGranary       = id; break;
+                case "Library":        imprLibrary       = id; break;
+                case "Marketplace":    imprMarketplace   = id; break;
+                case "City Walls":     imprCityWalls     = id; break;
+                case "Temple":         imprTemple        = id; break;
+                case "Aqueduct":       imprAqueduct      = id; break;
+                case "Colosseum":      imprColosseum     = id; break;
+                case "University":     imprUniversity    = id; break;
+                case "Bank":           imprBank          = id; break;
+                case "Courthouse":     imprCourthouse    = id; break;
+                case "Factory":        imprFactory       = id; break;
+                case "Research Lab":   imprResearchLab   = id; break;
+                case "Stock Exchange": imprStockExchange = id; break;
                 default: break;
             }
         }
@@ -349,6 +359,8 @@ public class AiPlayer {
                 case "Trade":             techTrade             = id; break;
                 case "Banking":           techBanking           = id; break;
                 case "University":        techUniversity        = id; break;
+                case "Industrialization": techIndustrialization = id; break;
+                case "Economics":         techEconomics         = id; break;
                 default: break;
             }
         }
@@ -692,11 +704,13 @@ public class AiPlayer {
             techHorsebackRiding,      // Horsemen (fast raider, 2 move)
             techIronWorking,          // Legion — 4 atk / 2 def, best early unit
             techMathematics,          // University tech prerequisite
-            techTrade,                // Banking prerequisite
+            techTrade,                // Banking + Industrialization prerequisite
             techTheRepublic,          // Republic government
             techBanking,              // Bank — gold income ×1.5
             techUniversity,           // University building — science ×2
             techDemocracy,            // Democracy government (zero corruption)
+            techIndustrialization,    // Factory — shields ×1.5
+            techEconomics,            // Stock Exchange — gold/luxury ×1.5 additional
         };
 
         for (long techId : priorityTechs) {
@@ -1007,6 +1021,43 @@ public class AiPlayer {
             if (walls != null && canBuildImprovement(owner, city, walls)) {
                 city.setProductionKind(1);
                 city.setProductionValue(imprCityWalls);
+                return;
+            }
+        }
+
+        // Priority 16: Factory for shield production bonus (+50% shields per turn).
+        // Industrialization required; only valuable in mid-sized cities that
+        // already have most essential buildings.  Mirrors dai_city_choose_build()
+        // in daicity.c where production multipliers are ranked after basic services.
+        if (!city.hasImprovement(imprFactory) && imprFactory >= 0 && city.getSize() >= 5) {
+            Improvement factory = game.improvements.get((long) imprFactory);
+            if (factory != null && canBuildImprovement(owner, city, factory)) {
+                city.setProductionKind(1);
+                city.setProductionValue(imprFactory);
+                return;
+            }
+        }
+
+        // Priority 17: Stock Exchange for gold and luxury bonus.
+        // Requires Economics tech + Bank; increases gold and luxury by 50%.
+        // Mirrors daicity.c ranking of economic buildings after science and defense.
+        if (!city.hasImprovement(imprStockExchange) && imprStockExchange >= 0 && city.getSize() >= 4) {
+            Improvement stockExchange = game.improvements.get((long) imprStockExchange);
+            if (stockExchange != null && canBuildImprovement(owner, city, stockExchange)) {
+                city.setProductionKind(1);
+                city.setProductionValue(imprStockExchange);
+                return;
+            }
+        }
+
+        // Priority 18: Research Lab for science bonus (+200% with Library+University).
+        // Computers tech required; only valuable in cities that already have both
+        // Library and University.  Mirrors daicity.c science building prioritisation.
+        if (!city.hasImprovement(imprResearchLab) && imprResearchLab >= 0 && city.getSize() >= 4) {
+            Improvement researchLab = game.improvements.get((long) imprResearchLab);
+            if (researchLab != null && canBuildImprovement(owner, city, researchLab)) {
+                city.setProductionKind(1);
+                city.setProductionValue(imprResearchLab);
                 return;
             }
         }

@@ -752,6 +752,14 @@ public class Game {
         techs.put(23L, new Technology("University",        "a.university",        "University",        "Philosophy",   "Mathematics",   100));
         techs.put(24L, new Technology("Gunpowder",         "a.gunpowder",         "Gunpowder",         "Iron Working", "None",           80));
         techs.put(25L, new Technology("Feudalism",         "a.feudalism",         "Feudalism",         "Warrior Code", "Monarchy",       60));
+        // Late-game technologies required by Factory, Mfg. Plant, Research Lab,
+        // Stock Exchange, Police Station, and Sewer System improvements.
+        // Prerequisites mirror the classic Freeciv tech tree.
+        techs.put(26L, new Technology("Industrialization", "a.industrialization",  "Industrialization", "Gunpowder",    "Trade",         120));
+        techs.put(27L, new Technology("Plastics",          "a.plastics",           "Plastics",          "Industrialization", "None",     160));
+        techs.put(28L, new Technology("Economics",         "a.economics",          "Economics",         "Trade",        "University",    100));
+        techs.put(29L, new Technology("Sanitation",        "a.sanitation",         "Sanitation",        "Masonry",      "Mathematics",    60));
+        techs.put(30L, new Technology("Computers",         "a.computers",          "Computers",         "Industrialization", "Mathematics", 160));
 
         governments.put(0L, new Government("Anarchy",   "Anarchy",   "Anarchy",   null,            25));
         governments.put(1L, new Government("Despotism", "Despotism", "Despotism", null,            37));
@@ -846,7 +854,29 @@ public class Game {
         improvements.put(10L, new Improvement(10, "Harbor",      "Harbor",      "b.port",        "b.fallback", 2,  60, 1, 0, "b_harbor",      "b_fallback", "The Harbor",      12));
         improvements.put(11L, new Improvement(11, "Colosseum",   "Colosseum",   "b.colosseum",   "b.fallback", 2, 100, 4, 0, "b_colosseum",   "b_fallback", "The Colosseum",    4));
         improvements.put(12L, new Improvement(12, "Cathedral",   "Cathedral",   "b.cathedral",   "b.fallback", 2, 120, 3, 0, "b_cathedral",   "b_fallback", "The Cathedral",    6));
-        improvements.put(13L, new Improvement(13, "University",  "University",  "b.university",  "b.fallback", 2, 160, 3, 0, "b_university",  "b_fallback", "The University",  23));
+        improvements.put(13L, new Improvement(13, "University",      "University",      "b.university",       "b.fallback", 2, 160, 3, 0, "b_university",       "b_fallback", "The University",     23));
+        // Late-game improvements from classic Freeciv ruleset:
+        // Factory and Mfg. Plant boost shield production; Research Lab boosts science;
+        // Stock Exchange boosts gold and luxury; Police Station improves happiness;
+        // Sewer System allows cities to grow beyond size 12.
+        Improvement factory = new Improvement(14, "Factory",      "Factory",      "b.factory",      "b.fallback", 2, 200, 4, 0, "b_factory",      "b_fallback", "The Factory",     26);
+        improvements.put(14L, factory);
+        Improvement mfgPlant = new Improvement(15, "Mfg. Plant",  "Mfg_Plant",    "b.mfg_plant",    "b.fallback", 2, 280, 6, 0, "b_mfg_plant",    "b_fallback", "Mfg. Plant",      27);
+        mfgPlant.setRequiredBuildingName("Factory");
+        improvements.put(15L, mfgPlant);
+        Improvement researchLab = new Improvement(16, "Research Lab", "Research_Lab", "b.research_lab", "b.fallback", 2, 120, 3, 0, "b_research_lab", "b_fallback", "Research Lab",    30);
+        researchLab.setRequiredBuildingName("University");
+        improvements.put(16L, researchLab);
+        Improvement stockExchange = new Improvement(17, "Stock Exchange", "Stock_Exchange", "b.stock_exchange", "b.fallback", 2, 120, 2, 0, "b_stock_exchange", "b_fallback", "Stock Exchange",  28);
+        stockExchange.setRequiredBuildingName("Bank");
+        improvements.put(17L, stockExchange);
+        // Police Station: reduces military-caused unhappiness in Republic/Democracy.
+        // Mirrors effect_police_station in classic effects.ruleset (Make_Content_Mil = 1 for
+        // Republic, 2 for Democracy).  Requires Communism technology.
+        improvements.put(18L, new Improvement(18, "Police Station", "Police_Station", "b.police_station", "b.fallback", 2,  50, 2, 0, "b_police_station", "b_fallback", "Police Station",  15));
+        // Sewer System: allows city growth beyond size 12 (together with Aqueduct).
+        // Referenced by cityGrowth() in CityTurn.java; requires Sanitation technology.
+        improvements.put(19L, new Improvement(19, "Sewer System",   "Sewer_System",   "b.sewer_system",   "b.fallback", 2,  80, 2, 0, "b_sewer_system",   "b_fallback", "Sewer System",    29));
     }
 
     /**
