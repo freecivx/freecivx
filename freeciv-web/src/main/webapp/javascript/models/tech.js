@@ -272,41 +272,68 @@ function update_tech_tree()
       var dx = Math.floor(reqtree[rid+'']['x'] * tech_xscale);  //scale in X direction.
       var dy = reqtree[rid+'']['y'];
 
-      // Alternating line colour sequence, each tech gets a different line colour to differentiate.
-      var sequence = 1+Math.round(dy/55)+Math.round(dx/45);      // Create a "seed" that bumps up as we span the canvas vertically and horizontally
-      sequence = sequence - (sequence-sequence%9);               // This creates a colour number from 0-8 out of our "seed"
-      if (reqtree[rid+'']['col'] !== undefined) sequence = reqtree[rid+'']['col']; // Allow reqtree designer to override random colour for some techs
+      // Color edges by type, mirroring reqtree.c edge type classification:
+      //   KNOWN_EDGE: both techs known     -> dark gray, thin
+      //   ACTIVE_EDGE: currently researching -> gold, thick
+      //   GOAL_EDGE: on path to research goal -> sky blue
+      //   READY_EDGE: prereq known, can research -> green
+      //   Normal: unknown prereq chain       -> muted blue-gray
+      var req_known = tech_known(techs[rid]['rule_name']);
+      var child_known = tech_known(ptech['rule_name']);
+      var is_researching = (client.conn.playing['researching'] == ptech['id']);
+      var is_goal_path = is_tech_req_for_goal(ptech['id'], client.conn.playing['tech_goal']);
 
-      // known tech connecting to known tech: use black line
-      if (tech_known(ptech['rule_name']) && tech_known(techs[rid]['rule_name'])) {
-        tech_canvas_ctx.strokeStyle = 'rgb(88, 88, 88)';
+      if (req_known && child_known) {
+        // KNOWN_EDGE: both techs known - dark gray, thin line
+        tech_canvas_ctx.strokeStyle = 'rgba(80, 80, 80, 0.9)';
         tech_canvas_ctx.lineWidth = 1;
-      }
-      else { // else differentiate line colours to make tracing them easier
-        if (sequence == 9) tech_canvas_ctx.strokeStyle =      'rgba(80, 80, 80, 0.95)';     // grey
-        else if (sequence == 8) tech_canvas_ctx.strokeStyle = 'rgba(55, 83, 104, 0.83)';       // egyptian blue
-        else if (sequence == 7) tech_canvas_ctx.strokeStyle = 'rgba(81, 146, 187, 0.8)';       // medium teal-blue
-        else if (sequence == 6) tech_canvas_ctx.strokeStyle = 'rgba(121, 127, 82, 0.88)';      // olive / ochre
-        else if (sequence == 5) tech_canvas_ctx.strokeStyle = 'rgba(138, 36, 78, 0.8)';        // wine
-        else if (sequence == 4) tech_canvas_ctx.strokeStyle = 'rgba(80, 161, 80, 0.8)';      // bright sky
-        else if (sequence == 3) tech_canvas_ctx.strokeStyle = 'rgba(60, 187, 146, 0.8)';       // bronze sea spray (strong green-cyan)
-        else if (sequence == 2) tech_canvas_ctx.strokeStyle = 'rgba(124, 108, 167, 0.95)';     // periwinkle
-        else if (sequence == 1) tech_canvas_ctx.strokeStyle = 'rgba(255, 255, 255, 0.8)';      // white
-        else tech_canvas_ctx.strokeStyle =                    'rgba(150, 91, 79, 0.85)';       // coral / salmon
+      } else if (is_researching) {
+        // ACTIVE_EDGE: currently being researched - bright gold
+        tech_canvas_ctx.strokeStyle = 'rgba(255, 200, 50, 1.0)';
         tech_canvas_ctx.lineWidth = 3;
+      } else if (is_goal_path) {
+        // GOAL_EDGE: on the path to the research goal - sky blue
+        tech_canvas_ctx.strokeStyle = 'rgba(100, 180, 255, 0.9)';
+        tech_canvas_ctx.lineWidth = 2;
+      } else if (req_known) {
+        // READY_EDGE: prerequisite known, child can be researched - bright green
+        tech_canvas_ctx.strokeStyle = 'rgba(100, 210, 80, 0.85)';
+        tech_canvas_ctx.lineWidth = 2;
+      } else {
+        // Normal unresearched edge - muted blue-gray
+        tech_canvas_ctx.strokeStyle = 'rgba(80, 100, 140, 0.7)';
+        tech_canvas_ctx.lineWidth = 1;
       }
 
       var node_offset = 3;
+      // Multi-segment orthogonal routing prevents lines from crossing through
+      // technology boxes. Route: child-left → (horizontal) → bend → (vertical) → (horizontal) → parent-right
+      var child_x = sx;
+      var child_y = sy + hy;
+      var parent_x = dx + hx + node_offset + 1;
+      var parent_y = dy + hy;
+      // Place the vertical bend midway between parent's right edge and child's left edge
+      var bend_x = Math.floor((child_x + parent_x) / 2);
+
       tech_canvas_ctx.beginPath();
-      tech_canvas_ctx.moveTo(sx, sy + hy);
-      tech_canvas_ctx.lineTo(dx + hx+(node_offset+1), dy + hy);
+      if (sy == dy) {
+        // Same row: simple horizontal line
+        tech_canvas_ctx.moveTo(child_x, child_y);
+        tech_canvas_ctx.lineTo(parent_x, parent_y);
+      } else {
+        // Different rows: three-segment routing (horizontal, vertical, horizontal)
+        tech_canvas_ctx.moveTo(child_x, child_y);
+        tech_canvas_ctx.lineTo(bend_x, child_y);
+        tech_canvas_ctx.lineTo(bend_x, parent_y);
+        tech_canvas_ctx.lineTo(parent_x, parent_y);
+      }
       tech_canvas_ctx.stroke();
 
-      // draw a node (helps indicate which line-colour is the real required tech: because we see a coloured node for it )
+      // Draw a junction dot at the parent connection point to indicate which tech is the prerequisite
       var radius = 2;
       tech_canvas_ctx.lineWidth = 4;
       tech_canvas_ctx.beginPath();
-      tech_canvas_ctx.arc(dx + hx+radius+node_offset, dy + hy, radius, 0, 2 * Math.PI, false);
+      tech_canvas_ctx.arc(parent_x, parent_y, radius, 0, 2 * Math.PI, false);
       tech_canvas_ctx.stroke();
     }
 
