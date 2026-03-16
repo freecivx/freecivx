@@ -1754,7 +1754,7 @@ public class AiPlayer {
      * once its own empire is secure.
      *
      * <p>A unit that stays in a city to garrison it is switched to
-     * {@code ACTIVITY_FORTIFIED} (activity=3) after reaching its post, matching
+     * {@code ACTIVITY_FORTIFIED} (activity=4) after reaching its post, matching
      * the C Freeciv server's {@code daiunit.c} behaviour where AIUNIT_DEFEND_HOME
      * units call {@code unit_activity_handling(punit, ACTIVITY_FORTIFYING)} once
      * they are in place.  Fortified units receive a +50% defence bonus (mirrors

@@ -207,13 +207,12 @@ public class CityTurn {
      * Activity code for a fortified unit.
      * A fortified unit receives a +50% defence bonus from
      * {@code Fortify_Defense_Bonus = 50} in classic {@code effects.ruleset}.
-     * Mirrors {@code ACTIVITY_FORTIFIED} in the C Freeciv server's
-     * {@code common/unit.h}.  Note: the in-progress state is
-     * {@code ACTIVITY_FORTIFYING} (9) and transitions to this value once the
-     * unit has spent one full turn fortifying; for simplicity this server
-     * treats both as equivalent and uses value 3 directly.
+     * Mirrors {@code ACTIVITY_FORTIFIED = 4} in the C Freeciv server's
+     * {@code common/fc_types.h} and the JS client's {@code fc_types.js}.
+     * Value 3 is {@code ACTIVITY_IRRIGATE} in the protocol and must not be
+     * used here.
      */
-    public static final int ACTIVITY_FORTIFIED = 3;
+    public static final int ACTIVITY_FORTIFIED = 4;
 
     /** Number of turns a worker needs to complete a road. */
     private static final int ROAD_TURNS = 2;

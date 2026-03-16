@@ -115,7 +115,7 @@ public class Actions {
 
         switch (actionId) {
             case ACTION_FORTIFY:
-                unit.setActivity(3); // ACTIVITY_FORTIFIED
+                unit.setActivity(net.freecivx.server.CityTurn.ACTIVITY_FORTIFIED);
                 return true;
             case ACTION_ROAD:
                 unit.setActivity(5); // ACTIVITY_ROAD
