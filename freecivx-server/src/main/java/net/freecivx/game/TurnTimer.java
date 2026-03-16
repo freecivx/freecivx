@@ -21,12 +21,10 @@ package net.freecivx.game;
 
 /**
  * Minimal timer abstraction used by {@link Game} to schedule the per-turn
- * timeout without importing {@code java.util.concurrent.Executors} or related
- * classes that are unavailable in the TeaVM/browser build.
+ * timeout.
  *
  * <p>Server builds inject a real implementation backed by a
- * {@link java.util.concurrent.ScheduledExecutorService}.  Browser/TeaVM builds
- * leave the field {@code null}, making turn timeouts a no-op.
+ * {@link java.util.concurrent.ScheduledExecutorService}.
  */
 public interface TurnTimer {
 

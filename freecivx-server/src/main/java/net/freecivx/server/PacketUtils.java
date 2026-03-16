@@ -22,12 +22,11 @@ package net.freecivx.server;
 import org.json.JSONArray;
 
 /**
- * Shared packet-encoding utilities used by both {@link CivServer} and
- * {@link BrowserCivServer}.
+ * Shared packet-encoding utilities used by {@link CivServer}.
  *
  * <p>Keeping these helpers in a standalone class with no server-transport
- * dependencies (no WebSocket, no HTTP) allows them to be compiled and used
- * by the TeaVM/browser build without dragging in server-only libraries.
+ * dependencies (no WebSocket, no HTTP) allows them to be reused across
+ * server implementations.
  */
 public final class PacketUtils {
 
