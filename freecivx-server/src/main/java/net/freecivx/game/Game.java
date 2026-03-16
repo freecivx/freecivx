@@ -348,77 +348,97 @@ public class Game {
         }
         populateFromRuleset();
 
-        // Nations and extras are always hardcoded (not loaded from ruleset files).
-        // City names are loaded from the matching nation/*.ruleset resource file.
-        Nation nationSoviet  = new Nation("Soviet Union", "Soviet", "soviet",  "The Soviets!");
-        Nation nationFrance  = new Nation("France",       "French", "france",  "Vive La France!");
-        Nation nationGermany = new Nation("Germany",      "German", "germany", "Deutschland");
-        nationSoviet .setCityNames(ruleset.loadNationCityNames("soviet"));
-        nationFrance .setCityNames(ruleset.loadNationCityNames("french"));
-        nationGermany.setCityNames(ruleset.loadNationCityNames("german"));
-        nations.put(0L, nationSoviet);
-        nations.put(1L, nationFrance);
-        nations.put(2L, nationGermany);
+        // --- Nations: loaded from ruleset nation files via nation-index.txt ---
+        List<Nation> rNations = ruleset.getNations();
+        if (rNations.isEmpty()) {
+            // Fallback: load the three founding nations so the game can still start.
+            Nation nationSoviet  = new Nation("Soviet Union", "Soviet", "soviet",  "");
+            Nation nationFrance  = new Nation("France",       "French", "france",  "");
+            Nation nationGermany = new Nation("Germany",      "German", "germany", "");
+            nationSoviet .setCityNames(ruleset.loadNationCityNames("soviet"));
+            nationFrance .setCityNames(ruleset.loadNationCityNames("french"));
+            nationGermany.setCityNames(ruleset.loadNationCityNames("german"));
+            nations.put(0L, nationSoviet);
+            nations.put(1L, nationFrance);
+            nations.put(2L, nationGermany);
+        } else {
+            for (int i = 0; i < rNations.size(); i++) {
+                nations.put((long) i, rNations.get(i));
+            }
+        }
 
-        // EC_* cause bit values (matching fc_types.js / common/fc_types.h):
-        //   EC_IRRIGATION=0 → 1, EC_MINE=1 → 2, EC_ROAD=2 → 4, EC_BASE=3 → 8,
-        //   EC_POLLUTION=4 → 16, EC_FALLOUT=5 → 32, EC_HUT=6 → 64,
-        //   EC_APPEARANCE=7 → 128, EC_RESOURCE=8 → 256
-        final int EC_IRRIGATION  = 1;
-        final int EC_MINE        = 2;
-        final int EC_ROAD        = 4;
-        final int EC_BASE        = 8;
-        final int EC_POLLUTION   = 16;
-        final int EC_FALLOUT     = 32;
-        final int EC_HUT         = 64;
-        final int EC_APPEARANCE  = 128;
-        final int EC_RESOURCE    = 256;
+        // --- Extras: bit positions fixed by MapGenerator/client protocol; data from ruleset ---
+        // Build a lookup map from the ruleset-loaded extras by their canonical name (lowercase).
+        // Matches rule_name when set (e.g. "Hut", "Railroad") or display name otherwise.
+        Map<String, Extra> nameToRulesetExtra = new HashMap<>();
+        for (Extra re : ruleset.getExtras()) {
+            nameToRulesetExtra.put(re.getName().toLowerCase(), re);
+        }
 
-        // Infrastructure / base extras (bits 0-14)
-        extras.put(0L,  new Extra("River",      0,            null));
-        extras.put(1L,  new Extra("Mine",        EC_MINE,      null));
-        extras.put(2L,  new Extra("Oil_well",    EC_MINE,      null));
-        extras.put(3L,  new Extra("Fallout",     EC_FALLOUT,   null));
-        extras.put(4L,  new Extra("Pollution",   EC_POLLUTION, null));
-        extras.put(5L,  new Extra("Buoy",        EC_BASE,      null));
-        extras.put(6L,  new Extra("Road",        EC_ROAD,      null));
-        extras.put(7L,  new Extra("Rail",        EC_ROAD,      null));
-        extras.put(8L,  new Extra("Hut",         EC_HUT,       null));
-        extras.put(9L,  new Extra("Irrigation",  EC_IRRIGATION, null));
-        extras.put(10L, new Extra("Farmland",    EC_IRRIGATION, null));
-        extras.put(11L, new Extra("Ruins",       EC_APPEARANCE, null));
-        extras.put(12L, new Extra("Airbase",     EC_BASE,      null));
-        extras.put(13L, new Extra("Airport",     0,            null));
-        extras.put(14L, new Extra("Fortress",    EC_BASE,      null));
+        // Canonical names for each bit position 0-31.
+        // These must match EXTRA_BIT_* in MapGenerator and the tile-extras protocol.
+        // rule_name values ("Railroad", "Hut", "Oil Well") are used when the ruleset
+        // stores them differently from what old code called ("Rail", "Hut", "Oil_well").
+        // "Airport" (bit 13) is not defined in terrain.ruleset; it is kept as a
+        // zero-causes placeholder for protocol completeness.
+        String[] extraBitNames = {
+            "River",      // bit  0
+            "Mine",       // bit  1
+            "Oil Well",   // bit  2  (rule_name of extra_oil_well)
+            "Fallout",    // bit  3
+            "Pollution",  // bit  4
+            "Buoy",       // bit  5
+            "Road",       // bit  6
+            "Railroad",   // bit  7  (rule_name of extra_railroad)
+            "Hut",        // bit  8  (rule_name of extra_hut)
+            "Irrigation", // bit  9
+            "Farmland",   // bit 10
+            "Ruins",      // bit 11
+            "Airbase",    // bit 12
+            "Airport",    // bit 13  (not in terrain.ruleset; placeholder)
+            "Fortress",   // bit 14
+            "Cattle",     // bit 15
+            "Game",       // bit 16
+            "Wheat",      // bit 17
+            "Buffalo",    // bit 18
+            "Pheasant",   // bit 19
+            "Coal",       // bit 20
+            "Iron",       // bit 21
+            "Gold",       // bit 22
+            "Oasis",      // bit 23
+            "Fish",       // bit 24
+            "Whales",     // bit 25
+            "Silk",       // bit 26
+            "Fruit",      // bit 27
+            "Gems",       // bit 28
+            "Ivory",      // bit 29
+            "Oil",        // bit 30  (resource, distinct from Oil Well infrastructure)
+            "Wine",       // bit 31
+        };
+        for (int bit = 0; bit < extraBitNames.length; bit++) {
+            String canonName = extraBitNames[bit];
+            Extra rExtra = nameToRulesetExtra.get(canonName.toLowerCase());
+            if (rExtra != null) {
+                extras.put((long) bit, rExtra);
+            } else {
+                // The extra is not in the ruleset file (e.g. Airport at bit 13).
+                // Create a minimal placeholder so the protocol slot is populated.
+                extras.put((long) bit, new Extra(canonName));
+            }
+        }
 
-        // Resource extras (bits 15-31): EC_RESOURCE cause; graphic tags match the
-        // classic Freeciv tileset (amplio2) so the 2D/3D map can draw them.
-        // Bit positions must match MapGenerator.EXTRA_BIT_* constants.
-        // Resource yield bonuses (food/shield/trade) match [resource_*] in terrain.ruleset.
-        extras.put(15L, new Extra("Cattle",   EC_RESOURCE, "ts.cattle",        0, 3, 0));
-        extras.put(16L, new Extra("Game",     EC_RESOURCE, "ts.game",           2, 1, 0));
-        extras.put(17L, new Extra("Wheat",    EC_RESOURCE, "ts.wheat",          2, 0, 0));
-        extras.put(18L, new Extra("Buffalo",  EC_RESOURCE, "ts.buffalo",        0, 2, 0));
-        extras.put(19L, new Extra("Pheasant", EC_RESOURCE, "ts.pheasant",       2, 0, 0));
-        extras.put(20L, new Extra("Coal",     EC_RESOURCE, "ts.coal",           0, 2, 0));
-        extras.put(21L, new Extra("Iron",     EC_RESOURCE, "ts.iron",           0, 3, 0));
-        extras.put(22L, new Extra("Gold",     EC_RESOURCE, "ts.gold",           0, 0, 6));
-        extras.put(23L, new Extra("Oasis",    EC_RESOURCE, "ts.oasis",          3, 0, 0));
-        extras.put(24L, new Extra("Fish",     EC_RESOURCE, "ts.fish",           2, 0, 0));
-        extras.put(25L, new Extra("Whales",   EC_RESOURCE, "ts.whales",         1, 1, 0));
-        // Additional resource extras (bits 26-31) covering the full classic ruleset.
-        extras.put(26L, new Extra("Silk",     EC_RESOURCE, "ts.silk",           0, 0, 3));
-        extras.put(27L, new Extra("Fruit",    EC_RESOURCE, "ts.fruit",          3, 0, 1));
-        extras.put(28L, new Extra("Gems",     EC_RESOURCE, "ts.gems",           0, 0, 4));
-        extras.put(29L, new Extra("Ivory",    EC_RESOURCE, "ts.arctic_ivory",   1, 1, 4));
-        extras.put(30L, new Extra("Oil",      EC_RESOURCE, "ts.oil",            0, 3, 0));
-        extras.put(31L, new Extra("Wine",     EC_RESOURCE, "ts.wine",           0, 0, 4));
-
-        // City styles are always hardcoded
-        cityStyle.put(0L, new CityStyle("European"));
-        cityStyle.put(1L, new CityStyle("Classical"));
-        cityStyle.put(2L, new CityStyle("Tropical"));
-        cityStyle.put(3L, new CityStyle("Asian"));
+        // --- City styles: loaded from styles.ruleset ---
+        List<CityStyle> rStyles = ruleset.getCityStyles();
+        if (rStyles.isEmpty()) {
+            cityStyle.put(0L, new CityStyle("European"));
+            cityStyle.put(1L, new CityStyle("Classical"));
+            cityStyle.put(2L, new CityStyle("Tropical"));
+            cityStyle.put(3L, new CityStyle("Asian"));
+        } else {
+            for (int i = 0; i < rStyles.size(); i++) {
+                cityStyle.put((long) i, rStyles.get(i));
+            }
+        }
 
         // Use a seeded generator when mapSeed >= 0 (mirrors "mapseed" in C server).
         MapGenerator mapGen = mapSeed >= 0
