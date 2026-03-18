@@ -74,6 +74,10 @@ function handle_server_join_reply(packet)
     client.conn.established = true;
     client.conn.id = packet['conn_id'];
 
+    if (packet['capability'] && packet['capability'].indexOf('freecivx-server') !== -1) {
+      freecivx_server = true;
+    }
+
     if (get_client_page() == PAGE_MAIN
 	|| get_client_page() == PAGE_NETWORK) {
       set_client_page(PAGE_START);
