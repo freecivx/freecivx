@@ -19,9 +19,13 @@ initial_port = 6000
 # Can be overridden with environment variable: PUBLITE_CHECK_INTERVAL
 check_interval = 40
 
-# Port for the freecivx-server Java server
+# Port for the freecivx-server Java server (singleplayer)
 # Can be overridden with environment variable: PUBLITE_FREECIVX_PORT
 freecivx_port = 7800
+
+# Port for the freecivx-server Java server (multiplayer MMO)
+# Can be overridden with environment variable: PUBLITE_FREECIVX_MULTI_PORT
+freecivx_multi_port = 7802
 
 [Resource usage]
 server_capacity_single = 4

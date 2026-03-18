@@ -12,6 +12,7 @@ import (
 // FreecivxLauncher starts and restarts the Java freecivx-server.
 type FreecivxLauncher struct {
 	Port        int
+	Mode        string // "singleplayer" or "multiplayer"
 	shutdown    chan struct{}
 	StartedTime string
 	NumStart    int
@@ -19,9 +20,10 @@ type FreecivxLauncher struct {
 }
 
 // NewFreecivxLauncher creates a FreecivxLauncher ready to run.
-func NewFreecivxLauncher(port int, shutdown chan struct{}) *FreecivxLauncher {
+func NewFreecivxLauncher(port int, mode string, shutdown chan struct{}) *FreecivxLauncher {
 	return &FreecivxLauncher{
 		Port:        port,
+		Mode:        mode,
 		shutdown:    shutdown,
 		StartedTime: time.Now().UTC().Format("2006-01-02 15:04:05"),
 	}
@@ -79,7 +81,7 @@ func (fl *FreecivxLauncher) launchFreecivx() error {
 	}
 	defer logFile.Close()
 
-	cmd := exec.Command("java", "-jar", jarPath, fmt.Sprintf("%d", fl.Port))
+	cmd := exec.Command("java", "-jar", jarPath, fmt.Sprintf("%d", fl.Port), "--mode", fl.Mode)
 	cmd.Stdout = logFile
 	cmd.Stderr = logFile
 	if err := cmd.Start(); err != nil {
