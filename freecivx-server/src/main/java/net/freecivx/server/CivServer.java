@@ -284,6 +284,13 @@ public class CivServer extends org.java_websocket.server.WebSocketServer impleme
             clients.get(connId).send(gotoPacket.toString());
         }
 
+        if (pid == Packets.PACKET_WEB_INFO_TEXT_REQ) {
+            int loc = json.optInt("loc");
+            int visibleUnit = json.optInt("visible_unit");
+            int focusUnit = json.optInt("focus_unit");
+            InfoTextHand.handleWebInfoTextReq(game, connId, loc, visibleUnit, focusUnit);
+        }
+
         if (pid == Packets.PACKET_UNIT_DO_ACTION) {
             long actor_id = json.optInt("actor_id");
             long target_id = json.optInt("target_id");

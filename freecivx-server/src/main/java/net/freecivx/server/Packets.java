@@ -86,6 +86,8 @@ public class Packets {
     public static int PACKET_WEB_RULESET_UNIT_ADDITION = 260;
     public static int PACKET_WEB_GOTO_PATH_REQ = 287;
     public static int PACKET_WEB_GOTO_PATH = 288;
+    public static int PACKET_WEB_INFO_TEXT_REQ = 289;
+    public static int PACKET_WEB_INFO_TEXT_MESSAGE = 290;
     public static int PACKET_RULESET_ACTION = 246;
     public static int PACKET_RULESET_ACTION_ENABLER = 235;
     public static int PACKET_PLAYER_SCORE = 179;
