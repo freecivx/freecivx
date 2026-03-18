@@ -519,7 +519,7 @@ function pregame_settings()
       "<div id='pregame_settings_tabs-3'> <br><br>" +
 	    "<table id='settings_table'>" +
 	    "<tr id='webllm_enabled'><td id='webllm_label'></td>" +
-        "<td><input type='checkbox' id='webllm_setting' checked>Enable Web-LLM AI integration (generates AI-powered messages and turn updates)</td></tr>" +
+        "<td><input type='checkbox' id='webllm_setting'>Enable Web-LLM AI integration (generates AI-powered messages and turn updates)</td></tr>" +
 	    "<tr id='speech_enabled'><td id='speech_label'></td>" +
         "<td><input type='checkbox' id='speech_setting'>Enable speech audio messages</td></tr>" +
 	    "<tr id='voice_row'><td id='voice_label'></td>" +
@@ -656,10 +656,10 @@ function pregame_settings()
   if (is_small_screen() || !navigator.gpu) {
     $("#webllm_enabled").hide();
   } else {
-    var stored_webllm_setting = simpleStorage.get("webllm_enabled", "true");
+    var stored_webllm_setting = simpleStorage.get("webllm_enabled", "false");
     if (typeof webllm_enabled !== 'undefined') {
-      $("#webllm_setting").prop("checked", stored_webllm_setting != "false");
-      webllm_enabled = (stored_webllm_setting != "false");
+      $("#webllm_setting").prop("checked", stored_webllm_setting === "true");
+      webllm_enabled = (stored_webllm_setting === "true");
     }
     $("#webllm_label").prop("innerHTML", "AI Messages:");
   }

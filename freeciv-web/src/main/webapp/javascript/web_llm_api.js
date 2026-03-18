@@ -28,7 +28,7 @@ var webllm_loaded = false;
 var command_center_active = false;
 var current_command_center_state = null;
 
-// Initialize webllm_enabled from localStorage (default: true)
+// Initialize webllm_enabled from localStorage (default: false)
 // We use localStorage directly to ensure it's available early
 // Disabled on mobile (small screens < 768px) or when WebGPU is not supported
 var webllm_enabled = (function() {
@@ -42,11 +42,11 @@ var webllm_enabled = (function() {
   }
   try {
     var stored = localStorage.getItem("webllm_enabled");
-    // Default to true if no value is stored
-    return stored === null ? true : stored === "true";
+    // Default to false if no value is stored
+    return stored === null ? false : stored === "true";
   } catch (e) {
-    console.log("[WebLLM] localStorage not available, defaulting to enabled");
-    return true;
+    console.log("[WebLLM] localStorage not available, defaulting to disabled");
+    return false;
   }
 })();
 
