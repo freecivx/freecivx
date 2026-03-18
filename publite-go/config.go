@@ -20,6 +20,7 @@ type Config struct {
 	InitialPort          int
 	CheckInterval        int
 	FreecivxPort         int
+	FreecivxMultiPort    int
 }
 
 // loadConfig reads an INI-format settings file and returns a Config.
@@ -29,6 +30,8 @@ type Config struct {
 //   - PUBLITE_STATUS_PORT
 //   - PUBLITE_INITIAL_PORT
 //   - PUBLITE_CHECK_INTERVAL
+//   - PUBLITE_FREECIVX_PORT
+//   - PUBLITE_FREECIVX_MULTI_PORT
 func loadConfig(path string) (*Config, error) {
 	f, err := os.Open(path)
 	if err != nil {
@@ -108,5 +111,6 @@ func loadConfig(path string) (*Config, error) {
 		InitialPort:          envInt("PUBLITE_INITIAL_PORT", getInt("Config", "initial_port", 6000)),
 		CheckInterval:        envInt("PUBLITE_CHECK_INTERVAL", getInt("Config", "check_interval", 40)),
 		FreecivxPort:         envInt("PUBLITE_FREECIVX_PORT", getInt("Config", "freecivx_port", 7800)),
+		FreecivxMultiPort:    envInt("PUBLITE_FREECIVX_MULTI_PORT", getInt("Config", "freecivx_multi_port", 7802)),
 	}, nil
 }

@@ -30,8 +30,10 @@ import org.json.JSONObject;
 import java.net.InetSocketAddress;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -52,6 +54,15 @@ public class CivServer extends org.java_websocket.server.WebSocketServer impleme
     private long lastActivityTime = System.currentTimeMillis();
     private final net.freecivx.game.TurnTimer turnTimer = createTurnTimer();
     Game game = null;
+
+    /** Game mode: "singleplayer" or "multiplayer". */
+    private final String gameMode;
+
+    /**
+     * Persists username → nation across game resets in multiplayer mode so
+     * that returning players are given back their original nation.
+     */
+    private final ConcurrentHashMap<String, Integer> usernameToNation = new ConcurrentHashMap<>();
 
     /** Creates the server-side {@link net.freecivx.game.TurnTimer} backed by a single-threaded scheduler. */
     private static net.freecivx.game.TurnTimer createTurnTimer() {
@@ -79,11 +90,13 @@ public class CivServer extends org.java_websocket.server.WebSocketServer impleme
         };
     }
 
-    public CivServer(InetSocketAddress address) {
+    public CivServer(InetSocketAddress address, String gameMode) {
         super(address);
+        this.gameMode = gameMode;
         this.setReuseAddr(true);
         game = new Game(this);
         game.setTurnTimer(turnTimer);
+        game.setMultiplayer("multiplayer".equals(gameMode));
         game.initGame();
 
     }
@@ -134,7 +147,15 @@ public class CivServer extends org.java_websocket.server.WebSocketServer impleme
             reply.put("conn_id", connId);
             conn.send(reply.toString());
             game.addConnection(connId, username, connId, conn.getRemoteSocketAddress().toString());
-            game.addPlayer(connId, username, conn.getRemoteSocketAddress().toString());
+            Integer previousNation = "multiplayer".equals(gameMode) ? usernameToNation.get(username) : null;
+            game.addPlayer(connId, username, conn.getRemoteSocketAddress().toString(), previousNation);
+            // Persist the nation chosen for this player so it survives game restarts.
+            if ("multiplayer".equals(gameMode)) {
+                net.freecivx.game.Player p = game.players.get(connId);
+                if (p != null) {
+                    usernameToNation.put(username, p.getNation());
+                }
+            }
         }
 
         if (pid == Packets.PACKET_PLAYER_READY) {
@@ -504,10 +525,61 @@ public class CivServer extends org.java_websocket.server.WebSocketServer impleme
     }
 
     public void resetGame() {
+        // Snapshot the active connections before wiping the game so we can
+        // re-add all currently-connected players to the fresh game.
+        List<net.freecivx.game.Connection> activeConnections = new ArrayList<>();
+        for (Map.Entry<Long, WebSocket> entry : clients.entrySet()) {
+            net.freecivx.game.Connection conn = game.connections.get(entry.getKey());
+            if (conn != null) {
+                activeConnections.add(conn);
+            }
+        }
+
+        // Persist nations so that returning players keep the same nation
+        // across restarts in multiplayer mode.
+        if ("multiplayer".equals(gameMode)) {
+            for (net.freecivx.game.Connection conn : activeConnections) {
+                net.freecivx.game.Player p = game.players.get(conn.getId());
+                if (p != null) {
+                    usernameToNation.put(conn.getUsername(), p.getNation());
+                }
+            }
+        }
+
         game = new Game(this);
         game.setTurnTimer(turnTimer);
+        game.setMultiplayer("multiplayer".equals(gameMode));
         game.initGame();
-        sendMessageAll("Server has been reset after 24 hours of inactivity.");
+
+        // Re-add connected players to the new game.  In multiplayer mode the
+        // persistent usernameToNation map ensures returning players keep their
+        // nation identity across restarts.
+        for (net.freecivx.game.Connection conn : activeConnections) {
+            long connId = conn.getId();
+            String username = conn.getUsername();
+            String ip = conn.getIp();
+            Integer previousNation = "multiplayer".equals(gameMode) ? usernameToNation.get(username) : null;
+            game.addConnection(connId, username, connId, ip);
+            game.addPlayer(connId, username, ip, previousNation);
+        }
+
+        if (!activeConnections.isEmpty()) {
+            game.startGame();
+        }
+
+        sendMessageAll("A new game has started!");
+    }
+
+    @Override
+    public void scheduleGameRestart(int delaySeconds) {
+        sendMessageAll("Game over! A new game will start in " + delaySeconds + " seconds.");
+        turnTimer.schedule(() -> {
+            try {
+                resetGame();
+            } catch (Exception e) {
+                log.error("Error during scheduled game restart: {}", e.getMessage());
+            }
+        }, delaySeconds);
     }
 
     private void broadcast(JSONObject msg) {

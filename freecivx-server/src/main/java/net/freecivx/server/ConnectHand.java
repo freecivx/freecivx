@@ -49,7 +49,7 @@ public class ConnectHand {
         }
 
         game.addConnection(connId, username, connId, "");
-        game.addPlayer(connId, username, "");
+        game.addPlayer(connId, username, "", null);
 
         sendServerJoinReply(server, connId, true);
         sendGameList(game, server, connId);

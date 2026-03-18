@@ -58,7 +58,21 @@ public class Game {
     public long phase = 0;
     boolean gameStarted = false;
 
+    /**
+     * When {@code true} this game runs as an MMO multiplayer session:
+     * players may join at any time, and reconnecting players resume with
+     * their previous nation.
+     * When {@code false} (the default) this is a classic singleplayer game.
+     */
+    private boolean multiplayer = false;
+
     private static final int MAX_START_POSITION_ATTEMPTS = 200;
+    /**
+     * Delay in seconds before automatically restarting the game after a
+     * victory condition is met.  Both singleplayer and multiplayer use this
+     * value so that players have time to read the end-game summary.
+     */
+    static final int GAME_RESTART_DELAY_SECONDS = 60;
     /**
      * Base player-number for AI players.  All AI IDs are {@code AI_PLAYER_ID_BASE + i}
      * (e.g. 100, 101, …) which keeps them well below 255 – the upper limit checked by
@@ -73,6 +87,14 @@ public class Game {
     private Ruleset ruleset = new Ruleset();
     /** Tracks which human players have pressed end-turn this turn. */
     private final Set<Long> humanPlayersDone = new HashSet<>();
+
+    /**
+     * Tracks which username maps to which player-number (connId) within the
+     * current game session.  Used in multiplayer mode so that a player who
+     * disconnects and reconnects is re-attached to their existing cities/units
+     * instead of starting from scratch.
+     */
+    private final Map<String, Long> usernameToPlayerNo = new HashMap<>();
 
     /**
      * Direction delta arrays used for goto path execution.
@@ -676,6 +698,21 @@ public class Game {
         return gameStarted;
     }
 
+    /** Returns {@code true} when this server is running in multiplayer MMO mode. */
+    public boolean isMultiplayer() {
+        return multiplayer;
+    }
+
+    /**
+     * Sets the game mode.  Must be called before {@link #initGame()} or
+     * {@link #startGame()}.
+     *
+     * @param multiplayer {@code true} for MMO multiplayer, {@code false} for singleplayer
+     */
+    public void setMultiplayer(boolean multiplayer) {
+        this.multiplayer = multiplayer;
+    }
+
     /**
      * Initialises a headless auto-game with the specified number of AI players.
      * Unlike {@link #startGame()}, this method does NOT broadcast any network
@@ -940,15 +977,16 @@ public class Game {
     }
 
     /**
-     * Ends the game when the turn limit is reached.
-     * Reveals the entire map to all human players and broadcasts a game-over
-     * message.  Mirrors the {@code end_turn} / {@code check_for_game_over()}
-     * logic in the C Freeciv server's {@code server/srv_main.c}.
+     * Ends the game when a victory condition is met.
+     * Reveals the entire map to all human players and schedules an automatic
+     * restart after {@link #GAME_RESTART_DELAY_SECONDS} seconds.  Mirrors the
+     * {@code end_turn} / {@code check_for_game_over()} logic in the C Freeciv
+     * server's {@code server/srv_main.c}.
      */
     public void endGame() {
-        log.info("Game over: turn limit {} reached at turn {}.", endTurn, turn);
-        server.sendMessageAll("Game over! The turn limit of " + endTurn + " has been reached.");
+        log.info("Game over at turn {}.", turn);
         net.freecivx.server.VisibilityHandler.revealMapToAll(this);
+        server.scheduleGameRestart(GAME_RESTART_DELAY_SECONDS);
     }
 
     public void changeUnitActivity(long unit_id, int activity) {
@@ -1253,9 +1291,57 @@ public class Game {
         return true;
     }
 
-    public void addPlayer(long connId, String username, String addr) {
-        Player player = new Player(connId, username, addr, random.nextInt(3));
+    /**
+     * Adds a new human player to the game.
+     *
+     * <p>In multiplayer mode this method also handles mid-game reconnection:
+     * if a player with the same {@code username} already has an active entry
+     * in {@link #usernameToPlayerNo} (i.e. they disconnected and are rejoining
+     * the same running game) their existing {@link Player} object is moved to
+     * the new {@code connId} and all their units/cities are re-attributed to
+     * the new connection so gameplay can resume seamlessly.
+     *
+     * @param connId         the WebSocket connection ID for this join request
+     * @param username       the player's display name
+     * @param addr           the player's remote address
+     * @param previousNation the nation index to reuse (for multiplayer returning
+     *                       players across game restarts), or {@code null} to
+     *                       assign a random nation
+     */
+    public void addPlayer(long connId, String username, String addr, Integer previousNation) {
+        // --- Multiplayer in-session rejoin ---
+        if (multiplayer && usernameToPlayerNo.containsKey(username)) {
+            long oldPlayerNo = usernameToPlayerNo.get(username);
+            Player oldPlayer = players.get(oldPlayerNo);
+            if (oldPlayer != null && oldPlayerNo != connId) {
+                // Re-attach the existing player object to the new connection.
+                players.remove(oldPlayerNo);
+                oldPlayer.setConnectionId(connId);
+                players.put(connId, oldPlayer);
+
+                // Reassign all units and cities from old player number to new.
+                final long op = oldPlayerNo;
+                units.values().stream()
+                        .filter(u -> u.getOwner() == op)
+                        .forEach(u -> u.setOwner(connId));
+                cities.values().stream()
+                        .filter(c -> c.getOwner() == op)
+                        .forEach(c -> c.setOwner(connId));
+
+                usernameToPlayerNo.put(username, connId);
+                server.sendMessageAll(username + " has rejoined the game.");
+                players.forEach((id, iplayer) -> server.sendPlayerInfoAll(iplayer));
+                players.forEach((id, iplayer) -> server.sendPlayerInfoAdditionAll(id, 0));
+                connections.forEach((id, conn) -> server.sendConnInfoAll(id, conn.getUsername(), conn.getIp(), conn.getPlayerNo()));
+                return;
+            }
+        }
+
+        // --- Normal first join ---
+        int nation = (previousNation != null) ? previousNation : random.nextInt(3);
+        Player player = new Player(connId, username, addr, nation);
         players.put(connId, player);
+        usernameToPlayerNo.put(username, connId);
         server.sendMessageAll(username + " has joined the game.");
 
         players.forEach((id, iplayer) -> server.sendPlayerInfoAll(iplayer));
@@ -1630,6 +1716,19 @@ public class Game {
                 units.remove(uid);
                 server.sendUnitRemove(uid);
             }
+        }
+
+        // Check if only one civilisation remains alive.  When that happens the
+        // survivor is declared the winner and the game ends with the standard
+        // 60-second restart countdown.  This mirrors check_for_game_over() in
+        // the C Freeciv server's srv_main.c.
+        List<Player> alive = players.values().stream()
+                .filter(Player::isAlive)
+                .collect(java.util.stream.Collectors.toList());
+        if (alive.size() == 1 && gameStarted) {
+            Player victor = alive.get(0);
+            server.sendMessageAll(victor.getUsername() + " has won the game!");
+            endGame();
         }
     }
 

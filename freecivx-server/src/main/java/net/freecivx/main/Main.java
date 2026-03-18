@@ -38,18 +38,28 @@ public class Main {
 
     public static void main(String[] args) {
         int port = 7800; // Default port
+        String gameMode = "singleplayer"; // Default game mode
 
-        if (args.length >= 1) {
-            try {
-                port = Integer.parseInt(args[0]);
-            } catch (NumberFormatException e) {
-                log.error("Invalid port number: {}", args[0]);
-                System.exit(1);
-                return;
+        for (int i = 0; i < args.length; i++) {
+            if ("--mode".equals(args[i]) && i + 1 < args.length) {
+                gameMode = args[++i].toLowerCase();
+                if (!"singleplayer".equals(gameMode) && !"multiplayer".equals(gameMode)) {
+                    log.error("Invalid game mode: {}. Use 'singleplayer' or 'multiplayer'.", gameMode);
+                    System.exit(1);
+                    return;
+                }
+            } else if (!args[i].startsWith("--")) {
+                try {
+                    port = Integer.parseInt(args[i]);
+                } catch (NumberFormatException e) {
+                    log.error("Invalid port number: {}", args[i]);
+                    System.exit(1);
+                    return;
+                }
             }
         }
 
-        log.info("This is the server for Freecivx on port {}. You can learn a lot about Freecivx at https://www.freecivx.com/", port);
+        log.info("This is the server for Freecivx on port {} in {} mode. You can learn a lot about Freecivx at https://www.freecivx.com/", port, gameMode);
 
         try {
             // Create HTTP server
@@ -59,7 +69,7 @@ public class Main {
             log.info("HTTP server started on port: {}", port + 1);
 
             // Start WebSocket server
-            CivServer wsServer = new CivServer(new InetSocketAddress(port));
+            CivServer wsServer = new CivServer(new InetSocketAddress(port), gameMode);
             wsServer.start();
             log.info("WebSocket server started on port: {}", port);
 

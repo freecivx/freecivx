@@ -81,6 +81,10 @@ public class Unit {
         return owner;
     }
 
+    public void setOwner(long owner) {
+        this.owner = owner;
+    }
+
     public long getTile() {
         return tile;
     }

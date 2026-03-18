@@ -125,7 +125,7 @@ public class AutoGame {
      * opened.
      */
     private static CivServer createHeadlessServer() {
-        return new CivServer(new InetSocketAddress("localhost", 0)) {
+        return new CivServer(new InetSocketAddress("localhost", 0), "singleplayer") {
 
             @Override public void sendMessageAll(String message) {}
 
@@ -192,6 +192,10 @@ public class AutoGame {
             @Override public void sendRulesetActionsAll() {}
 
             @Override public void sendGameStateTo(long connId) {}
+
+            @Override public void scheduleGameRestart(int delaySeconds) {
+                // No-op in headless simulation: restarts are not meaningful here.
+            }
         };
     }
 

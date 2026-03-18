@@ -153,4 +153,15 @@ public interface IGameServer {
      * {@code connId}.  Used to synchronise late-joining players.
      */
     void sendGameStateTo(long connId);
+
+    // -------------------------------------------------------------------------
+    // Game lifecycle
+    // -------------------------------------------------------------------------
+
+    /**
+     * Schedules a full game reset after {@code delaySeconds} seconds.
+     * All currently-connected clients are automatically re-added to the new game.
+     * Used by both singleplayer and multiplayer modes to restart after victory.
+     */
+    void scheduleGameRestart(int delaySeconds);
 }

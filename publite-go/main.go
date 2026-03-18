@@ -181,9 +181,12 @@ func main() {
 	port = mc.launchServer("singleplayer", port)
 	port = mc.launchServer("multiplayer", port)
 
-	// Launch one freecivx-server (Java server).
-	freecivxLauncher := NewFreecivxLauncher(cfg.FreecivxPort, mc.shutdown)
-	go freecivxLauncher.Run()
+	// Launch one freecivx-server in singleplayer mode and one in multiplayer mode.
+	freecivxSingle := NewFreecivxLauncher(cfg.FreecivxPort, "singleplayer", mc.shutdown)
+	go freecivxSingle.Run()
+
+	freecivxMulti := NewFreecivxLauncher(cfg.FreecivxMultiPort, "multiplayer", mc.shutdown)
+	go freecivxMulti.Run()
 
 	slog.Info("publite-go started!")
 
