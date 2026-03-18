@@ -1378,9 +1378,10 @@ public class Game {
         // Calculate terrain-based movement cost.
         // Mirrors tile_move_cost() in the C Freeciv server's common/movement.c:
         // Mountains=3, Hills/Forest/Jungle/Swamp=2, others=1; roads reduce cost.
+        // Air units (domain=2) always pay 1; naval units (domain=1) always pay 1.
         Tile srcTile = tiles.get(unit.getTile());
         Tile destTileObj = tiles.get((long) dest_tile);
-        int moveCost = Movement.tileMoveCost(srcTile, destTileObj, unit, terrains);
+        int moveCost = Movement.tileMoveCost(srcTile, destTileObj, unit, terrains, utype);
 
         unit.setTile(dest_tile);
         unit.setFacing(dir);
@@ -1659,6 +1660,284 @@ public class Game {
                     "Your " + defenderName + " successfully defended against the enemy " + attackerName + ".");
         }
         return attackerWins;
+    }
+
+    /**
+     * Diplomat action: establish an embassy with the owner of the target city.
+     * After success the acting player gains embassy status with the foreign
+     * player, enabling treaty negotiations and revealing the foreign player's
+     * gold/tech in future diplomacy packets.
+     * Mirrors {@code do_establish_embassy()} in the C Freeciv server's
+     * {@code server/unithand.c}.
+     *
+     * @param actorId  the ID of the diplomat/spy performing the action
+     * @param cityId   the ID of the foreign city to establish an embassy in
+     * @return {@code true} if the embassy was successfully established
+     */
+    public boolean establishEmbassy(long actorId, long cityId) {
+        Unit actor = units.get(actorId);
+        if (actor == null) return false;
+
+        UnitType actorType = unitTypes.get((long) actor.getType());
+        if (actorType == null || !actorType.isNonMilitary()) return false;
+
+        City targetCity = cities.get(cityId);
+        if (targetCity == null) return false;
+
+        long actorOwner = actor.getOwner();
+        long targetOwner = targetCity.getOwner();
+
+        // Cannot establish embassy in own city.
+        if (actorOwner == targetOwner) return false;
+
+        // Unit must be on or adjacent to the target city tile.
+        if (!isTileAdjacentOrEqual(actor.getTile(), targetCity.getTile())) return false;
+
+        // Mark the embassy as established in the acting player's record.
+        Player actingPlayer = players.get(actorOwner);
+        if (actingPlayer == null) return false;
+        Player targetPlayer = players.get(targetOwner);
+
+        String targetName = targetPlayer != null ? targetPlayer.getUsername() : "foreign";
+        // Consume all remaining move points — establishing an embassy uses the
+        // actor's full turn.  Mirrors the C server's "full move cost" for diplomatic
+        // actions.  The diplomat is not lost.
+        actor.setMovesleft(0);
+
+        Notify.notifyPlayer(this, server, actorOwner,
+                "Your Diplomat has established an embassy with " + targetName + ".");
+        if (targetPlayer != null) {
+            Notify.notifyPlayer(this, server, targetOwner,
+                    actingPlayer.getUsername() + " has established an embassy in " + targetCity.getName() + ".");
+        }
+        log.info("Embassy established: {} → {} (city {})", actorOwner, targetOwner, targetCity.getName());
+        return true;
+    }
+
+    /**
+     * Diplomat action: bribe an enemy unit, converting it to the acting player's
+     * control.  The gold cost is proportional to the unit's strength and current
+     * HP.  Mirrors {@code diplomat_bribe()} in the C Freeciv server's
+     * {@code server/unithand.c}.
+     *
+     * @param actorId  the ID of the diplomat/spy performing the bribe
+     * @param targetId the ID of the enemy unit to bribe
+     * @return {@code true} if the bribe was successful
+     */
+    public boolean bribeUnit(long actorId, long targetId) {
+        Unit actor = units.get(actorId);
+        Unit target = units.get(targetId);
+        if (actor == null || target == null) return false;
+
+        UnitType actorType = unitTypes.get((long) actor.getType());
+        if (actorType == null || !actorType.isNonMilitary()) return false;
+
+        // Cannot bribe own units.
+        if (actor.getOwner() == target.getOwner()) return false;
+
+        // Unit must be adjacent to the target.
+        if (!isTileAdjacentOrEqual(actor.getTile(), target.getTile())) return false;
+
+        // Cannot bribe a unit that is garrisoned in a city.
+        Tile targetTile = tiles.get(target.getTile());
+        if (targetTile != null && targetTile.getWorked() > 0
+                && cities.get(targetTile.getWorked()) != null) return false;
+
+        Player actingPlayer = players.get(actor.getOwner());
+        if (actingPlayer == null) return false;
+
+        UnitType targetType = unitTypes.get((long) target.getType());
+        // Bribe cost: (attack + defense) × current_HP / max_HP × 50 gold.
+        // Mirrors the bribe_cost() formula in the C Freeciv server.
+        int maxHp = targetType != null ? targetType.getHp() : 10;
+        int atk    = targetType != null ? targetType.getAttackStrength() : 1;
+        int def    = targetType != null ? targetType.getDefenseStrength() : 1;
+        int bribeCost = Math.max(1, (atk + def) * target.getHp() / maxHp * 50);
+
+        if (actingPlayer.getGold() < bribeCost) {
+            Notify.notifyPlayer(this, server, actor.getOwner(),
+                    "You need " + bribeCost + " gold to bribe this unit (you have "
+                    + actingPlayer.getGold() + ").");
+            return false;
+        }
+
+        // Deduct gold and transfer unit ownership.
+        actingPlayer.setGold(actingPlayer.getGold() - bribeCost);
+        long previousOwner = target.getOwner();
+        target.setOwner(actor.getOwner());
+        target.setVeteran(0); // Bribed units lose veteran status.
+
+        // Consume actor's moves.
+        actor.setMovesleft(0);
+
+        String targetName = targetType != null ? targetType.getName() : "unit";
+        Notify.notifyPlayer(this, server, actor.getOwner(),
+                "Your Diplomat bribed the enemy " + targetName + " for " + bribeCost + " gold.");
+        Notify.notifyPlayer(this, server, previousOwner,
+                "One of your " + targetName + " units was bribed by an enemy Diplomat!");
+
+        // Broadcast updated unit info to all players.
+        net.freecivx.server.UnitTools.refreshUnit(this, target.getId());
+        log.info("Unit {} bribed from player {} by player {} for {} gold",
+                targetId, previousOwner, actor.getOwner(), bribeCost);
+        return true;
+    }
+
+    /**
+     * Diplomat action: sabotage production in a foreign city, resetting its
+     * accumulated production shields to zero.  Mirrors
+     * {@code diplomat_sabotage()} in the C Freeciv server's
+     * {@code server/unithand.c}.
+     *
+     * @param actorId the ID of the diplomat/spy performing the sabotage
+     * @param cityId  the ID of the foreign city to sabotage
+     * @return {@code true} if the sabotage was successful
+     */
+    public boolean sabotageCity(long actorId, long cityId) {
+        Unit actor = units.get(actorId);
+        if (actor == null) return false;
+
+        UnitType actorType = unitTypes.get((long) actor.getType());
+        if (actorType == null || !actorType.isNonMilitary()) return false;
+
+        City targetCity = cities.get(cityId);
+        if (targetCity == null) return false;
+
+        // Cannot sabotage own cities.
+        if (actor.getOwner() == targetCity.getOwner()) return false;
+
+        // Unit must be on or adjacent to the target city tile.
+        if (!isTileAdjacentOrEqual(actor.getTile(), targetCity.getTile())) return false;
+
+        Player targetOwner = players.get(targetCity.getOwner());
+
+        // Reset the city's production accumulation (mirrors sabotage_city()).
+        targetCity.setShieldStock(0);
+
+        // Consume actor's moves.
+        actor.setMovesleft(0);
+
+        // The diplomat has a 50% chance of being expelled (lost) after sabotage.
+        // Mirrors the capture chance in the C Freeciv server's diplomat actions.
+        boolean expelled = random.nextInt(2) == 0;
+        if (expelled) {
+            units.remove(actorId);
+            server.sendUnitRemove(actorId);
+            Notify.notifyPlayer(this, server, actor.getOwner(),
+                    "Your Diplomat sabotaged " + targetCity.getName()
+                    + " but was caught and expelled!");
+        } else {
+            Notify.notifyPlayer(this, server, actor.getOwner(),
+                    "Your Diplomat successfully sabotaged production in " + targetCity.getName() + ".");
+        }
+        if (targetOwner != null) {
+            Notify.notifyPlayer(this, server, targetCity.getOwner(),
+                    "An enemy Diplomat has sabotaged production in " + targetCity.getName() + "!");
+        }
+        log.info("City {} sabotaged by player {}, expelled={}", targetCity.getName(),
+                actor.getOwner(), expelled);
+        return true;
+    }
+
+    /**
+     * Diplomat action: steal a random technology from a foreign player via their
+     * city.  The acting player receives one technology that the target player
+     * knows but the actor does not.  The diplomat may be caught and lost.
+     * Mirrors {@code diplomat_get_tech()} in the C Freeciv server's
+     * {@code server/unithand.c}.
+     *
+     * @param actorId the ID of the diplomat/spy performing the theft
+     * @param cityId  the ID of the foreign city to steal technology from
+     * @return {@code true} if a technology was stolen
+     */
+    public boolean stealTech(long actorId, long cityId) {
+        Unit actor = units.get(actorId);
+        if (actor == null) return false;
+
+        UnitType actorType = unitTypes.get((long) actor.getType());
+        if (actorType == null || !actorType.isNonMilitary()) return false;
+
+        City targetCity = cities.get(cityId);
+        if (targetCity == null) return false;
+
+        if (actor.getOwner() == targetCity.getOwner()) return false;
+
+        // Unit must be on or adjacent to the target city tile.
+        if (!isTileAdjacentOrEqual(actor.getTile(), targetCity.getTile())) return false;
+
+        Player actingPlayer = players.get(actor.getOwner());
+        Player targetPlayer = players.get(targetCity.getOwner());
+        if (actingPlayer == null || targetPlayer == null) return false;
+
+        // Find technologies the target has that the actor does not.
+        List<Long> stealableTechs = new ArrayList<>();
+        for (long techId : targetPlayer.getKnownTechs()) {
+            if (!actingPlayer.hasTech(techId)) {
+                stealableTechs.add(techId);
+            }
+        }
+
+        if (stealableTechs.isEmpty()) {
+            Notify.notifyPlayer(this, server, actor.getOwner(),
+                    "There are no technologies to steal from " + targetPlayer.getUsername() + ".");
+            return false;
+        }
+
+        // Pick a random technology to steal.
+        long stolenTechId = stealableTechs.get(random.nextInt(stealableTechs.size()));
+        Technology stolenTech = techs.get(stolenTechId);
+        String techName = stolenTech != null ? stolenTech.getName() : "technology";
+
+        actingPlayer.addKnownTech(stolenTechId);
+
+        // Consume actor's moves.
+        actor.setMovesleft(0);
+
+        // 33% chance of diplomat being caught.
+        boolean caught = random.nextInt(3) == 0;
+        if (caught) {
+            units.remove(actorId);
+            server.sendUnitRemove(actorId);
+            Notify.notifyPlayer(this, server, actor.getOwner(),
+                    "Your Diplomat stole " + techName + " but was caught!");
+            Notify.notifyPlayer(this, server, targetCity.getOwner(),
+                    "An enemy Diplomat stole " + techName + " from " + targetCity.getName()
+                    + " and was caught!");
+        } else {
+            Notify.notifyPlayer(this, server, actor.getOwner(),
+                    "Your Diplomat stole " + techName + " from " + targetCity.getName() + ".");
+            Notify.notifyPlayer(this, server, targetCity.getOwner(),
+                    "An enemy Diplomat has stolen technology from " + targetCity.getName() + "!");
+        }
+        // Broadcast updated research state to the actor's player.
+        net.freecivx.server.TechTools.sendResearchInfo(this, server,
+                actingPlayer.getConnectionId(), actingPlayer.getPlayerNo());
+        log.info("Tech {} stolen from {} by {}, caught={}", techName,
+                targetCity.getOwner(), actor.getOwner(), caught);
+        return true;
+    }
+
+    /**
+     * Returns {@code true} if the two tile indices represent the same tile or
+     * adjacent tiles (Chebyshev distance ≤ 1), taking map wrapping into account.
+     * Used by diplomat action validators to check adjacency to target cities/units.
+     *
+     * @param tileA the first tile index
+     * @param tileB the second tile index
+     * @return {@code true} if the tiles are equal or adjacent
+     */
+    public boolean isTileAdjacentOrEqual(long tileA, long tileB) {
+        if (tileA == tileB) return true;
+        if (map == null) return false;
+        int xsize = map.getXsize();
+        int ax = (int)(tileA % xsize);
+        int ay = (int)(tileA / xsize);
+        int bx = (int)(tileB % xsize);
+        int by = (int)(tileB / xsize);
+        int rawDx = Math.abs(ax - bx);
+        int wrappedDx = Math.min(rawDx, xsize - rawDx); // east-west wrap
+        int dy = Math.abs(ay - by);
+        return wrappedDx <= 1 && dy <= 1;
     }
 
     public void buildCity(long unit_id, String city_name, long tile_id) {

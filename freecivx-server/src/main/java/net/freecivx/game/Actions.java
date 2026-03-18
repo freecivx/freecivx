@@ -47,6 +47,36 @@ public class Actions {
     public static final int ACTION_ATTACK = 45;
 
     /**
+     * Action ID: establish an embassy with a foreign player's city.
+     * Mirrors ACTION_ESTABLISH_EMBASSY in the C Freeciv server's common/actions.c.
+     * Requires a Diplomat or Spy unit adjacent to or in an enemy city.
+     */
+    public static final int ACTION_ESTABLISH_EMBASSY = 5;
+
+    /**
+     * Action ID: bribe an enemy unit with gold, converting it to the acting
+     * player's side.  Mirrors ACTION_SPY_BRIBE_UNIT in the C Freeciv server.
+     * Requires a Diplomat/Spy adjacent to the target unit; costs gold equal to
+     * the unit's bribe value (attack+defense * HP / max_HP * 100).
+     */
+    public static final int ACTION_BRIBE_UNIT = 6;
+
+    /**
+     * Action ID: sabotage production in an enemy city, setting its shields to
+     * zero.  Mirrors ACTION_SPY_SABOTAGE_CITY in the C Freeciv server.
+     * Requires a Diplomat/Spy in or adjacent to the target city.
+     */
+    public static final int ACTION_SABOTAGE_CITY = 7;
+
+    /**
+     * Action ID: steal a random technology from the target player.
+     * Mirrors ACTION_SPY_STEAL_TECH in the C Freeciv server.
+     * Requires a Diplomat/Spy in or adjacent to an enemy city.
+     * The diplomat may be lost in the attempt.
+     */
+    public static final int ACTION_STEAL_TECH = 8;
+
+    /**
      * Checks whether a given action is currently enabled for an actor unit.
      * Returns {@code false} immediately if the actor does not exist or the
      * action ID is unknown.
@@ -87,7 +117,9 @@ public class Actions {
         if (unit == null) return enabled;
 
         int[] candidates = {ACTION_FOUND_CITY, ACTION_JOIN_CITY, ACTION_ROAD,
-                ACTION_IRRIGATE, ACTION_MINE, ACTION_FORTIFY, ACTION_ATTACK};
+                ACTION_IRRIGATE, ACTION_MINE, ACTION_FORTIFY, ACTION_ATTACK,
+                ACTION_ESTABLISH_EMBASSY, ACTION_BRIBE_UNIT,
+                ACTION_SABOTAGE_CITY, ACTION_STEAL_TECH};
 
         for (int actionId : candidates) {
             if (actionIsEnabled(game, unitId, actionId)) {
