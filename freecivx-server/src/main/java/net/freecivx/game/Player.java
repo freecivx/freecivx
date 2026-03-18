@@ -93,6 +93,12 @@ public class Player {
     private boolean phaseDone = false;
     /** Number of consecutive turns the player has been idle (no actions taken). */
     private int nturnsIdle = 0;
+    /**
+     * True when the player's WebSocket connection is currently open.
+     * Set to false when the player disconnects.  Used to indicate
+     * online/offline status to other players.
+     */
+    private boolean connected = true;
 
     // -------------------------------------------------------------------------
     // Diplomacy state (mirrors player_diplstate / player_ai in C Freeciv server)
@@ -346,7 +352,17 @@ public class Player {
         this.nturnsIdle = nturnsIdle;
     }
 
-    // Utility methods
+    /** Returns {@code true} when the player's WebSocket connection is currently open. */
+    public boolean isConnected() {
+        return connected;
+    }
+
+    /** Sets the connection status of this player. */
+    public void setConnected(boolean connected) {
+        this.connected = connected;
+    }
+
+
     @Override
     public String toString() {
         return "Player{" +

@@ -178,6 +178,26 @@ public class Game {
      */
     private TurnTimer turnTimer = null;
 
+    /**
+     * Secondary timer used to send a turn-countdown warning message to all
+     * players before the turn auto-advances.  Injected alongside
+     * {@link #turnTimer}; {@code null} disables the warning.
+     */
+    private TurnTimer warningTimer = null;
+
+    /**
+     * Number of seconds before turn end at which a countdown warning is sent
+     * to all players.  Only fires when {@link #turnTimeout} {@code > TURN_WARNING_SECONDS}.
+     */
+    static final int TURN_WARNING_SECONDS = 60;
+
+    /**
+     * Number of consecutive idle turns (no end-turn action) before a human
+     * player's civilisation is handed over to the AI.
+     * Mirrors the {@code idleturns} concept in the C Freeciv server.
+     */
+    static final int IDLE_TURNS_BEFORE_AI_TAKEOVER = 3;
+
     public WorldMap map;
     public Map<Long, Player> players = new HashMap<>();
     public Map<Long, Unit> units = new HashMap<>();
@@ -375,9 +395,27 @@ public class Game {
         this.turnTimer = turnTimer;
     }
 
-    /** Schedules a forced turn-end after {@link #turnTimeout} seconds. */
+    /**
+     * Injects the secondary {@link TurnTimer} used to send a turn-countdown
+     * warning message {@link #TURN_WARNING_SECONDS} before auto-advance.
+     *
+     * @param warningTimer the timer implementation for the warning
+     */
+    public void setWarningTimer(TurnTimer warningTimer) {
+        this.warningTimer = warningTimer;
+    }
+
+    /** Schedules a forced turn-end after {@link #turnTimeout} seconds, and
+     *  optionally a countdown warning {@link #TURN_WARNING_SECONDS} before. */
     private synchronized void scheduleTurnTimeout() {
         if (turnTimeout <= 0 || turnTimer == null) return;
+        // Schedule countdown warning if the timeout is long enough
+        if (warningTimer != null && turnTimeout > TURN_WARNING_SECONDS) {
+            final int warningDelay = turnTimeout - TURN_WARNING_SECONDS;
+            warningTimer.schedule(() ->
+                server.sendMessageAll("Turn ends in " + TURN_WARNING_SECONDS + " seconds."),
+                warningDelay);
+        }
         turnTimer.schedule(() -> {
             synchronized (Game.this) {
                 humanPlayersDone.clear();
@@ -386,10 +424,13 @@ public class Game {
         }, turnTimeout);
     }
 
-    /** Cancels any pending turn-timeout task. */
+    /** Cancels any pending turn-timeout and warning tasks. */
     private synchronized void cancelTurnTimeout() {
         if (turnTimer != null) {
             turnTimer.cancel();
+        }
+        if (warningTimer != null) {
+            warningTimer.cancel();
         }
     }
 
@@ -887,6 +928,9 @@ public class Game {
         Player player = players.get(connId);
         if (player == null || player.isAi()) return;
 
+        // Reset the idle counter – the player is actively participating.
+        player.setNturnsIdle(0);
+
         humanPlayersDone.add(connId);
 
         long humanAliveCount = players.values().stream()
@@ -903,6 +947,24 @@ public class Game {
     public void turnDone() {
         year++;
         turn++;
+
+        // Track idle human players: those who did NOT press end-turn this cycle.
+        // Increment their idle counter; convert to AI when the threshold is reached.
+        // Mirrors the C Freeciv server's idleout.c / srv_main.c idle handling.
+        List<Long> idleConversions = new ArrayList<>();
+        for (Player p : players.values()) {
+            if (p.isAi() || !p.isAlive()) continue;
+            if (!humanPlayersDone.contains(p.getPlayerNo())) {
+                p.setNturnsIdle(p.getNturnsIdle() + 1);
+                if (p.getNturnsIdle() >= IDLE_TURNS_BEFORE_AI_TAKEOVER) {
+                    idleConversions.add(p.getPlayerNo());
+                }
+            }
+        }
+        // Perform AI conversions after iterating to avoid ConcurrentModificationException.
+        for (long pid : idleConversions) {
+            convertPlayerToAi(pid);
+        }
 
         // Reset movement points for all units and send the new state only to
         // players who can see the unit's tile, so that fog-of-war is respected.
@@ -957,6 +1019,9 @@ public class Game {
         server.sendStartPhaseAll();
         server.sendMessageAll("Turn " + turn + " has started (Year " + yearStr + ").");
 
+        // Broadcast current scores to all clients so the scoreboard stays up to date.
+        sendScores();
+
         // Refresh fog of war for all human players at the start of each new turn.
         // This catches any visibility changes caused by city growth (new worked
         // tiles), border updates, or other end-of-turn effects.
@@ -987,6 +1052,72 @@ public class Game {
         log.info("Game over at turn {}.", turn);
         net.freecivx.server.VisibilityHandler.revealMapToAll(this);
         server.scheduleGameRestart(GAME_RESTART_DELAY_SECONDS);
+    }
+
+    /**
+     * Converts a human player to AI control.  Called when the player
+     * disconnects or remains idle for too many consecutive turns.
+     * The player's cities and units are kept intact; only the control type
+     * changes.  All other clients are notified via chat and updated player
+     * info so they can see the AI flag in their scoreboard.
+     *
+     * <p>Mirrors the AI-takeover logic in the C Freeciv server's
+     * {@code srv_main.c:handle_conn_close()} and {@code idleout.c}.
+     *
+     * @param connId the connection ID of the player to convert
+     */
+    public synchronized void convertPlayerToAi(long connId) {
+        Player player = players.get(connId);
+        if (player == null || player.isAi() || !player.isAlive()) return;
+        player.setAi(true);
+        player.setNturnsIdle(0);
+        player.setConnected(false);
+        log.info("Player {} converted to AI control.", player.getUsername());
+        server.sendMessageAll(player.getUsername() + "'s civilization is now managed by AI.");
+        server.sendPlayerInfoAll(player);
+    }
+
+    /**
+     * Computes a civilisation score for the given player.
+     * Mirrors the formula used by the C Freeciv server's {@code score.c}
+     * ({@code get_civ_score()}):
+     * <ul>
+     *   <li>Population: sum of city sizes (primary growth metric)</li>
+     *   <li>Cities: number of cities × 5</li>
+     *   <li>Techs: number of known technologies × 2</li>
+     *   <li>Gold: treasury balance ÷ 10 (floored at 0)</li>
+     *   <li>Alive bonus: +50 for civilisations still in the game</li>
+     * </ul>
+     *
+     * @param player the player to score
+     * @return a non-negative integer score
+     */
+    public long computeScore(Player player) {
+        // Collect the player's cities once and derive both pop and city-count.
+        long pid = player.getPlayerNo();
+        long[] stats = cities.values().stream()
+                .filter(c -> c.getOwner() == pid)
+                .collect(java.util.stream.Collectors.teeing(
+                        java.util.stream.Collectors.summingLong(City::getSize),
+                        java.util.stream.Collectors.counting(),
+                        (pop, cnt) -> new long[]{pop, cnt}));
+        long popScore  = stats[0];
+        long cityScore = stats[1] * 5L;
+        long techScore = player.getKnownTechs().size() * 2L;
+        long goldScore = Math.max(0, player.getGold()) / 10L;
+        long aliveBonus = player.isAlive() ? 50L : 0L;
+        return popScore + cityScore + techScore + goldScore + aliveBonus;
+    }
+
+    /**
+     * Broadcasts current civilisation scores to all connected clients using
+     * {@code PACKET_PLAYER_SCORE}.  Called at the end of each turn so that
+     * players can track relative progress on their scoreboard.
+     */
+    public void sendScores() {
+        for (Player p : players.values()) {
+            server.sendPlayerScoreAll(p.getPlayerNo(), computeScore(p));
+        }
     }
 
     public void changeUnitActivity(long unit_id, int activity) {
