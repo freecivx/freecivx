@@ -125,7 +125,7 @@ public class AutoGame {
      * opened.
      */
     private static CivServer createHeadlessServer() {
-        return new CivServer(new InetSocketAddress("localhost", 0), "singleplayer") {
+        return new CivServer(new InetSocketAddress("localhost", 0), "singleplayer", 0) {
 
             @Override public void sendMessageAll(String message) {}
 
