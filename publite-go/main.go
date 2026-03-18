@@ -181,12 +181,23 @@ func main() {
 	port = mc.launchServer("singleplayer", port)
 	port = mc.launchServer("multiplayer", port)
 
-	// Launch one freecivx-server in singleplayer mode and one in multiplayer mode.
-	freecivxSingle := NewFreecivxLauncher(cfg.FreecivxPort, "singleplayer", mc.shutdown)
+	// Launch four freecivx-server instances: multiplayer/hex, multiplayer/square,
+	// singleplayer/square and singleplayer/hex.
+	freecivxMultiHex := NewFreecivxLauncher(cfg.FreecivxMultiHexPort, "multiplayer", "hex",
+		"Freecivx Multiplayer Server -Hex map tiles - Java server", mc.shutdown)
+	go freecivxMultiHex.Run()
+
+	freecivxMulti := NewFreecivxLauncher(cfg.FreecivxMultiPort, "multiplayer", "square",
+		"Freecivx Multiplayer Server - Square map tiles - Java server", mc.shutdown)
+	go freecivxMulti.Run()
+
+	freecivxSingle := NewFreecivxLauncher(cfg.FreecivxPort, "singleplayer", "square",
+		"Freecivx Singleplayer Server - Square map tiles - Java server", mc.shutdown)
 	go freecivxSingle.Run()
 
-	freecivxMulti := NewFreecivxLauncher(cfg.FreecivxMultiPort, "multiplayer", mc.shutdown)
-	go freecivxMulti.Run()
+	freecivxSingleHex := NewFreecivxLauncher(cfg.FreecivxSingleHexPort, "singleplayer", "hex",
+		"Freecivx Singleplayer Server - Hex map tiles - Java server", mc.shutdown)
+	go freecivxSingleHex.Run()
 
 	slog.Info("publite-go started!")
 

@@ -39,6 +39,8 @@ public class Main {
     public static void main(String[] args) {
         int port = 7800; // Default port
         String gameMode = "singleplayer"; // Default game mode
+        String tiles = "square"; // Default tile type: "square" or "hex"
+        String metaMessage = null; // Computed after parsing args if not set explicitly
 
         for (int i = 0; i < args.length; i++) {
             if ("--mode".equals(args[i]) && i + 1 < args.length) {
@@ -48,6 +50,15 @@ public class Main {
                     System.exit(1);
                     return;
                 }
+            } else if ("--tiles".equals(args[i]) && i + 1 < args.length) {
+                tiles = args[++i].toLowerCase();
+                if (!"square".equals(tiles) && !"hex".equals(tiles)) {
+                    log.error("Invalid tiles type: {}. Use 'square' or 'hex'.", tiles);
+                    System.exit(1);
+                    return;
+                }
+            } else if ("--metamessage".equals(args[i]) && i + 1 < args.length) {
+                metaMessage = args[++i];
             } else if (!args[i].startsWith("--")) {
                 try {
                     port = Integer.parseInt(args[i]);
@@ -59,7 +70,15 @@ public class Main {
             }
         }
 
-        log.info("This is the server for Freecivx on port {} in {} mode. You can learn a lot about Freecivx at https://www.freecivx.com/", port, gameMode);
+        if (metaMessage == null) {
+            String modeLabel = "multiplayer".equals(gameMode) ? "Multiplayer" : "Singleplayer";
+            String tilesLabel = "hex".equals(tiles) ? "Hex" : "Square";
+            metaMessage = "Freecivx " + modeLabel + " Server - " + tilesLabel + " map tiles - Java server";
+        }
+
+        int topologyId = "hex".equals(tiles) ? net.freecivx.game.Game.TF_HEX : 0;
+
+        log.info("This is the server for Freecivx on port {} in {} mode with {} tiles. You can learn a lot about Freecivx at https://www.freecivx.com/", port, gameMode, tiles);
 
         try {
             // Create HTTP server
@@ -69,7 +88,7 @@ public class Main {
             log.info("HTTP server started on port: {}", port + 1);
 
             // Start WebSocket server
-            CivServer wsServer = new CivServer(new InetSocketAddress(port), gameMode);
+            CivServer wsServer = new CivServer(new InetSocketAddress(port), gameMode, topologyId);
             wsServer.start();
             log.info("WebSocket server started on port: {}", port);
 
@@ -94,7 +113,7 @@ public class Main {
             httpServer.start();
 
             // Publish to metaserver
-            MetaserverClient.publishToMetaserver(port);
+            MetaserverClient.publishToMetaserver(port, metaMessage);
 
         } catch (IOException e) {
             log.error("Failed to start the server: {}", e.getMessage());

@@ -21,6 +21,8 @@ type Config struct {
 	CheckInterval        int
 	FreecivxPort         int
 	FreecivxMultiPort    int
+	FreecivxSingleHexPort int
+	FreecivxMultiHexPort  int
 }
 
 // loadConfig reads an INI-format settings file and returns a Config.
@@ -32,6 +34,8 @@ type Config struct {
 //   - PUBLITE_CHECK_INTERVAL
 //   - PUBLITE_FREECIVX_PORT
 //   - PUBLITE_FREECIVX_MULTI_PORT
+//   - PUBLITE_FREECIVX_SINGLE_HEX_PORT
+//   - PUBLITE_FREECIVX_MULTI_HEX_PORT
 func loadConfig(path string) (*Config, error) {
 	f, err := os.Open(path)
 	if err != nil {
@@ -112,5 +116,7 @@ func loadConfig(path string) (*Config, error) {
 		CheckInterval:        envInt("PUBLITE_CHECK_INTERVAL", getInt("Config", "check_interval", 40)),
 		FreecivxPort:         envInt("PUBLITE_FREECIVX_PORT", getInt("Config", "freecivx_port", 7800)),
 		FreecivxMultiPort:    envInt("PUBLITE_FREECIVX_MULTI_PORT", getInt("Config", "freecivx_multi_port", 7802)),
+		FreecivxSingleHexPort: envInt("PUBLITE_FREECIVX_SINGLE_HEX_PORT", getInt("Config", "freecivx_single_hex_port", 7804)),
+		FreecivxMultiHexPort:  envInt("PUBLITE_FREECIVX_MULTI_HEX_PORT", getInt("Config", "freecivx_multi_hex_port", 7806)),
 	}, nil
 }

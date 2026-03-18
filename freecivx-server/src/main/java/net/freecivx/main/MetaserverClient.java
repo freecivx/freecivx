@@ -31,10 +31,10 @@ public class MetaserverClient {
 
     private static final Logger log = LoggerFactory.getLogger(MetaserverClient.class);
 
-    public static void publishToMetaserver(int port) {
+    public static void publishToMetaserver(int port, String message) {
         String metaserverUrl = "http://localhost:8080/freeciv-web/meta/metaserver";
         String serverHost = "localhost"; // Replace with actual host if necessary
-        String postData = String.format("host=%s&port=%d&vn[]=&vv[]=&type=freecivx&message=%s", serverHost, port, "Freecivx Multiplayer Server (Java)");
+        String postData = String.format("host=%s&port=%d&vn[]=&vv[]=&type=freecivx&message=%s", serverHost, port, message);
 
         try {
             URL url = new URL(metaserverUrl);
