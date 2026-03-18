@@ -169,6 +169,13 @@ public class AiPlayer {
     private int unitLegion   = -1; // Iron Working  — best early all-rounder
     private int unitPikemen  = -1; // Feudalism      — anti-horse specialist
     private int unitHorsemen = -1; // Horseback Riding — fast raider
+    // Naval unit-type IDs
+    private int unitTrireme   = -1; // Map Making — earliest naval combat unit
+    private int unitCaravel   = -1; // Navigation — mid-game naval explorer
+    // Air unit-type IDs
+    private int unitFighter   = -1; // Flight — earliest air combat unit
+    // Diplomat unit-type ID
+    private int unitDiplomat  = -1; // Writing — diplomatic unit
 
     // Technology IDs — resolved at runtime by name in resolveGameIds().
     // Initial values of -1 are overwritten on the first AI turn.
@@ -196,6 +203,9 @@ public class AiPlayer {
     private long techUniversity         = -1L; // req: Mathematics + Philosophy — unlocks University building
     private long techIndustrialization  = -1L; // req: Gunpowder + Trade — Factory
     private long techEconomics          = -1L; // req: Trade + University — Stock Exchange
+    private long techMapMaking          = -1L; // req: Alphabet — unlocks Trireme (naval)
+    private long techNavigation         = -1L; // req: Astronomy + Math — unlocks Caravel
+    private long techFlight             = -1L; // req: Combustion + Theory of Gravity — Fighter
 
     private static final int[] DIR_DX = {-1, 0, 1, -1, 1, -1, 0, 1};
     private static final int[] DIR_DY = {-1, -1, -1, 0, 0, 1, 1, 1};
@@ -295,7 +305,19 @@ public class AiPlayer {
                 continue;
             }
 
-            // Military units: defend cities first, then attack enemies
+            // Diplomat units: move toward enemy cities to perform diplomatic actions.
+            // Diplomats are non-military (NonMil flag) and have no attack strength,
+            // but are not workers (no hasSettlersFlag).  Mirrors the dai_diplomat_city()
+            // call in the C Freeciv server's daidiplomacy.c.
+            if (utype.isNonMilitary() && !utype.hasSettlersFlag()
+                    && utype.getAttackStrength() == 0) {
+                handleDiplomatUnit(unit, utype, owner);
+                continue;
+            }
+
+            // Military units: defend cities first, then attack enemies.
+            // Naval units (domain=1) and air units (domain=2) use the same handler
+            // but with domain-aware movement helpers.
             if (utype.getAttackStrength() > 0) {
                 handleMilitaryUnit(unit, utype, owner);
                 continue;
@@ -376,6 +398,9 @@ public class AiPlayer {
                 case "University":        techUniversity        = id; break;
                 case "Industrialization": techIndustrialization = id; break;
                 case "Economics":         techEconomics         = id; break;
+                case "Map Making":        techMapMaking         = id; break;
+                case "Navigation":        techNavigation        = id; break;
+                case "Flight":            techFlight            = id; break;
                 default: break;
             }
         }
@@ -385,11 +410,15 @@ public class AiPlayer {
             String n = e.getValue().getName();
             int id = e.getKey().intValue();
             switch (n) {
-                case "Phalanx":  unitPhalanx  = id; break;
-                case "Archers":  unitArchers  = id; break;
-                case "Legion":   unitLegion   = id; break;
-                case "Pikemen":  unitPikemen  = id; break;
-                case "Horsemen": unitHorsemen = id; break;
+                case "Phalanx":   unitPhalanx  = id; break;
+                case "Archers":   unitArchers  = id; break;
+                case "Legion":    unitLegion   = id; break;
+                case "Pikemen":   unitPikemen  = id; break;
+                case "Horsemen":  unitHorsemen = id; break;
+                case "Trireme":   unitTrireme  = id; break;
+                case "Caravel":   unitCaravel  = id; break;
+                case "Fighter":   unitFighter  = id; break;
+                case "Diplomat":  unitDiplomat = id; break;
                 default: break;
             }
         }
@@ -2006,6 +2035,13 @@ public class AiPlayer {
     /**
      * Moves a unit one step in the direction that minimises Manhattan distance
      * to the target tile.  Respects terrain and map-boundary constraints.
+     * <p>
+     * Domain-aware terrain filtering:
+     * <ul>
+     *   <li>Domain 0 (land): avoids ocean tiles.</li>
+     *   <li>Domain 1 (sea): avoids non-ocean tiles (land/mountains etc.).</li>
+     *   <li>Domain 2 (air): no terrain filtering — can fly anywhere.</li>
+     * </ul>
      *
      * @return {@code true} if the unit was successfully moved
      */
@@ -2027,11 +2063,13 @@ public class AiPlayer {
             long newTileId = ny * game.map.getXsize() + nx;
             Tile destTile = game.tiles.get(newTileId);
             if (destTile == null) continue;
-            // Land units avoid ocean tiles (terrain 2 = Ocean, 3 = Deep Ocean)
-            if (utype.getDomain() == 0) {
-                int terrain = destTile.getTerrain();
-                if (terrain == TERRAIN_OCEAN || terrain == TERRAIN_DEEP_OCEAN) continue;
-            }
+            int terrain = destTile.getTerrain();
+            boolean isOcean = (terrain == TERRAIN_OCEAN || terrain == TERRAIN_DEEP_OCEAN);
+            // Land units avoid ocean tiles
+            if (utype.getDomain() == 0 && isOcean) continue;
+            // Naval units avoid land tiles
+            if (utype.getDomain() == 1 && !isOcean) continue;
+            // Air units (domain=2) can enter any tile — no terrain filter needed
             long dist = Math.abs(nx - tx) + Math.abs(ny - ty);
             if (dist < bestDist) {
                 bestDist = dist;
@@ -2067,11 +2105,13 @@ public class AiPlayer {
             long newTileId = ny * game.map.getXsize() + nx;
             Tile destTile = game.tiles.get(newTileId);
             if (destTile == null) continue;
-            // Land units avoid ocean tiles (terrain 2 = Ocean, 3 = Deep Ocean)
-            if (utype.getDomain() == 0) {
-                int terrain = destTile.getTerrain();
-                if (terrain == TERRAIN_OCEAN || terrain == TERRAIN_DEEP_OCEAN) continue;
-            }
+            int terrain = destTile.getTerrain();
+            boolean isOcean = (terrain == TERRAIN_OCEAN || terrain == TERRAIN_DEEP_OCEAN);
+            // Land units avoid ocean tiles
+            if (utype.getDomain() == 0 && isOcean) continue;
+            // Naval units avoid land tiles
+            if (utype.getDomain() == 1 && !isOcean) continue;
+            // Air units (domain=2) can move anywhere — no terrain filter
             return game.moveUnit(unit.getId(), (int) newTileId, dir);
         }
         return false;
@@ -2081,5 +2121,115 @@ public class AiPlayer {
      * No-op shutdown method kept for API compatibility.
      */
     public void shutdown() {
+    }
+
+    // =========================================================================
+    // Diplomat unit AI (mirrors dai_diplomat_city() in daidiplomacy.c)
+    // =========================================================================
+
+    /**
+     * Handles AI behaviour for a diplomat or spy unit.  The diplomat moves
+     * toward the nearest reachable enemy city and, once adjacent, attempts to
+     * establish an embassy.  Mirrors the basic diplomat-city targeting in the C
+     * Freeciv server's {@code ai/default/daidiplomacy.c}.
+     *
+     * @param unit  the diplomat unit
+     * @param utype the unit type definition
+     * @param owner the owning AI player
+     */
+    private void handleDiplomatUnit(Unit unit, UnitType utype, Player owner) {
+        long ownerId = owner.getPlayerNo();
+
+        // Find the nearest enemy city as the diplomat's target.
+        long targetTile = -1;
+        long bestDist = Long.MAX_VALUE;
+        for (City city : game.cities.values()) {
+            if (city.getOwner() == ownerId) continue;
+            long cx = city.getTile() % game.map.getXsize();
+            long cy = city.getTile() / game.map.getXsize();
+            long ux = unit.getTile() % game.map.getXsize();
+            long uy = unit.getTile() / game.map.getXsize();
+            long dist = Math.abs(cx - ux) + Math.abs(cy - uy);
+            if (dist < bestDist) {
+                bestDist = dist;
+                targetTile = city.getTile();
+            }
+        }
+        if (targetTile < 0) return;
+
+        // If already adjacent to or on the target city tile, try to establish an embassy.
+        if (game.isTileAdjacentOrEqual(unit.getTile(), targetTile)) {
+            Tile tt = game.tiles.get(targetTile);
+            if (tt != null && tt.getWorked() > 0) {
+                game.establishEmbassy(unit.getId(), tt.getWorked());
+            }
+            return;
+        }
+
+        // Move toward the target city.
+        while (unit.getMovesleft() > 0 && game.units.containsKey(unit.getId())) {
+            if (!moveUnitToward(unit, utype, targetTile)) break;
+            if (game.isTileAdjacentOrEqual(unit.getTile(), targetTile)) break;
+        }
+    }
+
+    // =========================================================================
+    // Naval / air unit building helpers
+    // =========================================================================
+
+    /**
+     * Returns {@code true} if the given city tile is coastal — i.e., at least
+     * one of its eight adjacent tiles is an ocean tile.  Naval units can only be
+     * built and deployed from coastal cities.
+     * Mirrors the {@code is_terrain_near_tile()} / {@code is_ocean_near_tile()}
+     * check in the C Freeciv server's {@code common/map.c}.
+     *
+     * @param cityTileId the tile index of the city
+     * @return {@code true} if the city is on the coast
+     */
+    private boolean isCityCoastal(long cityTileId) {
+        int xsize = game.map.getXsize();
+        int ysize = game.map.getYsize();
+        int cx = (int)(cityTileId % xsize);
+        int cy = (int)(cityTileId / xsize);
+        for (int dx = -1; dx <= 1; dx++) {
+            for (int dy = -1; dy <= 1; dy++) {
+                if (dx == 0 && dy == 0) continue;
+                int nx = (cx + dx + xsize) % xsize;
+                int ny = cy + dy;
+                if (ny < 0 || ny >= ysize) continue;
+                Tile t = game.tiles.get((long)(ny * xsize + nx));
+                if (t != null) {
+                    int terrain = t.getTerrain();
+                    if (terrain == TERRAIN_OCEAN || terrain == TERRAIN_DEEP_OCEAN) return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Returns the best available naval unit the AI can build given current
+     * technology.  Mirrors dai_choose_naval() in the C Freeciv AI.
+     *
+     * @param player the AI player
+     * @return unit-type ID of the best available naval unit, or {@code -1}
+     */
+    private int bestAvailableNavalUnit(Player player) {
+        if (unitCaravel >= 0 && techNavigation >= 0 && player.hasTech(techNavigation)) return unitCaravel;
+        if (unitTrireme >= 0 && techMapMaking >= 0 && player.hasTech(techMapMaking)) return unitTrireme;
+        return -1;
+    }
+
+    /**
+     * Returns the best available air unit the AI can build given current
+     * technology.  Mirrors dai_choose_air() in the C Freeciv AI.
+     *
+     * @param player the AI player
+     * @return unit-type ID of the best available air unit, or {@code -1}
+     */
+    private int bestAvailableAirUnit(Player player) {
+        if (unitFighter >= 0 && techFlight >= 0 && player.hasTech(techFlight)) return unitFighter;
+        return -1;
     }
 }

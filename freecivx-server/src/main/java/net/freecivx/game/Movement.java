@@ -222,6 +222,10 @@ public class Movement {
      * tile.  Accounts for terrain type (Mountains=3, Hills/Forest=2, others=1),
      * road bonuses (divide cost by {@link #ROAD_MOVE_DIVISOR}), and railroad
      * bonuses (always cost 1).
+     * Air units (domain=2) always pay 1 move point regardless of terrain,
+     * mirroring the {@code UCF_TERRAIN_SPEED} unit-class flag in the C Freeciv
+     * server's {@code common/movement.c}.
+     * Naval units (domain=1) on ocean tiles always pay 1 move point.
      * Mirrors the {@code tile_move_cost} calculation in the C Freeciv server's
      * {@code common/movement.c}, using the terrain's {@code movement_cost} field
      * and road/rail extra detection via the tile extras bitvector.
@@ -231,16 +235,59 @@ public class Movement {
      * @param dest     the destination tile
      * @param unit     the unit being moved
      * @param terrains map of terrain type ID → {@link Terrain} definitions
+     * @param unitType the unit type definition (used for domain check)
+     * @return the number of move points consumed (always ≥ 1)
+     */
+    public static int tileMoveCost(Tile src, Tile dest, Unit unit,
+                                   Map<Long, Terrain> terrains,
+                                   UnitType unitType) {
+        if (src == null || dest == null || unit == null) return Integer.MAX_VALUE;
+
+        // Air units (domain=2) ignore terrain costs — they always pay 1 move point.
+        // Mirrors the UCF_TERRAIN_SPEED=false behaviour for Air/Helicopter classes
+        // in the C Freeciv server's common/movement.c.
+        if (unitType != null && unitType.getDomain() == 2) {
+            return 1;
+        }
+
+        // Naval units (domain=1) on ocean always pay 1 move point.
+        if (unitType != null && unitType.getDomain() == 1) {
+            return 1;
+        }
+
+        // Railroad: always 1 move point regardless of terrain (fastest travel)
+        if ((dest.getExtras() & (1 << EXTRA_BIT_RAIL)) != 0) {
+            return 1;
+        }
+
+        // Look up terrain cost from the ruleset (Mountains=3, Hills/Forest=2, others=1)
+        Terrain terrain = terrains.get((long) dest.getTerrain());
+        int baseCost = terrain != null ? terrain.getMoveCost() : 1;
+
+        // Road: divide terrain cost by ROAD_MOVE_DIVISOR (minimum 1).
+        // Mirrors the road move bonus in the C Freeciv server's movement.c.
+        if ((dest.getExtras() & (1 << EXTRA_BIT_ROAD)) != 0) {
+            return Math.max(1, baseCost / ROAD_MOVE_DIVISOR);
+        }
+
+        return baseCost;
+    }
+
+    /**
+     * Returns the terrain-accurate movement cost for entering the destination
+     * tile.  This overload is kept for backwards compatibility; it does not
+     * apply domain-based cost exemptions (air/naval).  Prefer the overload that
+     * accepts a {@link UnitType} parameter.
+     *
+     * @param src      the source tile
+     * @param dest     the destination tile
+     * @param unit     the unit being moved
+     * @param terrains map of terrain type ID → {@link Terrain} definitions
      * @return the number of move points consumed (always ≥ 1)
      */
     public static int tileMoveCost(Tile src, Tile dest, Unit unit,
                                    Map<Long, Terrain> terrains) {
         if (src == null || dest == null || unit == null) return Integer.MAX_VALUE;
-
-        // Air units ignore terrain movement costs (mirrors UCF_TERRAIN_SPEED flag)
-        if (unit.getType() >= 0) {
-            // Domain check is handled by the caller; air domain = 2
-        }
 
         // Railroad: always 1 move point regardless of terrain (fastest travel)
         if ((dest.getExtras() & (1 << EXTRA_BIT_RAIL)) != 0) {

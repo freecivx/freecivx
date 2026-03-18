@@ -109,6 +109,18 @@ public class UnitHand {
         } else if (actionType == Actions.ACTION_ROAD) {
             // Start building a road on the current tile.
             game.changeUnitActivity(actorId, CityTurn.ACTIVITY_ROAD);
+        } else if (actionType == Actions.ACTION_ESTABLISH_EMBASSY) {
+            // Establish embassy in the target city (targetId is cityId).
+            game.establishEmbassy(actorId, targetId);
+        } else if (actionType == Actions.ACTION_BRIBE_UNIT) {
+            // Bribe an adjacent enemy unit (targetId is unit ID).
+            game.bribeUnit(actorId, targetId);
+        } else if (actionType == Actions.ACTION_SABOTAGE_CITY) {
+            // Sabotage production in a foreign city (targetId is cityId).
+            game.sabotageCity(actorId, targetId);
+        } else if (actionType == Actions.ACTION_STEAL_TECH) {
+            // Steal a technology from a foreign player via their city (targetId is cityId).
+            game.stealTech(actorId, targetId);
         } else {
             // Unknown action: refresh the unit info for the client
             UnitTools.sendUnitInfo(game, game.getServer(), connId, actorId);
