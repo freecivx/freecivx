@@ -85,6 +85,7 @@ public class ConnectHand {
         reply.put("pid", Packets.PACKET_SERVER_JOIN_REPLY);
         reply.put("you_can_join", canJoin);
         reply.put("conn_id", connId);
+        reply.put("capability", "freecivx-server");
         server.sendMessage(connId, reply.toString());
     }
 
