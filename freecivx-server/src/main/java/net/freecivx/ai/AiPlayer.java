@@ -58,12 +58,12 @@ public class AiPlayer {
 
     private static final Logger log = LoggerFactory.getLogger(AiPlayer.class);
 
-    private final Game game;
-    private final Random random = new Random();
+    final Game game;
+    final Random random = new Random();
 
     // Per-unit persistent target tile IDs (inspired by daiunit.c unit-task system).
     // Storing targets across turns prevents units from changing goals every turn.
-    private final Map<Long, Long> unitTargets = new HashMap<>();
+    final Map<Long, Long> unitTargets = new HashMap<>();
 
     // Per-unit consecutive-turns-stuck counter.
     // When a settler (or other unit) fails to make progress toward its target for
@@ -71,13 +71,13 @@ public class AiPlayer {
     // searches for a new, hopefully reachable, destination.
     // Mirrors the "turns to go" reachability check in the C Freeciv server's
     // daisettler.c where a settler gives up on a site it cannot reach in time.
-    private final Map<Long, Integer> unitStuckTurns = new HashMap<>();
+    final Map<Long, Integer> unitStuckTurns = new HashMap<>();
 
     // Maximum consecutive turns a settler may fail to move toward its target
     // before the target is considered unreachable and cleared.
     // A value of 5 is sufficient to survive temporary obstacles (e.g. enemy units
     // blocking a corridor) while quickly releasing targets on the far side of water.
-    private static final int SETTLER_STUCK_TURNS = 5;
+    static final int SETTLER_STUCK_TURNS = 5;
 
     // Flag to ensure improvement and technology IDs are resolved only once.
     // IDs are assigned when the game starts and never change, so a single
@@ -110,7 +110,7 @@ public class AiPlayer {
     // Danger score threshold above which a city is considered in grave danger
     // and triggers an emergency production override regardless of the current
     // build queue.  Mirrors city_data->grave_danger in daimilitary.c.
-    private static final int GRAVE_DANGER_THRESHOLD = 15;
+    static final int GRAVE_DANGER_THRESHOLD = 15;
 
     // Maximum distance (Manhattan) at which enemy units contribute to a city's
     // danger score.  Mirrors ASSESS_DANGER_MAX_DISTANCE in daimilitary.c.
@@ -120,12 +120,12 @@ public class AiPlayer {
     // mirroring adv_settler_safe_tile() radius in daisettler.c.
     private static final int SETTLER_SAFE_DISTANCE = 2;
 
-    private static final String[] AI_CITY_NAMES = {
+    static final String[] AI_CITY_NAMES = {
         "Rome", "Athens", "Cairo", "Babylon", "Carthage", "Persepolis",
         "Thebes", "Memphis", "Nineveh", "Tyre", "Samarkand", "Antioch",
         "Corinth", "Sparta", "Troy", "Alexandria", "Damascus", "Jericho"
     };
-    private int aiCityNameIndex = 0;
+    int aiCityNameIndex = 0;
 
     // Terrain IDs – match Game.initGame() and are used in tileSettlerScore().
     private static final int TERRAIN_GRASSLAND = 7;
