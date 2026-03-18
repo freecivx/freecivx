@@ -45,6 +45,19 @@ public class Movement {
     public static final int EXTRA_BIT_RAIL = 7;
 
     /**
+     * 8-direction delta-X array.
+     * Indices 0-7 map to: NW(-1,-1), N(0,-1), NE(1,-1), W(-1,0),
+     * E(1,0), SW(-1,1), S(0,1), SE(1,1).
+     * Mirrors the direction encoding used throughout the C Freeciv server.
+     */
+    public static final int[] DIR_DX = {-1, 0, 1, -1, 1, -1, 0, 1};
+
+    /**
+     * 8-direction delta-Y array matching {@link #DIR_DX}.
+     */
+    public static final int[] DIR_DY = {-1, -1, -1, 0, 0, 1, 1, 1};
+
+    /**
      * Returns the full move rate for a unit, taking into account the unit
      * type's base move rate and any veteran-level bonuses.
      *
