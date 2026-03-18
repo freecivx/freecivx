@@ -24,8 +24,8 @@ public class PathFinder {
     private final Game game;
 
     /** Direction deltas: NW, N, NE, W, E, SW, S, SE (indices 0-7). */
-    private static final int[] DIR_DX = {-1, 0, 1, -1, 1, -1, 0, 1};
-    private static final int[] DIR_DY = {-1, -1, -1, 0, 0, 1, 1, 1};
+    private static final int[] DIR_DX = Movement.DIR_DX;
+    private static final int[] DIR_DY = Movement.DIR_DY;
 
     public PathFinder(Game game) {
         this.game = game;

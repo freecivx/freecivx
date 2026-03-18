@@ -102,9 +102,11 @@ public class Game {
      * Indices 0-7 match the PathFinder direction encoding:
      * 0=NW(-1,-1), 1=N(0,-1), 2=NE(1,-1), 3=W(-1,0),
      * 4=E(1,0), 5=SW(-1,1), 6=S(0,1), 7=SE(1,1).
+     * @deprecated Use {@link net.freecivx.game.Movement#DIR_DX} instead.
      */
-    static final int[] GOTO_DIR_DX = {-1, 0, 1, -1, 1, -1, 0, 1};
-    static final int[] GOTO_DIR_DY = {-1, -1, -1, 0, 0, 1, 1, 1};
+    static final int[] GOTO_DIR_DX = Movement.DIR_DX;
+    /** @deprecated Use {@link net.freecivx.game.Movement#DIR_DY} instead. */
+    static final int[] GOTO_DIR_DY = Movement.DIR_DY;
 
     /**
      * Optional map generation seed.  When {@code >= 0} the same seed is
@@ -1080,45 +1082,23 @@ public class Game {
 
     /**
      * Computes a civilisation score for the given player.
-     * Mirrors the formula used by the C Freeciv server's {@code score.c}
-     * ({@code get_civ_score()}):
-     * <ul>
-     *   <li>Population: sum of city sizes (primary growth metric)</li>
-     *   <li>Cities: number of cities × 5</li>
-     *   <li>Techs: number of known technologies × 2</li>
-     *   <li>Gold: treasury balance ÷ 10 (floored at 0)</li>
-     *   <li>Alive bonus: +50 for civilisations still in the game</li>
-     * </ul>
+     * Delegates to {@link net.freecivx.server.Score#computeScore}.
      *
      * @param player the player to score
      * @return a non-negative integer score
      */
     public long computeScore(Player player) {
-        // Collect the player's cities once and derive both pop and city-count.
-        long pid = player.getPlayerNo();
-        long[] stats = cities.values().stream()
-                .filter(c -> c.getOwner() == pid)
-                .collect(java.util.stream.Collectors.teeing(
-                        java.util.stream.Collectors.summingLong(City::getSize),
-                        java.util.stream.Collectors.counting(),
-                        (pop, cnt) -> new long[]{pop, cnt}));
-        long popScore  = stats[0];
-        long cityScore = stats[1] * 5L;
-        long techScore = player.getKnownTechs().size() * 2L;
-        long goldScore = Math.max(0, player.getGold()) / 10L;
-        long aliveBonus = player.isAlive() ? 50L : 0L;
-        return popScore + cityScore + techScore + goldScore + aliveBonus;
+        return net.freecivx.server.Score.computeScore(this, player);
     }
 
     /**
      * Broadcasts current civilisation scores to all connected clients using
      * {@code PACKET_PLAYER_SCORE}.  Called at the end of each turn so that
      * players can track relative progress on their scoreboard.
+     * Delegates to {@link net.freecivx.server.Score#sendScores}.
      */
     public void sendScores() {
-        for (Player p : players.values()) {
-            server.sendPlayerScoreAll(p.getPlayerNo(), computeScore(p));
-        }
+        net.freecivx.server.Score.sendScores(this, server);
     }
 
     public void changeUnitActivity(long unit_id, int activity) {
