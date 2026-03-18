@@ -21,6 +21,8 @@ package net.freecivx.ai;
 
 import net.freecivx.game.City;
 import net.freecivx.game.Game;
+import net.freecivx.game.Nation;
+import net.freecivx.game.Player;
 import net.freecivx.game.Terrain;
 import net.freecivx.game.Tile;
 import net.freecivx.game.Unit;
@@ -28,6 +30,7 @@ import net.freecivx.game.UnitType;
 import net.freecivx.server.CityTurn;
 
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 /**
@@ -135,8 +138,7 @@ class AiSettler {
                 && tileSettlerScore(currentTile) >= SETTLER_FOUND_SCORE
                 && !tooCloseToExistingCity(unit.getTile())
                 && game.units.containsKey(unit.getId())) {
-            String cityName = AiPlayer.AI_CITY_NAMES[ai.aiCityNameIndex % AiPlayer.AI_CITY_NAMES.length];
-            ai.aiCityNameIndex++;
+            String cityName = pickCityName(unit);
             game.buildCity(unit.getId(), cityName, unit.getTile());
             ai.unitTargets.remove(unitId);
             ai.unitStuckTurns.remove(unitId);
@@ -481,5 +483,32 @@ class AiSettler {
             }
         }
         return bestTile;
+    }
+
+    /**
+     * Picks a city name for the given settler's owner from the player's nation
+     * ruleset city-name list.  Names already in use by existing cities are
+     * skipped.  Falls back to "City &lt;N&gt;" when the list is exhausted.
+     *
+     * <p>Mirrors {@code city_name_suggestion()} in the C Freeciv server.
+     */
+    private String pickCityName(Unit unit) {
+        Player player = game.players.get(unit.getOwner());
+        if (player != null) {
+            Nation nation = game.nations.get((long) player.getNation());
+            if (nation != null) {
+                List<String> names = nation.getCityNames();
+                Set<String> usedNames = new HashSet<>();
+                for (City city : game.cities.values()) {
+                    usedNames.add(city.getName());
+                }
+                for (String name : names) {
+                    if (!usedNames.contains(name)) {
+                        return name;
+                    }
+                }
+            }
+        }
+        return "City " + (game.cities.size() + 1);
     }
 }
