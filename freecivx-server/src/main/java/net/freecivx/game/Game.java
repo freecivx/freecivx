@@ -1704,9 +1704,14 @@ public class Game {
         Player player = players.get(connId);
         if (player == null) return;
 
-        // Spawn starting units for the late joiner
-        long startPos = findStartPosition();
-        spawnStartingUnits(player, startPos);
+        // Only spawn starting units if the player doesn't already have units
+        // (e.g. rejoining a game they previously left).
+        boolean playerHasUnits = units.values().stream()
+                .anyMatch(u -> u.getOwner() == player.getPlayerNo());
+        if (!playerHasUnits) {
+            long startPos = findStartPosition();
+            spawnStartingUnits(player, startPos);
+        }
 
         // Compute the late-joiner's visibility BEFORE sendGameStateTo so the
         // tile packets sent there already carry correct known values.
