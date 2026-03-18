@@ -5,6 +5,8 @@
 <html lang="en">
 <head>
 <%@include file="/WEB-INF/jsp/fragments/head.jsp"%>
+<link rel="stylesheet" href="/css/fontawesome.min.css">
+<link rel="stylesheet" href="/css/solid.min.css">
 <title>Multiplayer Games - Freecivx</title>
 
 <style>
