@@ -53,6 +53,7 @@ public class CivServer extends org.java_websocket.server.WebSocketServer impleme
     private final AtomicInteger clientIdGenerator = new AtomicInteger(1);
     private long lastActivityTime = System.currentTimeMillis();
     private final net.freecivx.game.TurnTimer turnTimer = createTurnTimer();
+    private final net.freecivx.game.TurnTimer warningTimer = createTurnTimer();
     Game game = null;
 
     /** Game mode: "singleplayer" or "multiplayer". */
@@ -96,6 +97,7 @@ public class CivServer extends org.java_websocket.server.WebSocketServer impleme
         this.setReuseAddr(true);
         game = new Game(this);
         game.setTurnTimer(turnTimer);
+        game.setWarningTimer(warningTimer);
         game.setMultiplayer("multiplayer".equals(gameMode));
         game.initGame();
 
@@ -127,6 +129,23 @@ public class CivServer extends org.java_websocket.server.WebSocketServer impleme
         clients.remove(clientId);
         log.info("Connection closed (ID: {}): {}", clientId, conn.getRemoteSocketAddress());
 
+        // In multiplayer, if the game is running and the disconnecting client
+        // had an active player, mark them disconnected and convert to AI so the
+        // game can continue.  They may reconnect later and will resume control
+        // of their civilization via the reconnect logic in Game.addPlayer().
+        net.freecivx.game.Player player = game.players.get(clientId);
+        if (player != null && !player.isAi()) {
+            if (game.isGameStarted()) {
+                // Hand over to AI so the turn can advance even without this player.
+                // convertPlayerToAi() also sets connected=false internally.
+                game.convertPlayerToAi(clientId);
+            } else {
+                // Game not yet started: mark offline and notify the lobby.
+                player.setConnected(false);
+                sendMessageAll(player.getUsername() + " has left the lobby.");
+                sendPlayerInfoAll(player);
+            }
+        }
     }
 
     @Override
@@ -149,6 +168,13 @@ public class CivServer extends org.java_websocket.server.WebSocketServer impleme
             game.addConnection(connId, username, connId, conn.getRemoteSocketAddress().toString());
             Integer previousNation = "multiplayer".equals(gameMode) ? usernameToNation.get(username) : null;
             game.addPlayer(connId, username, conn.getRemoteSocketAddress().toString(), previousNation);
+            // Mark the player as connected so the client-side player list shows the correct status.
+            net.freecivx.game.Player joinedPlayer = game.players.get(connId);
+            if (joinedPlayer != null) {
+                joinedPlayer.setConnected(true);
+                // In multiplayer, a reconnecting AI player resumes human control.
+                joinedPlayer.setAi(false);
+            }
             // Persist the nation chosen for this player so it survives game restarts.
             if ("multiplayer".equals(gameMode)) {
                 net.freecivx.game.Player p = game.players.get(connId);
@@ -548,6 +574,7 @@ public class CivServer extends org.java_websocket.server.WebSocketServer impleme
 
         game = new Game(this);
         game.setTurnTimer(turnTimer);
+        game.setWarningTimer(warningTimer);
         game.setMultiplayer("multiplayer".equals(gameMode));
         game.initGame();
 
@@ -561,6 +588,12 @@ public class CivServer extends org.java_websocket.server.WebSocketServer impleme
             Integer previousNation = "multiplayer".equals(gameMode) ? usernameToNation.get(username) : null;
             game.addConnection(connId, username, connId, ip);
             game.addPlayer(connId, username, ip, previousNation);
+            // Mark the player as connected and human-controlled in the new game.
+            net.freecivx.game.Player p = game.players.get(connId);
+            if (p != null) {
+                p.setConnected(true);
+                p.setAi(false);
+            }
         }
 
         if (!activeConnections.isEmpty()) {
@@ -975,6 +1008,7 @@ public class CivServer extends org.java_websocket.server.WebSocketServer impleme
         msg.put("is_alive", player.isAlive());
         msg.put("phase_done", player.isPhaseDone());
         msg.put("nturns_idle", player.getNturnsIdle());
+        msg.put("connected", player.isConnected());
 
         broadcast(msg);
 
@@ -1007,6 +1041,15 @@ public class CivServer extends org.java_websocket.server.WebSocketServer impleme
             privateMsg.put("gives_shared_vision", privateVis);
             ownerWs.send(privateMsg.toString());
         }
+    }
+
+    @Override
+    public void sendPlayerScoreAll(long playerId, long score) {
+        JSONObject msg = new JSONObject();
+        msg.put("pid", Packets.PACKET_PLAYER_SCORE);
+        msg.put("player_id", playerId);
+        msg.put("score", score);
+        broadcast(msg);
     }
 
     public void sendNationInfoAll(long id, String name, String adjective, String graphic_str, String legend) {
@@ -1382,6 +1425,8 @@ public class CivServer extends org.java_websocket.server.WebSocketServer impleme
             JSONArray emb = new JSONArray(); emb.put(false); emb.put(false);
             msg.put("real_embassy", emb);
             msg.put("is_alive", player.isAlive());
+            msg.put("nturns_idle", player.getNturnsIdle());
+            msg.put("connected", player.isConnected());
             // Private financial data is sent only to the owning player
             if (player.getConnectionId() == connId) {
                 msg.put("tax", player.getTaxRate());
