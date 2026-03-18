@@ -25,8 +25,10 @@ import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -39,6 +41,24 @@ import java.util.Set;
 public class DiplHand {
 
     private static final Logger log = LoggerFactory.getLogger(DiplHand.class);
+
+    // -------------------------------------------------------------------------
+    // Diplomatic state constants (mirrors diplstate_type in C Freeciv player.h)
+    // -------------------------------------------------------------------------
+
+    /** Diplomatic state: at war. */
+    public static final int DS_WAR        = 1;
+    /** Diplomatic state: ceasefire (temporary truce with turn countdown). */
+    public static final int DS_CEASEFIRE  = 2;
+    /** Diplomatic state: permanent peace treaty. */
+    public static final int DS_PEACE      = 3;
+    /** Diplomatic state: full military alliance. */
+    public static final int DS_ALLIANCE   = 4;
+    /** Diplomatic state: no contact yet (never met). */
+    public static final int DS_NO_CONTACT = 5;
+
+    /** Default number of turns a ceasefire lasts. Mirrors turns_left_ceasefire in C server. */
+    public static final int CEASEFIRE_TURNS = 16;
 
     /** Clause type constant: cease-fire pact. */
     public static final int CLAUSE_CEASEFIRE = 0;
@@ -59,6 +79,14 @@ public class DiplHand {
      * Mirrors the {@code treaty->accept0/accept1} fields in the C Freeciv server.
      */
     private static final Map<Long, Set<Long>> treatyAcceptance = new HashMap<>();
+
+    /**
+     * Pending treaty clauses for an ongoing negotiation.
+     * Key: same canonical pair key as {@code treatyAcceptance}.
+     * Value: list of {type, giverPlayerId, value} int arrays.
+     * Mirrors the {@code treaty->clauses} list in the C Freeciv server.
+     */
+    private static final Map<Long, List<int[]>> pendingClauses = new HashMap<>();
 
     /**
      * Handles a request to initiate a diplomatic meeting between two players.
@@ -86,6 +114,8 @@ public class DiplHand {
     /**
      * Handles a request to add a clause to an ongoing diplomatic treaty.
      * The clause specifies what is being offered (gold, technology, pact type, etc.).
+     * Stores the clause in {@code pendingClauses} so it can be applied when both
+     * players accept.
      *
      * @param game    the current game state
      * @param connId  the connection ID of the player proposing the clause
@@ -97,6 +127,11 @@ public class DiplHand {
         Player player = game.players.get(connId);
         Player other = game.players.get(otherId);
         if (player == null || other == null) return;
+
+        // Record the clause so it can be applied when both sides accept
+        long key = Math.min(connId, otherId) * 100000L + Math.max(connId, otherId);
+        pendingClauses.computeIfAbsent(key, k -> new java.util.ArrayList<>())
+                      .add(new int[]{type, (int) connId, value});
 
         JSONObject msg = new JSONObject();
         msg.put("pid", Packets.PACKET_PLAYER_INFO);
@@ -111,6 +146,7 @@ public class DiplHand {
 
     /**
      * Handles a request to remove a previously proposed clause from a treaty.
+     * Removes the matching entry from {@code pendingClauses}.
      *
      * @param game    the current game state
      * @param connId  the connection ID of the player removing the clause
@@ -122,6 +158,12 @@ public class DiplHand {
         Player player = game.players.get(connId);
         Player other = game.players.get(otherId);
         if (player == null || other == null) return;
+
+        long key = Math.min(connId, otherId) * 100000L + Math.max(connId, otherId);
+        List<int[]> clauses = pendingClauses.get(key);
+        if (clauses != null) {
+            clauses.removeIf(c -> c[0] == type && c[1] == (int) connId && c[2] == value);
+        }
 
         JSONObject msg = new JSONObject();
         msg.put("pid", Packets.PACKET_PLAYER_INFO);
@@ -168,9 +210,8 @@ public class DiplHand {
 
     /**
      * Applies all pending treaty clauses between two players once both have
-     * accepted.  Currently handles cease-fire, peace, and alliance pact types.
-     * Technology-transfer and gold clauses require additional packet tracking
-     * and are logged for now.
+     * accepted.  Handles cease-fire, peace, alliance pact types, and transfers
+     * gold and technology.  Mirrors {@code accept_treaty()} in diplhand.c.
      *
      * @param game    the current game state
      * @param p1Id    first player's connection ID
@@ -181,8 +222,66 @@ public class DiplHand {
         Player p2 = game.players.get(p2Id);
         if (p1 == null || p2 == null) return;
 
-        log.info("Treaty concluded between {} and {}", p1.getUsername(), p2.getUsername());
+        // Retrieve and remove pending clauses for this pair
+        long key = Math.min(p1Id, p2Id) * 100000L + Math.max(p1Id, p2Id);
+        List<int[]> clauses = pendingClauses.remove(key);
 
+        int newState = -1;
+        if (clauses != null) {
+            for (int[] clause : clauses) {
+                int type = clause[0];
+                long giver = clause[1];
+                int value = clause[2];
+                long receiver = (giver == p1Id) ? p2Id : p1Id;
+                Player giverPlayer = game.players.get(giver);
+                Player receiverPlayer = game.players.get(receiver);
+                switch (type) {
+                    case CLAUSE_CEASEFIRE:
+                        newState = DS_CEASEFIRE;
+                        break;
+                    case CLAUSE_PEACE:
+                        newState = DS_PEACE;
+                        break;
+                    case CLAUSE_ALLIANCE:
+                        newState = DS_ALLIANCE;
+                        break;
+                    case CLAUSE_GOLD:
+                        if (giverPlayer != null && receiverPlayer != null) {
+                            int transfer = Math.min(value, giverPlayer.getGold());
+                            giverPlayer.setGold(giverPlayer.getGold() - transfer);
+                            receiverPlayer.setGold(receiverPlayer.getGold() + transfer);
+                            log.info("Gold transfer: {} gold from {} to {}",
+                                    transfer, giverPlayer.getUsername(), receiverPlayer.getUsername());
+                        }
+                        break;
+                    case CLAUSE_ADVANCE:
+                        if (giverPlayer != null && receiverPlayer != null) {
+                            long techId = (long) value;
+                            if (giverPlayer.hasTech(techId) && !receiverPlayer.hasTech(techId)) {
+                                receiverPlayer.addKnownTech(techId);
+                                log.info("Tech transfer: tech {} from {} to {}",
+                                        techId, giverPlayer.getUsername(), receiverPlayer.getUsername());
+                                Notify.notifyPlayer(game, game.getServer(), receiver,
+                                        "You received a technology from " + giverPlayer.getUsername() + ".");
+                            }
+                        }
+                        break;
+                    default:
+                        break;
+                }
+            }
+        }
+
+        // Apply the most significant pact found (alliance > peace > ceasefire)
+        if (newState == DS_ALLIANCE) {
+            setDiplStateSymmetric(p1, p2, DS_ALLIANCE, 0);
+        } else if (newState == DS_PEACE) {
+            setDiplStateSymmetric(p1, p2, DS_PEACE, 0);
+        } else if (newState == DS_CEASEFIRE) {
+            setDiplStateSymmetric(p1, p2, DS_CEASEFIRE, CEASEFIRE_TURNS);
+        }
+
+        log.info("Treaty concluded between {} and {}", p1.getUsername(), p2.getUsername());
         Notify.notifyPlayer(game, game.getServer(), p1Id,
                 "Treaty with " + p2.getUsername() + " is now in effect.");
         Notify.notifyPlayer(game, game.getServer(), p2Id,
@@ -190,9 +289,28 @@ public class DiplHand {
     }
 
     /**
+     * Sets the diplomatic state symmetrically on both players.
+     * For a ceasefire, also sets the {@code turnsLeft} countdown.
+     * Mirrors the two-way assignment in {@code accept_treaty()} in diplhand.c.
+     */
+    public static void setDiplStateSymmetric(Player p1, Player p2, int state, int turnsLeft) {
+        p1.setDiplState(p2.getConnectionId(), state);
+        p2.setDiplState(p1.getConnectionId(), state);
+        if (state == DS_CEASEFIRE) {
+            p1.setCeasefireTurnsLeft(p2.getConnectionId(), turnsLeft);
+            p2.setCeasefireTurnsLeft(p1.getConnectionId(), turnsLeft);
+        } else {
+            p1.setCeasefireTurnsLeft(p2.getConnectionId(), 0);
+            p2.setCeasefireTurnsLeft(p1.getConnectionId(), 0);
+        }
+    }
+
+    /**
      * Handles a player cancelling an existing pact with another player.
      * The clause type indicates which level of agreement is being cancelled
-     * (cease-fire, peace, alliance).
+     * (cease-fire, peace, alliance).  Cancelling any pact reverts to war
+     * (unless the players only had DS_NO_CONTACT, which cannot be cancelled).
+     * Mirrors {@code handle_diplomacy_cancel_pact} in diplhand.c.
      *
      * @param game        the current game state
      * @param connId      the connection ID of the player cancelling the pact
@@ -204,9 +322,17 @@ public class DiplHand {
         Player other = game.players.get(otherId);
         if (player == null || other == null) return;
 
+        // Cancelling any active pact defaults to war state
+        int currentState = player.getDiplState(otherId);
+        if (currentState != DS_NO_CONTACT) {
+            setDiplStateSymmetric(player, other, DS_WAR, 0);
+            log.info("{} cancelled pact (type {}) with {} — now at war",
+                    player.getUsername(), clauseType, other.getUsername());
+        }
+
         Notify.notifyPlayer(game, game.getServer(), otherId,
-                player.getUsername() + " has cancelled the pact (type " + clauseType + ").");
+                player.getUsername() + " has cancelled the pact — you are now at war!");
         Notify.notifyPlayer(game, game.getServer(), connId,
-                "Pact cancelled.");
+                "Pact cancelled — you are now at war with " + other.getUsername() + ".");
     }
 }
