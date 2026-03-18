@@ -4,174 +4,421 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<title>Multiplayer games of Freecivx - Freeciv</title>
 <%@include file="/WEB-INF/jsp/fragments/head.jsp"%>
-<title>Multiplayer games of Freecivx - Freeciv</title>
+<title>Multiplayer Games - Freecivx</title>
 
 <style>
-	.nav-tabs {
-		margin-top: 5px;
+	/* ── Hero banner ── */
+	.game-list-hero {
+		background: linear-gradient(135deg, #be602d 0%, #8b3d12 60%, #5a2409 100%);
+		color: #fff;
+		padding: 36px 0 28px;
+		margin-bottom: 28px;
+		border-radius: 0 0 8px 8px;
+		box-shadow: 0 4px 18px rgba(0,0,0,0.28);
 	}
-	.nav>li>a:hover {
-		background-color: #796f6f
+	.game-list-hero h1 {
+		font-family: 'Fredericka the Great', cursive;
+		color: #f9e4c4;
+		border-bottom: none;
+		margin: 0 0 6px 0;
+		font-size: 2.4rem;
+		letter-spacing: 1px;
 	}
-	.nav-tabs>li>a {
-		background-color: #ecb66a;
+	.game-list-hero .subtitle {
+		color: #f2d5aa;
+		font-size: 1rem;
+		margin-bottom: 18px;
+	}
+	.hero-stats {
+		display: flex;
+		gap: 18px;
+		flex-wrap: wrap;
+		justify-content: center;
+		margin-top: 10px;
+	}
+	.hero-stat {
+		background: rgba(255,255,255,0.13);
+		border: 1px solid rgba(255,255,255,0.22);
+		border-radius: 8px;
+		padding: 10px 22px;
+		text-align: center;
+		min-width: 110px;
+	}
+	.hero-stat .stat-number {
+		font-size: 2rem;
+		font-weight: 700;
+		color: #ffd89b;
+		line-height: 1.1;
+	}
+	.hero-stat .stat-label {
+		font-size: 0.78rem;
 		text-transform: uppercase;
+		letter-spacing: 1px;
+		color: #f2d5aa;
+		margin-top: 2px;
+	}
+
+	/* ── Section heading ── */
+	.section-heading {
+		display: flex;
+		align-items: center;
+		gap: 10px;
+		margin-bottom: 16px;
+	}
+	.section-heading h2 {
+		font-family: 'Fredericka the Great', cursive;
+		color: #be602d;
+		border-bottom: none;
+		margin: 0;
+		font-size: 1.5rem;
+	}
+	.section-heading .badge-count {
+		background: #be602d;
 		color: #fff;
-	    font-weight: 700;		
+		border-radius: 12px;
+		padding: 3px 11px;
+		font-size: 0.88rem;
+		font-weight: 700;
 	}
-	.nav-tabs>li.active>a {
+
+	/* ── Game cards ── */
+	.game-cards {
+		display: grid;
+		grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+		gap: 16px;
+		margin-bottom: 24px;
+	}
+	.game-card {
+		background: #fffaf3;
+		border: 1px solid #e0c98a;
+		border-radius: 10px;
+		box-shadow: 0 2px 8px rgba(190,96,45,0.08);
+		padding: 18px 20px 14px;
+		transition: box-shadow 0.18s, transform 0.18s;
+		display: flex;
+		flex-direction: column;
+		gap: 10px;
+	}
+	.game-card:hover {
+		box-shadow: 0 6px 20px rgba(190,96,45,0.18);
+		transform: translateY(-2px);
+	}
+	.game-card.running {
+		border-left: 4px solid #27ae60;
+	}
+	.game-card.pregame {
+		border-left: 4px solid #d3b86f;
+	}
+	.game-card.private {
+		border-left: 4px solid #8e44ad;
+		font-style: italic;
+	}
+
+	/* ── Card header ── */
+	.card-header-row {
+		display: flex;
+		align-items: flex-start;
+		justify-content: space-between;
+		gap: 8px;
+	}
+	.card-message {
+		font-size: 1.02rem;
+		font-weight: 600;
+		color: #3d2b1f;
+		flex: 1;
+		word-break: break-word;
+	}
+	.status-badge {
+		display: inline-flex;
+		align-items: center;
+		gap: 5px;
+		border-radius: 20px;
+		padding: 3px 11px;
+		font-size: 0.78rem;
+		font-weight: 700;
+		text-transform: uppercase;
+		letter-spacing: 0.5px;
+		white-space: nowrap;
+	}
+	.status-badge.running {
+		background: #eafaf1;
+		color: #1e8449;
+		border: 1px solid #a9dfbf;
+	}
+	.status-badge.pregame {
+		background: #fef9ec;
+		color: #9a7d0a;
+		border: 1px solid #d3b86f;
+	}
+	.status-badge.other {
+		background: #f2f3f4;
+		color: #566573;
+		border: 1px solid #ccc;
+	}
+
+	/* ── Card meta ── */
+	.card-meta {
+		display: flex;
+		gap: 16px;
+		flex-wrap: wrap;
+		color: #6e5a48;
+		font-size: 0.88rem;
+	}
+	.card-meta-item {
+		display: flex;
+		align-items: center;
+		gap: 5px;
+	}
+	.card-meta-item i {
+		color: #be602d;
+		width: 14px;
+		text-align: center;
+	}
+
+	/* ── Card actions ── */
+	.card-actions {
+		display: flex;
+		gap: 8px;
+		flex-wrap: wrap;
+		margin-top: 4px;
+	}
+	.btn-play {
+		background: linear-gradient(135deg, #27ae60, #1e8449);
 		color: #fff;
+		border: none;
+		border-radius: 6px;
+		padding: 7px 18px;
+		font-size: 0.88rem;
+		font-weight: 700;
+		text-decoration: none;
+		display: inline-flex;
+		align-items: center;
+		gap: 6px;
+		transition: background 0.15s, box-shadow 0.15s;
+		box-shadow: 0 2px 6px rgba(39,174,96,0.3);
 	}
-	.nav-tabs>li.active>a, .nav-tabs>li.active>a:hover, .nav-tabs>li.active>a:focus {
-	    background-color: #be602d;
-	    color: #fff;
+	.btn-play:hover {
+		background: linear-gradient(135deg, #2ecc71, #27ae60);
+		color: #fff;
+		text-decoration: none;
+		box-shadow: 0 4px 12px rgba(39,174,96,0.4);
 	}
-	.tab-pane {
-		background-color: #fcf1e0;
+	.btn-observe {
+		background: linear-gradient(135deg, #e67e22, #d35400);
+		color: #fff;
+		border: none;
+		border-radius: 6px;
+		padding: 7px 14px;
+		font-size: 0.88rem;
+		font-weight: 700;
+		text-decoration: none;
+		display: inline-flex;
+		align-items: center;
+		gap: 6px;
+		transition: background 0.15s, box-shadow 0.15s;
+		box-shadow: 0 2px 6px rgba(230,126,34,0.3);
 	}
-	.table {
-		background-color: #fcf1e0;
+	.btn-observe:hover {
+		background: linear-gradient(135deg, #f39c12, #e67e22);
+		color: #fff;
+		text-decoration: none;
 	}
-	.table td {
-		vertical-align: middle;
+	.btn-info-link {
+		background: transparent;
+		color: #be602d;
+		border: 1px solid #be602d;
+		border-radius: 6px;
+		padding: 7px 14px;
+		font-size: 0.88rem;
+		font-weight: 600;
+		text-decoration: none;
+		display: inline-flex;
+		align-items: center;
+		gap: 6px;
+		transition: background 0.15s, color 0.15s;
 	}
-	.label-lg {
-		font-size: 13px;
+	.btn-info-link:hover {
+		background: #be602d;
+		color: #fff;
+		text-decoration: none;
 	}
-	.label-lg:not(:last-child) {
-		margin-right: 3px;
+
+	/* ── Empty state ── */
+	.empty-state {
+		text-align: center;
+		padding: 52px 24px;
+		background: #fffaf3;
+		border: 2px dashed #d3b86f;
+		border-radius: 10px;
+		color: #9a7d5a;
 	}
-	.private-game {
-		font-style: italics;
+	.empty-state i {
+		font-size: 2.8rem;
+		color: #d3b86f;
+		margin-bottom: 14px;
+		display: block;
 	}
-	.running-game {
-		font-weight: bold;
+	.empty-state p {
+		font-size: 1.05rem;
+		margin: 0;
 	}
-	.highlight {
-		color: green;
-		font-weight: bold;
-	}
-	.active-player {
-		font-weight: bold;
-	}
-	#multiplayer-table td:last-child {
-		width: 290px;
-	}
-	#singleplayer-table td:last-child {
-		width: 140px;
+
+	/* ── Responsive tweaks ── */
+	@media (max-width: 600px) {
+		.game-list-hero h1 { font-size: 1.6rem; }
+		.hero-stats { gap: 10px; }
+		.hero-stat { min-width: 85px; padding: 8px 12px; }
+		.game-cards { grid-template-columns: 1fr; }
 	}
 </style>
-	
-	
+
 </head>
 <body>
 	<%@include file="/WEB-INF/jsp/fragments/header.jsp" %>
-	
-	<!-- Begin page content -->
-	<div id="content" class="container">
-		<div>
-			<ul class="nav nav-tabs hidden-xs" role="tablist">
-				<li role="presentation" class="${view == 'multiplayer' ? 'active' : ''}"><a href="#multi-player-tab"
-					aria-controls="multi-player" role="tab" data-toggle="tab">Multiplayer (${multiPlayerGames})</a></li>
-			</ul>
-			<ul class="nav nav-tabs hidden-lg hidden-md hidden-sm" role="tablist">
-					<li role="presentation" class="${view == 'multiplayer' ? 'active' : ''}"><a href="#multi-player-tab"
-					aria-controls="multi-player" role="tab" data-toggle="tab">Multi (${multiPlayerGames})</a></li>
-			</ul>
 
-			<div class="tab-content">
-	
-				<div role="tabpanel" class="tab-pane ${view == 'multiplayer' ? 'active' : ''}" id="multi-player-tab">
-					<c:if test="${fn:length(multiPlayerGamesList) > 0}">
-						<table id="multiplayer-table" class="table">
-							<tr>
-								<th class="hidden-xs">Players</th>
-								<th>Message</th>
-								<th>State</th>
-								<th class="hidden-xs">Turn</th>
-								<th>Action</th>
-							</tr>
-							<c:forEach items="${multiPlayerGamesList}" var="game">
-								<tr
-									class="${game.isProtected() ? 'private-game' : (game.state eq 'Running' ? 'running-game' : (game.players gt 0 ? 'highlight' : ''))}">
-									<td class="hidden-xs">
-										<c:choose>
-											<c:when test="${game.players == 0}">
-													None
-												</c:when>
-											<c:when test="${game.players == 1}">
-													1 player
-												</c:when>
-											<c:otherwise>
-													${game.players} players
-												</c:otherwise>
-										</c:choose>
-									</td>
-									<td>${game.message}</td>
-									<td>${game.state}</td>
-									<td class="hidden-xs">${game.turn}</td>
-									<td><c:choose>
-											<c:when test="${game.state != 'Running'}">
-
-                                                <a class="label label-success label-lg"
-                                                    href="/webclient/?action=multi&amp;civserverport=${game.port}&amp;civserverhost=${game.host}&amp;multi=true&amp;type=${game.type}">
-                                                    Play 3D</a>
-											</c:when>
-											<c:otherwise>
-                                                <a class="label label-success label-lg"
-                                                    href="/webclient/?action=multi&amp;civserverport=${game.port}&amp;civserverhost=${game.host}&amp;multi=true&amp;type=${game.type}">
-                                                    Play 3D</a>
-											<c:if test="${game.type} ne 'longturn'}">
-												<a class="label label-success label-lg"
-													href="/webclient/?action=observe&amp;civserverport=${game.port}&amp;civserverhost=${game.host}&amp;multi=true&amp;type=${game.type}">
-													Observe</a>
-											</c:if>
-											</c:otherwise>
-										</c:choose>
-										<a class="label label-primary label-lg"	href="/game/details?host=${game.host}&amp;port=${game.port}">
-											Info
-										</a>
-									</td>
-								</tr>
-							</c:forEach>
-						</table>
-					</c:if>
-					<c:if test="${fn:length(multiPlayerGamesList) == 0}">
-						No servers currently listed
-					</c:if>
+	<!-- Hero banner -->
+	<div class="game-list-hero">
+		<div class="container text-center">
+			<h1><i class="fa fa-globe"></i> Multiplayer Games</h1>
+			<p class="subtitle">Join or observe live Freecivx games &mdash; civilization awaits!</p>
+			<div class="hero-stats">
+				<div class="hero-stat">
+					<div class="stat-number" id="ongoing-games-hero">—</div>
+					<div class="stat-label">Active Games</div>
+				</div>
+				<div class="hero-stat">
+					<div class="stat-number" id="stats-mp-hero">—</div>
+					<div class="stat-label">Multiplayer Played</div>
+				</div>
+				<div class="hero-stat">
+					<div class="stat-number" id="stats-players-hero">—</div>
+					<div class="stat-label">Players</div>
 				</div>
 			</div>
 		</div>
+	</div>
+
+	<!-- Begin page content -->
+	<div id="content" class="container">
+
+		<div class="section-heading">
+			<h2><i class="fa fa-users"></i> Available Games</h2>
+			<span class="badge-count">${multiPlayerGames}</span>
+		</div>
+
+		<c:choose>
+			<c:when test="${fn:length(multiPlayerGamesList) > 0}">
+				<div class="game-cards" id="multi-player-tab">
+					<c:forEach items="${multiPlayerGamesList}" var="game">
+						<div class="game-card ${game.isProtected() ? 'private' : (game.state eq 'Running' ? 'running' : 'pregame')}">
+
+							<!-- Header: message + status -->
+							<div class="card-header-row">
+								<span class="card-message">
+									<c:choose>
+										<c:when test="${game.isProtected()}">
+											<i class="fa fa-lock" title="Password protected"></i>&nbsp;
+										</c:when>
+									</c:choose>
+									<c:choose>
+										<c:when test="${not empty game.message}">${game.message}</c:when>
+										<c:otherwise>Freecivx Game</c:otherwise>
+									</c:choose>
+								</span>
+								<c:choose>
+									<c:when test="${game.state eq 'Running'}">
+										<span class="status-badge running"><i class="fa fa-play-circle"></i> Running</span>
+									</c:when>
+									<c:when test="${game.state eq 'Pregame'}">
+										<span class="status-badge pregame"><i class="fa fa-hourglass-start"></i> Pregame</span>
+									</c:when>
+									<c:otherwise>
+										<span class="status-badge other"><i class="fa fa-circle"></i> ${game.state}</span>
+									</c:otherwise>
+								</c:choose>
+							</div>
+
+							<!-- Meta: players + turn -->
+							<div class="card-meta">
+								<span class="card-meta-item">
+									<i class="fa fa-users"></i>
+									<c:choose>
+										<c:when test="${game.players == 0}">No players</c:when>
+										<c:when test="${game.players == 1}">1 player</c:when>
+										<c:otherwise>${game.players} players</c:otherwise>
+									</c:choose>
+								</span>
+								<c:if test="${game.turn > 0}">
+									<span class="card-meta-item">
+										<i class="fa fa-history"></i> Turn ${game.turn}
+									</span>
+								</c:if>
+								<c:if test="${game.isProtected()}">
+									<span class="card-meta-item">
+										<i class="fa fa-lock"></i> Password required
+									</span>
+								</c:if>
+							</div>
+
+							<!-- Actions -->
+							<div class="card-actions">
+								<c:choose>
+									<c:when test="${game.state ne 'Running'}">
+										<a class="btn-play"
+											href="/webclient/?action=multi&amp;civserverport=${game.port}&amp;civserverhost=${game.host}&amp;multi=true&amp;type=${game.type}">
+											<i class="fa fa-play"></i> Play 3D
+										</a>
+									</c:when>
+									<c:otherwise>
+										<a class="btn-play"
+											href="/webclient/?action=multi&amp;civserverport=${game.port}&amp;civserverhost=${game.host}&amp;multi=true&amp;type=${game.type}">
+											<i class="fa fa-play"></i> Play 3D
+										</a>
+										<c:if test="${game.type ne 'longturn'}">
+											<a class="btn-observe"
+												href="/webclient/?action=observe&amp;civserverport=${game.port}&amp;civserverhost=${game.host}&amp;multi=true&amp;type=${game.type}">
+												<i class="fa fa-eye"></i> Observe
+											</a>
+										</c:if>
+									</c:otherwise>
+								</c:choose>
+								<a class="btn-info-link" href="/game/details?host=${game.host}&amp;port=${game.port}">
+									<i class="fa fa-info-circle"></i> Info
+								</a>
+							</div>
+
+						</div>
+					</c:forEach>
+				</div>
+			</c:when>
+			<c:otherwise>
+				<div class="empty-state">
+					<i class="fa fa-server"></i>
+					<p>No multiplayer servers are currently listed. Check back soon!</p>
+				</div>
+			</c:otherwise>
+		</c:choose>
 
 		<%@include file="/WEB-INF/jsp/fragments/footer.jsp"%>
 	</div>
 
-
 <script>
 $(document).ready(function(){
-
-
-    // Function to show Multiplayer tab
-    function showMultiPlayerTab() {
-        // Remove active class from all tabs
-        $("ul.nav-tabs li").removeClass("active");
-        // Add active class to Multiplayer tab
-        $("ul.nav-tabs li[role='presentation'] a[href='#multi-player-tab']").parent().addClass("active");
-
-        // Hide all tab panes
-        $(".tab-content .tab-pane").removeClass("active");
-        // Show Multiplayer tab pane
-        $("#multi-player-tab").addClass("active");
-    }
-
-        showMultiPlayerTab();
-
-
-
+	$.getJSON("/game/statistics", function(data) {
+		if (data.ongoing !== undefined) {
+			$("#ongoing-games-hero").text(data.ongoing);
+		}
+		if (data.finished && data.finished.multiPlayer !== undefined) {
+			$("#stats-mp-hero").text(data.finished.multiPlayer.toLocaleString());
+		}
+		if (data.finished && data.finished.players !== undefined) {
+			$("#stats-players-hero").text(data.finished.players.toLocaleString());
+		}
+	}).fail(function() {
+		console.log("Could not load game statistics.");
+	});
 });
-
 </script>
 </body>
 </html>
