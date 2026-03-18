@@ -21,7 +21,7 @@ Open a Powershell window, run as Administator, this command:
 
 ### 1.2. Git clone Freecivx:
 
-> git clone https://github.com/freecivworld/freecivworld.git --depth=10
+> git clone https://github.com/freecivx/freecivx.git --depth=10
 
   
 
