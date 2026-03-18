@@ -20,8 +20,10 @@
 package net.freecivx.game;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 public class Player {
@@ -91,6 +93,34 @@ public class Player {
     private boolean phaseDone = false;
     /** Number of consecutive turns the player has been idle (no actions taken). */
     private int nturnsIdle = 0;
+
+    // -------------------------------------------------------------------------
+    // Diplomacy state (mirrors player_diplstate / player_ai in C Freeciv server)
+    // -------------------------------------------------------------------------
+
+    /**
+     * Diplomatic relationship state with each other player, keyed by player ID.
+     * Values mirror the {@code diplstate_type} enum in the C Freeciv server's
+     * {@code common/player.h}: DS_WAR=1, DS_CEASEFIRE=2, DS_PEACE=3,
+     * DS_ALLIANCE=4, DS_NO_CONTACT=5.
+     * Absent entries are treated as DS_NO_CONTACT (5).
+     */
+    private final Map<Long, Integer> diplState = new HashMap<>();
+
+    /**
+     * Number of turns remaining on a ceasefire with each player.
+     * Only meaningful when {@link #getDiplState(long)} returns {@code DS_CEASEFIRE}.
+     * Mirrors {@code player_diplstate.turns_left} in the C Freeciv server.
+     */
+    private final Map<Long, Integer> ceasefireTurnsLeft = new HashMap<>();
+
+    /**
+     * AI "love" value toward each other player in the range [-1000, +1000].
+     * High values drive peace/alliance offers; low values drive war declarations.
+     * Mirrors {@code player_ai.love[]} in the C Freeciv server's
+     * {@code common/player.h}.  Only meaningful for AI-controlled players.
+     */
+    private final Map<Long, Integer> aiLove = new HashMap<>();
 
     // Constructor
     public Player(long connId, String username, String addr, int nation) {
@@ -325,6 +355,110 @@ public class Player {
                 ", address='" + address + '\'' +
                 ", nation=" + nation +
                 '}';
+    }
+
+    // -------------------------------------------------------------------------
+    // Diplomacy accessors
+    // -------------------------------------------------------------------------
+
+    /**
+     * Returns the diplomatic state toward another player.
+     * Mirrors {@code player_diplstate.type} in the C Freeciv server.
+     *
+     * @param otherId the other player's connection ID
+     * @return the diplomatic state (DS_WAR=1, DS_CEASEFIRE=2, DS_PEACE=3,
+     *         DS_ALLIANCE=4, DS_NO_CONTACT=5)
+     */
+    public int getDiplState(long otherId) {
+        return diplState.getOrDefault(otherId, 5); // 5 = DS_NO_CONTACT
+    }
+
+    /**
+     * Sets the diplomatic state toward another player.
+     *
+     * @param otherId the other player's connection ID
+     * @param state   the diplomatic state to set
+     */
+    public void setDiplState(long otherId, int state) {
+        diplState.put(otherId, state);
+    }
+
+    /**
+     * Returns the full diplomacy state map (player ID → state).
+     * Modifications to the returned map are reflected in this player's state.
+     */
+    public Map<Long, Integer> getDiplStateMap() {
+        return diplState;
+    }
+
+    /**
+     * Returns turns left on the ceasefire with the given player (0 if none).
+     * Mirrors {@code player_diplstate.turns_left} in the C Freeciv server.
+     */
+    public int getCeasefireTurnsLeft(long otherId) {
+        return ceasefireTurnsLeft.getOrDefault(otherId, 0);
+    }
+
+    /**
+     * Sets the ceasefire countdown with the given player.
+     *
+     * @param otherId    the other player's connection ID
+     * @param turnsLeft  number of turns remaining
+     */
+    public void setCeasefireTurnsLeft(long otherId, int turnsLeft) {
+        if (turnsLeft <= 0) {
+            ceasefireTurnsLeft.remove(otherId);
+        } else {
+            ceasefireTurnsLeft.put(otherId, turnsLeft);
+        }
+    }
+
+    /**
+     * Returns the full ceasefire-turns-left map (player ID → turns).
+     */
+    public Map<Long, Integer> getCeasefireTurnsLeftMap() {
+        return ceasefireTurnsLeft;
+    }
+
+    /**
+     * Returns this player's AI love value toward the given player.
+     * Range: {@code [-1000, +1000]}.  Defaults to 0 (neutral) for unknown players.
+     * Mirrors {@code player_ai.love[]} in the C Freeciv server.
+     *
+     * @param otherId the other player's connection ID
+     * @return the love value
+     */
+    public int getAiLove(long otherId) {
+        return aiLove.getOrDefault(otherId, 0);
+    }
+
+    /**
+     * Sets this player's AI love value toward the given player.
+     * Values are clamped to {@code [-1000, +1000]}.
+     *
+     * @param otherId the other player's connection ID
+     * @param love    the love value (clamped to [-1000, +1000])
+     */
+    public void setAiLove(long otherId, int love) {
+        aiLove.put(otherId, Math.max(-1000, Math.min(1000, love)));
+    }
+
+    /**
+     * Adjusts this player's AI love value toward another player by {@code delta}.
+     * Result is clamped to {@code [-1000, +1000]}.
+     *
+     * @param otherId the other player's connection ID
+     * @param delta   signed adjustment to apply
+     */
+    public void adjustAiLove(long otherId, int delta) {
+        setAiLove(otherId, getAiLove(otherId) + delta);
+    }
+
+    /**
+     * Returns the full AI-love map (player ID → love value).
+     */
+    public Map<Long, Integer> getAiLoveMap() {
+        return aiLove;
     }
 
 }

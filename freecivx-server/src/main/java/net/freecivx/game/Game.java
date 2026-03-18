@@ -1410,6 +1410,10 @@ public class Game {
         if (attacker == null || defender == null) return false;
         if (!Combat.canUnitAttack(attacker, defender)) return false;
 
+        // Report diplomatic incident before combat so AI love values are updated
+        // regardless of combat outcome.  Mirrors dai_incident() in daidiplomacy.c.
+        aiPlayer.reportIncident(attacker.getOwner(), defender.getOwner());
+
         UnitType attackerType = unitTypes.get((long) attacker.getType());
         UnitType defenderType = unitTypes.get((long) defender.getType());
 

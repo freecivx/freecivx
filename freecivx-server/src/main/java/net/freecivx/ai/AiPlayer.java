@@ -200,6 +200,9 @@ public class AiPlayer {
     private static final int[] DIR_DX = {-1, 0, 1, -1, 1, -1, 0, 1};
     private static final int[] DIR_DY = {-1, -1, -1, 0, 0, 1, 1, 1};
 
+    /** AI diplomacy subsystem. Mirrors daidiplomacy.c in the C Freeciv server. */
+    private final AiDiplomacy aiDiplomacy = new AiDiplomacy();
+
     public AiPlayer(Game game) {
         this.game = game;
     }
@@ -215,6 +218,20 @@ public class AiPlayer {
         }
     }
 
+    /**
+     * Reports a military incident to the AI diplomacy subsystem.
+     * Should be called whenever any player (human or AI) attacks another player's
+     * unit or city so that AI love values can be updated accordingly.
+     * Mirrors {@code dai_incident()} in daidiplomacy.c.
+     *
+     * @param attackerId connection ID of the aggressor
+     * @param defenderId connection ID of the victim
+     */
+    public void reportIncident(long attackerId, long defenderId) {
+        aiDiplomacy.handleIncident(game, attackerId, defenderId,
+                AiDiplomacy.LOVE_PENALTY_ATTACK);
+    }
+
     /** Performs all AI actions for the current turn (runs on the AI thread). */
     private void executeAiTurns() {
         // Resolve improvement and tech IDs from the loaded game data on the first
@@ -223,11 +240,18 @@ public class AiPlayer {
         // lookup used in the C Freeciv server's ruleset.c.
         resolveGameIds();
 
-        // Phase 0: Manage government evolution when better governments are available.
+        // Phase 0a: Update diplomatic love values and ceasefire countdowns, then
+        // execute diplomatic actions (war declarations, peace proposals).
+        // Mirrors dai_diplomacy_begin_new_phase() + dai_diplomacy_actions() in
+        // ai/default/daidiplomacy.c.
+        aiDiplomacy.beginNewPhase(game);
+        aiDiplomacy.performDiplomaticActions(game);
+
+        // Phase 0b: Manage government evolution when better governments are available.
         // Mirrors dai_manage_government() in ai/default/daicity.c.
         manageAiGovernments();
 
-        // Phase 0b: Adjust tax/science/luxury rates to maintain a positive gold balance
+        // Phase 0c: Adjust tax/science/luxury rates to maintain a positive gold balance
         // while maximising research speed.  Mirrors dai_manage_taxes() in aihand.c.
         manageAiTaxRates();
 
