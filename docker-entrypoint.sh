@@ -5,6 +5,6 @@
 exec "$@"
 
 while true; do
-  echo "FreecivWorld running"
+  echo "Freecivx running"
   sleep 10
 done

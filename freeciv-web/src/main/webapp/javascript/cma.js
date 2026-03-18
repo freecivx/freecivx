@@ -1,6 +1,6 @@
 /**********************************************************************
-    FreecivWorld.net - the web version of Freeciv. https://www.FreecivWorld.net/
-    Copyright (C) 2022 FreecivWorld.net
+    Freecivx.com - the web version of Freeciv. https://www.freecivx.com/
+    Copyright (C) 2022 Freecivx.com
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU Affero General Public License as published by
@@ -17,7 +17,7 @@
 
 ***********************************************************************/
 
-// CMA for FreecivWorld.net
+// CMA for Freecivx.com
 
 var _cma_val_sliders = [1,0,0,0,0,0];
 var _cma_min_sliders = [0,0,0,0,0,0];

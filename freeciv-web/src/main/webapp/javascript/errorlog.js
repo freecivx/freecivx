@@ -1,6 +1,6 @@
 /**********************************************************************
-    FreecivWorld.net - the web version of Freeciv. https://www.FreecivWorld.net/
-    Copyright (C) 2023 FreecivWorld.net
+    Freecivx.com - the web version of Freeciv. https://www.freecivx.com/
+    Copyright (C) 2023 Freecivx.com
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU Affero General Public License as published by
@@ -19,7 +19,7 @@
 
 
 /**************************************************************************
- Logs JavaScript error in FreecivWorld.net DB.
+ Logs JavaScript error in Freecivx.com DB.
  Named logErrorToServer to avoid conflict with browser's window.reportError.
 **************************************************************************/
 function logErrorToServer(error, msg) {

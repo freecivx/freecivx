@@ -4,9 +4,9 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<title>The Honourable List of Players of FreecivWorld</title>
+<title>The Honourable List of Players of Freecivx</title>
 <%@include file="/WEB-INF/jsp/fragments/head.jsp"%>
-<title>The Honourable List of Players of FreecivWorld</title>
+<title>The Honourable List of Players of Freecivx</title>
 
 <style>
 	.nav-tabs {
@@ -76,8 +76,8 @@
 	<!-- Begin page content -->
 	<div id="content" class="container mt-4">
 		<div class="alert alert-info text-center" style="background-color: white; background-image: none;">
-			<strong style="font-size:24px;">The Honourable List of Players of FreecivWorld</strong>
-			<p class="mb-0">These are the honourable, real registered and verified human players of Freeciv. <b><a href="https://www.FreecivWorld.net/">Register here</a>.</b></p>
+			<strong style="font-size:24px;">The Honourable List of Players of Freecivx</strong>
+			<p class="mb-0">These are the honourable, real registered and verified human players of Freeciv. <b><a href="https://www.freecivx.com/">Register here</a>.</b></p>
 			<p class="mb-0">Multiplayer games are <b><span class="tooltip-term" title="The Elo rating system measures the relative skill levels of players. Your rating increases when you win and decreases when you lose. The number of points gained or lost depends on the difference in ratings between you and your opponent, beating a higher-rated player earns more points.">Elo rated</span></b>. Win multiplayer games to increase your Elo score and climb the rankings!</p>
 		</div>
 	</div>

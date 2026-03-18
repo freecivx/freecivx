@@ -32,14 +32,14 @@ try {
 <!DOCTYPE html>
 <html>
 <head>
-<title>FreecivWorld.net Freeciv3D the 3D version of Freeciv</title>
+<title>Freecivx.com Freeciv3D the 3D version of Freeciv</title>
 
 <link href="/static/css/bootstrap.min.css" rel="stylesheet">
 
 <link rel="stylesheet" href="/css/fontawesome.min.css">
 <link rel="stylesheet" href="/css/solid.min.css">
 <link rel="stylesheet" type="text/css" href="/css/webclient.min.css?ts=${initParam.buildTimeStamp}" />
-<meta name="description" content="FreecivWorld.net play Freeciv in 3D online for free, open source strategy game">
+<meta name="description" content="Freecivx.com play Freeciv in 3D online for free, open source strategy game">
 <meta property="og:image" content="/images/freecivx-icon-web2.jpg" />
 
 <!-- Global configuration variables -->
@@ -86,7 +86,7 @@ var renderer_type_override="<%= rendererParam %>";
 
 <body>
 
-  <div id="introtxtja">FreecivWorld.net is the 3D version of the strategy game Freeciv. Because Civilization should be free, in 3D!</div>
+  <div id="introtxtja">Freecivx.com is the 3D version of the strategy game Freeciv. Because Civilization should be free, in 3D!</div>
 
     <div class="container">
         <%@include file="/WEB-INF/jsp/fragments/header.jsp"%>

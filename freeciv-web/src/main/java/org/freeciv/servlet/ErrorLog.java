@@ -16,7 +16,7 @@ import org.slf4j.LoggerFactory;
 
 
 /**
- * Logs errors of FreecivWorld.net
+ * Logs errors of Freecivx.com
  *
  * URL: /errorlog
  */

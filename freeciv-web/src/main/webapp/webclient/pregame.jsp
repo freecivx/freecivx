@@ -1,7 +1,7 @@
 <div id="fciv-intro">
   <div id="fciv-intro-txt">
     <div class="intro-content">
-      <h1 class="intro-title">Welcome to FreecivWorld</h1>
+      <h1 class="intro-title">Welcome to Freecivx</h1>
       <p class="intro-main">
         A free and open-source empire-building strategy game. Begin in the Stone Age and guide your civilization through centuries of progress.
       </p>
@@ -16,7 +16,7 @@
 <div id="pregame_page" style="display:none;">
   <div id="pregame_options">
 	<div id="pregame_buttons">
-		<div id="freeciv_logo" style="cursor:pointer;" onclick="window.open('/', '_new');" role="button" tabindex="0" aria-label="Open FreecivWorld homepage in new window">
+		<div id="freeciv_logo" style="cursor:pointer;" onclick="window.open('/', '_new');" role="button" tabindex="0" aria-label="Open Freecivx homepage in new window">
 		</div>
 		<button id="start_game_button" type="button" class="button" aria-label="Start the game"><i class="fa fa-play" aria-hidden="true"></i> <b>Start Game</b></button>
 		<button id="load_game_button" type="button" class="button" aria-label="Load a saved game or scenario"><i class="fa fa-folder-open" aria-hidden="true"></i> Load Game / Scenario</button>

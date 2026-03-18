@@ -144,4 +144,4 @@ if [[ "${verbose}" = true ]]; then
 fi
 
 printf "\n--------------------------------\n";
-echo "Check of FreecivWorld.net completed!"
+echo "Check of Freecivx.com completed!"

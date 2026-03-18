@@ -1,6 +1,6 @@
 # freeciv-scores-go
 
-freeciv-scores-go is a backend daemon written in Go that implements an end-to-end Elo rating system for multiplayer Freeciv games. It monitors game logs, calculates player rankings, and persists results to the FreecivWorld database.
+freeciv-scores-go is a backend daemon written in Go that implements an end-to-end Elo rating system for multiplayer Freeciv games. It monitors game logs, calculates player rankings, and persists results to the Freecivx database.
 
 ## Features
 
@@ -12,7 +12,7 @@ freeciv-scores-go is a backend daemon written in Go that implements an end-to-en
 
 ## How It Works
 
-1. **Watch:** Monitors ~/freecivworld/ranklog/ranklog-game-<port>.score.
+1. **Watch:** Monitors ~/freecivx/ranklog/ranklog-game-<port>.score.
 2. **Parse:** Extracts usernames from winners: and losers: lines.
 3. **Calculate:** Fetches current ratings and runs pairwise updates.
 4. **Persist:** Inserts game data and updates auth.elo_rating in one transaction.

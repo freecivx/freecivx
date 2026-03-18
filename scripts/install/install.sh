@@ -165,7 +165,7 @@ exec > >(tee "${basedir}/install.log")
 exec 2>&1
 
 echo "================================="
-echo "Running FreecivWorld.net setup script."
+echo "Running Freecivx.com setup script."
 echo "================================="
 echo
 
@@ -351,7 +351,7 @@ fi
 
 
 echo
-echo FreecivWorld.net installed!
+echo Freecivx.com installed!
 if [ ${#ext_installed[*]} -ne 0 ]; then
   echo "Some components have been installed outside the package managers:"
   for m in "${ext_installed[@]}"; do
@@ -374,7 +374,7 @@ You may want to personalize some things before starting it:
 Then run scripts/start-freeciv-web.sh and enjoy!
 EOF
 
-echo "Starting FreecivWorld.net"
+echo "Starting Freecivx.com"
 cd "${basedir}"/scripts/
 bash ./stop-freeciv-web.sh || echo "stop not done"
 killall -9 java || echo "java not stopped"

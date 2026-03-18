@@ -1,5 +1,5 @@
 /**********************************************************************
-    Freeciv-web - the web version of Freeciv. http://www.FreecivWorld.net/
+    Freeciv-web - the web version of Freeciv. http://www.freecivx.com/
     Copyright (C) 2009-2015  The Freeciv-web project
 
     This program is free software: you can redistribute it and/or modify
@@ -98,7 +98,7 @@ function update_game_info_pregame()
 
   if ($.getUrlVar('action') == "multi") {
     game_info_html += "<p>";
-    game_info_html += "<h2>FreecivWorld.net Multiplayer game</h2>-You are now about to play a multiplayer game.<br>-Please wait until at least 2 players have joined the game, then click the start game button.";
+    game_info_html += "<h2>Freecivx.com Multiplayer game</h2>-You are now about to play a multiplayer game.<br>-Please wait until at least 2 players have joined the game, then click the start game button.";
     game_info_html += "</p>";
     game_info_html += "";
   }
@@ -1059,7 +1059,7 @@ function show_intro_dialog(title, message) {
   });
 
   init_custom_scrollbar("#pregame_custom_scrollbar_div");
-  add_chatbox_text({message: 'Welcome to FreecivWorld - Freeciv 3D. Enter game commands, chat with players, change game settings, and start the game. Try the /help command. <br>', event : E_CHAT_MSG});
+  add_chatbox_text({message: 'Welcome to Freecivx - Freeciv 3D. Enter game commands, chat with players, change game settings, and start the game. Try the /help command. <br>', event : E_CHAT_MSG});
   $("#pregame_page").show();
 }
 
@@ -1160,7 +1160,7 @@ function show_new_user_account_dialog(gametype)
 {
 
   var title = "New user account";
-  var message = "Create a new FreecivWorld.net user account:<br><br>"
+  var message = "Create a new Freecivx.com user account:<br><br>"
                 + "<table><tr><td>Username:</td><td><input id='username' type='text' size='25' maxlength='30'></td></tr>"
                 + "<tr><td>Email:</td><td><input id='email' type='email' size='25' maxlength='64' ></td></tr>"
                 + "<tr><td>Password:</td><td><input id='password' type='password' size='25'></td></tr>"
@@ -1170,7 +1170,7 @@ function show_new_user_account_dialog(gametype)
                 + "<div id='age_validation_result' style='display:none;'></div>"
                 + "Please verify your e-mail by clicking in the link in the e-mail you will get from us. Remember your username and password, since you will need this to log in later."
                 + "<br>"
-                + "<div id='new_user_extra_info'><small><ul><li>It is free and safe to create a new account on FreecivWorld.net.</li>"
+                + "<div id='new_user_extra_info'><small><ul><li>It is free and safe to create a new account on Freecivx.com.</li>"
                 + "<li>A user account allows you to save and load games, and play in ranked multiplayer games.</li>"
                 + "<li>You will not receive any spam and your e-mail address will be kept safe. Your password is stored securely as a secure hash.</li>"
                 + "</ul></small></div>";
