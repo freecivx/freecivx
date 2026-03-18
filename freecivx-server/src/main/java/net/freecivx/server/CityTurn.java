@@ -159,6 +159,16 @@ public class CityTurn {
      */
     private static final int IMPR_POLICE_STATION = 18;
 
+    // -------------------------------------------------------------------------
+    // Improvement genus constants (match Improvement.getGenus() values).
+    // Mirrors the improvement_genus_id enum in the C Freeciv server's
+    // common/improvement.h.
+    // -------------------------------------------------------------------------
+    /** Genus value for a Great Wonder improvement (e.g. Pyramids, Great Wall). */
+    private static final int GENUS_GREAT_WONDER  = 0;
+    /** Genus value for a Small Wonder improvement (e.g. Palace). */
+    private static final int GENUS_SMALL_WONDER  = 1;
+
     /**
      * Luxury goods cost per citizen mood upgrade.
      * Mirrors {@code RS_DEFAULT_HAPPY_COST = 2} in the C Freeciv server's
@@ -543,6 +553,49 @@ public class CityTurn {
     }
 
     /**
+     * Returns {@code true} if any city in the entire game already contains the
+     * named improvement (typically used for Great Wonders to enforce uniqueness).
+     *
+     * <p>Mirrors {@code wonder_is_built()} / {@code player_has_wonder()} in the
+     * C Freeciv server's {@code common/improvement.c}: a Great Wonder can exist
+     * in at most one city across all civilisations simultaneously.
+     *
+     * @param game        the current game state
+     * @param wonderName  the display name of the improvement (case-insensitive)
+     * @return {@code true} when the wonder is present in any city in the world
+     */
+    static boolean worldHasWonder(Game game, String wonderName) {
+        int id = findImprId(game, wonderName, -1);
+        if (id < 0) return false;
+        for (City city : game.cities.values()) {
+            if (city.hasImprovement(id)) return true;
+        }
+        return false;
+    }
+
+    /**
+     * Returns {@code true} if any city owned by the given player contains the
+     * named improvement.  Used to check player-scope wonder effects such as the
+     * Lighthouse (sea unit bonus) and Great Wall (defensive bonus for all cities).
+     *
+     * <p>Mirrors the {@code "Player"}-scope requirement check in the C Freeciv
+     * server's {@code effects.ruleset} (e.g. {@code Building: Lighthouse (Player)}).
+     *
+     * @param game       the current game state
+     * @param playerId   the player to check
+     * @param wonderName the display name of the improvement (case-insensitive)
+     * @return {@code true} when any of the player's cities contains the wonder
+     */
+    public static boolean playerHasWonder(Game game, long playerId, String wonderName) {
+        int id = findImprId(game, wonderName, -1);
+        if (id < 0) return false;
+        for (City city : game.cities.values()) {
+            if (city.getOwner() == playerId && city.hasImprovement(id)) return true;
+        }
+        return false;
+    }
+
+    /**
      * Computes the total shield (production) output for a city based on its
      * centre tile output and city size.
      *
@@ -664,11 +717,47 @@ public class CityTurn {
                         }
                     }
                     if (techMet && buildingPrereqMet) {
+                        // Great Wonder uniqueness: only one civilisation can own each
+                        // great wonder simultaneously.  Mirrors wonder_is_built() /
+                        // city_build_building() checks in the C Freeciv server's
+                        // server/citytools.c and server/cityhand.c.
+                        if (improvement.getGenus() == GENUS_GREAT_WONDER
+                                && worldHasWonder(game, improvement.getName())) {
+                            // Another civilisation has already built this wonder.
+                            // Discard accumulated shields and reset production.
+                            // Mirrors the C server behaviour where wonder production
+                            // is cancelled when another player beats the builder to it.
+                            city.setShieldStock(0);
+                            city.setProductionKind(0);
+                            city.setProductionValue(-1);
+                            Notify.notifyPlayer(game, game.getServer(), city.getOwner(),
+                                    city.getName() + ": " + improvement.getName()
+                                    + " has already been built by another civilization!");
+                            VisibilityHandler.sendCityToVisiblePlayers(game, cityId);
+                            return;
+                        }
+
                         city.addImprovement(improvId);
                         city.setShieldStock(city.getShieldStock() - cost);
+
+                        // Notify the building player
                         Notify.notifyPlayer(game, game.getServer(),
                                 city.getOwner(),
                                 city.getName() + " has built " + improvement.getName() + ".");
+
+                        // Broadcast great and small wonder completion to ALL players.
+                        // Mirrors notify_action_spectators() / E_WONDER_BUILD in the
+                        // C Freeciv server (server/citytools.c city_build_building()).
+                        if (improvement.getGenus() == GENUS_GREAT_WONDER
+                                || improvement.getGenus() == GENUS_SMALL_WONDER) {
+                            Player wonderBuilder = game.players.get(city.getOwner());
+                            String civName = (wonderBuilder != null)
+                                    ? wonderBuilder.getUsername() : "A civilization";
+                            Notify.notifyAllPlayers(game, game.getServer(),
+                                    civName + " has built the " + improvement.getName()
+                                    + " in " + city.getName() + "!");
+                        }
+
                         // Reset production to nothing after completion (-1 = no production)
                         city.setProductionKind(0);
                         city.setProductionValue(-1);
@@ -815,10 +904,22 @@ public class CityTurn {
                 // City grows: increase size and reset granary
                 city.setSize(city.getSize() + 1);
                 // Granary improvement retains 50% of the new granary capacity after growth.
-                // The C server also computes savings based on the new (larger) size:
-                //   city_size_add(pcity, 1); ... new_food = city_granary_size(new_size) * savings_pct / 100
+                // Pyramids wonder (Growth_Food=25 / Shrink_Food=25 in C effects.ruleset)
+                // retains an additional 25% of the new granary capacity.
+                // Combined: Granary alone = 50% retained; Granary + Pyramids = 75%;
+                //           Pyramids alone = 25% retained.
+                // Mirrors effect_pyramids_grow (Growth_Food=25) in classic effects.ruleset.
+                int newGranarySize = cityGranarySize(city.getSize());
+                boolean hasPyramids = playerHasWonder(game, city.getOwner(), "Pyramids");
                 if (city.hasImprovement(granaryImprId)) {
-                    city.setFoodStock(cityGranarySize(city.getSize()) / 2);
+                    int savedFood = newGranarySize / 2;
+                    if (hasPyramids) {
+                        savedFood = savedFood + newGranarySize / 4; // +25% from Pyramids
+                    }
+                    city.setFoodStock(Math.min(savedFood, newGranarySize));
+                } else if (hasPyramids) {
+                    // Pyramids alone: retain 25% food on growth
+                    city.setFoodStock(newGranarySize / 4);
                 } else {
                     city.setFoodStock(0);
                 }
@@ -1001,7 +1102,18 @@ public class CityTurn {
         // that was already counted for the centre tile only.
         int workerTrade = Math.max(0, tradePerTile - 1);
         int additionalWorkerTrade = (city.getSize() - 1) * workerTrade;
-        return Math.max(CITY_CENTRE_TRADE_BONUS, tradePerTile + additionalWorkerTrade);
+        int baseTrade = Math.max(CITY_CENTRE_TRADE_BONUS, tradePerTile + additionalWorkerTrade);
+
+        // Colossus wonder: +1 trade on all tiles that already produce trade.
+        // Mirrors effect_colossus (Output_Inc_Tile = 1, Trade, OutputType:Trade) in
+        // the classic Freeciv effects.ruleset.  Each tile producing at least 1 trade
+        // gains +1, so the bonus scales with the number of active trade tiles.
+        // Simplified here as +1 trade per working citizen on a trade-producing terrain.
+        if (playerHasWonder(game, city.getOwner(), "Colossus") && tradePerTile > 0) {
+            baseTrade += city.getSize(); // +1 per citizen on a trade-producing tile
+        }
+
+        return baseTrade;
     }
 
 
@@ -1066,6 +1178,13 @@ public class CityTurn {
             if (city.hasImprovement(universityId)) {
                 scienceBonus += 100; // Research Lab + University: +100% (effect_research_lab_1)
             }
+        }
+        // Copernicus' Observatory wonder: +100% science in the city that contains it.
+        // Mirrors effect_copernicus (Output_Bonus = 100, Science, City scope) in the
+        // classic Freeciv effects.ruleset.  Applies only to the city holding the wonder,
+        // not empire-wide (matches the "City" scope in effects.ruleset).
+        if (city.hasImprovement(findImprId(game, "Copernicus' Observatory", -1))) {
+            scienceBonus += 100; // Copernicus' Observatory: +100% science (effect_copernicus)
         }
         science = (science * (100 + scienceBonus) + 99) / 100;
 
@@ -1311,6 +1430,11 @@ public class CityTurn {
         int cathedralId     = findImprId(game, "Cathedral",      IMPR_CATHEDRAL);
         int policeStationId = findImprId(game, "Police Station", IMPR_POLICE_STATION);
 
+        // Pre-compute player-scope wonder happiness bonuses (same as updateCityHappiness)
+        boolean hasOracle      = playerHasWonder(game, playerId, "Oracle");
+        boolean hasHangingGardens = playerHasWonder(game, playerId, "Hanging Gardens");
+        boolean hasJSBach      = playerHasWonder(game, playerId, "J.S. Bach's Cathedral");
+
         int requiredRate = 0;
 
         for (Map.Entry<Long, City> entry : game.cities.entrySet()) {
@@ -1329,6 +1453,15 @@ public class CityTurn {
                 String govName = gov.getRuleName();
                 if ("Democracy".equals(govName))      makeContent += 2;
                 else if ("Republic".equals(govName))  makeContent += 1;
+            }
+
+            // Wonder make_content bonuses (mirrors updateCityHappiness wonder checks)
+            if (city.hasImprovement(templeId) && hasOracle) makeContent += 2;
+            if (hasHangingGardens) makeContent += 1;
+            if (hasJSBach)         makeContent += 2;
+            // Shakespeare's Theatre: all citizens content in the city (no luxury needed)
+            if (city.hasImprovement(findImprId(game, "Shakespeare's Theater", -1))) {
+                makeContent += city.getSize();
             }
 
             int netUnhappy = Math.max(0, baseUnhappy - makeContent);
@@ -1449,6 +1582,38 @@ public class CityTurn {
             } else if ("Republic".equals(govName)) {
                 makeContent += 1;
             }
+        }
+
+        // Wonder effects that provide empire-wide or city-wide happiness bonuses.
+        // These are checked via playerHasWonder() (player scope) so only the
+        // civilisation that owns the wonder benefits.
+
+        // Oracle wonder: +2 make_content to cities that also have a Temple.
+        // Mirrors effect_oracle (Make_Content=2, requires Building:Temple in City)
+        // in the classic Freeciv effects.ruleset.
+        if (city.hasImprovement(templeId)
+                && playerHasWonder(game, city.getOwner(), "Oracle")) {
+            makeContent += 2;
+        }
+
+        // Hanging Gardens wonder: +1 make_content empire-wide (+2 in the home city,
+        // but simplified here as +1 per city for all the owner's cities).
+        // Mirrors effect_hanging_gardens (Make_Happy=1, Player scope) in effects.ruleset.
+        if (playerHasWonder(game, city.getOwner(), "Hanging Gardens")) {
+            makeContent += 1;
+        }
+
+        // J.S. Bach's Cathedral wonder: +2 make_content empire-wide.
+        // Mirrors effect_js_bach (Make_Content=2, Player scope) in effects.ruleset.
+        if (playerHasWonder(game, city.getOwner(), "J.S. Bach's Cathedral")) {
+            makeContent += 2;
+        }
+
+        // Shakespeare's Theatre wonder: makes all citizens in the city content.
+        // Mirrors effect_shakespeare (Make_Content = city_size, City scope) in effects.ruleset.
+        // All remaining unhappy citizens become content.
+        if (city.hasImprovement(findImprId(game, "Shakespeare's Theater", -1))) {
+            makeContent += city.getSize(); // enough to satisfy everyone
         }
 
         // Net unhappy citizens after applying building effects
