@@ -22,6 +22,7 @@ package net.freecivx.game;
 
 import net.freecivx.server.IGameServer;
 import net.freecivx.server.CityTools;
+import net.freecivx.server.CityTurn;
 import net.freecivx.server.Notify;
 import net.freecivx.server.Packets;
 import net.freecivx.server.VisibilityHandler;
@@ -1560,11 +1561,19 @@ public class Game {
 
         // Apply city walls defence bonus when the defender is garrisoned in a walled city.
         // City walls give +50% defence bonus, mirroring EFT_DEFEND_BONUS in the C server.
+        // Great Wall wonder acts as City Walls for all cities of the owner:
+        // mirrors effect_great_wall (Defend_Bonus=50, Building:City_Walls absent → Player scope)
+        // in the classic Freeciv effects.ruleset.
         int cityWallsBonus = 0;
         if (defenderTile != null && defenderTile.getWorked() > 0) {
             City defCity = cities.get(defenderTile.getWorked());
-            if (defCity != null && defCity.getWalls() > 0) {
-                cityWallsBonus = 50;
+            if (defCity != null) {
+                if (defCity.getWalls() > 0) {
+                    cityWallsBonus = 50;
+                } else if (CityTurn.playerHasWonder(this, defCity.getOwner(), "Great Wall")) {
+                    // Great Wall provides city-walls defence bonus to all cities of the owner
+                    cityWallsBonus = 50;
+                }
             }
         }
 
