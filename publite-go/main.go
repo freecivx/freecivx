@@ -188,11 +188,11 @@ func main() {
 	go freecivxMultiHex.Run()
 
 	freecivxMulti := NewFreecivxLauncher(cfg.FreecivxMultiPort, "multiplayer", "square",
-		"Freecivx Multiplayer Server - Square map tiles - Java server", mc.shutdown)
+		"Freecivx Multiplayer Server - Square map tiles - Java server - FreecivX MMO!", mc.shutdown)
 	go freecivxMulti.Run()
 
 	freecivxSingle := NewFreecivxLauncher(cfg.FreecivxPort, "singleplayer", "square",
-		"Freecivx Singleplayer Server - Square map tiles - Java server", mc.shutdown)
+		"Freecivx Singleplayer Server - Square map tiles - Java server - (Testing)", mc.shutdown)
 	go freecivxSingle.Run()
 
 	freecivxSingleHex := NewFreecivxLauncher(cfg.FreecivxSingleHexPort, "singleplayer", "hex",
