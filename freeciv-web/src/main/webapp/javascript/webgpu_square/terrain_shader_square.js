@@ -653,14 +653,27 @@ function createTerrainShaderSquareTSL(uniforms) {
     const NdotL = max(dot(normal, sunDir), 0.0);
     
     // Ambient light increased by 10%: 0.22 * 1.10 = 0.242
+    // diffuseStrength 0.58 (up from 0.53) increases slope contrast for more natural look
     const ambientLight = 0.242;
-    const diffuseStrength = 0.53;
+    const diffuseStrength = 0.58;
     const lightingFactor = add(ambientLight, mul(NdotL, diffuseStrength));
     
-    // Brightness boost: 1.264 = 1.331 (previous) * 0.95 (5% decrease requested)
-    // Cumulative effect: base 1.0 * 1.12 * 1.10 * 1.08 * 0.95 = ~1.264 total brightness multiplier
-    const brightnessBoost = 1.264;
+    // Brightness boost: 1.201 = 1.264 (previous) * 0.95 (5% darker as requested)
+    const brightnessBoost = 1.201;
     finalColor = vec4(mul(mul(finalColor.rgb, lightingFactor), brightnessBoost), finalColor.a);
+
+    // Apply contrast enhancement for more vivid, natural terrain appearance
+    // Formula: (color - 0.5) * contrast + 0.5, clamped to [0,1]
+    const TERRAIN_CONTRAST = 1.12;
+    const contrastedColor = clamp(add(mul(sub(finalColor.rgb, 0.5), TERRAIN_CONTRAST), 0.5), 0.0, 1.0);
+    finalColor = vec4(contrastedColor, finalColor.a);
+
+    // Apply subtle saturation boost for more natural, vivid terrain colours
+    const TERRAIN_SATURATION = 1.10;
+    const lumWeights = vec3(0.2126, 0.7152, 0.0722);
+    const lumValue = dot(finalColor.rgb, lumWeights);
+    const saturatedColor = mix(vec3(lumValue), finalColor.rgb, TERRAIN_SATURATION);
+    finalColor = vec4(saturatedColor, finalColor.a);
 
     // =========================================================================
     // SQUARE TILE GRID LINES
