@@ -139,7 +139,7 @@ public class AutoGame {
 
             @Override public void sendCalendarInfoAll() {}
 
-            @Override public void sendMapInfoAll(int xsize, int ysize) {}
+            @Override public void sendMapInfoAll(int xsize, int ysize, int topologyId) {}
 
             @Override public void sendTerrainInfoAll(long id, String name, String graphicStr) {}
 

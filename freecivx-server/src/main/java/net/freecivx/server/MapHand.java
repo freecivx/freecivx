@@ -133,7 +133,7 @@ public class MapHand {
         WorldMap map = game.map;
         if (map == null) return;
 
-        game.getServer().sendMapInfoAll(map.getXsize(), map.getYsize());
+        game.getServer().sendMapInfoAll(map.getXsize(), map.getYsize(), game.getTopologyId());
 
         for (Tile tile : game.tiles.values()) {
             sendTileInfo(game, connId, tile.getIndex());

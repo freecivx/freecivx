@@ -134,6 +134,22 @@ public class Game {
     private int endTurn = 0;
 
     /**
+     * Map topology bitmask sent to clients as {@code topology_id} in PACKET_MAP_INFO.
+     * Mirrors the Freeciv topology flags:
+     * <ul>
+     *   <li>0 – square (default)</li>
+     *   <li>2 – hex (TF_HEX; pure hexagonal, 6 neighbours)</li>
+     * </ul>
+     * TF_ISO = 1, TF_HEX = 2 (matches the JavaScript client constants).
+     */
+    private int topologyId = 0;
+
+    /** Topology flag constant: isometric (mirrors JS {@code TF_ISO}). */
+    public static final int TF_ISO = 1;
+    /** Topology flag constant: hexagonal (mirrors JS {@code TF_HEX}). */
+    public static final int TF_HEX = 2;
+
+    /**
      * Turn timer used to implement the per-turn {@link #turnTimeout}.
      * Injected by the server via {@link #setTurnTimer(TurnTimer)};
      * {@code null} when turn timeouts are not needed.
@@ -284,6 +300,22 @@ public class Game {
     /** Returns the configured end-turn limit (0 = disabled). */
     public int getEndTurn() {
         return endTurn;
+    }
+
+    /**
+     * Sets the map topology bitmask.
+     * Use {@link #TF_HEX} (2) for hexagonal topology or {@code 0} for square.
+     * Must be called before the game starts (before {@link #initGame()}).
+     *
+     * @param topologyId topology bitmask (0 = square, 2 = hex)
+     */
+    public void setTopologyId(int topologyId) {
+        this.topologyId = topologyId;
+    }
+
+    /** Returns the map topology bitmask (0 = square, 2 = hex). */
+    public int getTopologyId() {
+        return topologyId;
     }
 
     /**
@@ -523,7 +555,7 @@ public class Game {
         server.sendMessageAll("Starting new game.");
 
         server.sendCalendarInfoAll();
-        server.sendMapInfoAll(map.getXsize(), map.getYsize());
+        server.sendMapInfoAll(map.getXsize(), map.getYsize(), topologyId);
         server.sendGameInfoAll(getHistoricalYear(), turn, phase, turnTimeout);
         server.sendRulesetControl(improvements.size());
 
@@ -1053,6 +1085,13 @@ public class Game {
      */
     public int nextTileInDirection(long fromTile, int dir) {
         if (map == null || dir < 0 || dir > 7) return -1;
+        // Reject directions that are invalid for the current topology.
+        boolean isHex = (topologyId & TF_HEX) != 0;
+        boolean isIso = (topologyId & TF_ISO) != 0;
+        if (isHex) {
+            if (!isIso && (dir == 0 || dir == 7)) return -1; // pure hex: NW/SE invalid
+            if (isIso  && (dir == 2 || dir == 5)) return -1; // iso-hex: NE/SW invalid
+        }
         int xsize = map.getXsize();
         int ysize = map.getYsize();
         int x = (int)(fromTile % xsize);

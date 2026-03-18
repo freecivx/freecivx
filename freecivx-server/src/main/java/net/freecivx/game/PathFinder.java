@@ -81,6 +81,12 @@ public class PathFinder {
      * indices (0-7) from start to destination, or an empty list when no path
      * exists.
      *
+     * <p>For hex topology ({@link Game#TF_HEX}) only 6 of the 8 directions
+     * are valid.  For pure hex (TF_HEX without TF_ISO) the diagonal SE(7) and
+     * NW(0) directions are invalid; for iso-hex (TF_HEX | TF_ISO) NE(2) and
+     * SW(5) are invalid.  This mirrors {@code is_valid_dir()} in the
+     * C Freeciv client's {@code common/map.c}.
+     *
      * @param startTileId start tile index
      * @param destTileId  destination tile index
      * @param domain      unit domain: 0 = land, 1 = sea, 2 = air
@@ -94,6 +100,9 @@ public class PathFinder {
 
         long destX = destTile.getX(xsize);
         long destY = destTile.getY(xsize);
+
+        // Determine which directions are valid based on map topology.
+        boolean[] validDir = buildValidDirs(game.getTopologyId());
 
         // A* open set: [tileId (as double bits), f-cost]
         PriorityQueue<double[]> open = new PriorityQueue<>(
@@ -119,6 +128,8 @@ public class PathFinder {
             long curY = curTile.getY(xsize);
 
             for (int d = 0; d < 8; d++) {
+                if (!validDir[d]) continue;
+
                 long nx = curX + DIR_DX[d];
                 long ny = curY + DIR_DY[d];
 
@@ -149,6 +160,35 @@ public class PathFinder {
         }
 
         return Collections.emptyList(); // no path found
+    }
+
+    /**
+     * Returns a boolean array of length 8 where {@code true} means the
+     * direction index is valid for the given topology.
+     *
+     * <p>Direction indices: 0=NW, 1=N, 2=NE, 3=W, 4=E, 5=SW, 6=S, 7=SE.
+     * Mirrors {@code is_valid_dir()} in the C Freeciv client.
+     *
+     * @param topologyId the map topology bitmask (0=square, 2=hex, 3=iso-hex)
+     */
+    private static boolean[] buildValidDirs(int topologyId) {
+        boolean isHex = (topologyId & Game.TF_HEX) != 0;
+        boolean isIso = (topologyId & Game.TF_ISO) != 0;
+        boolean[] valid = new boolean[8];
+        for (int d = 0; d < 8; d++) {
+            if (isHex) {
+                if (!isIso) {
+                    // Pure hex: NW(0) and SE(7) are invalid.
+                    valid[d] = (d != 0 && d != 7);
+                } else {
+                    // Iso-hex: NE(2) and SW(5) are invalid.
+                    valid[d] = (d != 2 && d != 5);
+                }
+            } else {
+                valid[d] = true; // square: all 8 directions valid
+            }
+        }
+        return valid;
     }
 
     /**
