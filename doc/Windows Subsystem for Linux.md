@@ -1,13 +1,13 @@
-Run FreecivWorld.net on Windows Subsystem for Linux (WSL)
+Run Freecivx.com on Windows Subsystem for Linux (WSL)
 
 =================================================
 
-Allows running Freecivworld on an Ubuntu Linux in Windows. 
-This might be a good development environment for Freecivworld. 
+Allows running Freecivx on an Ubuntu Linux in Windows. 
+This might be a good development environment for Freecivx. 
 Remember to disable Windows realtime antivirus to get good performance.
 
   
-## 1. Running Freecivworld on WSL:
+## 1. Running Freecivx on WSL:
 
 ### 1.1. Install WSL on Windows 11:
 
@@ -19,7 +19,7 @@ Open a Powershell window, run as Administator, this command:
 
   
 
-### 1.2. Git clone Freecivworld:
+### 1.2. Git clone Freecivx:
 
 > git clone https://github.com/freecivworld/freecivworld.git --depth=10
 
@@ -27,18 +27,18 @@ Open a Powershell window, run as Administator, this command:
 
 ### 1.3. Build Freeciworld:
 
-> cd freecivworld
+> cd freecivx
 
 > bash ./scripts/install/install.sh --mode=TEST_MYSQL
 
   
 
-### 1.4. Start Freecivworld:
+### 1.4. Start Freecivx:
 
 > ./scripts/start-freeciv-web.sh
 
   
 
-### Open Freecivworld at http://localhost/
+### Open Freecivx at http://localhost/
 
 

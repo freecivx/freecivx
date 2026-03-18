@@ -13,11 +13,11 @@
         e.printStackTrace();
     }
 %>
-<title>FreecivWorld.net - Freeciv in 3D.</title>
+<title>Freecivx.com - Freeciv in 3D.</title>
 <meta charset="utf-8">
 <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
-<meta name="author" content="The FreecivWorld.net project">
-<meta name="description" content="Play FreecivWorld.net online with 3D WebGL in the browser.">
+<meta name="author" content="The Freecivx.com project">
+<meta name="description" content="Play Freecivx.com online with 3D WebGL in the browser.">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta property="og:image" content="/static/images/brand.png" />
 

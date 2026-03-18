@@ -1,4 +1,4 @@
-glTF 3D models for FreecivWorld.net
+glTF 3D models for Freecivx.com
 ===============================
 
 This directory contains glTF 2.0 binary .glb files.

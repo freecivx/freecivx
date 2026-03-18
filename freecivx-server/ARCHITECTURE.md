@@ -30,7 +30,7 @@
 ## 1. Overview
 
 `freecivx-server` is a Freeciv-compatible multiplayer game server written in Java 21.  
-It communicates with the [FreecivWorld.net](https://FreecivWorld.net) web client over **WebSocket**
+It communicates with the [Freecivx.com](https://freecivx.com) web client over **WebSocket**
 using **JSON** packets whose `pid` (packet ID) numbers mirror those of the original C Freeciv server.
 
 The server is designed for long-running, large-scale multiplayer games (MMO-style). Unlike the C
@@ -541,7 +541,7 @@ Implements `GameLogger` by writing to `System.out`.
 
 All packets are JSON objects with a required `"pid"` integer field.  
 The values below match the constants in `Packets.java` and are wire-compatible with the
-FreecivWorld web client.
+Freecivx web client.
 
 | Constant | ID | Direction | Description |
 |---|---|---|---|
@@ -699,7 +699,7 @@ The server bundles the **Freeciv classic ruleset** (forked from the C Freeciv se
 | `nation/*.ruleset` | 563 individual nation definition files |
 
 These files are a fork of the upstream Freeciv classic ruleset and can be customised for
-FreecivWorld-specific gameplay changes.
+Freecivx-specific gameplay changes.
 
 ### In-memory Ruleset State
 

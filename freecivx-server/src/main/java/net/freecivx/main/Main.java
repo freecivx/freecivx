@@ -1,5 +1,5 @@
 /**********************************************************************
- Freecivx - the 3D web version of Freeciv. http://www.FreecivWorld.net/
+ Freecivx - the 3D web version of Freeciv. http://www.freecivx.com/
  Copyright (C) 2009-2025  The Freeciv-web project, Andreas Røsdal
 
  This program is free software: you can redistribute it and/or modify
@@ -49,7 +49,7 @@ public class Main {
             }
         }
 
-        log.info("This is the server for Freecivx on port {}. You can learn a lot about Freecivx at https://www.FreecivWorld.net/", port);
+        log.info("This is the server for Freecivx on port {}. You can learn a lot about Freecivx at https://www.freecivx.com/", port);
 
         try {
             // Create HTTP server

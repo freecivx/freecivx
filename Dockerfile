@@ -1,9 +1,9 @@
-# FreecivWorld docker file
+# Freecivx docker file
 # Dockerfile update based on debian/tomcat package
 
 FROM ubuntu:latest
 
-LABEL maintainer="FreecivWorld"
+LABEL maintainer="Freecivx"
 
 RUN DEBIAN_FRONTEND=noninteractive apt-get update --yes --quiet && \
     DEBIAN_FRONTEND=noninteractive apt-get install --yes \

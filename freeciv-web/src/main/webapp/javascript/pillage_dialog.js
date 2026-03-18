@@ -1,5 +1,5 @@
 /**********************************************************************
-    Freeciv-web - the web version of Freeciv. http://www.FreecivWorld.net/
+    Freeciv-web - the web version of Freeciv. http://www.freecivx.com/
     Copyright (C) 2018  The Freeciv-web project
 
     This program is free software: you can redistribute it and/or modify

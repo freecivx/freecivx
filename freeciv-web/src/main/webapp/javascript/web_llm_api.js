@@ -1,5 +1,5 @@
 /**********************************************************************
-    Freeciv-web - the web version of Freeciv. http://www.FreecivWorld.net/
+    Freeciv-web - the web version of Freeciv. http://www.freecivx.com/
     Copyright (C) 2009-2015  The Freeciv-web project
 
     This program is free software: you can redistribute it and/or modify
@@ -946,7 +946,7 @@ function append_command_center_message(message, type, id, typewriter = false) {
  * Show fallback intro message in message dialog
  */
 function show_fallback_intro_message() {
-  const fallback_message = "Welcome to FreecivWorld.net, the free browser-based 3D version of the classic turn-based strategy game Freeciv! Have fun playing FreecivWorld!";
+  const fallback_message = "Welcome to Freecivx.com, the free browser-based 3D version of the classic turn-based strategy game Freeciv! Have fun playing Freecivx!";
   if (typeof message_log !== 'undefined') {
     message_log.update({ event: E_CONNECTION, message: "<b>Welcome:</b> " + fallback_message });
   }

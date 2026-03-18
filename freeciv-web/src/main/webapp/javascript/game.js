@@ -1,5 +1,5 @@
 /**********************************************************************
-    Freeciv-web - the web version of Freeciv. http://www.FreecivWorld.net/
+    Freeciv-web - the web version of Freeciv. http://www.freecivx.com/
     Copyright (C) 2009-2015  The Freeciv-web project
 
     This program is free software: you can redistribute it and/or modify
@@ -146,7 +146,7 @@ function update_game_status_panel() {
     }
   }
 
-  var page_title = "FreecivWorld.net - " + username + "  turn:" + game_info['turn'];
+  var page_title = "Freecivx.com - " + username + "  turn:" + game_info['turn'];
   if (server_settings['metamessage'] != null) {
     page_title += server_settings['metamessage']['val'];
   }

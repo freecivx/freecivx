@@ -7,7 +7,7 @@
 	<artifactId>freeciv-web</artifactId>
 	<version>1.0</version>
 	<packaging>war</packaging>
-	<name>FreecivWorld.net webapp - Freeciv 3D</name>
+	<name>Freecivx.com webapp - Freeciv 3D</name>
 
 
 	<properties>

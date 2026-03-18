@@ -1,5 +1,5 @@
 /**********************************************************************
-    Freeciv-web - the web version of Freeciv. http://www.FreecivWorld.net/
+    Freeciv-web - the web version of Freeciv. http://www.freecivx.com/
     Copyright (C) 2009-2015  The Freeciv-web project
 
     This program is free software: you can redistribute it and/or modify
@@ -47,7 +47,7 @@ var dialog_close_trigger = "";
 var dialog_message_close_task;
 
 /**************************************************************************
- Main starting point for FreecivWorld.net
+ Main starting point for Freecivx.com
 **************************************************************************/
 $(document).ready(function() {
   civclient_init();
@@ -148,12 +148,12 @@ function civclient_init()
 function init_common_intro_dialog() {
 
   if (observing) {
-    show_intro_dialog("Welcome to FreecivWorld.net",
+    show_intro_dialog("Welcome to Freecivx.com",
       "You have joined the game as an observer. Please enter your name:");
     $("#turn_done_button").button( "option", "disabled", true);
 
   } else if ($.getUrlVar('action') == "load") {
-    show_intro_dialog("Welcome to FreecivWorld.net",
+    show_intro_dialog("Welcome to Freecivx.com",
       "You are about to join this game server, where you can " +
       "load a savegame, tutorial, custom map generated from an image or a historical scenario map. " +
       "Please enter your name: ");
@@ -164,16 +164,16 @@ function init_common_intro_dialog() {
                   "participate in a multiplayer game. You can customize the game " +
                   "settings, and wait for the minimum number of players before " +
                   "the game can start. ";
-      show_intro_dialog("Welcome to FreecivWorld.net", msg);
+      show_intro_dialog("Welcome to Freecivx.com", msg);
 
   } else {
     const introText = `
-    Play the classic open source strategy game FreecivWorld. Start a singleplayer game against the AI or play others in multiplayer.
+    Play the classic open source strategy game Freecivx. Start a singleplayer game against the AI or play others in multiplayer.
     Start by entering your player name, or sign up as a new user.
     Creating an account is required.
     `;
 
-    show_intro_dialog("Welcome to FreecivWorld.net", introText);
+    show_intro_dialog("Welcome to Freecivx.com", introText);
   }
   checkInvitations();
 }
