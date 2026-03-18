@@ -22,7 +22,7 @@ https://freecivx.com
 
 Screenshots:
 ------------------------
-![Freeciv-web](https://raw.githubusercontent.com/freecivworld/freecivworld/main/doc/img/Screenshot.png "Freecivx.com screenshot")
+![Freeciv-web](https://raw.githubusercontent.com/freecivx/freecivx/main/doc/img/Screenshot.png "Freecivx.com screenshot")
 
 
 Overview
@@ -56,7 +56,7 @@ Check out Freeciv-web to a
 directory on your computer, by installing [Git](http://git-scm.com/) and
 running this command:
  ```bash
-  git clone https://github.com/freecivworld/freecivworld.git --depth=10
+  git clone https://github.com/freecivx/freecivx.git --depth=10
  ```
 
 You may also want to change some parameters before installing, although
