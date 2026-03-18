@@ -19,7 +19,6 @@
 
 package net.freecivx.ai;
 
-import net.freecivx.game.City;
 import net.freecivx.game.Game;
 import net.freecivx.game.Player;
 import net.freecivx.server.DiplHand;

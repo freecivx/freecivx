@@ -21,11 +21,9 @@ package net.freecivx.ai;
 
 import net.freecivx.game.City;
 import net.freecivx.game.Game;
-import net.freecivx.game.Government;
 import net.freecivx.game.Improvement;
 import net.freecivx.game.Player;
 import net.freecivx.game.Technology;
-import net.freecivx.game.Tile;
 import net.freecivx.game.Unit;
 import net.freecivx.game.UnitType;
 import net.freecivx.server.CityTurn;
@@ -35,11 +33,9 @@ import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
-import java.util.Set;
 
 /**
  * AiPlayer handles all AI decision-making for computer-controlled players.
