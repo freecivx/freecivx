@@ -350,6 +350,8 @@ public class CivServer extends org.java_websocket.server.WebSocketServer impleme
                         /set gold N     - Set starting gold for all players (0-50000)
                         /set generator N - Set map generator: 2 = fractal/fBM (default), 5 = island/continent
                         /set endturn N  - Set turn at which the game ends and reveals the whole map (0 = disabled)
+                        /set topology hex    - Use hexagonal map tiles (6-way movement)
+                        /set topology square - Use square map tiles (8-way movement, default)
                         /help           - Show this help text
                         Available scenarios: africa-350x350-v1.0.sav, british-isles.sav, caribbean-500x250-v1.2.sav, earth-large.sav, earth-small.sav, europe.sav, france.sav, hagworld.sav, iberian-peninsula.sav, india-350x350-v1.2.sav, italy.sav, japan.sav, middleeast-350x350-v1.1.sav, north_america.sav, scandinavia-350x350-v1.0.sav, tutorial.sav
                         Game features: units move with movement limits, AI players included.
@@ -386,6 +388,24 @@ public class CivServer extends org.java_websocket.server.WebSocketServer impleme
         }
         String setting = parts[1].toLowerCase();
         String rawValue = parts[2];
+
+        // Handle string-valued settings before attempting integer parsing.
+        if (setting.equals("topology")) {
+            switch (rawValue.toLowerCase()) {
+                case "hex", "hexagonal" -> {
+                    game.setTopologyId(Game.TF_HEX);
+                    sendMessageAll("topology: set to hex (hexagonal tiles, 6-way movement).");
+                }
+                case "square", "normal" -> {
+                    game.setTopologyId(0);
+                    sendMessageAll("topology: set to square (default).");
+                }
+                default -> sendMessage(connId,
+                        "topology must be 'hex' or 'square'.");
+            }
+            return;
+        }
+
         int value;
         try {
             value = Integer.parseInt(rawValue);
@@ -606,11 +626,12 @@ public class CivServer extends org.java_websocket.server.WebSocketServer impleme
         broadcast(msg);
     }
 
-    public void sendMapInfoAll(int xsize, int ysize) {
+    public void sendMapInfoAll(int xsize, int ysize, int topologyId) {
         JSONObject msg = new JSONObject();
         msg.put("pid", Packets.PACKET_MAP_INFO);
         msg.put("xsize", xsize);
         msg.put("ysize", ysize);
+        msg.put("topology_id", topologyId);
 
         broadcast(msg);
     }
@@ -1050,6 +1071,7 @@ public class CivServer extends org.java_websocket.server.WebSocketServer impleme
         mapMsg.put("pid", Packets.PACKET_MAP_INFO);
         mapMsg.put("xsize", game.map.getXsize());
         mapMsg.put("ysize", game.map.getYsize());
+        mapMsg.put("topology_id", game.getTopologyId());
         ws.send(mapMsg.toString());
 
         // Game state

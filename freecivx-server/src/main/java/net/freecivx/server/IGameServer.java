@@ -79,7 +79,7 @@ public interface IGameServer {
     // Map / ruleset initialisation
     // -------------------------------------------------------------------------
 
-    void sendMapInfoAll(int xsize, int ysize);
+    void sendMapInfoAll(int xsize, int ysize, int topologyId);
 
     void sendTerrainInfoAll(long id, String name, String graphic_str);
 
