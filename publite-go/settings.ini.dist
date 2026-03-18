@@ -19,13 +19,21 @@ initial_port = 6000
 # Can be overridden with environment variable: PUBLITE_CHECK_INTERVAL
 check_interval = 40
 
-# Port for the freecivx-server Java server (singleplayer)
+# Port for the freecivx-server Java server (singleplayer, square tiles)
 # Can be overridden with environment variable: PUBLITE_FREECIVX_PORT
 freecivx_port = 7800
 
-# Port for the freecivx-server Java server (multiplayer MMO)
+# Port for the freecivx-server Java server (multiplayer, square tiles)
 # Can be overridden with environment variable: PUBLITE_FREECIVX_MULTI_PORT
 freecivx_multi_port = 7802
+
+# Port for the freecivx-server Java server (singleplayer, hex tiles)
+# Can be overridden with environment variable: PUBLITE_FREECIVX_SINGLE_HEX_PORT
+freecivx_single_hex_port = 7804
+
+# Port for the freecivx-server Java server (multiplayer, hex tiles)
+# Can be overridden with environment variable: PUBLITE_FREECIVX_MULTI_HEX_PORT
+freecivx_multi_hex_port = 7806
 
 [Resource usage]
 server_capacity_single = 4

@@ -59,6 +59,9 @@ public class CivServer extends org.java_websocket.server.WebSocketServer impleme
     /** Game mode: "singleplayer" or "multiplayer". */
     private final String gameMode;
 
+    /** Map topology (0 = square, {@link net.freecivx.game.Game#TF_HEX} = hex). */
+    private final int topologyId;
+
     /**
      * Persists username → nation across game resets in multiplayer mode so
      * that returning players are given back their original nation.
@@ -91,14 +94,16 @@ public class CivServer extends org.java_websocket.server.WebSocketServer impleme
         };
     }
 
-    public CivServer(InetSocketAddress address, String gameMode) {
+    public CivServer(InetSocketAddress address, String gameMode, int topologyId) {
         super(address);
         this.gameMode = gameMode;
+        this.topologyId = topologyId;
         this.setReuseAddr(true);
         game = new Game(this);
         game.setTurnTimer(turnTimer);
         game.setWarningTimer(warningTimer);
         game.setMultiplayer("multiplayer".equals(gameMode));
+        game.setTopologyId(topologyId);
         game.initGame();
 
     }
@@ -576,6 +581,7 @@ public class CivServer extends org.java_websocket.server.WebSocketServer impleme
         game.setTurnTimer(turnTimer);
         game.setWarningTimer(warningTimer);
         game.setMultiplayer("multiplayer".equals(gameMode));
+        game.setTopologyId(topologyId);
         game.initGame();
 
         // Re-add connected players to the new game.  In multiplayer mode the
@@ -605,10 +611,11 @@ public class CivServer extends org.java_websocket.server.WebSocketServer impleme
 
     @Override
     public void scheduleGameRestart(int delaySeconds) {
-        sendMessageAll("Game over! A new game will start in " + delaySeconds + " seconds.");
+        sendMessageAll("Game over! The server will restart in " + delaySeconds + " seconds.");
         turnTimer.schedule(() -> {
             try {
-                resetGame();
+                log.info("Game over – exiting process for publite-go restart.");
+                System.exit(0);
             } catch (Exception e) {
                 log.error("Error during scheduled game restart: {}", e.getMessage());
             }
