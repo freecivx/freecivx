@@ -23,8 +23,8 @@ This module renders the Freeciv game map as a 2D top-down view using the **Tride
 `render_2d_map()` is the main entry point.  It draws five ordered layers:
 
 1. **Terrain + fog** — grassland base tile beneath every land tile; directional Trident sprites for all other terrain types; solid colour fallback when sprites are not yet loaded.
-2. **Extras + territory borders** — roads, railroads, irrigation, mines, fortresses, and player-colour border overlays.
-3. **City sprites** — Trident city graphics scaled to the current zoom level.
+2. **Extras + territory borders** — roads, railroads, irrigation, farmland, mines, fortresses, airbase, fallout, ruins, and player-colour border overlays.
+3. **City sprites** — Trident city graphics scaled to the current zoom level, using style-specific sprites based on `pcity['style']` (European, Classical, Tropical, Asian, Babylonian, Celtic, Industrial, ElectricAge, Modern, PostModern).
 4. **Unit sprites + badges** — the focused unit (or the first unit) on each tile; a count badge when multiple units are stacked. Each unit tile shows:
    - **Selection indicator** (`unit.select0`) drawn behind the focused unit so it is easy to identify.
    - **Unit sprite** (Trident `units.png`) centred on the tile.
@@ -35,6 +35,10 @@ This module renders the Freeciv game map as a 2D top-down view using the **Tride
 5. **City labels with nation flags** — always rendered last so they appear on top of everything else.
 
 An optional subtle grid is drawn after all layers via `map2d_draw_grid()`.
+
+All sprite draws are rendered at **+10 % brightness** (`ctx.filter = 'brightness(1.1)'`) for improved
+visual clarity.  The fog-of-war black fill and label backgrounds are unaffected because
+`brightness(1.1) × black = black`.
 
 ## Tilesets
 

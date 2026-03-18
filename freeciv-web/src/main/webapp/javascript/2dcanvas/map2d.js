@@ -262,6 +262,13 @@ function render_2d_map()
   ctx.fillStyle = '#000000';
   ctx.fillRect(0, 0, cw, ch);
 
+  /* Apply a 10% brightness boost to all subsequent sprite draws so that
+   * the Trident tileset appears noticeably brighter on screen.  Black
+   * fills (fog-of-war, label backgrounds) are unaffected because
+   * brightness(1.1) × 0 = 0.  Pure-white elements (grid, text) clamp
+   * at 255 and are also unchanged. */
+  ctx.filter = 'brightness(1.1)';
+
   /* How many tiles fit on screen (add 2 as margin) */
   var tiles_x = Math.ceil(cw / tw) + 2;
   var tiles_y = Math.ceil(ch / th) + 2;
@@ -372,6 +379,9 @@ function render_2d_map()
     map2d_render_goto_overlay(ctx, map2d_goto_punit, map2d_goto_path,
                               tw, th, start_x, start_y, off_x, off_y);
   }
+
+  /* Restore default filter so the context is clean for any later use. */
+  ctx.filter = 'none';
 }
 
 /* ------------------------------------------------------------------ */
@@ -508,12 +518,9 @@ function render_2d_tile(ctx, ptile, cx, cy, tw, th)
  */
 function map2d_draw_city(ctx, pcity, cx, cy, tw, th)
 {
-  /* Try city sprites from the trident tileset (style_city_0 variants) */
+  /* Try style-specific city sprite from the trident tileset */
   if (sprites_2d_init) {
-    var city_sprite = sprites_2d['city.european_city_0']
-                   || sprites_2d['city.classical_city_0']
-                   || sprites_2d['city.industrial_city_0']
-                   || sprites_2d['city.modern_city_0'];
+    var city_sprite = map2d_get_city_sprite(pcity);
     if (city_sprite) {
       ctx.drawImage(city_sprite, cx, cy, tw, th);
       /* Draw city walls on top if the city has them (mirrors 3D client) */
@@ -534,10 +541,44 @@ function map2d_draw_city(ctx, pcity, cx, cy, tw, th)
 }
 
 /**
- * Returns the wall sprite canvas for a city based on its style, or null.
- * @param {City} pcity - The city whose wall sprite is needed.
- * @returns {HTMLCanvasElement|null} The wall sprite canvas, or null if unavailable.
+ * Returns the city sprite canvas for a city based on its style, or null.
+ * Mirrors map2d_get_city_wall_sprite() but for the base city sprite.
+ * @param {City} pcity - The city whose sprite is needed.
+ * @returns {HTMLCanvasElement|null} The city sprite canvas, or null if unavailable.
  */
+function map2d_get_city_sprite(pcity)
+{
+  if (!sprites_2d_init) return null;
+
+  /* Map city style index to city sprite key (matches styles.ruleset order). */
+  var style_city_keys = [
+    'city.european_city_0',    /* 0: European */
+    'city.classical_city_0',   /* 1: Classical */
+    'city.tropical_city_0',    /* 2: Tropical */
+    'city.asian_city_0',       /* 3: Asian */
+    'city.classical_city_0',   /* 4: Babylonian (graphic_alt: classical) */
+    'city.european_city_0',    /* 5: Celtic (graphic_alt: european) */
+    'city.industrial_city_0',  /* 6: Industrial */
+    'city.electricage_city_0', /* 7: ElectricAge */
+    'city.modern_city_0',      /* 8: Modern */
+    'city.postmodern_city_0',  /* 9: PostModern */
+  ];
+
+  var style = pcity['style'];
+  var key = (typeof style === 'number' && style_city_keys[style])
+            ? style_city_keys[style] : null;
+
+  /* Fall back through the style list until we find an available sprite. */
+  if (key && sprites_2d[key]) return sprites_2d[key];
+
+  return sprites_2d['city.european_city_0']
+      || sprites_2d['city.classical_city_0']
+      || sprites_2d['city.industrial_city_0']
+      || sprites_2d['city.modern_city_0']
+      || null;
+}
+
+
 function map2d_get_city_wall_sprite(pcity)
 {
   if (!sprites_2d_init) return null;
@@ -1332,6 +1373,77 @@ function map2d_draw_tile_extras(ctx, ptile, cx, cy, tw, th)
       ctx.strokeStyle = 'rgba(180, 120, 0, 0.8)';
       ctx.lineWidth = 1;
       ctx.stroke();
+    }
+  }
+
+  /* --- Farmland (advanced irrigation) --- */
+  if (typeof EXTRA_FARMLAND !== 'undefined' && tile_has_extra(ptile, EXTRA_FARMLAND)) {
+    spr = sprites_2d_init && sprites_2d['tx.farmland'];
+    if (spr) {
+      ctx.drawImage(spr, cx, cy, tw, th);
+    } else {
+      /* Fallback: light green diagonal hatch (denser than irrigation) */
+      ctx.strokeStyle = 'rgba(80,200,120,0.55)';
+      ctx.lineWidth = Math.max(1, tw * 0.06);
+      for (var fi = -th; fi < tw + th; fi += Math.max(3, tw * 0.22)) {
+        ctx.beginPath();
+        ctx.moveTo(cx + fi, cy);
+        ctx.lineTo(cx + fi + th, cy + th);
+        ctx.stroke();
+      }
+    }
+  }
+
+  /* --- Airbase --- */
+  if (typeof EXTRA_AIRBASE !== 'undefined' && tile_has_extra(ptile, EXTRA_AIRBASE)) {
+    spr = sprites_2d_init && (sprites_2d['base.airbase_fg'] || sprites_2d['tx.airbase']);
+    if (spr) {
+      ctx.drawImage(spr, cx, cy, tw, th);
+    } else {
+      /* Fallback: cyan runway cross */
+      ctx.strokeStyle = 'rgba(0,200,220,0.85)';
+      ctx.lineWidth = Math.max(1, Math.floor(tw * 0.08));
+      var cx2 = cx + tw / 2;
+      var cy2 = cy + th / 2;
+      var ab = Math.max(3, Math.floor(Math.min(tw, th) * 0.35));
+      ctx.beginPath();
+      ctx.moveTo(cx2 - ab, cy2);
+      ctx.lineTo(cx2 + ab, cy2);
+      ctx.moveTo(cx2, cy2 - ab);
+      ctx.lineTo(cx2, cy2 + ab);
+      ctx.stroke();
+    }
+  }
+
+  /* --- Fallout (nuclear) --- */
+  if (typeof EXTRA_FALLOUT !== 'undefined' && tile_has_extra(ptile, EXTRA_FALLOUT)) {
+    spr = sprites_2d_init && sprites_2d['tx.fallout'];
+    if (spr) {
+      ctx.drawImage(spr, cx, cy, tw, th);
+    } else {
+      /* Fallback: yellow-green hazard overlay */
+      ctx.fillStyle = 'rgba(160,200,0,0.45)';
+      ctx.fillRect(cx, cy, tw, th);
+      ctx.fillStyle = 'rgba(200,220,0,0.7)';
+      ctx.font = 'bold ' + Math.max(6, Math.floor(th * 0.38)) + 'px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('☢', cx + tw / 2, cy + th / 2);
+    }
+  }
+
+  /* --- Ruins --- */
+  if (typeof EXTRA_RUINS !== 'undefined' && tile_has_extra(ptile, EXTRA_RUINS)) {
+    spr = sprites_2d_init && (sprites_2d['base.ruins_fg'] || sprites_2d['tx.ruins']);
+    if (spr) {
+      ctx.drawImage(spr, cx, cy, tw, th);
+    } else {
+      /* Fallback: dark grey stipple border */
+      ctx.strokeStyle = 'rgba(100,90,80,0.8)';
+      ctx.lineWidth = Math.max(1, Math.floor(tw * 0.09));
+      ctx.setLineDash([Math.max(2, Math.floor(tw * 0.15)), Math.max(1, Math.floor(tw * 0.1))]);
+      ctx.strokeRect(cx + 2, cy + 2, tw - 4, th - 4);
+      ctx.setLineDash([]);
     }
   }
 }
