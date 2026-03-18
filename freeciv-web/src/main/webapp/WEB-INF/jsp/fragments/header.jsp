@@ -25,7 +25,7 @@
 				</a>
 			</li>
 			<li><a href="/player/list">Player Ranking</a></li>
-			<li><a href="https://github.com/freecivworld/freecivworld/">GitHub</a></li>
+			<li><a href="https://github.com/freecivx/freecivx/">GitHub</a></li>
 			<li><a href="https://discord.gg/rE2evB5MFe">Discord</a></li>
 
 
