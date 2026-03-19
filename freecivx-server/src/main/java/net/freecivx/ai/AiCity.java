@@ -135,8 +135,14 @@ class AiCity {
         long myCityCount = game.cities.values().stream()
                 .filter(c -> c.getOwner() == ownerId).count();
 
+        // Count existing settlers already in the field so we do not queue more
+        // than needed.  Mirrors the daisettler.c heuristic that limits settler
+        // production to one per two existing cities (rounded up).
+        int mySettlers = ai.aiMilitary.countUnitsOfType(ownerId, AiPlayer.UNIT_SETTLERS);
+        int settlerCap = (int) (myCityCount / 2) + 1;
+
         // Priority 3: Early expansion — produce Settlers when empire is very small.
-        if (myCityCount < 2 && city.getSize() >= 2 && cityHasFoodSurplus(city)) {
+        if (myCityCount < 2 && mySettlers < settlerCap && city.getSize() >= 2 && cityHasFoodSurplus(city)) {
             city.setProductionKind(0);
             city.setProductionValue(AiPlayer.UNIT_SETTLERS);
             return;
@@ -153,7 +159,10 @@ class AiCity {
         }
 
         // Priority 5: Continue empire expansion with Settlers.
-        if (myCityCount < 8 && city.getSize() >= 2 && cityHasFoodSurplus(city)) {
+        // Cap settler production at one per two cities to avoid flooding the map
+        // with idle settlers when good founding sites are scarce.  Mirrors the
+        // settler-want decay in daicity.c when settlers already cover available sites.
+        if (myCityCount < 8 && mySettlers < settlerCap && city.getSize() >= 2 && cityHasFoodSurplus(city)) {
             city.setProductionKind(0);
             city.setProductionValue(AiPlayer.UNIT_SETTLERS);
             return;
@@ -358,8 +367,16 @@ class AiCity {
         }
 
         // Default: produce the best available offensive unit for army expansion.
-        city.setProductionKind(0);
-        city.setProductionValue(ai.aiMilitary.bestAvailableAttacker(owner));
+        // Limit total attackers to roughly two per city so that the production
+        // queue does not spiral into an endless army build-up.  Mirrors the
+        // military-want cap in dai_city_choose_build() in daicity.c.
+        int myAttackers = ai.aiMilitary.countMilitaryUnits(ownerId);
+        if (myAttackers < myCityCount * 2 + 2) {
+            city.setProductionKind(0);
+            city.setProductionValue(ai.aiMilitary.bestAvailableAttacker(owner));
+        }
+        // else: no production set – city will idle (accumulate gold or waste
+        // shields) rather than over-produce an army it cannot support.
     }
 
     /**

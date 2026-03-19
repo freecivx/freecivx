@@ -422,6 +422,26 @@ class AiMilitary {
         return count;
     }
 
+    /**
+     * Counts the total number of military (attack_strength &gt; 0) units owned by
+     * the given player.  Used by {@link AiCity} to cap army production so that
+     * the build queue does not spiral into an unlimited military build-up.
+     * Mirrors the army-size check in {@code dai_city_choose_build()} in
+     * {@code ai/default/daicity.c}.
+     *
+     * @param ownerId the player ID to count for
+     * @return number of military units owned by this player
+     */
+    int countMilitaryUnits(long ownerId) {
+        int count = 0;
+        for (Unit u : game.units.values()) {
+            if (u.getOwner() != ownerId) continue;
+            UnitType utype = game.unitTypes.get((long) u.getType());
+            if (utype != null && utype.getAttackStrength() > 0) count++;
+        }
+        return count;
+    }
+
     // =========================================================================
     // Target finding helpers
     // =========================================================================
@@ -463,6 +483,9 @@ class AiMilitary {
         long y = unit.getTile() / game.map.getXsize();
         long ownerId = owner.getPlayerNo();
 
+        UnitType myType = game.unitTypes.get((long) unit.getType());
+        if (myType == null || myType.getAttackStrength() == 0) return false;
+
         for (int dir = 0; dir < 8; dir++) {
             long nx = x + Movement.DIR_DX[dir];
             long ny = y + Movement.DIR_DY[dir];
@@ -476,6 +499,15 @@ class AiMilitary {
                 if (!isAtWarWith(ownerId, other.getOwner())) continue;
                 UnitType otherType = game.unitTypes.get((long) other.getType());
                 if (otherType == null || otherType.getAttackStrength() == 0) continue;
+
+                // Do not attack if the defender is significantly stronger.
+                // Compute a simple power ratio: attack (with veteran bonus) vs
+                // defence (with veteran bonus).  Mirrors the dai_unit_att_rating /
+                // dai_unit_def_rating comparison in daiunit.c.
+                int myAttack  = myType.getAttackStrength()  * (2 + unit.getVeteran());
+                int theirDef  = otherType.getDefenseStrength() * (2 + other.getVeteran());
+                if (myAttack < theirDef) continue; // Would likely lose – skip
+
                 game.attackUnit(unit.getId(), other.getId());
                 return true;
             }

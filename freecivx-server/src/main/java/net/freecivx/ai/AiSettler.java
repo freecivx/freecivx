@@ -62,7 +62,7 @@ class AiSettler {
     }
 
     /** How far (tiles) a settler searches for a good city spot. */
-    private static final int SETTLER_SEARCH_RADIUS = 12;
+    private static final int SETTLER_SEARCH_RADIUS = 20;
 
     /** Minimum Manhattan-distance between two cities (from daisettler.c). */
     private static final int MIN_CITY_SEPARATION = 3;
@@ -155,10 +155,18 @@ class AiSettler {
             }
         }
 
-        // Safety check: do not move into enemy-controlled territory without a
-        // military escort.  Mirrors adv_settler_safe_tile() in daisettler.c.
+        // Safety check: do not advance toward enemy-controlled territory without
+        // a military escort.  Mirrors adv_settler_safe_tile() in daisettler.c.
+        // If there is no target either, move randomly to escape the danger zone.
         if (isSettlerUnsafe(unit)) {
-            return; // Wait for danger to pass
+            if (target == null) {
+                // No safe founding spot found; flee in a random direction so the
+                // settler does not sit still forever in enemy-occupied land.
+                ai.aiMilitary.moveUnitRandomly(unit, utype);
+            }
+            // When a target exists but the current tile is unsafe, wait here
+            // for danger to pass rather than walking into certain death.
+            return;
         }
 
         if (target != null && target >= 0) {
@@ -297,8 +305,10 @@ class AiSettler {
      * full working radius, mirroring {@code city_desirability()} in
      * {@code ai/default/daisettler.c}.
      *
-     * <p>Tiles that are already claimed, too close to an existing city, or
-     * threatened by enemies are excluded from consideration.
+     * <p>Tiles that are already claimed or too close to an existing city are
+     * excluded.  Threatened tiles are deprioritised but kept as a fallback so
+     * that a settler surrounded by enemies can still find a target rather than
+     * wandering forever.
      *
      * @param fromTile the settler's current tile ID
      * @param ownerId  the owning player's ID
@@ -307,8 +317,10 @@ class AiSettler {
     private long findBestCitySpot(long fromTile, long ownerId) {
         long x = fromTile % game.map.getXsize();
         long y = fromTile / game.map.getXsize();
-        long bestTile = -1;
-        int bestScore = -1;
+        long bestSafeTile = -1;
+        int bestSafeScore = -1;
+        long bestUnsafeTile = -1;
+        int bestUnsafeScore = -1;
 
         long minY = Math.max(0, y - SETTLER_SEARCH_RADIUS);
         long maxY = Math.min(game.map.getYsize() - 1, y + SETTLER_SEARCH_RADIUS);
@@ -322,16 +334,24 @@ class AiSettler {
                 if (!CITY_SUITABLE_TERRAINS.contains(tile.getTerrain())) continue;
                 if (tile.getWorked() >= 0) continue; // Already a city here
                 if (tooCloseToExistingCity(tileId)) continue;
-                if (isTileThreatenedByEnemy(tileId, ownerId)) continue;
 
                 int score = cityRadiusScore(tileId);
-                if (score > bestScore) {
-                    bestScore = score;
-                    bestTile = tileId;
+                if (isTileThreatenedByEnemy(tileId, ownerId)) {
+                    if (score > bestUnsafeScore) {
+                        bestUnsafeScore = score;
+                        bestUnsafeTile = tileId;
+                    }
+                } else {
+                    if (score > bestSafeScore) {
+                        bestSafeScore = score;
+                        bestSafeTile = tileId;
+                    }
                 }
             }
         }
-        return bestTile;
+        // Prefer a safe site; fall back to the best unsafe site when no safe
+        // option exists within the search radius.
+        return bestSafeTile >= 0 ? bestSafeTile : bestUnsafeTile;
     }
 
     // =========================================================================
