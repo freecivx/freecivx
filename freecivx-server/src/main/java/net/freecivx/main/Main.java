@@ -82,19 +82,15 @@ public class Main {
 
         try {
             // Create HTTP server
-            HttpServer httpServer = HttpServer.create(new InetSocketAddress(port + 5000), 0);
+            HttpServer httpServer = HttpServer.create(new InetSocketAddress(port + 1), 0);
             httpServer.createContext("/", new HTTPStatusWebHandler());
             httpServer.setExecutor(Executors.newCachedThreadPool());
-            log.info("HTTP server started on port: {}", port + 5000);
+            log.info("HTTP server started on port: {}", port + 1);
 
             // Start WebSocket server
             CivServer wsServer = new CivServer(new InetSocketAddress(port), gameMode, topologyId);
             wsServer.start();
             log.info("WebSocket server started on port: {}", port);
-
-            // Register MCP endpoint for AI coding assistant introspection
-            httpServer.createContext("/mcp", new McpHandler(wsServer));
-            log.info("MCP server available at http://localhost:{}/mcp", port + 5000);
 
             // Idle restart: reset game if no players for 24 hours
             final long IDLE_RESET_MS = TimeUnit.HOURS.toMillis(24);
