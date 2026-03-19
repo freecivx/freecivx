@@ -977,7 +977,19 @@ public class Game {
         units.forEach((id, unit) -> {
             UnitType utype = unitTypes.get((long) unit.getType());
             if (utype != null) {
-                unit.setMovesleft(utype.getMoveRate());
+                int moveRate = utype.getMoveRate();
+                // Lighthouse wonder: +1 move for sea units (effect_lighthouse, Move_Bonus=1).
+                // Magellan's Expedition wonder: +2 moves for sea units (effect_magellans_expedition).
+                // Mirrors Move_Bonus effects in the classic Freeciv effects.ruleset.
+                if (utype.getDomain() == 1 /* sea */) {
+                    if (CityTurn.playerHasWonder(this, unit.getOwner(), "Lighthouse")) {
+                        moveRate += 1;
+                    }
+                    if (CityTurn.playerHasWonder(this, unit.getOwner(), "Magellan's Expedition")) {
+                        moveRate += 2;
+                    }
+                }
+                unit.setMovesleft(moveRate);
                 unit.setDoneMoving(false);
                 VisibilityHandler.sendUnitToVisiblePlayers(this, unit);
             }
