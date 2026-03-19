@@ -152,6 +152,9 @@ public class AiDiplomacy {
 
         for (Player ai : allPlayers) {
             if (!ai.isAi() || !ai.isAlive()) continue;
+            // Barbarians are handled separately in Barbarian.java; skip here to
+            // prevent the diplomacy system from accidentally offering them peace.
+            if (ai.getPlayerNo() == Barbarian.BARBARIAN_PLAYER_ID) continue;
 
             for (Player other : allPlayers) {
                 if (other.getConnectionId() == ai.getConnectionId()) continue;
@@ -227,6 +230,9 @@ public class AiDiplomacy {
 
         for (Player ai : allPlayers) {
             if (!ai.isAi() || !ai.isAlive()) continue;
+            // Barbarians are always at war with everyone; skip diplomatic
+            // negotiations so they never offer or accept pacts.
+            if (ai.getPlayerNo() == Barbarian.BARBARIAN_PLAYER_ID) continue;
 
             for (Player other : allPlayers) {
                 if (other.getConnectionId() == ai.getConnectionId()) continue;
