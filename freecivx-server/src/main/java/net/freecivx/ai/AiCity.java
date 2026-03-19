@@ -292,6 +292,27 @@ class AiCity {
             }
         }
 
+        // Priority 19: Naval unit for coastal cities once naval tech is available.
+        // Mirrors the naval-unit production priority in dai_city_choose_build() in
+        // ai/default/daicity.c — build one naval unit per coastal city as a patrol
+        // vessel when we have Map Making or Navigation technology.
+        if (ai.aiMilitary.isCityCoastal(city.getTile())) {
+            int bestNaval = ai.aiMilitary.bestAvailableNavalUnit(owner);
+            if (bestNaval >= 0) {
+                int navalUnits = ai.aiMilitary.countUnitsOfType(ownerId, bestNaval);
+                long coastalCities = game.cities.values().stream()
+                        .filter(c -> c.getOwner() == ownerId
+                                && ai.aiMilitary.isCityCoastal(c.getTile()))
+                        .count();
+                // One naval unit per coastal city is enough for patrol / deterrence.
+                if (navalUnits < coastalCities) {
+                    city.setProductionKind(0);
+                    city.setProductionValue(bestNaval);
+                    return;
+                }
+            }
+        }
+
         // Default: produce the best available offensive unit for army expansion.
         city.setProductionKind(0);
         city.setProductionValue(ai.aiMilitary.bestAvailableAttacker(owner));

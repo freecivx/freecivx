@@ -27,6 +27,9 @@ import net.freecivx.game.Tile;
 import net.freecivx.game.Unit;
 import net.freecivx.game.UnitType;
 import net.freecivx.server.CityTurn;
+import net.freecivx.server.DiplHand;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.Random;
@@ -40,6 +43,8 @@ import java.util.Random;
  * {@code ai/default/daimilitary.c} in the C Freeciv server.
  */
 class AiMilitary {
+
+    private static final Logger log = LoggerFactory.getLogger(AiMilitary.class);
 
     private final AiPlayer ai;
     private final Game game;
@@ -62,8 +67,21 @@ class AiMilitary {
      */
     static final int GRAVE_DANGER_THRESHOLD = 15;
 
+    /**
+     * HP fraction below which a unit is considered critically injured and
+     * should retreat to the nearest friendly city for recovery.
+     * Mirrors the {@code punit->hp < punittype->hp * 0.25} check in
+     * {@code dai_manage_hitpoint_recovery()} in {@code ai/default/daiunit.c}.
+     */
+    private static final double HP_RECOVERY_THRESHOLD = 0.25;
+
     private static final int TERRAIN_OCEAN      = 2;
     private static final int TERRAIN_DEEP_OCEAN = 3;
+
+    /** Unit domain constant for land units (matches C server {@code UTYF_LAND}). */
+    private static final int DOMAIN_LAND  = 0;
+    /** Unit domain constant for sea units (matches C server {@code UTYF_SEA}). */
+    private static final int DOMAIN_SEA   = 1;
 
     // -------------------------------------------------------------------------
     // Constructor
@@ -87,10 +105,22 @@ class AiMilitary {
      *
      * <p>A unit that stays in a city to garrison it is switched to
      * {@code ACTIVITY_FORTIFIED} (activity=4) after reaching its post.
+     *
+     * <p>Critically injured units (HP &lt; 25% of max) are redirected to the
+     * nearest friendly city for HP recovery before engaging in combat.
+     * Mirrors {@code AIUNIT_RECOVER} / {@code dai_manage_hitpoint_recovery()}
+     * in {@code ai/default/daiunit.c}.
      */
     void handleMilitaryUnit(Unit unit, UnitType utype, Player owner) {
         long unitId = unit.getId();
         long ownerId = owner.getPlayerNo();
+
+        // HP recovery: badly damaged units retreat to friendly city first.
+        // Mirrors the `punit->hp < punittype->hp * 0.25` check in daiunit.c.
+        if (needsHpRecovery(unit, utype)) {
+            manageHpRecovery(unit, utype, ownerId);
+            return;
+        }
 
         Long defenseTarget = ai.unitTargets.get(unitId);
         if (defenseTarget == null) {
@@ -174,12 +204,124 @@ class AiMilitary {
     }
 
     // =========================================================================
+    // HP recovery (mirrors AIUNIT_RECOVER / dai_manage_hitpoint_recovery() in daiunit.c)
+    // =========================================================================
+
+    /**
+     * Returns {@code true} if the unit is critically injured and should
+     * prioritise HP recovery over combat.
+     * Mirrors the {@code punit->hp < punittype->hp * 0.25} threshold in
+     * {@code dai_manage_hitpoint_recovery()} in {@code ai/default/daiunit.c}.
+     *
+     * @param unit  the unit to check
+     * @param utype the unit's type (provides max HP)
+     * @return {@code true} if the unit needs to retreat to a city for healing
+     */
+    boolean needsHpRecovery(Unit unit, UnitType utype) {
+        int maxHp = utype.getHp();
+        return maxHp > 0 && unit.getHp() < maxHp * HP_RECOVERY_THRESHOLD;
+    }
+
+    /**
+     * Sends a critically injured unit to the nearest friendly city to recover
+     * HP.  While in a friendly city the unit fortifies to receive any available
+     * HP regeneration bonus (e.g. from Barracks).  Once HP is fully restored
+     * normal combat duty resumes next turn.
+     *
+     * <p>Mirrors {@code dai_manage_hitpoint_recovery()} in
+     * {@code ai/default/daiunit.c}: move toward the nearest safe city; if
+     * already in a city, fortify and wait.
+     *
+     * @param unit    the injured unit
+     * @param utype   the unit's type
+     * @param ownerId the owning player's ID
+     */
+    void manageHpRecovery(Unit unit, UnitType utype, long ownerId) {
+        // If already in a friendly city, fortify to heal.
+        Tile currentTile = game.tiles.get(unit.getTile());
+        if (currentTile != null && currentTile.getWorked() > 0) {
+            City city = game.cities.get((long) currentTile.getWorked());
+            if (city != null && city.getOwner() == ownerId) {
+                if (unit.getActivity() != CityTurn.ACTIVITY_FORTIFIED) {
+                    game.changeUnitActivity(unit.getId(), CityTurn.ACTIVITY_FORTIFIED);
+                    log.debug("Unit {} (HP={}/{}) fortifying in {} to recover",
+                            unit.getId(), unit.getHp(), utype.getHp(), city.getName());
+                }
+                return;
+            }
+        }
+
+        // Not in a friendly city — move toward the nearest one.
+        long safeCityTile = findNearestFriendlyCityTile(unit.getTile(), ownerId, utype);
+        if (safeCityTile >= 0) {
+            log.debug("Unit {} (HP={}/{}) retreating to recover HP", unit.getId(),
+                    unit.getHp(), utype.getHp());
+            while (unit.getMovesleft() > 0 && game.units.containsKey(unit.getId())) {
+                if (!moveUnitToward(unit, utype, safeCityTile)) break;
+            }
+        }
+    }
+
+    /**
+     * Returns the tile ID of the nearest friendly city reachable by this unit.
+     * Land units search land cities; naval units search coastal cities.
+     * Mirrors the {@code find_nearest_safe_city()} helper in
+     * {@code ai/default/daiunit.c}.
+     *
+     * @param fromTile the unit's current tile ID
+     * @param ownerId  the owning player's ID
+     * @param utype    the unit type (used to filter by domain)
+     * @return the tile ID of the nearest friendly city, or {@code -1} if none
+     */
+    long findNearestFriendlyCityTile(long fromTile, long ownerId, UnitType utype) {
+        long x = fromTile % game.map.getXsize();
+        long y = fromTile / game.map.getXsize();
+        long bestTile = -1;
+        long bestDist = Long.MAX_VALUE;
+
+        for (City city : game.cities.values()) {
+            if (city.getOwner() != ownerId) continue;
+            // Naval units recover in coastal cities; land units in any city.
+            if (utype.getDomain() == DOMAIN_SEA && !isCityCoastal(city.getTile())) continue;
+            long cx = city.getTile() % game.map.getXsize();
+            long cy = city.getTile() / game.map.getXsize();
+            long dist = Math.abs(cx - x) + Math.abs(cy - y);
+            if (dist < bestDist) {
+                bestDist = dist;
+                bestTile = city.getTile();
+            }
+        }
+        return bestTile;
+    }
+
+    // =========================================================================
+    // Diplomacy helpers
+    // =========================================================================
+
+    /**
+     * Returns {@code true} if {@code ownerId} is currently at war with
+     * {@code otherId}.  Mirrors the {@code pplayers_at_war()} check used
+     * throughout the C Freeciv AI.
+     *
+     * @param ownerId the AI player's ID
+     * @param otherId the other player's ID
+     * @return {@code true} when the two players are in a DS_WAR relationship
+     */
+    boolean isAtWarWith(long ownerId, long otherId) {
+        Player owner = game.players.get(ownerId);
+        if (owner == null) return false;
+        return owner.getDiplState(otherId) == DiplHand.DS_WAR;
+    }
+
+    // =========================================================================
     // City danger assessment (mirrors daimilitary.c)
     // =========================================================================
 
     /**
      * Computes a numeric danger score for a city by summing enemy military unit
-     * attack strength weighted by proximity.  Mirrors {@code assess_danger()} in
+     * attack strength weighted by proximity.  Only units from players that are
+     * actively at war (DS_WAR) with the city owner are counted, mirroring the
+     * {@code pplayers_at_war()} filter in {@code assess_danger()} in
      * {@code ai/default/daimilitary.c}.
      *
      * @param city the city to evaluate
@@ -193,6 +335,8 @@ class AiMilitary {
 
         for (Unit u : game.units.values()) {
             if (u.getOwner() == ownerId) continue;
+            // Only count units belonging to players we are at war with.
+            if (!isAtWarWith(ownerId, u.getOwner())) continue;
             UnitType utype = game.unitTypes.get((long) u.getType());
             if (utype == null || utype.getAttackStrength() == 0) continue;
 
@@ -307,13 +451,17 @@ class AiMilitary {
 
     /**
      * Looks for an enemy military unit on a tile adjacent to {@code unit} and
-     * attacks it if found.  Civilian units are skipped.
+     * attacks it if found.  Only attacks units belonging to players that the
+     * AI is currently at war with (DS_WAR), mirroring the
+     * {@code pplayers_at_war()} guard in {@code dai_military_rampage()} in
+     * {@code ai/default/daiunit.c}.  Civilian units are always skipped.
      *
      * @return {@code true} if an attack was initiated
      */
     boolean attackAdjacentEnemy(Unit unit, Player owner) {
         long x = unit.getTile() % game.map.getXsize();
         long y = unit.getTile() / game.map.getXsize();
+        long ownerId = owner.getPlayerNo();
 
         for (int dir = 0; dir < 8; dir++) {
             long nx = x + Movement.DIR_DX[dir];
@@ -323,7 +471,9 @@ class AiMilitary {
 
             for (Unit other : new ArrayList<>(game.units.values())) {
                 if (other.getTile() != neighborTileId) continue;
-                if (other.getOwner() == owner.getPlayerNo()) continue;
+                if (other.getOwner() == ownerId) continue;
+                // Only attack players we are at war with.
+                if (!isAtWarWith(ownerId, other.getOwner())) continue;
                 UnitType otherType = game.unitTypes.get((long) other.getType());
                 if (otherType == null || otherType.getAttackStrength() == 0) continue;
                 game.attackUnit(unit.getId(), other.getId());
@@ -334,7 +484,10 @@ class AiMilitary {
     }
 
     /**
-     * Returns the tile ID of the nearest enemy unit, or {@code -1} if none exist.
+     * Returns the tile ID of the nearest enemy unit belonging to a player at
+     * war with {@code ownerId}, or {@code -1} if none exist.
+     * Mirrors the enemy-unit search in {@code dai_military_attack()} in
+     * {@code ai/default/daimilitary.c}.
      */
     long findNearestEnemyTile(long fromTile, long ownerId) {
         long x = fromTile % game.map.getXsize();
@@ -344,6 +497,7 @@ class AiMilitary {
 
         for (Unit other : game.units.values()) {
             if (other.getOwner() == ownerId) continue;
+            if (!isAtWarWith(ownerId, other.getOwner())) continue;
             long ex = other.getTile() % game.map.getXsize();
             long ey = other.getTile() / game.map.getXsize();
             long dist = Math.abs(ex - x) + Math.abs(ey - y);
@@ -357,9 +511,10 @@ class AiMilitary {
 
     /**
      * Returns the tile ID of the best offensive target for a military unit.
-     * Priority: (1) nearest undefended enemy city, (2) nearest defended enemy
-     * city, (3) nearest enemy unit.
-     * Mirrors {@code dai_military_attack()} and {@code find_city_want()} in
+     * Priority: (1) nearest undefended enemy city owned by a player at war,
+     * (2) nearest defended enemy city at war, (3) nearest enemy unit at war.
+     * Only targets players that are in a DS_WAR diplomatic state, mirroring the
+     * {@code pplayers_at_war()} filter in {@code dai_military_attack()} in
      * {@code ai/default/daimilitary.c}.
      *
      * @param fromTile the attacker's current tile ID
@@ -377,6 +532,8 @@ class AiMilitary {
 
         for (City city : game.cities.values()) {
             if (city.getOwner() == ownerId) continue;
+            // Only attack cities owned by players we are at war with.
+            if (!isAtWarWith(ownerId, city.getOwner())) continue;
             long cx = city.getTile() % game.map.getXsize();
             long cy = city.getTile() / game.map.getXsize();
             long dist = Math.abs(cx - x) + Math.abs(cy - y);
@@ -511,5 +668,121 @@ class AiMilitary {
             return game.moveUnit(unit.getId(), (int) newTileId, dir);
         }
         return false;
+    }
+
+    // =========================================================================
+    // Naval unit AI (mirrors dai_choose_naval() / dai_manage_unit() in daiunit.c)
+    // =========================================================================
+
+    /**
+     * Naval unit AI: attack adjacent enemy naval units; if none, patrol the
+     * coast near the nearest friendly coastal city; otherwise explore randomly.
+     *
+     * <p>Mirrors the naval-unit management in {@code dai_manage_unit()} and
+     * {@code dai_choose_naval()} in the C Freeciv server's
+     * {@code ai/default/daiunit.c}.
+     *
+     * @param unit  the naval unit
+     * @param utype the unit type
+     * @param owner the owning AI player
+     */
+    void handleNavalUnit(Unit unit, UnitType utype, Player owner) {
+        long ownerId = owner.getPlayerNo();
+
+        while (unit.getMovesleft() > 0 && game.units.containsKey(unit.getId())) {
+            // Attack adjacent enemy naval units first (opportunistic attack).
+            if (attackAdjacentEnemy(unit, owner)) continue;
+
+            // Move toward the nearest enemy naval unit or enemy coastal city.
+            long offensiveTarget = findNearestNavalTarget(unit.getTile(), ownerId);
+            if (offensiveTarget >= 0) {
+                if (!moveUnitToward(unit, utype, offensiveTarget)) break;
+            } else {
+                // No war target — patrol near the nearest friendly coastal city.
+                long patrolTarget = findNearestCoastalCityTile(unit.getTile(), ownerId);
+                if (patrolTarget >= 0 && patrolTarget != unit.getTile()) {
+                    if (!moveUnitToward(unit, utype, patrolTarget)) break;
+                } else {
+                    if (!moveUnitRandomly(unit, utype)) break;
+                }
+            }
+        }
+    }
+
+    /**
+     * Returns the tile ID of the nearest enemy naval unit or enemy coastal city
+     * belonging to a player at war with {@code ownerId}, or {@code -1} if none.
+     * Mirrors the naval-target selection in {@code dai_manage_unit()} in
+     * {@code ai/default/daiunit.c}.
+     *
+     * @param fromTile the naval unit's current tile ID
+     * @param ownerId  the AI player's ID
+     * @return the tile ID of the best naval target, or {@code -1} if none
+     */
+    private long findNearestNavalTarget(long fromTile, long ownerId) {
+        long x = fromTile % game.map.getXsize();
+        long y = fromTile / game.map.getXsize();
+        long bestDist = Long.MAX_VALUE;
+        long bestTile = -1;
+
+        // Search for enemy naval units.
+        for (Unit other : game.units.values()) {
+            if (other.getOwner() == ownerId) continue;
+            if (!isAtWarWith(ownerId, other.getOwner())) continue;
+            UnitType otherType = game.unitTypes.get((long) other.getType());
+            if (otherType == null || otherType.getDomain() != DOMAIN_SEA) continue;
+            long ex = other.getTile() % game.map.getXsize();
+            long ey = other.getTile() / game.map.getXsize();
+            long dist = Math.abs(ex - x) + Math.abs(ey - y);
+            if (dist < bestDist) {
+                bestDist = dist;
+                bestTile = other.getTile();
+            }
+        }
+
+        // Also consider enemy coastal cities (can be attacked from sea).
+        for (City city : game.cities.values()) {
+            if (city.getOwner() == ownerId) continue;
+            if (!isAtWarWith(ownerId, city.getOwner())) continue;
+            if (!isCityCoastal(city.getTile())) continue;
+            long cx = city.getTile() % game.map.getXsize();
+            long cy = city.getTile() / game.map.getXsize();
+            long dist = Math.abs(cx - x) + Math.abs(cy - y);
+            if (dist < bestDist) {
+                bestDist = dist;
+                bestTile = city.getTile();
+            }
+        }
+
+        return bestTile;
+    }
+
+    /**
+     * Returns the tile of the nearest friendly coastal city to {@code fromTile},
+     * used as a naval patrol waypoint when there is no combat target.
+     * Mirrors the city-proximity search in {@code dai_manage_unit()} in
+     * {@code ai/default/daiunit.c}.
+     *
+     * @param fromTile the naval unit's current tile ID
+     * @param ownerId  the AI player's ID
+     * @return the tile ID of the nearest coastal city, or {@code -1} if none
+     */
+    private long findNearestCoastalCityTile(long fromTile, long ownerId) {
+        long x = fromTile % game.map.getXsize();
+        long y = fromTile / game.map.getXsize();
+        long bestTile = -1;
+        long bestDist = Long.MAX_VALUE;
+        for (City city : game.cities.values()) {
+            if (city.getOwner() != ownerId) continue;
+            if (!isCityCoastal(city.getTile())) continue;
+            long cx = city.getTile() % game.map.getXsize();
+            long cy = city.getTile() / game.map.getXsize();
+            long dist = Math.abs(cx - x) + Math.abs(cy - y);
+            if (dist < bestDist) {
+                bestDist = dist;
+                bestTile = city.getTile();
+            }
+        }
+        return bestTile;
     }
 }
