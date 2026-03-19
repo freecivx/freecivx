@@ -121,6 +121,25 @@ public class UnitHand {
         } else if (actionType == Actions.ACTION_STEAL_TECH) {
             // Steal a technology from a foreign player via their city (targetId is cityId).
             game.stealTech(actorId, targetId);
+        } else if (actionType == Actions.ACTION_DISBAND_UNIT) {
+            // Disband the unit without resource recovery.
+            game.disbandUnit(actorId);
+        } else if (actionType == Actions.ACTION_RECYCLE_UNIT) {
+            // Recycle the unit back into city production (targetId is cityId).
+            game.recycleUnit(actorId, targetId);
+        } else if (actionType == Actions.ACTION_HOME_CITY) {
+            // Change the unit's home city to the target city (targetId is cityId).
+            game.setUnitHomecity(actorId, targetId);
+        } else if (actionType == Actions.ACTION_UPGRADE_UNIT) {
+            // Upgrade unit to a newer type; costs gold (targetId is cityId).
+            game.upgradeUnit(actorId, targetId);
+        } else if (actionType == Actions.ACTION_TRANSPORT_BOARD) {
+            // Board a transport unit (targetId is the transport unit ID).
+            game.boardTransport(actorId, targetId);
+        } else if (actionType == Actions.ACTION_TRANSPORT_DEBOARD
+                || actionType == Actions.ACTION_TRANSPORT_UNLOAD) {
+            // Deboard from current transport (unit- or transport-initiated).
+            game.deboardTransport(actorId);
         } else {
             // Unknown action: refresh the unit info for the client
             UnitTools.sendUnitInfo(game, game.getServer(), connId, actorId);
@@ -165,6 +184,7 @@ public class UnitHand {
         if (player == null || player.getConnectionId() != connId) return;
 
         unit.setTransported(true);
+        unit.setTransportedBy((long) transportId);
 
         JSONObject msg = new JSONObject();
         msg.put("pid", Packets.PACKET_UNIT_INFO);
@@ -193,11 +213,13 @@ public class UnitHand {
         if (!unit.isTransported()) return;
 
         unit.setTransported(false);
+        unit.setTransportedBy(-1L);
 
         JSONObject msg = new JSONObject();
         msg.put("pid", Packets.PACKET_UNIT_INFO);
         msg.put("id", unitId);
         msg.put("transported", false);
+        msg.put("transported_by", -1);
         game.getServer().broadcastPacket(msg);
     }
 }

@@ -234,6 +234,14 @@ public class CityTurn {
     private static final int RAILROAD_TURNS = 4;
 
     /**
+     * Activity code for a sentried unit.
+     * A sentried unit skips its turn and wakes up automatically when an
+     * enemy unit comes into view.  Mirrors {@code ACTIVITY_SENTRY} in the
+     * C Freeciv server's {@code common/fc_types.h}.
+     */
+    public static final int ACTIVITY_SENTRY = 6;
+
+    /**
      * Tile extras bitvector index for Road.
      * Matches extras entry 6 registered in {@code Game.initGame()}.
      */
