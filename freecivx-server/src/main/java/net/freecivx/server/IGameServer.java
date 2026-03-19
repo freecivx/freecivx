@@ -145,16 +145,6 @@ public interface IGameServer {
     void sendPlayerInfoAll(Player player);
 
     /**
-     * Broadcasts a {@code PACKET_PLAYER_SCORE} packet for a single player to
-     * all connected clients.  Mirrors the C Freeciv server's
-     * {@code send_player_score()} in {@code score.c}.
-     *
-     * @param playerId the player number (connection ID)
-     * @param score    the computed civilisation score
-     */
-    void sendPlayerScoreAll(long playerId, long score);
-
-    /**
      * Broadcasts a {@code PACKET_SPACESHIP_INFO} (137) packet containing the
      * full spaceship state for the given player.
      * Mirrors {@code send_spaceship_info()} in the C Freeciv server's

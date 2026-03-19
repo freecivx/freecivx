@@ -90,7 +90,6 @@ public class Packets {
     public static int PACKET_WEB_INFO_TEXT_MESSAGE = 290;
     public static int PACKET_RULESET_ACTION = 246;
     public static int PACKET_RULESET_ACTION_ENABLER = 235;
-    public static int PACKET_PLAYER_SCORE = 179;
 
     // Space Race packets (mirrors C server's packets.def)
     /** Client → server: request spaceship launch. */

@@ -1056,9 +1056,6 @@ public class Game {
         server.sendStartPhaseAll();
         server.sendMessageAll("Turn " + turn + " has started (Year " + yearStr + ").");
 
-        // Broadcast current scores to all clients so the scoreboard stays up to date.
-        sendScores();
-
         // Refresh fog of war for all human players at the start of each new turn.
         // This catches any visibility changes caused by city growth (new worked
         // tiles), border updates, or other end-of-turn effects.
@@ -1206,16 +1203,6 @@ public class Game {
      */
     public long computeScore(Player player) {
         return net.freecivx.server.Score.computeScore(this, player);
-    }
-
-    /**
-     * Broadcasts current civilisation scores to all connected clients using
-     * {@code PACKET_PLAYER_SCORE}.  Called at the end of each turn so that
-     * players can track relative progress on their scoreboard.
-     * Delegates to {@link net.freecivx.server.Score#sendScores}.
-     */
-    public void sendScores() {
-        net.freecivx.server.Score.sendScores(this, server);
     }
 
     public void changeUnitActivity(long unit_id, int activity) {
