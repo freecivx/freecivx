@@ -124,6 +124,8 @@ public class UnitTools {
         msg.put("activity", unit.getActivity());
         msg.put("movesleft", unit.getMovesleft());
         msg.put("transported", unit.isTransported());
+        msg.put("transported_by", unit.getTransportedBy());
+        msg.put("homecity", unit.getHomecity());
         server.sendMessage(connId, msg.toString());
     }
 

@@ -1949,6 +1949,210 @@ public class Game {
         return wrappedDx <= 1 && dy <= 1;
     }
 
+    /**
+     * Calculates the production cost of a unit type in shields.
+     * Uses the explicit {@code cost} field if set (> 0), or falls back to the
+     * legacy formula {@code (attack + defense) × hp / 2} used by old rulesets.
+     * This helper avoids duplicating the fallback formula across multiple methods.
+     *
+     * @param utype the unit type to query
+     * @return the production cost in shields (always ≥ 0)
+     */
+    private int calcUnitCost(UnitType utype) {
+        return utype.getCost() > 0 ? utype.getCost()
+                : (utype.getAttackStrength() + utype.getDefenseStrength()) * utype.getHp() / 2;
+    }
+
+    /**
+     * Disbands (destroys) a unit without recovering any resources.
+     * Mirrors {@code do_unit_disband()} in the C Freeciv server's
+     * {@code unithand.c}: the unit is simply removed from the game.
+     *
+     * @param unitId the ID of the unit to disband
+     */
+    public void disbandUnit(long unitId) {
+        Unit unit = units.get(unitId);
+        if (unit == null) return;
+
+        units.remove(unitId);
+        server.sendUnitRemove(unitId);
+        log.info("Unit {} disbanded by player {}", unitId, unit.getOwner());
+    }
+
+    /**
+     * Recycles a unit back into a city, adding half its production cost to the
+     * city's shield stock.  Mirrors {@code do_unit_recycle()} (ACTION_DISBAND_UNIT_RECOVER)
+     * in the C Freeciv server's {@code unithand.c}.
+     * The unit must be on the same tile as the target city.
+     * If {@code cityId} is not found, the unit is simply disbanded without recovery.
+     *
+     * @param unitId the ID of the unit to recycle
+     * @param cityId the ID of the city receiving the recycled shields
+     */
+    public void recycleUnit(long unitId, long cityId) {
+        Unit unit = units.get(unitId);
+        if (unit == null) return;
+
+        City city = cities.get(cityId);
+        if (city != null && city.getTile() == unit.getTile()) {
+            UnitType utype = unitTypes.get((long) unit.getType());
+            if (utype != null) {
+                int recycledShields = calcUnitCost(utype) / 2;
+                city.setShieldStock(city.getShieldStock() + recycledShields);
+                log.info("Unit {} recycled into city {} for {} shields", unitId, cityId, recycledShields);
+            }
+        }
+
+        units.remove(unitId);
+        server.sendUnitRemove(unitId);
+    }
+
+    /**
+     * Changes a unit's home city to the specified city.
+     * Mirrors {@code do_unit_change_homecity()} in the C Freeciv server's
+     * {@code unithand.c}.  The unit must be on the same tile as the target city
+     * and that city must belong to the same player as the unit.
+     * Sends an updated PACKET_UNIT_INFO to all visible clients on success.
+     *
+     * @param unitId the ID of the unit
+     * @param cityId the ID of the new home city
+     * @return {@code true} if the home city was changed successfully
+     */
+    public boolean setUnitHomecity(long unitId, long cityId) {
+        Unit unit = units.get(unitId);
+        if (unit == null) return false;
+
+        City city = cities.get(cityId);
+        if (city == null) return false;
+
+        if (city.getOwner() != unit.getOwner()) return false;
+        if (city.getTile() != unit.getTile()) return false;
+
+        unit.setHomecity(cityId);
+        net.freecivx.server.VisibilityHandler.sendUnitToVisiblePlayers(this, unit);
+        Notify.notifyPlayer(this, server, unit.getOwner(),
+                "Unit's home city changed to " + city.getName() + ".");
+        log.info("Unit {} home city changed to city {} by player {}", unitId, cityId, unit.getOwner());
+        return true;
+    }
+
+    /**
+     * Upgrades a unit to its newer type at the cost of gold.
+     * Mirrors {@code do_unit_upgrade()} in the C Freeciv server's
+     * {@code unithand.c}.  Requirements:
+     * <ul>
+     *   <li>The unit must be in a city owned by the same player.</li>
+     *   <li>The unit type must have a valid {@code upgradesTo} type.</li>
+     *   <li>The player must have enough gold to pay the upgrade cost.</li>
+     * </ul>
+     * The upgrade cost is {@code (newCost - oldCost) * 2}.  After upgrading,
+     * the unit's HP is restored to the new unit type's maximum HP.
+     * Sends an updated PACKET_UNIT_INFO on success.
+     *
+     * @param unitId the ID of the unit to upgrade
+     * @param cityId the ID of the city where the upgrade takes place
+     * @return {@code true} if the unit was upgraded successfully
+     */
+    public boolean upgradeUnit(long unitId, long cityId) {
+        Unit unit = units.get(unitId);
+        if (unit == null) return false;
+
+        City city = cities.get(cityId);
+        if (city == null || city.getOwner() != unit.getOwner()) return false;
+        if (city.getTile() != unit.getTile()) return false;
+
+        UnitType oldType = unitTypes.get((long) unit.getType());
+        if (oldType == null) return false;
+
+        int upgradesTo = oldType.getUpgradesTo();
+        if (upgradesTo < 0) {
+            Notify.notifyPlayer(this, server, unit.getOwner(),
+                    "This unit cannot be upgraded.");
+            return false;
+        }
+
+        UnitType newType = unitTypes.get((long) upgradesTo);
+        if (newType == null) return false;
+
+        // Calculate upgrade cost: (newCost - oldCost) * 2, minimum 0.
+        int upgradeCost = Math.max(0, (calcUnitCost(newType) - calcUnitCost(oldType)) * 2);
+
+        Player player = players.values().stream()
+                .filter(p -> p.getPlayerNo() == unit.getOwner())
+                .findFirst().orElse(null);
+        if (player == null) return false;
+
+        if (player.getGold() < upgradeCost) {
+            Notify.notifyPlayer(this, server, unit.getOwner(),
+                    "Insufficient gold to upgrade unit (need " + upgradeCost + " gold, have "
+                    + player.getGold() + ").");
+            return false;
+        }
+
+        player.setGold(player.getGold() - upgradeCost);
+        unit.setType(upgradesTo);
+        unit.setHp(newType.getHp()); // restore to full HP of new type
+
+        net.freecivx.server.VisibilityHandler.sendUnitToVisiblePlayers(this, unit);
+        // Broadcast updated gold to the player.
+        server.sendPlayerInfoAll(player);
+        Notify.notifyPlayer(this, server, unit.getOwner(),
+                "Unit upgraded from " + oldType.getName() + " to " + newType.getName()
+                + " for " + upgradeCost + " gold.");
+        log.info("Unit {} upgraded from {} to {} by player {} for {} gold",
+                unitId, oldType.getName(), newType.getName(), unit.getOwner(), upgradeCost);
+        return true;
+    }
+
+    /**
+     * Boards a unit onto a transport unit (load action).
+     * Mirrors {@code do_unit_board_transport()} in the C Freeciv server.
+     * Both the unit and the transport must be on the same tile.
+     * Sends updated PACKET_UNIT_INFO packets on success.
+     *
+     * @param unitId      the ID of the unit to board
+     * @param transportId the ID of the transport to board onto
+     * @return {@code true} if the unit was successfully boarded
+     */
+    public boolean boardTransport(long unitId, long transportId) {
+        Unit unit = units.get(unitId);
+        Unit transport = units.get(transportId);
+        if (unit == null || transport == null) return false;
+
+        if (unit.getOwner() != transport.getOwner()) return false;
+        if (unit.getTile() != transport.getTile()) return false;
+
+        unit.setTransported(true);
+        unit.setTransportedBy(transportId);
+
+        net.freecivx.server.VisibilityHandler.sendUnitToVisiblePlayers(this, unit);
+        log.info("Unit {} boarded transport {} for player {}", unitId, transportId, unit.getOwner());
+        return true;
+    }
+
+    /**
+     * Deboards a unit from its transport (unit-initiated or transport-initiated unload).
+     * Mirrors {@code do_unit_deboard_transport()} in the C Freeciv server.
+     * Clears the transported flag and {@code transported_by} on the unit.
+     * Sends updated PACKET_UNIT_INFO packets on success.
+     *
+     * @param unitId the ID of the unit to deboard
+     * @return {@code true} if the unit was successfully deboarded
+     */
+    public boolean deboardTransport(long unitId) {
+        Unit unit = units.get(unitId);
+        if (unit == null) return false;
+
+        if (!unit.isTransported()) return false;
+
+        unit.setTransported(false);
+        unit.setTransportedBy(-1L);
+
+        net.freecivx.server.VisibilityHandler.sendUnitToVisiblePlayers(this, unit);
+        log.info("Unit {} deboarded transport for player {}", unitId, unit.getOwner());
+        return true;
+    }
+
     public void buildCity(long unit_id, String city_name, long tile_id) {
         Unit unit = units.get(unit_id);
         if (unit == null) return;

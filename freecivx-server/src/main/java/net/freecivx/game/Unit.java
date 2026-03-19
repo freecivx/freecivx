@@ -38,6 +38,18 @@ public class Unit {
     private boolean transported = false;
     private int ssa_controller = 0;
     /**
+     * ID of the transport unit carrying this unit, or {@code -1} if not
+     * currently transported.  Mirrors {@code transported_by} in the C Freeciv
+     * unit struct.
+     */
+    private long transportedBy = -1L;
+    /**
+     * ID of this unit's home city, or {@code -1} if it has no home city.
+     * The home city pays the unit's gold upkeep each turn.
+     * Mirrors {@code homecity} in the C Freeciv unit struct.
+     */
+    private long homecity = -1L;
+    /**
      * Number of turns the unit has spent on the current terrain improvement
      * activity (road, irrigation, mine).  Mirrors {@code activity_count} in the
      * C Freeciv unit struct.  Reset to 0 whenever the unit's activity changes
@@ -165,6 +177,36 @@ public class Unit {
 
     public void setTransported(boolean transported) {
         this.transported = transported;
+    }
+
+    /**
+     * Returns the ID of the transport unit carrying this unit,
+     * or {@code -1} if not currently transported.
+     */
+    public long getTransportedBy() {
+        return transportedBy;
+    }
+
+    /**
+     * Sets the ID of the transport unit carrying this unit.
+     * Use {@code -1} to indicate the unit is not transported.
+     */
+    public void setTransportedBy(long transportedBy) {
+        this.transportedBy = transportedBy;
+    }
+
+    /**
+     * Returns the ID of this unit's home city, or {@code -1} if none.
+     */
+    public long getHomecity() {
+        return homecity;
+    }
+
+    /**
+     * Sets the home city ID for this unit.  Use {@code -1} for no home city.
+     */
+    public void setHomecity(long homecity) {
+        this.homecity = homecity;
     }
 
     /** Returns the number of turns this unit has spent on the current terrain improvement. */

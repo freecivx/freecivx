@@ -77,6 +77,54 @@ public class Actions {
     public static final int ACTION_STEAL_TECH = 8;
 
     /**
+     * Action ID: recycle a unit, adding half its production cost back to a
+     * city's shield stock.  Mirrors ACTION_DISBAND_UNIT_RECOVER in the C
+     * Freeciv server.  The unit must be in (on the same tile as) the target city.
+     */
+    public static final int ACTION_RECYCLE_UNIT = 38;
+
+    /**
+     * Action ID: disband (destroy) a unit without recovering resources.
+     * Mirrors ACTION_DISBAND_UNIT in the C Freeciv server.
+     */
+    public static final int ACTION_DISBAND_UNIT = 39;
+
+    /**
+     * Action ID: change a unit's home city to the city it is currently in.
+     * Mirrors ACTION_HOME_CITY in the C Freeciv server's common/actions.c.
+     * The unit must be on the same tile as the target city.
+     */
+    public static final int ACTION_HOME_CITY = 40;
+
+    /**
+     * Action ID: upgrade a unit to a newer type.
+     * Mirrors ACTION_UPGRADE_UNIT in the C Freeciv server.
+     * Requires the unit to be in a city owned by the same player,
+     * the player to have researched the required technology, and
+     * sufficient gold to pay the upgrade cost.
+     */
+    public static final int ACTION_UPGRADE_UNIT = 42;
+
+    /**
+     * Action ID: board a transport unit (load onto ship/aircraft).
+     * Mirrors ACTION_TRANSPORT_BOARD in the C Freeciv server.
+     * Both the unit and the transport must be on the same tile.
+     */
+    public static final int ACTION_TRANSPORT_BOARD = 68;
+
+    /**
+     * Action ID: deboard from a transport (unit-initiated unload).
+     * Mirrors ACTION_TRANSPORT_DEBOARD in the C Freeciv server.
+     */
+    public static final int ACTION_TRANSPORT_DEBOARD = 71;
+
+    /**
+     * Action ID: unload a unit from a transport (transport-initiated).
+     * Mirrors ACTION_TRANSPORT_UNLOAD in the C Freeciv server.
+     */
+    public static final int ACTION_TRANSPORT_UNLOAD = 83;
+
+    /**
      * Checks whether a given action is currently enabled for an actor unit.
      * Returns {@code false} immediately if the actor does not exist or the
      * action ID is unknown.
@@ -119,7 +167,11 @@ public class Actions {
         int[] candidates = {ACTION_FOUND_CITY, ACTION_JOIN_CITY, ACTION_ROAD,
                 ACTION_IRRIGATE, ACTION_MINE, ACTION_FORTIFY, ACTION_ATTACK,
                 ACTION_ESTABLISH_EMBASSY, ACTION_BRIBE_UNIT,
-                ACTION_SABOTAGE_CITY, ACTION_STEAL_TECH};
+                ACTION_SABOTAGE_CITY, ACTION_STEAL_TECH,
+                ACTION_RECYCLE_UNIT, ACTION_DISBAND_UNIT,
+                ACTION_HOME_CITY, ACTION_UPGRADE_UNIT,
+                ACTION_TRANSPORT_BOARD, ACTION_TRANSPORT_DEBOARD,
+                ACTION_TRANSPORT_UNLOAD};
 
         for (int actionId : candidates) {
             if (actionIsEnabled(game, unitId, actionId)) {
