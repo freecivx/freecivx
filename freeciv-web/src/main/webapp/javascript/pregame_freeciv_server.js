@@ -1165,7 +1165,7 @@ function show_new_user_account_dialog(gametype)
                 + "<tr><td>Email:</td><td><input id='email' type='email' size='25' maxlength='64' ></td></tr>"
                 + "<tr><td>Password:</td><td><input id='password' type='password' size='25'></td></tr>"
                 + "<tr><td>Confim password:</td><td><input id='confirm_password' type='password' size='25'></td></tr>"
-                + "<tr><td>Date of Birth:</td><td><input id='dob_day' type='text' size='2' maxlength='2' placeholder='DD' style='width:50px;'> / <input id='dob_month' type='text' size='2' maxlength='2' placeholder='MM' style='width:50px;'> / <input id='dob_year' type='text' size='4' maxlength='4' placeholder='YYYY' style='width:70px;'></td></tr></table><br>"
+                + "<tr><td>Date of Birth:</td><td><input id='dob_day' type='number' min='1' max='31' placeholder='DD' style='width:50px;'> / <input id='dob_month' type='number' min='1' max='12' placeholder='MM' style='width:50px;'> / <input id='dob_year' type='number' min='1900' max='2100' placeholder='YYYY' style='width:70px;'></td></tr></table><br>"
                 + "<div id='username_validation_result' style='display:none;'></div>"
                 + "<div id='age_validation_result' style='display:none;'></div>"
                 + "Please verify your e-mail by clicking in the link in the e-mail you will get from us. Remember your username and password, since you will need this to log in later."
