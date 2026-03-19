@@ -434,12 +434,12 @@ public class MapGenerator {
     public Map<Long, Tile> generateIslandMap() {
         // Number of island blobs and their approximate compactness radius.
         // 36 blobs (~20% more than the original 30) produces ~20% more land.
-        final int NUM_BLOBS = 36;
+        final int NUM_BLOBS = 50;
         final int BLOB_RADIUS = 5;
         // Each island grows to a target tile count within this range, ensuring
         // islands are fairly sized relative to each other.
-        final int MIN_ISLAND_TILES = 18;
-        final int MAX_ISLAND_TILES = 48;
+        final int MIN_ISLAND_TILES = 28;
+        final int MAX_ISLAND_TILES = 80;
 
         // Phase 1: initialise everything as deep ocean
         for (int y = 0; y < height; y++) {
