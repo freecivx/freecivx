@@ -371,8 +371,19 @@ public class CivServer extends org.java_websocket.server.WebSocketServer impleme
             }
         }
 
+        // Handle PACKET_SPACESHIP_LAUNCH (135): client requests launching its spaceship.
+        // Validates that the spaceship is in STARTED state with success_rate > 0 and
+        // that the player has a capital city.  Mirrors handle_spaceship_launch() in
+        // the C Freeciv server's server/spacerace.c.
+        if (pid == Packets.PACKET_SPACESHIP_LAUNCH) {
+            net.freecivx.game.Player launchPlayer = game.players.get(connId);
+            if (launchPlayer != null) {
+                game.handleSpaceshipLaunch(connId);
+            }
+        }
+
         if (pid == Packets.PACKET_CHAT_MSG_REQ) {
-            String message =  URLDecoder.decode(json.optString("message"), StandardCharsets.UTF_8);
+            String message = URLDecoder.decode(json.optString("message"), StandardCharsets.UTF_8);
             if (message.equalsIgnoreCase("/quit")) {
               // Not allowed?
             }
@@ -1066,6 +1077,45 @@ public class CivServer extends org.java_websocket.server.WebSocketServer impleme
         broadcast(msg);
     }
 
+    /**
+     * Broadcasts a PACKET_SPACESHIP_INFO (137) packet containing the full
+     * spaceship state for the given player.
+     * Mirrors {@code send_spaceship_info()} in the C Freeciv server's
+     * {@code server/spacerace.c}.
+     *
+     * @param player the player whose spaceship state to broadcast
+     */
+    public void sendSpaceshipInfo(net.freecivx.game.Player player) {
+        broadcast(buildSpaceshipInfoPacket(player));
+    }
+
+    /** Builds a PACKET_SPACESHIP_INFO JSON object for the given player. */
+    private JSONObject buildSpaceshipInfoPacket(net.freecivx.game.Player player) {
+        net.freecivx.game.Spaceship ship = player.getSpaceship();
+        JSONObject msg = new JSONObject();
+        msg.put("pid",          Packets.PACKET_SPACESHIP_INFO);
+        msg.put("player_num",   player.getPlayerNo());
+        msg.put("sship_state",  ship.getState().ordinal());
+        msg.put("structurals",  ship.getStructurals());
+        msg.put("components",   ship.getComponents());
+        msg.put("modules",      ship.getModules());
+        msg.put("fuel",         ship.getFuel());
+        msg.put("propulsion",   ship.getPropulsion());
+        msg.put("habitation",   ship.getHabitation());
+        msg.put("life_support", ship.getLifeSupport());
+        msg.put("solar_panels", ship.getSolarPanels());
+        msg.put("launch_year",  ship.getLaunchYear());
+        msg.put("population",   ship.getPopulation());
+        msg.put("mass",         ship.getMass());
+        msg.put("support_rate", ship.getSupportRate());
+        msg.put("energy_rate",  ship.getEnergyRate());
+        msg.put("success_rate", ship.getSuccessRate());
+        msg.put("travel_time",  ship.getTravelTime());
+        // structure bitvector not used by freecivx-server (auto-place)
+        msg.put("structure",    0);
+        return msg;
+    }
+
     public void sendNationInfoAll(long id, String name, String adjective, String graphic_str, String legend) {
         JSONObject msg = new JSONObject();
         msg.put("pid", Packets.PACKET_RULESET_NATION);
@@ -1464,6 +1514,15 @@ public class CivServer extends org.java_websocket.server.WebSocketServer impleme
             msg.put("player_num", conn.getPlayerNo());
             msg.put("addr", conn.getIp());
             ws.send(msg.toString());
+        });
+
+        // Spaceship info – send current state for all players
+        game.players.forEach((pid2, player) -> {
+            net.freecivx.game.Spaceship ship = player.getSpaceship();
+            if (ship.getState() != net.freecivx.game.Spaceship.State.NONE) {
+                JSONObject msg = buildSpaceshipInfoPacket(player);
+                ws.send(msg.toString());
+            }
         });
 
         // Server settings

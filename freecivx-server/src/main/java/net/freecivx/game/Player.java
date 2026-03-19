@@ -128,6 +128,13 @@ public class Player {
      */
     private final Map<Long, Integer> aiLove = new HashMap<>();
 
+    /**
+     * This player's spaceship state for the Space Race.
+     * Mirrors {@code player.spaceship} in the C Freeciv server's
+     * {@code common/player.h}.
+     */
+    private final Spaceship spaceship = new Spaceship();
+
     // Constructor
     public Player(long connId, String username, String addr, int nation) {
         this.connectionId = connId;
@@ -475,6 +482,14 @@ public class Player {
      */
     public Map<Long, Integer> getAiLoveMap() {
         return aiLove;
+    }
+
+    /**
+     * Returns this player's spaceship for the Space Race.
+     * Mirrors {@code player.spaceship} in the C Freeciv server.
+     */
+    public Spaceship getSpaceship() {
+        return spaceship;
     }
 
 }

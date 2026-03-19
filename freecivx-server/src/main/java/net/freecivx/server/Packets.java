@@ -92,4 +92,12 @@ public class Packets {
     public static int PACKET_RULESET_ACTION_ENABLER = 235;
     public static int PACKET_PLAYER_SCORE = 179;
 
+    // Space Race packets (mirrors C server's packets.def)
+    /** Client → server: request spaceship launch. */
+    public static int PACKET_SPACESHIP_LAUNCH = 135;
+    /** Client → server: place a spaceship component (not used in auto-place mode). */
+    public static int PACKET_SPACESHIP_PLACE  = 136;
+    /** Server → client: broadcast spaceship state for one player. */
+    public static int PACKET_SPACESHIP_INFO   = 137;
+
 }

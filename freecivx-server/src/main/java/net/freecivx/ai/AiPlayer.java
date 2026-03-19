@@ -103,6 +103,11 @@ public class AiPlayer {
     int imprFactory       = -1; // Shields +50% (Industrialization tech)
     int imprResearchLab   = -1; // Science +200% with Library+University (Computers tech)
     int imprStockExchange = -1; // Gold+Luxury +50% when Bank present (Economics tech)
+    // Space Race buildings
+    int imprApolloProgram    = -1; // Great Wonder – enables spaceship construction
+    int imprSpaceStructural  = -1; // Space Race part (Special genus, unlimited)
+    int imprSpaceComponent   = -1; // Space Race part (Special genus, unlimited)
+    int imprSpaceModule      = -1; // Space Race part (Special genus, unlimited)
 
     // Unit-type IDs — resolved at runtime by name in resolveGameIds().
     // Initial values of -1 are overwritten on the first AI turn.
@@ -151,6 +156,10 @@ public class AiPlayer {
     long techMapMaking          = -1L; // req: Alphabet — unlocks Trireme (naval)
     long techNavigation         = -1L; // req: Astronomy + Math — unlocks Caravel
     long techFlight             = -1L; // req: Combustion + Theory of Gravity — Fighter
+    long techRocketry           = -1L; // req: Advanced Flight + Electronics — Apollo Program
+    long techPlastics           = -1L; // req: Refining + Space Flight — Space Component
+    long techSuperconductors    = -1L; // req: Plastics + Labor Union — Space Module
+    long techSpaceFlight        = -1L; // req: Computers + Rocketry — Space Structural, Apollo Program
 
     /** AI diplomacy subsystem. Mirrors daidiplomacy.c in the C Freeciv server. */
     private final AiDiplomacy aiDiplomacy = new AiDiplomacy();
@@ -215,6 +224,18 @@ public class AiPlayer {
 
         // Phase 2: city production — delegate to AiCity
         aiCity.manageAiCities();
+
+        // Phase 2.5: spaceship launch — if any AI player's spaceship is ready
+        // (state == STARTED and success_rate > 0), launch it automatically.
+        // Mirrors the end-of-turn launch check in the C Freeciv AI.
+        for (Player aiPlayer : game.players.values()) {
+            if (!aiPlayer.isAi() || !aiPlayer.isAlive()) continue;
+            net.freecivx.game.Spaceship ship = aiPlayer.getSpaceship();
+            if (ship.getState() == net.freecivx.game.Spaceship.State.STARTED
+                    && ship.getSuccessRate() > 0.0) {
+                game.handleSpaceshipLaunch(aiPlayer.getPlayerNo());
+            }
+        }
 
         // Phase 3: unit actions — delegate to sub-modules
         List<Unit> unitsSnapshot = new ArrayList<>(game.units.values());
@@ -296,9 +317,13 @@ public class AiPlayer {
                 case "University":     imprUniversity    = id; break;
                 case "Bank":           imprBank          = id; break;
                 case "Courthouse":     imprCourthouse    = id; break;
-                case "Factory":        imprFactory       = id; break;
-                case "Research Lab":   imprResearchLab   = id; break;
-                case "Stock Exchange": imprStockExchange = id; break;
+                case "Factory":          imprFactory          = id; break;
+                case "Research Lab":     imprResearchLab      = id; break;
+                case "Stock Exchange":   imprStockExchange    = id; break;
+                case "Apollo Program":   imprApolloProgram    = id; break;
+                case "Space Structural": imprSpaceStructural  = id; break;
+                case "Space Component":  imprSpaceComponent   = id; break;
+                case "Space Module":     imprSpaceModule      = id; break;
                 default: break;
             }
         }
@@ -333,6 +358,10 @@ public class AiPlayer {
                 case "Map Making":        techMapMaking         = id; break;
                 case "Navigation":        techNavigation        = id; break;
                 case "Flight":            techFlight            = id; break;
+                case "Rocketry":          techRocketry          = id; break;
+                case "Plastics":          techPlastics          = id; break;
+                case "Superconductors":   techSuperconductors   = id; break;
+                case "Space Flight":      techSpaceFlight       = id; break;
                 default: break;
             }
         }
@@ -714,6 +743,10 @@ public class AiPlayer {
             techIndustrialization,    // Factory — shields ×1.5
             techEconomics,            // Stock Exchange — gold/luxury ×1.5 additional
             techFlight,               // Fighter air unit — air supremacy
+            techRocketry,             // Apollo Program wonder prerequisite
+            techSpaceFlight,          // Space Structural + Apollo Program
+            techPlastics,             // Space Component
+            techSuperconductors,      // Space Module
         };
 
         for (long techId : priorityTechs) {
