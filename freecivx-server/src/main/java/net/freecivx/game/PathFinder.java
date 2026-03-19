@@ -203,9 +203,50 @@ public class PathFinder {
         return 1;
     }
 
-    /** Chebyshev distance heuristic (8-directional movement). */
+    /**
+     * Distance heuristic for A*.
+     * For square maps uses Chebyshev distance (max of |dx|, |dy|).
+     * For hex maps uses the correct hex distance formula, mirroring
+     * {@code map_vector_to_distance()} in the JavaScript client's {@code map.js}:
+     * <ul>
+     *   <li>Pure hex (NW/SE invalid): same-sign diagonals cost |dx|+|dy|; others max(|dx|,|dy|).</li>
+     *   <li>Iso-hex (NE/SW invalid): opposite-sign diagonals cost |dx|+|dy|; others max(|dx|,|dy|).</li>
+     * </ul>
+     * East-west map wrapping is applied to the x delta so the heuristic is never
+     * inflated on cylindrical maps.
+     */
     private double heuristic(long x1, long y1, long x2, long y2) {
-        return Math.max(Math.abs(x1 - x2), Math.abs(y1 - y2));
+        long xsize = game.map.getXsize();
+        long rawDx = x1 - x2;
+        // Apply east-west wrap: choose the shorter horizontal delta.
+        long dx;
+        if (Math.abs(rawDx) * 2 <= xsize) {
+            dx = rawDx;
+        } else {
+            dx = rawDx > 0 ? rawDx - xsize : rawDx + xsize;
+        }
+        long dy = y1 - y2;
+        long absDx = Math.abs(dx);
+        long absDy = Math.abs(dy);
+        int topologyId = game.getTopologyId();
+        boolean isHex = (topologyId & Game.TF_HEX) != 0;
+        if (isHex) {
+            boolean isIso = (topologyId & Game.TF_ISO) != 0;
+            if (!isIso) {
+                // Pure hex: NW and SE diagonal directions are invalid.
+                // Moving in those quadrants (same-sign deltas) requires extra steps.
+                if ((dx < 0 && dy < 0) || (dx > 0 && dy > 0)) {
+                    return absDx + absDy;
+                }
+            } else {
+                // Iso-hex: NE and SW diagonal directions are invalid.
+                // Moving in those quadrants (opposite-sign deltas) requires extra steps.
+                if ((dx > 0 && dy < 0) || (dx < 0 && dy > 0)) {
+                    return absDx + absDy;
+                }
+            }
+        }
+        return Math.max(absDx, absDy);
     }
 
     /** Reconstructs the direction list by following parent pointers. */

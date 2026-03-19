@@ -116,6 +116,7 @@ public class Movement {
      * @param cities     all cities in the game (cities exempt units from ZOC)
      * @param tiles      all tiles in the game (terrain look-up)
      * @param worldMap   world map (adjacency/wrap computation)
+     * @param topologyId map topology bitmask (0=square, 2=hex, 3=iso-hex)
      * @return {@code true} if the move is allowed with respect to ZOC
      */
     public static boolean canStepWrtZoc(Unit unit, UnitType unitType,
@@ -124,7 +125,8 @@ public class Movement {
                                         Map<Long, UnitType> unitTypes,
                                         Map<Long, City> cities,
                                         Map<Long, Tile> tiles,
-                                        WorldMap worldMap) {
+                                        WorldMap worldMap,
+                                        int topologyId) {
         if (unit == null || unitType == null) return true;
 
         // Only land units are subject to ZOC (sea/air units ignore it).
@@ -158,8 +160,8 @@ public class Movement {
         // The move is allowed if either the source or destination is within the
         // moving player's own ZOC (friendly military unit adjacent to either tile).
         // Mirrors: is_my_zoc(owner, src) || is_my_zoc(owner, dst)
-        if (isTileInPlayersZoc(unit.getOwner(), srcTileIdx, allUnits, unitTypes, worldMap)) return true;
-        if (isTileInPlayersZoc(unit.getOwner(), dstTileIdx, allUnits, unitTypes, worldMap)) return true;
+        if (isTileInPlayersZoc(unit.getOwner(), srcTileIdx, allUnits, unitTypes, worldMap, topologyId)) return true;
+        if (isTileInPlayersZoc(unit.getOwner(), dstTileIdx, allUnits, unitTypes, worldMap, topologyId)) return true;
 
         // None of the exemptions apply: the move is blocked by enemy ZOC.
         return false;
@@ -173,39 +175,51 @@ public class Movement {
      * <p>A unit establishes ZOC if its domain is 0 (land) and it has a positive
      * attack strength.
      *
-     * @param playerId  the owner whose ZOC is being tested
-     * @param tileIdx   the tile to test
-     * @param allUnits  all units in the game
-     * @param unitTypes all unit type definitions
-     * @param worldMap  world map for adjacency and wrapping
+     * <p>For hex topologies only the 6 valid directions are checked, mirroring the
+     * {@code adjc_iterate} macro in the C Freeciv server which respects map topology.
+     *
+     * @param playerId   the owner whose ZOC is being tested
+     * @param tileIdx    the tile to test
+     * @param allUnits   all units in the game
+     * @param unitTypes  all unit type definitions
+     * @param worldMap   world map for adjacency and wrapping
+     * @param topologyId map topology bitmask (0=square, 2=hex, 3=iso-hex)
      * @return {@code true} if the player controls a military unit adjacent to the tile
      */
     private static boolean isTileInPlayersZoc(long playerId, long tileIdx,
                                       Map<Long, Unit> allUnits,
                                       Map<Long, UnitType> unitTypes,
-                                      WorldMap worldMap) {
+                                      WorldMap worldMap,
+                                      int topologyId) {
         int xsize = worldMap.getXsize();
         int ysize = worldMap.getYsize();
         int tx = (int)(tileIdx % xsize);
         int ty = (int)(tileIdx / xsize);
 
-        for (int dx = -1; dx <= 1; dx++) {
-            for (int dy = -1; dy <= 1; dy++) {
-                if (dx == 0 && dy == 0) continue;
-                int nx = (tx + dx + xsize) % xsize; // horizontal wrap
-                int ny = ty + dy;
-                if (ny < 0 || ny >= ysize) continue;
-                long adjIdx = (long)(ny * xsize + nx);
+        boolean isHex = (topologyId & 2) != 0; // TF_HEX = 2
+        boolean isIso = (topologyId & 1) != 0; // TF_ISO = 1
 
-                for (Unit u : allUnits.values()) {
-                    if (u.getOwner() != playerId) continue;
-                    if (u.getTile() != adjIdx) continue;
-                    UnitType utype = unitTypes.get((long) u.getType());
-                    // Ground military units (domain=0, attack>0) establish ZOC.
-                    if (utype != null && utype.getDomain() == 0
-                            && utype.getAttackStrength() > 0) {
-                        return true;
-                    }
+        // Iterate over the 8 direction indices (0=NW,1=N,2=NE,3=W,4=E,5=SW,6=S,7=SE).
+        // For hex topologies filter out the two invalid diagonal directions, matching
+        // adjc_iterate() in the C Freeciv server which respects map topology.
+        for (int d = 0; d < 8; d++) {
+            if (isHex) {
+                if (!isIso && (d == 0 || d == 7)) continue; // pure hex: NW/SE invalid
+                if (isIso  && (d == 2 || d == 5)) continue; // iso-hex: NE/SW invalid
+            }
+            int nx = (tx + DIR_DX[d] + xsize) % xsize; // horizontal wrap
+            int ny = ty + DIR_DY[d];
+            if (ny < 0 || ny >= ysize) continue;
+            long adjIdx = (long)(ny * xsize + nx);
+
+            for (Unit u : allUnits.values()) {
+                if (u.getOwner() != playerId) continue;
+                if (u.getTile() != adjIdx) continue;
+                UnitType utype = unitTypes.get((long) u.getType());
+                // Ground military units (domain=0, attack>0) establish ZOC.
+                if (utype != null && utype.getDomain() == 0
+                        && utype.getAttackStrength() > 0) {
+                    return true;
                 }
             }
         }
@@ -322,27 +336,44 @@ public class Movement {
 
     /**
      * Calculates the facing direction a unit should adopt when moving between tiles.
-     * Direction is encoded as an integer 0–7 representing the eight compass points.
+     * Direction is encoded using the DIR8_ encoding that matches the JavaScript client:
+     * DIR8_NORTHWEST=0, DIR8_NORTH=1, DIR8_NORTHEAST=2, DIR8_WEST=3, DIR8_EAST=4,
+     * DIR8_SOUTHWEST=5, DIR8_SOUTH=6, DIR8_SOUTHEAST=7.
+     * This encoding is the same as the DIR_DX/DIR_DY index order.
+     *
+     * <p>East-west map wrapping is handled: if the raw x-delta is greater than
+     * half the map width the shorter wrap-around path is used instead.
      *
      * @param fromTile tile index of the source tile
      * @param toTile   tile index of the destination tile
      * @param worldMap the world map (needed for x-wrap boundary handling)
-     * @return direction integer (0 = North, clockwise to 7 = NorthWest), or -1 on error
+     * @return DIR8_ direction index (0–7), or -1 on error
      */
     public static int unitFacing(int fromTile, int toTile, WorldMap worldMap) {
         if (worldMap == null) return -1;
         int xsize = worldMap.getXsize();
-        int dx = (toTile % xsize) - (fromTile % xsize);
+        int rawDx = (toTile % xsize) - (fromTile % xsize);
+        // Handle east-west map wrap: choose the shorter delta.
+        // Use multiplication to avoid integer-division ambiguity on odd map widths.
+        int dx;
+        if (Math.abs(rawDx) * 2 <= xsize) {
+            dx = rawDx;
+        } else {
+            dx = rawDx > 0 ? rawDx - xsize : rawDx + xsize;
+        }
         int dy = (toTile / xsize) - (fromTile / xsize);
 
-        if (dx == 0 && dy < 0) return 0; // North
-        if (dx > 0 && dy < 0) return 1;  // NE
-        if (dx > 0 && dy == 0) return 2; // East
-        if (dx > 0 && dy > 0) return 3;  // SE
-        if (dx == 0 && dy > 0) return 4; // South
-        if (dx < 0 && dy > 0) return 5;  // SW
-        if (dx < 0 && dy == 0) return 6; // West
-        if (dx < 0 && dy < 0) return 7;  // NW
+        // Return values use the same DIR8_ encoding as the JavaScript client and
+        // as the DIR_DX/DIR_DY index arrays:
+        //   0=NW, 1=N, 2=NE, 3=W, 4=E, 5=SW, 6=S, 7=SE
+        if (dx == 0 && dy < 0) return 1; // N  (DIR8_NORTH)
+        if (dx > 0 && dy < 0) return 2;  // NE (DIR8_NORTHEAST)
+        if (dx > 0 && dy == 0) return 4; // E  (DIR8_EAST)
+        if (dx > 0 && dy > 0) return 7;  // SE (DIR8_SOUTHEAST)
+        if (dx == 0 && dy > 0) return 6; // S  (DIR8_SOUTH)
+        if (dx < 0 && dy > 0) return 5;  // SW (DIR8_SOUTHWEST)
+        if (dx < 0 && dy == 0) return 3; // W  (DIR8_WEST)
+        if (dx < 0 && dy < 0) return 0;  // NW (DIR8_NORTHWEST)
         return -1;
     }
 
