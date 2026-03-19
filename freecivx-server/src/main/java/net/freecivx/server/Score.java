@@ -67,21 +67,4 @@ public class Score {
         long aliveBonus = player.isAlive() ? 50L : 0L;
         return popScore + cityScore + techScore + goldScore + aliveBonus;
     }
-
-    /**
-     * Broadcasts the current civilisation scores for all players to all
-     * connected clients using {@code PACKET_PLAYER_SCORE}.
-     * Called at the end of each turn so players can track relative progress
-     * on their scoreboard.
-     * Mirrors {@code report_scores()} in the C Freeciv server's
-     * {@code server/score.c}.
-     *
-     * @param game   the current game state
-     * @param server the server used to broadcast the packets
-     */
-    public static void sendScores(Game game, IGameServer server) {
-        for (Player p : game.players.values()) {
-            server.sendPlayerScoreAll(p.getPlayerNo(), computeScore(game, p));
-        }
-    }
 }

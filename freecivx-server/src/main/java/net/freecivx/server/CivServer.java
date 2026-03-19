@@ -1034,6 +1034,7 @@ public class CivServer extends org.java_websocket.server.WebSocketServer impleme
         msg.put("phase_done", player.isPhaseDone());
         msg.put("nturns_idle", player.getNturnsIdle());
         msg.put("connected", player.isConnected());
+        msg.put("score", game != null ? Score.computeScore(game, player) : 0);
 
         broadcast(msg);
 
@@ -1066,15 +1067,6 @@ public class CivServer extends org.java_websocket.server.WebSocketServer impleme
             privateMsg.put("gives_shared_vision", privateVis);
             ownerWs.send(privateMsg.toString());
         }
-    }
-
-    @Override
-    public void sendPlayerScoreAll(long playerId, long score) {
-        JSONObject msg = new JSONObject();
-        msg.put("pid", Packets.PACKET_PLAYER_SCORE);
-        msg.put("player_id", playerId);
-        msg.put("score", score);
-        broadcast(msg);
     }
 
     /**
