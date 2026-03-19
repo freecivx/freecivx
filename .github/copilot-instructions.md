@@ -28,3 +28,4 @@ Put all copilot documentation files in the doc directory.
 - do not create java tests for freecivx-server
 - don't change Java version requirement
 - don't run CodeQL check, it takes took long
+- keep jacadoc in freecivx-server to a minimum 
