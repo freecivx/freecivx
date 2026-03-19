@@ -23,11 +23,15 @@ import net.freecivx.game.Game;
 import net.freecivx.game.Government;
 import net.freecivx.game.Player;
 import net.freecivx.game.Technology;
+import net.freecivx.game.Unit;
+import net.freecivx.game.UnitType;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -235,5 +239,53 @@ public class PlrHand {
         player.setTaxRate(tax);
         TechTools.sendResearchInfo(game, game.getServer(), connId, connId);
         game.getServer().sendPlayerInfoAll(player);
+    }
+
+    /** Checks all living players for elimination and removes dead players' units. Mirrors kill_player(). */
+    public static void checkPlayerElimination(Game game) {
+        List<Player> snapshot = new ArrayList<>(game.players.values());
+        for (Player player : snapshot) {
+            if (!player.isAlive()) continue;
+            long pid = player.getPlayerNo();
+            if (pid == net.freecivx.ai.Barbarian.BARBARIAN_PLAYER_ID) continue;
+
+            long cityCount = game.cities.values().stream()
+                    .filter(c -> c.getOwner() == pid).count();
+            if (cityCount > 0) continue;
+
+            boolean hasSettlers = game.units.values().stream()
+                    .filter(u -> u.getOwner() == pid)
+                    .anyMatch(u -> {
+                        UnitType utype = game.unitTypes.get((long) u.getType());
+                        return utype != null && "Settlers".equalsIgnoreCase(utype.getName());
+                    });
+            if (hasSettlers) continue;
+
+            player.setAlive(false);
+            log.info("Player eliminated: {}", player.getUsername());
+            game.getServer().sendMessageAll(player.getUsername() + " has been eliminated!");
+
+            List<Long> idsToRemove = new ArrayList<>();
+            for (Map.Entry<Long, Unit> entry : game.units.entrySet()) {
+                if (entry.getValue().getOwner() == pid) {
+                    idsToRemove.add(entry.getKey());
+                }
+            }
+            for (long uid : idsToRemove) {
+                game.units.remove(uid);
+                game.getServer().sendUnitRemove(uid);
+            }
+        }
+
+        // Check for last-player-standing victory (excluding barbarians).
+        List<Player> alive = game.players.values().stream()
+                .filter(Player::isAlive)
+                .filter(p -> p.getPlayerNo() != net.freecivx.ai.Barbarian.BARBARIAN_PLAYER_ID)
+                .collect(java.util.stream.Collectors.toList());
+        if (alive.size() == 1 && game.isGameStarted()) {
+            Player victor = alive.get(0);
+            game.getServer().sendMessageAll(victor.getUsername() + " has won the game!");
+            game.endGame();
+        }
     }
 }

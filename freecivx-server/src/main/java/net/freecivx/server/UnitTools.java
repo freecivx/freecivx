@@ -19,13 +19,21 @@
 
 package net.freecivx.server;
 
+import net.freecivx.game.City;
 import net.freecivx.game.Game;
 import net.freecivx.game.Player;
+import net.freecivx.game.Technology;
 import net.freecivx.game.Tile;
 import net.freecivx.game.Unit;
 import net.freecivx.game.UnitType;
 import org.json.JSONObject;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.Random;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
@@ -36,6 +44,7 @@ import java.util.concurrent.atomic.AtomicLong;
  */
 public class UnitTools {
 
+    private static final Logger log = LoggerFactory.getLogger(UnitTools.class);
     private static final AtomicLong unitIdCounter = new AtomicLong(1);
 
     /** Default HP for a newly created unit. */
@@ -179,5 +188,163 @@ public class UnitTools {
         msg.put("activity", unit.getActivity());
         msg.put("movesleft", unit.getMovesleft());
         game.getServer().broadcastPacket(msg);
+    }
+
+    /** Production cost of a unit type in shields. Mirrors unit_build_shield_cost(). */
+    static int calcUnitCost(UnitType utype) {
+        return utype.getCost() > 0 ? utype.getCost()
+                : (utype.getAttackStrength() + utype.getDefenseStrength()) * utype.getHp() / 2;
+    }
+
+    /** Disbands a unit without recovering resources. Mirrors do_unit_disband(). */
+    public static void disbandUnit(Game game, long unitId) {
+        Unit unit = game.units.get(unitId);
+        if (unit == null) return;
+        game.units.remove(unitId);
+        game.getServer().sendUnitRemove(unitId);
+        log.info("Unit {} disbanded by player {}", unitId, unit.getOwner());
+    }
+
+    /** Recycles a unit into a city, adding half its cost to shield stock. Mirrors do_unit_recycle(). */
+    public static void recycleUnit(Game game, long unitId, long cityId) {
+        Unit unit = game.units.get(unitId);
+        if (unit == null) return;
+        City city = game.cities.get(cityId);
+        if (city != null && city.getTile() == unit.getTile()) {
+            UnitType utype = game.unitTypes.get((long) unit.getType());
+            if (utype != null) {
+                int recycledShields = calcUnitCost(utype) / 2;
+                city.setShieldStock(city.getShieldStock() + recycledShields);
+                log.info("Unit {} recycled into city {} for {} shields", unitId, cityId, recycledShields);
+            }
+        }
+        game.units.remove(unitId);
+        game.getServer().sendUnitRemove(unitId);
+    }
+
+    /** Changes a unit's home city. Mirrors do_unit_change_homecity(). */
+    public static boolean setUnitHomecity(Game game, long unitId, long cityId) {
+        Unit unit = game.units.get(unitId);
+        if (unit == null) return false;
+        City city = game.cities.get(cityId);
+        if (city == null) return false;
+        if (city.getOwner() != unit.getOwner()) return false;
+        if (city.getTile() != unit.getTile()) return false;
+        unit.setHomecity(cityId);
+        VisibilityHandler.sendUnitToVisiblePlayers(game, unit);
+        Notify.notifyPlayer(game, game.getServer(), unit.getOwner(),
+                "Unit's home city changed to " + city.getName() + ".");
+        log.info("Unit {} home city changed to city {} by player {}", unitId, cityId, unit.getOwner());
+        return true;
+    }
+
+    /** Upgrades a unit to its newer type at the cost of gold. Mirrors do_unit_upgrade(). */
+    public static boolean upgradeUnit(Game game, long unitId, long cityId) {
+        Unit unit = game.units.get(unitId);
+        if (unit == null) return false;
+        City city = game.cities.get(cityId);
+        if (city == null || city.getOwner() != unit.getOwner()) return false;
+        if (city.getTile() != unit.getTile()) return false;
+        UnitType oldType = game.unitTypes.get((long) unit.getType());
+        if (oldType == null) return false;
+        int upgradesTo = oldType.getUpgradesTo();
+        if (upgradesTo < 0) {
+            Notify.notifyPlayer(game, game.getServer(), unit.getOwner(), "This unit cannot be upgraded.");
+            return false;
+        }
+        UnitType newType = game.unitTypes.get((long) upgradesTo);
+        if (newType == null) return false;
+        int upgradeCost = Math.max(0, (calcUnitCost(newType) - calcUnitCost(oldType)) * 2);
+        Player player = game.players.values().stream()
+                .filter(p -> p.getPlayerNo() == unit.getOwner())
+                .findFirst().orElse(null);
+        if (player == null) return false;
+        if (player.getGold() < upgradeCost) {
+            Notify.notifyPlayer(game, game.getServer(), unit.getOwner(),
+                    "Insufficient gold to upgrade unit (need " + upgradeCost + " gold, have "
+                    + player.getGold() + ").");
+            return false;
+        }
+        player.setGold(player.getGold() - upgradeCost);
+        unit.setType(upgradesTo);
+        unit.setHp(newType.getHp());
+        VisibilityHandler.sendUnitToVisiblePlayers(game, unit);
+        game.getServer().sendPlayerInfoAll(player);
+        Notify.notifyPlayer(game, game.getServer(), unit.getOwner(),
+                "Unit upgraded from " + oldType.getName() + " to " + newType.getName()
+                + " for " + upgradeCost + " gold.");
+        log.info("Unit {} upgraded from {} to {} by player {} for {} gold",
+                unitId, oldType.getName(), newType.getName(), unit.getOwner(), upgradeCost);
+        return true;
+    }
+
+    /** Boards a unit onto a transport. Mirrors do_unit_board_transport(). */
+    public static boolean boardTransport(Game game, long unitId, long transportId) {
+        Unit unit = game.units.get(unitId);
+        Unit transport = game.units.get(transportId);
+        if (unit == null || transport == null) return false;
+        if (unit.getOwner() != transport.getOwner()) return false;
+        if (unit.getTile() != transport.getTile()) return false;
+        unit.setTransported(true);
+        unit.setTransportedBy(transportId);
+        VisibilityHandler.sendUnitToVisiblePlayers(game, unit);
+        log.info("Unit {} boarded transport {} for player {}", unitId, transportId, unit.getOwner());
+        return true;
+    }
+
+    /** Deboards a unit from its transport. Mirrors do_unit_deboard_transport(). */
+    public static boolean deboardTransport(Game game, long unitId) {
+        Unit unit = game.units.get(unitId);
+        if (unit == null) return false;
+        if (!unit.isTransported()) return false;
+        unit.setTransported(false);
+        unit.setTransportedBy(-1L);
+        VisibilityHandler.sendUnitToVisiblePlayers(game, unit);
+        log.info("Unit {} deboarded transport for player {}", unitId, unit.getOwner());
+        return true;
+    }
+
+    private static final int MIN_HUT_GOLD = 25;
+    private static final int MAX_HUT_GOLD = 100;
+    private static final Random random = new Random();
+
+    /** Awards a random reward when a unit enters a goodie hut. Mirrors unit_enter_hut(). */
+    public static void enterHut(Game game, Unit unit, net.freecivx.game.Tile tile) {
+        tile.setExtras(tile.getExtras() & ~(1 << 8));
+        game.getServer().sendTileInfoAll(tile);
+        long ownerId = unit.getOwner();
+        Player player = game.players.get(ownerId);
+        if (player == null) return;
+        if (random.nextBoolean()) {
+            int gold = MIN_HUT_GOLD + random.nextInt(MAX_HUT_GOLD - MIN_HUT_GOLD + 1);
+            player.setGold(player.getGold() + gold);
+            game.getServer().sendPlayerInfoAll(player);
+            Notify.notifyPlayer(game, game.getServer(), ownerId,
+                    "Your explorers found " + gold + " gold in a goodie hut!");
+        } else {
+            List<Long> researchable = new ArrayList<>();
+            for (Map.Entry<Long, Technology> entry : game.techs.entrySet()) {
+                long tid = entry.getKey();
+                if (!player.hasTech(tid) && TechTools.canPlayerResearch(game, ownerId, tid)) {
+                    researchable.add(tid);
+                }
+            }
+            if (!researchable.isEmpty()) {
+                long techId = researchable.get(random.nextInt(researchable.size()));
+                Technology tech = game.techs.get(techId);
+                TechTools.giveTechToPlayer(game, ownerId, techId);
+                game.getServer().sendPlayerInfoAll(player);
+                Notify.notifyPlayer(game, game.getServer(), ownerId,
+                        "Your explorers discovered "
+                        + (tech != null ? tech.getName() : "a new technology")
+                        + " in a goodie hut!");
+            } else {
+                int gold = MIN_HUT_GOLD;
+                player.setGold(player.getGold() + gold);
+                game.getServer().sendPlayerInfoAll(player);
+                Notify.notifyPlayer(game, game.getServer(), ownerId,
+                        "Your explorers found " + gold + " gold in a goodie hut!");
+            }
+        }
     }
 }

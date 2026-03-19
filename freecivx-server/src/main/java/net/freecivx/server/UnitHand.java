@@ -110,36 +110,26 @@ public class UnitHand {
             // Start building a road on the current tile.
             game.changeUnitActivity(actorId, CityTurn.ACTIVITY_ROAD);
         } else if (actionType == Actions.ACTION_ESTABLISH_EMBASSY) {
-            // Establish embassy in the target city (targetId is cityId).
-            game.establishEmbassy(actorId, targetId);
+            Diplomats.establishEmbassy(game, actorId, targetId);
         } else if (actionType == Actions.ACTION_BRIBE_UNIT) {
-            // Bribe an adjacent enemy unit (targetId is unit ID).
-            game.bribeUnit(actorId, targetId);
+            Diplomats.bribeUnit(game, actorId, targetId);
         } else if (actionType == Actions.ACTION_SABOTAGE_CITY) {
-            // Sabotage production in a foreign city (targetId is cityId).
-            game.sabotageCity(actorId, targetId);
+            Diplomats.sabotageCity(game, actorId, targetId);
         } else if (actionType == Actions.ACTION_STEAL_TECH) {
-            // Steal a technology from a foreign player via their city (targetId is cityId).
-            game.stealTech(actorId, targetId);
+            Diplomats.stealTech(game, actorId, targetId);
         } else if (actionType == Actions.ACTION_DISBAND_UNIT) {
-            // Disband the unit without resource recovery.
-            game.disbandUnit(actorId);
+            UnitTools.disbandUnit(game, actorId);
         } else if (actionType == Actions.ACTION_RECYCLE_UNIT) {
-            // Recycle the unit back into city production (targetId is cityId).
-            game.recycleUnit(actorId, targetId);
+            UnitTools.recycleUnit(game, actorId, targetId);
         } else if (actionType == Actions.ACTION_HOME_CITY) {
-            // Change the unit's home city to the target city (targetId is cityId).
-            game.setUnitHomecity(actorId, targetId);
+            UnitTools.setUnitHomecity(game, actorId, targetId);
         } else if (actionType == Actions.ACTION_UPGRADE_UNIT) {
-            // Upgrade unit to a newer type; costs gold (targetId is cityId).
-            game.upgradeUnit(actorId, targetId);
+            UnitTools.upgradeUnit(game, actorId, targetId);
         } else if (actionType == Actions.ACTION_TRANSPORT_BOARD) {
-            // Board a transport unit (targetId is the transport unit ID).
-            game.boardTransport(actorId, targetId);
+            UnitTools.boardTransport(game, actorId, targetId);
         } else if (actionType == Actions.ACTION_TRANSPORT_DEBOARD
                 || actionType == Actions.ACTION_TRANSPORT_UNLOAD) {
-            // Deboard from current transport (unit- or transport-initiated).
-            game.deboardTransport(actorId);
+            UnitTools.deboardTransport(game, actorId);
         } else {
             // Unknown action: refresh the unit info for the client
             UnitTools.sendUnitInfo(game, game.getServer(), connId, actorId);
