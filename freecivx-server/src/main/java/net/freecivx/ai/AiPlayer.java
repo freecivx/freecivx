@@ -375,6 +375,8 @@ public class AiPlayer {
     private void manageAiGovernments() {
         for (Player player : new ArrayList<>(game.players.values())) {
             if (!player.isAi()) continue;
+            // Barbarians have no government, technology, or cities.
+            if (player.getPlayerNo() == Barbarian.BARBARIAN_PLAYER_ID) continue;
             upgradeGovernmentIfPossible(player);
         }
     }
@@ -457,6 +459,8 @@ public class AiPlayer {
     private void manageAiTaxRates() {
         for (Player player : new ArrayList<>(game.players.values())) {
             if (!player.isAi() || !player.isAlive()) continue;
+            // Barbarians have no cities or economy – skip.
+            if (player.getPlayerNo() == Barbarian.BARBARIAN_PLAYER_ID) continue;
             adjustTaxRatesForPlayer(player);
         }
     }
@@ -636,6 +640,8 @@ public class AiPlayer {
         for (Map.Entry<Long, Player> entry : new ArrayList<>(game.players.entrySet())) {
             Player player = entry.getValue();
             if (!player.isAi()) continue;
+            // Barbarians have no technology tree – skip.
+            if (player.getPlayerNo() == Barbarian.BARBARIAN_PLAYER_ID) continue;
             pickResearchGoal(player, entry.getKey());
         }
     }

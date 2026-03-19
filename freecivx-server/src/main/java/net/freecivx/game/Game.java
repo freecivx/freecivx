@@ -27,6 +27,7 @@ import net.freecivx.server.Notify;
 import net.freecivx.server.Packets;
 import net.freecivx.server.VisibilityHandler;
 import net.freecivx.ai.AiPlayer;
+import net.freecivx.ai.Barbarian;
 import net.freecivx.data.Ruleset;
 import net.freecivx.data.ScenarioData;
 import net.freecivx.data.ScenarioLoader;
@@ -85,6 +86,8 @@ public class Game {
     private long lastActivityTime = System.currentTimeMillis();
     private Random random = new Random();
     private AiPlayer aiPlayer;
+    /** Barbarian spawning system; mirrors barbarian.c from the C Freeciv server. */
+    private final Barbarian barbarian = new Barbarian();
     private Ruleset ruleset = new Ruleset();
     /** Tracks which human players have pressed end-turn this turn. */
     private final Set<Long> humanPlayersDone = new HashSet<>();
@@ -1002,6 +1005,11 @@ public class Game {
         // Process end-of-turn city updates: growth, production, economy, research.
         // Mirrors update_city_activities() in the C Freeciv server's cityturn.c.
         net.freecivx.server.CityTurn.updateAllCities(this);
+
+        // Attempt to spawn barbarian groups near player cities.
+        // Mirrors summon_barbarians() called at the end of the turn in the C server's
+        // srv_main.c.  Barbarians only appear after ONSET_BARBARIAN_TURN turns.
+        barbarian.summonBarbarians(this);
 
         // Run AI turns (executed in the dedicated AI thread)
         aiPlayer.runAiTurns();
@@ -2092,6 +2100,12 @@ public class Game {
 
             long pid = player.getPlayerNo();
 
+            // Barbarians are a persistent neutral threat and are never eliminated
+            // by the standard city/settler check – they can always be re-summoned.
+            // Mirrors the barbarian resurrection in create_barbarian_player() in the
+            // C Freeciv server's barbarian.c.
+            if (pid == Barbarian.BARBARIAN_PLAYER_ID) continue;
+
             // Count cities owned by this player
             long cityCount = cities.values().stream()
                     .filter(c -> c.getOwner() == pid).count();
@@ -2130,8 +2144,11 @@ public class Game {
         // survivor is declared the winner and the game ends with the standard
         // 60-second restart countdown.  This mirrors check_for_game_over() in
         // the C Freeciv server's srv_main.c.
+        // Barbarians are excluded from the "last player standing" check since
+        // they are a neutral threat and not a civilisation that can win.
         List<Player> alive = players.values().stream()
                 .filter(Player::isAlive)
+                .filter(p -> p.getPlayerNo() != Barbarian.BARBARIAN_PLAYER_ID)
                 .collect(java.util.stream.Collectors.toList());
         if (alive.size() == 1 && gameStarted) {
             Player victor = alive.get(0);
