@@ -1332,6 +1332,17 @@ public class Game {
             dir = calculatedDir;
         }
 
+        // For hex topologies, reject moves in the two invalid diagonal directions.
+        // Pure hex (TF_HEX): NW(0) and SE(7) are invalid.
+        // Iso-hex (TF_HEX|TF_ISO): NE(2) and SW(5) are invalid.
+        // Mirrors is_valid_dir() in the JavaScript client and the C Freeciv server.
+        boolean isHexMap = (topologyId & TF_HEX) != 0;
+        boolean isIsoMap = (topologyId & TF_ISO) != 0;
+        if (isHexMap && dir >= 0) {
+            if (!isIsoMap && (dir == 0 || dir == 7)) return false; // pure hex: NW/SE invalid
+            if (isIsoMap  && (dir == 2 || dir == 5)) return false; // iso-hex: NE/SW invalid
+        }
+
         // Terrain check: land units cannot enter ocean tiles (terrain 2=Ocean, 3=Deep Ocean);
         // sea units (domain=1) can only enter ocean tiles and cannot move onto land.
         // Mirrors domain-based native-tile checks in the C Freeciv server's movement.c.
@@ -1351,7 +1362,7 @@ public class Game {
         // have a friendly unit adjacent to either the source or destination tile.
         // Mirrors can_step_taken_wrt_to_zoc() in the C Freeciv server's movement.c.
         if (utype != null && !Movement.canStepWrtZoc(unit, utype, unit.getTile(), (long) dest_tile,
-                units, unitTypes, cities, tiles, map)) {
+                units, unitTypes, cities, tiles, map, topologyId)) {
             return false;
         }
         // Check for enemy units on the destination tile — trigger combat instead
