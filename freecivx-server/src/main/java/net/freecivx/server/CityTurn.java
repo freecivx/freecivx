@@ -698,6 +698,17 @@ public class CityTurn {
                 shieldBonus += 50; // Mfg. Plant (requires Factory): +50% additional (effect_mfg_plant)
             }
         }
+        // Hoover Dam wonder: +25% production in each city that has a Factory or Mfg.Plant.
+        // Mirrors effect_hoover_dam and effect_hoover_dam_1 (Output_Bonus=25, Shield,
+        // Player scope, requires Factory or Mfg.Plant) in the classic Freeciv effects.ruleset.
+        if (playerHasWonder(game, city.getOwner(), "Hoover Dam")) {
+            if (city.hasImprovement(factoryId)) {
+                shieldBonus += 25; // Hoover Dam + Factory: +25% (effect_hoover_dam)
+            }
+            if (city.hasImprovement(mfgPlantId)) {
+                shieldBonus += 25; // Hoover Dam + Mfg.Plant: +25% (effect_hoover_dam_1)
+            }
+        }
         if (shieldBonus > 0) {
             shieldOutput = (shieldOutput * (100 + shieldBonus) + 99) / 100;
         }
@@ -808,6 +819,24 @@ public class CityTurn {
                             Notify.notifyAllPlayers(game, game.getServer(),
                                     civName + " has built the " + improvement.getName()
                                     + " in " + city.getName() + "!");
+                        }
+
+                        // Darwin's Voyage wonder: immediately grants 2 free technologies
+                        // to the builder.  Mirrors effect_darwins_voyage (Give_Imm_Tech=2)
+                        // in the classic Freeciv effects.ruleset.  The two lowest-ID
+                        // technologies that the player can currently research are granted.
+                        if ("Darwin's Voyage".equals(improvement.getName())) {
+                            int freeTechsGranted = 0;
+                            for (Map.Entry<Long, net.freecivx.game.Technology> te
+                                    : game.techs.entrySet()) {
+                                if (freeTechsGranted >= 2) break;
+                                if (TechTools.canPlayerResearch(game, city.getOwner(),
+                                        te.getKey())) {
+                                    TechTools.giveTechToPlayer(game, city.getOwner(),
+                                            te.getKey());
+                                    freeTechsGranted++;
+                                }
+                            }
                         }
 
                         // Reset production to nothing after completion (-1 = no production)
@@ -1238,6 +1267,20 @@ public class CityTurn {
         if (city.hasImprovement(findImprId(game, "Copernicus' Observatory", -1))) {
             scienceBonus += 100; // Copernicus' Observatory: +100% science (effect_copernicus)
         }
+        // Isaac Newton's College wonder: +100% science in each city that has a University.
+        // Mirrors effect_isaac_newtons_college (Output_Bonus=100, Science, City scope,
+        // requires Building:University) in the classic Freeciv effects.ruleset.
+        if (city.hasImprovement(universityId)
+                && playerHasWonder(game, city.getOwner(), "Isaac Newton's College")) {
+            scienceBonus += 100; // Isaac Newton's College + University: +100% (effect_isaac_newtons_college)
+        }
+        // SETI Program wonder: +100% science in each city that has a Research Lab.
+        // Mirrors effect_seti_program (Output_Bonus=100, Science, City scope,
+        // requires Building:Research Lab) in the classic Freeciv effects.ruleset.
+        if (city.hasImprovement(researchLabId)
+                && playerHasWonder(game, city.getOwner(), "SETI Program")) {
+            scienceBonus += 100; // SETI Program + Research Lab: +100% (effect_seti_program)
+        }
         science = (science * (100 + scienceBonus) + 99) / 100;
 
         // Apply government corruption to science output.
@@ -1422,6 +1465,14 @@ public class CityTurn {
             int maxHp = utype.getHp();
             if (unit.getHp() >= maxHp) continue; // Already at full HP
 
+            // United Nations wonder: +2 HP recovery per turn for all units empire-wide.
+            // Mirrors effect_united_nations (Unit_Recover=2, Player scope) in the classic
+            // Freeciv effects.ruleset.  Applies regardless of city presence.
+            if (playerHasWonder(game, unit.getOwner(), "United Nations")) {
+                unit.setHp(Math.min(maxHp, unit.getHp() + 2));
+                if (unit.getHp() >= maxHp) continue;
+            }
+
             // Unit must be in a friendly city to receive healing
             City city = cityByTile.get(unit.getTile());
             if (city == null) continue;
@@ -1483,9 +1534,11 @@ public class CityTurn {
         int policeStationId = findImprId(game, "Police Station", IMPR_POLICE_STATION);
 
         // Pre-compute player-scope wonder happiness bonuses (same as updateCityHappiness)
-        boolean hasOracle      = playerHasWonder(game, playerId, "Oracle");
+        boolean hasOracle         = playerHasWonder(game, playerId, "Oracle");
         boolean hasHangingGardens = playerHasWonder(game, playerId, "Hanging Gardens");
-        boolean hasJSBach      = playerHasWonder(game, playerId, "J.S. Bach's Cathedral");
+        boolean hasJSBach         = playerHasWonder(game, playerId, "J.S. Bach's Cathedral");
+        boolean hasMichelangelo   = playerHasWonder(game, playerId, "Michelangelo's Chapel");
+        boolean hasWomensSuffrage = playerHasWonder(game, playerId, "Women's Suffrage");
 
         int requiredRate = 0;
 
@@ -1501,7 +1554,7 @@ public class CityTurn {
             if (city.hasImprovement(templeId))    makeContent += 1;
             if (city.hasImprovement(colosseumId)) makeContent += 3;
             if (city.hasImprovement(cathedralId)) makeContent += 3;
-            if (gov != null && city.hasImprovement(policeStationId)) {
+            if (gov != null && city.hasImprovement(policeStationId) && !hasWomensSuffrage) {
                 String govName = gov.getRuleName();
                 if ("Democracy".equals(govName))      makeContent += 2;
                 else if ("Republic".equals(govName))  makeContent += 1;
@@ -1509,8 +1562,14 @@ public class CityTurn {
 
             // Wonder make_content bonuses (mirrors updateCityHappiness wonder checks)
             if (city.hasImprovement(templeId) && hasOracle) makeContent += 2;
-            if (hasHangingGardens) makeContent += 1;
-            if (hasJSBach)         makeContent += 2;
+            if (hasHangingGardens)   makeContent += 1;
+            if (hasJSBach)           makeContent += 2;
+            if (hasMichelangelo)     makeContent += 3;
+            if (hasWomensSuffrage && gov != null) {
+                String govName = gov.getRuleName();
+                if ("Democracy".equals(govName))      makeContent += 2;
+                else if ("Republic".equals(govName))  makeContent += 1;
+            }
             // Shakespeare's Theatre: all citizens content in the city (no luxury needed)
             if (city.hasImprovement(findImprId(game, "Shakespeare's Theater", -1))) {
                 makeContent += city.getSize();
@@ -1627,7 +1686,11 @@ public class CityTurn {
         // Republic: +1, Democracy: +2 (mirrors effect_police_station[_1] in
         // classic effects.ruleset).  Applied here as general make_content since
         // this implementation does not track military unhappiness separately.
-        if (gov != null && city.hasImprovement(policeStationId)) {
+        // NOTE: these effects require Women's Suffrage to be ABSENT (per effects.ruleset:
+        // "Building", "Women's Suffrage", "Player", FALSE).  When Women's Suffrage is
+        // present, its own Make_Content_Mil effects apply instead (see below).
+        boolean hasWomensSuffrage = playerHasWonder(game, city.getOwner(), "Women's Suffrage");
+        if (gov != null && city.hasImprovement(policeStationId) && !hasWomensSuffrage) {
             String govName = gov.getRuleName();
             if ("Democracy".equals(govName)) {
                 makeContent += 2;
@@ -1659,6 +1722,25 @@ public class CityTurn {
         // Mirrors effect_js_bach (Make_Content=2, Player scope) in effects.ruleset.
         if (playerHasWonder(game, city.getOwner(), "J.S. Bach's Cathedral")) {
             makeContent += 2;
+        }
+
+        // Michelangelo's Chapel wonder: +3 make_content empire-wide.
+        // Mirrors effect_michelangelos_chapel (Make_Content=3, Player scope) in
+        // the classic Freeciv effects.ruleset.
+        if (playerHasWonder(game, city.getOwner(), "Michelangelo's Chapel")) {
+            makeContent += 3;
+        }
+
+        // Women's Suffrage wonder: Make_Content_Mil empire-wide (Republic=+1, Democracy=+2).
+        // Replaces the Police Station effect (which requires Women's Suffrage to be absent).
+        // Mirrors effect_womens_suffrage and effect_womens_suffrage_1 in effects.ruleset.
+        if (hasWomensSuffrage && gov != null) {
+            String govName = gov.getRuleName();
+            if ("Democracy".equals(govName)) {
+                makeContent += 2;
+            } else if ("Republic".equals(govName)) {
+                makeContent += 1;
+            }
         }
 
         // Shakespeare's Theatre wonder: makes all citizens in the city content.
