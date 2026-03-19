@@ -168,6 +168,14 @@ public class CityTurn {
     private static final int GENUS_GREAT_WONDER  = 0;
     /** Genus value for a Small Wonder improvement (e.g. Palace). */
     private static final int GENUS_SMALL_WONDER  = 1;
+    /**
+     * Genus value for a Special improvement (Space Structural, Space Component,
+     * Space Module).  Special improvements are consumed into the player's
+     * spaceship rather than being stored as city buildings.
+     * Mirrors {@code BG_SPECIAL} in the C Freeciv server's
+     * {@code common/improvement.h}.
+     */
+    private static final int GENUS_SPECIAL       = 3;
 
     /**
      * Luxury goods cost per citizen mood upgrade.
@@ -572,7 +580,7 @@ public class CityTurn {
      * @param wonderName  the display name of the improvement (case-insensitive)
      * @return {@code true} when the wonder is present in any city in the world
      */
-    static boolean worldHasWonder(Game game, String wonderName) {
+    public static boolean worldHasWonder(Game game, String wonderName) {
         int id = findImprId(game, wonderName, -1);
         if (id < 0) return false;
         for (City city : game.cities.values()) {
@@ -741,6 +749,42 @@ public class CityTurn {
                             Notify.notifyPlayer(game, game.getServer(), city.getOwner(),
                                     city.getName() + ": " + improvement.getName()
                                     + " has already been built by another civilization!");
+                            VisibilityHandler.sendCityToVisiblePlayers(game, cityId);
+                            return;
+                        }
+
+                        // Special genus = spaceship part (Space Structural, Space
+                        // Component, Space Module).  These parts are consumed into the
+                        // player's spaceship instead of being stored as city buildings.
+                        // Apollo Program must be built somewhere in the world first.
+                        // Mirrors the BG_SPECIAL handling in spacerace.c and
+                        // city_build_building() in the C Freeciv server.
+                        if (improvement.getGenus() == GENUS_SPECIAL) {
+                            if (!worldHasWonder(game, "Apollo Program")) {
+                                Notify.notifyPlayer(game, game.getServer(), city.getOwner(),
+                                        city.getName() + " cannot build " + improvement.getName()
+                                        + ": requires the Apollo Program wonder first.");
+                                VisibilityHandler.sendCityToVisiblePlayers(game, cityId);
+                                return;
+                            }
+                            // Add part to the player's spaceship
+                            if (player != null) {
+                                net.freecivx.game.Spaceship ship = player.getSpaceship();
+                                String partName = improvement.getName();
+                                if (partName.equalsIgnoreCase("Space Structural")) {
+                                    ship.addStructural();
+                                } else if (partName.equalsIgnoreCase("Space Component")) {
+                                    ship.addComponent();
+                                } else if (partName.equalsIgnoreCase("Space Module")) {
+                                    ship.addModule();
+                                }
+                                Notify.notifyPlayer(game, game.getServer(), city.getOwner(),
+                                        city.getName() + " has built a " + partName + ".");
+                                game.getServer().sendSpaceshipInfo(player);
+                            }
+                            city.setShieldStock(city.getShieldStock() - cost);
+                            // Space parts can be built multiple times – keep production
+                            // queued so the city continues building the same part type.
                             VisibilityHandler.sendCityToVisiblePlayers(game, cityId);
                             return;
                         }

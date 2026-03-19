@@ -1028,6 +1028,10 @@ public class Game {
         // Mirrors check_for_city_destruction() / kill_player() in C Freeciv server.
         checkPlayerElimination();
 
+        // Check for Space Race victory: a launched spaceship may have arrived.
+        // Mirrors rank_spaceship_arrival() / spaceship_arrived() in spacerace.c.
+        checkSpaceshipArrival();
+
         server.sendGameInfoAll(getHistoricalYear(), turn, phase, turnTimeout);
         // Classic Freeciv: year 4000 BCE at turn 1, each turn advances 20 years.
         // getHistoricalYear() returns negative values for BC years and non-negative for AD.
@@ -1073,6 +1077,89 @@ public class Game {
         log.info("Game over at turn {}.", turn);
         net.freecivx.server.VisibilityHandler.revealMapToAll(this);
         server.scheduleGameRestart(GAME_RESTART_DELAY_SECONDS);
+    }
+
+    /**
+     * Handles a spaceship-launch request from a human player.
+     * Validates that the spaceship is in STARTED state, has a positive
+     * success rate, and that the player still has a capital city.
+     * Mirrors {@code handle_spaceship_launch()} in the C Freeciv server's
+     * {@code server/spacerace.c}.
+     *
+     * @param connId the connection ID of the requesting player
+     */
+    public synchronized void handleSpaceshipLaunch(long connId) {
+        Player player = players.get(connId);
+        if (player == null || !player.isAlive()) return;
+
+        Spaceship ship = player.getSpaceship();
+
+        if (ship.getState() == Spaceship.State.LAUNCHED
+                || ship.getState() == Spaceship.State.ARRIVED) {
+            net.freecivx.server.Notify.notifyPlayer(this, server, connId,
+                    "Your spaceship is already launched!");
+            return;
+        }
+        if (ship.getState() != Spaceship.State.STARTED || ship.getSuccessRate() <= 0.0) {
+            net.freecivx.server.Notify.notifyPlayer(this, server, connId,
+                    "Your spaceship cannot be launched yet. "
+                    + "Build more Space Components and Modules first.");
+            return;
+        }
+        // Require a capital city (mirrors C server check)
+        boolean hasCapital = cities.values().stream()
+                .anyMatch(c -> c.getOwner() == connId && c.isCapital());
+        if (!hasCapital) {
+            net.freecivx.server.Notify.notifyPlayer(this, server, connId,
+                    "You need a capital city to launch your spaceship.");
+            return;
+        }
+
+        ship.setState(Spaceship.State.LAUNCHED);
+        ship.setLaunchYear((int) getHistoricalYear());
+
+        int arrivalYear = ship.getLaunchYear() + (int) ship.getTravelTime();
+        String arrivalStr = arrivalYear < 0
+                ? Math.abs(arrivalYear) + " BC"
+                : arrivalYear + " AD";
+        log.info("Player {} launched spaceship (estimated arrival: {}).",
+                player.getUsername(), arrivalStr);
+        server.sendMessageAll(player.getUsername()
+                + " has launched a spaceship! Estimated arrival at Alpha Centauri: "
+                + arrivalStr + ".");
+        server.sendSpaceshipInfo(player);
+    }
+
+    /**
+     * Checks whether any launched spaceship has arrived at Alpha Centauri
+     * this turn.  The first arrival triggers a Space Race victory and ends
+     * the game.  Mirrors {@code rank_spaceship_arrival()} and
+     * {@code spaceship_arrived()} in the C Freeciv server's
+     * {@code server/spacerace.c}.
+     */
+    void checkSpaceshipArrival() {
+        long currentYear = getHistoricalYear();
+        // Collect players with launched ships ordered by arrival year
+        List<Player> launched = players.values().stream()
+                .filter(p -> p.getSpaceship().getState() == Spaceship.State.LAUNCHED)
+                .sorted(java.util.Comparator.comparingDouble(
+                        p -> p.getSpaceship().getArrivalYear()))
+                .collect(java.util.stream.Collectors.toList());
+
+        for (Player p : launched) {
+            Spaceship ship = p.getSpaceship();
+            if (ship.getArrivalYear() <= currentYear) {
+                ship.setState(Spaceship.State.ARRIVED);
+                log.info("Player {} spaceship has arrived at Alpha Centauri!",
+                        p.getUsername());
+                server.sendMessageAll(p.getUsername()
+                        + "'s spaceship has arrived at Alpha Centauri! "
+                        + p.getUsername() + " wins the Space Race!");
+                server.sendSpaceshipInfo(p);
+                endGame();
+                return; // End on first arrival
+            }
+        }
     }
 
     /**

@@ -292,6 +292,50 @@ class AiCity {
             }
         }
 
+        // Priority 19: Apollo Program great wonder (prerequisite for all spaceship parts).
+        // Build it if Space Flight tech is known and it hasn't been built anywhere yet.
+        if (ai.imprApolloProgram >= 0 && !CityTurn.worldHasWonder(game, "Apollo Program")) {
+            Improvement apollo = game.improvements.get((long) ai.imprApolloProgram);
+            if (apollo != null && canBuildImprovement(owner, city, apollo)) {
+                city.setProductionKind(1);
+                city.setProductionValue(ai.imprApolloProgram);
+                return;
+            }
+        }
+
+        // Priority 20: Space parts – once Apollo Program is built, dedicate large
+        // cities to building Space Structurals, Components, and Modules.
+        // Mirrors the late-game spaceship build priority in dai_city_choose_build()
+        // in the C Freeciv AI (ai/default/daicity.c).
+        if (CityTurn.worldHasWonder(game, "Apollo Program") && city.getSize() >= 6) {
+            net.freecivx.game.Spaceship ship = owner.getSpaceship();
+            // Build Structurals first (need at least 8), then Components and Modules
+            if (ship.getStructurals() < 12 && ai.imprSpaceStructural >= 0) {
+                Improvement struct = game.improvements.get((long) ai.imprSpaceStructural);
+                if (struct != null && canBuildImprovement(owner, city, struct)) {
+                    city.setProductionKind(1);
+                    city.setProductionValue(ai.imprSpaceStructural);
+                    return;
+                }
+            }
+            if (ship.getComponents() < 8 && ai.imprSpaceComponent >= 0) {
+                Improvement comp = game.improvements.get((long) ai.imprSpaceComponent);
+                if (comp != null && canBuildImprovement(owner, city, comp)) {
+                    city.setProductionKind(1);
+                    city.setProductionValue(ai.imprSpaceComponent);
+                    return;
+                }
+            }
+            if (ship.getModules() < 6 && ai.imprSpaceModule >= 0) {
+                Improvement mod = game.improvements.get((long) ai.imprSpaceModule);
+                if (mod != null && canBuildImprovement(owner, city, mod)) {
+                    city.setProductionKind(1);
+                    city.setProductionValue(ai.imprSpaceModule);
+                    return;
+                }
+            }
+        }
+
         // Priority 19: Naval unit for coastal cities once naval tech is available.
         // Mirrors the naval-unit production priority in dai_city_choose_build() in
         // ai/default/daicity.c — build one naval unit per coastal city as a patrol
