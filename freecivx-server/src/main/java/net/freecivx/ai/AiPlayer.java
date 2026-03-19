@@ -243,6 +243,13 @@ public class AiPlayer {
                 continue;
             }
 
+            // Naval units get dedicated naval AI (patrol/attack enemy ships and coastal cities).
+            // Mirrors the sea-unit branch in dai_manage_unit() in daiunit.c.
+            if (utype.getDomain() == 1 && utype.getAttackStrength() > 0) {
+                aiMilitary.handleNavalUnit(unit, utype, owner);
+                continue;
+            }
+
             if (utype.getAttackStrength() > 0) {
                 aiMilitary.handleMilitaryUnit(unit, utype, owner);
                 continue;
@@ -654,12 +661,17 @@ public class AiPlayer {
      *   <li>Feudalism → Pikemen (anti-horse unit, 2× defence vs Horse units)</li>
      *   <li>Horseback Riding → Horsemen (fast raider, 2 move)</li>
      *   <li>Iron Working → Legion (best early all-rounder: 4 atk / 2 def)</li>
-     *   <li>Mathematics → University tech prerequisite</li>
+     *   <li>Map Making → Trireme (earliest naval unit, coastal patrol)</li>
+     *   <li>Mathematics → University tech prerequisite + Navigation prerequisite</li>
+     *   <li>Navigation → Caravel (mid-game naval explorer)</li>
      *   <li>Trade → prerequisite for Banking</li>
      *   <li>The Republic → Republic government and Banking prerequisite</li>
      *   <li>Banking → Bank building (gold income ×1.5)</li>
      *   <li>University tech → University building (science ×2)</li>
      *   <li>Democracy → Democracy government (zero corruption)</li>
+     *   <li>Industrialization → Factory (shields ×1.5)</li>
+     *   <li>Economics → Stock Exchange (gold/luxury ×1.5)</li>
+     *   <li>Flight → Fighter air unit (air supremacy)</li>
      * </ol>
      *
      * @param player   the AI player
@@ -685,7 +697,9 @@ public class AiPlayer {
             techFeudalism,            // Pikemen — 2× defence vs Horse units
             techHorsebackRiding,      // Horsemen (fast raider, 2 move)
             techIronWorking,          // Legion — 4 atk / 2 def, best early unit
-            techMathematics,          // University tech prerequisite
+            techMapMaking,            // Trireme naval unit — coastal expansion/patrol
+            techMathematics,          // University tech prerequisite + Navigation prereq
+            techNavigation,           // Caravel naval unit — mid-game naval exploration
             techTrade,                // Banking + Industrialization prerequisite
             techTheRepublic,          // Republic government
             techBanking,              // Bank — gold income ×1.5
@@ -693,6 +707,7 @@ public class AiPlayer {
             techDemocracy,            // Democracy government (zero corruption)
             techIndustrialization,    // Factory — shields ×1.5
             techEconomics,            // Stock Exchange — gold/luxury ×1.5 additional
+            techFlight,               // Fighter air unit — air supremacy
         };
 
         for (long techId : priorityTechs) {
