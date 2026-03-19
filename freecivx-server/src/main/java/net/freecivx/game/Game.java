@@ -997,6 +997,16 @@ public class Game {
                 UnitType utype = unitTypes.get((long) unit.getType());
                 autoExploreUnit(unit, utype);
             }
+            // Auto-settler: apply worker/engineer terrain-improvement AI for human
+            // units flagged with SSA_AUTOSETTLER (keyboard shortcut 'A').
+            // Mirrors auto_settler_do_work() in the C Freeciv server's autosettlers.c.
+            if (unit.getSsa_controller() == Packets.SSA_AUTOSETTLER) {
+                UnitType utype = unitTypes.get((long) unit.getType());
+                if (utype != null && (unit.getType() == 1 /* Workers */
+                        || (utype.hasSettlersFlag() && utype.getAttackStrength() == 0))) {
+                    aiPlayer.runAutoSettler(unit, utype);
+                }
+            }
             if (!unit.getGotoPath().isEmpty()) {
                 executeGotoPath(unit);
             }

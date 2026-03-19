@@ -733,6 +733,20 @@ public class AiPlayer {
     }
 
     /**
+     * Runs the auto-settler (worker/engineer) logic for a human-controlled unit
+     * that has been set to {@link net.freecivx.server.Packets#SSA_AUTOSETTLER}.
+     * Delegates to the settler AI's worker handler so that the same terrain-
+     * improvement heuristics (road → railroad → irrigate → mine) apply to both
+     * AI and human auto-worker units.
+     *
+     * @param unit  the worker/engineer unit
+     * @param utype the unit type
+     */
+    public void runAutoSettler(Unit unit, net.freecivx.game.UnitType utype) {
+        aiSettler.handleWorker(unit, utype);
+    }
+
+    /**
      * No-op shutdown method kept for API compatibility.
      */
     public void shutdown() {
