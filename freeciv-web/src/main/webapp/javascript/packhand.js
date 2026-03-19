@@ -76,6 +76,9 @@ function handle_server_join_reply(packet)
 
     if (packet['capability'] && packet['capability'].indexOf('freecivx-server') !== -1) {
       freecivx_server = true;
+      if ($.getUrlVar('action') == "multi") {
+        autostart = true;
+      }
     }
 
     if (get_client_page() == PAGE_MAIN
