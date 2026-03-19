@@ -28,6 +28,7 @@ import net.freecivx.game.Unit;
 import net.freecivx.game.UnitType;
 import net.freecivx.server.CityTurn;
 import net.freecivx.server.DiplHand;
+import net.freecivx.server.Diplomats;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -189,10 +190,10 @@ class AiMilitary {
         }
         if (targetTile < 0) return;
 
-        if (game.isTileAdjacentOrEqual(unit.getTile(), targetTile)) {
+        if (Diplomats.isTileAdjacentOrEqual(game, unit.getTile(), targetTile)) {
             Tile tt = game.tiles.get(targetTile);
             if (tt != null && tt.getWorked() > 0) {
-                game.establishEmbassy(unit.getId(), tt.getWorked());
+                Diplomats.establishEmbassy(game, unit.getId(), tt.getWorked());
             }
             return;
         }

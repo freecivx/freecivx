@@ -547,4 +547,52 @@ public class CityTools {
         // Future implementation: track home city on Unit and pay upkeep
         log.debug("City {} supports unit {}", cityId, unitId);
     }
+
+    /** Captures or razes a city after the last defender is defeated. Mirrors city_conquest(). */
+    public static void captureOrRazeCity(Game game, Unit attacker, City city, long cityId, Tile cityTile) {
+        long oldOwner = city.getOwner();
+        long newOwner = attacker.getOwner();
+        String cityName = city.getName();
+
+        if (city.getSize() <= 1) {
+            for (long workedTileId : city.getWorkedTiles()) {
+                Tile wt = game.tiles.get(workedTileId);
+                if (wt != null) {
+                    wt.setWorked(-1);
+                    game.getServer().sendTileInfoAll(wt);
+                }
+            }
+            cityTile.setWorked(-1);
+            game.getServer().sendTileInfoAll(cityTile);
+            removeCity(game, cityId);
+            CityTurn.updateBorders(game);
+            game.getServer().sendMessageAll(cityName + " has been razed!");
+            log.info("City razed: {} (owner: {})", cityName, getPlayerName(game, oldOwner));
+            Notify.notifyPlayer(game, game.getServer(), oldOwner,
+                    cityName + " has been razed by the enemy!");
+        } else {
+            city.setOwner(newOwner);
+            city.setSize(city.getSize() - 1);
+            city.setProductionKind(0);
+            city.setProductionValue(-1);
+            city.setShieldStock(0);
+            VisibilityHandler.sendCityToVisiblePlayers(game, cityId);
+            CityTurn.updateBorders(game);
+            game.getServer().sendMessageAll(cityName + " has been captured!");
+            log.info("City captured: {} by {} from {}", cityName,
+                    getPlayerName(game, newOwner), getPlayerName(game, oldOwner));
+            Notify.notifyPlayer(game, game.getServer(), newOwner,
+                    "Our forces have captured " + cityName + "!");
+            Notify.notifyPlayer(game, game.getServer(), oldOwner,
+                    cityName + " has been captured by the enemy!");
+        }
+
+        attacker.setTile(cityTile.getIndex());
+        attacker.setMovesleft(0);
+    }
+
+    private static String getPlayerName(Game game, long playerId) {
+        net.freecivx.game.Player p = game.players.get(playerId);
+        return p != null ? p.getUsername() : "?";
+    }
 }
