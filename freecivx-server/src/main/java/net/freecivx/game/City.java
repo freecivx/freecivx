@@ -97,6 +97,21 @@ public class City {
      */
     private CmParameter cmParameter = null;
 
+    /**
+     * Count of specialists assigned to this city, indexed by specialist type.
+     * The three types match the classic Freeciv specialist order:
+     * <ul>
+     *   <li>index 0 – Entertainer (produces 1 luxury)</li>
+     *   <li>index 1 – Taxman     (produces 1 gold)</li>
+     *   <li>index 2 – Scientist  (produces 2 beakers)</li>
+     * </ul>
+     * The sum {@code specialists[0] + specialists[1] + specialists[2]} equals
+     * {@code city.getSize() - city.getWorkedTiles().size()} (citizens not
+     * working a tile).  Mirrors {@code pcity->specialists[SP_MAX]} in the C
+     * Freeciv city struct.
+     */
+    private int[] specialists = new int[]{0, 0, 0};
+
     // Constructor (backwards-compatible: accepts the old String improvements arg and ignores it)
     public City(String name, long owner, long tile, int size, int style, boolean capital, boolean occupied, int walls,
                 boolean happy, boolean unhappy, String improvements, int productionKind, int productionValue) {
@@ -349,6 +364,50 @@ public class City {
     /** Sets the CMA parameters; pass {@code null} to disable the city governor. */
     public void setCmParameter(CmParameter cmParameter) {
         this.cmParameter = cmParameter;
+    }
+
+    /**
+     * Returns the specialists array for this city.
+     * Index 0 = Entertainers, 1 = Taxmen, 2 = Scientists.
+     * The total of all elements equals {@code getSize() - getWorkedTiles().size()}.
+     */
+    public int[] getSpecialists() {
+        return specialists;
+    }
+
+    /**
+     * Returns the total number of specialists (citizens not working a tile).
+     * Equals {@code getSize() - getWorkedTiles().size()}.
+     */
+    public int getTotalSpecialists() {
+        return specialists[0] + specialists[1] + specialists[2];
+    }
+
+    /**
+     * Redistributes the specialist counts so that the total equals
+     * {@code getSize() - getWorkedTiles().size()}, preserving existing type
+     * ratios where possible.  Extra citizens are assigned to Entertainers
+     * (index 0) and surplus citizens are removed starting from Scientists
+     * (index 2) down.
+     * Call this whenever the worked-tile count or city size changes outside
+     * the city governor.
+     */
+    public void syncSpecialists() {
+        int target = Math.max(0, size - workedTiles.size());
+        int current = specialists[0] + specialists[1] + specialists[2];
+        int diff = target - current;
+        if (diff > 0) {
+            // Need more specialists – add as Entertainers
+            specialists[0] += diff;
+        } else if (diff < 0) {
+            // Need fewer specialists – remove from Scientists first, then Taxmen, then Entertainers
+            int toRemove = -diff;
+            for (int i = 2; i >= 0 && toRemove > 0; i--) {
+                int removed = Math.min(specialists[i], toRemove);
+                specialists[i] -= removed;
+                toRemove -= removed;
+            }
+        }
     }
 
     @Override

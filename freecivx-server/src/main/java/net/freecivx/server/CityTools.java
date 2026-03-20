@@ -242,24 +242,48 @@ public class CityTools {
         // "Cannot read properties of undefined (reading '5')" crash.
         // Indices 0–4 are intermediate stages; use 0 as a safe placeholder.
         // Index 5 is derived from the city's computed happy/unhappy state.
-        int citySize       = city.getSize();
+        //
+        // Specialists are citizens not working any tile.  They are displayed as
+        // separate specialist icons in the city dialog, so the ppl_* counts must
+        // only cover tile-working citizens (numWorkers).  This mirrors the C
+        // Freeciv server where ppl_* arrays count only non-specialist citizens.
+        int citySize        = city.getSize();
+        int numWorkers      = city.getWorkedTiles().size();
+        // Clamp to valid range: workers cannot exceed city size.
+        numWorkers = Math.min(numWorkers, citySize);
         boolean cityHappy   = city.isHappy();
         boolean cityUnhappy = city.isUnhappy();
 
         JSONArray pplHappy = new JSONArray();
         for (int i = 0; i < 5; i++) pplHappy.put(0);
-        pplHappy.put(cityHappy ? citySize : 0);
+        pplHappy.put(cityHappy ? numWorkers : 0);
 
         JSONArray pplContent = new JSONArray();
-        for (int i = 0; i < 5; i++) pplContent.put(citySize);
-        pplContent.put((!cityHappy && !cityUnhappy) ? citySize : 0);
+        for (int i = 0; i < 5; i++) pplContent.put(numWorkers);
+        pplContent.put((!cityHappy && !cityUnhappy) ? numWorkers : 0);
 
         JSONArray pplUnhappy = new JSONArray();
         for (int i = 0; i < 5; i++) pplUnhappy.put(0);
+        // Send 1 unhappy citizen when city is in disorder; 0 otherwise.
+        // The value "1" is not a worker count – it satisfies the JS city_unhappy()
+        // check (ppl_happy[5] < ppl_unhappy[5] + 2*ppl_angry[5]) when the server
+        // has already determined the city is unhappy.  Specialists are displayed
+        // separately and are not included in ppl_unhappy.
         pplUnhappy.put(cityUnhappy ? 1 : 0);
 
         JSONArray pplAngry = new JSONArray();
         for (int i = 0; i < 6; i++) pplAngry.put(0);
+
+        // Build the specialists JSON array.
+        // The client reads pcity['specialists'][u] for each of the SP_MAX=3 types:
+        //   0 = Entertainer, 1 = Taxman, 2 = Scientist.
+        // Mirrors the specialists[] array in PACKET_CITY_INFO from the C Freeciv server.
+        // specialists_size is the number of specialist types (always 3 in classic rules).
+        int[] specCounts = city.getSpecialists();
+        JSONArray specialistsArr = new JSONArray();
+        for (int sc : specCounts) {
+            specialistsArr.put(sc);
+        }
 
         // Translate internal production kind to Freeciv Universal Value Type constants
         // used by the network protocol.  The server stores kind as 0 (unit) or 1
@@ -329,6 +353,8 @@ public class CityTools {
         msg.put("ppl_content", pplContent);
         msg.put("ppl_unhappy", pplUnhappy);
         msg.put("ppl_angry", pplAngry);
+        msg.put("specialists", specialistsArr);
+        msg.put("specialists_size", specCounts.length);
         msg.put("surplus", surplus);
         msg.put("prod", prod);
         msg.put("worklist", worklistArr);
