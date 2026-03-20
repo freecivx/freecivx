@@ -117,7 +117,7 @@ public class CivServer extends org.java_websocket.server.WebSocketServer impleme
 
         long humanCount = game.players.values().stream().filter(p -> !p.isAi()).count();
         String welcomeMsg = String.format(
-                "Welcome to Freecivx server! " +
+                "Welcome to Freecivx server! This is the new Freeciv server, running on Java. Development version.  " +
                 "Version: %s | Players connected: %d | " +
                 "Game started: %s | Your connection ID: %d",
                 SERVER_VERSION,
