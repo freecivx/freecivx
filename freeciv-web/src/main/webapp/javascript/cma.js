@@ -18,8 +18,6 @@
 ***********************************************************************/
 
 // CMA for Freecivx.com
-// The governor algorithm runs entirely in JavaScript (see cm.js); no server
-// round-trip is needed to optimise citizen placement.
 
 var _cma_val_sliders = [1,0,0,0,0,0];
 var _cma_min_sliders = [0,0,0,0,0,0];
@@ -38,70 +36,100 @@ function show_city_governor_tab()
 { // Reject cases which can't show the Governor: -----------------------------------------------
   if (client_is_observer() || client.conn.playing == null) return false;
   if (!active_city) return false;
+  // this should disable CMA in saved games started before CMA was put in:
+  if (!active_city['cm_parameter']) {
+    // could we just insert a cm_parameter for the city with a default?
+    $("#city_governor_tab").html("Game was started before City Governor feature was added.");
+    return false;
+  }
   if (city_owner_player_id(active_city) != client.conn.playing.playerno) {
     $("#city_governor_tab").html("City Governor available only for domestic cities.");
     return false;
   }
 
-  /* Read state from the JS-side cm_city_params store. */
-  var state   = cm_city_params[active_city['id']];
-  var enabled = state && state['enabled'];
-  var param   = state && state['parameter'];
+  if (typeof active_city['cm_parameter'] !== 'undefined') {
+    $("#cma_food").prop('checked', active_city['cma_enabled'] && active_city['cm_parameter']['factor'][0] == 6);
+    $("#cma_shield").prop('checked', active_city['cma_enabled'] && active_city['cm_parameter']['factor'][1] == 6);
+    $("#cma_trade").prop('checked', active_city['cma_enabled'] && active_city['cm_parameter']['factor'][2] == 6);
+    $("#cma_gold").prop('checked', active_city['cma_enabled'] && active_city['cm_parameter']['factor'][3] == 6);
+    $("#cma_luxury").prop('checked', active_city['cma_enabled'] && active_city['cm_parameter']['factor'][4] == 6);
+    $("#cma_science").prop('checked', active_city['cma_enabled'] && active_city['cm_parameter']['factor'][5] == 6);
+  } else {
+    $("#cma_food").prop('checked', false);
+    $("#cma_shield").prop('checked', false);
+    $("#cma_trade").prop('checked', false);
+    $("#cma_gold").prop('checked', false);
+    $("#cma_luxury").prop('checked', false);
+    $("#cma_science").prop('checked', false);
+  }
 
-  $("#cma_food").prop('checked',    enabled && param && param['factor'][O_FOOD]    == 6);
-  $("#cma_shield").prop('checked',  enabled && param && param['factor'][O_SHIELD]  == 6);
-  $("#cma_trade").prop('checked',   enabled && param && param['factor'][O_TRADE]   == 6);
-  $("#cma_gold").prop('checked',    enabled && param && param['factor'][O_GOLD]    == 6);
-  $("#cma_luxury").prop('checked',  enabled && param && param['factor'][O_LUXURY]  == 6);
-  $("#cma_science").prop('checked', enabled && param && param['factor'][O_SCIENCE] == 6);
 }
 
 /**************************************************************************
-  Applies new CMA parameters from the UI, stores them locally, and runs
-  the JS governor immediately.  No server call is made for the optimisation
-  itself; only tile-assignment packets (make_worker / make_specialist) are
-  sent once the best layout has been computed.
+  Sends new CMA parameters to the server, populated from the UI states.
 **************************************************************************/
 function request_new_cma(city_id)
 {
   var cm_parameter = {};
 
-  _cma_val_sliders[O_FOOD]    = $("#cma_food").prop('checked')    ? 6 : 0;
-  _cma_val_sliders[O_SHIELD]  = $("#cma_shield").prop('checked')  ? 6 : 0;
-  _cma_val_sliders[O_TRADE]   = $("#cma_trade").prop('checked')   ? 6 : 0;
-  _cma_val_sliders[O_GOLD]    = $("#cma_gold").prop('checked')    ? 6 : 0;
-  _cma_val_sliders[O_LUXURY]  = $("#cma_luxury").prop('checked')  ? 6 : 0;
-  _cma_val_sliders[O_SCIENCE] = $("#cma_science").prop('checked') ? 6 : 0;
-
-  cm_parameter['minimal_surplus']  = [..._cma_min_sliders];
-  cm_parameter['require_happy']    = _cma_celebrate;
-  cm_parameter['allow_disorder']   = _cma_allow_disorder;
-  cm_parameter['max_growth']       = _cma_no_farmer;
-  cm_parameter['allow_specialists'] = _cma_allow_specialists;
-  cm_parameter['factor']           = [..._cma_val_sliders];
-  cm_parameter['happy_factor']     = _cma_happy_slider;
-
-  var cma_disabled = (_cma_val_sliders[O_FOOD]   === 0
-                   && _cma_val_sliders[O_SHIELD]  === 0
-                   && _cma_val_sliders[O_TRADE]   === 0
-                   && _cma_val_sliders[O_GOLD]    === 0
-                   && _cma_val_sliders[O_LUXURY]  === 0
-                   && _cma_val_sliders[O_SCIENCE] === 0);
-
-  if (cma_disabled) {
-    /* Governor disabled: clear local state. */
-    delete cm_city_params[city_id];
+  if ($("#cma_food").prop('checked')) {
+    _cma_val_sliders[0] = 6;
   } else {
-    /* Store parameter and run the governor immediately. */
-    cm_city_params[city_id] = { enabled: true, parameter: cm_parameter };
-    var pcity = cities[city_id];
-    if (pcity) {
-      var result = cm_query_result(pcity, cm_parameter);
-      if (result && result.found_a_valid) {
-        cm_apply_result(pcity, result);
-      }
-    }
+    _cma_val_sliders[0] = 0;
   }
+
+  if ($("#cma_shield").prop('checked')) {
+    _cma_val_sliders[1] = 6;
+  } else {
+    _cma_val_sliders[1] = 0;
+  }
+
+  if ($("#cma_trade").prop('checked')) {
+    _cma_val_sliders[2] = 6;
+  } else {
+    _cma_val_sliders[2] = 0;
+  }
+
+  if ($("#cma_gold").prop('checked')) {
+    _cma_val_sliders[3] = 6;
+  } else {
+    _cma_val_sliders[3] = 0;
+  }
+
+  if ($("#cma_luxury").prop('checked')) {
+    _cma_val_sliders[4] = 6;
+  } else {
+    _cma_val_sliders[4] = 0;
+  }
+
+  if ($("#cma_science").prop('checked')) {
+    _cma_val_sliders[5] = 6;
+  } else {
+    _cma_val_sliders[5] = 0;
+  }
+
+  cm_parameter['minimal_surplus'] = [..._cma_min_sliders];
+  cm_parameter['require_happy'] = _cma_celebrate;
+  cm_parameter['allow_disorder'] = _cma_allow_disorder;
+  cm_parameter['max_growth'] = _cma_no_farmer; /* temp. used as substitute for no_farmer because wasn't latter wasn't building into our return packets! */
+  cm_parameter['allow_specialists'] = _cma_allow_specialists;
+  cm_parameter['factor'] = [..._cma_val_sliders];
+  cm_parameter['happy_factor'] = _cma_happy_slider;
+
+  var cma_disabled = (!$("#cma_food").prop('checked') && !$("#cma_shield").prop('checked') && !$("#cma_trade").prop('checked')
+                   && !$("#cma_gold").prop('checked') && !$("#cma_luxury").prop('checked') && !$("#cma_science").prop('checked') );
+
+  if (!cma_disabled) {
+    var packet = {"pid" : packet_web_cma_set,
+                "id" : city_id,
+                "cm_parameter" : cm_parameter };
+    send_request(JSON.stringify(packet));
+  } else {
+    packet = {"pid" : packet_web_cma_clear,
+                "id" : city_id};
+    send_request(JSON.stringify(packet));
+  }
+
 }
 
 /**************************************************************************
