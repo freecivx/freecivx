@@ -45,6 +45,7 @@ public class Packets {
     public static int PACKET_CITY_NAME_SUGGESTION_INFO = 44;
     public static int PACKET_WEB_CITY_INFO_ADDITION = 256;
 
+    public static int PACKET_PLAYER_REMOVE = 50;
     public static int PACKET_PLAYER_INFO = 51;
     public static int PACKET_PLAYER_PHASE_DONE = 52;
     public static int PACKET_PLAYER_RATES = 53;
