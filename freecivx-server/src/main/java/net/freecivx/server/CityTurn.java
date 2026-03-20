@@ -1182,7 +1182,23 @@ public class CityTurn {
                         "Famine in " + city.getName() + "! Population has decreased to "
                                 + city.getSize() + ".");
             }
-            city.setFoodStock(0);
+            // After shrinking, apply granary savings so the city retains partial food.
+            // Mirrors city_shrink_granary_savings() / city_reset_foodbox() in the C server:
+            //   EFT_SHRINK_FOOD: Granary = 50%, Pyramids = 25% of new granary capacity.
+            // Without a Granary the food stock is reset to 0, matching the C server default.
+            int newGranarySize = cityGranarySize(city.getSize());
+            boolean hasPyramidsForShrink = playerHasWonder(game, city.getOwner(), "Pyramids");
+            if (city.hasImprovement(granaryImprId)) {
+                int savedFood = newGranarySize / 2;  // Granary: 50% retained on shrink
+                if (hasPyramidsForShrink) {
+                    savedFood = (newGranarySize * 3) / 4;  // Granary + Pyramids: 75% retained
+                }
+                city.setFoodStock(Math.min(savedFood, newGranarySize));
+            } else if (hasPyramidsForShrink) {
+                city.setFoodStock(newGranarySize / 4);  // Pyramids alone: 25% on shrink
+            } else {
+                city.setFoodStock(0);
+            }
         }
 
         VisibilityHandler.sendCityToVisiblePlayers(game, cityId);

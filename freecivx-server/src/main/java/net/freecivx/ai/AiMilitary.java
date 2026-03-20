@@ -357,9 +357,12 @@ class AiMilitary {
 
     /**
      * Returns the best available military defender the player can build.
+     * Covers the full classic-ruleset progression through Riflemen.
      * Mirrors {@code dai_build_adv_adjust_tech()} in {@code ai/default/daibuild.c}.
      */
     int bestAvailableDefender(Player player) {
+        if (ai.techConscription >= 0 && ai.unitRiflemen   >= 0 && player.hasTech(ai.techConscription))  return ai.unitRiflemen;
+        if (ai.techGunpowder    >= 0 && ai.unitMusketeers >= 0 && player.hasTech(ai.techGunpowder))      return ai.unitMusketeers;
         if (player.hasTech(ai.techIronWorking))   return ai.unitLegion;
         if (player.hasTech(ai.techWarriorCode))   return ai.unitArchers;
         if (player.hasTech(ai.techBronzeWorking)) return ai.unitPhalanx;
@@ -368,9 +371,15 @@ class AiMilitary {
 
     /**
      * Returns the best available offensive unit the player can build.
+     * Covers the full classic-ruleset progression from Warriors through Armor.
      * Mirrors {@code dai_choose_attacker()} in {@code ai/default/daimilitary.c}.
      */
     int bestAvailableAttacker(Player player) {
+        if (ai.techMobileWarfare >= 0 && ai.unitArmor    >= 0 && player.hasTech(ai.techMobileWarfare)) return ai.unitArmor;
+        if (ai.techTactics       >= 0 && ai.unitCavalry  >= 0 && player.hasTech(ai.techTactics))       return ai.unitCavalry;
+        if (ai.techConscription  >= 0 && ai.unitRiflemen >= 0 && player.hasTech(ai.techConscription))  return ai.unitRiflemen;
+        if (ai.techChivalry      >= 0 && ai.unitKnights  >= 0 && player.hasTech(ai.techChivalry))      return ai.unitKnights;
+        if (ai.techGunpowder     >= 0 && ai.unitMusketeers >= 0 && player.hasTech(ai.techGunpowder))   return ai.unitMusketeers;
         if (player.hasTech(ai.techHorsebackRiding)) return ai.unitHorsemen;
         if (player.hasTech(ai.techIronWorking))     return ai.unitLegion;
         if (player.hasTech(ai.techWarriorCode))     return ai.unitArchers;
