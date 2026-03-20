@@ -1600,40 +1600,58 @@ public class CityTurn {
 
         int requiredRate = 0;
 
+        // Government's Unhappy_Factor: mirrors EFT_UNHAPPY_FACTOR in effects.ruleset
+        // Republic=1, Democracy=2 (0 for other governments).
+        int unitUnhappyFactor = 0;
+        if (gov != null) {
+            String gn = gov.getRuleName();
+            if ("Republic".equals(gn))   unitUnhappyFactor = 1;
+            else if ("Democracy".equals(gn)) unitUnhappyFactor = 2;
+        }
+
         for (Map.Entry<Long, City> entry : game.cities.entrySet()) {
             City city = entry.getValue();
             if (city.getOwner() != playerId) continue;
+            long cityId = entry.getKey();
 
             int baseUnhappy = Math.max(0, city.getSize() - unhappyThreshold);
-            if (baseUnhappy == 0) continue;
 
             // Building make_content (mirrors updateCityHappiness)
             int makeContent = 0;
             if (city.hasImprovement(templeId))    makeContent += 1;
             if (city.hasImprovement(colosseumId)) makeContent += 3;
             if (city.hasImprovement(cathedralId)) makeContent += 3;
-            if (gov != null && city.hasImprovement(policeStationId) && !hasWomensSuffrage) {
-                String govName = gov.getRuleName();
-                if ("Democracy".equals(govName))      makeContent += 2;
-                else if ("Republic".equals(govName))  makeContent += 1;
-            }
 
             // Wonder make_content bonuses (mirrors updateCityHappiness wonder checks)
             if (city.hasImprovement(templeId) && hasOracle) makeContent += 2;
             if (hasHangingGardens)   makeContent += 1;
             if (hasJSBach)           makeContent += 2;
             if (hasMichelangelo)     makeContent += 3;
-            if (hasWomensSuffrage && gov != null) {
-                String govName = gov.getRuleName();
-                if ("Democracy".equals(govName))      makeContent += 2;
-                else if ("Republic".equals(govName))  makeContent += 1;
-            }
             // Shakespeare's Theatre: all citizens content in the city (no luxury needed)
             if (city.hasImprovement(findImprId(game, "Shakespeare's Theater", -1))) {
                 makeContent += city.getSize();
             }
 
-            int netUnhappy = Math.max(0, baseUnhappy - makeContent);
+            // EFT_MAKE_CONTENT_MIL: free military-unhappy slots from Police Station
+            // or Women's Suffrage (mirrors city_support() free_unhappy in common/city.c).
+            int freeUnhappyMil = 0;
+            if (gov != null && city.hasImprovement(policeStationId) && !hasWomensSuffrage) {
+                String govName = gov.getRuleName();
+                if ("Democracy".equals(govName))      freeUnhappyMil += 2;
+                else if ("Republic".equals(govName))  freeUnhappyMil += 1;
+            }
+            if (hasWomensSuffrage && gov != null) {
+                String govName = gov.getRuleName();
+                if ("Democracy".equals(govName))      freeUnhappyMil += 2;
+                else if ("Republic".equals(govName))  freeUnhappyMil += 1;
+            }
+
+            // Count unit-caused unhappiness for units homed to this city
+            // (mirrors city_unit_unhappiness() in common/city.c).
+            int unitCausedUnhappy = computeUnitCausedUnhappy(game, cityId,
+                    unitUnhappyFactor, freeUnhappyMil);
+
+            int netUnhappy = Math.max(0, baseUnhappy - makeContent) + unitCausedUnhappy;
             if (netUnhappy == 0) continue;
 
             // Luxury needed to neutralise all unhappy citizens.
@@ -1660,6 +1678,45 @@ public class CityTurn {
     }
 
     /**
+     * Computes the net unhappy citizens caused by military units homed to the
+     * given city, after absorbing as many unit happy costs as possible from the
+     * {@code freeUnhappyMil} budget (from Police Station / Women's Suffrage).
+     *
+     * <p>Each unit homed to the city with {@code happyCost > 0} costs
+     * {@code happyCost × unitUnhappyFactor} unhappy citizens.  The first
+     * {@code freeUnhappyMil} points of that cost are absorbed for free;
+     * the remainder is added to the returned count.
+     *
+     * <p>Mirrors {@code city_unit_unhappiness()} and the unit loop in
+     * {@code city_support()} from the C Freeciv server's {@code common/city.c}.
+     *
+     * @param game              the current game state
+     * @param cityId            the city whose homed units to evaluate
+     * @param unitUnhappyFactor government multiplier: 0 = no effect, 1 = Republic, 2 = Democracy
+     * @param freeUnhappyMil    free happy slots from {@code EFT_MAKE_CONTENT_MIL}
+     *                          (Police Station or Women's Suffrage)
+     * @return net unhappy citizens caused by military units in this city
+     */
+    private static int computeUnitCausedUnhappy(Game game, long cityId,
+            int unitUnhappyFactor, int freeUnhappyMil) {
+        if (unitUnhappyFactor <= 0) return 0;
+        int unitCausedUnhappy = 0;
+        for (Unit unit : game.units.values()) {
+            if (unit.getHomecity() != cityId) continue;
+            UnitType utype = game.unitTypes.get((long) unit.getType());
+            if (utype == null || utype.getHappyCost() <= 0) continue;
+            int cost = utype.getHappyCost() * unitUnhappyFactor;
+            if (freeUnhappyMil >= cost) {
+                freeUnhappyMil -= cost;
+            } else {
+                unitCausedUnhappy += cost - freeUnhappyMil;
+                freeUnhappyMil = 0;
+            }
+        }
+        return unitCausedUnhappy;
+    }
+
+    /**
      * Calculates and updates the happiness state of a city based on its size,
      * government type, happiness-producing buildings, and luxury goods output.
      *
@@ -1674,6 +1731,12 @@ public class CityTurn {
      *   <li>The {@code EFT_MAKE_CONTENT} effect from buildings (Temple = 1,
      *       Colosseum = 3, Cathedral = 3) converts unhappy citizens back to
      *       content, mirroring {@code citizen_content_buildings()} in
+     *       {@code common/city.c}.</li>
+     *   <li>Military units homed to the city cause additional unhappiness
+     *       scaled by the government's {@code Unhappy_Factor} (Republic = 1,
+     *       Democracy = 2), reduced by free slots from Police Station or
+     *       Women's Suffrage ({@code EFT_MAKE_CONTENT_MIL}).  Mirrors
+     *       {@code city_unit_unhappiness()} and {@code city_support()} in
      *       {@code common/city.c}.</li>
      *   <li>Luxury goods output (trade × player's luxury rate) further reduces
      *       unhappiness: each {@value #HAPPY_COST} luxury points converts one
@@ -1742,18 +1805,19 @@ public class CityTurn {
         if (city.hasImprovement(cathedralId)) makeContent += 3;
         // Police Station: Make_Content_Mil — reduces military-caused unhappiness.
         // Republic: +1, Democracy: +2 (mirrors effect_police_station[_1] in
-        // classic effects.ruleset).  Applied here as general make_content since
-        // this implementation does not track military unhappiness separately.
+        // classic effects.ruleset).  Applied to military-caused unhappiness only
+        // (as EFT_MAKE_CONTENT_MIL in city_support() of common/city.c).
         // NOTE: these effects require Women's Suffrage to be ABSENT (per effects.ruleset:
         // "Building", "Women's Suffrage", "Player", FALSE).  When Women's Suffrage is
         // present, its own Make_Content_Mil effects apply instead (see below).
         boolean hasWomensSuffrage = playerHasWonder(game, city.getOwner(), "Women's Suffrage");
+        int freeUnhappyMil = 0; // free slots that absorb military unhappiness
         if (gov != null && city.hasImprovement(policeStationId) && !hasWomensSuffrage) {
             String govName = gov.getRuleName();
             if ("Democracy".equals(govName)) {
-                makeContent += 2;
+                freeUnhappyMil += 2;
             } else if ("Republic".equals(govName)) {
-                makeContent += 1;
+                freeUnhappyMil += 1;
             }
         }
 
@@ -1795,9 +1859,9 @@ public class CityTurn {
         if (hasWomensSuffrage && gov != null) {
             String govName = gov.getRuleName();
             if ("Democracy".equals(govName)) {
-                makeContent += 2;
+                freeUnhappyMil += 2;
             } else if ("Republic".equals(govName)) {
-                makeContent += 1;
+                freeUnhappyMil += 1;
             }
         }
 
@@ -1808,8 +1872,27 @@ public class CityTurn {
             makeContent += city.getSize(); // enough to satisfy everyone
         }
 
-        // Net unhappy citizens after applying building effects
-        int netUnhappy = Math.max(0, baseUnhappy - makeContent);
+        // Military unit happiness cost: units homed to this city with happyCost > 0
+        // cause unhappiness scaled by the government's Unhappy_Factor effect.
+        //   Republic:  Unhappy_Factor = 1 → 1 unhappy citizen per unit
+        //   Democracy: Unhappy_Factor = 2 → 2 unhappy citizens per unit
+        // freeUnhappyMil (from Police Station or Women's Suffrage) absorbs some
+        // of this military unhappiness before it is counted.
+        // Mirrors city_unit_unhappiness() / city_support() in common/city.c.
+        int unitUnhappyFactor = 0;
+        if (gov != null) {
+            String govName = gov.getRuleName();
+            if ("Republic".equals(govName)) {
+                unitUnhappyFactor = 1;
+            } else if ("Democracy".equals(govName)) {
+                unitUnhappyFactor = 2;
+            }
+        }
+        int unitCausedUnhappy = computeUnitCausedUnhappy(game, cityId,
+                unitUnhappyFactor, freeUnhappyMil);
+
+        // Net unhappy citizens after applying building effects and unit costs
+        int netUnhappy = Math.max(0, baseUnhappy - makeContent) + unitCausedUnhappy;
 
         // Apply luxury-goods happiness effect.
         // Mirrors citizen_happy_luxury() / citizen_luxury_happy() in common/city.c.
