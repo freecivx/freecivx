@@ -99,6 +99,7 @@ public class AiPlayer {
     int imprUniversity    = -1; // Science × 2 (University tech, Library prereq)
     int imprBank          = -1; // Gold × 1.5 (Banking tech, Marketplace prereq)
     int imprCourthouse    = -1; // Reduces corruption (Code of Laws required)
+    int imprCathedral     = -1; // Happiness +3 (Monotheism tech, Temple prereq)
     // Late-game production and economy buildings
     int imprFactory       = -1; // Shields +50% (Industrialization tech)
     int imprResearchLab   = -1; // Science +200% with Library+University (Computers tech)
@@ -170,6 +171,7 @@ public class AiPlayer {
     long techPlastics           = -1L; // req: Refining + Space Flight — Space Component
     long techSuperconductors    = -1L; // req: Plastics + Labor Union — Space Module
     long techSpaceFlight        = -1L; // req: Computers + Rocketry — Space Structural, Apollo Program
+    long techMonotheism         = -1L; // req: Philosophy + Mysticism — Cathedral
 
     /** AI diplomacy subsystem. Mirrors daidiplomacy.c in the C Freeciv server. */
     private final AiDiplomacy aiDiplomacy = new AiDiplomacy();
@@ -332,6 +334,7 @@ public class AiPlayer {
                 case "University":     imprUniversity    = id; break;
                 case "Bank":           imprBank          = id; break;
                 case "Courthouse":     imprCourthouse    = id; break;
+                case "Cathedral":      imprCathedral     = id; break;
                 case "Factory":          imprFactory          = id; break;
                 case "Research Lab":     imprResearchLab      = id; break;
                 case "Stock Exchange":   imprStockExchange    = id; break;
@@ -382,6 +385,7 @@ public class AiPlayer {
                 case "Plastics":          techPlastics          = id; break;
                 case "Superconductors":   techSuperconductors   = id; break;
                 case "Space Flight":      techSpaceFlight       = id; break;
+                case "Monotheism":        techMonotheism        = id; break;
                 default: break;
             }
         }
@@ -784,6 +788,7 @@ public class AiPlayer {
             techLiteracy,             // Philosophy prereq → University chain
             techCeremonialBurial,     // Temple + Monarchy prerequisite
             techMysticism,            // Philosophy prereq → University chain
+            techMonotheism,           // Cathedral (happiness +3, requires Temple)
             techMonarchy,             // Better government (less corruption)
             techFeudalism,            // Pikemen — 2× defence vs Horse units
             techHorsebackRiding,      // Horsemen (fast raider, 2 move)

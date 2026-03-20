@@ -206,6 +206,24 @@ public class Game {
      */
     static final int IDLE_TURNS_BEFORE_AI_TAKEOVER = 3;
 
+    /**
+     * Global warming accumulator.  Incremented each turn by the number of
+     * pollution tiles on the map; reset to zero after a warming event fires.
+     * Mirrors {@code game.info.globalwarming} in the C Freeciv server's
+     * {@code common/game.h}.
+     */
+    public int globalWarmingAccum = 0;
+
+    /**
+     * Global warming level threshold.  When {@code globalWarmingAccum} exceeds
+     * this value a warming event may be triggered.  Increases after each warming
+     * event to require more and more pollution before the next one fires.
+     * Mirrors {@code game.info.warminglevel} in the C Freeciv server, initialised
+     * to {@code (map_tiles + 499) / 500} in {@code create_startunits()}.
+     * Default is 8 (for a 80×50 = 4000-tile map), set in {@link #initGame()}.
+     */
+    public int globalWarmingLevel = 8;
+
     public WorldMap map;
     public Map<Long, Player> players = new HashMap<>();
     public Map<Long, Unit> units = new HashMap<>();
@@ -543,6 +561,12 @@ public class Game {
                 ? new MapGenerator(map.getXsize(), map.getYsize(), mapSeed)
                 : new MapGenerator(map.getXsize(), map.getYsize());
         tiles = (generator == 5) ? mapGen.generateIslandMap() : mapGen.generateMap();
+
+        // Set the global warming threshold based on map size.
+        // Mirrors the warminglevel initialisation in the C Freeciv server:
+        //   game.info.warminglevel = (map_num_tiles() + 499) / 500;
+        int mapTiles = map.getXsize() * map.getYsize();
+        globalWarmingLevel = Math.max(1, (mapTiles + 499) / 500);
     }
 
     /**

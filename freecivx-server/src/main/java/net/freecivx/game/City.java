@@ -73,6 +73,23 @@ public class City {
      */
     private int anarchy = 0;
 
+    /**
+     * Number of consecutive turns this city has been celebrating (all citizens
+     * happy).  Incremented each turn {@link #wasHappy} is {@code true}; reset to
+     * zero when the city is no longer happy.  Mirrors the {@code rapture} field
+     * in the C Freeciv city struct (see {@code city_rapture_grow()} in
+     * {@code common/city.c}).
+     */
+    private int rapture = 0;
+
+    /**
+     * Whether this city was happy at the <em>end of the previous turn</em>.
+     * Used to determine whether the city can grow by rapture this turn:
+     * growth only triggers if the city was happy last turn AND is still happy
+     * this turn.  Mirrors {@code pcity->was_happy} in the C Freeciv city struct.
+     */
+    private boolean wasHappy = false;
+
     // Constructor (backwards-compatible: accepts the old String improvements arg and ignores it)
     public City(String name, long owner, long tile, int size, int style, boolean capital, boolean occupied, int walls,
                 boolean happy, boolean unhappy, String improvements, int productionKind, int productionValue) {
@@ -289,6 +306,34 @@ public class City {
         this.anarchy = anarchy;
     }
 
+    /**
+     * Returns the number of consecutive turns this city has been celebrating.
+     * Used by {@link net.freecivx.server.CityTurn#cityGrowth} to implement
+     * rapture growth (cities in Republic/Democracy grow each happy turn).
+     * Mirrors {@code pcity->rapture} in the C Freeciv city struct.
+     */
+    public int getRapture() {
+        return rapture;
+    }
+
+    /** Sets the rapture (celebrating) counter for this city. */
+    public void setRapture(int rapture) {
+        this.rapture = rapture;
+    }
+
+    /**
+     * Returns whether this city was happy at the end of the previous turn.
+     * Mirrors {@code pcity->was_happy} in the C Freeciv city struct.
+     */
+    public boolean isWasHappy() {
+        return wasHappy;
+    }
+
+    /** Sets the previous-turn happiness flag for this city. */
+    public void setWasHappy(boolean wasHappy) {
+        this.wasHappy = wasHappy;
+    }
+
     @Override
     public String toString() {
         return "City{" +
@@ -306,6 +351,7 @@ public class City {
                 ", productionKind=" + productionKind +
                 ", productionValue=" + productionValue +
                 ", shieldStock=" + shieldStock +
+                ", rapture=" + rapture +
                 '}';
     }
 }

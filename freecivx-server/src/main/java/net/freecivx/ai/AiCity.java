@@ -228,6 +228,18 @@ class AiCity {
             }
         }
 
+        // Priority 11.5: Cathedral for citizen happiness in large cities (requires Monotheism
+        // tech and Temple prerequisite).  Makes 3 unhappy citizens content — same effect as
+        // Colosseum but requires a different tech path.  Mirrors daicity.c priority.
+        if (!city.hasImprovement(ai.imprCathedral) && ai.imprCathedral >= 0 && city.getSize() >= 6) {
+            Improvement cathedral = game.improvements.get((long) ai.imprCathedral);
+            if (cathedral != null && canBuildImprovement(owner, city, cathedral)) {
+                city.setProductionKind(1);
+                city.setProductionValue(ai.imprCathedral);
+                return;
+            }
+        }
+
         // Priority 12: Marketplace for trade income.
         if (!city.hasImprovement(ai.imprMarketplace) && city.getSize() >= 3) {
             Improvement marketplace = game.improvements.get((long) ai.imprMarketplace);
