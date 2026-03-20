@@ -489,18 +489,14 @@ class AiMilitary {
      * @return {@code true} if an attack was initiated
      */
     boolean attackAdjacentEnemy(Unit unit, Player owner) {
-        long x = unit.getTile() % game.map.getXsize();
-        long y = unit.getTile() / game.map.getXsize();
         long ownerId = owner.getPlayerNo();
 
         UnitType myType = game.unitTypes.get((long) unit.getType());
         if (myType == null || myType.getAttackStrength() == 0) return false;
 
         for (int dir = 0; dir < 8; dir++) {
-            long nx = x + Movement.DIR_DX[dir];
-            long ny = y + Movement.DIR_DY[dir];
-            if (nx < 0 || nx >= game.map.getXsize() || ny < 0 || ny >= game.map.getYsize()) continue;
-            long neighborTileId = ny * game.map.getXsize() + nx;
+            int neighborTileId = game.nextTileInDirection(unit.getTile(), dir);
+            if (neighborTileId < 0) continue;
 
             for (Unit other : new ArrayList<>(game.units.values())) {
                 if (other.getTile() != neighborTileId) continue;
@@ -645,8 +641,6 @@ class AiMilitary {
     boolean moveUnitToward(Unit unit, UnitType utype, long targetTile) {
         if (unit.getMovesleft() <= 0) return false;
 
-        long x = unit.getTile() % game.map.getXsize();
-        long y = unit.getTile() / game.map.getXsize();
         long tx = targetTile % game.map.getXsize();
         long ty = targetTile / game.map.getXsize();
 
@@ -654,16 +648,16 @@ class AiMilitary {
         long bestDist = Long.MAX_VALUE;
 
         for (int dir = 0; dir < 8; dir++) {
-            long nx = x + Movement.DIR_DX[dir];
-            long ny = y + Movement.DIR_DY[dir];
-            if (nx < 0 || nx >= game.map.getXsize() || ny < 0 || ny >= game.map.getYsize()) continue;
-            long newTileId = ny * game.map.getXsize() + nx;
-            Tile destTile = game.tiles.get(newTileId);
+            int newTileId = game.nextTileInDirection(unit.getTile(), dir);
+            if (newTileId < 0) continue;
+            Tile destTile = game.tiles.get((long) newTileId);
             if (destTile == null) continue;
             int terrain = destTile.getTerrain();
             boolean isOcean = (terrain == TERRAIN_OCEAN || terrain == TERRAIN_DEEP_OCEAN);
             if (utype.getDomain() == 0 && isOcean) continue;
             if (utype.getDomain() == 1 && !isOcean) continue;
+            long nx = newTileId % game.map.getXsize();
+            long ny = newTileId / game.map.getXsize();
             long dist = Math.abs(nx - tx) + Math.abs(ny - ty);
             if (dist < bestDist) {
                 bestDist = dist;
@@ -672,9 +666,8 @@ class AiMilitary {
         }
 
         if (bestDir < 0) return false;
-        long nx = x + Movement.DIR_DX[bestDir];
-        long ny = y + Movement.DIR_DY[bestDir];
-        long newTileId = ny * game.map.getXsize() + nx;
+        long newTileId = game.nextTileInDirection(unit.getTile(), bestDir);
+        if (newTileId < 0) return false;
         return game.moveUnit(unit.getId(), (int) newTileId, bestDir);
     }
 
@@ -693,21 +686,17 @@ class AiMilitary {
         }
 
         long currentTile = unit.getTile();
-        long x = currentTile % game.map.getXsize();
-        long y = currentTile / game.map.getXsize();
 
         for (int dir : shuffledDirs) {
-            long nx = x + Movement.DIR_DX[dir];
-            long ny = y + Movement.DIR_DY[dir];
-            if (nx < 0 || nx >= game.map.getXsize() || ny < 0 || ny >= game.map.getYsize()) continue;
-            long newTileId = ny * game.map.getXsize() + nx;
-            Tile destTile = game.tiles.get(newTileId);
+            int newTileId = game.nextTileInDirection(unit.getTile(), dir);
+            if (newTileId < 0) continue;
+            Tile destTile = game.tiles.get((long) newTileId);
             if (destTile == null) continue;
             int terrain = destTile.getTerrain();
             boolean isOcean = (terrain == TERRAIN_OCEAN || terrain == TERRAIN_DEEP_OCEAN);
             if (utype.getDomain() == 0 && isOcean) continue;
             if (utype.getDomain() == 1 && !isOcean) continue;
-            return game.moveUnit(unit.getId(), (int) newTileId, dir);
+            return game.moveUnit(unit.getId(), newTileId, dir);
         }
         return false;
     }
