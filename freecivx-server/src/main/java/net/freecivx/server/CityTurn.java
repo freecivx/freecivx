@@ -1160,6 +1160,23 @@ public class CityTurn {
     }
 
     /**
+     * Sends a {@code PACKET_CITY_INFO} update for every city in the game to all
+     * human players who can currently see that city's tile (or own it).
+     * Called at the start of each new turn so that clients always receive the
+     * latest city state after all end-of-turn processing (city growth, production,
+     * AI city management) has completed.
+     * Mirrors the full-city-broadcast step in the C Freeciv server's
+     * {@code send_all_known_cities()} in {@code server/citytools.c}.
+     *
+     * @param game the current game state
+     */
+    public static void sendAllCitiesToVisiblePlayers(Game game) {
+        for (long cityId : new java.util.ArrayList<>(game.cities.keySet())) {
+            VisibilityHandler.sendCityToVisiblePlayers(game, cityId);
+        }
+    }
+
+    /**
      * Runs the full end-of-turn update for every city and every player.
      * Per city: food growth, production, shield accumulation.
      * Per player: gold income from trade (after corruption and building upkeep),

@@ -1074,6 +1074,12 @@ public class Game {
                 .filter(p -> !p.isAi() && p.isAlive())
                 .forEach(p -> VisibilityHandler.updateAndSendVisibility(p, this));
 
+        // Send updated city packets for all cities visible to each human player.
+        // This ensures clients receive the final city state (including AI city
+        // production changes from runAiTurns()) at the start of each new turn.
+        // Mirrors send_all_known_cities() in the C Freeciv server's citytools.c.
+        net.freecivx.server.CityTurn.sendAllCitiesToVisiblePlayers(this);
+
         // Re-arm the turn-timeout timer for the new turn.
         if (turnTimeout > 0) {
             scheduleTurnTimeout();
