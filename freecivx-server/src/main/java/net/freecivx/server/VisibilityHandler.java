@@ -289,6 +289,24 @@ public class VisibilityHandler {
         game.getServer().sendPacket(connId, MapHand.buildTileInfoPacket(tile, known));
     }
 
+    /**
+     * Sends a {@code PACKET_TILE_INFO} packet for every tile currently in the
+     * player's visible set, using {@link #TILE_KNOWN_SEEN} status.
+     * Call this at the start of each turn to keep the client map in sync with
+     * any terrain / improvement / border changes that occurred during the turn.
+     * Mirrors {@code send_all_known_tiles()} in the C Freeciv server's maphand.c.
+     *
+     * @param game   the current game state
+     * @param player the human player to update
+     */
+    public static void sendAllVisibleTilesToPlayer(Game game, Player player) {
+        if (player.isAi()) return;
+        long connId = player.getConnectionId();
+        for (long tileId : player.getVisibleTiles()) {
+            sendTileToPlayer(game, connId, tileId, TILE_KNOWN_SEEN);
+        }
+    }
+
     // -------------------------------------------------------------------------
     // Private helpers
     // -------------------------------------------------------------------------
