@@ -409,23 +409,27 @@ public class CityTurn {
         if (city == null) return;
 
         long centerTile = city.getTile();
-        long cx = centerTile % game.map.getXsize();
-        long cy = centerTile / game.map.getXsize();
+        int xsize = game.map.getXsize();
+        int cx = (int) (centerTile % xsize);
+        int cy = (int) (centerTile / xsize);
 
-        // City radius: citizens can work tiles within Chebyshev distance 2.
-        final int CITY_RADIUS = 2;
+        // City working radius: Euclidean squared distance ≤ CITY_RADIUS_SQ=5.
+        // Mirrors the classic Freeciv RS_DEFAULT_CITY_RADIUS_SQ and the
+        // JS client's build_city_tile_map(city_radius_sq).
+        int r = (int) Math.floor(Math.sqrt(CityTools.CITY_RADIUS_SQ));
 
         int bestScore = -1;
         Tile bestTile = null;
 
-        for (int dy = -CITY_RADIUS; dy <= CITY_RADIUS; dy++) {
-            for (int dx = -CITY_RADIUS; dx <= CITY_RADIUS; dx++) {
+        for (int dy = -r; dy <= r; dy++) {
+            for (int dx = -r; dx <= r; dx++) {
+                if (dx * dx + dy * dy > CityTools.CITY_RADIUS_SQ) continue;
                 if (dx == 0 && dy == 0) continue; // center already worked
-                long nx = cx + dx;
-                long ny = cy + dy;
-                if (nx < 0 || nx >= game.map.getXsize()
-                        || ny < 0 || ny >= game.map.getYsize()) continue;
-                long tileId = ny * game.map.getXsize() + nx;
+                // Cylindrical (horizontal) wrap
+                int nx = ((cx + dx) % xsize + xsize) % xsize;
+                int ny = cy + dy;
+                if (ny < 0 || ny >= game.map.getYsize()) continue;
+                long tileId = (long) ny * xsize + nx;
                 Tile t = game.tiles.get(tileId);
                 if (t == null || t.getWorked() >= 0) continue; // already worked by a city
 

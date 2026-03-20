@@ -278,6 +278,23 @@ public class CivServer extends org.java_websocket.server.WebSocketServer impleme
             CityHand.handleCityBuyRequest(game, connId, city_id);
         }
 
+        // Handle PACKET_CITY_MAKE_SPECIALIST (37): client moves a worker off a tile.
+        // Mirrors handle_city_make_specialist() in the C Freeciv server's cityhand.c.
+        if (pid == Packets.PACKET_CITY_MAKE_SPECIALIST) {
+            int city_id = json.optInt("city_id");
+            int tile_id = json.optInt("tile_id");
+            CityHand.handleCityMakeSpecialist(game, connId, city_id, tile_id);
+        }
+
+        // Handle PACKET_CITY_MAKE_WORKER (38): client assigns a citizen to work a tile.
+        // Mirrors handle_city_make_worker() in the C Freeciv server's cityhand.c.
+        if (pid == Packets.PACKET_CITY_MAKE_WORKER) {
+            int city_id = json.optInt("city_id");
+            int tile_id = json.optInt("tile_id");
+            CityHand.handleCityMakeWorker(game, connId, city_id, tile_id);
+        }
+
+
         if (pid == Packets.PACKET_WEB_GOTO_PATH_REQ) {
             PathFinder pf = new PathFinder(game);
             JSONObject gotoPacket = pf.processMove(json);

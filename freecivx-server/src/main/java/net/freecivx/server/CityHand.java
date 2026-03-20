@@ -22,6 +22,7 @@ package net.freecivx.server;
 import net.freecivx.game.City;
 import net.freecivx.game.Game;
 import net.freecivx.game.Player;
+import net.freecivx.game.Tile;
 import net.freecivx.game.Unit;
 import org.json.JSONObject;
 
@@ -145,6 +146,95 @@ public class CityHand {
         if (player == null || player.getConnectionId() != connId) return;
 
         CityTools.sendCityInfo(game, game.getServer(), connId, cityId);
+    }
+
+    /**
+     * Handles a PACKET_CITY_MAKE_WORKER (38) request from the client.
+     * Moves the city's population from a specialist slot back to working the
+     * specified tile.  The tile must be within the city's working radius and
+     * not already worked by another city.
+     * Mirrors {@code handle_city_make_worker()} in the C Freeciv server's
+     * {@code cityhand.c}.
+     *
+     * @param game   the current game state
+     * @param connId the connection ID of the requesting client
+     * @param cityId the ID of the city
+     * @param tileId the tile index the citizen should work
+     */
+    public static void handleCityMakeWorker(Game game, long connId, int cityId, int tileId) {
+        City city = game.cities.get((long) cityId);
+        if (city == null) return;
+
+        Player player = game.players.get(city.getOwner());
+        if (player == null || player.getConnectionId() != connId) return;
+
+        Tile tile = game.tiles.get((long) tileId);
+        if (tile == null) return;
+
+        // Tile must be within the city's working radius and not already worked.
+        if (!isTileInCityRadius(game, city, tile)) return;
+        if (tile.getWorked() >= 0 && tile.getWorked() != cityId) return; // worked by another city
+
+        // If the tile is not yet worked, assign it.
+        if (tile.getWorked() != cityId) {
+            tile.setWorked(cityId);
+            city.addWorkedTile((long) tileId);
+            game.getServer().sendTileInfoAll(tile);
+        }
+
+        VisibilityHandler.sendCityToVisiblePlayers(game, cityId);
+    }
+
+    /**
+     * Handles a PACKET_CITY_MAKE_SPECIALIST (37) request from the client.
+     * Removes a city worker from the specified tile, freeing the citizen as a
+     * specialist (not actively tracked here – the city size still determines
+     * worker count).  Mirrors {@code handle_city_make_specialist()} in the C
+     * Freeciv server's {@code cityhand.c}.
+     *
+     * @param game   the current game state
+     * @param connId the connection ID of the requesting client
+     * @param cityId the ID of the city
+     * @param tileId the tile index the citizen should stop working
+     */
+    public static void handleCityMakeSpecialist(Game game, long connId, int cityId, int tileId) {
+        City city = game.cities.get((long) cityId);
+        if (city == null) return;
+
+        Player player = game.players.get(city.getOwner());
+        if (player == null || player.getConnectionId() != connId) return;
+
+        // The city-centre tile is always worked and cannot be freed.
+        if ((long) tileId == city.getTile()) return;
+
+        Tile tile = game.tiles.get((long) tileId);
+        if (tile == null) return;
+        if (tile.getWorked() != cityId) return; // this city is not working this tile
+
+        tile.setWorked(-1);
+        city.removeWorkedTile((long) tileId);
+        game.getServer().sendTileInfoAll(tile);
+
+        VisibilityHandler.sendCityToVisiblePlayers(game, cityId);
+    }
+
+    /**
+     * Returns {@code true} if the given tile is within the working radius of the city.
+     * Uses the same Euclidean squared distance ≤ {@link CityTools#CITY_RADIUS_SQ} criterion
+     * as {@link CityTurn#assignNextWorkedTile}.
+     */
+    private static boolean isTileInCityRadius(Game game, City city, Tile tile) {
+        if (game.map == null) return false;
+        int xsize = game.map.getXsize();
+        int cx = (int) (city.getTile() % xsize);
+        int cy = (int) (city.getTile() / xsize);
+        int tx = (int) (tile.getIndex() % xsize);
+        int ty = (int) (tile.getIndex() / xsize);
+        // Horizontal cylindrical wrap
+        int rawDx = Math.abs(tx - cx);
+        int dx = Math.min(rawDx, xsize - rawDx);
+        int dy = ty - cy;
+        return dx * dx + dy * dy <= CityTools.CITY_RADIUS_SQ;
     }
 
     /**
