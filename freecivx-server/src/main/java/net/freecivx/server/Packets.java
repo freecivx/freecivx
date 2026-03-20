@@ -44,6 +44,10 @@ public class Packets {
     public static int PACKET_CITY_NAME_SUGGESTION_REQ = 43;
     public static int PACKET_CITY_NAME_SUGGESTION_INFO = 44;
     public static int PACKET_WEB_CITY_INFO_ADDITION = 256;
+    /** Client → server: set (enable) the city governor parameters for a city. */
+    public static int PACKET_WEB_CMA_SET   = 257;
+    /** Client → server: clear (disable) the city governor for a city. */
+    public static int PACKET_WEB_CMA_CLEAR = 258;
 
     public static int PACKET_PLAYER_REMOVE = 50;
     public static int PACKET_PLAYER_INFO = 51;

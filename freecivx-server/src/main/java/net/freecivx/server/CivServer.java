@@ -294,6 +294,59 @@ public class CivServer extends org.java_websocket.server.WebSocketServer impleme
             CityHand.handleCityMakeWorker(game, connId, city_id, tile_id);
         }
 
+        // Handle PACKET_WEB_CMA_SET (257): client enables the city governor with new parameters.
+        // Parses the cm_parameter object and stores it on the city, then immediately
+        // applies the governor to reassign workers.  Mirrors handle_web_cma_set() in
+        // the C Freeciv web client/server.
+        if (pid == Packets.PACKET_WEB_CMA_SET) {
+            int city_id = json.optInt("id");
+            City cmaCity = game.cities.get((long) city_id);
+            if (cmaCity != null) {
+                Player cmaPlayer = game.players.get(cmaCity.getOwner());
+                if (cmaPlayer != null && cmaPlayer.getConnectionId() == connId) {
+                    JSONObject cmJson = json.optJSONObject("cm_parameter");
+                    if (cmJson != null) {
+                        CmParameter params = new CmParameter();
+                        JSONArray factorArr  = cmJson.optJSONArray("factor");
+                        JSONArray surplusArr = cmJson.optJSONArray("minimal_surplus");
+                        int[] factor  = new int[6];
+                        int[] surplus = new int[6];
+                        for (int i = 0; i < 6; i++) {
+                            factor[i]  = (factorArr  != null) ? factorArr.optInt(i, 0)  : 0;
+                            surplus[i] = (surplusArr != null) ? surplusArr.optInt(i, 0) : 0;
+                        }
+                        params.setFactor(factor);
+                        params.setMinimalSurplus(surplus);
+                        params.setRequireHappy(cmJson.optBoolean("require_happy", false));
+                        params.setAllowDisorder(cmJson.optBoolean("allow_disorder", false));
+                        params.setAllowSpecialists(cmJson.optBoolean("allow_specialists", true));
+                        params.setHappyFactor(cmJson.optInt("happy_factor", 0));
+                        params.setMaxGrowth(cmJson.optBoolean("max_growth", false));
+                        cmaCity.setCmParameter(params);
+                        // Apply the governor immediately so the player sees the effect.
+                        CityGovernor.applyCityGovernor(game, (long) city_id);
+                        CityTools.sendCityInfo(game, this, -1L, (long) city_id);
+                        CityTools.sendWebCityInfoAddition(game, this, -1L, (long) city_id);
+                    }
+                }
+            }
+        }
+
+        // Handle PACKET_WEB_CMA_CLEAR (258): client disables the city governor.
+        // Clears the stored cm_parameter and broadcasts the updated city info.
+        if (pid == Packets.PACKET_WEB_CMA_CLEAR) {
+            int city_id = json.optInt("id");
+            City cmaCity = game.cities.get((long) city_id);
+            if (cmaCity != null) {
+                Player cmaPlayer = game.players.get(cmaCity.getOwner());
+                if (cmaPlayer != null && cmaPlayer.getConnectionId() == connId) {
+                    cmaCity.setCmParameter(null);
+                    CityTools.sendCityInfo(game, this, -1L, (long) city_id);
+                    CityTools.sendWebCityInfoAddition(game, this, -1L, (long) city_id);
+                }
+            }
+        }
+
 
         if (pid == Packets.PACKET_WEB_GOTO_PATH_REQ) {
             PathFinder pf = new PathFinder(game);
