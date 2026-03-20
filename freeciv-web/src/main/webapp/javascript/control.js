@@ -2119,9 +2119,12 @@ map_handle_key(keyboard_key, key_code, ctrl, alt, shift, the_event)
 
   }
 
+  // Numpad movement is disabled when using freecivx-server with hex map topology.
+  if (freecivx_server && is_hex()) return;
+
   // Numpad directions handling depends on map topology:
-  // - For hex maps (both C Freeciv server and freecivx-server): directions are rotated 45 degrees
-  //   counterclockwise to match the 3D camera perspective, which views the map from the SE direction.
+  // - For hex maps: directions are rotated 45 degrees counterclockwise to match
+  //   the 3D camera perspective, which views the map from the SE direction.
   //   Valid hex movements are NW, NE, E, SE, SW, W (not directly N or S).
   // - For square maps: directions are direct (no rotation needed).
   if (is_hex()) {
