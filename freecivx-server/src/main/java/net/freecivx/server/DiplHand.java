@@ -257,12 +257,20 @@ public class DiplHand {
                     case CLAUSE_ADVANCE:
                         if (giverPlayer != null && receiverPlayer != null) {
                             long techId = (long) value;
-                            if (giverPlayer.hasTech(techId) && !receiverPlayer.hasTech(techId)) {
-                                receiverPlayer.addKnownTech(techId);
+                            // Validate giver possesses the technology and receiver meets all
+                            // direct prerequisites before applying the transfer.
+                            // Mirrors the research_invention_gettable() check in the C Freeciv
+                            // server's diplhand.c (tech_trade_allow_holes = false).
+                            if (giverPlayer.hasTech(techId)
+                                    && TechTools.canPlayerResearch(game, receiver, techId)) {
                                 log.info("Tech transfer: tech {} from {} to {}",
                                         techId, giverPlayer.getUsername(), receiverPlayer.getUsername());
                                 Notify.notifyPlayer(game, game.getServer(), receiver,
                                         "You received a technology from " + giverPlayer.getUsername() + ".");
+                                // Use giveTechToPlayer to trigger all side effects: unit upgrades,
+                                // obsolete building removal, and city-info broadcasts.
+                                // Mirrors give_advance_to_player() in the C Freeciv server.
+                                TechTools.giveTechToPlayer(game, receiver, techId);
                             }
                         }
                         break;

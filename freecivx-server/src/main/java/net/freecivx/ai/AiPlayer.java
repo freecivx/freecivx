@@ -213,6 +213,11 @@ public class AiPlayer {
         aiDiplomacy.beginNewPhase(game);
         aiDiplomacy.performDiplomaticActions(game);
 
+        // Phase 0a-ii: share technologies with allies.
+        // Mirrors dai_share() in daidiplomacy.c: allied AI players exchange
+        // all applicable techs so they do not duplicate each other's research.
+        aiDiplomacy.performTechSharing(game);
+
         // Phase 0b: government evolution
         manageAiGovernments();
 
@@ -709,10 +714,22 @@ public class AiPlayer {
      *   <li>Flight → Fighter air unit (air supremacy)</li>
      * </ol>
      *
+     * <p>A long-term strategic goal is maintained so that
+     * {@link TechTools#pickNextResearchTowardGoal} can auto-advance research
+     * after each technology completes, mirroring the {@code choose_tech_goal()}
+     * / {@code tech_goal} mechanism in the C Freeciv server.
+     *
      * @param player   the AI player
      * @param playerId the player's connection ID
      */
     private void pickResearchGoal(Player player, long playerId) {
+        // Maintain a long-term strategic goal so that pickNextResearchTowardGoal
+        // can advance research automatically after each tech completes.
+        // Mirrors choose_tech_goal() / tech_goal in the C Freeciv server's aitech.c.
+        if (player.getTechGoal() < 0 || player.hasTech(player.getTechGoal())) {
+            player.setTechGoal(pickStrategicGoal(player));
+        }
+
         if (player.getResearchingTech() >= 0) return; // Already researching
 
         long[] priorityTechs = {
@@ -756,13 +773,54 @@ public class AiPlayer {
             }
         }
 
-        // Fallback: research the first available technology
+        // If the priority list yields nothing but a strategic goal path exists,
+        // follow the BFS path toward the goal.
+        long nextTech = TechTools.pickNextResearchTowardGoal(game, player);
+        if (nextTech >= 0) {
+            player.setResearchingTech(nextTech);
+            return;
+        }
+
+        // Final fallback: research the first available technology
         for (long techId : game.techs.keySet()) {
             if (TechTools.canPlayerResearch(game, playerId, techId)) {
                 player.setResearchingTech(techId);
                 return;
             }
         }
+    }
+
+    /**
+     * Selects a long-term strategic technology goal for the AI player.
+     * The AI aims for the first not-yet-known entry in a list of powerful
+     * late-game technologies; once a goal is achieved the next is adopted.
+     * This guides {@link TechTools#pickNextResearchTowardGoal} in choosing
+     * prerequisite steps after each technology is completed, mirroring
+     * {@code choose_tech_goal()} in the C Freeciv server's aitech.c.
+     *
+     * @param player the AI player
+     * @return the ID of the strategic goal technology, or -1 if all are known
+     */
+    private long pickStrategicGoal(Player player) {
+        // Ordered by ascending strategic importance: the AI always aims for the
+        // first goal it has not yet acquired.
+        long[] goalTargets = {
+            techUniversity,        // Science multiplier — accelerates all future research
+            techDemocracy,         // Zero-corruption government
+            techIndustrialization, // Factory — production boost
+            techEconomics,         // Stock Exchange — trade/gold boost
+            techFlight,            // Fighter unit — air superiority
+            techRocketry,          // Apollo Program wonder prerequisite
+            techSpaceFlight,       // Space Structural + Apollo Program
+            techPlastics,          // Space Component
+            techSuperconductors,   // Space Module
+        };
+        for (long goalId : goalTargets) {
+            if (goalId >= 0 && !player.hasTech(goalId)) {
+                return goalId;
+            }
+        }
+        return -1L;
     }
 
     /**

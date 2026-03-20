@@ -21,8 +21,10 @@ package net.freecivx.ai;
 
 import net.freecivx.game.Game;
 import net.freecivx.game.Player;
+import net.freecivx.game.Technology;
 import net.freecivx.server.DiplHand;
 import net.freecivx.server.Notify;
+import net.freecivx.server.TechTools;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -302,6 +304,70 @@ public class AiDiplomacy {
                         acceptCeasefireSymmetric(game, ai, other);
                         setCooldown(pairKey);
                         setCooldown(pairKey(other.getConnectionId(), ai.getConnectionId()));
+                    }
+                }
+            }
+        }
+    }
+
+    // =========================================================================
+    // Tech sharing
+    // =========================================================================
+
+    /**
+     * Automatically shares technologies between allied AI players.
+     * For each pair of allied AI players, any technology that one player knows
+     * and the other can research (all direct prerequisites met) is transferred
+     * for free.  This mirrors the team-tech-sharing logic in
+     * {@code dai_share()} in {@code ai/default/daidiplomacy.c}: allied
+     * AI players freely exchange knowledge to avoid research duplication and
+     * accelerate the allied tech base.
+     *
+     * <p>Human players in an alliance are notified of available tech offers
+     * but must accept them through the normal diplomacy screen.
+     *
+     * @param game the current game state
+     */
+    public void performTechSharing(Game game) {
+        List<Player> allPlayers = new ArrayList<>(game.players.values());
+
+        for (int i = 0; i < allPlayers.size(); i++) {
+            Player ai = allPlayers.get(i);
+            if (!ai.isAi() || !ai.isAlive()) continue;
+            if (ai.getPlayerNo() == Barbarian.BARBARIAN_PLAYER_ID) continue;
+
+            for (int j = i + 1; j < allPlayers.size(); j++) {
+                Player ally = allPlayers.get(j);
+                if (!ally.isAlive()) continue;
+                if (ally.getPlayerNo() == Barbarian.BARBARIAN_PLAYER_ID) continue;
+
+                if (ai.getDiplState(ally.getConnectionId()) != DiplHand.DS_ALLIANCE) continue;
+
+                if (ally.isAi()) {
+                    // AI–AI alliance: share all applicable techs in both directions.
+                    // Mirrors dai_share() for AI teammates in daidiplomacy.c.
+                    for (long techId : new ArrayList<>(ai.getKnownTechs())) {
+                        if (TechTools.canPlayerResearch(game, ally.getConnectionId(), techId)) {
+                            TechTools.giveTechToPlayer(game, ally.getConnectionId(), techId);
+                        }
+                    }
+                    for (long techId : new ArrayList<>(ally.getKnownTechs())) {
+                        if (TechTools.canPlayerResearch(game, ai.getConnectionId(), techId)) {
+                            TechTools.giveTechToPlayer(game, ai.getConnectionId(), techId);
+                        }
+                    }
+                } else {
+                    // AI–Human alliance: notify the human of any tech the AI can offer.
+                    // The human may then open the diplomacy screen to accept.
+                    for (long techId : new ArrayList<>(ai.getKnownTechs())) {
+                        if (TechTools.canPlayerResearch(game, ally.getConnectionId(), techId)) {
+                            Technology tech = game.techs.get(techId);
+                            String techName = tech != null ? tech.getName() : String.valueOf(techId);
+                            Notify.notifyPlayer(game, game.getServer(), ally.getConnectionId(),
+                                    ai.getUsername() + " is willing to share " + techName
+                                            + " with you (open diplomacy to accept).");
+                            break; // Notify for the first available tech only to avoid spam
+                        }
                     }
                 }
             }
