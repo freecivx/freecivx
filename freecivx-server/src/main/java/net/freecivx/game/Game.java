@@ -733,7 +733,17 @@ public class Game {
         server.sendStartPhaseAll();
         server.sendBeginTurnAll();
 
-        server.sendMessageAll("Welcome to the Freecivx game!");
+        server.sendMessageAll("The game has started! Build cities, research technologies, and conquer the world.");
+
+        // Send each human player a personalised message with their nation name.
+        for (Player p : players.values()) {
+            if (!p.isAi()) {
+                Nation nation = nations.get((long) p.getNation());
+                String nationName = (nation != null) ? nation.getName() : "Unknown";
+                Notify.notifyPlayer(this, server, p.getPlayerNo(),
+                        "You are playing as the " + nationName + " civilization. Good luck!");
+            }
+        }
 
         // Start the per-turn timeout timer if configured.
         if (turnTimeout > 0) {
@@ -1566,7 +1576,8 @@ public class Game {
         }
 
         // --- Normal first join ---
-        int nation = (previousNation != null) ? previousNation : random.nextInt(3);
+        int nation = (previousNation != null) ? previousNation
+                : (nations.isEmpty() ? 0 : random.nextInt(nations.size()));
         Player player = new Player(connId, username, addr, nation);
         players.put(connId, player);
         usernameToPlayerNo.put(username, connId);
