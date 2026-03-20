@@ -900,6 +900,19 @@ public class CivServer extends org.java_websocket.server.WebSocketServer impleme
         broadcast(msg);
     }
 
+    public void sendRulesetSpecialistAll(int id, String name, String plural_name, String rule_name) {
+        JSONObject msg = new JSONObject();
+        msg.put("pid", Packets.PACKET_RULESET_SPECIALIST);
+        msg.put("id", id);
+        msg.put("name", name);
+        msg.put("plural_name", plural_name);
+        msg.put("rule_name", rule_name);
+        msg.put("reqs", new JSONArray());
+        msg.put("reqs_count", 0);
+
+        broadcast(msg);
+    }
+
     public void sendRulesetUnitAll(long id, UnitType utype) {
             JSONObject msg = new JSONObject();
             msg.put("pid", Packets.PACKET_RULESET_UNIT);
