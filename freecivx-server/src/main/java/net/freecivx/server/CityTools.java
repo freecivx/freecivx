@@ -62,6 +62,17 @@ public class CityTools {
     static final int SHIELD_UPKEEP_PER_IMPROVEMENT = 1;
 
     /**
+     * Classic Freeciv city working radius in squared Euclidean distance units.
+     * Mirrors {@code RS_DEFAULT_CITY_RADIUS_SQ = 5} from the C Freeciv server's
+     * {@code common/game.h}.  A radius_sq of 5 covers the 21 tiles within
+     * Euclidean distance sqrt(5) of the city centre (the standard "city 2" ring).
+     * This value is sent as {@code city_radius_sq} in PACKET_CITY_INFO and is
+     * also used by the JS client to index the {@code output_food/shield/trade}
+     * arrays from PACKET_WEB_CITY_INFO_ADDITION.
+     */
+    public static final int CITY_RADIUS_SQ = 5;
+
+    /**
      * Creates a new city for the given player on the specified tile.
      * Assigns a unique city ID, adds the city to the game state, and
      * broadcasts the new city info to all clients.
@@ -83,6 +94,11 @@ public class CityTools {
         City city = new City(name, playerId, tileId, CITY_INITIAL_SIZE,
                 0, game.cities.isEmpty(), false, 0, false, false, "", 0, 0);
         game.cities.put(cityId, city);
+
+        // Mark the city-centre tile as worked and add it to the worked-tile list.
+        // Mirrors city_map_update_all() / citytools.c in the C Freeciv server.
+        tile.setWorked(cityId);
+        city.addWorkedTile(tileId);
 
         JSONObject msg = new JSONObject();
         msg.put("pid", Packets.PACKET_CITY_INFO);
@@ -150,6 +166,11 @@ public class CityTools {
         if (city == null) return;
 
         city.setSize(city.getSize() + 1);
+
+        // Assign the best available adjacent tile to the new citizen.
+        // Mirrors city_auto_arrange_workers() / assignNextWorkedTile in the C Freeciv server.
+        CityTurn.assignNextWorkedTile(game, cityId);
+
         VisibilityHandler.sendCityToVisiblePlayers(game, cityId);
     }
 
@@ -285,6 +306,11 @@ public class CityTools {
         msg.put("prod", prod);
         msg.put("worklist", worklistArr);
         msg.put("city_options", "");
+        // Classic Freeciv city working radius (squared Euclidean distance).
+        // RS_DEFAULT_CITY_RADIUS_SQ = 5: covers all tiles within sqrt(5) of the centre,
+        // matching the 21-tile working area used by assignNextWorkedTile() and the
+        // output_food/shield/trade arrays sent in PACKET_WEB_CITY_INFO_ADDITION.
+        msg.put("city_radius_sq", CITY_RADIUS_SQ);
 
         if (connId < 0) {
             server.broadcastPacket(msg);
@@ -412,6 +438,21 @@ public class CityTools {
         // Granary size for city_info_addition
         int granarySize = CityTurn.cityGranarySize(city.getSize());
 
+        // Compute per-tile output arrays for the city's working radius.
+        // These are indexed in the same tile-map order as the JS client uses in
+        // get_city_dxy_to_index(): tiles sorted first by Euclidean squared distance,
+        // then by dx, then by dy, for all tiles where dx^2+dy^2 <= CITY_RADIUS_SQ.
+        // Matches PACKET_WEB_CITY_INFO_ADDITION fields output_food/shield/trade[MAX_CITY_TILES+1].
+        int[] outputFood   = buildCityTileOutputArray(game, city, 0);
+        int[] outputShield = buildCityTileOutputArray(game, city, 1);
+        int[] outputTrade  = buildCityTileOutputArray(game, city, 2);
+        JSONArray outFoodArr   = new JSONArray();
+        JSONArray outShieldArr = new JSONArray();
+        JSONArray outTradeArr  = new JSONArray();
+        for (int v : outputFood)   outFoodArr.put(v);
+        for (int v : outputShield) outShieldArr.put(v);
+        for (int v : outputTrade)  outTradeArr.put(v);
+
         JSONObject msg = new JSONObject();
         msg.put("pid", Packets.PACKET_WEB_CITY_INFO_ADDITION);
         msg.put("id", cityId);
@@ -420,12 +461,76 @@ public class CityTools {
         msg.put("granary_size", granarySize);
         msg.put("granary_turns", 0);
         msg.put("cma_enabled", false);
+        msg.put("output_food",   outFoodArr);
+        msg.put("output_shield", outShieldArr);
+        msg.put("output_trade",  outTradeArr);
 
         if (connId < 0) {
             server.broadcastPacket(msg);
         } else {
             server.sendPacket(connId, msg);
         }
+    }
+
+    /**
+     * Builds a per-tile output array for the city's working radius, indexed in the same
+     * tile-map order used by the JavaScript client's {@code get_city_dxy_to_index()}.
+     * Tiles are sorted by Euclidean squared distance from the city centre, then by dx,
+     * then by dy, for all (dx,dy) where dx²+dy² ≤ {@link #CITY_RADIUS_SQ}.
+     * Matches the {@code output_food/shield/trade[MAX_CITY_TILES+1]} arrays in
+     * {@code PACKET_WEB_CITY_INFO_ADDITION} (packets.def).
+     *
+     * @param game      the current game state
+     * @param city      the city to evaluate
+     * @param outputIdx 0=food, 1=shield, 2=trade
+     * @return an int array of per-tile output values in tile-map sorted order
+     */
+    static int[] buildCityTileOutputArray(Game game, City city, int outputIdx) {
+        if (game.map == null) return new int[0];
+        int xsize = game.map.getXsize();
+        int ysize = game.map.getYsize();
+        long centerTile = city.getTile();
+        int cx = (int) (centerTile % xsize);
+        int cy = (int) (centerTile / xsize);
+
+        // Collect all (dx, dy) pairs within CITY_RADIUS_SQ sorted by (d_sq, dx, dy).
+        // Mirrors build_city_tile_map() in models/city.js.
+        int r = (int) Math.floor(Math.sqrt(CITY_RADIUS_SQ));
+        java.util.List<int[]> tiles = new java.util.ArrayList<>();
+        for (int dx = -r; dx <= r; dx++) {
+            for (int dy = -r; dy <= r; dy++) {
+                int dSq = dx * dx + dy * dy;
+                if (dSq <= CITY_RADIUS_SQ) {
+                    tiles.add(new int[]{dx, dy, dSq});
+                }
+            }
+        }
+        tiles.sort((a, b) -> {
+            int c = Integer.compare(a[2], b[2]);
+            if (c != 0) return c;
+            c = Integer.compare(a[0], b[0]);
+            if (c != 0) return c;
+            return Integer.compare(a[1], b[1]);
+        });
+
+        int[] result = new int[tiles.size()];
+        for (int i = 0; i < tiles.size(); i++) {
+            int dx = tiles.get(i)[0];
+            int dy = tiles.get(i)[1];
+            // Cylindrical (horizontal) wrap only – mirrors the JS map wrapping.
+            int nx = ((cx + dx) % xsize + xsize) % xsize;
+            int ny = cy + dy;
+            if (ny < 0 || ny >= ysize) {
+                result[i] = 0;
+                continue;
+            }
+            long tileId = (long) ny * xsize + nx;
+            Tile t = game.tiles.get(tileId);
+            boolean isCentre = (dx == 0 && dy == 0);
+            int[] out = CityTurn.getTileOutput(game, t, isCentre);
+            result[i] = Math.min(255, out[outputIdx]); // UINT8 cap
+        }
+        return result;
     }
 
     /**
