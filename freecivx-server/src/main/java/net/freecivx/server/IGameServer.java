@@ -87,6 +87,8 @@ public interface IGameServer {
 
     void sendRuleseGovernmentAll(long id, String name, String rule_name, String helptext);
 
+    void sendRulesetSpecialistAll(int id, String name, String plural_name, String rule_name);
+
     void sendRulesetUnitAll(long id, UnitType utype);
 
     void sendRulesetUnitWebAdditionAll(long id, UnitType utype);
