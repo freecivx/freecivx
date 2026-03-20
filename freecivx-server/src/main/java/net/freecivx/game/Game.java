@@ -683,6 +683,12 @@ public class Game {
         // Send governments
         governments.forEach((id, gov) -> server.sendRuleseGovernmentAll(id, gov.getName(), gov.getRuleName(), gov.getHelptext()));
 
+        // Send specialist types (Entertainer/Taxman/Scientist) so the client can
+        // display specialist icons and names in the city dialog (fixes plural_name error).
+        server.sendRulesetSpecialistAll(0, "Entertainer", "Entertainers", "entertainer");
+        server.sendRulesetSpecialistAll(1, "Taxman", "Taxmen", "taxman");
+        server.sendRulesetSpecialistAll(2, "Scientist", "Scientists", "scientist");
+
         // Send nations
         nations.forEach((id, nation) -> server.sendNationInfoAll(id, nation.getName(), nation.getAdjective(), nation.getGraphicsStr(), nation.getLegend()));
 
