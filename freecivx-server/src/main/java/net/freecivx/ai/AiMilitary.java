@@ -200,7 +200,7 @@ class AiMilitary {
 
         while (unit.getMovesleft() > 0 && game.units.containsKey(unit.getId())) {
             if (!moveUnitToward(unit, utype, targetTile)) break;
-            if (game.isTileAdjacentOrEqual(unit.getTile(), targetTile)) break;
+            if (Diplomats.isTileAdjacentOrEqual(game, unit.getTile(), targetTile)) break;
         }
     }
 
