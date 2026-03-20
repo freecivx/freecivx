@@ -31,6 +31,7 @@ import net.freecivx.game.Unit;
 import net.freecivx.game.UnitType;
 import net.freecivx.game.Extra;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -169,6 +170,13 @@ public class CityTurn {
     /** Genus value for a Small Wonder improvement (e.g. Palace). */
     private static final int GENUS_SMALL_WONDER  = 1;
     /**
+     * Genus value for a regular city improvement (e.g. Library, Barracks, Temple).
+     * These can be sold when a player cannot afford their upkeep.
+     * Mirrors {@code IG_IMPROVEMENT} in the C Freeciv server's
+     * {@code common/improvement.h}.
+     */
+    private static final int GENUS_IMPROVEMENT   = 2;
+    /**
      * Genus value for a Special improvement (Space Structural, Space Component,
      * Space Module).  Special improvements are consumed into the player's
      * spaceship rather than being stored as city buildings.
@@ -176,6 +184,13 @@ public class CityTurn {
      * {@code common/improvement.h}.
      */
     private static final int GENUS_SPECIAL       = 3;
+
+    /**
+     * Number of consecutive disorder turns after which the city warns about
+     * impending revolution.  Mirrors the {@code EFT_REVOLUTION_UNHAPPINESS}
+     * default value of 5 in the classic Freeciv effects.ruleset.
+     */
+    private static final int REVOLUTION_TURNS = 5;
 
     /**
      * Luxury goods cost per citizen mood upgrade.
@@ -1184,25 +1199,68 @@ public class CityTurn {
 
             int newGold = player.getGold() + income - buildingUpkeep - unitUpkeep;
 
-            // Bankruptcy: if the player cannot cover upkeep costs, disband military
-            // units one by one until solvent (or none remain).  Mirrors the gold
-            // upkeep auto-disband logic in the C Freeciv server's cityturn.c
-            // (city_support → unit_gold_upkeep → auto_settler_do_goto_action).
+            // Bankruptcy: if the player cannot cover upkeep costs, first sell
+            // regular improvements (non-wonders, non-specials), then disband
+            // military units if still insolvent.
+            // Mirrors city_balance_treasury_buildings() followed by
+            // city_balance_treasury_units() in the C Freeciv server's cityturn.c.
             if (newGold < 0) {
-                List<Unit> militaryUnits = new ArrayList<>();
-                for (Unit unit : game.units.values()) {
-                    if (unit.getOwner() != pid) continue;
-                    UnitType utype = game.unitTypes.get((long) unit.getType());
-                    if (utype != null && utype.getAttackStrength() > 0) {
-                        militaryUnits.add(unit);
+                // Phase 1: sell sellable buildings (genus == GENUS_IMPROVEMENT).
+                // Collect all sellable buildings across all of this player's cities.
+                // Mirrors the cityimpr_list iteration in city_balance_treasury_buildings().
+                // sellableBuildingEntries: each element is [cityId, improvementId]
+                List<long[]> sellableBuildingEntries = new ArrayList<>();
+                for (long cityId : game.cities.keySet()) {
+                    City city = game.cities.get(cityId);
+                    if (city == null || city.getOwner() != pid) continue;
+                    for (int improvId : new ArrayList<>(city.getImprovements())) {
+                        Improvement impr = game.improvements.get((long) improvId);
+                        if (impr != null && impr.getGenus() == GENUS_IMPROVEMENT) {
+                            sellableBuildingEntries.add(new long[]{cityId, improvId});
+                        }
                     }
                 }
-                for (Unit toDisband : militaryUnits) {
+                // Shuffle for random sell order, mirroring sell_random_building()
+                // in the C Freeciv server (which picks a random index each time).
+                Collections.shuffle(sellableBuildingEntries);
+                for (long[] entry : sellableBuildingEntries) {
                     if (newGold >= 0) break;
-                    newGold += 1; // Each disbanded unit saves 1 gold of upkeep
-                    UnitTools.removeUnit(game, toDisband.getId());
+                    long sellCityId = entry[0];
+                    int sellImprovId = (int) entry[1];
+                    City sellCity = game.cities.get(sellCityId);
+                    Improvement impr = game.improvements.get((long) sellImprovId);
+                    if (sellCity == null || impr == null) continue;
+                    sellCity.removeImprovement(sellImprovId);
+                    // Sell price: half build cost (mirrors impr_sell_gold() in C server).
+                    // Also recoup the upkeep already charged this turn for this building,
+                    // mirroring the gold refund in sell_random_building() in cityturn.c.
+                    int sellGold = impr.getBuildCost() / 2 + impr.getUpkeep();
+                    newGold += sellGold;
                     Notify.notifyPlayer(game, game.getServer(), pid,
-                            "Lack of funds! A military unit has been disbanded.");
+                            "Can't afford to maintain " + impr.getName()
+                                    + " in " + sellCity.getName()
+                                    + ", building sold!");
+                    VisibilityHandler.sendCityToVisiblePlayers(game, sellCityId);
+                }
+
+                // Phase 2: if still insolvent, disband military units one by one.
+                // Mirrors city_balance_treasury_units() in the C Freeciv server.
+                if (newGold < 0) {
+                    List<Unit> militaryUnits = new ArrayList<>();
+                    for (Unit unit : game.units.values()) {
+                        if (unit.getOwner() != pid) continue;
+                        UnitType utype = game.unitTypes.get((long) unit.getType());
+                        if (utype != null && utype.getAttackStrength() > 0) {
+                            militaryUnits.add(unit);
+                        }
+                    }
+                    for (Unit toDisband : militaryUnits) {
+                        if (newGold >= 0) break;
+                        newGold += 1; // Each disbanded unit saves 1 gold of upkeep
+                        UnitTools.removeUnit(game, toDisband.getId());
+                        Notify.notifyPlayer(game, game.getServer(), pid,
+                                "Lack of funds! A military unit has been disbanded.");
+                    }
                 }
             }
 
@@ -1919,13 +1977,28 @@ public class CityTurn {
         city.setHappy(isHappy);
         city.setUnhappy(isUnhappy);
 
-        // Notify the player when the happiness state changes
-        if (!wasUnhappy && isUnhappy) {
-            Notify.notifyPlayer(game, game.getServer(), city.getOwner(),
-                    city.getName() + " is in disorder!");
-        } else if (wasUnhappy && !isUnhappy) {
-            Notify.notifyPlayer(game, game.getServer(), city.getOwner(),
-                    "Order has been restored in " + city.getName() + ".");
+        // Update the civil disorder (anarchy) counter and send player notifications.
+        // Mirrors the anarchy counter logic in update_city_activity() in the C
+        // Freeciv server's cityturn.c.
+        if (isUnhappy) {
+            city.setAnarchy(city.getAnarchy() + 1);
+            if (city.getAnarchy() == 1) {
+                // First turn of disorder
+                Notify.notifyPlayer(game, game.getServer(), city.getOwner(),
+                        "Civil disorder in " + city.getName() + ".");
+            } else {
+                // Continuing disorder — warn about revolution threat at the threshold
+                String revolutionWarning = city.getAnarchy() >= REVOLUTION_TURNS
+                        ? " Unrest threatens to spread beyond the city." : "";
+                Notify.notifyPlayer(game, game.getServer(), city.getOwner(),
+                        "CIVIL DISORDER CONTINUES in " + city.getName() + "." + revolutionWarning);
+            }
+        } else {
+            if (city.getAnarchy() > 0) {
+                city.setAnarchy(0);
+                Notify.notifyPlayer(game, game.getServer(), city.getOwner(),
+                        "Order restored in " + city.getName() + ".");
+            }
         }
 
         // Broadcast the updated city state to all clients if anything changed

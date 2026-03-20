@@ -66,6 +66,13 @@ public class City {
      */
     private int foodStock = 0;
 
+    /**
+     * Number of consecutive turns the city has been in civil disorder (unhappy).
+     * Mirrors the {@code anarchy} counter in the C Freeciv city struct.
+     * Incremented each turn the city is unhappy; reset to zero when order is restored.
+     */
+    private int anarchy = 0;
+
     // Constructor (backwards-compatible: accepts the old String improvements arg and ignores it)
     public City(String name, long owner, long tile, int size, int style, boolean capital, boolean occupied, int walls,
                 boolean happy, boolean unhappy, String improvements, int productionKind, int productionValue) {
@@ -186,6 +193,11 @@ public class City {
         }
     }
 
+    /** Removes an improvement from the city. Does nothing if not present. */
+    public void removeImprovement(int improvementId) {
+        improvements.remove(Integer.valueOf(improvementId));
+    }
+
     /** Returns the list of tile indices currently worked by this city. */
     public List<Long> getWorkedTiles() {
         return workedTiles;
@@ -265,6 +277,16 @@ public class City {
 
     public void setFoodStock(int foodStock) {
         this.foodStock = foodStock;
+    }
+
+    /** Returns the number of consecutive turns this city has been in civil disorder. */
+    public int getAnarchy() {
+        return anarchy;
+    }
+
+    /** Sets the civil disorder turn counter for this city. */
+    public void setAnarchy(int anarchy) {
+        this.anarchy = anarchy;
     }
 
     @Override
