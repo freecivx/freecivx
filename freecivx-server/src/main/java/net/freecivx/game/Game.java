@@ -26,6 +26,7 @@ import net.freecivx.server.CityTurn;
 import net.freecivx.server.Notify;
 import net.freecivx.server.Packets;
 import net.freecivx.server.PlrHand;
+import net.freecivx.server.TechTools;
 import net.freecivx.server.VisibilityHandler;
 import net.freecivx.ai.AiPlayer;
 import net.freecivx.ai.Barbarian;
@@ -1079,6 +1080,24 @@ public class Game {
         // production changes from runAiTurns()) at the start of each new turn.
         // Mirrors send_all_known_cities() in the C Freeciv server's citytools.c.
         net.freecivx.server.CityTurn.sendAllCitiesToVisiblePlayers(this);
+
+        // Re-send all currently visible tiles to every human player so the
+        // client's map reflects the latest terrain/improvement/border state.
+        // Mirrors send_all_known_tiles() in the C Freeciv server's maphand.c.
+        players.values().stream()
+                .filter(p -> !p.isAi() && p.isAlive())
+                .forEach(p -> VisibilityHandler.sendAllVisibleTilesToPlayer(this, p));
+
+        // Re-send the final state of every visible unit after all AI movement
+        // has completed.  Mirrors send_all_known_units() in unittools.c.
+        units.forEach((id, unit) -> VisibilityHandler.sendUnitToVisiblePlayers(this, unit));
+
+        // Send each human player's current research state so the tech dialog
+        // stays in sync even when a tech was granted during city updates.
+        players.values().stream()
+                .filter(p -> !p.isAi() && p.isAlive())
+                .forEach(p -> TechTools.sendResearchInfo(this, server,
+                        p.getConnectionId(), p.getPlayerNo()));
 
         // Re-arm the turn-timeout timer for the new turn.
         if (turnTimeout > 0) {
