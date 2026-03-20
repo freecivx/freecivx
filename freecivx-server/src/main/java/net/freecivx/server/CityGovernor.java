@@ -140,6 +140,23 @@ public class CityGovernor {
             city.addWorkedTile(t.getIndex());
             citizensToAssign--;
         }
+
+        // --- Step 5: remaining citizens become specialists ---
+        // Citizens that could not be assigned to tiles become specialists.
+        // Mirrors cm_result.specialists[] in the C Freeciv server's cm.c where
+        // the CMA fills idle citizen slots with specialists when allowed.
+        int numWorkers     = city.getWorkedTiles().size();
+        int numSpecialists = Math.max(0, city.getSize() - numWorkers);
+        int[] specs = city.getSpecialists();
+        // Preserve specialist type distribution; sync to new total.
+        // By default all idle citizens become Entertainers (index 0).
+        int currentTotal = specs[0] + specs[1] + specs[2];
+        if (currentTotal != numSpecialists) {
+            // Reset to Entertainers if the total needs to change.
+            specs[0] = numSpecialists;
+            specs[1] = 0;
+            specs[2] = 0;
+        }
     }
 
     /**

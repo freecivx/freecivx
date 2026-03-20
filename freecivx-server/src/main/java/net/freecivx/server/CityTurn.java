@@ -497,6 +497,11 @@ public class CityTurn {
             bestTile.setWorked(cityId);
             city.addWorkedTile(bestTile.getIndex());
             game.getServer().sendTileInfoAll(bestTile);
+        } else {
+            // No free tile available – the new citizen becomes an Entertainer specialist.
+            // Mirrors the fallback in city_auto_arrange_workers() / cm.c where idle
+            // citizens that cannot be placed on tiles fill specialist slots.
+            city.getSpecialists()[0]++;
         }
     }
 
@@ -528,6 +533,28 @@ public class CityTurn {
             totalTrade   += out[2];
         }
         return new int[]{totalFood, totalShields, totalTrade};
+    }
+
+    /**
+     * Removes one specialist from the city, preferring Entertainers (index 0)
+     * first, then Taxmen (1), then Scientists (2).  This matches the forward
+     * iteration used in {@code city_reduce_specialists()} in the C Freeciv
+     * server's {@code server/citytools.c} and is consistent with
+     * {@link net.freecivx.server.CityHand#handleCityMakeWorker}.
+     *
+     * @param city the city from which to remove a specialist
+     * @return {@code true} if a specialist was removed; {@code false} if there
+     *         were no specialists to remove
+     */
+    private static boolean removeOneSpecialist(City city) {
+        int[] specs = city.getSpecialists();
+        for (int i = 0; i < specs.length; i++) {
+            if (specs[i] > 0) {
+                specs[i]--;
+                return true;
+            }
+        }
+        return false;
     }
 
     /**
@@ -1222,11 +1249,16 @@ public class CityTurn {
             }
         } else if (city.getFoodStock() < 0) {
             // Starvation: city shrinks if size > 1, mirrors city_reduce_size() in C server.
-            // Release the least-valuable worked tile so the reduced population no longer
-            // works it (mirrors the tile-release step in the C server's citytools.c).
+            // In the C server, city_reduce_size() removes a specialist first (if any) before
+            // releasing a worked tile.  This matches city_auto_arrange_workers() behaviour:
+            // workers are preferred over specialists.  Mirrors the logic in the C Freeciv
+            // server's server/citytools.c: city_reduce_specialists() is tried first.
             if (city.getSize() > 1) {
                 city.setSize(city.getSize() - 1);
-                releaseWorstWorkedTile(game, city);
+                // Remove a specialist first; fall back to releasing a worked tile.
+                if (!removeOneSpecialist(city)) {
+                    releaseWorstWorkedTile(game, city);
+                }
                 Notify.notifyPlayer(game, game.getServer(), city.getOwner(),
                         "Famine in " + city.getName() + "! Population has decreased to "
                                 + city.getSize() + ".");

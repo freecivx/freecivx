@@ -145,6 +145,17 @@ public class CityHand {
         Player player = game.players.get(city.getOwner());
         if (player == null || player.getConnectionId() != connId) return;
 
+        int[] specs = city.getSpecialists();
+        // Validate specialist type indices (0 = Entertainer, 1 = Taxman, 2 = Scientist).
+        if (oldSpec < 0 || oldSpec >= specs.length) return;
+        if (newSpec < 0 || newSpec >= specs.length) return;
+        if (specs[oldSpec] <= 0) return; // no specialist of this type to change
+
+        // Move one specialist from oldSpec type to newSpec type.
+        // Mirrors handle_city_change_specialist() in the C Freeciv server's cityhand.c.
+        specs[oldSpec]--;
+        specs[newSpec]++;
+
         CityTools.sendCityInfo(game, game.getServer(), connId, cityId);
     }
 
@@ -175,11 +186,22 @@ public class CityHand {
         if (!isTileInCityRadius(game, city, tile)) return;
         if (tile.getWorked() >= 0 && tile.getWorked() != cityId) return; // worked by another city
 
-        // If the tile is not yet worked, assign it.
+        // A city cannot have more tile workers than its population (size).
+        // Mirrors the population-limit check in handle_city_make_worker() in the
+        // C Freeciv server's cityhand.c.
         if (tile.getWorked() != cityId) {
+            if (city.getWorkedTiles().size() >= city.getSize()) return; // population limit
             tile.setWorked(cityId);
             city.addWorkedTile((long) tileId);
             game.getServer().sendTileInfoAll(tile);
+            // One specialist slot freed – decrement (prefer Entertainers first).
+            int[] specs = city.getSpecialists();
+            for (int i = 0; i < specs.length; i++) {
+                if (specs[i] > 0) {
+                    specs[i]--;
+                    break;
+                }
+            }
         }
 
         VisibilityHandler.sendCityToVisiblePlayers(game, cityId);
@@ -214,6 +236,12 @@ public class CityHand {
         tile.setWorked(-1);
         city.removeWorkedTile((long) tileId);
         game.getServer().sendTileInfoAll(tile);
+
+        // The freed citizen becomes an Entertainer specialist (index 0).
+        // Mirrors handle_city_make_specialist() in the C Freeciv server's
+        // cityhand.c, which calls city_add_specialist() defaulting to the
+        // first available specialist type.
+        city.getSpecialists()[0]++;
 
         VisibilityHandler.sendCityToVisiblePlayers(game, cityId);
     }
