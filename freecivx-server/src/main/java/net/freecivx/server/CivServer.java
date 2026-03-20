@@ -1073,7 +1073,11 @@ public class CivServer extends org.java_websocket.server.WebSocketServer impleme
             privateMsg.put("science", player.getScienceRate());
             privateMsg.put("gold", player.getGold());
             privateMsg.put("tech_upkeep", 0);
-            privateMsg.put("researching_cost", 0);
+            privateMsg.put("researching_cost",
+                    player.getResearchingTech() >= 0
+                    ? net.freecivx.game.Research.researchTechCost(game, player.getPlayerNo(), player.getResearchingTech())
+                    : 0);
+            privateMsg.put("tech_goal", player.getTechGoal());
             // Repeat flags and gives_shared_vision so packhand.js does not
             // replace the valid public BitVectors with BitVector(undefined).
             JSONArray privateFlags = new JSONArray();
@@ -1535,6 +1539,7 @@ public class CivServer extends org.java_websocket.server.WebSocketServer impleme
                         player.getResearchingTech() >= 0
                         ? net.freecivx.game.Research.researchTechCost(game, player.getPlayerNo(), player.getResearchingTech())
                         : 0);
+                msg.put("tech_goal", player.getTechGoal());
             }
             ws.send(msg.toString());
         });

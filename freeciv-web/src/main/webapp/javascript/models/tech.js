@@ -556,8 +556,9 @@ function update_tech_screen()
                                 + " / "
                                 + client.conn.playing['researching_cost']);
 
-  var pct_progress = 100 * (client.conn.playing['bulbs_researched']
-                            / client.conn.playing['researching_cost']);
+  var pct_progress = client.conn.playing['researching_cost'] > 0
+      ? 100 * (client.conn.playing['bulbs_researched'] / client.conn.playing['researching_cost'])
+      : 0;
 
   $("#progress_fg").css("width", pct_progress  + "%");
 
