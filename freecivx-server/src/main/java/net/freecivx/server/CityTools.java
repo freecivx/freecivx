@@ -20,6 +20,7 @@
 package net.freecivx.server;
 
 import net.freecivx.game.City;
+import net.freecivx.game.CmParameter;
 import net.freecivx.game.Game;
 import net.freecivx.game.Improvement;
 import net.freecivx.game.Nation;
@@ -486,7 +487,47 @@ public class CityTools {
         msg.put("can_build_improvement", canBuildImpr);
         msg.put("granary_size", granarySize);
         msg.put("granary_turns", 0);
-        msg.put("cma_enabled", false);
+
+        // Send CMA state: enabled flag + parameter object so the client governor tab
+        // shows the correct UI state.  Mirrors cm_parameter fields from packets.def.
+        CmParameter cma = city.getCmParameter();
+        boolean cmaEnabled = (cma != null);
+        msg.put("cma_enabled", cmaEnabled);
+        if (cmaEnabled) {
+            JSONObject cmParam = new JSONObject();
+            JSONArray factorArr = new JSONArray();
+            JSONArray surplusArr = new JSONArray();
+            for (int i = 0; i < 6; i++) {
+                factorArr.put(cma.getFactor()[i]);
+                surplusArr.put(cma.getMinimalSurplus()[i]);
+            }
+            cmParam.put("factor", factorArr);
+            cmParam.put("minimal_surplus", surplusArr);
+            cmParam.put("require_happy", cma.isRequireHappy());
+            cmParam.put("allow_disorder", cma.isAllowDisorder());
+            cmParam.put("allow_specialists", cma.isAllowSpecialists());
+            cmParam.put("happy_factor", cma.getHappyFactor());
+            cmParam.put("max_growth", cma.isMaxGrowth());
+            msg.put("cm_parameter", cmParam);
+        } else {
+            // Always include a default cm_parameter so the client doesn't reject the city
+            // (show_city_governor_tab() checks for existence of cm_parameter).
+            JSONObject cmParam = new JSONObject();
+            JSONArray factorArr = new JSONArray();
+            JSONArray surplusArr = new JSONArray();
+            for (int i = 0; i < 6; i++) {
+                factorArr.put(0);
+                surplusArr.put(0);
+            }
+            cmParam.put("factor", factorArr);
+            cmParam.put("minimal_surplus", surplusArr);
+            cmParam.put("require_happy", false);
+            cmParam.put("allow_disorder", false);
+            cmParam.put("allow_specialists", true);
+            cmParam.put("happy_factor", 0);
+            cmParam.put("max_growth", false);
+            msg.put("cm_parameter", cmParam);
+        }
         msg.put("output_food",   outFoodArr);
         msg.put("output_shield", outShieldArr);
         msg.put("output_trade",  outTradeArr);

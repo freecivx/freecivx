@@ -90,6 +90,13 @@ public class City {
      */
     private boolean wasHappy = false;
 
+    /**
+     * City Management Algorithm (CMA) parameters set by the player.
+     * {@code null} means the city governor is disabled for this city.
+     * Mirrors the {@code cm_parameter} concept in the C Freeciv client/server CMA.
+     */
+    private CmParameter cmParameter = null;
+
     // Constructor (backwards-compatible: accepts the old String improvements arg and ignores it)
     public City(String name, long owner, long tile, int size, int style, boolean capital, boolean occupied, int walls,
                 boolean happy, boolean unhappy, String improvements, int productionKind, int productionValue) {
@@ -332,6 +339,16 @@ public class City {
     /** Sets the previous-turn happiness flag for this city. */
     public void setWasHappy(boolean wasHappy) {
         this.wasHappy = wasHappy;
+    }
+
+    /** Returns the CMA parameters if the city governor is active, or {@code null} if disabled. */
+    public CmParameter getCmParameter() {
+        return cmParameter;
+    }
+
+    /** Sets the CMA parameters; pass {@code null} to disable the city governor. */
+    public void setCmParameter(CmParameter cmParameter) {
+        this.cmParameter = cmParameter;
     }
 
     @Override

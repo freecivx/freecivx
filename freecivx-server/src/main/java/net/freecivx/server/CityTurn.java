@@ -1319,6 +1319,11 @@ public class CityTurn {
 
         // Snapshot city IDs to avoid concurrent-modification issues
         for (long cityId : new ArrayList<>(game.cities.keySet())) {
+            // Apply city governor (CMA) before growth/production so worker assignment
+            // reflects the player's preferences for this turn.
+            // Mirrors the cm_result / cm_query_result() call in the C Freeciv server's
+            // cityturn.c before each city's turn is processed.
+            CityGovernor.applyCityGovernor(game, cityId);
             cityGrowth(game, cityId);
             cityProduction(game, cityId);
             updateCityHappiness(game, cityId);
