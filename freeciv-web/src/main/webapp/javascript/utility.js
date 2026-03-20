@@ -251,7 +251,7 @@ function forceLower(strnput)
 **************************************************************************/
 function submit_game_of_the_day() {
  show_fps();
- setTimeout(submit_game_of_the_day2, 1500);
+ setTimeout(submit_game_of_the_day2, 3500);
 
 }
 
