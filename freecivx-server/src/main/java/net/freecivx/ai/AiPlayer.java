@@ -417,43 +417,55 @@ public class AiPlayer {
 
     /**
      * Checks whether the given AI player can adopt a superior government and
-     * switches to it.  The government names and tech requirements mirror the
-     * classic Freeciv ruleset.  Uses the resolved tech IDs from
+     * switches to it immediately.  The government names and tech requirements
+     * mirror the classic Freeciv ruleset.  Uses the resolved tech IDs from
      * {@link #resolveGameIds()} so this works with both the loaded ruleset and
      * the hardcoded fallback.
+     *
+     * <p>The AI picks the <em>best</em> available government in one step,
+     * mirroring {@code dai_manage_government()} in the C Freeciv server's
+     * {@code ai/default/daicity.c}: it does not need to pass through every
+     * intermediate tier.  For example, a player who has researched
+     * {@code The Republic} directly (without first researching {@code Monarchy})
+     * may jump straight from Despotism to Republic.
+     *
+     * <p>Upgrade priority (highest first):
+     * <ol>
+     *   <li>Democracy (id 5) – requires "Democracy" tech</li>
+     *   <li>Republic  (id 4) – requires "The Republic" tech</li>
+     *   <li>Monarchy  (id 2) – requires "Monarchy" tech</li>
+     * </ol>
      *
      * @param player the AI player whose government may be upgraded
      */
     private void upgradeGovernmentIfPossible(Player player) {
         int currentGov = player.getGovernmentId();
 
-        if (currentGov <= 1) {
-            // Try to advance from Despotism (1) to Monarchy (2)
-            if (player.hasTech(techMonarchy)) {
-                player.setGovernmentId(2); // Monarchy
-                log.info("Player {} switched government: Despotism → Monarchy", player.getUsername());
-                game.getServer().sendPlayerInfoAll(player);
-                return;
-            }
+        // Democracy is the best government – check first so we skip Republic if
+        // both Democracy and Republic are available simultaneously.
+        if (currentGov < GOV_DEMOCRACY && techDemocracy >= 0 && player.hasTech(techDemocracy)) {
+            player.setGovernmentId(GOV_DEMOCRACY);
+            log.info("Player {} switched government to Democracy", player.getUsername());
+            game.getServer().sendPlayerInfoAll(player);
+            return;
         }
 
-        if (currentGov == 2) {
-            // Try to advance from Monarchy (2) to Republic (4)
-            if (player.hasTech(techTheRepublic)) {
-                player.setGovernmentId(4); // Republic
-                log.info("Player {} switched government: Monarchy → Republic", player.getUsername());
-                game.getServer().sendPlayerInfoAll(player);
-                return;
-            }
+        // Republic is better than Monarchy and Despotism.
+        // Allow a direct jump from Despotism without passing through Monarchy,
+        // which mirrors the C server where any known-tech government can be adopted
+        // immediately regardless of the current government.
+        if (currentGov < GOV_REPUBLIC && techTheRepublic >= 0 && player.hasTech(techTheRepublic)) {
+            player.setGovernmentId(GOV_REPUBLIC);
+            log.info("Player {} switched government to Republic", player.getUsername());
+            game.getServer().sendPlayerInfoAll(player);
+            return;
         }
 
-        if (currentGov == 4) {
-            // Try to advance from Republic (4) to Democracy (5)
-            if (player.hasTech(techDemocracy)) {
-                player.setGovernmentId(5); // Democracy
-                log.info("Player {} switched government: Republic → Democracy", player.getUsername());
-                game.getServer().sendPlayerInfoAll(player);
-            }
+        // Monarchy is better than Despotism/Anarchy.
+        if (currentGov < GOV_MONARCHY && techMonarchy >= 0 && player.hasTech(techMonarchy)) {
+            player.setGovernmentId(GOV_MONARCHY);
+            log.info("Player {} switched government to Monarchy", player.getUsername());
+            game.getServer().sendPlayerInfoAll(player);
         }
     }
 
@@ -639,6 +651,13 @@ public class AiPlayer {
      *  Mirrors the Unit_Upkeep_Free_Per_City effect in classic effects.ruleset and
      *  the FREE_UNITS_PER_CITY constant used in CityTurn. */
     private static final int AI_FREE_UNITS_PER_CITY = 3;
+
+    // Government IDs used in government-transition logic.
+    // Values match governments.ruleset load order: Anarchy=0, Despotism=1,
+    // Monarchy=2, Communism=3, Republic=4, Democracy=5.
+    private static final int GOV_MONARCHY  = 2;
+    private static final int GOV_REPUBLIC  = 4;
+    private static final int GOV_DEMOCRACY = 5;
 
     /**
      * Returns {@code true} if the given government grants free unit support
