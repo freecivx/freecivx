@@ -267,6 +267,31 @@ public class CityTools {
         int networkProductionKind = (city.getProductionKind() == 0)
                 ? Packets.VUT_UTYPE : Packets.VUT_IMPROVEMENT;
 
+        // Compute the gold cost to rush-buy the current production item.
+        // Mirrors city_buy_cost() in the C Freeciv server's common/city.c:
+        // buy_cost = remaining_shields * 2 (simplified formula for classic ruleset).
+        // This is displayed as "cost" in the city worklist dialog on the client.
+        int buyCost = 0;
+        int productionValue = city.getProductionValue();
+        if (productionValue >= 0) {
+            int totalCost = 0;
+            if (city.getProductionKind() == 0) {
+                // Unit production
+                UnitType utype = game.unitTypes.get((long) productionValue);
+                if (utype != null) {
+                    totalCost = CivServer.computeUnitBuildCost(utype);
+                }
+            } else {
+                // Improvement production
+                Improvement impr = game.improvements.get((long) productionValue);
+                if (impr != null) {
+                    totalCost = impr.getBuildCost();
+                }
+            }
+            int remaining = Math.max(0, totalCost - city.getShieldStock());
+            buyCost = remaining * 2;
+        }
+
         // Build the worklist JSON array.  Each item is translated from the internal
         // representation ({kind: 0/1, value: id}) to the VUT constants expected by
         // the client ({kind: 6 or 3, value: id}).
@@ -298,6 +323,7 @@ public class CityTools {
         msg.put("production_value", Math.max(0, city.getProductionValue()));
         msg.put("shield_stock", city.getShieldStock());
         msg.put("food_stock", city.getFoodStock());
+        msg.put("buy_cost", buyCost);
         msg.put("ppl_happy", pplHappy);
         msg.put("ppl_content", pplContent);
         msg.put("ppl_unhappy", pplUnhappy);
