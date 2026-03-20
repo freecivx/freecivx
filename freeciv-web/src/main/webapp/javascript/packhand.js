@@ -403,10 +403,6 @@ function handle_web_city_info_addition(packet)
   city_screen_updater();
   bulbs_output_updater();
 
-  /* Re-run the JS city governor for this city if it is enabled.
-   * This keeps the citizen assignment optimal after each turn update. */
-  if (typeof cm_run_governor === 'function') cm_run_governor(cities[packet['id']]);
-
   if (typeof map2d_schedule_render === 'function') map2d_schedule_render();
 }
 
