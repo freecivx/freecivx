@@ -58,6 +58,18 @@ public class CityTurn {
     private static final int GOV_DESPOTISM = 1;
     private static final int GOV_MONARCHY  = 2;
     private static final int GOV_COMMUNISM = 3;
+    /** Republic government ID – lower corruption than Monarchy. */
+    private static final int GOV_REPUBLIC  = 4;
+    /** Democracy government ID – zero corruption, highest happiness threshold. */
+    private static final int GOV_DEMOCRACY = 5;
+
+    /**
+     * Food consumed per citizen per turn.  Mirrors {@code RS_DEFAULT_FOOD_COST = 2}
+     * in the C Freeciv server's {@code common/game.h}.  Each of a city's citizens
+     * (equal to city size) consumes this many food units per turn; the remainder
+     * is the food surplus that accumulates toward city growth.
+     */
+    static final int RS_DEFAULT_FOOD_COST = 2;
 
     /**
      * Number of military units whose gold upkeep is covered "for free" per city
@@ -391,12 +403,15 @@ public class CityTurn {
      * Returns the granary size (food needed to grow) for a city of the given size.
      * Mirrors {@code city_granary_size} in the C Freeciv server's {@code common/city.c}.
      * Uses the classic Freeciv ruleset defaults:
-     *   granary_food_ini[0] = 20 (base for size-1 city)
-     *   granary_food_inc    = 10 (additional food per extra citizen)
+     *   granary_food_ini[0] = 20 (base amount of food for any city size)
+     *   granary_food_inc    = 10 (additional food per citizen above size 0)
      *   foodbox             = 100 (no scaling modifier)
-     * Formula: size=1 → 20, size>1 → 20 + 10*(size-1) = 10*size+10.
-     * This matches the non-linear C server formula and provides faster early
-     * city growth compared to the old linear (size*20) calculation.
+     * Formula: granary_food_ini + granary_food_inc * city_size = 20 + 10*size.
+     * Mirrors {@code city_granary_size()} in the C Freeciv server's
+     * {@code common/city.c}:
+     * {@code food_inis + food_incs * city_size} where
+     * {@code food_inis = foodbox * granary_food_ini / 100 = 100 * 20 / 100 = 20}
+     * and {@code food_incs = foodbox * granary_food_inc / 100 = 100 * 10 / 100 = 10}.
      *
      * @param citySize the current population size of the city
      * @return the amount of food required to fill the granary and grow
@@ -405,7 +420,8 @@ public class CityTurn {
         if (citySize <= 0) return 0;
         // Mirrors city_granary_size() in C Freeciv server's common/city.c.
         // RS_DEFAULT_GRANARY_FOOD_INI=20, RS_DEFAULT_GRANARY_FOOD_INC=10, foodbox=100.
-        return 10 * citySize + 10;
+        // C formula: food_inis + food_incs * city_size = 20 + 10 * city_size.
+        return 20 + 10 * citySize;
     }
 
     /**
@@ -1055,11 +1071,13 @@ public class CityTurn {
      * Cities above size 8 require an Aqueduct (improvement id 8) to grow further.
      * If food_stock drops below zero the city shrinks by one (starvation).
      *
-     * <p>Food surplus per turn is computed from the city's centre tile using
-     * {@link #computeWorkedTilesOutput}, so cities on fertile terrain
-     * (Grassland = 3 food/turn) grow faster than those on poor terrain
-     * (Desert = 1 food/turn).  This mirrors the terrain-based food output in
-     * the C Freeciv server.
+     * <p>Food surplus per turn = food production (sum of all worked tiles) minus
+     * food maintenance (2 food per citizen, {@code RS_DEFAULT_FOOD_COST = 2} in
+     * the C server's {@code common/game.h}).  This matches the C server formula:
+     * {@code surplus = food_production - city_size * game.info.food_cost}.
+     * Cities on fertile terrain (Grassland = 2 food/tile, irrigated for more)
+     * can grow larger; cities on barren terrain may stagnate or starve without
+     * irrigation.  Mirrors the terrain-based growth rate in the C Freeciv server.
      *
      * @param game   the current game state
      * @param cityId the ID of the city to process for growth
@@ -1068,13 +1086,24 @@ public class CityTurn {
         City city = game.cities.get(cityId);
         if (city == null) return;
 
-        // Food per turn: sum of all worked tiles' food output (centre tile + citizens' tiles).
+        // Food production: sum of all worked tiles' food output (centre tile + citizen tiles).
         // Mirrors food production from city_tile_output() summed over all worked tiles
         // in the C Freeciv server.  Using actual worked tiles means cities on fertile
         // land grow faster than those on barren terrain, and larger cities generate more
         // food from their additional citizen tiles.
         int[] workedOutput = computeWorkedTilesOutput(game, city);
-        int foodSurplus = Math.max(1, workedOutput[0]);
+        int foodProduction = workedOutput[0];
+
+        // Food maintenance: RS_DEFAULT_FOOD_COST food per citizen.
+        // Mirrors city_support() food upkeep in the C Freeciv server's common/city.c.
+        // Each of the city's citizens (= city size) consumes RS_DEFAULT_FOOD_COST food per turn.
+        int foodMaintenance = city.getSize() * RS_DEFAULT_FOOD_COST;
+
+        // Net food surplus: production minus maintenance.
+        // Positive → city accumulates food toward growth.
+        // Negative → city loses food from stock; if stock < 0 the city starves (shrinks).
+        // Mirrors city_surplus[O_FOOD] in the C Freeciv server.
+        int foodSurplus = foodProduction - foodMaintenance;
 
         int granaryImprId = findImprId(game, "Granary", IMPR_GRANARY);
         if (city.hasImprovement(granaryImprId)) {
