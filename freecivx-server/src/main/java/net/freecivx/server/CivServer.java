@@ -828,6 +828,7 @@ public class CivServer extends org.java_websocket.server.WebSocketServer impleme
             msg.put("helptext", utype.getHelptext());
             msg.put("attack_strength", utype.getAttackStrength());
             msg.put("defense_strength", utype.getDefenseStrength());
+            msg.put("build_cost", computeUnitBuildCost(utype));
             msg.put("build_reqs", new JSONArray());
 
         broadcast(msg);
@@ -1218,6 +1219,20 @@ public class CivServer extends org.java_websocket.server.WebSocketServer impleme
     }
 
     /**
+     * Computes the production cost in shields for a unit type, matching the
+     * formula used in {@link CityTurn#cityProduction}.  Uses the explicit
+     * ruleset {@code build_cost} when set, otherwise falls back to the legacy
+     * formula {@code (attack + defense) * hp / 2} with a minimum of 10.
+     */
+    static int computeUnitBuildCost(UnitType utype) {
+        if (utype.getCost() > 0) {
+            return utype.getCost();
+        }
+        return Math.max(10,
+                (utype.getAttackStrength() + utype.getDefenseStrength()) * utype.getHp() / 2);
+    }
+
+    /**
      * Sends PACKET_RULESET_ACTION (pid=246) for all 117 actions to populate
      * the client's actions[] map and eliminate "Asked for non existing action" errors.
      */
@@ -1346,6 +1361,7 @@ public class CivServer extends org.java_websocket.server.WebSocketServer impleme
             msg.put("helptext", utype.getHelptext());
             msg.put("attack_strength", utype.getAttackStrength());
             msg.put("defense_strength", utype.getDefenseStrength());
+            msg.put("build_cost", computeUnitBuildCost(utype));
             msg.put("build_reqs", new JSONArray());
             ws.send(msg.toString());
         });
