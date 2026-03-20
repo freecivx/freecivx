@@ -1088,6 +1088,13 @@ public class CivServer extends org.java_websocket.server.WebSocketServer impleme
         }
     }
 
+    public void sendPlayerRemoveAll(long playerNo) {
+        JSONObject msg = new JSONObject();
+        msg.put("pid", Packets.PACKET_PLAYER_REMOVE);
+        msg.put("playerno", playerNo);
+        broadcast(msg);
+    }
+
     /**
      * Broadcasts a PACKET_SPACESHIP_INFO (137) packet containing the full
      * spaceship state for the given player.

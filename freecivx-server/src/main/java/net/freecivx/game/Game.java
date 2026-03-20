@@ -1567,6 +1567,12 @@ public class Game {
                         .forEach(c -> c.setOwner(connId));
 
                 usernameToPlayerNo.put(username, connId);
+                // Tell all clients to remove the stale player entry for the
+                // old connection ID before broadcasting the updated player info
+                // under the new connection ID.  Without this, clients keep a
+                // ghost entry for the AI-controlled nation alongside the
+                // rejoining player's entry, causing a visible duplicate.
+                server.sendPlayerRemoveAll(oldPlayerNo);
                 server.sendMessageAll(username + " has rejoined the game.");
                 players.forEach((id, iplayer) -> server.sendPlayerInfoAll(iplayer));
                 players.forEach((id, iplayer) -> server.sendPlayerInfoAdditionAll(id, 0));

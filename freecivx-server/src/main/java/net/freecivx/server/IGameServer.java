@@ -144,6 +144,8 @@ public interface IGameServer {
 
     void sendPlayerInfoAll(Player player);
 
+    void sendPlayerRemoveAll(long playerNo);
+
     /**
      * Broadcasts a {@code PACKET_SPACESHIP_INFO} (137) packet containing the
      * full spaceship state for the given player.
