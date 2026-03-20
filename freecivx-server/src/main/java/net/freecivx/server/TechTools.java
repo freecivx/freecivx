@@ -141,6 +141,10 @@ public class TechTools {
             // Technology complete: grant it and reset bulbs
             giveTechToPlayer(game, playerId, techId);
             player.setBulbsResearched(bulbs - cost);
+            // Clear goal once it has been achieved so the client shows no stale goal.
+            if (player.getTechGoal() >= 0 && player.hasTech(player.getTechGoal())) {
+                player.setTechGoal(-1L);
+            }
             // Automatically advance toward tech goal if one is set.
             // Mirrors the C Freeciv server's auto-research-next behaviour.
             long nextTech = pickNextResearchTowardGoal(game, player);
@@ -219,6 +223,7 @@ public class TechTools {
         msg.put("researching_cost", researchingCost);
         msg.put("total_bulbs_prod", totalBulbsProd);
         msg.put("tech_upkeep", 0); // no tech upkeep in this implementation
+        msg.put("tech_goal", player.getTechGoal());
         msg.put("inventions", inventions);
         // Send the packet directly — do NOT use sendMessage() here because
         // sendMessage() wraps its argument in a PACKET_CHAT_MSG, which would
