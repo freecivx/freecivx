@@ -302,6 +302,9 @@ function update_unit_anim_list(old_unit, new_unit)
 
   if (old_unit['anim_list'] == null) old_unit['anim_list'] = [];
 
+  /* disable animations when using freecivx-server with hex map topology. */
+  if (freecivx_server && is_hex()) return;
+
   if (new_unit['transported'] == true) {
     /* don't show transported units animated. */
     old_unit['anim_list'] = [];
