@@ -21,6 +21,7 @@
     <org-apache-http.version>5.6</org-apache-http.version>
     <org-slf4j.version>2.0.17</org-slf4j.version>
     <org-apache-commons.version>3.20.0</org-apache-commons.version>
+    <org-apache-commons-text.version>1.15.0</org-apache-commons-text.version>
     <!-- Test versions -->
     <junit.version>6.0.1</junit.version>
     <mockito.version>5.2.0</mockito.version>
@@ -38,13 +39,13 @@
       <artifactId>Java-WebSocket</artifactId>
       <version>${org-java-websocket.version}</version>
     </dependency>
-    <!-- Optional: HTTP client for robust HTTP handling -->
+    <!-- HTTP client -->
     <dependency>
       <groupId>org.apache.httpcomponents.client5</groupId>
       <artifactId>httpclient5</artifactId>
       <version>${org-apache-http.version}</version>
     </dependency>
-    <!-- Optional: Logging support -->
+    <!-- Logging support -->
     <dependency>
       <groupId>org.slf4j</groupId>
       <artifactId>slf4j-api</artifactId>
@@ -65,27 +66,25 @@
       <groupId>org.junit.jupiter</groupId>
       <artifactId>junit-jupiter-api</artifactId>
       <version>${junit.version}</version>
-      <type>jar</type>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.junit.jupiter</groupId>
       <artifactId>junit-jupiter-engine</artifactId>
       <version>${junit.version}</version>
-      <type>jar</type>
       <scope>test</scope>
     </dependency>
     <!-- Mockito -->
     <dependency>
       <groupId>org.mockito</groupId>
-      <artifactId>mockito-inline</artifactId>
+      <artifactId>mockito-core</artifactId>
       <version>${mockito.version}</version>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.apache.commons</groupId>
       <artifactId>commons-text</artifactId>
-      <version>1.15.0</version>
+      <version>${org-apache-commons-text.version}</version>
     </dependency>
   </dependencies>
 
@@ -96,10 +95,6 @@
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-compiler-plugin</artifactId>
         <version>${maven-compiler-plugin.version}</version>
-        <configuration>
-          <source>${maven.compiler.source}</source>
-          <target>${maven.compiler.target}</target>
-        </configuration>
       </plugin>
       <!-- Maven Jar Plugin -->
       <plugin>
