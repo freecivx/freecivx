@@ -124,6 +124,20 @@ public class UnitType {
     private boolean nonMilitary = false;
 
     /**
+     * Happiness cost of this unit type: the number of unhappy citizens this
+     * unit causes in its home city when the government's {@code Unhappy_Factor}
+     * is non-zero.  Read from the {@code uk_happy} field in the Freeciv units
+     * ruleset (0 for civilians/settlers, 1 for military units).
+     *
+     * <p>Under Republic each unit with {@code happyCost = 1} makes one citizen
+     * unhappy; under Democracy it makes two citizens unhappy (scaled by the
+     * government's {@code Unhappy_Factor} effect: 1 for Republic, 2 for
+     * Democracy).  Mirrors {@code utype_happy_cost()} in the C Freeciv server's
+     * {@code common/unittype.c}.
+     */
+    private int happyCost = 0;
+
+    /**
      * Whether this unit type can build terrain improvements (roads, irrigation,
      * mines) and found cities.  Set when the ruleset {@code flags} field
      * contains {@code "Settlers"} or {@code "Cities"}.  True for Workers and
@@ -418,6 +432,27 @@ public class UnitType {
      */
     public void setVisionRadiusSq(int visionRadiusSq) {
         this.visionRadiusSq = Math.max(1, visionRadiusSq);
+    }
+
+    /**
+     * Returns the happiness cost of this unit: the number of unhappy citizens
+     * it causes in its home city, scaled by the government's
+     * {@code Unhappy_Factor} (1 for Republic, 2 for Democracy).
+     * Read from the {@code uk_happy} field in the Freeciv units ruleset.
+     * Mirrors {@code utype_happy_cost()} in the C Freeciv server's
+     * {@code common/unittype.c}.
+     */
+    public int getHappyCost() {
+        return happyCost;
+    }
+
+    /**
+     * Sets the happiness cost of this unit type.
+     *
+     * @param happyCost 0 for civilian/settler units; 1 for military units
+     */
+    public void setHappyCost(int happyCost) {
+        this.happyCost = Math.max(0, happyCost);
     }
 
     // Optional toString method for debugging
