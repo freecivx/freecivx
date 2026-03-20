@@ -760,6 +760,7 @@ public class CivServer extends org.java_websocket.server.WebSocketServer impleme
         msg.put("phase", phase);
         msg.put("timeout", timeout);
         msg.put("first_timeout", -1);
+        msg.put("granularity", 1);
 
         broadcast(msg);
     }
@@ -1270,6 +1271,7 @@ public class CivServer extends org.java_websocket.server.WebSocketServer impleme
         gameMsg.put("phase", game.phase);
         gameMsg.put("timeout", game.getTurnTimeout());
         gameMsg.put("first_timeout", -1);
+        gameMsg.put("granularity", 1);
         ws.send(gameMsg.toString());
 
         // Ruleset control
@@ -1487,30 +1489,38 @@ public class CivServer extends org.java_websocket.server.WebSocketServer impleme
             msg.put("username", player.getUsername());
             msg.put("name", player.getUsername());
             msg.put("nation", player.getNation());
-            msg.put("government", 1);
-            msg.put("researching", 1);
-            msg.put("bulbs_researched", 0);
-            msg.put("inventions", new JSONArray());
-            JSONArray flags = new JSONArray(); flags.put(0); flags.put(0);
+            msg.put("government", player.getGovernmentId());
+            msg.put("is_alive", player.isAlive());
+            msg.put("nturns_idle", player.getNturnsIdle());
+            msg.put("connected", player.isConnected());
+            JSONArray flags = new JSONArray(); flags.put(player.isAi() ? 1 : 0); flags.put(0);
             msg.put("flags", flags);
             JSONArray vis = new JSONArray(); vis.put(0); vis.put(0);
             msg.put("gives_shared_vision", vis);
             JSONArray emb = new JSONArray(); emb.put(false); emb.put(false);
             msg.put("real_embassy", emb);
-            msg.put("is_alive", player.isAlive());
-            msg.put("nturns_idle", player.getNturnsIdle());
-            msg.put("connected", player.isConnected());
-            // Private financial data is sent only to the owning player
+            // Private financial and research data sent only to the owning player
             if (player.getConnectionId() == connId) {
                 msg.put("tax", player.getTaxRate());
                 msg.put("luxury", player.getLuxuryRate());
                 msg.put("science", player.getScienceRate());
                 msg.put("gold", player.getGold());
                 msg.put("tech_upkeep", 0);
-                msg.put("researching_cost", 0);
+                msg.put("researching", player.getResearchingTech());
+                msg.put("bulbs_researched", player.getBulbsResearched());
+                msg.put("researching_cost",
+                        player.getResearchingTech() >= 0
+                        ? net.freecivx.game.Research.researchTechCost(game, player.getPlayerNo(), player.getResearchingTech())
+                        : 0);
             }
             ws.send(msg.toString());
         });
+
+        // Send full research info for the reconnecting player
+        game.players.values().stream()
+                .filter(p -> p.getConnectionId() == connId)
+                .findFirst()
+                .ifPresent(p -> TechTools.sendResearchInfo(game, this, connId, p.getPlayerNo()));
 
         // Connections
         game.connections.forEach((id, conn) -> {

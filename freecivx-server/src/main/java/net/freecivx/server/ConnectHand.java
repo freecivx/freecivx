@@ -21,6 +21,7 @@ package net.freecivx.server;
 
 import net.freecivx.game.City;
 import net.freecivx.game.Game;
+import net.freecivx.game.Nation;
 import net.freecivx.game.Player;
 import org.json.JSONObject;
 
@@ -99,6 +100,19 @@ public class ConnectHand {
      * @param connId the connection ID of the recipient client
      */
     public static void sendGameList(Game game, IGameServer server, long connId) {
+        // Send the full nation list so the client can display nation choices.
+        for (java.util.Map.Entry<Long, Nation> entry : game.nations.entrySet()) {
+            Nation nation = entry.getValue();
+            JSONObject nMsg = new JSONObject();
+            nMsg.put("pid", Packets.PACKET_RULESET_NATION);
+            nMsg.put("id", entry.getKey());
+            nMsg.put("name", nation.getName());
+            nMsg.put("adjective", nation.getAdjective());
+            nMsg.put("graphic_str", nation.getGraphicsStr());
+            nMsg.put("legend", nation.getLegend());
+            server.sendPacket(connId, nMsg);
+        }
+
         for (Player player : game.players.values()) {
             JSONObject msg = new JSONObject();
             msg.put("pid", Packets.PACKET_PLAYER_INFO);
@@ -106,7 +120,7 @@ public class ConnectHand {
             msg.put("name", player.getUsername());
             msg.put("nation", player.getNation());
             msg.put("is_alive", player.isAlive());
-            server.sendMessage(connId, msg.toString());
+            server.sendPacket(connId, msg);
         }
     }
 }

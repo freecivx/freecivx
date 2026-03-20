@@ -993,7 +993,59 @@ public class CityTurn {
             }
         }
 
+        // Auto-assign default production for human player cities with nothing queued.
+        // When a human city has no production target (productionKind=0, productionValue=-1),
+        // automatically queue Settlers if the city is large enough, otherwise queue a
+        // basic improvement (Barracks or Granary) so shields are never wasted.
+        // Mirrors the "always building something" principle from the C Freeciv server.
+        if (player != null && !player.isAi()
+                && city.getProductionKind() == 0 && city.getProductionValue() < 0) {
+            assignDefaultProduction(game, city, player);
+        }
+
         VisibilityHandler.sendCityToVisiblePlayers(game, cityId);
+    }
+
+    /**
+     * Assigns a default production target for a human player city that has nothing queued.
+     * Queues Settlers when the city is large enough (size ≥ 2), otherwise tries to build
+     * a Barracks or Granary so the city is always making progress.
+     * Unit/improvement names are matched by the classic ruleset convention, consistent
+     * with the name-based lookups used elsewhere in this server (e.g. findImprId).
+     */
+    private static void assignDefaultProduction(Game game, City city, Player player) {
+        // Look up the Settlers unit type by name (unit type ID 0 in the classic ruleset).
+        long settlersId = -1;
+        for (Map.Entry<Long, UnitType> e : game.unitTypes.entrySet()) {
+            if ("Settlers".equalsIgnoreCase(e.getValue().getName())) {
+                settlersId = e.getKey();
+                break;
+            }
+        }
+        if (settlersId >= 0 && city.getSize() >= 2) {
+            UnitType settlersType = game.unitTypes.get(settlersId);
+            long techReq = settlersType.getTechReqId();
+            if (techReq < 0 || player.hasTech(techReq)) {
+                city.setProductionKind(0);
+                city.setProductionValue((int) settlersId);
+                return;
+            }
+        }
+        // City too small for settlers or tech not met: queue a cheap improvement.
+        // Try Barracks first, then Granary (classic ruleset names).
+        for (String name : new String[]{"Barracks", "Granary"}) {
+            for (Map.Entry<Long, Improvement> e : game.improvements.entrySet()) {
+                Improvement impr = e.getValue();
+                if (name.equals(impr.getName()) && !city.hasImprovement(e.getKey().intValue())) {
+                    long techReq = impr.getTechReqId();
+                    if (techReq < 0 || player.hasTech(techReq)) {
+                        city.setProductionKind(1);
+                        city.setProductionValue(e.getKey().intValue());
+                        return;
+                    }
+                }
+            }
+        }
     }
 
     /**
