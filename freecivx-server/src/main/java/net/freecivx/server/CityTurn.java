@@ -450,6 +450,74 @@ public class CityTurn {
     }
 
     /**
+     * Computes the total food, shield, and trade output of a city by summing
+     * the output of every tile currently in {@link City#getWorkedTiles()}.
+     * The city-centre tile receives the +1/+1/+1 centre bonus; all other tiles
+     * are evaluated without it.
+     *
+     * <p>Mirrors the worked-tile iteration in {@code city_tile_output()} and
+     * {@code city_collect_output()} in the C Freeciv server's
+     * {@code common/city.c}: the city's total raw output is the sum of each
+     * worked tile's individual output.
+     *
+     * @param game the current game state
+     * @param city the city whose worked-tile output is needed
+     * @return int[3] = {totalFood, totalShields, totalTrade}; all values ≥ 0
+     */
+    private static int[] computeWorkedTilesOutput(Game game, City city) {
+        long centerTileId = city.getTile();
+        int totalFood = 0, totalShields = 0, totalTrade = 0;
+        for (long tileId : city.getWorkedTiles()) {
+            Tile t = game.tiles.get(tileId);
+            if (t == null) continue;
+            boolean isCenter = (tileId == centerTileId);
+            int[] out = getTileOutput(game, t, isCenter);
+            totalFood    += out[0];
+            totalShields += out[1];
+            totalTrade   += out[2];
+        }
+        return new int[]{totalFood, totalShields, totalTrade};
+    }
+
+    /**
+     * Releases the least-productive non-centre worked tile from the city when
+     * the city shrinks due to starvation.  The tile with the lowest combined
+     * food+shield+trade output is unassigned so the citizen can no longer work
+     * it.  The city-centre tile is never released.
+     *
+     * <p>Mirrors {@code city_reduce_size()} / the tile-release step in the C
+     * Freeciv server's {@code server/citytools.c} where a worked tile is
+     * unassigned on population loss.
+     *
+     * @param game the current game state
+     * @param city the shrinking city
+     */
+    private static void releaseWorstWorkedTile(Game game, City city) {
+        long centerTileId = city.getTile();
+        long worstTileId = -1;
+        int worstScore = Integer.MAX_VALUE;
+        for (long tileId : city.getWorkedTiles()) {
+            if (tileId == centerTileId) continue; // never release city centre
+            Tile t = game.tiles.get(tileId);
+            if (t == null) continue;
+            int[] out = getTileOutput(game, t, false);
+            int score = out[0] + out[1] + out[2];
+            if (score < worstScore) {
+                worstScore = score;
+                worstTileId = tileId;
+            }
+        }
+        if (worstTileId >= 0) {
+            Tile t = game.tiles.get(worstTileId);
+            if (t != null) {
+                t.setWorked(-1);
+                game.getServer().sendTileInfoAll(t);
+            }
+            city.removeWorkedTile(worstTileId);
+        }
+    }
+
+    /**
      * Recalculates national borders for all cities and updates tiles whose
      * owner has changed.  Only tiles where the ownership changes are
      * re-broadcast to clients.
@@ -619,22 +687,17 @@ public class CityTurn {
      * Computes the total shield (production) output for a city based on its
      * centre tile output and city size.
      *
-     * <p>The city centre tile contributes its terrain-based shields (including the
-     * city-centre +1 bonus).  Each additional citizen beyond the founder works a
-     * tile of the same terrain, contributing the terrain's base shield value.
-     * The result is always at least 1 shield per turn.
+     * <p>Shield output is the sum of all tiles in {@link City#getWorkedTiles()},
+     * giving each tile's terrain shield value (with city-centre +1 bonus on the
+     * centre tile).  The result is always at least 1 shield per turn.
      *
-     * @param city         the city whose shield output is needed
-     * @param centerOutput the pre-computed tile output for the city's centre tile
-     *                     (as returned by {@link #getTileOutput} with
-     *                     {@code isCityCenter=true})
+     * @param game the current game state
+     * @param city the city whose shield output is needed
      * @return shield output per turn (≥ 1)
      */
-    private static int computeCityShieldOutput(City city, int[] centerOutput) {
-        int additionalShields = (city.getSize() > 1)
-                ? (city.getSize() - 1) * Math.max(0, centerOutput[1])
-                : 0;
-        return Math.max(1, centerOutput[1] + additionalShields);
+    private static int computeCityShieldOutput(Game game, City city) {
+        int[] workedOutput = computeWorkedTilesOutput(game, city);
+        return Math.max(1, workedOutput[1]);
     }
 
 
@@ -647,9 +710,9 @@ public class CityTurn {
      * (productionKind 1), mirroring {@code city_distribute_surplus_shields} and
      * {@code city_build_unit} / {@code city_build_building} in the C Freeciv server.
      *
-     * <p>Shield output is computed from the city's centre tile using
-     * {@link #getTileOutput}, so productive terrain types (Forest = 3 shields/turn,
-     * Plains = 2 shields/turn) build improvements faster than barren terrain.
+     * <p>Shield output is the sum of all worked tiles (city centre + citizen tiles),
+     * so productive terrain types (Forest = 3 shields/turn, Plains = 2 shields/turn)
+     * build improvements faster than barren terrain.
      *
      * @param game   the current game state
      * @param cityId the ID of the city whose production is being processed
@@ -658,12 +721,9 @@ public class CityTurn {
         City city = game.cities.get(cityId);
         if (city == null) return;
 
-        // Shield output: base from the city's centre tile (terrain + extras + city-centre bonus),
-        // plus terrain shields per additional citizen (workers beyond the founder).
+        // Shield output: sum of all worked tiles (centre + citizens' tiles).
         // Mirrors shield output from worked tiles in the C Freeciv server.
-        Tile centerTile = game.tiles.get(city.getTile());
-        int[] centerOutput = getTileOutput(game, centerTile, true /* city center */);
-        int shieldOutput = computeCityShieldOutput(city, centerOutput);
+        int shieldOutput = computeCityShieldOutput(game, city);
 
         // Apply production waste (shields lost to inefficiency).
         // Mirrors the waste calculation for shields in the C Freeciv server's
@@ -929,9 +989,10 @@ public class CityTurn {
      * If food_stock drops below zero the city shrinks by one (starvation).
      *
      * <p>Food surplus per turn is computed from the city's centre tile using
-     * {@link #getTileOutput}, so cities on fertile terrain (Grassland = 3 food/turn)
-     * grow faster than those on poor terrain (Desert = 1 food/turn).  This mirrors
-     * the terrain-based food output in the C Freeciv server.
+     * {@link #computeWorkedTilesOutput}, so cities on fertile terrain
+     * (Grassland = 3 food/turn) grow faster than those on poor terrain
+     * (Desert = 1 food/turn).  This mirrors the terrain-based food output in
+     * the C Freeciv server.
      *
      * @param game   the current game state
      * @param cityId the ID of the city to process for growth
@@ -940,13 +1001,13 @@ public class CityTurn {
         City city = game.cities.get(cityId);
         if (city == null) return;
 
-        // Food surplus per turn: from the city's centre tile (terrain + extras + city-centre bonus).
-        // Mirrors food surplus[O_FOOD] from city_tile_output() in the C Freeciv server.
-        // Using the centre tile as a proxy for all worked tiles keeps the calculation
-        // simple while correctly reflecting terrain type (Grassland > Plains > Desert).
-        Tile centerTile = game.tiles.get(city.getTile());
-        int[] centerOutput = getTileOutput(game, centerTile, true /* city center */);
-        int foodSurplus = Math.max(1, centerOutput[0]);
+        // Food per turn: sum of all worked tiles' food output (centre tile + citizens' tiles).
+        // Mirrors food production from city_tile_output() summed over all worked tiles
+        // in the C Freeciv server.  Using actual worked tiles means cities on fertile
+        // land grow faster than those on barren terrain, and larger cities generate more
+        // food from their additional citizen tiles.
+        int[] workedOutput = computeWorkedTilesOutput(game, city);
+        int foodSurplus = Math.max(1, workedOutput[0]);
 
         int granaryImprId = findImprId(game, "Granary", IMPR_GRANARY);
         if (city.hasImprovement(granaryImprId)) {
@@ -1015,9 +1076,12 @@ public class CityTurn {
                         city.getName() + " has grown to size " + city.getSize() + ".");
             }
         } else if (city.getFoodStock() < 0) {
-            // Starvation: city shrinks if size > 1, mirrors city_reduce_size() in C server
+            // Starvation: city shrinks if size > 1, mirrors city_reduce_size() in C server.
+            // Release the least-valuable worked tile so the reduced population no longer
+            // works it (mirrors the tile-release step in the C server's citytools.c).
             if (city.getSize() > 1) {
                 city.setSize(city.getSize() - 1);
+                releaseWorstWorkedTile(game, city);
                 Notify.notifyPlayer(game, game.getServer(), city.getOwner(),
                         "Famine in " + city.getName() + "! Population has decreased to "
                                 + city.getSize() + ".");
@@ -1156,18 +1220,12 @@ public class CityTurn {
      * Computes the base trade output of a city before any economic building
      * bonuses, corruption, or rate splits.
      *
-     * <p>Trade is derived from the city's centre tile using
-     * {@link #getTileOutput}: terrain base trade + road trade bonus when the
-     * tile has a road extra.  All citizens (size workers) contribute the same
-     * per-tile trade value, plus the fixed city-centre bonus
-     * ({@link #CITY_CENTRE_TRADE_BONUS}).  This ensures that:
-     * <ul>
-     *   <li>Grassland/Plains/Desert cities with roads produce the same trade
-     *       as the old {@code city.getSize() + 1} formula, keeping balance.</li>
-     *   <li>Cities on terrain without a road trade bonus (Forest, Hills, …)
-     *       produce less trade, accurately reflecting the classic Freeciv
-     *       ruleset where roads are required for most trade income.</li>
-     * </ul>
+     * <p>Trade is the sum of the trade output of every tile in
+     * {@link City#getWorkedTiles()}: terrain base trade + road trade bonus on
+     * each tile, plus the city-centre bonus on the centre tile only.  This
+     * correctly reflects the classic Freeciv ruleset where each worked tile
+     * contributes its own trade independently (roads are required for most
+     * terrain types to generate trade).
      *
      * @param game   the current game state
      * @param cityId the ID of the city to evaluate
@@ -1177,25 +1235,21 @@ public class CityTurn {
         City city = game.cities.get(cityId);
         if (city == null) return 1;
 
-        Tile centerTile = game.tiles.get(city.getTile());
-        int[] centerOutput = getTileOutput(game, centerTile, true /* city center */);
-        int tradePerTile = centerOutput[2]; // includes city-centre bonus (+1)
+        int[] workedOutput = computeWorkedTilesOutput(game, city);
+        int baseTrade = Math.max(CITY_CENTRE_TRADE_BONUS, workedOutput[2]);
 
-        // The city-centre tile contributes tradePerTile; each additional worker
-        // (size-1 of them) contributes one tile's trade without the centre bonus.
-        // workerTrade = max(0, tradePerTile - 1) removes the city-centre +1
-        // that was already counted for the centre tile only.
-        int workerTrade = Math.max(0, tradePerTile - 1);
-        int additionalWorkerTrade = (city.getSize() - 1) * workerTrade;
-        int baseTrade = Math.max(CITY_CENTRE_TRADE_BONUS, tradePerTile + additionalWorkerTrade);
-
-        // Colossus wonder: +1 trade on all tiles that already produce trade.
-        // Mirrors effect_colossus (Output_Inc_Tile = 1, Trade, OutputType:Trade) in
-        // the classic Freeciv effects.ruleset.  Each tile producing at least 1 trade
-        // gains +1, so the bonus scales with the number of active trade tiles.
-        // Simplified here as +1 trade per working citizen on a trade-producing terrain.
-        if (playerHasWonder(game, city.getOwner(), "Colossus") && tradePerTile > 0) {
-            baseTrade += city.getSize(); // +1 per citizen on a trade-producing tile
+        // Colossus wonder: +1 trade on every worked tile that already produces trade.
+        // Mirrors effect_colossus (Output_Inc_Tile = 1, Trade) in the classic
+        // Freeciv effects.ruleset.  Count how many worked tiles produce ≥ 1 trade.
+        if (playerHasWonder(game, city.getOwner(), "Colossus")) {
+            long centerTileId = city.getTile();
+            for (long tileId : city.getWorkedTiles()) {
+                Tile t = game.tiles.get(tileId);
+                if (t == null) continue;
+                boolean isCenter = (tileId == centerTileId);
+                int[] out = getTileOutput(game, t, isCenter);
+                if (out[2] > 0) baseTrade++; // +1 per trade-producing tile
+            }
         }
 
         return baseTrade;
@@ -1921,10 +1975,8 @@ public class CityTurn {
         //   pop  = city_size * (100 + EFT_POLLU_POP_PCT) / 100       (one per citizen)
         //   mod  = game.info.base_pollution                           (-20 by default)
         //   total = max(0, prod + pop + mod)
-        // Use terrain-based shield output from the city centre tile for the shield estimate.
-        Tile centerTile = game.tiles.get(city.getTile());
-        int[] centerOutput = getTileOutput(game, centerTile, true /* city center */);
-        int shieldOutput = computeCityShieldOutput(city, centerOutput);
+        // Use the sum of all worked tiles for the shield estimate.
+        int shieldOutput = computeCityShieldOutput(game, city);
         int pollution = Math.max(0, shieldOutput + city.getSize() - BASE_POLLUTION);
         if (pollution == 0) return;
 
