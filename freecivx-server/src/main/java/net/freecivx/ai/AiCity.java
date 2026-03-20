@@ -374,9 +374,14 @@ class AiCity {
         if (myAttackers < myCityCount * 2 + 2) {
             city.setProductionKind(0);
             city.setProductionValue(ai.aiMilitary.bestAvailableAttacker(owner));
+        } else {
+            // Army cap reached: fall back to the best available defender so the city
+            // is never idle wasting shields.  Mirrors the fallback-defender path in
+            // dai_city_choose_build() in the C Freeciv server's daicity.c which always
+            // queues a "fallback defender" when no other priority wins.
+            city.setProductionKind(0);
+            city.setProductionValue(bestDefender);
         }
-        // else: no production set – city will idle (accumulate gold or waste
-        // shields) rather than over-produce an army it cannot support.
     }
 
     /**

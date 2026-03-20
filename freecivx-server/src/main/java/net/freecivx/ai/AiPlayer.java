@@ -119,6 +119,11 @@ public class AiPlayer {
     int unitLegion   = -1; // Iron Working  — best early all-rounder
     int unitPikemen  = -1; // Feudalism      — anti-horse specialist
     int unitHorsemen = -1; // Horseback Riding — fast raider
+    int unitKnights  = -1; // Chivalry — strong mid-game cavalry attacker
+    int unitMusketeers = -1; // Gunpowder — mid-game attacker/defender
+    int unitRiflemen = -1; // Conscription — strong late attacker/defender
+    int unitCavalry  = -1; // Tactics — powerful late-game cavalry
+    int unitArmor    = -1; // Mobile Warfare — best land attacker
     // Naval unit-type IDs
     int unitTrireme   = -1; // Map Making — earliest naval combat unit
     int unitCaravel   = -1; // Navigation — mid-game naval explorer
@@ -153,6 +158,11 @@ public class AiPlayer {
     long techUniversity         = -1L; // req: Mathematics + Philosophy — unlocks University building
     long techIndustrialization  = -1L; // req: Gunpowder + Trade — Factory
     long techEconomics          = -1L; // req: Trade + University — Stock Exchange
+    long techGunpowder          = -1L; // req: Invention + Iron Working — Musketeers
+    long techChivalry           = -1L; // req: Feudalism + Horseback Riding — Knights
+    long techConscription       = -1L; // req: Democracy — Riflemen
+    long techTactics            = -1L; // req: Conscription + Horseback Riding — Cavalry
+    long techMobileWarfare      = -1L; // req: Automobile + Tactics — Armor
     long techMapMaking          = -1L; // req: Alphabet — unlocks Trireme (naval)
     long techNavigation         = -1L; // req: Astronomy + Math — unlocks Caravel
     long techFlight             = -1L; // req: Combustion + Theory of Gravity — Fighter
@@ -360,6 +370,11 @@ public class AiPlayer {
                 case "University":        techUniversity        = id; break;
                 case "Industrialization": techIndustrialization = id; break;
                 case "Economics":         techEconomics         = id; break;
+                case "Gunpowder":         techGunpowder         = id; break;
+                case "Chivalry":          techChivalry          = id; break;
+                case "Conscription":      techConscription      = id; break;
+                case "Tactics":           techTactics           = id; break;
+                case "Mobile Warfare":    techMobileWarfare     = id; break;
                 case "Map Making":        techMapMaking         = id; break;
                 case "Navigation":        techNavigation        = id; break;
                 case "Flight":            techFlight            = id; break;
@@ -376,11 +391,16 @@ public class AiPlayer {
             String n = e.getValue().getName();
             int id = e.getKey().intValue();
             switch (n) {
-                case "Phalanx":   unitPhalanx  = id; break;
-                case "Archers":   unitArchers  = id; break;
-                case "Legion":    unitLegion   = id; break;
-                case "Pikemen":   unitPikemen  = id; break;
-                case "Horsemen":  unitHorsemen = id; break;
+                case "Phalanx":     unitPhalanx    = id; break;
+                case "Archers":     unitArchers    = id; break;
+                case "Legion":      unitLegion     = id; break;
+                case "Pikemen":     unitPikemen    = id; break;
+                case "Horsemen":    unitHorsemen   = id; break;
+                case "Knights":     unitKnights    = id; break;
+                case "Musketeers":  unitMusketeers = id; break;
+                case "Riflemen":    unitRiflemen   = id; break;
+                case "Cavalry":     unitCavalry    = id; break;
+                case "Armor":       unitArmor      = id; break;
                 case "Trireme":   unitTrireme  = id; break;
                 case "Caravel":   unitCaravel  = id; break;
                 case "Fighter":   unitFighter  = id; break;
