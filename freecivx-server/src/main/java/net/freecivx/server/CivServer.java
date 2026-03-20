@@ -56,6 +56,15 @@ public class CivServer extends org.java_websocket.server.WebSocketServer impleme
     private final net.freecivx.game.TurnTimer warningTimer = createTurnTimer();
     Game game = null;
 
+    /** Interval (in seconds) between PACKET_CONN_PING broadcasts. Must be less than
+     *  the client's 240-second timeout (pingtime_check in clinet.js). */
+    private static final int PING_INTERVAL_SECONDS = 120;
+    private final ScheduledExecutorService pingScheduler = Executors.newSingleThreadScheduledExecutor(r -> {
+        Thread t = new Thread(r, "conn-ping");
+        t.setDaemon(true);
+        return t;
+    });
+
     /** Game mode: "singleplayer" or "multiplayer". */
     private final String gameMode;
 
@@ -452,6 +461,10 @@ public class CivServer extends org.java_websocket.server.WebSocketServer impleme
             }
         }
 
+        if (pid == Packets.PACKET_CONN_PONG) {
+            log.debug("Received PONG from connection {}", connId);
+        }
+
         if (pid == Packets.PACKET_CHAT_MSG_REQ) {
             String message = URLDecoder.decode(json.optString("message"), StandardCharsets.UTF_8);
             if (message.equalsIgnoreCase("/quit")) {
@@ -614,11 +627,29 @@ public class CivServer extends org.java_websocket.server.WebSocketServer impleme
     @Override
     public void onStart() {
         log.info("WebSocket server started successfully.");
+        pingScheduler.scheduleAtFixedRate(() -> {
+            try {
+                sendPingToAll();
+            } catch (Exception e) {
+                log.error("Error sending ping: {}", e.getMessage());
+            }
+        }, PING_INTERVAL_SECONDS, PING_INTERVAL_SECONDS, TimeUnit.SECONDS);
+    }
+
+    /** Broadcasts a PACKET_CONN_PING to all connected clients.
+     *  Mirrors connection_ping() / send_ping_times_to_all() in sernet.c. */
+    private void sendPingToAll() {
+        if (clients.isEmpty()) return;
+        JSONObject ping = new JSONObject();
+        ping.put("pid", Packets.PACKET_CONN_PING);
+        broadcast(ping);
+        log.debug("Sent PING to {} client(s)", clients.size());
     }
 
     @Override
     public void stop() throws InterruptedException {
         log.info("Stopping WebSocket server...");
+        pingScheduler.shutdownNow();
         for (WebSocket conn : clients.values()) {
             conn.close(1001, "Server shutting down"); // Use close code 1001 (going away)
         }
