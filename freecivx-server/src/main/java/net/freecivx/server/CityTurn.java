@@ -325,6 +325,26 @@ public class CityTurn {
     private static final int CITY_CENTRE_TRADE_BONUS = 1;
 
     /**
+     * Minimum city size required for a city to start celebrating (rapture).
+     * Mirrors {@code GAME_DEFAULT_CELEBRATESIZE = 3} in the C Freeciv server's
+     * {@code common/game.h}: cities smaller than this can never be in rapture
+     * regardless of how many happy citizens they have.
+     */
+    private static final int CELEBRATE_SIZE = 3;
+
+    /**
+     * Government IDs for which {@code EFT_RAPTURE_GROW > 0} in the classic
+     * Freeciv {@code effects.ruleset}.  These governments enable rapture growth:
+     * when a city with size ≥ {@value #CELEBRATE_SIZE} has been happy for at least
+     * one turn, it may grow by one population each turn (regardless of the food
+     * granary) as long as it has a positive food surplus.  Mirrors
+     * {@code effect_rapture_grow_0} (Republic) and {@code effect_rapture_grow_1}
+     * (Democracy) in {@code data/classic/effects.ruleset}.
+     */
+    private static final int GOV_RAPTURE_REPUBLIC   = GOV_REPUBLIC;
+    private static final int GOV_RAPTURE_DEMOCRACY  = GOV_DEMOCRACY;
+
+    /**
      * Computes the food, shield, and trade output of a single tile.
      * Takes into account terrain base values, tile extras (road, irrigation, mine,
      * and resource extras), and the city-centre bonus when applicable.
@@ -1079,6 +1099,13 @@ public class CityTurn {
      * can grow larger; cities on barren terrain may stagnate or starve without
      * irrigation.  Mirrors the terrain-based growth rate in the C Freeciv server.
      *
+     * <p>Rapture growth: cities in Republic or Democracy that are celebrating
+     * (were happy last turn AND are still happy AND have size ≥ {@value #CELEBRATE_SIZE})
+     * and have a positive food surplus grow by one population each turn, even if
+     * the food granary is not full.  Mirrors {@code city_rapture_grow()} in the
+     * C Freeciv server's {@code common/city.c} and the rapture grow logic in
+     * {@code city_populate()} in {@code server/cityturn.c}.
+     *
      * @param game   the current game state
      * @param cityId the ID of the city to process for growth
      */
@@ -1111,10 +1138,18 @@ public class CityTurn {
             foodSurplus += 1;
         }
 
+        // Rapture (celebration) growth: if the city was happy last turn, is still
+        // celebrating (happy + size >= CELEBRATE_SIZE), has a positive food surplus,
+        // and the government supports rapture growth (Republic or Democracy in the
+        // classic Freeciv ruleset), grow the city by one regardless of the granary.
+        // Mirrors city_rapture_grow() in common/city.c and the rapture path in
+        // city_populate() in server/cityturn.c.
+        boolean raptureGrow = isCityRaptureGrow(game, city, foodSurplus);
+
         int granarySize = cityGranarySize(city.getSize());
         city.setFoodStock(city.getFoodStock() + foodSurplus);
 
-        if (city.getFoodStock() >= granarySize) {
+        if (raptureGrow || city.getFoodStock() >= granarySize) {
             // Cities above size 8 require an Aqueduct to grow further.
             // Cities above size 12 require both an Aqueduct and a Sewer System.
             // Mirrors city_can_grow_to() / effect_aqueduct and effect_sewer_system
@@ -1126,7 +1161,7 @@ public class CityTurn {
 
             if (city.getSize() >= 12 && !(hasAqueduct && hasSewerSys)) {
                 // Cannot grow beyond size 12 without both Aqueduct and Sewer System.
-                city.setFoodStock(granarySize);
+                city.setFoodStock(Math.min(city.getFoodStock(), granarySize));
                 if (!hasAqueduct) {
                     Notify.notifyPlayer(game, game.getServer(), city.getOwner(),
                             city.getName() + " needs an Aqueduct to grow beyond size "
@@ -1138,38 +1173,52 @@ public class CityTurn {
                 }
             } else if (city.getSize() >= 8 && !hasAqueduct) {
                 // Cap food stock at granary size; cannot grow without Aqueduct
-                city.setFoodStock(granarySize);
+                city.setFoodStock(Math.min(city.getFoodStock(), granarySize));
                 Notify.notifyPlayer(game, game.getServer(), city.getOwner(),
                         city.getName() + " needs an Aqueduct to grow beyond size "
                                 + city.getSize() + ".");
             } else {
                 // City grows: increase size and reset granary
                 city.setSize(city.getSize() + 1);
-                // Granary improvement retains 50% of the new granary capacity after growth.
-                // Pyramids wonder (Growth_Food=25 / Shrink_Food=25 in C effects.ruleset)
-                // retains an additional 25% of the new granary capacity.
-                // Combined: Granary alone = 50% retained; Granary + Pyramids = 75%;
-                //           Pyramids alone = 25% retained.
-                // Mirrors effect_pyramids_grow (Growth_Food=25) in classic effects.ruleset.
+                // Rapture growth: keep the full new granary size in the food stock
+                // (the city did not "spend" its food growing; it grew by celebration).
+                // Mirrors the rapture_grow path in city_increase_size() in C server:
+                //   new_food = city_granary_size(new_size)  (no food consumed on rapture grow)
+                // Normal growth: apply Granary / Pyramids savings percentage.
                 int newGranarySize = cityGranarySize(city.getSize());
-                boolean hasPyramids = playerHasWonder(game, city.getOwner(), "Pyramids");
-                if (city.hasImprovement(granaryImprId)) {
-                    int savedFood = newGranarySize / 2;
-                    if (hasPyramids) {
-                        savedFood = savedFood + newGranarySize / 4; // +25% from Pyramids
-                    }
-                    city.setFoodStock(Math.min(savedFood, newGranarySize));
-                } else if (hasPyramids) {
-                    // Pyramids alone: retain 25% food on growth
-                    city.setFoodStock(newGranarySize / 4);
+                if (raptureGrow) {
+                    // Rapture growth: food stock stays full (no granary reset)
+                    city.setFoodStock(Math.min(city.getFoodStock(), newGranarySize));
                 } else {
-                    city.setFoodStock(0);
+                    // Normal growth: Granary retains 50%, Pyramids adds 25%.
+                    // Combined: Granary alone = 50% retained; Granary + Pyramids = 75%;
+                    //           Pyramids alone = 25% retained.
+                    // Mirrors effect_pyramids_grow (Growth_Food=25) in classic effects.ruleset.
+                    boolean hasPyramids = playerHasWonder(game, city.getOwner(), "Pyramids");
+                    if (city.hasImprovement(granaryImprId)) {
+                        int savedFood = newGranarySize / 2;
+                        if (hasPyramids) {
+                            savedFood = savedFood + newGranarySize / 4; // +25% from Pyramids
+                        }
+                        city.setFoodStock(Math.min(savedFood, newGranarySize));
+                    } else if (hasPyramids) {
+                        // Pyramids alone: retain 25% food on growth
+                        city.setFoodStock(newGranarySize / 4);
+                    } else {
+                        city.setFoodStock(0);
+                    }
                 }
                 // Assign a new worked tile to the additional citizen.
                 // Mirrors city_choose_tile_to_work() in the C Freeciv server.
                 assignNextWorkedTile(game, cityId);
-                Notify.notifyPlayer(game, game.getServer(), city.getOwner(),
-                        city.getName() + " has grown to size " + city.getSize() + ".");
+                if (raptureGrow) {
+                    Notify.notifyPlayer(game, game.getServer(), city.getOwner(),
+                            city.getName() + " is growing by leaps and bounds! (size "
+                                    + city.getSize() + ")");
+                } else {
+                    Notify.notifyPlayer(game, game.getServer(), city.getOwner(),
+                            city.getName() + " has grown to size " + city.getSize() + ".");
+                }
             }
         } else if (city.getFoodStock() < 0) {
             // Starvation: city shrinks if size > 1, mirrors city_reduce_size() in C server.
@@ -1202,6 +1251,35 @@ public class CityTurn {
         }
 
         VisibilityHandler.sendCityToVisiblePlayers(game, cityId);
+    }
+
+    /**
+     * Returns {@code true} if this city should grow by rapture (celebration)
+     * this turn, independent of whether the food granary is full.
+     *
+     * <p>Rapture growth requires all of the following to be true (mirrors
+     * {@code city_rapture_grow()} in the C Freeciv server's {@code common/city.c}):
+     * <ol>
+     *   <li>The city's {@code rapture} counter is &gt; 0 (it was celebrating last turn)</li>
+     *   <li>The city has a positive food surplus this turn</li>
+     *   <li>The player's government has {@code EFT_RAPTURE_GROW &gt; 0}
+     *       (Republic or Democracy in the classic ruleset)</li>
+     *   <li>The city size is at least {@value #CELEBRATE_SIZE}</li>
+     * </ol>
+     *
+     * @param game        the current game state
+     * @param city        the city to test
+     * @param foodSurplus the city's net food surplus this turn (may be negative)
+     * @return {@code true} if the city should grow by rapture
+     */
+    private static boolean isCityRaptureGrow(Game game, City city, int foodSurplus) {
+        if (city.getSize() < CELEBRATE_SIZE) return false;
+        if (foodSurplus <= 0) return false;
+        if (city.getRapture() <= 0) return false;
+        Player player = game.players.get(city.getOwner());
+        if (player == null) return false;
+        int govId = player.getGovernmentId();
+        return govId == GOV_RAPTURE_REPUBLIC || govId == GOV_RAPTURE_DEMOCRACY;
     }
 
     /**
@@ -1386,6 +1464,146 @@ public class CityTurn {
             // Broadcast updated gold and research state to the player's client
             game.getServer().sendPlayerInfoAll(player);
         }
+
+        // Check for global warming after all city updates.
+        // Mirrors the update_environmental_upset() call in srv_main.c.
+        checkGlobalWarming(game);
+    }
+
+    /**
+     * Checks whether accumulated global pollution has triggered a global-warming
+     * event and, if so, transforms a number of random terrain tiles to simulate
+     * environmental degradation.
+     *
+     * <p>Algorithm (mirrors {@code update_environmental_upset()} in the C Freeciv
+     * server's {@code srv_main.c}):
+     * <ol>
+     *   <li>Count all pollution tiles ({@link #EXTRA_BIT_POLLUTION}) on the map.</li>
+     *   <li>Accumulate the count in {@link Game#globalWarmingAccum}.</li>
+     *   <li>If the accumulator has not yet exceeded
+     *       {@link Game#globalWarmingLevel}, clear the accumulator and return.</li>
+     *   <li>Otherwise subtract the level from the accumulator; if a random
+     *       roll succeeds (probability proportional to the remainder), trigger
+     *       a warming event: transform
+     *       {@code (xsize/10 + ysize/10 + accum×5)} random land tiles from
+     *       wetter to drier terrain (Grassland→Plains, Plains→Desert) and
+     *       broadcast a global notification.</li>
+     *   <li>After triggering, reset the accumulator to 0 and raise the level
+     *       by {@code (map_tiles + 999) / 1000}, making subsequent events
+     *       harder to trigger.</li>
+     * </ol>
+     *
+     * @param game the current game state
+     */
+    static void checkGlobalWarming(Game game) {
+        // Count total pollution tiles on the map.
+        int pollutionCount = 0;
+        for (Tile tile : game.tiles.values()) {
+            if ((tile.getExtras() & (1 << EXTRA_BIT_POLLUTION)) != 0) {
+                pollutionCount++;
+            }
+        }
+
+        if (pollutionCount == 0) return;
+
+        // Accumulate pollution each turn.
+        // Mirrors: *accum += count; in update_environmental_upset().
+        game.globalWarmingAccum += pollutionCount;
+
+        if (game.globalWarmingAccum < game.globalWarmingLevel) {
+            // Not enough accumulated yet; keep counting.
+            return;
+        }
+
+        // Level threshold crossed.
+        game.globalWarmingAccum -= game.globalWarmingLevel;
+
+        // Random chance: trigger warming with probability accum / (map_tiles/20).
+        // Mirrors: if (fc_rand((map_num_tiles() + 19) / 20) < *accum) in srv_main.c.
+        int mapTiles = game.map.getXsize() * game.map.getYsize();
+        int threshold = Math.max(1, (mapTiles + 19) / 20);
+        if (ThreadLocalRandom.current().nextInt(threshold) >= game.globalWarmingAccum) {
+            return; // Chance did not trigger this turn
+        }
+
+        // Warming event fires!  Transform terrain tiles.
+        // Number of tiles affected: (xsize/10 + ysize/10 + accum*5).
+        // Mirrors the effect parameter in global_warming() in C server maphand.c.
+        int effectStrength = (game.map.getXsize() / 10)
+                + (game.map.getYsize() / 10)
+                + (game.globalWarmingAccum * 5);
+        effectStrength = Math.max(1, effectStrength);
+
+        // Build lists of transformable terrain IDs.
+        // Grassland (warmer_drier_result = Plains) → and Plains (→ Desert).
+        long grasslandId = -1;
+        long plainsId    = -1;
+        long desertId    = -1;
+        for (Map.Entry<Long, Terrain> e : game.terrains.entrySet()) {
+            String n = e.getValue().getName();
+            if ("Grassland".equalsIgnoreCase(n)) grasslandId = e.getKey();
+            else if ("Plains".equalsIgnoreCase(n))    plainsId    = e.getKey();
+            else if ("Desert".equalsIgnoreCase(n))    desertId    = e.getKey();
+        }
+
+        if (grasslandId < 0 || plainsId < 0 || desertId < 0) {
+            // Cannot perform warming without the expected terrain types.
+            return;
+        }
+
+        // Collect candidate tiles that can be transformed.
+        // Only land tiles (Grassland or Plains) that are not city centres or
+        // ocean tiles are eligible.  Mirrors the random tile selection in
+        // climate_change() in C server maphand.c.
+        List<Tile> candidates = new ArrayList<>();
+        for (Tile tile : game.tiles.values()) {
+            int t = tile.getTerrain();
+            if (t == (int) grasslandId || t == (int) plainsId) {
+                // Exclude city-centre tiles to avoid disrupting cities.
+                boolean isCityTile = game.cities.values().stream()
+                        .anyMatch(c -> c.getTile() == tile.getIndex());
+                if (!isCityTile) {
+                    candidates.add(tile);
+                }
+            }
+        }
+
+        if (candidates.isEmpty()) {
+            // No eligible tiles; still reset accumulator and raise level.
+        } else {
+            // Transform up to effectStrength tiles.
+            Collections.shuffle(candidates,
+                    new java.util.Random(ThreadLocalRandom.current().nextLong()));
+            int changed = 0;
+            for (Tile tile : candidates) {
+                if (changed >= effectStrength) break;
+                int t = tile.getTerrain();
+                int newTerrain;
+                if (t == (int) grasslandId) {
+                    newTerrain = (int) plainsId;  // Grassland → Plains (drier)
+                } else if (t == (int) plainsId && desertId >= 0) {
+                    newTerrain = (int) desertId;  // Plains → Desert (drier)
+                } else {
+                    continue;
+                }
+                tile.setTerrain(newTerrain);
+                // Clear irrigation (no longer relevant after drying)
+                tile.setExtras(tile.getExtras() & ~(1 << EXTRA_BIT_IRRIGATION));
+                game.getServer().sendTileInfoAll(tile);
+                changed++;
+            }
+        }
+
+        // Reset accumulator and raise the warming level so successive events
+        // require more pollution.  Mirrors the post-event reset in srv_main.c:
+        //   *accum = 0; *level += (map_num_tiles() + 999) / 1000;
+        game.globalWarmingAccum = 0;
+        game.globalWarmingLevel += Math.max(1, (mapTiles + 999) / 1000);
+
+        // Notify all players about the warming event.
+        // Message mirrors the C Freeciv server's global_warming() in maphand.c.
+        Notify.notifyAllPlayers(game, game.getServer(),
+                "Global warming has occurred! Vast ranges of grassland have become deserts.");
     }
 
     /**
@@ -2083,13 +2301,39 @@ public class CityTurn {
         // city_happy()  (C server): no angry, no unhappy, happy >= (size+1)/2
         // city_unhappy()(C server): happy < unhappy + 2*angry
         // Simplified: city is happy when no net unhappy citizens remain.
-        boolean wasHappy   = city.isHappy();
-        boolean wasUnhappy = city.isUnhappy();
-        boolean isHappy    = (netUnhappy == 0);
-        boolean isUnhappy  = (netUnhappy > 0);
+        boolean prevHappy   = city.isHappy();
+        boolean prevUnhappy = city.isUnhappy();
+        boolean isHappy     = (netUnhappy == 0);
+        boolean isUnhappy   = (netUnhappy > 0);
 
         city.setHappy(isHappy);
         city.setUnhappy(isUnhappy);
+
+        // Update the rapture (celebration) counter.
+        // A city is celebrating when it was happy last turn (wasHappy) AND is
+        // currently happy AND has size >= CELEBRATE_SIZE.  The counter drives
+        // rapture growth in cityGrowth(): cities in Republic/Democracy with a
+        // positive food surplus grow one extra population each rapture turn.
+        // Mirrors the rapture counter update in update_city_activity() in the C
+        // Freeciv server's cityturn.c (pcity->rapture++ / pcity->rapture=0).
+        boolean isCelebrating = isHappy && city.isWasHappy()
+                && city.getSize() >= CELEBRATE_SIZE;
+        if (isCelebrating) {
+            city.setRapture(city.getRapture() + 1);
+            if (city.getRapture() == 1) {
+                Notify.notifyPlayer(game, game.getServer(), city.getOwner(),
+                        "Celebrations in your honor in " + city.getName() + "!");
+            }
+        } else {
+            if (city.getRapture() > 0) {
+                Notify.notifyPlayer(game, game.getServer(), city.getOwner(),
+                        "Celebrations canceled in " + city.getName() + ".");
+                city.setRapture(0);
+            }
+        }
+        // Update was_happy for use by next turn's rapture check.
+        // Mirrors pcity->was_happy = is_happy in update_city_activity() in C server.
+        city.setWasHappy(isHappy);
 
         // Update the civil disorder (anarchy) counter and send player notifications.
         // Mirrors the anarchy counter logic in update_city_activity() in the C
@@ -2116,7 +2360,7 @@ public class CityTurn {
         }
 
         // Broadcast the updated city state to all clients if anything changed
-        if (wasHappy != isHappy || wasUnhappy != isUnhappy) {
+        if (prevHappy != isHappy || prevUnhappy != isUnhappy) {
             VisibilityHandler.sendCityToVisiblePlayers(game, cityId);
         }
     }
