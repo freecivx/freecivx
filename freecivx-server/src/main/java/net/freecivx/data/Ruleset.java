@@ -355,6 +355,7 @@ public class Ruleset {
                 boolean isSettler = flags.contains("Settlers") || flags.contains("Cities");
                 boolean hasHorse  = flags.contains("Horse");
                 boolean isNonMil  = flags.contains("NonMil");
+                boolean hasHelpWonder = flags.contains("HelpWonder");
                 String actions = isSettler ? settlerActions : defaultActions;
                 UnitType ut = new UnitType(name, graphic, moveRate, hp, 1, name,
                         attack, defense, actions, domain, buildCost);
@@ -364,6 +365,7 @@ public class Ruleset {
                 ut.setHasHorseFlag(hasHorse);
                 ut.setNonMilitary(isNonMil);
                 ut.setHasSettlersFlag(isSettler);
+                ut.setHasHelpWonderFlag(hasHelpWonder);
                 ut.setVisionRadiusSq(visionRadiusSq);
                 // Anti-horse defense multiplier: DefenseMultiplier=1 → factor=2 (double defense)
                 if (sec.antiHorseBonus > 0) {

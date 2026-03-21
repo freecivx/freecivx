@@ -125,6 +125,16 @@ public class Actions {
     public static final int ACTION_TRANSPORT_UNLOAD = 83;
 
     /**
+     * Action ID: help build a wonder in a friendly city.
+     * The acting unit (Caravan or Freight) is disbanded and its production
+     * cost is added as shields to the target city's wonder production.
+     * Mirrors ACTION_HELP_WONDER (id 22) in the C Freeciv server's
+     * {@code common/actions.c} and {@code do_unit_help_build_wonder()} in
+     * {@code server/unittools.c}.
+     */
+    public static final int ACTION_HELP_WONDER = 22;
+
+    /**
      * Checks whether a given action is currently enabled for an actor unit.
      * Returns {@code false} immediately if the actor does not exist or the
      * action ID is unknown.
