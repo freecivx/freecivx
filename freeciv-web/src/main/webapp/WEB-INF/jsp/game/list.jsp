@@ -322,7 +322,7 @@
 
 				<%-- ── Freeciv C Server Games ── --%>
 				<div class="section-heading">
-					<h2><i class="fa fa-users"></i> Freeciv C Server Games</h2>
+					<h1><i class="fa fa-users"></i> Freeciv C Server Games</h1>
 					<span class="badge-count">${cServerCount}</span>
 				</div>
 
@@ -422,7 +422,7 @@
 				</c:choose>
 				<%-- ── Freecivx Server Games (Beta) ── --%>
 				<div class="section-heading" style="margin-top:20px;">
-					<h2><i class="fa fa-rocket"></i> Freecivx Server Games</h2>
+					<h1><i class="fa fa-rocket"></i> Freecivx Java Server Games</h1>
 					<span class="badge-count">${freecivxCount}</span>
 					<span class="badge" style="background:#8e44ad;color:#fff;border-radius:12px;padding:3px 11px;font-size:0.82rem;font-weight:700;">Beta</span>
 				</div>
