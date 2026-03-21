@@ -21,6 +21,7 @@ package net.freecivx.server;
 
 import net.freecivx.game.City;
 import net.freecivx.game.Game;
+import net.freecivx.game.Improvement;
 import net.freecivx.game.Player;
 import net.freecivx.game.Tile;
 import net.freecivx.game.Unit;
@@ -369,6 +370,30 @@ public class CityHand {
             if (game.unitTypes.get((long) productionValue) == null) return;
         } else {
             if (game.improvements.get((long) productionValue) == null) return;
+        }
+
+        // For improvement production, enforce uniqueness rules before queuing.
+        // Mirrors can_city_build_improvement_direct() in the C Freeciv server:
+        //   - A city may not re-build an improvement it already has.
+        //   - A great wonder (genus 0) may only be built once across the entire world.
+        // Spaceship parts (genus 3) are exempt: they can be produced multiple times.
+        if (internalKind == 1) {
+            Improvement impr = game.improvements.get((long) productionValue);
+            if (impr != null && impr.getGenus() != 3 /* GENUS_SPECIAL */) {
+                // Reject if the city already contains this improvement.
+                if (city.hasImprovement(productionValue)) {
+                    Notify.notifyPlayer(game, game.getServer(), city.getOwner(),
+                            city.getName() + " already has " + impr.getName() + ".");
+                    return;
+                }
+                // Reject if this is a great wonder already built anywhere in the world.
+                if (impr.getGenus() == 0 /* GENUS_GREAT_WONDER */
+                        && CityTurn.worldHasWonder(game, impr.getName())) {
+                    Notify.notifyPlayer(game, game.getServer(), city.getOwner(),
+                            impr.getName() + " has already been built by another civilization!");
+                    return;
+                }
+            }
         }
 
         // Only reset shield stock when the production target actually changes.
