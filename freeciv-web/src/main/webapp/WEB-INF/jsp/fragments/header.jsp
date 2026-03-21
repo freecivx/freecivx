@@ -19,7 +19,7 @@
 		<ul class="nav navbar-nav">
 			<li><a href="/webclient/?action=new&type=singleplayer">New Game</a></li>
 			<li class="dropdown">
-				<a href="/game/list?v=singleplayer" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">
+				<a href="/game/list" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">
 					<span onclick="window.location='/game/list'">Multiplayer Games</span>
 					<span class="badge ongoing-games-number" id="ongoing-games" title="Ongoing games"></span>
 				</a>
