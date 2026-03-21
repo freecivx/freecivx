@@ -420,89 +420,6 @@ function createTerrainShaderTSL(uniforms) {
         return { mask: isTerrain, color: terrainColor };
     }
 
-    /**
-     * Helper function to get terrain colour for a given terrain type value.
-     * Wrapped in Fn() so it compiles to a single GPU function called for each
-     * of the 6 hex neighbours, rather than being inlined 6 times.
-     */
-    const getTerrainColorForHexFn = Fn(([tType, coord]) => {
-        let color = vec4(0, 0, 0, 1);
-
-        function matchTerrain(terrainValue, layerIndex, blendWithBeach) {
-            const isTerrain = step(terrainValue - 0.5, tType).mul(step(tType, terrainValue + 0.5));
-            let tc;
-            if (blendWithBeach) {
-                const baseTerrainColor = texture(terrainAtlasTex, coord).depth(int(layerIndex));
-                const coastTex = texture(terrainAtlasTex, coord).depth(int(TERRAIN_ATLAS_COAST));
-                const aboveWater = step(WATER_LEVEL, posY);
-                const SHORELINE_RANGE = BEACH_HIGH - WATER_LEVEL;
-                const shorelineT = clamp(div(sub(posY, WATER_LEVEL), SHORELINE_RANGE), 0.0, 1.0);
-                const aboveWaterColor = mix(vec4(beachSandColor, 1.0), baseTerrainColor, shorelineT);
-                tc = mix(coastTex, aboveWaterColor, aboveWater);
-            } else {
-                tc = texture(terrainAtlasTex, coord).depth(int(layerIndex));
-            }
-            return { mask: isTerrain, color: tc };
-        }
-
-        function matchTerrainFromArray(terrainValue, layerIndex) {
-            const isTerrain = step(terrainValue - 0.5, tType).mul(step(tType, terrainValue + 0.5));
-            return { mask: isTerrain, color: texture(terrainLayersTex, coord).depth(int(layerIndex)) };
-        }
-
-        const layersList = [
-            matchTerrain(TERRAIN_GRASSLAND,  TERRAIN_ATLAS_GRASSLAND,  true),
-            matchTerrain(TERRAIN_PLAINS,     TERRAIN_ATLAS_PLAINS,     true),
-            matchTerrain(TERRAIN_DESERT,     TERRAIN_ATLAS_DESERT,     true),
-            matchTerrain(TERRAIN_HILLS,      TERRAIN_ATLAS_HILLS,      true),
-            matchTerrain(TERRAIN_MOUNTAINS,  TERRAIN_ATLAS_MOUNTAINS,  true),
-            matchTerrain(TERRAIN_SWAMP,      TERRAIN_ATLAS_SWAMP,      true),
-            matchTerrain(TERRAIN_FOREST,     TERRAIN_ATLAS_FOREST,     true),
-            matchTerrain(TERRAIN_JUNGLE,     TERRAIN_ATLAS_JUNGLE,     true),
-            matchTerrain(TERRAIN_COAST,      TERRAIN_ATLAS_COAST,      false),
-            matchTerrain(TERRAIN_FLOOR,      TERRAIN_ATLAS_OCEAN,      false),
-            matchTerrain(TERRAIN_LAKE,       TERRAIN_ATLAS_COAST,      false),
-            matchTerrainFromArray(TERRAIN_ARCTIC,  TERRAIN_LAYER_ARCTIC),
-            matchTerrainFromArray(TERRAIN_TUNDRA,  TERRAIN_LAYER_TUNDRA)
-        ];
-
-        for (const layer of layersList) {
-            color = color.mix(layer.color, layer.mask);
-        }
-
-        return color;
-    });
-
-    // =========================================================================
-    // HEX NEIGHBOUR UV OFFSETS
-    // =========================================================================
-    // Defined here once and reused by the terrain edge blending section below
-    // as well as the visibility blending and nation border sections further down.
-    const neighborOffsetX = float(1.0).div(map_x_size);
-    const neighborOffsetY = float(1.0).div(map_y_size);
-
-    const neighborUV_E  = vec2(tileCenterUV.x.add(neighborOffsetX),              tileCenterUV.y                     );
-    const neighborUV_W  = vec2(tileCenterUV.x.sub(neighborOffsetX),              tileCenterUV.y                     );
-    const neighborUV_NE = vec2(tileCenterUV.x.add(neighborOffsetX.mul(0.5)),     tileCenterUV.y.add(neighborOffsetY));
-    const neighborUV_NW = vec2(tileCenterUV.x.sub(neighborOffsetX.mul(0.5)),     tileCenterUV.y.add(neighborOffsetY));
-    const neighborUV_SE = vec2(tileCenterUV.x.add(neighborOffsetX.mul(0.5)),     tileCenterUV.y.sub(neighborOffsetY));
-    const neighborUV_SW = vec2(tileCenterUV.x.sub(neighborOffsetX.mul(0.5)),     tileCenterUV.y.sub(neighborOffsetY));
-
-    // Sample terrain type at all 6 hex neighbours (r-channel = terrain, a-channel = visibility)
-    const terrainTypeNeighE  = texture(maptilesTex, neighborUV_E);
-    const terrainTypeNeighW  = texture(maptilesTex, neighborUV_W);
-    const terrainTypeNeighNE = texture(maptilesTex, neighborUV_NE);
-    const terrainTypeNeighNW = texture(maptilesTex, neighborUV_NW);
-    const terrainTypeNeighSE = texture(maptilesTex, neighborUV_SE);
-    const terrainTypeNeighSW = texture(maptilesTex, neighborUV_SW);
-
-    const terrainNeighE  = terrainTypeNeighE.r.mul(256.0).floor();
-    const terrainNeighW  = terrainTypeNeighW.r.mul(256.0).floor();
-    const terrainNeighNE = terrainTypeNeighNE.r.mul(256.0).floor();
-    const terrainNeighNW = terrainTypeNeighNW.r.mul(256.0).floor();
-    const terrainNeighSE = terrainTypeNeighSE.r.mul(256.0).floor();
-    const terrainNeighSW = terrainTypeNeighSW.r.mul(256.0).floor();
-
     // Build terrain layers - including all terrain types from WebGL shader
     // Note: TERRAIN_INACCESSIBLE (0) renders as black (default finalColor)
     const layers = [
@@ -527,55 +444,6 @@ function createTerrainShaderTSL(uniforms) {
     for (const layer of layers) {
         finalColor = mix(finalColor, layer.color, layer.mask);
     }
-
-    // =========================================================================
-    // HEXAGONAL TERRAIN EDGE BLENDING (smooth transitions between terrain types)
-    // =========================================================================
-    // Blend terrain textures at hex tile borders for smooth Civ 6-style transitions.
-    // Uses per-face signed hex distances to determine which neighbour's colour to
-    // blend toward at each of the 6 faces, without a separate face-classification step.
-    //
-    // Blend zone: outer 20 % of the hex radius (hexDist 0.40 – 0.50).
-    // Maximum blend weight of 0.40 ensures the current tile's texture always dominates.
-
-    // Signed distances for each edge pair (positive side = the face the pixel is on)
-    const d2BlendSigned = hexX.mul(0.5).add(hexY.mul(HEX_SQRT3_OVER_2));   // >0 = NE face, <0 = SW face
-    const d3BlendSigned = hexX.mul(-0.5).add(hexY.mul(HEX_SQRT3_OVER_2));  // >0 = NW face, <0 = SE face
-
-    const HEX_BLEND_START    = 0.40;  // hexDist at which blending begins
-    const HEX_BLEND_END      = 0.50;  // hexDist at which blending is full strength (= hex edge)
-    const HEX_BLEND_STRENGTH = 0.40;  // Maximum blend weight toward neighbour colour
-
-    // Per-face blend factors (0 at hex center, HEX_BLEND_STRENGTH at hex edge)
-    const eBlend  = smoothstep(HEX_BLEND_START, HEX_BLEND_END, hexX)               .mul(HEX_BLEND_STRENGTH);
-    const wBlend  = smoothstep(HEX_BLEND_START, HEX_BLEND_END, hexX.negate())      .mul(HEX_BLEND_STRENGTH);
-    const neBlend = smoothstep(HEX_BLEND_START, HEX_BLEND_END, d2BlendSigned)      .mul(HEX_BLEND_STRENGTH);
-    const swBlend = smoothstep(HEX_BLEND_START, HEX_BLEND_END, d2BlendSigned.negate()).mul(HEX_BLEND_STRENGTH);
-    const nwBlend = smoothstep(HEX_BLEND_START, HEX_BLEND_END, d3BlendSigned)      .mul(HEX_BLEND_STRENGTH);
-    const seBlend = smoothstep(HEX_BLEND_START, HEX_BLEND_END, d3BlendSigned.negate()).mul(HEX_BLEND_STRENGTH);
-
-    // Fetch neighbour terrain colours via the GPU function (compiled once, called 6×)
-    const colorNeighE  = getTerrainColorForHexFn(terrainNeighE,  texCoord);
-    const colorNeighW  = getTerrainColorForHexFn(terrainNeighW,  texCoord);
-    const colorNeighNE = getTerrainColorForHexFn(terrainNeighNE, texCoord);
-    const colorNeighNW = getTerrainColorForHexFn(terrainNeighNW, texCoord);
-    const colorNeighSE = getTerrainColorForHexFn(terrainNeighSE, texCoord);
-    const colorNeighSW = getTerrainColorForHexFn(terrainNeighSW, texCoord);
-
-    // Guard: only blend when the neighbour tile has a known terrain type (> 0)
-    const hasTerrainNeighE  = step(0.5, terrainNeighE);
-    const hasTerrainNeighW  = step(0.5, terrainNeighW);
-    const hasTerrainNeighNE = step(0.5, terrainNeighNE);
-    const hasTerrainNeighNW = step(0.5, terrainNeighNW);
-    const hasTerrainNeighSE = step(0.5, terrainNeighSE);
-    const hasTerrainNeighSW = step(0.5, terrainNeighSW);
-
-    finalColor = finalColor.mix(colorNeighE,  eBlend.mul(hasTerrainNeighE));
-    finalColor = finalColor.mix(colorNeighW,  wBlend.mul(hasTerrainNeighW));
-    finalColor = finalColor.mix(colorNeighNE, neBlend.mul(hasTerrainNeighNE));
-    finalColor = finalColor.mix(colorNeighNW, nwBlend.mul(hasTerrainNeighNW));
-    finalColor = finalColor.mix(colorNeighSE, seBlend.mul(hasTerrainNeighSE));
-    finalColor = finalColor.mix(colorNeighSW, swBlend.mul(hasTerrainNeighSW));
 
     // =========================================================================
     // IRRIGATION AND FARMLAND RENDERING
@@ -808,16 +676,27 @@ function createTerrainShaderTSL(uniforms) {
     // Sample visibility from neighboring hex tiles to create soft blending
     // at the boundary between unknown (black) tiles and known/visible tiles.
     // This creates a gradual fade rather than a hard edge.
-    // neighborOffsetX/Y and neighborUV_* are defined earlier (shared with terrain blending).
     
-    // Sample neighbor visibilities – reuse the terrain neighbour texture samples
-    // (terrainTypeNeigh* already read the maptiles texture at the same UV positions)
-    const visE = terrainTypeNeighE.a;
-    const visW = terrainTypeNeighW.a;
-    const visNE = terrainTypeNeighNE.a;
-    const visNW = terrainTypeNeighNW.a;
-    const visSE = terrainTypeNeighSE.a;
-    const visSW = terrainTypeNeighSW.a;
+    // Calculate neighbor sampling offsets (in UV space)
+    const neighborOffsetX = float(1.0).div(map_x_size);
+    const neighborOffsetY = float(1.0).div(map_y_size);
+    
+    // Sample 6 hex neighbors' visibility for edge softening
+    // We sample at offsets corresponding to hex neighbor directions
+    const neighborUV_E = vec2(tileCenterUV.x.add(neighborOffsetX), tileCenterUV.y);
+    const neighborUV_W = vec2(tileCenterUV.x.sub(neighborOffsetX), tileCenterUV.y);
+    const neighborUV_NE = vec2(tileCenterUV.x.add(neighborOffsetX.mul(0.5)), tileCenterUV.y.add(neighborOffsetY));
+    const neighborUV_NW = vec2(tileCenterUV.x.sub(neighborOffsetX.mul(0.5)), tileCenterUV.y.add(neighborOffsetY));
+    const neighborUV_SE = vec2(tileCenterUV.x.add(neighborOffsetX.mul(0.5)), tileCenterUV.y.sub(neighborOffsetY));
+    const neighborUV_SW = vec2(tileCenterUV.x.sub(neighborOffsetX.mul(0.5)), tileCenterUV.y.sub(neighborOffsetY));
+    
+    // Sample neighbor visibilities
+    const visE = texture(maptilesTex, neighborUV_E).a;
+    const visW = texture(maptilesTex, neighborUV_W).a;
+    const visNE = texture(maptilesTex, neighborUV_NE).a;
+    const visNW = texture(maptilesTex, neighborUV_NW).a;
+    const visSE = texture(maptilesTex, neighborUV_SE).a;
+    const visSW = texture(maptilesTex, neighborUV_SW).a;
     
     // Calculate average neighbor visibility
     const avgNeighborVis = visE.add(visW).add(visNE).add(visNW).add(visSE).add(visSW).mul(1.0 / 6.0);

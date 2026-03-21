@@ -239,15 +239,6 @@ const WaterConfig = Object.freeze({
         /** Base opacity (constant for clean game look) */
         BASE: 0.72
     }),
-    /** PBR material settings for MeshStandardNodeMaterial */
-    MATERIAL: Object.freeze({
-        /** Roughness (0 = mirror-like, 1 = fully rough) – smooth water for scene-light specular */
-        ROUGHNESS: 0.15,
-        /** Metalness (0 = dielectric, 1 = metallic) – water is non-metallic */
-        METALNESS: 0.0,
-        /** Normal perturbation strength – controls how much ripple gradients tilt surface normals */
-        NORMAL_STRENGTH: 0.18
-    }),
     /** Water color palette (stylized game colors) */
     COLORS: Object.freeze({
         /** Deep ocean color - darker rich blue with more contrast */
