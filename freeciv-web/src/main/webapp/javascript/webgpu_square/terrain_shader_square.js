@@ -659,18 +659,18 @@ function createTerrainShaderSquareTSL(uniforms) {
     const diffuseStrength = 0.58;
     const lightingFactor = add(ambientLight, mul(NdotL, diffuseStrength));
     
-    // Brightness boost: 1.201 = 1.264 (previous) * 0.95 (5% darker as requested)
-    const brightnessBoost = 1.201;
+    // Brightness boost: 1.0 = neutral (no extra boost) for a more natural look
+    const brightnessBoost = 1.0;
     finalColor = vec4(mul(mul(finalColor.rgb, lightingFactor), brightnessBoost), finalColor.a);
 
     // Apply contrast enhancement for more vivid, natural terrain appearance
     // Formula: (color - 0.5) * contrast + 0.5, clamped to [0,1]
-    const TERRAIN_CONTRAST = 1.12;
+    const TERRAIN_CONTRAST = 1.05;
     const contrastedColor = clamp(add(mul(sub(finalColor.rgb, 0.5), TERRAIN_CONTRAST), 0.5), 0.0, 1.0);
     finalColor = vec4(contrastedColor, finalColor.a);
 
-    // Apply subtle saturation boost for more natural, vivid terrain colours
-    const TERRAIN_SATURATION = 1.10;
+    // Apply slight desaturation for a more natural, earthy terrain appearance
+    const TERRAIN_SATURATION = 0.92;
     const lumWeights = vec3(0.2126, 0.7152, 0.0722);
     const lumValue = dot(finalColor.rgb, lumWeights);
     const saturatedColor = mix(vec3(lumValue), finalColor.rgb, TERRAIN_SATURATION);
