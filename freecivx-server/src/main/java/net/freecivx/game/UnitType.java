@@ -148,6 +148,16 @@ public class UnitType {
      */
     private boolean hasSettlersFlag = false;
 
+    /**
+     * Whether this unit type can help build a wonder in a friendly city.
+     * Set when the ruleset {@code flags} field contains {@code "HelpWonder"}.
+     * True for Caravan and Freight; false for all other units.
+     * Mirrors the {@code "HelpWonder"} unit flag in the classic Freeciv
+     * units ruleset and the {@code do_unit_help_build_wonder()} action in
+     * the C Freeciv server's {@code server/unittools.c}.
+     */
+    private boolean hasHelpWonderFlag = false;
+
     // Constructor (backwards-compatible without cost)
     public UnitType(String name, String graphicsStr, int moveRate, int hp, int veteranLevels, String helptext, int attackStrength, int defenseStrength,
                     String utype_actions, int domain) {
@@ -414,6 +424,28 @@ public class UnitType {
      */
     public void setHasSettlersFlag(boolean hasSettlersFlag) {
         this.hasSettlersFlag = hasSettlersFlag;
+    }
+
+    /**
+     * Returns {@code true} if this unit type has the {@code "HelpWonder"}
+     * flag, meaning it can contribute its production cost as shields to a
+     * wonder under construction in a friendly city.  True for Caravan and
+     * Freight; false for all other units.  Mirrors the {@code "HelpWonder"}
+     * flag in the classic Freeciv units ruleset.
+     */
+    public boolean hasHelpWonderFlag() {
+        return hasHelpWonderFlag;
+    }
+
+    /**
+     * Sets whether this unit type has the {@code "HelpWonder"} flag
+     * (parsed from the ruleset).  Should be {@code true} for Caravan and
+     * Freight.
+     *
+     * @param hasHelpWonderFlag {@code true} if this unit can help build wonders
+     */
+    public void setHasHelpWonderFlag(boolean hasHelpWonderFlag) {
+        this.hasHelpWonderFlag = hasHelpWonderFlag;
     }
 
     /**
