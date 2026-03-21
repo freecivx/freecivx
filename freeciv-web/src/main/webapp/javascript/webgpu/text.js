@@ -20,6 +20,11 @@
 var texture_cache = {};
 var webgl_mapview_font = "27px arial, sans serif";
 
+/* Render labels at this resolution multiplier for sharper text and icons.
+ * A value of 2 means 2x the canvas pixels per logical unit, improving clarity
+ * at close zoom levels without changing the world-space size of sprites. */
+var LABEL_SCALE = 2;
+
 
 /**********************************************************************
   ...

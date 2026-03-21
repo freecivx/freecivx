@@ -214,7 +214,8 @@ function webgl_preload()
           webgl_textures["water1"].wrapS = THREE.RepeatWrapping;
           webgl_textures["water1"].wrapT = THREE.RepeatWrapping;
           webgl_textures["water1"].magFilter = THREE.LinearFilter;
-          webgl_textures["water1"].minFilter = THREE.LinearFilter;
+          webgl_textures["water1"].minFilter = THREE.LinearMipmapLinearFilter;
+          webgl_textures["water1"].generateMipmaps = true;
           webgl_textures["water1"].needsUpdate = true;
         }
       })()
@@ -228,7 +229,8 @@ function webgl_preload()
           webgl_textures["water2"].wrapS = THREE.RepeatWrapping;
           webgl_textures["water2"].wrapT = THREE.RepeatWrapping;
           webgl_textures["water2"].magFilter = THREE.LinearFilter;
-          webgl_textures["water2"].minFilter = THREE.LinearFilter;
+          webgl_textures["water2"].minFilter = THREE.LinearMipmapLinearFilter;
+          webgl_textures["water2"].generateMipmaps = true;
           webgl_textures["water2"].needsUpdate = true;
         }
       })()
@@ -247,7 +249,8 @@ function handle_new_texture(url, terrain_name)
                 texture.wrapS = THREE.RepeatWrapping;
                 texture.wrapT = THREE.RepeatWrapping;
                 texture.magFilter = THREE.LinearFilter;
-                texture.minFilter = THREE.LinearFilter;
+                texture.minFilter = THREE.LinearMipmapLinearFilter;
+                texture.generateMipmaps = true;
                 texture.needsUpdate = true;
                 webgl_textures[terrain_name] = texture;
   }
