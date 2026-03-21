@@ -71,6 +71,20 @@ class AiCity {
     }
 
     /**
+     * Manages city production for all cities owned by {@code player}.
+     * Called from the virtual-thread per-player phase in {@link AiPlayer#executeAiTurns()}.
+     *
+     * @param player the AI player whose cities should be managed
+     */
+    void manageAiCitiesForPlayer(Player player) {
+        for (Map.Entry<Long, City> entry : new ArrayList<>(game.cities.entrySet())) {
+            City city = entry.getValue();
+            if (city.getOwner() != player.getPlayerNo()) continue;
+            manageAiCity(city, entry.getKey(), player);
+        }
+    }
+
+    /**
      * Chooses what to build in a single AI city based on strategic priorities.
      * Inspired by {@code dai_city_choose_build()} in {@code ai/default/daicity.c}.
      *

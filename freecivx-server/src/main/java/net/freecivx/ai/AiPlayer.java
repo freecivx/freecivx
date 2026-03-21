@@ -36,11 +36,14 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 
 /**
  * AiPlayer handles all AI decision-making for computer-controlled players.
- * AI turns are executed in a dedicated background thread to keep the main
- * game loop responsive.
+ * AI turns are executed using Java 21 virtual threads to enable concurrent
+ * per-player processing while keeping the main game loop responsive.
  *
  * <p>Strategies are based on the Freeciv C server default AI (ai/default/):
  * <ul>
@@ -286,11 +289,12 @@ public class AiPlayer {
                 AiDiplomacy.LOVE_PENALTY_ATTACK);
     }
 
-    /** Performs all AI actions for the current turn (runs on the AI thread). */
+    /** Performs all AI actions for the current turn using virtual threads for per-player phases. */
     private void executeAiTurns() {
         resolveGameIds();
 
-        // Phase 0a: diplomacy
+        // Phase 0a: diplomacy — must remain sequential because love-values and
+        // tech-sharing tables are shared state across all players.
         aiDiplomacy.beginNewPhase(game);
         aiDiplomacy.performDiplomaticActions(game);
 
@@ -299,90 +303,144 @@ public class AiPlayer {
         // all applicable techs so they do not duplicate each other's research.
         aiDiplomacy.performTechSharing(game);
 
-        // Phase 0b: government evolution
-        manageAiGovernments();
-
-        // Phase 0c: tax / science / luxury rates
-        manageAiTaxRates();
-
-        // Phase 1: research goals
-        pickResearchGoals();
-
-        // Phase 2: city production — delegate to AiCity
-        aiCity.manageAiCities();
-
-        // Phase 2.3: upgrade obsolete units when gold reserves allow.
-        // Mirrors dai_upgrade_units() in ai/default/aihand.c: the AI spends
-        // excess gold to modernise veteran troops (e.g. Warriors → Phalanx,
-        // Phalanx → Legion) before spending it on new production.
-        upgradeObsoleteUnits();
-
-        // Phase 2.5: spaceship launch — if any AI player's spaceship is ready
-        // (state == STARTED and success_rate > 0), launch it automatically.
-        // Mirrors the end-of-turn launch check in the C Freeciv AI.
-        for (Player aiPlayer : game.players.values()) {
-            if (!aiPlayer.isAi() || !aiPlayer.isAlive()) continue;
-            net.freecivx.game.Spaceship ship = aiPlayer.getSpaceship();
-            if (ship.getState() == net.freecivx.game.Spaceship.State.STARTED
-                    && ship.getSuccessRate() > 0.0) {
-                game.handleSpaceshipLaunch(aiPlayer.getPlayerNo());
+        // Collect active AI players once; reuse for all parallel phases.
+        List<Player> aiPlayers = new ArrayList<>();
+        for (Player p : game.players.values()) {
+            if (p.isAi() && p.isAlive() && p.getPlayerNo() != Barbarian.BARBARIAN_PLAYER_ID) {
+                aiPlayers.add(p);
             }
         }
 
-        // Phase 3: unit actions — delegate to sub-modules
-        List<Unit> unitsSnapshot = new ArrayList<>(game.units.values());
-        for (Unit unit : unitsSnapshot) {
+        // Phases 0b–2.5: per-player operations that write only to the owning
+        // player's data (government, rates, research, city production, unit
+        // upgrades, spaceship).  Run concurrently in Java 21 virtual threads so
+        // that AI players do not block each other.
+        runPerPlayerConcurrently(aiPlayers, player -> {
+            // Phase 0b: government evolution
+            upgradeGovernmentIfPossible(player);
+
+            // Phase 0c: tax / science / luxury rates
+            adjustTaxRatesForPlayer(player);
+
+            // Phase 1: research goals
+            pickResearchGoal(player, player.getPlayerNo());
+
+            // Phase 2: city production — delegate to AiCity
+            aiCity.manageAiCitiesForPlayer(player);
+
+            // Phase 2.3: upgrade obsolete units when gold reserves allow.
+            // Mirrors dai_upgrade_units() in ai/default/aihand.c.
+            upgradeUnitsForPlayer(player);
+
+            // Phase 2.5: spaceship launch — if this player's spaceship is ready
+            // (state == STARTED and success_rate > 0), launch it automatically.
+            // Mirrors the end-of-turn launch check in the C Freeciv AI.
+            net.freecivx.game.Spaceship ship = player.getSpaceship();
+            if (ship.getState() == net.freecivx.game.Spaceship.State.STARTED
+                    && ship.getSuccessRate() > 0.0) {
+                game.handleSpaceshipLaunch(player.getPlayerNo());
+            }
+        });
+
+        // Phase 3: unit actions — group by player and run each player's units
+        // concurrently in a virtual thread.  Combat operations inside are
+        // serialised via Game.combatLock so that unit-map mutations are safe.
+        Map<Long, List<Unit>> unitsByPlayer = new HashMap<>();
+        for (Unit unit : new ArrayList<>(game.units.values())) {
             Player owner = game.players.get(unit.getOwner());
-            if (owner == null || !owner.isAi()) continue;
-            if (!game.units.containsKey(unit.getId())) continue;
-
-            UnitType utype = game.unitTypes.get((long) unit.getType());
-            if (utype == null) continue;
-
-            if (unit.getType() == UNIT_SETTLERS) {
-                aiSettler.handleSettler(unit, utype);
-                continue;
+            if (owner != null && owner.isAi()) {
+                unitsByPlayer.computeIfAbsent(unit.getOwner(), k -> new ArrayList<>()).add(unit);
             }
+        }
 
-            if (unit.getType() == UNIT_WORKERS
-                    || (utype.hasSettlersFlag() && utype.getAttackStrength() == 0)) {
-                aiSettler.handleWorker(unit, utype);
-                continue;
+        runPerPlayerConcurrently(aiPlayers, player -> {
+            List<Unit> playerUnits = unitsByPlayer.get(player.getPlayerNo());
+            if (playerUnits == null) return;
+            for (Unit unit : playerUnits) {
+                if (!game.units.containsKey(unit.getId())) continue;
+
+                UnitType utype = game.unitTypes.get((long) unit.getType());
+                if (utype == null) continue;
+
+                if (unit.getType() == UNIT_SETTLERS) {
+                    aiSettler.handleSettler(unit, utype);
+                    continue;
+                }
+
+                if (unit.getType() == UNIT_WORKERS
+                        || (utype.hasSettlersFlag() && utype.getAttackStrength() == 0)) {
+                    aiSettler.handleWorker(unit, utype);
+                    continue;
+                }
+
+                if (utype.isNonMilitary() && !utype.hasSettlersFlag()
+                        && utype.getAttackStrength() == 0) {
+                    aiMilitary.handleDiplomatUnit(unit, utype, player);
+                    continue;
+                }
+
+                // Naval units get dedicated naval AI (patrol/attack enemy ships and coastal cities).
+                // Mirrors the sea-unit branch in dai_manage_unit() in daiunit.c.
+                if (utype.getDomain() == 1 && utype.getAttackStrength() > 0) {
+                    aiMilitary.handleNavalUnit(unit, utype, player);
+                    continue;
+                }
+
+                // Air units (domain == 2) get dedicated air combat AI.
+                // Mirrors the air-unit branch in dai_manage_unit() in daiunit.c / aiair.c.
+                if (utype.getDomain() == 2 && utype.getAttackStrength() > 0) {
+                    aiMilitary.handleAirUnit(unit, utype, player);
+                    continue;
+                }
+
+                if (utype.getAttackStrength() > 0) {
+                    aiMilitary.handleMilitaryUnit(unit, utype, player);
+                    continue;
+                }
+
+                // Explorers and other non-combat units: move randomly
+                int movesUsed = 0;
+                while (unit.getMovesleft() > 0 && movesUsed < utype.getMoveRate()) {
+                    if (!aiMilitary.moveUnitRandomly(unit, utype)) break;
+                    movesUsed++;
+                }
             }
+        });
+    }
 
-            if (utype.isNonMilitary() && !utype.hasSettlersFlag()
-                    && utype.getAttackStrength() == 0) {
-                aiMilitary.handleDiplomatUnit(unit, utype, owner);
-                continue;
+    /**
+     * Runs the given task for each AI player concurrently using Java 21 virtual threads.
+     * Waits for all tasks to complete before returning.  Exceptions from individual
+     * player tasks are logged but do not abort other players' processing.
+     *
+     * @param players list of AI players to process
+     * @param task    the per-player action to execute
+     */
+    private void runPerPlayerConcurrently(List<Player> players,
+                                          java.util.function.Consumer<Player> task) {
+        if (players.isEmpty()) return;
+        try (ExecutorService vte = Executors.newVirtualThreadPerTaskExecutor()) {
+            List<Future<?>> futures = new ArrayList<>(players.size());
+            for (Player player : players) {
+                futures.add(vte.submit(() -> {
+                    try {
+                        task.accept(player);
+                    } catch (Exception e) {
+                        log.error("AI virtual-thread task failed for player {}: {}",
+                                player.getPlayerNo(), e.getMessage(), e);
+                    }
+                }));
             }
-
-            // Naval units get dedicated naval AI (patrol/attack enemy ships and coastal cities).
-            // Mirrors the sea-unit branch in dai_manage_unit() in daiunit.c.
-            if (utype.getDomain() == 1 && utype.getAttackStrength() > 0) {
-                aiMilitary.handleNavalUnit(unit, utype, owner);
-                continue;
-            }
-
-            // Air units (domain == 2) get dedicated air combat AI.
-            // Mirrors the air-unit branch in dai_manage_unit() in daiunit.c / aiair.c.
-            if (utype.getDomain() == 2 && utype.getAttackStrength() > 0) {
-                aiMilitary.handleAirUnit(unit, utype, owner);
-                continue;
-            }
-
-            if (utype.getAttackStrength() > 0) {
-                aiMilitary.handleMilitaryUnit(unit, utype, owner);
-                continue;
-            }
-
-            // Explorers and other non-combat units: move randomly
-            int movesUsed = 0;
-            while (unit.getMovesleft() > 0 && movesUsed < utype.getMoveRate()) {
-                if (!aiMilitary.moveUnitRandomly(unit, utype)) break;
-                movesUsed++;
+            for (Future<?> f : futures) {
+                try {
+                    f.get();
+                } catch (Exception e) {
+                    log.error("AI virtual-thread future error: {}", e.getMessage(), e);
+                }
             }
         }
     }
+
 
     // =========================================================================
     // Runtime ID resolution

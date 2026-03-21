@@ -35,6 +35,9 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.Collectors;
 
@@ -1472,12 +1475,43 @@ public class CityTurn {
         processWorkerActivities(game);
 
         // Snapshot city IDs to avoid concurrent-modification issues
-        for (long cityId : new ArrayList<>(game.cities.keySet())) {
-            // Apply city governor (CMA) before growth/production so worker assignment
-            // reflects the player's preferences for this turn.
-            // Mirrors the cm_result / cm_query_result() call in the C Freeciv server's
-            // cityturn.c before each city's turn is processed.
-            CityGovernor.applyCityGovernor(game, cityId);
+        List<Long> cityIds = new ArrayList<>(game.cities.keySet());
+
+        // Apply city governor (CMA) for all cities in parallel using Java 21 virtual
+        // threads.  Each city is fully independent: it releases its own tiles and
+        // reclaims the best ones.  Cities of the same player serialise via
+        // Player.playerLock (a ReentrantLock, not synchronized, so virtual threads
+        // can unmount while waiting — JEP 444) to prevent two sibling cities
+        // claiming the same tile simultaneously.  Mirrors the cm_result /
+        // cm_query_result() call in the C Freeciv server's cityturn.c before each
+        // city's turn is processed.
+        try (ExecutorService vte = Executors.newVirtualThreadPerTaskExecutor()) {
+            List<Future<?>> futures = new ArrayList<>(cityIds.size());
+            for (long cityId : cityIds) {
+                futures.add(vte.submit(() -> {
+                    net.freecivx.game.City c = game.cities.get(cityId);
+                    if (c == null) return;
+                    // Serialise within the owning player so sibling cities do not
+                    // race to claim overlapping tiles.
+                    net.freecivx.game.Player owner = game.players.get(c.getOwner());
+                    if (owner != null) {
+                        owner.playerLock.lock();
+                        try {
+                            CityGovernor.applyCityGovernor(game, cityId);
+                        } finally {
+                            owner.playerLock.unlock();
+                        }
+                    }
+                }));
+            }
+            for (Future<?> f : futures) {
+                try { f.get(); } catch (Exception ignored) {
+                    // individual city governor errors should not abort the turn
+                }
+            }
+        }
+
+        for (long cityId : cityIds) {
             cityGrowth(game, cityId);
             cityProduction(game, cityId);
             updateCityHappiness(game, cityId);
