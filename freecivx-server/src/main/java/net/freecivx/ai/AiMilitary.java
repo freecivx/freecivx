@@ -512,7 +512,20 @@ class AiMilitary {
                 // dai_unit_def_rating comparison in daiunit.c.
                 int myAttack  = myType.getAttackStrength()  * (2 + unit.getVeteran());
                 int theirDef  = otherType.getDefenseStrength() * (2 + other.getVeteran());
-                if (myAttack < theirDef) continue; // Would likely lose – skip
+                // Scale threshold by AI skill level:
+                //   Easy   (2): only attack when myAttack >= 2 × theirDef (cautious)
+                //   Normal (3): attack when myAttack >= theirDef (current default)
+                //   Hard   (4): attack when 3 × myAttack >= 2 × theirDef (aggressive)
+                int skillLevel = game.getAiSkillLevel();
+                boolean shouldAttack;
+                if (skillLevel <= Game.AI_SKILL_EASY) {
+                    shouldAttack = myAttack >= theirDef * 2;
+                } else if (skillLevel >= Game.AI_SKILL_HARD) {
+                    shouldAttack = myAttack * 3 >= theirDef * 2;
+                } else {
+                    shouldAttack = myAttack >= theirDef; // normal
+                }
+                if (!shouldAttack) continue; // Would likely lose – skip
 
                 game.attackUnit(unit.getId(), other.getId());
                 return true;

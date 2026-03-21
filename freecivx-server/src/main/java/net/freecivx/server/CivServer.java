@@ -493,6 +493,16 @@ public class CivServer extends org.java_websocket.server.WebSocketServer impleme
             if (message.toLowerCase().startsWith("/set ")) {
                 handleSetCommand(connId, message);
             }
+            if (message.equalsIgnoreCase("/easy")) {
+                game.setAiSkillLevel(Game.AI_SKILL_EASY);
+                sendMessageAll("AI skill level set to Easy.");
+            } else if (message.equalsIgnoreCase("/normal")) {
+                game.setAiSkillLevel(Game.AI_SKILL_NORMAL);
+                sendMessageAll("AI skill level set to Normal.");
+            } else if (message.equalsIgnoreCase("/hard")) {
+                game.setAiSkillLevel(Game.AI_SKILL_HARD);
+                sendMessageAll("AI skill level set to Hard.");
+            }
             if (message.equalsIgnoreCase("/help")) {
                 String helptext = """
                         Freecivx Java server commands:
@@ -501,10 +511,14 @@ public class CivServer extends org.java_websocket.server.WebSocketServer impleme
                         /set timeout N  - Set turn timeout in seconds (0 = no timeout, max 500)
                         /set aifill N   - Set number of AI players (0-9, applied at game start)
                         /set gold N     - Set starting gold for all players (0-50000)
+                        /set techlevel N - Set number of free random techs given to each player at start (0-50)
                         /set generator N - Set map generator: 2 = fractal/fBM (default), 5 = island/continent
                         /set endturn N  - Set turn at which the game ends and reveals the whole map (0 = disabled)
                         /set topology hex    - Use hexagonal map tiles (6-way movement)
                         /set topology square - Use square map tiles (8-way movement, default)
+                        /easy           - Set AI skill level to Easy
+                        /normal         - Set AI skill level to Normal (default)
+                        /hard           - Set AI skill level to Hard
                         /help           - Show this help text
                         Available scenarios: africa-350x350-v1.0.sav, british-isles.sav, caribbean-500x250-v1.2.sav, earth-large.sav, earth-small.sav, europe.sav, france.sav, hagworld.sav, iberian-peninsula.sav, india-350x350-v1.2.sav, italy.sav, japan.sav, middleeast-350x350-v1.1.sav, north_america.sav, scandinavia-350x350-v1.0.sav, tutorial.sav
                         Game features: units move with movement limits, AI players included.
@@ -593,6 +607,19 @@ public class CivServer extends org.java_websocket.server.WebSocketServer impleme
                 }
                 game.setInitialGold(value);
                 sendMessageAll("gold: starting gold set to " + value + ".");
+            }
+            case "techlevel" -> {
+                if (value < 0 || value > 50) {
+                    sendMessage(connId, "techlevel must be between 0 and 50.");
+                    return;
+                }
+                game.setTechLevel(value);
+                String msg = value == 0
+                        ? "techlevel: disabled (no free starting technologies)."
+                        : "techlevel: each player will receive " + value
+                          + (value == 1 ? " free random technology" : " free random technologies")
+                          + " at game start.";
+                sendMessageAll(msg);
             }
             case "generator" -> {
                 if (value != 2 && value != 5) {

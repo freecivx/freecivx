@@ -636,7 +636,13 @@ public class AiPlayer {
         }
 
         // Clamp all rates to [0,100] in multiples of 10 with the three summing to 100.
-        sciRate = Math.max(0, Math.min(MAX_AI_SCIENCE_RATE, (sciRate / 10) * 10));
+        // Use a skill-level-dependent science cap: hard AI researches more aggressively,
+        // easy AI is more conservative.  Mirrors the 'maxrate' cap in dai_manage_taxes().
+        int skillLevel = game.getAiSkillLevel();
+        int maxSciRate = (skillLevel >= Game.AI_SKILL_HARD) ? 90
+                       : (skillLevel <= Game.AI_SKILL_EASY) ? 60
+                       : MAX_AI_SCIENCE_RATE; // normal = 80%
+        sciRate = Math.max(0, Math.min(maxSciRate, (sciRate / 10) * 10));
         luxRate = Math.max(0, Math.min(MAX_AI_LUXURY_RATE, (luxRate / 10) * 10));
         taxRate = 100 - sciRate - luxRate;
         // Guard against rounding drift
