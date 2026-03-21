@@ -1462,6 +1462,58 @@ function set_unit_focus_and_activate(punit)
 }
 
 /**************************************************************************
+ Toggle the given list of units into / out of the multi-unit selection.
+ If every unit in sunits is already in current_focus it is removed
+ (de-select); otherwise each unit that is not yet in focus is added.
+ Only the player's own units should be passed here.
+ @param {Array} sunits - Array of unit objects on the clicked tile.
+**************************************************************************/
+function append_units_to_focus(sunits)
+{
+  if (!sunits || sunits.length === 0) return;
+
+  /* Build a quick lookup of which units are currently in focus. */
+  var in_focus = {};
+  for (var focusIdx = 0; focusIdx < current_focus.length; focusIdx++) {
+    in_focus[current_focus[focusIdx]['id']] = true;
+  }
+
+  /* Check whether ALL units on this tile are already selected. */
+  var all_selected = true;
+  for (var unitIdx = 0; unitIdx < sunits.length; unitIdx++) {
+    if (!in_focus[sunits[unitIdx]['id']]) { all_selected = false; break; }
+  }
+
+  if (all_selected) {
+    /* De-select: remove these units from focus. */
+    var new_focus = [];
+    for (var fi = 0; fi < current_focus.length; fi++) {
+      var already = false;
+      for (var si = 0; si < sunits.length; si++) {
+        if (current_focus[fi]['id'] === sunits[si]['id']) { already = true; break; }
+      }
+      if (!already) new_focus.push(current_focus[fi]);
+    }
+    current_focus = new_focus;
+  } else {
+    /* Add any units from this tile that are not yet in focus. */
+    for (var addIdx = 0; addIdx < sunits.length; addIdx++) {
+      if (!in_focus[sunits[addIdx]['id']]) {
+        current_focus.push(sunits[addIdx]);
+      }
+    }
+  }
+
+  /* If the selection is now empty fall back to focusing the first unit. */
+  if (current_focus.length === 0 && sunits.length > 0) {
+    current_focus = [sunits[0]];
+  }
+
+  update_active_units_dialog();
+  if (typeof map2d_schedule_render === 'function') map2d_schedule_render();
+}
+
+/**************************************************************************
  See set_unit_focus_and_redraw()
  @param {Unit} punit - The unit to activate from the city dialog.
 **************************************************************************/
@@ -1857,6 +1909,13 @@ function do_map_click(ptile, qtype, first_time_called)
   } else if (action_tgt_sel_active && current_focus.length > 0) {
     request_unit_act_sel_vs(ptile);
     action_tgt_sel_active = false;
+  } else if (qtype === SELECT_APPEND) {
+    /* Shift+click: toggle the clicked unit(s) into / out of the selection.
+     * Only the player's own units can be multi-selected. */
+    if (sunits != null && sunits.length > 0
+        && sunits[0]['owner'] == client.conn.playing.playerno) {
+      append_units_to_focus(sunits);
+    }
   } else {
     if (pcity != null) {
       if (pcity['owner'] == client.conn.playing.playerno) {
