@@ -1067,6 +1067,21 @@ public class CityTurn {
                             return;
                         }
 
+                        // Prevent re-building an improvement the city already has.
+                        // Mirrors can_city_build_improvement_direct() in the C Freeciv server
+                        // which returns FALSE when the city already contains the building.
+                        // Great wonders are already covered by the worldHasWonder check above;
+                        // this guard handles regular improvements and small wonders.
+                        if (city.hasImprovement(improvId)) {
+                            city.setShieldStock(0);
+                            city.setProductionKind(0);
+                            city.setProductionValue(-1);
+                            Notify.notifyPlayer(game, game.getServer(), city.getOwner(),
+                                    city.getName() + " already has " + improvement.getName() + ".");
+                            VisibilityHandler.sendCityToVisiblePlayers(game, cityId);
+                            return;
+                        }
+
                         city.addImprovement(improvId);
                         city.setShieldStock(city.getShieldStock() - cost);
 
