@@ -33,11 +33,9 @@
  * 
  * This stylized water shader uses:
  * - UV-scrolling patterns for gentle surface animation
- * - Three-layer caustic/ripple effects for richer visual depth
+ * - Layered caustic/ripple effects
  * - Gradient-based color transitions (deep to shallow)
- * - Analytical surface-normal computation from ripple gradient (normalNode)
- * - MeshStandardNodeMaterial: emissiveNode for self-lit water colour +
- *   scene-light specular highlights via roughnessNode/metalnessNode
+ * - Soft specular highlights without dramatic waves
  * - Tile visibility from maptiles texture (alpha channel)
  */
 
@@ -104,7 +102,7 @@ function add_quality_dependent_objects_webgpu() {
  - Hex-aware: Uses hexagonal tile coordinate system for visibility sampling
 ****************************************************************************/
 function createWaterMaterialTSL() {
-  const { uniform, uv, vec2, vec3, vec4, float, sin, cos, mix, fract, clamp, pow, sqrt, mul, add, sub, abs, floor, texture, mod, max, div, step } = THREE;
+  const { uniform, uv, vec2, vec3, vec4, sin, cos, mix, fract, clamp, pow, sqrt, mul, add, sub, abs, floor, texture, mod, max, div, step } = THREE;
   
   // Time uniform for animation
   const timeUniform = uniform(0.0);
@@ -220,14 +218,8 @@ function createWaterMaterialTSL() {
   const causticV2 = add(mul(uvNode.y, mul(causticScale, 1.3)), mul(timeUniform, mul(causticSpeed, 0.3)));
   const caustic2 = noise2D(causticU2, causticV2);
   
-  // Layer 3: Tertiary caustic (finest detail, slower drift in opposite diagonal)
-  const causticU3 = add(mul(uvNode.x, mul(causticScale, 0.8)), mul(timeUniform, mul(causticSpeed, 0.35)));
-  const causticV3 = sub(mul(uvNode.y, mul(causticScale, 1.1)), mul(timeUniform, mul(causticSpeed, 0.45)));
-  const caustic3 = noise2D(causticU3, causticV3);
-  
-  // Combine three caustic layers for richer cell-like pattern.
-  // Weights: layer1=1.0, layer2=1.0, layer3=0.5  →  sum=2.5, so divide by 2.5 to normalise to [0,1].
-  const causticPattern = mul(add(add(caustic1, caustic2), mul(caustic3, 0.5)), float(1.0).div(2.5));
+  // Combine caustics for cell-like pattern
+  const causticPattern = mul(add(caustic1, caustic2), 0.5);
   const causticIntensity = clamp(mul(sub(causticPattern, 0.3), 2.5), 0.0, 1.0);
   
   // ==== GENTLE SURFACE RIPPLES ====
@@ -299,41 +291,10 @@ function createWaterMaterialTSL() {
   // Constant opacity for clean, game-like appearance
   const opacity = waterConfig ? waterConfig.OPACITY.BASE : 0.72;
   
-  // ==== WATER SURFACE NORMALS (analytical gradient of ripple function) ====
-  // Compute the gradient of the combined ripple function to create dynamic surface normals.
-  // ripple1 = sin((u + 0.5*v) * scale + t * speed)  →  ∂/∂u = cos(...)*scale, ∂/∂v = cos(...)*scale*0.5
-  // ripple2 = sin((0.7*u + v) * scale*0.8 + t*speed*1.3)  →  ∂/∂u = cos(...)*scale*0.8*0.7, ∂/∂v = cos(...)*scale*0.8
-  const rippleArg1 = add(mul(add(mul(uvNode.x, 1.0), mul(uvNode.y, 0.5)), rippleScale), mul(timeUniform, rippleSpeed));
-  const rippleArg2 = add(mul(add(mul(uvNode.x, 0.7), mul(uvNode.y, 1.0)), mul(rippleScale, 0.8)), mul(timeUniform, mul(rippleSpeed, 1.3)));
-  const gradU = mul(add(cos(rippleArg1).mul(rippleScale), cos(rippleArg2).mul(rippleScale * 0.8 * 0.7)), rippleAmplitude);
-  const gradV = mul(add(cos(rippleArg1).mul(rippleScale * 0.5), cos(rippleArg2).mul(rippleScale * 0.8)), rippleAmplitude);
-  // Perturb the up-facing normal (0,1,0) using the height-field gradient.
-  // normalNode on a horizontal plane: -gradU maps to X, 1 is Y (up), -gradV maps to Z.
-  const NORMAL_STRENGTH = (waterConfig && waterConfig.MATERIAL) ? waterConfig.MATERIAL.NORMAL_STRENGTH : 0.18;
-  const waterNormal = THREE.normalize(vec3(
-    mul(gradU, -NORMAL_STRENGTH),
-    float(1.0),
-    mul(gradV, -NORMAL_STRENGTH)
-  ));
-
-  // ==== CREATE MATERIAL (MeshStandardNodeMaterial for PBR scene-light interaction) ====
-  // Use emissiveNode for the animated water colour so it is self-lit like a stylised
-  // strategy-game ocean, while roughnessNode/metalnessNode allow the scene directional
-  // and spotlight to add physically-correct specular highlights on the surface.
-  const roughness = (waterConfig && waterConfig.MATERIAL) ? waterConfig.MATERIAL.ROUGHNESS : 0.15;
-  const metalness = (waterConfig && waterConfig.MATERIAL) ? waterConfig.MATERIAL.METALNESS : 0.0;
-  
-  const waterMaterial = new THREE.MeshStandardNodeMaterial();
-  // Black albedo – all visible colour comes from the emissive + specular highlights
-  waterMaterial.colorNode = vec3(0.0, 0.0, 0.0);
-  // Animated water colour (already includes fog-of-war visibility masking)
-  waterMaterial.emissiveNode = finalColor;
-  // Animated surface normals for realistic specular highlights from scene lights
-  waterMaterial.normalNode = waterNormal;
-  waterMaterial.roughnessNode = float(roughness);
-  waterMaterial.metalnessNode = float(metalness);
+  // Create material
+  const waterMaterial = new THREE.MeshBasicNodeMaterial();
+  waterMaterial.colorNode = vec4(finalColor, opacity);
   waterMaterial.transparent = true;
-  waterMaterial.opacity = opacity;
   waterMaterial.side = THREE.DoubleSide;
   waterMaterial.depthWrite = false;
   
