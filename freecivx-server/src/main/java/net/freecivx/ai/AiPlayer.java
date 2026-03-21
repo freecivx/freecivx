@@ -88,18 +88,22 @@ public class AiPlayer {
     // are assigned in the order buildings appear in the ruleset file.
     // Initial values of -1 (unknown) are overwritten on the first AI turn.
     int imprBarracks      = -1;
+    int imprBarracksII    = -1; // Upgraded barracks (Gunpowder prereq)
+    int imprBarracksIII   = -1; // Advanced barracks (Leadership prereq)
     int imprGranary       = -1;
     int imprLibrary       = -1;
     int imprMarketplace   = -1;
     int imprCityWalls     = -1;
     int imprTemple        = -1;
     int imprAqueduct      = -1; // Allows cities to grow beyond size 8
+    int imprSewerSystem   = -1; // Allows cities to grow beyond size 12 (Sanitation tech)
     // Mid/late-game buildings — mirrors dai_city_choose_build() priorities in daicity.c
     int imprColosseum     = -1; // Happiness (Construction tech required)
     int imprUniversity    = -1; // Science × 2 (University tech, Library prereq)
     int imprBank          = -1; // Gold × 1.5 (Banking tech, Marketplace prereq)
     int imprCourthouse    = -1; // Reduces corruption (Code of Laws required)
     int imprCathedral     = -1; // Happiness +3 (Monotheism tech, Temple prereq)
+    int imprPoliceStation = -1; // Happiness in Democracy/Republic (Communism tech)
     // Late-game production and economy buildings
     int imprFactory       = -1; // Shields +50% (Industrialization tech)
     int imprMfgPlant      = -1; // Shields +50% additional (Plastics tech, Factory prereq)
@@ -108,11 +112,19 @@ public class AiPlayer {
     int imprNuclearPlant  = -1; // Shields +25% + pollution -25% (Nuclear Power tech)
     int imprSolarPlant    = -1; // Shields +25% + pollution -50% (Environmentalism tech)
     int imprRecyclingCenter = -1; // Pollution -66% (Recycling tech)
+    int imprMassTransit   = -1; // Removes pollution entirely (Mass Production tech)
     int imprResearchLab   = -1; // Science +200% with Library+University (Computers tech)
     int imprStockExchange = -1; // Gold+Luxury +50% when Bank present (Economics tech)
+    int imprSupermarket   = -1; // +50% food output (Refrigeration tech)
+    int imprSuperHighways = -1; // +50% road trade (Automobile tech)
     // Coastal and naval infrastructure
     int imprHarbour          = -1; // +1 food on oceanic tiles (Seafaring tech)
     int imprOffPlatform      = -1; // +1 shield on oceanic tiles (Miniaturization tech)
+    int imprPortFacility     = -1; // +1 food/shield/trade on oceanic tiles (Amphibious Warfare)
+    // Defense buildings
+    int imprCoastalDefense   = -1; // Triples defense for coastal cities (Gunpowder tech)
+    int imprSAMBattery       = -1; // Defense against air attacks (Rocketry tech)
+    int imprAirport          = -1; // Airlift + shields bonus (Radio tech)
     // Space Race buildings
     int imprApolloProgram    = -1; // Great Wonder – enables spaceship construction
     int imprSpaceStructural  = -1; // Space Race part (Special genus, unlimited)
@@ -124,23 +136,34 @@ public class AiPlayer {
     static final int UNIT_SETTLERS = 0;
     static final int UNIT_WORKERS  = 1;
     static final int UNIT_WARRIORS = 3;
-    int unitPhalanx  = -1; // Bronze Working — best early defender
-    int unitArchers  = -1; // Warrior Code — strong attacker
-    int unitLegion   = -1; // Iron Working  — best early all-rounder
-    int unitPikemen  = -1; // Feudalism      — anti-horse specialist
-    int unitHorsemen = -1; // Horseback Riding — fast raider
-    int unitKnights  = -1; // Chivalry — strong mid-game cavalry attacker
+    int unitPhalanx    = -1; // Bronze Working — best early defender
+    int unitArchers    = -1; // Warrior Code — strong attacker
+    int unitLegion     = -1; // Iron Working  — best early all-rounder
+    int unitPikemen    = -1; // Feudalism      — anti-horse specialist
+    int unitHorsemen   = -1; // Horseback Riding — fast raider
+    int unitKnights    = -1; // Chivalry — strong mid-game cavalry attacker
     int unitMusketeers = -1; // Gunpowder — mid-game attacker/defender
-    int unitRiflemen = -1; // Conscription — strong late attacker/defender
-    int unitCavalry  = -1; // Tactics — powerful late-game cavalry
-    int unitArmor    = -1; // Mobile Warfare — best land attacker
+    int unitRiflemen   = -1; // Conscription — strong late attacker/defender
+    int unitCavalry    = -1; // Tactics — powerful late-game cavalry
+    int unitArmor      = -1; // Mobile Warfare — best land attacker
+    // Siege unit-type IDs
+    int unitCatapult   = -1; // Mathematics — early siege (6/1 atk/def)
+    int unitCannon     = -1; // Metallurgy — mid siege (8/1 atk/def)
+    int unitArtillery  = -1; // Machine Tools — late siege (10/1 atk/def)
+    int unitHowitzer   = -1; // Robotics — best siege (12/2 atk/def, 2 move)
+    // Engineer unit-type ID
+    int unitEngineers  = -1; // Explosives — faster terrain improvement (replaces Workers)
     // Naval unit-type IDs
-    int unitTrireme   = -1; // Map Making — earliest naval combat unit
-    int unitCaravel   = -1; // Navigation — mid-game naval explorer
+    int unitTrireme    = -1; // Map Making — earliest naval combat unit
+    int unitCaravel    = -1; // Navigation — mid-game naval explorer
+    int unitDestroyer  = -1; // Electricity — fast modern naval unit
+    int unitCruiser    = -1; // Steel — powerful naval unit
+    int unitBattleship = -1; // Automobile — best naval attacker
     // Air unit-type IDs
-    int unitFighter   = -1; // Flight — earliest air combat unit
+    int unitFighter    = -1; // Flight — earliest air combat unit
+    int unitBomber     = -1; // Advanced Flight — heavy bomber
     // Diplomat unit-type ID
-    int unitDiplomat  = -1; // Writing — diplomatic unit
+    int unitDiplomat   = -1; // Writing — diplomatic unit
 
     // Technology IDs — resolved at runtime by name in resolveGameIds().
     // Initial values of -1 are overwritten on the first AI turn.
@@ -181,6 +204,21 @@ public class AiPlayer {
     long techSuperconductors    = -1L; // req: Plastics + Labor Union — Space Module
     long techSpaceFlight        = -1L; // req: Computers + Rocketry — Space Structural, Apollo Program
     long techMonotheism         = -1L; // req: Philosophy + Mysticism — Cathedral
+    long techSanitation         = -1L; // req: Engineering — Sewer System (city growth >12)
+    long techRefrigeration      = -1L; // req: Electricity + Sanitation — Supermarket
+    long techAutomobile         = -1L; // req: Combustion + Steel — Super Highways, Battleship
+    long techCommunism          = -1L; // req: Philosophy + Industrialization — Police Station
+    long techRadio              = -1L; // req: Magnetism + Electronics — Airport
+    long techMassProduction     = -1L; // req: Automobile + Electronics — Mass Transit
+    long techAmphibious         = -1L; // req: Navigation + Tactics — Port Facility
+    long techMetallurgy         = -1L; // req: Iron Working + Gunpowder — Cannon
+    long techExplosives         = -1L; // req: Gunpowder + Chemistry — Engineers
+    long techElectricity        = -1L; // req: Metallurgy + Magnetism — Destroyer, Hydro Plant
+    long techSteel              = -1L; // req: Industrialization + Electricity — Cruiser
+    long techAdvancedFlight     = -1L; // req: Radio + Machine Tools — Bomber
+    long techMachineTools       = -1L; // req: Steel + Industrialization — Artillery
+    long techRobotics           = -1L; // req: Computers + Mobile Warfare — Howitzer
+    long techCombustion         = -1L; // req: Refining + Steel — Submarine
 
     /** AI diplomacy subsystem. Mirrors daidiplomacy.c in the C Freeciv server. */
     private final AiDiplomacy aiDiplomacy = new AiDiplomacy();
@@ -346,17 +384,21 @@ public class AiPlayer {
             int id = e.getKey().intValue();
             switch (n) {
                 case "Barracks":       imprBarracks      = id; break;
+                case "Barracks II":    imprBarracksII    = id; break;
+                case "Barracks III":   imprBarracksIII   = id; break;
                 case "Granary":        imprGranary       = id; break;
                 case "Library":        imprLibrary       = id; break;
                 case "Marketplace":    imprMarketplace   = id; break;
                 case "City Walls":     imprCityWalls     = id; break;
                 case "Temple":         imprTemple        = id; break;
                 case "Aqueduct":       imprAqueduct      = id; break;
+                case "Sewer System":   imprSewerSystem   = id; break;
                 case "Colosseum":      imprColosseum     = id; break;
                 case "University":     imprUniversity    = id; break;
                 case "Bank":           imprBank          = id; break;
                 case "Courthouse":     imprCourthouse    = id; break;
                 case "Cathedral":      imprCathedral     = id; break;
+                case "Police Station": imprPoliceStation = id; break;
                 case "Factory":          imprFactory          = id; break;
                 case "Mfg. Plant":       imprMfgPlant         = id; break;
                 case "Power Plant":      imprPowerPlant       = id; break;
@@ -364,14 +406,21 @@ public class AiPlayer {
                 case "Nuclear Plant":    imprNuclearPlant     = id; break;
                 case "Solar Plant":      imprSolarPlant       = id; break;
                 case "Recycling Center": imprRecyclingCenter  = id; break;
+                case "Mass Transit":     imprMassTransit      = id; break;
                 case "Research Lab":     imprResearchLab      = id; break;
                 case "Stock Exchange":   imprStockExchange    = id; break;
+                case "Supermarket":      imprSupermarket      = id; break;
+                case "Super Highways":   imprSuperHighways    = id; break;
                 case "Apollo Program":   imprApolloProgram    = id; break;
                 case "Space Structural": imprSpaceStructural  = id; break;
                 case "Space Component":  imprSpaceComponent   = id; break;
                 case "Space Module":     imprSpaceModule      = id; break;
                 case "Harbor":           imprHarbour          = id; break;
                 case "Offshore Platform": imprOffPlatform     = id; break;
+                case "Port Facility":    imprPortFacility     = id; break;
+                case "Coastal Defense":  imprCoastalDefense   = id; break;
+                case "SAM Battery":      imprSAMBattery       = id; break;
+                case "Airport":          imprAirport          = id; break;
                 default: break;
             }
         }
@@ -416,6 +465,21 @@ public class AiPlayer {
                 case "Superconductors":   techSuperconductors   = id; break;
                 case "Space Flight":      techSpaceFlight       = id; break;
                 case "Monotheism":        techMonotheism        = id; break;
+                case "Sanitation":        techSanitation        = id; break;
+                case "Refrigeration":     techRefrigeration     = id; break;
+                case "Automobile":        techAutomobile        = id; break;
+                case "Communism":         techCommunism         = id; break;
+                case "Radio":             techRadio             = id; break;
+                case "Mass Production":   techMassProduction    = id; break;
+                case "Amphibious Warfare": techAmphibious       = id; break;
+                case "Metallurgy":        techMetallurgy        = id; break;
+                case "Explosives":        techExplosives        = id; break;
+                case "Electricity":       techElectricity       = id; break;
+                case "Steel":             techSteel             = id; break;
+                case "Advanced Flight":   techAdvancedFlight    = id; break;
+                case "Machine Tools":     techMachineTools      = id; break;
+                case "Robotics":          techRobotics          = id; break;
+                case "Combustion":        techCombustion        = id; break;
                 default: break;
             }
         }
@@ -425,20 +489,29 @@ public class AiPlayer {
             String n = e.getValue().getName();
             int id = e.getKey().intValue();
             switch (n) {
-                case "Phalanx":     unitPhalanx    = id; break;
-                case "Archers":     unitArchers    = id; break;
-                case "Legion":      unitLegion     = id; break;
-                case "Pikemen":     unitPikemen    = id; break;
-                case "Horsemen":    unitHorsemen   = id; break;
-                case "Knights":     unitKnights    = id; break;
-                case "Musketeers":  unitMusketeers = id; break;
-                case "Riflemen":    unitRiflemen   = id; break;
-                case "Cavalry":     unitCavalry    = id; break;
-                case "Armor":       unitArmor      = id; break;
-                case "Trireme":   unitTrireme  = id; break;
-                case "Caravel":   unitCaravel  = id; break;
-                case "Fighter":   unitFighter  = id; break;
-                case "Diplomat":  unitDiplomat = id; break;
+                case "Phalanx":      unitPhalanx    = id; break;
+                case "Archers":      unitArchers    = id; break;
+                case "Legion":       unitLegion     = id; break;
+                case "Pikemen":      unitPikemen    = id; break;
+                case "Horsemen":     unitHorsemen   = id; break;
+                case "Knights":      unitKnights    = id; break;
+                case "Musketeers":   unitMusketeers = id; break;
+                case "Riflemen":     unitRiflemen   = id; break;
+                case "Cavalry":      unitCavalry    = id; break;
+                case "Armor":        unitArmor      = id; break;
+                case "Catapult":     unitCatapult   = id; break;
+                case "Cannon":       unitCannon     = id; break;
+                case "Artillery":    unitArtillery  = id; break;
+                case "Howitzer":     unitHowitzer   = id; break;
+                case "Engineers":    unitEngineers  = id; break;
+                case "Trireme":      unitTrireme    = id; break;
+                case "Caravel":      unitCaravel    = id; break;
+                case "Destroyer":    unitDestroyer  = id; break;
+                case "Cruiser":      unitCruiser    = id; break;
+                case "Battleship":   unitBattleship = id; break;
+                case "Fighter":      unitFighter    = id; break;
+                case "Bomber":       unitBomber     = id; break;
+                case "Diplomat":     unitDiplomat   = id; break;
                 default: break;
             }
         }
@@ -915,22 +988,36 @@ public class AiPlayer {
             techHorsebackRiding,      // Horsemen (fast raider, 2 move)
             techIronWorking,          // Legion — 4 atk / 2 def, best early unit
             techChivalry,             // Knights — strong mid-game cavalry attacker
-            techGunpowder,            // Musketeers — mid-game attacker/defender
+            techGunpowder,            // Musketeers — mid-game attacker/defender; Coastal Defense
+            techMetallurgy,           // Cannon — mid-game siege unit
+            techExplosives,           // Engineers — faster terrain improvement
             techMapMaking,            // Trireme naval unit — coastal expansion/patrol
-            techMathematics,          // University tech prerequisite + Navigation prereq
+            techMathematics,          // University tech prerequisite + Navigation prereq; Catapult
             techNavigation,           // Caravel naval unit — mid-game naval exploration
             techTrade,                // Banking + Industrialization prerequisite
             techTheRepublic,          // Republic government
             techBanking,              // Bank — gold income ×1.5
             techUniversity,           // University building — science ×2
+            techSanitation,           // Sewer System — city growth beyond size 12
             techDemocracy,            // Democracy government (zero corruption)
             techConscription,         // Riflemen — strong late attacker/defender
             techTactics,              // Cavalry — powerful late-game cavalry
             techIndustrialization,    // Factory — shields ×1.5
+            techElectricity,          // Destroyer naval unit; Hydro Plant
+            techSteel,                // Cruiser naval unit; Machine Tools prereq
+            techMachineTools,         // Artillery — late siege unit
+            techCommunism,            // Police Station — happiness in Democracy/Republic
             techMobileWarfare,        // Armor — best land attacker
+            techAutomobile,           // Super Highways — trade bonus; Battleship; Mobile Warfare prereq
+            techRefrigeration,        // Supermarket — food bonus
             techEconomics,            // Stock Exchange — gold/luxury ×1.5 additional
+            techAdvancedFlight,       // Bomber — heavy air unit
             techFlight,               // Fighter air unit — air supremacy
-            techRocketry,             // Apollo Program wonder prerequisite
+            techRobotics,             // Howitzer — best siege unit
+            techRadio,                // Airport — airlift + production bonus
+            techMassProduction,       // Mass Transit — removes city pollution
+            techAmphibious,           // Port Facility — naval infrastructure
+            techRocketry,             // Apollo Program wonder prerequisite; SAM Battery
             techSpaceFlight,          // Space Structural + Apollo Program
             techPlastics,             // Space Component
             techSuperconductors,      // Space Module
@@ -978,8 +1065,13 @@ public class AiPlayer {
             techUniversity,        // Science multiplier — accelerates all future research
             techDemocracy,         // Zero-corruption government
             techIndustrialization, // Factory — production boost
+            techElectricity,       // Destroyer + Hydro Plant
+            techSteel,             // Cruiser naval power
+            techAutomobile,        // Super Highways + Battleship
             techEconomics,         // Stock Exchange — trade/gold boost
+            techAdvancedFlight,    // Bomber — air supremacy
             techFlight,            // Fighter unit — air superiority
+            techRobotics,          // Howitzer — best siege unit
             techRocketry,          // Apollo Program wonder prerequisite
             techSpaceFlight,       // Space Structural + Apollo Program
             techPlastics,          // Space Component
