@@ -75,9 +75,9 @@ var map2d_last_event_pos = {clientX: 0, clientY: 0};
  * terrain overlays.  All other land terrains (plains, desert, hills,
  * mountains, arctic, forest, etc.) use directional sprites only.
  *
- * Oceanic terrains use the layer-1 naming "t.l1.coast_n…" and
- * "t.l1.floor_n…".  Both coast and floor are considered "ocean" for
- * the purpose of directional neighbor detection.
+ * Oceanic terrains use the layer-1 naming "t.l1.coast_n…",
+ * "t.l1.floor_n…", and "t.l1.lake_n…".  Coast, floor, and lake are
+ * all considered "ocean" for the purpose of directional neighbor detection.
  */
 var map2d_terrain_simple = {
   "grassland": true    /* only terrain with a non-directional base tile: t.l0.grassland1 */
@@ -96,7 +96,8 @@ var map2d_terrain_colors = {
   "desert":    "#d4c87a",
   "arctic":    "#e0ecf8",
   "coast":     "#4682b4",
-  "floor":     "#1a3a6a"
+  "floor":     "#1a3a6a",
+  "lake":      "#3a6fa0"
 };
 
 /* ------------------------------------------------------------------ */
@@ -119,16 +120,20 @@ function get_2d_terrain_sprite_tag(pterrain, ptile)
     return "t.l0." + g + "1";
   }
 
-  /* Oceanic terrains use layer-1 tags.  Both coast and floor count as
+  /* Oceanic terrains use layer-1 tags.  Coast, floor, and lake all count as
    * "ocean" neighbours so the correct shoreline/transition sprite is
-   * chosen regardless of whether the adjacent tile is shallow or deep. */
-  if (g === "coast" || g === "floor") {
+   * chosen regardless of whether the adjacent tile is shallow, deep, or a
+   * freshwater lake. */
+  if (g === "coast" || g === "floor" || g === "lake") {
     var dir_tag = "t.l1." + g + "_n" + map2d_ocean_neighbor_flag(ptile, DIR8_NORTH)
                               + "e" + map2d_ocean_neighbor_flag(ptile, DIR8_EAST)
                               + "s" + map2d_ocean_neighbor_flag(ptile, DIR8_SOUTH)
                               + "w" + map2d_ocean_neighbor_flag(ptile, DIR8_WEST);
     if (sprites_2d_init && sprites_2d[dir_tag]) return dir_tag;
-    return "t.l1." + g + "_n0e0s0w0";
+    /* Fall back to coast directional sprite if lake sprites are absent */
+    var fallback_tag = "t.l1." + (sprites_2d_init && sprites_2d["t.l1." + g + "_n0e0s0w0"]
+                                  ? g : "coast") + "_n0e0s0w0";
+    return fallback_tag;
   }
 
   /* Directional land terrains: hills, forest, mountains, desert, arctic,
@@ -166,8 +171,8 @@ function map2d_neighbor_flag(ptile, graphic_str, dir)
 
 /**
  * Returns 1 if the tile in direction `dir` from `ptile` is any ocean
- * terrain (coast or floor), 0 otherwise.  Used for the directional
- * neighbour flags of ocean tiles so that coast↔floor transitions are
+ * terrain (coast, floor, or lake), 0 otherwise.  Used for the directional
+ * neighbour flags of ocean tiles so that coast↔floor↔lake transitions are
  * handled correctly.
  * @param {Tile} ptile - The source map tile.
  * @param {number} dir - The direction constant (e.g. DIR8_NORTH).
@@ -180,7 +185,39 @@ function map2d_ocean_neighbor_flag(ptile, dir)
   var nterrain = tile_terrain(ntile);
   if (nterrain == null) return 0;
   var ng = nterrain['graphic_str'];
-  return (ng === 'coast' || ng === 'floor') ? 1 : 0;
+  return (ng === 'coast' || ng === 'floor' || ng === 'lake') ? 1 : 0;
+}
+
+/**
+ * Returns 1 if the tile in direction `dir` from `ptile` has the given
+ * extra type, 0 otherwise.
+ * @param {Tile} ptile - The source map tile.
+ * @param {number} extra_id - The extra ID to test for (e.g. EXTRA_RIVER).
+ * @param {number} dir - The direction constant (e.g. DIR8_NORTH).
+ * @returns {number} 1 if the neighbour has that extra, 0 otherwise.
+ */
+function map2d_extra_neighbor_flag(ptile, extra_id, dir)
+{
+  var ntile = mapstep(ptile, dir);
+  if (ntile == null) return 0;
+  return tile_has_extra(ntile, extra_id) ? 1 : 0;
+}
+
+/**
+ * Returns 1 if the tile in direction `dir` from `ptile` has a River
+ * extra or is an ocean tile (rivers flow into the sea), 0 otherwise.
+ * @param {Tile} ptile - The source map tile.
+ * @param {number} dir - The direction constant (e.g. DIR8_NORTH).
+ * @returns {number} 1 if the neighbour is a river source/outlet, 0 otherwise.
+ */
+function map2d_river_neighbor_flag(ptile, dir)
+{
+  var ntile = mapstep(ptile, dir);
+  if (ntile == null) return 0;
+  /* River outlets at ocean/lake edges */
+  if (map2d_ocean_neighbor_flag(ptile, dir)) return 1;
+  if (typeof EXTRA_RIVER === 'undefined') return 0;
+  return tile_has_extra(ntile, EXTRA_RIVER) ? 1 : 0;
 }
 
 /* ------------------------------------------------------------------ */
@@ -434,7 +471,7 @@ function map2d_render_terrain(ctx, ptile, cx, cy, tw, th)
 
   var pterrain  = tile_terrain(ptile);
   var g         = pterrain ? pterrain['graphic_str'] : null;
-  var is_ocean  = (g === 'coast' || g === 'floor');
+  var is_ocean  = (g === 'coast' || g === 'floor' || g === 'lake');
 
   /* Step 1 – textured water base for ocean tiles, grassland base for land
    * tiles.  Ocean directional sprites are (partially) transparent and must be
@@ -1320,6 +1357,20 @@ function map2d_draw_tile_extras(ctx, ptile, cx, cy, tw, th)
     }
   }
 
+  /* --- Oil Well (Mine on Oil terrain: use oil_mine sprite) --- */
+  if (typeof EXTRA_OIL_WELL !== 'undefined' && tile_has_extra(ptile, EXTRA_OIL_WELL)) {
+    spr = sprites_2d_init && (sprites_2d['tx.oil_mine'] || sprites_2d['tx.mine']);
+    if (spr) {
+      ctx.drawImage(spr, cx, cy, tw, th);
+    } else {
+      ctx.fillStyle = 'rgba(80,80,80,0.85)';
+      ctx.font = Math.max(6, Math.floor(th * 0.4)) + 'px sans-serif';
+      ctx.textAlign = 'left';
+      ctx.textBaseline = 'top';
+      ctx.fillText('O', cx + 1, cy + 1);
+    }
+  }
+
   /* --- Fortress (thin dark border) --- */
   if (typeof EXTRA_FORTRESS !== 'undefined' && tile_has_extra(ptile, EXTRA_FORTRESS)) {
     spr = sprites_2d_init && sprites_2d['base.fortress_fg'];
@@ -1365,6 +1416,35 @@ function map2d_draw_tile_extras(ctx, ptile, cx, cy, tw, th)
   /* --- Railroad (dark lines with tick marks) --- */
   if (typeof EXTRA_RAIL !== 'undefined' && tile_has_extra(ptile, EXTRA_RAIL)) {
     map2d_draw_road_lines(ctx, ptile, cx, cy, tw, th, true);
+  }
+
+  /* --- River (blue flowing line) --- */
+  if (typeof EXTRA_RIVER !== 'undefined' && tile_has_extra(ptile, EXTRA_RIVER)) {
+    var rn = map2d_river_neighbor_flag(ptile, DIR8_NORTH);
+    var re = map2d_river_neighbor_flag(ptile, DIR8_EAST);
+    var rs = map2d_river_neighbor_flag(ptile, DIR8_SOUTH);
+    var rw = map2d_river_neighbor_flag(ptile, DIR8_WEST);
+    var river_tag = 'road.river_s_n' + rn + 'e' + re + 's' + rs + 'w' + rw;
+    spr = sprites_2d_init && sprites_2d[river_tag];
+    if (spr) {
+      ctx.drawImage(spr, cx, cy, tw, th);
+    } else {
+      /* Fallback: diagonal blue river stripe */
+      ctx.strokeStyle = 'rgba(50,120,220,0.75)';
+      ctx.lineWidth = Math.max(2, Math.floor(tw * 0.18));
+      var cx2r = cx + tw / 2;
+      var cy2r = cy + th / 2;
+      ctx.beginPath();
+      if (rn) { ctx.moveTo(cx2r, cy2r); ctx.lineTo(cx2r, cy); }
+      if (rs) { ctx.moveTo(cx2r, cy2r); ctx.lineTo(cx2r, cy + th); }
+      if (re) { ctx.moveTo(cx2r, cy2r); ctx.lineTo(cx + tw, cy2r); }
+      if (rw) { ctx.moveTo(cx2r, cy2r); ctx.lineTo(cx, cy2r); }
+      if (!rn && !rs && !re && !rw) {
+        /* Isolated river: small blue circle */
+        ctx.arc(cx2r, cy2r, Math.max(2, Math.floor(tw * 0.15)), 0, 2 * Math.PI);
+      }
+      ctx.stroke();
+    }
   }
 
   /* --- Resources (wheat, whales, gems, oil, coal, gold, fish, etc.) --- */
