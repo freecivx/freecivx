@@ -653,27 +653,27 @@ function createTerrainShaderSquareTSL(uniforms) {
     const normal = normalLocal;
     const NdotL = max(dot(normal, sunDir), 0.0);
     
-    // Ambient light increased by 10%: 0.22 * 1.10 = 0.242
-    // diffuseStrength 0.58 (up from 0.53) increases slope contrast for more natural look
-    const ambientLight = 0.242;
-    const diffuseStrength = 0.58;
+    // Ambient light and diffuse for more natural, brighter terrain
+    // Total range: 0.30 (in shadow) to 0.92 (fully lit)
+    const ambientLight = 0.30;
+    const diffuseStrength = 0.62;
     const lightingFactor = add(ambientLight, mul(NdotL, diffuseStrength));
     
-    // Brightness boost: 1.0 = neutral (no extra boost) for a more natural look
-    const brightnessBoost = 1.0;
+    // Brightness boost: slightly above 1.0 to increase overall terrain brightness
+    const brightnessBoost = 1.15;
     finalColor = vec4(mul(mul(finalColor.rgb, lightingFactor), brightnessBoost), finalColor.a);
 
     // Apply contrast enhancement for more vivid, natural terrain appearance
     // Formula: (color - 0.5) * contrast + 0.5, clamped to [0,1]
-    const TERRAIN_CONTRAST = 1.05;
+    const TERRAIN_CONTRAST = 1.08;
     const contrastedColor = clamp(add(mul(sub(finalColor.rgb, 0.5), TERRAIN_CONTRAST), 0.5), 0.0, 1.0);
     finalColor = vec4(contrastedColor, finalColor.a);
 
-    // Apply slight desaturation for a more natural, earthy terrain appearance
-    const TERRAIN_SATURATION = 0.92;
+    // Apply saturation boost for more vivid, natural terrain colours
+    const TERRAIN_SATURATION = 1.08;
     const lumWeights = vec3(0.2126, 0.7152, 0.0722);
     const lumValue = dot(finalColor.rgb, lumWeights);
-    const saturatedColor = mix(vec3(lumValue), finalColor.rgb, TERRAIN_SATURATION);
+    const saturatedColor = clamp(mix(vec3(lumValue), finalColor.rgb, TERRAIN_SATURATION), 0.0, 1.0);
     finalColor = vec4(saturatedColor, finalColor.a);
 
     // =========================================================================
