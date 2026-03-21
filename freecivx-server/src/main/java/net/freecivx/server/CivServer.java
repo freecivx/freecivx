@@ -465,6 +465,17 @@ public class CivServer extends org.java_websocket.server.WebSocketServer impleme
             log.debug("Received PONG from connection {}", connId);
         }
 
+        // Handle PACKET_REPORT_REQ (111): client requests a government report.
+        // Routes to ReportHand to generate demographics, top cities, wonders, or
+        // space race content and send it back as PACKET_PAGE_MSG + PACKET_PAGE_MSG_PART.
+        // Mirrors handle_report_req() in the C Freeciv server's srv_main.c.
+        if (pid == Packets.PACKET_REPORT_REQ) {
+            int reportType = json.optInt("type", -1);
+            if (reportType >= 0) {
+                ReportHand.handleReportReq(game, this, connId, reportType);
+            }
+        }
+
         if (pid == Packets.PACKET_CHAT_MSG_REQ) {
             String message = URLDecoder.decode(json.optString("message"), StandardCharsets.UTF_8);
             if (message.equalsIgnoreCase("/quit")) {
@@ -1262,6 +1273,27 @@ public class CivServer extends org.java_websocket.server.WebSocketServer impleme
         return msg;
     }
 
+    /**
+     * Sends a government report to a single client as
+     * PACKET_PAGE_MSG (110) + PACKET_PAGE_MSG_PART (250).
+     * Mirrors {@code page_conn()} in the C Freeciv server's
+     * {@code server/report.c}.
+     */
+    public void sendPageMsg(long connId, String headline, String caption, String message) {
+        JSONObject header = new JSONObject();
+        header.put("pid",      Packets.PACKET_PAGE_MSG);
+        header.put("headline", headline);
+        header.put("caption",  caption);
+        header.put("event",    0);
+        header.put("parts",    1);
+        sendTo(connId, header);
+
+        JSONObject part = new JSONObject();
+        part.put("pid",   Packets.PACKET_PAGE_MSG_PART);
+        part.put("lines", message);
+        sendTo(connId, part);
+    }
+
     public void sendNationInfoAll(long id, String name, String adjective, String graphic_str, String legend) {
         JSONObject msg = new JSONObject();
         msg.put("pid", Packets.PACKET_RULESET_NATION);
@@ -1687,13 +1719,12 @@ public class CivServer extends org.java_websocket.server.WebSocketServer impleme
             ws.send(msg.toString());
         });
 
-        // Spaceship info – send current state for all players
+        // Spaceship info – send current state for all players.
+        // Always sent (even for NONE state) so the spaceship tab in the
+        // government dialog has valid data from the moment the game starts.
         game.players.forEach((pid2, player) -> {
-            net.freecivx.game.Spaceship ship = player.getSpaceship();
-            if (ship.getState() != net.freecivx.game.Spaceship.State.NONE) {
-                JSONObject msg = buildSpaceshipInfoPacket(player);
-                ws.send(msg.toString());
-            }
+            JSONObject msg = buildSpaceshipInfoPacket(player);
+            ws.send(msg.toString());
         });
 
         // Server settings

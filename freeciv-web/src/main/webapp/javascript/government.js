@@ -377,26 +377,39 @@ function load_spaceship_tab()
 {
   if (client_is_observer()) return;
 
-  var spaceship = spaceship_info[client.conn.playing['playerno']];
+  var my_playerno = client.conn.playing['playerno'];
+  var spaceship = spaceship_info[my_playerno];
   var message = "";
 
   message += "<div class='spaceship-info'>";
-  message += "<h3>Spaceship</h3>";
-  message += "<p><strong>Progress:</strong> " + get_spaceship_state_text(spaceship['sship_state']) + "</p>";
-  message += "<p><strong>Success probability:</strong> " + Math.floor(spaceship['success_rate'] * 100) + "%</p>";
-  message += "<p><strong>Travel time:</strong> " + Math.floor(spaceship['travel_time']) + " years</p>";
-  message += "<p><strong>Components:</strong> " + spaceship['components'] + "</p>";
-  message += "<p><strong>Energy Rate:</strong> " + Math.floor(spaceship['energy_rate'] * 100) + "%</p>";
-  message += "<p><strong>Support Rate:</strong> " + Math.floor(spaceship['support_rate'] * 100) + "%</p>";
-  message += "<p><strong>Habitation:</strong> " + spaceship['habitation'] + "</p>";
-  message += "<p><strong>Life Support:</strong> " + spaceship['life_support'] + "</p>";
-  message += "<p><strong>Mass:</strong> " + spaceship['mass'] + " tons</p>";
-  message += "<p><strong>Modules:</strong> " + spaceship['modules'] + "</p>";
-  message += "<p><strong>Population:</strong> " + spaceship['population'] + "</p>";
-  message += "<p><strong>Propulsion:</strong> " + spaceship['propulsion'] + "</p>";
-  message += "<p><strong>Solar Panels:</strong> " + spaceship['solar_panels'] + "</p>";
-  message += "<p><strong>Structurals:</strong> " + spaceship['structurals'] + "</p>";
-  if (spaceship['launch_year'] != 9999) message += "<p><strong>Launch year:</strong> " + spaceship['launch_year'] + "</p>";
+
+  if (!spaceship) {
+    message += "<h3>Spaceship</h3>";
+    message += "<p>No spaceship data available yet. Build the Apollo Program wonder to begin the Space Race.</p>";
+  } else {
+    message += "<h3>Spaceship</h3>";
+    message += "<p><strong>Progress:</strong> " + get_spaceship_state_text(spaceship['sship_state']) + "</p>";
+    message += "<p><strong>Success probability:</strong> " + Math.floor(spaceship['success_rate'] * 100) + "%</p>";
+    message += "<p><strong>Travel time:</strong> " + Math.floor(spaceship['travel_time']) + " years</p>";
+    message += "<p><strong>Components:</strong> " + spaceship['components'] + "</p>";
+    message += "<p><strong>Energy Rate:</strong> " + Math.floor(spaceship['energy_rate'] * 100) + "%</p>";
+    message += "<p><strong>Support Rate:</strong> " + Math.floor(spaceship['support_rate'] * 100) + "%</p>";
+    message += "<p><strong>Habitation:</strong> " + spaceship['habitation'] + "</p>";
+    message += "<p><strong>Life Support:</strong> " + spaceship['life_support'] + "</p>";
+    message += "<p><strong>Mass:</strong> " + spaceship['mass'] + " tons</p>";
+    message += "<p><strong>Modules:</strong> " + spaceship['modules'] + "</p>";
+    message += "<p><strong>Population:</strong> " + spaceship['population'] + "</p>";
+    message += "<p><strong>Propulsion:</strong> " + spaceship['propulsion'] + "</p>";
+    message += "<p><strong>Solar Panels:</strong> " + spaceship['solar_panels'] + "</p>";
+    message += "<p><strong>Structurals:</strong> " + spaceship['structurals'] + "</p>";
+    if (spaceship['launch_year'] != 9999) message += "<p><strong>Launch year:</strong> " + spaceship['launch_year'] + "</p>";
+
+    if (spaceship['sship_state'] == SSHIP_STARTED && spaceship['success_rate'] > 0) {
+      message += "<div style='margin-top: 20px;'>";
+      message += "<button id='launch_spaceship_button' class='button' onclick='launch_spaceship_from_tab();'>Launch Spaceship!</button>";
+      message += "</div>";
+    }
+  }
 
   if (game_info['victory_conditions'] == 0) {
     message = "<div class='spaceship-info'><p>Spaceship victory disabled.</p>";
@@ -405,11 +418,34 @@ function load_spaceship_tab()
   message += "<p style='margin-top: 15px;'><em>Launch a spaceship to Alpha Centauri! To build a spaceship build the Apollo program wonder, Factory, then lots of Space Components, Space Modules and Space Structurals (10+ each) in a city. "
    + "For help, see the Space Race page in the manual.</em></p>";
 
-  if (spaceship['sship_state'] == SSHIP_STARTED && spaceship['success_rate'] > 0) {
-    message += "<div style='margin-top: 20px;'>";
-    message += "<button id='launch_spaceship_button' class='button' onclick='launch_spaceship_from_tab();'>Launch Spaceship!</button>";
-    message += "</div>";
+  // Space Race standings – show all players' progress using received spaceship_info
+  var race_rows = "";
+  var player_nums = Object.keys(spaceship_info);
+  if (player_nums.length > 0) {
+    race_rows += "<h3 style='margin-top:20px;'>Space Race Standings</h3>";
+    race_rows += "<table style='width:100%;border-collapse:collapse;font-size:0.9em;'>";
+    race_rows += "<tr style='border-bottom:1px solid #555;'><th style='text-align:left;padding:4px;'>Civilization</th>"
+              + "<th style='text-align:left;padding:4px;'>Status</th>"
+              + "<th style='text-align:right;padding:4px;'>Parts</th>"
+              + "<th style='text-align:right;padding:4px;'>Success%</th></tr>";
+    player_nums.forEach(function(pnum) {
+      var sship = spaceship_info[pnum];
+      var pplayer = players[pnum];
+      var civ_name = (pplayer && pplayer['name']) ? pplayer['name'] : ("Player " + pnum);
+      var state_text = get_spaceship_state_text(sship['sship_state']);
+      var parts = (sship['structurals'] || 0) + (sship['components'] || 0) + (sship['modules'] || 0);
+      var pct = Math.floor((sship['success_rate'] || 0) * 100) + "%";
+      race_rows += "<tr style='border-bottom:1px solid #333;'>"
+                + "<td style='padding:4px;'>" + civ_name + "</td>"
+                + "<td style='padding:4px;'>" + state_text + "</td>"
+                + "<td style='text-align:right;padding:4px;'>" + parts + "</td>"
+                + "<td style='text-align:right;padding:4px;'>" + pct + "</td>"
+                + "</tr>";
+    });
+    race_rows += "</table>";
+    message += race_rows;
   }
+
   message += "</div>";
 
   $("#spaceship_content").html(message);
