@@ -41,19 +41,21 @@ function createTerrainShaderSquareTSL(uniforms) {
     // Import TSL functions and nodes from THREE
     const { 
         texture, uniform, positionLocal, attribute, uv, normalLocal,
-        vec2, vec3, vec4, int,
+        vec2, vec3, vec4, int, float,
         mix, step, floor, fract, mod, dot, sin, cos, normalize, max, min, pow, clamp, abs,
         mul, add, sub, div,
-        smoothstep, hash, fwidth
+        smoothstep, hash, fwidth,
+        Fn
     } = THREE;
     
     // Verify all required TSL functions and nodes are available
     const requiredTSLNames = [
         'texture', 'uniform', 'positionLocal', 'attribute', 'uv', 'normalLocal',
-        'vec2', 'vec3', 'vec4', 'int',
+        'vec2', 'vec3', 'vec4', 'int', 'float',
         'mix', 'step', 'floor', 'fract', 'mod', 'dot', 'sin', 'cos', 'normalize', 'max', 'min', 'pow', 'clamp', 'abs',
         'mul', 'add', 'sub', 'div',
-        'smoothstep', 'hash', 'fwidth'
+        'smoothstep', 'hash', 'fwidth',
+        'Fn'
     ];
     const missing = requiredTSLNames.filter(name => THREE[name] === undefined);
     if (missing.length > 0) {
@@ -175,15 +177,15 @@ function createTerrainShaderSquareTSL(uniforms) {
     // =========================================================================
     // Square tiles are simpler - no staggering needed
     // Calculate which tile we're in
-    const tileYRaw = mul(map_y_size, uvNode.y);
-    const tileY = floor(tileYRaw);
+    const tileYRaw = map_y_size.mul(uvNode.y);
+    const tileY = tileYRaw.floor();
     
-    const tileXRaw = mul(map_x_size, uvNode.x);
-    const tileX = floor(tileXRaw);
+    const tileXRaw = map_x_size.mul(uvNode.x);
+    const tileX = tileXRaw.floor();
     
     // Local position within the current tile (0 to 1 range)
-    const localX = fract(tileXRaw);
-    const localY = fract(tileYRaw);
+    const localX = tileXRaw.fract();
+    const localY = tileYRaw.fract();
 
     // =========================================================================
     // SQUARE TILE EDGE GRID LINES
@@ -193,24 +195,24 @@ function createTerrainShaderSquareTSL(uniforms) {
     // exactly one pixel wide at any zoom level — crisp when zoomed in, soft when zoomed out.
     const localXFw = fwidth(localX);
     const localYFw = fwidth(localY);
-    const nearLeftEdge = sub(1.0, smoothstep(sub(TILE_EDGE_WIDTH, localXFw), add(TILE_EDGE_WIDTH, localXFw), localX));
-    const nearBottomEdge = sub(1.0, smoothstep(sub(TILE_EDGE_WIDTH, localYFw), add(TILE_EDGE_WIDTH, localYFw), localY));
+    const nearLeftEdge = float(1.0).sub(smoothstep(float(TILE_EDGE_WIDTH).sub(localXFw), float(TILE_EDGE_WIDTH).add(localXFw), localX));
+    const nearBottomEdge = float(1.0).sub(smoothstep(float(TILE_EDGE_WIDTH).sub(localYFw), float(TILE_EDGE_WIDTH).add(localYFw), localY));
     
     // Combine to create grid line mask (1 at edges, 0 elsewhere)
-    const gridLineMask = max(nearLeftEdge, nearBottomEdge);
+    const gridLineMask = nearLeftEdge.max(nearBottomEdge);
     
     // =========================================================================
     // TERRAIN SAMPLING AT TILE CENTER
     // =========================================================================
-    const tileCenterU = div(add(tileX, 0.5), map_x_size);
-    const tileCenterV = div(add(tileY, 0.5), map_y_size);
+    const tileCenterU = tileX.add(0.5).div(map_x_size);
+    const tileCenterV = tileY.add(0.5).div(map_y_size);
     const tileCenterUV = vec2(tileCenterU, tileCenterV);
     
     // Add pseudo-random texture offset for visual variety.
     // Uses THREE's hash() TSL function for a more robust pseudo-random value than sin-based hashing.
     const rnd = hash(tileCenterUV);
-    const rndOffset = mul(sub(rnd, 0.5), div(1.0, mul(TEXTURE_RANDOM_SCALE, vec2(map_x_size, map_y_size))));
-    const sampledUV = add(tileCenterUV, rndOffset);
+    const rndOffset = rnd.sub(0.5).mul(float(1.0).div(vec2(map_x_size, map_y_size).mul(TEXTURE_RANDOM_SCALE)));
+    const sampledUV = tileCenterUV.add(rndOffset);
 
     // Sample terrain type
     const terrainType = texture(maptilesTex, sampledUV);
@@ -220,7 +222,7 @@ function createTerrainShaderSquareTSL(uniforms) {
     const dy = localY;
 
     // Extract terrain type value
-    const terrainHere = floor(mul(terrainType.r, 256.0));
+    const terrainHere = terrainType.r.mul(256.0).floor();
     const posY = posNode.y;
 
     // Texture coordinate node
@@ -233,23 +235,23 @@ function createTerrainShaderSquareTSL(uniforms) {
     // NEIGHBOR TERRAIN SAMPLING FOR EDGE BLENDING
     // =========================================================================
     // Sample terrain types from 4 neighboring tiles (N, E, S, W)
-    const terrainOffsetX = div(1.0, map_x_size);
-    const terrainOffsetY = div(1.0, map_y_size);
+    const terrainOffsetX = float(1.0).div(map_x_size);
+    const terrainOffsetY = float(1.0).div(map_y_size);
     
-    const neighborTerrainUV_E = vec2(add(tileCenterUV.x, terrainOffsetX), tileCenterUV.y);
-    const neighborTerrainUV_W = vec2(sub(tileCenterUV.x, terrainOffsetX), tileCenterUV.y);
-    const neighborTerrainUV_N = vec2(tileCenterUV.x, add(tileCenterUV.y, terrainOffsetY));
-    const neighborTerrainUV_S = vec2(tileCenterUV.x, sub(tileCenterUV.y, terrainOffsetY));
+    const neighborTerrainUV_E = vec2(tileCenterUV.x.add(terrainOffsetX), tileCenterUV.y);
+    const neighborTerrainUV_W = vec2(tileCenterUV.x.sub(terrainOffsetX), tileCenterUV.y);
+    const neighborTerrainUV_N = vec2(tileCenterUV.x, tileCenterUV.y.add(terrainOffsetY));
+    const neighborTerrainUV_S = vec2(tileCenterUV.x, tileCenterUV.y.sub(terrainOffsetY));
     
     const terrainTypeE = texture(maptilesTex, neighborTerrainUV_E);
     const terrainTypeW = texture(maptilesTex, neighborTerrainUV_W);
     const terrainTypeN = texture(maptilesTex, neighborTerrainUV_N);
     const terrainTypeS = texture(maptilesTex, neighborTerrainUV_S);
     
-    const terrainE = floor(mul(terrainTypeE.r, 256.0));
-    const terrainW = floor(mul(terrainTypeW.r, 256.0));
-    const terrainN = floor(mul(terrainTypeN.r, 256.0));
-    const terrainS = floor(mul(terrainTypeS.r, 256.0));
+    const terrainE = terrainTypeE.r.mul(256.0).floor();
+    const terrainW = terrainTypeW.r.mul(256.0).floor();
+    const terrainN = terrainTypeN.r.mul(256.0).floor();
+    const terrainS = terrainTypeS.r.mul(256.0).floor();
 
     // =========================================================================
     // TERRAIN EDGE BLENDING PARAMETERS
@@ -304,61 +306,55 @@ function createTerrainShaderSquareTSL(uniforms) {
     function createTerrainLayerFromArray(terrainValue, layerIndex, coord) {
         const step1 = step(terrainValue - 0.5, terrainHere);
         const step2 = step(terrainHere, terrainValue + 0.5);
-        const isTerrain = mul(step1, step2);
+        const isTerrain = step1.mul(step2);
         const terrainColor = texture(terrainLayersTex, coord).depth(int(layerIndex));
         return { mask: isTerrain, color: terrainColor };
     }
     
     /**
-     * Helper function to get terrain color for a given terrain type value
-     * This is used for neighbor terrain blending
+     * Helper function to get terrain color for a given terrain type value.
+     * Wrapped in Fn() so it compiles to a single GPU function called for each
+     * of the 4 cardinal neighbors, rather than being inlined 4 times.
      */
-    function getTerrainColorForType(tType, coord) {
+    const getTerrainColorForTypeFn = Fn(([tType, coord]) => {
         // Start with black (unknown terrain)
         let color = vec4(0, 0, 0, 1);
         
-        // Helper to check if terrain matches and return color
-        function matchTerrain(terrainValue, layerIndex, useCoord, blendWithBeach) {
-            const step1 = step(terrainValue - 0.5, tType);
-            const step2 = step(tType, terrainValue + 0.5);
-            const isTerrain = mul(step1, step2);
-            const terrainColor = computeTerrainColor(layerIndex, useCoord, blendWithBeach);
-            return { mask: isTerrain, color: terrainColor };
+        // Helper to check if terrain matches and return color (atlas)
+        function matchTerrain(terrainValue, layerIndex, blendWithBeach) {
+            const isTerrain = step(terrainValue - 0.5, tType).mul(step(tType, terrainValue + 0.5));
+            return { mask: isTerrain, color: computeTerrainColor(layerIndex, coord, blendWithBeach) };
         }
         
         // Helper to check terrain from array texture
-        function matchTerrainFromArray(terrainValue, layerIndex, useCoord) {
-            const step1 = step(terrainValue - 0.5, tType);
-            const step2 = step(tType, terrainValue + 0.5);
-            const isTerrain = mul(step1, step2);
-            const terrainColor = texture(terrainLayersTex, useCoord).depth(int(layerIndex));
-            return { mask: isTerrain, color: terrainColor };
+        function matchTerrainFromArray(terrainValue, layerIndex) {
+            const isTerrain = step(terrainValue - 0.5, tType).mul(step(tType, terrainValue + 0.5));
+            return { mask: isTerrain, color: texture(terrainLayersTex, coord).depth(int(layerIndex)) };
         }
         
-        // Match each terrain type
+        // Match each terrain type and accumulate
         const layersList = [
-            matchTerrain(TERRAIN_GRASSLAND, TERRAIN_ATLAS_GRASSLAND, coord, true),
-            matchTerrain(TERRAIN_PLAINS, TERRAIN_ATLAS_PLAINS, coord, true),
-            matchTerrain(TERRAIN_DESERT, TERRAIN_ATLAS_DESERT, coord, true),
-            matchTerrain(TERRAIN_HILLS, TERRAIN_ATLAS_HILLS, coord, true),
-            matchTerrain(TERRAIN_MOUNTAINS, TERRAIN_ATLAS_MOUNTAINS, coord, true),
-            matchTerrain(TERRAIN_SWAMP, TERRAIN_ATLAS_SWAMP, coord, true),
-            matchTerrain(TERRAIN_FOREST, TERRAIN_ATLAS_FOREST, coord, true),
-            matchTerrain(TERRAIN_JUNGLE, TERRAIN_ATLAS_JUNGLE, coord, true),
-            matchTerrain(TERRAIN_COAST, TERRAIN_ATLAS_COAST, coord, false),
-            matchTerrain(TERRAIN_FLOOR, TERRAIN_ATLAS_OCEAN, coord, false),
-            matchTerrain(TERRAIN_LAKE, TERRAIN_ATLAS_COAST, coord, false),
-            matchTerrainFromArray(TERRAIN_ARCTIC, TERRAIN_LAYER_ARCTIC, coord),
-            matchTerrainFromArray(TERRAIN_TUNDRA, TERRAIN_LAYER_TUNDRA, coord)
+            matchTerrain(TERRAIN_GRASSLAND, TERRAIN_ATLAS_GRASSLAND, true),
+            matchTerrain(TERRAIN_PLAINS, TERRAIN_ATLAS_PLAINS, true),
+            matchTerrain(TERRAIN_DESERT, TERRAIN_ATLAS_DESERT, true),
+            matchTerrain(TERRAIN_HILLS, TERRAIN_ATLAS_HILLS, true),
+            matchTerrain(TERRAIN_MOUNTAINS, TERRAIN_ATLAS_MOUNTAINS, true),
+            matchTerrain(TERRAIN_SWAMP, TERRAIN_ATLAS_SWAMP, true),
+            matchTerrain(TERRAIN_FOREST, TERRAIN_ATLAS_FOREST, true),
+            matchTerrain(TERRAIN_JUNGLE, TERRAIN_ATLAS_JUNGLE, true),
+            matchTerrain(TERRAIN_COAST, TERRAIN_ATLAS_COAST, false),
+            matchTerrain(TERRAIN_FLOOR, TERRAIN_ATLAS_OCEAN, false),
+            matchTerrain(TERRAIN_LAKE, TERRAIN_ATLAS_COAST, false),
+            matchTerrainFromArray(TERRAIN_ARCTIC, TERRAIN_LAYER_ARCTIC),
+            matchTerrainFromArray(TERRAIN_TUNDRA, TERRAIN_LAYER_TUNDRA)
         ];
         
-        // Combine all terrain layers
         for (const layer of layersList) {
-            color = mix(color, layer.color, layer.mask);
+            color = color.mix(layer.color, layer.mask);
         }
         
         return color;
-    }
+    });
 
     // Build terrain layers for current tile
     const layers = [
@@ -380,51 +376,46 @@ function createTerrainShaderSquareTSL(uniforms) {
     // Combine all terrain layers for current tile
     let finalColor = vec4(0, 0, 0, 1);
     for (const layer of layers) {
-        finalColor = mix(finalColor, layer.color, layer.mask);
+        finalColor = finalColor.mix(layer.color, layer.mask);
     }
     
     // =========================================================================
     // TERRAIN EDGE BLENDING (blend terrain textures at tile borders)
     // =========================================================================
-    // Get terrain colors for neighboring tiles
-    const colorE = getTerrainColorForType(terrainE, texCoord);
-    const colorW = getTerrainColorForType(terrainW, texCoord);
-    const colorN = getTerrainColorForType(terrainN, texCoord);
-    const colorS = getTerrainColorForType(terrainS, texCoord);
+    // Get terrain colors for neighboring tiles using the Fn() GPU function
+    const colorE = getTerrainColorForTypeFn(terrainE, texCoord);
+    const colorW = getTerrainColorForTypeFn(terrainW, texCoord);
+    const colorN = getTerrainColorForTypeFn(terrainN, texCoord);
+    const colorS = getTerrainColorForTypeFn(terrainS, texCoord);
     
-    // Calculate edge proximity factors (1.0 at edge, 0.0 at center)
+    // Calculate edge proximity factors (1.0 at edge, 0.0 at center) using method chaining
     // East edge: localX close to 1.0
-    const eastEdgeProximity = clamp(div(sub(localX, sub(1.0, TERRAIN_BLEND_WIDTH)), TERRAIN_BLEND_WIDTH), 0.0, 1.0);
+    const eastEdgeProximity = localX.sub(float(1.0).sub(TERRAIN_BLEND_WIDTH)).div(TERRAIN_BLEND_WIDTH).clamp(0.0, 1.0);
     // West edge: localX close to 0.0
-    const westEdgeProximity = clamp(div(sub(TERRAIN_BLEND_WIDTH, localX), TERRAIN_BLEND_WIDTH), 0.0, 1.0);
+    const westEdgeProximity = float(TERRAIN_BLEND_WIDTH).sub(localX).div(TERRAIN_BLEND_WIDTH).clamp(0.0, 1.0);
     // North edge: localY close to 1.0
-    const northEdgeProximity = clamp(div(sub(localY, sub(1.0, TERRAIN_BLEND_WIDTH)), TERRAIN_BLEND_WIDTH), 0.0, 1.0);
+    const northEdgeProximity = localY.sub(float(1.0).sub(TERRAIN_BLEND_WIDTH)).div(TERRAIN_BLEND_WIDTH).clamp(0.0, 1.0);
     // South edge: localY close to 0.0
-    const southEdgeProximity = clamp(div(sub(TERRAIN_BLEND_WIDTH, localY), TERRAIN_BLEND_WIDTH), 0.0, 1.0);
+    const southEdgeProximity = float(TERRAIN_BLEND_WIDTH).sub(localY).div(TERRAIN_BLEND_WIDTH).clamp(0.0, 1.0);
     
     // Apply smooth step for more natural blending transition using THREE's smoothstep()
-    const eastBlend = smoothstep(0.0, 1.0, eastEdgeProximity);
-    const westBlend = smoothstep(0.0, 1.0, westEdgeProximity);
-    const northBlend = smoothstep(0.0, 1.0, northEdgeProximity);
-    const southBlend = smoothstep(0.0, 1.0, southEdgeProximity);
-    
     // Scale by blend strength
-    const eastFactor = mul(eastBlend, TERRAIN_BLEND_STRENGTH);
-    const westFactor = mul(westBlend, TERRAIN_BLEND_STRENGTH);
-    const northFactor = mul(northBlend, TERRAIN_BLEND_STRENGTH);
-    const southFactor = mul(southBlend, TERRAIN_BLEND_STRENGTH);
+    const eastFactor = smoothstep(0.0, 1.0, eastEdgeProximity).mul(TERRAIN_BLEND_STRENGTH);
+    const westFactor = smoothstep(0.0, 1.0, westEdgeProximity).mul(TERRAIN_BLEND_STRENGTH);
+    const northFactor = smoothstep(0.0, 1.0, northEdgeProximity).mul(TERRAIN_BLEND_STRENGTH);
+    const southFactor = smoothstep(0.0, 1.0, southEdgeProximity).mul(TERRAIN_BLEND_STRENGTH);
     
     // Blend neighbor terrain colors into final color
-    // Only blend if neighbor terrain is different (non-zero terrain type)
+    // Only blend if neighbor terrain is non-zero
     const hasTerrainE = step(0.5, terrainE);
     const hasTerrainW = step(0.5, terrainW);
     const hasTerrainN = step(0.5, terrainN);
     const hasTerrainS = step(0.5, terrainS);
     
-    finalColor = mix(finalColor, colorE, mul(eastFactor, hasTerrainE));
-    finalColor = mix(finalColor, colorW, mul(westFactor, hasTerrainW));
-    finalColor = mix(finalColor, colorN, mul(northFactor, hasTerrainN));
-    finalColor = mix(finalColor, colorS, mul(southFactor, hasTerrainS));
+    finalColor = finalColor.mix(colorE, eastFactor.mul(hasTerrainE));
+    finalColor = finalColor.mix(colorW, westFactor.mul(hasTerrainW));
+    finalColor = finalColor.mix(colorN, northFactor.mul(hasTerrainN));
+    finalColor = finalColor.mix(colorS, southFactor.mul(hasTerrainS));
 
     // =========================================================================
     // IRRIGATION AND FARMLAND RENDERING
@@ -434,82 +425,74 @@ function createTerrainShaderSquareTSL(uniforms) {
     // - 1 = irrigation
     // - 2 = farmland
     // We render textures from terrain_layers DataArrayTexture overlaid on the terrain
-    const irrigationFlag = floor(mul(terrainType.b, 256.0));
+    const irrigationFlag = terrainType.b.mul(256.0).floor();
     
     // Irrigation: sample irrigation texture from terrain_layers and blend over terrain
-    const hasIrrigation = mul(step(0.5, irrigationFlag), step(irrigationFlag, 1.5));
+    const hasIrrigation = step(0.5, irrigationFlag).mul(step(irrigationFlag, 1.5));
     const irrigationTexColor = texture(terrainLayersTex, texCoord).depth(int(TERRAIN_LAYER_IRRIGATION));
-    finalColor = vec4(
-        mix(finalColor.rgb, irrigationTexColor.rgb, mul(hasIrrigation, irrigationTexColor.a)),
-        finalColor.a
-    );
+    finalColor = vec4(finalColor.rgb.mix(irrigationTexColor.rgb, hasIrrigation.mul(irrigationTexColor.a)), finalColor.a);
     
     // Farmland: sample farmland texture from terrain_layers and blend over terrain
     const hasFarmland = step(1.5, irrigationFlag);
     const farmlandTexColor = texture(terrainLayersTex, texCoord).depth(int(TERRAIN_LAYER_FARMLAND));
-    finalColor = vec4(
-        mix(finalColor.rgb, farmlandTexColor.rgb, mul(hasFarmland, farmlandTexColor.a)),
-        finalColor.a
-    );
+    finalColor = vec4(finalColor.rgb.mix(farmlandTexColor.rgb, hasFarmland.mul(farmlandTexColor.a)), finalColor.a);
 
     // =========================================================================
     // ROADS, RAILROADS AND RIVERS RENDERING (using texture_2d_array)
     // =========================================================================
     const roadData = texture(roadsmapTex, tileCenterUV);
-    const roadIndex = floor(mul(roadData.r, 256.0));
-    const roadIndex2 = floor(mul(roadData.g, 256.0));
-    const roadIndex3 = floor(mul(roadData.b, 256.0));
+    const roadIndex = roadData.r.mul(256.0).floor();
+    const roadIndex2 = roadData.g.mul(256.0).floor();
+    const roadIndex3 = roadData.b.mul(256.0).floor();
     
-    const hasRiver = mul(step(19.5, roadIndex), step(roadIndex, 29.5));
-    const hasRiverJunction = mul(step(52.5, roadIndex), step(roadIndex, 53.5));
-    const hasRoad = mul(step(0.5, roadIndex), step(roadIndex, 9.5));
-    const hasRoadJunction = mul(step(41.5, roadIndex), step(roadIndex, 42.5));
-    const hasRailroad = mul(step(9.5, roadIndex), step(roadIndex, 19.5));
-    const hasRailJunction = mul(step(42.5, roadIndex), step(roadIndex, 43.5));
+    const hasRiver = step(19.5, roadIndex).mul(step(roadIndex, 29.5));
+    const hasRiverJunction = step(52.5, roadIndex).mul(step(roadIndex, 53.5));
+    const hasRoad = step(0.5, roadIndex).mul(step(roadIndex, 9.5));
+    const hasRoadJunction = step(41.5, roadIndex).mul(step(roadIndex, 42.5));
+    const hasRailroad = step(9.5, roadIndex).mul(step(roadIndex, 19.5));
+    const hasRailJunction = step(42.5, roadIndex).mul(step(roadIndex, 43.5));
     
     // Second texture from G channel
-    const hasRiver2 = mul(step(19.5, roadIndex2), step(roadIndex2, 29.5));
-    const hasRiverJunction2 = mul(step(52.5, roadIndex2), step(roadIndex2, 53.5));
-    const hasRoad2 = mul(step(0.5, roadIndex2), step(roadIndex2, 9.5));
-    const hasRoadJunction2 = mul(step(41.5, roadIndex2), step(roadIndex2, 42.5));
-    const hasRailroad2 = mul(step(9.5, roadIndex2), step(roadIndex2, 19.5));
-    const hasRailJunction2 = mul(step(42.5, roadIndex2), step(roadIndex2, 43.5));
+    const hasRiver2 = step(19.5, roadIndex2).mul(step(roadIndex2, 29.5));
+    const hasRiverJunction2 = step(52.5, roadIndex2).mul(step(roadIndex2, 53.5));
+    const hasRoad2 = step(0.5, roadIndex2).mul(step(roadIndex2, 9.5));
+    const hasRoadJunction2 = step(41.5, roadIndex2).mul(step(roadIndex2, 42.5));
+    const hasRailroad2 = step(9.5, roadIndex2).mul(step(roadIndex2, 19.5));
+    const hasRailJunction2 = step(42.5, roadIndex2).mul(step(roadIndex2, 43.5));
     
     // Third texture from B channel
-    const hasRiver3 = mul(step(19.5, roadIndex3), step(roadIndex3, 29.5));
-    const hasRiverJunction3 = mul(step(52.5, roadIndex3), step(roadIndex3, 53.5));
-    const hasRoad3 = mul(step(0.5, roadIndex3), step(roadIndex3, 9.5));
-    const hasRoadJunction3 = mul(step(41.5, roadIndex3), step(roadIndex3, 42.5));
-    const hasRailroad3 = mul(step(9.5, roadIndex3), step(roadIndex3, 19.5));
-    const hasRailJunction3 = mul(step(42.5, roadIndex3), step(roadIndex3, 43.5));
+    const hasRiver3 = step(19.5, roadIndex3).mul(step(roadIndex3, 29.5));
+    const hasRiverJunction3 = step(52.5, roadIndex3).mul(step(roadIndex3, 53.5));
+    const hasRoad3 = step(0.5, roadIndex3).mul(step(roadIndex3, 9.5));
+    const hasRoadJunction3 = step(41.5, roadIndex3).mul(step(roadIndex3, 42.5));
+    const hasRailroad3 = step(9.5, roadIndex3).mul(step(roadIndex3, 19.5));
+    const hasRailJunction3 = step(42.5, roadIndex3).mul(step(roadIndex3, 43.5));
     
     // Calculate layer indices for texture array sampling
     // Indices are clamped to valid ranges for cross-platform safety: some WebGPU
     // implementations have undefined behaviour on out-of-bounds array access.
     // River sprite layer selection (indices 20-29 for regular rivers)
-    const riverLayerIndex = int(clamp(sub(roadIndex, 20.0), 0.0, 9.0));
-    const riverLayerIndex2 = int(clamp(sub(roadIndex2, 20.0), 0.0, 9.0));
-    const riverLayerIndex3 = int(clamp(sub(roadIndex3, 20.0), 0.0, 9.0));
+    const riverLayerIndex = int(roadIndex.sub(20.0).clamp(0.0, 9.0));
+    const riverLayerIndex2 = int(roadIndex2.sub(20.0).clamp(0.0, 9.0));
+    const riverLayerIndex3 = int(roadIndex3.sub(20.0).clamp(0.0, 9.0));
     
     // Road sprite layer selection (indices 1-9 for regular roads)
-    const roadLayerIndex = int(clamp(sub(roadIndex, 1.0), 0.0, 8.0));
-    const roadLayerIndex2 = int(clamp(sub(roadIndex2, 1.0), 0.0, 8.0));
-    const roadLayerIndex3 = int(clamp(sub(roadIndex3, 1.0), 0.0, 8.0));
+    const roadLayerIndex = int(roadIndex.sub(1.0).clamp(0.0, 8.0));
+    const roadLayerIndex2 = int(roadIndex2.sub(1.0).clamp(0.0, 8.0));
+    const roadLayerIndex3 = int(roadIndex3.sub(1.0).clamp(0.0, 8.0));
     
     // Railroad sprite layer selection (indices 10-19 for regular railroads)
-    const railLayerIndex = int(clamp(sub(roadIndex, 10.0), 0.0, 9.0));
-    const railLayerIndex2 = int(clamp(sub(roadIndex2, 10.0), 0.0, 9.0));
-    const railLayerIndex3 = int(clamp(sub(roadIndex3, 10.0), 0.0, 9.0));
+    const railLayerIndex = int(roadIndex.sub(10.0).clamp(0.0, 9.0));
+    const railLayerIndex2 = int(roadIndex2.sub(10.0).clamp(0.0, 9.0));
+    const railLayerIndex3 = int(roadIndex3.sub(10.0).clamp(0.0, 9.0));
     
     // Sample river sprite using texture array with vec2 UV and integer layer index
-    // For texture_2d_array (DataArrayTexture), pass layer index as third parameter
     const riverSpriteUV = vec2(localX, localY);
     const riverSprite = texture(riverspritesTex, riverSpriteUV).depth(riverLayerIndex);
     const riverSprite2 = texture(riverspritesTex, riverSpriteUV).depth(riverLayerIndex2);
     const riverSprite3 = texture(riverspritesTex, riverSpriteUV).depth(riverLayerIndex3);
     
     // Sample road sprite using texture array with vec2 UV and integer layer index
-    // For texture_2d_array (DataArrayTexture), pass layer index as third parameter
     const roadSpriteUV = vec2(localX, localY);
     const roadSprite = texture(roadspritesTex, roadSpriteUV).depth(roadLayerIndex);
     const roadSprite2 = texture(roadspritesTex, roadSpriteUV).depth(roadLayerIndex2);
@@ -526,181 +509,93 @@ function createTerrainShaderSquareTSL(uniforms) {
     const riverJunctionSprite = texture(riverspritesTex, junctionUV).depth(int(0));
     const roadJunctionSprite = texture(roadspritesTex, junctionUV).depth(int(0));
     const railJunctionSprite = texture(railroadspritesTex, junctionUV).depth(int(0));
-    
+
+    // =========================================================================
+    // SPRITE BLENDING HELPER (modern Fn() pattern)
+    // =========================================================================
+    // Fn() compiles this into a named GPU function rather than inlining the same
+    // three-operation expression 18 times, reducing compiled shader size.
+    const blendSpriteOnTerrain = Fn(([base, sprite, hasMask]) => {
+        const alpha = hasMask.mul(sprite.a).mul(0.9);
+        return vec4(base.rgb.mix(sprite.rgb, alpha), base.a);
+    });
+
     // Blend rivers onto terrain first (lowest layer, rendered before roads)
-    const riverAlpha = mul(hasRiver, riverSprite.a);
-    finalColor = vec4(
-        mix(finalColor.rgb, riverSprite.rgb, mul(riverAlpha, 0.9)),
-        finalColor.a
-    );
-    
-    // Blend second river texture (from G channel)
-    const riverAlpha2 = mul(hasRiver2, riverSprite2.a);
-    finalColor = vec4(
-        mix(finalColor.rgb, riverSprite2.rgb, mul(riverAlpha2, 0.9)),
-        finalColor.a
-    );
-    
-    // Blend third river texture (from B channel)
-    const riverAlpha3 = mul(hasRiver3, riverSprite3.a);
-    finalColor = vec4(
-        mix(finalColor.rgb, riverSprite3.rgb, mul(riverAlpha3, 0.9)),
-        finalColor.a
-    );
-    
-    // Blend river junctions separately (index 53 only)
-    const riverJunctionAlpha = mul(hasRiverJunction, riverJunctionSprite.a);
-    finalColor = vec4(
-        mix(finalColor.rgb, riverJunctionSprite.rgb, mul(riverJunctionAlpha, 0.9)),
-        finalColor.a
-    );
-    
-    const riverJunctionAlpha2 = mul(hasRiverJunction2, riverJunctionSprite.a);
-    finalColor = vec4(
-        mix(finalColor.rgb, riverJunctionSprite.rgb, mul(riverJunctionAlpha2, 0.9)),
-        finalColor.a
-    );
-    
-    const riverJunctionAlpha3 = mul(hasRiverJunction3, riverJunctionSprite.a);
-    finalColor = vec4(
-        mix(finalColor.rgb, riverJunctionSprite.rgb, mul(riverJunctionAlpha3, 0.9)),
-        finalColor.a
-    );
-    
-    // Blend roads onto terrain
-    const roadAlpha = mul(hasRoad, roadSprite.a);
-    finalColor = vec4(
-        mix(finalColor.rgb, roadSprite.rgb, mul(roadAlpha, 0.9)),
-        finalColor.a
-    );
-    
-    // Blend second road texture (from G channel)
-    const roadAlpha2 = mul(hasRoad2, roadSprite2.a);
-    finalColor = vec4(
-        mix(finalColor.rgb, roadSprite2.rgb, mul(roadAlpha2, 0.9)),
-        finalColor.a
-    );
-    
-    // Blend third road texture (from B channel)
-    const roadAlpha3 = mul(hasRoad3, roadSprite3.a);
-    finalColor = vec4(
-        mix(finalColor.rgb, roadSprite3.rgb, mul(roadAlpha3, 0.9)),
-        finalColor.a
-    );
-    
-    const roadJunctionAlpha = mul(hasRoadJunction, roadJunctionSprite.a);
-    finalColor = vec4(
-        mix(finalColor.rgb, roadJunctionSprite.rgb, mul(roadJunctionAlpha, 0.9)),
-        finalColor.a
-    );
-    
-    const roadJunctionAlpha2 = mul(hasRoadJunction2, roadJunctionSprite.a);
-    finalColor = vec4(
-        mix(finalColor.rgb, roadJunctionSprite.rgb, mul(roadJunctionAlpha2, 0.9)),
-        finalColor.a
-    );
-    
-    const roadJunctionAlpha3 = mul(hasRoadJunction3, roadJunctionSprite.a);
-    finalColor = vec4(
-        mix(finalColor.rgb, roadJunctionSprite.rgb, mul(roadJunctionAlpha3, 0.9)),
-        finalColor.a
-    );
-    
-    // Blend railroads onto terrain (indices 10-19)
-    const railAlpha = mul(hasRailroad, railSprite.a);
-    finalColor = vec4(
-        mix(finalColor.rgb, railSprite.rgb, mul(railAlpha, 0.9)),
-        finalColor.a
-    );
-    
-    // Blend second railroad texture (from G channel)
-    const railAlpha2 = mul(hasRailroad2, railSprite2.a);
-    finalColor = vec4(
-        mix(finalColor.rgb, railSprite2.rgb, mul(railAlpha2, 0.9)),
-        finalColor.a
-    );
-    
-    // Blend third railroad texture (from B channel)
-    const railAlpha3 = mul(hasRailroad3, railSprite3.a);
-    finalColor = vec4(
-        mix(finalColor.rgb, railSprite3.rgb, mul(railAlpha3, 0.9)),
-        finalColor.a
-    );
-    
-    // Blend railroad junctions (index 43)
-    const railJunctionAlpha = mul(hasRailJunction, railJunctionSprite.a);
-    finalColor = vec4(
-        mix(finalColor.rgb, railJunctionSprite.rgb, mul(railJunctionAlpha, 0.9)),
-        finalColor.a
-    );
-    
-    const railJunctionAlpha2 = mul(hasRailJunction2, railJunctionSprite.a);
-    finalColor = vec4(
-        mix(finalColor.rgb, railJunctionSprite.rgb, mul(railJunctionAlpha2, 0.9)),
-        finalColor.a
-    );
-    
-    const railJunctionAlpha3 = mul(hasRailJunction3, railJunctionSprite.a);
-    finalColor = vec4(
-        mix(finalColor.rgb, railJunctionSprite.rgb, mul(railJunctionAlpha3, 0.9)),
-        finalColor.a
-    );
+    finalColor = blendSpriteOnTerrain(finalColor, riverSprite, hasRiver);
+    finalColor = blendSpriteOnTerrain(finalColor, riverSprite2, hasRiver2);
+    finalColor = blendSpriteOnTerrain(finalColor, riverSprite3, hasRiver3);
+
+    // Blend river junctions (index 53)
+    finalColor = blendSpriteOnTerrain(finalColor, riverJunctionSprite, hasRiverJunction);
+    finalColor = blendSpriteOnTerrain(finalColor, riverJunctionSprite, hasRiverJunction2);
+    finalColor = blendSpriteOnTerrain(finalColor, riverJunctionSprite, hasRiverJunction3);
+
+    // Blend regular roads (indices 1-9) and road junctions (index 42)
+    finalColor = blendSpriteOnTerrain(finalColor, roadSprite, hasRoad);
+    finalColor = blendSpriteOnTerrain(finalColor, roadSprite2, hasRoad2);
+    finalColor = blendSpriteOnTerrain(finalColor, roadSprite3, hasRoad3);
+    finalColor = blendSpriteOnTerrain(finalColor, roadJunctionSprite, hasRoadJunction);
+    finalColor = blendSpriteOnTerrain(finalColor, roadJunctionSprite, hasRoadJunction2);
+    finalColor = blendSpriteOnTerrain(finalColor, roadJunctionSprite, hasRoadJunction3);
+
+    // Blend railroads (indices 10-19) and railroad junctions (index 43)
+    finalColor = blendSpriteOnTerrain(finalColor, railSprite, hasRailroad);
+    finalColor = blendSpriteOnTerrain(finalColor, railSprite2, hasRailroad2);
+    finalColor = blendSpriteOnTerrain(finalColor, railSprite3, hasRailroad3);
+    finalColor = blendSpriteOnTerrain(finalColor, railJunctionSprite, hasRailJunction);
+    finalColor = blendSpriteOnTerrain(finalColor, railJunctionSprite, hasRailJunction2);
+    finalColor = blendSpriteOnTerrain(finalColor, railJunctionSprite, hasRailJunction3);
 
     // =========================================================================
     // SLOPE-BASED LIGHTING
     // =========================================================================
     const sunDir = vec3(0.503, 0.704, 0.503);
     const normal = normalLocal;
-    const NdotL = max(dot(normal, sunDir), 0.0);
+    const NdotL = normal.dot(sunDir).max(0.0);
     
     // Ambient light and diffuse for more natural, brighter terrain
     // Total range: 0.30 (in shadow) to 0.92 (fully lit)
     const ambientLight = 0.30;
     const diffuseStrength = 0.62;
-    const lightingFactor = add(ambientLight, mul(NdotL, diffuseStrength));
+    const lightingFactor = NdotL.mul(diffuseStrength).add(ambientLight);
     
     // Brightness boost: slightly above 1.0 to increase overall terrain brightness
     const brightnessBoost = 1.15;
-    finalColor = vec4(mul(mul(finalColor.rgb, lightingFactor), brightnessBoost), finalColor.a);
+    finalColor = vec4(finalColor.rgb.mul(lightingFactor).mul(brightnessBoost), finalColor.a);
 
     // Apply contrast enhancement for more vivid, natural terrain appearance
     // Formula: (color - 0.5) * contrast + 0.5, clamped to [0,1]
     const TERRAIN_CONTRAST = 1.08;
-    const contrastedColor = clamp(add(mul(sub(finalColor.rgb, 0.5), TERRAIN_CONTRAST), 0.5), 0.0, 1.0);
+    const contrastedColor = finalColor.rgb.sub(0.5).mul(TERRAIN_CONTRAST).add(0.5).clamp(0.0, 1.0);
     finalColor = vec4(contrastedColor, finalColor.a);
 
     // Apply saturation boost for more vivid, natural terrain colours
     const TERRAIN_SATURATION = 1.08;
     const lumWeights = vec3(0.2126, 0.7152, 0.0722);
-    const lumValue = dot(finalColor.rgb, lumWeights);
-    const saturatedColor = clamp(mix(vec3(lumValue), finalColor.rgb, TERRAIN_SATURATION), 0.0, 1.0);
+    const lumValue = finalColor.rgb.dot(lumWeights);
+    const saturatedColor = vec3(lumValue).mix(finalColor.rgb, TERRAIN_SATURATION).clamp(0.0, 1.0);
     finalColor = vec4(saturatedColor, finalColor.a);
 
     // =========================================================================
     // SQUARE TILE GRID LINES
     // =========================================================================
     const tileEdgeColor = vec3(TILE_EDGE_COLOR_R, TILE_EDGE_COLOR_G, TILE_EDGE_COLOR_B);
-    const gridEdgeBlend = mul(gridLineMask, TILE_EDGE_BLEND_STRENGTH);
-    finalColor = vec4(
-        mix(finalColor.rgb, tileEdgeColor, gridEdgeBlend),
-        finalColor.a
-    );
+    finalColor = vec4(finalColor.rgb.mix(tileEdgeColor, gridLineMask.mul(TILE_EDGE_BLEND_STRENGTH)), finalColor.a);
 
     // =========================================================================
     // VISIBILITY BLENDING
     // =========================================================================
     const tileVisibilityTex = texture(maptilesTex, tileCenterUV);
     const tileVisibility = tileVisibilityTex.a;
-    const tileVisibilityScaled = mul(tileVisibility, VISIBILITY_VISIBLE);
     
     // Neighbor UV offsets (also used by the borders section below)
-    const neighborOffsetX = div(1.0, map_x_size);
-    const neighborOffsetY = div(1.0, map_y_size);
+    const neighborOffsetX = float(1.0).div(map_x_size);
+    const neighborOffsetY = float(1.0).div(map_y_size);
     
-    const neighborUV_E = vec2(add(tileCenterUV.x, neighborOffsetX), tileCenterUV.y);
-    const neighborUV_W = vec2(sub(tileCenterUV.x, neighborOffsetX), tileCenterUV.y);
-    const neighborUV_N = vec2(tileCenterUV.x, add(tileCenterUV.y, neighborOffsetY));
-    const neighborUV_S = vec2(tileCenterUV.x, sub(tileCenterUV.y, neighborOffsetY));
+    const neighborUV_E = vec2(tileCenterUV.x.add(neighborOffsetX), tileCenterUV.y);
+    const neighborUV_W = vec2(tileCenterUV.x.sub(neighborOffsetX), tileCenterUV.y);
+    const neighborUV_N = vec2(tileCenterUV.x, tileCenterUV.y.add(neighborOffsetY));
+    const neighborUV_S = vec2(tileCenterUV.x, tileCenterUV.y.sub(neighborOffsetY));
     
     // Reuse the neighbor terrain-type samples taken earlier (same UV positions as
     // neighborUV_E/W/N/S) to read visibility from the alpha channel.  This avoids
@@ -710,28 +605,26 @@ function createTerrainShaderSquareTSL(uniforms) {
     const visN = terrainTypeN.a;
     const visS = terrainTypeS.a;
     
-    const avgNeighborVis = mul(add(add(add(visE, visW), visN), visS), 0.25);
+    const avgNeighborVis = visE.add(visW).add(visN).add(visS).mul(0.25);
     
     // Edge proximity for soft blending (distance from center)
-    const distFromCenter = max(abs(sub(localX, 0.5)), abs(sub(localY, 0.5)));
-    const edgeProximity = clamp(mul(sub(distFromCenter, 0.3), 5.0), 0.0, 1.0);
+    const distFromCenter = localX.sub(0.5).abs().max(localY.sub(0.5).abs());
+    const edgeProximity = distFromCenter.sub(0.3).mul(5.0).clamp(0.0, 1.0);
     
-    const softVisibility = mix(tileVisibility, avgNeighborVis, mul(edgeProximity, 0.4));
-    const softVisibilityScaled = mul(softVisibility, VISIBILITY_VISIBLE);
+    const softVisibility = tileVisibility.mix(avgNeighborVis, edgeProximity.mul(0.4));
     
-    const visNormalized = clamp(div(softVisibilityScaled, VISIBILITY_VISIBLE), 0.0, 1.0);
     // Use THREE's smoothstep() for a hardware-accelerated S-curve
-    const visSmooth = smoothstep(0.0, 1.0, visNormalized);
-    const smoothVisibility = mul(visSmooth, VISIBILITY_VISIBLE);
+    const visSmooth = smoothstep(0.0, 1.0, softVisibility.mul(VISIBILITY_VISIBLE).clamp(0.0, 1.0));
+    const smoothVisibility = visSmooth.mul(VISIBILITY_VISIBLE);
     
     // Active city highlighting
     const vertexVisibility = vertColor.x;
-    let effectiveVisibility = min(smoothVisibility, vertexVisibility);
+    let effectiveVisibility = smoothVisibility.min(vertexVisibility);
     
     const isKnownTerrain = step(0.5, terrainHere);
-    effectiveVisibility = max(effectiveVisibility, mul(isKnownTerrain, VISIBILITY_FOGGED));
+    effectiveVisibility = effectiveVisibility.max(isKnownTerrain.mul(VISIBILITY_FOGGED));
     
-    finalColor = vec4(mul(finalColor.rgb, effectiveVisibility), finalColor.a);
+    finalColor = vec4(finalColor.rgb.mul(effectiveVisibility), finalColor.a);
 
     // =========================================================================
     // NATION BORDERS
@@ -751,56 +644,37 @@ function createTerrainShaderSquareTSL(uniforms) {
     
     const hasBorder = step(0.1, currentBorder.a);
     
-    // Detect border edges
-    const borderDiffE = add(add(abs(sub(currentBorder.r, borderE.r)), abs(sub(currentBorder.g, borderE.g))), abs(sub(currentBorder.b, borderE.b)));
-    const borderDiffW = add(add(abs(sub(currentBorder.r, borderW.r)), abs(sub(currentBorder.g, borderW.g))), abs(sub(currentBorder.b, borderW.b)));
-    const borderDiffN = add(add(abs(sub(currentBorder.r, borderN.r)), abs(sub(currentBorder.g, borderN.g))), abs(sub(currentBorder.b, borderN.b)));
-    const borderDiffS = add(add(abs(sub(currentBorder.r, borderS.r)), abs(sub(currentBorder.g, borderS.g))), abs(sub(currentBorder.b, borderS.b)));
+    // Detect border edges using method chaining for colour-difference sum
+    const isEdgeE = step(BORDER_COLOR_DIFF_THRESHOLD, currentBorder.r.sub(borderE.r).abs().add(currentBorder.g.sub(borderE.g).abs()).add(currentBorder.b.sub(borderE.b).abs()));
+    const isEdgeW = step(BORDER_COLOR_DIFF_THRESHOLD, currentBorder.r.sub(borderW.r).abs().add(currentBorder.g.sub(borderW.g).abs()).add(currentBorder.b.sub(borderW.b).abs()));
+    const isEdgeN = step(BORDER_COLOR_DIFF_THRESHOLD, currentBorder.r.sub(borderN.r).abs().add(currentBorder.g.sub(borderN.g).abs()).add(currentBorder.b.sub(borderN.b).abs()));
+    const isEdgeS = step(BORDER_COLOR_DIFF_THRESHOLD, currentBorder.r.sub(borderS.r).abs().add(currentBorder.g.sub(borderS.g).abs()).add(currentBorder.b.sub(borderS.b).abs()));
     
-    const isEdgeE = step(BORDER_COLOR_DIFF_THRESHOLD, borderDiffE);
-    const isEdgeW = step(BORDER_COLOR_DIFF_THRESHOLD, borderDiffW);
-    const isEdgeN = step(BORDER_COLOR_DIFF_THRESHOLD, borderDiffN);
-    const isEdgeS = step(BORDER_COLOR_DIFF_THRESHOLD, borderDiffS);
-    
-    // Edge factors
-    const eastEdgeFactor = mul(isEdgeE, clamp(mul(sub(localX, BORDER_EDGE_THRESHOLD_POS), BORDER_EDGE_SHARPNESS), 0.0, 1.0));
-    const westEdgeFactor = mul(isEdgeW, clamp(mul(sub(BORDER_EDGE_WIDTH_POS, localX), BORDER_EDGE_SHARPNESS), 0.0, 1.0));
-    const northEdgeFactor = mul(isEdgeN, clamp(mul(sub(localY, BORDER_EDGE_THRESHOLD_POS), BORDER_EDGE_SHARPNESS), 0.0, 1.0));
-    const southEdgeFactor = mul(isEdgeS, clamp(mul(sub(BORDER_EDGE_WIDTH_POS, localY), BORDER_EDGE_SHARPNESS), 0.0, 1.0));
-    
-    const totalEdgeFactor = max(max(max(eastEdgeFactor, westEdgeFactor), northEdgeFactor), southEdgeFactor);
+    // Edge factors using method chaining
+    const eastEdgeFactor  = isEdgeE.mul(localX.sub(BORDER_EDGE_THRESHOLD_POS).mul(BORDER_EDGE_SHARPNESS).clamp(0.0, 1.0));
+    const westEdgeFactor  = isEdgeW.mul(float(BORDER_EDGE_WIDTH_POS).sub(localX).mul(BORDER_EDGE_SHARPNESS).clamp(0.0, 1.0));
+    const northEdgeFactor = isEdgeN.mul(localY.sub(BORDER_EDGE_THRESHOLD_POS).mul(BORDER_EDGE_SHARPNESS).clamp(0.0, 1.0));
+    const southEdgeFactor = isEdgeS.mul(float(BORDER_EDGE_WIDTH_POS).sub(localY).mul(BORDER_EDGE_SHARPNESS).clamp(0.0, 1.0));
     
     // Dashed pattern
-    const dashPatternY = step(fract(mul(localY, DASH_FREQUENCY)), DASH_RATIO);
-    const dashPatternX = step(fract(mul(localX, DASH_FREQUENCY)), DASH_RATIO);
+    const dashPatternY = step(localY.mul(DASH_FREQUENCY).fract(), DASH_RATIO);
+    const dashPatternX = step(localX.mul(DASH_FREQUENCY).fract(), DASH_RATIO);
     
-    const dashedEastEdge = mul(eastEdgeFactor, dashPatternY);
-    const dashedWestEdge = mul(westEdgeFactor, dashPatternY);
-    const dashedNorthEdge = mul(northEdgeFactor, dashPatternX);
-    const dashedSouthEdge = mul(southEdgeFactor, dashPatternX);
-    
-    const dashedTotalEdgeFactor = max(max(max(dashedEastEdge, dashedWestEdge), dashedNorthEdge), dashedSouthEdge);
+    const dashedTotalEdgeFactor = eastEdgeFactor.mul(dashPatternY).max(westEdgeFactor.mul(dashPatternY)).max(northEdgeFactor.mul(dashPatternX)).max(southEdgeFactor.mul(dashPatternX));
     
     const borderLineIntensity = 0.45;
     
     const brightenedBorderColor = vec3(
-        min(add(currentBorder.r, 0.3), 1.0),
-        min(add(currentBorder.g, 0.3), 1.0),
-        min(add(currentBorder.b, 0.3), 1.0)
+        currentBorder.r.add(0.3).min(1.0),
+        currentBorder.g.add(0.3).min(1.0),
+        currentBorder.b.add(0.3).min(1.0)
     );
     
-    const shouldShowBorderLine = mul(borders_visible.select(1.0, 0.0), mul(hasBorder, dashedTotalEdgeFactor));
-    finalColor = vec4(
-        mix(finalColor.rgb, brightenedBorderColor, mul(shouldShowBorderLine, borderLineIntensity)),
-        finalColor.a
-    );
+    const shouldShowBorderLine = borders_visible.select(1.0, 0.0).mul(hasBorder).mul(dashedTotalEdgeFactor);
+    finalColor = vec4(finalColor.rgb.mix(brightenedBorderColor, shouldShowBorderLine.mul(borderLineIntensity)), finalColor.a);
     
-    const shouldShowBorderFill = mul(borders_visible.select(1.0, 0.0), hasBorder);
-    const borderFillFactor = mul(shouldShowBorderFill, 0.05);
-    finalColor = vec4(
-        mix(finalColor.rgb, currentBorder.rgb, borderFillFactor),
-        finalColor.a
-    );
+    const shouldShowBorderFill = borders_visible.select(1.0, 0.0).mul(hasBorder);
+    finalColor = vec4(finalColor.rgb.mix(currentBorder.rgb, shouldShowBorderFill.mul(0.05)), finalColor.a);
 
     // =========================================================================
     // SELECTED TILE HIGHLIGHTING
@@ -809,9 +683,8 @@ function createTerrainShaderSquareTSL(uniforms) {
     // A value of -1 indicates no selection, otherwise the tile at (selected_x, selected_y) is highlighted
     const hasSelection = selected_x.greaterThanEqual(0.0).and(selected_y.greaterThanEqual(0.0));
     // Use epsilon-based comparison (0.5) for float precision tolerance
-    // tileX/tileY are floored floats (e.g., 5.0), selected_x/selected_y are uniform integers (e.g., 5)
-    const xMatch = abs(sub(tileX, selected_x)).lessThan(0.5);
-    const yMatch = abs(sub(tileY, selected_y)).lessThan(0.5);
+    const xMatch = tileX.sub(selected_x).abs().lessThan(0.5);
+    const yMatch = tileY.sub(selected_y).abs().lessThan(0.5);
     const isSelectedTile = xMatch.and(yMatch);
     const shouldHighlightTile = hasSelection.and(isSelectedTile);
     
@@ -827,28 +700,17 @@ function createTerrainShaderSquareTSL(uniforms) {
     // Create square edge mask for selection highlighting (all four edges)
     // Each edge detection returns 1.0 when within SELECTION_EDGE_WIDTH of that edge
     const nearLeftEdgeSel = step(localX, SELECTION_EDGE_WIDTH);
-    const nearRightEdgeSel = step(sub(1.0, localX), SELECTION_EDGE_WIDTH);
+    const nearRightEdgeSel = step(float(1.0).sub(localX), SELECTION_EDGE_WIDTH);
     const nearBottomEdgeSel = step(localY, SELECTION_EDGE_WIDTH);
-    const nearTopEdgeSel = step(sub(1.0, localY), SELECTION_EDGE_WIDTH);
+    const nearTopEdgeSel = step(float(1.0).sub(localY), SELECTION_EDGE_WIDTH);
     // Combine all four edge masks: 1.0 if near any edge, 0.0 otherwise
-    const horizontalEdges = max(nearLeftEdgeSel, nearRightEdgeSel);
-    const verticalEdges = max(nearBottomEdgeSel, nearTopEdgeSel);
-    const squareEdgeMask = max(horizontalEdges, verticalEdges);
+    const squareEdgeMask = nearLeftEdgeSel.max(nearRightEdgeSel).max(nearBottomEdgeSel).max(nearTopEdgeSel);
     
     // Apply edge highlighting on selected tile
-    const scaledEdgeMask = mul(squareEdgeMask, SELECTION_EDGE_INTENSITY);
-    const selectionEdgeFactor = mul(selectionActive, scaledEdgeMask);
-    finalColor = vec4(
-        mix(finalColor.rgb, SELECTION_HIGHLIGHT_COLOR, selectionEdgeFactor),
-        finalColor.a
-    );
+    finalColor = vec4(finalColor.rgb.mix(SELECTION_HIGHLIGHT_COLOR, selectionActive.mul(squareEdgeMask).mul(SELECTION_EDGE_INTENSITY)), finalColor.a);
     
     // Apply subtle fill highlighting to the entire selected tile
-    const selectionFillFactor = mul(selectionActive, SELECTION_FILL_INTENSITY);
-    finalColor = vec4(
-        mix(finalColor.rgb, SELECTION_HIGHLIGHT_COLOR, selectionFillFactor),
-        finalColor.a
-    );
+    finalColor = vec4(finalColor.rgb.mix(SELECTION_HIGHLIGHT_COLOR, selectionActive.mul(SELECTION_FILL_INTENSITY)), finalColor.a);
 
     // =========================================================================
     // OUT-OF-BOUNDS CHECK
