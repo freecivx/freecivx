@@ -88,19 +88,19 @@
 	.game-cards {
 		display: grid;
 		grid-template-columns: 1fr;
-		gap: 14px;
-		margin-bottom: 24px;
+		gap: 4px;
+		margin-bottom: 4px;
 	}
 	.game-card {
 		background: #fffaf3;
 		border: 1px solid #e0c98a;
 		border-radius: 10px;
 		box-shadow: 0 2px 8px rgba(190,96,45,0.08);
-		padding: 18px 20px 14px;
+		padding: 4px 4px 4px;
 		transition: box-shadow 0.18s, transform 0.18s;
 		display: flex;
 		flex-direction: column;
-		gap: 10px;
+		gap: 4px;
 	}
 	.game-card:hover {
 		box-shadow: 0 6px 20px rgba(190,96,45,0.18);
