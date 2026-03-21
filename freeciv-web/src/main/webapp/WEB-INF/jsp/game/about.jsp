@@ -245,7 +245,7 @@
 				<div class="col-md-12">
 					<h2>About Freeciv</h2>
 					<p>
-						Freeciv is a free and open-source turn-based strategy game inspired by the classic <em>Civilization</em> series. 
+						Freeciv is a free and open-source turn-based strategy game inspired by the classic Freeciv series. 
 						Players guide a civilization from the ancient era through the space age, founding cities, researching technologies, 
 						building armies and wonders, and competing or cooperating with other civilizations to achieve victory.
 					</p>
@@ -263,7 +263,7 @@
 					<h2>History of Freeciv</h2>
 					<p>
 						Freeciv was created in 1996 by students at the 
-						University of Aarhus in Denmark. Inspired by <em>Civilization II</em>, they wanted to build a free, 
+						University of Aarhus in Denmark. They wanted to build a free, 
 						cross-platform alternative that anyone could play and improve. The project quickly grew into a global 
 						open-source effort with contributors from dozens of countries.
 					</p>
