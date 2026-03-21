@@ -164,6 +164,28 @@ public class Game {
     private int endTurn = 0;
 
     /**
+     * Number of free random technologies granted to each player at game start.
+     * Mirrors the {@code techlevel} setting ({@code game.info.tech}) in the
+     * C Freeciv server's {@code settings.c} / {@code techtools.c:give_initial_techs()}.
+     * Default 0 (no free techs).
+     */
+    private int techLevel = 0;
+
+    /** AI skill-level constant: easy. */
+    public static final int AI_SKILL_EASY   = 2;
+    /** AI skill-level constant: normal (default). */
+    public static final int AI_SKILL_NORMAL = 3;
+    /** AI skill-level constant: hard. */
+    public static final int AI_SKILL_HARD   = 4;
+
+    /**
+     * AI skill level applied to all AI players.
+     * Mirrors {@code game.info.skill_level} in the C Freeciv server.
+     * Default: {@link #AI_SKILL_NORMAL}.
+     */
+    private int aiSkillLevel = AI_SKILL_NORMAL;
+
+    /**
      * Map topology bitmask sent to clients as {@code topology_id} in PACKET_MAP_INFO.
      * Mirrors the Freeciv topology flags:
      * <ul>
@@ -368,6 +390,38 @@ public class Game {
     /** Returns the configured end-turn limit (0 = disabled). */
     public int getEndTurn() {
         return endTurn;
+    }
+
+    /**
+     * Sets the number of free random technologies granted to each player at
+     * game start.  Mirrors the {@code techlevel} setting in the C Freeciv server.
+     *
+     * @param level number of free techs (0–50)
+     */
+    public void setTechLevel(int level) {
+        this.techLevel = level;
+    }
+
+    /** Returns the configured tech level (free random techs per player at start). */
+    public int getTechLevel() {
+        return techLevel;
+    }
+
+    /**
+     * Sets the AI skill level applied to all AI players.
+     * Use {@link #AI_SKILL_EASY}, {@link #AI_SKILL_NORMAL}, or
+     * {@link #AI_SKILL_HARD}.
+     * Mirrors {@code game.info.skill_level} in the C Freeciv server.
+     *
+     * @param level one of the {@code AI_SKILL_*} constants
+     */
+    public void setAiSkillLevel(int level) {
+        this.aiSkillLevel = level;
+    }
+
+    /** Returns the current AI skill level ({@link #AI_SKILL_EASY}, {@link #AI_SKILL_NORMAL}, or {@link #AI_SKILL_HARD}). */
+    public int getAiSkillLevel() {
+        return aiSkillLevel;
     }
 
     /**
@@ -728,6 +782,25 @@ public class Game {
         players.values().forEach(p -> p.setGold(initialGold));
         players.forEach((id, iplayer) -> server.sendPlayerInfoAll(iplayer));
         players.forEach((id, iplayer) -> server.sendPlayerInfoAdditionAll(id, 0));
+
+        // Give each player 'techLevel' free random technologies at game start.
+        // Mirrors give_initial_techs(presearch, game.info.tech) in C techtools.c.
+        if (techLevel > 0 && !techs.isEmpty()) {
+            List<Long> allTechIds = new ArrayList<>(techs.keySet());
+            for (Player p : players.values()) {
+                int granted = 0;
+                // Shuffle a copy so each player gets a different random selection.
+                List<Long> shuffled = new ArrayList<>(allTechIds);
+                java.util.Collections.shuffle(shuffled, random);
+                for (Long tid : shuffled) {
+                    if (granted >= techLevel) break;
+                    if (!p.hasTech(tid)) {
+                        p.addKnownTech(tid);
+                        granted++;
+                    }
+                }
+            }
+        }
 
         // Initialize Units for all players
         for (Player player : players.values()) {
