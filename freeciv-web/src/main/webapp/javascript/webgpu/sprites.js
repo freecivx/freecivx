@@ -39,9 +39,12 @@ function create_unit_label_sprite(punit, ptile)
   } else {
     var width = 0;
     var fcanvas = document.createElement("canvas");
-    fcanvas.width = 100;
-    fcanvas.height = 32;
+    fcanvas.width = 100 * LABEL_SCALE;
+    fcanvas.height = 32 * LABEL_SCALE;
     var ctx = fcanvas.getContext("2d");
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
+    ctx.setTransform(LABEL_SCALE, 0, 0, LABEL_SCALE, 0, 0);
 
     ctx.drawImage(sprites[pflag['key']], 0, 0,
                 sprites[pflag['key']].width, sprites[pflag['key']].height,
@@ -125,9 +128,12 @@ function create_unit_label_sprite(punit, ptile)
 ****************************************************************************/
 function create_city_label_sprite(pcity, index) {
   var fcanvas = document.createElement("canvas");
-  fcanvas.width = 390;
-  fcanvas.height = 35;
+  fcanvas.width = 390 * LABEL_SCALE;
+  fcanvas.height = 35 * LABEL_SCALE;
   var ctx = fcanvas.getContext("2d");
+  ctx.imageSmoothingEnabled = true;
+  ctx.imageSmoothingQuality = 'high';
+  ctx.setTransform(LABEL_SCALE, 0, 0, LABEL_SCALE, 0, 0);
   pcity['label_canvas' + index] = fcanvas;
 
   var owner_id = pcity.owner;
@@ -244,13 +250,16 @@ function update_city_label(pcity, index)
   var canvas = pcity['label_canvas' + index];
   if (canvas == null) {
     canvas = document.createElement('canvas');
-    canvas.width = 390;
-    canvas.height = 35;
+    canvas.width = 390 * LABEL_SCALE;
+    canvas.height = 35 * LABEL_SCALE;
     pcity['label_canvas'] = canvas;
   }
 
   var ctx = canvas.getContext('2d');
   ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.imageSmoothingEnabled = true;
+  ctx.imageSmoothingQuality = 'high';
+  ctx.setTransform(LABEL_SCALE, 0, 0, LABEL_SCALE, 0, 0);
 
   var owner_id = pcity.owner;
   if (owner_id == null) return null;
@@ -357,14 +366,17 @@ function create_city_worked_sprite(food, shields, trade) {
   } else {
 
     var fcanvas = document.createElement("canvas");
-    fcanvas.width = 64;
-    fcanvas.height = 32;
+    fcanvas.width = 64 * LABEL_SCALE;
+    fcanvas.height = 32 * LABEL_SCALE;
     var ctx = fcanvas.getContext("2d");
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
+    ctx.setTransform(LABEL_SCALE, 0, 0, LABEL_SCALE, 0, 0);
 
     // Add a border around the canvas
     ctx.strokeStyle = "black";  // border color
     ctx.lineWidth = 8;  // border width
-    ctx.strokeRect(0, 0, fcanvas.width, fcanvas.height);
+    ctx.strokeRect(0, 0, 64, 32);
 
     ctx.fillStyle = "#00FF00";
     ctx.fillRect(0, 0, 20, 32);
@@ -408,9 +420,12 @@ function create_unit_explosion_sprite(frame)
     texture = texture_cache[key];
   } else {
     var fcanvas = document.createElement("canvas");
-    fcanvas.width = 32;
-    fcanvas.height = 32;
+    fcanvas.width = 32 * LABEL_SCALE;
+    fcanvas.height = 32 * LABEL_SCALE;
     var fcontext = fcanvas.getContext("2d");
+    fcontext.imageSmoothingEnabled = true;
+    fcontext.imageSmoothingQuality = 'high';
+    fcontext.setTransform(LABEL_SCALE, 0, 0, LABEL_SCALE, 0, 0);
     fcontext.drawImage(sprites[key], 0, 0,
                 sprites[key].width, sprites[key].height,
                 0,0,32,32);
@@ -441,9 +456,12 @@ function create_city_disorder_sprite()
 function create_tile_label_sprite(label_text)
 {
   var fcanvas = document.createElement("canvas");
-  fcanvas.width = 350;
-  fcanvas.height = 35;
+  fcanvas.width = 350 * LABEL_SCALE;
+  fcanvas.height = 35 * LABEL_SCALE;
   var ctx = fcanvas.getContext("2d");
+  ctx.imageSmoothingEnabled = true;
+  ctx.imageSmoothingQuality = 'high';
+  ctx.setTransform(LABEL_SCALE, 0, 0, LABEL_SCALE, 0, 0);
 
 
   // Name and size
