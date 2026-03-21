@@ -67,6 +67,16 @@ public class Terrain {
      */
     private int roadTradeBonus;
 
+    /**
+     * {@code true} when this terrain belongs to the "Oceanic" class
+     * ({@code class = "Oceanic"} in {@code terrain.ruleset}).
+     * Mirrors the {@code terrain_class} field in the C Freeciv server
+     * ({@code TC_OCEAN} in {@code common/terrain.h}).
+     * Used by the Harbour (+1 food) and Offshore Platform (+1 shield) city
+     * building effects which apply to all oceanic tiles worked by the city.
+     */
+    private boolean oceanic;
+
     // Constructor (backwards-compatible: no defence/move args defaults to 0/1)
     public Terrain(String name, String graphicsStr) {
         this(name, graphicsStr, 0, 1);
@@ -224,6 +234,19 @@ public class Terrain {
 
     public void setRoadTradeBonus(int roadTradeBonus) {
         this.roadTradeBonus = roadTradeBonus;
+    }
+
+    /**
+     * Returns {@code true} when this terrain belongs to the "Oceanic" terrain
+     * class (Lake, Ocean, Deep Ocean in the classic ruleset).  Used to apply
+     * the Harbour (+1 food) and Offshore Platform (+1 shield) building effects.
+     */
+    public boolean isOceanic() {
+        return oceanic;
+    }
+
+    public void setOceanic(boolean oceanic) {
+        this.oceanic = oceanic;
     }
 
     // Method to display terrain information

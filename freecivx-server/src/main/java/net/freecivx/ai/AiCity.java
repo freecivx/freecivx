@@ -168,6 +168,20 @@ class AiCity {
             return;
         }
 
+        // Priority 5.5: Harbour for coastal cities.
+        // Adds +1 food to every oceanic tile worked by the city (effect_harbour).
+        // Important for early food growth in coastal cities; build right after Granary.
+        // Mirrors the coastal-city food priority in daicity.c.
+        if (ai.imprHarbour >= 0 && !city.hasImprovement(ai.imprHarbour)
+                && ai.aiMilitary.isCityCoastal(city.getTile())) {
+            Improvement harbour = game.improvements.get((long) ai.imprHarbour);
+            if (harbour != null && canBuildImprovement(owner, city, harbour)) {
+                city.setProductionKind(1);
+                city.setProductionValue(ai.imprHarbour);
+                return;
+            }
+        }
+
         // Priority 6: Temple for citizen happiness.
         if (!city.hasImprovement(ai.imprTemple)) {
             Improvement temple = game.improvements.get((long) ai.imprTemple);
@@ -293,6 +307,58 @@ class AiCity {
             }
         }
 
+        // Priority 16.5: Mfg. Plant once Factory is built (+50% additional shields).
+        // Mirrors the Mfg.Plant priority after Factory in daicity.c.
+        if (city.hasImprovement(ai.imprFactory) && ai.imprMfgPlant >= 0
+                && !city.hasImprovement(ai.imprMfgPlant) && city.getSize() >= 6) {
+            Improvement mfgPlant = game.improvements.get((long) ai.imprMfgPlant);
+            if (mfgPlant != null && canBuildImprovement(owner, city, mfgPlant)) {
+                city.setProductionKind(1);
+                city.setProductionValue(ai.imprMfgPlant);
+                return;
+            }
+        }
+
+        // Priority 16.7: Energy source for cities with Factory.
+        // Build the best available power plant to boost production (+25% shields)
+        // and reduce pollution.  Priority: Solar > Nuclear > Hydro > Power Plant.
+        // Only one energy source is needed per city; skip if Hoover Dam is built.
+        if (city.hasImprovement(ai.imprFactory)
+                && !CityTurn.playerHasWonder(game, ownerId, "Hoover Dam")) {
+            // Check whether an energy source is already present.
+            boolean hasEnergy = (ai.imprSolarPlant  >= 0 && city.hasImprovement(ai.imprSolarPlant))
+                    || (ai.imprNuclearPlant >= 0 && city.hasImprovement(ai.imprNuclearPlant))
+                    || (ai.imprHydroPlant   >= 0 && city.hasImprovement(ai.imprHydroPlant))
+                    || (ai.imprPowerPlant   >= 0 && city.hasImprovement(ai.imprPowerPlant));
+            if (!hasEnergy) {
+                // Try each energy source in preference order.
+                int[] energyChoices = { ai.imprSolarPlant, ai.imprNuclearPlant,
+                        ai.imprHydroPlant, ai.imprPowerPlant };
+                for (int imprId : energyChoices) {
+                    if (imprId < 0) continue;
+                    Improvement plant = game.improvements.get((long) imprId);
+                    if (plant != null && canBuildImprovement(owner, city, plant)) {
+                        city.setProductionKind(1);
+                        city.setProductionValue(imprId);
+                        return;
+                    }
+                }
+            }
+        }
+
+        // Priority 16.9: Recycling Center to reduce city pollution once production
+        // buildings are present.  Mirrors the late-game pollution-reduction priority
+        // in daicity.c.
+        if (city.hasImprovement(ai.imprFactory) && ai.imprRecyclingCenter >= 0
+                && !city.hasImprovement(ai.imprRecyclingCenter) && city.getSize() >= 5) {
+            Improvement recycling = game.improvements.get((long) ai.imprRecyclingCenter);
+            if (recycling != null && canBuildImprovement(owner, city, recycling)) {
+                city.setProductionKind(1);
+                city.setProductionValue(ai.imprRecyclingCenter);
+                return;
+            }
+        }
+
         // Priority 17: Stock Exchange for gold and luxury bonus.
         if (!city.hasImprovement(ai.imprStockExchange) && ai.imprStockExchange >= 0 && city.getSize() >= 4) {
             Improvement stockExchange = game.improvements.get((long) ai.imprStockExchange);
@@ -309,6 +375,19 @@ class AiCity {
             if (researchLab != null && canBuildImprovement(owner, city, researchLab)) {
                 city.setProductionKind(1);
                 city.setProductionValue(ai.imprResearchLab);
+                return;
+            }
+        }
+
+        // Priority 18.5: Offshore Platform for coastal cities.
+        // Adds +1 shield to every oceanic tile (effect_offshore_platform).
+        // A mid-to-late game coastal infrastructure improvement.
+        if (ai.imprOffPlatform >= 0 && !city.hasImprovement(ai.imprOffPlatform)
+                && ai.aiMilitary.isCityCoastal(city.getTile()) && city.getSize() >= 4) {
+            Improvement offPlat = game.improvements.get((long) ai.imprOffPlatform);
+            if (offPlat != null && canBuildImprovement(owner, city, offPlat)) {
+                city.setProductionKind(1);
+                city.setProductionValue(ai.imprOffPlatform);
                 return;
             }
         }
