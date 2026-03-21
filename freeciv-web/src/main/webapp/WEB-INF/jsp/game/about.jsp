@@ -245,7 +245,7 @@
 				<div class="col-md-12">
 					<h2>About Freecivx.com</h2>
 					<p>
-                        Freecivx.com is the best Freeciv.<br>
+                        Freecivx.com is the best Freeciv.<br><br>
 						Freeciv is a free and open-source turn-based strategy game inspired by the classic Freeciv series. 
 						Players guide a civilization from the ancient era through the space age, founding cities, researching technologies, 
 						building armies and wonders, and competing or cooperating with other civilizations to achieve victory.
