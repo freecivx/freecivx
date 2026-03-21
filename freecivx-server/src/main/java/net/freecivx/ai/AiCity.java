@@ -25,6 +25,7 @@ import net.freecivx.game.Government;
 import net.freecivx.game.Improvement;
 import net.freecivx.game.Player;
 import net.freecivx.game.Tile;
+import net.freecivx.game.UnitType;
 import net.freecivx.server.CityTurn;
 
 import java.util.ArrayList;
@@ -122,12 +123,30 @@ class AiCity {
             }
         }
 
-        // Priority 2: Barracks for fast unit healing.
+        // Priority 2: Barracks (I, II, III) for fast unit healing.
+        // Always build the best available barracks tier; II/III upgrade once old
+        // barracks obsoletes (Gunpowder / Leadership).  Mirrors daicity.c.
         if (!city.hasImprovement(ai.imprBarracks)) {
             Improvement barracks = game.improvements.get((long) ai.imprBarracks);
             if (barracks != null && canBuildImprovement(owner, city, barracks)) {
                 city.setProductionKind(1);
                 city.setProductionValue(ai.imprBarracks);
+                return;
+            }
+        }
+        if (ai.imprBarracksII >= 0 && !city.hasImprovement(ai.imprBarracksII)) {
+            Improvement barracksII = game.improvements.get((long) ai.imprBarracksII);
+            if (barracksII != null && canBuildImprovement(owner, city, barracksII)) {
+                city.setProductionKind(1);
+                city.setProductionValue(ai.imprBarracksII);
+                return;
+            }
+        }
+        if (ai.imprBarracksIII >= 0 && !city.hasImprovement(ai.imprBarracksIII)) {
+            Improvement barracksIII = game.improvements.get((long) ai.imprBarracksIII);
+            if (barracksIII != null && canBuildImprovement(owner, city, barracksIII)) {
+                city.setProductionKind(1);
+                city.setProductionValue(ai.imprBarracksIII);
                 return;
             }
         }
@@ -192,12 +211,17 @@ class AiCity {
             }
         }
 
-        // Priority 7: Workers for terrain improvements.
+        // Priority 7: Workers (or Engineers if available) for terrain improvements.
+        // Engineers are strictly better than Workers (2× speed) and replace them
+        // once Explosives tech is known.  Mirrors the daisettler.c priority.
         if (myCityCount >= 2 && city.getSize() >= 3) {
-            int myWorkers = ai.aiMilitary.countUnitsOfType(ownerId, AiPlayer.UNIT_WORKERS);
+            int workerType = (ai.unitEngineers >= 0 && canBuildUnit(owner, ai.unitEngineers))
+                    ? ai.unitEngineers : AiPlayer.UNIT_WORKERS;
+            int myWorkers = ai.aiMilitary.countUnitsOfType(ownerId, AiPlayer.UNIT_WORKERS)
+                    + (ai.unitEngineers >= 0 ? ai.aiMilitary.countUnitsOfType(ownerId, ai.unitEngineers) : 0);
             if (myWorkers < myCityCount) {
                 city.setProductionKind(0);
-                city.setProductionValue(AiPlayer.UNIT_WORKERS);
+                city.setProductionValue(workerType);
                 return;
             }
         }
@@ -232,6 +256,18 @@ class AiCity {
             }
         }
 
+        // Priority 10.5: Sewer System to allow city growth beyond size 12.
+        // Mirrors the Sanitation chain in daicity.c which unlocks further growth.
+        if (ai.imprSewerSystem >= 0 && !city.hasImprovement(ai.imprSewerSystem)
+                && city.getSize() >= 10 && city.hasImprovement(ai.imprAqueduct)) {
+            Improvement sewer = game.improvements.get((long) ai.imprSewerSystem);
+            if (sewer != null && canBuildImprovement(owner, city, sewer)) {
+                city.setProductionKind(1);
+                city.setProductionValue(ai.imprSewerSystem);
+                return;
+            }
+        }
+
         // Priority 11: Colosseum for citizen happiness in larger cities.
         if (!city.hasImprovement(ai.imprColosseum) && ai.imprColosseum >= 0 && city.getSize() >= 5) {
             Improvement colosseum = game.improvements.get((long) ai.imprColosseum);
@@ -254,12 +290,36 @@ class AiCity {
             }
         }
 
+        // Priority 11.7: Police Station reduces military unhappiness in Republic/Democracy.
+        // Mirrors the Communism-gated happiness improvement in daicity.c.
+        if (ai.imprPoliceStation >= 0 && !city.hasImprovement(ai.imprPoliceStation)
+                && city.getSize() >= 4) {
+            Improvement police = game.improvements.get((long) ai.imprPoliceStation);
+            if (police != null && canBuildImprovement(owner, city, police)) {
+                city.setProductionKind(1);
+                city.setProductionValue(ai.imprPoliceStation);
+                return;
+            }
+        }
+
         // Priority 12: Marketplace for trade income.
         if (!city.hasImprovement(ai.imprMarketplace) && city.getSize() >= 3) {
             Improvement marketplace = game.improvements.get((long) ai.imprMarketplace);
             if (marketplace != null && canBuildImprovement(owner, city, marketplace)) {
                 city.setProductionKind(1);
                 city.setProductionValue(ai.imprMarketplace);
+                return;
+            }
+        }
+
+        // Priority 12.5: Supermarket for food bonus (+50% food with Granary).
+        // Very useful for growing large cities quickly.  Mirrors daicity.c.
+        if (ai.imprSupermarket >= 0 && !city.hasImprovement(ai.imprSupermarket)
+                && city.getSize() >= 4 && city.hasImprovement(ai.imprGranary)) {
+            Improvement supermarket = game.improvements.get((long) ai.imprSupermarket);
+            if (supermarket != null && canBuildImprovement(owner, city, supermarket)) {
+                city.setProductionKind(1);
+                city.setProductionValue(ai.imprSupermarket);
                 return;
             }
         }
@@ -297,12 +357,36 @@ class AiCity {
             }
         }
 
+        // Priority 15.5: Coastal Defense for coastal cities (×3 defense bonus).
+        // Mirrors the coastal-defense priority in daicity.c for sea-border cities.
+        if (ai.imprCoastalDefense >= 0 && !city.hasImprovement(ai.imprCoastalDefense)
+                && ai.aiMilitary.isCityCoastal(city.getTile())) {
+            Improvement coastal = game.improvements.get((long) ai.imprCoastalDefense);
+            if (coastal != null && canBuildImprovement(owner, city, coastal)) {
+                city.setProductionKind(1);
+                city.setProductionValue(ai.imprCoastalDefense);
+                return;
+            }
+        }
+
         // Priority 16: Factory for shield production bonus.
         if (!city.hasImprovement(ai.imprFactory) && ai.imprFactory >= 0 && city.getSize() >= 5) {
             Improvement factory = game.improvements.get((long) ai.imprFactory);
             if (factory != null && canBuildImprovement(owner, city, factory)) {
                 city.setProductionKind(1);
                 city.setProductionValue(ai.imprFactory);
+                return;
+            }
+        }
+
+        // Priority 16.3: Super Highways for trade bonus (+50% road trade).
+        // Mirrors the Super Highways priority in daicity.c for cities with good trade.
+        if (ai.imprSuperHighways >= 0 && !city.hasImprovement(ai.imprSuperHighways)
+                && city.getSize() >= 5 && city.hasImprovement(ai.imprMarketplace)) {
+            Improvement superHwy = game.improvements.get((long) ai.imprSuperHighways);
+            if (superHwy != null && canBuildImprovement(owner, city, superHwy)) {
+                city.setProductionKind(1);
+                city.setProductionValue(ai.imprSuperHighways);
                 return;
             }
         }
@@ -359,6 +443,19 @@ class AiCity {
             }
         }
 
+        // Priority 16.95: Mass Transit removes all city pollution.
+        // Higher priority than Recycling Center when Factory is present.
+        // Mirrors the pollution-control priority in daicity.c.
+        if (ai.imprMassTransit >= 0 && city.hasImprovement(ai.imprFactory)
+                && !city.hasImprovement(ai.imprMassTransit) && city.getSize() >= 6) {
+            Improvement massTransit = game.improvements.get((long) ai.imprMassTransit);
+            if (massTransit != null && canBuildImprovement(owner, city, massTransit)) {
+                city.setProductionKind(1);
+                city.setProductionValue(ai.imprMassTransit);
+                return;
+            }
+        }
+
         // Priority 17: Stock Exchange for gold and luxury bonus.
         if (!city.hasImprovement(ai.imprStockExchange) && ai.imprStockExchange >= 0 && city.getSize() >= 4) {
             Improvement stockExchange = game.improvements.get((long) ai.imprStockExchange);
@@ -379,6 +476,17 @@ class AiCity {
             }
         }
 
+        // Priority 18.3: SAM Battery for air defense.
+        // Mirrors the air-defense building priority in daicity.c.
+        if (ai.imprSAMBattery >= 0 && !city.hasImprovement(ai.imprSAMBattery)) {
+            Improvement sam = game.improvements.get((long) ai.imprSAMBattery);
+            if (sam != null && canBuildImprovement(owner, city, sam)) {
+                city.setProductionKind(1);
+                city.setProductionValue(ai.imprSAMBattery);
+                return;
+            }
+        }
+
         // Priority 18.5: Offshore Platform for coastal cities.
         // Adds +1 shield to every oceanic tile (effect_offshore_platform).
         // A mid-to-late game coastal infrastructure improvement.
@@ -388,6 +496,29 @@ class AiCity {
             if (offPlat != null && canBuildImprovement(owner, city, offPlat)) {
                 city.setProductionKind(1);
                 city.setProductionValue(ai.imprOffPlatform);
+                return;
+            }
+        }
+
+        // Priority 18.6: Port Facility for coastal trade boost.
+        // Mirrors the Port Facility priority in daicity.c for naval cities.
+        if (ai.imprPortFacility >= 0 && !city.hasImprovement(ai.imprPortFacility)
+                && ai.aiMilitary.isCityCoastal(city.getTile()) && city.getSize() >= 4) {
+            Improvement portFac = game.improvements.get((long) ai.imprPortFacility);
+            if (portFac != null && canBuildImprovement(owner, city, portFac)) {
+                city.setProductionKind(1);
+                city.setProductionValue(ai.imprPortFacility);
+                return;
+            }
+        }
+
+        // Priority 18.7: Airport for airlift capability and production bonus.
+        // Mirrors the Airport priority in daicity.c.
+        if (ai.imprAirport >= 0 && !city.hasImprovement(ai.imprAirport) && city.getSize() >= 5) {
+            Improvement airport = game.improvements.get((long) ai.imprAirport);
+            if (airport != null && canBuildImprovement(owner, city, airport)) {
+                city.setProductionKind(1);
+                city.setProductionValue(ai.imprAirport);
                 return;
             }
         }
@@ -458,13 +589,22 @@ class AiCity {
         }
 
         // Default: produce the best available offensive unit for army expansion.
-        // Limit total attackers to roughly two per city so that the production
-        // queue does not spiral into an endless army build-up.  Mirrors the
-        // military-want cap in dai_city_choose_build() in daicity.c.
+        // Mix in siege units (Catapult/Cannon/Artillery/Howitzer) at a ratio of
+        // one siege unit per two cities to give the AI city-assault capability.
+        // Mirrors the mixed-army approach in dai_city_choose_build() in daicity.c.
         int myAttackers = ai.aiMilitary.countMilitaryUnits(ownerId);
         if (myAttackers < myCityCount * 2 + 2) {
-            city.setProductionKind(0);
-            city.setProductionValue(ai.aiMilitary.bestAvailableAttacker(owner));
+            int siegeUnit = ai.aiMilitary.bestAvailableSiegeUnit(owner);
+            int siegeCount = siegeUnit >= 0 ? ai.aiMilitary.countUnitsOfType(ownerId, siegeUnit) : 0;
+            // Build one siege unit per two cities (rounded down).
+            int desiredSiege = (int) myCityCount / 2;
+            if (siegeUnit >= 0 && siegeCount < desiredSiege) {
+                city.setProductionKind(0);
+                city.setProductionValue(siegeUnit);
+            } else {
+                city.setProductionKind(0);
+                city.setProductionValue(ai.aiMilitary.bestAvailableAttacker(owner));
+            }
         } else {
             // Army cap reached: fall back to the best available defender so the city
             // is never idle wasting shields.  Mirrors the fallback-defender path in
@@ -498,6 +638,23 @@ class AiCity {
      */
     boolean canBuildImprovement(Player player, Improvement impr) {
         long techReq = impr.getTechReqId();
+        return techReq < 0 || player.hasTech(techReq);
+    }
+
+    /**
+     * Returns {@code true} if the player has the prerequisite technology to
+     * build the given unit type.  Mirrors {@code can_player_build_unit_direct()}
+     * in the C Freeciv server's {@code common/unittype.c}.
+     *
+     * @param player  the player to check
+     * @param unitTypeId the unit type ID to check
+     * @return {@code true} if the unit can be built
+     */
+    boolean canBuildUnit(Player player, int unitTypeId) {
+        if (unitTypeId < 0) return false;
+        UnitType utype = game.unitTypes.get((long) unitTypeId);
+        if (utype == null) return false;
+        long techReq = utype.getTechReqId();
         return techReq < 0 || player.hasTech(techReq);
     }
 

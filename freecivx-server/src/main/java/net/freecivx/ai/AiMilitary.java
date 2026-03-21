@@ -428,12 +428,33 @@ class AiMilitary {
     }
 
     /**
+     * Returns the best available siege unit the AI can build.
+     * Siege units (Catapult, Cannon, Artillery, Howitzer) are high-attack
+     * units for city assault.  Mirrors {@code dai_choose_attacker()} in
+     * {@code ai/default/daimilitary.c}.
+     *
+     * @param player the AI player
+     * @return the best siege unit type ID, or {@code -1} if none available
+     */
+    int bestAvailableSiegeUnit(Player player) {
+        if (ai.techRobotics     >= 0 && ai.unitHowitzer  >= 0 && player.hasTech(ai.techRobotics))     return ai.unitHowitzer;
+        if (ai.techMachineTools >= 0 && ai.unitArtillery >= 0 && player.hasTech(ai.techMachineTools))  return ai.unitArtillery;
+        if (ai.techMetallurgy   >= 0 && ai.unitCannon    >= 0 && player.hasTech(ai.techMetallurgy))    return ai.unitCannon;
+        if (ai.techMathematics  >= 0 && ai.unitCatapult  >= 0 && player.hasTech(ai.techMathematics))   return ai.unitCatapult;
+        return -1;
+    }
+
+    /**
      * Returns the best available naval unit the AI can build.
+     * Covers the full classic-ruleset naval progression.
      * Mirrors {@code dai_choose_naval()} in the C Freeciv AI.
      */
     int bestAvailableNavalUnit(Player player) {
-        if (ai.unitCaravel >= 0 && ai.techNavigation >= 0 && player.hasTech(ai.techNavigation)) return ai.unitCaravel;
-        if (ai.unitTrireme >= 0 && ai.techMapMaking >= 0 && player.hasTech(ai.techMapMaking))   return ai.unitTrireme;
+        if (ai.unitBattleship >= 0 && ai.techAutomobile >= 0 && player.hasTech(ai.techAutomobile))  return ai.unitBattleship;
+        if (ai.unitCruiser    >= 0 && ai.techSteel      >= 0 && player.hasTech(ai.techSteel))        return ai.unitCruiser;
+        if (ai.unitDestroyer  >= 0 && ai.techElectricity >= 0 && player.hasTech(ai.techElectricity)) return ai.unitDestroyer;
+        if (ai.unitCaravel    >= 0 && ai.techNavigation >= 0 && player.hasTech(ai.techNavigation))   return ai.unitCaravel;
+        if (ai.unitTrireme    >= 0 && ai.techMapMaking  >= 0 && player.hasTech(ai.techMapMaking))    return ai.unitTrireme;
         return -1;
     }
 
@@ -442,6 +463,7 @@ class AiMilitary {
      * Mirrors {@code dai_choose_air()} in the C Freeciv AI.
      */
     int bestAvailableAirUnit(Player player) {
+        if (ai.unitBomber  >= 0 && ai.techAdvancedFlight >= 0 && player.hasTech(ai.techAdvancedFlight)) return ai.unitBomber;
         if (ai.unitFighter >= 0 && ai.techFlight >= 0 && player.hasTech(ai.techFlight)) return ai.unitFighter;
         return -1;
     }
