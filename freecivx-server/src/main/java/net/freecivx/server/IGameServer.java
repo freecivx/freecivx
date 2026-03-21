@@ -158,6 +158,19 @@ public interface IGameServer {
      */
     void sendSpaceshipInfo(Player player);
 
+    /**
+     * Sends a government report page to a single client as
+     * {@code PACKET_PAGE_MSG} (110) + {@code PACKET_PAGE_MSG_PART} (250).
+     * Mirrors {@code page_conn()} in the C Freeciv server's
+     * {@code server/report.c}.
+     *
+     * @param connId   the connection to send the report to
+     * @param headline short title shown in the report header
+     * @param caption  subtitle / date line
+     * @param message  full report body text (newlines are converted to &lt;br&gt; by the client)
+     */
+    void sendPageMsg(long connId, String headline, String caption, String message);
+
     // -------------------------------------------------------------------------
     // Late-join sync
     // -------------------------------------------------------------------------

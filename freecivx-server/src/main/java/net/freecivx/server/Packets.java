@@ -108,4 +108,12 @@ public class Packets {
     /** Server → client: broadcast spaceship state for one player. */
     public static int PACKET_SPACESHIP_INFO   = 137;
 
+    // Government report packets (mirrors C server's packets.def)
+    /** Server → client: report page header (headline, caption, parts count). */
+    public static int PACKET_PAGE_MSG      = 110;
+    /** Client → server: request a government report by type. */
+    public static int PACKET_REPORT_REQ    = 111;
+    /** Server → client: one fragment of a multi-part report page. */
+    public static int PACKET_PAGE_MSG_PART = 250;
+
 }
