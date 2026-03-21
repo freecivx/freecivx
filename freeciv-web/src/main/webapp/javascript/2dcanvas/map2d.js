@@ -58,6 +58,24 @@ var map2d_goto_path  = null;  /* path object from compute_client_goto_path */
  * when it is triggered indirectly, e.g. via do_map_click → show_map_context_menu). */
 var map2d_last_event_pos = {clientX: 0, clientY: 0};
 
+/* ------------------------------------------------------------------ */
+/*  Sprite cache for composite tile layers and city labels              */
+/* ------------------------------------------------------------------ */
+
+/* Pre-rendered terrain+extras canvases keyed by content fingerprint.  */
+var map2d_tile_cache      = {};
+var map2d_tile_cache_size = 0;
+var MAP2D_TILE_CACHE_MAX  = 2048;
+
+/* Pre-rendered city label canvases keyed by content fingerprint.      */
+var map2d_label_cache      = {};
+var map2d_label_cache_size = 0;
+var MAP2D_LABEL_CACHE_MAX  = 512;
+
+/* Track last tile dimensions to detect zoom changes that require
+ * a full cache flush (all cached canvases are the wrong size).        */
+var map2d_cache_tw = 0;
+var map2d_cache_th = 0;
 
 /* ------------------------------------------------------------------ */
 /*  Terrain → sprite-tag mapping (Trident tileset naming convention)   */
@@ -220,6 +238,286 @@ function map2d_river_neighbor_flag(ptile, dir)
 }
 
 /* ------------------------------------------------------------------ */
+/*  Sprite cache helpers                                                */
+/* ------------------------------------------------------------------ */
+
+/**
+ * Clear both sprite caches (terrain+extras tiles and city labels).
+ * Must be called whenever the tile dimensions change (zoom) or when
+ * the 2D sprite sheet is (re-)loaded.
+ */
+function map2d_clear_sprite_caches()
+{
+  map2d_tile_cache       = {};
+  map2d_tile_cache_size  = 0;
+  map2d_label_cache      = {};
+  map2d_label_cache_size = 0;
+}
+
+/**
+ * Compute a content-fingerprint cache key for the terrain+extras layer
+ * of a tile at the given pixel dimensions.
+ *
+ * The key encodes every attribute that affects the rendered output so
+ * that entries are automatically bypassed (cache miss) whenever the tile
+ * changes — no explicit per-tile invalidation is required.
+ *
+ * @param {Tile}   ptile - The map tile.
+ * @param {number} tw    - Tile pixel width at the current zoom level.
+ * @param {number} th    - Tile pixel height at the current zoom level.
+ * @returns {string} Cache key.
+ */
+function map2d_tile_key(ptile, tw, th)
+{
+  var pterrain   = tile_terrain(ptile);
+  var g          = pterrain ? pterrain['graphic_str'] : '';
+  /* Include the resolved sprite tag so directional variants are tracked. */
+  var tag        = (pterrain && sprites_2d_init)
+                   ? get_2d_terrain_sprite_tag(pterrain, ptile) : g;
+  var known      = tile_get_known(ptile);
+  var extras_str = (ptile['extras'] && ptile['extras'].length > 0)
+                   ? ptile['extras'].slice().sort().join(',') : '';
+
+  /* Directional neighbor flags for extras whose rendering depends on
+   * neighboring tiles (river flow direction, road/rail connections). */
+  var river_nbr = '';
+  if (typeof EXTRA_RIVER !== 'undefined' && tile_has_extra(ptile, EXTRA_RIVER)) {
+    river_nbr = '' + map2d_river_neighbor_flag(ptile, DIR8_NORTH)
+                   + map2d_river_neighbor_flag(ptile, DIR8_EAST)
+                   + map2d_river_neighbor_flag(ptile, DIR8_SOUTH)
+                   + map2d_river_neighbor_flag(ptile, DIR8_WEST);
+  }
+  var road_nbr = '';
+  if (typeof EXTRA_ROAD !== 'undefined' && tile_has_extra(ptile, EXTRA_ROAD)) {
+    road_nbr = '' + map2d_extra_neighbor_flag(ptile, EXTRA_ROAD, DIR8_NORTH)
+                  + map2d_extra_neighbor_flag(ptile, EXTRA_ROAD, DIR8_EAST)
+                  + map2d_extra_neighbor_flag(ptile, EXTRA_ROAD, DIR8_SOUTH)
+                  + map2d_extra_neighbor_flag(ptile, EXTRA_ROAD, DIR8_WEST);
+  }
+  var rail_nbr = '';
+  if (typeof EXTRA_RAIL !== 'undefined' && tile_has_extra(ptile, EXTRA_RAIL)) {
+    rail_nbr = '' + map2d_extra_neighbor_flag(ptile, EXTRA_RAIL, DIR8_NORTH)
+                  + map2d_extra_neighbor_flag(ptile, EXTRA_RAIL, DIR8_EAST)
+                  + map2d_extra_neighbor_flag(ptile, EXTRA_RAIL, DIR8_SOUTH)
+                  + map2d_extra_neighbor_flag(ptile, EXTRA_RAIL, DIR8_WEST);
+  }
+  var res = tile_resource(ptile);
+
+  /* Append sprites_2d_init so entries made before the tileset was loaded
+   * are never served after it loads. */
+  return tag + '|' + extras_str
+       + '|' + river_nbr + '|' + road_nbr + '|' + rail_nbr
+       + '|' + (res !== null ? res : '')
+       + '|' + known
+       + '|' + (sprites_2d_init ? '1' : '0')
+       + '|' + tw + '|' + th;
+}
+
+/**
+ * Compute a content-fingerprint cache key for a city label canvas.
+ *
+ * @param {City}   pcity - The city whose label is to be drawn.
+ * @param {number} tw    - Current tile pixel width (affects centering).
+ * @param {number} th    - Current tile pixel height (determines font size).
+ * @returns {string} Cache key.
+ */
+function map2d_label_key(pcity, tw, th)
+{
+  var font_size  = Math.max(7, Math.floor(th * 0.35));
+  /* Use the same size encoding as the renderer so null and 0 are distinct. */
+  var city_size  = (typeof pcity['size'] === 'number') ? pcity['size'] : null;
+  var size_str   = (city_size !== null) ? String(city_size) : '';
+  var flag_key   = '';
+  if (sprites_2d_init && typeof get_city_flag_sprite === 'function') {
+    var fi = get_city_flag_sprite(pcity);
+    if (fi && fi['key']) flag_key = fi['key'];
+  }
+  return (pcity['name'] || '') + '|' + size_str
+       + '|' + pcity['owner'] + '|' + flag_key
+       + '|' + font_size + '|' + tw;
+}
+
+/**
+ * Draw the combined terrain + extras layer for ptile at canvas position
+ * (cx, cy), using an off-screen canvas cache to avoid redundant redraws.
+ *
+ * On a cache hit the tile is blitted with a single drawImage() call.
+ * On a cache miss the tile is rendered into an off-screen canvas (tw×th),
+ * stored in map2d_tile_cache, and then blitted.
+ *
+ * The brightness filter set on the main context is applied at blit-time,
+ * so the cached canvas is stored unfiltered.
+ *
+ * @param {CanvasRenderingContext2D} ctx  - Main canvas context (may have a filter set).
+ * @param {Tile}   ptile - The map tile to draw.
+ * @param {number} cx    - Canvas x of the tile's top-left corner.
+ * @param {number} cy    - Canvas y of the tile's top-left corner.
+ * @param {number} tw    - Tile pixel width.
+ * @param {number} th    - Tile pixel height.
+ */
+function map2d_draw_terrain_extras_cached(ctx, ptile, cx, cy, tw, th)
+{
+  var key    = map2d_tile_key(ptile, tw, th);
+  var cached = map2d_tile_cache[key];
+
+  if (!cached) {
+    /* Flush entire cache when limit is reached to avoid LRU bookkeeping overhead. */
+    if (map2d_tile_cache_size >= MAP2D_TILE_CACHE_MAX) {
+      map2d_tile_cache      = {};
+      map2d_tile_cache_size = 0;
+    }
+
+    var offCanvas    = document.createElement('canvas');
+    offCanvas.width  = tw;
+    offCanvas.height = th;
+    var offCtx = offCanvas.getContext('2d');
+
+    map2d_render_terrain(offCtx, ptile, 0, 0, tw, th);
+    if (tile_get_known(ptile) === TILE_KNOWN_SEEN) {
+      map2d_draw_tile_extras(offCtx, ptile, 0, 0, tw, th);
+    }
+
+    map2d_tile_cache[key] = offCanvas;
+    map2d_tile_cache_size++;
+    cached = offCanvas;
+  }
+
+  ctx.drawImage(cached, cx, cy);
+}
+
+/**
+ * Render a city label into an off-screen canvas and return it.
+ * The returned canvas has a `total_w` property that records the combined
+ * width of the flag + gap + text, needed to centre the label on blit.
+ *
+ * @param {City}   pcity - The city whose label is to be rendered.
+ * @param {number} tw    - Current tile pixel width.
+ * @param {number} th    - Current tile pixel height.
+ * @returns {HTMLCanvasElement|null}
+ */
+function _map2d_render_label_canvas(pcity, tw, th)
+{
+  var city_size = (typeof pcity['size'] === 'number') ? pcity['size'] : null;
+  var city_name = (pcity['name'] || '').toUpperCase();
+  var name      = city_name + (city_size !== null ? ' ' + city_size : '');
+  var font_size = Math.max(7, Math.floor(th * 0.35));
+  var pad       = 3;
+
+  /* Measure text width using a minimal temporary canvas. */
+  var tmp    = document.createElement('canvas');
+  tmp.width  = 1;
+  tmp.height = 1;
+  var tmpCtx = tmp.getContext('2d');
+  tmpCtx.font = font_size + 'px sans-serif';
+  var text_w = tmpCtx.measureText(name).width;
+
+  /* Resolve nation flag sprite. */
+  var flag_spr = null, fw = 0, fh = 0;
+  if (sprites_2d_init && typeof get_city_flag_sprite === 'function') {
+    var flag_info = get_city_flag_sprite(pcity);
+    if (flag_info && flag_info['key']) {
+      var spr = sprites_2d[flag_info['key']];
+      if (spr) {
+        fh = font_size;
+        fw = Math.round(fh * spr.width / Math.max(1, spr.height));
+        flag_spr = spr;
+      }
+    }
+  }
+
+  var gap       = flag_spr ? 2 : 0;
+  var total_w   = fw + gap + text_w;
+  var outline_w = total_w + pad * 2;
+  var bg_h      = font_size + pad * 2;
+
+  /* The offscreen canvas represents the rectangle:
+   *   (outline_x, label_y – pad) … (outline_x + outline_w, label_y – pad + bg_h)
+   * where outline_x = start_x – pad.
+   * Everything is drawn relative to (0, 0) = (outline_x, label_y – pad). */
+  var offCanvas    = document.createElement('canvas');
+  offCanvas.width  = Math.ceil(outline_w);
+  offCanvas.height = Math.ceil(bg_h);
+  var c = offCanvas.getContext('2d');
+
+  c.font         = font_size + 'px sans-serif';
+  c.textBaseline = 'top';
+
+  /* Semi-transparent black background behind the text portion only.
+   * In offscreen coords: bg starts at x = fw + gap (= bg_x – outline_x),
+   * y = 0 (= label_y – pad – (label_y – pad)). */
+  c.globalAlpha = 0.85;
+  c.fillStyle   = '#000000';
+  c.fillRect(fw + gap, 0, text_w + pad * 2, bg_h);
+  c.globalAlpha = 1.0;
+
+  /* Nation flag (in offscreen coords: x = pad, y = pad). */
+  if (flag_spr) {
+    c.drawImage(flag_spr, pad, pad, fw, fh);
+  }
+
+  /* Label text (in offscreen coords: x = pad + fw + gap, y = pad). */
+  c.textAlign   = 'left';
+  c.strokeStyle = '#000000';
+  c.lineWidth   = 3;
+  c.strokeText(name, pad + fw + gap, pad);
+  c.fillStyle = '#ffffff';
+  c.fillText(name, pad + fw + gap, pad);
+
+  /* Nation colour border outline around the entire label. */
+  var nation_color = map2d_player_color(pcity['owner'], null);
+  if (nation_color) {
+    c.lineWidth   = 1;
+    c.strokeStyle = nation_color;
+    c.strokeRect(0, 0, outline_w, bg_h);
+  }
+
+  /* Attach total_w so the caller can compute the correct blit position. */
+  offCanvas.total_w = total_w;
+  return offCanvas;
+}
+
+/**
+ * Draw a city label using the label sprite cache.
+ *
+ * On a cache hit the label canvas is blitted in a single drawImage() call.
+ * On a cache miss the label is rendered via _map2d_render_label_canvas(),
+ * stored in map2d_label_cache, and then blitted.
+ *
+ * @param {CanvasRenderingContext2D} ctx  - Main canvas context.
+ * @param {City}   pcity - The city whose label is to be drawn.
+ * @param {number} cx    - Canvas x of the city tile's top-left corner.
+ * @param {number} cy    - Canvas y of the city tile's top-left corner.
+ * @param {number} tw    - Tile pixel width.
+ * @param {number} th    - Tile pixel height.
+ */
+function map2d_draw_city_label_cached(ctx, pcity, cx, cy, tw, th)
+{
+  if (tw < 20) return;
+
+  var key    = map2d_label_key(pcity, tw, th);
+  var cached = map2d_label_cache[key];
+
+  if (!cached) {
+    if (map2d_label_cache_size >= MAP2D_LABEL_CACHE_MAX) {
+      map2d_label_cache      = {};
+      map2d_label_cache_size = 0;
+    }
+    cached = _map2d_render_label_canvas(pcity, tw, th);
+    if (!cached) return;
+    map2d_label_cache[key] = cached;
+    map2d_label_cache_size++;
+  }
+
+  /* Blit position mirrors map2d_draw_city_label():
+   *   outline_x = Math.floor(cx + tw/2 – total_w/2) – pad
+   *   blit_y    = cy + th + 1 – pad                         */
+  var pad    = 3;
+  var blit_x = Math.floor(cx + tw / 2 - cached.total_w / 2) - pad;
+  var blit_y = cy + th + 1 - pad;
+  ctx.drawImage(cached, blit_x, blit_y);
+}
+
+/* ------------------------------------------------------------------ */
 /*  Canvas initialisation                                               */
 /* ------------------------------------------------------------------ */
 
@@ -294,6 +592,14 @@ function render_2d_map()
   var tw = Math.max(1, Math.floor(map2d_tileset_config['normal_tile_width']  * map2d_zoom));
   var th = Math.max(1, Math.floor(map2d_tileset_config['normal_tile_height'] * map2d_zoom));
 
+  /* Flush the sprite caches whenever the zoom level changes so that
+   * cached canvases (which are sized for the old tw×th) are not reused. */
+  if (tw !== map2d_cache_tw || th !== map2d_cache_th) {
+    map2d_clear_sprite_caches();
+    map2d_cache_tw = tw;
+    map2d_cache_th = th;
+  }
+
   /* Clear */
   ctx.fillStyle = '#000000';
   ctx.fillRect(0, 0, cw, ch);
@@ -339,17 +645,10 @@ function render_2d_map()
 
   var i, v;
 
-  /* --- Layer 1: terrain + fog --- */
+  /* --- Layers 1+2: terrain + extras (combined, cached) --- */
   for (i = 0; i < vis.length; i++) {
     v = vis[i];
-    map2d_render_terrain(ctx, v.ptile, v.cx, v.cy, tw, th);
-  }
-
-  /* --- Layer 2: extras --- */
-  for (i = 0; i < vis.length; i++) {
-    v = vis[i];
-    if (tile_get_known(v.ptile) !== TILE_KNOWN_SEEN) continue;
-    map2d_draw_tile_extras(ctx, v.ptile, v.cx, v.cy, tw, th);
+    map2d_draw_terrain_extras_cached(ctx, v.ptile, v.cx, v.cy, tw, th);
   }
 
   /* --- Layer 3: territory borders (dashed colored lines) --- */
@@ -426,7 +725,7 @@ function render_2d_map()
   /* --- Layer 6: city labels with flags (always on top) --- */
   for (i = 0; i < city_label_queue.length; i++) {
     var q = city_label_queue[i];
-    map2d_draw_city_label(ctx, q.pcity, q.cx, q.cy, tw, th);
+    map2d_draw_city_label_cached(ctx, q.pcity, q.cx, q.cy, tw, th);
   }
 
   /* Draw grid lines (optional, subtle) */

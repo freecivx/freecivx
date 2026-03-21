@@ -227,6 +227,10 @@ function _cache_sprites_2d(img)
       sprites_2d[tile_tag.slice(prefix.length)] = newCanvas;
     }
     sprites_2d_init = true;
+    /* Invalidate tile and label caches built before sprites were available. */
+    if (typeof map2d_clear_sprite_caches === 'function') {
+      map2d_clear_sprite_caches();
+    }
     render_2d_map();
   } catch(e) {
     console.error("Error caching 2D trident sprites: " + e);
