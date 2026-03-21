@@ -48,21 +48,19 @@ function createTerrainShaderTSL(uniforms) {
     // These should be available after three-modules-webgpu.js has loaded
     const { 
         texture, uniform, positionLocal, attribute, uv, normalLocal,
-        vec2, vec3, vec4, int, float,
+        vec2, vec3, vec4, int,
         mix, step, floor, fract, mod, dot, sin, cos, normalize, max, min, pow, clamp, abs,
         mul, add, sub, div,
-        smoothstep, hash, fwidth,
-        Fn
+        smoothstep, hash, fwidth
     } = THREE;
     
     // Verify all required TSL functions and nodes are available
     const requiredTSLNames = [
         'texture', 'uniform', 'positionLocal', 'attribute', 'uv', 'normalLocal',
-        'vec2', 'vec3', 'vec4', 'int', 'float',
+        'vec2', 'vec3', 'vec4', 'int',
         'mix', 'step', 'floor', 'fract', 'mod', 'dot', 'sin', 'cos', 'normalize', 'max', 'min', 'pow', 'clamp', 'abs',
         'mul', 'add', 'sub', 'div',
-        'smoothstep', 'hash', 'fwidth',
-        'Fn'
+        'smoothstep', 'hash', 'fwidth'
     ];
     const missing = requiredTSLNames.filter(name => THREE[name] === undefined);
     if (missing.length > 0) {
@@ -216,38 +214,38 @@ function createTerrainShaderTSL(uniforms) {
     // Reference: https://www.redblobgames.com/grids/hexagons/#coordinates-offset
     
     // Calculate which tile row we're in (used for stagger offset)
-    const tileYRaw = map_y_size.mul(uvNode.y);
-    const tileY = tileYRaw.floor();
+    const tileYRaw = mul(map_y_size, uvNode.y);
+    const tileY = floor(tileYRaw);
     
     // Hex stagger: mesh geometry offsets odd rows by 0.5 tile width
     // However, UV.y is inverted (1 - meshRow/gridY), so we need to calculate
     // the original mesh row parity. The mesh row ≈ (map_y_size - 1 - tileY),
     // so isOddRow = ((map_y_size - 1) - tileY) % 2
     // This ensures row 0 is normal and row 1+ alternates correctly
-    const isOddRow = map_y_size.sub(1.0).sub(tileY).mod(2.0);
+    const isOddRow = mod(sub(sub(map_y_size, 1.0), tileY), 2.0);
     
     // Calculate hex-adjusted UV coordinates
     // Remove the stagger from UV to get the logical tile X coordinate
-    const hexOffsetX = isOddRow.mul(float(0.5).div(map_x_size));
-    const hexUvX = uvNode.x.sub(hexOffsetX);
+    const hexOffsetX = mul(isOddRow, div(0.5, map_x_size));
+    const hexUvX = sub(uvNode.x, hexOffsetX);
     const hexUV = vec2(hexUvX, uvNode.y);
     
     // Calculate the tile X coordinate
-    const tileXRaw = map_x_size.mul(hexUvX);
-    const tileX = tileXRaw.floor();
+    const tileXRaw = mul(map_x_size, hexUvX);
+    const tileX = floor(tileXRaw);
     
     // =========================================================================
     // HEXAGONAL CELL LOCAL COORDINATES
     // =========================================================================
     // Calculate position within the current hex cell (0 to 1 range)
     // This is used for hex shape masking and edge detection
-    const localX = tileXRaw.fract();
-    const localY = tileYRaw.fract();
+    const localX = fract(tileXRaw);
+    const localY = fract(tileYRaw);
     
     // Transform local coordinates to hex-centered system (-0.5 to 0.5 range)
     // Center is at (0, 0), corners at edges
-    const centeredX = localX.sub(0.5);
-    const centeredY = localY.sub(0.5);
+    const centeredX = sub(localX, 0.5);
+    const centeredY = sub(localY, 0.5);
     
     // =========================================================================
     // HEXAGONAL DISTANCE FUNCTION (Signed Distance Field)
@@ -266,21 +264,21 @@ function createTerrainShaderTSL(uniforms) {
     // after this compression (pointy-top hexes should be taller than wide),
     // we stretch the hex shape in UV space by HEX_ASPECT (the inverse factor)
     const hexX = centeredX;
-    const hexY = centeredY.mul(HEX_ASPECT);
+    const hexY = mul(centeredY, HEX_ASPECT);
     
     // Calculate distance to three pairs of hex edges using dot products with edge normals
     // Edge 1: vertical edges (normal = (1, 0)) - horizontal direction edges
-    const dist1 = hexX.abs();
+    const dist1 = abs(hexX);
     
     // Edge 2: top-right and bottom-left edges (normal = (0.5, sqrt(3)/2))
-    const dist2 = hexX.mul(0.5).add(hexY.mul(HEX_SQRT3_OVER_2)).abs();
+    const dist2 = abs(add(mul(hexX, 0.5), mul(hexY, HEX_SQRT3_OVER_2)));
     
     // Edge 3: top-left and bottom-right edges (normal = (-0.5, sqrt(3)/2))
-    const dist3 = hexX.mul(-0.5).add(hexY.mul(HEX_SQRT3_OVER_2)).abs();
+    const dist3 = abs(add(mul(hexX, -0.5), mul(hexY, HEX_SQRT3_OVER_2)));
     
     // The distance to hex edge is the maximum of these three distances
     // For a pointy-top hex with inradius 0.5, points inside have max(dist1,dist2,dist3) < 0.5
-    const hexDist = dist1.max(dist2).max(dist3);
+    const hexDist = max(max(dist1, dist2), dist3);
     
     // =========================================================================
     // HEX EDGE MASK FOR VISUAL BORDERS BETWEEN TILES
@@ -302,36 +300,35 @@ function createTerrainShaderTSL(uniforms) {
     // Determine which edge is active and blend edge widths accordingly
     // When dist1 is the dominant edge (horizontal), use wider edge
     // When dist2 or dist3 is dominant (diagonal), use narrower edge
-    const isHorizontalEdge = step(dist2.max(dist3), dist1);
-    // mix(a, b, t): method form is a.mix(b, t) — diagonal width at t=0, horizontal at t=1
-    const effectiveEdgeWidth = float(HEX_EDGE_WIDTH_DIAGONAL).mix(HEX_EDGE_WIDTH_HORIZONTAL, isHorizontalEdge);
-    const edgeStart = float(hexInradius).sub(effectiveEdgeWidth);
+    const isHorizontalEdge = step(max(dist2, dist3), dist1);
+    const effectiveEdgeWidth = mix(HEX_EDGE_WIDTH_DIAGONAL, HEX_EDGE_WIDTH_HORIZONTAL, isHorizontalEdge);
+    const edgeStart = sub(hexInradius, effectiveEdgeWidth);
     
     // Smooth step from interior to edge using THREE's smoothstep() TSL function.
     // fwidth() provides a screen-space derivative for adaptive anti-aliasing: the AA
     // band narrows automatically when zoomed in (sharper edges) and widens when zoomed
     // out (softer edges), eliminating both aliasing and over-blurring.
     const hexDistFw = fwidth(hexDist);
-    const hexEdgeMask = smoothstep(edgeStart.sub(hexDistFw), hexInradius, hexDist);
+    const hexEdgeMask = smoothstep(sub(edgeStart, hexDistFw), hexInradius, hexDist);
     
     // =========================================================================
     // TERRAIN SAMPLING AT HEX TILE CENTER
     // =========================================================================
     // Sample terrain type from the center of the current hex tile
     // This ensures consistent terrain per hex, not per pixel
-    const tileCenterU = tileX.add(0.5).div(map_x_size);
-    const tileCenterV = tileY.add(0.5).div(map_y_size);
+    const tileCenterU = div(add(tileX, 0.5), map_x_size);
+    const tileCenterV = div(add(tileY, 0.5), map_y_size);
     
     // Add back the hex stagger offset for odd rows when sampling
-    const tileCenterUStaggered = tileCenterU.add(hexOffsetX);
+    const tileCenterUStaggered = add(tileCenterU, hexOffsetX);
     const tileCenterUV = vec2(tileCenterUStaggered, tileCenterV);
     
     // Add pseudo-random texture offset for visual variety within tiles
     // Uses THREE's hash() TSL function for a more robust pseudo-random value than sin-based hashing
     // TEXTURE_RANDOM_SCALE controls amplitude: larger value = smaller random offset
     const rnd = hash(tileCenterUV);
-    const rndOffset = rnd.sub(0.5).mul(float(1.0).div(vec2(map_x_size, map_y_size).mul(TEXTURE_RANDOM_SCALE)));
-    const sampledUV = tileCenterUV.add(rndOffset);
+    const rndOffset = mul(sub(rnd, 0.5), div(1.0, mul(TEXTURE_RANDOM_SCALE, vec2(map_x_size, map_y_size))));
+    const sampledUV = add(tileCenterUV, rndOffset);
 
     // Sample terrain type using hex tile center
     const terrainType = texture(maptilesTex, sampledUV);
@@ -343,7 +340,7 @@ function createTerrainShaderTSL(uniforms) {
     const dy = localY;
 
     // Extract terrain type value from texture (stored in red channel as 0-255 value)
-    const terrainHere = terrainType.r.mul(256.0).floor();
+    const terrainHere = floor(mul(terrainType.r, 256.0));
     const posY = posNode.y;
 
     // Texture coordinate node for hexagonal tiles
@@ -453,17 +450,23 @@ function createTerrainShaderTSL(uniforms) {
     // - 1 = irrigation
     // - 2 = farmland
     // We render textures from terrain_layers DataArrayTexture overlaid on the terrain
-    const irrigationFlag = terrainType.b.mul(256.0).floor();
+    const irrigationFlag = floor(mul(terrainType.b, 256.0));
     
     // Irrigation: sample irrigation texture from terrain_layers and blend over terrain
-    const hasIrrigation = step(0.5, irrigationFlag).mul(step(irrigationFlag, 1.5));
+    const hasIrrigation = mul(step(0.5, irrigationFlag), step(irrigationFlag, 1.5));
     const irrigationTexColor = texture(terrainLayersTex, texCoord).depth(int(TERRAIN_LAYER_IRRIGATION));
-    finalColor = vec4(finalColor.rgb.mix(irrigationTexColor.rgb, hasIrrigation.mul(irrigationTexColor.a)), finalColor.a);
+    finalColor = vec4(
+        mix(finalColor.rgb, irrigationTexColor.rgb, mul(hasIrrigation, irrigationTexColor.a)),
+        finalColor.a
+    );
     
     // Farmland: sample farmland texture from terrain_layers and blend over terrain
     const hasFarmland = step(1.5, irrigationFlag);
     const farmlandTexColor = texture(terrainLayersTex, texCoord).depth(int(TERRAIN_LAYER_FARMLAND));
-    finalColor = vec4(finalColor.rgb.mix(farmlandTexColor.rgb, hasFarmland.mul(farmlandTexColor.a)), finalColor.a);
+    finalColor = vec4(
+        mix(finalColor.rgb, farmlandTexColor.rgb, mul(hasFarmland, farmlandTexColor.a)),
+        finalColor.a
+    );
 
     // =========================================================================
     // ROADS AND RAILROADS RENDERING (using texture_2d_array)
@@ -474,33 +477,33 @@ function createTerrainShaderTSL(uniforms) {
     // - G channel: secondary connection sprite index
     // - B channel: tertiary connection sprite index
     const roadData = texture(roadsmapTex, tileCenterUV);
-    const roadIndex = roadData.r.mul(256.0).floor();
-    const roadIndex2 = roadData.g.mul(256.0).floor();
-    const roadIndex3 = roadData.b.mul(256.0).floor();
+    const roadIndex = floor(mul(roadData.r, 256.0));
+    const roadIndex2 = floor(mul(roadData.g, 256.0));
+    const roadIndex3 = floor(mul(roadData.b, 256.0));
     
     // Determine if this tile has rivers (indices 20-29, 53), roads (indices 1-9, 42) or railroads (indices 10-19, 43)
-    const hasRiver = step(19.5, roadIndex).mul(step(roadIndex, 29.5));
-    const hasRiverJunction = step(52.5, roadIndex).mul(step(roadIndex, 53.5));
-    const hasRoad = step(0.5, roadIndex).mul(step(roadIndex, 9.5));
-    const hasRoadJunction = step(41.5, roadIndex).mul(step(roadIndex, 42.5));
-    const hasRailroad = step(9.5, roadIndex).mul(step(roadIndex, 19.5));
-    const hasRailJunction = step(42.5, roadIndex).mul(step(roadIndex, 43.5));
+    const hasRiver = mul(step(19.5, roadIndex), step(roadIndex, 29.5));
+    const hasRiverJunction = mul(step(52.5, roadIndex), step(roadIndex, 53.5));
+    const hasRoad = mul(step(0.5, roadIndex), step(roadIndex, 9.5));
+    const hasRoadJunction = mul(step(41.5, roadIndex), step(roadIndex, 42.5));
+    const hasRailroad = mul(step(9.5, roadIndex), step(roadIndex, 19.5));
+    const hasRailJunction = mul(step(42.5, roadIndex), step(roadIndex, 43.5));
     
     // Second texture from G channel
-    const hasRiver2 = step(19.5, roadIndex2).mul(step(roadIndex2, 29.5));
-    const hasRiverJunction2 = step(52.5, roadIndex2).mul(step(roadIndex2, 53.5));
-    const hasRoad2 = step(0.5, roadIndex2).mul(step(roadIndex2, 9.5));
-    const hasRoadJunction2 = step(41.5, roadIndex2).mul(step(roadIndex2, 42.5));
-    const hasRailroad2 = step(9.5, roadIndex2).mul(step(roadIndex2, 19.5));
-    const hasRailJunction2 = step(42.5, roadIndex2).mul(step(roadIndex2, 43.5));
+    const hasRiver2 = mul(step(19.5, roadIndex2), step(roadIndex2, 29.5));
+    const hasRiverJunction2 = mul(step(52.5, roadIndex2), step(roadIndex2, 53.5));
+    const hasRoad2 = mul(step(0.5, roadIndex2), step(roadIndex2, 9.5));
+    const hasRoadJunction2 = mul(step(41.5, roadIndex2), step(roadIndex2, 42.5));
+    const hasRailroad2 = mul(step(9.5, roadIndex2), step(roadIndex2, 19.5));
+    const hasRailJunction2 = mul(step(42.5, roadIndex2), step(roadIndex2, 43.5));
     
     // Third texture from B channel
-    const hasRiver3 = step(19.5, roadIndex3).mul(step(roadIndex3, 29.5));
-    const hasRiverJunction3 = step(52.5, roadIndex3).mul(step(roadIndex3, 53.5));
-    const hasRoad3 = step(0.5, roadIndex3).mul(step(roadIndex3, 9.5));
-    const hasRoadJunction3 = step(41.5, roadIndex3).mul(step(roadIndex3, 42.5));
-    const hasRailroad3 = step(9.5, roadIndex3).mul(step(roadIndex3, 19.5));
-    const hasRailJunction3 = step(42.5, roadIndex3).mul(step(roadIndex3, 43.5));
+    const hasRiver3 = mul(step(19.5, roadIndex3), step(roadIndex3, 29.5));
+    const hasRiverJunction3 = mul(step(52.5, roadIndex3), step(roadIndex3, 53.5));
+    const hasRoad3 = mul(step(0.5, roadIndex3), step(roadIndex3, 9.5));
+    const hasRoadJunction3 = mul(step(41.5, roadIndex3), step(roadIndex3, 42.5));
+    const hasRailroad3 = mul(step(9.5, roadIndex3), step(roadIndex3, 19.5));
+    const hasRailJunction3 = mul(step(42.5, roadIndex3), step(roadIndex3, 43.5));
     
     // Calculate layer indices for texture array sampling
     // Roads, railroads and rivers are now stored in DataArrayTexture with 16 layers (4x4 grid)
@@ -513,19 +516,19 @@ function createTerrainShaderTSL(uniforms) {
     // implementations have undefined behaviour on out-of-bounds array access.
     
     // River sprite layer selection (indices 20-29 for regular rivers)
-    const riverLayerIndex = int(roadIndex.sub(20.0).clamp(0.0, 9.0));
-    const riverLayerIndex2 = int(roadIndex2.sub(20.0).clamp(0.0, 9.0));
-    const riverLayerIndex3 = int(roadIndex3.sub(20.0).clamp(0.0, 9.0));
+    const riverLayerIndex = int(clamp(sub(roadIndex, 20.0), 0.0, 9.0));
+    const riverLayerIndex2 = int(clamp(sub(roadIndex2, 20.0), 0.0, 9.0));
+    const riverLayerIndex3 = int(clamp(sub(roadIndex3, 20.0), 0.0, 9.0));
     
     // Road sprite layer selection (indices 1-9 for regular roads)
-    const roadLayerIndex = int(roadIndex.sub(1.0).clamp(0.0, 8.0));
-    const roadLayerIndex2 = int(roadIndex2.sub(1.0).clamp(0.0, 8.0));
-    const roadLayerIndex3 = int(roadIndex3.sub(1.0).clamp(0.0, 8.0));
+    const roadLayerIndex = int(clamp(sub(roadIndex, 1.0), 0.0, 8.0));
+    const roadLayerIndex2 = int(clamp(sub(roadIndex2, 1.0), 0.0, 8.0));
+    const roadLayerIndex3 = int(clamp(sub(roadIndex3, 1.0), 0.0, 8.0));
     
     // Railroad sprite layer selection (indices 10-19 for regular railroads)
-    const railLayerIndex = int(roadIndex.sub(10.0).clamp(0.0, 9.0));
-    const railLayerIndex2 = int(roadIndex2.sub(10.0).clamp(0.0, 9.0));
-    const railLayerIndex3 = int(roadIndex3.sub(10.0).clamp(0.0, 9.0));
+    const railLayerIndex = int(clamp(sub(roadIndex, 10.0), 0.0, 9.0));
+    const railLayerIndex2 = int(clamp(sub(roadIndex2, 10.0), 0.0, 9.0));
+    const railLayerIndex3 = int(clamp(sub(roadIndex3, 10.0), 0.0, 9.0));
     
     // Sample river sprite using texture array with vec2 UV and integer layer index
     // For texture_2d_array (DataArrayTexture), pass layer index as third parameter
@@ -554,46 +557,128 @@ function createTerrainShaderTSL(uniforms) {
     const riverJunctionSprite = texture(riverspritesTex, junctionUV).depth(int(0));
     const roadJunctionSprite = texture(roadspritesTex, junctionUV).depth(int(0));
     const railJunctionSprite = texture(railroadspritesTex, junctionUV).depth(int(0));
-
-    // =========================================================================
-    // SPRITE BLENDING HELPER (modern Fn() pattern)
-    // =========================================================================
-    // Fn() compiles this into a named GPU function rather than inlining the same
-    // three-operation expression 18 times. The compiled WGSL/GLSL shader is
-    // smaller, and the function is reused across all road/river/railroad layers.
-    //   base    – current vec4 terrain colour
-    //   sprite  – sampled sprite vec4 (rgb + alpha)
-    //   hasMask – 1.0 when this sprite type is active, 0.0 otherwise
-    const blendSpriteOnTerrain = Fn(([base, sprite, hasMask]) => {
-        const alpha = hasMask.mul(sprite.a).mul(0.9);
-        return vec4(base.rgb.mix(sprite.rgb, alpha), base.a);
-    });
-
+    
     // Blend rivers onto terrain first (lowest layer, rendered before roads)
-    finalColor = blendSpriteOnTerrain(finalColor, riverSprite, hasRiver);
-    finalColor = blendSpriteOnTerrain(finalColor, riverSprite2, hasRiver2);
-    finalColor = blendSpriteOnTerrain(finalColor, riverSprite3, hasRiver3);
-
-    // Blend river junctions (index 53)
-    finalColor = blendSpriteOnTerrain(finalColor, riverJunctionSprite, hasRiverJunction);
-    finalColor = blendSpriteOnTerrain(finalColor, riverJunctionSprite, hasRiverJunction2);
-    finalColor = blendSpriteOnTerrain(finalColor, riverJunctionSprite, hasRiverJunction3);
-
-    // Blend regular roads (indices 1-9) and road junctions (index 42)
-    finalColor = blendSpriteOnTerrain(finalColor, roadSprite, hasRoad);
-    finalColor = blendSpriteOnTerrain(finalColor, roadSprite2, hasRoad2);
-    finalColor = blendSpriteOnTerrain(finalColor, roadSprite3, hasRoad3);
-    finalColor = blendSpriteOnTerrain(finalColor, roadJunctionSprite, hasRoadJunction);
-    finalColor = blendSpriteOnTerrain(finalColor, roadJunctionSprite, hasRoadJunction2);
-    finalColor = blendSpriteOnTerrain(finalColor, roadJunctionSprite, hasRoadJunction3);
-
-    // Blend railroads (indices 10-19) and railroad junctions (index 43)
-    finalColor = blendSpriteOnTerrain(finalColor, railSprite, hasRailroad);
-    finalColor = blendSpriteOnTerrain(finalColor, railSprite2, hasRailroad2);
-    finalColor = blendSpriteOnTerrain(finalColor, railSprite3, hasRailroad3);
-    finalColor = blendSpriteOnTerrain(finalColor, railJunctionSprite, hasRailJunction);
-    finalColor = blendSpriteOnTerrain(finalColor, railJunctionSprite, hasRailJunction2);
-    finalColor = blendSpriteOnTerrain(finalColor, railJunctionSprite, hasRailJunction3);
+    // hasRiver is 1 for indices 20-29, hasRiverJunction is separate
+    const riverAlpha = mul(hasRiver, riverSprite.a);
+    finalColor = vec4(
+        mix(finalColor.rgb, riverSprite.rgb, mul(riverAlpha, 0.9)),
+        finalColor.a
+    );
+    
+    // Blend second river texture (from G channel)
+    const riverAlpha2 = mul(hasRiver2, riverSprite2.a);
+    finalColor = vec4(
+        mix(finalColor.rgb, riverSprite2.rgb, mul(riverAlpha2, 0.9)),
+        finalColor.a
+    );
+    
+    // Blend third river texture (from B channel)
+    const riverAlpha3 = mul(hasRiver3, riverSprite3.a);
+    finalColor = vec4(
+        mix(finalColor.rgb, riverSprite3.rgb, mul(riverAlpha3, 0.9)),
+        finalColor.a
+    );
+    
+    // Blend river junctions separately (index 53 only)
+    const riverJunctionAlpha = mul(hasRiverJunction, riverJunctionSprite.a);
+    finalColor = vec4(
+        mix(finalColor.rgb, riverJunctionSprite.rgb, mul(riverJunctionAlpha, 0.9)),
+        finalColor.a
+    );
+    
+    const riverJunctionAlpha2 = mul(hasRiverJunction2, riverJunctionSprite.a);
+    finalColor = vec4(
+        mix(finalColor.rgb, riverJunctionSprite.rgb, mul(riverJunctionAlpha2, 0.9)),
+        finalColor.a
+    );
+    
+    const riverJunctionAlpha3 = mul(hasRiverJunction3, riverJunctionSprite.a);
+    finalColor = vec4(
+        mix(finalColor.rgb, riverJunctionSprite.rgb, mul(riverJunctionAlpha3, 0.9)),
+        finalColor.a
+    );
+    
+    // Blend regular roads onto terrain (only where sprite alpha > 0)
+    // hasRoad is 1 for indices 1-9, hasRoadJunction is separate
+    const roadAlpha = mul(hasRoad, roadSprite.a);
+    finalColor = vec4(
+        mix(finalColor.rgb, roadSprite.rgb, mul(roadAlpha, 0.9)),
+        finalColor.a
+    );
+    
+    // Blend second road texture (from G channel)
+    const roadAlpha2 = mul(hasRoad2, roadSprite2.a);
+    finalColor = vec4(
+        mix(finalColor.rgb, roadSprite2.rgb, mul(roadAlpha2, 0.9)),
+        finalColor.a
+    );
+    
+    // Blend third road texture (from B channel)
+    const roadAlpha3 = mul(hasRoad3, roadSprite3.a);
+    finalColor = vec4(
+        mix(finalColor.rgb, roadSprite3.rgb, mul(roadAlpha3, 0.9)),
+        finalColor.a
+    );
+    
+    // Blend road junctions separately (index 42 only)
+    const roadJunctionAlpha = mul(hasRoadJunction, roadJunctionSprite.a);
+    finalColor = vec4(
+        mix(finalColor.rgb, roadJunctionSprite.rgb, mul(roadJunctionAlpha, 0.9)),
+        finalColor.a
+    );
+    
+    const roadJunctionAlpha2 = mul(hasRoadJunction2, roadJunctionSprite.a);
+    finalColor = vec4(
+        mix(finalColor.rgb, roadJunctionSprite.rgb, mul(roadJunctionAlpha2, 0.9)),
+        finalColor.a
+    );
+    
+    const roadJunctionAlpha3 = mul(hasRoadJunction3, roadJunctionSprite.a);
+    finalColor = vec4(
+        mix(finalColor.rgb, roadJunctionSprite.rgb, mul(roadJunctionAlpha3, 0.9)),
+        finalColor.a
+    );
+    
+    // Blend regular railroads onto terrain (indices 10-19)
+    const railAlpha = mul(hasRailroad, railSprite.a);
+    finalColor = vec4(
+        mix(finalColor.rgb, railSprite.rgb, mul(railAlpha, 0.9)),
+        finalColor.a
+    );
+    
+    // Blend second railroad texture (from G channel)
+    const railAlpha2 = mul(hasRailroad2, railSprite2.a);
+    finalColor = vec4(
+        mix(finalColor.rgb, railSprite2.rgb, mul(railAlpha2, 0.9)),
+        finalColor.a
+    );
+    
+    // Blend third railroad texture (from B channel)
+    const railAlpha3 = mul(hasRailroad3, railSprite3.a);
+    finalColor = vec4(
+        mix(finalColor.rgb, railSprite3.rgb, mul(railAlpha3, 0.9)),
+        finalColor.a
+    );
+    
+    // Blend railroad junctions separately (index 43 only)
+    const railJunctionAlpha = mul(hasRailJunction, railJunctionSprite.a);
+    finalColor = vec4(
+        mix(finalColor.rgb, railJunctionSprite.rgb, mul(railJunctionAlpha, 0.9)),
+        finalColor.a
+    );
+    
+    const railJunctionAlpha2 = mul(hasRailJunction2, railJunctionSprite.a);
+    finalColor = vec4(
+        mix(finalColor.rgb, railJunctionSprite.rgb, mul(railJunctionAlpha2, 0.9)),
+        finalColor.a
+    );
+    
+    const railJunctionAlpha3 = mul(hasRailJunction3, railJunctionSprite.a);
+    finalColor = vec4(
+        mix(finalColor.rgb, railJunctionSprite.rgb, mul(railJunctionAlpha3, 0.9)),
+        finalColor.a
+    );
 
 
     // =========================================================================
@@ -610,7 +695,7 @@ function createTerrainShaderTSL(uniforms) {
     
     // Calculate diffuse lighting using Lambert's law: max(0, N·L)
     // This gives brighter surfaces facing the sun and darker surfaces facing away
-    const NdotL = normal.dot(sunDir).max(0.0);
+    const NdotL = max(dot(normal, sunDir), 0.0);
     
     // Apply ambient + diffuse lighting model for natural terrain appearance
     // ambient: base brightness for surfaces not directly facing sun
@@ -618,24 +703,24 @@ function createTerrainShaderTSL(uniforms) {
     // Total range: 0.30 (in shadow) to 0.92 (fully lit)
     const ambientLight = 0.30;
     const diffuseStrength = 0.62;
-    const lightingFactor = NdotL.mul(diffuseStrength).add(ambientLight);
+    const lightingFactor = add(ambientLight, mul(NdotL, diffuseStrength));
     
     // Apply lighting to terrain color for natural appearance
     // Brightness boost: slightly above 1.0 to increase overall terrain brightness
     const brightnessBoost = 1.15;
-    finalColor = vec4(finalColor.rgb.mul(lightingFactor).mul(brightnessBoost), finalColor.a);
+    finalColor = vec4(mul(mul(finalColor.rgb, lightingFactor), brightnessBoost), finalColor.a);
 
     // Apply contrast enhancement for more vivid, natural terrain appearance
     // Formula: (color - 0.5) * contrast + 0.5, clamped to [0,1]
     const TERRAIN_CONTRAST = 1.08;
-    const contrastedColor = finalColor.rgb.sub(0.5).mul(TERRAIN_CONTRAST).add(0.5).clamp(0.0, 1.0);
+    const contrastedColor = clamp(add(mul(sub(finalColor.rgb, 0.5), TERRAIN_CONTRAST), 0.5), 0.0, 1.0);
     finalColor = vec4(contrastedColor, finalColor.a);
 
     // Apply saturation boost for more vivid, natural terrain colours
     const TERRAIN_SATURATION = 1.08;
     const lumWeights = vec3(0.2126, 0.7152, 0.0722);
-    const lumValue = finalColor.rgb.dot(lumWeights);
-    const saturatedColor = vec3(lumValue).mix(finalColor.rgb, TERRAIN_SATURATION).clamp(0.0, 1.0);
+    const lumValue = dot(finalColor.rgb, lumWeights);
+    const saturatedColor = clamp(mix(vec3(lumValue), finalColor.rgb, TERRAIN_SATURATION), 0.0, 1.0);
     finalColor = vec4(saturatedColor, finalColor.a);
 
     // =========================================================================
@@ -647,8 +732,11 @@ function createTerrainShaderTSL(uniforms) {
     
     // Blend hex edge color with terrain based on edge mask
     // The edge mask is strongest at hex boundaries and fades toward center
-    const hexEdgeBlend = hexEdgeMask.mul(HEX_EDGE_BLEND_STRENGTH);
-    finalColor = vec4(finalColor.rgb.mix(hexEdgeColor, hexEdgeBlend), finalColor.a);
+    const hexEdgeBlend = mul(hexEdgeMask, HEX_EDGE_BLEND_STRENGTH);
+    finalColor = vec4(
+        mix(finalColor.rgb, hexEdgeColor, hexEdgeBlend),
+        finalColor.a
+    );
 
     // =========================================================================
     // HEXAGONAL VISIBILITY BLENDING (Hex-Aligned Unknown Tile Edges)
@@ -670,6 +758,11 @@ function createTerrainShaderTSL(uniforms) {
     const tileVisibilityTex = texture(maptilesTex, tileCenterUV);
     const hexVisibility = tileVisibilityTex.a;  // Alpha channel contains visibility
     
+    // Convert texture value (0-1) to visibility scale
+    // Texture stores: 0=unknown, ~0.541=fogged, 1.0=visible
+    // After scaling by VISIBILITY_VISIBLE (1.0): 0, ~0.54, 1.0
+    const hexVisibilityScaled = mul(hexVisibility, VISIBILITY_VISIBLE);
+    
     // =========================================================================
     // SOFT EDGES BETWEEN UNKNOWN AND KNOWN TILES
     // =========================================================================
@@ -678,17 +771,17 @@ function createTerrainShaderTSL(uniforms) {
     // This creates a gradual fade rather than a hard edge.
     
     // Calculate neighbor sampling offsets (in UV space)
-    const neighborOffsetX = float(1.0).div(map_x_size);
-    const neighborOffsetY = float(1.0).div(map_y_size);
+    const neighborOffsetX = div(1.0, map_x_size);
+    const neighborOffsetY = div(1.0, map_y_size);
     
     // Sample 6 hex neighbors' visibility for edge softening
     // We sample at offsets corresponding to hex neighbor directions
-    const neighborUV_E = vec2(tileCenterUV.x.add(neighborOffsetX), tileCenterUV.y);
-    const neighborUV_W = vec2(tileCenterUV.x.sub(neighborOffsetX), tileCenterUV.y);
-    const neighborUV_NE = vec2(tileCenterUV.x.add(neighborOffsetX.mul(0.5)), tileCenterUV.y.add(neighborOffsetY));
-    const neighborUV_NW = vec2(tileCenterUV.x.sub(neighborOffsetX.mul(0.5)), tileCenterUV.y.add(neighborOffsetY));
-    const neighborUV_SE = vec2(tileCenterUV.x.add(neighborOffsetX.mul(0.5)), tileCenterUV.y.sub(neighborOffsetY));
-    const neighborUV_SW = vec2(tileCenterUV.x.sub(neighborOffsetX.mul(0.5)), tileCenterUV.y.sub(neighborOffsetY));
+    const neighborUV_E = vec2(add(tileCenterUV.x, neighborOffsetX), tileCenterUV.y);
+    const neighborUV_W = vec2(sub(tileCenterUV.x, neighborOffsetX), tileCenterUV.y);
+    const neighborUV_NE = vec2(add(tileCenterUV.x, mul(neighborOffsetX, 0.5)), add(tileCenterUV.y, neighborOffsetY));
+    const neighborUV_NW = vec2(sub(tileCenterUV.x, mul(neighborOffsetX, 0.5)), add(tileCenterUV.y, neighborOffsetY));
+    const neighborUV_SE = vec2(add(tileCenterUV.x, mul(neighborOffsetX, 0.5)), sub(tileCenterUV.y, neighborOffsetY));
+    const neighborUV_SW = vec2(sub(tileCenterUV.x, mul(neighborOffsetX, 0.5)), sub(tileCenterUV.y, neighborOffsetY));
     
     // Sample neighbor visibilities
     const visE = texture(maptilesTex, neighborUV_E).a;
@@ -699,23 +792,25 @@ function createTerrainShaderTSL(uniforms) {
     const visSW = texture(maptilesTex, neighborUV_SW).a;
     
     // Calculate average neighbor visibility
-    const avgNeighborVis = visE.add(visW).add(visNE).add(visNW).add(visSE).add(visSW).mul(1.0 / 6.0);
+    const avgNeighborVis = mul(add(add(add(add(add(visE, visW), visNE), visNW), visSE), visSW), div(1.0, 6.0));
     
     // Create soft edge factor based on distance from hex center
     // At hex edges, blend with neighbor visibility for softer transitions
     // hexDist is the distance to hex edge (0 at center, 0.5 at edge)
-    const edgeProximity = hexDist.sub(0.3).mul(5.0).clamp(0.0, 1.0);  // 0 at center, 1 near edge
+    const edgeProximity = clamp(mul(sub(hexDist, 0.3), 5.0), 0.0, 1.0);  // 0 at center, 1 near edge
     
     // Blend current tile visibility with neighbor average at edges
     // This creates soft transitions at boundaries between unknown and known tiles
-    const softVisibility = hexVisibility.mix(avgNeighborVis, edgeProximity.mul(0.4));
+    const softVisibility = mix(hexVisibility, avgNeighborVis, mul(edgeProximity, 0.4));
+    const softVisibilityScaled = mul(softVisibility, VISIBILITY_VISIBLE);
     
     // Apply smoothstep curve for softer edges within the visible/fogged regions using THREE's smoothstep().
     // smoothstep(0, 1, t) = t² × (3 - 2t) — an S-curve that eases in and out.
-    const visSmooth = smoothstep(0.0, 1.0, softVisibility.mul(VISIBILITY_VISIBLE).clamp(0.0, 1.0));
+    const visNormalized = clamp(div(softVisibilityScaled, VISIBILITY_VISIBLE), 0.0, 1.0);
+    const visSmooth = smoothstep(0.0, 1.0, visNormalized);
     
     // Scale back to original range to maintain brightness levels
-    const smoothVisibility = visSmooth.mul(VISIBILITY_VISIBLE);
+    const smoothVisibility = mul(visSmooth, VISIBILITY_VISIBLE);
     
     // =========================================================================
     // ACTIVE CITY HIGHLIGHTING (Vertex Color Based)
@@ -732,15 +827,15 @@ function createTerrainShaderTSL(uniforms) {
     
     // Use the minimum of hex visibility and vertex visibility
     // This allows active city highlighting to dim tiles that would otherwise be visible
-    let effectiveVisibility = smoothVisibility.min(vertexVisibility);
+    let effectiveVisibility = min(smoothVisibility, vertexVisibility);
     
     // If terrain type is known (terrainHere > 0), the tile is at least known (not unknown).
     // Ensure minimum visibility of VISIBILITY_FOGGED for known terrain.
     const isKnownTerrain = step(0.5, terrainHere);
-    effectiveVisibility = effectiveVisibility.max(isKnownTerrain.mul(VISIBILITY_FOGGED));
+    effectiveVisibility = max(effectiveVisibility, mul(isKnownTerrain, VISIBILITY_FOGGED));
     
     // Apply the visibility to the terrain color
-    finalColor = vec4(finalColor.rgb.mul(effectiveVisibility), finalColor.a);
+    finalColor = vec4(mul(finalColor.rgb, effectiveVisibility), finalColor.a);
 
     // =========================================================================
     // NATION BORDERS WITH HEX-EDGE-ALIGNED DASHED BORDER LINES
@@ -768,13 +863,12 @@ function createTerrainShaderTSL(uniforms) {
     const hasBorder = step(0.1, currentBorder.a);
 
     // Detect nation boundaries: 1.0 when neighbour belongs to a different nation
-    // Use method chaining for the colour-difference sum; free step() for clear edge/x ordering
-    const isEdgeE  = step(BORDER_COLOR_DIFF_THRESHOLD, currentBorder.r.sub(borderE.r).abs().add(currentBorder.g.sub(borderE.g).abs()).add(currentBorder.b.sub(borderE.b).abs()));
-    const isEdgeW  = step(BORDER_COLOR_DIFF_THRESHOLD, currentBorder.r.sub(borderW.r).abs().add(currentBorder.g.sub(borderW.g).abs()).add(currentBorder.b.sub(borderW.b).abs()));
-    const isEdgeNE = step(BORDER_COLOR_DIFF_THRESHOLD, currentBorder.r.sub(borderNE.r).abs().add(currentBorder.g.sub(borderNE.g).abs()).add(currentBorder.b.sub(borderNE.b).abs()));
-    const isEdgeNW = step(BORDER_COLOR_DIFF_THRESHOLD, currentBorder.r.sub(borderNW.r).abs().add(currentBorder.g.sub(borderNW.g).abs()).add(currentBorder.b.sub(borderNW.b).abs()));
-    const isEdgeSE = step(BORDER_COLOR_DIFF_THRESHOLD, currentBorder.r.sub(borderSE.r).abs().add(currentBorder.g.sub(borderSE.g).abs()).add(currentBorder.b.sub(borderSE.b).abs()));
-    const isEdgeSW = step(BORDER_COLOR_DIFF_THRESHOLD, currentBorder.r.sub(borderSW.r).abs().add(currentBorder.g.sub(borderSW.g).abs()).add(currentBorder.b.sub(borderSW.b).abs()));
+    const isEdgeE  = step(BORDER_COLOR_DIFF_THRESHOLD, add(add(abs(sub(currentBorder.r, borderE.r)),  abs(sub(currentBorder.g, borderE.g))),  abs(sub(currentBorder.b, borderE.b))));
+    const isEdgeW  = step(BORDER_COLOR_DIFF_THRESHOLD, add(add(abs(sub(currentBorder.r, borderW.r)),  abs(sub(currentBorder.g, borderW.g))),  abs(sub(currentBorder.b, borderW.b))));
+    const isEdgeNE = step(BORDER_COLOR_DIFF_THRESHOLD, add(add(abs(sub(currentBorder.r, borderNE.r)), abs(sub(currentBorder.g, borderNE.g))), abs(sub(currentBorder.b, borderNE.b))));
+    const isEdgeNW = step(BORDER_COLOR_DIFF_THRESHOLD, add(add(abs(sub(currentBorder.r, borderNW.r)), abs(sub(currentBorder.g, borderNW.g))), abs(sub(currentBorder.b, borderNW.b))));
+    const isEdgeSE = step(BORDER_COLOR_DIFF_THRESHOLD, add(add(abs(sub(currentBorder.r, borderSE.r)), abs(sub(currentBorder.g, borderSE.g))), abs(sub(currentBorder.b, borderSE.b))));
+    const isEdgeSW = step(BORDER_COLOR_DIFF_THRESHOLD, add(add(abs(sub(currentBorder.r, borderSW.r)), abs(sub(currentBorder.g, borderSW.g))), abs(sub(currentBorder.b, borderSW.b))));
 
     // -----------------------------------------------------------------------
     // HEX FACE CLASSIFICATION via signed SDF distances
@@ -784,27 +878,27 @@ function createTerrainShaderTSL(uniforms) {
     // The dominant distance determines which hex face the pixel lies on.
     // -----------------------------------------------------------------------
     // Signed (pre-abs) distances – used to distinguish the two faces in each pair
-    const d2Signed = hexX.mul(0.5).add(hexY.mul(HEX_SQRT3_OVER_2));   // >0 = NE, <0 = SW
-    const d3Signed = hexX.mul(-0.5).add(hexY.mul(HEX_SQRT3_OVER_2));  // >0 = NW, <0 = SE
+    const d2Signed = add(mul(hexX, 0.5), mul(hexY, HEX_SQRT3_OVER_2));   // >0 = NE, <0 = SW
+    const d3Signed = add(mul(hexX, -0.5), mul(hexY, HEX_SQRT3_OVER_2));  // >0 = NW, <0 = SE
 
     // Classify which of the three distance pairs is dominant (max)
-    const dist1Dom = step(dist2, dist1).mul(step(dist3, dist1));  // dist1 >= dist2 AND dist1 >= dist3
-    const dist2Dom = step(dist1, dist2).mul(step(dist3, dist2));  // dist2 >= dist1 AND dist2 >= dist3
-    const dist3Dom = step(dist1, dist3).mul(step(dist2, dist3));  // dist3 >= dist1 AND dist3 >= dist2
+    const dist1Dom = mul(step(dist2, dist1), step(dist3, dist1));  // dist1 >= dist2 AND dist1 >= dist3
+    const dist2Dom = mul(step(dist1, dist2), step(dist3, dist2));  // dist2 >= dist1 AND dist2 >= dist3
+    const dist3Dom = mul(step(dist1, dist3), step(dist2, dist3));  // dist3 >= dist1 AND dist3 >= dist2
 
     // Map to one of the 6 hex faces using dominant distance + sign
-    const onEFace  = dist1Dom.mul(step(0.0, hexX));                               // right vertical edge
-    const onWFace  = dist1Dom.mul(float(1.0).sub(step(0.0, hexX)));               // left vertical edge
-    const onNEFace = dist2Dom.mul(step(0.0, d2Signed));                           // upper-right diagonal
-    const onSWFace = dist2Dom.mul(float(1.0).sub(step(0.0, d2Signed)));           // lower-left diagonal
-    const onNWFace = dist3Dom.mul(step(0.0, d3Signed));                           // upper-left diagonal
-    const onSEFace = dist3Dom.mul(float(1.0).sub(step(0.0, d3Signed)));           // lower-right diagonal
+    const onEFace  = mul(dist1Dom, step(0.0, hexX));                    // right vertical edge
+    const onWFace  = mul(dist1Dom, sub(1.0, step(0.0, hexX)));          // left vertical edge
+    const onNEFace = mul(dist2Dom, step(0.0, d2Signed));                // upper-right diagonal
+    const onSWFace = mul(dist2Dom, sub(1.0, step(0.0, d2Signed)));      // lower-left diagonal
+    const onNWFace = mul(dist3Dom, step(0.0, d3Signed));                // upper-left diagonal
+    const onSEFace = mul(dist3Dom, sub(1.0, step(0.0, d3Signed)));      // lower-right diagonal
 
     // -----------------------------------------------------------------------
     // NARROW BORDER LINE MASK at the hex edge (tighter than hexEdgeMask)
     // -----------------------------------------------------------------------
     const BORDER_LINE_WIDTH = 0.04;  // Border line width as fraction of hex inradius
-    const borderEdgeStart = float(hexInradius).sub(BORDER_LINE_WIDTH);
+    const borderEdgeStart = sub(hexInradius, BORDER_LINE_WIDTH);
     // Use THREE's smoothstep() for cleaner, hardware-accelerated S-curve computation
     const hexBorderMask = smoothstep(borderEdgeStart, hexInradius, hexDist);
 
@@ -814,39 +908,46 @@ function createTerrainShaderTSL(uniforms) {
     // NE/SW diagonal edges → dashes vary along the NE-SW tangent direction
     // NW/SE diagonal edges → dashes vary along the NW-SE tangent direction
     // -----------------------------------------------------------------------
-    const dashVertical = step(localY.mul(DASH_FREQUENCY).fract(), DASH_RATIO);
-    const dashNESW = step(localX.mul(-HEX_SQRT3_OVER_2).add(localY.mul(0.5)).mul(DASH_FREQUENCY).fract(), DASH_RATIO);
-    const dashNWSE = step(localX.mul(HEX_SQRT3_OVER_2).add(localY.mul(0.5)).mul(DASH_FREQUENCY).fract(), DASH_RATIO);
+    const dashVertical = step(fract(mul(localY, DASH_FREQUENCY)), DASH_RATIO);
+    const dashNESW = step(fract(mul(add(mul(localX, -HEX_SQRT3_OVER_2), mul(localY, 0.5)), DASH_FREQUENCY)), DASH_RATIO);
+    const dashNWSE = step(fract(mul(add(mul(localX,  HEX_SQRT3_OVER_2), mul(localY, 0.5)), DASH_FREQUENCY)), DASH_RATIO);
 
     // -----------------------------------------------------------------------
     // COMBINE – border line appears where: correct face + border line mask + nation boundary + dash
     // -----------------------------------------------------------------------
-    const borderFactorE  = isEdgeE.mul(onEFace).mul(hexBorderMask.mul(dashVertical));
-    const borderFactorW  = isEdgeW.mul(onWFace).mul(hexBorderMask.mul(dashVertical));
-    const borderFactorNE = isEdgeNE.mul(onNEFace).mul(hexBorderMask.mul(dashNESW));
-    const borderFactorSW = isEdgeSW.mul(onSWFace).mul(hexBorderMask.mul(dashNESW));
-    const borderFactorNW = isEdgeNW.mul(onNWFace).mul(hexBorderMask.mul(dashNWSE));
-    const borderFactorSE = isEdgeSE.mul(onSEFace).mul(hexBorderMask.mul(dashNWSE));
+    const borderFactorE  = mul(mul(isEdgeE,  onEFace),  mul(hexBorderMask, dashVertical));
+    const borderFactorW  = mul(mul(isEdgeW,  onWFace),  mul(hexBorderMask, dashVertical));
+    const borderFactorNE = mul(mul(isEdgeNE, onNEFace), mul(hexBorderMask, dashNESW));
+    const borderFactorSW = mul(mul(isEdgeSW, onSWFace), mul(hexBorderMask, dashNESW));
+    const borderFactorNW = mul(mul(isEdgeNW, onNWFace), mul(hexBorderMask, dashNWSE));
+    const borderFactorSE = mul(mul(isEdgeSE, onSEFace), mul(hexBorderMask, dashNWSE));
 
-    const hexBorderLineFactor = borderFactorE.max(borderFactorW).max(borderFactorNE).max(borderFactorSW).max(borderFactorNW).max(borderFactorSE);
+    const hexBorderLineFactor = max(max(max(max(max(borderFactorE, borderFactorW), borderFactorNE), borderFactorSW), borderFactorNW), borderFactorSE);
 
     // Border line intensity – brighter and more opaque for clear visibility
     const borderLineIntensity = 0.65;
 
-    // Brighten nation colour for the border line using method chaining
+    // Brighten nation colour for the border line
     const brightenedBorderColor = vec3(
-        currentBorder.r.add(0.3).min(1.0),
-        currentBorder.g.add(0.3).min(1.0),
-        currentBorder.b.add(0.3).min(1.0)
+        min(add(currentBorder.r, 0.3), 1.0),
+        min(add(currentBorder.g, 0.3), 1.0),
+        min(add(currentBorder.b, 0.3), 1.0)
     );
 
     // Apply border line where borders are visible and at nation edges
-    const shouldShowBorderLine = borders_visible.select(1.0, 0.0).mul(hasBorder).mul(hexBorderLineFactor);
-    finalColor = vec4(finalColor.rgb.mix(brightenedBorderColor, shouldShowBorderLine.mul(borderLineIntensity)), finalColor.a);
+    const shouldShowBorderLine = mul(borders_visible.select(1.0, 0.0), mul(hasBorder, hexBorderLineFactor));
+    finalColor = vec4(
+        mix(finalColor.rgb, brightenedBorderColor, mul(shouldShowBorderLine, borderLineIntensity)),
+        finalColor.a
+    );
 
     // Subtle territory fill tint
-    const shouldShowBorderFill = borders_visible.select(1.0, 0.0).mul(hasBorder);
-    finalColor = vec4(finalColor.rgb.mix(currentBorder.rgb, shouldShowBorderFill.mul(0.05)), finalColor.a);
+    const shouldShowBorderFill = mul(borders_visible.select(1.0, 0.0), hasBorder);
+    const borderFillFactor = mul(shouldShowBorderFill, 0.05);
+    finalColor = vec4(
+        mix(finalColor.rgb, currentBorder.rgb, borderFillFactor),
+        finalColor.a
+    );
 
     // =========================================================================
     // SELECTED TILE HIGHLIGHTING
@@ -856,8 +957,8 @@ function createTerrainShaderTSL(uniforms) {
     const hasSelection = selected_x.greaterThanEqual(0.0).and(selected_y.greaterThanEqual(0.0));
     // Use epsilon-based comparison (0.5) for float precision tolerance
     // tileX/tileY are floored floats (e.g., 5.0), selected_x/selected_y are uniform integers (e.g., 5)
-    const xMatch = tileX.sub(selected_x).abs().lessThan(0.5);
-    const yMatch = tileY.sub(selected_y).abs().lessThan(0.5);
+    const xMatch = abs(sub(tileX, selected_x)).lessThan(0.5);
+    const yMatch = abs(sub(tileY, selected_y)).lessThan(0.5);
     const isSelectedTile = xMatch.and(yMatch);
     const shouldHighlightTile = hasSelection.and(isSelectedTile);
     
@@ -870,10 +971,19 @@ function createTerrainShaderTSL(uniforms) {
     const selectionActive = shouldHighlightTile.select(1.0, 0.0);
     
     // Apply edge highlighting on selected tile (using hexEdgeMask for edge detection)
-    finalColor = vec4(finalColor.rgb.mix(SELECTION_HIGHLIGHT_COLOR, selectionActive.mul(hexEdgeMask).mul(SELECTION_EDGE_INTENSITY)), finalColor.a);
+    const scaledEdgeMask = mul(hexEdgeMask, SELECTION_EDGE_INTENSITY);
+    const selectionEdgeFactor = mul(selectionActive, scaledEdgeMask);
+    finalColor = vec4(
+        mix(finalColor.rgb, SELECTION_HIGHLIGHT_COLOR, selectionEdgeFactor),
+        finalColor.a
+    );
     
     // Apply subtle fill highlighting to the entire selected tile
-    finalColor = vec4(finalColor.rgb.mix(SELECTION_HIGHLIGHT_COLOR, selectionActive.mul(SELECTION_FILL_INTENSITY)), finalColor.a);
+    const selectionFillFactor = mul(selectionActive, SELECTION_FILL_INTENSITY);
+    finalColor = vec4(
+        mix(finalColor.rgb, SELECTION_HIGHLIGHT_COLOR, selectionFillFactor),
+        finalColor.a
+    );
 
     // =========================================================================
     // OUT-OF-BOUNDS CHECK - Render black where no tiles exist
