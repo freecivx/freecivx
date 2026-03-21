@@ -651,20 +651,17 @@ function render_2d_map()
     map2d_draw_terrain_extras_cached(ctx, v.ptile, v.cx, v.cy, tw, th);
   }
 
-  /* --- Layer 3: territory borders (dashed colored lines) --- */
-  if (draw_borders) {
-    for (i = 0; i < vis.length; i++) {
-      v = vis[i];
-      if (tile_get_known(v.ptile) !== TILE_KNOWN_SEEN) continue;
-      map2d_draw_border(ctx, v.ptile, v.cx, v.cy, tw, th);
-    }
-  }
-
-  /* --- Layer 4: city sprites --- */
+  /* --- Layers 3+4: territory borders + city sprites (combined pass) ---
+   * Merging these two layers into one loop avoids a second full iteration
+   * over the visible-tile list.  Borders are drawn at tile edges before the
+   * city sprite so cities always appear on top. */
   var city_label_queue = [];
   for (i = 0; i < vis.length; i++) {
     v = vis[i];
     if (tile_get_known(v.ptile) !== TILE_KNOWN_SEEN) continue;
+    if (draw_borders) {
+      map2d_draw_border(ctx, v.ptile, v.cx, v.cy, tw, th);
+    }
     var pcity = tile_city(v.ptile);
     if (pcity) {
       map2d_draw_city(ctx, pcity, v.cx, v.cy, tw, th);
