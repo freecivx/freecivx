@@ -268,6 +268,15 @@ function update_map_known_tiles()
 function animate_webgl() {
   if (scene == null) return;
 
+  // Skip 3D rendering when the 2D map tab is active.
+  // Still tick the timer so deltaTime doesn't spike on switch-back.
+  try {
+    if ($('#tabs').tabs('option', 'active') !== 0) {
+      if (timer) timer.update();
+      return;
+    }
+  } catch (e) {}
+
   if (stats != null) stats.begin();
   if (mapview_slide['active']) update_map_slide_3d();
 
