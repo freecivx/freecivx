@@ -43,7 +43,8 @@ function createTerrainShaderSquareTSL(uniforms) {
         texture, uniform, positionLocal, attribute, uv, normalLocal,
         vec2, vec3, vec4, int,
         mix, step, floor, fract, mod, dot, sin, cos, normalize, max, min, pow, clamp, abs,
-        mul, add, sub, div
+        mul, add, sub, div,
+        smoothstep, hash, fwidth
     } = THREE;
     
     // Verify all required TSL functions and nodes are available
@@ -51,7 +52,8 @@ function createTerrainShaderSquareTSL(uniforms) {
         'texture', 'uniform', 'positionLocal', 'attribute', 'uv', 'normalLocal',
         'vec2', 'vec3', 'vec4', 'int',
         'mix', 'step', 'floor', 'fract', 'mod', 'dot', 'sin', 'cos', 'normalize', 'max', 'min', 'pow', 'clamp', 'abs',
-        'mul', 'add', 'sub', 'div'
+        'mul', 'add', 'sub', 'div',
+        'smoothstep', 'hash', 'fwidth'
     ];
     const missing = requiredTSLNames.filter(name => THREE[name] === undefined);
     if (missing.length > 0) {
@@ -186,10 +188,13 @@ function createTerrainShaderSquareTSL(uniforms) {
     // =========================================================================
     // SQUARE TILE EDGE GRID LINES
     // =========================================================================
-    // Create grid lines at tile edges for visual clarity
-    // Check if we're near the edge of the tile
-    const nearLeftEdge = step(localX, TILE_EDGE_WIDTH);
-    const nearBottomEdge = step(localY, TILE_EDGE_WIDTH);
+    // Create grid lines at tile edges using fwidth() for adaptive anti-aliasing.
+    // fwidth() returns the rate of change per screen pixel, so the AA band is
+    // exactly one pixel wide at any zoom level — crisp when zoomed in, soft when zoomed out.
+    const localXFw = fwidth(localX);
+    const localYFw = fwidth(localY);
+    const nearLeftEdge = sub(1.0, smoothstep(sub(TILE_EDGE_WIDTH, localXFw), add(TILE_EDGE_WIDTH, localXFw), localX));
+    const nearBottomEdge = sub(1.0, smoothstep(sub(TILE_EDGE_WIDTH, localYFw), add(TILE_EDGE_WIDTH, localYFw), localY));
     
     // Combine to create grid line mask (1 at edges, 0 elsewhere)
     const gridLineMask = max(nearLeftEdge, nearBottomEdge);
@@ -201,9 +206,9 @@ function createTerrainShaderSquareTSL(uniforms) {
     const tileCenterV = div(add(tileY, 0.5), map_y_size);
     const tileCenterUV = vec2(tileCenterU, tileCenterV);
     
-    // Add pseudo-random texture offset for visual variety
-    const rndSeed = dot(tileCenterUV, vec2(12.98, 78.233));
-    const rnd = fract(mul(sin(rndSeed), 43758.5453));
+    // Add pseudo-random texture offset for visual variety.
+    // Uses THREE's hash() TSL function for a more robust pseudo-random value than sin-based hashing.
+    const rnd = hash(tileCenterUV);
     const rndOffset = mul(sub(rnd, 0.5), div(1.0, mul(TEXTURE_RANDOM_SCALE, vec2(map_x_size, map_y_size))));
     const sampledUV = add(tileCenterUV, rndOffset);
 
@@ -254,14 +259,6 @@ function createTerrainShaderSquareTSL(uniforms) {
     // Blend strength: how much to blend neighbor terrain (0-1)
     const TERRAIN_BLEND_STRENGTH = 0.5;
 
-    /**
-     * Helper function to apply smooth step interpolation: t * t * (3 - 2*t)
-     * This creates a smoother transition than linear interpolation
-     */
-    function smoothStep(t) {
-        return mul(mul(t, t), sub(3.0, mul(2.0, t)));
-    }
-    
     /**
      * Helper function to compute terrain color with optional beach blending
      * Used by both createTerrainLayer and getTerrainColorForType to share logic
@@ -405,11 +402,11 @@ function createTerrainShaderSquareTSL(uniforms) {
     // South edge: localY close to 0.0
     const southEdgeProximity = clamp(div(sub(TERRAIN_BLEND_WIDTH, localY), TERRAIN_BLEND_WIDTH), 0.0, 1.0);
     
-    // Apply smooth step for more natural blending transition
-    const eastBlend = smoothStep(eastEdgeProximity);
-    const westBlend = smoothStep(westEdgeProximity);
-    const northBlend = smoothStep(northEdgeProximity);
-    const southBlend = smoothStep(southEdgeProximity);
+    // Apply smooth step for more natural blending transition using THREE's smoothstep()
+    const eastBlend = smoothstep(0.0, 1.0, eastEdgeProximity);
+    const westBlend = smoothstep(0.0, 1.0, westEdgeProximity);
+    const northBlend = smoothstep(0.0, 1.0, northEdgeProximity);
+    const southBlend = smoothstep(0.0, 1.0, southEdgeProximity);
     
     // Scale by blend strength
     const eastFactor = mul(eastBlend, TERRAIN_BLEND_STRENGTH);
@@ -723,7 +720,8 @@ function createTerrainShaderSquareTSL(uniforms) {
     const softVisibilityScaled = mul(softVisibility, VISIBILITY_VISIBLE);
     
     const visNormalized = clamp(div(softVisibilityScaled, VISIBILITY_VISIBLE), 0.0, 1.0);
-    const visSmooth = smoothStep(visNormalized);
+    // Use THREE's smoothstep() for a hardware-accelerated S-curve
+    const visSmooth = smoothstep(0.0, 1.0, visNormalized);
     const smoothVisibility = mul(visSmooth, VISIBILITY_VISIBLE);
     
     // Active city highlighting
