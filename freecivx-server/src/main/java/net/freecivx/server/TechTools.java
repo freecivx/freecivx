@@ -73,6 +73,12 @@ public class TechTools {
         // Notify the player in-game that a new technology has been discovered.
         Notify.notifyPlayer(game, game.getServer(), playerId,
                 "You have discovered " + tech.getName() + "!");
+        // In multiplayer, broadcast notable technology discoveries to all players
+        // so everyone can track the technology race.
+        if (game.isMultiplayer() && !player.isAi()) {
+            Notify.notifyAllPlayers(game, game.getServer(),
+                    player.getUsername() + " has discovered " + tech.getName() + "!");
+        }
         // Auto-upgrade units that are made obsolete by the newly acquired technology.
         // Mirrors do_upgrade_effects() in the C Freeciv server's server/unittools.c.
         doUpgradeEffects(game, playerId);
