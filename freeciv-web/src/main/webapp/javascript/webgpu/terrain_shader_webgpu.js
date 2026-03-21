@@ -372,37 +372,22 @@ function createTerrainShaderTSL(uniforms) {
         if (blendWithBeach) {
             // Get base terrain texture from atlas
             const baseTerrainColor = texture(terrainAtlasTex, coord).depth(int(layerIndex));
-            
-            // Calculate beach blend factor based on elevation
-            // Creates a smooth gradient: coast -> beach sand -> land texture
-            // Below WATER_LEVEL: underwater terrain - use coast/water texture, no beach
-            // WATER_LEVEL to BEACH_MID: blend coast to sand (only above water)
-            // BEACH_MID to BEACH_HIGH: blend sand to terrain
-            // Above BEACH_HIGH: full terrain texture
-            
-            // Check if terrain is underwater (below water level)
-            // Returns 1.0 when above water, 0.0 when underwater
-            const aboveWater = step(WATER_LEVEL, posY);
-            
-            // Lower beach zone (coast to sand) - smooth transition
-            // Uses precomputed BEACH_LOWER_RANGE for efficiency
-            // Only apply beach blending when above water
-            const lowerBeachT = mul(
-                clamp(div(sub(posY, BEACH_BLEND_HIGH), BEACH_LOWER_RANGE), 0.0, 1.0),
-                aboveWater  // Zero out beach blending when underwater
-            );
-            // Upper beach zone (sand to terrain) - smooth transition
-            // Uses precomputed BEACH_UPPER_RANGE for efficiency
-            const upperBeachT = clamp(
-                div(sub(posY, BEACH_MID), BEACH_UPPER_RANGE),
-                0.0, 1.0
-            );
-            
-            // Blend: coast texture -> sand -> terrain texture
-            // When underwater (aboveWater=0), lowerBeachT=0 so result is pure coast texture
             const coastTex = texture(terrainAtlasTex, coord).depth(int(TERRAIN_ATLAS_COAST));
-            const lowerBlend = mix(coastTex, vec4(beachSandColor, 1.0), lowerBeachT);
-            terrainColor = mix(lowerBlend, baseTerrainColor, upperBeachT);
+
+            // 1.0 when above water level, 0.0 when underwater
+            const aboveWater = step(WATER_LEVEL, posY);
+
+            // Shoreline gradient: 0.0 at water level (beach sand), 1.0 at BEACH_HIGH (full terrain)
+            // Guarantees land tiles above water always show terrain, never coast/water texture.
+            // Range: BEACH_HIGH - WATER_LEVEL = 52.5 - 50.0 = 2.5
+            const SHORELINE_RANGE = BEACH_HIGH - WATER_LEVEL;
+            const shorelineT = clamp(div(sub(posY, WATER_LEVEL), SHORELINE_RANGE), 0.0, 1.0);
+
+            // Above water: blend from beach sand (shoreline) to full terrain texture
+            const aboveWaterColor = mix(vec4(beachSandColor, 1.0), baseTerrainColor, shorelineT);
+
+            // Below water: show coast texture; above water: shoreline sand→terrain gradient
+            terrainColor = mix(coastTex, aboveWaterColor, aboveWater);
         } else {
             terrainColor = texture(terrainAtlasTex, coord).depth(int(layerIndex));
         }
@@ -852,135 +837,112 @@ function createTerrainShaderTSL(uniforms) {
     finalColor = vec4(mul(finalColor.rgb, effectiveVisibility), finalColor.a);
 
     // =========================================================================
-    // NATION BORDERS WITH DISTINCT BORDER LINES
+    // NATION BORDERS WITH HEX-EDGE-ALIGNED DASHED BORDER LINES
     // =========================================================================
-    // Render map borders for each nation color with a distinct border line
-    // at the edge of the player's nation map tiles.
-    //
-    // We detect border edges by comparing the current tile's owner with neighbors.
-    // Where ownership changes, we draw a colored border line.
-    
-    // Border edge detection constants - narrower lines for less intrusive borders
-    const BORDER_EDGE_THRESHOLD_POS = 0.88;    // Position threshold for E/W edge detection (0.88 = last 12% of tile, narrower)
-    const BORDER_EDGE_WIDTH_POS = 0.12;        // Position for W edge (first 12% of tile, narrower)
-    const BORDER_EDGE_SHARPNESS = 12.0;        // Sharpness factor for edge falloff (sharper for narrower lines)
-    const BORDER_DIAGONAL_SHARPNESS = 6.0;     // Sharpness factor for diagonal edges
-    const BORDER_CORNER_THRESHOLD = 0.6;       // Center threshold for corner detection (narrower corners)
+    // Border lines follow the actual hexagonal edges using the hex SDF face
+    // classification computed above (dist1, dist2, dist3 and their signs).
+    // Each of the 6 hex faces is mapped to the corresponding hex neighbor direction.
+
     const BORDER_COLOR_DIFF_THRESHOLD = 0.05;  // Minimum RGB difference to detect nation boundary
-    
-    // Dashed line pattern constants
-    const DASH_FREQUENCY = 8.0;                // Number of dashes per tile edge
-    const DASH_RATIO = 0.6;                    // Ratio of dash to gap (0.6 = 60% dash, 40% gap)
-    
-    // Sample border color (nation color) for current tile and neighbors
+
+    // Dashed line constants - fewer, clearer dashes along each hex edge
+    const DASH_FREQUENCY = 6.0;   // Dashes per hex edge
+    const DASH_RATIO = 0.55;      // 55 % dash, 45 % gap for visible contrast
+
+    // Sample border color for current tile and all 6 hex neighbours
     const currentBorder = texture(bordersTex, tileCenterUV);
-    const borderE = texture(bordersTex, neighborUV_E);
-    const borderW = texture(bordersTex, neighborUV_W);
+    const borderE  = texture(bordersTex, neighborUV_E);
+    const borderW  = texture(bordersTex, neighborUV_W);
     const borderNE = texture(bordersTex, neighborUV_NE);
     const borderNW = texture(bordersTex, neighborUV_NW);
     const borderSE = texture(bordersTex, neighborUV_SE);
     const borderSW = texture(bordersTex, neighborUV_SW);
-    
-    // Check if this tile has a border (non-default alpha)
+
+    // Check if this tile has a border (non-zero alpha)
     const hasBorder = step(0.1, currentBorder.a);
-    
-    // Detect border edges by comparing RGB values with neighbors
-    // Compare all three color channels for accurate nation detection
-    // Red channel differences
-    const borderDiffRE = abs(sub(currentBorder.r, borderE.r));
-    const borderDiffRW = abs(sub(currentBorder.r, borderW.r));
-    const borderDiffRNE = abs(sub(currentBorder.r, borderNE.r));
-    const borderDiffRNW = abs(sub(currentBorder.r, borderNW.r));
-    const borderDiffRSE = abs(sub(currentBorder.r, borderSE.r));
-    const borderDiffRSW = abs(sub(currentBorder.r, borderSW.r));
-    
-    // Green channel differences
-    const borderDiffGE = abs(sub(currentBorder.g, borderE.g));
-    const borderDiffGW = abs(sub(currentBorder.g, borderW.g));
-    const borderDiffGNE = abs(sub(currentBorder.g, borderNE.g));
-    const borderDiffGNW = abs(sub(currentBorder.g, borderNW.g));
-    const borderDiffGSE = abs(sub(currentBorder.g, borderSE.g));
-    const borderDiffGSW = abs(sub(currentBorder.g, borderSW.g));
-    
-    // Blue channel differences
-    const borderDiffBE = abs(sub(currentBorder.b, borderE.b));
-    const borderDiffBW = abs(sub(currentBorder.b, borderW.b));
-    const borderDiffBNE = abs(sub(currentBorder.b, borderNE.b));
-    const borderDiffBNW = abs(sub(currentBorder.b, borderNW.b));
-    const borderDiffBSE = abs(sub(currentBorder.b, borderSE.b));
-    const borderDiffBSW = abs(sub(currentBorder.b, borderSW.b));
-    
-    // Combine all color channel differences (RGB sum) for threshold comparison
-    const isEdgeE = step(BORDER_COLOR_DIFF_THRESHOLD, add(add(borderDiffRE, borderDiffGE), borderDiffBE));
-    const isEdgeW = step(BORDER_COLOR_DIFF_THRESHOLD, add(add(borderDiffRW, borderDiffGW), borderDiffBW));
-    const isEdgeNE = step(BORDER_COLOR_DIFF_THRESHOLD, add(add(borderDiffRNE, borderDiffGNE), borderDiffBNE));
-    const isEdgeNW = step(BORDER_COLOR_DIFF_THRESHOLD, add(add(borderDiffRNW, borderDiffGNW), borderDiffBNW));
-    const isEdgeSE = step(BORDER_COLOR_DIFF_THRESHOLD, add(add(borderDiffRSE, borderDiffGSE), borderDiffBSE));
-    const isEdgeSW = step(BORDER_COLOR_DIFF_THRESHOLD, add(add(borderDiffRSW, borderDiffGSW), borderDiffBSW));
-    
-    // Calculate directional edge factors based on position within hex
-    // This creates border lines at the actual hex edges facing different directions
-    
-    // East edge: line appears at right side of tile (x near 1.0)
-    const eastEdgeFactor = mul(isEdgeE, clamp(mul(sub(localX, BORDER_EDGE_THRESHOLD_POS), BORDER_EDGE_SHARPNESS), 0.0, 1.0));
-    // West edge: line appears at left side of tile (x near 0)  
-    const westEdgeFactor = mul(isEdgeW, clamp(mul(sub(BORDER_EDGE_WIDTH_POS, localX), BORDER_EDGE_SHARPNESS), 0.0, 1.0));
-    // NE edge: appears at upper-right corner region
-    const neEdgeFactor = mul(isEdgeNE, mul(clamp(mul(sub(localX, BORDER_CORNER_THRESHOLD), BORDER_DIAGONAL_SHARPNESS), 0.0, 1.0), clamp(mul(sub(localY, BORDER_CORNER_THRESHOLD), BORDER_DIAGONAL_SHARPNESS), 0.0, 1.0)));
-    // NW edge: appears at upper-left corner region
-    const nwEdgeFactor = mul(isEdgeNW, mul(clamp(mul(sub(BORDER_CORNER_THRESHOLD, localX), BORDER_DIAGONAL_SHARPNESS), 0.0, 1.0), clamp(mul(sub(localY, BORDER_CORNER_THRESHOLD), BORDER_DIAGONAL_SHARPNESS), 0.0, 1.0)));
-    // SE edge: appears at lower-right corner region
-    const seEdgeFactor = mul(isEdgeSE, mul(clamp(mul(sub(localX, BORDER_CORNER_THRESHOLD), BORDER_DIAGONAL_SHARPNESS), 0.0, 1.0), clamp(mul(sub(BORDER_CORNER_THRESHOLD, localY), BORDER_DIAGONAL_SHARPNESS), 0.0, 1.0)));
-    // SW edge: appears at lower-left corner region
-    const swEdgeFactor = mul(isEdgeSW, mul(clamp(mul(sub(BORDER_CORNER_THRESHOLD, localX), BORDER_DIAGONAL_SHARPNESS), 0.0, 1.0), clamp(mul(sub(BORDER_CORNER_THRESHOLD, localY), BORDER_DIAGONAL_SHARPNESS), 0.0, 1.0)));
-    
-    // Combine all edge factors
-    const totalEdgeFactor = max(max(max(max(max(eastEdgeFactor, westEdgeFactor), neEdgeFactor), nwEdgeFactor), seEdgeFactor), swEdgeFactor);
-    
-    // Create dashed line pattern using position along the edge
-    // For E/W edges, use Y position; for diagonal edges, use combined X+Y
-    // The dash pattern is created by taking the fractional part of (position * frequency)
-    // and comparing it to the dash ratio
-    const dashPatternY = step(fract(mul(localY, DASH_FREQUENCY)), DASH_RATIO);
-    const dashPatternX = step(fract(mul(localX, DASH_FREQUENCY)), DASH_RATIO);
-    const dashPatternDiagonal = step(fract(mul(add(localX, localY), DASH_FREQUENCY)), DASH_RATIO);
-    
-    // Apply dash pattern to each edge type:
-    // - E/W edges use Y-based pattern (dashes along vertical edges)
-    // - Diagonal edges use combined pattern
-    const dashedEastEdge = mul(eastEdgeFactor, dashPatternY);
-    const dashedWestEdge = mul(westEdgeFactor, dashPatternY);
-    const dashedNEEdge = mul(neEdgeFactor, dashPatternDiagonal);
-    const dashedNWEdge = mul(nwEdgeFactor, dashPatternDiagonal);
-    const dashedSEEdge = mul(seEdgeFactor, dashPatternDiagonal);
-    const dashedSWEdge = mul(swEdgeFactor, dashPatternDiagonal);
-    
-    // Combine all dashed edge factors
-    const dashedTotalEdgeFactor = max(max(max(max(max(dashedEastEdge, dashedWestEdge), dashedNEEdge), dashedNWEdge), dashedSEEdge), dashedSWEdge);
-    
-    // Use hex edge mask to concentrate border lines at hex boundaries
-    const borderLineFactor = mul(dashedTotalEdgeFactor, hexEdgeMask);
-    
-    // Border line width and intensity
-    const borderLineIntensity = 0.45;  // How opaque the border line is (more transparent)
-    
-    // Brighten the nation color for the border line (make it more visible)
+
+    // Detect nation boundaries: 1.0 when neighbour belongs to a different nation
+    const isEdgeE  = step(BORDER_COLOR_DIFF_THRESHOLD, add(add(abs(sub(currentBorder.r, borderE.r)),  abs(sub(currentBorder.g, borderE.g))),  abs(sub(currentBorder.b, borderE.b))));
+    const isEdgeW  = step(BORDER_COLOR_DIFF_THRESHOLD, add(add(abs(sub(currentBorder.r, borderW.r)),  abs(sub(currentBorder.g, borderW.g))),  abs(sub(currentBorder.b, borderW.b))));
+    const isEdgeNE = step(BORDER_COLOR_DIFF_THRESHOLD, add(add(abs(sub(currentBorder.r, borderNE.r)), abs(sub(currentBorder.g, borderNE.g))), abs(sub(currentBorder.b, borderNE.b))));
+    const isEdgeNW = step(BORDER_COLOR_DIFF_THRESHOLD, add(add(abs(sub(currentBorder.r, borderNW.r)), abs(sub(currentBorder.g, borderNW.g))), abs(sub(currentBorder.b, borderNW.b))));
+    const isEdgeSE = step(BORDER_COLOR_DIFF_THRESHOLD, add(add(abs(sub(currentBorder.r, borderSE.r)), abs(sub(currentBorder.g, borderSE.g))), abs(sub(currentBorder.b, borderSE.b))));
+    const isEdgeSW = step(BORDER_COLOR_DIFF_THRESHOLD, add(add(abs(sub(currentBorder.r, borderSW.r)), abs(sub(currentBorder.g, borderSW.g))), abs(sub(currentBorder.b, borderSW.b))));
+
+    // -----------------------------------------------------------------------
+    // HEX FACE CLASSIFICATION via signed SDF distances
+    // dist1 = |hexX|            → left (W) / right (E) vertical edges
+    // dist2 = |hexX*0.5 + hexY*0.866| → upper-right (NE) / lower-left (SW)
+    // dist3 = |-hexX*0.5 + hexY*0.866| → upper-left (NW) / lower-right (SE)
+    // The dominant distance determines which hex face the pixel lies on.
+    // -----------------------------------------------------------------------
+    // Signed (pre-abs) distances – used to distinguish the two faces in each pair
+    const d2Signed = add(mul(hexX, 0.5), mul(hexY, HEX_SQRT3_OVER_2));   // >0 = NE, <0 = SW
+    const d3Signed = add(mul(hexX, -0.5), mul(hexY, HEX_SQRT3_OVER_2));  // >0 = NW, <0 = SE
+
+    // Classify which of the three distance pairs is dominant (max)
+    const dist1Dom = mul(step(dist2, dist1), step(dist3, dist1));  // dist1 >= dist2 AND dist1 >= dist3
+    const dist2Dom = mul(step(dist1, dist2), step(dist3, dist2));  // dist2 >= dist1 AND dist2 >= dist3
+    const dist3Dom = mul(step(dist1, dist3), step(dist2, dist3));  // dist3 >= dist1 AND dist3 >= dist2
+
+    // Map to one of the 6 hex faces using dominant distance + sign
+    const onEFace  = mul(dist1Dom, step(0.0, hexX));                    // right vertical edge
+    const onWFace  = mul(dist1Dom, sub(1.0, step(0.0, hexX)));          // left vertical edge
+    const onNEFace = mul(dist2Dom, step(0.0, d2Signed));                // upper-right diagonal
+    const onSWFace = mul(dist2Dom, sub(1.0, step(0.0, d2Signed)));      // lower-left diagonal
+    const onNWFace = mul(dist3Dom, step(0.0, d3Signed));                // upper-left diagonal
+    const onSEFace = mul(dist3Dom, sub(1.0, step(0.0, d3Signed)));      // lower-right diagonal
+
+    // -----------------------------------------------------------------------
+    // NARROW BORDER LINE MASK at the hex edge (tighter than hexEdgeMask)
+    // -----------------------------------------------------------------------
+    const BORDER_LINE_WIDTH = 0.04;  // Border line width as fraction of hex inradius
+    const borderEdgeStart = sub(hexInradius, BORDER_LINE_WIDTH);
+    const borderT = clamp(div(sub(hexDist, borderEdgeStart), BORDER_LINE_WIDTH), 0.0, 1.0);
+    const hexBorderMask = mul(mul(borderT, borderT), sub(3.0, mul(2.0, borderT)));
+
+    // -----------------------------------------------------------------------
+    // DASH PATTERNS aligned with each hex edge direction
+    // E/W vertical edges  → dashes vary along Y
+    // NE/SW diagonal edges → dashes vary along the NE-SW tangent direction
+    // NW/SE diagonal edges → dashes vary along the NW-SE tangent direction
+    // -----------------------------------------------------------------------
+    const dashVertical = step(fract(mul(localY, DASH_FREQUENCY)), DASH_RATIO);
+    const dashNESW = step(fract(mul(add(mul(localX, -HEX_SQRT3_OVER_2), mul(localY, 0.5)), DASH_FREQUENCY)), DASH_RATIO);
+    const dashNWSE = step(fract(mul(add(mul(localX,  HEX_SQRT3_OVER_2), mul(localY, 0.5)), DASH_FREQUENCY)), DASH_RATIO);
+
+    // -----------------------------------------------------------------------
+    // COMBINE – border line appears where: correct face + border line mask + nation boundary + dash
+    // -----------------------------------------------------------------------
+    const borderFactorE  = mul(mul(isEdgeE,  onEFace),  mul(hexBorderMask, dashVertical));
+    const borderFactorW  = mul(mul(isEdgeW,  onWFace),  mul(hexBorderMask, dashVertical));
+    const borderFactorNE = mul(mul(isEdgeNE, onNEFace), mul(hexBorderMask, dashNESW));
+    const borderFactorSW = mul(mul(isEdgeSW, onSWFace), mul(hexBorderMask, dashNESW));
+    const borderFactorNW = mul(mul(isEdgeNW, onNWFace), mul(hexBorderMask, dashNWSE));
+    const borderFactorSE = mul(mul(isEdgeSE, onSEFace), mul(hexBorderMask, dashNWSE));
+
+    const hexBorderLineFactor = max(max(max(max(max(borderFactorE, borderFactorW), borderFactorNE), borderFactorSW), borderFactorNW), borderFactorSE);
+
+    // Border line intensity – brighter and more opaque for clear visibility
+    const borderLineIntensity = 0.65;
+
+    // Brighten nation colour for the border line
     const brightenedBorderColor = vec3(
         min(add(currentBorder.r, 0.3), 1.0),
         min(add(currentBorder.g, 0.3), 1.0),
         min(add(currentBorder.b, 0.3), 1.0)
     );
-    
-    // Apply border line only where borders are visible and at nation edges
-    const shouldShowBorderLine = mul(borders_visible.select(1.0, 0.0), mul(hasBorder, borderLineFactor));
+
+    // Apply border line where borders are visible and at nation edges
+    const shouldShowBorderLine = mul(borders_visible.select(1.0, 0.0), mul(hasBorder, hexBorderLineFactor));
     finalColor = vec4(
         mix(finalColor.rgb, brightenedBorderColor, mul(shouldShowBorderLine, borderLineIntensity)),
         finalColor.a
     );
-    
-    // Also apply subtle area fill for border territories (more transparent)
+
+    // Subtle territory fill tint
     const shouldShowBorderFill = mul(borders_visible.select(1.0, 0.0), hasBorder);
-    const borderFillFactor = mul(shouldShowBorderFill, 0.05);  // Very subtle territory tint
+    const borderFillFactor = mul(shouldShowBorderFill, 0.05);
     finalColor = vec4(
         mix(finalColor.rgb, currentBorder.rgb, borderFillFactor),
         finalColor.a

@@ -269,18 +269,22 @@ function createTerrainShaderSquareTSL(uniforms) {
     function computeTerrainColor(layerIndex, coord, blendWithBeach) {
         if (blendWithBeach) {
             const baseTerrainColor = texture(terrainAtlasTex, coord).depth(int(layerIndex));
-            const aboveWater = step(WATER_LEVEL, posY);
-            const lowerBeachT = mul(
-                clamp(div(sub(posY, BEACH_BLEND_HIGH), BEACH_LOWER_RANGE), 0.0, 1.0),
-                aboveWater
-            );
-            const upperBeachT = clamp(
-                div(sub(posY, BEACH_MID), BEACH_UPPER_RANGE),
-                0.0, 1.0
-            );
             const coastTex = texture(terrainAtlasTex, coord).depth(int(TERRAIN_ATLAS_COAST));
-            const lowerBlend = mix(coastTex, vec4(beachSandColor, 1.0), lowerBeachT);
-            return mix(lowerBlend, baseTerrainColor, upperBeachT);
+
+            // 1.0 when above water level, 0.0 when underwater
+            const aboveWater = step(WATER_LEVEL, posY);
+
+            // Shoreline gradient: 0.0 at water level (beach sand), 1.0 at BEACH_HIGH (full terrain)
+            // Guarantees land tiles above water always show terrain, never coast/water texture.
+            // Range: BEACH_HIGH - WATER_LEVEL = 52.5 - 50.0 = 2.5
+            const SHORELINE_RANGE = BEACH_HIGH - WATER_LEVEL;
+            const shorelineT = clamp(div(sub(posY, WATER_LEVEL), SHORELINE_RANGE), 0.0, 1.0);
+
+            // Above water: blend from beach sand (shoreline) to full terrain texture
+            const aboveWaterColor = mix(vec4(beachSandColor, 1.0), baseTerrainColor, shorelineT);
+
+            // Below water: show coast texture; above water: shoreline sand→terrain gradient
+            return mix(coastTex, aboveWaterColor, aboveWater);
         } else {
             return texture(terrainAtlasTex, coord).depth(int(layerIndex));
         }
@@ -734,9 +738,9 @@ function createTerrainShaderSquareTSL(uniforms) {
     // =========================================================================
     // NATION BORDERS
     // =========================================================================
-    const BORDER_EDGE_THRESHOLD_POS = 0.88;
-    const BORDER_EDGE_WIDTH_POS = 0.12;
-    const BORDER_EDGE_SHARPNESS = 12.0;
+    const BORDER_EDGE_THRESHOLD_POS = 0.90;
+    const BORDER_EDGE_WIDTH_POS = 0.10;
+    const BORDER_EDGE_SHARPNESS = 14.0;
     const BORDER_COLOR_DIFF_THRESHOLD = 0.05;
     const DASH_FREQUENCY = 8.0;
     const DASH_RATIO = 0.6;
