@@ -172,6 +172,68 @@ public class CityTurn {
      */
     private static final int IMPR_POLICE_STATION = 18;
 
+    /**
+     * Fallback improvement ID for Harbour.
+     * Grants EFT_OUTPUT_ADD_TILE = 1 (food) on all oceanic tiles worked by the
+     * city in the classic Freeciv {@code effects.ruleset}.  Mirrors the
+     * {@code effect_harbour} effect which adds +1 food to each oceanic tile.
+     */
+    private static final int IMPR_HARBOUR          = 8;
+
+    /**
+     * Fallback improvement ID for Offshore Platform.
+     * Grants EFT_OUTPUT_ADD_TILE = 1 (shield) on all oceanic tiles worked by
+     * the city.  Mirrors the {@code effect_offshore_platform} effect.
+     * Requires Miniaturization technology.
+     */
+    private static final int IMPR_OFFSHORE_PLATFORM = 19;
+
+    /**
+     * Fallback improvement ID for Power Plant.
+     * Grants EFT_OUTPUT_BONUS = 25 (shield) once for each of Factory and
+     * Mfg. Plant present, but only when no Hoover Dam, Nuclear Plant, Hydro
+     * Plant, or Solar Plant is active.  Mirrors {@code effect_power_plant} in
+     * the classic Freeciv {@code effects.ruleset}.
+     * Requires Refining technology.
+     */
+    private static final int IMPR_POWER_PLANT      = 20;
+
+    /**
+     * Fallback improvement ID for Hydro Plant.
+     * Same shield bonus as Power Plant (+25% per Factory/Mfg.Plant) but
+     * reduces production pollution by 25% per Factory/Mfg.Plant.  Active
+     * only when no Hoover Dam, Nuclear Plant, or Solar Plant is present.
+     * Requires Electronics technology.
+     */
+    private static final int IMPR_HYDRO_PLANT      = 9;  // positional after Harbour
+
+    /**
+     * Fallback improvement ID for Nuclear Plant.
+     * Same shield bonus as Power Plant (+25% per Factory/Mfg.Plant) and
+     * reduces production pollution by 25% per Factory/Mfg.Plant.  Active
+     * only when no Hoover Dam or Solar Plant is present.
+     * Requires Nuclear Power technology.
+     */
+    private static final int IMPR_NUCLEAR_PLANT    = 16;
+
+    /**
+     * Fallback improvement ID for Solar Plant.
+     * Grants EFT_OUTPUT_BONUS = 25 (shield) per Factory/Mfg.Plant and reduces
+     * production pollution by 50% per Factory/Mfg.Plant.  No exclusions —
+     * Solar Plant always overrides lower-tier power sources.
+     * Requires Environmentalism technology.
+     */
+    private static final int IMPR_SOLAR_PLANT      = 25;
+
+    /**
+     * Fallback improvement ID for Recycling Center.
+     * Grants EFT_POLLU_PROD_PCT = -66 in the classic Freeciv
+     * {@code effects.ruleset}, reducing production-based city pollution by
+     * two-thirds.  Mirrors {@code effect_recycling_center}.
+     * Requires Recycling technology.
+     */
+    private static final int IMPR_RECYCLING_CENTER = 24;
+
     // -------------------------------------------------------------------------
     // Improvement genus constants (match Improvement.getGenus() values).
     // Mirrors the improvement_genus_id enum in the C Freeciv server's
@@ -523,11 +585,29 @@ public class CityTurn {
     private static int[] computeWorkedTilesOutput(Game game, City city) {
         long centerTileId = city.getTile();
         int totalFood = 0, totalShields = 0, totalTrade = 0;
+
+        // Resolve Harbour and Offshore Platform IDs once per city computation.
+        // These buildings add +1 food / +1 shield to every oceanic tile worked
+        // by the city.  Mirrors effect_harbour and effect_offshore_platform in
+        // the classic Freeciv effects.ruleset (Output_Add_Tile = 1).
+        int harbourId        = findImprId(game, "Harbor",           IMPR_HARBOUR);
+        int offPlatformId    = findImprId(game, "Offshore Platform", IMPR_OFFSHORE_PLATFORM);
+        boolean hasHarbour   = city.hasImprovement(harbourId);
+        boolean hasOffPlat   = city.hasImprovement(offPlatformId);
+
         for (long tileId : city.getWorkedTiles()) {
             Tile t = game.tiles.get(tileId);
             if (t == null) continue;
             boolean isCenter = (tileId == centerTileId);
             int[] out = getTileOutput(game, t, isCenter);
+            // Apply Harbour and Offshore Platform bonuses for oceanic tiles.
+            if (hasHarbour || hasOffPlat) {
+                Terrain terrain = game.terrains.get((long) t.getTerrain());
+                if (terrain != null && terrain.isOceanic()) {
+                    if (hasHarbour)  out[0]++;  // +1 food  (effect_harbour)
+                    if (hasOffPlat)  out[1]++;  // +1 shield (effect_offshore_platform)
+                }
+            }
             totalFood    += out[0];
             totalShields += out[1];
             totalTrade   += out[2];
@@ -833,22 +913,64 @@ public class CityTurn {
         // Ceiling division preserves fractional shield output for small cities.
         int factoryId  = findImprId(game, "Factory",   IMPR_FACTORY);
         int mfgPlantId = findImprId(game, "Mfg. Plant", IMPR_MFG_PLANT);
+        boolean hasFactory  = city.hasImprovement(factoryId);
+        boolean hasMfgPlant = hasFactory && city.hasImprovement(mfgPlantId);
         int shieldBonus = 0;
-        if (city.hasImprovement(factoryId)) {
-            shieldBonus += 50; // Factory: +50% (effect_factory)
-            if (city.hasImprovement(mfgPlantId)) {
-                shieldBonus += 50; // Mfg. Plant (requires Factory): +50% additional (effect_mfg_plant)
+        if (hasFactory)  shieldBonus += 50; // Factory: +50% (effect_factory)
+        if (hasMfgPlant) shieldBonus += 50; // Mfg. Plant (requires Factory): +50% additional
+
+        // Energy source: adds +25% shields per Factory and per Mfg.Plant.
+        // The highest-priority power source wins; each applies its bonus once per
+        // applicable prerequisite building (Factory or Mfg.Plant).
+        // Priority chain (mirrors effects.ruleset exclusion logic):
+        //   Solar Plant (no exclusions) > Nuclear Plant (excl. Solar) >
+        //   Hydro Plant (excl. Solar/Nuclear/Hoover Dam) >
+        //   Power Plant (excl. Solar/Nuclear/Hydro/Hoover Dam) >
+        //   Hoover Dam wonder (player scope, excl. by local plants).
+        // Mirrors effect_power_plant, effect_hydro_plant, effect_nuclear_plant,
+        // effect_solar_plant, and effect_hoover_dam in effects.ruleset.
+        if (hasFactory || hasMfgPlant) {
+            boolean hooverDam    = playerHasWonder(game, city.getOwner(), "Hoover Dam");
+            int solarPlantId   = findImprId(game, "Solar Plant",   IMPR_SOLAR_PLANT);
+            int nuclearPlantId = findImprId(game, "Nuclear Plant", IMPR_NUCLEAR_PLANT);
+            int hydroPlantId   = findImprId(game, "Hydro Plant",   IMPR_HYDRO_PLANT);
+            int powerPlantId   = findImprId(game, "Power Plant",   IMPR_POWER_PLANT);
+            boolean hasSolar   = city.hasImprovement(solarPlantId);
+            boolean hasNuclear = city.hasImprovement(nuclearPlantId);
+            boolean hasHydro   = city.hasImprovement(hydroPlantId);
+            boolean hasPower   = city.hasImprovement(powerPlantId);
+
+            // Determine which energy source is active (highest priority wins).
+            // Each active source adds +25% once per Factory and once per Mfg.Plant.
+            int energyBonus = 0;
+            if (hasSolar) {
+                // Solar Plant: always fires, no exclusions (effect_solar_plant/1).
+                energyBonus = 25;
+            } else if (hasNuclear && !hooverDam) {
+                // Nuclear Plant: fires unless Hoover Dam or Solar Plant present.
+                energyBonus = 25;
+            } else if (hasHydro && !hooverDam && !hasNuclear) {
+                // Hydro Plant: fires unless Hoover Dam, Nuclear, or Solar present.
+                energyBonus = 25;
+            } else if (hasPower && !hooverDam && !hasNuclear && !hasHydro) {
+                // Power Plant: fires only with no Hoover Dam and no better plant.
+                energyBonus = 25;
+            } else if (hooverDam && !hasSolar && !hasNuclear && !hasHydro && !hasPower) {
+                // Hoover Dam (player wonder): provides plant-equivalent bonus to all
+                // cities when no local plant is present (effect_hoover_dam/1).
+                energyBonus = 25;
             }
-        }
-        // Hoover Dam wonder: +25% production in each city that has a Factory or Mfg.Plant.
-        // Mirrors effect_hoover_dam and effect_hoover_dam_1 (Output_Bonus=25, Shield,
-        // Player scope, requires Factory or Mfg.Plant) in the classic Freeciv effects.ruleset.
-        if (playerHasWonder(game, city.getOwner(), "Hoover Dam")) {
-            if (city.hasImprovement(factoryId)) {
-                shieldBonus += 25; // Hoover Dam + Factory: +25% (effect_hoover_dam)
+
+            if (energyBonus > 0) {
+                if (hasFactory)  shieldBonus += energyBonus;
+                if (hasMfgPlant) shieldBonus += energyBonus;
             }
-            if (city.hasImprovement(mfgPlantId)) {
-                shieldBonus += 25; // Hoover Dam + Mfg.Plant: +25% (effect_hoover_dam_1)
+
+            // Hoover Dam stacks with Solar Plant (Solar has no Hoover Dam exclusion).
+            // Mirrors the additive effect model in Freeciv: each effect fires independently.
+            if (hooverDam && hasSolar) {
+                if (hasFactory)  shieldBonus += 25; // Hoover Dam + Factory (Solar already added)
+                if (hasMfgPlant) shieldBonus += 25; // Hoover Dam + Mfg.Plant
             }
         }
         if (shieldBonus > 0) {
@@ -2520,15 +2642,70 @@ public class CityTurn {
         City city = game.cities.get(cityId);
         if (city == null) return;
 
-        // Calculate pollution level: shields + population - base offset.
+        // Calculate pollution level using EFT_POLLU_PROD_PCT adjustments.
         // Mirrors city_pollution_types() in common/city.c:
-        //   prod = shield_total * (100 + EFT_POLLU_PROD_PCT) / 100   (one per shield)
-        //   pop  = city_size * (100 + EFT_POLLU_POP_PCT) / 100       (one per citizen)
-        //   mod  = game.info.base_pollution                           (-20 by default)
-        //   total = max(0, prod + pop + mod)
-        // Use the sum of all worked tiles for the shield estimate.
+        //   prod = shield_total * max(100 + EFT_POLLU_PROD_PCT, 0) / 100
+        //   pop  = city_size (EFT_POLLU_POP_PCT = 0 by default in classic ruleset)
+        //   mod  = game.info.base_pollution = -20
+        //   total = max(prod + pop + mod, 0)
         int shieldOutput = computeCityShieldOutput(game, city);
-        int pollution = Math.max(0, shieldOutput + city.getSize() - BASE_POLLUTION);
+
+        // Accumulate Pollu_Prod_Pct adjustments from buildings.
+        // Mirrors the sum of EFT_POLLU_PROD_PCT effects in the classic ruleset.
+        int polluProdPct = 0;
+
+        // Recycling Center: -66% production pollution (effect_recycling_center).
+        // Requires Recycling technology.
+        int recyclingId = findImprId(game, "Recycling Center", IMPR_RECYCLING_CENTER);
+        boolean hasRecycling = city.hasImprovement(recyclingId);
+
+        // Power-plant pollution reductions: exclusive chain mirrors the C ruleset.
+        // Solar Plant: -50% per Factory/Mfg.Plant (highest priority, no exclusions).
+        // Nuclear Plant: -25% per Factory/Mfg.Plant (if no Solar Plant and no Hoover Dam).
+        // Hydro Plant: -25% per Factory/Mfg.Plant (if no Solar/Nuclear/Hoover Dam).
+        int factoryId2    = findImprId(game, "Factory",       IMPR_FACTORY);
+        int mfgPlantId2   = findImprId(game, "Mfg. Plant",   IMPR_MFG_PLANT);
+        int solarPlantId  = findImprId(game, "Solar Plant",   IMPR_SOLAR_PLANT);
+        int nuclearPlantId = findImprId(game, "Nuclear Plant", IMPR_NUCLEAR_PLANT);
+        int hydroPlantId  = findImprId(game, "Hydro Plant",   IMPR_HYDRO_PLANT);
+        boolean hasFactory2   = city.hasImprovement(factoryId2);
+        boolean hasMfgPlant2  = hasFactory2 && city.hasImprovement(mfgPlantId2);
+        boolean hasSolar      = city.hasImprovement(solarPlantId);
+        boolean hasNuclear    = city.hasImprovement(nuclearPlantId);
+        boolean hasHydro      = city.hasImprovement(hydroPlantId);
+        boolean hooverDam2    = playerHasWonder(game, city.getOwner(), "Hoover Dam");
+
+        // Count how many plant-eligible buildings are present (Factory + Mfg.Plant).
+        int plantMultiplier = (hasFactory2 ? 1 : 0) + (hasMfgPlant2 ? 1 : 0);
+        if (plantMultiplier > 0) {
+            int plantPollutionReductionPct = 0;
+            if (hasSolar) {
+                plantPollutionReductionPct = -50; // Solar Plant: -50% per Factory/Mfg.Plant
+            } else if (hasNuclear && !hooverDam2) {
+                plantPollutionReductionPct = -25; // Nuclear Plant: -25% (no Solar/Hoover Dam)
+            } else if (hasHydro && !hooverDam2 && !hasNuclear) {
+                plantPollutionReductionPct = -25; // Hydro Plant: -25% (no Solar/Nuclear/Hoover Dam)
+            }
+            polluProdPct += plantPollutionReductionPct * plantMultiplier;
+        }
+
+        // Recycling Center -66% (effect_recycling_center).  The interaction with
+        // Solar Plant in the C ruleset is complex; for simplicity apply Recycling
+        // Center when no Solar Plant is providing a stronger reduction.
+        if (hasRecycling && !hasSolar) {
+            polluProdPct = Math.min(polluProdPct, -66);
+        } else if (hasRecycling && hasSolar) {
+            // Solar Plant may give >= -66% with Mfg.Plant; otherwise top-up to -66%.
+            if (polluProdPct > -66) polluProdPct = -66;
+        }
+
+        // Clamp to [-100, 0] so production pollution cannot be negative (mirrors
+        // MAX(prod, 0) in city_pollution_types() in the C server).
+        polluProdPct = Math.max(-100, polluProdPct);
+
+        // Compute effective production component of pollution.
+        int prodPollution = shieldOutput * Math.max(100 + polluProdPct, 0) / 100;
+        int pollution = Math.max(0, prodPollution + city.getSize() - BASE_POLLUTION);
         if (pollution == 0) return;
 
         // Probabilistic: only place pollution if random roll is below pollution level.

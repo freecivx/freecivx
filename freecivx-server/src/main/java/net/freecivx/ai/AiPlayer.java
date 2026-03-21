@@ -102,8 +102,17 @@ public class AiPlayer {
     int imprCathedral     = -1; // Happiness +3 (Monotheism tech, Temple prereq)
     // Late-game production and economy buildings
     int imprFactory       = -1; // Shields +50% (Industrialization tech)
+    int imprMfgPlant      = -1; // Shields +50% additional (Plastics tech, Factory prereq)
+    int imprPowerPlant    = -1; // Shields +25% per Factory/Mfg.Plant (Refining tech)
+    int imprHydroPlant    = -1; // Shields +25% + pollution -25% (Electronics tech)
+    int imprNuclearPlant  = -1; // Shields +25% + pollution -25% (Nuclear Power tech)
+    int imprSolarPlant    = -1; // Shields +25% + pollution -50% (Environmentalism tech)
+    int imprRecyclingCenter = -1; // Pollution -66% (Recycling tech)
     int imprResearchLab   = -1; // Science +200% with Library+University (Computers tech)
     int imprStockExchange = -1; // Gold+Luxury +50% when Bank present (Economics tech)
+    // Coastal and naval infrastructure
+    int imprHarbour          = -1; // +1 food on oceanic tiles (Seafaring tech)
+    int imprOffPlatform      = -1; // +1 shield on oceanic tiles (Miniaturization tech)
     // Space Race buildings
     int imprApolloProgram    = -1; // Great Wonder – enables spaceship construction
     int imprSpaceStructural  = -1; // Space Race part (Special genus, unlimited)
@@ -336,12 +345,20 @@ public class AiPlayer {
                 case "Courthouse":     imprCourthouse    = id; break;
                 case "Cathedral":      imprCathedral     = id; break;
                 case "Factory":          imprFactory          = id; break;
+                case "Mfg. Plant":       imprMfgPlant         = id; break;
+                case "Power Plant":      imprPowerPlant       = id; break;
+                case "Hydro Plant":      imprHydroPlant       = id; break;
+                case "Nuclear Plant":    imprNuclearPlant     = id; break;
+                case "Solar Plant":      imprSolarPlant       = id; break;
+                case "Recycling Center": imprRecyclingCenter  = id; break;
                 case "Research Lab":     imprResearchLab      = id; break;
                 case "Stock Exchange":   imprStockExchange    = id; break;
                 case "Apollo Program":   imprApolloProgram    = id; break;
                 case "Space Structural": imprSpaceStructural  = id; break;
                 case "Space Component":  imprSpaceComponent   = id; break;
                 case "Space Module":     imprSpaceModule      = id; break;
+                case "Harbor":           imprHarbour          = id; break;
+                case "Offshore Platform": imprOffPlatform     = id; break;
                 default: break;
             }
         }

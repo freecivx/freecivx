@@ -519,8 +519,13 @@ public class Ruleset {
                 // (e.g. Grassland, Plains, Desert in the classic ruleset).
                 int    roadTradePct = sec.getInt("road_trade_incr_pct", 0);
                 int    roadTrade  = roadTradePct > 0 ? 1 : 0;
-                terrains.add(new Terrain(name, graphic, defBonus, moveCost,
-                        food, shield, trade, irrigFood, mineShield, roadTrade));
+                // class = "Oceanic" for water terrains (Lake, Ocean, Deep Ocean).
+                // Mirrors terrain_class in common/terrain.h (TC_OCEAN).
+                boolean oceanic = "Oceanic".equalsIgnoreCase(sec.get("class"));
+                Terrain t = new Terrain(name, graphic, defBonus, moveCost,
+                        food, shield, trade, irrigFood, mineShield, roadTrade);
+                t.setOceanic(oceanic);
+                terrains.add(t);
             }
             log.info("Loaded {} terrains from {}", terrains.size(), path);
             return true;
