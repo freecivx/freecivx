@@ -247,7 +247,7 @@
 					<p>
 						Freeciv is a free and open-source turn-based strategy game inspired by the classic <em>Civilization</em> series. 
 						Players guide a civilization from the ancient era through the space age, founding cities, researching technologies, 
-						building armies and wonders, and competing — or cooperating — with other civilizations to achieve victory.
+						building armies and wonders, and competing or cooperating with other civilizations to achieve victory.
 					</p>
 					<p>
 						The game is played on a procedurally generated world map. Each turn represents years of in-game time, and 
@@ -262,13 +262,13 @@
 				<div class="col-md-12">
 					<h2>History of Freeciv</h2>
 					<p>
-						Freeciv was created in 1996 by Peter Unold, Claus Leth Gregersen, and Allan Ove Kjeldbjerg at the 
+						Freeciv was created in 1996 by students at the 
 						University of Aarhus in Denmark. Inspired by <em>Civilization II</em>, they wanted to build a free, 
 						cross-platform alternative that anyone could play and improve. The project quickly grew into a global 
 						open-source effort with contributors from dozens of countries.
 					</p>
 					<p>
-						Over the following years Freeciv gained many features that rivalled — and sometimes surpassed — the 
+						Over the following years Freeciv gained many features that rivalled and sometimes surpassed the 
 						commercial titles that inspired it: customizable rulesets, AI opponents, LAN and internet multiplayer, 
 						and ports to virtually every desktop operating system. The 2.x releases in the 2000s brought isometric 
 						graphics, improved diplomacy, and a richer technology tree. The 3.x series (ongoing) modernised the 
@@ -276,7 +276,7 @@
 					</p>
 					<p>
 						<strong>Freeciv-web</strong>, launched around 2013, brought the game fully into the browser using 
-						HTML5 and WebGL — no plugin required. <strong>Freecivx.com</strong> is the next step in that journey, 
+						HTML5 and WebGL no plugin required. <strong>Freecivx.com</strong> is the next step in that journey, 
 						launched in January 2026. It builds on Freeciv-web with a new 3D WebGL/WebGPU renderer powered by 
 						Three.js, a rewritten Java game server, and a smoother multiplayer experience.
 					</p>
@@ -288,7 +288,7 @@
 				<div class="col-md-12">
 					<h2>How to Play</h2>
 					<p>
-						Freeciv is a turn-based game — every player takes their turn before time advances. Here is a 
+						Freeciv is a turn-based game every player takes their turn before time advances. Here is a 
 						quick guide to getting started:
 					</p>
 					<ol class="how-to-play-steps">
