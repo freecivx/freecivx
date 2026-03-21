@@ -712,7 +712,7 @@ function createTerrainShaderTSL(uniforms) {
     
     // Apply smoothstep curve for softer edges within the visible/fogged regions using THREE's smoothstep().
     // smoothstep(0, 1, t) = t² × (3 - 2t) — an S-curve that eases in and out.
-    const visSmooth = softVisibility.mul(VISIBILITY_VISIBLE).clamp(0.0, 1.0).smoothstep(0.0, 1.0);
+    const visSmooth = smoothstep(0.0, 1.0, softVisibility.mul(VISIBILITY_VISIBLE).clamp(0.0, 1.0));
     
     // Scale back to original range to maintain brightness levels
     const smoothVisibility = visSmooth.mul(VISIBILITY_VISIBLE);
@@ -804,7 +804,7 @@ function createTerrainShaderTSL(uniforms) {
     // NARROW BORDER LINE MASK at the hex edge (tighter than hexEdgeMask)
     // -----------------------------------------------------------------------
     const BORDER_LINE_WIDTH = 0.04;  // Border line width as fraction of hex inradius
-    const borderEdgeStart = hexInradius - BORDER_LINE_WIDTH;
+    const borderEdgeStart = float(hexInradius).sub(BORDER_LINE_WIDTH);
     // Use THREE's smoothstep() for cleaner, hardware-accelerated S-curve computation
     const hexBorderMask = smoothstep(borderEdgeStart, hexInradius, hexDist);
 
