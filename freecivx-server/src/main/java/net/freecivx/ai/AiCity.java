@@ -160,6 +160,85 @@ class AiCity {
         int mySettlers = ai.aiMilitary.countUnitsOfType(ownerId, AiPlayer.UNIT_SETTLERS);
         int settlerCap = (int) (myCityCount / 2) + 1;
 
+        // Priority 2.5: Great Wonders — build early when the prereq tech is available and
+        // the wonder has not yet been built anywhere in the world.  Wonders give empire-wide
+        // bonuses and are worth prioritising before most buildings.
+        // Mirrors the wonder-want calculation in dai_city_choose_build() in daicity.c.
+        //
+        // Pyramids (Masonry) — reduces food lost on city growth/shrink (very early, high value).
+        if (ai.imprPyramids >= 0 && !CityTurn.worldHasWonder(game, "Pyramids")) {
+            Improvement pyramids = game.improvements.get((long) ai.imprPyramids);
+            if (pyramids != null && canBuildImprovement(owner, pyramids)) {
+                city.setProductionKind(1);
+                city.setProductionValue(ai.imprPyramids);
+                return;
+            }
+        }
+        // Great Wall (Masonry) — free City Walls in all cities, strong early defence.
+        if (ai.imprGreatWall >= 0 && !CityTurn.worldHasWonder(game, "Great Wall")) {
+            Improvement greatWall = game.improvements.get((long) ai.imprGreatWall);
+            if (greatWall != null && canBuildImprovement(owner, greatWall)) {
+                city.setProductionKind(1);
+                city.setProductionValue(ai.imprGreatWall);
+                return;
+            }
+        }
+        // Lighthouse (Map Making, coastal only) — +1 naval move; veteran new ships.
+        if (ai.imprLighthouse >= 0 && ai.aiMilitary.isCityCoastal(city.getTile())
+                && !CityTurn.worldHasWonder(game, "Lighthouse")) {
+            Improvement lighthouse = game.improvements.get((long) ai.imprLighthouse);
+            if (lighthouse != null && canBuildImprovement(owner, lighthouse)) {
+                city.setProductionKind(1);
+                city.setProductionValue(ai.imprLighthouse);
+                return;
+            }
+        }
+        // Great Library (Literacy) — auto-learns any tech known by 2+ other civs.
+        if (ai.imprGreatLibrary >= 0 && !CityTurn.worldHasWonder(game, "Great Library")) {
+            Improvement greatLibrary = game.improvements.get((long) ai.imprGreatLibrary);
+            if (greatLibrary != null && canBuildImprovement(owner, greatLibrary)) {
+                city.setProductionKind(1);
+                city.setProductionValue(ai.imprGreatLibrary);
+                return;
+            }
+        }
+        // Leonardo's Workshop (Invention) — auto-upgrades one obsolete unit per turn.
+        if (ai.imprLeonardosWorkshop >= 0 && !CityTurn.worldHasWonder(game, "Leonardo's Workshop")) {
+            Improvement leonardos = game.improvements.get((long) ai.imprLeonardosWorkshop);
+            if (leonardos != null && canBuildImprovement(owner, leonardos)) {
+                city.setProductionKind(1);
+                city.setProductionValue(ai.imprLeonardosWorkshop);
+                return;
+            }
+        }
+        // Copernicus' Observatory (Astronomy) — +100% science in the city where built.
+        if (ai.imprCopernicusObservatory >= 0 && !CityTurn.worldHasWonder(game, "Copernicus' Observatory")) {
+            Improvement copernicus = game.improvements.get((long) ai.imprCopernicusObservatory);
+            if (copernicus != null && canBuildImprovement(owner, copernicus)) {
+                city.setProductionKind(1);
+                city.setProductionValue(ai.imprCopernicusObservatory);
+                return;
+            }
+        }
+        // Isaac Newton's College (Theory of Gravity) — +100% science in all University cities.
+        if (ai.imprIsaacNewtonsCollege >= 0 && !CityTurn.worldHasWonder(game, "Isaac Newton's College")) {
+            Improvement newtons = game.improvements.get((long) ai.imprIsaacNewtonsCollege);
+            if (newtons != null && canBuildImprovement(owner, newtons)) {
+                city.setProductionKind(1);
+                city.setProductionValue(ai.imprIsaacNewtonsCollege);
+                return;
+            }
+        }
+        // J.S. Bach's Cathedral (Theology) — 2 unhappy→content in every city.
+        if (ai.imprBachsCathedral >= 0 && !CityTurn.worldHasWonder(game, "J.S. Bach's Cathedral")) {
+            Improvement bachs = game.improvements.get((long) ai.imprBachsCathedral);
+            if (bachs != null && canBuildImprovement(owner, bachs)) {
+                city.setProductionKind(1);
+                city.setProductionValue(ai.imprBachsCathedral);
+                return;
+            }
+        }
+
         // Priority 3: Early expansion — produce Settlers when empire is very small.
         if (myCityCount < 2 && mySettlers < settlerCap && city.getSize() >= 2 && cityHasFoodSurplus(city)) {
             city.setProductionKind(0);
@@ -222,6 +301,18 @@ class AiCity {
             if (myWorkers < myCityCount) {
                 city.setProductionKind(0);
                 city.setProductionValue(workerType);
+                return;
+            }
+        }
+
+        // Priority 7.5: Diplomat for embassy establishment and diplomatic actions.
+        // Build one Diplomat per 4 cities to enable tech sharing and espionage.
+        // Mirrors the diplomat-production priority in daiunit.c.
+        if (ai.unitDiplomat >= 0 && myCityCount >= 4 && canBuildUnit(owner, ai.unitDiplomat)) {
+            int myDiplomats = ai.aiMilitary.countUnitsOfType(ownerId, ai.unitDiplomat);
+            if (myDiplomats < (int) Math.max(1, myCityCount / 3)) {
+                city.setProductionKind(0);
+                city.setProductionValue(ai.unitDiplomat);
                 return;
             }
         }
@@ -583,6 +674,28 @@ class AiCity {
                 if (navalUnits < coastalCities) {
                     city.setProductionKind(0);
                     city.setProductionValue(bestNaval);
+                    return;
+                }
+            }
+        }
+
+        // Priority 19.5: Air unit (Fighter/Bomber) for cities that have an Airport.
+        // Build one air unit per 3 cities with airports, mirroring the air-unit
+        // production priority in dai_city_choose_build() in daicity.c.
+        if (city.hasImprovement(ai.imprAirport) && ai.imprAirport >= 0) {
+            int bestAir = ai.aiMilitary.bestAvailableAirUnit(owner);
+            if (bestAir >= 0) {
+                int airUnits = ai.aiMilitary.countUnitsOfType(ownerId, bestAir);
+                long airportCities = game.cities.values().stream()
+                        .filter(c -> c.getOwner() == ownerId && c.hasImprovement(ai.imprAirport))
+                        .count();
+                // One air unit per three airport-cities as a minimum air force.
+                // Use ceiling division so that even a single airport-city builds 1 air unit
+                // and production scales smoothly: 1-3 cities → 1, 4-6 → 2, etc.
+                int desiredAir = (int) ((airportCities + 2) / 3);
+                if (airUnits < desiredAir) {
+                    city.setProductionKind(0);
+                    city.setProductionValue(bestAir);
                     return;
                 }
             }
