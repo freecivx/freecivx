@@ -275,8 +275,7 @@ function map2d_tile_key(ptile, tw, th)
   var tag        = (pterrain && sprites_2d_init)
                    ? get_2d_terrain_sprite_tag(pterrain, ptile) : g;
   var known      = tile_get_known(ptile);
-  var extras_str = (ptile['extras'] && ptile['extras'].length > 0)
-                   ? ptile['extras'].slice().sort().join(',') : '';
+  var extras_str = ptile['extras'] ? ptile['extras'].toString() : '';
 
   /* Directional neighbor flags for extras whose rendering depends on
    * neighboring tiles (river flow direction, road/rail connections). */
