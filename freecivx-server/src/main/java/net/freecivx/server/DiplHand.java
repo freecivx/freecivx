@@ -294,6 +294,19 @@ public class DiplHand {
                 "Treaty with " + p2.getUsername() + " is now in effect.");
         Notify.notifyPlayer(game, game.getServer(), p2Id,
                 "Treaty with " + p1.getUsername() + " is now in effect.");
+
+        // Broadcast notable treaty outcomes to all players so everyone can
+        // follow the shifting diplomatic landscape of the game.
+        if (newState == DS_ALLIANCE) {
+            Notify.notifyAllPlayers(game, game.getServer(),
+                    p1.getUsername() + " and " + p2.getUsername() + " have formed an Alliance!");
+        } else if (newState == DS_PEACE) {
+            Notify.notifyAllPlayers(game, game.getServer(),
+                    p1.getUsername() + " and " + p2.getUsername() + " have agreed to Peace.");
+        } else if (newState == DS_CEASEFIRE) {
+            Notify.notifyAllPlayers(game, game.getServer(),
+                    p1.getUsername() + " and " + p2.getUsername() + " have agreed to a Ceasefire.");
+        }
     }
 
     /**
@@ -342,5 +355,8 @@ public class DiplHand {
                 player.getUsername() + " has cancelled the pact — you are now at war!");
         Notify.notifyPlayer(game, game.getServer(), connId,
                 "Pact cancelled — you are now at war with " + other.getUsername() + ".");
+        // Broadcast war declaration to all players.
+        Notify.notifyAllPlayers(game, game.getServer(),
+                player.getUsername() + " has declared war on " + other.getUsername() + "!");
     }
 }

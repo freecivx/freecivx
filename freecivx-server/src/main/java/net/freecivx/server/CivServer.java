@@ -195,6 +195,18 @@ public class CivServer extends org.java_websocket.server.WebSocketServer impleme
                 if (p != null) {
                     usernameToNation.put(username, p.getNation());
                 }
+                // Send multiplayer pregame instructions to the joining player.
+                if (!game.isGameStarted()) {
+                    sendMessage(connId, "Welcome to the Freecivx multiplayer lobby, " + username + "!"
+                            + " Right-click your name to pick a nation."
+                            + " Press Start Game when all players are ready."
+                            + " Type /help for available commands.");
+                    long humanCount = game.players.values().stream().filter(pl -> !pl.isAi()).count();
+                    if (humanCount >= 2) {
+                        sendMessageAll("There are now " + humanCount + " players in the lobby."
+                                + " Any player can press Start Game to begin!");
+                    }
+                }
             }
         }
 
@@ -202,6 +214,13 @@ public class CivServer extends org.java_websocket.server.WebSocketServer impleme
             if (game.isGameStarted()) {
                 game.syncNewPlayer(connId);
             } else {
+                // In multiplayer, announce who is starting the game so other players
+                // know the game is about to begin.
+                if ("multiplayer".equals(gameMode)) {
+                    Connection playerConn = game.connections.get(connId);
+                    String starterName = (playerConn != null) ? playerConn.getUsername() : "A player";
+                    sendMessageAll(starterName + " has pressed Start Game — the game is beginning!");
+                }
                 game.startGame();
             }
         }

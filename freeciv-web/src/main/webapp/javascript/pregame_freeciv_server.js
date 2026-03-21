@@ -97,10 +97,22 @@ function update_game_info_pregame()
   }
 
   if ($.getUrlVar('action') == "multi") {
-    game_info_html += "<p>";
-    game_info_html += "<h2>Freecivx.com Multiplayer game</h2>-You are now about to play a multiplayer game.<br>-Please wait until at least 2 players have joined the game, then click the start game button.";
-    game_info_html += "</p>";
-    game_info_html += "";
+    game_info_html += "<div id='multiplayer_info_box'>";
+    game_info_html += "<h2>&#127760; Freecivx.com Multiplayer Game</h2>";
+    game_info_html += "<p>Welcome to a live multiplayer game of Freecivx! "
+                   + "Compete against other players in real time to build the greatest civilization.</p>";
+    game_info_html += "<ul>";
+    game_info_html += "<li><b>Pick your nation</b> – right-click your name in the player list to choose a nation.</li>";
+    game_info_html += "<li><b>Wait for players</b> – at least 2 human players should join before starting.</li>";
+    game_info_html += "<li><b>Start the game</b> – click the <i>Start Game</i> button when ready. "
+                   + "The game begins as soon as you press start.</li>";
+    game_info_html += "<li><b>Take turns</b> – each player moves their units, builds cities and researches "
+                   + "technologies, then clicks <i>Turn Done</i>.</li>";
+    game_info_html += "<li><b>Diplomacy</b> – open the diplomacy dialog to propose peace or alliances with other players.</li>";
+    game_info_html += "<li><b>Chat</b> – use the chat box to communicate with other players during the game.</li>";
+    game_info_html += "</ul>";
+    game_info_html += "<p><i>Tip: Use the <b>Invite</b> button below to invite a friend to this game!</i></p>";
+    game_info_html += "</div>";
   }
 
   $("#pregame_game_info").html(game_info_html);
