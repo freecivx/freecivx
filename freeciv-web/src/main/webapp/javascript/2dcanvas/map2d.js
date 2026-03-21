@@ -335,31 +335,46 @@ function render_2d_map()
   }
 
   /* --- Layer 5: unit sprites + shield flags + activity badges --- */
-  var focused_unit = (typeof current_focus !== 'undefined' && current_focus.length > 0)
-                     ? current_focus[0] : null;
+  /* Build a set of all focused unit IDs for fast lookup. */
+  var focus_id_set = {};
+  var focus_units = (typeof current_focus !== 'undefined') ? current_focus : [];
+  for (var fi2 = 0; fi2 < focus_units.length; fi2++) {
+    focus_id_set[focus_units[fi2]['id']] = true;
+  }
+  var focused_unit = focus_units.length > 0 ? focus_units[0] : null;
+
   for (i = 0; i < vis.length; i++) {
     v = vis[i];
     if (tile_get_known(v.ptile) !== TILE_KNOWN_SEEN) continue;
     var punits = tile_units(v.ptile);
     if (punits && punits.length > 0) {
-      /* If the focused unit is on this tile, display it on top */
+      /* If any focused unit is on this tile, display the first focused unit
+       * on top so the player's selected unit is always visible. */
       var display_unit = punits[0];
-      if (focused_unit != null) {
-        for (var fi = 0; fi < punits.length; fi++) {
-          if (punits[fi]['id'] === focused_unit['id']) {
-            display_unit = punits[fi];
-            break;
-          }
+      var tile_has_focus = false;
+      for (var fi = 0; fi < punits.length; fi++) {
+        if (focus_id_set[punits[fi]['id']]) {
+          display_unit = punits[fi];
+          tile_has_focus = true;
+          break;
         }
       }
-      /* Draw selection indicator under the focused unit */
-      if (focused_unit != null && display_unit['id'] === focused_unit['id']) {
+      /* Draw selection indicator only when a focused unit is on this tile
+       * and there is actually a unit in focus (no stale selection sprite). */
+      if (tile_has_focus && focus_units.length > 0) {
         map2d_draw_unit_select(ctx, v.cx, v.cy, tw, th);
       }
       map2d_draw_unit(ctx, display_unit, v.cx, v.cy, tw, th);
       map2d_draw_unit_activity(ctx, display_unit, v.cx, v.cy, tw, th);
+      /* Show stack count badge to indicate how many units are on this tile. */
       if (punits.length > 1) {
         map2d_draw_unit_count(ctx, punits.length, v.cx, v.cy, tw, th);
+      }
+      /* When multiple units are selected (multi-focus), draw a small cyan
+       * star badge on every tile that contains at least one selected unit,
+       * so the player can see which tiles have selected units at a glance. */
+      if (focus_units.length > 1 && tile_has_focus) {
+        map2d_draw_multi_select_badge(ctx, v.cx, v.cy, tw, th);
       }
     }
   }
@@ -1006,11 +1021,14 @@ function map2d_update_mouse_cursor()
  * actions and tile info are reachable with a single click/tap,
  * including on mobile where there is no right-click.
  *
- * @param {Tile} ptile     - The tile that was clicked.
+ * @param {Tile} ptile       - The tile that was clicked.
  * @param {object} [event_pos] - Optional {clientX, clientY} for context
  *                               menu positioning in 2D mode.
+ * @param {boolean} [shift_select] - When true the Shift key was held;
+ *                                   adds the clicked unit to the current
+ *                                   selection rather than replacing it.
  */
-function map2d_handle_tile_click(ptile, event_pos)
+function map2d_handle_tile_click(ptile, event_pos, shift_select)
 {
   if (ptile == null) return;
 
@@ -1021,6 +1039,11 @@ function map2d_handle_tile_click(ptile, event_pos)
     render_2d_map();
     return;
   }
+
+  /* Shift+click: append the unit(s) on the clicked tile to the current
+   * selection rather than replacing it.  No context menu is shown. */
+  var qtype = (shift_select && typeof SELECT_APPEND !== 'undefined')
+              ? SELECT_APPEND : SELECT_POPUP;
 
   /* In 2D-only mode, update the last known event position so that any
    * context menu opened via do_map_click → show_map_context_menu appears
@@ -1035,12 +1058,12 @@ function map2d_handle_tile_click(ptile, event_pos)
       && typeof client !== 'undefined' && client.conn && client.conn.playing) {
     map2d_mouse_tile = ptile;
     if (pos) map2d_last_event_pos = pos;
-    do_map_click(ptile, SELECT_POPUP, true);
+    do_map_click(ptile, qtype, true);
     render_2d_map();
     return;
   }
 
-  do_map_click(ptile, SELECT_POPUP, true);
+  do_map_click(ptile, qtype, true);
   render_2d_map();
 }
 
@@ -1601,6 +1624,38 @@ function map2d_draw_unit_count(ctx, count, cx, cy, tw, th)
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
   ctx.fillText(count > 9 ? '9+' : String(count), bx, by + r);
+}
+
+/* ------------------------------------------------------------------ */
+/*  Multi-select badge                                                  */
+/* ------------------------------------------------------------------ */
+
+/**
+ * Draw a small cyan star badge in the bottom-right corner of a tile to
+ * indicate that this tile contains a unit that is part of a multi-unit
+ * selection.  The badge makes it visually clear which tiles have selected
+ * units when the player has more than one unit in focus.
+ * @param {CanvasRenderingContext2D} ctx
+ * @param {number} cx - Canvas x pixel coordinate of the tile's top-left corner.
+ * @param {number} cy - Canvas y pixel coordinate of the tile's top-left corner.
+ * @param {number} tw - Tile width in pixels at current zoom.
+ * @param {number} th - Tile height in pixels at current zoom.
+ */
+function map2d_draw_multi_select_badge(ctx, cx, cy, tw, th)
+{
+  if (tw < 10) return;
+  var r = Math.max(4, Math.floor(Math.min(tw, th) * 0.18));
+  var bx = cx + tw - r - 1;
+  var by = cy + th - r - 1;
+  ctx.fillStyle = '#00ccff';
+  ctx.beginPath();
+  ctx.arc(bx, by, r, 0, 2 * Math.PI);
+  ctx.fill();
+  ctx.fillStyle = '#ffffff';
+  ctx.font = 'bold ' + Math.max(5, r) + 'px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('\u2605', bx, by); /* ★ */
 }
 
 /* ------------------------------------------------------------------ */

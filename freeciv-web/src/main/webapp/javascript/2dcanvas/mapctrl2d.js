@@ -224,7 +224,8 @@ function init_2d_map_controls() {
         if (tile && e.button !== 2) {
           // Left-click or Mobile tap: delegate to the tile-click handler so that
           // city dialogs, unit selection, and goto all work correctly on mobile.
-          map2d_handle_tile_click(tile, e.type === 'touchend' ? ptr : e);
+          // Pass the original event so Shift-key state is available for multi-select.
+          map2d_handle_tile_click(tile, e.type === 'touchend' ? ptr : e, e.shiftKey || false);
         }
       }
 
