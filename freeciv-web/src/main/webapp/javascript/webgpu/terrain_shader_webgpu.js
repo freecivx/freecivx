@@ -49,7 +49,7 @@ function createTerrainShaderTSL(uniforms) {
     const { 
         texture, uniform, positionLocal, attribute, uv, normalLocal,
         vec2, vec3, vec4, int,
-        mix, step, floor, fract, mod, dot, sin, cos, normalize, max, min, pow, clamp, abs,
+        mix, step, floor, fract, mod, dot, max, min, clamp, abs,
         mul, add, sub, div,
         smoothstep, hash, fwidth
     } = THREE;
@@ -58,7 +58,7 @@ function createTerrainShaderTSL(uniforms) {
     const requiredTSLNames = [
         'texture', 'uniform', 'positionLocal', 'attribute', 'uv', 'normalLocal',
         'vec2', 'vec3', 'vec4', 'int',
-        'mix', 'step', 'floor', 'fract', 'mod', 'dot', 'sin', 'cos', 'normalize', 'max', 'min', 'pow', 'clamp', 'abs',
+        'mix', 'step', 'floor', 'fract', 'mod', 'dot', 'max', 'min', 'clamp', 'abs',
         'mul', 'add', 'sub', 'div',
         'smoothstep', 'hash', 'fwidth'
     ];
@@ -69,7 +69,6 @@ function createTerrainShaderTSL(uniforms) {
     }
 
     // Define terrain type constants (matching game logic)
-    const TERRAIN_INACCESSIBLE = 0.0;
     const TERRAIN_LAKE = 10.0;
     const TERRAIN_COAST = 20.0;
     const TERRAIN_FLOOR = 30.0;
@@ -95,10 +94,6 @@ function createTerrainShaderTSL(uniforms) {
     
     // Beach sand colour (warm golden sand) - precomputed for efficiency
     const BEACH_SAND_COLOR = { r: 0.92, g: 0.85, b: 0.65 };
-    
-    // Precomputed beach zone ranges for shader efficiency
-    const BEACH_LOWER_RANGE = BEACH_MID - BEACH_BLEND_HIGH;  // ≈ 1.1
-    const BEACH_UPPER_RANGE = BEACH_HIGH - BEACH_MID;        // ≈ 1.0
 
     // =========================================================================
     // HEXAGONAL TILE CONSTANTS (from HexConfig in config.js)
@@ -125,8 +120,6 @@ function createTerrainShaderTSL(uniforms) {
     // we need to stretch the hex in UV space by the inverse of the compression factor
     // This counteracts the mesh compression so the final rendered hex has correct proportions
     const HEX_ASPECT = 1.0 / HEX_MESH_HEIGHT_FACTOR; // ≈ 1.1547 - Y-coordinate scale factor for hex geometry
-    const HEX_EDGE_WIDTH = hexConfig.EDGE_WIDTH; // Width of hex edge highlight (as fraction of tile)
-    const HEX_EDGE_SOFTNESS = hexConfig.EDGE_SOFTNESS; // Edge anti-aliasing softness
     const HEX_EDGE_BLEND_STRENGTH = hexConfig.EDGE_BLEND_STRENGTH; // How strongly hex edges darken the terrain (0-1)
     const HEX_EDGE_COLOR_R = hexConfig.EDGE_COLOR.r; // Red component of edge darkening color
     const HEX_EDGE_COLOR_G = hexConfig.EDGE_COLOR.g; // Green component of edge darkening color  
@@ -135,7 +128,6 @@ function createTerrainShaderTSL(uniforms) {
 
     // Visibility constants (matching vertex color values from tile_visibility_handler.js)
     // These values are set in get_vertex_color_from_tile() and interpolated across vertices
-    const VISIBILITY_UNKNOWN = 0.0;   // Tile is unknown (black)
     const VISIBILITY_FOGGED = 0.54;   // Tile was seen but currently not visible (fogged)
     const VISIBILITY_VISIBLE = 1.0;   // Tile is fully visible
 
@@ -175,10 +167,6 @@ function createTerrainShaderTSL(uniforms) {
     // Road/railroad/river sprites are stored in DataArrayTexture (texture_2d_array) with 16 layers
     // Each layer is a separate sprite from the original 4x4 grid
     // Sprite indices: 1-9 for roads, 10-19 for railroads, 20-29 for rivers, 42/43/53 for junctions
-    // Irrigation/Farmland flags from maptiles blue channel
-    const IRRIGATION_FLAG = 1.0;
-    const FARMLAND_FLAG = 2.0;
-
     // Map size uniforms
     const map_x_size = uniform(uniforms.map_x_size.value);
     const map_y_size = uniform(uniforms.map_y_size.value);
@@ -228,7 +216,6 @@ function createTerrainShaderTSL(uniforms) {
     // Remove the stagger from UV to get the logical tile X coordinate
     const hexOffsetX = mul(isOddRow, div(0.5, map_x_size));
     const hexUvX = sub(uvNode.x, hexOffsetX);
-    const hexUV = vec2(hexUvX, uvNode.y);
     
     // Calculate the tile X coordinate
     const tileXRaw = mul(map_x_size, hexUvX);
@@ -441,6 +428,13 @@ function createTerrainShaderTSL(uniforms) {
     for (const layer of layers) {
         finalColor = mix(finalColor, layer.color, layer.mask);
     }
+
+    // Per-tile brightness variation (free – reuses rnd.x from the hash already computed above).
+    // Keeps a ±7 % range so adjacent tiles are visually distinct without looking noisy.
+    const BRIGHTNESS_MIN   = 0.93;  // darkest a tile can be relative to its base texture
+    const BRIGHTNESS_RANGE = 0.14;  // full range (0.93 → 1.07, i.e. ±7 %)
+    const perTileBrightness = add(BRIGHTNESS_MIN, mul(rnd.x, BRIGHTNESS_RANGE));
+    finalColor = vec4(mul(finalColor.rgb, perTileBrightness), finalColor.a);
 
     // =========================================================================
     // IRRIGATION AND FARMLAND RENDERING
@@ -760,8 +754,7 @@ function createTerrainShaderTSL(uniforms) {
     
     // Convert texture value (0-1) to visibility scale
     // Texture stores: 0=unknown, ~0.541=fogged, 1.0=visible
-    // After scaling by VISIBILITY_VISIBLE (1.0): 0, ~0.54, 1.0
-    const hexVisibilityScaled = mul(hexVisibility, VISIBILITY_VISIBLE);
+    // softVisibility and softVisibilityScaled use hexVisibility directly below
     
     // =========================================================================
     // SOFT EDGES BETWEEN UNKNOWN AND KNOWN TILES
@@ -819,10 +812,6 @@ function createTerrainShaderTSL(uniforms) {
     // - When a city is selected, tiles belonging to the city remain at full brightness
     // - Other tiles are dimmed to 0.30 brightness
     // This uses vertex interpolation which provides smooth transitions at tile boundaries
-    // 
-    // We compare the vertex color with the hex visibility to detect active city dimming:
-    // - If vertColor.x < hexVisibilityScaled, the tile is being dimmed for active city view
-    // - In this case, use the dimmed vertex color value instead of the texture visibility
     const vertexVisibility = vertColor.x;
     
     // Use the minimum of hex visibility and vertex visibility

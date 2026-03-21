@@ -102,11 +102,14 @@ function add_quality_dependent_objects_webgpu() {
  - Hex-aware: Uses hexagonal tile coordinate system for visibility sampling
 ****************************************************************************/
 function createWaterMaterialTSL() {
-  const { uniform, uv, vec2, vec3, vec4, sin, cos, mix, fract, clamp, pow, sqrt, mul, add, sub, abs, floor, texture, mod, max, div, step } = THREE;
-  
-  // Time uniform for animation
-  const timeUniform = uniform(0.0);
-  window.waterTimeUniform = timeUniform;
+  // mx_noise_float – MaterialX GPU-native gradient noise, returns [0, 1].
+  // Replaces the old hand-rolled hash+bilinear noise2D helper: same cost,
+  // better quality (true gradient Perlin vs value noise).
+  // time – built-in Three.js TSL clock node; automatically updated by the
+  // renderer each frame, so no manual uniform or update function is needed.
+  const { uniform, uv, vec2, vec3, vec4, sin, mix, fract, clamp, pow,
+          mul, add, sub, abs, floor, texture, mod, max, div,
+          time, mx_noise_float } = THREE;
   
   const uvNode = uv();
   
@@ -124,7 +127,6 @@ function createWaterMaterialTSL() {
   };
   const HEX_SQRT3_OVER_2 = hexConfig.SQRT3_OVER_2; // sqrt(3)/2
   const HEX_MESH_HEIGHT_FACTOR = HEX_SQRT3_OVER_2;
-  const HEX_ASPECT = 1.0 / HEX_MESH_HEIGHT_FACTOR; // ~1.1547
   
   // Calculate which tile row we're in (used for stagger offset)
   const tileYRaw = mul(map_y_size, uvNode.y);
@@ -167,60 +169,32 @@ function createWaterMaterialTSL() {
   const shallowWater = waterConfig
     ? vec3(waterConfig.COLORS.SHALLOW.r, waterConfig.COLORS.SHALLOW.g, waterConfig.COLORS.SHALLOW.b)
     : vec3(0.18, 0.50, 0.60);
-  const surfaceHighlight = waterConfig
-    ? vec3(waterConfig.COLORS.SURFACE.r, waterConfig.COLORS.SURFACE.g, waterConfig.COLORS.SURFACE.b)
-    : vec3(0.35, 0.60, 0.72);
   const causticColor = waterConfig
     ? vec3(waterConfig.COLORS.CAUSTIC.r, waterConfig.COLORS.CAUSTIC.g, waterConfig.COLORS.CAUSTIC.b)
     : vec3(0.50, 0.75, 0.85);
   
-  // ==== PROCEDURAL NOISE FUNCTIONS ====
-  // Simple hash function for pseudo-random values
-  function hash(p) {
-    return fract(mul(sin(mul(p, 127.1)), 43758.5453));
-  }
-  
-  // Smooth noise using hash
-  function noise2D(x, y) {
-    const ix = floor(x);
-    const iy = floor(y);
-    const fx = fract(x);
-    const fy = fract(y);
-    
-    // Smooth interpolation curve
-    const ux = mul(mul(fx, fx), sub(3.0, mul(2.0, fx)));
-    const uy = mul(mul(fy, fy), sub(3.0, mul(2.0, fy)));
-    
-    // Corner values
-    const a = hash(add(ix, mul(iy, 157.0)));
-    const b = hash(add(add(ix, 1.0), mul(iy, 157.0)));
-    const c = hash(add(ix, mul(add(iy, 1.0), 157.0)));
-    const d = hash(add(add(ix, 1.0), mul(add(iy, 1.0), 157.0)));
-    
-    // Bilinear interpolation
-    const mixAB = mix(a, b, ux);
-    const mixCD = mix(c, d, ux);
-    return mix(mixAB, mixCD, uy);
-  }
-  
   // ==== CAUSTIC PATTERN ====
-  // Creates cell-like caustic patterns that slowly drift
+  // mx_noise_float(vec3(u, v, 0)) samples 3-D MaterialX gradient noise at
+  // z=0, giving the same smooth Perlin-like result as the old noise2D helper
+  // but using the GPU's native implementation – cleaner and no manual hash code.
+  // The product of two layers creates sharp bright lines where both peak at
+  // once, mimicking real underwater caustic light patterns.
   const causticScale = waterConfig ? waterConfig.CAUSTICS.SCALE : 12.0;
   const causticSpeed = waterConfig ? waterConfig.CAUSTICS.SPEED : 0.08;
   
-  // Layer 1: Primary caustic pattern
-  const causticU1 = add(mul(uvNode.x, causticScale), mul(timeUniform, causticSpeed));
-  const causticV1 = add(mul(uvNode.y, causticScale), mul(timeUniform, mul(causticSpeed, 0.7)));
-  const caustic1 = noise2D(causticU1, causticV1);
+  // Layer 1: primary caustic, drifting diagonally
+  const causticU1 = add(mul(uvNode.x, causticScale), mul(time, causticSpeed));
+  const causticV1 = add(mul(uvNode.y, causticScale), mul(time, mul(causticSpeed, 0.7)));
+  const caustic1 = mx_noise_float(vec3(causticU1, causticV1, 0.0));
   
-  // Layer 2: Secondary caustic (different scale and direction)
-  const causticU2 = sub(mul(uvNode.x, mul(causticScale, 1.5)), mul(timeUniform, mul(causticSpeed, 0.5)));
-  const causticV2 = add(mul(uvNode.y, mul(causticScale, 1.3)), mul(timeUniform, mul(causticSpeed, 0.3)));
-  const caustic2 = noise2D(causticU2, causticV2);
+  // Layer 2: secondary caustic, different scale and counter-drift direction
+  const causticU2 = sub(mul(uvNode.x, mul(causticScale, 1.5)), mul(time, mul(causticSpeed, 0.5)));
+  const causticV2 = add(mul(uvNode.y, mul(causticScale, 1.3)), mul(time, mul(causticSpeed, 0.3)));
+  const caustic2 = mx_noise_float(vec3(causticU2, causticV2, 0.0));
   
-  // Combine caustics for cell-like pattern
-  const causticPattern = mul(add(caustic1, caustic2), 0.5);
-  const causticIntensity = clamp(mul(sub(causticPattern, 0.3), 2.5), 0.0, 1.0);
+  // Product combine: bright only where both layers are simultaneously bright
+  const causticPattern = mul(caustic1, caustic2);
+  const causticIntensity = clamp(mul(sub(causticPattern, 0.10), 4.0), 0.0, 1.0);
   
   // ==== GENTLE SURFACE RIPPLES ====
   // Very subtle ripple movement (not waves, just surface shimmer)
@@ -228,8 +202,8 @@ function createWaterMaterialTSL() {
   const rippleSpeed = waterConfig ? waterConfig.RIPPLES.SPEED : 0.15;
   const rippleAmplitude = waterConfig ? waterConfig.RIPPLES.AMPLITUDE : 0.1;
   
-  const ripple1 = sin(add(mul(add(mul(uvNode.x, 1.0), mul(uvNode.y, 0.5)), rippleScale), mul(timeUniform, rippleSpeed)));
-  const ripple2 = sin(add(mul(add(mul(uvNode.x, 0.7), mul(uvNode.y, 1.0)), mul(rippleScale, 0.8)), mul(timeUniform, mul(rippleSpeed, 1.3))));
+  const ripple1 = sin(add(mul(add(mul(uvNode.x, 1.0), mul(uvNode.y, 0.5)), rippleScale), mul(time, rippleSpeed)));
+  const ripple2 = sin(add(mul(add(mul(uvNode.x, 0.7), mul(uvNode.y, 1.0)), mul(rippleScale, 0.8)), mul(time, mul(rippleSpeed, 1.3))));
   const rippleValue = mul(add(ripple1, ripple2), rippleAmplitude);
   
   // ==== BASE COLOR GRADIENT ====
@@ -247,6 +221,15 @@ function createWaterMaterialTSL() {
   const causticIntensityFactor = waterConfig ? waterConfig.CAUSTICS.INTENSITY : 0.15;
   const colorWithCaustics = mix(baseColor, causticColor, mul(causticIntensity, causticIntensityFactor));
   
+  // ==== FOAM HIGHLIGHTS ====
+  // Bright white-blue specks at caustic intensity peaks simulate wind-blown foam.
+  // Reuses the already-computed causticIntensity – zero extra texture reads.
+  const FOAM_THRESHOLD  = 0.78;  // causticIntensity level at which foam starts appearing
+  const FOAM_SHARPNESS  = 5.0;   // how quickly foam ramps from threshold to full intensity
+  const FOAM_STRENGTH   = 0.12;  // maximum additive brightness of the foam highlight
+  const foamAmount = clamp(mul(sub(causticIntensity, FOAM_THRESHOLD), FOAM_SHARPNESS), 0.0, 1.0);
+  const foamColor = mul(vec3(0.88, 0.94, 1.0), mul(foamAmount, FOAM_STRENGTH));
+
   // ==== GENTLE SPECULAR ====
   // Soft sun reflection based on ripples (not dramatic)
   const specularPower = waterConfig ? waterConfig.SPECULAR.POWER : 8.0;
@@ -260,14 +243,14 @@ function createWaterMaterialTSL() {
   const shimmerScale = waterConfig ? waterConfig.SHIMMER.SCALE : 40.0;
   const shimmerSpeed = waterConfig ? waterConfig.SHIMMER.SPEED : 0.2;
   const shimmerIntensity = waterConfig ? waterConfig.SHIMMER.INTENSITY : 0.03;
-  const shimmerU = add(mul(uvNode.x, shimmerScale), mul(timeUniform, shimmerSpeed));
-  const shimmerV = add(mul(uvNode.y, mul(shimmerScale, 0.875)), mul(timeUniform, mul(shimmerSpeed, 0.75)));
+  const shimmerU = add(mul(uvNode.x, shimmerScale), mul(time, shimmerSpeed));
+  const shimmerV = add(mul(uvNode.y, mul(shimmerScale, 0.875)), mul(time, mul(shimmerSpeed, 0.75)));
   const shimmer = mul(fract(mul(sin(add(shimmerU, shimmerV)), 43758.5)), shimmerIntensity);
   
   // ==== EDGE DARKENING (Vignette) ====
-  // Slight darkening at edges for depth
-  // Use Chebyshev distance (max(|cx|,|cy|)) instead of Euclidean sqrt for better
-  // performance and a square falloff that matches tile-based game viewports.
+  // Slight darkening at edges for depth.
+  // Chebyshev distance (max(|cx|,|cy|)) gives a square falloff matching the
+  // tile-based game viewport without requiring a costly sqrt.
   const edgeDarkenStrength = waterConfig ? waterConfig.EDGE.DARKEN : 0.15;
   const edgeMax = waterConfig ? waterConfig.EDGE.MAX : 0.1;
   const cx = sub(uvNode.x, 0.5);
@@ -276,7 +259,8 @@ function createWaterMaterialTSL() {
   const edgeDarken = clamp(mul(edgeDist, edgeDarkenStrength), 0.0, edgeMax);
   
   // ==== FINAL COMPOSITION ====
-  const colorWithSpecular = add(colorWithCaustics, specularTint);
+  const colorWithFoam = add(colorWithCaustics, foamColor);
+  const colorWithSpecular = add(colorWithFoam, specularTint);
   const colorWithShimmer = add(colorWithSpecular, vec3(shimmer, shimmer, shimmer));
   const colorBeforeVisibility = sub(colorWithShimmer, vec3(edgeDarken, edgeDarken, edgeDarken));
   
@@ -302,15 +286,10 @@ function createWaterMaterialTSL() {
 }
 
 /****************************************************************************
- Update water animation time uniform. Called from render loop.
+ Update water animation. No-op: animation is now driven by the built-in
+ THREE.time TSL node which the renderer advances automatically each frame.
+ Kept for API compatibility with callers in mapview_common.js / options.js.
 ****************************************************************************/
-function updateWaterAnimation(deltaTime) {
-  if (window.waterTimeUniform && window.waterTimeUniform.value !== undefined) {
-    window.waterTimeUniform.value += deltaTime;
-    // Wrap time to prevent float precision loss in sin() after long play sessions.
-    // 1000 seconds keeps values well within float32 precision range.
-    if (window.waterTimeUniform.value > 1000.0) {
-      window.waterTimeUniform.value -= 1000.0;
-    }
-  }
-}
+function updateWaterAnimation() { /* driven by THREE.time node */ }
+window.updateWaterAnimation = updateWaterAnimation;
+window.add_quality_dependent_objects_webgpu = add_quality_dependent_objects_webgpu;
