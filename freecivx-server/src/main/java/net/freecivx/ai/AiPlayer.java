@@ -251,6 +251,12 @@ public class AiPlayer {
         // Phase 2: city production — delegate to AiCity
         aiCity.manageAiCities();
 
+        // Phase 2.3: upgrade obsolete units when gold reserves allow.
+        // Mirrors dai_upgrade_units() in ai/default/aihand.c: the AI spends
+        // excess gold to modernise veteran troops (e.g. Warriors → Phalanx,
+        // Phalanx → Legion) before spending it on new production.
+        upgradeObsoleteUnits();
+
         // Phase 2.5: spaceship launch — if any AI player's spaceship is ready
         // (state == STARTED and success_rate > 0), launch it automatically.
         // Mirrors the end-of-turn launch check in the C Freeciv AI.
@@ -294,6 +300,13 @@ public class AiPlayer {
             // Mirrors the sea-unit branch in dai_manage_unit() in daiunit.c.
             if (utype.getDomain() == 1 && utype.getAttackStrength() > 0) {
                 aiMilitary.handleNavalUnit(unit, utype, owner);
+                continue;
+            }
+
+            // Air units (domain == 2) get dedicated air combat AI.
+            // Mirrors the air-unit branch in dai_manage_unit() in daiunit.c / aiair.c.
+            if (utype.getDomain() == 2 && utype.getAttackStrength() > 0) {
+                aiMilitary.handleAirUnit(unit, utype, owner);
                 continue;
             }
 
@@ -513,6 +526,91 @@ public class AiPlayer {
     // =========================================================================
     // Tax rate management (inspired by dai_manage_taxes() in aihand.c)
     // =========================================================================
+
+    // =========================================================================
+    // Unit upgrade management (mirrors dai_upgrade_units() in aihand.c)
+    // =========================================================================
+
+    /**
+     * Upgrades obsolete units for all AI players when they have sufficient gold
+     * reserves.  Only units located inside a friendly city can be upgraded
+     * (matching the C server constraint: the unit must be in a city of the same
+     * owner).
+     *
+     * <p>Mirrors {@code dai_upgrade_units()} in the C Freeciv server's
+     * {@code ai/default/aihand.c}: scan every unit that has an upgrade path,
+     * check whether the player can afford the cost, and perform the upgrade.
+     * Prioritises veteran / highly experienced units (highest HP fraction) so
+     * that the most battle-hardened troops are modernised first.
+     *
+     * <p>A minimum gold reserve ({@link #AI_UPGRADE_GOLD_RESERVE}) is kept in
+     * the treasury before any upgrade is attempted, mirroring the gold-reserve
+     * guard in the C server's {@code dai_gold_reserve()}.
+     */
+    private void upgradeObsoleteUnits() {
+        for (Player player : new ArrayList<>(game.players.values())) {
+            if (!player.isAi() || !player.isAlive()) continue;
+            if (player.getPlayerNo() == Barbarian.BARBARIAN_PLAYER_ID) continue;
+            upgradeUnitsForPlayer(player);
+        }
+    }
+
+    /**
+     * Upgrades all upgradeable units in friendly cities for one AI player,
+     * subject to the gold-reserve constraint.
+     *
+     * @param player the AI player whose units should be upgraded
+     */
+    private void upgradeUnitsForPlayer(Player player) {
+        long pid = player.getPlayerNo();
+
+        // Build a lookup of city tile → city game-map key for fast "is unit in a city?" checks.
+        Map<Long, Long> cityIdByTile = new HashMap<>();
+        for (Map.Entry<Long, City> e : game.cities.entrySet()) {
+            if (e.getValue().getOwner() == pid) cityIdByTile.put(e.getValue().getTile(), e.getKey());
+        }
+        if (cityIdByTile.isEmpty()) return;
+
+        // Collect all units that can be upgraded and are currently in a friendly city.
+        List<Unit> candidates = new ArrayList<>();
+        for (Unit unit : game.units.values()) {
+            if (unit.getOwner() != pid) continue;
+            if (!cityIdByTile.containsKey(unit.getTile())) continue;
+            UnitType utype = game.unitTypes.get((long) unit.getType());
+            if (utype == null || utype.getUpgradesTo() < 0) continue;
+            // Only upgrade if the upgraded type exists in the ruleset.
+            if (!game.unitTypes.containsKey((long) utype.getUpgradesTo())) continue;
+            candidates.add(unit);
+        }
+        if (candidates.isEmpty()) return;
+
+        // Sort by HP fraction descending so veteran units are upgraded first.
+        candidates.sort((a, b) -> {
+            UnitType ta = game.unitTypes.get((long) a.getType());
+            UnitType tb = game.unitTypes.get((long) b.getType());
+            double fracA = (ta != null && ta.getHp() > 0) ? (double) a.getHp() / ta.getHp() : 0;
+            double fracB = (tb != null && tb.getHp() > 0) ? (double) b.getHp() / tb.getHp() : 0;
+            return Double.compare(fracB, fracA);
+        });
+
+        for (Unit unit : candidates) {
+            // Keep a minimum gold reserve before upgrading.
+            if (player.getGold() < AI_UPGRADE_GOLD_RESERVE) break;
+
+            Long cityId = cityIdByTile.get(unit.getTile());
+            if (cityId == null) continue;
+            net.freecivx.server.UnitTools.upgradeUnit(game, unit.getId(), cityId);
+        }
+    }
+
+    /**
+     * Minimum gold the AI keeps in reserve before spending gold on unit upgrades.
+     * Mirrors the reserve-before-upgrade guard in {@code dai_upgrade_units()} in
+     * {@code ai/default/aihand.c}.
+     */
+    private static final int AI_UPGRADE_GOLD_RESERVE = 50;
+
+
 
     /**
      * Adjusts the tax/science/luxury rates of every AI player to maintain a
@@ -816,6 +914,8 @@ public class AiPlayer {
             techFeudalism,            // Pikemen — 2× defence vs Horse units
             techHorsebackRiding,      // Horsemen (fast raider, 2 move)
             techIronWorking,          // Legion — 4 atk / 2 def, best early unit
+            techChivalry,             // Knights — strong mid-game cavalry attacker
+            techGunpowder,            // Musketeers — mid-game attacker/defender
             techMapMaking,            // Trireme naval unit — coastal expansion/patrol
             techMathematics,          // University tech prerequisite + Navigation prereq
             techNavigation,           // Caravel naval unit — mid-game naval exploration
@@ -824,7 +924,10 @@ public class AiPlayer {
             techBanking,              // Bank — gold income ×1.5
             techUniversity,           // University building — science ×2
             techDemocracy,            // Democracy government (zero corruption)
+            techConscription,         // Riflemen — strong late attacker/defender
+            techTactics,              // Cavalry — powerful late-game cavalry
             techIndustrialization,    // Factory — shields ×1.5
+            techMobileWarfare,        // Armor — best land attacker
             techEconomics,            // Stock Exchange — gold/luxury ×1.5 additional
             techFlight,               // Fighter air unit — air supremacy
             techRocketry,             // Apollo Program wonder prerequisite

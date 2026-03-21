@@ -319,23 +319,43 @@ class AiMilitary {
     // =========================================================================
 
     /**
-     * Computes a numeric danger score for a city by summing enemy military unit
-     * attack strength weighted by proximity.  Only units from players that are
-     * actively at war (DS_WAR) with the city owner are counted, mirroring the
+     * Computes a numeric danger score for a city by comparing incoming enemy
+     * threat against the city's current garrison defence.
+     *
+     * <p>The raw threat is the sum of enemy-unit attack-strength values weighted
+     * by proximity (closer enemies contribute more).  Only units belonging to
+     * players at war (DS_WAR) are counted, mirroring the
      * {@code pplayers_at_war()} filter in {@code assess_danger()} in
      * {@code ai/default/daimilitary.c}.
      *
+     * <p>The garrison defence score is the sum of defence-strength values of
+     * all friendly military units currently on the city tile.  The final danger
+     * score is {@code max(0, threat - garrisonDefence)}, so a city that already
+     * has a strong garrison contributes 0 (no additional units needed).
+     * This mirrors the {@code defense_value} vs {@code attack_value} comparison
+     * in {@code assess_danger()} in the C Freeciv server.
+     *
      * @param city the city to evaluate
-     * @return non-negative danger score; 0 = no threat
+     * @return non-negative net danger score; 0 = no net threat
      */
     int assessCityDanger(City city) {
         long cx = city.getTile() % game.map.getXsize();
         long cy = city.getTile() / game.map.getXsize();
         long ownerId = city.getOwner();
-        int dangerScore = 0;
+        int threatScore = 0;
+        int garrisonDefence = 0;
 
         for (Unit u : game.units.values()) {
-            if (u.getOwner() == ownerId) continue;
+            if (u.getOwner() == ownerId) {
+                // Friendly unit on the city tile: contribute to garrison defence.
+                if (u.getTile() == city.getTile()) {
+                    UnitType utype = game.unitTypes.get((long) u.getType());
+                    if (utype != null && utype.getDefenseStrength() > 0) {
+                        garrisonDefence += utype.getDefenseStrength() * veteranFactor(u);
+                    }
+                }
+                continue;
+            }
             // Only count units belonging to players we are at war with.
             if (!isAtWarWith(ownerId, u.getOwner())) continue;
             UnitType utype = game.unitTypes.get((long) u.getType());
@@ -346,9 +366,30 @@ class AiMilitary {
             long dist = Math.abs(ux - cx) + Math.abs(uy - cy);
             if (dist > ASSESS_DANGER_MAX_DISTANCE) continue;
 
-            dangerScore += utype.getAttackStrength() * (ASSESS_DANGER_MAX_DISTANCE + 1 - dist);
+            // Weight threat by proximity; veteran bonus adds extra threat.
+            threatScore += utype.getAttackStrength()
+                    * (ASSESS_DANGER_MAX_DISTANCE + 1 - dist)
+                    * veteranFactor(u);
         }
-        return dangerScore;
+
+        // Net danger = how much the threat exceeds the current garrison.
+        // A well-defended city returns 0 even if there are nearby enemies.
+        return Math.max(0, threatScore - garrisonDefence);
+    }
+
+    /**
+     * Returns a multiplier that scales a unit's combat effectiveness based on
+     * its veteran level.  A veteran level of 0 returns 1; each additional level
+     * adds 1 more, so a maximum-veteran unit contributes proportionally more.
+     * Used consistently in both threat and garrison calculations in
+     * {@link #assessCityDanger(City)} so that the formula is applied identically
+     * on both sides of the danger comparison.
+     *
+     * @param unit the unit to evaluate
+     * @return veteran factor ≥ 1
+     */
+    private static int veteranFactor(Unit unit) {
+        return 1 + unit.getVeteran();
     }
 
     // =========================================================================
@@ -828,5 +869,61 @@ class AiMilitary {
             }
         }
         return bestTile;
+    }
+
+    // =========================================================================
+    // Air unit AI (mirrors aiair.c)
+    // =========================================================================
+
+    /** Unit domain constant for air units (matches C server {@code UTYF_AIR}). */
+    private static final int DOMAIN_AIR = 2;
+
+    /**
+     * Air unit AI: attacks the nearest enemy unit or city, then returns to a
+     * friendly city to refuel / rearm.  If the unit is already in a friendly
+     * city with no moves left it fortifies (rearms).
+     *
+     * <p>Mirrors the air-unit management in {@code dai_manage_unit()} in
+     * {@code ai/default/daiunit.c} and {@code dai_manage_airunit()} in
+     * {@code ai/default/aiair.c}: the fighter patrols between a friendly base
+     * city and the nearest enemy target.
+     *
+     * @param unit  the air unit
+     * @param utype the unit type definition
+     * @param owner the owning AI player
+     */
+    void handleAirUnit(Unit unit, UnitType utype, Player owner) {
+        long ownerId = owner.getPlayerNo();
+
+        // HP recovery: critically damaged air units stay in a friendly city to heal.
+        if (needsHpRecovery(unit, utype)) {
+            manageHpRecovery(unit, utype, ownerId);
+            return;
+        }
+
+        // Find the nearest offensive target (enemy unit or city).
+        long offensiveTarget = findNearestOffensiveTarget(unit.getTile(), ownerId);
+
+        while (unit.getMovesleft() > 0 && game.units.containsKey(unit.getId())) {
+            // Try an opportunistic attack on an adjacent enemy first.
+            if (attackAdjacentEnemy(unit, owner)) continue;
+
+            if (offensiveTarget >= 0) {
+                // Move toward the offensive target.
+                if (!moveUnitToward(unit, utype, offensiveTarget)) break;
+            } else {
+                // No war target — return to the nearest friendly city to rearm/patrol.
+                long baseTile = findNearestFriendlyCityTile(unit.getTile(), ownerId, utype);
+                if (baseTile >= 0 && baseTile != unit.getTile()) {
+                    if (!moveUnitToward(unit, utype, baseTile)) break;
+                } else {
+                    // Already at base or nowhere to go — fortify.
+                    if (unit.getActivity() != CityTurn.ACTIVITY_FORTIFIED) {
+                        game.changeUnitActivity(unit.getId(), CityTurn.ACTIVITY_FORTIFIED);
+                    }
+                    break;
+                }
+            }
+        }
     }
 }
