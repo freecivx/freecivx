@@ -130,6 +130,16 @@ public class AiPlayer {
     int imprSpaceStructural  = -1; // Space Race part (Special genus, unlimited)
     int imprSpaceComponent   = -1; // Space Race part (Special genus, unlimited)
     int imprSpaceModule      = -1; // Space Race part (Special genus, unlimited)
+    // Great Wonders — build at most once per game; give empire-wide bonuses
+    // Mirrors the wonder-want calculation in dai_city_choose_build() (daicity.c)
+    int imprPyramids              = -1; // Masonry — reduces food lost on city growth/shrink
+    int imprGreatWall             = -1; // Masonry — free City Walls in all cities (obsoletes with Metallurgy)
+    int imprLighthouse            = -1; // Map Making — +1 naval move, veteran new ships (coastal)
+    int imprGreatLibrary          = -1; // Literacy — auto-learns techs known by 2+ civs (obsoletes with Electricity)
+    int imprLeonardosWorkshop     = -1; // Invention — upgrades one obsolete unit/turn (obsoletes with Automobile)
+    int imprCopernicusObservatory = -1; // Astronomy — +100% science in the city it is built
+    int imprIsaacNewtonsCollege   = -1; // Theory of Gravity — +100% science in all University cities
+    int imprBachsCathedral        = -1; // Theology — 2 unhappy→content in every city
 
     // Unit-type IDs — resolved at runtime by name in resolveGameIds().
     // Initial values of -1 are overwritten on the first AI turn.
@@ -219,6 +229,18 @@ public class AiPlayer {
     long techMachineTools       = -1L; // req: Steel + Industrialization — Artillery
     long techRobotics           = -1L; // req: Computers + Mobile Warfare — Howitzer
     long techCombustion         = -1L; // req: Refining + Steel — Submarine
+    // Additional tech IDs needed for wonders and mid/late-game buildings
+    long techPhilosophy         = -1L; // req: Mysticism + Literacy — prereq for Monotheism, Communism
+    long techAstronomy          = -1L; // req: Mysticism + Mathematics — Copernicus' Observatory
+    long techInvention          = -1L; // req: Engineering + Literacy — Leonardo's Workshop
+    long techEngineering        = -1L; // req: The Wheel + Construction — prereq for Invention, Sanitation
+    long techTheWheel           = -1L; // req: Horseback Riding — prereq for Engineering
+    long techTheoryOfGravity    = -1L; // req: Astronomy + University — Isaac Newton's College
+    long techTheology           = -1L; // req: Feudalism + Monotheism — J.S. Bach's Cathedral
+    long techMagnetism          = -1L; // req: Iron Working + Physics — prereq for Electricity, Radio
+    long techElectronics        = -1L; // req: The Corporation + Electricity — prereq for Computers, Nuclear Power
+    long techComputers          = -1L; // req: Mass Production + Miniaturization — Research Lab×, SETI, Space Flight prereq
+    long techNuclearPower       = -1L; // req: Nuclear Fission + Electronics — Nuclear Plant
 
     /** AI diplomacy subsystem. Mirrors daidiplomacy.c in the C Freeciv server. */
     private final AiDiplomacy aiDiplomacy = new AiDiplomacy();
@@ -415,6 +437,14 @@ public class AiPlayer {
                 case "Space Structural": imprSpaceStructural  = id; break;
                 case "Space Component":  imprSpaceComponent   = id; break;
                 case "Space Module":     imprSpaceModule      = id; break;
+                case "Pyramids":              imprPyramids              = id; break;
+                case "Great Wall":            imprGreatWall             = id; break;
+                case "Lighthouse":            imprLighthouse            = id; break;
+                case "Great Library":         imprGreatLibrary          = id; break;
+                case "Leonardo's Workshop":   imprLeonardosWorkshop     = id; break;
+                case "Copernicus' Observatory": imprCopernicusObservatory = id; break;
+                case "Isaac Newton's College":  imprIsaacNewtonsCollege   = id; break;
+                case "J.S. Bach's Cathedral":   imprBachsCathedral        = id; break;
                 case "Harbor":           imprHarbour          = id; break;
                 case "Offshore Platform": imprOffPlatform     = id; break;
                 case "Port Facility":    imprPortFacility     = id; break;
@@ -480,6 +510,17 @@ public class AiPlayer {
                 case "Machine Tools":     techMachineTools      = id; break;
                 case "Robotics":          techRobotics          = id; break;
                 case "Combustion":        techCombustion        = id; break;
+                case "Philosophy":        techPhilosophy        = id; break;
+                case "Astronomy":         techAstronomy         = id; break;
+                case "Invention":         techInvention         = id; break;
+                case "Engineering":       techEngineering       = id; break;
+                case "The Wheel":         techTheWheel          = id; break;
+                case "Theory of Gravity": techTheoryOfGravity   = id; break;
+                case "Theology":          techTheology          = id; break;
+                case "Magnetism":         techMagnetism         = id; break;
+                case "Electronics":       techElectronics       = id; break;
+                case "Computers":         techComputers         = id; break;
+                case "Nuclear Power":     techNuclearPower      = id; break;
                 default: break;
             }
         }
@@ -974,30 +1015,34 @@ public class AiPlayer {
             techBronzeWorking,        // Phalanx + military prerequisite chain
             techCurrency,             // Construction prerequisite (Aqueduct/Colosseum chain)
             techWarriorCode,          // Archers (strong attacker) + Feudalism prereq
-            techMasonry,              // Barracks + City Walls + Construction prereq
+            techMasonry,              // Barracks + City Walls + Construction prereq; Pyramids & Great Wall wonders
             techConstruction,         // Aqueduct (growth >8) + Colosseum (happiness)
             techAlphabet,             // Temple (happiness) + many prerequisites
             techWriting,              // Library → science bonus + Literacy prereq
             techCodeOfLaws,           // Marketplace + Monarchy/Literacy prerequisite
             techLiteracy,             // Philosophy prereq → University chain
             techCeremonialBurial,     // Temple + Monarchy prerequisite
-            techMysticism,            // Philosophy prereq → University chain
-            techMonotheism,           // Cathedral (happiness +3, requires Temple)
+            techMysticism,            // Philosophy prereq → University chain; Astronomy prereq
             techMonarchy,             // Better government (less corruption)
             techFeudalism,            // Pikemen — 2× defence vs Horse units
-            techHorsebackRiding,      // Horsemen (fast raider, 2 move)
+            techHorsebackRiding,      // Horsemen (fast raider, 2 move); The Wheel prereq
+            techTheWheel,             // Engineering prereq → Invention → Leonardo's Workshop
             techIronWorking,          // Legion — 4 atk / 2 def, best early unit
             techChivalry,             // Knights — strong mid-game cavalry attacker
             techGunpowder,            // Musketeers — mid-game attacker/defender; Coastal Defense
             techMetallurgy,           // Cannon — mid-game siege unit
             techExplosives,           // Engineers — faster terrain improvement
-            techMapMaking,            // Trireme naval unit — coastal expansion/patrol
+            techEngineering,          // The Wheel + Construction — Sanitation prereq; Invention prereq
+            techMapMaking,            // Trireme naval unit — coastal expansion/patrol; Lighthouse wonder
             techMathematics,          // University tech prerequisite + Navigation prereq; Catapult
+            techAstronomy,            // Copernicus' Observatory wonder; Theory of Gravity prereq
             techNavigation,           // Caravel naval unit — mid-game naval exploration
             techTrade,                // Banking + Industrialization prerequisite
             techTheRepublic,          // Republic government
             techBanking,              // Bank — gold income ×1.5
             techUniversity,           // University building — science ×2
+            techPhilosophy,           // Monotheism prereq; Communism prereq
+            techMonotheism,           // Cathedral (happiness +3, requires Temple)
             techSanitation,           // Sewer System — city growth beyond size 12
             techDemocracy,            // Democracy government (zero corruption)
             techConscription,         // Riflemen — strong late attacker/defender
@@ -1011,6 +1056,11 @@ public class AiPlayer {
             techAutomobile,           // Super Highways — trade bonus; Battleship; Mobile Warfare prereq
             techRefrigeration,        // Supermarket — food bonus
             techEconomics,            // Stock Exchange — gold/luxury ×1.5 additional
+            techInvention,            // Leonardo's Workshop wonder; Engineering + Literacy prereq
+            techTheoryOfGravity,      // Isaac Newton's College wonder — +100% science in University cities
+            techTheology,             // J.S. Bach's Cathedral wonder — 2 unhappy→content in all cities
+            techMagnetism,            // Iron Working + Physics — prereq for Electricity, Radio
+            techElectronics,          // The Corporation + Electricity — Computers; Nuclear Power
             techAdvancedFlight,       // Bomber — heavy air unit
             techFlight,               // Fighter air unit — air supremacy
             techRobotics,             // Howitzer — best siege unit
@@ -1018,6 +1068,8 @@ public class AiPlayer {
             techMassProduction,       // Mass Transit — removes city pollution
             techAmphibious,           // Port Facility — naval infrastructure
             techRocketry,             // Apollo Program wonder prerequisite; SAM Battery
+            techComputers,            // Research Lab bonus; SETI Program; Space Flight prereq
+            techNuclearPower,         // Nuclear Plant — shields +25% with less pollution
             techSpaceFlight,          // Space Structural + Apollo Program
             techPlastics,             // Space Component
             techSuperconductors,      // Space Module
@@ -1069,10 +1121,14 @@ public class AiPlayer {
             techSteel,             // Cruiser naval power
             techAutomobile,        // Super Highways + Battleship
             techEconomics,         // Stock Exchange — trade/gold boost
+            techAstronomy,         // Copernicus' Observatory — +100% science in one city
+            techTheoryOfGravity,   // Isaac Newton's College — +100% science in all University cities
+            techInvention,         // Leonardo's Workshop — free unit upgrades
             techAdvancedFlight,    // Bomber — air supremacy
             techFlight,            // Fighter unit — air superiority
             techRobotics,          // Howitzer — best siege unit
             techRocketry,          // Apollo Program wonder prerequisite
+            techComputers,         // Research Lab multiplier + Space Flight prereq
             techSpaceFlight,       // Space Structural + Apollo Program
             techPlastics,          // Space Component
             techSuperconductors,   // Space Module
