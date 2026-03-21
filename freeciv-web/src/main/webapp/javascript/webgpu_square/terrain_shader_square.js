@@ -42,7 +42,7 @@ function createTerrainShaderSquareTSL(uniforms) {
     const { 
         texture, uniform, positionLocal, attribute, uv, normalLocal,
         vec2, vec3, vec4, int,
-        mix, step, floor, fract, mod, dot, sin, cos, normalize, max, min, pow, clamp, abs,
+        mix, step, floor, fract, dot, max, min, clamp, abs,
         mul, add, sub, div,
         smoothstep, hash, fwidth
     } = THREE;
@@ -51,7 +51,7 @@ function createTerrainShaderSquareTSL(uniforms) {
     const requiredTSLNames = [
         'texture', 'uniform', 'positionLocal', 'attribute', 'uv', 'normalLocal',
         'vec2', 'vec3', 'vec4', 'int',
-        'mix', 'step', 'floor', 'fract', 'mod', 'dot', 'sin', 'cos', 'normalize', 'max', 'min', 'pow', 'clamp', 'abs',
+        'mix', 'step', 'floor', 'fract', 'dot', 'max', 'min', 'clamp', 'abs',
         'mul', 'add', 'sub', 'div',
         'smoothstep', 'hash', 'fwidth'
     ];
@@ -62,7 +62,6 @@ function createTerrainShaderSquareTSL(uniforms) {
     }
 
     // Define terrain type constants (matching game logic)
-    const TERRAIN_INACCESSIBLE = 0.0;
     const TERRAIN_LAKE = 10.0;
     const TERRAIN_COAST = 20.0;
     const TERRAIN_FLOOR = 30.0;
@@ -85,10 +84,6 @@ function createTerrainShaderSquareTSL(uniforms) {
     
     // Beach sand colour (warm golden sand)
     const BEACH_SAND_COLOR = { r: 0.92, g: 0.85, b: 0.65 };
-    
-    // Precomputed beach zone ranges
-    const BEACH_LOWER_RANGE = BEACH_MID - BEACH_BLEND_HIGH;
-    const BEACH_UPPER_RANGE = BEACH_HIGH - BEACH_MID;
 
     // =========================================================================
     // SQUARE TILE CONSTANTS (from SquareConfig in config.js)
@@ -109,7 +104,6 @@ function createTerrainShaderSquareTSL(uniforms) {
     const TEXTURE_RANDOM_SCALE = squareConfig.TEXTURE_RANDOM_SCALE;
 
     // Visibility constants
-    const VISIBILITY_UNKNOWN = 0.0;
     const VISIBILITY_FOGGED = 0.54;
     const VISIBILITY_VISIBLE = 1.06;
 
@@ -147,10 +141,6 @@ function createTerrainShaderSquareTSL(uniforms) {
     // INFRASTRUCTURE CONSTANTS
     // =========================================================================
     // Road/railroad/river sprites are stored in DataArrayTexture (texture_2d_array) with 16 layers
-    // Sprite indices: 1-9 for roads, 10-19 for railroads, 20-29 for rivers, 42/43/53 for junctions
-    const IRRIGATION_FLAG = 1.0;
-    const FARMLAND_FLAG = 2.0;
-
     // Map size uniforms
     const map_x_size = uniform(uniforms.map_x_size.value);
     const map_y_size = uniform(uniforms.map_y_size.value);
@@ -698,7 +688,6 @@ function createTerrainShaderSquareTSL(uniforms) {
     // =========================================================================
     const tileVisibilityTex = texture(maptilesTex, tileCenterUV);
     const tileVisibility = tileVisibilityTex.a;
-    const tileVisibilityScaled = mul(tileVisibility, VISIBILITY_VISIBLE);
     
     // Neighbor UV offsets (also used by the borders section below)
     const neighborOffsetX = div(1.0, map_x_size);
@@ -774,8 +763,6 @@ function createTerrainShaderSquareTSL(uniforms) {
     const westEdgeFactor = mul(isEdgeW, clamp(mul(sub(BORDER_EDGE_WIDTH_POS, localX), BORDER_EDGE_SHARPNESS), 0.0, 1.0));
     const northEdgeFactor = mul(isEdgeN, clamp(mul(sub(localY, BORDER_EDGE_THRESHOLD_POS), BORDER_EDGE_SHARPNESS), 0.0, 1.0));
     const southEdgeFactor = mul(isEdgeS, clamp(mul(sub(BORDER_EDGE_WIDTH_POS, localY), BORDER_EDGE_SHARPNESS), 0.0, 1.0));
-    
-    const totalEdgeFactor = max(max(max(eastEdgeFactor, westEdgeFactor), northEdgeFactor), southEdgeFactor);
     
     // Dashed pattern
     const dashPatternY = step(fract(mul(localY, DASH_FREQUENCY)), DASH_RATIO);
