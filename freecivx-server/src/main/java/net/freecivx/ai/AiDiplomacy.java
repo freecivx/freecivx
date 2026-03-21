@@ -217,7 +217,10 @@ public class AiDiplomacy {
      *
      * <p>For each AI player, iterates over all known opponents and:
      * <ol>
-     *   <li>Declares war if love is below {@link #LOVE_THRESHOLD_WAR}.</li>
+     *   <li>Declares war if love is below {@link #LOVE_THRESHOLD_WAR} <em>and</em>
+     *       the AI has sufficient military power relative to the target
+     *       (mirrors the power-check in {@code dai_diplomacy_actions()} in
+     *       the C Freeciv AI which prevents suicidal war declarations).</li>
      *   <li>Proposes a ceasefire, peace, or alliance if love crosses the
      *       respective threshold and the relationship can be improved.</li>
      * </ol>
@@ -251,9 +254,25 @@ public class AiDiplomacy {
                 // Mirrors the war-declaration branch in dai_diplomacy_actions().
                 // Only consider attacking if we are currently at peace (not already
                 // at war) and love has dropped below the war threshold.
+                // Additionally require a minimum power advantage so the AI does not
+                // suicidally declare war on a much stronger opponent.
+                // This mirrors the assess_power() guard in the C Freeciv AI's
+                // dai_diplomacy_actions() in ai/default/daidiplomacy.c.
                 // -----------------------------------------------------------------
                 if (love < LOVE_THRESHOLD_WAR && state != DiplHand.DS_WAR) {
-                    declareWar(game, ai, other);
+                    int myPower    = assessPlayerPower(game, ai.getPlayerNo());
+                    int theirPower = assessPlayerPower(game, other.getPlayerNo());
+                    // Only declare war if we have at least POWER_WAR_RATIO of the
+                    // target's power.  Prevents the AI from attacking hopeless odds.
+                    if (myPower * 100 >= theirPower * POWER_WAR_RATIO) {
+                        declareWar(game, ai, other);
+                        setCooldown(pairKey);
+                        continue;
+                    }
+                    // Too weak to win: skip war declaration and apply a cooldown so
+                    // the same power check is not repeated every turn.  The cooldown
+                    // also applies here (not just on war declarations) to avoid
+                    // burning CPU reassessing an already-evaluated pair each turn.
                     setCooldown(pairKey);
                     continue;
                 }
@@ -309,6 +328,48 @@ public class AiDiplomacy {
             }
         }
     }
+
+    /**
+     * Computes a simple power score for a player based on military units,
+     * city count, and technology count.  Used to guard war declarations against
+     * opponents that are too strong.  Mirrors {@code assess_player_power()} /
+     * {@code calculate_our_power()} in {@code ai/default/aitools.c} in the
+     * C Freeciv server.
+     *
+     * <p>Score = (militaryUnits × 10) + (cityCount × 20) + (techCount × 5)
+     *
+     * @param game     the current game state
+     * @param playerId the player to assess
+     * @return non-negative power score; higher = stronger
+     */
+    private static int assessPlayerPower(Game game, long playerId) {
+        int score = 0;
+        for (net.freecivx.game.Unit u : game.units.values()) {
+            if (u.getOwner() != playerId) continue;
+            net.freecivx.game.UnitType utype = game.unitTypes.get((long) u.getType());
+            if (utype != null && utype.getAttackStrength() > 0) {
+                score += utype.getAttackStrength() * 10;
+            }
+        }
+        for (net.freecivx.game.City c : game.cities.values()) {
+            if (c.getOwner() == playerId) score += 20;
+        }
+        net.freecivx.game.Player player = game.players.get(playerId);
+        if (player != null) {
+            score += player.getKnownTechs().size() * 5;
+        }
+        return Math.max(1, score); // Avoid division by zero
+    }
+
+    /**
+     * Minimum power ratio (as percentage) the AI needs relative to the target
+     * before it will declare war.  A value of 60 means the AI will only declare
+     * war if it has at least 60% of the target's power.
+     * Mirrors the power-guard in {@code dai_diplomacy_actions()} in
+     * {@code ai/default/daidiplomacy.c}.
+     */
+    private static final int POWER_WAR_RATIO = 60;
+
 
     // =========================================================================
     // Tech sharing
