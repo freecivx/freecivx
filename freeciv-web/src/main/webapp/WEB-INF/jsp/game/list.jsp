@@ -281,7 +281,7 @@
 	<!-- Hero banner -->
 	<div class="game-list-hero">
 		<div class="container text-center">
-			<h1 style="font-size:120%;"><i class="fa fa-globe"></i> Multiplayer Games</h1>
+			<h1 style="font-size:200%;"><i class="fa fa-globe"></i> Multiplayer Games</h1>
 			<p class="subtitle">Join or observe live Freecivx games &mdash; civilization awaits!</p>
 			<div class="hero-stats">
 				<div class="hero-stat">
