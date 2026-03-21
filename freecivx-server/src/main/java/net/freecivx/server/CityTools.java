@@ -126,9 +126,8 @@ public class CityTools {
         game.cities.remove(cityId);
 
         JSONObject msg = new JSONObject();
-        msg.put("pid", Packets.PACKET_CITY_INFO);
-        msg.put("id", cityId);
-        msg.put("remove", true);
+        msg.put("pid", Packets.PACKET_CITY_REMOVE);
+        msg.put("city_id", cityId);
         game.getServer().broadcastPacket(msg);
     }
 
@@ -147,9 +146,8 @@ public class CityTools {
      */
     public static void removeCityFromPlayer(Game game, IGameServer server, long connId, long cityId) {
         JSONObject msg = new JSONObject();
-        msg.put("pid", Packets.PACKET_CITY_INFO);
-        msg.put("id", cityId);
-        msg.put("remove", true);
+        msg.put("pid", Packets.PACKET_CITY_REMOVE);
+        msg.put("city_id", cityId);
         server.sendPacket(connId, msg);
     }
 

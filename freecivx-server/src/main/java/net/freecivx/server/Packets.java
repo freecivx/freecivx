@@ -29,6 +29,7 @@ public class Packets {
     public static int PACKET_MAP_INFO = 17;
     public static int PACKET_CHAT_MSG = 25;
     public static int PACKET_CHAT_MSG_REQ = 26;
+    public static int PACKET_CITY_REMOVE = 30;
     public static int PACKET_CITY_INFO = 31;
     public static int PACKET_CITY_SHORT_INFO = 32;
     public static int PACKET_CITY_BUY = 34;
