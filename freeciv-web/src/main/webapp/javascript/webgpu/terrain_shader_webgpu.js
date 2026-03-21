@@ -50,7 +50,8 @@ function createTerrainShaderTSL(uniforms) {
         texture, uniform, positionLocal, attribute, uv, normalLocal,
         vec2, vec3, vec4, int,
         mix, step, floor, fract, mod, dot, sin, cos, normalize, max, min, pow, clamp, abs,
-        mul, add, sub, div
+        mul, add, sub, div,
+        smoothstep, hash, fwidth
     } = THREE;
     
     // Verify all required TSL functions and nodes are available
@@ -58,7 +59,8 @@ function createTerrainShaderTSL(uniforms) {
         'texture', 'uniform', 'positionLocal', 'attribute', 'uv', 'normalLocal',
         'vec2', 'vec3', 'vec4', 'int',
         'mix', 'step', 'floor', 'fract', 'mod', 'dot', 'sin', 'cos', 'normalize', 'max', 'min', 'pow', 'clamp', 'abs',
-        'mul', 'add', 'sub', 'div'
+        'mul', 'add', 'sub', 'div',
+        'smoothstep', 'hash', 'fwidth'
     ];
     const missing = requiredTSLNames.filter(name => THREE[name] === undefined);
     if (missing.length > 0) {
@@ -302,11 +304,12 @@ function createTerrainShaderTSL(uniforms) {
     const effectiveEdgeWidth = mix(HEX_EDGE_WIDTH_DIAGONAL, HEX_EDGE_WIDTH_HORIZONTAL, isHorizontalEdge);
     const edgeStart = sub(hexInradius, effectiveEdgeWidth);
     
-    // Smooth step from interior to edge
-    // hexEdgeMask = smoothstep(edgeStart, hexInradius, hexDist)
-    // Using manual smoothstep: t = clamp((x-edge0)/(edge1-edge0), 0, 1); return t*t*(3-2*t)
-    const edgeT = clamp(div(sub(hexDist, edgeStart), effectiveEdgeWidth), 0.0, 1.0);
-    const hexEdgeMask = mul(mul(edgeT, edgeT), sub(3.0, mul(2.0, edgeT)));
+    // Smooth step from interior to edge using THREE's smoothstep() TSL function.
+    // fwidth() provides a screen-space derivative for adaptive anti-aliasing: the AA
+    // band narrows automatically when zoomed in (sharper edges) and widens when zoomed
+    // out (softer edges), eliminating both aliasing and over-blurring.
+    const hexDistFw = fwidth(hexDist);
+    const hexEdgeMask = smoothstep(sub(edgeStart, hexDistFw), hexInradius, hexDist);
     
     // =========================================================================
     // TERRAIN SAMPLING AT HEX TILE CENTER
@@ -321,9 +324,9 @@ function createTerrainShaderTSL(uniforms) {
     const tileCenterUV = vec2(tileCenterUStaggered, tileCenterV);
     
     // Add pseudo-random texture offset for visual variety within tiles
+    // Uses THREE's hash() TSL function for a more robust pseudo-random value than sin-based hashing
     // TEXTURE_RANDOM_SCALE controls amplitude: larger value = smaller random offset
-    const rndSeed = dot(tileCenterUV, vec2(12.98, 78.233));
-    const rnd = fract(mul(sin(rndSeed), 43758.5453));
+    const rnd = hash(tileCenterUV);
     const rndOffset = mul(sub(rnd, 0.5), div(1.0, mul(TEXTURE_RANDOM_SCALE, vec2(map_x_size, map_y_size))));
     const sampledUV = add(tileCenterUV, rndOffset);
 
@@ -802,11 +805,10 @@ function createTerrainShaderTSL(uniforms) {
     const softVisibility = mix(hexVisibility, avgNeighborVis, mul(edgeProximity, 0.4));
     const softVisibilityScaled = mul(softVisibility, VISIBILITY_VISIBLE);
     
-    // Apply smoothstep curve for softer edges within the visible/fogged regions
-    // This maintains smooth transitions for brightness while using hex-sampled visibility
+    // Apply smoothstep curve for softer edges within the visible/fogged regions using THREE's smoothstep().
+    // smoothstep(0, 1, t) = t² × (3 - 2t) — an S-curve that eases in and out.
     const visNormalized = clamp(div(softVisibilityScaled, VISIBILITY_VISIBLE), 0.0, 1.0);
-    // Smoothstep formula: t² × (3 - 2t) creates an S-curve that eases in and out
-    const visSmooth = mul(mul(visNormalized, visNormalized), sub(3.0, mul(2.0, visNormalized)));
+    const visSmooth = smoothstep(0.0, 1.0, visNormalized);
     
     // Scale back to original range to maintain brightness levels
     const smoothVisibility = mul(visSmooth, VISIBILITY_VISIBLE);
@@ -898,8 +900,8 @@ function createTerrainShaderTSL(uniforms) {
     // -----------------------------------------------------------------------
     const BORDER_LINE_WIDTH = 0.04;  // Border line width as fraction of hex inradius
     const borderEdgeStart = sub(hexInradius, BORDER_LINE_WIDTH);
-    const borderT = clamp(div(sub(hexDist, borderEdgeStart), BORDER_LINE_WIDTH), 0.0, 1.0);
-    const hexBorderMask = mul(mul(borderT, borderT), sub(3.0, mul(2.0, borderT)));
+    // Use THREE's smoothstep() for cleaner, hardware-accelerated S-curve computation
+    const hexBorderMask = smoothstep(borderEdgeStart, hexInradius, hexDist);
 
     // -----------------------------------------------------------------------
     // DASH PATTERNS aligned with each hex edge direction
