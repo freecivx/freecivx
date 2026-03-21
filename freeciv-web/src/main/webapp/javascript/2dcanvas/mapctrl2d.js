@@ -253,10 +253,13 @@ function init_2d_map_controls() {
   });
 
   /* ---- Final Cleanup & Keyboard ---------------------------------- */
-  /* Always show context menu on right-click, regardless of drag state. */
+  /* Right-click centers the map on the clicked tile and shows context menu. */
   $canvas.on('contextmenu', function(e) {
     e.preventDefault();
     map2d_mouse_tile = map2d_tile_from_event(e);
+    if (map2d_mouse_tile != null) {
+      center_2d_map_on_tile(map2d_mouse_tile);
+    }
     map2d_show_context_menu(e);
   });
 
