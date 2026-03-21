@@ -25,8 +25,18 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.locks.ReentrantLock;
 
 public class Player {
+
+    /**
+     * Per-player lock used by virtual-thread AI and city-governor processing to
+     * prevent two concurrent virtual threads from modifying the same player's
+     * city tiles or data simultaneously.  A {@link ReentrantLock} is used (not
+     * {@code synchronized}) so that virtual threads can be unmounted while
+     * waiting, avoiding carrier-thread pinning (JEP 444).
+     */
+    public final ReentrantLock playerLock = new ReentrantLock();
 
     private long connectionId;
     private String username;

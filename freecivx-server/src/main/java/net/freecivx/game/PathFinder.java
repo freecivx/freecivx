@@ -18,6 +18,10 @@ import java.util.PriorityQueue;
  * Uses an A* search that accounts for per-terrain movement costs, and for
  * land units avoids ocean tiles (terrain 2 = Ocean, 3 = Deep Ocean).
  * Mirrors the behaviour of {@code common/pf_tools.c} in the C Freeciv server.
+ *
+ * <p>This class is safe to use from Java 21 virtual threads: {@link #findPath}
+ * reads only game tiles and map metadata (both {@link ConcurrentHashMap}-backed
+ * and effectively immutable during pathfinding) and does not write shared state.
  */
 public class PathFinder {
     private static final Logger log = LoggerFactory.getLogger(PathFinder.class);

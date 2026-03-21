@@ -47,6 +47,8 @@ import java.util.Map;
 import java.util.Queue;
 import java.util.Random;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * The Game class
@@ -247,19 +249,28 @@ public class Game {
     public int globalWarmingLevel = 8;
 
     public WorldMap map;
-    public Map<Long, Player> players = new HashMap<>();
-    public Map<Long, Unit> units = new HashMap<>();
-    public Map<Long, City> cities = new HashMap<>();
-    public Map<Long, Technology> techs = new HashMap<>();
-    public Map<Long, Improvement> improvements = new HashMap<>();
-    public Map<Long, Terrain> terrains = new HashMap<>();
-    public Map<Long, Tile> tiles = new HashMap<>();
-    public Map<Long, Government> governments = new HashMap<>();
-    public Map<Long, Nation> nations = new HashMap<>();
-    public Map<Long, Extra> extras = new HashMap<>();
-    public Map<Long, UnitType> unitTypes = new HashMap<>();
-    public Map<Long, CityStyle> cityStyle = new HashMap<>();
-    public Map<Long, Connection> connections = new HashMap<>();
+    public Map<Long, Player> players = new ConcurrentHashMap<>();
+    public Map<Long, Unit> units = new ConcurrentHashMap<>();
+    public Map<Long, City> cities = new ConcurrentHashMap<>();
+    public Map<Long, Technology> techs = new ConcurrentHashMap<>();
+    public Map<Long, Improvement> improvements = new ConcurrentHashMap<>();
+    public Map<Long, Terrain> terrains = new ConcurrentHashMap<>();
+    public Map<Long, Tile> tiles = new ConcurrentHashMap<>();
+    public Map<Long, Government> governments = new ConcurrentHashMap<>();
+    public Map<Long, Nation> nations = new ConcurrentHashMap<>();
+    public Map<Long, Extra> extras = new ConcurrentHashMap<>();
+    public Map<Long, UnitType> unitTypes = new ConcurrentHashMap<>();
+    public Map<Long, CityStyle> cityStyle = new ConcurrentHashMap<>();
+    public Map<Long, Connection> connections = new ConcurrentHashMap<>();
+
+    /**
+     * Lock protecting combat operations and structural modifications to {@link #units}
+     * (unit removal on death, unit creation). Virtual threads that perform combat must
+     * acquire this lock so that concurrent AI player threads do not corrupt the unit map.
+     * Use a {@link ReentrantLock} (not {@code synchronized}) so that virtual threads can
+     * be unmounted while waiting, avoiding carrier-thread pinning.
+     */
+    public final ReentrantLock combatLock = new ReentrantLock();
 
     public Game(IGameServer server) {
         this.server = server;
@@ -1801,10 +1812,6 @@ public class Game {
         if (attacker == null || defender == null) return false;
         if (!Combat.canUnitAttack(attacker, defender)) return false;
 
-        // Report diplomatic incident before combat so AI love values are updated
-        // regardless of combat outcome.  Mirrors dai_incident() in daidiplomacy.c.
-        aiPlayer.reportIncident(attacker.getOwner(), defender.getOwner());
-
         UnitType attackerType = unitTypes.get((long) attacker.getType());
         UnitType defenderType = unitTypes.get((long) defender.getType());
 
@@ -1816,6 +1823,16 @@ public class Game {
             return false;
         }
 
+        // Report diplomatic incident before combat so AI love values are updated
+        // regardless of combat outcome.  Mirrors dai_incident() in daidiplomacy.c.
+        aiPlayer.reportIncident(attacker.getOwner(), defender.getOwner());
+
+        // Acquire the combat lock so that concurrent virtual-thread AI players
+        // do not corrupt the unit map when multiple players fight simultaneously.
+        // Using ReentrantLock (not synchronized) keeps virtual threads unmountable
+        // while waiting, avoiding carrier-thread pinning (JEP 444).
+        combatLock.lock();
+        try {
         Tile defenderTile = tiles.get(defender.getTile());
 
         // Apply city walls defence bonus when the defender is garrisoned in a walled city.
@@ -1918,6 +1935,9 @@ public class Game {
                     "Your " + defenderName + " successfully defended against the enemy " + attackerName + ".");
         }
         return attackerWins;
+        } finally {
+            combatLock.unlock();
+        }
     }
 
     public void buildCity(long unit_id, String city_name, long tile_id) {
