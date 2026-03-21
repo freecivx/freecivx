@@ -39,9 +39,6 @@ The server implements a complete Freeciv classic ruleset game loop:
   - **JSON** packets whose `pid` numbers mirror those of the original C Freeciv server.
 - **Security**: Java eliminates entire classes of C vulnerabilities (memory corruption, buffer overflows, segfaults).
 
-## Tests
-
-Do **not** create Java unit tests for freecivx-server. The server is tested through integration and end-to-end testing only.
 
 ## Getting Started
 
