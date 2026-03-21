@@ -320,109 +320,8 @@
 					</c:choose>
 				</c:forEach>
 
-				<%-- ── Freecivx Server Games ── --%>
-				<div class="section-heading">
-					<h2><i class="fa fa-rocket"></i> Freecivx Server Games</h2>
-					<span class="badge-count">${freecivxCount}</span>
-				</div>
-
-				<c:choose>
-					<c:when test="${freecivxCount > 0}">
-						<div class="game-cards" id="freecivx-games-tab">
-							<c:forEach items="${multiPlayerGamesList}" var="game">
-								<c:if test="${game.type eq 'freecivx'}">
-									<div class="game-card ${game.isProtected() ? 'private' : (game.state eq 'Running' ? 'running' : 'pregame')}">
-
-										<!-- Header: message + status -->
-										<div class="card-header-row">
-											<span class="card-message">
-												<c:choose>
-													<c:when test="${game.isProtected()}">
-														<i class="fa fa-lock" title="Password protected"></i>&nbsp;
-													</c:when>
-												</c:choose>
-												<c:choose>
-													<c:when test="${not empty game.message}">${game.message}</c:when>
-													<c:otherwise>Freecivx Game</c:otherwise>
-												</c:choose>
-											</span>
-											<c:choose>
-												<c:when test="${game.state eq 'Running'}">
-													<span class="status-badge running"><i class="fa fa-play-circle"></i> Running</span>
-												</c:when>
-												<c:when test="${game.state eq 'Pregame'}">
-													<span class="status-badge pregame"><i class="fa fa-hourglass-start"></i> Pregame</span>
-												</c:when>
-												<c:otherwise>
-													<span class="status-badge other"><i class="fa fa-circle"></i> ${game.state}</span>
-												</c:otherwise>
-											</c:choose>
-										</div>
-
-										<!-- Meta: players + turn -->
-										<div class="card-meta">
-											<span class="card-meta-item">
-												<i class="fa fa-users"></i>
-												<c:choose>
-													<c:when test="${game.players == 0}">No players</c:when>
-													<c:when test="${game.players == 1}">1 player</c:when>
-													<c:otherwise>${game.players} players</c:otherwise>
-												</c:choose>
-											</span>
-											<c:if test="${game.turn > 0}">
-												<span class="card-meta-item">
-													<i class="fa fa-history"></i> Turn ${game.turn}
-												</span>
-											</c:if>
-											<c:if test="${game.isProtected()}">
-												<span class="card-meta-item">
-													<i class="fa fa-lock"></i> Password required
-												</span>
-											</c:if>
-										</div>
-
-										<!-- Actions -->
-										<div class="card-actions">
-											<c:choose>
-												<c:when test="${game.state ne 'Running'}">
-													<a class="btn-play"
-														href="/webclient/?action=multi&amp;civserverport=${game.port}&amp;civserverhost=${game.host}&amp;multi=true&amp;type=${game.type}">
-														<i class="fa fa-play"></i> Play 3D
-													</a>
-												</c:when>
-												<c:otherwise>
-													<a class="btn-play"
-														href="/webclient/?action=multi&amp;civserverport=${game.port}&amp;civserverhost=${game.host}&amp;multi=true&amp;type=${game.type}">
-														<i class="fa fa-play"></i> Play 3D
-													</a>
-													<c:if test="${game.type ne 'longturn'}">
-														<a class="btn-observe"
-															href="/webclient/?action=observe&amp;civserverport=${game.port}&amp;civserverhost=${game.host}&amp;multi=true&amp;type=${game.type}">
-															<i class="fa fa-eye"></i> Observe
-														</a>
-													</c:if>
-												</c:otherwise>
-											</c:choose>
-											<a class="btn-info-link" href="/game/details?host=${game.host}&amp;port=${game.port}">
-												<i class="fa fa-info-circle"></i> Info
-											</a>
-										</div>
-
-									</div>
-								</c:if>
-							</c:forEach>
-						</div>
-					</c:when>
-					<c:otherwise>
-						<div class="empty-state" style="margin-bottom:24px;">
-							<i class="fa fa-server"></i>
-							<p>No Freecivx server games currently running.</p>
-						</div>
-					</c:otherwise>
-				</c:choose>
-
 				<%-- ── Freeciv C Server Games ── --%>
-				<div class="section-heading" style="margin-top:20px;">
+				<div class="section-heading">
 					<h2><i class="fa fa-users"></i> Freeciv C Server Games</h2>
 					<span class="badge-count">${cServerCount}</span>
 				</div>
@@ -521,6 +420,108 @@
 						</div>
 					</c:otherwise>
 				</c:choose>
+				<%-- ── Freecivx Server Games (Beta) ── --%>
+				<div class="section-heading" style="margin-top:20px;">
+					<h2><i class="fa fa-rocket"></i> Freecivx Server Games</h2>
+					<span class="badge-count">${freecivxCount}</span>
+					<span class="badge" style="background:#8e44ad;color:#fff;border-radius:12px;padding:3px 11px;font-size:0.82rem;font-weight:700;">Beta</span>
+				</div>
+
+				<c:choose>
+					<c:when test="${freecivxCount > 0}">
+						<div class="game-cards" id="freecivx-games-tab">
+							<c:forEach items="${multiPlayerGamesList}" var="game">
+								<c:if test="${game.type eq 'freecivx'}">
+									<div class="game-card ${game.isProtected() ? 'private' : (game.state eq 'Running' ? 'running' : 'pregame')}">
+
+										<!-- Header: message + status -->
+										<div class="card-header-row">
+											<span class="card-message">
+												<c:choose>
+													<c:when test="${game.isProtected()}">
+														<i class="fa fa-lock" title="Password protected"></i>&nbsp;
+													</c:when>
+												</c:choose>
+												<c:choose>
+													<c:when test="${not empty game.message}">${game.message}</c:when>
+													<c:otherwise>Freecivx Game</c:otherwise>
+												</c:choose>
+											</span>
+											<c:choose>
+												<c:when test="${game.state eq 'Running'}">
+													<span class="status-badge running"><i class="fa fa-play-circle"></i> Running</span>
+												</c:when>
+												<c:when test="${game.state eq 'Pregame'}">
+													<span class="status-badge pregame"><i class="fa fa-hourglass-start"></i> Pregame</span>
+												</c:when>
+												<c:otherwise>
+													<span class="status-badge other"><i class="fa fa-circle"></i> ${game.state}</span>
+												</c:otherwise>
+											</c:choose>
+										</div>
+
+										<!-- Meta: players + turn -->
+										<div class="card-meta">
+											<span class="card-meta-item">
+												<i class="fa fa-users"></i>
+												<c:choose>
+													<c:when test="${game.players == 0}">No players</c:when>
+													<c:when test="${game.players == 1}">1 player</c:when>
+													<c:otherwise>${game.players} players</c:otherwise>
+												</c:choose>
+											</span>
+											<c:if test="${game.turn > 0}">
+												<span class="card-meta-item">
+													<i class="fa fa-history"></i> Turn ${game.turn}
+												</span>
+											</c:if>
+											<c:if test="${game.isProtected()}">
+												<span class="card-meta-item">
+													<i class="fa fa-lock"></i> Password required
+												</span>
+											</c:if>
+										</div>
+
+										<!-- Actions -->
+										<div class="card-actions">
+											<c:choose>
+												<c:when test="${game.state ne 'Running'}">
+													<a class="btn-play"
+														href="/webclient/?action=multi&amp;civserverport=${game.port}&amp;civserverhost=${game.host}&amp;multi=true&amp;type=${game.type}">
+														<i class="fa fa-play"></i> Play 3D
+													</a>
+												</c:when>
+												<c:otherwise>
+													<a class="btn-play"
+														href="/webclient/?action=multi&amp;civserverport=${game.port}&amp;civserverhost=${game.host}&amp;multi=true&amp;type=${game.type}">
+														<i class="fa fa-play"></i> Play 3D
+													</a>
+													<c:if test="${game.type ne 'longturn'}">
+														<a class="btn-observe"
+															href="/webclient/?action=observe&amp;civserverport=${game.port}&amp;civserverhost=${game.host}&amp;multi=true&amp;type=${game.type}">
+															<i class="fa fa-eye"></i> Observe
+														</a>
+													</c:if>
+												</c:otherwise>
+											</c:choose>
+											<a class="btn-info-link" href="/game/details?host=${game.host}&amp;port=${game.port}">
+												<i class="fa fa-info-circle"></i> Info
+											</a>
+										</div>
+
+									</div>
+								</c:if>
+							</c:forEach>
+						</div>
+					</c:when>
+					<c:otherwise>
+						<div class="empty-state" style="margin-bottom:24px;">
+							<i class="fa fa-server"></i>
+							<p>No Freecivx server games currently running.</p>
+						</div>
+					</c:otherwise>
+				</c:choose>
+
 
 			</c:when>
 			<c:otherwise>
