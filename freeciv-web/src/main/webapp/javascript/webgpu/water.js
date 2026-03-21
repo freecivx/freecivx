@@ -218,9 +218,11 @@ function createWaterMaterialTSL() {
   const causticV2 = add(mul(uvNode.y, mul(causticScale, 1.3)), mul(timeUniform, mul(causticSpeed, 0.3)));
   const caustic2 = noise2D(causticU2, causticV2);
   
-  // Combine caustics for cell-like pattern
-  const causticPattern = mul(add(caustic1, caustic2), 0.5);
-  const causticIntensity = clamp(mul(sub(causticPattern, 0.3), 2.5), 0.0, 1.0);
+  // Combine caustics: product gives bright lines where both layers peak simultaneously,
+  // creating sharp cell-pattern highlights (real caustics) rather than a flat average.
+  // No extra ops vs the old add+halve – just mul instead of add, adjusted threshold.
+  const causticPattern = mul(caustic1, caustic2);
+  const causticIntensity = clamp(mul(sub(causticPattern, 0.10), 4.0), 0.0, 1.0);
   
   // ==== GENTLE SURFACE RIPPLES ====
   // Very subtle ripple movement (not waves, just surface shimmer)
@@ -247,6 +249,15 @@ function createWaterMaterialTSL() {
   const causticIntensityFactor = waterConfig ? waterConfig.CAUSTICS.INTENSITY : 0.15;
   const colorWithCaustics = mix(baseColor, causticColor, mul(causticIntensity, causticIntensityFactor));
   
+  // ==== FOAM HIGHLIGHTS ====
+  // Bright white-blue specks at caustic intensity peaks simulate wind-blown foam.
+  // Reuses the already-computed causticIntensity – zero extra texture reads.
+  const FOAM_THRESHOLD  = 0.78;  // causticIntensity level at which foam starts appearing
+  const FOAM_SHARPNESS  = 5.0;   // how quickly foam ramps from threshold to full intensity
+  const FOAM_STRENGTH   = 0.12;  // maximum additive brightness of the foam highlight
+  const foamAmount = clamp(mul(sub(causticIntensity, FOAM_THRESHOLD), FOAM_SHARPNESS), 0.0, 1.0);
+  const foamColor = mul(vec3(0.88, 0.94, 1.0), mul(foamAmount, FOAM_STRENGTH));
+
   // ==== GENTLE SPECULAR ====
   // Soft sun reflection based on ripples (not dramatic)
   const specularPower = waterConfig ? waterConfig.SPECULAR.POWER : 8.0;
@@ -276,7 +287,8 @@ function createWaterMaterialTSL() {
   const edgeDarken = clamp(mul(edgeDist, edgeDarkenStrength), 0.0, edgeMax);
   
   // ==== FINAL COMPOSITION ====
-  const colorWithSpecular = add(colorWithCaustics, specularTint);
+  const colorWithFoam = add(colorWithCaustics, foamColor);
+  const colorWithSpecular = add(colorWithFoam, specularTint);
   const colorWithShimmer = add(colorWithSpecular, vec3(shimmer, shimmer, shimmer));
   const colorBeforeVisibility = sub(colorWithShimmer, vec3(edgeDarken, edgeDarken, edgeDarken));
   
