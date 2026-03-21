@@ -10,19 +10,20 @@ import (
 
 // Config holds the publite-go configuration.
 type Config struct {
-	ServerCapacitySingle int
-	ServerCapacityMulti  int
-	ServerLimit          int
-	SavesDir             string
-	MetaHost             string
-	MetaPort             int
-	StatusPort           int
-	InitialPort          int
-	CheckInterval        int
-	FreecivxPort         int
-	FreecivxMultiPort    int
+	ServerCapacitySingle  int
+	ServerCapacityMulti   int
+	ServerLimit           int
+	SavesDir              string
+	MetaHost              string
+	MetaPort              int
+	StatusPort            int
+	InitialPort           int
+	CheckInterval         int
+	FreecivxPort          int
+	FreecivxMultiPort     int
 	FreecivxSingleHexPort int
 	FreecivxMultiHexPort  int
+	FreecivxMultiLargePort int
 }
 
 // loadConfig reads an INI-format settings file and returns a Config.
@@ -36,6 +37,7 @@ type Config struct {
 //   - PUBLITE_FREECIVX_MULTI_PORT
 //   - PUBLITE_FREECIVX_SINGLE_HEX_PORT
 //   - PUBLITE_FREECIVX_MULTI_HEX_PORT
+//   - PUBLITE_FREECIVX_MULTI_LARGE_PORT
 func loadConfig(path string) (*Config, error) {
 	f, err := os.Open(path)
 	if err != nil {
@@ -105,18 +107,19 @@ func loadConfig(path string) (*Config, error) {
 	}
 
 	return &Config{
-		ServerCapacitySingle: getInt("Resource usage", "server_capacity_single", 5),
-		ServerCapacityMulti:  getInt("Resource usage", "server_capacity_multi", 2),
-		ServerLimit:          getInt("Resource usage", "server_limit", 250),
-		SavesDir:             get("Config", "save_directory", "/var/lib/tomcat11/webapps/data/savegames/"),
-		MetaHost:             envStr("PUBLITE_METAHOST", get("Config", "metahost", "localhost")),
-		MetaPort:             envInt("PUBLITE_METAPORT", getInt("Config", "metaport", 8080)),
-		StatusPort:           envInt("PUBLITE_STATUS_PORT", getInt("Config", "status_port", 4002)),
-		InitialPort:          envInt("PUBLITE_INITIAL_PORT", getInt("Config", "initial_port", 6000)),
-		CheckInterval:        envInt("PUBLITE_CHECK_INTERVAL", getInt("Config", "check_interval", 40)),
-		FreecivxPort:         envInt("PUBLITE_FREECIVX_PORT", getInt("Config", "freecivx_port", 7800)),
-		FreecivxMultiPort:    envInt("PUBLITE_FREECIVX_MULTI_PORT", getInt("Config", "freecivx_multi_port", 7802)),
+		ServerCapacitySingle:  getInt("Resource usage", "server_capacity_single", 5),
+		ServerCapacityMulti:   getInt("Resource usage", "server_capacity_multi", 2),
+		ServerLimit:           getInt("Resource usage", "server_limit", 250),
+		SavesDir:              get("Config", "save_directory", "/var/lib/tomcat11/webapps/data/savegames/"),
+		MetaHost:              envStr("PUBLITE_METAHOST", get("Config", "metahost", "localhost")),
+		MetaPort:              envInt("PUBLITE_METAPORT", getInt("Config", "metaport", 8080)),
+		StatusPort:            envInt("PUBLITE_STATUS_PORT", getInt("Config", "status_port", 4002)),
+		InitialPort:           envInt("PUBLITE_INITIAL_PORT", getInt("Config", "initial_port", 6000)),
+		CheckInterval:         envInt("PUBLITE_CHECK_INTERVAL", getInt("Config", "check_interval", 40)),
+		FreecivxPort:          envInt("PUBLITE_FREECIVX_PORT", getInt("Config", "freecivx_port", 7800)),
+		FreecivxMultiPort:     envInt("PUBLITE_FREECIVX_MULTI_PORT", getInt("Config", "freecivx_multi_port", 7802)),
 		FreecivxSingleHexPort: envInt("PUBLITE_FREECIVX_SINGLE_HEX_PORT", getInt("Config", "freecivx_single_hex_port", 7804)),
 		FreecivxMultiHexPort:  envInt("PUBLITE_FREECIVX_MULTI_HEX_PORT", getInt("Config", "freecivx_multi_hex_port", 7806)),
+		FreecivxMultiLargePort: envInt("PUBLITE_FREECIVX_MULTI_LARGE_PORT", getInt("Config", "freecivx_multi_large_port", 7808)),
 	}, nil
 }

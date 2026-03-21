@@ -271,6 +271,24 @@ public class Game {
         return server;
     }
 
+    /** Width of the world map.  Set via {@link #setMapSize(int, int)} before {@link #initGame()}. */
+    private int mapXSize = 80;
+
+    /** Height of the world map.  Set via {@link #setMapSize(int, int)} before {@link #initGame()}. */
+    private int mapYSize = 80;
+
+    /**
+     * Overrides the default 80×80 map dimensions used by {@link #initGame()}.
+     * Must be called before {@link #initGame()}.
+     *
+     * @param xSize map width in tiles (≥ 1)
+     * @param ySize map height in tiles (≥ 1)
+     */
+    public void setMapSize(int xSize, int ySize) {
+        this.mapXSize = xSize;
+        this.mapYSize = ySize;
+    }
+
     /**
      * Sets the map generation seed for reproducible map generation.
      * Must be called before {@link #initGame()}.
@@ -521,7 +539,7 @@ public class Game {
      * if the ruleset cannot be loaded — the server cannot run without it.
      */
     public void initGame() {
-        map = new WorldMap(80, 80);
+        map = new WorldMap(mapXSize, mapYSize);
 
         // --- Load ruleset from classpath resources ---
         boolean rulesetOk = ruleset.loadRuleset("classic");
