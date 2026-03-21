@@ -442,6 +442,13 @@ function createTerrainShaderTSL(uniforms) {
         finalColor = mix(finalColor, layer.color, layer.mask);
     }
 
+    // Per-tile brightness variation (free – reuses rnd.x from the hash already computed above).
+    // Keeps a ±7 % range so adjacent tiles are visually distinct without looking noisy.
+    const BRIGHTNESS_MIN   = 0.93;  // darkest a tile can be relative to its base texture
+    const BRIGHTNESS_RANGE = 0.14;  // full range (0.93 → 1.07, i.e. ±7 %)
+    const perTileBrightness = add(BRIGHTNESS_MIN, mul(rnd.x, BRIGHTNESS_RANGE));
+    finalColor = vec4(mul(finalColor.rgb, perTileBrightness), finalColor.a);
+
     // =========================================================================
     // IRRIGATION AND FARMLAND RENDERING
     // =========================================================================
