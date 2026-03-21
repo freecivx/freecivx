@@ -68,9 +68,8 @@ The canvas supports:
 
 ## Deferred rendering
 
-Rapid server packet bursts are coalesced into a single repaint via a 60 ms timer
-(`MAP2D_RENDER_DELAY_MS`).  Call `render_2d_map()` freely; redundant redraws are
-automatically suppressed.
+Rapid server packet bursts are coalesced into a single repaint via `requestAnimationFrame`.
+Call `render_2d_map()` freely; redundant redraws are automatically suppressed.
 
 ## Related modules
 

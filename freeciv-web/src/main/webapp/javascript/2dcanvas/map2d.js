@@ -49,7 +49,6 @@ var map2d_mouse_tile = null;
 
 /* Deferred render: avoids triggering dozens of redraws during packet bursts */
 var map2d_render_pending = false;
-var MAP2D_RENDER_DELAY_MS = 60; /* coalesce rapid packet bursts into one repaint */
 
 /* Goto path overlay state for the 2D canvas */
 var map2d_goto_punit = null;  /* focused unit being moved during goto preview */
@@ -306,7 +305,7 @@ function render_2d_map()
    * at 255 and are also unchanged. */
   ctx.filter = 'brightness(1.1)';
 
-  /* How many tiles fit on screen (add 2 as margin) */
+  /* How many tiles fit on screen (add 2 as margin to cover partial edge tiles) */
   var tiles_x = Math.ceil(cw / tw) + 2;
   var tiles_y = Math.ceil(ch / th) + 2;
 
@@ -318,15 +317,23 @@ function render_2d_map()
   var off_x = Math.floor(cw / 2 - (map2d_center_x - start_x) * tw);
   var off_y = Math.floor(ch / 2 - (map2d_center_y - start_y) * th);
 
-  /* Build visible-tile list (avoids recomputing positions for every layer) */
+  /* Build visible-tile list (avoids recomputing positions for every layer).
+   * Only include tiles whose rectangle intersects the canvas, and skip tiles
+   * that are completely unknown (canvas is pre-cleared to black, so they
+   * would render nothing). */
   var vis = [];
   for (var ty = 0; ty < tiles_y; ty++) {
     var map_y = start_y + ty;
     if (map_y < 0 || map_y >= map['ysize']) continue;
+    var cy_tile = off_y + ty * th;
+    if (cy_tile >= ch || cy_tile + th <= 0) continue;  /* row entirely off-canvas */
     for (var tx = 0; tx < tiles_x; tx++) {
+      var cx_tile = off_x + tx * tw;
+      if (cx_tile >= cw || cx_tile + tw <= 0) continue;  /* column entirely off-canvas */
       var map_x = ((start_x + tx) % map['xsize'] + map['xsize']) % map['xsize'];
       var ptile = map_pos_to_tile(map_x, map_y);
-      if (ptile) vis.push({ptile: ptile, cx: off_x + tx * tw, cy: off_y + ty * th});
+      if (!ptile || tile_get_known(ptile) === TILE_UNKNOWN) continue;
+      vis.push({ptile: ptile, cx: cx_tile, cy: cy_tile});
     }
   }
 
@@ -1005,10 +1012,10 @@ function map2d_schedule_render()
     return;
   }
   map2d_render_pending = true;
-  setTimeout(function() {
+  requestAnimationFrame(function() {
     map2d_render_pending = false;
     render_2d_map();
-  }, MAP2D_RENDER_DELAY_MS);
+  });
 }
 
 /**
