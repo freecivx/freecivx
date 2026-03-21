@@ -78,7 +78,7 @@ public class Game {
      * victory condition is met.  Both singleplayer and multiplayer use this
      * value so that players have time to read the end-game summary.
      */
-    static final int GAME_RESTART_DELAY_SECONDS = 60;
+    static final int GAME_RESTART_DELAY_SECONDS = 300;
     /**
      * Base player-number for AI players.  All AI IDs are {@code AI_PLAYER_ID_BASE + i}
      * (e.g. 100, 101, …) which keeps them well below 255 – the upper limit checked by
