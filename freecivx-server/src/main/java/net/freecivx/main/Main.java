@@ -41,6 +41,7 @@ public class Main {
         String gameMode = "singleplayer"; // Default game mode
         String tiles = "square"; // Default tile type: "square" or "hex"
         String metaMessage = null; // Computed after parsing args if not set explicitly
+        int mapSize = 0; // 0 means use default (80)
 
         for (int i = 0; i < args.length; i++) {
             if ("--mode".equals(args[i]) && i + 1 < args.length) {
@@ -59,6 +60,19 @@ public class Main {
                 }
             } else if ("--metamessage".equals(args[i]) && i + 1 < args.length) {
                 metaMessage = args[++i];
+            } else if ("--mapsize".equals(args[i]) && i + 1 < args.length) {
+                try {
+                    mapSize = Integer.parseInt(args[++i]);
+                    if (mapSize <= 0) {
+                        log.error("Map size must be a positive integer, got: {}", mapSize);
+                        System.exit(1);
+                        return;
+                    }
+                } catch (NumberFormatException e) {
+                    log.error("Invalid map size: {}", args[i]);
+                    System.exit(1);
+                    return;
+                }
             } else if (!args[i].startsWith("--")) {
                 try {
                     port = Integer.parseInt(args[i]);
@@ -88,7 +102,9 @@ public class Main {
             log.info("HTTP server started on port: {}", port + 1);
 
             // Start WebSocket server
-            CivServer wsServer = new CivServer(new InetSocketAddress(port), gameMode, topologyId);
+            CivServer wsServer = mapSize > 0
+                    ? new CivServer(new InetSocketAddress(port), gameMode, topologyId, mapSize)
+                    : new CivServer(new InetSocketAddress(port), gameMode, topologyId);
             wsServer.start();
             log.info("WebSocket server started on port: {}", port);
 

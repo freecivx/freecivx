@@ -15,6 +15,7 @@ type FreecivxLauncher struct {
 	Mode        string // "singleplayer" or "multiplayer"
 	Tiles       string // "square" or "hex"
 	MetaMessage string // metaserver description text
+	MapSize     int    // map dimensions (MapSize × MapSize); 0 means default (80)
 	shutdown    chan struct{}
 	StartedTime string
 	NumStart    int
@@ -28,6 +29,19 @@ func NewFreecivxLauncher(port int, mode string, tiles string, metaMessage string
 		Mode:        mode,
 		Tiles:       tiles,
 		MetaMessage: metaMessage,
+		shutdown:    shutdown,
+		StartedTime: time.Now().UTC().Format("2006-01-02 15:04:05"),
+	}
+}
+
+// NewFreecivxLauncherWithMapSize creates a FreecivxLauncher with a custom map size.
+func NewFreecivxLauncherWithMapSize(port int, mode string, tiles string, metaMessage string, mapSize int, shutdown chan struct{}) *FreecivxLauncher {
+	return &FreecivxLauncher{
+		Port:        port,
+		Mode:        mode,
+		Tiles:       tiles,
+		MetaMessage: metaMessage,
+		MapSize:     mapSize,
 		shutdown:    shutdown,
 		StartedTime: time.Now().UTC().Format("2006-01-02 15:04:05"),
 	}
@@ -86,6 +100,9 @@ func (fl *FreecivxLauncher) launchFreecivx() error {
 	defer logFile.Close()
 
 	cmd := exec.Command("java", "-jar", jarPath, fmt.Sprintf("%d", fl.Port), "--mode", fl.Mode, "--tiles", fl.Tiles, "--metamessage", fl.MetaMessage)
+	if fl.MapSize > 0 {
+		cmd.Args = append(cmd.Args, "--mapsize", fmt.Sprintf("%d", fl.MapSize))
+	}
 	cmd.Stdout = logFile
 	cmd.Stderr = logFile
 	if err := cmd.Start(); err != nil {

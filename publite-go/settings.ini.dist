@@ -35,6 +35,10 @@ freecivx_single_hex_port = 7804
 # Can be overridden with environment variable: PUBLITE_FREECIVX_MULTI_HEX_PORT
 freecivx_multi_hex_port = 7806
 
+# Port for the freecivx-server Java server (multiplayer, square tiles, large map)
+# Can be overridden with environment variable: PUBLITE_FREECIVX_MULTI_LARGE_PORT
+freecivx_multi_large_port = 7808
+
 [Resource usage]
 server_capacity_single = 4
 server_capacity_multi = 2

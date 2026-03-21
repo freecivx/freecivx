@@ -181,8 +181,8 @@ func main() {
 	port = mc.launchServer("singleplayer", port)
 	port = mc.launchServer("multiplayer", port)
 
-	// Launch four freecivx-server instances: multiplayer/hex, multiplayer/square,
-	// singleplayer/square and singleplayer/hex.
+	// Launch five freecivx-server instances: multiplayer/hex, multiplayer/square,
+	// multiplayer/square/large, singleplayer/square and singleplayer/hex.
 	freecivxMultiHex := NewFreecivxLauncher(cfg.FreecivxMultiHexPort, "multiplayer", "hex",
 		"Freecivx Multiplayer Server - Hex map tiles - Java server - BETA!", mc.shutdown)
 	go freecivxMultiHex.Run()
@@ -190,6 +190,10 @@ func main() {
 	freecivxMulti := NewFreecivxLauncher(cfg.FreecivxMultiPort, "multiplayer", "square",
 		"Freecivx Multiplayer Server - Square map tiles - Java server - FreecivX MMO!", mc.shutdown)
 	go freecivxMulti.Run()
+
+	freecivxMultiLarge := NewFreecivxLauncherWithMapSize(cfg.FreecivxMultiLargePort, "multiplayer", "square",
+		"Freecivx Multiplayer Server - Square map tiles - Large map - Java server - FreecivX MMO!", 100, mc.shutdown)
+	go freecivxMultiLarge.Run()
 
 	freecivxSingle := NewFreecivxLauncher(cfg.FreecivxPort, "singleplayer", "square",
 		"Freecivx Singleplayer Server - Square map tiles - Java server - (Testing)", mc.shutdown)
