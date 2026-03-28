@@ -252,6 +252,9 @@ function update_map_terrain_geometry()
 ****************************************************************************/
 function update_map_known_tiles()
 {
+  // Flush any road texture updates batched by schedule_road_update().
+  process_pending_road_updates();
+
   if (map_known_dirty) {
     update_tiles_known_vertex_colors();
     update_map_terrain_geometry();
