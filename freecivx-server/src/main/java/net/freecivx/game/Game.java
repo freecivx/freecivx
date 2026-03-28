@@ -248,6 +248,21 @@ public class Game {
      */
     public int globalWarmingLevel = 8;
 
+    /**
+     * Accumulated fallout tile count for nuclear winter.  Each turn the number
+     * of fallout tiles is added here; when it exceeds {@link #globalCoolingLevel}
+     * a nuclear winter event may be triggered.  Mirrors {@code game.info.cooling}
+     * in the C Freeciv server's {@code common/game.h}.
+     */
+    public int globalCoolingAccum = 0;
+
+    /**
+     * Nuclear winter level threshold.  Increases after each winter event.
+     * Mirrors {@code game.info.coolinglevel} in the C Freeciv server, initialised
+     * the same way as the warming level.
+     */
+    public int globalCoolingLevel = 8;
+
     public WorldMap map;
     public Map<Long, Player> players = new ConcurrentHashMap<>();
     public Map<Long, Unit> units = new ConcurrentHashMap<>();
@@ -650,6 +665,7 @@ public class Game {
         //   game.info.warminglevel = (map_num_tiles() + 499) / 500;
         int mapTiles = map.getXsize() * map.getYsize();
         globalWarmingLevel = Math.max(1, (mapTiles + 499) / 500);
+        globalCoolingLevel = Math.max(1, (mapTiles + 499) / 500);
     }
 
     /**
@@ -1660,7 +1676,8 @@ public class Game {
                 || unit.getActivity() == net.freecivx.server.CityTurn.ACTIVITY_IRRIGATE
                 || unit.getActivity() == net.freecivx.server.CityTurn.ACTIVITY_MINE
                 || unit.getActivity() == net.freecivx.server.CityTurn.ACTIVITY_FORTIFIED
-                || unit.getActivity() == net.freecivx.server.CityTurn.ACTIVITY_RAILROAD) {
+                || unit.getActivity() == net.freecivx.server.CityTurn.ACTIVITY_RAILROAD
+                || unit.getActivity() == net.freecivx.server.CityTurn.ACTIVITY_CLEAN) {
             unit.setActivity(0);
             unit.setActivityCount(0);
         }

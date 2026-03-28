@@ -132,6 +132,15 @@ public class UnitHand {
             UnitTools.deboardTransport(game, actorId);
         } else if (actionType == Actions.ACTION_HELP_WONDER) {
             UnitTools.helpWonder(game, actorId, targetId);
+        } else if (actionType == Actions.ACTION_NUKE || actionType == Actions.ACTION_NUKE_CITY) {
+            // targetId is the target tile index for ACTION_NUKE, or city ID for ACTION_NUKE_CITY.
+            // For ACTION_NUKE_CITY, resolve the city's tile as the blast centre.
+            long targetTileId = targetId;
+            if (actionType == Actions.ACTION_NUKE_CITY) {
+                net.freecivx.game.City targetCity = game.cities.get(targetId);
+                if (targetCity != null) targetTileId = targetCity.getTile();
+            }
+            UnitTools.nukeExplosion(game, actorId, targetTileId);
         } else {
             // Unknown action: refresh the unit info for the client
             UnitTools.sendUnitInfo(game, game.getServer(), connId, actorId);

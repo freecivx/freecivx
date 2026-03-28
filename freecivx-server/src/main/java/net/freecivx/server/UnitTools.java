@@ -413,6 +413,117 @@ public class UnitTools {
     private static final int MAX_HUT_GOLD = 100;
     private static final Random random = new Random();
 
+    /**
+     * Detonates a nuclear weapon at the specified target tile.
+     *
+     * <p>Mirrors {@code unit_nuke()} and {@code do_nuclear_explosion()} in the C
+     * Freeciv server's {@code server/unithand.c} and {@code server/unittools.c}:
+     * <ol>
+     *   <li>The acting Nuclear unit is destroyed (self-consuming).</li>
+     *   <li>For every tile within blast-radius 1 (the target and its 8 neighbours):
+     *     <ul>
+     *       <li>All units on the tile are killed and their owners notified.</li>
+     *       <li>If the tile contains a city it loses 1 population point; if its
+     *           size drops to 0 the city is destroyed.</li>
+     *       <li>With 50% probability, a Fallout extra is placed on the tile.</li>
+     *     </ul>
+     *   </li>
+     *   <li>All players are notified of the detonation.</li>
+     * </ol>
+     *
+     * <p>Fallout placed by the explosion contributes to the risk of nuclear
+     * winter just as pollution contributes to global warming.
+     *
+     * @param game        the current game state
+     * @param actorId     the ID of the Nuclear unit performing the action (will be removed)
+     * @param targetTileId the index of the target tile
+     */
+    public static void nukeExplosion(Game game, long actorId, long targetTileId) {
+        Unit actor = game.units.get(actorId);
+        if (actor == null) return;
+
+        long actorOwner = actor.getOwner();
+
+        // The nuke is self-consuming: remove it before processing the explosion so it
+        // does not appear as a victim of its own blast (mirrors C server behaviour).
+        removeUnit(game, actorId);
+
+        Tile targetTile = game.tiles.get(targetTileId);
+        if (targetTile == null) return;
+
+        int xsize = game.map.getXsize();
+        int ysize = game.map.getYsize();
+        long cx = targetTile.getX(xsize);
+        long cy = targetTile.getY(xsize);
+
+        // Process every tile in the 3×3 blast area (radius 1 Chebyshev = nuke_blast_radius_1_sq).
+        // Mirrors circle_iterate(..., nuke_radius_size=1, ...) → do_nuke_tile() in C server.
+        for (int dy = -1; dy <= 1; dy++) {
+            long ny = cy + dy;
+            if (ny < 0 || ny >= ysize) continue;
+            for (int dx = -1; dx <= 1; dx++) {
+                long nx = ((cx + dx) % xsize + xsize) % xsize;
+                long tileIdx = ny * xsize + nx;
+                Tile blastTile = game.tiles.get(tileIdx);
+                if (blastTile == null) continue;
+
+                // Kill all units on the blast tile (mirrors unit_list_iterate_safe in do_nuke_tile).
+                for (Unit u : new ArrayList<>(game.units.values())) {
+                    if (u.getTile() != tileIdx) continue;
+                    long victimOwner = u.getOwner();
+                    UnitType utype = game.unitTypes.get((long) u.getType());
+                    String unitName = (utype != null) ? utype.getName() : "unit";
+                    removeUnit(game, u.getId());
+                    Notify.notifyPlayer(game, game.getServer(), victimOwner,
+                            "Your " + unitName + " was destroyed by a nuclear explosion!");
+                    if (victimOwner != actorOwner) {
+                        Notify.notifyPlayer(game, game.getServer(), actorOwner,
+                                "An enemy " + unitName + " was destroyed by your nuclear weapon.");
+                    }
+                }
+
+                // Damage city on the blast tile (mirrors city population loss in do_nuke_tile).
+                for (Map.Entry<Long, City> cityEntry : new ArrayList<>(game.cities.entrySet())) {
+                    City city = cityEntry.getValue();
+                    if (city.getTile() != tileIdx) continue;
+                    long cityOwnerId = city.getOwner();
+                    String cityName = city.getName();
+                    int newSize = city.getSize() - 1;
+                    if (newSize <= 0) {
+                        // Destroy the city.
+                        CityTools.removeCity(game, cityEntry.getKey());
+                        Notify.notifyPlayer(game, game.getServer(), cityOwnerId,
+                                cityName + " was destroyed by a nuclear explosion!");
+                        if (cityOwnerId != actorOwner) {
+                            Notify.notifyPlayer(game, game.getServer(), actorOwner,
+                                    "Your nuclear weapon destroyed " + cityName + "!");
+                        }
+                    } else {
+                        city.setSize(newSize);
+                        VisibilityHandler.sendCityToVisiblePlayers(game, cityEntry.getKey());
+                        Notify.notifyPlayer(game, game.getServer(), cityOwnerId,
+                                cityName + " was damaged by a nuclear explosion!");
+                    }
+                }
+
+                // 50% chance to place Fallout on the blast tile.
+                // Mirrors the fc_rand(2)==1 check in do_nuke_tile() in C server.
+                if (random.nextBoolean()) {
+                    int extras = blastTile.getExtras();
+                    if ((extras & (1 << CityTurn.EXTRA_BIT_FALLOUT)) == 0) {
+                        blastTile.setExtras(extras | (1 << CityTurn.EXTRA_BIT_FALLOUT));
+                        game.getServer().sendTileInfoAll(blastTile);
+                    }
+                }
+            }
+        }
+
+        // Notify all connected players of the detonation.
+        // Mirrors notify_conn(NULL, ..., E_NUKE, ...) in do_nuclear_explosion().
+        Notify.notifyAllPlayers(game, game.getServer(),
+                "A nuclear weapon has been detonated! The world watches in horror.");
+    }
+
     /** Awards a random reward when a unit enters a goodie hut. Mirrors unit_enter_hut(). */
     public static void enterHut(Game game, Unit unit, net.freecivx.game.Tile tile) {
         tile.setExtras(tile.getExtras() & ~(1 << 8));
