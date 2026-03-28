@@ -200,7 +200,9 @@ function map2d_ocean_neighbor_flag(ptile, dir)
   var ntile = mapstep(ptile, dir);
   if (ntile == null) return 0;
   var nterrain = tile_terrain(ntile);
-  if (nterrain == null) return 0;
+  /* Treat unknown tiles as ocean so that ocean tiles adjacent to unexplored
+   * areas do not render a spurious grassland/land edge. */
+  if (nterrain == null) return 1;
   var ng = nterrain['graphic_str'];
   return (ng === 'coast' || ng === 'floor' || ng === 'lake') ? 1 : 0;
 }
@@ -697,6 +699,13 @@ function render_2d_map()
           tile_has_focus = true;
           break;
         }
+      }
+      /* If a city occupies this tile, hide idle garrisoned units: they are
+       * considered to be inside the city walls.  Only render the unit when
+       * it is selected (in focus) or is actively doing something. */
+      if (tile_city(v.ptile) && !tile_has_focus
+          && display_unit['activity'] === ACTIVITY_IDLE) {
+        continue;
       }
       /* Draw selection indicator only when a focused unit is on this tile
        * and there is actually a unit in focus (no stale selection sprite). */
