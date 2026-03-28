@@ -253,6 +253,179 @@ class AiCity {
             }
         }
 
+        // J.S. Bach's Cathedral (Theology) — 2 unhappy→content in every city.
+        if (ai.imprBachsCathedral >= 0 && !CityTurn.worldHasWonder(game, "J.S. Bach's Cathedral")) {
+            Improvement bachs = game.improvements.get((long) ai.imprBachsCathedral);
+            if (bachs != null && canBuildImprovement(owner, bachs)) {
+                city.setProductionKind(1);
+                city.setProductionValue(ai.imprBachsCathedral);
+                return;
+            }
+        }
+        // Colossus (Bronze Working) — +1 trade on every trade-producing tile empire-wide.
+        // Very early wonder; build as soon as Bronze Working is available.
+        if (ai.imprColossus >= 0 && !CityTurn.worldHasWonder(game, "Colossus")) {
+            Improvement colossus = game.improvements.get((long) ai.imprColossus);
+            if (colossus != null && canBuildImprovement(owner, colossus)) {
+                city.setProductionKind(1);
+                city.setProductionValue(ai.imprColossus);
+                return;
+            }
+        }
+        // Oracle (Mysticism) — doubles the happiness effect of every Temple.
+        if (ai.imprOracle >= 0 && !CityTurn.worldHasWonder(game, "Oracle")) {
+            Improvement oracle = game.improvements.get((long) ai.imprOracle);
+            if (oracle != null && canBuildImprovement(owner, oracle)) {
+                city.setProductionKind(1);
+                city.setProductionValue(ai.imprOracle);
+                return;
+            }
+        }
+        // Hanging Gardens (Pottery) — +1 food per citizen in every city (huge growth boost).
+        if (ai.imprHangingGardens >= 0 && !CityTurn.worldHasWonder(game, "Hanging Gardens")) {
+            Improvement gardens = game.improvements.get((long) ai.imprHangingGardens);
+            if (gardens != null && canBuildImprovement(owner, gardens)) {
+                city.setProductionKind(1);
+                city.setProductionValue(ai.imprHangingGardens);
+                return;
+            }
+        }
+        // Sun Tzu's War Academy (Feudalism) — free Barracks in every city, veteran units.
+        if (ai.imprSunTzus >= 0 && !CityTurn.worldHasWonder(game, "Sun Tzu's War Academy")) {
+            Improvement sunTzu = game.improvements.get((long) ai.imprSunTzus);
+            if (sunTzu != null && canBuildImprovement(owner, sunTzu)) {
+                city.setProductionKind(1);
+                city.setProductionValue(ai.imprSunTzus);
+                return;
+            }
+        }
+        // King Richard's Crusade (Chivalry) — +1 attack strength for all ground units.
+        if (ai.imprKingRichardsCrusade >= 0 && !CityTurn.worldHasWonder(game, "King Richard's Crusade")) {
+            Improvement krc = game.improvements.get((long) ai.imprKingRichardsCrusade);
+            if (krc != null && canBuildImprovement(owner, krc)) {
+                city.setProductionKind(1);
+                city.setProductionValue(ai.imprKingRichardsCrusade);
+                return;
+            }
+        }
+        // Marco Polo's Embassy (Trade) — auto-embassy with every other civilization.
+        if (ai.imprMarcoPolosEmbassy >= 0 && !CityTurn.worldHasWonder(game, "Marco Polo's Embassy")) {
+            Improvement marco = game.improvements.get((long) ai.imprMarcoPolosEmbassy);
+            if (marco != null && canBuildImprovement(owner, marco)) {
+                city.setProductionKind(1);
+                city.setProductionValue(ai.imprMarcoPolosEmbassy);
+                return;
+            }
+        }
+        // Magellan's Expedition (Navigation) — +1 movement for all sea units.
+        if (ai.imprMagellansExpedition >= 0 && !CityTurn.worldHasWonder(game, "Magellan's Expedition")) {
+            Improvement magellan = game.improvements.get((long) ai.imprMagellansExpedition);
+            if (magellan != null && canBuildImprovement(owner, magellan)) {
+                city.setProductionKind(1);
+                city.setProductionValue(ai.imprMagellansExpedition);
+                return;
+            }
+        }
+        // Michelangelo's Chapel (Monotheism) — Cathedrals in all cities for free.
+        if (ai.imprMichelangelosChapel >= 0 && !CityTurn.worldHasWonder(game, "Michelangelo's Chapel")) {
+            Improvement chapel = game.improvements.get((long) ai.imprMichelangelosChapel);
+            if (chapel != null && canBuildImprovement(owner, chapel)) {
+                city.setProductionKind(1);
+                city.setProductionValue(ai.imprMichelangelosChapel);
+                return;
+            }
+        }
+        // Statue of Liberty (Democracy) — no anarchy when changing governments.
+        if (ai.imprStatueOfLiberty >= 0 && !CityTurn.worldHasWonder(game, "Statue of Liberty")) {
+            Improvement liberty = game.improvements.get((long) ai.imprStatueOfLiberty);
+            if (liberty != null && canBuildImprovement(owner, liberty)) {
+                city.setProductionKind(1);
+                city.setProductionValue(ai.imprStatueOfLiberty);
+                return;
+            }
+        }
+        // Women's Suffrage (Industrialization) — halves military unhappiness in Republic/Democracy.
+        if (ai.imprWomensSuffrage >= 0 && !CityTurn.worldHasWonder(game, "Women's Suffrage")) {
+            Improvement suffrage = game.improvements.get((long) ai.imprWomensSuffrage);
+            if (suffrage != null && canBuildImprovement(owner, suffrage)) {
+                city.setProductionKind(1);
+                city.setProductionValue(ai.imprWomensSuffrage);
+                return;
+            }
+        }
+        // A. Smith's Trading Co. (Economics) — covers upkeep of all commercial buildings.
+        if (ai.imprAdamSmith >= 0 && !CityTurn.worldHasWonder(game, "A.Smith's Trading Co.")) {
+            Improvement asmith = game.improvements.get((long) ai.imprAdamSmith);
+            if (asmith != null && canBuildImprovement(owner, asmith)) {
+                city.setProductionKind(1);
+                city.setProductionValue(ai.imprAdamSmith);
+                return;
+            }
+        }
+        // Hoover Dam (Electronics) — free Hydro Plant effect in every city empire-wide.
+        if (ai.imprHooverDam >= 0 && !CityTurn.worldHasWonder(game, "Hoover Dam")) {
+            Improvement hoover = game.improvements.get((long) ai.imprHooverDam);
+            if (hoover != null && canBuildImprovement(owner, hoover)) {
+                city.setProductionKind(1);
+                city.setProductionValue(ai.imprHooverDam);
+                return;
+            }
+        }
+        // Darwin's Voyage (Railroad) — grants 2 free random technologies.
+        if (ai.imprDarwinsVoyage >= 0 && !CityTurn.worldHasWonder(game, "Darwin's Voyage")) {
+            Improvement darwin = game.improvements.get((long) ai.imprDarwinsVoyage);
+            if (darwin != null && canBuildImprovement(owner, darwin)) {
+                city.setProductionKind(1);
+                city.setProductionValue(ai.imprDarwinsVoyage);
+                return;
+            }
+        }
+        // Shakespeare's Theater (Music Theory) — all unhappy citizens become content in the city.
+        if (ai.imprShakespearesTheatre >= 0 && !CityTurn.worldHasWonder(game, "Shakespeare's Theater")) {
+            Improvement shakespeare = game.improvements.get((long) ai.imprShakespearesTheatre);
+            if (shakespeare != null && canBuildImprovement(owner, shakespeare)) {
+                city.setProductionKind(1);
+                city.setProductionValue(ai.imprShakespearesTheatre);
+                return;
+            }
+        }
+        // United Nations (Communism) — enables cease-fire and peace negotiations.
+        if (ai.imprUnitedNations >= 0 && !CityTurn.worldHasWonder(game, "United Nations")) {
+            Improvement un = game.improvements.get((long) ai.imprUnitedNations);
+            if (un != null && canBuildImprovement(owner, un)) {
+                city.setProductionKind(1);
+                city.setProductionValue(ai.imprUnitedNations);
+                return;
+            }
+        }
+        // SETI Program (Computers) — +50% science output in every city.
+        if (ai.imprSetiProgram >= 0 && !CityTurn.worldHasWonder(game, "SETI Program")) {
+            Improvement seti = game.improvements.get((long) ai.imprSetiProgram);
+            if (seti != null && canBuildImprovement(owner, seti)) {
+                city.setProductionKind(1);
+                city.setProductionValue(ai.imprSetiProgram);
+                return;
+            }
+        }
+        // Cure For Cancer (Genetic Engineering) — 1 unhappy citizen becomes content in all cities.
+        if (ai.imprCureForCancer >= 0 && !CityTurn.worldHasWonder(game, "Cure For Cancer")) {
+            Improvement cure = game.improvements.get((long) ai.imprCureForCancer);
+            if (cure != null && canBuildImprovement(owner, cure)) {
+                city.setProductionKind(1);
+                city.setProductionValue(ai.imprCureForCancer);
+                return;
+            }
+        }
+        // Manhattan Project (Nuclear Fission) — enables nuclear units for all civilizations.
+        if (ai.imprManhattanProject >= 0 && !CityTurn.worldHasWonder(game, "Manhattan Project")) {
+            Improvement manhattan = game.improvements.get((long) ai.imprManhattanProject);
+            if (manhattan != null && canBuildImprovement(owner, manhattan)) {
+                city.setProductionKind(1);
+                city.setProductionValue(ai.imprManhattanProject);
+                return;
+            }
+        }
+
         // Priority 3: Early expansion — produce Settlers when empire is very small.
         if (myCityCount < 2 && mySettlers < settlerCap && city.getSize() >= 2 && cityHasFoodSurplus(city)) {
             city.setProductionKind(0);

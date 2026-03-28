@@ -304,6 +304,69 @@ public class UnitTools {
         return true;
     }
 
+    /**
+     * Helps build a wonder in a friendly city by disbanding the Caravan or
+     * Freight unit and contributing its full production cost as shields to the
+     * city's current production.  The city must be currently building a great
+     * wonder (genus 0) for the action to succeed.
+     *
+     * <p>Mirrors {@code do_unit_help_build_wonder()} in the C Freeciv server's
+     * {@code server/unittools.c}: the unit is removed and its
+     * {@code utype_build_shield_cost_base()} is added to the city's shield stock.
+     *
+     * @param game   the current game state
+     * @param unitId the ID of the Caravan/Freight unit performing the action
+     * @param cityId the ID of the target city currently building a wonder
+     * @return {@code true} if the action was successfully performed
+     */
+    public static boolean helpWonder(Game game, long unitId, long cityId) {
+        Unit unit = game.units.get(unitId);
+        if (unit == null) return false;
+
+        UnitType utype = game.unitTypes.get((long) unit.getType());
+        if (utype == null || !utype.hasHelpWonderFlag()) {
+            Notify.notifyPlayer(game, game.getServer(), unit.getOwner(),
+                    "Only Caravans and Freights can help build wonders.");
+            return false;
+        }
+
+        City city = game.cities.get(cityId);
+        if (city == null) return false;
+        if (city.getOwner() != unit.getOwner()) return false;
+        if (city.getTile() != unit.getTile()) {
+            Notify.notifyPlayer(game, game.getServer(), unit.getOwner(),
+                    "The unit must be in the same city to help build a wonder.");
+            return false;
+        }
+
+        // The city must be building a great wonder (genus 0).
+        if (city.getProductionKind() != 1) {
+            Notify.notifyPlayer(game, game.getServer(), unit.getOwner(),
+                    "The city must be building a wonder to receive caravan help.");
+            return false;
+        }
+        net.freecivx.game.Improvement target =
+                game.improvements.get((long) city.getProductionValue());
+        if (target == null || target.getGenus() != 0) {
+            Notify.notifyPlayer(game, game.getServer(), unit.getOwner(),
+                    "The city must be building a great wonder to receive caravan help.");
+            return false;
+        }
+
+        int shields = calcUnitCost(utype);
+        city.setShieldStock(city.getShieldStock() + shields);
+
+        game.units.remove(unitId);
+        game.getServer().sendUnitRemove(unitId);
+
+        Notify.notifyPlayer(game, game.getServer(), unit.getOwner(),
+                utype.getName() + " helped build " + target.getName()
+                + " in " + city.getName() + " (++" + shields + " production shields).");
+        log.info("Unit {} ({}) helped build {} in city {} for {} shields",
+                unitId, utype.getName(), target.getName(), city.getName(), shields);
+        return true;
+    }
+
     private static final int MIN_HUT_GOLD = 25;
     private static final int MAX_HUT_GOLD = 100;
     private static final Random random = new Random();

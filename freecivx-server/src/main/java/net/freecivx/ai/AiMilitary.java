@@ -416,11 +416,13 @@ class AiMilitary {
      * Mirrors {@code dai_choose_attacker()} in {@code ai/default/daimilitary.c}.
      */
     int bestAvailableAttacker(Player player) {
-        if (ai.techMobileWarfare >= 0 && ai.unitArmor    >= 0 && player.hasTech(ai.techMobileWarfare)) return ai.unitArmor;
-        if (ai.techTactics       >= 0 && ai.unitCavalry  >= 0 && player.hasTech(ai.techTactics))       return ai.unitCavalry;
-        if (ai.techConscription  >= 0 && ai.unitRiflemen >= 0 && player.hasTech(ai.techConscription))  return ai.unitRiflemen;
-        if (ai.techChivalry      >= 0 && ai.unitKnights  >= 0 && player.hasTech(ai.techChivalry))      return ai.unitKnights;
-        if (ai.techGunpowder     >= 0 && ai.unitMusketeers >= 0 && player.hasTech(ai.techGunpowder))   return ai.unitMusketeers;
+        if (ai.techMobileWarfare >= 0 && ai.unitArmor     >= 0 && player.hasTech(ai.techMobileWarfare)) return ai.unitArmor;
+        if (ai.techTactics       >= 0 && ai.unitCavalry   >= 0 && player.hasTech(ai.techTactics))       return ai.unitCavalry;
+        if (ai.techConscription  >= 0 && ai.unitRiflemen  >= 0 && player.hasTech(ai.techConscription))  return ai.unitRiflemen;
+        if (ai.unitDragoons >= 0 && ai.techGunpowder >= 0 && ai.techChivalry >= 0
+                && player.hasTech(ai.techGunpowder) && player.hasTech(ai.techChivalry))                  return ai.unitDragoons;
+        if (ai.techChivalry      >= 0 && ai.unitKnights   >= 0 && player.hasTech(ai.techChivalry))      return ai.unitKnights;
+        if (ai.techGunpowder     >= 0 && ai.unitMusketeers >= 0 && player.hasTech(ai.techGunpowder))    return ai.unitMusketeers;
         if (player.hasTech(ai.techHorsebackRiding)) return ai.unitHorsemen;
         if (player.hasTech(ai.techIronWorking))     return ai.unitLegion;
         if (player.hasTech(ai.techWarriorCode))     return ai.unitArchers;
@@ -450,11 +452,13 @@ class AiMilitary {
      * Mirrors {@code dai_choose_naval()} in the C Freeciv AI.
      */
     int bestAvailableNavalUnit(Player player) {
-        if (ai.unitBattleship >= 0 && ai.techAutomobile >= 0 && player.hasTech(ai.techAutomobile))  return ai.unitBattleship;
-        if (ai.unitCruiser    >= 0 && ai.techSteel      >= 0 && player.hasTech(ai.techSteel))        return ai.unitCruiser;
-        if (ai.unitDestroyer  >= 0 && ai.techElectricity >= 0 && player.hasTech(ai.techElectricity)) return ai.unitDestroyer;
-        if (ai.unitCaravel    >= 0 && ai.techNavigation >= 0 && player.hasTech(ai.techNavigation))   return ai.unitCaravel;
-        if (ai.unitTrireme    >= 0 && ai.techMapMaking  >= 0 && player.hasTech(ai.techMapMaking))    return ai.unitTrireme;
+        if (ai.unitBattleship >= 0 && ai.techAutomobile  >= 0 && player.hasTech(ai.techAutomobile))  return ai.unitBattleship;
+        if (ai.unitCruiser    >= 0 && ai.techSteel        >= 0 && player.hasTech(ai.techSteel))        return ai.unitCruiser;
+        if (ai.unitDestroyer  >= 0 && ai.techElectricity  >= 0 && player.hasTech(ai.techElectricity))  return ai.unitDestroyer;
+        if (ai.unitIronclad   >= 0 && ai.techSteamEngine  >= 0 && player.hasTech(ai.techSteamEngine))  return ai.unitIronclad;
+        if (ai.unitFrigate    >= 0 && ai.techMagnetism    >= 0 && player.hasTech(ai.techMagnetism))    return ai.unitFrigate;
+        if (ai.unitCaravel    >= 0 && ai.techNavigation   >= 0 && player.hasTech(ai.techNavigation))   return ai.unitCaravel;
+        if (ai.unitTrireme    >= 0 && ai.techMapMaking    >= 0 && player.hasTech(ai.techMapMaking))    return ai.unitTrireme;
         return -1;
     }
 

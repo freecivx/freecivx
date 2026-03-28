@@ -143,6 +143,25 @@ public class AiPlayer {
     int imprCopernicusObservatory = -1; // Astronomy — +100% science in the city it is built
     int imprIsaacNewtonsCollege   = -1; // Theory of Gravity — +100% science in all University cities
     int imprBachsCathedral        = -1; // Theology — 2 unhappy→content in every city
+    // Additional great wonders from the classic ruleset not yet tracked by the AI
+    int imprColossus              = -1; // Bronze Working — +1 trade on all trade-producing tiles (obs. Electricity)
+    int imprOracle                = -1; // Mysticism — doubles effects of Temples in all cities
+    int imprHangingGardens        = -1; // Pottery — +1 food to all citizens in all cities
+    int imprMarcoPolosEmbassy     = -1; // Trade — automatic embassy with every civilization
+    int imprAdamSmith             = -1; // Economics — covers upkeep of all commercial buildings
+    int imprShakespearesTheatre   = -1; // Music Theory — all unhappy citizens become content in the city
+    int imprHooverDam             = -1; // Electronics — free Hydro Plant + clean energy in all cities
+    int imprSetiProgram           = -1; // Computers — +50% science output in every city
+    int imprMagellansExpedition   = -1; // Navigation — +1 movement for all sea units
+    int imprDarwinsVoyage         = -1; // Railroad — grants 2 free random technologies
+    int imprSunTzus               = -1; // Feudalism — free Barracks in every city
+    int imprMichelangelosChapel   = -1; // Monotheism — cathedrals free in all cities
+    int imprStatueOfLiberty       = -1; // Democracy — eliminates anarchy when changing governments
+    int imprManhattanProject      = -1; // Nuclear Fission — enables nuclear weapons for all civilizations
+    int imprCureForCancer         = -1; // Genetic Engineering — 1 unhappy citizen→content in all cities
+    int imprWomensSuffrage        = -1; // Industrialization — reduces military unhappiness in Republic/Democracy
+    int imprKingRichardsCrusade   = -1; // Chivalry — +1 attack strength for all ground units
+    int imprUnitedNations         = -1; // Communism — enables peace negotiations between civilizations
 
     // Unit-type IDs — resolved at runtime by name in resolveGameIds().
     // Initial values of -1 are overwritten on the first AI turn.
@@ -177,6 +196,15 @@ public class AiPlayer {
     int unitBomber     = -1; // Advanced Flight — heavy bomber
     // Diplomat unit-type ID
     int unitDiplomat   = -1; // Writing — diplomatic unit
+    // Additional unit-type IDs (resolved in resolveGameIds)
+    int unitCaravan    = -1; // Trade — trade unit; can help build wonders and establish trade routes
+    int unitFreight    = -1; // Trade + Refining — upgraded Caravan (faster, more shields)
+    int unitSpy        = -1; // Espionage — upgraded Diplomat with advanced covert actions
+    int unitFrigate    = -1; // Magnetism — mid-game naval combat unit (replaces Caravel)
+    int unitGalleon    = -1; // Navigation — high-capacity naval transport
+    int unitIronclad   = -1; // Steam Engine — early steam-powered warship
+    int unitSubmarine  = -1; // Combustion — stealth naval unit (hidden unless adjacent)
+    int unitDragoons   = -1; // Chivalry — mid-game cavalry (obsoletes Knights with Gunpowder)
 
     // Technology IDs — resolved at runtime by name in resolveGameIds().
     // Initial values of -1 are overwritten on the first AI turn.
@@ -244,6 +272,21 @@ public class AiPlayer {
     long techElectronics        = -1L; // req: The Corporation + Electricity — prereq for Computers, Nuclear Power
     long techComputers          = -1L; // req: Mass Production + Miniaturization — Research Lab×, SETI, Space Flight prereq
     long techNuclearPower       = -1L; // req: Nuclear Fission + Electronics — Nuclear Plant
+    // Additional techs needed for missing wonders and mid/late-game features
+    long techRefining           = -1L; // req: Chemistry + Combustion — Power Plant
+    long techPhysics            = -1L; // req: Magnetism + Mathematics — unlock Magnetism chain
+    long techTheCorporation     = -1L; // req: Economics + Industrialization — Stock Exchange chain
+    long techMiniaturization    = -1L; // req: Machine Tools + Electronics — Offshore Platform
+    long techNuclearFission     = -1L; // req: Mass Production + Atomic Theory — Manhattan Project
+    long techLaborUnion         = -1L; // req: Mass Production + Communism — spaceship prerequisite
+    long techGeneticEngineering = -1L; // req: Medicine + Industrialization — Cure For Cancer
+    long techRailroad           = -1L; // req: Industrialization + Steam Engine — Darwin's Voyage
+    long techMusicTheory        = -1L; // req: Theology + Mathematics — Shakespeare's Theater
+    long techMedicine           = -1L; // req: Trade + Philosophy — Genetic Engineering prerequisite
+    long techSteamEngine        = -1L; // req: Physics + Industrialization — Railroad prerequisite
+    long techChemistry          = -1L; // req: Medicine + University — Refining prerequisite
+    long techEspionage          = -1L; // req: Communism — Spy unit
+    long techSeafaring          = -1L; // req: Alphabet — Harbor building
 
     /** AI diplomacy subsystem. Mirrors daidiplomacy.c in the C Freeciv server. */
     private final AiDiplomacy aiDiplomacy = new AiDiplomacy();
@@ -503,6 +546,24 @@ public class AiPlayer {
                 case "Copernicus' Observatory": imprCopernicusObservatory = id; break;
                 case "Isaac Newton's College":  imprIsaacNewtonsCollege   = id; break;
                 case "J.S. Bach's Cathedral":   imprBachsCathedral        = id; break;
+                case "Colossus":              imprColossus              = id; break;
+                case "Oracle":                imprOracle                = id; break;
+                case "Hanging Gardens":       imprHangingGardens        = id; break;
+                case "Marco Polo's Embassy":  imprMarcoPolosEmbassy     = id; break;
+                case "A.Smith's Trading Co.": imprAdamSmith             = id; break;
+                case "Shakespeare's Theater": imprShakespearesTheatre   = id; break;
+                case "Hoover Dam":            imprHooverDam             = id; break;
+                case "SETI Program":          imprSetiProgram           = id; break;
+                case "Magellan's Expedition": imprMagellansExpedition   = id; break;
+                case "Darwin's Voyage":       imprDarwinsVoyage         = id; break;
+                case "Sun Tzu's War Academy": imprSunTzus               = id; break;
+                case "Michelangelo's Chapel": imprMichelangelosChapel   = id; break;
+                case "Statue of Liberty":     imprStatueOfLiberty       = id; break;
+                case "Manhattan Project":     imprManhattanProject      = id; break;
+                case "Cure For Cancer":       imprCureForCancer         = id; break;
+                case "Women's Suffrage":      imprWomensSuffrage        = id; break;
+                case "King Richard's Crusade": imprKingRichardsCrusade  = id; break;
+                case "United Nations":        imprUnitedNations         = id; break;
                 case "Harbor":           imprHarbour          = id; break;
                 case "Offshore Platform": imprOffPlatform     = id; break;
                 case "Port Facility":    imprPortFacility     = id; break;
@@ -579,6 +640,20 @@ public class AiPlayer {
                 case "Electronics":       techElectronics       = id; break;
                 case "Computers":         techComputers         = id; break;
                 case "Nuclear Power":     techNuclearPower      = id; break;
+                case "Refining":          techRefining          = id; break;
+                case "Physics":           techPhysics           = id; break;
+                case "The Corporation":   techTheCorporation    = id; break;
+                case "Miniaturization":   techMiniaturization   = id; break;
+                case "Nuclear Fission":   techNuclearFission    = id; break;
+                case "Labor Union":       techLaborUnion        = id; break;
+                case "Genetic Engineering": techGeneticEngineering = id; break;
+                case "Railroad":          techRailroad          = id; break;
+                case "Music Theory":      techMusicTheory       = id; break;
+                case "Medicine":          techMedicine          = id; break;
+                case "Steam Engine":      techSteamEngine       = id; break;
+                case "Chemistry":         techChemistry         = id; break;
+                case "Espionage":         techEspionage         = id; break;
+                case "Seafaring":         techSeafaring         = id; break;
                 default: break;
             }
         }
@@ -611,6 +686,14 @@ public class AiPlayer {
                 case "Fighter":      unitFighter    = id; break;
                 case "Bomber":       unitBomber     = id; break;
                 case "Diplomat":     unitDiplomat   = id; break;
+                case "Caravan":      unitCaravan    = id; break;
+                case "Freight":      unitFreight    = id; break;
+                case "Spy":          unitSpy        = id; break;
+                case "Frigate":      unitFrigate    = id; break;
+                case "Galleon":      unitGalleon    = id; break;
+                case "Ironclad":     unitIronclad   = id; break;
+                case "Submarine":    unitSubmarine  = id; break;
+                case "Dragoons":     unitDragoons   = id; break;
                 default: break;
             }
         }
@@ -1118,6 +1201,20 @@ public class AiPlayer {
             techTheoryOfGravity,      // Isaac Newton's College wonder — +100% science in University cities
             techTheology,             // J.S. Bach's Cathedral wonder — 2 unhappy→content in all cities
             techMagnetism,            // Iron Working + Physics — prereq for Electricity, Radio
+            techPhysics,              // Magnetism + Mathematics — Frigate; Magnetism prereq
+            techSeafaring,            // Alphabet — Harbor building; Seafaring chain
+            techMedicine,             // Trade + Philosophy — Genetic Engineering prerequisite
+            techChemistry,            // Medicine + University — Refining prerequisite
+            techRefining,             // Chemistry + Combustion — Power Plant
+            techTheCorporation,       // Economics + Industrialization — Railroad; Electronics prereq
+            techSteamEngine,          // Physics + Industrialization — Ironclad; Railroad prereq
+            techRailroad,             // Industrialization + Steam Engine — Darwin's Voyage; fast movement
+            techMusicTheory,          // Theology + Mathematics — Shakespeare's Theater wonder
+            techMiniaturization,      // Machine Tools + Electronics — Offshore Platform
+            techNuclearFission,       // Mass Production + Atomic Theory — Manhattan Project
+            techLaborUnion,           // Mass Production + Communism — spaceship prereq
+            techGeneticEngineering,   // Medicine + Industrialization — Cure For Cancer wonder
+            techEspionage,            // Communism — Spy unit (advanced diplomat)
             techElectronics,          // The Corporation + Electricity — Computers; Nuclear Power
             techAdvancedFlight,       // Bomber — heavy air unit
             techFlight,               // Fighter air unit — air supremacy

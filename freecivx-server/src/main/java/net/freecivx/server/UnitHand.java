@@ -130,6 +130,8 @@ public class UnitHand {
         } else if (actionType == Actions.ACTION_TRANSPORT_DEBOARD
                 || actionType == Actions.ACTION_TRANSPORT_UNLOAD) {
             UnitTools.deboardTransport(game, actorId);
+        } else if (actionType == Actions.ACTION_HELP_WONDER) {
+            UnitTools.helpWonder(game, actorId, targetId);
         } else {
             // Unknown action: refresh the unit info for the client
             UnitTools.sendUnitInfo(game, game.getServer(), connId, actorId);
