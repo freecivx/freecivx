@@ -20,9 +20,11 @@
 var map_known_dirty = true;
 var map_geometry_dirty = true;
 
-// Pre-allocated buffer for vertex colors to avoid repeated large allocations
+// Persistent Float32Array for vertex color data.
+// Reused across frames to avoid large typed-array GC pressure.
+// A new Float32BufferAttribute wrapper is created each dirty frame so that
+// Three.js WebGPU reliably re-uploads the buffer to the GPU.
 var _vert_colors_buffer = null;
-var _vert_colors_attr = null;
 
 /**************************************************************************
  Updates the terrain vertex colors to set tile to known, unknown or fogged.
@@ -64,14 +66,11 @@ function update_tiles_known_vertex_colors()
   const gridY1 = gridY + 1;
   const total = gridX1 * gridY1;
 
-  // Lazily allocate (or reallocate on map size change) a persistent buffer.
-  // This avoids creating a fresh ~12 MB Float32Array on every dirty frame.
+  // Lazily allocate (or reallocate on map-size change) the persistent buffer.
+  // Writing directly into a Float32Array avoids the JS-array resize overhead
+  // of push() across tens-of-thousands of vertices during bulk tile reveals.
   if (_vert_colors_buffer === null || _vert_colors_buffer.length !== total * 3) {
-    if (_vert_colors_buffer !== null) landGeometry.deleteAttribute('vertColor');
     _vert_colors_buffer = new Float32Array(total * 3);
-    _vert_colors_attr = new THREE.Float32BufferAttribute(_vert_colors_buffer, 3);
-    _vert_colors_attr.usage = THREE.DynamicDrawUsage;
-    landGeometry.setAttribute('vertColor', _vert_colors_attr);
   }
 
   let idx = 0;
@@ -103,7 +102,11 @@ function update_tiles_known_vertex_colors()
     }
   }
 
-  _vert_colors_attr.needsUpdate = true;
+  // Always pass a new Float32BufferAttribute wrapping the pre-allocated buffer.
+  // Three.js WebGPU tracks attributes by object identity, so a new wrapper
+  // guarantees the GPU buffer is re-uploaded every dirty frame.
+  landGeometry.setAttribute( 'vertColor', new THREE.Float32BufferAttribute( _vert_colors_buffer, 3 ) );
+
   landGeometry.colorsNeedUpdate = true;
 
 }
