@@ -51,7 +51,7 @@ function createTerrainShaderTSL(uniforms) {
         vec2, vec3, vec4, int,
         mix, step, floor, fract, mod, dot, max, min, clamp, abs,
         mul, add, sub, div,
-        smoothstep, hash, fwidth
+        smoothstep, hash, fwidth, sin, pow, time, mx_noise_float
     } = THREE;
     
     // Verify all required TSL functions and nodes are available
@@ -60,7 +60,7 @@ function createTerrainShaderTSL(uniforms) {
         'vec2', 'vec3', 'vec4', 'int',
         'mix', 'step', 'floor', 'fract', 'mod', 'dot', 'max', 'min', 'clamp', 'abs',
         'mul', 'add', 'sub', 'div',
-        'smoothstep', 'hash', 'fwidth'
+        'smoothstep', 'hash', 'fwidth', 'sin', 'pow', 'time', 'mx_noise_float'
     ];
     const missing = requiredTSLNames.filter(name => THREE[name] === undefined);
     if (missing.length > 0) {
@@ -788,10 +788,58 @@ function createTerrainShaderTSL(uniforms) {
 
 
     // =========================================================================
+    // MOUNTAIN SNOW CAPS
+    // =========================================================================
+    // High-elevation mountain (and hill) tiles receive a white snow overlay that
+    // fades in smoothly with world-space elevation.  mx_noise_float gives the
+    // snow edge an organic, irregular appearance rather than a sharp line.
+    //
+    // posY = ptile['height'] * 100 after the geometry rotation:
+    //   sea-level / beach ≈ 50, flat land ≈ 52–58, hills ≈ 60–70, mountains ≈ 70–90.
+    // The thresholds can be tuned via TerrainEffectsConfig in config.js.
+    {
+        const fxConfig = window.TerrainEffectsConfig;
+        const SNOW_START = fxConfig ? fxConfig.SNOW_START_LEVEL : 64.0;
+        const SNOW_FULL  = fxConfig ? fxConfig.SNOW_FULL_LEVEL  : 80.0;
+        const SNOW_NOISE_SCALE = fxConfig ? fxConfig.SNOW_NOISE_SCALE : 6.0;
+        const HILLS_SNOW_FACTOR = fxConfig ? fxConfig.HILLS_SNOW_FACTOR : 0.25;
+        const snowCfgColor = fxConfig ? fxConfig.SNOW_COLOR : { r: 0.93, g: 0.94, b: 0.97 };
+
+        // Elevation factor: 0 below SNOW_START, rising to 1 at SNOW_FULL
+        const snowElevation = smoothstep(SNOW_START, SNOW_FULL, posY);
+
+        // mx_noise_float gives smooth gradient noise for irregular snow edges.
+        // Using MaterialX gradient noise (same GPU-native function used by the water shader).
+        const snowNoise = mx_noise_float(vec3(
+            mul(tileCenterUV.x, SNOW_NOISE_SCALE),
+            mul(tileCenterUV.y, SNOW_NOISE_SCALE),
+            0.0
+        ));
+        // Combine elevation with noise: higher elevation = more snow; noise perturbs the edge
+        const snowMask = clamp(mul(snowElevation, add(0.5, snowNoise)), 0.0, 1.0);
+
+        // Terrain type gates: mountains get full snow, hills get reduced coverage
+        const isMountainSnow = mul(
+            step(TERRAIN_MOUNTAINS - 0.5, terrainHere),
+            step(terrainHere, TERRAIN_MOUNTAINS + 0.5)
+        );
+        const isHillsSnow = mul(
+            step(TERRAIN_HILLS - 0.5, terrainHere),
+            step(terrainHere, TERRAIN_HILLS + 0.5)
+        );
+        const snowTerrainFactor = add(isMountainSnow, mul(isHillsSnow, HILLS_SNOW_FACTOR));
+
+        // Snow colour: cool white (slight blue tint for cold atmosphere)
+        const snowColor = vec3(snowCfgColor.r, snowCfgColor.g, snowCfgColor.b);
+        finalColor = vec4(
+            mix(finalColor.rgb, snowColor, mul(snowTerrainFactor, snowMask)),
+            finalColor.a
+        );
+    }
+
+    // =========================================================================
     // SLOPE-BASED LIGHTING WITH SUN DIRECTION
     // =========================================================================
-    // Calculate lighting based on terrain slope and sun direction
-    // Sun direction: coming from southeast, elevated position (typical daytime sun)
     // Original (0.5, 0.7, 0.5), normalized = (0.503, 0.704, 0.503)
     const sunDir = vec3(0.503, 0.704, 0.503);
     
@@ -828,6 +876,39 @@ function createTerrainShaderTSL(uniforms) {
     const lumValue = dot(finalColor.rgb, lumWeights);
     const saturatedColor = clamp(mix(vec3(lumValue), finalColor.rgb, TERRAIN_SATURATION), 0.0, 1.0);
     finalColor = vec4(saturatedColor, finalColor.a);
+
+    // =========================================================================
+    // ANIMATED VEGETATION WIND EFFECT
+    // =========================================================================
+    // Forest and Jungle tiles oscillate ±2.2 % in brightness to simulate gentle
+    // wind moving across the canopy.  Two sine waves at different speeds with
+    // per-tile phase offsets (derived from tileCenterUV) ensure adjacent tiles
+    // sway independently, giving an organic rustling appearance.
+    // THREE.time is the built-in TSL clock node; the renderer advances it each
+    // frame automatically — no manual uniform update is required.
+    {
+        const fxConfig = window.TerrainEffectsConfig;
+        const WIND_SPEED     = fxConfig ? fxConfig.WIND_SPEED     : 0.35;
+        const WIND_SPEED_2   = fxConfig ? fxConfig.WIND_SPEED_2   : 0.53;
+        const WIND_AMPLITUDE = fxConfig ? fxConfig.WIND_AMPLITUDE : 0.022;
+
+        const isForestWind = mul(
+            step(TERRAIN_FOREST - 0.5, terrainHere),
+            step(terrainHere, TERRAIN_FOREST + 0.5)
+        );
+        const isJungleWind = mul(
+            step(TERRAIN_JUNGLE - 0.5, terrainHere),
+            step(terrainHere, TERRAIN_JUNGLE + 0.5)
+        );
+        const isVegetation = max(isForestWind, isJungleWind);
+
+        // Per-tile phase offsets prevent all tiles from pulsing in synchrony
+        const windPhase1 = add(mul(time, WIND_SPEED),   mul(tileCenterUV.x, 7.1));
+        const windPhase2 = add(mul(time, WIND_SPEED_2), mul(tileCenterUV.y, 5.3));
+        const windOscillation = mul(add(sin(windPhase1), sin(windPhase2)), WIND_AMPLITUDE);
+        const windBrightness  = add(1.0, mul(isVegetation, windOscillation));
+        finalColor = vec4(clamp(mul(finalColor.rgb, windBrightness), 0.0, 1.0), finalColor.a);
+    }
 
     // =========================================================================
     // HEXAGONAL EDGE HIGHLIGHTING (Civ 6 Style)
