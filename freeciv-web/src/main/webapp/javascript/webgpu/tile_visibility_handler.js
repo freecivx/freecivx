@@ -40,9 +40,6 @@ function webgl_update_tile_known(old_tile, new_tile)
 
   if (tile_get_known(new_tile) != tile_get_known(old_tile)) {
     map_known_dirty = true;
-    // A tile reveal may change LOD structure (TILE_UNKNOWN → KNOWN exposes a
-    // detail terrain type like Mountains or Hills for the first time).
-    map_geometry_dirty = true;
     // Update visibility in maptiles texture for hex-aligned visibility boundaries
     update_tiletypes_visibility(new_tile);
   }
@@ -54,38 +51,12 @@ function webgl_update_tile_known(old_tile, new_tile)
  This will update the fog of war and unknown tiles, and farmland/irrigation
  by storing these as vertex colors in the landscape mesh.
  
- When LOD geometry is active (lod_vertex_tile_xy is set), each vertex has
- an explicit owning tile recorded by init_land_geometry(), so the color
- buffer is rebuilt directly from that mapping.  This ensures visibility
- colors are correct immediately after a LOD geometry rebuild.
-
- For the regular uniform grid the existing floor-based tile lookup is used.
+ For hexagonal maps, we need to account for the staggered row layout when
+ determining which tile a vertex belongs to. Odd rows are offset by half
+ a tile width (odd-r offset coordinate system).
 **************************************************************************/
 function update_tiles_known_vertex_colors()
 {
-  // LOD path: per-vertex tile coordinates are stored in lod_vertex_tile_xy.
-  if (typeof lod_vertex_tile_xy !== 'undefined' && lod_vertex_tile_xy !== null) {
-    var nv = lod_vertex_tile_xy.length >> 1;
-    if (_vert_colors_buffer === null || _vert_colors_buffer.length !== nv * 3) {
-      _vert_colors_buffer = new Float32Array(nv * 3);
-    }
-    var idx = 0;
-    for (var vi = 0; vi < nv; vi++) {
-      var tx    = lod_vertex_tile_xy[vi * 2];
-      var ty    = lod_vertex_tile_xy[vi * 2 + 1];
-      var ptile = map_pos_to_tile(tx, ty);
-      var c     = ptile ? get_vertex_color_from_tile(ptile, tx, ty) : [0, 0, 0];
-      _vert_colors_buffer[idx]     = c[0];
-      _vert_colors_buffer[idx + 1] = c[1];
-      _vert_colors_buffer[idx + 2] = c[2];
-      idx += 3;
-    }
-    landGeometry.setAttribute('vertColor', new THREE.Float32BufferAttribute(_vert_colors_buffer, 3));
-    landGeometry.colorsNeedUpdate = true;
-    return;
-  }
-
-  // Uniform-grid path (terrain_quality <= 1 or non-LOD geometry).
   const xquality = map.xsize * terrain_quality + 1;
   const yquality = map.ysize * terrain_quality + 1;
   const gridX = Math.floor(xquality);

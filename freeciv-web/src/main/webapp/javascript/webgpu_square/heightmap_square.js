@@ -19,17 +19,17 @@
 
 /**
  * Heightmap Generation for Square Map Tiles
- *
- * Per-terrain-type height targets (same constants as the hex version):
- *   Mountains  0.63 – 0.72   (high peaks, moderate slope)
- *   Hills      0.57 – 0.63   (moderate elevation)
- *   Forest/Jungle  0.54 – 0.57
- *   Flat land  0.52 – 0.54   (grassland, plains, desert, tundra …)
- *   Beach      0.55           (land adjacent to ocean)
- *   Ocean      0.44 – 0.45
- *
- * Flat tiles receive a constant height (no IDW) so they produce zero
- * normal variation on the GPU and are ideal candidates for LOD Q=1.
+ * 
+ * This module provides heightmap generation specifically optimized for
+ * square map tile topology. Unlike hexagonal maps, square maps:
+ * - Use direct 8-neighbor connectivity (N, NE, E, SE, S, SW, W, NW)
+ * - Have 1:1 aspect ratio tiles
+ * - Use bilinear interpolation for sub-tile positions
+ * 
+ * Key differences from hex topology:
+ * - Deeper rivers for better visual definition (0.95 vs 0.98 factor)
+ * - Steeper river banks for narrower river appearance (1.08 vs 1.045 factor)
+ * - Direct coordinate mapping without row staggering
  */
 
 /****************************************************************************
@@ -37,109 +37,96 @@
 ****************************************************************************/
 function update_heightmap_square(heightmap_quality)
 {
-  var hm_res_x = map.xsize * heightmap_quality + 1;
-  var hm_res_y = map.ysize * heightmap_quality + 1;
+  let heightmap_resolution_x = map.xsize * heightmap_quality + 1;
+  let heightmap_resolution_y = map.ysize * heightmap_quality + 1;
 
-  // --- Phase 1: per-tile target heights (does not modify ptile['height']) --
-  var tile_h = new Float32Array(map.xsize * map.ysize);
+  console.log("Updating heightmap (square topology)...");
 
-  for (var ty = 0; ty < map.ysize; ty++) {
-    for (var tx = 0; tx < map.xsize; tx++) {
-      var ptile = map_pos_to_tile(tx, ty);
-      var idx   = ty * map.xsize + tx;
+  for (let x = 0; x < map.xsize ; x++) {
+    for (let y = 0; y < map.ysize; y++) {
+      let ptile = map_pos_to_tile(x, y);
+
+      // Make coastline more distinct, to make it easier to distinguish ocean from land.
+      if (is_ocean_tile(ptile) && is_land_tile_near(ptile)) {
+        ptile['height'] = 0.45;
+      }
+      if (!is_ocean_tile(ptile) && is_ocean_tile_near(ptile)) {
+        ptile['height'] = 0.55;
+      }
+
       if (tile_get_known(ptile) == TILE_UNKNOWN) {
-        tile_h[idx] = -1;
-      } else if (is_ocean_tile(ptile)) {
-        tile_h[idx] = is_land_tile_near(ptile) ? TERRAIN_HEIGHT_OCEAN_COAST
-                                                : TERRAIN_HEIGHT_OCEAN_DEEP;
-      } else if (is_ocean_tile_near(ptile)) {
-        tile_h[idx] = TERRAIN_HEIGHT_BEACH;
-      } else {
-        tile_h[idx] = get_terrain_target_height(ptile);
-      }
-    }
-  }
+        ptile['height'] = 0.51;
+        let neighbours = [
+          { "x": x - 1 , "y": y - 1},
+          { "x": x - 1, "y": y },
+          { "x": x - 1,  "y": y + 1 },
+          { "x": x,  "y": y - 1},
+          { "x": x , "y": y + 1},
+          { "x": x + 1, "y": y - 1 },
+          { "x": x + 1,  "y": y },
+          { "x": x + 1,  "y": y + 1},
+          ];
 
-  // --- Phase 2: propagate to unknown tiles from 8-connected known neighbours
-  for (var ty = 0; ty < map.ysize; ty++) {
-    for (var tx = 0; tx < map.xsize; tx++) {
-      var idx = ty * map.xsize + tx;
-      if (tile_h[idx] >= 0) continue;
-      for (var dy = -1; dy <= 1; dy++) {
-        for (var dx = -1; dx <= 1; dx++) {
-          if (dx === 0 && dy === 0) continue;
-          var nx = tx + dx, ny = ty + dy;
-          if (nx >= 0 && nx < map.xsize && ny >= 0 && ny < map.ysize) {
-            if (tile_h[ny * map.xsize + nx] >= 0) {
-              tile_h[idx] = TERRAIN_HEIGHT_FLAT;
-              break;
-            }
+        for (let i = 0; i < 8; i++) {
+          let coords = neighbours[i];
+          if (coords.x < 0 || coords.x >= map.xsize || coords.y < 0 || coords.y >= map.ysize || ptile['height'] > 0.51) {
+            continue;
+          }
+          let ntile = map_pos_to_tile(coords.x, coords.y);
+          if (tile_get_known(ntile) != TILE_UNKNOWN) {
+            ptile['height'] = ntile['height'];
           }
         }
-        if (tile_h[idx] >= 0) break;
+
       }
-      if (tile_h[idx] < 0) tile_h[idx] = TERRAIN_HEIGHT_FLAT;
     }
   }
 
-  // --- Phase 3: build heightmap array with sub-tile interpolation ----------
-  var CTX = [0, 0, 1, 1];
-  var CTY = [0, 1, 0, 1];
-
-  for (var hx = 0; hx < hm_res_x; hx++) {
-    for (var hy = 0; hy < hm_res_y; hy++) {
-      var index = hy * hm_res_x + hx;
-      var gx    = hx / heightmap_quality - 0.5;
-      var gy    = hy / heightmap_quality - 0.5;
-      var igx   = Math.round(gx);
-      var igy   = Math.round(gy);
-
-      if (igx === gx && igy === gy) {
-        if (igx >= 0 && igx < map.xsize && igy >= 0 && igy < map.ysize) {
-          heightmap[index] = tile_h[igy * map.xsize + igx];
+  for (let x = 0; x < heightmap_resolution_x; x++) {
+    for (let y = 0; y < heightmap_resolution_y; y++) {
+      let index = y * heightmap_resolution_x + x;
+      let gx = x / heightmap_quality - 0.5;
+      let gy = y / heightmap_quality - 0.5;
+       if (Math.round(gx) == gx && Math.round(gy) == gy) {
+        let ptile = map_pos_to_tile(gx, gy);
+        heightmap[index] = ptile['height'];
+        if (tile_terrain(ptile)['name'] == "Mountains") {
+          heightmap[index] = ptile['height'] * 1.02;
         }
       } else {
-        var flx = Math.floor(gx), fly = Math.floor(gy);
+        let neighbours = [
+          { "x": Math.floor(gx), "y": Math.floor(gy) },
+          { "x": Math.floor(gx), "y": Math.ceil(gy) },
+          { "x": Math.ceil(gx),  "y": Math.floor(gy) },
+          { "x": Math.ceil(gx),  "y": Math.ceil(gy) }];
 
-        var allFlat = true;
-        for (var ci = 0; ci < 4; ci++) {
-          var ctx = flx + CTX[ci], cty = fly + CTY[ci];
-          if (ctx < 0 || ctx >= map.xsize || cty < 0 || cty >= map.ysize) continue;
-          var ct = map_pos_to_tile(ctx, cty);
-          if (tile_get_known(ct) != TILE_UNKNOWN && !is_flat_terrain(ct) && !is_ocean_tile(ct)) {
-            allFlat = false; break;
+        let norm = 0;
+        let sum = 0;
+        for (let i = 0; i < 4; i++) {
+          let coords = neighbours[i];
+          if (coords.x < 0 || coords.x >= map.xsize || coords.y < 0 || coords.y >= map.ysize) {
+            continue;
           }
+          let dx = gx - coords.x;
+          let dy = gy - coords.y;
+          let distance = Math.sqrt(dx*dx + dy*dy);
+          let ptile = map_pos_to_tile(coords.x, coords.y);
+          let height = 0;
+          if (tile_terrain(ptile)['name'] == "Hills" || tile_terrain(ptile)['name'] == "Mountains") {
+            let rnd = ((x * y) % 10) / 10;
+            height = ptile['height'] + ((rnd - 0.5) / 50) - 0.01;
+          } else {
+            height = ptile['height'];
+          }
+
+          sum += height / distance / distance;
+          norm += 1 / distance / distance;
         }
 
-        if (allFlat) {
-          var flatSum = 0, flatCnt = 0;
-          for (var ci = 0; ci < 4; ci++) {
-            var ctx = flx + CTX[ci], cty = fly + CTY[ci];
-            if (ctx >= 0 && ctx < map.xsize && cty >= 0 && cty < map.ysize) {
-              flatSum += tile_h[cty * map.xsize + ctx]; flatCnt++;
-            }
-          }
-          heightmap[index] = flatCnt > 0 ? flatSum / flatCnt : TERRAIN_HEIGHT_FLAT;
-        } else {
-          var norm = 0, wsum = 0;
-          for (var ci = 0; ci < 4; ci++) {
-            var ctx = flx + CTX[ci], cty = fly + CTY[ci];
-            if (ctx < 0 || ctx >= map.xsize || cty < 0 || cty >= map.ysize) continue;
-            var dx = gx - ctx, dy = gy - cty;
-            var distSq = dx * dx + dy * dy;
-            if (distSq < 1e-10) { norm = 1; wsum = tile_h[cty * map.xsize + ctx]; break; }
-            var h = tile_h[cty * map.xsize + ctx];
-            var ct = map_pos_to_tile(ctx, cty);
-            if (tile_get_known(ct) != TILE_UNKNOWN && tile_terrain(ct)['name'] === "Mountains") {
-              var rnd = ((hx * 7 + hy * 13) % 31) / 31.0;
-              h += (rnd - 0.5) * 0.024;
-            }
-            wsum += h / distSq;
-            norm += 1.0 / distSq;
-          }
-          heightmap[index] = norm > 0 ? wsum / norm : TERRAIN_HEIGHT_FLAT;
-        }
+        heightmap[index] = (sum / norm);
       }
     }
   }
+
+  console.log("Heightmap updated (square topology).");
 }
