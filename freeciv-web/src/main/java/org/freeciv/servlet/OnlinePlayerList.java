@@ -69,7 +69,9 @@ public class OnlinePlayerList extends HttpServlet {
 
         } catch (RuntimeException err) {
             response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
-            response.getWriter().write("{\"error\": \"An error occurred.\" " +  err.getMessage()  +" }");
+            JSONObject errorResponse = new JSONObject();
+            errorResponse.put("error", "An error occurred.");
+            response.getWriter().write(errorResponse.toString());
         }
     }
 

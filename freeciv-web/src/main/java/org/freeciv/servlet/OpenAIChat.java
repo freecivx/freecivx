@@ -10,6 +10,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.json.JSONObject;
 
 import java.io.IOException;
 import java.time.Duration;
@@ -104,7 +105,9 @@ public class OpenAIChat  extends HttpServlet {
             for (ChatCompletionChoice choice : choices) {
 
                 response.setContentType("application/json");
-                response.getWriter().write(String.format("{\"message\": \"%s\"}", choice.getMessage().getContent()));
+                JSONObject jsonResponse = new JSONObject();
+                jsonResponse.put("message", choice.getMessage().getContent());
+                response.getWriter().write(jsonResponse.toString());
             }
 
 
