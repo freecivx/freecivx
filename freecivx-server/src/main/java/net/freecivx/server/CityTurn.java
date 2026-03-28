@@ -367,6 +367,13 @@ public class CityTurn {
      * Mirrors the {@code EC_POLLUTION} extra cause in the C Freeciv server.
      */
     public static final int EXTRA_BIT_POLLUTION = 4;
+    /**
+     * Tile extras bitvector index for Fortress.
+     * Matches extras entry 14 ("Fortress") registered in {@code Game.initGame()}.
+     * Mirrors the {@code defense_bonus = 100} and {@code HP_Regen = 25} effects
+     * in the classic Freeciv {@code terrain.ruleset} and {@code effects.ruleset}.
+     */
+    public static final int EXTRA_BIT_FORTRESS = 14;
 
     /**
      * Base pollution modifier (negative offset) applied when computing a city's
@@ -2025,7 +2032,16 @@ public class CityTurn {
         // This ensures that luxury spending reduces gold income correctly.
         // Mirrors the economic split in the C Freeciv server (economic.tax).
         // Ceiling division preserves at least 1 gold when the taxRate is > 0.
-        return (trade * player.getTaxRate() + 99) / 100;
+        int taxGold = (trade * player.getTaxRate() + 99) / 100;
+
+        // Taxman specialist output: each taxman produces 3 gold directly,
+        // bypassing the trade/rate split.  Mirrors city_specialist_output()
+        // in the C Freeciv server's common/city.c (O_GOLD = 3 per taxman).
+        // specialists[1] = Taxmen (index 1 in the classic specialists ruleset).
+        int[] specs = city.getSpecialists();
+        taxGold += specs[1] * 3;
+
+        return taxGold;
     }
 
     /**
@@ -2090,21 +2106,67 @@ public class CityTurn {
             trade = (trade * (100 - corruptionPct) + 99) / 100;
         }
 
-        return (trade * player.getLuxuryRate() + 99) / 100;
+        return (trade * player.getLuxuryRate() + 99) / 100
+                + cityEntertainerLuxury(city);
     }
 
     /**
-     * start of the turn.  Mirrors {@code unit_restore_hitpoints()} in the C
-     * Freeciv server's {@code server/unittools.c}:
+     * Returns the luxury output produced by the specialists (Entertainers) in the
+     * given city this turn.  Entertainers produce 2 luxury points each, directly
+     * bypassing the trade/rate split.  Mirrors {@code city_specialist_output()}
+     * in the C Freeciv server's {@code common/city.c} (O_LUXURY = 2 per
+     * Entertainer).
+     *
+     * @param city the city to evaluate
+     * @return luxury points produced by Entertainer specialists
+     */
+    public static int cityEntertainerLuxury(City city) {
+        if (city == null) return 0;
+        // specialists[0] = Entertainers (index 0 in the classic specialists ruleset)
+        return city.getSpecialists()[0] * 2;
+    }
+
+    /**
+     * Returns the science (bulbs) produced by Scientist specialists in the given
+     * city this turn.  Each scientist produces 3 bulbs directly, bypassing the
+     * trade/rate split.  Mirrors {@code city_specialist_output()} in the C Freeciv
+     * server's {@code common/city.c} (O_SCIENCE = 3 per Scientist).
+     *
+     * <p>This output should be added to the player's bulb accumulation AFTER the
+     * science rate has been applied to the trade-based science, so that the
+     * specialist contribution is not scaled down by the science rate.
+     *
+     * @param city the city to evaluate
+     * @return science bulbs produced by Scientist specialists
+     */
+    public static int cityScientistOutput(City city) {
+        if (city == null) return 0;
+        // specialists[2] = Scientists (index 2 in the classic specialists ruleset)
+        return city.getSpecialists()[2] * 3;
+    }
+
+    /**
+     * Restores hit points to damaged units at the start of each turn.
+     * Mirrors {@code unit_restore_hitpoints()} in the C Freeciv server's
+     * {@code server/unittools.c}.
+     *
+     * <p>HP recovery model (mirrors {@code effects.ruleset}):
      * <ul>
-     *   <li>A city with <b>Barracks</b> (improvement id {@value #IMPR_BARRACKS})
-     *       provides full HP restoration in one turn
-     *       ({@code EFT_HP_REGEN = 100} in {@code effects.ruleset}).</li>
-     *   <li>A city without Barracks restores 1/{@value #HP_RESTORE_DIVISOR} of
-     *       max HP per turn (modest baseline recovery).</li>
+     *   <li><b>HP_Regen_2 effects (additive)</b>: every non-Helicopter unit gains
+     *       10% HP per turn (effect_base_regen).  Fortified units gain an
+     *       additional 10% (effect_fortified_regen).</li>
+     *   <li><b>HP_Regen effects (take max)</b>: Barracks / Barracks II / III give
+     *       land units 100% HP regen (full heal) per turn; Airport gives air units
+     *       100% HP regen; Port Facility gives naval units 100% HP regen; a
+     *       Fortress tile gives land units 25% HP regen.</li>
+     *   <li>Total regen per turn = max(HP_Regen values) + sum(HP_Regen_2 values).
+     *       Full-heal buildings dominate; fortress and base regen are meaningful
+     *       outside cities.</li>
+     *   <li>United Nations wonder adds a flat +2 HP per turn empire-wide, applied
+     *       first.</li>
      * </ul>
-     * Only units belonging to the city owner benefit; enemy units occupying a
-     * tile with a friendly city are not healed.
+     * Enemy units occupying a tile with a friendly city are not healed by that
+     * city's improvements.
      *
      * @param game the current game state
      */
@@ -2113,7 +2175,11 @@ public class CityTurn {
         Map<Long, City> cityByTile = game.cities.values().stream()
                 .collect(Collectors.toMap(City::getTile, c -> c, (a, b) -> a));
 
-        int barracksId = findImprId(game, "Barracks", IMPR_BARRACKS);
+        int barracksId    = findImprId(game, "Barracks",      IMPR_BARRACKS);
+        int barracksIIId  = findImprId(game, "Barracks II",   -1);
+        int barracksIIIId = findImprId(game, "Barracks III",  -1);
+        int airportId     = findImprId(game, "Airport",       -1);
+        int portFacId     = findImprId(game, "Port Facility", -1);
 
         for (Unit unit : game.units.values()) {
             UnitType utype = game.unitTypes.get((long) unit.getType());
@@ -2129,19 +2195,54 @@ public class CityTurn {
                 if (unit.getHp() >= maxHp) continue;
             }
 
-            // Unit must be in a friendly city to receive healing
-            City city = cityByTile.get(unit.getTile());
-            if (city == null) continue;
-            if (city.getOwner() != unit.getOwner()) continue;
+            int domain = utype.getDomain(); // 0=land, 1=sea, 2=air
 
-            if (city.hasImprovement(barracksId)) {
-                // Barracks: full heal in one turn (EFT_HP_REGEN = 100%)
-                unit.setHp(maxHp);
-            } else {
-                // No Barracks: restore 20% of max HP (baseline regen)
-                int restore = Math.max(1, maxHp / HP_RESTORE_DIVISOR);
-                unit.setHp(Math.min(maxHp, unit.getHp() + restore));
+            // HP_Regen_2 (additive): base 10% for all units + fortified bonus 10%.
+            // Mirrors effect_base_regen (HP_Regen_2=10) and
+            // effect_fortified_regen (HP_Regen_2=10) in classic effects.ruleset.
+            int regen2Pct = 10; // base regen
+            if (unit.getActivity() == ACTIVITY_FORTIFIED) {
+                regen2Pct += 10; // fortified bonus
             }
+
+            // HP_Regen (take max): Barracks=100 (land), Airport=100 (air),
+            // Port Facility=100 (sea), Fortress=25 (land outside city).
+            int regenPct = 0;
+
+            City city = cityByTile.get(unit.getTile());
+            if (city != null && city.getOwner() == unit.getOwner()) {
+                // Domain-specific city-building regen (HP_Regen)
+                if (domain == 0) { // Land: Barracks / Barracks II / Barracks III
+                    if (city.hasImprovement(barracksId)
+                            || city.hasImprovement(barracksIIId)
+                            || city.hasImprovement(barracksIIIId)) {
+                        regenPct = 100; // full heal
+                    }
+                } else if (domain == 2) { // Air: Airport
+                    if (city.hasImprovement(airportId)) {
+                        regenPct = 100;
+                    }
+                } else if (domain == 1) { // Sea: Port Facility
+                    if (city.hasImprovement(portFacId)) {
+                        regenPct = 100;
+                    }
+                }
+            } else {
+                // Outside city: Fortress gives 25% HP regen to land units.
+                // Mirrors effect_fortress_hp_regen (HP_Regen=25, Extra:Fortress,
+                // UnitClass:Land) in the classic Freeciv effects.ruleset.
+                // Fortress is extras bit 14 in the bitvector (Game.initGame()).
+                Tile tile = game.tiles.get(unit.getTile());
+                if (tile != null && domain == 0
+                        && (tile.getExtras() & (1 << EXTRA_BIT_FORTRESS)) != 0) {
+                    regenPct = 25;
+                }
+            }
+
+            // Total: HP_Regen (max value) + HP_Regen_2 (additive sum)
+            int totalPct = regenPct + regen2Pct;
+            int restore = Math.max(1, (maxHp * totalPct + 99) / 100);
+            unit.setHp(Math.min(maxHp, unit.getHp() + restore));
         }
     }
 
@@ -2254,7 +2355,13 @@ public class CityTurn {
 
             // Luxury needed to neutralise all unhappy citizens.
             // Each HAPPY_COST luxury points covers one unhappy citizen.
-            int luxuryNeeded = netUnhappy * HAPPY_COST;
+            // Subtract luxury already provided by Entertainer specialists
+            // (2 points per entertainer), since they contribute directly without
+            // requiring a non-zero luxury rate.  Mirrors city_specialist_output()
+            // (O_LUXURY) in the C Freeciv server's common/city.c.
+            int entertainerLux = cityEntertainerLuxury(city);
+            int luxuryNeeded = netUnhappy * HAPPY_COST - entertainerLux;
+            if (luxuryNeeded <= 0) continue; // entertainers cover all unhappiness
 
             // Estimate city trade (conservative: no Marketplace/Bank bonus)
             int trade = cityTradeBase(game, entry.getKey());
