@@ -374,6 +374,14 @@ public class CityTurn {
      * in the classic Freeciv {@code terrain.ruleset} and {@code effects.ruleset}.
      */
     public static final int EXTRA_BIT_FORTRESS = 14;
+    /**
+     * Tile extras bitvector index for River.
+     * Matches extras entry 0 ("River") registered in {@code Game.initGame()}.
+     * Rivers add +1 trade unconditionally to any tile they occupy, mirroring
+     * {@code trade_incr_const = 1} in the classic Freeciv
+     * {@code terrain.ruleset} {@code [extra_river]} section.
+     */
+    public static final int EXTRA_BIT_RIVER = 0;
 
     /**
      * Base pollution modifier (negative offset) applied when computing a city's
@@ -456,6 +464,13 @@ public class CityTurn {
             // Road trade bonus (Grassland/Plains/Desert in classic ruleset get +1 trade with road).
             if ((extras & (1 << EXTRA_BIT_ROAD)) != 0) {
                 trade += terrain.getRoadTradeBonus();
+            }
+            // River trade bonus: Rivers unconditionally add +1 trade to any tile.
+            // Mirrors trade_incr_const = 1 in [extra_river] in the classic
+            // Freeciv terrain.ruleset.  Note that Road and River bonuses are
+            // independent — a tile can have both.
+            if ((extras & (1 << EXTRA_BIT_RIVER)) != 0) {
+                trade += 1;
             }
             // Irrigation food bonus
             if ((extras & (1 << EXTRA_BIT_IRRIGATION)) != 0) {
@@ -1300,6 +1315,31 @@ public class CityTurn {
         // Each of the city's citizens (= city size) consumes RS_DEFAULT_FOOD_COST food per turn.
         int foodMaintenance = city.getSize() * RS_DEFAULT_FOOD_COST;
 
+        // Unit food upkeep: some unit types (e.g. Settlers) require food from their
+        // supporting city each turn.  Mirrors punit->upkeep[O_FOOD] in the C Freeciv
+        // server's city_support() / update_unit_upkeep() in server/citytools.c.
+        // Under Republic or Democracy the food upkeep factor doubles (Upkeep_Factor=2
+        // for Food), mirroring effect_republic_unit_upkeep / effect_democracy_unit_upkeep
+        // in the classic Freeciv effects.ruleset.
+        // A single pass also tracks the first unit with food upkeep for potential
+        // starvation disbanding below, avoiding a second iteration over game units.
+        Player cityPlayer = game.players.get(city.getOwner());
+        int govId = cityPlayer != null ? cityPlayer.getGovernmentId() : GOV_DESPOTISM;
+        int foodUpkeepFactor = (govId == GOV_REPUBLIC || govId == GOV_DEMOCRACY) ? 2 : 1;
+        int unitFoodUpkeep = 0;
+        Unit firstFoodUpkeepUnit = null;
+        for (Unit unit : game.units.values()) {
+            if (unit.getHomecity() != cityId) continue;
+            UnitType utype = game.unitTypes.get((long) unit.getType());
+            if (utype != null && utype.getFoodUpkeep() > 0) {
+                unitFoodUpkeep += utype.getFoodUpkeep() * foodUpkeepFactor;
+                if (firstFoodUpkeepUnit == null) {
+                    firstFoodUpkeepUnit = unit;
+                }
+            }
+        }
+        foodMaintenance += unitFoodUpkeep;
+
         // Net food surplus: production minus maintenance.
         // Positive → city accumulates food toward growth.
         // Negative → city loses food from stock; if stock < 0 the city starves (shrinks).
@@ -1395,37 +1435,55 @@ public class CityTurn {
                 }
             }
         } else if (city.getFoodStock() < 0) {
-            // Starvation: city shrinks if size > 1, mirrors city_reduce_size() in C server.
-            // In the C server, city_reduce_size() removes a specialist first (if any) before
-            // releasing a worked tile.  This matches city_auto_arrange_workers() behaviour:
-            // workers are preferred over specialists.  Mirrors the logic in the C Freeciv
-            // server's server/citytools.c: city_reduce_specialists() is tried first.
-            if (city.getSize() > 1) {
-                city.setSize(city.getSize() - 1);
-                // Remove a specialist first; fall back to releasing a worked tile.
-                if (!removeOneSpecialist(city)) {
-                    releaseWorstWorkedTile(game, city);
-                }
+            // Starvation: try to disband a unit with food upkeep first (e.g. Settlers).
+            // Mirrors the C Freeciv server's city_populate() in server/cityturn.c:
+            //   if food_stock < 0: find a unit with upkeep[O_FOOD] > 0 and disband it.
+            // This avoids city shrinkage when a Settler is consuming food the city
+            // cannot afford.  firstFoodUpkeepUnit was captured during the upkeep
+            // calculation above, so no second iteration is needed.
+            if (firstFoodUpkeepUnit != null) {
+                String unitName = "unit";
+                UnitType utype = game.unitTypes.get((long) firstFoodUpkeepUnit.getType());
+                if (utype != null) unitName = utype.getName();
+                UnitTools.removeUnit(game, firstFoodUpkeepUnit.getId());
                 Notify.notifyPlayer(game, game.getServer(), city.getOwner(),
-                        "Famine in " + city.getName() + "! Population has decreased to "
-                                + city.getSize() + ".");
-            }
-            // After shrinking, apply granary savings so the city retains partial food.
-            // Mirrors city_shrink_granary_savings() / city_reset_foodbox() in the C server:
-            //   EFT_SHRINK_FOOD: Granary = 50%, Pyramids = 25% of new granary capacity.
-            // Without a Granary the food stock is reset to 0, matching the C server default.
-            int newGranarySize = cityGranarySize(city.getSize());
-            boolean hasPyramidsForShrink = playerHasWonder(game, city.getOwner(), "Pyramids");
-            if (city.hasImprovement(granaryImprId)) {
-                int savedFood = newGranarySize / 2;  // Granary: 50% retained on shrink
-                if (hasPyramidsForShrink) {
-                    savedFood = (newGranarySize * 3) / 4;  // Granary + Pyramids: 75% retained
-                }
-                city.setFoodStock(Math.min(savedFood, newGranarySize));
-            } else if (hasPyramidsForShrink) {
-                city.setFoodStock(newGranarySize / 4);  // Pyramids alone: 25% on shrink
+                        "Famine feared in " + city.getName()
+                                + ", " + unitName + " lost!");
+                // Reset food stock to 0 after disbanding (mirrors city_reset_foodbox()
+                // in the C server after the unit dies).
+                city.setFoodStock(Math.max(0, city.getFoodStock()));
             } else {
-                city.setFoodStock(0);
+                // No unit with food upkeep to disband — city shrinks.
+                // In the C server, city_reduce_size() removes a specialist first (if any)
+                // before releasing a worked tile.  Mirrors city_reduce_specialists() and
+                // city_auto_arrange_workers() in the C Freeciv server's citytools.c.
+                if (city.getSize() > 1) {
+                    city.setSize(city.getSize() - 1);
+                    // Remove a specialist first; fall back to releasing a worked tile.
+                    if (!removeOneSpecialist(city)) {
+                        releaseWorstWorkedTile(game, city);
+                    }
+                    Notify.notifyPlayer(game, game.getServer(), city.getOwner(),
+                            "Famine in " + city.getName() + "! Population has decreased to "
+                                    + city.getSize() + ".");
+                }
+                // After shrinking, apply granary savings so the city retains partial food.
+                // Mirrors city_shrink_granary_savings() / city_reset_foodbox() in the C server:
+                //   EFT_SHRINK_FOOD: Granary = 50%, Pyramids = 25% of new granary capacity.
+                // Without a Granary the food stock is reset to 0, matching the C server default.
+                int newGranarySize = cityGranarySize(city.getSize());
+                boolean hasPyramidsForShrink = playerHasWonder(game, city.getOwner(), "Pyramids");
+                if (city.hasImprovement(granaryImprId)) {
+                    int savedFood = newGranarySize / 2;  // Granary: 50% retained on shrink
+                    if (hasPyramidsForShrink) {
+                        savedFood = (newGranarySize * 3) / 4;  // Granary + Pyramids: 75% retained
+                    }
+                    city.setFoodStock(Math.min(savedFood, newGranarySize));
+                } else if (hasPyramidsForShrink) {
+                    city.setFoodStock(newGranarySize / 4);  // Pyramids alone: 25% on shrink
+                } else {
+                    city.setFoodStock(0);
+                }
             }
         }
 
