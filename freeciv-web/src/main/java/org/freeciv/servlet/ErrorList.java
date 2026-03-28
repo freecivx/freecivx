@@ -1,5 +1,6 @@
 package org.freeciv.servlet;
 
+import org.apache.commons.text.StringEscapeUtils;
 import org.freeciv.util.DatabaseUtil;
 import org.json.JSONObject;
 import org.slf4j.Logger;
@@ -53,7 +54,7 @@ public class ErrorList extends HttpServlet {
                                 String stacktrace = new String(Base64.getDecoder().decode(rs.getString("stacktrace").getBytes(StandardCharsets.UTF_8)), StandardCharsets.UTF_8);
                                 String timestamp = rs.getString("timestamp");
 
-                                response.getOutputStream().print("<td style='padding:3px;'>" + id + "</td><td style='padding:3px;'>" + stacktrace + "</td><td style='padding:3px;'>" + timestamp + "</td>");
+                                response.getOutputStream().print("<td style='padding:3px;'>" + id + "</td><td style='padding:3px;'>" + StringEscapeUtils.escapeHtml4(stacktrace) + "</td><td style='padding:3px;'>" + StringEscapeUtils.escapeHtml4(timestamp) + "</td>");
                                 response.getOutputStream().print("</tr>");
 
                                 if ((count + 1)  % 2 == 0) {

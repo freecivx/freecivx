@@ -26,6 +26,8 @@ import java.sql.*;
 import javax.sql.*;
 
 import org.freeciv.util.Constants;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.naming.*;
 
@@ -39,6 +41,7 @@ import javax.naming.*;
 public class CivclientLauncher extends HttpServlet {
 	
 	private static final long serialVersionUID = 1L;
+	private static final Logger logger = LoggerFactory.getLogger(CivclientLauncher.class);
 
 	public void doPost(HttpServletRequest request, HttpServletResponse response)
 			throws IOException, ServletException {
@@ -119,15 +122,17 @@ public class CivclientLauncher extends HttpServlet {
 			}
 
 		} catch (Exception err) {
-			response.setHeader("result", err.getMessage());
-			err.printStackTrace();
+			logger.error("Error in CivclientLauncher", err);
+			response.setHeader("result", "error");
+			response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR,
+					"Unable to find a valid Freeciv server to play on. Please try again later.");
 			return;
 		} finally {
 			if (conn != null)
 				try {
 					conn.close();
 				} catch (SQLException e) {
-					e.printStackTrace();
+					logger.error("Error closing database connection", e);
 				}
 		}
 
