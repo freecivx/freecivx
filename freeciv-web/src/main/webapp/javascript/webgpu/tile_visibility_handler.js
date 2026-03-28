@@ -102,7 +102,7 @@ function update_tiles_known_vertex_colors()
     _vert_colors_buffer = new Float32Array(total * 3);
   }
 
-  var idx = 0;
+  let idx = 0;
   for ( let iy = 0; iy < gridY1; iy ++ ) {
     for ( let ix = 0; ix < gridX1; ix ++ ) {
         var sx = ix % xquality, sy = iy % yquality;
