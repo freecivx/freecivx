@@ -252,16 +252,6 @@ class AiCity {
                 return;
             }
         }
-
-        // J.S. Bach's Cathedral (Theology) — 2 unhappy→content in every city.
-        if (ai.imprBachsCathedral >= 0 && !CityTurn.worldHasWonder(game, "J.S. Bach's Cathedral")) {
-            Improvement bachs = game.improvements.get((long) ai.imprBachsCathedral);
-            if (bachs != null && canBuildImprovement(owner, bachs)) {
-                city.setProductionKind(1);
-                city.setProductionValue(ai.imprBachsCathedral);
-                return;
-            }
-        }
         // Colossus (Bronze Working) — +1 trade on every trade-producing tile empire-wide.
         // Very early wonder; build as soon as Bronze Working is available.
         if (ai.imprColossus >= 0 && !CityTurn.worldHasWonder(game, "Colossus")) {

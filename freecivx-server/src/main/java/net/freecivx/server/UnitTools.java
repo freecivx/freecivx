@@ -361,7 +361,7 @@ public class UnitTools {
 
         Notify.notifyPlayer(game, game.getServer(), unit.getOwner(),
                 utype.getName() + " helped build " + target.getName()
-                + " in " + city.getName() + " (++" + shields + " production shields).");
+                + " in " + city.getName() + " (+" + shields + " production shields).");
         log.info("Unit {} ({}) helped build {} in city {} for {} shields",
                 unitId, utype.getName(), target.getName(), city.getName(), shields);
         return true;
