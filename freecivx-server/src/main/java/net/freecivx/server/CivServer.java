@@ -544,6 +544,23 @@ public class CivServer extends org.java_websocket.server.WebSocketServer impleme
                 game.setAiSkillLevel(Game.AI_SKILL_HARD);
                 sendMessageAll("AI skill level set to Hard.");
             }
+            if (message.equalsIgnoreCase("/surrender")) {
+                net.freecivx.game.Player surrenderingPlayer = game.players.get(connId);
+                if (surrenderingPlayer == null || surrenderingPlayer.isAi()) {
+                    sendMessage(connId, "You cannot surrender: no active player found for your connection.");
+                } else if (!game.isGameStarted()) {
+                    sendMessage(connId, "The game has not started yet.");
+                } else {
+                    String playerName = surrenderingPlayer.getUsername();
+                    // Convert the surrendering player to AI control so their cities
+                    // and units continue to be managed.  Mirrors the C server's
+                    // /surrender / handle_player_surrender() which hands control
+                    // to the default AI (dai) and marks the human as gone.
+                    surrenderingPlayer.setAi(true);
+                    surrenderingPlayer.setConnected(false);
+                    sendMessageAll(playerName + " has surrendered and their civilization is now controlled by the AI.");
+                }
+            }
             if (message.equalsIgnoreCase("/help")) {
                 String helptext = """
                         Freecivx Java server commands:
@@ -560,6 +577,7 @@ public class CivServer extends org.java_websocket.server.WebSocketServer impleme
                         /easy           - Set AI skill level to Easy
                         /normal         - Set AI skill level to Normal (default)
                         /hard           - Set AI skill level to Hard
+                        /surrender      - Surrender and hand your civilization over to AI control
                         /help           - Show this help text
                         Available scenarios: africa-350x350-v1.0.sav, british-isles.sav, caribbean-500x250-v1.2.sav, earth-large.sav, earth-small.sav, europe.sav, france.sav, hagworld.sav, iberian-peninsula.sav, india-350x350-v1.2.sav, italy.sav, japan.sav, middleeast-350x350-v1.1.sav, north_america.sav, scandinavia-350x350-v1.0.sav, tutorial.sav
                         Game features: units move with movement limits, AI players included.
