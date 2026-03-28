@@ -99,12 +99,7 @@ function setup_window_size ()
   var new_mapview_width = winWidth - width_offset;
   var new_mapview_height = winHeight - height_offset;
 
-
-  $("#pregame_custom_scrollbar_div").height( new_mapview_height - 100
-                                        - $("#pregame_game_info").outerHeight());
-  $("#pregame_custom_scrollbar_div").width($(window).width() - 250);
-  $("#pregame_player_list").height( new_mapview_height - 100);
-  $("#pregame_text_input").width($(window).width() - 250);
+  /* Pregame layout is handled by CSS flexbox; no explicit height overrides needed */
 
   $("#nations").height( new_mapview_height - 100);
   $("#nations").width( new_mapview_width);

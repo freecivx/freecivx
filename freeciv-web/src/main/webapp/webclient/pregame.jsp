@@ -27,9 +27,13 @@
   </div>
 
   <div id="pregame_content_wrapper">
-    <div id="pregame_player_list" role="list" aria-label="Player list"></div>
+    <div id="pregame_player_list_wrapper">
+      <div class="pregame_section_header"><i class="fa fa-users" aria-hidden="true"></i> Players</div>
+      <div id="pregame_player_list" role="list" aria-label="Player list"></div>
+    </div>
     <div id="pregame_main_area">
       <div id="pregame_game_info" aria-live="polite"></div>
+      <div class="pregame_section_header"><i class="fa fa-comments" aria-hidden="true"></i> Game Messages</div>
       <div id="pregame_custom_scrollbar_div">
         <ol id="pregame_message_area" role="log" aria-live="polite" aria-label="Game messages"></ol>
       </div>
