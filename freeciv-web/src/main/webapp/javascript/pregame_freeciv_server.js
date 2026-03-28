@@ -140,11 +140,11 @@ function update_player_info_pregame()
       if (player != null) {
         if (player['name'].indexOf("AI") != -1) {
           player_html += "<div id='pregame_plr_" + id
-		        + "' class='pregame_player_name'><div id='pregame_ai_icon'></div><b>"
+		        + "' class='pregame_player_name'><i class='fa fa-android pregame_fa_ai_icon' aria-hidden='true'></i><b>"
                         + player['name'] + "</b></div>";
         } else {
           player_html += "<div id='pregame_plr_" + id
-		        + "' class='pregame_player_name'><div id='pregame_player_icon'></div><b>"
+		        + "' class='pregame_player_name'><i class='fa fa-user pregame_fa_player_icon' aria-hidden='true'></i><b>"
                         + player['name'] + "</b></div>";
         }
       }
@@ -1068,6 +1068,7 @@ function show_intro_dialog(title, message) {
 
   $(window).on("resize", function () {
     $("#dialog").dialog("option", "position", { my: "center", at: "center", of: window });
+    setup_window_size();
   });
 
   init_custom_scrollbar("#pregame_custom_scrollbar_div");
