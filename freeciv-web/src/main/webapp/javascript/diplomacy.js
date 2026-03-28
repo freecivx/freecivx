@@ -359,7 +359,8 @@ function createDiplomacyDialog(counterpart) {
   diplomacyDialog.dialog({
     bgiframe: true,
     modal: false,
-    height: 500,
+    width: 600,
+    height: 450,
     buttons: {
       "Accept treaty": function () {
         accept_treaty_req(counterpartId);
