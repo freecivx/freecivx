@@ -121,16 +121,22 @@ public class TechTools {
         // University, and other science-producing buildings — mirroring the
         // per-city science output calculation in the C Freeciv server.
         int scienceOutput = 0;
+        int specialistScience = 0;
         for (Map.Entry<Long, City> entry : game.cities.entrySet()) {
             City city = entry.getValue();
             if (city.getOwner() == playerId) {
                 scienceOutput += net.freecivx.server.CityTurn.cityScienceContribution(game, entry.getKey());
+                // Scientist specialist output bypasses the trade/rate split.
+                // See CityTurn.cityScientistOutput() for details.
+                specialistScience += net.freecivx.server.CityTurn.cityScientistOutput(city);
             }
         }
         // Apply player science rate (percentage of output directed to research).
         // Use ceiling division to prevent the combined rounding of cityScienceContribution
         // and the scienceRate step from reducing the output to zero for small cities.
-        scienceOutput = (scienceOutput * player.getScienceRate() + 99) / 100;
+        // Scientist specialist output is added AFTER the rate to bypass the split.
+        scienceOutput = (scienceOutput * player.getScienceRate() + 99) / 100
+                + specialistScience;
 
         // Accumulate bulbs and check for completion
         int bulbs = player.getBulbsResearched() + scienceOutput;
@@ -209,12 +215,16 @@ public class TechTools {
         // Total bulb production this turn (after science-rate scaling).
         // Used by the client to display "N turns to complete" estimates.
         int totalBulbsProd = 0;
+        int totalSpecialistScience = 0;
         for (Map.Entry<Long, City> entry : game.cities.entrySet()) {
-            if (entry.getValue().getOwner() == playerId) {
+            City city = entry.getValue();
+            if (city.getOwner() == playerId) {
                 totalBulbsProd += net.freecivx.server.CityTurn.cityScienceContribution(game, entry.getKey());
+                totalSpecialistScience += net.freecivx.server.CityTurn.cityScientistOutput(city);
             }
         }
-        totalBulbsProd = totalBulbsProd * player.getScienceRate() / 100;
+        totalBulbsProd = totalBulbsProd * player.getScienceRate() / 100
+                + totalSpecialistScience;
 
         JSONObject msg = new JSONObject();
         msg.put("pid", Packets.PACKET_RESEARCH_INFO);

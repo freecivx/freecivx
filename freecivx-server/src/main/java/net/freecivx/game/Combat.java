@@ -277,14 +277,23 @@ public class Combat {
         if (tile == null) return 0;
         // Terrain defense bonuses indexed by terrain ID (matching Game.initGame order)
         // Forest=50, Hills=100, Jungle=50, Mountains=200, Swamp=50, others=0
+        int bonus = 0;
         switch (tile.getTerrain()) {
-            case 6:  return 50;   // Forest
-            case 8:  return 100;  // Hills
-            case 9:  return 50;   // Jungle
-            case 10: return 200;  // Mountains
-            case 12: return 50;   // Swamp
-            default: return 0;
+            case 6:  bonus = 50;  break; // Forest
+            case 8:  bonus = 100; break; // Hills
+            case 9:  bonus = 50;  break; // Jungle
+            case 10: bonus = 200; break; // Mountains
+            case 12: bonus = 50;  break; // Swamp
+            default: break;
         }
+        // Fortress extra defense bonus: +100%, stacking with terrain.
+        // Mirrors defense_bonus = 100 in [extra_fortress] in terrain.ruleset and
+        // tile_extras_defense_bonus() in the C Freeciv server's common/tile.c.
+        // Uses CityTurn.EXTRA_BIT_FORTRESS (bit 14 in Game.initGame() extras order).
+        if ((tile.getExtras() & (1 << net.freecivx.server.CityTurn.EXTRA_BIT_FORTRESS)) != 0) {
+            bonus += 100;
+        }
+        return bonus;
     }
 
     /**
