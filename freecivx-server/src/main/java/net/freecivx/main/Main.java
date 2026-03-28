@@ -128,8 +128,11 @@ public class Main {
             // Start HTTP server
             httpServer.start();
 
-            // Publish to metaserver
-            MetaserverClient.publishToMetaserver(port, metaMessage);
+            // Start metaserver reporting: initial publish + periodic refresh + goodbye on shutdown
+            final int finalPort = port;
+            final String finalMessage = metaMessage;
+            MetaserverClient.start(wsServer, finalPort, finalMessage);
+            Runtime.getRuntime().addShutdownHook(new Thread(MetaserverClient::publishGoodbye, "meta-goodbye"));
 
         } catch (IOException e) {
             log.error("Failed to start the server: {}", e.getMessage());
