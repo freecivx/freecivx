@@ -135,6 +135,25 @@ public class Actions {
     public static final int ACTION_HELP_WONDER = 22;
 
     /**
+     * Action ID: detonate a nuclear weapon on a tile.
+     * The acting Nuclear unit is destroyed and all units in the blast radius
+     * are killed; cities in the blast radius lose population; tiles have a 50%
+     * chance of receiving Fallout.  Fallout contributes to nuclear winter.
+     * Mirrors {@code ACTION_NUKE = 33} in the C Freeciv server's
+     * {@code common/actions.h}.
+     */
+    public static final int ACTION_NUKE = 33;
+
+    /**
+     * Action ID: detonate a nuclear weapon targeting a city tile.
+     * Identical in effect to {@link #ACTION_NUKE} but the target is specified
+     * as a city rather than an arbitrary tile.
+     * Mirrors {@code ACTION_NUKE_CITY = 34} in the C Freeciv server's
+     * {@code common/actions.h}.
+     */
+    public static final int ACTION_NUKE_CITY = 34;
+
+    /**
      * Checks whether a given action is currently enabled for an actor unit.
      * Returns {@code false} immediately if the actor does not exist or the
      * action ID is unknown.

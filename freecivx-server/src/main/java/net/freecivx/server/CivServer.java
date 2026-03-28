@@ -248,6 +248,7 @@ public class CivServer extends org.java_websocket.server.WebSocketServer impleme
             var ORDER_MOVE = 0;
             var ORDER_FULL_MP = 2;
             var ORDER_ACTION_MOVE = 3;
+            var ORDER_PERFORM_ACTION = 4;
             int unit_id = json.optInt("unit_id");
             int dest_tile = json.optInt("dest_tile");
             JSONArray ordersArray = json.optJSONArray("orders");
@@ -255,24 +256,16 @@ public class CivServer extends org.java_websocket.server.WebSocketServer impleme
             if (orderUnit != null && ordersArray != null && ordersArray.length() > 0) {
                 Player orderPlayer = game.players.get(orderUnit.getOwner());
                 if (orderPlayer != null && orderPlayer.getConnectionId() == connId) {
-                    JSONObject firstOrder = ordersArray.getJSONObject(0);
-                    int order = firstOrder.optInt("order");
-                    int dir = firstOrder.optInt("dir");
-
-                    if (order == ORDER_ACTION_MOVE && ordersArray.length() == 1) {
-                        // Simple single-tile move: clear any pending goto and move one step.
-                        orderUnit.getGotoPath().clear();
-                        game.moveUnit(unit_id, dest_tile, dir);
-                    } else {
-                        // Multi-step goto (or a single ORDER_MOVE step): collect all
-                        // direction indices from the orders array and store them as the
-                        // unit's goto path.  The server then executes as many steps as
-                        // the unit's current movement points allow, and the remainder is
-                        // stored for automatic continuation on the next turn.
-                        // Mirrors the unit_orders queue handling in the C Freeciv server's
-                        // unithand.c / server/unittools.c.
+                    // Check if the last order is ORDER_PERFORM_ACTION (e.g. nuke detonation
+                    // after a goto).  Handle the action before processing any movement.
+                    JSONObject lastOrder = ordersArray.getJSONObject(ordersArray.length() - 1);
+                    int lastOrderType = lastOrder.optInt("order");
+                    if (lastOrderType == ORDER_PERFORM_ACTION) {
+                        int actionId = lastOrder.optInt("action");
+                        int targetTile = lastOrder.optInt("target", dest_tile);
+                        // First execute any movement steps (all orders except the last).
                         List<Integer> gotoPath = new java.util.ArrayList<>();
-                        for (int i = 0; i < ordersArray.length(); i++) {
+                        for (int i = 0; i < ordersArray.length() - 1; i++) {
                             JSONObject o = ordersArray.getJSONObject(i);
                             int stepOrder = o.optInt("order");
                             int stepDir   = o.optInt("dir");
@@ -280,8 +273,42 @@ public class CivServer extends org.java_websocket.server.WebSocketServer impleme
                                 gotoPath.add(stepDir);
                             }
                         }
-                        orderUnit.setGotoPath(gotoPath);
-                        game.executeGotoPath(orderUnit);
+                        if (!gotoPath.isEmpty()) {
+                            orderUnit.setGotoPath(gotoPath);
+                            game.executeGotoPath(orderUnit);
+                        }
+                        // Perform the final action (e.g. nuke).
+                        UnitHand.handleUnitDoAction(game, connId, (long) unit_id,
+                                (long) targetTile, actionId, "");
+                    } else {
+                        JSONObject firstOrder = ordersArray.getJSONObject(0);
+                        int order = firstOrder.optInt("order");
+                        int dir = firstOrder.optInt("dir");
+
+                        if (order == ORDER_ACTION_MOVE && ordersArray.length() == 1) {
+                            // Simple single-tile move: clear any pending goto and move one step.
+                            orderUnit.getGotoPath().clear();
+                            game.moveUnit(unit_id, dest_tile, dir);
+                        } else {
+                            // Multi-step goto (or a single ORDER_MOVE step): collect all
+                            // direction indices from the orders array and store them as the
+                            // unit's goto path.  The server then executes as many steps as
+                            // the unit's current movement points allow, and the remainder is
+                            // stored for automatic continuation on the next turn.
+                            // Mirrors the unit_orders queue handling in the C Freeciv server's
+                            // unithand.c / server/unittools.c.
+                            List<Integer> gotoPath = new java.util.ArrayList<>();
+                            for (int i = 0; i < ordersArray.length(); i++) {
+                                JSONObject o = ordersArray.getJSONObject(i);
+                                int stepOrder = o.optInt("order");
+                                int stepDir   = o.optInt("dir");
+                                if (stepOrder == ORDER_MOVE || stepOrder == ORDER_ACTION_MOVE) {
+                                    gotoPath.add(stepDir);
+                                }
+                            }
+                            orderUnit.setGotoPath(gotoPath);
+                            game.executeGotoPath(orderUnit);
+                        }
                     }
                 }
             }
@@ -423,6 +450,17 @@ public class CivServer extends org.java_websocket.server.WebSocketServer impleme
                 activity = (targetExtra == CityTurn.EXTRA_BIT_RAIL)
                         ? CityTurn.ACTIVITY_RAILROAD
                         : CityTurn.ACTIVITY_ROAD;
+            }
+            // JS client sends ACTIVITY_MINE = 2 or ACTIVITY_PLANT = 16 for mine building.
+            // Map both to the internal ACTIVITY_MINE code used by processWorkerActivities.
+            // Mirrors the C server's unified handling of mine-type activities.
+            if (activity == 2 || activity == 16) {
+                activity = CityTurn.ACTIVITY_MINE;
+            }
+            // JS client sends ACTIVITY_IRRIGATE = 3 or ACTIVITY_CULTIVATE = 15 for
+            // irrigation. Map both to the internal ACTIVITY_IRRIGATE code.
+            if (activity == 3 || activity == 15) {
+                activity = CityTurn.ACTIVITY_IRRIGATE;
             }
             Unit actUnit = game.units.get(unit_id);
             if (actUnit != null) {

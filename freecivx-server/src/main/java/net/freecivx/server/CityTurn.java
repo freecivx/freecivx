@@ -332,6 +332,12 @@ public class CityTurn {
     private static final int MINE_TURNS = 5;
     /** Number of turns a worker needs to complete a railroad. */
     private static final int RAILROAD_TURNS = 4;
+    /**
+     * Number of turns a worker needs to clean up pollution or fallout.
+     * Mirrors the {@code removal_time = 3} value for Pollution and Fallout in
+     * the classic Freeciv {@code terrain.ruleset}.
+     */
+    public static final int CLEAN_TURNS = 3;
 
     /**
      * Activity code for a sentried unit.
@@ -340,6 +346,15 @@ public class CityTurn {
      * C Freeciv server's {@code common/fc_types.h}.
      */
     public static final int ACTIVITY_SENTRY = 6;
+
+    /**
+     * Activity code for a unit cleaning up pollution or fallout.
+     * Mirrors {@code ACTIVITY_CLEAN = 17} in the C Freeciv server's
+     * {@code common/fc_types.h} and the client's {@code fc_types.js}.
+     * When this activity completes, the Pollution and/or Fallout extra bits
+     * are removed from the unit's current tile.
+     */
+    public static final int ACTIVITY_CLEAN = 17;
 
     /**
      * Tile extras bitvector index for Road.
@@ -367,6 +382,14 @@ public class CityTurn {
      * Mirrors the {@code EC_POLLUTION} extra cause in the C Freeciv server.
      */
     public static final int EXTRA_BIT_POLLUTION = 4;
+    /**
+     * Tile extras bitvector index for Fallout.
+     * Matches extras entry 3 ("Fallout") registered in {@code Game.initGame()}.
+     * Mirrors the {@code EC_FALLOUT} extra cause in the C Freeciv server.
+     * Fallout contributes to the risk of nuclear winter just as pollution
+     * contributes to global warming.
+     */
+    public static final int EXTRA_BIT_FALLOUT = 3;
     /**
      * Tile extras bitvector index for Fortress.
      * Matches extras entry 14 ("Fortress") registered in {@code Game.initGame()}.
@@ -1741,6 +1764,10 @@ public class CityTurn {
         // Check for global warming after all city updates.
         // Mirrors the update_environmental_upset() call in srv_main.c.
         checkGlobalWarming(game);
+        // Check for nuclear winter triggered by fallout accumulation.
+        // Mirrors the second update_environmental_upset(EUT_NUCLEAR_WINTER, ...) call
+        // in srv_main.c (only relevant once nuclear weapons have been used).
+        checkNuclearWinter(game);
     }
 
     /**
@@ -1877,6 +1904,126 @@ public class CityTurn {
         // Message mirrors the C Freeciv server's global_warming() in maphand.c.
         Notify.notifyAllPlayers(game, game.getServer(),
                 "Global warming has occurred! Vast ranges of grassland have become deserts.");
+    }
+
+    /**
+     * Checks whether accumulated nuclear fallout has triggered a nuclear-winter
+     * event and, if so, transforms a number of random terrain tiles to simulate
+     * cooling/freezing.
+     *
+     * <p>Algorithm mirrors {@code update_environmental_upset(EUT_NUCLEAR_WINTER, ...)}
+     * in the C Freeciv server's {@code srv_main.c} and {@code nuclear_winter()} in
+     * {@code server/maphand.c}:
+     * <ol>
+     *   <li>Count all fallout tiles ({@link #EXTRA_BIT_FALLOUT}) on the map.</li>
+     *   <li>Accumulate the count in {@link Game#globalCoolingAccum}.</li>
+     *   <li>If the accumulator does not yet exceed {@link Game#globalCoolingLevel},
+     *       clear the accumulator and return.</li>
+     *   <li>With probability {@code accum / (map_tiles/20)}, trigger a winter event
+     *       that transforms Grassland and Plains tiles to Tundra.</li>
+     * </ol>
+     *
+     * @param game the current game state
+     */
+    static void checkNuclearWinter(Game game) {
+        // Count total fallout tiles on the map.
+        int falloutCount = 0;
+        for (Tile tile : game.tiles.values()) {
+            if ((tile.getExtras() & (1 << EXTRA_BIT_FALLOUT)) != 0) {
+                falloutCount++;
+            }
+        }
+
+        if (falloutCount == 0) return;
+
+        // Accumulate fallout each turn.
+        game.globalCoolingAccum += falloutCount;
+
+        if (game.globalCoolingAccum < game.globalCoolingLevel) {
+            return;
+        }
+
+        // Level threshold crossed.
+        game.globalCoolingAccum -= game.globalCoolingLevel;
+
+        // Random chance: trigger winter with probability accum / (map_tiles/20).
+        // Mirrors update_environmental_upset() logic in C server.
+        int mapTiles = game.map.getXsize() * game.map.getYsize();
+        int threshold = Math.max(1, (mapTiles + 19) / 20);
+        if (ThreadLocalRandom.current().nextInt(threshold) >= game.globalCoolingAccum) {
+            return;
+        }
+
+        // Winter event fires!  Transform terrain tiles (drier cooling result).
+        // Number of tiles affected: (xsize/10 + ysize/10 + accum*5).
+        // Mirrors the effect parameter in nuclear_winter() in C server maphand.c.
+        int effectStrength = (game.map.getXsize() / 10)
+                + (game.map.getYsize() / 10)
+                + (game.globalCoolingAccum * 5);
+        effectStrength = Math.max(1, effectStrength);
+
+        // Classic ruleset cooler_drier transformations:
+        //   Grassland → Tundra,  Plains → Tundra,  Forest → Tundra
+        //   Swamp → Tundra,  Jungle → Tundra
+        // These mirror the cooler_drier_result values in terrain.ruleset.
+        long grasslandId = -1;
+        long plainsId    = -1;
+        long forestId    = -1;
+        long swampId     = -1;
+        long jungleId    = -1;
+        long tundraId    = -1;
+        for (Map.Entry<Long, Terrain> e : game.terrains.entrySet()) {
+            String n = e.getValue().getName();
+            if ("Grassland".equalsIgnoreCase(n)) grasslandId = e.getKey();
+            else if ("Plains".equalsIgnoreCase(n))    plainsId    = e.getKey();
+            else if ("Forest".equalsIgnoreCase(n))    forestId    = e.getKey();
+            else if ("Swamp".equalsIgnoreCase(n))     swampId     = e.getKey();
+            else if ("Jungle".equalsIgnoreCase(n))    jungleId    = e.getKey();
+            else if ("Tundra".equalsIgnoreCase(n))    tundraId    = e.getKey();
+        }
+
+        if (tundraId < 0) {
+            // Cannot perform winter without Tundra terrain.
+            return;
+        }
+
+        // Collect candidate tiles (Grassland, Plains, Forest, Swamp, or Jungle that are not city centres).
+        // Swamp and Jungle are "wetlands" per the classic ruleset (cooler_drier_result = Tundra).
+        List<Tile> candidates = new ArrayList<>();
+        for (Tile tile : game.tiles.values()) {
+            int t = tile.getTerrain();
+            if (t == (int) grasslandId || t == (int) plainsId || t == (int) forestId
+                    || t == (int) swampId || t == (int) jungleId) {
+                boolean isCityTile = game.cities.values().stream()
+                        .anyMatch(c -> c.getTile() == tile.getIndex());
+                if (!isCityTile) {
+                    candidates.add(tile);
+                }
+            }
+        }
+
+        if (!candidates.isEmpty()) {
+            Collections.shuffle(candidates,
+                    new java.util.Random(ThreadLocalRandom.current().nextLong()));
+            int changed = 0;
+            for (Tile tile : candidates) {
+                if (changed >= effectStrength) break;
+                tile.setTerrain((int) tundraId);
+                // Clear irrigation (no longer relevant after freezing)
+                tile.setExtras(tile.getExtras() & ~(1 << EXTRA_BIT_IRRIGATION));
+                game.getServer().sendTileInfoAll(tile);
+                changed++;
+            }
+        }
+
+        // Reset accumulator and raise the cooling level.
+        game.globalCoolingAccum = 0;
+        game.globalCoolingLevel += Math.max(1, (mapTiles + 999) / 1000);
+
+        // Notify all players about the winter event.
+        // Message mirrors the C Freeciv server's nuclear_winter() in maphand.c.
+        Notify.notifyAllPlayers(game, game.getServer(),
+                "Nuclear winter has occurred! Wetlands have dried up and vast ranges of grassland have become tundra.");
     }
 
     /**
@@ -2767,15 +2914,37 @@ public class CityTurn {
             unit.setActivityCount(unit.getActivityCount() + 1);
 
             if (unit.getActivityCount() >= requiredTurns) {
-                int extraBit = workerActivityExtraBit(activity);
-                String extraName = workerActivityName(activity);
+                if (activity == ACTIVITY_CLEAN) {
+                    // Clean up pollution and/or fallout on the tile.
+                    // Mirrors ACTIVITY_CLEAN handling in unittools.c: destroy_extra() for
+                    // whichever nuisance extras are present on the tile.
+                    boolean cleaned = false;
+                    int extras = tile.getExtras();
+                    if ((extras & (1 << EXTRA_BIT_POLLUTION)) != 0) {
+                        tile.setExtras(extras & ~(1 << EXTRA_BIT_POLLUTION));
+                        extras = tile.getExtras();
+                        cleaned = true;
+                    }
+                    if ((extras & (1 << EXTRA_BIT_FALLOUT)) != 0) {
+                        tile.setExtras(extras & ~(1 << EXTRA_BIT_FALLOUT));
+                        cleaned = true;
+                    }
+                    if (cleaned) {
+                        game.getServer().sendTileInfoAll(tile);
+                        Notify.notifyPlayer(game, game.getServer(), unit.getOwner(),
+                                "Pollution/Fallout has been cleaned up.");
+                    }
+                } else {
+                    int extraBit = workerActivityExtraBit(activity);
+                    String extraName = workerActivityName(activity);
 
-                // Apply the tile improvement only if not already present
-                if (extraBit >= 0 && (tile.getExtras() & (1 << extraBit)) == 0) {
-                    tile.setExtras(tile.getExtras() | (1 << extraBit));
-                    game.getServer().sendTileInfoAll(tile);
-                    Notify.notifyPlayer(game, game.getServer(), unit.getOwner(),
-                            extraName + " has been completed.");
+                    // Apply the tile improvement only if not already present
+                    if (extraBit >= 0 && (tile.getExtras() & (1 << extraBit)) == 0) {
+                        tile.setExtras(tile.getExtras() | (1 << extraBit));
+                        game.getServer().sendTileInfoAll(tile);
+                        Notify.notifyPlayer(game, game.getServer(), unit.getOwner(),
+                                extraName + " has been completed.");
+                    }
                 }
                 // Return the worker to idle and reset activity counter
                 unit.setActivity(0);
@@ -2798,6 +2967,7 @@ public class CityTurn {
         if (activity == ACTIVITY_IRRIGATE) return IRRIGATE_TURNS;
         if (activity == ACTIVITY_MINE)     return MINE_TURNS;
         if (activity == ACTIVITY_RAILROAD) return RAILROAD_TURNS;
+        if (activity == ACTIVITY_CLEAN)    return CLEAN_TURNS;
         return 0;
     }
 
