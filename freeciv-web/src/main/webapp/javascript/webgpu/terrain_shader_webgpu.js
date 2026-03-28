@@ -281,8 +281,8 @@ function createTerrainShaderTSL(uniforms) {
     // The Y-direction edges appear thicker due to mesh compression, so we use
     // a blended approach: horizontal edges (dist1) get full width, 
     // diagonal edges (dist2, dist3) get slightly reduced width
-    const HEX_EDGE_WIDTH_HORIZONTAL = 0.05;  // Wider edges on left/right for better X visibility
-    const HEX_EDGE_WIDTH_DIAGONAL = 0.035;   // Narrower edges on top/bottom to reduce Y edge prominence
+    const HEX_EDGE_WIDTH_HORIZONTAL = 0.048; // Edge width for E/W vertical faces
+    const HEX_EDGE_WIDTH_DIAGONAL = 0.040;   // Edge width for diagonal faces (NE/NW/SE/SW)
     
     // Determine which edge is active and blend edge widths accordingly
     // When dist1 is the dominant edge (horizontal), use wider edge
@@ -504,8 +504,8 @@ function createTerrainShaderTSL(uniforms) {
 
     // Per-tile brightness variation (free – reuses rnd from the hash already computed above).
     // Keeps a ±7 % range so adjacent tiles are visually distinct without looking noisy.
-    const BRIGHTNESS_MIN   = 0.93;  // darkest a tile can be relative to its base texture
-    const BRIGHTNESS_RANGE = 0.14;  // full range (0.93 → 1.07, i.e. ±7 %)
+    const BRIGHTNESS_MIN   = 0.92;  // darkest a tile can be relative to its base texture
+    const BRIGHTNESS_RANGE = 0.16;  // full range: -8 % (0.92) to +8 % (1.08) around neutral 1.0
     const perTileBrightness = add(BRIGHTNESS_MIN, mul(rnd.x, BRIGHTNESS_RANGE));
     finalColor = vec4(mul(finalColor.rgb, perTileBrightness), finalColor.a);
 
@@ -516,7 +516,7 @@ function createTerrainShaderTSL(uniforms) {
     // rnd2 in [0,1] → warmCoolShift in [-HUE_VARIATION/2, +HUE_VARIATION/2].
     // Red channel shifts up (warm) while blue shifts down, and vice-versa.
     // Keeps the variation imperceptible but adds richness when many tiles are visible.
-    const HUE_VARIATION = 0.04;
+    const HUE_VARIATION = 0.05;
     const warmCoolShift = mul(sub(rnd2, 0.5), HUE_VARIATION);
     const perTileTint = vec3(add(1.0, warmCoolShift), 1.0, sub(1.0, warmCoolShift));
     finalColor = vec4(clamp(mul(finalColor.rgb, perTileTint), 0.0, 1.0), finalColor.a);
@@ -532,8 +532,8 @@ function createTerrainShaderTSL(uniforms) {
     // faceBlend: smoothly rises from 0 at TERRAIN_BLEND_START to TERRAIN_BLEND_AMOUNT at the hex edge.
     // onXFace: 1.0 only on the hex face that borders neighbour X, 0.0 elsewhere.
     // step(0.5, neighborTerrainX): guards against blending with inaccessible (type 0) neighbours.
-    const TERRAIN_BLEND_START  = 0.32; // Fraction of inradius where blending begins
-    const TERRAIN_BLEND_AMOUNT = 0.45; // Maximum blend weight at the hex edge
+    const TERRAIN_BLEND_START  = 0.30; // Fraction of inradius where blending begins
+    const TERRAIN_BLEND_AMOUNT = 0.44; // Maximum blend weight at the hex edge
     const faceBlend = mul(smoothstep(TERRAIN_BLEND_START, hexInradius, hexDist), TERRAIN_BLEND_AMOUNT);
     const colorNeighborE  = getTerrainColorForType(neighborTerrainE,  texCoord);
     const colorNeighborW  = getTerrainColorForType(neighborTerrainW,  texCoord);
@@ -842,6 +842,47 @@ function createTerrainShaderTSL(uniforms) {
     const hexEdgeBlend = mul(hexEdgeMaskSq, HEX_EDGE_BLEND_STRENGTH);
     finalColor = vec4(
         mix(finalColor.rgb, hexEdgeColor, hexEdgeBlend),
+        finalColor.a
+    );
+
+    // =========================================================================
+    // HEX INNER RIM LIGHTING (Raised-Tile 3D Effect)
+    // =========================================================================
+    // A thin bright shoulder just inside the dark edge creates a raised-tile
+    // illusion, giving each hex a subtle 3D bevel appearance (like Civ 6 tiles).
+    // The rim peaks at edgeStart (where the dark edge line begins) and fades
+    // smoothly both inward and outward, producing a lit bevel on the tile boundary.
+    const HEX_RIM_WIDTH = 0.06;
+    const rimStart = sub(edgeStart, HEX_RIM_WIDTH);
+    const rimRise = smoothstep(rimStart, edgeStart, hexDist);
+    const rimFall = sub(1.0, smoothstep(edgeStart, hexInradius, hexDist));
+    const hexRimMask = mul(rimRise, rimFall);
+    const HEX_RIM_STRENGTH = 0.20;
+    finalColor = vec4(
+        clamp(mul(finalColor.rgb, add(1.0, mul(hexRimMask, HEX_RIM_STRENGTH))), 0.0, 1.0),
+        finalColor.a
+    );
+
+    // =========================================================================
+    // HEX CORNER AMBIENT OCCLUSION
+    // =========================================================================
+    // Subtle darkening at the 6 corner vertices of each hex tile adds depth and
+    // helps distinguish adjacent tiles of the same terrain type.
+    // Corners are detected as points where the median hex distance function equals
+    // the maximum (hexDist), meaning two distances are simultaneously dominant.
+    // A distance-to-boundary factor restricts the AO to the tile periphery only.
+    const hexDistSum = add(add(dist1, dist2), dist3);
+    const hexDistMin = min(min(dist1, dist2), dist3);
+    const hexDistMed = sub(hexDistSum, add(hexDist, hexDistMin)); // middle value = sum - largest - smallest
+    const cornerProximity = abs(sub(hexDist, hexDistMed)); // 0 at corners, large elsewhere
+    const HEX_CORNER_AO_RADIUS = 0.10;
+    const HEX_CORNER_AO_STRENGTH = 0.16;
+    const cornerAO = mul(
+        sub(1.0, smoothstep(0.0, HEX_CORNER_AO_RADIUS, cornerProximity)),
+        smoothstep(0.30, hexInradius, hexDist)
+    );
+    finalColor = vec4(
+        mul(finalColor.rgb, sub(1.0, mul(cornerAO, HEX_CORNER_AO_STRENGTH))),
         finalColor.a
     );
 
