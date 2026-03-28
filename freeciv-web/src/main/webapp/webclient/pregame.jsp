@@ -1,10 +1,14 @@
 <div id="fciv-intro">
   <div id="fciv-intro-txt">
     <div class="intro-content">
-      <h1 class="intro-title">Welcome to Freecivx</h1>
+      <h1 class="intro-title">Freecivx</h1>
+      <p class="intro-subtitle">3D Empire-Building Strategy</p>
       <p class="intro-main">
-        A free and open-source empire-building strategy game. Begin in the Stone Age and guide your civilization through centuries of progress.
+        A free and open-source strategy game. Begin in the Stone Age and guide your civilization through centuries of progress — now in 3D!
       </p>
+      <div class="intro-cta">
+        <a href="/webclient/?action=new&amp;type=singleplayer" class="intro-play-btn" aria-label="Play Freecivx now"><i class="fa fa-play" aria-hidden="true"></i> Play Now</a>
+      </div>
       <p class="intro-license">
         Open source under the <a href="https://www.gnu.org/licenses/agpl-3.0.en.html" target="_blank" rel="noopener">AGPL license</a>
       </p>
