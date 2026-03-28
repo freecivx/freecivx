@@ -227,9 +227,9 @@ function init_land_geometry(geometry, mesh_quality)
   const segment_width = mapview_model_width / gridX;
   const segment_height = (mapview_model_height / gridY) * HEX_HEIGHT_FACTOR;
 
-  const indices = [];
-  const uvs = [];
-  const vertices = [];
+  var indices = [];
+  var uvs = [];
+  var vertices = [];
   let heightmap_scale = (mesh_quality === 2) ? (mesh_quality * 2) : 1;
   const heightmap_resolution_x = map.xsize * mesh_quality + 1;
 
