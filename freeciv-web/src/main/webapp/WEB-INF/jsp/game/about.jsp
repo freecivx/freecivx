@@ -180,6 +180,13 @@
 		<%@include file="/WEB-INF/jsp/fragments/header.jsp"%>
 
 		<div class="jumbotron">
+				   <div class="col-md-12">
+		                  <div class="vcontainer">
+                                        <iframe  src="https://www.youtube.com/embed/GpwFZAZXXmw" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen class="video"></iframe>
+                                        </div>
+                                  </div>
+
+
 			<div class="container-fluid">
 				<div class="row top-buffer-3">
 					<p class="lead">
@@ -400,11 +407,7 @@
 
 	    <div class="row">
 			<div class="col-md-12">
-                    <div class="col-md-12">
-		                  <div class="vcontainer">
-                                        <iframe  src="https://www.youtube.com/embed/GpwFZAZXXmw" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen class="video"></iframe>
-                                        </div>
-                                  </div>
+                 
 			
 		    </div>
 
