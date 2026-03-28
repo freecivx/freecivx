@@ -54,8 +54,10 @@ public class UnitTools {
 
     /**
      * Creates a new unit for the given player on the specified tile.
-     * Assigns a unique unit ID, places it on the map, and broadcasts the
-     * new unit info to all connected clients.
+     * Assigns a unique unit ID, places it on the map, and notifies clients
+     * according to fog-of-war rules: the owning player receives a full
+     * {@code PACKET_UNIT_INFO}; other human players only receive a
+     * {@code PACKET_UNIT_SHORT_INFO} if they can currently see the tile.
      *
      * @param game       the current game state
      * @param playerId   the ID of the player who will own the unit
@@ -86,7 +88,21 @@ public class UnitTools {
         msg.put("type", unitTypeId);
         msg.put("hp", hp);
         msg.put("movesleft", moveRate);
-        game.getServer().broadcastPacket(msg);
+
+        // Send full unit info only to the owning player.
+        if (!player.isAi()) {
+            game.getServer().sendPacket(player.getConnectionId(), msg);
+        }
+
+        // Send short unit info to other human players who can currently see
+        // the tile.  Foreign players on unknown tiles must not receive this.
+        for (Player p : game.players.values()) {
+            if (p.isAi() || p.getPlayerNo() == player.getPlayerNo()) continue;
+            if (p.getVisibleTiles().contains(tileId)) {
+                game.getServer().sendPacket(p.getConnectionId(),
+                        VisibilityHandler.buildUnitShortInfoPacket(unit));
+            }
+        }
 
         return unit;
     }
@@ -139,16 +155,42 @@ public class UnitTools {
     }
 
     /**
-     * Sends PACKET_UNIT_INFO for every unit in the game to the specified client.
-     * Used during initial synchronisation after a player joins mid-game.
+     * Sends unit packets to the specified client for the initial game
+     * synchronisation, respecting fog-of-war rules.
+     * <ul>
+     *   <li>Own units always receive a full {@code PACKET_UNIT_INFO}.</li>
+     *   <li>Foreign units on tiles that are currently visible to the player
+     *       receive a {@code PACKET_UNIT_SHORT_INFO}.</li>
+     *   <li>Foreign units on unknown or fogged tiles are silently skipped.</li>
+     * </ul>
      *
      * @param game   the current game state
      * @param server the CivServer used to transmit packets
      * @param connId the connection ID of the recipient client
      */
     public static void sendAllUnitInfo(Game game, IGameServer server, long connId) {
-        for (long unitId : game.units.keySet()) {
-            sendUnitInfo(game, server, connId, unitId);
+        // Find the player associated with this connection.
+        Player recipient = null;
+        for (Player p : game.players.values()) {
+            if (p.getConnectionId() == connId) {
+                recipient = p;
+                break;
+            }
+        }
+        if (recipient == null) {
+            log.warn("sendAllUnitInfo: no player found for connId {}", connId);
+            return;
+        }
+        long recipientPlayerId = recipient.getPlayerNo();
+        for (Unit unit : game.units.values()) {
+            if (unit.getOwner() == recipientPlayerId) {
+                // Own units – send full info.
+                sendUnitInfo(game, server, connId, unit.getId());
+            } else if (recipient.getVisibleTiles().contains(unit.getTile())) {
+                // Foreign unit on a currently visible tile – send short info.
+                server.sendPacket(connId, VisibilityHandler.buildUnitShortInfoPacket(unit));
+            }
+            // Foreign unit on unknown/fogged tile – skip entirely.
         }
     }
 
