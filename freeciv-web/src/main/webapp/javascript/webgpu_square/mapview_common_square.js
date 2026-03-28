@@ -18,130 +18,146 @@
 ***********************************************************************/
 
 /**
- * Mapview Common - Square Map Geometry and Rendering (LOD)
- *
- * Per-tile LOD: detail tiles (mountains, hills, forest, jungle) use
- * terrain_quality subdivisions; every other tile uses a single quad (Q=1).
- * LOD variables (lod_vertex_fine_pos etc.) are shared with the hex version
- * since only one topology is active at a time.
+ * Mapview Common - Square Map Geometry and Rendering
+ * 
+ * This module handles the creation and update of the terrain mesh with
+ * square tile topology. Key features:
+ * - Standard grid layout (no staggering)
+ * - Proper UV coordinate mapping for square tile sampling
+ * - Height-based terrain with interpolation between neighbors
  */
 
 /****************************************************************************
-  Initialize land geometry with per-tile LOD subdivision (square topology).
-
-  Fine-grid scale = terrain_quality (same as the heightmap resolution).
-  Square tiles have no row stagger, so the mapping is straightforward:
-    fix = tx * terrain_quality + sx * (terrain_quality / Q)
-    fiy = ty * terrain_quality + sy * (terrain_quality / Q)
-  UV.x = fix / (xsize * terrain_quality)
-  UV.y = 1 − fiy / (ysize * terrain_quality)
+  Initialize land geometry with square tile grid
+  
+  Creates a mesh with square tiling using standard grid coordinates.
+  
+  Grid properties:
+  - Each tile has 8 neighbors (square topology with diagonals)
+  - No row staggering
+  - UV coordinates map directly to tile positions
+  
+  @param {THREE.BufferGeometry} geometry - Geometry to initialize
+  @param {number} mesh_quality - Quality multiplier (1=standard, 2=low-res for raycasting)
 ****************************************************************************/
 function init_land_geometry_square(geometry, mesh_quality)
 {
-  var Q_scale  = terrain_quality;
-  var hm_res_x = map.xsize * Q_scale + 1;
-  var seg_w    = mapview_model_width  / (map.xsize * Q_scale);
-  var seg_h    = mapview_model_height / (map.ysize * Q_scale);
-  var half_w   = mapview_model_width  / 2;
-  var half_h   = mapview_model_height / 2;
+  const xquality = map.xsize * mesh_quality + 1;
+  const yquality = map.ysize * mesh_quality + 1;
 
-  var vertices = [];
-  var uvs      = [];
-  var indices  = [];
-  var finePos  = [];
-  var hmIdxArr = [];
+  const width_half = mapview_model_width / 2;
+  const height_half = mapview_model_height / 2;
 
-  var vi = 0;
+  const gridX = Math.floor(xquality);
+  const gridY = Math.floor(yquality);
 
-  for (var ty = 0; ty < map.ysize; ty++) {
-    for (var tx = 0; tx < map.xsize; tx++) {
-      var Q    = get_tile_lod_q(tx, ty, mesh_quality);
-      var step = Q_scale / Q;
-      var tile_vi_start = vi;
+  const gridX1 = gridX + 1;
+  const gridY1 = gridY + 1;
 
-      for (var sy = 0; sy <= Q; sy++) {
-        for (var sx = 0; sx <= Q; sx++) {
-          var fix = tx * Q_scale + sx * step;
-          var fiy = ty * Q_scale + sy * step;
+  // Square tile dimensions - no height factor adjustment
+  const segment_width = mapview_model_width / gridX;
+  const segment_height = mapview_model_height / gridY;
 
-          var wx = fix * seg_w - half_w;
-          var wy = fiy * seg_h - half_h;
+  const indices = [];
+  const uvs = [];
+  const vertices = [];
+  let heightmap_scale = (mesh_quality === 2) ? (mesh_quality * 2) : 1;
+  const heightmap_resolution_x = map.xsize * mesh_quality + 1;
 
-          var hm_idx = fiy * hm_res_x + fix;
-          var h = (heightmap && hm_idx < heightmap.length) ? heightmap[hm_idx] : 0;
+  // Create vertices for square grid
+  for ( let iy = 0; iy < gridY1; iy ++ ) {
+    const y = iy * segment_height - height_half;
+    
+    for ( let ix = 0; ix < gridX1; ix ++ ) {
+      const x = ix * segment_width - width_half;
+      var sx = ix % xquality, sy = iy % yquality;
 
-          vertices.push(wx, -wy, h * 100);
-          uvs.push(fix / (map.xsize * Q_scale));
-          uvs.push(1 - fiy / (map.ysize * Q_scale));
-
-          finePos.push(fix, fiy);
-          hmIdxArr.push(hm_idx);
-          vi++;
-        }
-      }
-
-      for (var sy = 0; sy < Q; sy++) {
-        for (var sx = 0; sx < Q; sx++) {
-          var a = tile_vi_start + sy       * (Q + 1) + sx;
-          var b = tile_vi_start + (sy + 1) * (Q + 1) + sx;
-          var c = tile_vi_start + (sy + 1) * (Q + 1) + (sx + 1);
-          var d = tile_vi_start + sy       * (Q + 1) + (sx + 1);
-          indices.push(a, b, d);
-          indices.push(b, c, d);
-        }
-      }
+      // Calculate 1D index for heightmap array
+      const heightmap_index = (sy * heightmap_scale) * heightmap_resolution_x + (sx * heightmap_scale);
+      const height_value = heightmap && heightmap[heightmap_index] !== undefined ? heightmap[heightmap_index] * 100 : 0;
+      
+      vertices.push( x, -y, height_value );
+      
+      // UV coordinates for square sampling - direct mapping
+      uvs.push( ix / gridX );
+      uvs.push( 1 - ( iy / gridY ) );
     }
   }
 
-  var bufAttr = new THREE.Float32BufferAttribute(vertices, 3);
-  if (mesh_quality <= 2) {
-    lofibufferattribute      = bufAttr;
-    lod_lofi_vertex_fine_pos = new Int32Array(finePos);
-    lod_lofi_vertex_hm_idx   = new Int32Array(hmIdxArr);
-  } else {
-    landbufferattribute      = bufAttr;
-    lod_vertex_fine_pos      = new Int32Array(finePos);
-    lod_vertex_hm_idx        = new Int32Array(hmIdxArr);
+  // Create triangles connecting the square grid
+  for ( let iy = 0; iy < gridY; iy ++ ) {
+    for ( let ix = 0; ix < gridX; ix ++ ) {
+      const a = ix + gridX1 * iy;
+      const b = ix + gridX1 * ( iy + 1 );
+      const c = ( ix + 1 ) + gridX1 * ( iy + 1 );
+      const d = ( ix + 1 ) + gridX1 * iy;
+
+      indices.push( a, b, d );
+      indices.push( b, c, d );
+    }
   }
 
-  geometry.setAttribute('position', bufAttr);
-  geometry.setIndex(indices);
-  geometry.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2));
+  if (mesh_quality === 2) {
+    lofibufferattribute = new THREE.Float32BufferAttribute( vertices, 3 );
+    geometry.setAttribute( 'position', lofibufferattribute);
+  } else {
+    landbufferattribute = new THREE.Float32BufferAttribute( vertices, 3 );
+    geometry.setAttribute( 'position', landbufferattribute);
+  }
+
+  geometry.setIndex( indices );
+  geometry.setAttribute( 'uv', new THREE.Float32BufferAttribute( uvs, 2 ) );
+
   geometry.computeVertexNormals();
 
   return geometry;
 }
 
 /****************************************************************************
-  Update vertex positions of the LOD square terrain geometry.
+  Update the land terrain geometry with square tiling
+  
+  Updates vertex positions based on current heightmap values while maintaining
+  square grid layout.
+  
+  @param {THREE.BufferGeometry} geometry - Geometry to update
+  @param {number} mesh_quality - Quality multiplier matching init_land_geometry_square
 ****************************************************************************/
 function update_land_geometry_square(geometry, mesh_quality) {
-  var bufAttr  = mesh_quality <= 2 ? lofibufferattribute      : landbufferattribute;
-  var finePosA = mesh_quality <= 2 ? lod_lofi_vertex_fine_pos : lod_vertex_fine_pos;
-  var hmIdxA   = mesh_quality <= 2 ? lod_lofi_vertex_hm_idx   : lod_vertex_hm_idx;
+  const xquality = map.xsize * mesh_quality + 1;
+  const yquality = map.ysize * mesh_quality + 1;
 
-  if (!bufAttr || !finePosA || !hmIdxA || !heightmap) return geometry;
+  const gridX = Math.floor(xquality);
+  const gridY = Math.floor(yquality);
 
-  var Q_scale = terrain_quality;
-  var seg_w   = mapview_model_width  / (map.xsize * Q_scale);
-  var seg_h   = mapview_model_height / (map.ysize * Q_scale);
-  var half_w  = mapview_model_width  / 2;
-  var half_h  = mapview_model_height / 2;
-  var hm_len  = heightmap.length;
+  // Square tile dimensions
+  const segment_width = mapview_model_width / gridX;
+  const segment_height = mapview_model_height / gridY;
 
-  var nv = finePosA.length >> 1;
-  for (var vi = 0; vi < nv; vi++) {
-    var fix = finePosA[vi * 2];
-    var fiy = finePosA[vi * 2 + 1];
-    var wx = fix * seg_w - half_w;
-    var wy = fiy * seg_h - half_h;
-    var hm_idx = hmIdxA[vi];
-    var h = (hm_idx < hm_len) ? heightmap[hm_idx] * 100 : 0;
-    bufAttr.setXYZ(vi, wx, -wy, h);
+  const width_half = mapview_model_width / 2;
+  const height_half = mapview_model_height / 2;
+
+  const heightmap_scale = (mesh_quality === 2) ? 2 : 1;
+  const heightmap_resolution_x = map.xsize * mesh_quality + 1;
+  const bufferAttribute = mesh_quality === 2 ? lofibufferattribute : landbufferattribute;
+
+  for (let iy = 0; iy <= gridY; iy++) {
+    const y = iy * segment_height - height_half;
+    
+    for (let ix = 0; ix <= gridX; ix++) {
+      const x = ix * segment_width - width_half;
+      const sx = ix % xquality, sy = iy % yquality;
+      const index = iy * (gridX + 1) + ix;
+      // Calculate 1D index for heightmap array
+      const heightIndex = (sy * heightmap_scale) * heightmap_resolution_x + (sx * heightmap_scale);
+      const height_value = heightmap && heightmap[heightIndex] !== undefined ? heightmap[heightIndex] * 100 : 0;
+
+      bufferAttribute.setXYZ(index, x, -y, height_value);
+    }
   }
 
-  bufAttr.needsUpdate = true;
+  bufferAttribute.needsUpdate = true;
   geometry.computeVertexNormals();
+
   return geometry;
 }
 
