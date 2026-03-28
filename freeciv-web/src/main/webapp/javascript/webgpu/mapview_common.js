@@ -252,6 +252,9 @@ function update_map_terrain_geometry()
 ****************************************************************************/
 function update_map_known_tiles()
 {
+  // Always flush batched road updates regardless of visibility changes
+  if (typeof flush_roads_updates === 'function') flush_roads_updates();
+
   if (map_known_dirty) {
     update_tiles_known_vertex_colors();
     update_map_terrain_geometry();

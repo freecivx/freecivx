@@ -20,6 +20,10 @@
 var map_known_dirty = true;
 var map_geometry_dirty = true;
 
+// Pre-allocated buffer for vertex colors to avoid repeated large allocations
+var _vert_colors_buffer = null;
+var _vert_colors_attr = null;
+
 /**************************************************************************
  Updates the terrain vertex colors to set tile to known, unknown or fogged.
  Also updates the maptiles texture visibility for hexagonal edge rendering.
@@ -53,13 +57,24 @@ function update_tiles_known_vertex_colors()
 {
   const xquality = map.xsize * terrain_quality + 1;
   const yquality = map.ysize * terrain_quality + 1;
-  const colors = [];
   const gridX = Math.floor(xquality);
   const gridY = Math.floor(yquality);
 
   const gridX1 = gridX + 1;
   const gridY1 = gridY + 1;
+  const total = gridX1 * gridY1;
 
+  // Lazily allocate (or reallocate on map size change) a persistent buffer.
+  // This avoids creating a fresh ~12 MB Float32Array on every dirty frame.
+  if (_vert_colors_buffer === null || _vert_colors_buffer.length !== total * 3) {
+    if (_vert_colors_buffer !== null) landGeometry.deleteAttribute('vertColor');
+    _vert_colors_buffer = new Float32Array(total * 3);
+    _vert_colors_attr = new THREE.Float32BufferAttribute(_vert_colors_buffer, 3);
+    _vert_colors_attr.usage = THREE.DynamicDrawUsage;
+    landGeometry.setAttribute('vertColor', _vert_colors_attr);
+  }
+
+  let idx = 0;
   for ( let iy = 0; iy < gridY1; iy ++ ) {
     for ( let ix = 0; ix < gridX1; ix ++ ) {
         var sx = ix % xquality, sy = iy % yquality;
@@ -76,15 +91,19 @@ function update_tiles_known_vertex_colors()
         var ptile = map_pos_to_tile(mx, my);
         if (ptile != null) {
           var c = get_vertex_color_from_tile(ptile, ix, iy);
-          colors.push(c[0], c[1], c[2]);
+          _vert_colors_buffer[idx]     = c[0];
+          _vert_colors_buffer[idx + 1] = c[1];
+          _vert_colors_buffer[idx + 2] = c[2];
         } else {
-          colors.push(0,0,0);
+          _vert_colors_buffer[idx]     = 0;
+          _vert_colors_buffer[idx + 1] = 0;
+          _vert_colors_buffer[idx + 2] = 0;
         }
+        idx += 3;
     }
   }
 
-  landGeometry.setAttribute( 'vertColor', new THREE.Float32BufferAttribute( colors, 3) );
-
+  _vert_colors_attr.needsUpdate = true;
   landGeometry.colorsNeedUpdate = true;
 
 }
