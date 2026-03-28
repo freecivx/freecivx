@@ -59,189 +59,263 @@ var mapview_model_height;
 var MAPVIEW_ASPECT_FACTOR = 35.71;
 
 // Hexagonal tile constants for offset coordinate system (odd-r: odd rows shifted right)
-// Reference: https://www.redblobgames.com/grids/hexagons/#coordinates-offset
-// Using centralized HexConfig when available for consistency across the codebase
 var HEX_WIDTH_FACTOR = (typeof window !== 'undefined' && window.HexConfig) ? window.HexConfig.WIDTH_FACTOR : 1.0;
 var HEX_HEIGHT_FACTOR = (typeof window !== 'undefined' && window.HexConfig) ? window.HexConfig.HEIGHT_FACTOR : Math.sqrt(3) / 2;
 var HEX_STAGGER = (typeof window !== 'undefined' && window.HexConfig) ? window.HexConfig.STAGGER : 0.5;
 
+// ---------------------------------------------------------------------------
+// LOD (Level-of-Detail) geometry tracking
+//
+// Detail tiles (mountains, hills, forest, jungle) are rendered at full
+// terrain_quality subdivisions.  Every other tile (flat land, ocean, unknown)
+// uses a single quad (Q=1) – giving a real reduction in vertex / triangle
+// count proportional to the fraction of flat tiles on the map.
+//
+// Per-vertex fine-grid positions [fix0,fiy0, fix1,fiy1, …] are stored so
+// that update_land_geometry() can recompute world positions and z-heights
+// cheaply without rebuilding the index / UV buffers.
+// ---------------------------------------------------------------------------
+var lod_vertex_fine_pos      = null;   // main mesh: Int32Array [fix, fiy …]
+var lod_lofi_vertex_fine_pos = null;   // lofi mesh: Int32Array [fix, fiy …]
+var lod_vertex_hm_idx        = null;   // main mesh: Int32Array heightmap indices
+var lod_lofi_vertex_hm_idx   = null;   // lofi mesh: Int32Array heightmap indices
+var lod_structure_hash       = -1;     // changes when tile detail-level changes
 
 /****************************************************************************
-  Initialize land geometry with hexagonal tile grid
-  
-  Creates a mesh with hexagonal tiling using offset coordinates (odd-r).
-  Reference: https://www.redblobgames.com/grids/hexagons/#coordinates-offset
-  
-  Grid properties:
-  - Each tile has 6 neighbors (hex topology)
-  - Odd rows are offset by half a tile width (odd-r offset coordinates)
-  - UV coordinates map to hex tile centers for proper terrain sampling
-  - Heightmap values are interpolated between adjacent hex tiles
-  
-  @param {THREE.BufferGeometry} geometry - Geometry to initialize
-  @param {number} mesh_quality - Quality multiplier (1=standard, 2=low-res for raycasting)
+  Returns true when a tile needs full-quality (terrain_quality) subdivision.
+  Flat land, ocean and unknown tiles use a single quad instead.
+****************************************************************************/
+function is_detail_tile_lod(tx, ty) {
+  if (tx < 0 || tx >= map.xsize || ty < 0 || ty >= map.ysize) return false;
+  var ptile = map_pos_to_tile(tx, ty);
+  if (ptile == null || tile_get_known(ptile) == TILE_UNKNOWN) return false;
+  var n = tile_terrain(ptile)['name'];
+  return n === "Mountains" || n === "Hills" || n === "Forest" || n === "Jungle";
+}
+
+/****************************************************************************
+  Returns the LOD subdivision count Q for one tile.
+  lofi mesh (mesh_quality <= 2): always Q=1.
+  main mesh: terrain_quality for detail tiles, 1 for everything else.
+****************************************************************************/
+function get_tile_lod_q(tx, ty, mesh_quality) {
+  if (mesh_quality <= 2) return 1;
+  return is_detail_tile_lod(tx, ty) ? mesh_quality : 1;
+}
+
+/****************************************************************************
+  Hash of which tiles are detail vs flat.  Used to detect topology changes
+  that require a full geometry rebuild (e.g. when a tile is first revealed).
+****************************************************************************/
+function compute_lod_structure_hash() {
+  var h = 0;
+  for (var ty = 0; ty < map.ysize; ty++) {
+    for (var tx = 0; tx < map.xsize; tx++) {
+      if (is_detail_tile_lod(tx, ty)) h = (h + tx * 1000003 + ty * 7 + 1) | 0;
+    }
+  }
+  return h;
+}
+
+/****************************************************************************
+  Initialize land geometry with per-tile LOD subdivision (hex topology).
+
+  Each tile independently contributes (Q+1)² vertices and Q²×2 triangles,
+  where Q = get_tile_lod_q(tx, ty, mesh_quality).
+
+  All vertex positions are stored in fine-grid coordinates so that
+  update_land_geometry() can update only the z (height) component cheaply.
+
+  Fine-grid scale = terrain_quality  (the heightmap resolution per tile).
+  For tile (tx,ty) sub-vertex (sx,sy) at tile quality Q:
+    fix = tx * terrain_quality + sx * (terrain_quality / Q)
+    fiy = ty * terrain_quality + sy * (terrain_quality / Q)
+  UV.x = (fix + hex_stagger(fiy)) / (xsize * terrain_quality)
+  UV.y = 1 − fiy / (ysize * terrain_quality)
 ****************************************************************************/
 function init_land_geometry(geometry, mesh_quality)
 {
-  const xquality = map.xsize * mesh_quality + 1;
-  const yquality = map.ysize * mesh_quality + 1;
+  var Q_scale   = terrain_quality;            // fine-grid cells per tile
+  var hm_res_x  = map.xsize * Q_scale + 1;   // matches init_heightmap resolution
+  var seg_w     = mapview_model_width  / (map.xsize * Q_scale);
+  var seg_h     = (mapview_model_height / (map.ysize * Q_scale)) * HEX_HEIGHT_FACTOR;
+  var half_w    = mapview_model_width  / 2;
+  var half_h    = mapview_model_height / 2;
 
-  const width_half = mapview_model_width / 2;
-  const height_half = mapview_model_height / 2;
+  var vertices  = [];
+  var uvs       = [];
+  var indices   = [];
+  var finePos   = [];   // [fix, fiy] pairs for every vertex
+  var hmIdxArr  = [];   // heightmap array index for every vertex
 
-  const gridX = Math.floor(xquality);
-  const gridY = Math.floor(yquality);
+  var vi = 0;  // running vertex index
 
-  const gridX1 = gridX + 1;
-  const gridY1 = gridY + 1;
+  for (var ty = 0; ty < map.ysize; ty++) {
+    for (var tx = 0; tx < map.xsize; tx++) {
+      var Q    = get_tile_lod_q(tx, ty, mesh_quality);
+      var step = Q_scale / Q;   // fine-grid steps per subdivision step
+      var tile_vi_start = vi;
 
-  // Hex tile dimensions
-  const segment_width = mapview_model_width / gridX;
-  const segment_height = (mapview_model_height / gridY) * HEX_HEIGHT_FACTOR;
+      for (var sy = 0; sy <= Q; sy++) {
+        for (var sx = 0; sx <= Q; sx++) {
+          var fix = tx * Q_scale + sx * step;
+          var fiy = ty * Q_scale + sy * step;
 
-  const indices = [];
-  const uvs = [];
-  const vertices = [];
-  let heightmap_scale = (mesh_quality === 2) ? (mesh_quality * 2) : 1;
-  const heightmap_resolution_x = map.xsize * mesh_quality + 1;
+          var row_stagger = (fiy % 2 === 1) ? seg_w * HEX_STAGGER : 0;
+          var wx = fix * seg_w - half_w + row_stagger;
+          var wy = fiy * seg_h - half_h;
 
-  // Create vertices for hexagonal grid
-  for ( let iy = 0; iy < gridY1; iy ++ ) {
-    // Apply hex row offset for odd rows (odd-r staggered grid)
-    // In Freeciv hex: row 0 is normal, row 1 is staggered 0.5 tiles right, etc.
-    const rowOffset = (iy % 2 === 1) ? segment_width * HEX_STAGGER : 0;
-    const y = iy * segment_height - height_half;
-    
-    for ( let ix = 0; ix < gridX1; ix ++ ) {
-      const x = ix * segment_width - width_half + rowOffset;
-      var sx = ix % xquality, sy = iy % yquality;
+          var hm_idx = fiy * hm_res_x + fix;
+          var h = (heightmap && hm_idx < heightmap.length) ? heightmap[hm_idx] : 0;
 
-      // Calculate 1D index for heightmap array
-      const heightmap_index = (sy * heightmap_scale) * heightmap_resolution_x + (sx * heightmap_scale);
-      const height_value = heightmap && heightmap[heightmap_index] !== undefined ? heightmap[heightmap_index] * 100 : 0;
-      
-      vertices.push( x, -y, height_value );
-      
-      // UV coordinates for hex sampling
-      // Add hex stagger to UV for odd rows - the shader will subtract this
-      // to get the correct tile position for terrain texture lookup
-      const uvX = (ix + (iy % 2 === 1 ? HEX_STAGGER : 0)) / gridX;
-      uvs.push( uvX );
-      uvs.push( 1 - ( iy / gridY ) );
+          vertices.push(wx, -wy, h * 100);
+
+          var uv_stagger = (fiy % 2 === 1) ? HEX_STAGGER : 0;
+          uvs.push((fix + uv_stagger) / (map.xsize * Q_scale));
+          uvs.push(1 - fiy / (map.ysize * Q_scale));
+
+          finePos.push(fix, fiy);
+          hmIdxArr.push(hm_idx);
+          vi++;
+        }
+      }
+
+      // Q×Q quads → Q×Q×2 triangles
+      for (var sy = 0; sy < Q; sy++) {
+        for (var sx = 0; sx < Q; sx++) {
+          var a = tile_vi_start + sy       * (Q + 1) + sx;
+          var b = tile_vi_start + (sy + 1) * (Q + 1) + sx;
+          var c = tile_vi_start + (sy + 1) * (Q + 1) + (sx + 1);
+          var d = tile_vi_start + sy       * (Q + 1) + (sx + 1);
+          indices.push(a, b, d);
+          indices.push(b, c, d);
+        }
+      }
     }
   }
 
-  // Create triangles connecting the hexagonal grid
-  // Uses standard triangle pairs but with hex-aware indexing
-  for ( let iy = 0; iy < gridY; iy ++ ) {
-    for ( let ix = 0; ix < gridX; ix ++ ) {
-      const a = ix + gridX1 * iy;
-      const b = ix + gridX1 * ( iy + 1 );
-      const c = ( ix + 1 ) + gridX1 * ( iy + 1 );
-      const d = ( ix + 1 ) + gridX1 * iy;
-
-      indices.push( a, b, d );
-      indices.push( b, c, d );
-    }
-  }
-
-  if (mesh_quality === 2) {
-    lofibufferattribute = new THREE.Float32BufferAttribute( vertices, 3 );
-    geometry.setAttribute( 'position', lofibufferattribute);
+  var bufAttr = new THREE.Float32BufferAttribute(vertices, 3);
+  if (mesh_quality <= 2) {
+    lofibufferattribute      = bufAttr;
+    lod_lofi_vertex_fine_pos = new Int32Array(finePos);
+    lod_lofi_vertex_hm_idx   = new Int32Array(hmIdxArr);
   } else {
-    landbufferattribute = new THREE.Float32BufferAttribute( vertices, 3 );
-    geometry.setAttribute( 'position', landbufferattribute);
+    landbufferattribute      = bufAttr;
+    lod_vertex_fine_pos      = new Int32Array(finePos);
+    lod_vertex_hm_idx        = new Int32Array(hmIdxArr);
   }
 
-  geometry.setIndex( indices );
-  geometry.setAttribute( 'uv', new THREE.Float32BufferAttribute( uvs, 2 ) );
-
+  geometry.setAttribute('position', bufAttr);
+  geometry.setIndex(indices);
+  geometry.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2));
   geometry.computeVertexNormals();
 
   return geometry;
 }
 
 /****************************************************************************
-  Update the land terrain geometry with hexagonal tiling
-  
-  Updates vertex positions based on current heightmap values while maintaining
-  hex grid layout with odd-r offset coordinates.
-  
-  @param {THREE.BufferGeometry} geometry - Geometry to update
-  @param {number} mesh_quality - Quality multiplier matching init_land_geometry
+  Update vertex positions of the LOD hex terrain geometry.
+
+  X and Y are recomputed from the stored fine-grid coordinates so the
+  function is safe to call after rotateX / translate have been applied
+  (those permanent transforms are re-applied by update_map_terrain_geometry
+  immediately after this call).
 ****************************************************************************/
 function update_land_geometry(geometry, mesh_quality) {
-  const xquality = map.xsize * mesh_quality + 1;
-  const yquality = map.ysize * mesh_quality + 1;
+  var bufAttr  = mesh_quality <= 2 ? lofibufferattribute      : landbufferattribute;
+  var finePosA = mesh_quality <= 2 ? lod_lofi_vertex_fine_pos : lod_vertex_fine_pos;
+  var hmIdxA   = mesh_quality <= 2 ? lod_lofi_vertex_hm_idx   : lod_vertex_hm_idx;
 
-  const gridX = Math.floor(xquality);
-  const gridY = Math.floor(yquality);
+  if (!bufAttr || !finePosA || !hmIdxA || !heightmap) return geometry;
 
-  // Hex tile dimensions
-  const segment_width = mapview_model_width / gridX;
-  const segment_height = (mapview_model_height / gridY) * HEX_HEIGHT_FACTOR;
+  var Q_scale = terrain_quality;
+  var seg_w   = mapview_model_width  / (map.xsize * Q_scale);
+  var seg_h   = (mapview_model_height / (map.ysize * Q_scale)) * HEX_HEIGHT_FACTOR;
+  var half_w  = mapview_model_width  / 2;
+  var half_h  = mapview_model_height / 2;
+  var hm_len  = heightmap.length;
 
-  const width_half = mapview_model_width / 2;
-  const height_half = mapview_model_height / 2;
-
-  const heightmap_scale = (mesh_quality === 2) ? 2 : 1;
-  const heightmap_resolution_x = map.xsize * mesh_quality + 1;
-  const bufferAttribute = mesh_quality === 2 ? lofibufferattribute : landbufferattribute;
-
-  for (let iy = 0; iy <= gridY; iy++) {
-    // Apply hex row offset for odd rows (odd-r staggered grid)
-    const rowOffset = (iy % 2 === 1) ? segment_width * HEX_STAGGER : 0;
-    const y = iy * segment_height - height_half;
-    
-    for (let ix = 0; ix <= gridX; ix++) {
-      const x = ix * segment_width - width_half + rowOffset;
-      const sx = ix % xquality, sy = iy % yquality;
-      const index = iy * (gridX + 1) + ix;
-      // Calculate 1D index for heightmap array
-      const heightIndex = (sy * heightmap_scale) * heightmap_resolution_x + (sx * heightmap_scale);
-      const height_value = heightmap && heightmap[heightIndex] !== undefined ? heightmap[heightIndex] * 100 : 0;
-
-      bufferAttribute.setXYZ(index, x, -y, height_value);
-    }
+  var nv = finePosA.length >> 1;  // total vertex count
+  for (var vi = 0; vi < nv; vi++) {
+    var fix = finePosA[vi * 2];
+    var fiy = finePosA[vi * 2 + 1];
+    var row_stagger = (fiy % 2 === 1) ? seg_w * HEX_STAGGER : 0;
+    var wx = fix * seg_w - half_w + row_stagger;
+    var wy = fiy * seg_h - half_h;
+    var hm_idx = hmIdxA[vi];
+    var h = (hm_idx < hm_len) ? heightmap[hm_idx] * 100 : 0;
+    bufAttr.setXYZ(vi, wx, -wy, h);
   }
 
-  bufferAttribute.needsUpdate = true;
+  bufAttr.needsUpdate = true;
   geometry.computeVertexNormals();
-
   return geometry;
 }
 
 
 /****************************************************************************
-  Update the map terrain geometry!
+  Update the map terrain geometry.
+
+  Two separate change signals are tracked:
+  1. LOD structure hash  – which tiles are detail (mountains/hills/forest/
+     jungle) vs flat.  Changes when a tile is first revealed or terrain
+     type changes.  Requires a full geometry rebuild (new index buffer).
+  2. Heightmap hash – tile heights changed (e.g. terrain transformation).
+     Only vertex z-positions need updating; index/UV buffers stay the same.
+
+  Both cases re-apply the fixed rotateX + translate transforms that put the
+  geometry in the correct world-space orientation.
 ****************************************************************************/
 function update_map_terrain_geometry()
 {
-  if (map_geometry_dirty) {
-    var hash = generate_heightmap_hash();
-    if (hash != heightmap_hash) {
+  if (!map_geometry_dirty) {
+    return;
+  }
 
+  var newLodHash    = compute_lod_structure_hash();
+  var newHeightHash = generate_heightmap_hash();
+  var lodChanged    = (newLodHash    !== lod_structure_hash);
+  var heightChanged = (newHeightHash !== heightmap_hash);
+
+  if (lodChanged || heightChanged) {
+    // Always recompute the heightmap first (needed for both cases).
+    if (is_hex()) {
+      update_heightmap(terrain_quality);
+    } else {
+      update_heightmap_square(terrain_quality);
+    }
+
+    if (lodChanged) {
+      // Full topology rebuild – new vertex / index / UV buffers.
+      console.log("LOD structure changed – rebuilding terrain geometry.");
       if (is_hex()) {
-        update_heightmap(terrain_quality);
+        init_land_geometry(lofiGeometry, 2);
+        init_land_geometry(landGeometry, terrain_quality);
       } else {
-        update_heightmap_square(terrain_quality);
+        init_land_geometry_square(lofiGeometry, 2);
+        init_land_geometry_square(landGeometry, terrain_quality);
       }
-      
-      // Use appropriate geometry update based on map topology
+      lod_structure_hash = newLodHash;
+      console.log("Land mesh triangles after LOD rebuild: " + landGeometry.index.count / 3);
+    } else {
+      // Heights-only update – fast z-position refresh.
       if (is_hex()) {
         update_land_geometry(lofiGeometry, 2);
         update_land_geometry(landGeometry, terrain_quality);
-      } else  {
+      } else {
         update_land_geometry_square(lofiGeometry, 2);
         update_land_geometry_square(landGeometry, terrain_quality);
       }
-
-      lofiGeometry.rotateX( - Math.PI / 2 );
-      lofiGeometry.translate(Math.floor(mapview_model_width / 2) - 500, 0, Math.floor(mapview_model_height / 2));
-      landGeometry.rotateX( - Math.PI / 2 );
-      landGeometry.translate(Math.floor(mapview_model_width / 2) - 500, 0, Math.floor(mapview_model_height / 2));
-      heightmap_hash = hash;
     }
+
+    // Re-apply the world-space transform (both init and update output
+    // pre-rotation positions so this is always correct).
+    lofiGeometry.rotateX( - Math.PI / 2 );
+    lofiGeometry.translate(Math.floor(mapview_model_width / 2) - 500, 0, Math.floor(mapview_model_height / 2));
+    landGeometry.rotateX( - Math.PI / 2 );
+    landGeometry.translate(Math.floor(mapview_model_width / 2) - 500, 0, Math.floor(mapview_model_height / 2));
+
+    heightmap_hash = newHeightHash;
   }
 
   map_geometry_dirty = false;
