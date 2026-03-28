@@ -383,23 +383,67 @@ body
 
 #game_status_panel_bar {
   position: absolute;
+  display: flex;
+  align-items: center;
+  gap: 8px;
   color: #ffffff;
-  height: 23px;
-  text-align: center;
+  height: 26px;
   top: 50px;
+  left: 0;
+  right: 0;
   overflow: hidden;
+  white-space: nowrap;
   text-shadow: -1px 0 black, 0 1px black, 1px 0 black, 0 -1px black;
-  font-size: 70%;
+  font-size: 75%;
+  padding: 0 6px;
 }
 
 #game_status_panel_top {
   float: right;
+  display: flex;
+  align-items: center;
+  gap: 10px;
   color: #ffffff;
-  height: 30px;
-  text-align: center;
+  height: 36px;
   text-shadow: -1px 0 black, 0 1px black, 1px 0 black, 0 -1px black;
-  padding-right: 150px;
-  padding-top: 5px;
+  padding-right: 158px;
+  padding-left: 8px;
+  overflow: hidden;
+  white-space: nowrap;
+  font-size: 0.9em;
+}
+
+.status-player {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.status-flag {
+  height: 20px;
+  vertical-align: middle;
+}
+
+.status-gov {
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+}
+
+.status-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  white-space: nowrap;
+}
+
+.status-rates {
+  gap: 6px;
+}
+
+.status-icon {
+  font-size: 13px;
+  opacity: 0.85;
 }
 
 .ui-dialog .ui-dialog-content {
@@ -1995,6 +2039,20 @@ li.tech-both::before {
     padding: 6px 12px !important;
   }
 
+}
+
+/* On medium screens hide the rates section to save space */
+@media (max-width: 1280px) {
+  .status-rates {
+    display: none !important;
+  }
+}
+
+/* On narrow screens also hide population */
+@media (max-width: 1050px) {
+  .status-population {
+    display: none !important;
+  }
 }
 
 /* Custom OverlayScrollbars styling - light grey theme */

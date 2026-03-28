@@ -91,44 +91,57 @@ function update_game_status_panel() {
 
     var pnation = nations[pplayer['nation']];
     var flag_file = pnation['graphic_str'] + ".svg";
-
-    status_html += "<b>" + pplayer['name'] + "</b> &nbsp; <img src='/images/flags/" + flag_file
-        + "' height='26px' id='top_flag' title='" + pnation['adjective'] + "'>&nbsp;&nbsp;";
-
-    status_html += "<span style='cursor:pointer;' onclick='javascript:show_revolution_dialog()'>";
     var gov_name = governments[client.conn.playing['government']]['name'];
 
-    if (gov_name == "Anarchy") status_html += "<img class='lowered_gov' src='/images/gov.anarchy.png' title='Anarchy'>";
-    else if (gov_name == "Despotism") status_html += "<img class='lowered_gov' src='/images/gov.despotism.png' title='Despotism'>";
-    else if (gov_name == "Monarchy") status_html += "<img class='lowered_gov' src='/images/gov.monarchy.png' title='Monarchy'>";
-    else if (gov_name == "Communism") status_html += "<img class='lowered_gov' src='/images/gov.communism.png' title='Communism'>";
-    else if (gov_name == "Republic") status_html += "<img class='lowered_gov' src='/images/gov.republic.png' title='Republic'>";
-    else if (gov_name == "Democracy") status_html += "<img class='lowered_gov' src='/images/gov.democracy.png' title='Democracy'>";
-    else if (gov_name == "Fundamentalism") status_html += "<img class='lowered_gov' src='/images/gov.fundamentalism.png' title='Fundamentalism'>";
-    else if (gov_name == "Theocracy") status_html += "<img class='lowered_gov' src='/images/gov.theocracy.png' title='Theocracy'>";
-    else if (gov_name == "Federation") status_html += "<img class='lowered_gov' src='/images/gov.federation.png' title='Federation'>";
-    else if (gov_name == "Nationalism") status_html += "<img class='lowered_gov' src='/images/gov.nationalism.png' title='Nationalism'>";
-    else status_html += "<img class='lowered_gov' src='/images/gov.despotism.png' title='"+gov_name+"'>"; // other gov/custom ruleset
-    status_html += "</span> &nbsp;";
+    var gov_img_map = {
+      "Anarchy": "anarchy", "Despotism": "despotism", "Monarchy": "monarchy",
+      "Communism": "communism", "Republic": "republic", "Democracy": "democracy",
+      "Fundamentalism": "fundamentalism", "Theocracy": "theocracy",
+      "Federation": "federation", "Nationalism": "nationalism"
+    };
+    var gov_img = gov_img_map[gov_name] || "despotism";
 
-    status_html += "<i class='fa fa-child' aria-hidden='true' title='Population'></i>: ";
-    status_html += "<b>" + civ_population(client.conn.playing.playerno) + "</b>  &nbsp;&nbsp;";
-    status_html += "<i class='far fa-clock' title='Year (turn)'></i>: <b>" + get_year_string() + "</b> &nbsp;&nbsp;";
+    // Player name + flag
+    status_html += "<span class='status-player'>";
+    status_html += "<b class='status-player-name'>" + pplayer['name'] + "</b>";
+    status_html += "<img src='/images/flags/" + flag_file + "' class='status-flag' title='" + pnation['adjective'] + "'>";
+    status_html += "</span>";
 
-    status_html += "<img src='/images/coinage.png'>: ";
-    if (pplayer['expected_income'] >= 0) {
-      status_html += "<b title='Gold (net income)'>";
-    } else {
-      status_html += "<b class='negative_net_income' title='Gold (net income)'>";
-    }
-    status_html += pplayer['gold'] + " (" + net_income + ")</b>  &nbsp;&nbsp;";
-    status_html += "<span><img src='/images/gold.png' title='Tax rate'>: <b>" + tax + "</b>% ";
-    status_html += "<img src='/images/quavers.png' title='Luxury rate'>: <b>" + lux + "</b>% ";
-    status_html += "<img src='/images/science.png' title='Science rate'>: <b>" + sci + "</b>%</span> ";
+    // Government (clickable)
+    status_html += "<span class='status-gov' onclick='javascript:show_revolution_dialog()' title='" + gov_name + "'>";
+    status_html += "<img class='lowered_gov' src='/images/gov." + gov_img + ".png'>";
+    status_html += "</span>";
+
+    // Population
+    status_html += "<span class='status-item status-population'>";
+    status_html += "<i class='fas fa-person status-icon' title='Population'></i>";
+    status_html += "<b>" + civ_population(client.conn.playing.playerno) + "</b>";
+    status_html += "</span>";
+
+    // Year / Turn
+    status_html += "<span class='status-item status-year'>";
+    status_html += "<i class='far fa-clock status-icon' title='Year (turn)'></i>";
+    status_html += "<b>" + get_year_string() + "</b>";
+    status_html += "</span>";
+
+    // Gold
+    var gold_class = pplayer['expected_income'] >= 0 ? "" : "negative_net_income";
+    status_html += "<span class='status-item status-gold'>";
+    status_html += "<i class='fas fa-coins status-icon' title='Gold (net income)'></i>";
+    status_html += "<b class='" + gold_class + "' title='Gold (net income)'>";
+    status_html += pplayer['gold'] + " (" + net_income + ")</b>";
+    status_html += "</span>";
+
+    // Rates: tax / luxury / science
+    status_html += "<span class='status-item status-rates'>";
+    status_html += "<i class='fas fa-landmark status-icon' title='Tax rate'></i><b>" + tax + "</b>%";
+    status_html += "<i class='fas fa-music status-icon' title='Luxury rate'></i><b>" + lux + "</b>%";
+    status_html += "<i class='fas fa-flask status-icon' title='Science rate'></i><b>" + sci + "</b>%";
+    status_html += "</span>";
+
   } else if (server_settings != null && server_settings['metamessage'] != null) {
-    status_html += server_settings['metamessage']['val']
-                   + " Observing - ";
-    status_html += "Turn: <b>" + game_info['turn'] + "</b>  ";
+    status_html += server_settings['metamessage']['val'] + " Observing - ";
+    status_html += "Turn: <b>" + game_info['turn'] + "</b>";
   }
 
   if ($(window).width() - sum_width() > 700) {
