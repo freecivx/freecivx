@@ -199,6 +199,9 @@ function createTerrainShaderSquareTSL(uniforms) {
     // Add pseudo-random texture offset for visual variety.
     // Uses THREE's hash() TSL function for a more robust pseudo-random value than sin-based hashing.
     const rnd = hash(tileCenterUV);
+    // rnd2 uses a spatially shifted input so its values are statistically independent from rnd.
+    // The offset 0.317 is an arbitrary irrational-like constant that decorrelates the two hashes.
+    const rnd2 = hash(add(tileCenterUV, 0.317)); // Second independent hash for per-tile hue variation
     const rndOffset = mul(sub(rnd, 0.5), div(1.0, mul(TEXTURE_RANDOM_SCALE, vec2(map_x_size, map_y_size))));
     const sampledUV = add(tileCenterUV, rndOffset);
 
@@ -373,12 +376,23 @@ function createTerrainShaderSquareTSL(uniforms) {
         finalColor = mix(finalColor, layer.color, layer.mask);
     }
 
-    // Per-tile brightness variation (free – reuses rnd.x from the hash already computed above).
+    // Per-tile brightness variation (free – reuses rnd from the hash already computed above).
     // Keeps a ±7 % range so adjacent tiles are visually distinct without looking noisy.
     const BRIGHTNESS_MIN   = 0.93;  // darkest a tile can be relative to its base texture
     const BRIGHTNESS_RANGE = 0.14;  // full range (0.93 → 1.07, i.e. ±7 %)
     const perTileBrightness = add(BRIGHTNESS_MIN, mul(rnd.x, BRIGHTNESS_RANGE));
     finalColor = vec4(mul(finalColor.rgb, perTileBrightness), finalColor.a);
+
+    // =========================================================================
+    // PER-TILE HUE VARIATION
+    // =========================================================================
+    // Subtle warm/cool tint per tile using rnd2 (independent second hash).
+    // Shifts red and blue channels in opposite directions by up to ±2 %.
+    // Adds richness to large uniform terrain areas without visible noise.
+    const HUE_VARIATION = 0.04;
+    const warmCoolShift = mul(sub(rnd2, 0.5), HUE_VARIATION);
+    const perTileTint = vec3(add(1.0, warmCoolShift), 1.0, sub(1.0, warmCoolShift));
+    finalColor = vec4(clamp(mul(finalColor.rgb, perTileTint), 0.0, 1.0), finalColor.a);
     
     // =========================================================================
     // TERRAIN EDGE BLENDING (blend terrain textures at tile borders)
@@ -677,7 +691,10 @@ function createTerrainShaderSquareTSL(uniforms) {
     // SQUARE TILE GRID LINES
     // =========================================================================
     const tileEdgeColor = vec3(TILE_EDGE_COLOR_R, TILE_EDGE_COLOR_G, TILE_EDGE_COLOR_B);
-    const gridEdgeBlend = mul(gridLineMask, TILE_EDGE_BLEND_STRENGTH);
+    // Squared falloff concentrates the grid line shadow at the tile boundary,
+    // keeping the tile interior bright while still marking borders clearly.
+    const gridLineMaskSq = mul(gridLineMask, gridLineMask);
+    const gridEdgeBlend = mul(gridLineMaskSq, TILE_EDGE_BLEND_STRENGTH);
     finalColor = vec4(
         mix(finalColor.rgb, tileEdgeColor, gridEdgeBlend),
         finalColor.a

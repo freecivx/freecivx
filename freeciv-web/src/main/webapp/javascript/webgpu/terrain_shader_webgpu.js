@@ -297,7 +297,27 @@ function createTerrainShaderTSL(uniforms) {
     // out (softer edges), eliminating both aliasing and over-blurring.
     const hexDistFw = fwidth(hexDist);
     const hexEdgeMask = smoothstep(sub(edgeStart, hexDistFw), hexInradius, hexDist);
-    
+
+    // =========================================================================
+    // HEX FACE CLASSIFICATION (shared by terrain blending and border rendering)
+    // =========================================================================
+    // Pre-compute which of the 6 hex faces each pixel belongs to.
+    // dist1 = |hexX|                 → E (right) / W (left) vertical faces
+    // dist2 = |hexX*0.5 + hexY*0.866| → NE (upper-right) / SW (lower-left) diagonal faces
+    // dist3 = |-hexX*0.5 + hexY*0.866| → NW (upper-left) / SE (lower-right) diagonal faces
+    // The dominant distance determines the face; the sign selects which of the two.
+    const d2Signed = add(mul(hexX, 0.5), mul(hexY, HEX_SQRT3_OVER_2));   // >0 = NE face, <0 = SW face
+    const d3Signed = add(mul(hexX, -0.5), mul(hexY, HEX_SQRT3_OVER_2));  // >0 = NW face, <0 = SE face
+    const dist1Dom = mul(step(dist2, dist1), step(dist3, dist1));
+    const dist2Dom = mul(step(dist1, dist2), step(dist3, dist2));
+    const dist3Dom = mul(step(dist1, dist3), step(dist2, dist3));
+    const onEFace  = mul(dist1Dom, step(0.0, hexX));
+    const onWFace  = mul(dist1Dom, sub(1.0, step(0.0, hexX)));
+    const onNEFace = mul(dist2Dom, step(0.0, d2Signed));
+    const onSWFace = mul(dist2Dom, sub(1.0, step(0.0, d2Signed)));
+    const onNWFace = mul(dist3Dom, step(0.0, d3Signed));
+    const onSEFace = mul(dist3Dom, sub(1.0, step(0.0, d3Signed)));
+
     // =========================================================================
     // TERRAIN SAMPLING AT HEX TILE CENTER
     // =========================================================================
@@ -309,11 +329,44 @@ function createTerrainShaderTSL(uniforms) {
     // Add back the hex stagger offset for odd rows when sampling
     const tileCenterUStaggered = add(tileCenterU, hexOffsetX);
     const tileCenterUV = vec2(tileCenterUStaggered, tileCenterV);
-    
+
+    // =========================================================================
+    // NEIGHBOR TILE UV COORDINATES AND MAPTILE TEXTURE SAMPLES
+    // =========================================================================
+    // Pre-computed hex neighbor UVs and full-vec4 maptile reads shared by:
+    // terrain edge blending, visibility blending, and nation border rendering.
+    // Storing the full vec4 avoids duplicate texture fetches when both .r (terrain
+    // type) and .a (visibility) are needed from the same neighbour sample.
+    const neighborOffsetX = div(1.0, map_x_size);
+    const neighborOffsetY = div(1.0, map_y_size);
+    const neighborUV_E  = vec2(add(tileCenterUV.x, neighborOffsetX), tileCenterUV.y);
+    const neighborUV_W  = vec2(sub(tileCenterUV.x, neighborOffsetX), tileCenterUV.y);
+    const neighborUV_NE = vec2(add(tileCenterUV.x, mul(neighborOffsetX, 0.5)), add(tileCenterUV.y, neighborOffsetY));
+    const neighborUV_NW = vec2(sub(tileCenterUV.x, mul(neighborOffsetX, 0.5)), add(tileCenterUV.y, neighborOffsetY));
+    const neighborUV_SE = vec2(add(tileCenterUV.x, mul(neighborOffsetX, 0.5)), sub(tileCenterUV.y, neighborOffsetY));
+    const neighborUV_SW = vec2(sub(tileCenterUV.x, mul(neighborOffsetX, 0.5)), sub(tileCenterUV.y, neighborOffsetY));
+    // One texture fetch per neighbor – .r used for terrain type, .a for visibility
+    const neighborTexE  = texture(maptilesTex, neighborUV_E);
+    const neighborTexW  = texture(maptilesTex, neighborUV_W);
+    const neighborTexNE = texture(maptilesTex, neighborUV_NE);
+    const neighborTexNW = texture(maptilesTex, neighborUV_NW);
+    const neighborTexSE = texture(maptilesTex, neighborUV_SE);
+    const neighborTexSW = texture(maptilesTex, neighborUV_SW);
+    // Terrain type for each neighbor (0-255 range from .r channel)
+    const neighborTerrainE  = floor(mul(neighborTexE.r,  256.0));
+    const neighborTerrainW  = floor(mul(neighborTexW.r,  256.0));
+    const neighborTerrainNE = floor(mul(neighborTexNE.r, 256.0));
+    const neighborTerrainNW = floor(mul(neighborTexNW.r, 256.0));
+    const neighborTerrainSE = floor(mul(neighborTexSE.r, 256.0));
+    const neighborTerrainSW = floor(mul(neighborTexSW.r, 256.0));
+
     // Add pseudo-random texture offset for visual variety within tiles
     // Uses THREE's hash() TSL function for a more robust pseudo-random value than sin-based hashing
     // TEXTURE_RANDOM_SCALE controls amplitude: larger value = smaller random offset
     const rnd = hash(tileCenterUV);
+    // rnd2 uses a spatially shifted input so its values are statistically independent from rnd.
+    // The offset 0.317 is an arbitrary irrational-like constant that decorrelates the two hashes.
+    const rnd2 = hash(add(tileCenterUV, 0.317)); // Second independent hash for per-tile hue variation
     const rndOffset = mul(sub(rnd, 0.5), div(1.0, mul(TEXTURE_RANDOM_SCALE, vec2(map_x_size, map_y_size))));
     const sampledUV = add(tileCenterUV, rndOffset);
 
@@ -337,71 +390,91 @@ function createTerrainShaderTSL(uniforms) {
     const beachSandColor = vec3(BEACH_SAND_COLOR.r, BEACH_SAND_COLOR.g, BEACH_SAND_COLOR.b);
 
     /**
+     * Shared helper: sample the correct terrain atlas colour for a given layer index,
+     * optionally blending with beach sand and coast texture at shoreline elevations.
+     */
+    function computeTerrainColor(layerIndex, coord, blendWithBeach) {
+        if (blendWithBeach) {
+            const baseTerrainColor = texture(terrainAtlasTex, coord).depth(int(layerIndex));
+            const coastTex = texture(terrainAtlasTex, coord).depth(int(TERRAIN_ATLAS_COAST));
+            const aboveWater = step(WATER_LEVEL, posY);
+            const SHORELINE_RANGE = BEACH_HIGH - WATER_LEVEL;
+            const shorelineT = clamp(div(sub(posY, WATER_LEVEL), SHORELINE_RANGE), 0.0, 1.0);
+            const aboveWaterColor = mix(vec4(beachSandColor, 1.0), baseTerrainColor, shorelineT);
+            return mix(coastTex, aboveWaterColor, aboveWater);
+        } else {
+            return texture(terrainAtlasTex, coord).depth(int(layerIndex));
+        }
+    }
+
+    /**
      * Helper function to create terrain selection and blending logic
      * Uses terrain_atlas DataArrayTexture for efficient texture sampling.
-     * 
+     *
      * @param {number} terrainValue - The terrain type ID to match (e.g., TERRAIN_GRASSLAND)
-     * @param {number} layerIndex - The layer index in terrain_atlas texture (0-9, see TERRAIN_ATLAS_* constants above)
+     * @param {number} layerIndex - The layer index in terrain_atlas texture (0-9)
      * @param {object} coord - TSL vec2 coordinate node for texture sampling
      * @param {boolean} blendWithBeach - If true, blends with beach sand colour at shore elevations
-     * @returns {object} Object with mask (selection boolean) and color (sampled texture) nodes
-     * 
-     * Uses step functions to create smooth transitions between terrain types.
-     * When blendWithBeach is true, terrain at elevations in the beach zone
-     * transitions to a warm sand colour, creating natural beach areas.
+     * @returns {object} Object with mask and color TSL nodes
      */
     function createTerrainLayer(terrainValue, layerIndex, coord, blendWithBeach = true) {
-        // Create float mask for this terrain type (ensure it's a float, not boolean)
-        // Split step() operations and use mul() to ensure float multiplication
+        // Create float mask for this terrain type
         const step1 = step(terrainValue - 0.5, terrainHere);
         const step2 = step(terrainHere, terrainValue + 0.5);
         const isTerrain = mul(step1, step2);
-        
-        // Sample terrain texture from atlas
-        let terrainColor;
-        if (blendWithBeach) {
-            // Get base terrain texture from atlas
-            const baseTerrainColor = texture(terrainAtlasTex, coord).depth(int(layerIndex));
-            const coastTex = texture(terrainAtlasTex, coord).depth(int(TERRAIN_ATLAS_COAST));
-
-            // 1.0 when above water level, 0.0 when underwater
-            const aboveWater = step(WATER_LEVEL, posY);
-
-            // Shoreline gradient: 0.0 at water level (beach sand), 1.0 at BEACH_HIGH (full terrain)
-            // Guarantees land tiles above water always show terrain, never coast/water texture.
-            // Range: BEACH_HIGH - WATER_LEVEL = 52.5 - 50.0 = 2.5
-            const SHORELINE_RANGE = BEACH_HIGH - WATER_LEVEL;
-            const shorelineT = clamp(div(sub(posY, WATER_LEVEL), SHORELINE_RANGE), 0.0, 1.0);
-
-            // Above water: blend from beach sand (shoreline) to full terrain texture
-            const aboveWaterColor = mix(vec4(beachSandColor, 1.0), baseTerrainColor, shorelineT);
-
-            // Below water: show coast texture; above water: shoreline sand→terrain gradient
-            terrainColor = mix(coastTex, aboveWaterColor, aboveWater);
-        } else {
-            terrainColor = texture(terrainAtlasTex, coord).depth(int(layerIndex));
-        }
-        
-        return { mask: isTerrain, color: terrainColor };
+        return { mask: isTerrain, color: computeTerrainColor(layerIndex, coord, blendWithBeach) };
     }
-    
+
     /**
      * Helper function to create terrain layer from terrain_layers DataArrayTexture
-     * 
+     *
      * @param {number} terrainValue - The terrain type ID to match (e.g., TERRAIN_ARCTIC)
      * @param {number} layerIndex - The layer index in terrain_layers texture (0-3)
      * @param {object} coord - TSL vec2 coordinate node for texture sampling
-     * @returns {object} Object with mask (selection boolean) and color (sampled texture) nodes
+     * @returns {object} Object with mask and color TSL nodes
      */
     function createTerrainLayerFromArray(terrainValue, layerIndex, coord) {
         const step1 = step(terrainValue - 0.5, terrainHere);
         const step2 = step(terrainHere, terrainValue + 0.5);
         const isTerrain = mul(step1, step2);
-        
-        // Sample from terrain_layers DataArrayTexture by passing layer index as third parameter
-        const terrainColor = texture(terrainLayersTex, coord).depth(int(layerIndex));
-        
-        return { mask: isTerrain, color: terrainColor };
+        return { mask: isTerrain, color: texture(terrainLayersTex, coord).depth(int(layerIndex)) };
+    }
+
+    /**
+     * Return the blended terrain colour for an arbitrary terrain-type value tType.
+     * Used to compute neighbour terrain colours for hex-edge terrain blending.
+     */
+    function getTerrainColorForType(tType, coord) {
+        let color = vec4(0, 0, 0, 1);
+        function matchTerrain(terrainValue, layerIndex, blendWithBeach) {
+            const s1 = step(terrainValue - 0.5, tType);
+            const s2 = step(tType, terrainValue + 0.5);
+            return { mask: mul(s1, s2), color: computeTerrainColor(layerIndex, coord, blendWithBeach) };
+        }
+        function matchTerrainFromArray(terrainValue, layerIndex) {
+            const s1 = step(terrainValue - 0.5, tType);
+            const s2 = step(tType, terrainValue + 0.5);
+            return { mask: mul(s1, s2), color: texture(terrainLayersTex, coord).depth(int(layerIndex)) };
+        }
+        const layersList = [
+            matchTerrain(TERRAIN_GRASSLAND, TERRAIN_ATLAS_GRASSLAND, true),
+            matchTerrain(TERRAIN_PLAINS,    TERRAIN_ATLAS_PLAINS,    true),
+            matchTerrain(TERRAIN_DESERT,    TERRAIN_ATLAS_DESERT,    true),
+            matchTerrain(TERRAIN_HILLS,     TERRAIN_ATLAS_HILLS,     true),
+            matchTerrain(TERRAIN_MOUNTAINS, TERRAIN_ATLAS_MOUNTAINS, true),
+            matchTerrain(TERRAIN_SWAMP,     TERRAIN_ATLAS_SWAMP,     true),
+            matchTerrain(TERRAIN_FOREST,    TERRAIN_ATLAS_FOREST,    true),
+            matchTerrain(TERRAIN_JUNGLE,    TERRAIN_ATLAS_JUNGLE,    true),
+            matchTerrain(TERRAIN_COAST,     TERRAIN_ATLAS_COAST,     false),
+            matchTerrain(TERRAIN_FLOOR,     TERRAIN_ATLAS_OCEAN,     false),
+            matchTerrain(TERRAIN_LAKE,      TERRAIN_ATLAS_COAST,     false),
+            matchTerrainFromArray(TERRAIN_ARCTIC, TERRAIN_LAYER_ARCTIC),
+            matchTerrainFromArray(TERRAIN_TUNDRA, TERRAIN_LAYER_TUNDRA),
+        ];
+        for (const layer of layersList) {
+            color = mix(color, layer.color, layer.mask);
+        }
+        return color;
     }
 
     // Build terrain layers - including all terrain types from WebGL shader
@@ -429,12 +502,51 @@ function createTerrainShaderTSL(uniforms) {
         finalColor = mix(finalColor, layer.color, layer.mask);
     }
 
-    // Per-tile brightness variation (free – reuses rnd.x from the hash already computed above).
+    // Per-tile brightness variation (free – reuses rnd from the hash already computed above).
     // Keeps a ±7 % range so adjacent tiles are visually distinct without looking noisy.
     const BRIGHTNESS_MIN   = 0.93;  // darkest a tile can be relative to its base texture
     const BRIGHTNESS_RANGE = 0.14;  // full range (0.93 → 1.07, i.e. ±7 %)
     const perTileBrightness = add(BRIGHTNESS_MIN, mul(rnd.x, BRIGHTNESS_RANGE));
     finalColor = vec4(mul(finalColor.rgb, perTileBrightness), finalColor.a);
+
+    // =========================================================================
+    // PER-TILE HUE VARIATION
+    // =========================================================================
+    // Subtle warm/cool tint per tile using rnd2 (independent second hash).
+    // rnd2 in [0,1] → warmCoolShift in [-HUE_VARIATION/2, +HUE_VARIATION/2].
+    // Red channel shifts up (warm) while blue shifts down, and vice-versa.
+    // Keeps the variation imperceptible but adds richness when many tiles are visible.
+    const HUE_VARIATION = 0.04;
+    const warmCoolShift = mul(sub(rnd2, 0.5), HUE_VARIATION);
+    const perTileTint = vec3(add(1.0, warmCoolShift), 1.0, sub(1.0, warmCoolShift));
+    finalColor = vec4(clamp(mul(finalColor.rgb, perTileTint), 0.0, 1.0), finalColor.a);
+
+    // =========================================================================
+    // TERRAIN EDGE BLENDING AT HEX FACES
+    // =========================================================================
+    // Near each of the 6 hex face boundaries, blend the current tile's terrain
+    // colour with the colour of the neighbouring tile's terrain type.
+    // This creates natural, soft transitions between different terrain types
+    // (e.g. grassland fading into desert) instead of a hard edge.
+    //
+    // faceBlend: smoothly rises from 0 at TERRAIN_BLEND_START to TERRAIN_BLEND_AMOUNT at the hex edge.
+    // onXFace: 1.0 only on the hex face that borders neighbour X, 0.0 elsewhere.
+    // step(0.5, neighborTerrainX): guards against blending with inaccessible (type 0) neighbours.
+    const TERRAIN_BLEND_START  = 0.32; // Fraction of inradius where blending begins
+    const TERRAIN_BLEND_AMOUNT = 0.45; // Maximum blend weight at the hex edge
+    const faceBlend = mul(smoothstep(TERRAIN_BLEND_START, hexInradius, hexDist), TERRAIN_BLEND_AMOUNT);
+    const colorNeighborE  = getTerrainColorForType(neighborTerrainE,  texCoord);
+    const colorNeighborW  = getTerrainColorForType(neighborTerrainW,  texCoord);
+    const colorNeighborNE = getTerrainColorForType(neighborTerrainNE, texCoord);
+    const colorNeighborNW = getTerrainColorForType(neighborTerrainNW, texCoord);
+    const colorNeighborSE = getTerrainColorForType(neighborTerrainSE, texCoord);
+    const colorNeighborSW = getTerrainColorForType(neighborTerrainSW, texCoord);
+    finalColor = mix(finalColor, colorNeighborE,  mul(mul(onEFace,  faceBlend), step(0.5, neighborTerrainE)));
+    finalColor = mix(finalColor, colorNeighborW,  mul(mul(onWFace,  faceBlend), step(0.5, neighborTerrainW)));
+    finalColor = mix(finalColor, colorNeighborNE, mul(mul(onNEFace, faceBlend), step(0.5, neighborTerrainNE)));
+    finalColor = mix(finalColor, colorNeighborNW, mul(mul(onNWFace, faceBlend), step(0.5, neighborTerrainNW)));
+    finalColor = mix(finalColor, colorNeighborSE, mul(mul(onSEFace, faceBlend), step(0.5, neighborTerrainSE)));
+    finalColor = mix(finalColor, colorNeighborSW, mul(mul(onSWFace, faceBlend), step(0.5, neighborTerrainSW)));
 
     // =========================================================================
     // IRRIGATION AND FARMLAND RENDERING
@@ -723,10 +835,11 @@ function createTerrainShaderTSL(uniforms) {
     // Apply subtle darkening at hex edges to create visible hex tile boundaries
     // This gives the distinctive Civilization 6 hexagonal map appearance
     const hexEdgeColor = vec3(HEX_EDGE_COLOR_R, HEX_EDGE_COLOR_G, HEX_EDGE_COLOR_B);
-    
-    // Blend hex edge color with terrain based on edge mask
-    // The edge mask is strongest at hex boundaries and fades toward center
-    const hexEdgeBlend = mul(hexEdgeMask, HEX_EDGE_BLEND_STRENGTH);
+
+    // Squared falloff concentrates the shadow tightly at the hex boundary for a
+    // crisper, more natural-looking edge line while keeping the tile interior bright.
+    const hexEdgeMaskSq = mul(hexEdgeMask, hexEdgeMask);
+    const hexEdgeBlend = mul(hexEdgeMaskSq, HEX_EDGE_BLEND_STRENGTH);
     finalColor = vec4(
         mix(finalColor.rgb, hexEdgeColor, hexEdgeBlend),
         finalColor.a
@@ -761,28 +874,16 @@ function createTerrainShaderTSL(uniforms) {
     // =========================================================================
     // Sample visibility from neighboring hex tiles to create soft blending
     // at the boundary between unknown (black) tiles and known/visible tiles.
-    // This creates a gradual fade rather than a hard edge.
-    
-    // Calculate neighbor sampling offsets (in UV space)
-    const neighborOffsetX = div(1.0, map_x_size);
-    const neighborOffsetY = div(1.0, map_y_size);
-    
-    // Sample 6 hex neighbors' visibility for edge softening
-    // We sample at offsets corresponding to hex neighbor directions
-    const neighborUV_E = vec2(add(tileCenterUV.x, neighborOffsetX), tileCenterUV.y);
-    const neighborUV_W = vec2(sub(tileCenterUV.x, neighborOffsetX), tileCenterUV.y);
-    const neighborUV_NE = vec2(add(tileCenterUV.x, mul(neighborOffsetX, 0.5)), add(tileCenterUV.y, neighborOffsetY));
-    const neighborUV_NW = vec2(sub(tileCenterUV.x, mul(neighborOffsetX, 0.5)), add(tileCenterUV.y, neighborOffsetY));
-    const neighborUV_SE = vec2(add(tileCenterUV.x, mul(neighborOffsetX, 0.5)), sub(tileCenterUV.y, neighborOffsetY));
-    const neighborUV_SW = vec2(sub(tileCenterUV.x, mul(neighborOffsetX, 0.5)), sub(tileCenterUV.y, neighborOffsetY));
-    
-    // Sample neighbor visibilities
-    const visE = texture(maptilesTex, neighborUV_E).a;
-    const visW = texture(maptilesTex, neighborUV_W).a;
-    const visNE = texture(maptilesTex, neighborUV_NE).a;
-    const visNW = texture(maptilesTex, neighborUV_NW).a;
-    const visSE = texture(maptilesTex, neighborUV_SE).a;
-    const visSW = texture(maptilesTex, neighborUV_SW).a;
+    // neighborUV_* and neighborTex* are pre-computed at the top of the shader
+    // and shared here – no duplicate texture fetches needed.
+
+    // Extract visibility (.a channel) from the pre-sampled neighbour maptile reads
+    const visE  = neighborTexE.a;
+    const visW  = neighborTexW.a;
+    const visNE = neighborTexNE.a;
+    const visNW = neighborTexNW.a;
+    const visSE = neighborTexSE.a;
+    const visSW = neighborTexSW.a;
     
     // Calculate average neighbor visibility
     const avgNeighborVis = mul(add(add(add(add(add(visE, visW), visNE), visNW), visSE), visSW), div(1.0, 6.0));
@@ -860,28 +961,10 @@ function createTerrainShaderTSL(uniforms) {
     const isEdgeSW = step(BORDER_COLOR_DIFF_THRESHOLD, add(add(abs(sub(currentBorder.r, borderSW.r)), abs(sub(currentBorder.g, borderSW.g))), abs(sub(currentBorder.b, borderSW.b))));
 
     // -----------------------------------------------------------------------
-    // HEX FACE CLASSIFICATION via signed SDF distances
-    // dist1 = |hexX|            → left (W) / right (E) vertical edges
-    // dist2 = |hexX*0.5 + hexY*0.866| → upper-right (NE) / lower-left (SW)
-    // dist3 = |-hexX*0.5 + hexY*0.866| → upper-left (NW) / lower-right (SE)
-    // The dominant distance determines which hex face the pixel lies on.
+    // HEX FACE CLASSIFICATION variables (d2Signed, d3Signed, dist1Dom …
+    // onEFace … onSEFace) are pre-computed in the HEX FACE CLASSIFICATION
+    // section near the top of the shader and reused here.
     // -----------------------------------------------------------------------
-    // Signed (pre-abs) distances – used to distinguish the two faces in each pair
-    const d2Signed = add(mul(hexX, 0.5), mul(hexY, HEX_SQRT3_OVER_2));   // >0 = NE, <0 = SW
-    const d3Signed = add(mul(hexX, -0.5), mul(hexY, HEX_SQRT3_OVER_2));  // >0 = NW, <0 = SE
-
-    // Classify which of the three distance pairs is dominant (max)
-    const dist1Dom = mul(step(dist2, dist1), step(dist3, dist1));  // dist1 >= dist2 AND dist1 >= dist3
-    const dist2Dom = mul(step(dist1, dist2), step(dist3, dist2));  // dist2 >= dist1 AND dist2 >= dist3
-    const dist3Dom = mul(step(dist1, dist3), step(dist2, dist3));  // dist3 >= dist1 AND dist3 >= dist2
-
-    // Map to one of the 6 hex faces using dominant distance + sign
-    const onEFace  = mul(dist1Dom, step(0.0, hexX));                    // right vertical edge
-    const onWFace  = mul(dist1Dom, sub(1.0, step(0.0, hexX)));          // left vertical edge
-    const onNEFace = mul(dist2Dom, step(0.0, d2Signed));                // upper-right diagonal
-    const onSWFace = mul(dist2Dom, sub(1.0, step(0.0, d2Signed)));      // lower-left diagonal
-    const onNWFace = mul(dist3Dom, step(0.0, d3Signed));                // upper-left diagonal
-    const onSEFace = mul(dist3Dom, sub(1.0, step(0.0, d3Signed)));      // lower-right diagonal
 
     // -----------------------------------------------------------------------
     // NARROW BORDER LINE MASK at the hex edge (tighter than hexEdgeMask)
