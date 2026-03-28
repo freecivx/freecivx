@@ -319,48 +319,6 @@ const MapviewConfig = Object.freeze({
     ASPECT_FACTOR: 35.71
 });
 
-/**
- * Terrain visual effects configuration
- *
- * Centralised constants for the snow-cap and animated wind effects in the
- * terrain shaders (both hex and square topologies).
- *
- * Snow caps
- * ---------
- * posY in the terrain shader equals ptile['height'] * 100.
- * Typical value ranges: sea-level ≈ 50, flat land ≈ 52–58, hills ≈ 60–70,
- * mountains ≈ 70–90.  Adjust SNOW_START_LEVEL / SNOW_FULL_LEVEL to move
- * the snow line up or down the mountain.
- *
- * Wind animation
- * --------------
- * Uses THREE.time (built-in TSL clock, no manual update needed) with two
- * sine waves at different frequencies and per-tile phase offsets so that
- * adjacent forest/jungle tiles sway independently.  The amplitude is kept
- * very small (≈ ±2 %) so the effect is subtle and non-distracting.
- *
- * @readonly
- * @type {Object}
- */
-const TerrainEffectsConfig = Object.freeze({
-    /** World-Y elevation at which snow begins to appear on mountain tiles */
-    SNOW_START_LEVEL: 64.0,
-    /** World-Y elevation at which snow coverage reaches maximum on mountain tiles */
-    SNOW_FULL_LEVEL: 80.0,
-    /** Snow colour – pure white with a slight cool blue tint */
-    SNOW_COLOR: Object.freeze({ r: 0.93, g: 0.94, b: 0.97 }),
-    /** Snow coverage fraction applied to hill tiles (0 = none, 1 = same as mountains) */
-    HILLS_SNOW_FACTOR: 0.25,
-    /** mx_noise_float scale for irregular snow-edge noise (higher = smaller patches) */
-    SNOW_NOISE_SCALE: 6.0,
-    /** Primary vegetation wind oscillation speed (rad/s) */
-    WIND_SPEED: 0.35,
-    /** Secondary vegetation wind oscillation speed for organic variation (rad/s) */
-    WIND_SPEED_2: 0.53,
-    /** Maximum brightness amplitude for vegetation wind animation (fraction, e.g. 0.022 = ±2.2 %) */
-    WIND_AMPLITUDE: 0.022
-});
-
 
 // Export configuration objects to global scope for compatibility with existing code
 // Note: This project uses script concatenation for bundling, not ES modules.
@@ -378,4 +336,3 @@ window.TerrainType = TerrainType;
 window.BeachConfig = BeachConfig;
 window.AnimationConfig = AnimationConfig;
 window.MapviewConfig = MapviewConfig;
-window.TerrainEffectsConfig = TerrainEffectsConfig;
