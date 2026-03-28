@@ -199,9 +199,12 @@ function map2d_ocean_neighbor_flag(ptile, dir)
 {
   var ntile = mapstep(ptile, dir);
   if (ntile == null) return 0;
-  var nterrain = tile_terrain(ntile);
   /* Treat unknown tiles as ocean so that ocean tiles adjacent to unexplored
-   * areas do not render a spurious grassland/land edge. */
+   * areas do not render a spurious grassland/land edge.  Unknown tiles
+   * default to terrain id 0 (grassland), so we must check the known state
+   * before calling tile_terrain(). */
+  if (tile_get_known(ntile) === TILE_UNKNOWN) return 1;
+  var nterrain = tile_terrain(ntile);
   if (nterrain == null) return 1;
   var ng = nterrain['graphic_str'];
   return (ng === 'coast' || ng === 'floor' || ng === 'lake') ? 1 : 0;
