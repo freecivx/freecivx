@@ -19,7 +19,6 @@
 
 var roads_texture;
 var roads_data;
-var roads_dirty_tiles_set = new Set();  // Pending road updates, flushed by process_pending_road_updates()
 
 /****************************************************************************
  Initialize roads image
@@ -88,49 +87,6 @@ function update_roads_tile(ptile, recursive)
     update_roads_tile(ntile, false);
   }
 
-}
-
-/****************************************************************************
-  Schedules a road texture update for ptile and all 8 of its neighbors.
-  Updates are collected in roads_dirty_tiles_set and applied in a single
-  batch by process_pending_road_updates(), which avoids redundant per-tile
-  work when many tiles change at once (e.g., full map reveal at game end).
-****************************************************************************/
-function schedule_road_update(ptile)
-{
-  if (ptile == null) return;
-  roads_dirty_tiles_set.add(ptile['index']);
-
-  // Queue all 8 neighbors so connections are re-evaluated correctly.
-  const x = ptile.x;
-  const y = ptile.y;
-  const neighbours = [
-    {x: x - 1, y: y - 1}, {x: x - 1, y: y}, {x: x - 1, y: y + 1},
-    {x: x,     y: y - 1},                     {x: x,     y: y + 1},
-    {x: x + 1, y: y - 1}, {x: x + 1, y: y}, {x: x + 1, y: y + 1},
-  ];
-  for (let i = 0; i < 8; i++) {
-    const c = neighbours[i];
-    if (c.x >= 0 && c.x < map.xsize && c.y >= 0 && c.y < map.ysize) {
-      const ntile = map_pos_to_tile(c.x, c.y);
-      if (ntile != null) roads_dirty_tiles_set.add(ntile['index']);
-    }
-  }
-}
-
-/****************************************************************************
-  Flushes all pending road texture updates collected by schedule_road_update.
-  Called from the terrain update interval so that overlapping updates from
-  multiple handle_tile_info packets are merged into a single pass.
-****************************************************************************/
-function process_pending_road_updates()
-{
-  if (roads_dirty_tiles_set.size === 0) return;
-  for (const tileIndex of roads_dirty_tiles_set) {
-    const ptile = tiles[tileIndex];
-    if (ptile != null) update_roads_tile(ptile, false);
-  }
-  roads_dirty_tiles_set.clear();
 }
 
 /****************************************************************************
