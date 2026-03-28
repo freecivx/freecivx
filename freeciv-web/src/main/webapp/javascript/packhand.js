@@ -199,7 +199,7 @@ function handle_tile_info(packet)
     }
 
     update_borders_tile(tiles[packet['tile']]);
-    update_roads_tile(tiles[packet['tile']], true);
+    schedule_roads_tile_update(tiles[packet['tile']]);
     update_tiletypes_tile(tiles[packet['tile']]);
 
     if (typeof map2d_schedule_render === 'function') map2d_schedule_render();

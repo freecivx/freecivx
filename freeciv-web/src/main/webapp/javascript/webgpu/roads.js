@@ -20,6 +20,11 @@
 var roads_texture;
 var roads_data;
 
+// Set of tile indices (ptile.tile) pending road texture updates.
+// Populated by schedule_roads_tile_update(); drained by flush_roads_updates()
+// each rendering frame, eliminating O(N×9) redundant work during bulk tile reveals.
+var roads_dirty_tiles = new Set();
+
 /****************************************************************************
  Initialize roads image
 ****************************************************************************/
@@ -87,6 +92,47 @@ function update_roads_tile(ptile, recursive)
     update_roads_tile(ntile, false);
   }
 
+}
+
+/****************************************************************************
+  Schedule road texture updates for ptile and its 8 neighbours.
+  Uses a Set for automatic deduplication so that when many tiles arrive in
+  the same frame, each tile's road texture is only recomputed once.
+  Actual updates are flushed by flush_roads_updates() each rendering frame.
+****************************************************************************/
+function schedule_roads_tile_update(ptile)
+{
+  if (ptile == null) return;
+  roads_dirty_tiles.add(ptile.tile);
+
+  let x = ptile.x;
+  let y = ptile.y;
+  let neighbours = [
+    { x: x - 1, y: y - 1 }, { x: x - 1, y: y }, { x: x - 1, y: y + 1 },
+    { x: x,     y: y - 1 },                       { x: x,     y: y + 1 },
+    { x: x + 1, y: y - 1 }, { x: x + 1, y: y }, { x: x + 1, y: y + 1 },
+  ];
+  for (let i = 0; i < neighbours.length; i++) {
+    let c = neighbours[i];
+    if (c.x < 0 || c.x >= map.xsize || c.y < 0 || c.y >= map.ysize) continue;
+    let ntile = map_pos_to_tile(c.x, c.y);
+    if (ntile != null) roads_dirty_tiles.add(ntile.tile);
+  }
+}
+
+/****************************************************************************
+  Flush all pending road texture updates accumulated since the last call.
+  Called once per rendering frame from update_map_known_tiles() so that
+  many simultaneous tile packets are batched into a single pass.
+****************************************************************************/
+function flush_roads_updates()
+{
+  if (roads_dirty_tiles.size === 0) return;
+  for (let tile_index of roads_dirty_tiles) {
+    let ptile = tiles[tile_index];
+    if (ptile != null) update_roads_tile(ptile, false);
+  }
+  roads_dirty_tiles.clear();
 }
 
 /****************************************************************************
