@@ -20,6 +20,7 @@
 package net.freecivx.server;
 
 import net.freecivx.game.*;
+import net.freecivx.main.MetaserverClient;
 import org.apache.commons.text.StringEscapeUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.java_websocket.WebSocket;
@@ -170,6 +171,7 @@ public class CivServer extends org.java_websocket.server.WebSocketServer impleme
                 sendMessageAll(player.getUsername() + " has left the lobby.");
                 sendPlayerInfoAll(player);
             }
+            MetaserverClient.notifyUpdate();
         }
     }
 
@@ -219,6 +221,7 @@ public class CivServer extends org.java_websocket.server.WebSocketServer impleme
                     }
                 }
             }
+            MetaserverClient.notifyUpdate();
         }
 
         if (pid == Packets.PACKET_PLAYER_READY) {
@@ -233,6 +236,7 @@ public class CivServer extends org.java_websocket.server.WebSocketServer impleme
                     sendMessageAll(starterName + " has pressed Start Game — the game is beginning!");
                 }
                 game.startGame();
+                MetaserverClient.notifyUpdate();
             }
         }
 
