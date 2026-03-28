@@ -348,6 +348,7 @@ public class Ruleset {
                 int    firepower = sec.getInt("firepower", 1);
                 int    popCost   = sec.getInt("pop_cost", 0);
                 int    happyCost = sec.getInt("uk_happy", 0);
+                int    foodUpkeep = sec.getInt("uk_food", 0);
                 int    visionRadiusSq = sec.getInt("vision_radius_sq", 2);
                 String unitClass = sec.get("class");
                 int    domain    = classToDomain(unitClass);
@@ -362,6 +363,7 @@ public class Ruleset {
                 ut.setFirepower(firepower);
                 ut.setPopCost(popCost);
                 ut.setHappyCost(happyCost);
+                ut.setFoodUpkeep(foodUpkeep);
                 ut.setHasHorseFlag(hasHorse);
                 ut.setNonMilitary(isNonMil);
                 ut.setHasSettlersFlag(isSettler);

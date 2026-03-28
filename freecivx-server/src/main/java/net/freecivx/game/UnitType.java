@@ -158,6 +158,19 @@ public class UnitType {
      */
     private boolean hasHelpWonderFlag = false;
 
+    /**
+     * Food upkeep cost per turn.  Read from the {@code uk_food} field in the
+     * Freeciv units ruleset.  Mirrors the {@code O_FOOD} component of
+     * {@code punit->upkeep[]} in the C Freeciv server.
+     *
+     * <p>In the classic ruleset only Settlers have {@code uk_food = 1}; all
+     * other units have {@code uk_food = 0}.  Under Republic or Democracy the
+     * effective cost is doubled (Upkeep_Factor for Food = 1 extra, giving a
+     * total factor of 2) — mirrors {@code effect_republic_unit_upkeep} and
+     * {@code effect_democracy_unit_upkeep} in classic {@code effects.ruleset}.
+     */
+    private int foodUpkeep = 0;
+
     // Constructor (backwards-compatible without cost)
     public UnitType(String name, String graphicsStr, int moveRate, int hp, int veteranLevels, String helptext, int attackStrength, int defenseStrength,
                     String utype_actions, int domain) {
@@ -485,6 +498,26 @@ public class UnitType {
      */
     public void setHappyCost(int happyCost) {
         this.happyCost = Math.max(0, happyCost);
+    }
+
+    /**
+     * Returns the per-turn food upkeep cost of this unit type.
+     * In the classic ruleset only Settlers return 1; all others return 0.
+     * Mirrors the {@code O_FOOD} component of {@code punit->upkeep[]} in the
+     * C Freeciv server.
+     */
+    public int getFoodUpkeep() {
+        return foodUpkeep;
+    }
+
+    /**
+     * Sets the per-turn food upkeep cost.  Read from {@code uk_food} in the
+     * Freeciv units ruleset.
+     *
+     * @param foodUpkeep food upkeep per turn (≥ 0)
+     */
+    public void setFoodUpkeep(int foodUpkeep) {
+        this.foodUpkeep = Math.max(0, foodUpkeep);
     }
 
     // Optional toString method for debugging
